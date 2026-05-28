@@ -1,0 +1,38 @@
+# Local/runtime state
+.pytest_cache/
+**/__pycache__/
+*.py[cod]
+*.log
+*.sqlite3
+*.db
+
+# JavaScript/Rust build dependencies and outputs
+node_modules/
+dist/
+dist-sidecar/
+dist-ui/
+build/
+build-sidecar/
+src-tauri/target/
+src-tauri/gen/
+
+# Packaged binaries/installers
+*.exe
+*.msi
+*.pkg
+*.pyz
+
+# Raw/private corpus and helper artifacts
+DevelopmentalCorpusArchive_20260526_122541/
+might help/
+
+# Large/generated research outputs remain local unless explicitly promoted.
+analysis/*
+!analysis/live_layer_20260528/
+!analysis/live_layer_20260528/**
+
+# Local environment files
+.env
+.env.*
+.venv/
+venv/

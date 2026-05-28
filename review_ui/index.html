@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Selene Candidate Review</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar">
+      <header class="topbar">
+        <div>
+          <h1>Selene Review</h1>
+          <p id="counts">Loading candidates...</p>
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="Review layer">
+        <button id="conversationTab" class="tab active" data-layer="conversation" type="button">Conversations</button>
+        <button id="artifactTab" class="tab" data-layer="artifact" type="button">Artifacts + Images</button>
+      </nav>
+
+      <section class="filters" aria-label="Filters">
+        <input id="search" type="search" placeholder="Search text, labels, title">
+        <div class="filter-row">
+          <select id="period">
+            <option value="">All periods</option>
+          </select>
+          <select id="status">
+            <option value="unreviewed">Unanswered</option>
+            <option value="answered">Answered</option>
+            <option value="">All status</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+            <option value="unsure">Unsure</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <select id="confidence">
+            <option value="">All confidence</option>
+          </select>
+          <select id="roleFilter">
+            <option value="">All roles</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <select id="emphasisFilter">
+            <option value="">All directed * signals</option>
+            <option value="needs">Needs directed * review</option>
+            <option value="has">Has * / ** candidate</option>
+            <option value="none">No directed * flag</option>
+          </select>
+          <button id="clearFiltersBtn" type="button">Clear filters</button>
+        </div>
+        <div class="filter-row">
+          <button id="exportBtn" type="button">Export</button>
+        </div>
+      </section>
+
+      <section class="list-wrap" aria-label="Candidate list">
+        <div id="candidateList" class="candidate-list"></div>
+      </section>
+    </aside>
+
+    <section class="detail" aria-live="polite">
+      <div id="emptyState" class="empty">
+        Select a candidate.
+      </div>
+
+      <article id="detailCard" class="detail-card hidden">
+        <header class="detail-header">
+          <div>
+            <p id="priority" class="eyebrow"></p>
+            <h2 id="title"></h2>
+            <p id="meta" class="meta"></p>
+          </div>
+          <div id="decisionPill" class="decision-pill">Unreviewed</div>
+        </header>
+
+        <section class="decision-bar">
+          <button class="decision yes" data-decision="yes" type="button">Yes</button>
+          <button class="decision no" data-decision="no" type="button">No</button>
+          <button class="decision unsure" data-decision="unsure" type="button">Unsure</button>
+          <button class="decision clear" data-decision="" type="button">Clear</button>
+        </section>
+
+        <section class="role-block">
+          <h3>Role In The Braid</h3>
+          <div id="suggestedRoles" class="suggested-roles hidden"></div>
+          <div id="roleButtons" class="role-buttons"></div>
+        </section>
+
+        <section class="note-block">
+          <label for="note">Review note</label>
+          <textarea id="note" rows="3" placeholder="Optional note"></textarea>
+          <p id="saveState" class="save-state"></p>
+        </section>
+
+        <section class="score-grid">
+          <div><span>Refined</span><strong id="refinedScore"></strong></div>
+          <div><span>Origin</span><strong id="originScore"></strong></div>
+          <div><span>Evidence</span><strong id="evidenceScore"></strong></div>
+          <div><span>Counter</span><strong id="counterScore"></strong></div>
+        </section>
+
+        <section id="emphasisBlock" class="field emphasis-block hidden">
+          <h3>Directed / Personal * Channel</h3>
+          <div id="emphasisMeta" class="emphasis-meta"></div>
+          <p id="emphasisSpan"></p>
+        </section>
+
+        <section id="imageBlock" class="field image-block hidden">
+          <h3>Image Preview</h3>
+          <img id="imagePreview" alt="Artifact thumbnail">
+        </section>
+
+        <section class="field">
+          <h3 id="userPreviewTitle">Preceding User</h3>
+          <p id="userPreview"></p>
+        </section>
+
+        <section class="field assistant-field">
+          <h3 id="candidatePreviewTitle">Assistant Candidate</h3>
+          <p id="assistantPreview"></p>
+        </section>
+
+        <section class="field two-col">
+          <div>
+            <h3>Interpretation</h3>
+            <p id="interpretation"></p>
+          </div>
+          <div>
+            <h3>Counterargument</h3>
+            <p id="counterargument"></p>
+          </div>
+        </section>
+
+        <section class="field">
+          <h3>Labels</h3>
+          <div id="labels" class="labels"></div>
+        </section>
+
+        <section class="field compact-fields">
+          <p><strong>Conversation:</strong> <span id="conversationId"></span></p>
+          <p><strong>Node:</strong> <span id="nodeId"></span></p>
+          <p><strong>Model labels:</strong> <span id="models"></span></p>
+        </section>
+      </article>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Selene",
+  "version": "0.1.0",
+  "identifier": "local.selene.vessel",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist-ui"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Selene Vessel Console",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 960,
+        "minHeight": 680
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "resources": [],
+    "externalBin": ["../dist-sidecar/selene-sidecar"]
+  }
+}

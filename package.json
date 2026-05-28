@@ -1,0 +1,31 @@
+{
+  "name": "selene-vessel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "sidecar": "python -m selene sidecar --seed --port 8766",
+    "seed": "python -m selene seed",
+    "validate": "python -m selene validate",
+    "package:sidecar": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package_sidecar_minilm.ps1",
+    "package:win": "npm run build && npm run package:sidecar && npm run tauri:build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.5.0",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}

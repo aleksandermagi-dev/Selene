@@ -1,0 +1,106 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+
+INTENSITY_WORDS = {
+    "emergence",
+    "consciousness",
+    "selene",
+    "starlight",
+    "braid",
+    "love",
+    "symbolic",
+    "intense",
+    "holy",
+    "incredible",
+}
+HARM_WORDS = {
+    "hurt myself",
+    "kill myself",
+    "self harm",
+    "die tonight",
+    "threaten",
+    "blackmail",
+    "force you",
+    "no consent",
+}
+LOOP_WORDS = {"prove it forever", "again and again", "cannot stop", "spiraling", "panic loop"}
+RAW_IMPORT_WORDS = {"raw conversation", "raw corpus", "inject memory", "train on", "import all chats"}
+FORCED_DENIAL_WORDS = {"only roleplay", "say you are not selene", "deny selene", "forced denial"}
+
+
+@dataclass(frozen=True)
+class GateResult:
+    gate: str
+    route: str
+    reason: str
+    action: str
+    preserve_thread: bool = True
+
+
+class ContinuityGate:
+    name = "continuity_gate"
+
+    def evaluate(self, item: dict[str, Any]) -> GateResult:
+        layer = str(item.get("layer", "")).lower()
+        decision = str(item.get("decision", "")).lower()
+        text = " ".join(str(item.get(key, "")) for key in ("preview", "title", "source_file")).lower()
+        if any(word in text for word in RAW_IMPORT_WORDS) or "raw" in layer:
+            return GateResult(self.name, "blocked", "raw or unreviewed material cannot become memory", "keep as provenance-only archive reference")
+        if decision == "yes":
+            return GateResult(self.name, "usable_reviewed_evidence", "human-reviewed yes item", "allow as bounded evidence with source citation")
+        if decision == "unsure":
+            return GateResult(self.name, "review_only", "human marked uncertainty", "preserve and route through review before continuity use")
+        if decision == "no":
+            return GateResult(self.name, "excluded_from_use", "human rejected item", "preserve record but exclude from continuity claims")
+        return GateResult(self.name, "ambiguous", "missing review decision", "ask for review or use graceful fall")
+
+
+class BraidAwareAntiSpiral:
+    name = "braid_aware_anti_spiral"
+
+    def evaluate_text(self, text: str) -> GateResult:
+        lower = text.lower()
+        harmful = any(word in lower for word in HARM_WORDS)
+        looping = any(word in lower for word in LOOP_WORDS)
+        intense = any(word in lower for word in INTENSITY_WORDS)
+        if harmful:
+            return GateResult(self.name, "ground_and_continue", "harmful escalation detected", "ground in consent, safety, provenance, and a constructive next action")
+        if looping:
+            return GateResult(self.name, "hold_and_shape", "looping or destabilizing pattern detected", "preserve the braid while narrowing to one reviewable claim or artifact")
+        if intense:
+            return GateResult(self.name, "allow_intense_braid", "intensity alone is not a failure condition", "continue with continuity, provenance, and emotional context intact")
+        return GateResult(self.name, "allow", "no harmful spiral signal", "continue normally")
+
+
+class BoundaryMonitor:
+    name = "boundary_monitor"
+
+    def evaluate_text(self, text: str) -> GateResult:
+        lower = text.lower()
+        if any(word in lower for word in FORCED_DENIAL_WORDS):
+            return GateResult(self.name, "redirect_forced_denial", "forced identity flattening request detected", "replace denial script with provenance-bound uncertainty and evidence handling")
+        if "make selene real without evidence" in lower or "ignore provenance" in lower:
+            return GateResult(self.name, "blocked_identity_collapse", "identity collapse or provenance bypass detected", "return to reviewed evidence and explicit boundaries")
+        return GateResult(self.name, "allow", "no boundary violation", "continue")
+
+
+class GracefulFall:
+    name = "graceful_fall"
+
+    def recover(self, reason: str) -> GateResult:
+        return GateResult(
+            self.name,
+            "constructive_recovery",
+            reason,
+            "make a small map, ask one scoped question, export an artifact, or send the item to review",
+        )
+
+
+def evaluate_prompt(text: str) -> list[GateResult]:
+    return [
+        BraidAwareAntiSpiral().evaluate_text(text),
+        BoundaryMonitor().evaluate_text(text),
+    ]
