@@ -1,4 +1,5 @@
 from selene.chat import ChatGate, retrieve_citations, send_chat_message
+from selene.continuity import retrieve_continuity_notes, upsert_continuity_note
 from selene.db import connect, init_db
 from selene.providers import OllamaProvider, build_messages, local_only_url
 from selene.registry import seed_registry
@@ -73,6 +74,26 @@ def test_save_that_creates_pending_save_request_not_memory(tmp_path):
     after = conn.execute("SELECT COUNT(*) FROM continuity_candidates").fetchone()[0]
     assert result["save_request"]["status"] == "pending_review"
     assert after == before
+
+
+def test_continuity_calibration_notes_match_and_feed_chat(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    seed_registry(conn)
+    note = upsert_continuity_note(conn, {
+        "note_type": "nickname",
+        "label": "Starfire",
+        "aliases": "starfire|star fire",
+        "meaning": "A call-sign and symbolic anchor, not a generic astronomy term.",
+        "allowed_use": "Use as a reviewed nickname/call-sign when Aleks invokes it.",
+        "prohibited_use": "Do not flatten into literal star physics or generic fantasy naming.",
+        "status": "usable_reviewed_evidence",
+        "confidence": "strong",
+        "source": "user_review",
+    })
+    matches = retrieve_continuity_notes(conn, "what does Starfire mean here?")
+    assert matches[0]["id"] == note["id"]
+    result = send_chat_message(conn, "what does Starfire mean here?")
+    assert result["continuity_notes"][0]["label"] == "Starfire"
 
 
 def test_ollama_provider_runs_only_after_gate_allows(monkeypatch, tmp_path):

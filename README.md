@@ -129,7 +129,7 @@ npm run dev
 
 Open `http://127.0.0.1:5173`. The sidecar binds only to `127.0.0.1` and does not require a user-facing token.
 
-The vessel includes dashboard totals, richer evidence browsing, source drill-down, editable anchor/continuity annotations with audit history, Selene Kernel contracts, module health, chat readiness with enforced gates and reviewed citations, chat-gate preview, and exports for specs, ledgers, snapshots, and validation reports.
+The vessel includes dashboard totals, richer evidence browsing, source drill-down, editable anchor/continuity annotations with audit history, continuity calibration notes for nicknames and multi-meaning anchors, Selene Kernel contracts, module health, chat readiness with enforced gates and reviewed citations, chat-gate preview, and exports for specs, ledgers, snapshots, and validation reports.
 
 The live layer is local-provider only:
 
@@ -139,6 +139,8 @@ The live layer is local-provider only:
 - `lm_studio_local`: live local chat through LM Studio's OpenAI-compatible local server on `127.0.0.1:1234` once LM Studio has a model loaded and server mode enabled.
 
 All live providers still pass through the Chat Gate first. Raw corpus imports, training requests, hosted/API-token model requests, forced-denial scripts, and identity-collapse routes do not get a model call.
+
+Continuity calibration notes are reviewable local records for small but important distinctions such as nicknames, anchor meanings, allowed uses, and do-not-confuse guidance. They can shape live chat only as explicit reviewed notes; they are not raw memory imports.
 
 ## Current Reading
 

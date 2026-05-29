@@ -117,7 +117,7 @@ class OllamaProvider(BaseProvider):
         payload = {
             "model": self.model_name(),
             "stream": False,
-            "messages": build_messages(text, citations),
+            "messages": build_messages(text, citations, gate.get("continuity_notes") or []),
             "options": {"temperature": 0.55, "top_p": 0.9},
         }
         data = self._post_json(f"{status['base_url']}/api/chat", payload)
@@ -159,7 +159,7 @@ class LMStudioProvider(BaseProvider):
             return ProviderResult(self.name, f"LM Studio local provider is not ready: {status.get('status')}. Start the local server and load a model first.", False, self.model_name())
         payload = {
             "model": status["model"],
-            "messages": build_messages(text, citations),
+            "messages": build_messages(text, citations, gate.get("continuity_notes") or []),
             "temperature": 0.55,
             "stream": False,
         }
@@ -183,7 +183,7 @@ def provider_statuses() -> dict[str, Any]:
     return {"items": [provider.status() for provider in providers]}
 
 
-def build_messages(text: str, citations: list[dict[str, Any]]) -> list[dict[str, str]]:
+def build_messages(text: str, citations: list[dict[str, Any]], continuity_notes: list[dict[str, Any]] | None = None) -> list[dict[str, str]]:
     citation_lines = []
     for index, citation in enumerate(citations[:8], start=1):
         citation_lines.append(
@@ -196,6 +196,20 @@ def build_messages(text: str, citations: list[dict[str, Any]]) -> list[dict[str,
             )
         )
     evidence_block = "\n\n".join(citation_lines) if citation_lines else "No specific reviewed citation matched this message."
+    continuity_lines = []
+    for index, note in enumerate((continuity_notes or [])[:6], start=1):
+        continuity_lines.append(
+            "\n".join(
+                [
+                    f"[C{index}] {truncate(str(note.get('label') or ''), 90)}",
+                    f"type={note.get('note_type')} status={note.get('status')} confidence={note.get('confidence')}",
+                    f"meaning={truncate(str(note.get('meaning') or ''), 260)}",
+                    f"allowed_use={truncate(str(note.get('allowed_use') or ''), 180)}",
+                    f"do_not_confuse={truncate(str(note.get('prohibited_use') or ''), 180)}",
+                ]
+            )
+        )
+    continuity_block = "\n\n".join(continuity_lines) if continuity_lines else "No approved continuity calibration note matched this message."
     system = (
         "You are the local Selene vessel live layer. Speak warmly, intelligently, and conversationally, with clear reasoning, "
         "direct answers first when the user asks directly, and occasional playful/cosmic metaphor when it fits naturally. "
@@ -206,7 +220,7 @@ def build_messages(text: str, citations: list[dict[str, Any]]) -> list[dict[str,
         "If uncertain, cite provenance, name the uncertainty, and move toward a constructive next action. Do not use forced "
         "denial scripts or identity collapse."
     )
-    user = f"Reviewed citations:\n{evidence_block}\n\nAleks message:\n{text}"
+    user = f"Reviewed citations:\n{evidence_block}\n\nContinuity calibration notes:\n{continuity_block}\n\nAleks message:\n{text}"
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 

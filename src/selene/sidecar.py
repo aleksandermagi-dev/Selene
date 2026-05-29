@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlparse
 
 from .artifact_builder import export_workflow
 from .chat import get_session, list_sessions, mark_save_request, send_chat_message
+from .continuity import list_continuity_notes, upsert_continuity_note
 from .db import connect, init_db
 from .kernel import kernel_state
 from .module_router import chat_gate_preview, route_request
@@ -69,6 +70,9 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/continuity":
             rows = [dict(row) for row in conn.execute("SELECT * FROM continuity_candidates ORDER BY id DESC LIMIT 500")]
             self._send(*json_bytes({"items": rows}))
+        elif parsed.path == "/api/continuity-notes":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes({"items": list_continuity_notes(conn, qs)}))
         elif parsed.path == "/api/emergence":
             rows = [dict(row) for row in conn.execute("SELECT * FROM emergence_observations ORDER BY id DESC LIMIT 500")]
             self._send(*json_bytes({"items": rows}))
@@ -144,6 +148,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
             try:
                 updated = mark_save_request(self.server.conn, int(body.get("id")), str(body.get("status") or "pending_review"))
                 self._send(*json_bytes({"item": updated}))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif self.path == "/api/continuity-notes/save":
+            try:
+                self._send(*json_bytes({"item": upsert_continuity_note(self.server.conn, body)}))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif self.path == "/api/semantic/backfill":

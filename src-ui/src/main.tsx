@@ -14,7 +14,7 @@ type Dashboard = {
 };
 type EvidenceDetail = { item: Dict; anchors: Dict[]; continuity: Dict[]; emergence: Dict[] };
 
-const tabs = ["dashboard", "evidence", "anchors", "continuity", "emergence", "kernel", "artifacts", "chat", "chat gate", "health"];
+const tabs = ["dashboard", "evidence", "anchors", "continuity", "calibration", "emergence", "kernel", "artifacts", "chat", "chat gate", "health"];
 const statuses = ["", "usable_reviewed_evidence", "review_only", "excluded_from_use", "ambiguous"];
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -35,6 +35,7 @@ function App() {
   const [items, setItems] = useState<Dict[]>([]);
   const [detail, setDetail] = useState<EvidenceDetail | null>(null);
   const [selectedEdit, setSelectedEdit] = useState<{ table: string; item: Dict } | null>(null);
+  const [calibrationEdit, setCalibrationEdit] = useState<Dict | null>(null);
   const [filters, setFilters] = useState({ q: "", decision: "", layer: "", phase: "", role: "", sensitivity: "", confidence: "", source_type: "" });
   const [status, setStatus] = useState("booting sidecar");
   const [kernel, setKernel] = useState<Dict | null>(null);
@@ -64,6 +65,9 @@ function App() {
     if (tab === "evidence") loadEvidence();
     if (["anchors", "continuity", "emergence"].includes(tab)) {
       api<{ items: Dict[] }>(`/api/${tab}`).then((data) => setItems(data.items));
+    }
+    if (tab === "calibration") {
+      api<{ items: Dict[] }>("/api/continuity-notes").then((data) => setItems(data.items));
     }
   }, [tab, filters]);
 
@@ -171,6 +175,22 @@ function App() {
               setSelectedEdit({ ...selectedEdit, item: updated });
               api<{ items: Dict[] }>(`/api/${tab}`).then((data) => setItems(data.items));
             }} /> : <Panel title="Review Edit"><p>Select an anchor or continuity candidate to annotate it.</p></Panel>} />
+          </>
+        )}
+
+        {tab === "calibration" && (
+          <>
+            <header>
+              <h1>Continuity Calibration</h1>
+              <p>Review nicknames, anchor meanings, allowed uses, and do-not-confuse notes before they shape live chat.</p>
+            </header>
+            <SplitView
+              left={<EvidenceList items={items} onSelect={(item) => setCalibrationEdit(item)} />}
+              right={<CalibrationPanel item={calibrationEdit} onNew={() => setCalibrationEdit({})} onSaved={(updated) => {
+                setCalibrationEdit(updated);
+                api<{ items: Dict[] }>("/api/continuity-notes").then((data) => setItems(data.items));
+              }} />}
+            />
           </>
         )}
 
@@ -377,6 +397,61 @@ function EditPanel({ edit, onSaved }: { edit: { table: string; item: Dict }; onS
   );
 }
 
+function CalibrationPanel({ item, onNew, onSaved }: { item: Dict | null; onNew: () => void; onSaved: (item: Dict) => void }) {
+  const [draft, setDraft] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setDraft({
+      id: text(item?.id),
+      note_type: text(item?.note_type || "anchor"),
+      label: text(item?.label),
+      aliases: text(item?.aliases),
+      meaning: text(item?.meaning),
+      allowed_use: text(item?.allowed_use),
+      prohibited_use: text(item?.prohibited_use),
+      status: text(item?.status || "review_only"),
+      confidence: text(item?.confidence || "open"),
+      source: text(item?.source || "user_review"),
+      source_ref: text(item?.source_ref)
+    });
+  }, [item]);
+
+  return (
+    <Panel title="Calibration Note">
+      <button onClick={onNew}>New Note</button>
+      <div className="filters">
+        <label>
+          <span>Type</span>
+          <select value={draft.note_type || "anchor"} onChange={(e) => setDraft({ ...draft, note_type: e.target.value })}>
+            {["style", "anchor", "nickname", "project_fact", "relationship_context", "boundary", "open_question", "do_not_use"].map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>Status</span>
+          <select value={draft.status || "review_only"} onChange={(e) => setDraft({ ...draft, status: e.target.value })}>
+            {["usable_reviewed_evidence", "review_only", "excluded_from_use", "ambiguous"].map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>Confidence</span>
+          <select value={draft.confidence || "open"} onChange={(e) => setDraft({ ...draft, confidence: e.target.value })}>
+            {["strong", "moderate", "weak", "open"].map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+      </div>
+      {["label", "aliases", "meaning", "allowed_use", "prohibited_use", "source", "source_ref"].map((field) => (
+        <label key={field}>
+          <span>{field}</span>
+          <textarea value={draft[field] || ""} onChange={(e) => setDraft({ ...draft, [field]: e.target.value })} />
+        </label>
+      ))}
+      <button className="primary" onClick={() => api<{ item: Dict }>("/api/continuity-notes/save", { method: "POST", body: JSON.stringify(draft) }).then((data) => onSaved(data.item))}>
+        Save Calibration
+      </button>
+    </Panel>
+  );
+}
+
 function ChatResult({ result }: { result: Dict }) {
   const gate = (result.gate || {}) as Dict;
   const assistant = (result.assistant || {}) as Dict;
@@ -386,11 +461,13 @@ function ChatResult({ result }: { result: Dict }) {
         <span>{text(gate.route)}</span>
         <span>{text(gate.continuity_status)}</span>
         <span>{Array.isArray(result.citations) ? result.citations.length : 0} citations</span>
+        <span>{Array.isArray(result.continuity_notes) ? result.continuity_notes.length : 0} continuity notes</span>
         <span>model call: {text(assistant.model_call_made)}</span>
         <span>save: {result.save_request ? "pending" : "none"}</span>
       </div>
       <p>{text(assistant.content)}</p>
       <CitationDetails citations={(result.citations || []) as Dict[]} />
+      <ContinuityNoteDetails notes={(result.continuity_notes || []) as Dict[]} />
     </div>
   );
 }
@@ -443,17 +520,36 @@ function CitationDetails({ citations }: { citations: Dict[] }) {
   );
 }
 
+function ContinuityNoteDetails({ notes }: { notes: Dict[] }) {
+  if (!notes.length) return null;
+  return (
+    <details>
+      <summary>{notes.length} continuity calibration notes</summary>
+      <div className="citationList">
+        {notes.map((note, index) => (
+          <article className="linked" key={`${text(note.id)}-${index}`}>
+            <strong>{text(note.label)}</strong>
+            <small>{text(note.note_type)} | {text(note.status)} | {text(note.confidence)}</small>
+            <p>{text(note.meaning)}</p>
+            {note.prohibited_use ? <p><strong>Do not confuse:</strong> {text(note.prohibited_use)}</p> : null}
+          </article>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function EvidenceList({ items, onSelect }: { items: Dict[]; onSelect: (item: Dict) => void }) {
   return (
     <div className="list">
       {items.map((item, index) => (
         <article key={text(item.id || index)} onClick={() => onSelect(item)}>
           <div className="row">
-            <strong>{text(item.title || item.anchor || item.signal_type || item.id)}</strong>
-            <span>{text(item.decision || item.status || item.confidence_label || item.review_status || item.layer)}</span>
+            <strong>{text(item.title || item.anchor || item.label || item.signal_type || item.id)}</strong>
+            <span>{text(item.decision || item.status || item.confidence_label || item.review_status || item.layer || item.note_type)}</span>
           </div>
-          <p>{text(item.preview)}</p>
-          <small>{text(item.layer || item.anchor_type || item.signal_type)} | {text(item.source || item.evidence_id)}</small>
+          <p>{text(item.preview || item.meaning)}</p>
+          <small>{text(item.layer || item.anchor_type || item.signal_type || item.note_type)} | {text(item.source || item.evidence_id || item.aliases)}</small>
         </article>
       ))}
     </div>

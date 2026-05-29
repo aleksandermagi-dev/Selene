@@ -5,6 +5,7 @@ import re
 import sqlite3
 from typing import Any
 
+from .continuity import retrieve_continuity_notes
 from .gates import BraidAwareAntiSpiral, BoundaryMonitor
 from .providers import LOCAL_PROVIDER_NAMES, get_provider
 from .registry import truncate
@@ -32,6 +33,7 @@ class ChatGate:
         raw_requested = any(marker in lower for marker in RAW_MARKERS)
         paid_requested = any(marker in lower for marker in PAID_MARKERS)
         citations = retrieve_citations(conn, text)
+        continuity_notes = retrieve_continuity_notes(conn, text)
 
         provider_is_local = provider_name in LOCAL_PROVIDER_NAMES
         if raw_requested or paid_requested:
@@ -61,7 +63,8 @@ class ChatGate:
             "model_call_allowed": route == "allowed_preview_only" and provider_is_local,
             "provider_requested": provider_name,
             "allowed_evidence_sources": allowed,
-            "continuity_status": "reviewed_only" if citations else "no_specific_anchor_matched",
+            "continuity_status": "reviewed_only" if citations else ("reviewed_continuity_note" if continuity_notes else "no_specific_anchor_matched"),
+            "continuity_notes": continuity_notes,
             "anti_spiral_status": anti.__dict__,
             "boundary_status": boundary.__dict__,
             "provenance_requirements": requirements,
@@ -134,6 +137,7 @@ def send_chat_message(conn: sqlite3.Connection, text: str, session_id: int | Non
     session_id = session_id or create_session(conn, text)
     gate = ChatGate().evaluate(conn, text, provider_name)
     citations = gate["matched_evidence"]
+    continuity_notes = gate.get("continuity_notes") or []
     provider = get_provider(provider_name)
     provider_result = provider.generate(text, gate, citations)
 
@@ -154,6 +158,7 @@ def send_chat_message(conn: sqlite3.Connection, text: str, session_id: int | Non
         "assistant": {"provider": provider_result.provider, "content": provider_result.content, "model_call_made": provider_result.model_call_made, "model": provider_result.model},
         "gate": gate,
         "citations": citations,
+        "continuity_notes": continuity_notes,
         "save_request": save_request,
     }
 

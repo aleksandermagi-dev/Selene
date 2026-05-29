@@ -191,6 +191,25 @@ CREATE TABLE IF NOT EXISTS continuity_save_requests (
   FOREIGN KEY (message_id) REFERENCES chat_messages(id)
 );
 
+CREATE TABLE IF NOT EXISTS continuity_notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  note_type TEXT NOT NULL,
+  label TEXT NOT NULL,
+  aliases TEXT,
+  meaning TEXT NOT NULL,
+  allowed_use TEXT,
+  prohibited_use TEXT,
+  status TEXT NOT NULL DEFAULT 'review_only',
+  confidence TEXT NOT NULL DEFAULT 'open',
+  source TEXT,
+  source_ref TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_continuity_notes_status ON continuity_notes(status);
+CREATE INDEX IF NOT EXISTS idx_continuity_notes_label ON continuity_notes(label);
+
 CREATE TABLE IF NOT EXISTS evidence_embeddings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   evidence_id TEXT NOT NULL UNIQUE,
