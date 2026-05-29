@@ -63,10 +63,11 @@ pub fn run() {
                 if sidecar_port_open() {
                     stop_stale_sidecars();
                 }
+                let parent_pid = std::process::id().to_string();
                 let (_rx, child) = app
                     .shell()
                     .sidecar("selene-sidecar")?
-                    .args(["--seed", "--port", "8766"])
+                    .args(["--seed", "--port", "8766", "--parent-pid", parent_pid.as_str()])
                     .spawn()?;
                 app.manage(SidecarState(Mutex::new(Some(child))));
             }

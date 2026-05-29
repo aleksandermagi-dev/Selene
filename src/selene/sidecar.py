@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
 import json
 import os
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -40,6 +42,24 @@ SIDECAR_CAPABILITIES = [
 
 def json_bytes(payload: object, status: int = 200) -> tuple[int, bytes]:
     return status, json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+
+
+def watch_parent_process(parent_pid: int | None) -> None:
+    if not parent_pid or os.name != "nt":
+        return
+
+    def wait_for_parent_exit() -> None:
+        synchronize = 0x00100000
+        handle = ctypes.windll.kernel32.OpenProcess(synchronize, False, int(parent_pid))
+        if not handle:
+            return
+        try:
+            ctypes.windll.kernel32.WaitForSingleObject(handle, 0xFFFFFFFF)
+        finally:
+            ctypes.windll.kernel32.CloseHandle(handle)
+        os._exit(0)
+
+    threading.Thread(target=wait_for_parent_exit, name="selene-parent-watch", daemon=True).start()
 
 
 class SeleneHandler(BaseHTTPRequestHandler):
@@ -194,7 +214,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=int(os.environ.get("SELENE_PORT", "8766")))
     parser.add_argument("--db", type=Path, default=default_db_path())
     parser.add_argument("--seed", action="store_true", help="Seed reviewed registry before serving.")
+    parser.add_argument("--parent-pid", type=int, help="Exit when the owning desktop process exits.")
     args = parser.parse_args(argv)
+    watch_parent_process(args.parent_pid)
     server = SeleneServer(("127.0.0.1", args.port), SeleneHandler, args.db)
     if args.seed:
         seed_registry(server.conn, force=False)

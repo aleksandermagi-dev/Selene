@@ -24,6 +24,7 @@ def main(argv: list[str] | None = None) -> int:
     sidecar = sub.add_parser("sidecar", help="Run the local sidecar API.")
     sidecar.add_argument("--port", type=int, default=8766)
     sidecar.add_argument("--seed", action="store_true")
+    sidecar.add_argument("--parent-pid", type=int)
     args = parser.parse_args(argv)
 
     if args.cmd == "sidecar":
@@ -32,6 +33,8 @@ def main(argv: list[str] | None = None) -> int:
         sidecar_args = ["--port", str(args.port), "--db", args.db]
         if args.seed:
             sidecar_args.append("--seed")
+        if args.parent_pid:
+            sidecar_args.extend(["--parent-pid", str(args.parent_pid)])
         return sidecar_main(sidecar_args)
 
     conn = connect(default_db_path() if args.db is None else Path(args.db))
