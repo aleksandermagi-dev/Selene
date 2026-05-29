@@ -76,6 +76,30 @@ button.primary {
   overflow: auto;
 }
 
+.bootBanner {
+  background: #fff6df;
+  border: 1px solid #d8b66b;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 14px;
+}
+
+.payloadBar {
+  background: #eadfc7;
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.payloadBar span {
+  background: #c77d4e;
+  display: block;
+  height: 100%;
+  transition: width 200ms ease;
+}
+
 header {
   display: grid;
   gap: 8px;

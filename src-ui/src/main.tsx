@@ -13,6 +13,12 @@ type Dashboard = {
   workflows: Array<{ workflow_key: string; title: string; description: string; output_type: string }>;
 };
 type EvidenceDetail = { item: Dict; anchors: Dict[]; continuity: Dict[]; emergence: Dict[] };
+type BootState = {
+  ready: boolean;
+  attempts: number;
+  message: string;
+  health: Dict | null;
+};
 
 const tabs = ["dashboard", "evidence", "anchors", "continuity", "calibration", "emergence", "kernel", "artifacts", "chat", "chat gate", "health"];
 const statuses = ["", "usable_reviewed_evidence", "review_only", "excluded_from_use", "ambiguous"];
@@ -37,7 +43,7 @@ function App() {
   const [selectedEdit, setSelectedEdit] = useState<{ table: string; item: Dict } | null>(null);
   const [calibrationEdit, setCalibrationEdit] = useState<Dict | null>(null);
   const [filters, setFilters] = useState({ q: "", decision: "", layer: "", phase: "", role: "", sensitivity: "", confidence: "", source_type: "" });
-  const [status, setStatus] = useState("booting sidecar");
+  const [boot, setBoot] = useState<BootState>({ ready: false, attempts: 0, message: "starting sidecar payload", health: null });
   const [kernel, setKernel] = useState<Dict | null>(null);
   const [contracts, setContracts] = useState<Dict[]>([]);
   const [paths, setPaths] = useState<Dict | null>(null);
@@ -52,6 +58,37 @@ function App() {
   const [chatSendResult, setChatSendResult] = useState<Dict | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    let timer: number | undefined;
+
+    async function pollHealth(attempt: number) {
+      try {
+        const health = await api<Dict>("/health");
+        if (cancelled) return;
+        setBoot({ ready: true, attempts: attempt, message: "sidecar connected", health });
+      } catch (err) {
+        if (cancelled) return;
+        const elapsed = Math.max(1, attempt * 2);
+        const detail = err instanceof Error ? err.message : "not reachable";
+        setBoot({
+          ready: false,
+          attempts: attempt,
+          message: `unpacking local sidecar payload (${elapsed}s): ${detail}`,
+          health: null
+        });
+        timer = window.setTimeout(() => pollHealth(attempt + 1), 2000);
+      }
+    }
+
+    pollHealth(1);
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!boot.ready) return;
     refreshDashboard();
     api<Dict>("/api/kernel").then(setKernel).catch(() => undefined);
     api<{ items: Dict[] }>("/api/contracts").then((data) => setContracts(data.items)).catch(() => undefined);
@@ -59,9 +96,10 @@ function App() {
     api<Dict>("/api/validate").then(setValidation).catch(() => undefined);
     api<Dict>("/api/semantic/status").then(setSemantic).catch(() => undefined);
     api<{ items: Dict[] }>("/api/providers/status").then((data) => setProviders(data.items)).catch(() => undefined);
-  }, []);
+  }, [boot.ready]);
 
   useEffect(() => {
+    if (!boot.ready) return;
     if (tab === "evidence") loadEvidence();
     if (["anchors", "continuity", "emergence"].includes(tab)) {
       api<{ items: Dict[] }>(`/api/${tab}`).then((data) => setItems(data.items));
@@ -69,15 +107,15 @@ function App() {
     if (tab === "calibration") {
       api<{ items: Dict[] }>("/api/continuity-notes").then((data) => setItems(data.items));
     }
-  }, [tab, filters]);
+  }, [tab, filters, boot.ready]);
 
   function refreshDashboard() {
     api<Dashboard>("/api/dashboard")
       .then((data) => {
         setDashboard(data);
-        setStatus("sidecar connected");
+        setBoot((current) => ({ ...current, ready: true, message: "sidecar connected" }));
       })
-      .catch((err) => setStatus(`waiting for sidecar: ${err.message}`));
+      .catch((err) => setBoot((current) => ({ ...current, message: `waiting for registry: ${err.message}` })));
   }
 
   function loadEvidence() {
@@ -127,10 +165,18 @@ function App() {
             </button>
           ))}
         </nav>
-        <p className="status">{status}</p>
+        <p className="status">{boot.message}</p>
       </aside>
 
       <section className="workspace">
+        {!boot.ready && (
+          <div className="bootBanner">
+            <strong>Starting local payload</strong>
+            <p>Selene is unpacking the bundled Python sidecar and MiniLM runtime. Cold starts can take 30-40 seconds after reinstall or rebuild.</p>
+            <div className="payloadBar"><span style={{ width: `${Math.min(95, boot.attempts * 7)}%` }} /></div>
+          </div>
+        )}
+
         {tab === "dashboard" && (
           <>
             <header>
@@ -281,11 +327,12 @@ function App() {
               <p>Local-only sidecar, state paths, validation parity, and package readiness.</p>
             </header>
             <div className="metrics">
-              <Metric label="Sidecar" value={status.includes("connected") ? "ok" : "waiting"} />
+              <Metric label="Sidecar" value={boot.ready ? "ok" : "waiting"} />
               <Metric label="Tokenless" value="yes" />
               <Metric label="Validation" value={text(validation?.ok ?? "unknown")} />
               <Metric label="Semantic" value={text(semantic?.status ?? "unknown")} />
             </div>
+            <Panel title="Sidecar Payload"><Json value={boot.health || { status: boot.message, attempts: boot.attempts }} /></Panel>
             <Panel title="State Paths"><Json value={paths} /></Panel>
             <Panel title="MiniLM Semantic Retrieval">
               <p>Optional local `sentence-transformers/all-MiniLM-L6-v2` index over reviewed evidence only. Keyword citations remain active when the runtime is unavailable.</p>
