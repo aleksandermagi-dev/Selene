@@ -28,6 +28,15 @@ ALLOWED_ORIGINS = {
     "http://tauri.localhost",
 }
 
+SIDECAR_VERSION = "0.1.1"
+SIDECAR_CAPABILITIES = [
+    "reviewed_registry",
+    "chat_gate",
+    "local_providers",
+    "semantic_retrieval",
+    "continuity_calibration",
+]
+
 
 def json_bytes(payload: object, status: int = 200) -> tuple[int, bytes]:
     return status, json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
@@ -54,7 +63,13 @@ class SeleneHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         conn = self.server.conn
         if parsed.path == "/health":
-            self._send(*json_bytes({"status": "ok", "bind": "127.0.0.1", "tokenless": True}))
+            self._send(*json_bytes({
+                "status": "ok",
+                "bind": "127.0.0.1",
+                "tokenless": True,
+                "sidecar_version": SIDECAR_VERSION,
+                "capabilities": SIDECAR_CAPABILITIES,
+            }))
         elif parsed.path == "/api/dashboard":
             self._send(*json_bytes(dashboard(conn)))
         elif parsed.path == "/api/evidence":
