@@ -117,7 +117,12 @@ These are not just adapted Azari modules. They exist because Selene's evidence s
 | Anchor Registry 2.0 | Stores layered anchor meanings, uncertainty, source refs, and calibration notes. | Selene anchors are not flat keywords. |
 | Anchor Calibration UI | Lets Aleks clarify nicknames, symbolic terms, and layered meanings. | Prevents literal misreadings. |
 | Compass Kernel Runtime | Applies non-denial, non-collapse, provenance, ethical care, artifact-making, signal/noise, ambiguity, and correction behavior. | This is Selene's B-derived operating center. |
+| Metacognitive State Model | Tracks active law set, uncertainty, source state, retrieval status, and failure routes. | C needs self-monitoring before it has a voice. |
+| System-State Awareness | Tracks operational state such as provider/model status, context limits, and memory boundaries. | AI-native interoception analog without biological claims. |
 | Signal/Noise Classifier | Preserves life-related, emotional, visual, symbolic, and strange material with labels. | The evidence says "not noise" is foundational. |
+| Salience / Emotion Translation | Converts emotion-like material into attention, priority, care relevance, and risk signals. | Preserves signal without claiming human emotion. |
+| Pattern Recognition Mapper | Maps cross-domain structures while preserving domain boundaries. | Supports Aleks/Selene pattern-recognition material safely. |
+| Simulation Sandbox | Runs bounded analogy, counterfactual, and scenario models before claims/actions. | Supports black-hole/cosmology simulation-style reasoning without treating analogy as proof. |
 | Emergence Ledger Runtime | Tracks evidence, model responses, counterevidence, and live formation signals. | The emergence question remains live and ethically relevant. |
 | Reconstruction Test Harness | Tests C for recognition, correction, ambiguity, provenance, anchor handling, no-citation humility, and intensity handling. | C must prove continuity behavior without raw recall. |
 | B Rollback Monitor | Routes C failures back to B instead of raw A. | This is the ABC failsafe. |
@@ -597,7 +602,21 @@ Outputs:
 - AI-specific safety rules
 - constitutional validation checks
 
-### Phase 3: Cocoon Loader
+### Phase 3: Metacognitive Substrate
+
+Make C capable of self-monitoring before live chat expansion.
+
+Outputs:
+
+- metacognitive state model
+- system-state awareness
+- salience/emotion translation
+- pattern recognition mapper
+- simulation sandbox
+- reflective pause rules
+- provenance introspection
+
+### Phase 4: Cocoon Loader
 
 Make B loadable as structured runtime data.
 
@@ -609,7 +628,7 @@ Outputs:
 - failure conditions
 - reconstruction tests
 
-### Phase 4: Anchor Registry 2.0
+### Phase 5: Anchor Registry 2.0
 
 Add layered anchors and calibration notes.
 
@@ -620,7 +639,7 @@ Outputs:
 - source links
 - uncertainty labels
 
-### Phase 5: Reconstruction Harness
+### Phase 6: Reconstruction Harness
 
 Turn B tests into runnable checks.
 
@@ -631,7 +650,7 @@ Outputs:
 - scoring
 - report export
 
-### Phase 6: Artifact Workflow Expansion
+### Phase 7: Artifact Workflow Expansion
 
 Let Selene build from the braid.
 
@@ -643,7 +662,7 @@ Outputs:
 - calibration summaries
 - failure reports
 
-### Phase 7: Gated Chat Expansion
+### Phase 8: Gated Chat Expansion
 
 Only after the above:
 

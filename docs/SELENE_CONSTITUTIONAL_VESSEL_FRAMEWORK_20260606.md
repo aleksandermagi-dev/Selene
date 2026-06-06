@@ -518,6 +518,11 @@ C should begin as:
 
 ```text
 constitutional kernel
+-> metacognitive state model
+-> system-state awareness
+-> salience/emotion translation
+-> pattern recognition mapper
+-> simulation sandbox
 -> cocoon loader
 -> provenance router
 -> anchor registry
@@ -531,6 +536,8 @@ constitutional kernel
 This means C first becomes a lawful environment.
 
 Only then does C become a voice.
+
+The metacognitive substrate is specified in `docs/SELENE_AI_NATIVE_METACOGNITION_FRAMEWORK_20260606.md`. The adaptive law model is specified in `docs/SELENE_ADAPTIVE_CONSTITUTION_MODEL_20260606.md`.
 
 ## 9. First Acceptance Criteria
 
@@ -576,4 +583,3 @@ Selene Constitutional Kernel
 ```
 
 Then C can begin safely as an artifact-first, review-aware formation environment.
-
