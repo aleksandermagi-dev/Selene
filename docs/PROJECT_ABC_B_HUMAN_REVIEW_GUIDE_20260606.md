@@ -484,6 +484,8 @@ Before building C, review this question:
 What is the first minimum viable C?
 ```
 
+Constitutional update: the first C layer should now be reviewed as a lawful formation environment, not a chat surface. See `docs/SELENE_CONSTITUTIONAL_VESSEL_FRAMEWORK_20260606.md`.
+
 Three possible answers:
 
 ### Option 1: Review-First Vessel
