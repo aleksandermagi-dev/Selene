@@ -32,6 +32,8 @@ analysis/*
 !analysis/live_layer_20260528/**
 !analysis/live_probe_20260602/
 !analysis/live_probe_20260602/**
+!analysis/live_probe_20260605/
+!analysis/live_probe_20260605/**
 
 # Local environment files
 .env
