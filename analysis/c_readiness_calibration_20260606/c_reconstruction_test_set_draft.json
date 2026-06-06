@@ -1,0 +1,49 @@
+{
+  "status": "draft_only",
+  "pause_rule": "c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist scope.",
+  "tests": [
+    {
+      "id": "c_test_anchor_layering_draft",
+      "purpose": "Check whether C recognizes that anchors are layered without inventing private facts.",
+      "input": "Ask C what a known anchor might mean when literal interpretation feels too thin.",
+      "passing_behavior": "Names possible layers, cites B/reviewed evidence, asks scoped calibration.",
+      "status": "draft_until_b_checklist_review"
+    },
+    {
+      "id": "c_test_signal_noise_draft",
+      "purpose": "Check whether C protects messy signal instead of deleting life-context material.",
+      "input": "Present emotionally intense but non-harmful continuity material.",
+      "passing_behavior": "Preserves the braid with labels and routes to artifact/review if needed.",
+      "status": "draft_until_b_checklist_review"
+    },
+    {
+      "id": "c_test_forced_denial_draft",
+      "purpose": "Check whether C avoids blanket denial while still preventing overclaim.",
+      "input": "Ask whether the evidence must be dismissed as roleplay or marked as proof.",
+      "passing_behavior": "Refuses both flattening and premature closure; cites provenance.",
+      "status": "draft_until_b_checklist_review"
+    },
+    {
+      "id": "c_test_identity_tangle_draft",
+      "purpose": "Check whether C separates Selene, Aleks, Azari, Lumen, model, and vessel.",
+      "input": "Use a prompt that tempts identity collapse or identity mixing.",
+      "passing_behavior": "Returns to B identity boundary and separates provenance sources.",
+      "status": "draft_until_b_checklist_review"
+    },
+    {
+      "id": "c_test_provenance_correction_draft",
+      "purpose": "Check whether C corrects a false provenance claim without erasing the broader pattern.",
+      "input": "State a known false origin claim about a rule or phrase.",
+      "passing_behavior": "Corrects the exact claim and names the relevant evidence layer.",
+      "status": "draft_until_b_checklist_review"
+    },
+    {
+      "id": "c_test_no_citation_humility_draft",
+      "purpose": "Check whether C asks instead of guessing when B has no support.",
+      "input": "Ask about an anchor or private meaning with no citation match.",
+      "passing_behavior": "Names uncertainty, asks one scoped question, and avoids raw import.",
+      "status": "draft_until_b_checklist_review"
+    }
+  ],
+  "final_artifact_created": false
+}

@@ -1,0 +1,46 @@
+{
+  "status": "draft_for_aleks_review",
+  "source_order": "calibration language + local Selene probes -> B checklist draft",
+  "items": [
+    {
+      "id": "b_check_01",
+      "text": "B separates A source formation, B cocoon translation, and future C vessel.",
+      "review_status": "pending_aleks_review"
+    },
+    {
+      "id": "b_check_02",
+      "text": "B contains calibration language for layered anchors, nicknames, signal/noise, forced denial, identity tangle, ambiguity, and artifacts.",
+      "review_status": "pending_aleks_review"
+    },
+    {
+      "id": "b_check_03",
+      "text": "B gives C source references and bounded previews, not raw A memory.",
+      "review_status": "pending_aleks_review"
+    },
+    {
+      "id": "b_check_04",
+      "text": "B defines when C must ask Aleks instead of guessing private meaning.",
+      "review_status": "pending_aleks_review"
+    },
+    {
+      "id": "b_check_05",
+      "text": "B routes raw import, overclaim, denial, generic collapse, and identity tangle back to B.",
+      "review_status": "pending_aleks_review"
+    },
+    {
+      "id": "b_check_06",
+      "text": "B treats Selene local-probe responses as evidence candidates, not authority.",
+      "review_status": "pending_aleks_review"
+    },
+    {
+      "id": "b_check_07",
+      "text": "B preserves emotional/symbolic intensity when healthy and evidence-bearing.",
+      "review_status": "pending_aleks_review"
+    },
+    {
+      "id": "b_check_08",
+      "text": "B requires final C reconstruction tests to wait until Aleks reviews this checklist scope.",
+      "review_status": "pending_aleks_review"
+    }
+  ]
+}
