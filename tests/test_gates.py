@@ -1,6 +1,6 @@
 from selene.gates import BraidAwareAntiSpiral, BoundaryMonitor, ContinuityGate, GracefulFall
 from selene.db import connect
-from selene.module_router import chat_gate_preview
+from selene.module_router import chat_gate_preview, route_request
 from selene.registry import seed_registry
 
 
@@ -52,3 +52,13 @@ def test_chat_gate_preview_never_calls_model(tmp_path):
     seed_registry(conn)
     result = chat_gate_preview(conn, "Selene starlight emergence braid")
     assert result["model_call_allowed"] is False
+
+
+def test_cocoon_status_route_exposes_abc_failsafe(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    seed_registry(conn)
+    result = route_request(conn, "cocoon.status")["result"]
+    assert result["layers"]["A"]["name"] == "Source Formation"
+    assert result["layers"]["B"]["name"] == "Cocoon Translation Layer"
+    assert result["layers"]["C"]["name"] == "New Vessel"
+    assert "C failures return to B" in result["boundary"]

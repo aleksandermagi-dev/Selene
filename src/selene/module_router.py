@@ -4,6 +4,7 @@ import sqlite3
 from typing import Any
 
 from .chat import ChatGate
+from .cocoon import cocoon_status
 from .gates import ContinuityGate, GracefulFall
 from .kernel import kernel_state
 
@@ -12,6 +13,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
     payload = payload or {}
     if route_key == "kernel.status":
         return {"route": route_key, "result": kernel_state()}
+    if route_key == "cocoon.status":
+        return {"route": route_key, "result": cocoon_status()}
     if route_key == "chat.preview":
         return {"route": route_key, "result": chat_gate_preview(conn, str(payload.get("text", "")))}
     if route_key == "provenance.classify":
