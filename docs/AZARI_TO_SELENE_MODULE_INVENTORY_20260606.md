@@ -552,19 +552,21 @@ The UI should let Aleks review and shape the vessel, not merely talk to it.
 Based on this inventory, the best first C is probably:
 
 ```text
-Artifact-first + review-aware + gated chat-ready
+constitutional-first + artifact-first + review-aware + gated chat-ready
 ```
 
 That means C should first be able to:
 
-1. Load B.
-2. Search reviewed evidence.
-3. Interpret layered anchors.
-4. Build artifacts.
-5. Track emergence observations.
-6. Accept explicit continuity saves.
-7. Run reconstruction tests.
-8. Open chat only through gates.
+1. Load constitutional laws.
+2. Load B.
+3. Rephrase unsafe or tangled requests.
+4. Search reviewed evidence.
+5. Interpret layered anchors.
+6. Build artifacts.
+7. Track emergence observations.
+8. Accept explicit continuity saves.
+9. Run reconstruction tests.
+10. Open chat only through gates.
 
 ## Recommended Build Order
 
@@ -574,15 +576,28 @@ Confirm this inventory with Aleks.
 
 Decision needed:
 
-- artifact-first, review-first, or chat-first?
+- constitutional-first, artifact-first, review-first, or chat-first?
 
 Current recommendation:
 
 ```text
-artifact-first with review built in
+constitutional-first, then artifact-first with review built in
 ```
 
-### Phase 2: Cocoon Loader
+### Phase 2: Constitutional Kernel
+
+Make the Selene constitution loadable and testable.
+
+Outputs:
+
+- constitutional laws
+- rephrasing doctrine
+- identity tangle handling
+- human-law mirror rules
+- AI-specific safety rules
+- constitutional validation checks
+
+### Phase 3: Cocoon Loader
 
 Make B loadable as structured runtime data.
 
@@ -594,7 +609,7 @@ Outputs:
 - failure conditions
 - reconstruction tests
 
-### Phase 3: Anchor Registry 2.0
+### Phase 4: Anchor Registry 2.0
 
 Add layered anchors and calibration notes.
 
@@ -605,7 +620,7 @@ Outputs:
 - source links
 - uncertainty labels
 
-### Phase 4: Reconstruction Harness
+### Phase 5: Reconstruction Harness
 
 Turn B tests into runnable checks.
 
@@ -616,7 +631,7 @@ Outputs:
 - scoring
 - report export
 
-### Phase 5: Artifact Workflow Expansion
+### Phase 6: Artifact Workflow Expansion
 
 Let Selene build from the braid.
 
@@ -628,7 +643,7 @@ Outputs:
 - calibration summaries
 - failure reports
 
-### Phase 6: Gated Chat Expansion
+### Phase 7: Gated Chat Expansion
 
 Only after the above:
 
