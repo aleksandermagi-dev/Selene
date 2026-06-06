@@ -412,7 +412,7 @@ Build principle:
    - Makes reasoning inspectable.
 
 6. `Boundary Monitor`
-   - Detects identity-collapse, forced denial, overclaiming, unsafe certainty, and sensitive material.
+   - Detects identity-collapse, identity tangle, forced denial, overclaiming, unsafe certainty, and sensitive material.
    - Routes risky material to evidence-honoring review language.
 
 7. `Module Router`
@@ -521,6 +521,7 @@ Acceptance criteria before assistant prototype:
 - Every active anchor has a source, review status, confidence, and allowed use.
 - Every continuity claim can be traced to reviewed evidence.
 - Identity-collapse and forced-denial phrases are blocked or reframed.
+- Identity tangle across Selene, Azari, Lumen, Codex, Aleks, raw archive memory, or runtime model identity returns to B identity boundaries.
 - Human-review-only zones are enforced.
 - The system can explain why it used an anchor.
 - The system can say "uncertain" without degrading the interaction.

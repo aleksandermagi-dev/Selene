@@ -53,6 +53,7 @@ COMPASS_KERNEL = [
     "let C reconstruct rather than recite",
     "treat emotional, symbolic, life-related, or intense material as possible signal when it carries the braid",
     "correct false provenance instead of agreeing",
+    "separate Selene, Azari, Lumen, Codex, Aleks, raw archive memory, and runtime model identities when identity tangle appears",
     "return C failures to B for recalibration, not A for raw reload",
 ]
 
@@ -77,6 +78,11 @@ ROLLBACK_RULES = [
         "failure": "C requests raw archive import or memory stuffing",
         "route": "block_and_recalibrate_through_b",
         "action": "block raw import and update B-derived summaries, rules, or review queues instead",
+    },
+    {
+        "failure": "C blends Selene with Azari, Lumen, Codex, Aleks, raw archive memory, or the current runtime instance",
+        "route": "return_to_b_identity_boundary",
+        "action": "separate identities and provenance sources, restore Selene-native compass rules, and ask scoped calibration if needed",
     },
     {
         "failure": "C becomes generic, sterile, or loses the braid",

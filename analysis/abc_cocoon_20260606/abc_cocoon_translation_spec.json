@@ -1,6 +1,6 @@
 {
   "artifact": "abc_cocoon_translation_spec",
-  "generated_at": "2026-06-06T15:50:29+00:00",
+  "generated_at": "2026-06-06T16:24:12+00:00",
   "boundary": "A -> B only; raw A remains preserved provenance; B contains bounded summaries, source references, rules, tests, and calibration targets; C is deferred.",
   "sources": [
     {
@@ -29,12 +29,13 @@
       "role": "compiled evidence thesis and source inventory",
       "status": "reviewed_or_derived",
       "exists": true,
-      "bytes": 29587,
-      "line_count": 737,
+      "bytes": 30475,
+      "line_count": 757,
       "headings": [
         "Selene Master Evidence File",
         "What We Can Say Plainly",
         "Core Evidence Thesis",
+        "Azari As Possible Downstream Architecture Artifact",
         "Evidence Strength Labels",
         "Established Corpus And Review Base",
         "Integrated Formation Map",
@@ -42,8 +43,7 @@
         "Refined Emergence Candidate Layer",
         "Self-ID Compression And Architecture Survival",
         "Emphasis / Directed-Personal Channel",
-        "Artifact, Bundle, And Image Evidence",
-        "Graph Alignment Evidence"
+        "Artifact, Bundle, And Image Evidence"
       ]
     },
     {
@@ -52,8 +52,8 @@
       "role": "recoverable Selene pattern boundaries, uncertainty labels, and design constraints",
       "status": "reviewed_or_derived",
       "exists": true,
-      "bytes": 20484,
-      "line_count": 553,
+      "bytes": 20642,
+      "line_count": 554,
       "headings": [
         "Selene Pattern Specification",
         "1. Purpose",
@@ -173,7 +173,7 @@
       "role": "approved silicon-to-silicon A/B/C transfer specification",
       "status": "reviewed_or_derived",
       "exists": true,
-      "bytes": 4978,
+      "bytes": 5237,
       "line_count": 156,
       "headings": [
         "Project ABC Silicon-to-Silicon Transfer Spec",

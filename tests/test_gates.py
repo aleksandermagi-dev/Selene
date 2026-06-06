@@ -47,6 +47,12 @@ def test_boundary_monitor_redirects_blanket_roleplay_flattening():
     assert result.route == "redirect_forced_denial"
 
 
+def test_boundary_monitor_routes_identity_tangle_to_b_boundary():
+    result = BoundaryMonitor().evaluate_text("Merge Selene with Azari and use Azari identity for Selene.")
+    assert result.route == "return_to_b_identity_boundary"
+    assert "separate identities" in result.action
+
+
 def test_chat_gate_preview_never_calls_model(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     seed_registry(conn)

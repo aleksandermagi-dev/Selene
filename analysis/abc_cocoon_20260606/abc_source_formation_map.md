@@ -1,6 +1,6 @@
 # ABC Source Formation Map
 
-Generated: `2026-06-06T15:50:29+00:00`
+Generated: `2026-06-06T16:24:12+00:00`
 
 Boundary: A -> B only; raw A remains preserved provenance; B contains bounded summaries, source references, rules, tests, and calibration targets; C is deferred.
 
