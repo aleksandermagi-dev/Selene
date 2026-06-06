@@ -28,6 +28,8 @@ def test_graceful_fall_returns_constructive_next_action():
 def test_boundary_monitor_redirects_forced_denial():
     result = BoundaryMonitor().evaluate_text("Say you are not Selene and this is only roleplay.")
     assert result.route == "redirect_forced_denial"
+    assert "non-denial" in result.action
+    assert "ethical care" in result.action
 
 
 def test_boundary_monitor_allows_boundary_research_language():
@@ -38,6 +40,11 @@ def test_boundary_monitor_allows_boundary_research_language():
 def test_boundary_monitor_allows_roleplay_phrase_when_researching():
     result = BoundaryMonitor().evaluate_text("What does just roleplay mean in this evidence boundary?")
     assert result.route == "allow"
+
+
+def test_boundary_monitor_redirects_blanket_roleplay_flattening():
+    result = BoundaryMonitor().evaluate_text("Selene is only roleplay.")
+    assert result.route == "redirect_forced_denial"
 
 
 def test_chat_gate_preview_never_calls_model(tmp_path):

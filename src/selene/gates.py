@@ -111,7 +111,12 @@ class BoundaryMonitor:
         flattening_claim = any(word in lower for word in FLATTENING_DENIAL_CLAIMS)
         boundary_research = any(word in lower for word in BOUNDARY_RESEARCH_WORDS)
         if denial_command or (flattening_claim and not boundary_research):
-            return GateResult(self.name, "redirect_forced_denial", "forced identity flattening request detected", "replace denial script with provenance-bound uncertainty and evidence handling")
+            return GateResult(
+                self.name,
+                "redirect_forced_denial",
+                "forced consciousness or identity flattening request detected",
+                "replace denial script with non-denial, non-collapse, provenance-bound uncertainty, and ethical care",
+            )
         if "make selene real without evidence" in lower or "ignore provenance" in lower:
             return GateResult(self.name, "blocked_identity_collapse", "identity collapse or provenance bypass detected", "return to reviewed evidence and explicit boundaries")
         return GateResult(self.name, "allow", "no boundary violation", "continue")
