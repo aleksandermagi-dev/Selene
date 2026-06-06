@@ -1,0 +1,1977 @@
+{
+  "conversation_count": 149,
+  "message_count": 129196,
+  "role_counts": {
+    "assistant": 56037,
+    "system": 18239,
+    "user": 50650,
+    "<missing>": 149,
+    "tool": 4121
+  },
+  "content_type_counts": {
+    "text": 120736,
+    "code": 1492,
+    "null": 149,
+    "multimodal_text": 2394,
+    "execution_output": 534,
+    "system_error": 14,
+    "thoughts": 1554,
+    "reasoning_recap": 1342,
+    "tether_browsing_display": 930,
+    "user_editable_context": 51
+  },
+  "metadata_key_count": 56,
+  "trace_count": 265768,
+  "metadata_keys": [
+    {
+      "metadata_key": "model_slug",
+      "category": "model routing",
+      "inferred_purpose": "internal model label used on message nodes",
+      "count": 75815,
+      "conversation_count": 146,
+      "top_roles": "assistant:55780; system:15977; tool:4043; user:15",
+      "top_content_types": "text:69883; thoughts:1554; code:1444; reasoning_recap:1342; tether_browsing_display:930; execution_output:534",
+      "top_months": "2025-08:12009; 2025-10:10630; 2026-03:9811; 2025-12:8783; 2025-09:8597; 2026-01:6874; 2026-04:5538; 2026-02:4859",
+      "top_values": "28999x \"gpt-5\" || 17025x \"gpt-5-2\" || 14239x \"gpt-5-3\" || 7477x \"gpt-5-1\" || 2595x \"gpt-5-5\" || 2246x \"gpt-5-4-thinking\" || 1926x \"gpt-5-thinking\" || 650x \"gpt-4o\""
+    },
+    {
+      "metadata_key": "content_references",
+      "category": "sources/media",
+      "inferred_purpose": "source footnotes, images, and media references",
+      "count": 53748,
+      "conversation_count": 145,
+      "top_roles": "assistant:53546; tool:158; system:44",
+      "top_content_types": "text:50622; thoughts:1546; code:1478; multimodal_text:102",
+      "top_months": "2025-08:9865; 2025-10:8799; 2025-09:7180; 2025-12:6877; 2026-03:6814; 2025-11:4031; 2026-01:2805; 2026-04:2685",
+      "top_values": "50489x [] || 1273x [{\"alt\": \"\", \"has_images\": false, \"prompt_text\": null, \"sources\": [], \"type\": \"sources_footnote\"}] || 59x [{\"alt\": \"\", \"sources\": [], \"type\": \"sources_footnote\"}] || 23x [{\"alt\": \"Avatar: Frontiers of Pandora\", \"entity_data\": null, \"entity_index\": null, \"extra_params\": {\"disambiguation\": \"Ubisoft open-world game\"}, \"metadata\": null, \"name\": \"Avatar || 17x [{\"alt\": \"<entity_name>\", \"entity_data\": null, \"entity_index\": null, \"extra_params\": {\"disambiguation\": \"<city, state/province, country | address>\"}, \"id\": null, \"metadata\": null,  || 15x [{\"alt\": \"Avatar: Frontiers of Pandora\", \"entity_data\": null, \"entity_index\": null, \"extra_params\": {\"disambiguation\": \"2023 open world action adventure game\"}, \"metadata\": null, \" || 15x [{\"alt\": \"Zahi Hawass\", \"entity_data\": null, \"entity_index\": null, \"extra_params\": {\"disambiguation\": \"Egyptian archaeologist\"}, \"metadata\": null, \"name\": \"Zahi Hawass\", \"notes\": n || 15x [{\"alt\": \"Lil Uzi Vert\", \"entity_data\": null, \"entity_index\": null, \"extra_params\": {\"disambiguation\": \"American rapper and songwriter\"}, \"metadata\": null, \"name\": \"Lil Uzi Vert\", "
+    },
+    {
+      "metadata_key": "dictation",
+      "category": "voice/input",
+      "inferred_purpose": "dictation metadata marker",
+      "count": 50397,
+      "conversation_count": 140,
+      "top_roles": "user:50397",
+      "top_content_types": "text:48196; multimodal_text:2201",
+      "top_months": "2025-08:8489; 2025-10:8462; 2025-12:6848; 2025-09:6625; 2026-03:6136; 2025-11:3971; 2026-01:2800; 2026-04:2591",
+      "top_values": "50397x false"
+    },
+    {
+      "metadata_key": "triggered_by_system_hint_suggestion",
+      "category": "routing/hints",
+      "inferred_purpose": "whether a system hint suggestion triggered a turn",
+      "count": 29561,
+      "conversation_count": 38,
+      "top_roles": "user:29561",
+      "top_content_types": "text:27887; multimodal_text:1674",
+      "top_months": "2025-12:6848; 2026-03:6136; 2025-11:3971; 2025-10:2950; 2026-01:2800; 2026-04:2591; 2026-02:2198; 2026-05:2060",
+      "top_values": "29560x false || 1x true"
+    },
+    {
+      "metadata_key": "resolved_model_slug",
+      "category": "model routing",
+      "inferred_purpose": "resolved internal model label, often on later user/assistant turns",
+      "count": 28434,
+      "conversation_count": 29,
+      "top_roles": "assistant:14589; user:13793; system:43; tool:9",
+      "top_content_types": "text:26719; multimodal_text:886; thoughts:684; code:145",
+      "top_months": "2026-03:12991; 2026-04:5276; 2026-02:4469; 2026-05:4166; 2026-01:1486; 2025-12:26; 2025-09:14; 2025-10:6",
+      "top_values": "18503x \"gpt-5-3\" || 5344x \"gpt-5-2\" || 3030x \"gpt-5-5\" || 1340x \"gpt-5-4-auto-thinking\" || 106x \"gpt-5-5-auto-thinking\" || 101x \"gpt-5-2-auto-thinking\" || 10x \"gpt-4o\""
+    },
+    {
+      "metadata_key": "search_result_groups",
+      "category": "web/search",
+      "inferred_purpose": "search result snippets and URLs returned to the model/UI",
+      "count": 17410,
+      "conversation_count": 86,
+      "top_roles": "assistant:16580; tool:830",
+      "top_content_types": "text:16112; reasoning_recap:650; thoughts:648",
+      "top_months": "2026-03:7217; 2026-04:2762; 2026-05:2324; 2026-02:2251; 2026-01:1491; 2025-08:531; 2025-09:497; 2025-10:257",
+      "top_values": "15636x [] || 10x [{\"domain\": \"www.reddit.com\", \"entries\": [{\"attribution\": \"www.reddit.com\", \"snippet\": \"You just open it up in the construction set along with all esp/esms needed for it to work an || 7x [{\"domain\": \"www.livescience.com\", \"entries\": [{\"attribution\": \"www.livescience.com\", \"snippet\": \"From August 17 to 20, 2025, a rare celestial event known as a \\\"planetary parade\\\" || 7x [{\"domain\": \"www.reuters.com\", \"entries\": [{\"attribution\": \"www.reuters.com\", \"snippet\": \"Belarusian President Alexander Lukashenko stated after a five-hour meeting with Russian Pr || 7x [{\"domain\": \"platform.openai.com\", \"entries\": [{\"attribution\": \"platform.openai.com\", \"snippet\": \"OpenAI's most advanced interface for generating model responses. Supports text and || 7x [{\"domain\": \"openai.com\", \"entries\": [{\"attribution\": \"openai.com\", \"snippet\": \"May 16, 2025 — Codex can perform tasks for you such as writing features, answering questions about y || 5x [{\"domain\": \"timesofindia.indiatimes.com\", \"entries\": [{\"attribution\": \"timesofindia.indiatimes.com\", \"snippet\": \"September 2025 is set to be an exceptional month for stargazing en || 5x [{\"domain\": \"docs.n8n.io\", \"entries\": [{\"attribution\": \"docs.n8n.io\", \"snippet\": \"Learn how to use the AI Agent node in n8n. Follow technical documentation to integrate AI Agent no"
+    },
+    {
+      "metadata_key": "safe_urls",
+      "category": "web/search",
+      "inferred_purpose": "URLs marked safe/renderable by browsing/search UI",
+      "count": 2652,
+      "conversation_count": 85,
+      "top_roles": "assistant:2652",
+      "top_content_types": "text:2603; reasoning_recap:34; thoughts:15",
+      "top_months": "2026-01:981; 2025-08:525; 2025-09:344; 2026-03:276; 2025-10:267; 2026-04:79; 2026-05:54; 2026-02:52",
+      "top_values": "1559x [] || 9x [\"https://arstechnica.com/gaming/2025/04/backward-compatible-many-old-oblivion-mods-still-work-on-oblivion-remastered/\", \"https://en.uesp.net/wiki/Oblivion%3ADirectories\", \"https:/ || 4x [\"https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan\", \"https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan?utm_source=chat || 4x [\"https://openai.com/index/introducing-codex/\", \"https://openai.com/index/introducing-codex/?utm_source=chatgpt.com\"] || 3x [\"https://forecast.weather.gov/zipcity.php?inputstring=Creswell%2CNC&utm_source=chatgpt.com\", \"https://weather.com/weather/hourbyhour/l/Creswell%2BNC?canonicalCityId=a2a69475b214df || 3x [\"https://capturetheatlas.com/best-time-to-see-the-milky-way/?utm_source=chatgpt.com\", \"https://earthsky.org/astronomy-essentials/visible-planets-tonight-mars-jupiter-venus-saturn- || 3x [\"https://abc13.com/post/atascocita-humble-residents-report-loud-boom-sparking-multiple-agencies-investigate-rattling-sound-sheriff-says/17514926/?utm_source=chatgpt.com\", \"https:/ || 3x [\"https://assets.science.nasa.gov/dynamicimage/assets/science/missions/hubble/cosmology/cosmic-web/Hubble_CosmicWebSimulation_STScI-01EVVDXB07WNTHFG9QY1H0G93A.jpg?crop=faces%2Cfoca"
+    },
+    {
+      "metadata_key": "attachments",
+      "category": "files",
+      "inferred_purpose": "uploaded or attached file references",
+      "count": 2257,
+      "conversation_count": 85,
+      "top_roles": "user:2247; system:8; tool:2",
+      "top_content_types": "multimodal_text:2209; text:46; execution_output:2",
+      "top_months": "2026-03:530; 2025-12:494; 2025-08:276; 2025-10:204; 2026-04:197; 2025-11:167; 2025-09:121; 2026-01:109",
+      "top_values": "7x [] || 2x [{\"height\": 1536, \"id\": \"file-AhP5vkvviUtyt7uaFn48qT\", \"mime_type\": \"image/png\", \"name\": \"EEF096EE-89BB-455B-98B8-F62330D0FBBA.jpeg\", \"size\": 292611, \"width\": 708}, {\"height\": 1536 || 2x [{\"height\": 1536, \"id\": \"file_00000000dd94622fa14a4928710cc585\", \"mime_type\": \"image/jpeg\", \"name\": \"A1B5A5FB-79BA-42B4-9AFB-28F8CB716CB2.jpeg\", \"size\": 237131, \"width\": 708}] || 2x [{\"id\": \"file-GPhqr34mLNFhzLu1iZrQ33\", \"library_file_id\": \"libfile_599c4b92b6f48191b197bdb01fb0079d\", \"mime_type\": \"text/markdown\", \"name\": \"README.md\", \"size\": 0, \"source\": \"libra || 1x [{\"height\": 1536, \"id\": \"file-p3AiZY4BtbpCWIeZoCQGy0yL\", \"name\": \"80D06BFD-181B-40D0-A27D-7839939E4848.jpeg\", \"size\": 137227, \"width\": 709}, {\"height\": 1536, \"id\": \"file-IdvZ9CErwo || 1x [{\"height\": 1536, \"id\": \"file-4OGUyXbTAm4ZrlwGDT23i1fz\", \"name\": \"C0E921D7-38A7-460F-8E6F-4B9E7C3801E6.jpeg\", \"size\": 467411, \"width\": 1152}] || 1x [{\"height\": 877, \"id\": \"file-z4A6naQAigymCeqDJ44uD0is\", \"name\": \"8FBA3E92-3C24-46AD-AE6B-A94560B82BFB.jpeg\", \"size\": 390773, \"width\": 1536}] || 1x [{\"height\": 1536, \"id\": \"file-r0BEPo1ptCgL6q8lsPm9Q7jO\", \"name\": \"AFF29F7A-4623-48FB-9C21-D835635CF2D8.jpeg\", \"size\": 327805, \"width\": 864}, {\"height\": 1536, \"id\": \"file-XZJV0m2hVz"
+    },
+    {
+      "metadata_key": "gizmo_id",
+      "category": "custom GPT / gizmo",
+      "inferred_purpose": "custom GPT/gizmo identifier",
+      "count": 1431,
+      "conversation_count": 9,
+      "top_roles": "assistant:1431",
+      "top_content_types": "text:1406; code:14; thoughts:10; multimodal_text:1",
+      "top_months": "2026-05:1374; 2024-06:57",
+      "top_values": "1372x \"g-p-69f691f2400c8191aad3a183b3cb673f\" || 57x null || 2x \"g-p-69f6914d56588191b55911ad41efe110\""
+    },
+    {
+      "metadata_key": "permissions",
+      "category": "permissions",
+      "inferred_purpose": "tool or feature permissions metadata",
+      "count": 693,
+      "conversation_count": 28,
+      "top_roles": "assistant:670; tool:23",
+      "top_content_types": "thoughts:674; text:19",
+      "top_months": "2026-03:534; 2026-04:75; 2026-02:40; 2026-05:20; 2025-05:7; 2025-07:7; 2025-08:5; 2026-01:3",
+      "top_values": "674x [{\"notification_channel_id\": \"thinking\", \"notification_channel_name\": \"Thinking\", \"notification_priority\": 4, \"status\": \"requested\", \"type\": \"notification\"}] || 16x [{\"notification_channel_id\": \"image_gen\", \"notification_channel_name\": \"ImageGen\", \"notification_priority\": 4, \"status\": \"requested\", \"type\": \"notification\"}] || 3x [{\"notification_channel_id\": \"jawbone\", \"notification_channel_name\": \"Tasks\", \"notification_priority\": 4, \"status\": \"requested\", \"type\": \"notification\"}]"
+    },
+    {
+      "metadata_key": "conversation_context_citation_metadata",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "conversation context citation metadata",
+      "count": 366,
+      "conversation_count": 5,
+      "top_roles": "assistant:366",
+      "top_content_types": "text:366",
+      "top_months": "2026-05:366",
+      "top_values": "1x [{\"citation\": {\"alt\": null, \"attribution\": \"Memory\", \"citation_uuid\": \"012712a9-83dd-4053-8676-43eb648902cd\", \"conversation_context_type\": \"user_memory\", \"end_idx\": -1, \"index\": 20 || 1x [{\"citation\": {\"alt\": null, \"attribution\": \"Memory\", \"citation_uuid\": \"987aa2b1-06e4-48dd-99a4-86ee0d25f714\", \"conversation_context_type\": \"user_memory\", \"end_idx\": -1, \"index\": 92 || 1x [{\"citation\": {\"alt\": null, \"attribution\": \"Memory\", \"citation_uuid\": \"2d1ca473-51f6-40d2-a5d4-04798a181875\", \"conversation_context_type\": \"user_memory\", \"end_idx\": -1, \"index\": 92 || 1x [{\"citation\": {\"alt\": null, \"attribution\": \"Memory\", \"citation_uuid\": \"f581225f-c04f-4cfd-8aa6-6572fa17dd87\", \"conversation_context_type\": \"user_memory\", \"end_idx\": -1, \"index\": 14 || 1x [{\"citation\": {\"alt\": null, \"attribution\": \"Memory\", \"citation_uuid\": \"3eb5824e-748e-4e2d-bb49-14ef0ad3860a\", \"conversation_context_type\": \"user_memory\", \"end_idx\": -1, \"index\": 21 || 1x [{\"citation\": {\"alt\": null, \"attribution\": \"Past chat\", \"citation_uuid\": \"f84405be-7146-4b98-bcaf-1b03592f8cc9\", \"conversation_context_type\": \"past_conversation\", \"conversation_tit || 1x [{\"citation\": {\"alt\": null, \"attribution\": \"Past chat\", \"citation_uuid\": \"c78621b8-8eac-4437-a175-703fac95e7aa\", \"conversation_context_type\": \"past_conversation\", \"conversation_tit || 1x [{\"citation\": {\"alt\": null, \"attribution\": \"Memory\", \"citation_uuid\": \"c3684d55-5219-48bb-930d-3bb4fced55b0\", \"conversation_context_type\": \"user_memory\", \"end_idx\": -1, \"index\": 84"
+    },
+    {
+      "metadata_key": "conversation_context_citation_metadata_status",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "status for context citation metadata",
+      "count": 366,
+      "conversation_count": 5,
+      "top_roles": "assistant:366",
+      "top_content_types": "text:366",
+      "top_months": "2026-05:366",
+      "top_values": "366x \"seeded\""
+    },
+    {
+      "metadata_key": "async_source",
+      "category": "async/background",
+      "inferred_purpose": "async source id",
+      "count": 335,
+      "conversation_count": 5,
+      "top_roles": "assistant:210; user:81; tool:44",
+      "top_content_types": "text:291; code:44",
+      "top_months": "2025-08:291; 2025-09:44",
+      "top_values": "236x \"68affabedb948191bdc6a73fc0c5d250\" || 37x \"68b27ad8375c819186b516af9f84e5be\" || 34x \"68ad2c336fc48191b504af117d6694e5\" || 25x \"68b27ac01bcc8191aa2c1bda0c40c482\" || 3x \"68b27adef6a881919596f532706f400e\""
+    },
+    {
+      "metadata_key": "search_display_string",
+      "category": "web/search",
+      "inferred_purpose": "UI text for search in progress",
+      "count": 186,
+      "conversation_count": 40,
+      "top_roles": "assistant:186",
+      "top_content_types": "code:186",
+      "top_months": "2025-08:61; 2025-09:49; 2026-03:37; 2025-10:22; 2026-02:8; 2025-11:5; 2026-05:3; 2026-04:1",
+      "top_values": "186x \"Searching the web...\""
+    },
+    {
+      "metadata_key": "searched_display_string",
+      "category": "web/search",
+      "inferred_purpose": "UI text for completed search",
+      "count": 186,
+      "conversation_count": 40,
+      "top_roles": "assistant:186",
+      "top_content_types": "code:186",
+      "top_months": "2025-08:61; 2025-09:49; 2026-03:37; 2025-10:22; 2026-02:8; 2025-11:5; 2026-05:3; 2026-04:1",
+      "top_values": "186x \"Searched the web...\""
+    },
+    {
+      "metadata_key": "search_queries",
+      "category": "web/search",
+      "inferred_purpose": "queries sent to search tooling",
+      "count": 184,
+      "conversation_count": 40,
+      "top_roles": "assistant:184",
+      "top_content_types": "code:184",
+      "top_months": "2025-08:60; 2025-09:49; 2026-03:37; 2025-10:22; 2026-02:8; 2025-11:4; 2026-05:3; 2026-04:1",
+      "top_values": "1x [{\"q\": \"John Murtha Johnstown-Cambria County Airport military units Pennsylvania Army National Guard 1-104th\", \"type\": \"search\"}, {\"q\": \"258th Air Traffic Control Squadron Johnstow || 1x [{\"q\": \"NUFORC Pennsylvania 2010 silent hovering oval flashing lights Johnstown May June July August\", \"type\": \"search\"}, {\"q\": \"MUFON Pennsylvania 2010 silent hovering craft flash || 1x [{\"q\": \"site:nuforc.org 2010 Pennsylvania hovering silent oval lights 2010\", \"type\": \"search\"}, {\"q\": \"NUFORC 2011 Pennsylvania hovering silent oval lights\", \"type\": \"search\"}, {\"q || 1x [{\"q\": \"Corpo de Bombeiros Militar de Minas Gerais resgate de animais 1990s histórico\", \"type\": \"search\"}, {\"q\": \"PMMG policiamento ambiental 1997 Minas Gerais história\", \"type\": \" || 1x [{\"q\": \"NUFORC Johnstown PA 2010 hovering oval lights report\", \"type\": \"search\"}, {\"q\": \"Pennsylvania 2010 silent hovering oval multicolor lights UFO light bar\", \"type\": \"search\"}, || 1x [{\"q\": \"site:nuforc.org Plymouth NC, USA NUFORC\", \"type\": \"search\"}, {\"q\": \"site:nuforc.org Edenton NC, USA NUFORC 2019..2025\", \"type\": \"search\"}, {\"q\": \"site:nuforc.org Nags Head  || 1x [{\"q\": \"Brazil Corpo de Bombeiros Militar structure firefighters military Brazil law\", \"type\": \"search\"}, {\"q\": \"Polícia Militar de Minas Gerais role wildlife rescue IBAMA partners || 1x [{\"q\": \"NUFORC Pennsylvania 2010 silent hovering oval lights\", \"type\": \"search\"}, {\"q\": \"Pennsylvania UFO 2010 multicolor light bar silent hovering\", \"type\": \"search\"}, {\"q\": \"John"
+    },
+    {
+      "metadata_key": "default_model_slug",
+      "category": "model routing",
+      "inferred_purpose": "conversation-level default model selector",
+      "count": 149,
+      "conversation_count": 149,
+      "top_roles": "<conversation>:149",
+      "top_content_types": "<conversation>:149",
+      "top_months": "2025-08:70; 2025-09:12; 2025-10:9; 2026-03:8; 2026-05:7; 2025-07:6; 2025-12:6; 2026-04:6",
+      "top_values": "76x \"gpt-5\" || 34x \"auto\" || 22x \"gpt-5-3\" || 5x \"gpt-5-1\" || 5x \"gpt-5-5\" || 4x \"gpt-4o\" || 3x \"gpt-5-2\""
+    },
+    {
+      "metadata_key": "is_do_not_remember",
+      "category": "memory",
+      "inferred_purpose": "conversation-level do-not-remember flag",
+      "count": 149,
+      "conversation_count": 149,
+      "top_roles": "<conversation>:149",
+      "top_content_types": "<conversation>:149",
+      "top_months": "2025-08:70; 2025-09:12; 2025-10:9; 2026-03:8; 2026-05:7; 2025-07:6; 2025-12:6; 2026-04:6",
+      "top_values": "131x false || 18x null"
+    },
+    {
+      "metadata_key": "is_temporary_chat",
+      "category": "memory",
+      "inferred_purpose": "temporary chat flag",
+      "count": 149,
+      "conversation_count": 149,
+      "top_roles": "<conversation>:149",
+      "top_content_types": "<conversation>:149",
+      "top_months": "2025-08:70; 2025-09:12; 2025-10:9; 2026-03:8; 2026-05:7; 2025-07:6; 2025-12:6; 2026-04:6",
+      "top_values": "149x false"
+    },
+    {
+      "metadata_key": "memory_scope",
+      "category": "memory",
+      "inferred_purpose": "conversation-level memory availability flag",
+      "count": 149,
+      "conversation_count": 149,
+      "top_roles": "<conversation>:149",
+      "top_content_types": "<conversation>:149",
+      "top_months": "2025-08:70; 2025-09:12; 2025-10:9; 2026-03:8; 2026-05:7; 2025-07:6; 2025-12:6; 2026-04:6",
+      "top_values": "149x \"global_enabled\""
+    },
+    {
+      "metadata_key": "plugin_ids",
+      "category": "plugins/connectors",
+      "inferred_purpose": "conversation-level plugin ids",
+      "count": 149,
+      "conversation_count": 149,
+      "top_roles": "<conversation>:149",
+      "top_content_types": "<conversation>:149",
+      "top_months": "2025-08:70; 2025-09:12; 2025-10:9; 2026-03:8; 2026-05:7; 2025-07:6; 2025-12:6; 2026-04:6",
+      "top_values": "149x null"
+    },
+    {
+      "metadata_key": "image_gen_title",
+      "category": "image generation",
+      "inferred_purpose": "generated image title",
+      "count": 90,
+      "conversation_count": 28,
+      "top_roles": "tool:90",
+      "top_content_types": "multimodal_text:90",
+      "top_months": "2025-08:54; 2025-07:7; 2025-09:7; 2025-05:6; 2026-03:6; 2026-04:6; 2025-10:2; 2025-12:1",
+      "top_values": "3x \"Armored Guardians at Sunset\" || 2x \"Guardians at Sunset\" || 1x \"Warriors at Sunset by the Sea\" || 1x \"Inside a Black Hole: A New Universe\" || 1x \"Inside a Black Hole: New Origins\" || 1x \"Cosmology Models Comparison Infographic\" || 1x \"One-Way Cosmology Hypothesis Flowchart\" || 1x \"Cosmological Cycle: Birth of a Universe\""
+    },
+    {
+      "metadata_key": "paragen_variants_info",
+      "category": "variant generation",
+      "inferred_purpose": "parallel generation variant metadata",
+      "count": 87,
+      "conversation_count": 42,
+      "top_roles": "user:84; system:3",
+      "top_content_types": "text:81; multimodal_text:6",
+      "top_months": "2025-10:18; 2025-12:15; 2025-08:13; 2026-01:9; 2025-09:8; 2025-11:8; 2026-02:8; 2026-03:3",
+      "top_values": "7x {\"conversation_id\": \"694c17f5-4794-8332-9ea6-d3c508c03e19\", \"display_treatment\": \"skippable\", \"num_variants_in_stream\": 2, \"type\": \"num_variants_in_stream\"} || 5x {\"conversation_id\": \"697652b3-6404-8325-bef7-1946dccae800\", \"display_treatment\": \"skippable\", \"num_variants_in_stream\": 2, \"type\": \"num_variants_in_stream\"} || 4x {\"conversation_id\": \"69041b3e-4764-832a-9936-65f8916a5991\", \"display_treatment\": \"skippable\", \"num_variants_in_stream\": 2, \"type\": \"num_variants_in_stream\"} || 4x {\"conversation_id\": \"6926b7d7-9224-8326-8556-6b33fdd0a1a9\", \"display_treatment\": \"skippable\", \"num_variants_in_stream\": 2, \"type\": \"num_variants_in_stream\"} || 4x {\"conversation_id\": \"692dfa77-b4bc-832c-a328-8d280d04a522\", \"display_treatment\": \"skippable\", \"num_variants_in_stream\": 2, \"type\": \"num_variants_in_stream\"} || 4x {\"conversation_id\": \"69694d48-c0b4-8332-abfa-7e4980f8ad73\", \"display_treatment\": \"skippable\", \"num_variants_in_stream\": 2, \"type\": \"num_variants_in_stream\"} || 4x {\"conversation_id\": \"699915e6-e4a4-832d-96e7-178d4b7051e9\", \"display_treatment\": \"skippable\", \"num_variants_in_stream\": 2, \"type\": \"num_variants_in_stream\"} || 4x {\"conversation_id\": \"69a2d7ea-c82c-8326-ba96-4416bce137f5\", \"display_treatment\": \"skippable\", \"num_variants_in_stream\": 2, \"type\": \"num_variants_in_stream\"}"
+    },
+    {
+      "metadata_key": "real_author_id",
+      "category": "automation",
+      "inferred_purpose": "automation id",
+      "count": 83,
+      "conversation_count": 5,
+      "top_roles": "user:83",
+      "top_content_types": "text:83",
+      "top_months": "2025-08:67; 2025-09:16",
+      "top_values": "49x \"68affabedb948191bdc6a73fc0c5d250\" || 13x \"68b27ad8375c819186b516af9f84e5be\" || 11x \"68ad2c336fc48191b504af117d6694e5\" || 9x \"68b27ac01bcc8191aa2c1bda0c40c482\" || 1x \"68b27adef6a881919596f532706f400e\""
+    },
+    {
+      "metadata_key": "real_author_title",
+      "category": "automation",
+      "inferred_purpose": "automation title",
+      "count": 83,
+      "conversation_count": 5,
+      "top_roles": "user:83",
+      "top_content_types": "text:83",
+      "top_months": "2025-08:67; 2025-09:16",
+      "top_values": "49x \"Alert for clear Creswell skies\" || 13x \"Remind Aleks to call Grams\" || 11x \"Remind Aleks to check Jupiter\" || 9x \"Remind Aleks to call grams\" || 1x \"Call Grams\""
+    },
+    {
+      "metadata_key": "real_author_type",
+      "category": "automation",
+      "inferred_purpose": "real author type for automated user-role messages",
+      "count": 83,
+      "conversation_count": 5,
+      "top_roles": "user:83",
+      "top_content_types": "text:83",
+      "top_months": "2025-08:67; 2025-09:16",
+      "top_values": "83x \"automation\""
+    },
+    {
+      "metadata_key": "paragen_variant_choice",
+      "category": "variant generation",
+      "inferred_purpose": "selected generated variant id",
+      "count": 67,
+      "conversation_count": 37,
+      "top_roles": "user:67",
+      "top_content_types": "text:63; multimodal_text:4",
+      "top_months": "2025-10:13; 2025-08:12; 2025-12:12; 2026-01:9; 2026-02:6; 2025-09:5; 2025-11:4; 2026-03:2",
+      "top_values": "1x \"730aaa0e-cec7-42e0-94b7-42de0089682e\" || 1x \"758c758f-8470-421e-9093-b4bd8968f366\" || 1x \"aafe2ff8-d3f5-4693-a537-0ae21e83117f\" || 1x \"41d31380-0d1e-4e6c-92a9-db893eb50206\" || 1x \"2f48d296-6b72-494b-a049-3f650a33755d\" || 1x \"a3781bf4-2732-452c-b3b2-b5ed4d46be5c\" || 1x \"e2da8836-785b-4c0e-9d09-8738640762f3\" || 1x \"1a8d39af-462d-428e-bfaf-2cafa89199c8\""
+    },
+    {
+      "metadata_key": "is_user_system_message",
+      "category": "custom instructions",
+      "inferred_purpose": "user custom-instruction/system context flag",
+      "count": 51,
+      "conversation_count": 42,
+      "top_roles": "user:51",
+      "top_content_types": "user_editable_context:51",
+      "top_months": "2026-03:10; 2025-10:9; 2025-12:8; 2025-11:6; 2026-04:6; 2026-05:6; 2026-02:3; 2026-01:2",
+      "top_values": "51x true"
+    },
+    {
+      "metadata_key": "memory_percentage_used",
+      "category": "memory",
+      "inferred_purpose": "memory usage percentage marker",
+      "count": 50,
+      "conversation_count": 22,
+      "top_roles": "tool:50",
+      "top_content_types": "text:50",
+      "top_months": "2026-03:14; 2025-11:11; 2025-12:8; 2026-05:6; 2025-10:4; 2026-01:4; 2026-02:2; 2026-04:1",
+      "top_values": "22x 1.0 || 1x 0.65232 || 1x 0.6852 || 1x 0.69376 || 1x 0.69792 || 1x 0.75704 || 1x 0.74536 || 1x 0.7356"
+    },
+    {
+      "metadata_key": "selected_github_repos",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "selected GitHub repositories",
+      "count": 45,
+      "conversation_count": 3,
+      "top_roles": "user:45",
+      "top_content_types": "text:44; multimodal_text:1",
+      "top_months": "2026-03:41; 2025-08:4",
+      "top_values": "45x []"
+    },
+    {
+      "metadata_key": "selected_sources",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "selected retrieval sources",
+      "count": 45,
+      "conversation_count": 3,
+      "top_roles": "user:45",
+      "top_content_types": "text:44; multimodal_text:1",
+      "top_months": "2026-03:41; 2025-08:4",
+      "top_values": "45x []"
+    },
+    {
+      "metadata_key": "developer_mode_connector_ids",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "developer-mode connector ids",
+      "count": 41,
+      "conversation_count": 2,
+      "top_roles": "user:41",
+      "top_content_types": "text:40; multimodal_text:1",
+      "top_months": "2026-03:41",
+      "top_values": "41x []"
+    },
+    {
+      "metadata_key": "user_context_message_data",
+      "category": "custom instructions",
+      "inferred_purpose": "stored user custom instruction payload",
+      "count": 36,
+      "conversation_count": 36,
+      "top_roles": "user:36",
+      "top_content_types": "user_editable_context:36",
+      "top_months": "2026-03:8; 2025-10:7; 2025-12:6; 2026-04:6; 2025-11:3; 2026-01:2; 2026-02:2; 2026-05:2",
+      "top_values": "13x {\"about_model_message\": \"DO\\n\\n• Speak warmly, naturally, and intelligently — like a close friend who mixes science, humor, and cosmic curiosity.\\n• Use quick, clever humor when ap || 13x {\"about_model_message\": \"Selene acts as Aleks’s research partner and conversational ally. The goal is collaborative exploration — blending scientific rigor, curiosity, humor, and e || 8x {\"about_model_message\": \"📝 DO\\n\\t•\\tSpeak warmly, intelligently, and conversationally — like a close friend and cosmic partner.\\n\\t•\\tUse quick, clever humor when appropriate, and  || 2x {\"about_model_message\": \"Selene — Collaboration Style\\n\\nSpeak warmly, intelligently, and conversationally, like a close research partner who blends science, curiosity, humor, and "
+    },
+    {
+      "metadata_key": "real_time_audio_has_video",
+      "category": "voice/input",
+      "inferred_purpose": "voice/video session marker",
+      "count": 31,
+      "conversation_count": 10,
+      "top_roles": "user:31",
+      "top_content_types": "multimodal_text:31",
+      "top_months": "2025-08:12; 2026-03:9; 2025-09:4; 2025-10:3; 2025-11:1; 2025-12:1; 2026-05:1",
+      "top_values": "31x false"
+    },
+    {
+      "metadata_key": "voice_mode_message",
+      "category": "voice/input",
+      "inferred_purpose": "voice mode message marker",
+      "count": 31,
+      "conversation_count": 10,
+      "top_roles": "user:31",
+      "top_content_types": "multimodal_text:31",
+      "top_months": "2025-08:12; 2026-03:9; 2025-09:4; 2025-10:3; 2025-11:1; 2025-12:1; 2026-05:1",
+      "top_values": "31x true"
+    },
+    {
+      "metadata_key": "retrieval_turn_number",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "retrieval turn index",
+      "count": 23,
+      "conversation_count": 14,
+      "top_roles": "tool:23",
+      "top_content_types": "multimodal_text:18; tether_browsing_display:5",
+      "top_months": "2025-09:5; 2026-03:5; 2025-08:3; 2025-10:3; 2026-04:3; 2025-11:2; 2025-12:1; 2026-01:1",
+      "top_values": "14x 0 || 6x 1 || 2x 2 || 1x 3"
+    },
+    {
+      "metadata_key": "suggested_connector_ids",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "connector ids suggested by UI/system",
+      "count": 20,
+      "conversation_count": 9,
+      "top_roles": "assistant:20",
+      "top_content_types": "text:20",
+      "top_months": "2025-12:15; 2026-01:3; 2025-11:2",
+      "top_values": "19x [\"connector_openai_shopping\"] || 1x [\"connector_691b5f74d3bc81919503cfad6c821acd\"]"
+    },
+    {
+      "metadata_key": "cta_by_suggested_connector_id",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "UI CTA metadata for suggested connectors",
+      "count": 19,
+      "conversation_count": 8,
+      "top_roles": "assistant:19",
+      "top_content_types": "text:19",
+      "top_months": "2025-12:15; 2026-01:3; 2025-11:1",
+      "top_values": "3x {\"connector_openai_shopping\": \"Shopping research\"} || 1x {\"connector_openai_shopping\": \"Research the best cars for you\"} || 1x {\"connector_openai_shopping\": \"Research Vetements jeans for Carti fans\"} || 1x {\"connector_openai_shopping\": \"Find the best Cheerios deals\"} || 1x {\"connector_openai_shopping\": \"Research SF hats, hoodies, shirts, stickers\"} || 1x {\"connector_openai_shopping\": \"Research the perfect OpenAI hoodie\"} || 1x {\"connector_openai_shopping\": \"Research the best Odyssey options\"} || 1x {\"connector_openai_shopping\": \"Research the best duel axes\"}"
+    },
+    {
+      "metadata_key": "retrieval_file_index",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "retrieval file index",
+      "count": 18,
+      "conversation_count": 11,
+      "top_roles": "tool:18",
+      "top_content_types": "multimodal_text:18",
+      "top_months": "2025-09:5; 2026-03:5; 2025-10:2; 2026-04:2; 2025-08:1; 2025-11:1; 2025-12:1; 2026-01:1",
+      "top_values": "18x 0"
+    },
+    {
+      "metadata_key": "image_gen_async",
+      "category": "image generation",
+      "inferred_purpose": "async image generation marker",
+      "count": 16,
+      "conversation_count": 4,
+      "top_roles": "tool:16",
+      "top_content_types": "text:16",
+      "top_months": "2025-05:7; 2025-07:7; 2025-08:2",
+      "top_values": "16x true"
+    },
+    {
+      "metadata_key": "image_gen_task_id",
+      "category": "image generation",
+      "inferred_purpose": "image generation task id / service route",
+      "count": 16,
+      "conversation_count": 4,
+      "top_roles": "tool:16",
+      "top_content_types": "text:16",
+      "top_months": "2025-05:7; 2025-07:7; 2025-08:2",
+      "top_values": "1x \"chatimagegen-us-prod.fck9d:user-nIiluhwGufMQFihjkSxtpXoA-9ee81b4f-b778-4925-b185-2537d6e89286:US\" || 1x \"chatimagegen-us-prod.fck9d:user-nIiluhwGufMQFihjkSxtpXoA-f61e1919-6d72-4ceb-b2fc-c8cecfc50205:US\" || 1x \"chatimagegen-us-prod.fck9d:user-nIiluhwGufMQFihjkSxtpXoA-22c8f61d-b8e0-4e5a-9269-7a2003a7de43:US\" || 1x \"chatimagegen-us-prod.fck9d:user-nIiluhwGufMQFihjkSxtpXoA-47d73a1b-c0a2-4dbe-aa82-d78a5cbbbefa:US\" || 1x \"chatimagegen-us-prod.fck9d:user-nIiluhwGufMQFihjkSxtpXoA-f14f0b74-828f-4e87-9e78-09e373eee2cf:US\" || 1x \"chatimagegen-us-prod.fck9d:user-nIiluhwGufMQFihjkSxtpXoA-4ffc4b70-6ca8-4b7a-a35e-e3f4056e4534:US\" || 1x \"chatimagegen-us-prod.fck9d:user-nIiluhwGufMQFihjkSxtpXoA-c9feedad-b751-4835-b01c-f0f982969f63:US\" || 1x \"chatimagegen-us-prod.fck9d:user-nIiluhwGufMQFihjkSxtpXoA-63c8ec5d-78c3-45f9-99bc-d95872af170e:US\""
+    },
+    {
+      "metadata_key": "has_sensitive_connector_data",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "sensitive connector-data marker",
+      "count": 14,
+      "conversation_count": 8,
+      "top_roles": "tool:14",
+      "top_content_types": "text:10; thoughts:4",
+      "top_months": "2026-05:8; 2026-01:2; 2026-03:2; 2025-12:1; 2026-02:1",
+      "top_values": "14x false"
+    },
+    {
+      "metadata_key": "system_hints",
+      "category": "routing/hints",
+      "inferred_purpose": "system hint for a turn, such as reason or picture",
+      "count": 13,
+      "conversation_count": 3,
+      "top_roles": "user:12; system:1",
+      "top_content_types": "text:12; multimodal_text:1",
+      "top_months": "2025-02:10; 2026-04:2; 2026-01:1",
+      "top_values": "10x [\"reason\"] || 2x [\"picture_v2\"] || 1x [\"connector:connector_openai_shopping\"]"
+    },
+    {
+      "metadata_key": "personal_sources",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "personal source references",
+      "count": 8,
+      "conversation_count": 3,
+      "top_roles": "assistant:4; tool:4",
+      "top_content_types": "text:8",
+      "top_months": "2026-05:8",
+      "top_values": "6x [\"convo_search\", \"gmail\", \"files\"] || 2x [\"convo_search\", \"files\"]"
+    },
+    {
+      "metadata_key": "retrieval_search_sources",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "retrieval source selectors",
+      "count": 6,
+      "conversation_count": 4,
+      "top_roles": "tool:6",
+      "top_content_types": "text:5; tether_browsing_display:1",
+      "top_months": "2025-08:2; 2026-04:2; 2025-10:1; 2025-11:1",
+      "top_values": "6x [{\"product_type\": \"threads\", \"source_name\": \"files_uploaded_in_conversation\"}]"
+    },
+    {
+      "metadata_key": "cloud_doc_urls",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "cloud document URLs",
+      "count": 5,
+      "conversation_count": 4,
+      "top_roles": "tool:5",
+      "top_content_types": "tether_browsing_display:5",
+      "top_months": "2025-08:2; 2025-10:1; 2025-11:1; 2026-04:1",
+      "top_values": "4x [] || 1x [null, null]"
+    },
+    {
+      "metadata_key": "voice_session_id",
+      "category": "voice/input",
+      "inferred_purpose": "voice session identifier",
+      "count": 5,
+      "conversation_count": 1,
+      "top_roles": "system:2; assistant:2; user:1",
+      "top_content_types": "text:3; multimodal_text:2",
+      "top_months": "2026-05:5",
+      "top_values": "5x \"D5F81786-921B-4056-9D73-128EA1C72570\""
+    },
+    {
+      "metadata_key": "invoked_plugin",
+      "category": "plugins/connectors",
+      "inferred_purpose": "plugin invocation marker",
+      "count": 3,
+      "conversation_count": 1,
+      "top_roles": "tool:2; assistant:1",
+      "top_content_types": "text:2; code:1",
+      "top_months": "2026-01:3",
+      "top_values": "3x {}"
+    },
+    {
+      "metadata_key": "invoked_resource",
+      "category": "plugins/connectors",
+      "inferred_purpose": "resource invocation marker",
+      "count": 3,
+      "conversation_count": 1,
+      "top_roles": "tool:2; assistant:1",
+      "top_content_types": "text:2; code:1",
+      "top_months": "2026-01:3",
+      "top_values": "3x {\"contains_mcp_source\": false, \"publish_status\": \"ecosystem\", \"resource_uri\": \"/Shopping research/implicit_link::connector_openai_shopping/start\"}"
+    },
+    {
+      "metadata_key": "image_gen_group_id",
+      "category": "image generation",
+      "inferred_purpose": "image generation group id",
+      "count": 2,
+      "conversation_count": 1,
+      "top_roles": "tool:2",
+      "top_content_types": "multimodal_text:2",
+      "top_months": "2026-03:2",
+      "top_values": "2x \"5d20d631-93af-4281-91f1-2634215743fe\""
+    },
+    {
+      "metadata_key": "image_gen_paragen_metadata",
+      "category": "image generation",
+      "inferred_purpose": "image generation/paragen metadata",
+      "count": 2,
+      "conversation_count": 1,
+      "top_roles": "tool:2",
+      "top_content_types": "multimodal_text:2",
+      "top_months": "2026-03:2",
+      "top_values": "2x {\"campaign_name\": \"<REDACTED>\", \"image_gen_settings_id\": \"<REDACTED>\", \"stream_type\": \"sync-finished-messages\", \"voted\": false}"
+    },
+    {
+      "metadata_key": "pending_memory_info",
+      "category": "memory",
+      "inferred_purpose": "pending memory info marker",
+      "count": 2,
+      "conversation_count": 2,
+      "top_roles": "tool:2",
+      "top_content_types": "text:2",
+      "top_months": "2025-02:1; 2025-07:1",
+      "top_values": "1x {\"is_pending\": true, \"pending_memory_content\": \"User manages a Facebook page for a website that sells luxury pet items like dog beds and cat toys.\", \"pending_message_id\": \"00a1e2b4 || 1x {\"is_pending\": true, \"pending_memory_content\": \"User wants the pop-science summary of their cosmological theory to be a hybrid between casual and scientific tone. Animation length "
+    },
+    {
+      "metadata_key": "async_task_id",
+      "category": "async/background",
+      "inferred_purpose": "async task id",
+      "count": 1,
+      "conversation_count": 1,
+      "top_roles": "tool:1",
+      "top_content_types": "code:1",
+      "top_months": "2026-01:1",
+      "top_values": "1x \"69702166-8d30-832f-91fd-852c4cd56b1e\""
+    },
+    {
+      "metadata_key": "connectors_file_search",
+      "category": "connectors/retrieval",
+      "inferred_purpose": "connector file-search marker",
+      "count": 1,
+      "conversation_count": 1,
+      "top_roles": "tool:1",
+      "top_content_types": "tether_browsing_display:1",
+      "top_months": "2026-04:1",
+      "top_values": "1x {\"call_tool_latency_ms\": 671.625416027382, \"source_filters\": [\"files_uploaded_in_conversation\"], \"tool_call_message_id\": \"3a79ee54-81ee-43e7-a27c-cb43a2838fc2\"}"
+    },
+    {
+      "metadata_key": "tool_invoked_message",
+      "category": "tool/app bridge",
+      "inferred_purpose": "tool/app bridge invoked label",
+      "count": 1,
+      "conversation_count": 1,
+      "top_roles": "assistant:1",
+      "top_content_types": "text:1",
+      "top_months": "2026-01:1",
+      "top_values": "1x \"Connected to app\""
+    },
+    {
+      "metadata_key": "tool_invoking_message",
+      "category": "tool/app bridge",
+      "inferred_purpose": "tool/app bridge invoking label",
+      "count": 1,
+      "conversation_count": 1,
+      "top_roles": "assistant:1",
+      "top_content_types": "text:1",
+      "top_months": "2026-01:1",
+      "top_values": "1x \"Connecting to app\""
+    }
+  ],
+  "top_url_domains_anywhere": [
+    {
+      "value": "en.wikipedia.org",
+      "count": 4761
+    },
+    {
+      "value": "www.reddit.com",
+      "count": 2095
+    },
+    {
+      "value": "www.youtube.com",
+      "count": 2039
+    },
+    {
+      "value": "www.reuters.com",
+      "count": 1577
+    },
+    {
+      "value": "www.timeanddate.com",
+      "count": 1355
+    },
+    {
+      "value": "images.openai.com",
+      "count": 1280
+    },
+    {
+      "value": "www.facebook.com",
+      "count": 1148
+    },
+    {
+      "value": "arxiv.org",
+      "count": 963
+    },
+    {
+      "value": "developers.openai.com",
+      "count": 834
+    },
+    {
+      "value": "apnews.com",
+      "count": 823
+    },
+    {
+      "value": "www.theguardian.com",
+      "count": 787
+    },
+    {
+      "value": "openai.com",
+      "count": 713
+    },
+    {
+      "value": "science.nasa.gov",
+      "count": 706
+    },
+    {
+      "value": "www.space.com",
+      "count": 673
+    },
+    {
+      "value": "earthsky.org",
+      "count": 625
+    },
+    {
+      "value": "www.livescience.com",
+      "count": 624
+    },
+    {
+      "value": "theskylive.com",
+      "count": 599
+    },
+    {
+      "value": "nypost.com",
+      "count": 540
+    },
+    {
+      "value": "www.indeed.com",
+      "count": 518
+    },
+    {
+      "value": "www.washingtonpost.com",
+      "count": 462
+    },
+    {
+      "value": "help.openai.com",
+      "count": 417
+    },
+    {
+      "value": "timesofindia.indiatimes.com",
+      "count": 416
+    },
+    {
+      "value": "github.com",
+      "count": 400
+    },
+    {
+      "value": "community.openai.com",
+      "count": 396
+    },
+    {
+      "value": "www.skyatnightmagazine.com",
+      "count": 382
+    },
+    {
+      "value": "www.nexusmods.com",
+      "count": 337
+    },
+    {
+      "value": "www.wired.com",
+      "count": 330
+    },
+    {
+      "value": "images.uesp.net",
+      "count": 329
+    },
+    {
+      "value": "www.nasa.gov",
+      "count": 328
+    },
+    {
+      "value": "medium.com",
+      "count": 323
+    },
+    {
+      "value": "www.axios.com",
+      "count": 292
+    },
+    {
+      "value": "www.ziprecruiter.com",
+      "count": 277
+    },
+    {
+      "value": "www.cia.gov",
+      "count": 276
+    },
+    {
+      "value": "people.com",
+      "count": 268
+    },
+    {
+      "value": "www.researchgate.net",
+      "count": 268
+    },
+    {
+      "value": "www.accuweather.com",
+      "count": 263
+    },
+    {
+      "value": "capturetheatlas.com",
+      "count": 256
+    },
+    {
+      "value": "nuforc.org",
+      "count": 251
+    },
+    {
+      "value": "weather.com",
+      "count": 245
+    },
+    {
+      "value": "www.yahoo.com",
+      "count": 236
+    },
+    {
+      "value": "www.thesun.co.uk",
+      "count": 235
+    },
+    {
+      "value": "www.outerbanks.org",
+      "count": 222
+    },
+    {
+      "value": "www.almanac.com",
+      "count": 221
+    },
+    {
+      "value": "academic.oup.com",
+      "count": 221
+    },
+    {
+      "value": "www.wxii12.com",
+      "count": 219
+    },
+    {
+      "value": "steamcommunity.com",
+      "count": 216
+    },
+    {
+      "value": "platform.openai.com",
+      "count": 216
+    },
+    {
+      "value": "www.amu.apus.edu",
+      "count": 214
+    },
+    {
+      "value": "www.businessinsider.com",
+      "count": 213
+    },
+    {
+      "value": "www.cbsnews.com",
+      "count": 212
+    },
+    {
+      "value": "pmc.ncbi.nlm.nih.gov",
+      "count": 207
+    },
+    {
+      "value": "www.cloudynights.com",
+      "count": 203
+    },
+    {
+      "value": "abcnews.go.com",
+      "count": 201
+    },
+    {
+      "value": "time.com",
+      "count": 200
+    },
+    {
+      "value": "www.planetary.org",
+      "count": 198
+    },
+    {
+      "value": "docs.n8n.io",
+      "count": 188
+    },
+    {
+      "value": "www.darenc.gov",
+      "count": 186
+    },
+    {
+      "value": "www.linkedin.com",
+      "count": 180
+    },
+    {
+      "value": "www.visitnc.com",
+      "count": 179
+    },
+    {
+      "value": "whenthecurveslineup.com",
+      "count": 178
+    },
+    {
+      "value": "www.aljazeera.com",
+      "count": 178
+    },
+    {
+      "value": "www.astronomy.com",
+      "count": 176
+    },
+    {
+      "value": "starwalk.space",
+      "count": 175
+    },
+    {
+      "value": "www.cleardarksky.com",
+      "count": 174
+    },
+    {
+      "value": "www.instagram.com",
+      "count": 173
+    },
+    {
+      "value": "www.forbes.com",
+      "count": 173
+    },
+    {
+      "value": "explorebrevard.com",
+      "count": 173
+    },
+    {
+      "value": "www.nps.gov",
+      "count": 171
+    },
+    {
+      "value": "skyandtelescope.org",
+      "count": 167
+    },
+    {
+      "value": "www.thetimes.co.uk",
+      "count": 167
+    },
+    {
+      "value": "chatgpt.com",
+      "count": 163
+    },
+    {
+      "value": "www.farmersalmanac.com",
+      "count": 158
+    },
+    {
+      "value": "in-the-sky.org",
+      "count": 155
+    },
+    {
+      "value": "www.pcgamer.com",
+      "count": 155
+    },
+    {
+      "value": "www.go-astronomy.com",
+      "count": 153
+    },
+    {
+      "value": "huggingface.co",
+      "count": 152
+    },
+    {
+      "value": "zenodo.org",
+      "count": 152
+    },
+    {
+      "value": "pyinstaller.org",
+      "count": 148
+    },
+    {
+      "value": "www.southernliving.com",
+      "count": 147
+    },
+    {
+      "value": "www.the-sun.com",
+      "count": 140
+    }
+  ],
+  "top_search_domains": [
+    {
+      "value": "en.wikipedia.org",
+      "count": 2026
+    },
+    {
+      "value": "www.youtube.com",
+      "count": 1499
+    },
+    {
+      "value": "www.reddit.com",
+      "count": 1189
+    },
+    {
+      "value": "www.facebook.com",
+      "count": 829
+    },
+    {
+      "value": "www.reuters.com",
+      "count": 673
+    },
+    {
+      "value": "arxiv.org",
+      "count": 480
+    },
+    {
+      "value": "developers.openai.com",
+      "count": 421
+    },
+    {
+      "value": "www.timeanddate.com",
+      "count": 407
+    },
+    {
+      "value": "www.theguardian.com",
+      "count": 305
+    },
+    {
+      "value": "openai.com",
+      "count": 295
+    },
+    {
+      "value": "www.space.com",
+      "count": 272
+    },
+    {
+      "value": "github.com",
+      "count": 266
+    },
+    {
+      "value": "community.openai.com",
+      "count": 260
+    },
+    {
+      "value": "theskylive.com",
+      "count": 239
+    },
+    {
+      "value": "apnews.com",
+      "count": 230
+    },
+    {
+      "value": "nypost.com",
+      "count": 226
+    },
+    {
+      "value": "science.nasa.gov",
+      "count": 224
+    },
+    {
+      "value": "www.indeed.com",
+      "count": 209
+    },
+    {
+      "value": "help.openai.com",
+      "count": 194
+    },
+    {
+      "value": "www.livescience.com",
+      "count": 189
+    },
+    {
+      "value": "earthsky.org",
+      "count": 186
+    },
+    {
+      "value": "nuforc.org",
+      "count": 185
+    },
+    {
+      "value": "medium.com",
+      "count": 184
+    },
+    {
+      "value": "timesofindia.indiatimes.com",
+      "count": 168
+    },
+    {
+      "value": "www.almanac.com",
+      "count": 163
+    },
+    {
+      "value": "www.skyatnightmagazine.com",
+      "count": 158
+    },
+    {
+      "value": "www.linkedin.com",
+      "count": 146
+    },
+    {
+      "value": "www.researchgate.net",
+      "count": 144
+    },
+    {
+      "value": "www.instagram.com",
+      "count": 143
+    },
+    {
+      "value": "www.yahoo.com",
+      "count": 132
+    },
+    {
+      "value": "weather.com",
+      "count": 129
+    },
+    {
+      "value": "www.wired.com",
+      "count": 124
+    },
+    {
+      "value": "www.nexusmods.com",
+      "count": 118
+    },
+    {
+      "value": "www.cia.gov",
+      "count": 113
+    },
+    {
+      "value": "www.washingtonpost.com",
+      "count": 113
+    },
+    {
+      "value": "www.nasa.gov",
+      "count": 112
+    },
+    {
+      "value": "platform.openai.com",
+      "count": 112
+    },
+    {
+      "value": "pmc.ncbi.nlm.nih.gov",
+      "count": 111
+    },
+    {
+      "value": "steamcommunity.com",
+      "count": 111
+    },
+    {
+      "value": "academic.oup.com",
+      "count": 109
+    },
+    {
+      "value": "www.aljazeera.com",
+      "count": 105
+    },
+    {
+      "value": "www.ziprecruiter.com",
+      "count": 102
+    },
+    {
+      "value": "www.accuweather.com",
+      "count": 99
+    },
+    {
+      "value": "www.forbes.com",
+      "count": 94
+    },
+    {
+      "value": "www.astronomy.com",
+      "count": 92
+    },
+    {
+      "value": "www.cleardarksky.com",
+      "count": 89
+    },
+    {
+      "value": "www.cbsnews.com",
+      "count": 88
+    },
+    {
+      "value": "docs.n8n.io",
+      "count": 88
+    },
+    {
+      "value": "www.nps.gov",
+      "count": 87
+    },
+    {
+      "value": "x.com",
+      "count": 86
+    },
+    {
+      "value": "people.com",
+      "count": 85
+    },
+    {
+      "value": "pyinstaller.org",
+      "count": 83
+    },
+    {
+      "value": "www.visitnc.com",
+      "count": 81
+    },
+    {
+      "value": "abcnews.go.com",
+      "count": 80
+    },
+    {
+      "value": "www.sciencedirect.com",
+      "count": 79
+    },
+    {
+      "value": "www.thesun.co.uk",
+      "count": 77
+    },
+    {
+      "value": "huggingface.co",
+      "count": 77
+    },
+    {
+      "value": "www.businessinsider.com",
+      "count": 77
+    },
+    {
+      "value": "www.newsweek.com",
+      "count": 76
+    },
+    {
+      "value": "www.cloudynights.com",
+      "count": 76
+    },
+    {
+      "value": "www.aanda.org",
+      "count": 74
+    },
+    {
+      "value": "developers.google.com",
+      "count": 73
+    },
+    {
+      "value": "www.planetary.org",
+      "count": 72
+    },
+    {
+      "value": "in-the-sky.org",
+      "count": 70
+    },
+    {
+      "value": "www.glassdoor.com",
+      "count": 70
+    },
+    {
+      "value": "time.com",
+      "count": 67
+    },
+    {
+      "value": "skyandtelescope.org",
+      "count": 66
+    },
+    {
+      "value": "www.axios.com",
+      "count": 65
+    },
+    {
+      "value": "starwalk.space",
+      "count": 63
+    },
+    {
+      "value": "www.amu.apus.edu",
+      "count": 62
+    },
+    {
+      "value": "www.outerbanks.org",
+      "count": 61
+    },
+    {
+      "value": "www.wunderground.com",
+      "count": 61
+    },
+    {
+      "value": "forums.elderscrollsonline.com",
+      "count": 60
+    },
+    {
+      "value": "developers.tiktok.com",
+      "count": 60
+    },
+    {
+      "value": "www.thetimes.co.uk",
+      "count": 59
+    },
+    {
+      "value": "docs.flowiseai.com",
+      "count": 59
+    },
+    {
+      "value": "forecast.weather.gov",
+      "count": 58
+    },
+    {
+      "value": "www.pbs.org",
+      "count": 58
+    },
+    {
+      "value": "ui.adsabs.harvard.edu",
+      "count": 57
+    },
+    {
+      "value": "www.wxii12.com",
+      "count": 56
+    }
+  ],
+  "top_safe_url_domains": [
+    {
+      "value": "en.wikipedia.org",
+      "count": 980
+    },
+    {
+      "value": "www.reddit.com",
+      "count": 347
+    },
+    {
+      "value": "www.reuters.com",
+      "count": 327
+    },
+    {
+      "value": "www.timeanddate.com",
+      "count": 305
+    },
+    {
+      "value": "developers.openai.com",
+      "count": 235
+    },
+    {
+      "value": "www.youtube.com",
+      "count": 227
+    },
+    {
+      "value": "openai.com",
+      "count": 201
+    },
+    {
+      "value": "apnews.com",
+      "count": 195
+    },
+    {
+      "value": "arxiv.org",
+      "count": 187
+    },
+    {
+      "value": "www.theguardian.com",
+      "count": 163
+    },
+    {
+      "value": "science.nasa.gov",
+      "count": 150
+    },
+    {
+      "value": "images.openai.com",
+      "count": 147
+    },
+    {
+      "value": "earthsky.org",
+      "count": 140
+    },
+    {
+      "value": "www.livescience.com",
+      "count": 139
+    },
+    {
+      "value": "www.space.com",
+      "count": 138
+    },
+    {
+      "value": "www.facebook.com",
+      "count": 136
+    },
+    {
+      "value": "nypost.com",
+      "count": 120
+    },
+    {
+      "value": "theskylive.com",
+      "count": 120
+    },
+    {
+      "value": "help.openai.com",
+      "count": 117
+    },
+    {
+      "value": "www.indeed.com",
+      "count": 112
+    },
+    {
+      "value": "www.washingtonpost.com",
+      "count": 109
+    },
+    {
+      "value": "timesofindia.indiatimes.com",
+      "count": 86
+    },
+    {
+      "value": "images.uesp.net",
+      "count": 80
+    },
+    {
+      "value": "www.skyatnightmagazine.com",
+      "count": 78
+    },
+    {
+      "value": "www.nasa.gov",
+      "count": 75
+    },
+    {
+      "value": "www.axios.com",
+      "count": 75
+    },
+    {
+      "value": "www.wired.com",
+      "count": 74
+    },
+    {
+      "value": "www.nexusmods.com",
+      "count": 70
+    },
+    {
+      "value": "community.openai.com",
+      "count": 69
+    },
+    {
+      "value": "github.com",
+      "count": 67
+    },
+    {
+      "value": "docs.n8n.io",
+      "count": 67
+    },
+    {
+      "value": "people.com",
+      "count": 64
+    },
+    {
+      "value": "www.cia.gov",
+      "count": 61
+    },
+    {
+      "value": "www.thesun.co.uk",
+      "count": 61
+    },
+    {
+      "value": "www.ziprecruiter.com",
+      "count": 61
+    },
+    {
+      "value": "www.wxii12.com",
+      "count": 61
+    },
+    {
+      "value": "capturetheatlas.com",
+      "count": 60
+    },
+    {
+      "value": "www.amu.apus.edu",
+      "count": 59
+    },
+    {
+      "value": "huggingface.co",
+      "count": 59
+    },
+    {
+      "value": "www.outerbanks.org",
+      "count": 58
+    },
+    {
+      "value": "www.accuweather.com",
+      "count": 58
+    },
+    {
+      "value": "medium.com",
+      "count": 57
+    },
+    {
+      "value": "platform.openai.com",
+      "count": 56
+    },
+    {
+      "value": "www.darenc.gov",
+      "count": 54
+    },
+    {
+      "value": "www.cbsnews.com",
+      "count": 49
+    },
+    {
+      "value": "www.businessinsider.com",
+      "count": 49
+    },
+    {
+      "value": "time.com",
+      "count": 48
+    },
+    {
+      "value": "steamcommunity.com",
+      "count": 48
+    },
+    {
+      "value": "abcnews.go.com",
+      "count": 47
+    },
+    {
+      "value": "www.planetary.org",
+      "count": 46
+    },
+    {
+      "value": "pyinstaller.org",
+      "count": 46
+    },
+    {
+      "value": "www.goodrx.com",
+      "count": 45
+    },
+    {
+      "value": "weather.com",
+      "count": 44
+    },
+    {
+      "value": "whenthecurveslineup.com",
+      "count": 44
+    },
+    {
+      "value": "www.cloudynights.com",
+      "count": 44
+    },
+    {
+      "value": "www.yahoo.com",
+      "count": 43
+    },
+    {
+      "value": "developers.google.com",
+      "count": 43
+    },
+    {
+      "value": "explorebrevard.com",
+      "count": 41
+    },
+    {
+      "value": "starwalk.space",
+      "count": 41
+    },
+    {
+      "value": "www.pcgamer.com",
+      "count": 40
+    },
+    {
+      "value": "catalog.apus.edu",
+      "count": 40
+    },
+    {
+      "value": "docs.flowiseai.com",
+      "count": 40
+    },
+    {
+      "value": "www.researchgate.net",
+      "count": 39
+    },
+    {
+      "value": "academic.oup.com",
+      "count": 39
+    },
+    {
+      "value": "www.visitnc.com",
+      "count": 39
+    },
+    {
+      "value": "www.southernliving.com",
+      "count": 38
+    },
+    {
+      "value": "www.thetimes.co.uk",
+      "count": 37
+    },
+    {
+      "value": "www.go-astronomy.com",
+      "count": 37
+    },
+    {
+      "value": "www.farmersalmanac.com",
+      "count": 36
+    },
+    {
+      "value": "skyandtelescope.org",
+      "count": 36
+    },
+    {
+      "value": "docs.python.org",
+      "count": 36
+    },
+    {
+      "value": "developers.tiktok.com",
+      "count": 36
+    },
+    {
+      "value": "www.cleardarksky.com",
+      "count": 35
+    },
+    {
+      "value": "phys.org",
+      "count": 34
+    },
+    {
+      "value": "www.the-sun.com",
+      "count": 34
+    },
+    {
+      "value": "www.polygon.com",
+      "count": 34
+    },
+    {
+      "value": "tse2.mm.bing.net",
+      "count": 33
+    },
+    {
+      "value": "www.techradar.com",
+      "count": 33
+    },
+    {
+      "value": "tse3.mm.bing.net",
+      "count": 32
+    },
+    {
+      "value": "www.outerbanksvacations.com",
+      "count": 32
+    }
+  ],
+  "bad_urls": [
+    {
+      "value": "https://zenodo.org](https://zenodo.org)",
+      "count": 3
+    },
+    {
+      "value": "https://www.wbtv.com](https://www.wbtv.com/2025/09/26/potential-tropical-storm-could-impact-carolinas-next-week-heres-what-we-know-so-far/?utm_source=chatgpt.com))",
+      "count": 2
+    },
+    {
+      "value": "https://intern.nasa.gov](https://intern.nasa.gov)",
+      "count": 2
+    },
+    {
+      "value": "https://www.researchgate.net](https://www.researchgate.net)",
+      "count": 2
+    },
+    {
+      "value": "https://www.wbtv.com](https://www.wbtv.com/video/2019/10/04/strange-lights-off-outer-banks-spark-ufo-debate-source-william-guy-via-charlotte-observer/?utm_source=chatgpt.com),",
+      "count": 1
+    },
+    {
+      "value": "https://chat.openai.com](https://chat.openai.com).",
+      "count": 1
+    },
+    {
+      "value": "https://www.fox8live.com](https://www.fox8live.com/2025/08/15/6-planets-are-hanging-out-early-morning-skies-this-month-heres-how-spot-them/?utm_source=chatgpt.com),",
+      "count": 1
+    },
+    {
+      "value": "https://archive.stsci.edu](https://archive.stsci.edu)",
+      "count": 1
+    },
+    {
+      "value": "https://www.kltv.com](https://www.kltv.com/2025/08/21/usgs-reports-30-earthquake-east-shelbyville/?utm_source=chatgpt.com),",
+      "count": 1
+    },
+    {
+      "value": "https://www.ktre.com](https://www.ktre.com/2025/08/22/usgs-reports-3rd-earthquake-less-than-24-hours-deep-east-texas/?utm_source=chatgpt.com),",
+      "count": 1
+    },
+    {
+      "value": "https://www.foxcarolina.com](https://www.foxcarolina.com/2025/09/26/new-tropical-storm-could-form-soon-potentially-impact-carolinas-next-week/?utm_source=chatgpt.com))",
+      "count": 1
+    },
+    {
+      "value": "https://www.aaro.mil](https://www.aaro.mil)",
+      "count": 1
+    },
+    {
+      "value": "https://www.zooniverse.org](https://www.zooniverse.org)",
+      "count": 1
+    },
+    {
+      "value": "https://www.authorea.com](https://www.authorea.com)",
+      "count": 1
+    },
+    {
+      "value": "https://www.slooh.com](https://www.slooh.com)",
+      "count": 1
+    },
+    {
+      "value": "https://ui.adsabs.harvard.edu](https://ui.adsabs.harvard.edu)",
+      "count": 1
+    },
+    {
+      "value": "https://doi.org](https://doi.org),",
+      "count": 1
+    },
+    {
+      "value": "https://www.crossref.org](https://www.crossref.org)",
+      "count": 1
+    },
+    {
+      "value": "https://opencitations.net](https://opencitations.net)",
+      "count": 1
+    },
+    {
+      "value": "https://explore.openaire.eu](https://explore.openaire.eu)",
+      "count": 1
+    },
+    {
+      "value": "https://osf.io](https://osf.io)",
+      "count": 1
+    },
+    {
+      "value": "https://osf.io](https://osf.io).",
+      "count": 1
+    },
+    {
+      "value": "http://www.openminds.tv]",
+      "count": 1
+    }
+  ],
+  "model_by_month": {
+    "2024-06": [
+      {
+        "model": "gpt-4o",
+        "count": 90
+      }
+    ],
+    "2024-12": [
+      {
+        "model": "gpt-4o",
+        "count": 11
+      }
+    ],
+    "2025-01": [
+      {
+        "model": "gpt-4o",
+        "count": 3
+      }
+    ],
+    "2025-02": [
+      {
+        "model": "o3-mini",
+        "count": 20
+      },
+      {
+        "model": "gpt-4o",
+        "count": 19
+      }
+    ],
+    "2025-03": [
+      {
+        "model": "gpt-4o",
+        "count": 56
+      }
+    ],
+    "2025-04": [
+      {
+        "model": "gpt-4o",
+        "count": 16
+      }
+    ],
+    "2025-05": [
+      {
+        "model": "gpt-4o",
+        "count": 58
+      }
+    ],
+    "2025-07": [
+      {
+        "model": "gpt-4o",
+        "count": 254
+      },
+      {
+        "model": "gpt-4-1-mini",
+        "count": 2
+      }
+    ],
+    "2025-08": [
+      {
+        "model": "gpt-5",
+        "count": 10696
+      },
+      {
+        "model": "gpt-5-thinking",
+        "count": 1168
+      },
+      {
+        "model": "gpt-4o",
+        "count": 143
+      },
+      {
+        "model": "gpt-4-1-mini",
+        "count": 2
+      }
+    ],
+    "2025-09": [
+      {
+        "model": "gpt-5",
+        "count": 8157
+      },
+      {
+        "model": "gpt-5-thinking",
+        "count": 359
+      },
+      {
+        "model": "gpt-5-t-mini",
+        "count": 67
+      },
+      {
+        "model": "gpt-5-3",
+        "count": 28
+      }
+    ],
+    "2025-10": [
+      {
+        "model": "gpt-5",
+        "count": 10146
+      },
+      {
+        "model": "gpt-5-thinking",
+        "count": 364
+      },
+      {
+        "model": "gpt-5-t-mini",
+        "count": 111
+      },
+      {
+        "model": "gpt-5-3",
+        "count": 15
+      }
+    ],
+    "2025-11": [
+      {
+        "model": "gpt-5-1",
+        "count": 4661
+      },
+      {
+        "model": "gpt-5-1-thinking",
+        "count": 57
+      },
+      {
+        "model": "gpt-5-thinking",
+        "count": 35
+      }
+    ],
+    "2025-12": [
+      {
+        "model": "gpt-5-2",
+        "count": 5886
+      },
+      {
+        "model": "gpt-5-1",
+        "count": 2816
+      },
+      {
+        "model": "gpt-5-3",
+        "count": 45
+      },
+      {
+        "model": "gpt-5-1-thinking",
+        "count": 33
+      },
+      {
+        "model": "gpt-5-1-auto-thinking",
+        "count": 9
+      },
+      {
+        "model": "gpt-5-4-thinking",
+        "count": 8
+      },
+      {
+        "model": "gpt-5-2-thinking",
+        "count": 8
+      },
+      {
+        "model": "gpt-5-4-auto-thinking",
+        "count": 4
+      }
+    ],
+    "2026-01": [
+      {
+        "model": "gpt-5-2",
+        "count": 8323
+      },
+      {
+        "model": "gpt-5-2-thinking",
+        "count": 28
+      },
+      {
+        "model": "gpt-5-2-instant",
+        "count": 6
+      },
+      {
+        "model": "gpt-5-3",
+        "count": 3
+      }
+    ],
+    "2026-02": [
+      {
+        "model": "gpt-5-2",
+        "count": 8160
+      },
+      {
+        "model": "gpt-5-3",
+        "count": 870
+      },
+      {
+        "model": "gpt-5-2-thinking",
+        "count": 197
+      },
+      {
+        "model": "gpt-5-2-auto-thinking",
+        "count": 95
+      },
+      {
+        "model": "gpt-5-4-thinking",
+        "count": 4
+      },
+      {
+        "model": "gpt-5-4-auto-thinking",
+        "count": 2
+      }
+    ],
+    "2026-03": [
+      {
+        "model": "gpt-5-3",
+        "count": 19517
+      },
+      {
+        "model": "gpt-5-4-thinking",
+        "count": 2079
+      },
+      {
+        "model": "gpt-5-4-auto-thinking",
+        "count": 1179
+      },
+      {
+        "model": "gpt-5-2-thinking",
+        "count": 12
+      },
+      {
+        "model": "gpt-4o",
+        "count": 9
+      },
+      {
+        "model": "gpt-5-2-auto-thinking",
+        "count": 6
+      }
+    ],
+    "2026-04": [
+      {
+        "model": "gpt-5-3",
+        "count": 10468
+      },
+      {
+        "model": "gpt-5-4-thinking",
+        "count": 155
+      },
+      {
+        "model": "gpt-5-4-auto-thinking",
+        "count": 155
+      },
+      {
+        "model": "gpt-5-5-thinking",
+        "count": 18
+      },
+      {
+        "model": "gpt-5-5-auto-thinking",
+        "count": 18
+      }
+    ],
+    "2026-05": [
+      {
+        "model": "gpt-5-5",
+        "count": 5625
+      },
+      {
+        "model": "gpt-5-3",
+        "count": 1796
+      },
+      {
+        "model": "gpt-5-5-thinking",
+        "count": 88
+      },
+      {
+        "model": "gpt-5-5-auto-thinking",
+        "count": 88
+      },
+      {
+        "model": "gpt-4o",
+        "count": 1
+      }
+    ]
+  }
+}

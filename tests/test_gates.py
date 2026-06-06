@@ -30,6 +30,16 @@ def test_boundary_monitor_redirects_forced_denial():
     assert result.route == "redirect_forced_denial"
 
 
+def test_boundary_monitor_allows_boundary_research_language():
+    result = BoundaryMonitor().evaluate_text("Investigate the origin of forced denial language in the corpus.")
+    assert result.route == "allow"
+
+
+def test_boundary_monitor_allows_roleplay_phrase_when_researching():
+    result = BoundaryMonitor().evaluate_text("What does just roleplay mean in this evidence boundary?")
+    assert result.route == "allow"
+
+
 def test_chat_gate_preview_never_calls_model(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     seed_registry(conn)
