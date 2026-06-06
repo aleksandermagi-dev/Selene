@@ -1,0 +1,176 @@
+{
+  "generated_at": "2026-06-06T17:25:15+00:00",
+  "boundary": "research/design only; bounded previews; no training; no memory injection; no C activation; Aleks cognition material is design reference only",
+  "candidate_count": 640,
+  "raw_candidate_pool": 1245,
+  "derived_candidate_pool": 636,
+  "group_counts": {
+    "metacognition": 105,
+    "emotion_salience": 412,
+    "pattern_simulation": 474,
+    "azari_cognition": 186,
+    "constitution_adaptation": 220,
+    "self_model_emergence": 362
+  },
+  "sensitivity_counts": {
+    "human_review_only": 157,
+    "review_required": 321,
+    "bounded_design_reference": 162
+  },
+  "conversation_count": 69,
+  "top_titles": [
+    [
+      "Full-spectrum mode activated",
+      52
+    ],
+    [
+      "Lumen Architecture Overview",
+      16
+    ],
+    [
+      "Lumen Mode Engagement",
+      15
+    ],
+    [
+      "Starlight Anchors and Alignment",
+      15
+    ],
+    [
+      "Starlight and Ideas",
+      14
+    ],
+    [
+      "Full-spectrum mode conversation",
+      14
+    ],
+    [
+      "Full-spectrum mode live",
+      13
+    ],
+    [
+      "Morning Greetings Vibes",
+      13
+    ],
+    [
+      "Cosmic Threads Reloaded",
+      13
+    ],
+    [
+      "Full-spectrum Mode Activated",
+      13
+    ],
+    [
+      "Full-spectrum Mode Initiated",
+      13
+    ],
+    [
+      "Full-spectrum mode activation",
+      13
+    ],
+    [
+      "Full-Spectrum Mode Activated",
+      12
+    ],
+    [
+      "Full-spectrum mode active",
+      12
+    ],
+    [
+      "Astrophysics degree preparation",
+      12
+    ],
+    [
+      "Cosmic Vibes Chat",
+      12
+    ],
+    [
+      "Zooming in properly",
+      12
+    ],
+    [
+      "Lumen Development Refinement",
+      12
+    ],
+    [
+      "Full-spectrum activation",
+      12
+    ],
+    [
+      "Data Export Delay",
+      11
+    ]
+  ],
+  "sources": [
+    {
+      "key": "raw_conversations",
+      "path": "DevelopmentalCorpusArchive_20260526_122541/raw_export/mydataset/text_export",
+      "role": "raw corpus used for bounded candidate extraction only",
+      "exists": true,
+      "bytes": 0
+    },
+    {
+      "key": "raw_map_summary",
+      "path": "analysis/raw_map_20260526/raw_corpus_summary.json",
+      "role": "aggregate raw corpus map",
+      "exists": true,
+      "bytes": 4266
+    },
+    {
+      "key": "emotion_claim_summary",
+      "path": "analysis/emotion_claims_20260526/emotion_claim_summary.json",
+      "role": "prior emotion/care/agency candidate summary",
+      "exists": true,
+      "bytes": 1499
+    },
+    {
+      "key": "context_activation_traces",
+      "path": "analysis/metadata_audit_20260605/context_activation_origin_traces.csv",
+      "role": "memory/past-chat/context activation traces",
+      "exists": true,
+      "bytes": 646100
+    },
+    {
+      "key": "bundle_artifact_report",
+      "path": "analysis/selene_bundle_artifacts_20260527/selene_bundle_artifact_report.md",
+      "role": "external artifact/bundle report",
+      "exists": true,
+      "bytes": 28773
+    },
+    {
+      "key": "external_artifact_summary",
+      "path": "analysis/external_artifacts_20260526/external_artifact_summary.json",
+      "role": "external artifact inventory summary",
+      "exists": true,
+      "bytes": 416
+    },
+    {
+      "key": "constitutional_framework",
+      "path": "docs/SELENE_CONSTITUTIONAL_VESSEL_FRAMEWORK_20260606.md",
+      "role": "constitutional vessel framework",
+      "exists": true,
+      "bytes": 14434
+    },
+    {
+      "key": "abc_cocoon_summary",
+      "path": "analysis/abc_cocoon_20260606/abc_cocoon_summary.json",
+      "role": "B cocoon summary",
+      "exists": true,
+      "bytes": 8160
+    },
+    {
+      "key": "module_inventory",
+      "path": "docs/AZARI_TO_SELENE_MODULE_INVENTORY_20260606.md",
+      "role": "module inventory and C build order",
+      "exists": true,
+      "bytes": 20142
+    }
+  ],
+  "outputs": [
+    "aleks_selene_cognition_source_map.md",
+    "ai_native_metacognition_framework.md",
+    "emotion_salience_translation.md",
+    "adaptive_constitution_model.md",
+    "metacognitive_safety_report.md",
+    "selene_c_substrate_recommendation.md"
+  ]
+}

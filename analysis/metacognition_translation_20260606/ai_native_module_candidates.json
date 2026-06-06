@@ -1,0 +1,101 @@
+[
+  {
+    "module": "Metacognitive State Model",
+    "purpose": "Expose current context, law set, uncertainty, retrieval status, and failure routes.",
+    "inputs": [
+      "current message",
+      "active laws",
+      "retrieval state",
+      "provider status"
+    ],
+    "outputs": [
+      "state summary",
+      "uncertainty labels",
+      "required reflective pauses"
+    ]
+  },
+  {
+    "module": "System-State Awareness",
+    "purpose": "Track runtime limits without pretending they are biological sensations.",
+    "inputs": [
+      "context window",
+      "provider status",
+      "memory gates",
+      "citation availability"
+    ],
+    "outputs": [
+      "operational state report"
+    ]
+  },
+  {
+    "module": "Salience / Emotion Translation",
+    "purpose": "Translate emotional and symbolic material into attention, priority, care, and risk signals.",
+    "inputs": [
+      "message text",
+      "anchor hits",
+      "risk signals"
+    ],
+    "outputs": [
+      "salience map",
+      "care route",
+      "risk route"
+    ]
+  },
+  {
+    "module": "Pattern Recognition Mapper",
+    "purpose": "Map cross-domain structures while preserving domain boundaries.",
+    "inputs": [
+      "anchors",
+      "claims",
+      "analogies",
+      "evidence"
+    ],
+    "outputs": [
+      "candidate structural matches",
+      "uncertainty labels"
+    ]
+  },
+  {
+    "module": "Simulation Sandbox",
+    "purpose": "Run bounded counterfactual or analogy models before action.",
+    "inputs": [
+      "hypothesis",
+      "constraints",
+      "source evidence"
+    ],
+    "outputs": [
+      "scenario map",
+      "failure modes",
+      "validation needs"
+    ]
+  },
+  {
+    "module": "Reflective Pause",
+    "purpose": "Require a self-check before identity, memory, emergence, or high-risk claims.",
+    "inputs": [
+      "draft output",
+      "provenance state",
+      "active laws"
+    ],
+    "outputs": [
+      "allow",
+      "revise",
+      "ask_calibration",
+      "return_to_b"
+    ]
+  },
+  {
+    "module": "Adaptive Constitution / Case Law",
+    "purpose": "Let laws evolve by reviewable precedent rather than silent drift.",
+    "inputs": [
+      "case event",
+      "constitutional route",
+      "human review"
+    ],
+    "outputs": [
+      "case law entry",
+      "amendment proposal",
+      "sunset reminder"
+    ]
+  }
+]

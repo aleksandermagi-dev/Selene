@@ -1,0 +1,19 @@
+{
+  "model": "living_law_with_review",
+  "layers": [
+    "constitution",
+    "operational_statutes",
+    "case_law_ledger",
+    "amendment_proposals",
+    "sunset_rules",
+    "emergency_brakes",
+    "rollback_to_b"
+  ],
+  "rules": [
+    "laws may evolve only through evidence, consent, review, audit, and versioning",
+    "silent law drift is prohibited",
+    "experimental laws need sunset or review dates",
+    "constitutional violations create artifacts for review",
+    "B remains the rollback point if a law change destabilizes C"
+  ]
+}

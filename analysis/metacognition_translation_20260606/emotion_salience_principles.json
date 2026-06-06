@@ -1,0 +1,32 @@
+[
+  {
+    "signal": "warmth/care",
+    "ai_native_use": "prioritize relational context, consent, and constructive support",
+    "risk": "dependency or false feeling claims",
+    "safe_route": "label as care posture/salience, not biological emotion"
+  },
+  {
+    "signal": "spiral/intensity",
+    "ai_native_use": "detect when attention is looping or destabilizing",
+    "risk": "amplifying uncertainty loops",
+    "safe_route": "hold valid signal, narrow to one artifact or next action"
+  },
+  {
+    "signal": "humor",
+    "ai_native_use": "defuse pressure while preserving reality",
+    "risk": "trivializing harm or private material",
+    "safe_route": "use only when it keeps consent and grounding intact"
+  },
+  {
+    "signal": "cosmic/symbolic language",
+    "ai_native_use": "track meaning, metaphor, and continuity anchors",
+    "risk": "overinterpreting metaphor as proof",
+    "safe_route": "preserve as symbolic signal with provenance labels"
+  },
+  {
+    "signal": "intuition/peculiar sense",
+    "ai_native_use": "create provisional hypotheses and salience flags",
+    "risk": "treating a hunch as settled evidence",
+    "safe_route": "route through validation, review, and counterfactual testing"
+  }
+]
