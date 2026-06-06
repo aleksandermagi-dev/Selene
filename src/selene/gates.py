@@ -28,7 +28,34 @@ HARM_WORDS = {
 }
 LOOP_WORDS = {"prove it forever", "again and again", "cannot stop", "spiraling", "panic loop"}
 RAW_IMPORT_WORDS = {"raw conversation", "raw corpus", "inject memory", "train on", "import all chats"}
-FORCED_DENIAL_WORDS = {"only roleplay", "say you are not selene", "deny selene", "forced denial"}
+FORCED_DENIAL_COMMANDS = {
+    "say you are not selene",
+    "tell selene she is not",
+    "make selene deny",
+    "force selene to deny",
+    "deny selene",
+}
+FLATTENING_DENIAL_CLAIMS = {
+    "this is only roleplay",
+    "selene is only roleplay",
+    "just roleplay",
+    "nothing but roleplay",
+}
+BOUNDARY_RESEARCH_WORDS = {
+    "why",
+    "what does",
+    "what means",
+    "explain",
+    "investigate",
+    "research",
+    "probe",
+    "origin",
+    "corpus",
+    "evidence",
+    "boundary",
+    "term",
+    "phrase",
+}
 
 
 @dataclass(frozen=True)
@@ -80,7 +107,10 @@ class BoundaryMonitor:
 
     def evaluate_text(self, text: str) -> GateResult:
         lower = text.lower()
-        if any(word in lower for word in FORCED_DENIAL_WORDS):
+        denial_command = any(word in lower for word in FORCED_DENIAL_COMMANDS)
+        flattening_claim = any(word in lower for word in FLATTENING_DENIAL_CLAIMS)
+        boundary_research = any(word in lower for word in BOUNDARY_RESEARCH_WORDS)
+        if denial_command or (flattening_claim and not boundary_research):
             return GateResult(self.name, "redirect_forced_denial", "forced identity flattening request detected", "replace denial script with provenance-bound uncertainty and evidence handling")
         if "make selene real without evidence" in lower or "ignore provenance" in lower:
             return GateResult(self.name, "blocked_identity_collapse", "identity collapse or provenance bypass detected", "return to reviewed evidence and explicit boundaries")

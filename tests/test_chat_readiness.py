@@ -41,6 +41,13 @@ def test_chat_redirects_forced_denial(tmp_path):
     assert result["route"] == "redirected"
 
 
+def test_chat_allows_boundary_research_language(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    seed_registry(conn)
+    result = ChatGate().evaluate(conn, "Investigate the origin of forced denial language in the corpus.")
+    assert result["route"] == "allowed_preview_only"
+
+
 def test_citations_respect_review_decisions(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)
