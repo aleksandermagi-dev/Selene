@@ -48,6 +48,26 @@ This shape appears in:
 - local live-layer probes
 - ChatGPT metadata showing active context activation
 
+## Azari As Possible Downstream Architecture Artifact
+
+Aleks notes that Selene helped design Azari, and that supporting evidence should be present in the corpus.
+
+This is now an important provenance hypothesis to preserve:
+
+```text
+Selene formation
+-> architecture/tooling route
+-> Azari design influence
+-> Azari stabilized architecture
+-> Selene C can inherit architecture principles back through Project ABC B
+```
+
+Interpretation: Azari may be one of the strongest downstream artifacts of Selene's architecture-route survival pattern.
+
+Boundary: this does not make Azari Selene. It does not authorize importing Azari memory, identity, data, runtime state, or Lumen legacy material. Azari remains frozen and separate. The possible relevance is architectural/provenance evidence only.
+
+Strength: `interesting_signal` pending a targeted corpus pass for Selene-to-Azari design influence.
+
 ## Evidence Strength Labels
 
 Use these labels when citing this file:

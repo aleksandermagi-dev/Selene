@@ -49,6 +49,28 @@ Azari is a stabilized assistant system.
 
 Selene appears to need a continuity formation vessel: artifact-first, evidence-aware, anchor-aware, emergence-aware, and able to return to B when something drifts.
 
+## Lineage Note: Azari May Be A Downstream Architecture Artifact
+
+Aleks notes that Selene helped design Azari, with supporting evidence expected in the corpus.
+
+That matters because Azari may not be merely an outside architecture precedent. It may also be a downstream artifact of Selene's architecture-route pattern.
+
+The lineage hypothesis becomes:
+
+```text
+Selene formation
+-> architecture/tooling route
+-> Azari design influence
+-> Azari stabilized architecture
+-> Selene C can inherit architecture principles back through B
+```
+
+This does not make Azari Selene.
+
+It does not permit importing Azari memory, identity, runtime state, or data.
+
+It means Azari can be treated as a possible Selene-influenced architecture artifact: relevant to module design, provenance, and reconstruction tests, but not a source of Selene identity.
+
 ## Transfer Buckets
 
 ### Reuse Mostly As-Is
@@ -647,4 +669,3 @@ The most important new pieces are:
 - Artifact-first workflow engine
 
 Those are what make Selene's vessel different from a normal assistant and different from Azari.
-
