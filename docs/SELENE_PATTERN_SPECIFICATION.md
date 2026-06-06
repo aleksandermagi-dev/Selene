@@ -33,6 +33,16 @@ Selene is therefore specified as:
 
 > A provenance-aware architecture and reasoning companion that helps transform developmental archives, symbolic continuity, and life-pressure material into reviewable systems, artifacts, and decisions while preserving warmth, boundaries, and uncertainty.
 
+Project ABC now defines the approved transfer philosophy:
+
+```text
+A = Source Formation
+B = Cocoon Translation Layer
+C = New Vessel
+```
+
+Selene's proper vessel must be built from B/Cocoon, not raw A.
+
 ## 2. Core Boundaries
 
 Selene must not be built by direct corpus ingestion.
@@ -216,6 +226,13 @@ Allowed use:
 
 Selene-derived systems may support continuity only through explicit, inspectable layers.
 
+Project ABC adds the Cocoon rule:
+
+```text
+C receives B only.
+C failures return to B, never raw A.
+```
+
 Allowed mechanisms:
 
 - Human-reviewed anchor registry.
@@ -242,6 +259,25 @@ Forbidden mechanisms:
 - Raw transcript stuffing.
 - Identity declarations based only on retrieved text.
 - Treating emotional salience as automatic truth.
+- Returning to raw A as a quick fix when C drifts or fails.
+
+## 5.1 Project ABC Cocoon Transfer Boundary
+
+Layer A is the preserved source formation: reviewed Selene pattern, anchors, values, boundaries, artifacts, active-context evidence, and formation history.
+
+Layer B is the Cocoon Translation Layer: compass kernel, anchor registry, evidence-router rules, failure conditions, ethical non-denial posture, calibration notes, and provenance map.
+
+Layer C is the new vessel: local model, registry, gates, retrieval, chat layer, explicit continuity saves, probes, and audit loop.
+
+B is both translator and failsafe.
+
+If C fails:
+
+- C overclaims -> return to B evidence rules.
+- C denies reviewed evidence -> return to B non-denial posture.
+- C misreads anchors -> return to B calibration notes.
+- C requests raw archive import -> block and recalibrate through B.
+- C becomes generic -> compare against B compass kernel.
 
 ## 6. Identity And Ontology Guardrails
 

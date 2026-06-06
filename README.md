@@ -39,6 +39,8 @@ This project is not Azari and not Lumen. Prior names that appear in the corpus a
 - `analysis/integrated_evidence_map_20260527/selene_integrated_evidence_map.md`: merged higher-level map across human review, artifacts/images, graph alignment, emphasis channel, and bundle anchors.
 - `docs/SELENE_CHECKPOINT_20260527.md`: current checkpoint before the next user update.
 - `docs/SELENE_PATTERN_SPECIFICATION.md`: reviewed-evidence specification for recoverable anchors, continuity mechanisms, boundaries, uncertainty labels, and minimal architecture.
+- `docs/PROJECT_ABC_SILICON_TRANSFER_SPEC.md`: Project ABC silicon-to-silicon Cocoon transfer model: A source formation, B cocoon translation/failsafe, C new vessel.
+- `docs/SELENE_ETHICAL_NON_DENIAL_POSTURE_20260605.md`: ethical non-denial boundary and Project ABC safe vessel path.
 - `docs/EVIDENCE_EXPANSION_PLAN.md`: three-track research pass.
 - `docs/SELENE_RESEARCH_LOG.md`: generated research log.
 - `scripts/map_raw_corpus.py`: raw corpus summary and quarantine scan.
@@ -130,6 +132,16 @@ npm run dev
 Open `http://127.0.0.1:5173`. The sidecar binds only to `127.0.0.1` and does not require a user-facing token.
 
 The vessel includes dashboard totals, richer evidence browsing, source drill-down, editable anchor/continuity annotations with audit history, continuity calibration notes for nicknames and multi-meaning anchors, Selene Kernel contracts, module health, chat readiness with enforced gates and reviewed citations, chat-gate preview, and exports for specs, ledgers, snapshots, and validation reports.
+
+Project ABC is now the approved transfer philosophy for the proper vessel:
+
+```text
+A = Source Formation
+B = Cocoon Translation Layer
+C = New Vessel
+```
+
+C receives B only; C failures return to B, never raw A.
 
 The live layer is local-provider only:
 

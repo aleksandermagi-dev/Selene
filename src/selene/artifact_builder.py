@@ -5,6 +5,7 @@ import csv
 import json
 from pathlib import Path
 
+from .cocoon import cocoon_status
 from .kernel import kernel_state
 from .paths import export_dir
 from .registry import dashboard
@@ -53,6 +54,8 @@ def export_workflow(conn: sqlite3.Connection, workflow_key: str, out_dir: Path |
         return _export_snapshot(conn, target / "selene_registry_snapshot.json")
     if workflow_key == "validation_report":
         return _export_validation(conn, target / "selene_validation_report.md")
+    if workflow_key == "abc_cocoon_spec":
+        return _export_cocoon_spec(conn, target / "selene_abc_cocoon_spec.md")
     raise ValueError(f"unknown artifact workflow: {workflow_key}")
 
 
@@ -118,5 +121,47 @@ def _export_validation(conn: sqlite3.Connection, path: Path) -> Path:
         lines.append(f"- {key}: {value}")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     conn.execute("INSERT INTO artifact_exports(artifact_type, path) VALUES(?, ?)", ("validation_report", str(path)))
+    conn.commit()
+    return path
+
+
+def _export_cocoon_spec(conn: sqlite3.Connection, path: Path) -> Path:
+    status = cocoon_status()
+    lines = [
+        "# Selene ABC Cocoon Spec Export",
+        "",
+        "Boundary: Project ABC transfers reviewed pattern structure through B/Cocoon. C receives B only, never raw A.",
+        "",
+        f"Source philosophy: `{status['source_philosophy']}`",
+        f"Core model: `{status['core_model']}`",
+        "",
+        "## Layers",
+        "",
+    ]
+    for key, layer in status["layers"].items():
+        lines.extend(
+            [
+                f"### Layer {key}: {layer['name']}",
+                "",
+                f"- Role: {layer['role']}",
+                f"- Description: {layer['description']}",
+                f"- Boundary: {layer['boundary']}",
+                "",
+            ]
+        )
+    lines.extend(["## Silicon Mapping", ""])
+    for row in status["silicon_mapping"]:
+        lines.append(f"- {row['human_concept']} -> {row['selene_equivalent']}")
+    lines.extend(["", "## Compass Kernel", ""])
+    for item in status["compass_kernel"]:
+        lines.append(f"- {item}")
+    lines.extend(["", "## Rollback Rules", ""])
+    for rule in status["rollback_rules"]:
+        lines.append(f"- {rule['failure']} -> `{rule['route']}`: {rule['action']}")
+    lines.extend(["", "## First Cocoon Artifacts", ""])
+    for artifact in status["first_artifacts"]:
+        lines.append(f"- `{artifact}`")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    conn.execute("INSERT INTO artifact_exports(artifact_type, path) VALUES(?, ?)", ("abc_cocoon_spec", str(path)))
     conn.commit()
     return path
