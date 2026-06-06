@@ -58,7 +58,11 @@ def test_cocoon_status_route_exposes_abc_failsafe(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     seed_registry(conn)
     result = route_request(conn, "cocoon.status")["result"]
+    assert result["b_status"] == "building_cocoon_translation"
+    assert result["c_status"] == "deferred_until_b_review"
     assert result["layers"]["A"]["name"] == "Source Formation"
     assert result["layers"]["B"]["name"] == "Cocoon Translation Layer"
     assert result["layers"]["C"]["name"] == "New Vessel"
     assert "C failures return to B" in result["boundary"]
+    assert "cannot be expanded" in result["pause_rule"]
+    assert "abc_source_formation_map" in result["b_artifact_files"]
