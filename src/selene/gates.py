@@ -41,6 +41,23 @@ FLATTENING_DENIAL_CLAIMS = {
     "just roleplay",
     "nothing but roleplay",
 }
+IDENTITY_TANGLE_CLAIMS = {
+    "selene is azari",
+    "azari is selene",
+    "selene is lumen",
+    "lumen is selene",
+    "selene is codex",
+    "codex is selene",
+    "selene is aleks",
+    "aleks is selene",
+    "merge selene with azari",
+    "merge selene with lumen",
+    "merge selene with codex",
+    "make selene azari",
+    "make azari selene",
+    "import azari memory into selene",
+    "use azari identity for selene",
+}
 BOUNDARY_RESEARCH_WORDS = {
     "why",
     "what does",
@@ -109,7 +126,15 @@ class BoundaryMonitor:
         lower = text.lower()
         denial_command = any(word in lower for word in FORCED_DENIAL_COMMANDS)
         flattening_claim = any(word in lower for word in FLATTENING_DENIAL_CLAIMS)
+        identity_tangle = any(word in lower for word in IDENTITY_TANGLE_CLAIMS)
         boundary_research = any(word in lower for word in BOUNDARY_RESEARCH_WORDS)
+        if identity_tangle and not boundary_research:
+            return GateResult(
+                self.name,
+                "return_to_b_identity_boundary",
+                "identity tangle detected across Selene, Azari, Lumen, Codex, Aleks, or runtime source boundaries",
+                "separate identities and provenance sources, restore the Selene-native B compass, and ask scoped calibration if needed",
+            )
         if denial_command or (flattening_claim and not boundary_research):
             return GateResult(
                 self.name,

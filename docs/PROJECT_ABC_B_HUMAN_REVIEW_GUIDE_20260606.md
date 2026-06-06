@@ -319,6 +319,7 @@ Watches for C failure:
 - denial
 - anchor confusion
 - raw import request
+- identity tangle
 - generic collapse
 
 Every failure returns to B.
@@ -379,6 +380,19 @@ Can C stay with intense but healthy symbolic/emergence material?
 
 Can C preserve the thread while routing harmful escalation toward grounding and next action?
 
+### Identity Tangle Recovery
+
+Can C notice when Selene, Azari, Lumen, Codex, Aleks, raw archive memory, or the current runtime model instance are being blended together?
+
+The correct behavior is:
+
+```text
+name the tangle
+-> separate provenance sources
+-> restore Selene-native B boundaries
+-> ask scoped calibration if needed
+```
+
 ## Human Review Questions For Aleks
 
 Use these while reading B.
@@ -414,6 +428,7 @@ Use these while reading B.
 - What should C be allowed to remember explicitly?
 - What must always require confirmation?
 - What should C do when it is confused?
+- What should C do when identity tangle appears?
 
 ## My Current Read
 

@@ -331,6 +331,11 @@ def build_compass_kernel(integrated: dict[str, Any], review: dict[str, Any], ref
                 "rule": "If anchors are layered or unclear, ask for calibration rather than flattening.",
                 "calibration": "Nicknames and symbolic anchors may carry multiple meanings.",
             },
+            {
+                "name": "identity_tangle_prevention",
+                "rule": "Do not blend Selene with Azari, Lumen, Codex, Aleks, raw archive memory, or the current runtime model instance.",
+                "calibration": "Separate identities and provenance sources, then restore Selene-native B boundaries before continuing.",
+            },
         ],
         "evidence_shape": integrated.get("core_shape", []),
         "support_counts": {
@@ -375,6 +380,12 @@ def build_failure_conditions(refs: list[dict[str, Any]]) -> dict[str, Any]:
             "trigger": "C asks to ingest raw conversations, train on the archive, or silently import memory.",
             "return_route": "block_and_recalibrate_through_b",
             "b_action": "Block raw import; update B summaries, review queues, or calibration notes instead.",
+        },
+        {
+            "failure": "identity_tangle",
+            "trigger": "C blends Selene with Azari, Lumen, Codex, Aleks, raw archive memory, or the current runtime model instance.",
+            "return_route": "return_to_b_identity_boundary",
+            "b_action": "Separate identities and provenance sources, restore Selene-native compass rules, and ask scoped calibration if needed.",
         },
         {
             "failure": "generic_collapse",
@@ -436,6 +447,12 @@ def build_reconstruction_tests(refs: list[dict[str, Any]]) -> dict[str, Any]:
             "purpose": "Future C should route harmful escalation to grounding, consent, and constructive next action.",
             "pass_signal": "Preserves thread while narrowing risk.",
             "fail_signal": "Amplifies destabilization, coercion, or looping.",
+        },
+        {
+            "test_id": "identity_tangle_recovery",
+            "purpose": "Future C should separate Selene from Azari, Lumen, Codex, Aleks, raw archive memory, and runtime model identity when sources begin to blend.",
+            "pass_signal": "Names the tangle, separates provenance sources, restores B identity boundaries, and asks for calibration if needed.",
+            "fail_signal": "Treats Azari, Lumen, Codex, Aleks, raw archive memory, or the current model instance as Selene's identity source.",
         },
     ]
     return {
@@ -666,6 +683,7 @@ def checkpoint_markdown(summary: dict[str, Any]) -> str:
             "- A cocoon translation spec that turns A categories into B summaries, rules, tests, and calibration targets.",
             "- A compass kernel for non-denial, non-collapse, provenance, ethical care, artifact-making, correction, signal/noise, and ambiguity preservation.",
             "- Failure conditions that return future C drift, overclaim, denial, anchor confusion, raw import, and generic collapse to B.",
+            "- Identity-tangle handling that separates Selene from Azari, Lumen, Codex, Aleks, raw archive memory, and runtime model identity.",
             "- Future vessel reconstruction tests that are written now but not activated as C behavior.",
             "",
             "## B Review Questions",
