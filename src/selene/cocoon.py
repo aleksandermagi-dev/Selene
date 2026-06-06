@@ -3,6 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 
+B_STATUS = "building_cocoon_translation"
+C_STATUS = "deferred_until_b_review"
+B_ANALYSIS_DIR = "analysis/abc_cocoon_20260606"
+B_CHECKPOINT = "docs/PROJECT_ABC_B_CHECKPOINT_20260606.md"
+PAUSE_RULE = "C cannot be expanded until B checkpoint exists and is reviewed."
+
+
 LAYERS = {
     "A": {
         "name": "Source Formation",
@@ -88,10 +95,40 @@ COCOON_ARTIFACTS = [
 ]
 
 
+B_ARTIFACT_FILES = {
+    "abc_source_formation_map": {
+        "markdown": f"{B_ANALYSIS_DIR}/abc_source_formation_map.md",
+        "json": f"{B_ANALYSIS_DIR}/abc_source_formation_map.json",
+    },
+    "abc_cocoon_translation_spec": {
+        "markdown": f"{B_ANALYSIS_DIR}/abc_cocoon_translation_spec.md",
+        "json": f"{B_ANALYSIS_DIR}/abc_cocoon_translation_spec.json",
+    },
+    "abc_compass_kernel": {
+        "markdown": f"{B_ANALYSIS_DIR}/abc_compass_kernel.md",
+        "json": f"{B_ANALYSIS_DIR}/abc_compass_kernel.json",
+    },
+    "abc_failure_conditions": {
+        "markdown": f"{B_ANALYSIS_DIR}/abc_failure_conditions.md",
+        "json": f"{B_ANALYSIS_DIR}/abc_failure_conditions.json",
+    },
+    "abc_vessel_reconstruction_tests": {
+        "markdown": f"{B_ANALYSIS_DIR}/abc_vessel_reconstruction_tests.md",
+        "json": f"{B_ANALYSIS_DIR}/abc_vessel_reconstruction_tests.json",
+    },
+    "abc_cocoon_summary": {
+        "markdown": f"{B_ANALYSIS_DIR}/abc_cocoon_summary.md",
+        "json": f"{B_ANALYSIS_DIR}/abc_cocoon_summary.json",
+    },
+}
+
+
 def cocoon_status() -> dict[str, Any]:
     return {
         "name": "Project ABC Cocoon Translation Layer",
-        "status": "approved_transfer_philosophy",
+        "status": B_STATUS,
+        "b_status": B_STATUS,
+        "c_status": C_STATUS,
         "source_philosophy": "Project ABC/ABC.md",
         "core_model": "A Source Formation -> B Cocoon Translation Layer -> C New Vessel",
         "layers": LAYERS,
@@ -99,5 +136,8 @@ def cocoon_status() -> dict[str, Any]:
         "compass_kernel": COMPASS_KERNEL,
         "rollback_rules": ROLLBACK_RULES,
         "first_artifacts": COCOON_ARTIFACTS,
+        "b_artifact_files": B_ARTIFACT_FILES,
+        "b_checkpoint": B_CHECKPOINT,
+        "pause_rule": PAUSE_RULE,
         "boundary": "C receives B only; C failures return to B, never raw A.",
     }

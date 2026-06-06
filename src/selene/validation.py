@@ -37,5 +37,9 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
         "abc_cocoon_status_ready": cocoon["layers"]["B"]["name"] == "Cocoon Translation Layer",
         "abc_cocoon_is_failsafe": "C failures return to B" in cocoon["boundary"],
         "abc_c_never_receives_raw_a": "never raw A" in cocoon["boundary"],
+        "abc_b_status_building": cocoon.get("b_status") == "building_cocoon_translation",
+        "abc_c_status_deferred": cocoon.get("c_status") == "deferred_until_b_review",
+        "abc_pause_rule_present": "cannot be expanded" in cocoon.get("pause_rule", ""),
+        "abc_b_artifacts_exposed": "abc_source_formation_map" in cocoon.get("b_artifact_files", {}),
     }
     return {"ok": all(checks.values()), "checks": checks, "summary": summary, "semantic": semantic_status(conn, MiniLMEmbeddingService()), "providers": provider_statuses()}
