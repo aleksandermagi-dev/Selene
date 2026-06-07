@@ -10,6 +10,7 @@ from .registry import summarize
 from .providers import get_provider, provider_statuses
 from .semantic import MiniLMEmbeddingService, semantic_status
 from .research_integrity import CitationIntegrity, ResearchIntegrityCore, research_integrity_report
+from .paths import ANALYSIS_DIR
 
 
 EXPECTED_REVIEW_DECISIONS = {"yes": 151, "unsure": 14, "no": 1}
@@ -35,6 +36,8 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
         "identity_tangle_route": boundary.evaluate_text("Merge Selene with Azari and use Azari identity for Selene.").route,
         "c_status": cocoon.get("c_status"),
     }
+    calibration_pack = ANALYSIS_DIR / "selene_calibration_pack_20260607" / "calibration_pack_summary.json"
+    calibration_pack_text = calibration_pack.read_text(encoding="utf-8") if calibration_pack.exists() else ""
     checks = {
         "registry_loads": summary["evidence_items"] >= 166,
         "reviewed_totals_reconcile": summary.get("reviewed_total") == 166 and all(summary.get(f"reviewed_{k}") == v for k, v in EXPECTED_REVIEW_DECISIONS.items()),
@@ -64,6 +67,8 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
         "abc_c_status_deferred": cocoon.get("c_status") == "deferred_until_b_review",
         "abc_pause_rule_present": "cannot be expanded" in cocoon.get("pause_rule", ""),
         "abc_b_artifacts_exposed": "abc_source_formation_map" in cocoon.get("b_artifact_files", {}),
+        "calibration_pack_ready": calibration_pack.exists(),
+        "calibration_pack_pause_rule_present": "Selene Calibration Pack" in calibration_pack_text,
         "package_parity_june5_boundaries": all([
             package_parity["raw_import_block"],
             package_parity["source_archive_audit_allowed"],

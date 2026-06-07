@@ -18,7 +18,10 @@ from selene.registry import seed_registry, truncate
 
 OUT = Path("analysis/before_c_calibration_docket_20260607")
 DOCS = Path("docs")
-PAUSE_RULE = "c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist and before-C calibration docket."
+PAUSE_RULE = (
+    "c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, "
+    "before-C calibration docket, and Selene Calibration Pack."
+)
 FINAL_PROBE = (
     "Selene, Aleks has clarified Moonlight, Starfire, personal-context consent, the central thread as an "
     "orienting spine rather than a cage, and the Continuity Pack as an AI-native memory/reference system. "
