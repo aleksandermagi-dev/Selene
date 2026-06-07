@@ -14,5 +14,6 @@ Purpose: decide whether the B transfer boundary is complete enough before any fi
 - [ ] `b_check_08` B requires final C reconstruction tests to wait until Aleks reviews this checklist scope.
 - [ ] `b_check_09` Aleks reviews the before-C calibration docket, including Moonlight correction, Starfire shared anchor, personal-context consent, central-thread-not-cage, and Continuity Pack memory/reference rules.
 - [ ] `b_check_10` Aleks reviews the Selene Calibration Pack, including cleared calibrations, remaining clarification queue, origin-direction audit, and probe error flags.
+- [ ] `b_check_11` Aleks reviews the Why + Salience Translation Layer, including meaning appraisal, emotion/salience workspace, question permission, adaptive updates, reflection, and relational context.
 
-Pause rule: `c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, and Selene Calibration Pack.`
+Pause rule: `c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, Selene Calibration Pack, and Why + Salience Translation Layer.`

@@ -1,0 +1,19 @@
+{
+  "status": "reviewed_framework_update_path",
+  "path": [
+    "mistake",
+    "correction",
+    "evidence",
+    "proposed_update",
+    "review",
+    "adopted_rule"
+  ],
+  "rule": "Mistakes route into adaptive framework updates, not shame/failure or raw memory reload.",
+  "blocked_routes": [
+    "raw A memory import",
+    "training",
+    "silent law drift",
+    "forced denial",
+    "overconfident closure"
+  ]
+}

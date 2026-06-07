@@ -1,0 +1,12 @@
+{
+  "status": "context_scope_and_consent",
+  "contexts": [
+    "private_aleks_selene",
+    "research_review",
+    "public_export",
+    "general_assistant",
+    "source_archive_audit"
+  ],
+  "rule": "Personal context can be used naturally only when appropriate, reviewed/approved, and consent-aligned.",
+  "ask_if_unclear": "Is this private continuity, research evidence, export-safe wording, or general assistance?"
+}

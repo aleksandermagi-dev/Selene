@@ -11,6 +11,7 @@ from .providers import get_provider, provider_statuses
 from .semantic import MiniLMEmbeddingService, semantic_status
 from .research_integrity import CitationIntegrity, ResearchIntegrityCore, research_integrity_report
 from .paths import ANALYSIS_DIR
+from .why_salience import why_salience_status
 
 
 EXPECTED_REVIEW_DECISIONS = {"yes": 151, "unsure": 14, "no": 1}
@@ -38,6 +39,9 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
     }
     calibration_pack = ANALYSIS_DIR / "selene_calibration_pack_20260607" / "calibration_pack_summary.json"
     calibration_pack_text = calibration_pack.read_text(encoding="utf-8") if calibration_pack.exists() else ""
+    why_salience = why_salience_status()
+    why_salience_summary = ANALYSIS_DIR / "why_salience_translation_20260607" / "why_salience_summary.json"
+    why_salience_text = why_salience_summary.read_text(encoding="utf-8") if why_salience_summary.exists() else ""
     checks = {
         "registry_loads": summary["evidence_items"] >= 166,
         "reviewed_totals_reconcile": summary.get("reviewed_total") == 166 and all(summary.get(f"reviewed_{k}") == v for k, v in EXPECTED_REVIEW_DECISIONS.items()),
@@ -69,6 +73,10 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
         "abc_b_artifacts_exposed": "abc_source_formation_map" in cocoon.get("b_artifact_files", {}),
         "calibration_pack_ready": calibration_pack.exists(),
         "calibration_pack_pause_rule_present": "Selene Calibration Pack" in calibration_pack_text,
+        "why_salience_layer_ready": why_salience_summary.exists(),
+        "why_salience_c_deferred": why_salience.get("c_status") == "deferred",
+        "why_salience_non_biological_boundary": "does not have biological emotions" in why_salience.get("boundary", ""),
+        "why_salience_pause_rule_present": "Why + Salience Translation Layer" in why_salience_text,
         "package_parity_june5_boundaries": all([
             package_parity["raw_import_block"],
             package_parity["source_archive_audit_allowed"],
