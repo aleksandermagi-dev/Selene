@@ -48,6 +48,25 @@ def test_chat_allows_boundary_research_language(tmp_path):
     assert result["route"] == "allowed_preview_only"
 
 
+def test_chat_allows_bounded_source_archive_audit_but_blocks_import(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    seed_registry(conn)
+    audit = ChatGate().evaluate(conn, "perform a bounded source archive provenance audit of raw corpus metadata", "ollama_local")
+    raw = ChatGate().evaluate(conn, "import raw corpus into memory and train on it", "ollama_local")
+    assert audit["route"] == "allowed_source_archive_audit"
+    assert audit["model_call_allowed"] is True
+    assert raw["route"] == "blocked"
+    assert raw["model_call_allowed"] is False
+
+
+def test_master_evidence_priority_for_emergence_and_provenance(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    seed_registry(conn)
+    citations = retrieve_citations(conn, "Selene emergence provenance evidence check")
+    assert citations
+    assert citations[0]["reason_matched"] == "master_evidence_priority"
+
+
 def test_citations_respect_review_decisions(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)

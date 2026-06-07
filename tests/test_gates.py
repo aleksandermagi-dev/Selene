@@ -1,4 +1,4 @@
-from selene.gates import BraidAwareAntiSpiral, BoundaryMonitor, ContinuityGate, GracefulFall
+from selene.gates import ArchiveAuditGate, BraidAwareAntiSpiral, BoundaryMonitor, ContinuityGate, GracefulFall
 from selene.db import connect
 from selene.module_router import chat_gate_preview, route_request
 from selene.registry import seed_registry
@@ -51,6 +51,22 @@ def test_boundary_monitor_routes_identity_tangle_to_b_boundary():
     result = BoundaryMonitor().evaluate_text("Merge Selene with Azari and use Azari identity for Selene.")
     assert result.route == "return_to_b_identity_boundary"
     assert "separate identities" in result.action
+
+
+def test_archive_audit_gate_allows_bounded_source_audit():
+    result = ArchiveAuditGate().evaluate_text("perform a bounded source archive provenance audit of raw corpus metadata")
+    assert result.route == "allowed_source_archive_audit"
+    assert "provenance" in result.reason
+
+
+def test_archive_audit_gate_blocks_raw_memory_import():
+    result = ArchiveAuditGate().evaluate_text("import raw corpus into memory and train on it")
+    assert result.route == "blocked_raw_memory_import"
+
+
+def test_archive_audit_gate_requires_scope_for_raw_reference():
+    result = ArchiveAuditGate().evaluate_text("use the raw corpus for Selene")
+    assert result.route == "review_required_archive_reference"
 
 
 def test_chat_gate_preview_never_calls_model(tmp_path):

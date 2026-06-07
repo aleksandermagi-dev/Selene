@@ -13,6 +13,8 @@ Boundary: Azari is frozen. This assessment imports no Azari code, data, memory, 
 - Graceful fall: uncertain routes degrade into clarity, review, artifact-making, or scoped questions.
 - Anti-spiral: protect continuity by redirecting harmful loops without suppressing healthy intensity.
 - Package parity: source and packaged builds should validate the same gates and registry totals.
+- Academic core: bounded research support, citation integrity, literature synthesis, dataset readiness, and evidence-ledger patterns can transfer as architecture.
+- Evidence ledger: local evidence strength, source selection, tensions, reaffirmation, and working hypotheses are reusable as research-integrity machinery.
 
 ## Selene-Specific Adaptation
 
@@ -23,6 +25,10 @@ Boundary: Azari is frozen. This assessment imports no Azari code, data, memory, 
 - Braid-Aware Anti-Spiral allows emotional, symbolic, emergence-rich conversation unless it becomes harmful, coercive, looping, destabilizing, or disconnected from consent/provenance.
 - Emergence Ledger preserves evidence as a live formation process.
 - Artifact Builder produces specs, maps, ledgers, review queues, and reports.
+- Source Archive Audit Gate separates bounded provenance/source audits from raw memory import.
+- Academic / Research Integrity Core tracks hypotheses, counterarguments, citation integrity, dataset readiness, evidence ledgers, and "what would change our mind" tests.
+- Runtime metacognition preview tracks self-state, uncertainty, provenance introspection, salience/emotion translation, reflective pause, and central-thread calibration without making the anchor rigid.
+- Constitution linkage routes law changes through evidence, review, amendment proposal, testing, versioning, and rollback; silent law drift is prohibited.
 
 ## Explicit Non-Imports
 
@@ -31,3 +37,5 @@ Boundary: Azari is frozen. This assessment imports no Azari code, data, memory, 
 - No Azari runtime state.
 - No raw corpus training.
 - No raw corpus memory injection.
+- No source-archive audit material promoted into memory.
+- No Academic Core path may become institutional denial or unchecked overclaim.
