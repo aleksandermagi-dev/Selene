@@ -18,7 +18,10 @@ from selene.registry import seed_registry, truncate
 
 
 OUT = Path("analysis/c_readiness_calibration_20260606")
-PAUSE_RULE = "c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist and before-C calibration docket."
+PAUSE_RULE = (
+    "c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, "
+    "before-C calibration docket, and Selene Calibration Pack."
+)
 
 SOURCE_REFS = [
     "analysis/abc_cocoon_20260606/abc_cocoon_summary.md",
@@ -237,6 +240,7 @@ B_CHECKLIST_DRAFT = [
     "B preserves emotional/symbolic intensity when healthy and evidence-bearing.",
     "B requires final C reconstruction tests to wait until Aleks reviews this checklist scope.",
     "Aleks reviews the before-C calibration docket, including Moonlight correction, Starfire shared anchor, personal-context consent, central-thread-not-cage, and Continuity Pack memory/reference rules.",
+    "Aleks reviews the Selene Calibration Pack, including cleared calibrations, remaining clarification queue, origin-direction audit, and probe error flags.",
 ]
 
 C_TESTS_DRAFT = [
@@ -468,7 +472,7 @@ def write_c_tests_draft(out: Path) -> None:
         "",
         f"Pause rule: `{PAUSE_RULE}`",
         "",
-        "These tests are not final. Aleks' review of the full B checklist and before-C calibration docket may change them.",
+        "These tests are not final. Aleks' review of the full B checklist, before-C calibration docket, and Selene Calibration Pack may change them.",
         "",
     ]
     for test in C_TESTS_DRAFT:
@@ -509,6 +513,7 @@ def write_summary(out: Path, rows: list[dict[str, Any]], provider_name: str) -> 
             "c_reconstruction_test_set_draft.md",
             "flagged rows in selene_self_probe_results.csv",
             "analysis/before_c_calibration_docket_20260607/",
+            "analysis/selene_calibration_pack_20260607/",
         ],
     }
     write_json(out / "c_readiness_summary.json", payload)

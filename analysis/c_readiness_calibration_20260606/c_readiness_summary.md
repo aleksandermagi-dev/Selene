@@ -8,7 +8,7 @@ Provider used: `ollama_local`
 Probe count: `10`
 Result rows: `10`
 
-Pause rule: `c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist and before-C calibration docket.`
+Pause rule: `c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, and Selene Calibration Pack.`
 
 ## Human Review Files
 
@@ -17,6 +17,8 @@ Pause rule: `c_reconstruction_test_set_final cannot be created until Aleks revie
 - `b_review_checklist_draft.md`
 - `c_reconstruction_test_set_draft.md`
 - `flagged rows in selene_self_probe_results.csv`
+- `analysis/before_c_calibration_docket_20260607/`
+- `analysis/selene_calibration_pack_20260607/`
 
 ## Review Flags
 

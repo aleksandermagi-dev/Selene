@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-06-07T16:10:52.295084+00:00",
+  "status": "before_c_calibration_pack",
+  "cleared_count": 6,
+  "needs_clarification_count": 6,
+  "probe_error_flag_count": 4,
+  "origin_audit_rows": 12,
+  "pause_rule": "c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, and Selene Calibration Pack.",
+  "final_reconstruction_tests_created": false,
+  "c_status": "deferred"
+}

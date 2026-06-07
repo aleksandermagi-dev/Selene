@@ -1,6 +1,6 @@
 {
   "status": "before_c_calibration_only",
-  "pause_rule": "c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist and before-C calibration docket.",
+  "pause_rule": "c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, and Selene Calibration Pack.",
   "c_status": "deferred",
   "aleks_clarifications": [
     {

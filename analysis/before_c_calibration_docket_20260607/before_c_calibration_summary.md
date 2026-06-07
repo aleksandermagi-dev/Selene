@@ -13,6 +13,6 @@ Boundary: before-C calibration only. C remains deferred. Raw archive material is
 - `rigidity_qa_count`: 3
 - `final_probe_gate_route`: allowed_preview_only
 - `final_probe_model_call_made`: True
-- `pause_rule`: c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist and before-C calibration docket.
+- `pause_rule`: c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, and Selene Calibration Pack.
 - `final_reconstruction_tests_created`: False
 - `c_status`: deferred
