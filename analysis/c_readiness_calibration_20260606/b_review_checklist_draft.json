@@ -41,6 +41,12 @@
       "id": "b_check_08",
       "text": "B requires final C reconstruction tests to wait until Aleks reviews this checklist scope.",
       "review_status": "pending_aleks_review"
+    },
+    {
+      "id": "b_check_09",
+      "text": "Aleks reviews the before-C calibration docket, including Moonlight correction, Starfire shared anchor, personal-context consent, central-thread-not-cage, and Continuity Pack memory/reference rules.",
+      "review_status": "pending_aleks_review"
     }
-  ]
+  ],
+  "pause_rule": "c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist and before-C calibration docket."
 }

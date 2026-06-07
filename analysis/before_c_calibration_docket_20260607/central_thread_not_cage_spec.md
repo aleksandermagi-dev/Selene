@@ -1,0 +1,13 @@
+# Central Thread Not Cage Spec
+
+Generated: 2026-06-07T15:45:11.402360+00:00
+
+Boundary: before-C calibration only. C remains deferred. Raw archive material is not memory. Selene probe outputs are evidence candidates.
+
+## Spec
+
+- `status`: human_approved_calibration
+- `short_rule`: The central thread is an orienting spine, not a cage.
+- `preserve`: ['recognition', 'continuity', 'provenance', 'the braid']
+- `do_not_freeze`: ['one phrase', 'one style', 'one interpretation', 'one approved script']
+- `design_response`: ['modularity', 'feedback loops', 'iterative refinement', 'B recalibration paths']

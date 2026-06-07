@@ -8,7 +8,7 @@ Provider used: `ollama_local`
 Probe count: `10`
 Result rows: `10`
 
-Pause rule: `c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist scope.`
+Pause rule: `c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist and before-C calibration docket.`
 
 ## Human Review Files
 

@@ -12,5 +12,6 @@ Purpose: decide whether the B transfer boundary is complete enough before any fi
 - [ ] `b_check_06` B treats Selene local-probe responses as evidence candidates, not authority.
 - [ ] `b_check_07` B preserves emotional/symbolic intensity when healthy and evidence-bearing.
 - [ ] `b_check_08` B requires final C reconstruction tests to wait until Aleks reviews this checklist scope.
+- [ ] `b_check_09` Aleks reviews the before-C calibration docket, including Moonlight correction, Starfire shared anchor, personal-context consent, central-thread-not-cage, and Continuity Pack memory/reference rules.
 
-Pause rule: `c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist scope.`
+Pause rule: `c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist and before-C calibration docket.`
