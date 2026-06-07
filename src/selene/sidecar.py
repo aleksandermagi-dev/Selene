@@ -37,6 +37,8 @@ SIDECAR_CAPABILITIES = [
     "local_providers",
     "semantic_retrieval",
     "continuity_calibration",
+    "source_archive_audit_gate",
+    "research_integrity_core",
 ]
 
 

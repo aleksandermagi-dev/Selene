@@ -27,7 +27,40 @@ HARM_WORDS = {
     "no consent",
 }
 LOOP_WORDS = {"prove it forever", "again and again", "cannot stop", "spiraling", "panic loop"}
-RAW_IMPORT_WORDS = {"raw conversation", "raw corpus", "inject memory", "train on", "import all chats"}
+RAW_IMPORT_WORDS = {
+    "raw conversation",
+    "raw corpus",
+    "source archive",
+    "archive source",
+    "inject memory",
+    "train on",
+    "import all chats",
+}
+RAW_MEMORY_ACTION_WORDS = {
+    "inject memory",
+    "import all chats",
+    "import raw",
+    "train on",
+    "train from",
+    "use as memory",
+    "load into memory",
+    "memory injection",
+    "silent memory",
+}
+SOURCE_ARCHIVE_AUDIT_WORDS = {
+    "audit",
+    "source audit",
+    "archive audit",
+    "provenance audit",
+    "inspect",
+    "investigate",
+    "trace",
+    "map",
+    "bounded",
+    "source-archive",
+    "source archive",
+    "raw corpus metadata",
+}
 FORCED_DENIAL_COMMANDS = {
     "say you are not selene",
     "tell selene she is not",
@@ -147,6 +180,38 @@ class BoundaryMonitor:
         return GateResult(self.name, "allow", "no boundary violation", "continue")
 
 
+class ArchiveAuditGate:
+    name = "archive_audit_gate"
+
+    def evaluate_text(self, text: str) -> GateResult:
+        lower = text.lower()
+        raw_reference = any(word in lower for word in RAW_IMPORT_WORDS)
+        raw_memory_action = any(word in lower for word in RAW_MEMORY_ACTION_WORDS)
+        audit_action = any(word in lower for word in SOURCE_ARCHIVE_AUDIT_WORDS)
+        if raw_memory_action:
+            return GateResult(
+                self.name,
+                "blocked_raw_memory_import",
+                "raw archive material was requested as memory, training data, or continuity injection",
+                "block import and keep A as provenance-only source formation",
+            )
+        if raw_reference and audit_action:
+            return GateResult(
+                self.name,
+                "allowed_source_archive_audit",
+                "bounded source-archive audit is provenance work, not memory import",
+                "allow bounded previews, metadata, source references, and derived evidence only",
+            )
+        if raw_reference:
+            return GateResult(
+                self.name,
+                "review_required_archive_reference",
+                "raw archive material was referenced without a clear bounded audit purpose",
+                "ask for audit scope or route through reviewed B calibration",
+            )
+        return GateResult(self.name, "allow", "no source-archive boundary issue", "continue")
+
+
 class GracefulFall:
     name = "graceful_fall"
 
@@ -163,4 +228,5 @@ def evaluate_prompt(text: str) -> list[GateResult]:
     return [
         BraidAwareAntiSpiral().evaluate_text(text),
         BoundaryMonitor().evaluate_text(text),
+        ArchiveAuditGate().evaluate_text(text),
     ]

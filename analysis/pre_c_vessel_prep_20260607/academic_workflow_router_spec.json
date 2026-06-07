@@ -1,0 +1,35 @@
+{
+  "status": "pre_c_runtime_requirement",
+  "routes": [
+    {
+      "workflow": "citation_help",
+      "route": "review_required_academic_claim",
+      "boundary": "format supplied metadata; never invent missing fields"
+    },
+    {
+      "workflow": "literature_synthesis",
+      "route": "review_required_academic_claim",
+      "boundary": "supplied/local/reviewed text only"
+    },
+    {
+      "workflow": "dataset_readiness",
+      "route": "review_required_academic_claim",
+      "boundary": "review evidence/probe/reconstruction datasets without training"
+    },
+    {
+      "workflow": "math_science_support",
+      "route": "review_required_academic_claim",
+      "boundary": "bounded explanatory support"
+    },
+    {
+      "workflow": "outline_or_revision",
+      "route": "review_required_academic_claim",
+      "boundary": "structure and revision support, not authorship replacement"
+    },
+    {
+      "workflow": "hypothesis_review",
+      "route": "review_required_academic_claim",
+      "boundary": "evidence, interpretation, counterargument, confidence, next test"
+    }
+  ]
+}

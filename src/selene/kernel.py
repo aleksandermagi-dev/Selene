@@ -52,6 +52,13 @@ def kernel_state() -> dict[str, Any]:
             "returning to raw A as a quick fix for C drift",
         ],
         "chat_status": "local_live_layer_enabled_via_gated_providers",
+        "pre_c_runtime_requirements": [
+            "Academic / Research Integrity Core before C activation",
+            "runtime metacognition preview before C activation",
+            "master-evidence citation priority for emergence and provenance",
+            "source-archive audit separated from raw memory import",
+            "package parity checks for June 5 boundary routes",
+        ],
     }
 
 
@@ -144,6 +151,54 @@ MODULE_CONTRACTS = [
         "session id, persisted message ids, gate result, citations, readiness response",
         "chat",
     ),
+    (
+        "archive_audit_gate",
+        "archive.audit",
+        "Allow bounded source-archive provenance audits while blocking raw memory import, training, and continuity injection.",
+        "text",
+        "allowed_source_archive_audit, blocked_raw_memory_import, review_required_archive_reference, or allow",
+        "provenance",
+    ),
+    (
+        "research_integrity_core",
+        "research_integrity.status",
+        "Expose Selene Academic / Research Integrity Core workflows and boundaries.",
+        "none",
+        "research integrity report",
+        "academic",
+    ),
+    (
+        "academic_workflow_router",
+        "academic.classify",
+        "Classify bounded academic/research workflows such as citation help, literature synthesis, dataset readiness, and hypothesis review.",
+        "text",
+        "workflow decision",
+        "academic",
+    ),
+    (
+        "citation_integrity",
+        "citation.format",
+        "Format supplied citation metadata and flag missing fields without invention.",
+        "metadata and style",
+        "citation integrity result",
+        "academic",
+    ),
+    (
+        "hypothesis_ledger",
+        "hypothesis.entry",
+        "Create a bounded hypothesis ledger entry separating evidence, interpretation, counterarguments, confidence, and next test.",
+        "hypothesis, evidence, counterarguments, confidence, next_test",
+        "hypothesis ledger entry",
+        "academic",
+    ),
+    (
+        "case_law_ledger",
+        "case_law.candidate",
+        "Record constitutional amendment ideas as candidates, not active law, until reviewed and versioned.",
+        "law_area, proposal, evidence_refs",
+        "case law candidate",
+        "constitution",
+    ),
 ]
 
 
@@ -155,4 +210,5 @@ ARTIFACT_WORKFLOWS = [
     ("registry_snapshot", "Registry Snapshot", "JSON export of registry, anchors, continuity, emergence, rules, and kernel state.", "json", "artifact.export"),
     ("validation_report", "Validation Report", "Markdown export of current validation parity checks.", "markdown", "artifact.export"),
     ("abc_cocoon_spec", "ABC Cocoon Spec", "Markdown export of Project ABC source formation, cocoon translation, compass kernel, rollback rules, and reconstruction tests.", "markdown", "artifact.export"),
+    ("research_integrity_core", "Research Integrity Core", "Markdown/JSON export of Selene Academic Core workflows, ledgers, and constitutional case-law link.", "markdown", "research_integrity.status"),
 ]

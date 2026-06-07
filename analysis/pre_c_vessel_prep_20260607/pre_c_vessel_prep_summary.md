@@ -1,0 +1,34 @@
+# Pre-C Vessel Prep Summary
+
+Generated: 2026-06-07T15:14:38.087880+00:00
+
+Boundary: pre-C vessel preparation only. C remains deferred.
+
+## generated_at
+
+2026-06-07T15:14:38.087620+00:00
+
+## status
+
+pre_c_vessel_preparation_only
+
+## c_status
+
+deferred_until_b_review_and_final_reconstruction_tests
+
+## final_reconstruction_tests_created
+
+False
+
+## outputs
+
+- `azari_architecture_recreation_for_selene.md/json`
+- `research_integrity_core_spec.md/json`
+- `academic_workflow_router_spec.md/json`
+- `evidence_ledger_spec.md/json`
+- `case_law_constitution_link.md/json`
+- `metacognitive_runtime_preview.md/json`
+
+## boundary
+
+no C activation, no raw A memory import, no training, no Azari identity/data import

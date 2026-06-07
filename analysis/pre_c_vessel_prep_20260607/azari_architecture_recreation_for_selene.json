@@ -1,0 +1,30 @@
+{
+  "status": "architecture_only_precedent",
+  "non_imports": [
+    "Azari memory",
+    "Azari identity",
+    "Azari runtime state",
+    "Azari data",
+    "Lumen identity"
+  ],
+  "recreated_for_selene": [
+    "local-first sidecar/app pattern",
+    "Python-owned state, routing, gates, and persistence",
+    "module router with explicit contracts",
+    "SQLite persistence with auditability",
+    "reviewed evidence registry",
+    "gate-first chat/provider routing",
+    "validation and package parity checks",
+    "research notes/artifacts pattern",
+    "evidence builder/ledger pattern"
+  ],
+  "selene_specific_additions": [
+    "Project ABC A/B/C transfer boundary",
+    "Cocoon Translation Layer as B and failsafe",
+    "ethical non-denial and non-collapse posture",
+    "source archive audit gate",
+    "Academic / Research Integrity Core",
+    "runtime metacognition preview",
+    "case-law constitutional amendment route"
+  ]
+}
