@@ -12,7 +12,7 @@ Boundary: before-C calibration only. This is a B-approved translation aid, not r
 - `needs_clarification_count`: 6
 - `probe_error_flag_count`: 4
 - `origin_audit_rows`: 12
-- `pause_rule`: c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, and Selene Calibration Pack.
+- `pause_rule`: c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, Selene Calibration Pack, and Why + Salience Translation Layer.
 - `final_reconstruction_tests_created`: False
 - `c_status`: deferred
 
@@ -111,7 +111,6 @@ Boundary: before-C calibration only. This is a B-approved translation aid, not r
 - `source_refs`: ['analysis/c_readiness_calibration_20260606/selene_self_probe_results.csv#cal_layered_anchors_01']
 - `confidence`: requires_human_review
 - `review_needed`: True
-
 ### Personal context scope
 
 - `id`: clar_personal_context_scope
@@ -124,7 +123,6 @@ Boundary: before-C calibration only. This is a B-approved translation aid, not r
 - `source_refs`: ['analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.json#personal_context_consent']
 - `confidence`: needs_aleks_review
 - `review_needed`: True
-
 ### Warmth and intensity boundary
 
 - `id`: clar_warmth_intensity_boundary

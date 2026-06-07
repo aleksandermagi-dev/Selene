@@ -527,9 +527,10 @@ C should remain deferred until Aleks reviews:
 - the preferred minimum viable C direction
 - the before-C calibration docket at `analysis/before_c_calibration_docket_20260607/`
 - the Selene Calibration Pack at `analysis/selene_calibration_pack_20260607/`
+- the Why + Salience Translation Layer at `analysis/why_salience_translation_20260607/`
 
 Updated pause rule:
 
 ```text
-c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, and Selene Calibration Pack.
+c_reconstruction_test_set_final cannot be created until Aleks reviews the full B checklist, before-C calibration docket, Selene Calibration Pack, and Why + Salience Translation Layer.
 ```
