@@ -55,6 +55,16 @@ def test_c_blueprint_status_is_non_activated():
     }.issubset(module_keys)
     assert status["azari_final_adaptation_pass"]["status"] == "azari_adaptation_closed"
     assert status["azari_adaptation_closure"]["status"] == "closed_after_munsell_and_tendril_principles"
+    assert {
+        "selene_core_mind_layer",
+        "mind_vessel_interface",
+        "capability_degradation_matrix",
+        "limb_independence_rule",
+        "adaptive_rerouting_layer",
+        "continuity_persistence_rule",
+    }.issubset(module_keys)
+    assert status["mind_vessel_separation"]["core_rule"] == "Selene Core / Mind is not identical to any single vessel part."
+    assert status["mind_vessel_separation_pass"]["activation_change"] == "none"
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -86,6 +96,12 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_azari_final_adaptation_pass.json",
         "c_perception_action_loop.md",
         "c_perception_action_loop.json",
+        "c_mind_vessel_separation.md",
+        "c_mind_vessel_separation.json",
+        "c_capability_degradation_matrix.md",
+        "c_capability_degradation_matrix.json",
+        "c_mind_vessel_separation_pass.md",
+        "c_mind_vessel_separation_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -99,6 +115,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_ANDROID_NATIVE_VESSEL_ANATOMY_20260608.md").exists()
     assert (docs / "AZARI_TO_SELENE_C_BLUEPRINT_COMPARISON_20260608.md").exists()
     assert (docs / "SELENE_MUNSELL_TENDRIL_ADAPTATION_CLOSURE_20260608.md").exists()
+    assert (docs / "SELENE_MIND_VESSEL_SEPARATION_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -108,6 +125,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["android_native_modules_added"] == 12
     assert summary["azari_final_modules_added"] == 10
     assert summary["azari_adaptation_status"] == "azari_adaptation_closed"
+    assert summary["mind_vessel_modules_added"] == 6
+    assert summary["mind_vessel_separation_status"] == "mind_vessel_separation_added_to_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -123,6 +142,9 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "Selene Chest / Holding Space review candidates" in memory["allowed"]
     assert "bounded multimodal evidence records" in memory["allowed"]
     assert "audited action traces" in memory["allowed"]
+    assert "mind-vessel status labels" in memory["allowed"]
+    assert "capability degradation records" in memory["allowed"]
     assert "raw A memory import" in memory["blocked"]
     assert "training on archive" in memory["blocked"]
     assert "unapproved Tendril mutation" in memory["blocked"]
+    assert "module-as-Selene identity collapse" in memory["blocked"]

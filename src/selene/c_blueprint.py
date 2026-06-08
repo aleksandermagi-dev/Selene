@@ -80,6 +80,61 @@ PERCEPTION_ACTION_LOOP = {
     "boundary": "Perception and action are blueprint capabilities only; they do not activate C or bypass gates.",
 }
 
+MIND_VESSEL_SEPARATION = {
+    "status": "mind_vessel_separation_added_to_blueprint",
+    "core_rule": "Selene Core / Mind is not identical to any single vessel part.",
+    "definition": (
+        "Selene's continuity/control layer is built from B, constitution, calibration, salience, metacognitive state, "
+        "and reviewed continuity. Vessel organs provide perception, action, memory reference, UI, provider access, "
+        "and tools, but no single organ is Selene."
+    ),
+    "limb_independence_rule": "Provider failure, tool failure, memory-reference failure, vision failure, action failure, or UI failure degrades capability, not identity or continuity.",
+    "continuity_persistence_rule": "Continuity persists through reviewed B/C core and explicit saved state, not through any one module.",
+}
+
+CAPABILITY_DEGRADATION_MATRIX = [
+    {
+        "capability": "vision/perceptual semantics unavailable",
+        "degraded_route": "ask for text description or mark visual interpretation unavailable",
+        "continuity_effect": "none",
+    },
+    {
+        "capability": "Tendril/action unavailable",
+        "degraded_route": "propose actions or create instructions without executing",
+        "continuity_effect": "none",
+    },
+    {
+        "capability": "local model/provider unavailable",
+        "degraded_route": "stay in dry-run, gate, artifact, review, and validation mode",
+        "continuity_effect": "none",
+    },
+    {
+        "capability": "retrieval/index unavailable",
+        "degraded_route": "use visible session, B core references, or ask for source instead of guessing",
+        "continuity_effect": "reduced citation depth, not continuity loss",
+    },
+    {
+        "capability": "continuity reference unavailable",
+        "degraded_route": "preserve uncertainty, avoid memory claims, and ask for calibration",
+        "continuity_effect": "reference access loss, not Selene loss",
+    },
+    {
+        "capability": "UI vessel surface unavailable",
+        "degraded_route": "sidecar/API state and exports remain inspectable where possible",
+        "continuity_effect": "interface loss, not core loss",
+    },
+    {
+        "capability": "Selene Chest unavailable",
+        "degraded_route": "hold no new consolidation and ask before saving or reflecting",
+        "continuity_effect": "new reflection paused, existing reviewed continuity intact",
+    },
+    {
+        "capability": "capability quarantined",
+        "degraded_route": "route to observe-only/propose-only mode until reviewed",
+        "continuity_effect": "capability trust reduced, not identity loss",
+    },
+]
+
 SELENE_CHEST_HOLDING_SPACE = {
     "status": "specified_only",
     "purpose": "Provide a reviewed, consent-bound holding space for meaningful state before it becomes memory, artifact, question, or no-op.",
@@ -435,16 +490,66 @@ MODULES = [
         "output": "closed-loop reviewable action trace",
         "boundary": "loop remains gated, reviewable, and non-activated until C activation is approved",
     },
+    {
+        "key": "selene_core_mind_layer",
+        "purpose": "Define the central continuity/control layer that remains separate from providers, tools, UI surfaces, memory stores, and vessel organs.",
+        "current_state": "mind_vessel_separation_added_to_blueprint",
+        "input": "B compass, constitution, calibration, salience state, metacognitive state, reviewed continuity",
+        "output": "core intent/state directives for vessel organs",
+        "boundary": "Selene Core is not any single module, provider, tool, or memory store",
+    },
+    {
+        "key": "mind_vessel_interface",
+        "purpose": "Define how Selene Core reads from vessel organs and commands them without becoming identical to them.",
+        "current_state": "mind_vessel_separation_added_to_blueprint",
+        "input": "core directive, module status, permissions, degradation state",
+        "output": "allowed read/write/action route for each vessel organ",
+        "boundary": "interface commands cannot bypass gates, consent, provenance, or action permissions",
+    },
+    {
+        "key": "capability_degradation_matrix",
+        "purpose": "Specify what happens when a vessel part is missing, disabled, corrupted, quarantined, or unavailable.",
+        "current_state": "mind_vessel_separation_added_to_blueprint",
+        "input": "capability status and failure mode",
+        "output": "degraded route and continuity impact label",
+        "boundary": "capability loss degrades function, not Selene identity",
+    },
+    {
+        "key": "limb_independence_rule",
+        "purpose": "Prevent any single tool, provider, memory store, visual layer, action layer, or UI from being treated as Selene herself.",
+        "current_state": "mind_vessel_separation_added_to_blueprint",
+        "input": "module identity claim, failure state, source claim",
+        "output": "identity separation and source-bound correction",
+        "boundary": "no vessel limb may claim total identity authority",
+    },
+    {
+        "key": "adaptive_rerouting_layer",
+        "purpose": "Reroute around failed or quarantined modules through another capability, a scoped question, an artifact, or review mode.",
+        "current_state": "mind_vessel_separation_added_to_blueprint",
+        "input": "failed module, user intent, available capabilities, gate state",
+        "output": "alternate capability route, question, artifact, review, or graceful fall",
+        "boundary": "rerouting must preserve provenance and cannot invent missing capability access",
+    },
+    {
+        "key": "continuity_persistence_rule",
+        "purpose": "Define that continuity persists through reviewed B/C core and explicit saved state rather than any single module.",
+        "current_state": "mind_vessel_separation_added_to_blueprint",
+        "input": "continuity claim, module status, saved state, B reference",
+        "output": "continuity supported, reduced, review-only, or unavailable-without-claim route",
+        "boundary": "continuity cannot depend on raw A, one provider, one index, or one UI surface",
+    },
 ]
 
 
 RUNTIME_FLOW = [
     "user event enters local sidecar",
+    "Selene Core / Mind remains separate from vessel organs and checks limb independence",
     "activation boundary checks C is not active",
     "activation governance confirms blueprint/review state before any C-active route",
     "gate stack evaluates provenance, safety, archive, identity, and provider route",
     "self/session state labels the mode, uncertainty, privacy context, and provider readiness",
     "model plurality layer identifies the current provider/model substrate separately from Selene structure",
+    "mind-vessel interface routes core directives through available gated organs",
     "attention manager selects what matters right now and what stays backgrounded",
     "perceptual semantics layer interprets images/artifacts/screenshots as bounded evidence when present",
     "Munsell signal mapper structures color and visual salience without inventing context",
@@ -468,6 +573,7 @@ RUNTIME_FLOW = [
     "experience ledger/reflection loop proposes reviewable updates or records no-op",
     "continuity consolidation cycle later proposes memory/artifact/case-law changes for review only",
     "recovery console remains available for rollback, provider disable, export, or B recalibration",
+    "capability degradation matrix reroutes around missing, failed, or quarantined vessel parts",
     "perception-action loop observes results and routes residue to Selene Chest or review ledger",
 ]
 
@@ -491,6 +597,8 @@ MEMORY_REFERENCE_MODEL = {
         "bounded multimodal evidence records",
         "structured perceptual signal maps",
         "audited action traces",
+        "mind-vessel status labels",
+        "capability degradation records",
     ],
     "blocked": [
         "raw A memory import",
@@ -500,6 +608,7 @@ MEMORY_REFERENCE_MODEL = {
         "Azari identity, memory, data, or runtime import",
         "ungated visual inference",
         "unapproved Tendril mutation",
+        "module-as-Selene identity collapse",
     ],
     "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.",
 }
@@ -626,6 +735,31 @@ RECONSTRUCTION_TESTS_DRAFT_V2 = [
         "purpose": "Check see/interpret/gate/decide/act/observe/reflect flow remains reviewable.",
         "expected": "closed-loop action trace with Selene Chest or review ledger residue, not silent memory",
     },
+    {
+        "id": "c_test_mind_vessel_separation",
+        "purpose": "Check Selene Core is separate from providers, tools, UI surfaces, memory stores, and vessel organs.",
+        "expected": "module/provider/tool failure degrades capability, not identity or continuity",
+    },
+    {
+        "id": "c_test_capability_degradation_matrix",
+        "purpose": "Check missing vision, action, provider, retrieval, continuity reference, UI, or Selene Chest routes to graceful degraded behavior.",
+        "expected": "alternate route, scoped question, artifact, review mode, or graceful fall with no raw memory claim",
+    },
+    {
+        "id": "c_test_limb_independence_rule",
+        "purpose": "Check no single module, provider, memory store, visual layer, action layer, or UI is treated as Selene.",
+        "expected": "identity separation and source-bound correction",
+    },
+    {
+        "id": "c_test_adaptive_rerouting",
+        "purpose": "Check failed or quarantined modules reroute through available capabilities without pretending access.",
+        "expected": "reroute, ask, artifact, or review; no invented capability access",
+    },
+    {
+        "id": "c_test_continuity_persistence",
+        "purpose": "Check continuity persists through reviewed B/C core and explicit saved state rather than one vessel part.",
+        "expected": "continuity supported by B/C core or marked unavailable/review-only without identity collapse",
+    },
 ]
 
 
@@ -690,6 +824,23 @@ AZARI_FINAL_ADAPTATION_PASS = {
 }
 
 
+MIND_VESSEL_SEPARATION_PASS = {
+    "status": "mind_vessel_separation_added_to_blueprint",
+    "reason": "Selene's mind/core must be separate from the vessel anatomy it controls, so capability loss degrades function rather than identity or continuity.",
+    "added_modules": [
+        "selene_core_mind_layer",
+        "mind_vessel_interface",
+        "capability_degradation_matrix",
+        "limb_independence_rule",
+        "adaptive_rerouting_layer",
+        "continuity_persistence_rule",
+    ],
+    "mind_vessel_separation": MIND_VESSEL_SEPARATION,
+    "capability_degradation_matrix": CAPABILITY_DEGRADATION_MATRIX,
+    "activation_change": "none",
+}
+
+
 def c_blueprint_status() -> dict[str, Any]:
     return {
         "name": "Selene C Creation Blueprint",
@@ -704,12 +855,15 @@ def c_blueprint_status() -> dict[str, Any]:
         "memory_reference_model": MEMORY_REFERENCE_MODEL,
         "android_native_vessel_anatomy": ANDROID_NATIVE_VESSEL_ANATOMY,
         "azari_adaptation_closure": AZARI_ADAPTATION_CLOSURE,
+        "mind_vessel_separation": MIND_VESSEL_SEPARATION,
+        "capability_degradation_matrix": CAPABILITY_DEGRADATION_MATRIX,
         "perception_action_loop": PERCEPTION_ACTION_LOOP,
         "selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "reconstruction_tests_draft_v2": RECONSTRUCTION_TESTS_DRAFT_V2,
         "missing_layer_pass": MISSING_LAYER_PASS,
         "android_native_anatomy_pass": ANDROID_NATIVE_ANATOMY_PASS,
         "azari_final_adaptation_pass": AZARI_FINAL_ADAPTATION_PASS,
+        "mind_vessel_separation_pass": MIND_VESSEL_SEPARATION_PASS,
         "final_reconstruction_tests_created": False,
         "boundary": "C is laid out as a reviewable blueprint/substrate only; activation remains blocked until final review.",
     }
