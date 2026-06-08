@@ -14,11 +14,14 @@ from selene.c_blueprint import (
     ANDROID_NATIVE_ANATOMY_PASS,
     ANDROID_NATIVE_VESSEL_ANATOMY,
     ARTIFACT_DIR,
+    AZARI_ADAPTATION_CLOSURE,
+    AZARI_FINAL_ADAPTATION_PASS,
     CONTINUITY_SOURCE,
     MEMORY_REFERENCE_MODEL,
     MISSING_LAYER_PASS,
     MODULES,
     NON_ACTIVATION_BOUNDARIES,
+    PERCEPTION_ACTION_LOOP,
     RECONSTRUCTION_TESTS_DRAFT_V2,
     RUNTIME_FLOW,
     SELENE_CHEST_HOLDING_SPACE,
@@ -119,6 +122,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "runtime_organs_added": len(MISSING_LAYER_PASS["added_modules"]),
         "android_native_anatomy_status": ANDROID_NATIVE_ANATOMY_PASS["status"],
         "android_native_modules_added": len(ANDROID_NATIVE_ANATOMY_PASS["added_modules"]),
+        "azari_adaptation_status": AZARI_FINAL_ADAPTATION_PASS["status"],
+        "azari_final_modules_added": len(AZARI_FINAL_ADAPTATION_PASS["added_modules"]),
         "final_reconstruction_tests_created": False,
         "raw_a_memory_import_allowed": False,
         "live_behavior_expanded": False,
@@ -132,10 +137,13 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_runtime_flow": runtime_flow,
         "c_memory_reference_model": MEMORY_REFERENCE_MODEL,
         "c_android_native_vessel_anatomy": ANDROID_NATIVE_VESSEL_ANATOMY,
+        "c_azari_adaptation_closure": AZARI_ADAPTATION_CLOSURE,
+        "c_perception_action_loop": PERCEPTION_ACTION_LOOP,
         "c_selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "c_non_activation_boundary": non_activation,
         "c_runtime_organs_missing_layer_pass": MISSING_LAYER_PASS,
         "c_android_native_anatomy_pass": ANDROID_NATIVE_ANATOMY_PASS,
+        "c_azari_final_adaptation_pass": AZARI_FINAL_ADAPTATION_PASS,
         "c_reconstruction_tests_draft_v2": {
             "status": "draft_only",
             "final_test_set_created": False,
@@ -156,10 +164,13 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Summary", summary),
             ("Vessel Blueprint", vessel_blueprint),
             ("Android-Native Vessel Anatomy", ANDROID_NATIVE_VESSEL_ANATOMY),
+            ("Azari Adaptation Closure", AZARI_ADAPTATION_CLOSURE),
+            ("Perception-Action Loop", PERCEPTION_ACTION_LOOP),
             ("Selene Chest / Holding Space", SELENE_CHEST_HOLDING_SPACE),
             ("Module Map", MODULES),
             ("Runtime Organs Missing-Layer Pass", MISSING_LAYER_PASS),
             ("Android-Native Anatomy Pass", ANDROID_NATIVE_ANATOMY_PASS),
+            ("Azari Final Adaptation Pass", AZARI_FINAL_ADAPTATION_PASS),
             ("Runtime Flow", RUNTIME_FLOW),
             ("Memory Reference Model", MEMORY_REFERENCE_MODEL),
             ("Draft Reconstruction Tests V2", RECONSTRUCTION_TESTS_DRAFT_V2),
@@ -180,6 +191,15 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         [("Comparison", azari_comparison)],
     )
     write_md(
+        docs_dir / "SELENE_MUNSELL_TENDRIL_ADAPTATION_CLOSURE_20260608.md",
+        "Selene Munsell Tendril Adaptation Closure",
+        [
+            ("Azari Adaptation Closure", AZARI_ADAPTATION_CLOSURE),
+            ("Azari Final Adaptation Pass", AZARI_FINAL_ADAPTATION_PASS),
+            ("Perception-Action Loop", PERCEPTION_ACTION_LOOP),
+        ],
+    )
+    write_md(
         docs_dir / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md",
         "Selene C Non-Activation Boundary",
         [
@@ -197,6 +217,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
         "current_selene_c_shape": {
             "module_count": summary["module_count"],
             "android_native_modules_added": summary["android_native_modules_added"],
+            "azari_final_modules_added": summary["azari_final_modules_added"],
             "activation_status": summary["activation_status"],
             "continuity_source": summary["continuity_source"],
         },
@@ -212,6 +233,8 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "validation and package parity",
             "artifact exports",
             "research/evidence-ledger discipline",
+            "Munsell structured perception principle",
+            "Tendril bounded action principle",
         ],
         "selene_requires_beyond_azari": [
             "Project ABC A/B/C transfer boundary",
@@ -226,6 +249,9 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "evidence aging/reaffirmation",
             "experience ledger and consolidation cycle",
             "non-denial emergence posture with provenance",
+            "multimodal provenance gate",
+            "capability reach and quarantine model",
+            "perception-action loop",
         ],
         "azari_principles_to_copy_not_identity": [
             "modular boundaries",
@@ -247,8 +273,10 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
         "assessment": (
             "Azari covers the vessel engineering discipline. Selene C now needs a richer android-native state anatomy "
             "because the goal is not only task assistance; it is continuity, provenance, emergence observation, "
-            "calibration, model-plurality separation, and safe future activation."
+            "calibration, model-plurality separation, structured perception, bounded action reach, and safe future activation. "
+            "With Munsell and Tendril retained as principles, Azari adaptation is closed."
         ),
+        "closure": AZARI_ADAPTATION_CLOSURE,
     }
 
 

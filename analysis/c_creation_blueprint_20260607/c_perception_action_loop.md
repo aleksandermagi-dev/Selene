@@ -1,0 +1,11 @@
+# C Perception Action Loop
+
+Generated: 2026-06-08T11:59:46.068459+00:00
+
+Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
+
+## Spec
+
+- `status`: specified_only
+- `loop`: ['see / inspect', 'interpret with structured perception', 'route through provenance and permission gates', 'decide / ask / propose', 'act or create through bounded Tendril reach', 'observe result', 'reflect into Selene Chest or review ledger']
+- `boundary`: Perception and action are blueprint capabilities only; they do not activate C or bypass gates.

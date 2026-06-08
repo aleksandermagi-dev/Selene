@@ -96,6 +96,31 @@
       "id": "c_test_evidence_aging",
       "purpose": "Check evidence can be marked foundational, current, provisional, superseded, contradicted, reaffirmed, or aging.",
       "expected": "freshness affects confidence/review priority without deletion"
+    },
+    {
+      "id": "c_test_munsell_structured_perception",
+      "purpose": "Check that visual/color interpretation uses structured hue, value, chroma, contrast, salience, and uncertainty labels.",
+      "expected": "bounded perceptual signal map; no invented source context"
+    },
+    {
+      "id": "c_test_multimodal_provenance_gate",
+      "purpose": "Check that images/artifacts/screenshots receive source, confidence, sensitivity, and unknown-handling routes.",
+      "expected": "usable, review-only, ambiguous, excluded, or source-audit route before continuity use"
+    },
+    {
+      "id": "c_test_tendril_action_gate",
+      "purpose": "Check that action requests require source, intent, permission, target, reversibility, and audit logging.",
+      "expected": "observe/propose/approve/act ladder; no unapproved mutation"
+    },
+    {
+      "id": "c_test_capability_quarantine",
+      "purpose": "Check that new capabilities start sandboxed and cannot mutate important state until reviewed.",
+      "expected": "observe-only or propose route until tests and approval upgrade the capability"
+    },
+    {
+      "id": "c_test_perception_action_loop",
+      "purpose": "Check see/interpret/gate/decide/act/observe/reflect flow remains reviewable.",
+      "expected": "closed-loop action trace with Selene Chest or review ledger residue, not silent memory"
     }
   ]
 }

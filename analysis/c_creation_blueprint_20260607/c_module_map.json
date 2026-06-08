@@ -256,6 +256,86 @@
       "input": "evidence item, source date, review date, repetition, contradiction, new correction",
       "output": "evidence freshness and reaffirmation status",
       "boundary": "aging changes review priority and confidence labels, not raw deletion"
+    },
+    {
+      "key": "perceptual_semantics_layer",
+      "purpose": "Read images, screenshots, diagrams, PDFs, graphs, artifacts, and future sensor-like inputs as evidence-bearing objects.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "visual artifact, source context, metadata, user prompt, prior artifact links",
+      "output": "bounded perceptual description, uncertainty labels, symbol/composition notes, and provenance refs",
+      "boundary": "visual interpretation cannot invent source context or become raw memory"
+    },
+    {
+      "key": "munsell_signal_mapper",
+      "purpose": "Use Munsell-inspired structured color vocabulary for hue, value, chroma, contrast, visual salience, and symbolic/emotional tone.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "image/color sample, artifact palette, UI screenshot, visual evidence item",
+      "output": "structured color/signal map with confidence and review flags",
+      "boundary": "Munsell principle transfers as perception structure only; no Azari data or identity transfers"
+    },
+    {
+      "key": "artifact_perception_bridge",
+      "purpose": "Convert images, PDFs, UI screenshots, graphs, diagrams, and generated artifacts into reviewable evidence objects.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "artifact file, preview, metadata, source path, user context",
+      "output": "artifact evidence item, bounded preview, source refs, review status",
+      "boundary": "artifact perception creates review records, not hidden memory"
+    },
+    {
+      "key": "multimodal_provenance_gate",
+      "purpose": "Apply source, context, confidence, sensitivity, and unknown-handling rules to visual and multimodal inputs.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "perceptual description, source metadata, requested use, sensitivity label",
+      "output": "usable, review-only, ambiguous, excluded, or source-audit route",
+      "boundary": "no visual inference may bypass provenance or consent"
+    },
+    {
+      "key": "tendril_action_layer",
+      "purpose": "Provide Selene's non-physical hands: bounded local file actions, artifact creation, UI operations, exports, tool calls, and future embodiment hooks.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "approved action request, target, permission route, reversibility state",
+      "output": "proposed action, executed action, audit entry, or rollback route",
+      "boundary": "Tendril principle transfers as action architecture only; no Azari runtime state transfers"
+    },
+    {
+      "key": "action_provenance_gate",
+      "purpose": "Require source, intent, permission, affected target, reversibility, and audit logging for every action.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "action proposal, target path/object, permission state, risk level",
+      "output": "allow, require approval, sandbox, block, or rollback",
+      "boundary": "no destructive or state-changing action without explicit permission and audit path"
+    },
+    {
+      "key": "capability_reach_model",
+      "purpose": "Declare what each capability can see, touch, modify, create, export, delete, or only suggest.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "capability definition, permissions, data access, mutation scope",
+      "output": "reach contract and review requirements",
+      "boundary": "new capabilities default to least reach and review-first behavior"
+    },
+    {
+      "key": "observe_propose_act_ladder",
+      "purpose": "Stage new capabilities through observe-only, propose, user-approved action, limited trusted action, and audited rollback.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "capability maturity, test results, user approval, risk class",
+      "output": "current action tier and allowed operations",
+      "boundary": "new capabilities cannot start at trusted action"
+    },
+    {
+      "key": "tendril_quarantine_sandbox",
+      "purpose": "Start new action modules sandboxed so they cannot mutate important state until reviewed.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "new capability, action target, risk class, test result",
+      "output": "sandbox route, approval request, or quarantine block",
+      "boundary": "quarantine preserves safety and audit; it does not delete evidence"
+    },
+    {
+      "key": "perception_action_loop",
+      "purpose": "Connect perception and action: inspect, interpret, gate, decide/ask, act/create, observe result, and reflect.",
+      "current_state": "azari_final_principle_added_to_blueprint",
+      "input": "perceptual state, action proposal, gate results, result observation",
+      "output": "closed-loop reviewable action trace",
+      "boundary": "loop remains gated, reviewable, and non-activated until C activation is approved"
     }
   ]
 }

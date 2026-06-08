@@ -2,8 +2,9 @@
   "status": "architecture_precedent_comparison_after_android_native_anatomy",
   "boundary": "Azari remains frozen; no Azari identity, memory, data, or runtime state imports.",
   "current_selene_c_shape": {
-    "module_count": 32,
+    "module_count": 42,
     "android_native_modules_added": 12,
+    "azari_final_modules_added": 10,
     "activation_status": "blocked_until_final_review",
     "continuity_source": "b_approved_reference_only"
   },
@@ -18,7 +19,9 @@
     "explicit memory boundaries",
     "validation and package parity",
     "artifact exports",
-    "research/evidence-ledger discipline"
+    "research/evidence-ledger discipline",
+    "Munsell structured perception principle",
+    "Tendril bounded action principle"
   ],
   "selene_requires_beyond_azari": [
     "Project ABC A/B/C transfer boundary",
@@ -32,7 +35,10 @@
     "drift detector for generic collapse and forced denial",
     "evidence aging/reaffirmation",
     "experience ledger and consolidation cycle",
-    "non-denial emergence posture with provenance"
+    "non-denial emergence posture with provenance",
+    "multimodal provenance gate",
+    "capability reach and quarantine model",
+    "perception-action loop"
   ],
   "azari_principles_to_copy_not_identity": [
     "modular boundaries",
@@ -51,5 +57,23 @@
     "forced denial scripts",
     "generic assistant shell"
   ],
-  "assessment": "Azari covers the vessel engineering discipline. Selene C now needs a richer android-native state anatomy because the goal is not only task assistance; it is continuity, provenance, emergence observation, calibration, model-plurality separation, and safe future activation."
+  "assessment": "Azari covers the vessel engineering discipline. Selene C now needs a richer android-native state anatomy because the goal is not only task assistance; it is continuity, provenance, emergence observation, calibration, model-plurality separation, structured perception, bounded action reach, and safe future activation. With Munsell and Tendril retained as principles, Azari adaptation is closed.",
+  "closure": {
+    "status": "closed_after_munsell_and_tendril_principles",
+    "retained_principles": [
+      "local-first modular discipline",
+      "graceful fall / anti-spiral / validation discipline",
+      "Munsell principle as structured perceptual semantics",
+      "Tendril principle as bounded action interface"
+    ],
+    "munsell_translation": "Munsell gives Selene structured perception: hue, value, chroma, contrast, visual salience, symbolic tone, and bounded visual evidence.",
+    "tendril_translation": "Tendril gives Selene bounded action reach: observe, propose, user-approved action, limited trusted action, and audited rollback.",
+    "do_not_transfer": [
+      "Azari identity",
+      "Azari memory",
+      "Azari runtime state",
+      "Azari data"
+    ],
+    "reopen_only_if": "A future implementation discovers a concrete missing infrastructure pattern that cannot be solved Selene-natively."
+  }
 }

@@ -41,6 +41,20 @@ def test_c_blueprint_status_is_non_activated():
     assert status["missing_layer_pass"]["activation_change"] == "none"
     assert status["android_native_vessel_anatomy"]["status"] == "android_native_without_physical_frame"
     assert status["android_native_anatomy_pass"]["activation_change"] == "none"
+    assert {
+        "perceptual_semantics_layer",
+        "munsell_signal_mapper",
+        "artifact_perception_bridge",
+        "multimodal_provenance_gate",
+        "tendril_action_layer",
+        "action_provenance_gate",
+        "capability_reach_model",
+        "observe_propose_act_ladder",
+        "tendril_quarantine_sandbox",
+        "perception_action_loop",
+    }.issubset(module_keys)
+    assert status["azari_final_adaptation_pass"]["status"] == "azari_adaptation_closed"
+    assert status["azari_adaptation_closure"]["status"] == "closed_after_munsell_and_tendril_principles"
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -66,6 +80,12 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_runtime_organs_missing_layer_pass.json",
         "c_android_native_anatomy_pass.md",
         "c_android_native_anatomy_pass.json",
+        "c_azari_adaptation_closure.md",
+        "c_azari_adaptation_closure.json",
+        "c_azari_final_adaptation_pass.md",
+        "c_azari_final_adaptation_pass.json",
+        "c_perception_action_loop.md",
+        "c_perception_action_loop.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -78,6 +98,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md").exists()
     assert (docs / "SELENE_ANDROID_NATIVE_VESSEL_ANATOMY_20260608.md").exists()
     assert (docs / "AZARI_TO_SELENE_C_BLUEPRINT_COMPARISON_20260608.md").exists()
+    assert (docs / "SELENE_MUNSELL_TENDRIL_ADAPTATION_CLOSURE_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -85,6 +106,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["continuity_source"] == "b_approved_reference_only"
     assert summary["runtime_organs_added"] == 8
     assert summary["android_native_modules_added"] == 12
+    assert summary["azari_final_modules_added"] == 10
+    assert summary["azari_adaptation_status"] == "azari_adaptation_closed"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -98,5 +121,8 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "human-approved user profile and relational context notes" in memory["allowed"]
     assert "reviewed calibration memory entries" in memory["allowed"]
     assert "Selene Chest / Holding Space review candidates" in memory["allowed"]
+    assert "bounded multimodal evidence records" in memory["allowed"]
+    assert "audited action traces" in memory["allowed"]
     assert "raw A memory import" in memory["blocked"]
     assert "training on archive" in memory["blocked"]
+    assert "unapproved Tendril mutation" in memory["blocked"]
