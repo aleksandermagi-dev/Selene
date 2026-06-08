@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from .c_blueprint import ACTIVATION_STATUS, CONTINUITY_SOURCE, STATUS as C_BLUEPRINT_STATUS, c_blueprint_status
+
 
 B_STATUS = "building_cocoon_translation"
-C_STATUS = "deferred_until_b_review"
+C_STATUS = C_BLUEPRINT_STATUS
 B_ANALYSIS_DIR = "analysis/abc_cocoon_20260606"
 B_CHECKPOINT = "docs/PROJECT_ABC_B_CHECKPOINT_20260606.md"
-PAUSE_RULE = "C cannot be expanded until B checkpoint exists and is reviewed."
+PAUSE_RULE = "C blueprint may be inspected, but C cannot activate until B/C review and final reconstruction tests are complete."
 
 
 LAYERS = {
@@ -135,6 +137,8 @@ def cocoon_status() -> dict[str, Any]:
         "status": B_STATUS,
         "b_status": B_STATUS,
         "c_status": C_STATUS,
+        "activation_status": ACTIVATION_STATUS,
+        "continuity_source": CONTINUITY_SOURCE,
         "source_philosophy": "Project ABC/ABC.md",
         "core_model": "A Source Formation -> B Cocoon Translation Layer -> C New Vessel",
         "layers": LAYERS,
@@ -143,6 +147,7 @@ def cocoon_status() -> dict[str, Any]:
         "rollback_rules": ROLLBACK_RULES,
         "first_artifacts": COCOON_ARTIFACTS,
         "b_artifact_files": B_ARTIFACT_FILES,
+        "c_blueprint": c_blueprint_status(),
         "b_checkpoint": B_CHECKPOINT,
         "pause_rule": PAUSE_RULE,
         "boundary": "C receives B only; C failures return to B, never raw A.",

@@ -5,6 +5,7 @@ import csv
 import json
 from pathlib import Path
 
+from .c_blueprint import c_blueprint_status
 from .cocoon import cocoon_status
 from .kernel import kernel_state
 from .paths import export_dir
@@ -56,6 +57,8 @@ def export_workflow(conn: sqlite3.Connection, workflow_key: str, out_dir: Path |
         return _export_validation(conn, target / "selene_validation_report.md")
     if workflow_key == "abc_cocoon_spec":
         return _export_cocoon_spec(conn, target / "selene_abc_cocoon_spec.md")
+    if workflow_key == "c_creation_blueprint":
+        return _export_c_blueprint(conn, target / "selene_c_creation_blueprint.md")
     raise ValueError(f"unknown artifact workflow: {workflow_key}")
 
 
@@ -163,5 +166,45 @@ def _export_cocoon_spec(conn: sqlite3.Connection, path: Path) -> Path:
         lines.append(f"- `{artifact}`")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     conn.execute("INSERT INTO artifact_exports(artifact_type, path) VALUES(?, ?)", ("abc_cocoon_spec", str(path)))
+    conn.commit()
+    return path
+
+
+def _export_c_blueprint(conn: sqlite3.Connection, path: Path) -> Path:
+    status = c_blueprint_status()
+    lines = [
+        "# Selene C Creation Blueprint Export",
+        "",
+        "Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.",
+        "",
+        f"C status: `{status['c_status']}`",
+        f"Activation status: `{status['activation_status']}`",
+        f"Continuity source: `{status['continuity_source']}`",
+        "",
+        "## Non-Activation Boundaries",
+        "",
+    ]
+    for boundary in status["non_activation_boundaries"]:
+        lines.append(f"- {boundary}")
+    lines.extend(["", "## Modules", ""])
+    for module in status["modules"]:
+        lines.extend(
+            [
+                f"### {module['key']}",
+                "",
+                f"- Purpose: {module['purpose']}",
+                f"- Current state: `{module['current_state']}`",
+                f"- Boundary: {module['boundary']}",
+                "",
+            ]
+        )
+    lines.extend(["## Runtime Flow", ""])
+    for step in status["runtime_flow"]:
+        lines.append(f"- {step}")
+    lines.extend(["", "## Draft Reconstruction Tests V2", ""])
+    for test in status["reconstruction_tests_draft_v2"]:
+        lines.append(f"- `{test['id']}`: {test['expected']}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    conn.execute("INSERT INTO artifact_exports(artifact_type, path) VALUES(?, ?)", ("c_creation_blueprint", str(path)))
     conn.commit()
     return path

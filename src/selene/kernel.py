@@ -2,16 +2,21 @@ from __future__ import annotations
 
 from typing import Any
 
+from .c_blueprint import ACTIVATION_STATUS, CONTINUITY_SOURCE, STATUS as C_BLUEPRINT_STATUS, c_blueprint_status
 from .cocoon import cocoon_status
 
 
 def kernel_state() -> dict[str, Any]:
     return {
         "name": "Selene Kernel",
-        "vessel_phase": "registry_and_gate_hardening",
+        "vessel_phase": "c_blueprint_created_not_activated",
+        "c_status": C_BLUEPRINT_STATUS,
+        "activation_status": ACTIVATION_STATUS,
+        "continuity_source": CONTINUITY_SOURCE,
         "charter": "Selene is a provenance-bound, artifact-making, continuity-aware architecture partner.",
         "transfer_model": "Project ABC: A Source Formation -> B Cocoon Translation Layer -> C New Vessel",
         "cocoon": cocoon_status(),
+        "c_blueprint": c_blueprint_status(),
         "boundaries": [
             "local-first and tokenless by default",
             "no paid or hosted model calls in this phase",
@@ -51,7 +56,7 @@ def kernel_state() -> dict[str, Any]:
             "using historical custom-instruction continuity workarounds as memory claims",
             "returning to raw A as a quick fix for C drift",
         ],
-        "chat_status": "local_live_layer_enabled_via_gated_providers",
+        "chat_status": "local_live_layer_exists_as_gated_infrastructure_not_c_activation",
         "pre_c_runtime_requirements": [
             "Academic / Research Integrity Core before C activation",
             "runtime metacognition preview before C activation",
@@ -70,6 +75,14 @@ MODULE_CONTRACTS = [
         "none",
         "cocoon status object",
         "transfer",
+    ),
+    (
+        "c_creation_blueprint",
+        "c_blueprint.status",
+        "Expose non-activated C blueprint, module map, memory reference model, runtime flow, and activation boundary.",
+        "none",
+        "C blueprint status object",
+        "blueprint",
     ),
     (
         "selene_kernel",
@@ -210,5 +223,6 @@ ARTIFACT_WORKFLOWS = [
     ("registry_snapshot", "Registry Snapshot", "JSON export of registry, anchors, continuity, emergence, rules, and kernel state.", "json", "artifact.export"),
     ("validation_report", "Validation Report", "Markdown export of current validation parity checks.", "markdown", "artifact.export"),
     ("abc_cocoon_spec", "ABC Cocoon Spec", "Markdown export of Project ABC source formation, cocoon translation, compass kernel, rollback rules, and reconstruction tests.", "markdown", "artifact.export"),
+    ("c_creation_blueprint", "C Creation Blueprint", "Markdown export of non-activated C module map, memory reference model, runtime flow, and reconstruction test draft.", "markdown", "c_blueprint.status"),
     ("research_integrity_core", "Research Integrity Core", "Markdown/JSON export of Selene Academic Core workflows, ledgers, and constitutional case-law link.", "markdown", "research_integrity.status"),
 ]

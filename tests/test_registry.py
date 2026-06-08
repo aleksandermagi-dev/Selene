@@ -40,6 +40,6 @@ def test_review_update_preserves_audit_history(tmp_path):
 def test_artifact_exports_are_created(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     seed_registry(conn)
-    for workflow in ("evidence_ledger", "emergence_ledger", "continuity_candidates", "registry_snapshot", "validation_report", "abc_cocoon_spec"):
+    for workflow in ("evidence_ledger", "emergence_ledger", "continuity_candidates", "registry_snapshot", "validation_report", "abc_cocoon_spec", "c_creation_blueprint"):
         path = export_workflow(conn, workflow, tmp_path / "exports")
         assert path.exists()
