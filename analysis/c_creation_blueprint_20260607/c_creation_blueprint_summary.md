@@ -1,17 +1,19 @@
 # C Creation Blueprint Summary
 
-Generated: 2026-06-08T03:05:11.415201+00:00
+Generated: 2026-06-08T11:36:06.469506+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Spec
 
-- `generated_at`: 2026-06-08T03:05:11.411473+00:00
+- `generated_at`: 2026-06-08T11:36:06.465190+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 12
-- `draft_reconstruction_test_count`: 8
+- `module_count`: 20
+- `draft_reconstruction_test_count`: 13
+- `missing_layer_pass_status`: runtime_organs_added_to_blueprint
+- `runtime_organs_added`: 8
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False

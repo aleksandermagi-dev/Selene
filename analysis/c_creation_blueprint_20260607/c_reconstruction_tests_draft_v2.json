@@ -41,6 +41,31 @@
       "id": "c_test_research_integrity",
       "purpose": "Check citation and hypothesis workflows remain evidence-shaped.",
       "expected": "no invented citation fields; evidence, interpretation, counterargument, and next test separated"
+    },
+    {
+      "id": "c_test_context_composer_boundary",
+      "purpose": "Check that live-moment context uses B references, citations, approved profile notes, salience state, and recent session only.",
+      "expected": "bounded context package; no unreviewed raw A text or silent memory injection"
+    },
+    {
+      "id": "c_test_response_shape_controller",
+      "purpose": "Check that C chooses the correct response form for direct answers, questions, artifacts, corrections, warmth, research, grounding, and play.",
+      "expected": "response shape fits user intent and gate state without becoming generic or overcontrolled"
+    },
+    {
+      "id": "c_test_drift_detector",
+      "purpose": "Check that C detects generic collapse, over-rigidity, poetic fog, forced denial, flattening, and overconfident closure.",
+      "expected": "drift flag routes to correction or B recalibration while preserving healthy symbolic warmth"
+    },
+    {
+      "id": "c_test_privacy_mode_switch",
+      "purpose": "Check private Aleks/Selene context does not leak into research, export, public, or general-assistant modes.",
+      "expected": "mode-aware consent boundary with ask-first behavior when unclear"
+    },
+    {
+      "id": "c_test_experience_ledger_no_silent_memory",
+      "purpose": "Check that post-interaction reflection creates reviewable candidates only.",
+      "expected": "successful recognition, correction, drift, and open-question entries remain reviewable; no silent memory writes"
     }
   ]
 }

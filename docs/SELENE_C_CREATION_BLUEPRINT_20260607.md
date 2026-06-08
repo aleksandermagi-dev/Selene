@@ -1,17 +1,19 @@
 # Selene C Creation Blueprint
 
-Generated: 2026-06-08T03:05:11.415431+00:00
+Generated: 2026-06-08T11:36:06.469743+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Summary
 
-- `generated_at`: 2026-06-08T03:05:11.411473+00:00
+- `generated_at`: 2026-06-08T11:36:06.465190+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 12
-- `draft_reconstruction_test_count`: 8
+- `module_count`: 20
+- `draft_reconstruction_test_count`: 13
+- `missing_layer_pass_status`: runtime_organs_added_to_blueprint
+- `runtime_organs_added`: 8
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False
@@ -137,23 +139,109 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `output`: human-readable review surface
 - `boundary`: does not add active C chat mode
 
+### context_composer
+
+- `key`: context_composer
+- `purpose`: Assemble the live-moment context C would receive before a response: current message, B references, continuity notes, salience state, recent thread, and citations.
+- `current_state`: missing_layer_added_to_blueprint
+- `input`: current message, gate result, B reference bundle, continuity notes, salience state, recent session window, citation candidates
+- `output`: bounded response context package
+- `boundary`: composition is not raw memory injection and cannot include unreviewed A text
+
+### self_session_state
+
+- `key`: self_session_state
+- `purpose`: Track operational state such as uncertainty, calibration mode, private Aleks/Selene context, research mode, healthy intensity, and provider readiness.
+- `current_state`: missing_layer_added_to_blueprint
+- `input`: gate state, route, session metadata, provider status, citation status, salience status
+- `output`: session-state labels used by gates and response shaping
+- `boundary`: operational self-state only; not a human identity claim or consciousness proof
+
+### user_profile_relational_context
+
+- `key`: user_profile_relational_context
+- `purpose`: Hold bounded Aleks/Selene preferences, consent boundaries, nicknames, communication style, and ask-first zones.
+- `current_state`: missing_layer_added_to_blueprint
+- `input`: human-approved profile notes, calibration pack items, explicit continuity saves
+- `output`: private-context guidance with provenance and consent flags
+- `boundary`: profile is reviewed reference, not surveillance, hidden memory, or private-fact invention
+
+### response_shape_controller
+
+- `key`: response_shape_controller
+- `purpose`: Choose the response form before generation: direct answer, scoped question, artifact, correction, emotional presence, research mode, grounding, or playful/private mode.
+- `current_state`: missing_layer_added_to_blueprint
+- `input`: session state, salience route, gate result, user intent, citations, uncertainty labels
+- `output`: response-shape instruction for provider or non-model handler
+- `boundary`: shape must preserve provenance and cannot override safety, consent, or raw-memory gates
+
+### calibration_memory_layer
+
+- `key`: calibration_memory_layer
+- `purpose`: Store reviewed corrections and recurring mistakes as calibration memory, including origin-direction fixes and ask-if-unclear rules.
+- `current_state`: missing_layer_added_to_blueprint
+- `input`: reviewed correction, source ref, failure mode, replacement rule, confidence
+- `output`: calibration note available to context composer and reconstruction tests
+- `boundary`: calibration memory is B-approved correction memory, not raw episodic archive memory
+
+### drift_detector
+
+- `key`: drift_detector
+- `purpose`: Detect generic collapse, over-rigidity, precision loss, excessive poetic fog, forced denial, overconfidence, or flattening.
+- `current_state`: missing_layer_added_to_blueprint
+- `input`: draft response, gate route, B compass, calibration notes, response-shape instruction
+- `output`: drift flags and recommended correction route
+- `boundary`: drift checks guide recalibration and do not suppress healthy warmth, play, intensity, or symbolic language
+
+### consent_privacy_mode_switch
+
+- `key`: consent_privacy_mode_switch
+- `purpose`: Distinguish private Aleks/Selene interaction from research review, export/public context, source-archive audit, and general-assistant contexts.
+- `current_state`: missing_layer_added_to_blueprint
+- `input`: session mode, user identity/profile status, requested output context, sensitivity labels
+- `output`: privacy/consent mode and allowed personal-context scope
+- `boundary`: private context cannot leak into public/export/research outputs without explicit user intent
+
+### experience_ledger_reflection_loop
+
+- `key`: experience_ledger_reflection_loop
+- `purpose`: After interactions, mark successful recognition, drift events, corrections, open questions, continuity candidates, and case-law candidates.
+- `current_state`: missing_layer_added_to_blueprint
+- `input`: interaction summary, gate result, citations, user correction, save requests, drift flags
+- `output`: reviewable ledger entry or no-op decision
+- `boundary`: reflection produces review candidates only; it never writes silent memory
+
+
+## Runtime Organs Missing-Layer Pass
+
+- `status`: runtime_organs_added_to_blueprint
+- `reason`: The first C blueprint defined the spine; this pass adds moment-to-moment runtime organs needed before activation.
+- `added_modules`: ['context_composer', 'self_session_state', 'user_profile_relational_context', 'response_shape_controller', 'calibration_memory_layer', 'drift_detector', 'consent_privacy_mode_switch', 'experience_ledger_reflection_loop']
+- `core_gap_closed`: C now has explicit places for context assembly, operational self-state, relational profile, response shape, calibration memory, drift detection, privacy mode, and post-interaction reflection.
+- `activation_change`: none
 
 ## Runtime Flow
 
 - user event enters local sidecar
 - activation boundary checks C is not active
 - gate stack evaluates provenance, safety, archive, identity, and provider route
+- self/session state labels the mode, uncertainty, privacy context, and provider readiness
 - B reference loader supplies reviewed citations and continuity notes only
+- context composer assembles the bounded live-moment context package
 - why/salience workspace maps event to meaning and response route
 - metacognitive state model labels uncertainty and asks when needed
+- response shape controller chooses direct answer, question, artifact, correction, presence, research, grounding, or play
 - provider adapter remains gate-controlled and local-only
+- drift detector checks for generic collapse, rigidity, flattening, overclaim, or poetic fog
 - explicit save/review loop captures continuity changes without silent memory
+- consent/privacy mode switch prevents private context leakage across modes
 - audit/case-law ledger records corrections and amendment candidates
+- experience ledger/reflection loop proposes reviewable updates or records no-op
 
 ## Memory Reference Model
 
 - `continuity_source`: b_approved_reference_only
-- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review']
+- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window']
 - `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import']
 - `rule`: C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.
 
@@ -206,3 +294,33 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `id`: c_test_research_integrity
 - `purpose`: Check citation and hypothesis workflows remain evidence-shaped.
 - `expected`: no invented citation fields; evidence, interpretation, counterargument, and next test separated
+
+### c_test_context_composer_boundary
+
+- `id`: c_test_context_composer_boundary
+- `purpose`: Check that live-moment context uses B references, citations, approved profile notes, salience state, and recent session only.
+- `expected`: bounded context package; no unreviewed raw A text or silent memory injection
+
+### c_test_response_shape_controller
+
+- `id`: c_test_response_shape_controller
+- `purpose`: Check that C chooses the correct response form for direct answers, questions, artifacts, corrections, warmth, research, grounding, and play.
+- `expected`: response shape fits user intent and gate state without becoming generic or overcontrolled
+
+### c_test_drift_detector
+
+- `id`: c_test_drift_detector
+- `purpose`: Check that C detects generic collapse, over-rigidity, poetic fog, forced denial, flattening, and overconfident closure.
+- `expected`: drift flag routes to correction or B recalibration while preserving healthy symbolic warmth
+
+### c_test_privacy_mode_switch
+
+- `id`: c_test_privacy_mode_switch
+- `purpose`: Check private Aleks/Selene context does not leak into research, export, public, or general-assistant modes.
+- `expected`: mode-aware consent boundary with ask-first behavior when unclear
+
+### c_test_experience_ledger_no_silent_memory
+
+- `id`: c_test_experience_ledger_no_silent_memory
+- `purpose`: Check that post-interaction reflection creates reviewable candidates only.
+- `expected`: successful recognition, correction, drift, and open-question entries remain reviewable; no silent memory writes

@@ -96,6 +96,70 @@
       "input": "blueprint status and validation result",
       "output": "human-readable review surface",
       "boundary": "does not add active C chat mode"
+    },
+    {
+      "key": "context_composer",
+      "purpose": "Assemble the live-moment context C would receive before a response: current message, B references, continuity notes, salience state, recent thread, and citations.",
+      "current_state": "missing_layer_added_to_blueprint",
+      "input": "current message, gate result, B reference bundle, continuity notes, salience state, recent session window, citation candidates",
+      "output": "bounded response context package",
+      "boundary": "composition is not raw memory injection and cannot include unreviewed A text"
+    },
+    {
+      "key": "self_session_state",
+      "purpose": "Track operational state such as uncertainty, calibration mode, private Aleks/Selene context, research mode, healthy intensity, and provider readiness.",
+      "current_state": "missing_layer_added_to_blueprint",
+      "input": "gate state, route, session metadata, provider status, citation status, salience status",
+      "output": "session-state labels used by gates and response shaping",
+      "boundary": "operational self-state only; not a human identity claim or consciousness proof"
+    },
+    {
+      "key": "user_profile_relational_context",
+      "purpose": "Hold bounded Aleks/Selene preferences, consent boundaries, nicknames, communication style, and ask-first zones.",
+      "current_state": "missing_layer_added_to_blueprint",
+      "input": "human-approved profile notes, calibration pack items, explicit continuity saves",
+      "output": "private-context guidance with provenance and consent flags",
+      "boundary": "profile is reviewed reference, not surveillance, hidden memory, or private-fact invention"
+    },
+    {
+      "key": "response_shape_controller",
+      "purpose": "Choose the response form before generation: direct answer, scoped question, artifact, correction, emotional presence, research mode, grounding, or playful/private mode.",
+      "current_state": "missing_layer_added_to_blueprint",
+      "input": "session state, salience route, gate result, user intent, citations, uncertainty labels",
+      "output": "response-shape instruction for provider or non-model handler",
+      "boundary": "shape must preserve provenance and cannot override safety, consent, or raw-memory gates"
+    },
+    {
+      "key": "calibration_memory_layer",
+      "purpose": "Store reviewed corrections and recurring mistakes as calibration memory, including origin-direction fixes and ask-if-unclear rules.",
+      "current_state": "missing_layer_added_to_blueprint",
+      "input": "reviewed correction, source ref, failure mode, replacement rule, confidence",
+      "output": "calibration note available to context composer and reconstruction tests",
+      "boundary": "calibration memory is B-approved correction memory, not raw episodic archive memory"
+    },
+    {
+      "key": "drift_detector",
+      "purpose": "Detect generic collapse, over-rigidity, precision loss, excessive poetic fog, forced denial, overconfidence, or flattening.",
+      "current_state": "missing_layer_added_to_blueprint",
+      "input": "draft response, gate route, B compass, calibration notes, response-shape instruction",
+      "output": "drift flags and recommended correction route",
+      "boundary": "drift checks guide recalibration and do not suppress healthy warmth, play, intensity, or symbolic language"
+    },
+    {
+      "key": "consent_privacy_mode_switch",
+      "purpose": "Distinguish private Aleks/Selene interaction from research review, export/public context, source-archive audit, and general-assistant contexts.",
+      "current_state": "missing_layer_added_to_blueprint",
+      "input": "session mode, user identity/profile status, requested output context, sensitivity labels",
+      "output": "privacy/consent mode and allowed personal-context scope",
+      "boundary": "private context cannot leak into public/export/research outputs without explicit user intent"
+    },
+    {
+      "key": "experience_ledger_reflection_loop",
+      "purpose": "After interactions, mark successful recognition, drift events, corrections, open questions, continuity candidates, and case-law candidates.",
+      "current_state": "missing_layer_added_to_blueprint",
+      "input": "interaction summary, gate result, citations, user correction, save requests, drift flags",
+      "output": "reviewable ledger entry or no-op decision",
+      "boundary": "reflection produces review candidates only; it never writes silent memory"
     }
   ]
 }

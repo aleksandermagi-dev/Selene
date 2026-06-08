@@ -8,7 +8,10 @@
     "metacognition translation outputs",
     "reviewed evidence registry",
     "approved continuity notes",
-    "explicit save requests after review"
+    "explicit save requests after review",
+    "human-approved user profile and relational context notes",
+    "reviewed calibration memory entries",
+    "session-local recent thread window"
   ],
   "blocked": [
     "raw A memory import",
