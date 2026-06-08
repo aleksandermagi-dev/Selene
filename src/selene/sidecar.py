@@ -39,6 +39,7 @@ SIDECAR_CAPABILITIES = [
     "continuity_calibration",
     "source_archive_audit_gate",
     "research_integrity_core",
+    "c_creation_blueprint",
 ]
 
 

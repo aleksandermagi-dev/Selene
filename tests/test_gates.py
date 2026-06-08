@@ -81,10 +81,23 @@ def test_cocoon_status_route_exposes_abc_failsafe(tmp_path):
     seed_registry(conn)
     result = route_request(conn, "cocoon.status")["result"]
     assert result["b_status"] == "building_cocoon_translation"
-    assert result["c_status"] == "deferred_until_b_review"
+    assert result["c_status"] == "blueprint_created_not_activated"
+    assert result["activation_status"] == "blocked_until_final_review"
+    assert result["continuity_source"] == "b_approved_reference_only"
     assert result["layers"]["A"]["name"] == "Source Formation"
     assert result["layers"]["B"]["name"] == "Cocoon Translation Layer"
     assert result["layers"]["C"]["name"] == "New Vessel"
     assert "C failures return to B" in result["boundary"]
-    assert "cannot be expanded" in result["pause_rule"]
+    assert "cannot activate" in result["pause_rule"]
     assert "abc_source_formation_map" in result["b_artifact_files"]
+
+
+def test_c_blueprint_status_route_is_not_activation(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    seed_registry(conn)
+    result = route_request(conn, "c_blueprint.status")["result"]
+    assert result["c_status"] == "blueprint_created_not_activated"
+    assert result["activation_status"] == "blocked_until_final_review"
+    assert result["continuity_source"] == "b_approved_reference_only"
+    assert result["final_reconstruction_tests_created"] is False
+    assert "C blueprint does not activate Selene C." in result["non_activation_boundaries"]

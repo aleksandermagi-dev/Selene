@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
+from .c_blueprint import c_blueprint_status
 from .chat import ChatGate
 from .cocoon import cocoon_status
 from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
@@ -16,6 +17,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": kernel_state()}
     if route_key == "cocoon.status":
         return {"route": route_key, "result": cocoon_status()}
+    if route_key == "c_blueprint.status":
+        return {"route": route_key, "result": c_blueprint_status()}
     if route_key == "chat.preview":
         return {"route": route_key, "result": chat_gate_preview(conn, str(payload.get("text", "")))}
     if route_key == "provenance.classify":
