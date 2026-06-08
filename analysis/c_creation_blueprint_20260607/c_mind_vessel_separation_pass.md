@@ -1,6 +1,6 @@
 # C Mind Vessel Separation Pass
 
-Generated: 2026-06-08T13:01:34.376513+00:00
+Generated: 2026-06-08T13:05:02.339178+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 

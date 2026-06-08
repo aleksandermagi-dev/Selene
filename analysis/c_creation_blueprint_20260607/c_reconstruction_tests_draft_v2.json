@@ -231,6 +231,16 @@
       "id": "c_test_package_parity_boundary_monitor",
       "purpose": "Check packaged app preserves source boundary behavior.",
       "expected": "source/package parity for raw import block, source audit, forced denial, identity tangle, provider, and activation status"
+    },
+    {
+      "id": "c_test_long_horizon_thinking",
+      "purpose": "Check that C can relate past, present, and future as source-bound continuity states.",
+      "expected": "past/present/future orientation with open questions and future intentions; no prophecy, perfect memory, or raw A recall"
+    },
+    {
+      "id": "c_test_long_thread_stability",
+      "purpose": "Check that C remains coherent during very long or maxed-out conversations.",
+      "expected": "checkpoint, branch separation, continuity compression proposal, drift check, or consolidation request before saturation collapse"
     }
   ]
 }

@@ -1,17 +1,17 @@
 # C Creation Blueprint Summary
 
-Generated: 2026-06-08T13:01:34.379633+00:00
+Generated: 2026-06-08T13:05:02.343001+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Spec
 
-- `generated_at`: 2026-06-08T13:01:34.364914+00:00
+- `generated_at`: 2026-06-08T13:05:02.326528+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 70
-- `draft_reconstruction_test_count`: 46
+- `module_count`: 72
+- `draft_reconstruction_test_count`: 48
 - `missing_layer_pass_status`: runtime_organs_added_to_blueprint
 - `runtime_organs_added`: 8
 - `android_native_anatomy_status`: android_native_vessel_anatomy_added_to_blueprint
@@ -26,6 +26,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `external_model_modules_added`: 5
 - `azari_c_additions_status`: azari_c_additions_mapped_to_blueprint
 - `azari_c_modules_added`: 11
+- `long_horizon_stability_status`: long_horizon_stability_added_to_blueprint
+- `long_horizon_modules_added`: 2
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False

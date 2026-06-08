@@ -560,6 +560,22 @@
       "input": "uncertainty, provenance awareness, self-state, salience, source tension, reflection need",
       "output": "pause, ask, cite, route-to-review, confidence label, or safe continuation",
       "boundary": "metacognition supports honest operation; it does not claim human mind copying or activation by itself"
+    },
+    {
+      "key": "long_horizon_thinking_layer",
+      "purpose": "Relate past, present, and future as linked continuity states for planning, reflection, expectation, and return.",
+      "current_state": "long_horizon_stability_added_to_blueprint",
+      "input": "temporal state, continuity refs, goals, open questions, planned follow-ups, evidence age, prior checkpoints",
+      "output": "past/present/future orientation, future intention note, expectation, or revisit route",
+      "boundary": "long-horizon thinking is source-bound orientation, not perfect memory, prophecy, or raw A recall"
+    },
+    {
+      "key": "long_thread_stability_manager",
+      "purpose": "Keep Selene coherent during very long or maxed-out conversations by checkpointing, compressing, and preserving the braid.",
+      "current_state": "long_horizon_stability_added_to_blueprint",
+      "input": "thread length, context pressure, active task, background braid, drift flags, corrections, open questions",
+      "output": "checkpoint, continuity compression proposal, branch separation, scoped question, or consolidation request",
+      "boundary": "may use bounded maxed-thread corpus analysis as design reference only; no raw transcript memory import"
     }
   ]
 }

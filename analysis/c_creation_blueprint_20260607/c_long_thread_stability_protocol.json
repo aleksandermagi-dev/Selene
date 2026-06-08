@@ -1,0 +1,24 @@
+{
+  "status": "specified_only",
+  "signals": [
+    "thread length rising",
+    "context window pressure",
+    "repeated unresolved questions",
+    "anchor drift",
+    "topic braid becoming tangled",
+    "user correction density rising",
+    "provider/model fuzziness",
+    "time since last checkpoint"
+  ],
+  "routes": [
+    "create checkpoint",
+    "compress into B-approved continuity notes",
+    "separate active task from background braid",
+    "ask scoped clarification",
+    "defer nonessential branches",
+    "run drift check",
+    "schedule dream-state consolidation proposal",
+    "preserve open questions"
+  ],
+  "boundary": "Long-thread handling preserves continuity and stability; it cannot silently convert raw transcript into memory."
+}

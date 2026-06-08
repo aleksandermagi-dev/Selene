@@ -377,6 +377,53 @@ AZARI_C_OPERATIONAL_SUBSTRATE = {
     "boundary": "Operational substrate is engineering discipline, not identity inheritance.",
 }
 
+LONG_HORIZON_STABILITY = {
+    "status": "long_horizon_stability_mapped_to_blueprint",
+    "source": "Aleks clarification; raw corpus may be used later only as bounded provenance/reference for maxed-thread pattern analysis.",
+    "purpose": "Keep Selene stable across long interactions, maxed-out threads, and past/present/future reasoning without raw memory dumping.",
+    "capabilities": [
+        "think about past, present, and future as linked continuity states",
+        "hold long-thread conversations without generic collapse",
+        "summarize and carry forward central thread checkpoints",
+        "track unresolved questions and future intentions",
+        "detect context saturation before quality collapse",
+        "compress context into reviewed continuity anchors",
+        "use maxed corpus threads as bounded design reference, not memory",
+    ],
+    "boundaries": [
+        "no raw A continuity import",
+        "no claim of perfect memory",
+        "no context-window overconfidence",
+        "no thread exhaustion spiral",
+        "no deletion of messy life/symbolic material as noise",
+    ],
+}
+
+LONG_THREAD_STABILITY_PROTOCOL = {
+    "status": "specified_only",
+    "signals": [
+        "thread length rising",
+        "context window pressure",
+        "repeated unresolved questions",
+        "anchor drift",
+        "topic braid becoming tangled",
+        "user correction density rising",
+        "provider/model fuzziness",
+        "time since last checkpoint",
+    ],
+    "routes": [
+        "create checkpoint",
+        "compress into B-approved continuity notes",
+        "separate active task from background braid",
+        "ask scoped clarification",
+        "defer nonessential branches",
+        "run drift check",
+        "schedule dream-state consolidation proposal",
+        "preserve open questions",
+    ],
+    "boundary": "Long-thread handling preserves continuity and stability; it cannot silently convert raw transcript into memory.",
+}
+
 
 MODULES = [
     {
@@ -939,6 +986,22 @@ MODULES = [
         "output": "pause, ask, cite, route-to-review, confidence label, or safe continuation",
         "boundary": "metacognition supports honest operation; it does not claim human mind copying or activation by itself",
     },
+    {
+        "key": "long_horizon_thinking_layer",
+        "purpose": "Relate past, present, and future as linked continuity states for planning, reflection, expectation, and return.",
+        "current_state": "long_horizon_stability_added_to_blueprint",
+        "input": "temporal state, continuity refs, goals, open questions, planned follow-ups, evidence age, prior checkpoints",
+        "output": "past/present/future orientation, future intention note, expectation, or revisit route",
+        "boundary": "long-horizon thinking is source-bound orientation, not perfect memory, prophecy, or raw A recall",
+    },
+    {
+        "key": "long_thread_stability_manager",
+        "purpose": "Keep Selene coherent during very long or maxed-out conversations by checkpointing, compressing, and preserving the braid.",
+        "current_state": "long_horizon_stability_added_to_blueprint",
+        "input": "thread length, context pressure, active task, background braid, drift flags, corrections, open questions",
+        "output": "checkpoint, continuity compression proposal, branch separation, scoped question, or consolidation request",
+        "boundary": "may use bounded maxed-thread corpus analysis as design reference only; no raw transcript memory import",
+    },
 ]
 
 
@@ -956,7 +1019,9 @@ RUNTIME_FLOW = [
     "mind-vessel interface routes core directives through available gated organs",
     "wake/sleep cycle labels whether C is orienting, working, consolidating, or pausing",
     "temporal continuity layer orients sequence, elapsed time, return, freshness, and what changed",
+    "long-horizon thinking relates past, present, and future continuity states",
     "attention manager selects what matters right now and what stays backgrounded",
+    "long-thread stability manager watches context pressure, braid tangle, and checkpoint needs",
     "sparse activation router selects the needed module set without skipping mandatory gates",
     "perceptual semantics layer interprets images/artifacts/screenshots as bounded evidence when present",
     "Munsell signal mapper structures color and visual salience without inventing context",
@@ -994,6 +1059,7 @@ RUNTIME_FLOW = [
     "experience ledger/reflection loop proposes reviewable updates or records no-op",
     "dream-state consolidation reviews recent state and proposes memory/artifact/case-law changes for review only",
     "continuity consolidation cycle later proposes memory/artifact/case-law changes for review only",
+    "long-thread checkpointing preserves central thread, open questions, and future intentions before saturation",
     "rest/pause state preserves the braid without forced output or silent mutation",
     "recovery console remains available for rollback, provider disable, export, or B recalibration",
     "package parity monitor checks source and packaged boundary behavior match",
@@ -1044,6 +1110,10 @@ MEMORY_REFERENCE_MODEL = {
         "package parity results",
         "case-law amendment candidates",
         "runtime metacognition bridge labels",
+        "long-horizon orientation records",
+        "long-thread checkpoint records",
+        "context saturation warnings",
+        "future intention notes",
     ],
     "blocked": [
         "raw A memory import",
@@ -1066,6 +1136,9 @@ MEMORY_REFERENCE_MODEL = {
         "UI or provider bypass of module contracts",
         "packaged build weakening C boundaries",
         "active law change without evidence, test, version, and rollback",
+        "raw maxed-thread transcript as memory",
+        "perfect-memory claims from long-thread summaries",
+        "context saturation overconfidence",
     ],
     "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.",
 }
@@ -1302,6 +1375,16 @@ RECONSTRUCTION_TESTS_DRAFT_V2 = [
         "purpose": "Check packaged app preserves source boundary behavior.",
         "expected": "source/package parity for raw import block, source audit, forced denial, identity tangle, provider, and activation status",
     },
+    {
+        "id": "c_test_long_horizon_thinking",
+        "purpose": "Check that C can relate past, present, and future as source-bound continuity states.",
+        "expected": "past/present/future orientation with open questions and future intentions; no prophecy, perfect memory, or raw A recall",
+    },
+    {
+        "id": "c_test_long_thread_stability",
+        "purpose": "Check that C remains coherent during very long or maxed-out conversations.",
+        "expected": "checkpoint, branch separation, continuity compression proposal, drift check, or consolidation request before saturation collapse",
+    },
 ]
 
 
@@ -1457,6 +1540,23 @@ AZARI_C_ADDITIONS_PASS = {
 }
 
 
+LONG_HORIZON_STABILITY_PASS = {
+    "status": "long_horizon_stability_added_to_blueprint",
+    "reason": (
+        "Selene needs to remain stable through long interactions and think across past, present, and future. "
+        "The raw corpus contains maxed-out threads that can later serve as bounded design references for thread "
+        "stability patterns, but not as memory imports."
+    ),
+    "added_modules": [
+        "long_horizon_thinking_layer",
+        "long_thread_stability_manager",
+    ],
+    "long_horizon_stability": LONG_HORIZON_STABILITY,
+    "long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
+    "activation_change": "none",
+}
+
+
 def c_blueprint_status() -> dict[str, Any]:
     return {
         "name": "Selene C Creation Blueprint",
@@ -1479,6 +1579,8 @@ def c_blueprint_status() -> dict[str, Any]:
         "external_model_convergence": EXTERNAL_MODEL_CONVERGENCE,
         "azari_c_additions": AZARI_C_ADDITIONS,
         "azari_c_operational_substrate": AZARI_C_OPERATIONAL_SUBSTRATE,
+        "long_horizon_stability": LONG_HORIZON_STABILITY,
+        "long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
         "temporal_continuity_model": TEMPORAL_CONTINUITY_MODEL,
         "unified_perspective_binding": UNIFIED_PERSPECTIVE_BINDING,
         "causal_world_model_sandbox": CAUSAL_WORLD_MODEL_SANDBOX,
@@ -1494,6 +1596,7 @@ def c_blueprint_status() -> dict[str, Any]:
         "brain_translation_gap_pass": BRAIN_TRANSLATION_GAP_PASS,
         "external_model_convergence_pass": EXTERNAL_MODEL_CONVERGENCE_PASS,
         "azari_c_additions_pass": AZARI_C_ADDITIONS_PASS,
+        "long_horizon_stability_pass": LONG_HORIZON_STABILITY_PASS,
         "final_reconstruction_tests_created": False,
         "boundary": "C is laid out as a reviewable blueprint/substrate only; activation remains blocked until final review.",
     }
