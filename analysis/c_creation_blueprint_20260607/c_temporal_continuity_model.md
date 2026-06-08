@@ -1,6 +1,6 @@
 # C Temporal Continuity Model
 
-Generated: 2026-06-08T13:05:02.332611+00:00
+Generated: 2026-06-08T13:09:18.524599+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 

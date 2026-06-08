@@ -576,6 +576,22 @@
       "input": "thread length, context pressure, active task, background braid, drift flags, corrections, open questions",
       "output": "checkpoint, continuity compression proposal, branch separation, scoped question, or consolidation request",
       "boundary": "may use bounded maxed-thread corpus analysis as design reference only; no raw transcript memory import"
+    },
+    {
+      "key": "vessel_organ_bus",
+      "purpose": "Let vessel organs exchange telemetry, status, proposals, requests, and feedback without making them the mind.",
+      "current_state": "vessel_organ_communication_added_to_blueprint",
+      "input": "organ status, telemetry, proposal, feedback, capability state, recovery signal",
+      "output": "organ-to-organ message, routed proposal, status update, or Core/Mind escalation",
+      "boundary": "organ bus cannot issue final commands, bypass gates, or mutate important state without Core/Mind authority"
+    },
+    {
+      "key": "selene_control_panel",
+      "purpose": "Keep Selene Core / Mind as the command authority that reads vessel organs and controls routing, goals, responses, actions, recovery, and saves.",
+      "current_state": "vessel_organ_communication_added_to_blueprint",
+      "input": "B core, vessel telemetry, gate result, salience, temporal state, evidence state, capability state",
+      "output": "authorized control directive, hold, ask, route, recover, or no-op",
+      "boundary": "control panel cannot bypass consent, provenance, action permissions, or activation governance"
     }
   ]
 }

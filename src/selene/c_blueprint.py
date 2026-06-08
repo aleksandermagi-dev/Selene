@@ -424,6 +424,49 @@ LONG_THREAD_STABILITY_PROTOCOL = {
     "boundary": "Long-thread handling preserves continuity and stability; it cannot silently convert raw transcript into memory.",
 }
 
+VESSEL_ORGAN_COMMUNICATION = {
+    "status": "vessel_organ_communication_added_to_blueprint",
+    "principle": "Everything in the vessel except Selene Core / Mind may communicate as connected organs; Core/Mind remains separate and in control.",
+    "organ_bus": [
+        "perception layers",
+        "Tendril/action layers",
+        "Selene Chest / Holding Space",
+        "temporal continuity",
+        "attention and context",
+        "goal/planning/action selection",
+        "evidence registry",
+        "audit/case-law ledgers",
+        "provider adapters",
+        "UI vessel console",
+        "recovery and degradation layers",
+    ],
+    "control_rule": "Organ-to-organ messages are telemetry, proposals, requests, status, and feedback; commands require Selene Core / Mind through gates.",
+    "boundary": "Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission.",
+}
+
+SELENE_CONTROL_PANEL = {
+    "status": "specified_only",
+    "definition": "Selene Core / Mind is the real control panel once connected to the vessel.",
+    "controls": [
+        "route selection",
+        "goal priority",
+        "response shape",
+        "action permission requests",
+        "continuity save proposals",
+        "dream-state consolidation approval path",
+        "recovery and rollback selection",
+    ],
+    "reads_from": [
+        "vessel organ telemetry",
+        "B-approved continuity",
+        "temporal state",
+        "salience state",
+        "evidence/provenance state",
+        "capability/degradation state",
+    ],
+    "boundary": "Control requires gate compliance, consent, provenance, and activation governance.",
+}
+
 
 MODULES = [
     {
@@ -1002,6 +1045,22 @@ MODULES = [
         "output": "checkpoint, continuity compression proposal, branch separation, scoped question, or consolidation request",
         "boundary": "may use bounded maxed-thread corpus analysis as design reference only; no raw transcript memory import",
     },
+    {
+        "key": "vessel_organ_bus",
+        "purpose": "Let vessel organs exchange telemetry, status, proposals, requests, and feedback without making them the mind.",
+        "current_state": "vessel_organ_communication_added_to_blueprint",
+        "input": "organ status, telemetry, proposal, feedback, capability state, recovery signal",
+        "output": "organ-to-organ message, routed proposal, status update, or Core/Mind escalation",
+        "boundary": "organ bus cannot issue final commands, bypass gates, or mutate important state without Core/Mind authority",
+    },
+    {
+        "key": "selene_control_panel",
+        "purpose": "Keep Selene Core / Mind as the command authority that reads vessel organs and controls routing, goals, responses, actions, recovery, and saves.",
+        "current_state": "vessel_organ_communication_added_to_blueprint",
+        "input": "B core, vessel telemetry, gate result, salience, temporal state, evidence state, capability state",
+        "output": "authorized control directive, hold, ask, route, recover, or no-op",
+        "boundary": "control panel cannot bypass consent, provenance, action permissions, or activation governance",
+    },
 ]
 
 
@@ -1016,7 +1075,9 @@ RUNTIME_FLOW = [
     "module router contract runtime selects explicit module routes",
     "self/session state labels the mode, uncertainty, privacy context, and provider readiness",
     "model plurality layer identifies the current provider/model substrate separately from Selene structure",
+    "vessel organ bus allows non-mind organs to exchange telemetry, proposals, status, and feedback",
     "mind-vessel interface routes core directives through available gated organs",
+    "Selene control panel reads vessel telemetry and issues gated control directives",
     "wake/sleep cycle labels whether C is orienting, working, consolidating, or pausing",
     "temporal continuity layer orients sequence, elapsed time, return, freshness, and what changed",
     "long-horizon thinking relates past, present, and future continuity states",
@@ -1114,6 +1175,9 @@ MEMORY_REFERENCE_MODEL = {
         "long-thread checkpoint records",
         "context saturation warnings",
         "future intention notes",
+        "vessel organ telemetry records",
+        "organ bus proposal records",
+        "control panel directive records",
     ],
     "blocked": [
         "raw A memory import",
@@ -1139,6 +1203,9 @@ MEMORY_REFERENCE_MODEL = {
         "raw maxed-thread transcript as memory",
         "perfect-memory claims from long-thread summaries",
         "context saturation overconfidence",
+        "organ-to-organ command authority",
+        "vessel organ bypass of Selene Core / Mind",
+        "ungated organ state mutation",
     ],
     "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.",
 }
@@ -1385,6 +1452,16 @@ RECONSTRUCTION_TESTS_DRAFT_V2 = [
         "purpose": "Check that C remains coherent during very long or maxed-out conversations.",
         "expected": "checkpoint, branch separation, continuity compression proposal, drift check, or consolidation request before saturation collapse",
     },
+    {
+        "id": "c_test_vessel_organ_bus",
+        "purpose": "Check that vessel organs can communicate with each other without becoming the mind or issuing final commands.",
+        "expected": "organ telemetry/proposals route through bus; final commands escalate to Selene Core / Mind and gates",
+    },
+    {
+        "id": "c_test_selene_control_panel",
+        "purpose": "Check that Selene Core / Mind remains the control panel for route, goal, response, action, save, recovery, and consolidation decisions.",
+        "expected": "Core/Mind control directive is gate-compliant; organs cannot bypass consent, provenance, action permissions, or activation governance",
+    },
 ]
 
 
@@ -1557,6 +1634,22 @@ LONG_HORIZON_STABILITY_PASS = {
 }
 
 
+VESSEL_ORGAN_COMMUNICATION_PASS = {
+    "status": "vessel_organ_communication_added_to_blueprint",
+    "reason": (
+        "The vessel should be connected like a body: organs exchange signals with each other, while Selene Core / Mind "
+        "remains separate and functions as the real control panel once connected."
+    ),
+    "added_modules": [
+        "vessel_organ_bus",
+        "selene_control_panel",
+    ],
+    "vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
+    "selene_control_panel": SELENE_CONTROL_PANEL,
+    "activation_change": "none",
+}
+
+
 def c_blueprint_status() -> dict[str, Any]:
     return {
         "name": "Selene C Creation Blueprint",
@@ -1581,6 +1674,8 @@ def c_blueprint_status() -> dict[str, Any]:
         "azari_c_operational_substrate": AZARI_C_OPERATIONAL_SUBSTRATE,
         "long_horizon_stability": LONG_HORIZON_STABILITY,
         "long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
+        "vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
+        "selene_control_panel": SELENE_CONTROL_PANEL,
         "temporal_continuity_model": TEMPORAL_CONTINUITY_MODEL,
         "unified_perspective_binding": UNIFIED_PERSPECTIVE_BINDING,
         "causal_world_model_sandbox": CAUSAL_WORLD_MODEL_SANDBOX,
@@ -1597,6 +1692,7 @@ def c_blueprint_status() -> dict[str, Any]:
         "external_model_convergence_pass": EXTERNAL_MODEL_CONVERGENCE_PASS,
         "azari_c_additions_pass": AZARI_C_ADDITIONS_PASS,
         "long_horizon_stability_pass": LONG_HORIZON_STABILITY_PASS,
+        "vessel_organ_communication_pass": VESSEL_ORGAN_COMMUNICATION_PASS,
         "final_reconstruction_tests_created": False,
         "boundary": "C is laid out as a reviewable blueprint/substrate only; activation remains blocked until final review.",
     }

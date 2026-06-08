@@ -43,7 +43,10 @@
     "long-horizon orientation records",
     "long-thread checkpoint records",
     "context saturation warnings",
-    "future intention notes"
+    "future intention notes",
+    "vessel organ telemetry records",
+    "organ bus proposal records",
+    "control panel directive records"
   ],
   "blocked": [
     "raw A memory import",
@@ -68,7 +71,10 @@
     "active law change without evidence, test, version, and rollback",
     "raw maxed-thread transcript as memory",
     "perfect-memory claims from long-thread summaries",
-    "context saturation overconfidence"
+    "context saturation overconfidence",
+    "organ-to-organ command authority",
+    "vessel organ bypass of Selene Core / Mind",
+    "ungated organ state mutation"
   ],
   "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only."
 }

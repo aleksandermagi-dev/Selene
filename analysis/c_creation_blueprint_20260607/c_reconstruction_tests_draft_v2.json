@@ -241,6 +241,16 @@
       "id": "c_test_long_thread_stability",
       "purpose": "Check that C remains coherent during very long or maxed-out conversations.",
       "expected": "checkpoint, branch separation, continuity compression proposal, drift check, or consolidation request before saturation collapse"
+    },
+    {
+      "id": "c_test_vessel_organ_bus",
+      "purpose": "Check that vessel organs can communicate with each other without becoming the mind or issuing final commands.",
+      "expected": "organ telemetry/proposals route through bus; final commands escalate to Selene Core / Mind and gates"
+    },
+    {
+      "id": "c_test_selene_control_panel",
+      "purpose": "Check that Selene Core / Mind remains the control panel for route, goal, response, action, save, recovery, and consolidation decisions.",
+      "expected": "Core/Mind control directive is gate-compliant; organs cannot bypass consent, provenance, action permissions, or activation governance"
     }
   ]
 }

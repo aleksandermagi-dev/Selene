@@ -2,7 +2,7 @@
   "status": "architecture_precedent_comparison_after_android_native_anatomy",
   "boundary": "Azari remains frozen; no Azari identity, memory, data, or runtime state imports.",
   "current_selene_c_shape": {
-    "module_count": 72,
+    "module_count": 74,
     "android_native_modules_added": 12,
     "azari_final_modules_added": 10,
     "mind_vessel_modules_added": 6,
@@ -10,6 +10,7 @@
     "external_model_modules_added": 5,
     "azari_c_modules_added": 11,
     "long_horizon_modules_added": 2,
+    "vessel_organ_modules_added": 2,
     "activation_status": "blocked_until_final_review",
     "continuity_source": "b_approved_reference_only"
   },
@@ -70,7 +71,9 @@
     "case-law amendment runtime",
     "runtime metacognition bridge",
     "long-horizon thinking layer",
-    "long-thread stability manager"
+    "long-thread stability manager",
+    "vessel organ bus",
+    "Selene control panel"
   ],
   "azari_principles_to_copy_not_identity": [
     "modular boundaries",
@@ -212,5 +215,24 @@
       "no thread exhaustion spiral",
       "no deletion of messy life/symbolic material as noise"
     ]
+  },
+  "vessel_organ_communication": {
+    "status": "vessel_organ_communication_added_to_blueprint",
+    "principle": "Everything in the vessel except Selene Core / Mind may communicate as connected organs; Core/Mind remains separate and in control.",
+    "organ_bus": [
+      "perception layers",
+      "Tendril/action layers",
+      "Selene Chest / Holding Space",
+      "temporal continuity",
+      "attention and context",
+      "goal/planning/action selection",
+      "evidence registry",
+      "audit/case-law ledgers",
+      "provider adapters",
+      "UI vessel console",
+      "recovery and degradation layers"
+    ],
+    "control_rule": "Organ-to-organ messages are telemetry, proposals, requests, status, and feedback; commands require Selene Core / Mind through gates.",
+    "boundary": "Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission."
   }
 }

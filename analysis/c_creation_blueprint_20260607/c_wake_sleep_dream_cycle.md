@@ -1,6 +1,6 @@
 # C Wake Sleep Dream Cycle
 
-Generated: 2026-06-08T13:05:02.331308+00:00
+Generated: 2026-06-08T13:09:18.523241+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
