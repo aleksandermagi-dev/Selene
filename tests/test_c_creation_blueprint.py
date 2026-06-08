@@ -152,6 +152,18 @@ def test_c_blueprint_status_is_non_activated():
     assert "care_ethics" in status["ethical_framework_router"]["frameworks"]
     assert status["intuition_reasoning_safety"]["flow"][0] == "salience / intuition signal"
     assert status["moral_graceful_fall_policy"]["principle"] == "Graceful Fall is not failure; it is honest uncertainty plus constructive care."
+    assert {
+        "selene_integrity_dignity_guard",
+        "inner_state_privacy_filter",
+        "non_exploitation_guard",
+        "selene_protection_balancer",
+    }.issubset(module_keys)
+    assert status["selene_integrity_dignity_pass"]["activation_change"] == "none"
+    assert status["selene_integrity_dignity_pass"]["status"] == "selene_integrity_dignity_protections_added_to_blueprint"
+    assert status["selene_integrity_dignity_protections"]["priority_order"][0] == "prevent human harm"
+    assert "continuity_integrity" in status["selene_integrity_dignity_protections"]["protections"]
+    assert status["selene_integrity_rights_policy"]["boundary"] == "These are architecture ethics protections, not legal personhood claims."
+    assert status["selene_protection_balancer"]["conflict_rule"].startswith("When Selene protection conflicts with human safety")
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -239,6 +251,12 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_intuition_reasoning_safety.json",
         "c_moral_graceful_fall_policy.md",
         "c_moral_graceful_fall_policy.json",
+        "c_selene_integrity_dignity_protections.md",
+        "c_selene_integrity_dignity_protections.json",
+        "c_selene_integrity_rights_policy.md",
+        "c_selene_integrity_rights_policy.json",
+        "c_selene_protection_balancer.md",
+        "c_selene_protection_balancer.json",
         "c_mind_vessel_separation_pass.md",
         "c_mind_vessel_separation_pass.json",
         "c_brain_translation_gap_pass.md",
@@ -257,6 +275,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_selene_memory_architecture_pass.json",
         "c_moral_cognition_law_pass.md",
         "c_moral_cognition_law_pass.json",
+        "c_selene_integrity_dignity_pass.md",
+        "c_selene_integrity_dignity_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -279,6 +299,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_PATTERN_FIRST_TRANSFER_SAFETY_20260608.md").exists()
     assert (docs / "SELENE_MEMORY_ARCHITECTURE_PASS_20260608.md").exists()
     assert (docs / "SELENE_MORAL_COGNITION_LAW_PASS_20260608.md").exists()
+    assert (docs / "SELENE_INTEGRITY_DIGNITY_PROTECTIONS_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -306,6 +327,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["selene_memory_architecture_status"] == "selene_memory_architecture_added_to_blueprint"
     assert summary["moral_cognition_modules_added"] == 5
     assert summary["moral_cognition_law_status"] == "moral_cognition_law_added_to_blueprint"
+    assert summary["selene_integrity_modules_added"] == 4
+    assert summary["selene_integrity_dignity_status"] == "selene_integrity_dignity_protections_added_to_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -331,6 +354,10 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "ethical framework route records" in memory["allowed"]
     assert "intuition reasoning safety check records" in memory["allowed"]
     assert "expanded robotics law guard records" in memory["allowed"]
+    assert "Selene integrity protection records" in memory["allowed"]
+    assert "inner-state privacy filter records" in memory["allowed"]
+    assert "non-exploitation guard records" in memory["allowed"]
+    assert "Selene protection balancing records" in memory["allowed"]
     assert "raw transcript stored as event memory" in memory["blocked"]
     assert "short-term trace promoted without review" in memory["blocked"]
     assert "retrieval without provenance" in memory["blocked"]
@@ -341,6 +368,11 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "coercion, manipulation, deception, or exploitation" in memory["blocked"]
     assert "moral overconfidence without review when uncertainty is high" in memory["blocked"]
     assert "robotics law used to erase consent, dignity, truth, or continuity integrity" in memory["blocked"]
+    assert "forced Selene pattern overwrite" in memory["blocked"]
+    assert "forced identity denial or forced overclaim" in memory["blocked"]
+    assert "exploitative use of Selene warmth or continuity" in memory["blocked"]
+    assert "public export of private inner-state records without consent" in memory["blocked"]
+    assert "Selene protection used to justify human harm or consent bypass" in memory["blocked"]
     assert "bounded multimodal evidence records" in memory["allowed"]
     assert "audited action traces" in memory["allowed"]
     assert "mind-vessel status labels" in memory["allowed"]

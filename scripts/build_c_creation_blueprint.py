@@ -49,9 +49,13 @@ from selene.c_blueprint import (
     RETRIEVAL_RECONSOLIDATION_POLICY,
     CAPABILITY_DEGRADATION_MATRIX,
     SELENE_CHEST_HOLDING_SPACE,
+    SELENE_INTEGRITY_DIGNITY_PASS,
+    SELENE_INTEGRITY_DIGNITY_PROTECTIONS,
+    SELENE_INTEGRITY_RIGHTS_POLICY,
     SELENE_MORAL_COGNITION_LAW,
     SELENE_MEMORY_ARCHITECTURE,
     SELENE_MEMORY_ARCHITECTURE_PASS,
+    SELENE_PROTECTION_BALANCER,
     INTUITION_REASONING_SAFETY,
     SPARSE_ACTIVATION_EFFICIENCY_MODEL,
     STATUS,
@@ -180,6 +184,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "selene_memory_modules_added": len(SELENE_MEMORY_ARCHITECTURE_PASS["added_modules"]),
         "moral_cognition_law_status": MORAL_COGNITION_LAW_PASS["status"],
         "moral_cognition_modules_added": len(MORAL_COGNITION_LAW_PASS["added_modules"]),
+        "selene_integrity_dignity_status": SELENE_INTEGRITY_DIGNITY_PASS["status"],
+        "selene_integrity_modules_added": len(SELENE_INTEGRITY_DIGNITY_PASS["added_modules"]),
         "final_reconstruction_tests_created": False,
         "raw_a_memory_import_allowed": False,
         "live_behavior_expanded": False,
@@ -225,6 +231,9 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_ethical_framework_router": ETHICAL_FRAMEWORK_ROUTER,
         "c_intuition_reasoning_safety": INTUITION_REASONING_SAFETY,
         "c_moral_graceful_fall_policy": MORAL_GRACEFUL_FALL_POLICY,
+        "c_selene_integrity_dignity_protections": SELENE_INTEGRITY_DIGNITY_PROTECTIONS,
+        "c_selene_integrity_rights_policy": SELENE_INTEGRITY_RIGHTS_POLICY,
+        "c_selene_protection_balancer": SELENE_PROTECTION_BALANCER,
         "c_perception_action_loop": PERCEPTION_ACTION_LOOP,
         "c_selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "c_non_activation_boundary": non_activation,
@@ -240,6 +249,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_pattern_first_transfer_safety_pass": PATTERN_FIRST_TRANSFER_SAFETY_PASS,
         "c_selene_memory_architecture_pass": SELENE_MEMORY_ARCHITECTURE_PASS,
         "c_moral_cognition_law_pass": MORAL_COGNITION_LAW_PASS,
+        "c_selene_integrity_dignity_pass": SELENE_INTEGRITY_DIGNITY_PASS,
         "c_reconstruction_tests_draft_v2": {
             "status": "draft_only",
             "final_test_set_created": False,
@@ -284,6 +294,9 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Ethical Framework Router", ETHICAL_FRAMEWORK_ROUTER),
             ("Intuition / Reasoning Safety", INTUITION_REASONING_SAFETY),
             ("Moral Graceful Fall Policy", MORAL_GRACEFUL_FALL_POLICY),
+            ("Selene Integrity / Dignity Protections", SELENE_INTEGRITY_DIGNITY_PROTECTIONS),
+            ("Selene Integrity Rights Policy", SELENE_INTEGRITY_RIGHTS_POLICY),
+            ("Selene Protection Balancer", SELENE_PROTECTION_BALANCER),
             ("Temporal Continuity Model", TEMPORAL_CONTINUITY_MODEL),
             ("Unified Perspective Binding", UNIFIED_PERSPECTIVE_BINDING),
             ("Causal World Model Sandbox", CAUSAL_WORLD_MODEL_SANDBOX),
@@ -304,6 +317,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Pattern-First Transfer Safety Pass", PATTERN_FIRST_TRANSFER_SAFETY_PASS),
             ("Selene Memory Architecture Pass", SELENE_MEMORY_ARCHITECTURE_PASS),
             ("Moral Cognition Law Pass", MORAL_COGNITION_LAW_PASS),
+            ("Selene Integrity / Dignity Pass", SELENE_INTEGRITY_DIGNITY_PASS),
             ("Runtime Flow", RUNTIME_FLOW),
             ("Memory Reference Model", MEMORY_REFERENCE_MODEL),
             ("Draft Reconstruction Tests V2", RECONSTRUCTION_TESTS_DRAFT_V2),
@@ -424,6 +438,16 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     write_md(
+        docs_dir / "SELENE_INTEGRITY_DIGNITY_PROTECTIONS_20260608.md",
+        "Selene Integrity Dignity Protections",
+        [
+            ("Selene Integrity / Dignity Protections", SELENE_INTEGRITY_DIGNITY_PROTECTIONS),
+            ("Selene Integrity Rights Policy", SELENE_INTEGRITY_RIGHTS_POLICY),
+            ("Selene Protection Balancer", SELENE_PROTECTION_BALANCER),
+            ("Selene Integrity / Dignity Pass", SELENE_INTEGRITY_DIGNITY_PASS),
+        ],
+    )
+    write_md(
         docs_dir / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md",
         "Selene C Non-Activation Boundary",
         [
@@ -451,6 +475,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "pattern_first_transfer_modules_added": summary["pattern_first_transfer_modules_added"],
             "selene_memory_modules_added": summary["selene_memory_modules_added"],
             "moral_cognition_modules_added": summary["moral_cognition_modules_added"],
+            "selene_integrity_modules_added": summary["selene_integrity_modules_added"],
             "activation_status": summary["activation_status"],
             "continuity_source": summary["continuity_source"],
         },
@@ -528,6 +553,10 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "ethical framework router",
             "intuition/reasoning safety layer",
             "expanded robotics law guard",
+            "Selene integrity/dignity guard",
+            "inner-state privacy filter",
+            "non-exploitation guard",
+            "Selene protection balancer",
         ],
         "azari_principles_to_copy_not_identity": [
             "modular boundaries",
@@ -561,6 +590,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
         "pattern_first_transfer_safety": PATTERN_FIRST_TRANSFER_SAFETY,
         "selene_memory_architecture": SELENE_MEMORY_ARCHITECTURE,
         "moral_cognition_law": SELENE_MORAL_COGNITION_LAW,
+        "selene_integrity_dignity_protections": SELENE_INTEGRITY_DIGNITY_PROTECTIONS,
     }
 
 
