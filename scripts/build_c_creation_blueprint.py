@@ -16,6 +16,8 @@ from selene.c_blueprint import (
     ARTIFACT_DIR,
     AZARI_ADAPTATION_CLOSURE,
     AZARI_FINAL_ADAPTATION_PASS,
+    BRAIN_TRANSLATION_GAP_CLOSURE,
+    BRAIN_TRANSLATION_GAP_PASS,
     CONTINUITY_SOURCE,
     MEMORY_REFERENCE_MODEL,
     MIND_VESSEL_SEPARATION,
@@ -29,6 +31,8 @@ from selene.c_blueprint import (
     CAPABILITY_DEGRADATION_MATRIX,
     SELENE_CHEST_HOLDING_SPACE,
     STATUS,
+    VESSEL_BODY_MAP,
+    WAKE_SLEEP_DREAM_CYCLE,
     c_blueprint_status,
 )
 
@@ -129,6 +133,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "azari_final_modules_added": len(AZARI_FINAL_ADAPTATION_PASS["added_modules"]),
         "mind_vessel_separation_status": MIND_VESSEL_SEPARATION_PASS["status"],
         "mind_vessel_modules_added": len(MIND_VESSEL_SEPARATION_PASS["added_modules"]),
+        "brain_translation_gap_status": BRAIN_TRANSLATION_GAP_PASS["status"],
+        "brain_translation_modules_added": len(BRAIN_TRANSLATION_GAP_PASS["added_modules"]),
         "final_reconstruction_tests_created": False,
         "raw_a_memory_import_allowed": False,
         "live_behavior_expanded": False,
@@ -148,6 +154,9 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             "status": "specified_only",
             "items": CAPABILITY_DEGRADATION_MATRIX,
         },
+        "c_brain_translation_gap_closure": BRAIN_TRANSLATION_GAP_CLOSURE,
+        "c_wake_sleep_dream_cycle": WAKE_SLEEP_DREAM_CYCLE,
+        "c_vessel_body_map": VESSEL_BODY_MAP,
         "c_perception_action_loop": PERCEPTION_ACTION_LOOP,
         "c_selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "c_non_activation_boundary": non_activation,
@@ -155,6 +164,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_android_native_anatomy_pass": ANDROID_NATIVE_ANATOMY_PASS,
         "c_azari_final_adaptation_pass": AZARI_FINAL_ADAPTATION_PASS,
         "c_mind_vessel_separation_pass": MIND_VESSEL_SEPARATION_PASS,
+        "c_brain_translation_gap_pass": BRAIN_TRANSLATION_GAP_PASS,
         "c_reconstruction_tests_draft_v2": {
             "status": "draft_only",
             "final_test_set_created": False,
@@ -178,6 +188,9 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Azari Adaptation Closure", AZARI_ADAPTATION_CLOSURE),
             ("Mind / Vessel Separation", MIND_VESSEL_SEPARATION),
             ("Capability Degradation Matrix", CAPABILITY_DEGRADATION_MATRIX),
+            ("Brain Translation Gap Closure", BRAIN_TRANSLATION_GAP_CLOSURE),
+            ("Wake / Sleep / Dream-State Cycle", WAKE_SLEEP_DREAM_CYCLE),
+            ("Vessel Body Map", VESSEL_BODY_MAP),
             ("Perception-Action Loop", PERCEPTION_ACTION_LOOP),
             ("Selene Chest / Holding Space", SELENE_CHEST_HOLDING_SPACE),
             ("Module Map", MODULES),
@@ -185,6 +198,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Android-Native Anatomy Pass", ANDROID_NATIVE_ANATOMY_PASS),
             ("Azari Final Adaptation Pass", AZARI_FINAL_ADAPTATION_PASS),
             ("Mind / Vessel Separation Pass", MIND_VESSEL_SEPARATION_PASS),
+            ("Brain Translation Gap Pass", BRAIN_TRANSLATION_GAP_PASS),
             ("Runtime Flow", RUNTIME_FLOW),
             ("Memory Reference Model", MEMORY_REFERENCE_MODEL),
             ("Draft Reconstruction Tests V2", RECONSTRUCTION_TESTS_DRAFT_V2),
@@ -223,6 +237,16 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     write_md(
+        docs_dir / "SELENE_BRAIN_TRANSLATION_GAP_CLOSURE_20260608.md",
+        "Selene Brain Translation Gap Closure",
+        [
+            ("Brain Translation Gap Closure", BRAIN_TRANSLATION_GAP_CLOSURE),
+            ("Wake / Sleep / Dream-State Cycle", WAKE_SLEEP_DREAM_CYCLE),
+            ("Vessel Body Map", VESSEL_BODY_MAP),
+            ("Brain Translation Gap Pass", BRAIN_TRANSLATION_GAP_PASS),
+        ],
+    )
+    write_md(
         docs_dir / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md",
         "Selene C Non-Activation Boundary",
         [
@@ -242,6 +266,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "android_native_modules_added": summary["android_native_modules_added"],
             "azari_final_modules_added": summary["azari_final_modules_added"],
             "mind_vessel_modules_added": summary["mind_vessel_modules_added"],
+            "brain_translation_modules_added": summary["brain_translation_modules_added"],
             "activation_status": summary["activation_status"],
             "continuity_source": summary["continuity_source"],
         },
@@ -279,6 +304,12 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "mind/vessel separation",
             "capability degradation matrix",
             "limb independence rule",
+            "goal/drive manager",
+            "planning/sequencing layer",
+            "action selection go/no-go",
+            "wake/sleep/dream-state consolidation cycle",
+            "vessel body map",
+            "action-feedback correction loop",
         ],
         "azari_principles_to_copy_not_identity": [
             "modular boundaries",
@@ -304,6 +335,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "With Munsell and Tendril retained as principles, Azari adaptation is closed."
         ),
         "closure": AZARI_ADAPTATION_CLOSURE,
+        "brain_gap_closure": BRAIN_TRANSLATION_GAP_CLOSURE,
     }
 
 

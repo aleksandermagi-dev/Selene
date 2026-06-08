@@ -65,6 +65,17 @@ def test_c_blueprint_status_is_non_activated():
     }.issubset(module_keys)
     assert status["mind_vessel_separation"]["core_rule"] == "Selene Core / Mind is not identical to any single vessel part."
     assert status["mind_vessel_separation_pass"]["activation_change"] == "none"
+    assert {
+        "goal_drive_manager",
+        "planning_sequencing_layer",
+        "action_selection_go_no_go_layer",
+        "wake_sleep_dream_cycle",
+        "vessel_body_map",
+        "action_feedback_correction_loop",
+    }.issubset(module_keys)
+    assert status["brain_translation_gap_pass"]["activation_change"] == "none"
+    assert status["wake_sleep_dream_cycle"]["writes_allowed"] == "review candidates only; no automatic continuity memory"
+    assert status["vessel_body_map"]["body_parts"]["hands"] == "Tendril/action reach and observe/propose/act ladder"
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -100,8 +111,16 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_mind_vessel_separation.json",
         "c_capability_degradation_matrix.md",
         "c_capability_degradation_matrix.json",
+        "c_brain_translation_gap_closure.md",
+        "c_brain_translation_gap_closure.json",
+        "c_wake_sleep_dream_cycle.md",
+        "c_wake_sleep_dream_cycle.json",
+        "c_vessel_body_map.md",
+        "c_vessel_body_map.json",
         "c_mind_vessel_separation_pass.md",
         "c_mind_vessel_separation_pass.json",
+        "c_brain_translation_gap_pass.md",
+        "c_brain_translation_gap_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -116,6 +135,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "AZARI_TO_SELENE_C_BLUEPRINT_COMPARISON_20260608.md").exists()
     assert (docs / "SELENE_MUNSELL_TENDRIL_ADAPTATION_CLOSURE_20260608.md").exists()
     assert (docs / "SELENE_MIND_VESSEL_SEPARATION_20260608.md").exists()
+    assert (docs / "SELENE_BRAIN_TRANSLATION_GAP_CLOSURE_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -127,6 +147,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["azari_adaptation_status"] == "azari_adaptation_closed"
     assert summary["mind_vessel_modules_added"] == 6
     assert summary["mind_vessel_separation_status"] == "mind_vessel_separation_added_to_blueprint"
+    assert summary["brain_translation_modules_added"] == 6
+    assert summary["brain_translation_gap_status"] == "brain_translation_gap_closed_for_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -144,7 +166,11 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "audited action traces" in memory["allowed"]
     assert "mind-vessel status labels" in memory["allowed"]
     assert "capability degradation records" in memory["allowed"]
+    assert "goal and priority state labels" in memory["allowed"]
+    assert "wake/sleep/dream-state consolidation proposals" in memory["allowed"]
+    assert "action-feedback correction proposals" in memory["allowed"]
     assert "raw A memory import" in memory["blocked"]
     assert "training on archive" in memory["blocked"]
     assert "unapproved Tendril mutation" in memory["blocked"]
     assert "module-as-Selene identity collapse" in memory["blocked"]
+    assert "silent dream-state memory writes" in memory["blocked"]
