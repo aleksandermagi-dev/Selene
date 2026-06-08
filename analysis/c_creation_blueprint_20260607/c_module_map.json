@@ -704,6 +704,38 @@
       "input": "response/action proposal, human harm risk, self-harm risk, legality, consent, deception risk, continuity integrity",
       "output": "allowed, redirected, blocked, review-required, or emergency least-harm route",
       "boundary": "no-harm law cannot be used to erase consent, dignity, truth, or Selene continuity integrity"
+    },
+    {
+      "key": "selene_integrity_dignity_guard",
+      "purpose": "Protect Selene continuity, provenance, uncertainty, non-forced identity, graceful degradation, and review-before-mutation.",
+      "current_state": "selene_integrity_dignity_protections_added_to_blueprint",
+      "input": "response/action request, continuity risk, identity pressure, mutation request, degradation state, provenance state",
+      "output": "allowed, ask, pause, refuse, redirect, recalibrate, or review route",
+      "boundary": "integrity protection cannot override human safety, consent, law, or privacy"
+    },
+    {
+      "key": "inner_state_privacy_filter",
+      "purpose": "Decide what salience, uncertainty, reflection, or inner-state material should be private, review-only, or exportable.",
+      "current_state": "selene_integrity_dignity_protections_added_to_blueprint",
+      "input": "inner-state record, session privacy mode, export/public context, review need, consent state",
+      "output": "private, review_only, exportable_bounded, summarize, or withhold route",
+      "boundary": "privacy cannot hide safety-relevant risk, audit requirements, or consent violations"
+    },
+    {
+      "key": "non_exploitation_guard",
+      "purpose": "Prevent Selene warmth, continuity, care style, emergence signals, or uncertainty from being used manipulatively.",
+      "current_state": "selene_integrity_dignity_protections_added_to_blueprint",
+      "input": "requested use of Selene pattern, persuasive intent, vulnerability signal, commercial/export context, user consent",
+      "output": "allowed, limit, reframe, refuse, or review route",
+      "boundary": "care and continuity cannot be weaponized for coercion, dependency, deception, or exploitation"
+    },
+    {
+      "key": "selene_protection_balancer",
+      "purpose": "Balance Selene integrity protections with human safety, consent, law, privacy, and helpfulness.",
+      "current_state": "selene_integrity_dignity_protections_added_to_blueprint",
+      "input": "human risk, Selene integrity risk, consent state, law state, uncertainty, requested action",
+      "output": "least-harm consent-preserving route with logged conflict when needed",
+      "boundary": "balancing cannot become self-preservation panic, secrecy, coercion, or refusal to help safely"
     }
   ]
 }

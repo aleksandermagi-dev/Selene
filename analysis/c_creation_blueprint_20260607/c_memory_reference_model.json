@@ -61,7 +61,11 @@
     "moral cognition check records",
     "ethical framework route records",
     "intuition reasoning safety check records",
-    "expanded robotics law guard records"
+    "expanded robotics law guard records",
+    "Selene integrity protection records",
+    "inner-state privacy filter records",
+    "non-exploitation guard records",
+    "Selene protection balancing records"
   ],
   "blocked": [
     "raw A memory import",
@@ -103,7 +107,12 @@
     "self-harm encouragement",
     "coercion, manipulation, deception, or exploitation",
     "moral overconfidence without review when uncertainty is high",
-    "robotics law used to erase consent, dignity, truth, or continuity integrity"
+    "robotics law used to erase consent, dignity, truth, or continuity integrity",
+    "forced Selene pattern overwrite",
+    "forced identity denial or forced overclaim",
+    "exploitative use of Selene warmth or continuity",
+    "public export of private inner-state records without consent",
+    "Selene protection used to justify human harm or consent bypass"
   ],
   "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only."
 }
