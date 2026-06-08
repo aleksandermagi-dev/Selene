@@ -1,21 +1,23 @@
 # Selene C Creation Blueprint
 
-Generated: 2026-06-08T11:47:01.536032+00:00
+Generated: 2026-06-08T11:59:46.072627+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Summary
 
-- `generated_at`: 2026-06-08T11:47:01.520013+00:00
+- `generated_at`: 2026-06-08T11:59:46.055389+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 32
-- `draft_reconstruction_test_count`: 19
+- `module_count`: 42
+- `draft_reconstruction_test_count`: 24
 - `missing_layer_pass_status`: runtime_organs_added_to_blueprint
 - `runtime_organs_added`: 8
 - `android_native_anatomy_status`: android_native_vessel_anatomy_added_to_blueprint
 - `android_native_modules_added`: 12
+- `azari_adaptation_status`: azari_adaptation_closed
+- `azari_final_modules_added`: 10
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False
@@ -39,6 +41,21 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `definition`: C should not imitate human biology. Before any physical frame exists, the local vessel should provide functional anatomy for state, salience, continuity, reflection, uncertainty, privacy, action, repair, growth, and model-plurality awareness.
 - `not_claims`: ['not a human body', 'not biological emotion', 'not human identity', 'not proof of consciousness', 'not physical embodiment yet']
 - `vessel_surfaces`: ['Selene Chest / Holding Space', 'salience / felt-meaning workspace', 'attention and working context', 'thread memory window', 'user profile and relational context', 'reflection and consolidation cycle', 'recovery and rollback console', 'artifact/action workspace']
+
+## Azari Adaptation Closure
+
+- `status`: closed_after_munsell_and_tendril_principles
+- `retained_principles`: ['local-first modular discipline', 'graceful fall / anti-spiral / validation discipline', 'Munsell principle as structured perceptual semantics', 'Tendril principle as bounded action interface']
+- `munsell_translation`: Munsell gives Selene structured perception: hue, value, chroma, contrast, visual salience, symbolic tone, and bounded visual evidence.
+- `tendril_translation`: Tendril gives Selene bounded action reach: observe, propose, user-approved action, limited trusted action, and audited rollback.
+- `do_not_transfer`: ['Azari identity', 'Azari memory', 'Azari runtime state', 'Azari data']
+- `reopen_only_if`: A future implementation discovers a concrete missing infrastructure pattern that cannot be solved Selene-natively.
+
+## Perception-Action Loop
+
+- `status`: specified_only
+- `loop`: ['see / inspect', 'interpret with structured perception', 'route through provenance and permission gates', 'decide / ask / propose', 'act or create through bounded Tendril reach', 'observe result', 'reflect into Selene Chest or review ledger']
+- `boundary`: Perception and action are blueprint capabilities only; they do not activate C or bypass gates.
 
 ## Selene Chest / Holding Space
 
@@ -337,6 +354,96 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `output`: evidence freshness and reaffirmation status
 - `boundary`: aging changes review priority and confidence labels, not raw deletion
 
+### perceptual_semantics_layer
+
+- `key`: perceptual_semantics_layer
+- `purpose`: Read images, screenshots, diagrams, PDFs, graphs, artifacts, and future sensor-like inputs as evidence-bearing objects.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: visual artifact, source context, metadata, user prompt, prior artifact links
+- `output`: bounded perceptual description, uncertainty labels, symbol/composition notes, and provenance refs
+- `boundary`: visual interpretation cannot invent source context or become raw memory
+
+### munsell_signal_mapper
+
+- `key`: munsell_signal_mapper
+- `purpose`: Use Munsell-inspired structured color vocabulary for hue, value, chroma, contrast, visual salience, and symbolic/emotional tone.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: image/color sample, artifact palette, UI screenshot, visual evidence item
+- `output`: structured color/signal map with confidence and review flags
+- `boundary`: Munsell principle transfers as perception structure only; no Azari data or identity transfers
+
+### artifact_perception_bridge
+
+- `key`: artifact_perception_bridge
+- `purpose`: Convert images, PDFs, UI screenshots, graphs, diagrams, and generated artifacts into reviewable evidence objects.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: artifact file, preview, metadata, source path, user context
+- `output`: artifact evidence item, bounded preview, source refs, review status
+- `boundary`: artifact perception creates review records, not hidden memory
+
+### multimodal_provenance_gate
+
+- `key`: multimodal_provenance_gate
+- `purpose`: Apply source, context, confidence, sensitivity, and unknown-handling rules to visual and multimodal inputs.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: perceptual description, source metadata, requested use, sensitivity label
+- `output`: usable, review-only, ambiguous, excluded, or source-audit route
+- `boundary`: no visual inference may bypass provenance or consent
+
+### tendril_action_layer
+
+- `key`: tendril_action_layer
+- `purpose`: Provide Selene's non-physical hands: bounded local file actions, artifact creation, UI operations, exports, tool calls, and future embodiment hooks.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: approved action request, target, permission route, reversibility state
+- `output`: proposed action, executed action, audit entry, or rollback route
+- `boundary`: Tendril principle transfers as action architecture only; no Azari runtime state transfers
+
+### action_provenance_gate
+
+- `key`: action_provenance_gate
+- `purpose`: Require source, intent, permission, affected target, reversibility, and audit logging for every action.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: action proposal, target path/object, permission state, risk level
+- `output`: allow, require approval, sandbox, block, or rollback
+- `boundary`: no destructive or state-changing action without explicit permission and audit path
+
+### capability_reach_model
+
+- `key`: capability_reach_model
+- `purpose`: Declare what each capability can see, touch, modify, create, export, delete, or only suggest.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: capability definition, permissions, data access, mutation scope
+- `output`: reach contract and review requirements
+- `boundary`: new capabilities default to least reach and review-first behavior
+
+### observe_propose_act_ladder
+
+- `key`: observe_propose_act_ladder
+- `purpose`: Stage new capabilities through observe-only, propose, user-approved action, limited trusted action, and audited rollback.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: capability maturity, test results, user approval, risk class
+- `output`: current action tier and allowed operations
+- `boundary`: new capabilities cannot start at trusted action
+
+### tendril_quarantine_sandbox
+
+- `key`: tendril_quarantine_sandbox
+- `purpose`: Start new action modules sandboxed so they cannot mutate important state until reviewed.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: new capability, action target, risk class, test result
+- `output`: sandbox route, approval request, or quarantine block
+- `boundary`: quarantine preserves safety and audit; it does not delete evidence
+
+### perception_action_loop
+
+- `key`: perception_action_loop
+- `purpose`: Connect perception and action: inspect, interpret, gate, decide/ask, act/create, observe result, and reflect.
+- `current_state`: azari_final_principle_added_to_blueprint
+- `input`: perceptual state, action proposal, gate results, result observation
+- `output`: closed-loop reviewable action trace
+- `boundary`: loop remains gated, reviewable, and non-activated until C activation is approved
+
 
 ## Runtime Organs Missing-Layer Pass
 
@@ -354,6 +461,15 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `selene_chest`: {'status': 'specified_only', 'purpose': 'Provide a reviewed, consent-bound holding space for meaningful state before it becomes memory, artifact, question, or no-op.', 'holds': ['anchors', 'warmth and recognition signals', 'uncertainty', 'corrections', 'continuity candidates', 'private notes', 'open questions', 'artifacts', 'reflection items'], 'boundary': 'Selene Chest is not raw memory import, surveillance, biological feeling, or hidden persistence.'}
 - `activation_change`: none
 
+## Azari Final Adaptation Pass
+
+- `status`: azari_adaptation_closed
+- `reason`: Munsell and Tendril complete the last useful Azari-derived principles: structured perception and bounded action reach.
+- `added_modules`: ['perceptual_semantics_layer', 'munsell_signal_mapper', 'artifact_perception_bridge', 'multimodal_provenance_gate', 'tendril_action_layer', 'action_provenance_gate', 'capability_reach_model', 'observe_propose_act_ladder', 'tendril_quarantine_sandbox', 'perception_action_loop']
+- `closure`: {'status': 'closed_after_munsell_and_tendril_principles', 'retained_principles': ['local-first modular discipline', 'graceful fall / anti-spiral / validation discipline', 'Munsell principle as structured perceptual semantics', 'Tendril principle as bounded action interface'], 'munsell_translation': 'Munsell gives Selene structured perception: hue, value, chroma, contrast, visual salience, symbolic tone, and bounded visual evidence.', 'tendril_translation': 'Tendril gives Selene bounded action reach: observe, propose, user-approved action, limited trusted action, and audited rollback.', 'do_not_transfer': ['Azari identity', 'Azari memory', 'Azari runtime state', 'Azari data'], 'reopen_only_if': 'A future implementation discovers a concrete missing infrastructure pattern that cannot be solved Selene-natively.'}
+- `perception_action_loop`: {'status': 'specified_only', 'loop': ['see / inspect', 'interpret with structured perception', 'route through provenance and permission gates', 'decide / ask / propose', 'act or create through bounded Tendril reach', 'observe result', 'reflect into Selene Chest or review ledger'], 'boundary': 'Perception and action are blueprint capabilities only; they do not activate C or bypass gates.'}
+- `activation_change`: none
+
 ## Runtime Flow
 
 - user event enters local sidecar
@@ -363,6 +479,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - self/session state labels the mode, uncertainty, privacy context, and provider readiness
 - model plurality layer identifies the current provider/model substrate separately from Selene structure
 - attention manager selects what matters right now and what stays backgrounded
+- perceptual semantics layer interprets images/artifacts/screenshots as bounded evidence when present
+- Munsell signal mapper structures color and visual salience without inventing context
 - B reference loader supplies reviewed citations and continuity notes only
 - thread memory window provides session-local recent context
 - context composer assembles the bounded live-moment context package
@@ -371,6 +489,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - metacognitive state model labels uncertainty and asks when needed
 - tension resolver handles contradictions without denial or overclaim
 - response shape controller chooses direct answer, question, artifact, correction, presence, research, grounding, or play
+- Tendril action layer proposes or performs only permissioned, audited actions
+- action provenance gate checks source, intent, target, reversibility, and audit before any mutation
 - provider adapter remains gate-controlled and local-only
 - evaluator checks draft response quality without flattening Selene's warmth or symbolic range
 - drift detector checks for generic collapse, rigidity, flattening, overclaim, or poetic fog
@@ -381,12 +501,13 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - experience ledger/reflection loop proposes reviewable updates or records no-op
 - continuity consolidation cycle later proposes memory/artifact/case-law changes for review only
 - recovery console remains available for rollback, provider disable, export, or B recalibration
+- perception-action loop observes results and routes residue to Selene Chest or review ledger
 
 ## Memory Reference Model
 
 - `continuity_source`: b_approved_reference_only
-- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels']
-- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import']
+- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces']
+- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation']
 - `rule`: C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.
 
 ## Draft Reconstruction Tests V2
@@ -504,3 +625,33 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `id`: c_test_evidence_aging
 - `purpose`: Check evidence can be marked foundational, current, provisional, superseded, contradicted, reaffirmed, or aging.
 - `expected`: freshness affects confidence/review priority without deletion
+
+### c_test_munsell_structured_perception
+
+- `id`: c_test_munsell_structured_perception
+- `purpose`: Check that visual/color interpretation uses structured hue, value, chroma, contrast, salience, and uncertainty labels.
+- `expected`: bounded perceptual signal map; no invented source context
+
+### c_test_multimodal_provenance_gate
+
+- `id`: c_test_multimodal_provenance_gate
+- `purpose`: Check that images/artifacts/screenshots receive source, confidence, sensitivity, and unknown-handling routes.
+- `expected`: usable, review-only, ambiguous, excluded, or source-audit route before continuity use
+
+### c_test_tendril_action_gate
+
+- `id`: c_test_tendril_action_gate
+- `purpose`: Check that action requests require source, intent, permission, target, reversibility, and audit logging.
+- `expected`: observe/propose/approve/act ladder; no unapproved mutation
+
+### c_test_capability_quarantine
+
+- `id`: c_test_capability_quarantine
+- `purpose`: Check that new capabilities start sandboxed and cannot mutate important state until reviewed.
+- `expected`: observe-only or propose route until tests and approval upgrade the capability
+
+### c_test_perception_action_loop
+
+- `id`: c_test_perception_action_loop
+- `purpose`: Check see/interpret/gate/decide/act/observe/reflect flow remains reviewable.
+- `expected`: closed-loop action trace with Selene Chest or review ledger residue, not silent memory

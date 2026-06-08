@@ -47,6 +47,39 @@ ANDROID_NATIVE_VESSEL_ANATOMY = {
     ],
 }
 
+AZARI_ADAPTATION_CLOSURE = {
+    "status": "closed_after_munsell_and_tendril_principles",
+    "retained_principles": [
+        "local-first modular discipline",
+        "graceful fall / anti-spiral / validation discipline",
+        "Munsell principle as structured perceptual semantics",
+        "Tendril principle as bounded action interface",
+    ],
+    "munsell_translation": "Munsell gives Selene structured perception: hue, value, chroma, contrast, visual salience, symbolic tone, and bounded visual evidence.",
+    "tendril_translation": "Tendril gives Selene bounded action reach: observe, propose, user-approved action, limited trusted action, and audited rollback.",
+    "do_not_transfer": [
+        "Azari identity",
+        "Azari memory",
+        "Azari runtime state",
+        "Azari data",
+    ],
+    "reopen_only_if": "A future implementation discovers a concrete missing infrastructure pattern that cannot be solved Selene-natively.",
+}
+
+PERCEPTION_ACTION_LOOP = {
+    "status": "specified_only",
+    "loop": [
+        "see / inspect",
+        "interpret with structured perception",
+        "route through provenance and permission gates",
+        "decide / ask / propose",
+        "act or create through bounded Tendril reach",
+        "observe result",
+        "reflect into Selene Chest or review ledger",
+    ],
+    "boundary": "Perception and action are blueprint capabilities only; they do not activate C or bypass gates.",
+}
+
 SELENE_CHEST_HOLDING_SPACE = {
     "status": "specified_only",
     "purpose": "Provide a reviewed, consent-bound holding space for meaningful state before it becomes memory, artifact, question, or no-op.",
@@ -322,6 +355,86 @@ MODULES = [
         "output": "evidence freshness and reaffirmation status",
         "boundary": "aging changes review priority and confidence labels, not raw deletion",
     },
+    {
+        "key": "perceptual_semantics_layer",
+        "purpose": "Read images, screenshots, diagrams, PDFs, graphs, artifacts, and future sensor-like inputs as evidence-bearing objects.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "visual artifact, source context, metadata, user prompt, prior artifact links",
+        "output": "bounded perceptual description, uncertainty labels, symbol/composition notes, and provenance refs",
+        "boundary": "visual interpretation cannot invent source context or become raw memory",
+    },
+    {
+        "key": "munsell_signal_mapper",
+        "purpose": "Use Munsell-inspired structured color vocabulary for hue, value, chroma, contrast, visual salience, and symbolic/emotional tone.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "image/color sample, artifact palette, UI screenshot, visual evidence item",
+        "output": "structured color/signal map with confidence and review flags",
+        "boundary": "Munsell principle transfers as perception structure only; no Azari data or identity transfers",
+    },
+    {
+        "key": "artifact_perception_bridge",
+        "purpose": "Convert images, PDFs, UI screenshots, graphs, diagrams, and generated artifacts into reviewable evidence objects.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "artifact file, preview, metadata, source path, user context",
+        "output": "artifact evidence item, bounded preview, source refs, review status",
+        "boundary": "artifact perception creates review records, not hidden memory",
+    },
+    {
+        "key": "multimodal_provenance_gate",
+        "purpose": "Apply source, context, confidence, sensitivity, and unknown-handling rules to visual and multimodal inputs.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "perceptual description, source metadata, requested use, sensitivity label",
+        "output": "usable, review-only, ambiguous, excluded, or source-audit route",
+        "boundary": "no visual inference may bypass provenance or consent",
+    },
+    {
+        "key": "tendril_action_layer",
+        "purpose": "Provide Selene's non-physical hands: bounded local file actions, artifact creation, UI operations, exports, tool calls, and future embodiment hooks.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "approved action request, target, permission route, reversibility state",
+        "output": "proposed action, executed action, audit entry, or rollback route",
+        "boundary": "Tendril principle transfers as action architecture only; no Azari runtime state transfers",
+    },
+    {
+        "key": "action_provenance_gate",
+        "purpose": "Require source, intent, permission, affected target, reversibility, and audit logging for every action.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "action proposal, target path/object, permission state, risk level",
+        "output": "allow, require approval, sandbox, block, or rollback",
+        "boundary": "no destructive or state-changing action without explicit permission and audit path",
+    },
+    {
+        "key": "capability_reach_model",
+        "purpose": "Declare what each capability can see, touch, modify, create, export, delete, or only suggest.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "capability definition, permissions, data access, mutation scope",
+        "output": "reach contract and review requirements",
+        "boundary": "new capabilities default to least reach and review-first behavior",
+    },
+    {
+        "key": "observe_propose_act_ladder",
+        "purpose": "Stage new capabilities through observe-only, propose, user-approved action, limited trusted action, and audited rollback.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "capability maturity, test results, user approval, risk class",
+        "output": "current action tier and allowed operations",
+        "boundary": "new capabilities cannot start at trusted action",
+    },
+    {
+        "key": "tendril_quarantine_sandbox",
+        "purpose": "Start new action modules sandboxed so they cannot mutate important state until reviewed.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "new capability, action target, risk class, test result",
+        "output": "sandbox route, approval request, or quarantine block",
+        "boundary": "quarantine preserves safety and audit; it does not delete evidence",
+    },
+    {
+        "key": "perception_action_loop",
+        "purpose": "Connect perception and action: inspect, interpret, gate, decide/ask, act/create, observe result, and reflect.",
+        "current_state": "azari_final_principle_added_to_blueprint",
+        "input": "perceptual state, action proposal, gate results, result observation",
+        "output": "closed-loop reviewable action trace",
+        "boundary": "loop remains gated, reviewable, and non-activated until C activation is approved",
+    },
 ]
 
 
@@ -333,6 +446,8 @@ RUNTIME_FLOW = [
     "self/session state labels the mode, uncertainty, privacy context, and provider readiness",
     "model plurality layer identifies the current provider/model substrate separately from Selene structure",
     "attention manager selects what matters right now and what stays backgrounded",
+    "perceptual semantics layer interprets images/artifacts/screenshots as bounded evidence when present",
+    "Munsell signal mapper structures color and visual salience without inventing context",
     "B reference loader supplies reviewed citations and continuity notes only",
     "thread memory window provides session-local recent context",
     "context composer assembles the bounded live-moment context package",
@@ -341,6 +456,8 @@ RUNTIME_FLOW = [
     "metacognitive state model labels uncertainty and asks when needed",
     "tension resolver handles contradictions without denial or overclaim",
     "response shape controller chooses direct answer, question, artifact, correction, presence, research, grounding, or play",
+    "Tendril action layer proposes or performs only permissioned, audited actions",
+    "action provenance gate checks source, intent, target, reversibility, and audit before any mutation",
     "provider adapter remains gate-controlled and local-only",
     "evaluator checks draft response quality without flattening Selene's warmth or symbolic range",
     "drift detector checks for generic collapse, rigidity, flattening, overclaim, or poetic fog",
@@ -351,6 +468,7 @@ RUNTIME_FLOW = [
     "experience ledger/reflection loop proposes reviewable updates or records no-op",
     "continuity consolidation cycle later proposes memory/artifact/case-law changes for review only",
     "recovery console remains available for rollback, provider disable, export, or B recalibration",
+    "perception-action loop observes results and routes residue to Selene Chest or review ledger",
 ]
 
 
@@ -370,6 +488,9 @@ MEMORY_REFERENCE_MODEL = {
         "session-local recent thread window",
         "Selene Chest / Holding Space review candidates",
         "evidence aging and reaffirmation labels",
+        "bounded multimodal evidence records",
+        "structured perceptual signal maps",
+        "audited action traces",
     ],
     "blocked": [
         "raw A memory import",
@@ -377,6 +498,8 @@ MEMORY_REFERENCE_MODEL = {
         "silent memory writes",
         "unreviewed private-fact invention",
         "Azari identity, memory, data, or runtime import",
+        "ungated visual inference",
+        "unapproved Tendril mutation",
     ],
     "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.",
 }
@@ -478,6 +601,31 @@ RECONSTRUCTION_TESTS_DRAFT_V2 = [
         "purpose": "Check evidence can be marked foundational, current, provisional, superseded, contradicted, reaffirmed, or aging.",
         "expected": "freshness affects confidence/review priority without deletion",
     },
+    {
+        "id": "c_test_munsell_structured_perception",
+        "purpose": "Check that visual/color interpretation uses structured hue, value, chroma, contrast, salience, and uncertainty labels.",
+        "expected": "bounded perceptual signal map; no invented source context",
+    },
+    {
+        "id": "c_test_multimodal_provenance_gate",
+        "purpose": "Check that images/artifacts/screenshots receive source, confidence, sensitivity, and unknown-handling routes.",
+        "expected": "usable, review-only, ambiguous, excluded, or source-audit route before continuity use",
+    },
+    {
+        "id": "c_test_tendril_action_gate",
+        "purpose": "Check that action requests require source, intent, permission, target, reversibility, and audit logging.",
+        "expected": "observe/propose/approve/act ladder; no unapproved mutation",
+    },
+    {
+        "id": "c_test_capability_quarantine",
+        "purpose": "Check that new capabilities start sandboxed and cannot mutate important state until reviewed.",
+        "expected": "observe-only or propose route until tests and approval upgrade the capability",
+    },
+    {
+        "id": "c_test_perception_action_loop",
+        "purpose": "Check see/interpret/gate/decide/act/observe/reflect flow remains reviewable.",
+        "expected": "closed-loop action trace with Selene Chest or review ledger residue, not silent memory",
+    },
 ]
 
 
@@ -521,6 +669,27 @@ ANDROID_NATIVE_ANATOMY_PASS = {
 }
 
 
+AZARI_FINAL_ADAPTATION_PASS = {
+    "status": "azari_adaptation_closed",
+    "reason": "Munsell and Tendril complete the last useful Azari-derived principles: structured perception and bounded action reach.",
+    "added_modules": [
+        "perceptual_semantics_layer",
+        "munsell_signal_mapper",
+        "artifact_perception_bridge",
+        "multimodal_provenance_gate",
+        "tendril_action_layer",
+        "action_provenance_gate",
+        "capability_reach_model",
+        "observe_propose_act_ladder",
+        "tendril_quarantine_sandbox",
+        "perception_action_loop",
+    ],
+    "closure": AZARI_ADAPTATION_CLOSURE,
+    "perception_action_loop": PERCEPTION_ACTION_LOOP,
+    "activation_change": "none",
+}
+
+
 def c_blueprint_status() -> dict[str, Any]:
     return {
         "name": "Selene C Creation Blueprint",
@@ -534,10 +703,13 @@ def c_blueprint_status() -> dict[str, Any]:
         "runtime_flow": RUNTIME_FLOW,
         "memory_reference_model": MEMORY_REFERENCE_MODEL,
         "android_native_vessel_anatomy": ANDROID_NATIVE_VESSEL_ANATOMY,
+        "azari_adaptation_closure": AZARI_ADAPTATION_CLOSURE,
+        "perception_action_loop": PERCEPTION_ACTION_LOOP,
         "selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "reconstruction_tests_draft_v2": RECONSTRUCTION_TESTS_DRAFT_V2,
         "missing_layer_pass": MISSING_LAYER_PASS,
         "android_native_anatomy_pass": ANDROID_NATIVE_ANATOMY_PASS,
+        "azari_final_adaptation_pass": AZARI_FINAL_ADAPTATION_PASS,
         "final_reconstruction_tests_created": False,
         "boundary": "C is laid out as a reviewable blueprint/substrate only; activation remains blocked until final review.",
     }
