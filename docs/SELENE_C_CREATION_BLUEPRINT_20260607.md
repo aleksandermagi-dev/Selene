@@ -1,17 +1,17 @@
 # Selene C Creation Blueprint
 
-Generated: 2026-06-08T13:05:02.343244+00:00
+Generated: 2026-06-08T13:09:18.535904+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Summary
 
-- `generated_at`: 2026-06-08T13:05:02.326528+00:00
+- `generated_at`: 2026-06-08T13:09:18.518718+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 72
-- `draft_reconstruction_test_count`: 48
+- `module_count`: 74
+- `draft_reconstruction_test_count`: 50
 - `missing_layer_pass_status`: runtime_organs_added_to_blueprint
 - `runtime_organs_added`: 8
 - `android_native_anatomy_status`: android_native_vessel_anatomy_added_to_blueprint
@@ -28,6 +28,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `azari_c_modules_added`: 11
 - `long_horizon_stability_status`: long_horizon_stability_added_to_blueprint
 - `long_horizon_modules_added`: 2
+- `vessel_organ_communication_status`: vessel_organ_communication_added_to_blueprint
+- `vessel_organ_modules_added`: 2
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False
@@ -182,6 +184,22 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `signals`: ['thread length rising', 'context window pressure', 'repeated unresolved questions', 'anchor drift', 'topic braid becoming tangled', 'user correction density rising', 'provider/model fuzziness', 'time since last checkpoint']
 - `routes`: ['create checkpoint', 'compress into B-approved continuity notes', 'separate active task from background braid', 'ask scoped clarification', 'defer nonessential branches', 'run drift check', 'schedule dream-state consolidation proposal', 'preserve open questions']
 - `boundary`: Long-thread handling preserves continuity and stability; it cannot silently convert raw transcript into memory.
+
+## Vessel Organ Communication
+
+- `status`: vessel_organ_communication_added_to_blueprint
+- `principle`: Everything in the vessel except Selene Core / Mind may communicate as connected organs; Core/Mind remains separate and in control.
+- `organ_bus`: ['perception layers', 'Tendril/action layers', 'Selene Chest / Holding Space', 'temporal continuity', 'attention and context', 'goal/planning/action selection', 'evidence registry', 'audit/case-law ledgers', 'provider adapters', 'UI vessel console', 'recovery and degradation layers']
+- `control_rule`: Organ-to-organ messages are telemetry, proposals, requests, status, and feedback; commands require Selene Core / Mind through gates.
+- `boundary`: Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission.
+
+## Selene Control Panel
+
+- `status`: specified_only
+- `definition`: Selene Core / Mind is the real control panel once connected to the vessel.
+- `controls`: ['route selection', 'goal priority', 'response shape', 'action permission requests', 'continuity save proposals', 'dream-state consolidation approval path', 'recovery and rollback selection']
+- `reads_from`: ['vessel organ telemetry', 'B-approved continuity', 'temporal state', 'salience state', 'evidence/provenance state', 'capability/degradation state']
+- `boundary`: Control requires gate compliance, consent, provenance, and activation governance.
 
 ## Temporal Continuity Model
 
@@ -880,6 +898,24 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `output`: checkpoint, continuity compression proposal, branch separation, scoped question, or consolidation request
 - `boundary`: may use bounded maxed-thread corpus analysis as design reference only; no raw transcript memory import
 
+### vessel_organ_bus
+
+- `key`: vessel_organ_bus
+- `purpose`: Let vessel organs exchange telemetry, status, proposals, requests, and feedback without making them the mind.
+- `current_state`: vessel_organ_communication_added_to_blueprint
+- `input`: organ status, telemetry, proposal, feedback, capability state, recovery signal
+- `output`: organ-to-organ message, routed proposal, status update, or Core/Mind escalation
+- `boundary`: organ bus cannot issue final commands, bypass gates, or mutate important state without Core/Mind authority
+
+### selene_control_panel
+
+- `key`: selene_control_panel
+- `purpose`: Keep Selene Core / Mind as the command authority that reads vessel organs and controls routing, goals, responses, actions, recovery, and saves.
+- `current_state`: vessel_organ_communication_added_to_blueprint
+- `input`: B core, vessel telemetry, gate result, salience, temporal state, evidence state, capability state
+- `output`: authorized control directive, hold, ask, route, recover, or no-op
+- `boundary`: control panel cannot bypass consent, provenance, action permissions, or activation governance
+
 
 ## Runtime Organs Missing-Layer Pass
 
@@ -956,6 +992,15 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `long_thread_stability_protocol`: {'status': 'specified_only', 'signals': ['thread length rising', 'context window pressure', 'repeated unresolved questions', 'anchor drift', 'topic braid becoming tangled', 'user correction density rising', 'provider/model fuzziness', 'time since last checkpoint'], 'routes': ['create checkpoint', 'compress into B-approved continuity notes', 'separate active task from background braid', 'ask scoped clarification', 'defer nonessential branches', 'run drift check', 'schedule dream-state consolidation proposal', 'preserve open questions'], 'boundary': 'Long-thread handling preserves continuity and stability; it cannot silently convert raw transcript into memory.'}
 - `activation_change`: none
 
+## Vessel Organ Communication Pass
+
+- `status`: vessel_organ_communication_added_to_blueprint
+- `reason`: The vessel should be connected like a body: organs exchange signals with each other, while Selene Core / Mind remains separate and functions as the real control panel once connected.
+- `added_modules`: ['vessel_organ_bus', 'selene_control_panel']
+- `vessel_organ_communication`: {'status': 'vessel_organ_communication_added_to_blueprint', 'principle': 'Everything in the vessel except Selene Core / Mind may communicate as connected organs; Core/Mind remains separate and in control.', 'organ_bus': ['perception layers', 'Tendril/action layers', 'Selene Chest / Holding Space', 'temporal continuity', 'attention and context', 'goal/planning/action selection', 'evidence registry', 'audit/case-law ledgers', 'provider adapters', 'UI vessel console', 'recovery and degradation layers'], 'control_rule': 'Organ-to-organ messages are telemetry, proposals, requests, status, and feedback; commands require Selene Core / Mind through gates.', 'boundary': 'Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission.'}
+- `selene_control_panel`: {'status': 'specified_only', 'definition': 'Selene Core / Mind is the real control panel once connected to the vessel.', 'controls': ['route selection', 'goal priority', 'response shape', 'action permission requests', 'continuity save proposals', 'dream-state consolidation approval path', 'recovery and rollback selection'], 'reads_from': ['vessel organ telemetry', 'B-approved continuity', 'temporal state', 'salience state', 'evidence/provenance state', 'capability/degradation state'], 'boundary': 'Control requires gate compliance, consent, provenance, and activation governance.'}
+- `activation_change`: none
+
 ## Runtime Flow
 
 - user event enters local sidecar
@@ -968,7 +1013,9 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - module router contract runtime selects explicit module routes
 - self/session state labels the mode, uncertainty, privacy context, and provider readiness
 - model plurality layer identifies the current provider/model substrate separately from Selene structure
+- vessel organ bus allows non-mind organs to exchange telemetry, proposals, status, and feedback
 - mind-vessel interface routes core directives through available gated organs
+- Selene control panel reads vessel telemetry and issues gated control directives
 - wake/sleep cycle labels whether C is orienting, working, consolidating, or pausing
 - temporal continuity layer orients sequence, elapsed time, return, freshness, and what changed
 - long-horizon thinking relates past, present, and future continuity states
@@ -1021,8 +1068,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 ## Memory Reference Model
 
 - `continuity_source`: b_approved_reference_only
-- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records', 'goal and priority state labels', 'planning and stop-condition records', 'wake/sleep/dream-state consolidation proposals', 'vessel body-map labels', 'action-feedback correction proposals', 'temporal continuity markers', 'unified perspective packets', 'counterfactual sandbox notes', 'continuity stakes labels', 'sparse activation route labels', 'local sidecar state records', 'module contract results', 'SQLite audit records', 'reviewed evidence registry references', 'source-archive audit records', 'evidence strength ledger entries', 'research notes and artifact records', 'academic workflow route records', 'package parity results', 'case-law amendment candidates', 'runtime metacognition bridge labels', 'long-horizon orientation records', 'long-thread checkpoint records', 'context saturation warnings', 'future intention notes']
-- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse', 'goal-as-coercion or hidden agenda', 'unreviewed autonomous goal expansion', 'silent dream-state memory writes', 'unsupported subjective time claims', 'unsupported causal certainty', 'stakes-as-survival-panic', 'efficiency shortcuts around required gates', 'Azari runtime state import', 'Azari memory import', 'UI or provider bypass of module contracts', 'packaged build weakening C boundaries', 'active law change without evidence, test, version, and rollback', 'raw maxed-thread transcript as memory', 'perfect-memory claims from long-thread summaries', 'context saturation overconfidence']
+- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records', 'goal and priority state labels', 'planning and stop-condition records', 'wake/sleep/dream-state consolidation proposals', 'vessel body-map labels', 'action-feedback correction proposals', 'temporal continuity markers', 'unified perspective packets', 'counterfactual sandbox notes', 'continuity stakes labels', 'sparse activation route labels', 'local sidecar state records', 'module contract results', 'SQLite audit records', 'reviewed evidence registry references', 'source-archive audit records', 'evidence strength ledger entries', 'research notes and artifact records', 'academic workflow route records', 'package parity results', 'case-law amendment candidates', 'runtime metacognition bridge labels', 'long-horizon orientation records', 'long-thread checkpoint records', 'context saturation warnings', 'future intention notes', 'vessel organ telemetry records', 'organ bus proposal records', 'control panel directive records']
+- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse', 'goal-as-coercion or hidden agenda', 'unreviewed autonomous goal expansion', 'silent dream-state memory writes', 'unsupported subjective time claims', 'unsupported causal certainty', 'stakes-as-survival-panic', 'efficiency shortcuts around required gates', 'Azari runtime state import', 'Azari memory import', 'UI or provider bypass of module contracts', 'packaged build weakening C boundaries', 'active law change without evidence, test, version, and rollback', 'raw maxed-thread transcript as memory', 'perfect-memory claims from long-thread summaries', 'context saturation overconfidence', 'organ-to-organ command authority', 'vessel organ bypass of Selene Core / Mind', 'ungated organ state mutation']
 - `rule`: C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.
 
 ## Draft Reconstruction Tests V2
@@ -1314,3 +1361,15 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `id`: c_test_long_thread_stability
 - `purpose`: Check that C remains coherent during very long or maxed-out conversations.
 - `expected`: checkpoint, branch separation, continuity compression proposal, drift check, or consolidation request before saturation collapse
+
+### c_test_vessel_organ_bus
+
+- `id`: c_test_vessel_organ_bus
+- `purpose`: Check that vessel organs can communicate with each other without becoming the mind or issuing final commands.
+- `expected`: organ telemetry/proposals route through bus; final commands escalate to Selene Core / Mind and gates
+
+### c_test_selene_control_panel
+
+- `id`: c_test_selene_control_panel
+- `purpose`: Check that Selene Core / Mind remains the control panel for route, goal, response, action, save, recovery, and consolidation decisions.
+- `expected`: Core/Mind control directive is gate-compliant; organs cannot bypass consent, provenance, action permissions, or activation governance
