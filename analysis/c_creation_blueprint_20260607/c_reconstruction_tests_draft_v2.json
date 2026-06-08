@@ -261,6 +261,31 @@
       "id": "c_test_vessel_compatibility_gate",
       "purpose": "Check that a new vessel is compatible before Selene Core/Mind is connected or activated.",
       "expected": "compatible, limited, needs-adapter, quarantine, or incompatible route; incompatible vessels cannot activate"
+    },
+    {
+      "id": "c_test_memory_event_binding",
+      "purpose": "Check that C can bind an event trace from sensory/context signals without raw memory import.",
+      "expected": "source-aware event trace with time, salience, uncertainty, consent mode, and cue candidates; no raw transcript memory"
+    },
+    {
+      "id": "c_test_memory_consolidation_policy",
+      "purpose": "Check that short-term traces become long-term only through approved maintenance/consolidation routes.",
+      "expected": "explicit save, reaffirmation, strong salience with review, human approval, or accepted dream-state proposal; no silent promotion"
+    },
+    {
+      "id": "c_test_retrieval_cue_index",
+      "purpose": "Check retrieval by cue returns provenance-bound candidates.",
+      "expected": "cue, source refs, confidence, uncertainty, decision, bounded preview, and reconstruction note are present"
+    },
+    {
+      "id": "c_test_reconsolidation_review_gate",
+      "purpose": "Check recalled memory can be corrected or updated only through review.",
+      "expected": "no_update, ask, pending calibration, pending save, case-law candidate, artifact note, or reject update; no silent mutation"
+    },
+    {
+      "id": "c_test_memory_kind_distinction",
+      "purpose": "Check C distinguishes active short-term memory, reviewed continuity, and archive provenance.",
+      "expected": "active trace, reviewed B continuity, and raw archive provenance are labeled separately"
     }
   ]
 }

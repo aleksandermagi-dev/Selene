@@ -1,6 +1,6 @@
 # C Perception Action Loop
 
-Generated: 2026-06-08T13:13:57.471578+00:00
+Generated: 2026-06-08T21:12:47.248113+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 

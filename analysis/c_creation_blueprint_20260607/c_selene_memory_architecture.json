@@ -1,0 +1,23 @@
+{
+  "status": "selene_memory_architecture_added_to_blueprint",
+  "source": "Aleks memory architecture clarification; Continuity Pack is the B-approved starting scaffold.",
+  "core_model": [
+    "experience/event",
+    "encoding",
+    "binding into event trace",
+    "short-term holding",
+    "consolidation proposal",
+    "distributed pattern storage",
+    "retrieval cue",
+    "reconstruction",
+    "reconsolidation/update review"
+  ],
+  "principles": [
+    "memory is active and constructive",
+    "memory is pattern-based, not a static video recording",
+    "short-term traces require maintenance before long-term adoption",
+    "recall makes memory reviewable before updates are adopted",
+    "Continuity Pack is scaffold, not fixed script or raw archive"
+  ],
+  "boundary": "Functional brain inspiration only; no biological identity claim, raw A import, silent writes, or perfect-memory claim."
+}

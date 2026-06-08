@@ -1,6 +1,6 @@
 # C Capability Degradation Matrix
 
-Generated: 2026-06-08T13:13:57.463962+00:00
+Generated: 2026-06-08T21:12:47.238802+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 

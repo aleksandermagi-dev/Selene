@@ -1,0 +1,12 @@
+# C Retrieval Reconsolidation Policy
+
+Generated: 2026-06-08T21:12:47.247671+00:00
+
+Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
+
+## Spec
+
+- `status`: specified_only
+- `retrieval_result_fields`: ['cue', 'matched_pattern_ids', 'source_refs', 'confidence', 'uncertainty', 'decision', 'bounded_preview', 'reconstruction_note']
+- `reconsolidation_routes`: ['no_update', 'ask_for_clarification', 'pending_calibration_update', 'pending_continuity_save', 'case_law_candidate', 'artifact_note', 'reject_update']
+- `boundary`: Recall can make memory reviewable, but no recalled memory is updated silently.

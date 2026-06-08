@@ -49,7 +49,14 @@
     "control panel directive records",
     "pattern/core transfer records",
     "vessel compatibility reports",
-    "transfer reconstruction test results"
+    "transfer reconstruction test results",
+    "encoded event traces",
+    "working memory maintenance records",
+    "salience-weighted memory labels",
+    "procedural memory candidates",
+    "distributed pattern memory records",
+    "retrieval cue records",
+    "reconsolidation review records"
   ],
   "blocked": [
     "raw A memory import",
@@ -81,7 +88,12 @@
     "module instance treated as transfer identity",
     "target vessel activation without compatibility gate",
     "transfer without reconstruction tests",
-    "raw A copied as transfer payload"
+    "raw A copied as transfer payload",
+    "raw transcript stored as event memory",
+    "short-term trace promoted without review",
+    "retrieval without provenance",
+    "silent recalled-memory update",
+    "human-brain identity claim"
   ],
   "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only."
 }

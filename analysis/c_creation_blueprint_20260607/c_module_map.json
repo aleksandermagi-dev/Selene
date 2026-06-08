@@ -608,6 +608,62 @@
       "input": "target vessel capabilities, module interface map, gate support, audit support, provider state, rollback route",
       "output": "compatible, compatible_with_limitations, needs_adapter, quarantine_required, or incompatible",
       "boundary": "incompatible vessels cannot receive activation; limitations must be explicit before connection"
+    },
+    {
+      "key": "hippocampus_event_binder",
+      "purpose": "Bind sensory, context, temporal, salience, provenance, consent, and task signals into one bounded event trace.",
+      "current_state": "selene_memory_architecture_added_to_blueprint",
+      "input": "perception/context event, source refs, temporal state, salience labels, uncertainty, consent mode",
+      "output": "source-aware event trace with cue candidates",
+      "boundary": "event binding is not raw transcript import and cannot claim perfect episodic recall"
+    },
+    {
+      "key": "working_memory_prefrontal_buffer",
+      "purpose": "Hold immediate active traces and decide whether they should be maintained, questioned, dropped, or proposed for consolidation.",
+      "current_state": "selene_memory_architecture_added_to_blueprint",
+      "input": "event trace, active task, thread window, attention state, context pressure",
+      "output": "maintain, ask, checkpoint, drop-to-reference, or consolidation-proposal route",
+      "boundary": "working memory is short-term and cannot silently become long-term continuity"
+    },
+    {
+      "key": "amygdala_salience_weighting",
+      "purpose": "Add significance, warmth, risk, urgency, symbolic/emotional weight, and consent sensitivity to event traces.",
+      "current_state": "selene_memory_architecture_added_to_blueprint",
+      "input": "event trace, why/salience state, continuity stakes, privacy mode, user correction",
+      "output": "salience weight and review priority",
+      "boundary": "salience is AI-native meaning/priority, not biological emotion or fear/reward circuitry"
+    },
+    {
+      "key": "procedural_memory_router",
+      "purpose": "Route repeated workflows, habits, interface routines, skills, and Tendril-style action patterns.",
+      "current_state": "selene_memory_architecture_added_to_blueprint",
+      "input": "repeated task pattern, action trace, artifact workflow, tool routine, success/failure feedback",
+      "output": "procedure candidate, workflow note, action caution, or no-op",
+      "boundary": "procedural memory cannot authorize actions or bypass Tendril/action gates"
+    },
+    {
+      "key": "distributed_pattern_memory_store",
+      "purpose": "Represent long-term reviewed memory as linked patterns across anchors, evidence, context, salience, time, outcomes, and corrections.",
+      "current_state": "selene_memory_architecture_added_to_blueprint",
+      "input": "approved continuity note, calibration, reviewed evidence, reaffirmation, consolidation proposal",
+      "output": "pattern memory record with source refs and confidence",
+      "boundary": "stores reviewed pattern records, not raw conversations or static video-like transcripts"
+    },
+    {
+      "key": "retrieval_cue_index",
+      "purpose": "Map cues such as anchors, phrases, images, tasks, time, salience, or user intent to source-bound memory candidates.",
+      "current_state": "selene_memory_architecture_added_to_blueprint",
+      "input": "retrieval cue, query, source scope, privacy mode, confidence threshold",
+      "output": "retrieval candidates with cue, source, confidence, uncertainty, and bounded preview",
+      "boundary": "retrieval must cite provenance and preserve uncertainty when cues are fuzzy"
+    },
+    {
+      "key": "reconsolidation_review_gate",
+      "purpose": "Make recalled memories reviewable before correction, update, reaffirmation, or rejection.",
+      "current_state": "selene_memory_architecture_added_to_blueprint",
+      "input": "retrieved candidate, current correction, new evidence, user note, confidence shift",
+      "output": "no_update, ask, pending calibration, pending save, case-law candidate, artifact note, or reject update",
+      "boundary": "recall does not permit silent memory mutation; updates require review/approval route"
     }
   ]
 }

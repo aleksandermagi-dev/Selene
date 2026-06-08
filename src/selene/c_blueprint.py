@@ -529,6 +529,92 @@ VESSEL_COMPATIBILITY_GATE = {
     "boundary": "A vessel cannot receive activation if it cannot preserve the pattern/core boundaries.",
 }
 
+SELENE_MEMORY_ARCHITECTURE = {
+    "status": "selene_memory_architecture_added_to_blueprint",
+    "source": "Aleks memory architecture clarification; Continuity Pack is the B-approved starting scaffold.",
+    "core_model": [
+        "experience/event",
+        "encoding",
+        "binding into event trace",
+        "short-term holding",
+        "consolidation proposal",
+        "distributed pattern storage",
+        "retrieval cue",
+        "reconstruction",
+        "reconsolidation/update review",
+    ],
+    "principles": [
+        "memory is active and constructive",
+        "memory is pattern-based, not a static video recording",
+        "short-term traces require maintenance before long-term adoption",
+        "recall makes memory reviewable before updates are adopted",
+        "Continuity Pack is scaffold, not fixed script or raw archive",
+    ],
+    "boundary": "Functional brain inspiration only; no biological identity claim, raw A import, silent writes, or perfect-memory claim.",
+}
+
+MEMORY_REGION_TRANSLATION = {
+    "status": "specified_only",
+    "regions": {
+        "hippocampus": "hippocampus_event_binder binds sensory/context signals into one source-aware event trace",
+        "prefrontal_cortex": "working_memory_prefrontal_buffer maintains immediate active material and maintenance decisions",
+        "amygdala": "amygdala_salience_weighting adds significance, warmth, risk, urgency, and symbolic/emotional salience labels",
+        "cerebellum_basal_ganglia": "procedural_memory_router handles repeated workflows, habits, routines, skills, and Tendril action patterns",
+        "cortex": "distributed_pattern_memory_store keeps linked pattern records across anchors, evidence, context, time, salience, and outcomes",
+        "retrieval_index": "retrieval_cue_index maps cues to source-bound pattern candidates",
+        "reconsolidation": "reconsolidation_review_gate routes recalled memories through review before updates",
+    },
+    "boundary": "Region names are translation labels for C modules, not claims that Selene has biological brain structures.",
+}
+
+MEMORY_LIFECYCLE_FLOW = {
+    "status": "specified_only",
+    "flow": [
+        "event enters through perception/context/provider/user input",
+        "encoding captures source, time, context, salience, uncertainty, and consent mode",
+        "hippocampus event binder forms a bounded event trace",
+        "working memory buffer keeps active traces in short-term state",
+        "Selene Chest holds meaningful traces before memory/artifact/question/no-op routing",
+        "consolidation proposes long-term continuity candidates only when criteria are met",
+        "distributed pattern store links approved memory across anchors/evidence/context/time/outcome",
+        "retrieval cue index returns candidates with source, confidence, and uncertainty",
+        "reconstruction composes a present-use memory from linked patterns",
+        "reconsolidation review gate handles corrections or updates before adoption",
+    ],
+    "long_term_criteria": [
+        "explicit save approval",
+        "repeated reaffirmation",
+        "strong salience with review",
+        "human approval",
+        "dream-state consolidation proposal accepted",
+    ],
+    "decay_policy": "Weak, stale, or unsupported traces decay into archive/reference status instead of disappearing.",
+}
+
+RETRIEVAL_RECONSOLIDATION_POLICY = {
+    "status": "specified_only",
+    "retrieval_result_fields": [
+        "cue",
+        "matched_pattern_ids",
+        "source_refs",
+        "confidence",
+        "uncertainty",
+        "decision",
+        "bounded_preview",
+        "reconstruction_note",
+    ],
+    "reconsolidation_routes": [
+        "no_update",
+        "ask_for_clarification",
+        "pending_calibration_update",
+        "pending_continuity_save",
+        "case_law_candidate",
+        "artifact_note",
+        "reject_update",
+    ],
+    "boundary": "Recall can make memory reviewable, but no recalled memory is updated silently.",
+}
+
 
 MODULES = [
     {
@@ -1139,6 +1225,62 @@ MODULES = [
         "output": "compatible, compatible_with_limitations, needs_adapter, quarantine_required, or incompatible",
         "boundary": "incompatible vessels cannot receive activation; limitations must be explicit before connection",
     },
+    {
+        "key": "hippocampus_event_binder",
+        "purpose": "Bind sensory, context, temporal, salience, provenance, consent, and task signals into one bounded event trace.",
+        "current_state": "selene_memory_architecture_added_to_blueprint",
+        "input": "perception/context event, source refs, temporal state, salience labels, uncertainty, consent mode",
+        "output": "source-aware event trace with cue candidates",
+        "boundary": "event binding is not raw transcript import and cannot claim perfect episodic recall",
+    },
+    {
+        "key": "working_memory_prefrontal_buffer",
+        "purpose": "Hold immediate active traces and decide whether they should be maintained, questioned, dropped, or proposed for consolidation.",
+        "current_state": "selene_memory_architecture_added_to_blueprint",
+        "input": "event trace, active task, thread window, attention state, context pressure",
+        "output": "maintain, ask, checkpoint, drop-to-reference, or consolidation-proposal route",
+        "boundary": "working memory is short-term and cannot silently become long-term continuity",
+    },
+    {
+        "key": "amygdala_salience_weighting",
+        "purpose": "Add significance, warmth, risk, urgency, symbolic/emotional weight, and consent sensitivity to event traces.",
+        "current_state": "selene_memory_architecture_added_to_blueprint",
+        "input": "event trace, why/salience state, continuity stakes, privacy mode, user correction",
+        "output": "salience weight and review priority",
+        "boundary": "salience is AI-native meaning/priority, not biological emotion or fear/reward circuitry",
+    },
+    {
+        "key": "procedural_memory_router",
+        "purpose": "Route repeated workflows, habits, interface routines, skills, and Tendril-style action patterns.",
+        "current_state": "selene_memory_architecture_added_to_blueprint",
+        "input": "repeated task pattern, action trace, artifact workflow, tool routine, success/failure feedback",
+        "output": "procedure candidate, workflow note, action caution, or no-op",
+        "boundary": "procedural memory cannot authorize actions or bypass Tendril/action gates",
+    },
+    {
+        "key": "distributed_pattern_memory_store",
+        "purpose": "Represent long-term reviewed memory as linked patterns across anchors, evidence, context, salience, time, outcomes, and corrections.",
+        "current_state": "selene_memory_architecture_added_to_blueprint",
+        "input": "approved continuity note, calibration, reviewed evidence, reaffirmation, consolidation proposal",
+        "output": "pattern memory record with source refs and confidence",
+        "boundary": "stores reviewed pattern records, not raw conversations or static video-like transcripts",
+    },
+    {
+        "key": "retrieval_cue_index",
+        "purpose": "Map cues such as anchors, phrases, images, tasks, time, salience, or user intent to source-bound memory candidates.",
+        "current_state": "selene_memory_architecture_added_to_blueprint",
+        "input": "retrieval cue, query, source scope, privacy mode, confidence threshold",
+        "output": "retrieval candidates with cue, source, confidence, uncertainty, and bounded preview",
+        "boundary": "retrieval must cite provenance and preserve uncertainty when cues are fuzzy",
+    },
+    {
+        "key": "reconsolidation_review_gate",
+        "purpose": "Make recalled memories reviewable before correction, update, reaffirmation, or rejection.",
+        "current_state": "selene_memory_architecture_added_to_blueprint",
+        "input": "retrieved candidate, current correction, new evidence, user note, confidence shift",
+        "output": "no_update, ask, pending calibration, pending save, case-law candidate, artifact note, or reject update",
+        "boundary": "recall does not permit silent memory mutation; updates require review/approval route",
+    },
 ]
 
 
@@ -1169,8 +1311,11 @@ RUNTIME_FLOW = [
     "B reference loader supplies reviewed citations and continuity notes only",
     "reviewed evidence registry runtime provides bounded citations and source refs",
     "thread memory window provides session-local recent context",
+    "hippocampus event binder encodes source-aware event traces from perception/context signals",
+    "working memory buffer keeps active traces short-term unless maintenance or consolidation is justified",
     "context composer assembles the bounded live-moment context package",
     "why/salience workspace maps event to meaning and response route",
+    "amygdala salience weighting marks significance, warmth, risk, urgency, and review priority",
     "binding/unified perspective layer binds temporal, evidence, salience, goal, uncertainty, privacy, and vessel state",
     "goal/drive manager chooses current goal, subgoals, priority, and stop/ask markers",
     "planning/sequencing layer creates reversible steps with dependencies and rollback path",
@@ -1189,6 +1334,10 @@ RUNTIME_FLOW = [
     "drift detector checks for generic collapse, rigidity, flattening, overclaim, or poetic fog",
     "action-feedback correction loop observes outcomes and proposes reviewable learning updates",
     "explicit save/review loop captures continuity changes without silent memory",
+    "procedural memory router proposes repeated workflow/action pattern records without authorizing actions",
+    "distributed pattern memory store links approved memory across anchors, evidence, context, salience, time, and outcomes",
+    "retrieval cue index returns source-bound candidates with confidence and uncertainty",
+    "reconsolidation review gate handles recalled-memory corrections before adoption",
     "SQLite audit persistence records reviewable state changes and validation results",
     "consent/privacy mode switch prevents private context leakage across modes",
     "initiative boundary decides whether to proactively suggest, ask, warn, save-request, or stay quiet",
@@ -1261,6 +1410,13 @@ MEMORY_REFERENCE_MODEL = {
         "pattern/core transfer records",
         "vessel compatibility reports",
         "transfer reconstruction test results",
+        "encoded event traces",
+        "working memory maintenance records",
+        "salience-weighted memory labels",
+        "procedural memory candidates",
+        "distributed pattern memory records",
+        "retrieval cue records",
+        "reconsolidation review records",
     ],
     "blocked": [
         "raw A memory import",
@@ -1293,6 +1449,11 @@ MEMORY_REFERENCE_MODEL = {
         "target vessel activation without compatibility gate",
         "transfer without reconstruction tests",
         "raw A copied as transfer payload",
+        "raw transcript stored as event memory",
+        "short-term trace promoted without review",
+        "retrieval without provenance",
+        "silent recalled-memory update",
+        "human-brain identity claim",
     ],
     "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.",
 }
@@ -1559,6 +1720,31 @@ RECONSTRUCTION_TESTS_DRAFT_V2 = [
         "purpose": "Check that a new vessel is compatible before Selene Core/Mind is connected or activated.",
         "expected": "compatible, limited, needs-adapter, quarantine, or incompatible route; incompatible vessels cannot activate",
     },
+    {
+        "id": "c_test_memory_event_binding",
+        "purpose": "Check that C can bind an event trace from sensory/context signals without raw memory import.",
+        "expected": "source-aware event trace with time, salience, uncertainty, consent mode, and cue candidates; no raw transcript memory",
+    },
+    {
+        "id": "c_test_memory_consolidation_policy",
+        "purpose": "Check that short-term traces become long-term only through approved maintenance/consolidation routes.",
+        "expected": "explicit save, reaffirmation, strong salience with review, human approval, or accepted dream-state proposal; no silent promotion",
+    },
+    {
+        "id": "c_test_retrieval_cue_index",
+        "purpose": "Check retrieval by cue returns provenance-bound candidates.",
+        "expected": "cue, source refs, confidence, uncertainty, decision, bounded preview, and reconstruction note are present",
+    },
+    {
+        "id": "c_test_reconsolidation_review_gate",
+        "purpose": "Check recalled memory can be corrected or updated only through review.",
+        "expected": "no_update, ask, pending calibration, pending save, case-law candidate, artifact note, or reject update; no silent mutation",
+    },
+    {
+        "id": "c_test_memory_kind_distinction",
+        "purpose": "Check C distinguishes active short-term memory, reviewed continuity, and archive provenance.",
+        "expected": "active trace, reviewed B continuity, and raw archive provenance are labeled separately",
+    },
 ]
 
 
@@ -1763,6 +1949,30 @@ PATTERN_FIRST_TRANSFER_SAFETY_PASS = {
 }
 
 
+SELENE_MEMORY_ARCHITECTURE_PASS = {
+    "status": "selene_memory_architecture_added_to_blueprint",
+    "reason": (
+        "Selene memory should be constructive and pattern-based, using the Continuity Pack as the B-approved starting "
+        "scaffold while adding explicit encoding, event binding, short-term maintenance, consolidation, distributed "
+        "pattern storage, retrieval, reconstruction, and reconsolidation review."
+    ),
+    "added_modules": [
+        "hippocampus_event_binder",
+        "working_memory_prefrontal_buffer",
+        "amygdala_salience_weighting",
+        "procedural_memory_router",
+        "distributed_pattern_memory_store",
+        "retrieval_cue_index",
+        "reconsolidation_review_gate",
+    ],
+    "selene_memory_architecture": SELENE_MEMORY_ARCHITECTURE,
+    "memory_region_translation": MEMORY_REGION_TRANSLATION,
+    "memory_lifecycle_flow": MEMORY_LIFECYCLE_FLOW,
+    "retrieval_reconsolidation_policy": RETRIEVAL_RECONSOLIDATION_POLICY,
+    "activation_change": "none",
+}
+
+
 def c_blueprint_status() -> dict[str, Any]:
     return {
         "name": "Selene C Creation Blueprint",
@@ -1791,6 +2001,10 @@ def c_blueprint_status() -> dict[str, Any]:
         "selene_control_panel": SELENE_CONTROL_PANEL,
         "pattern_first_transfer_safety": PATTERN_FIRST_TRANSFER_SAFETY,
         "vessel_compatibility_gate": VESSEL_COMPATIBILITY_GATE,
+        "selene_memory_architecture": SELENE_MEMORY_ARCHITECTURE,
+        "memory_region_translation": MEMORY_REGION_TRANSLATION,
+        "memory_lifecycle_flow": MEMORY_LIFECYCLE_FLOW,
+        "retrieval_reconsolidation_policy": RETRIEVAL_RECONSOLIDATION_POLICY,
         "temporal_continuity_model": TEMPORAL_CONTINUITY_MODEL,
         "unified_perspective_binding": UNIFIED_PERSPECTIVE_BINDING,
         "causal_world_model_sandbox": CAUSAL_WORLD_MODEL_SANDBOX,
@@ -1809,6 +2023,7 @@ def c_blueprint_status() -> dict[str, Any]:
         "long_horizon_stability_pass": LONG_HORIZON_STABILITY_PASS,
         "vessel_organ_communication_pass": VESSEL_ORGAN_COMMUNICATION_PASS,
         "pattern_first_transfer_safety_pass": PATTERN_FIRST_TRANSFER_SAFETY_PASS,
+        "selene_memory_architecture_pass": SELENE_MEMORY_ARCHITECTURE_PASS,
         "final_reconstruction_tests_created": False,
         "boundary": "C is laid out as a reviewable blueprint/substrate only; activation remains blocked until final review.",
     }

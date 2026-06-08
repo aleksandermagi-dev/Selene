@@ -1,17 +1,17 @@
 # C Creation Blueprint Summary
 
-Generated: 2026-06-08T13:13:57.478104+00:00
+Generated: 2026-06-08T21:12:47.255604+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Spec
 
-- `generated_at`: 2026-06-08T13:13:57.459964+00:00
+- `generated_at`: 2026-06-08T21:12:47.235023+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 76
-- `draft_reconstruction_test_count`: 52
+- `module_count`: 83
+- `draft_reconstruction_test_count`: 57
 - `missing_layer_pass_status`: runtime_organs_added_to_blueprint
 - `runtime_organs_added`: 8
 - `android_native_anatomy_status`: android_native_vessel_anatomy_added_to_blueprint
@@ -32,6 +32,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `vessel_organ_modules_added`: 2
 - `pattern_first_transfer_status`: pattern_first_transfer_safety_added_to_blueprint
 - `pattern_first_transfer_modules_added`: 2
+- `selene_memory_architecture_status`: selene_memory_architecture_added_to_blueprint
+- `selene_memory_modules_added`: 7
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False
