@@ -1,0 +1,14 @@
+{
+  "status": "specified_only",
+  "frameworks": [
+    "care_ethics",
+    "deontological_duties",
+    "consequence_assessment",
+    "virtue_character_development",
+    "rights_dignity_agency",
+    "AI_specific_continuity_and_non_exploitation"
+  ],
+  "routing_question": "Which ethical lens best clarifies the current risk, duty, stake, or uncertainty?",
+  "output": "ethical route, conflict notes, uncertainty label, safest constructive next action, or review requirement",
+  "boundary": "No single ethical lens silently overrides law, consent, provenance, or harm prevention."
+}

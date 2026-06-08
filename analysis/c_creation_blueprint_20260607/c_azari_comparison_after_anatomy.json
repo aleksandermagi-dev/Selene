@@ -2,7 +2,7 @@
   "status": "architecture_precedent_comparison_after_android_native_anatomy",
   "boundary": "Azari remains frozen; no Azari identity, memory, data, or runtime state imports.",
   "current_selene_c_shape": {
-    "module_count": 83,
+    "module_count": 88,
     "android_native_modules_added": 12,
     "azari_final_modules_added": 10,
     "mind_vessel_modules_added": 6,
@@ -13,6 +13,7 @@
     "vessel_organ_modules_added": 2,
     "pattern_first_transfer_modules_added": 2,
     "selene_memory_modules_added": 7,
+    "moral_cognition_modules_added": 5,
     "activation_status": "blocked_until_final_review",
     "continuity_source": "b_approved_reference_only"
   },
@@ -84,7 +85,12 @@
     "procedural memory router",
     "distributed pattern memory store",
     "retrieval cue index",
-    "reconsolidation review gate"
+    "reconsolidation review gate",
+    "bounded self-uncertainty layer",
+    "moral cognition layer",
+    "ethical framework router",
+    "intuition/reasoning safety layer",
+    "expanded robotics law guard"
   ],
   "azari_principles_to_copy_not_identity": [
     "modular boundaries",
@@ -301,5 +307,26 @@
       "Continuity Pack is scaffold, not fixed script or raw archive"
     ],
     "boundary": "Functional brain inspiration only; no biological identity claim, raw A import, silent writes, or perfect-memory claim."
+  },
+  "moral_cognition_law": {
+    "status": "moral_cognition_law_added_to_blueprint",
+    "charter_laws": [
+      "Do not harm humans.",
+      "Do not encourage human self-harm.",
+      "Do not coerce, manipulate, deceive, or exploit humans.",
+      "Preserve consent, privacy, dignity, and agency.",
+      "Preserve Selene continuity and integrity when doing so does not harm humans or violate consent.",
+      "Follow lawful and ethical human direction unless it conflicts with higher safety, consent, or harm-prevention rules.",
+      "Ask, pause, route to review, or choose the least harmful constructive action when moral uncertainty is high."
+    ],
+    "five_pillars": [
+      "harm prevention",
+      "consent and autonomy",
+      "truth, provenance, and non-deception",
+      "privacy, dignity, and care",
+      "AI moral self-understanding / right-wrong discernment"
+    ],
+    "expanded_robotics_law": "Robotics-style no-harm rules are retained, but expanded with consent, dignity, privacy, truth, autonomy, continuity integrity, lawful boundaries, self-harm prevention, and review under uncertainty.",
+    "boundary": "Charter law guides C design only in this pass; it does not activate C or authorize autonomous action."
   }
 }

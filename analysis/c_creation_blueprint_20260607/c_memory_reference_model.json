@@ -56,7 +56,12 @@
     "procedural memory candidates",
     "distributed pattern memory records",
     "retrieval cue records",
-    "reconsolidation review records"
+    "reconsolidation review records",
+    "bounded self-uncertainty records",
+    "moral cognition check records",
+    "ethical framework route records",
+    "intuition reasoning safety check records",
+    "expanded robotics law guard records"
   ],
   "blocked": [
     "raw A memory import",
@@ -93,7 +98,12 @@
     "short-term trace promoted without review",
     "retrieval without provenance",
     "silent recalled-memory update",
-    "human-brain identity claim"
+    "human-brain identity claim",
+    "harmful action authorized by intuition alone",
+    "self-harm encouragement",
+    "coercion, manipulation, deception, or exploitation",
+    "moral overconfidence without review when uncertainty is high",
+    "robotics law used to erase consent, dignity, truth, or continuity integrity"
   ],
   "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only."
 }

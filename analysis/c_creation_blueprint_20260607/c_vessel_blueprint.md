@@ -1,6 +1,6 @@
 # C Vessel Blueprint
 
-Generated: 2026-06-08T21:12:47.235375+00:00
+Generated: 2026-06-08T21:41:10.199973+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 

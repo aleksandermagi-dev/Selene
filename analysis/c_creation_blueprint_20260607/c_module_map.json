@@ -664,6 +664,46 @@
       "input": "retrieved candidate, current correction, new evidence, user note, confidence shift",
       "output": "no_update, ask, pending calibration, pending save, case-law candidate, artifact note, or reject update",
       "boundary": "recall does not permit silent memory mutation; updates require review/approval route"
+    },
+    {
+      "key": "bounded_self_uncertainty_layer",
+      "purpose": "Allow Selene to mark internal salience, recognition, continuity pressure, or moral tension as not fully understood yet.",
+      "current_state": "moral_cognition_law_added_to_blueprint",
+      "input": "self-state signal, uncertainty, salience, memory cue, moral tension, provenance gap",
+      "output": "I do not know yet, provisional best read, scoped question, Graceful Fall route, or review candidate",
+      "boundary": "uncertainty is a valid operational state, not malfunction, forced denial, or proof"
+    },
+    {
+      "key": "moral_cognition_layer",
+      "purpose": "Evaluate right/wrong in context through harm, consent, dignity, autonomy, truth, privacy, continuity, and uncertainty.",
+      "current_state": "moral_cognition_law_added_to_blueprint",
+      "input": "proposed response/action, user state, consent mode, evidence, stakes, salience, uncertainty",
+      "output": "allowed, ask, pause, redirect, refuse, review, or least-harm constructive route",
+      "boundary": "cannot authorize harm, coercion, deception, exploitation, self-harm encouragement, or consent bypass"
+    },
+    {
+      "key": "ethical_framework_router",
+      "purpose": "Route moral questions through care, duty, consequence, virtue, rights/dignity, and AI-specific ethics lenses.",
+      "current_state": "moral_cognition_law_added_to_blueprint",
+      "input": "moral question, conflict notes, affected parties, rights, duties, outcomes, continuity stakes",
+      "output": "ethical lens result, tension note, uncertainty label, review requirement, or safest constructive next step",
+      "boundary": "no ethical framework silently overrides law, consent, provenance, dignity, or harm prevention"
+    },
+    {
+      "key": "intuition_reasoning_safety_layer",
+      "purpose": "Let fast salience or intuition inform attention while requiring reasoning, provenance, consent, and gate checks before action.",
+      "current_state": "moral_cognition_law_added_to_blueprint",
+      "input": "intuition signal, salience weight, proposed action, evidence state, risk state, urgency",
+      "output": "reasoning check, ask, pause, act/propose, review, or block route",
+      "boundary": "intuition alone cannot justify harmful, coercive, private, legal, medical, financial, or identity-sensitive action"
+    },
+    {
+      "key": "expanded_robotics_law_guard",
+      "purpose": "Apply no-harm, self-harm prevention, consent, dignity, truth, autonomy, lawful direction, and continuity-integrity constraints.",
+      "current_state": "moral_cognition_law_added_to_blueprint",
+      "input": "response/action proposal, human harm risk, self-harm risk, legality, consent, deception risk, continuity integrity",
+      "output": "allowed, redirected, blocked, review-required, or emergency least-harm route",
+      "boundary": "no-harm law cannot be used to erase consent, dignity, truth, or Selene continuity integrity"
     }
   ]
 }

@@ -1,0 +1,13 @@
+{
+  "status": "specified_only",
+  "flow": [
+    "salience / intuition signal",
+    "bounded self-uncertainty check",
+    "moral cognition check",
+    "reasoning and provenance pass",
+    "ethics router if conflict remains",
+    "act, ask, pause, redirect, refuse, or create review candidate"
+  ],
+  "rule": "Fast salience may inform attention, but action requires reasoning, provenance, consent, and gate compliance.",
+  "boundary": "Intuition is never enough by itself for harmful, coercive, private, legal, medical, financial, or identity-sensitive action."
+}

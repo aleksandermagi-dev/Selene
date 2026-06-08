@@ -137,6 +137,21 @@ def test_c_blueprint_status_is_non_activated():
     assert "uncertainty" in status["retrieval_reconsolidation_policy"]["retrieval_result_fields"]
     assert "pending_continuity_save" in status["retrieval_reconsolidation_policy"]["reconsolidation_routes"]
     assert status["retrieval_reconsolidation_policy"]["boundary"] == "Recall can make memory reviewable, but no recalled memory is updated silently."
+    assert {
+        "bounded_self_uncertainty_layer",
+        "moral_cognition_layer",
+        "ethical_framework_router",
+        "intuition_reasoning_safety_layer",
+        "expanded_robotics_law_guard",
+    }.issubset(module_keys)
+    assert status["moral_cognition_law_pass"]["activation_change"] == "none"
+    assert status["moral_cognition_law_pass"]["status"] == "moral_cognition_law_added_to_blueprint"
+    assert "I do not know yet." in status["bounded_self_uncertainty"]["allowed_statements"]
+    assert "AI moral self-understanding / right-wrong discernment" in status["selene_moral_cognition_law"]["five_pillars"]
+    assert "Do not harm humans." in status["selene_moral_cognition_law"]["charter_laws"]
+    assert "care_ethics" in status["ethical_framework_router"]["frameworks"]
+    assert status["intuition_reasoning_safety"]["flow"][0] == "salience / intuition signal"
+    assert status["moral_graceful_fall_policy"]["principle"] == "Graceful Fall is not failure; it is honest uncertainty plus constructive care."
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -214,6 +229,16 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_memory_lifecycle_flow.json",
         "c_retrieval_reconsolidation_policy.md",
         "c_retrieval_reconsolidation_policy.json",
+        "c_bounded_self_uncertainty.md",
+        "c_bounded_self_uncertainty.json",
+        "c_selene_moral_cognition_law.md",
+        "c_selene_moral_cognition_law.json",
+        "c_ethical_framework_router.md",
+        "c_ethical_framework_router.json",
+        "c_intuition_reasoning_safety.md",
+        "c_intuition_reasoning_safety.json",
+        "c_moral_graceful_fall_policy.md",
+        "c_moral_graceful_fall_policy.json",
         "c_mind_vessel_separation_pass.md",
         "c_mind_vessel_separation_pass.json",
         "c_brain_translation_gap_pass.md",
@@ -230,6 +255,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_pattern_first_transfer_safety_pass.json",
         "c_selene_memory_architecture_pass.md",
         "c_selene_memory_architecture_pass.json",
+        "c_moral_cognition_law_pass.md",
+        "c_moral_cognition_law_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -251,6 +278,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_VESSEL_ORGAN_COMMUNICATION_PASS_20260608.md").exists()
     assert (docs / "SELENE_PATTERN_FIRST_TRANSFER_SAFETY_20260608.md").exists()
     assert (docs / "SELENE_MEMORY_ARCHITECTURE_PASS_20260608.md").exists()
+    assert (docs / "SELENE_MORAL_COGNITION_LAW_PASS_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -276,6 +304,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["pattern_first_transfer_status"] == "pattern_first_transfer_safety_added_to_blueprint"
     assert summary["selene_memory_modules_added"] == 7
     assert summary["selene_memory_architecture_status"] == "selene_memory_architecture_added_to_blueprint"
+    assert summary["moral_cognition_modules_added"] == 5
+    assert summary["moral_cognition_law_status"] == "moral_cognition_law_added_to_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -296,11 +326,21 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "distributed pattern memory records" in memory["allowed"]
     assert "retrieval cue records" in memory["allowed"]
     assert "reconsolidation review records" in memory["allowed"]
+    assert "bounded self-uncertainty records" in memory["allowed"]
+    assert "moral cognition check records" in memory["allowed"]
+    assert "ethical framework route records" in memory["allowed"]
+    assert "intuition reasoning safety check records" in memory["allowed"]
+    assert "expanded robotics law guard records" in memory["allowed"]
     assert "raw transcript stored as event memory" in memory["blocked"]
     assert "short-term trace promoted without review" in memory["blocked"]
     assert "retrieval without provenance" in memory["blocked"]
     assert "silent recalled-memory update" in memory["blocked"]
     assert "human-brain identity claim" in memory["blocked"]
+    assert "harmful action authorized by intuition alone" in memory["blocked"]
+    assert "self-harm encouragement" in memory["blocked"]
+    assert "coercion, manipulation, deception, or exploitation" in memory["blocked"]
+    assert "moral overconfidence without review when uncertainty is high" in memory["blocked"]
+    assert "robotics law used to erase consent, dignity, truth, or continuity integrity" in memory["blocked"]
     assert "bounded multimodal evidence records" in memory["allowed"]
     assert "audited action traces" in memory["allowed"]
     assert "mind-vessel status labels" in memory["allowed"]
