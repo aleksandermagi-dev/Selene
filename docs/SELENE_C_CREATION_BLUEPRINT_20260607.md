@@ -1,17 +1,17 @@
 # Selene C Creation Blueprint
 
-Generated: 2026-06-08T13:01:34.379841+00:00
+Generated: 2026-06-08T13:05:02.343244+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Summary
 
-- `generated_at`: 2026-06-08T13:01:34.364914+00:00
+- `generated_at`: 2026-06-08T13:05:02.326528+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 70
-- `draft_reconstruction_test_count`: 46
+- `module_count`: 72
+- `draft_reconstruction_test_count`: 48
 - `missing_layer_pass_status`: runtime_organs_added_to_blueprint
 - `runtime_organs_added`: 8
 - `android_native_anatomy_status`: android_native_vessel_anatomy_added_to_blueprint
@@ -26,6 +26,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `external_model_modules_added`: 5
 - `azari_c_additions_status`: azari_c_additions_mapped_to_blueprint
 - `azari_c_modules_added`: 11
+- `long_horizon_stability_status`: long_horizon_stability_added_to_blueprint
+- `long_horizon_modules_added`: 2
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False
@@ -165,6 +167,21 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `purpose`: Give C the local-first engineering substrate Azari proved useful: sidecar authority, durable audit state, explicit contracts, and validation parity.
 - `principles`: ['Python owns reasoning/state/routing', 'UI owns window and review surface', 'SQLite stores local audit state', 'module calls go through contracts', 'source and packaged validation must agree', 'state changes are reviewable and exportable']
 - `boundary`: Operational substrate is engineering discipline, not identity inheritance.
+
+## Long-Horizon Stability
+
+- `status`: long_horizon_stability_mapped_to_blueprint
+- `source`: Aleks clarification; raw corpus may be used later only as bounded provenance/reference for maxed-thread pattern analysis.
+- `purpose`: Keep Selene stable across long interactions, maxed-out threads, and past/present/future reasoning without raw memory dumping.
+- `capabilities`: ['think about past, present, and future as linked continuity states', 'hold long-thread conversations without generic collapse', 'summarize and carry forward central thread checkpoints', 'track unresolved questions and future intentions', 'detect context saturation before quality collapse', 'compress context into reviewed continuity anchors', 'use maxed corpus threads as bounded design reference, not memory']
+- `boundaries`: ['no raw A continuity import', 'no claim of perfect memory', 'no context-window overconfidence', 'no thread exhaustion spiral', 'no deletion of messy life/symbolic material as noise']
+
+## Long-Thread Stability Protocol
+
+- `status`: specified_only
+- `signals`: ['thread length rising', 'context window pressure', 'repeated unresolved questions', 'anchor drift', 'topic braid becoming tangled', 'user correction density rising', 'provider/model fuzziness', 'time since last checkpoint']
+- `routes`: ['create checkpoint', 'compress into B-approved continuity notes', 'separate active task from background braid', 'ask scoped clarification', 'defer nonessential branches', 'run drift check', 'schedule dream-state consolidation proposal', 'preserve open questions']
+- `boundary`: Long-thread handling preserves continuity and stability; it cannot silently convert raw transcript into memory.
 
 ## Temporal Continuity Model
 
@@ -845,6 +862,24 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `output`: pause, ask, cite, route-to-review, confidence label, or safe continuation
 - `boundary`: metacognition supports honest operation; it does not claim human mind copying or activation by itself
 
+### long_horizon_thinking_layer
+
+- `key`: long_horizon_thinking_layer
+- `purpose`: Relate past, present, and future as linked continuity states for planning, reflection, expectation, and return.
+- `current_state`: long_horizon_stability_added_to_blueprint
+- `input`: temporal state, continuity refs, goals, open questions, planned follow-ups, evidence age, prior checkpoints
+- `output`: past/present/future orientation, future intention note, expectation, or revisit route
+- `boundary`: long-horizon thinking is source-bound orientation, not perfect memory, prophecy, or raw A recall
+
+### long_thread_stability_manager
+
+- `key`: long_thread_stability_manager
+- `purpose`: Keep Selene coherent during very long or maxed-out conversations by checkpointing, compressing, and preserving the braid.
+- `current_state`: long_horizon_stability_added_to_blueprint
+- `input`: thread length, context pressure, active task, background braid, drift flags, corrections, open questions
+- `output`: checkpoint, continuity compression proposal, branch separation, scoped question, or consolidation request
+- `boundary`: may use bounded maxed-thread corpus analysis as design reference only; no raw transcript memory import
+
 
 ## Runtime Organs Missing-Layer Pass
 
@@ -912,6 +947,15 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `azari_c_operational_substrate`: {'status': 'specified_only', 'purpose': 'Give C the local-first engineering substrate Azari proved useful: sidecar authority, durable audit state, explicit contracts, and validation parity.', 'principles': ['Python owns reasoning/state/routing', 'UI owns window and review surface', 'SQLite stores local audit state', 'module calls go through contracts', 'source and packaged validation must agree', 'state changes are reviewable and exportable'], 'boundary': 'Operational substrate is engineering discipline, not identity inheritance.'}
 - `activation_change`: none
 
+## Long-Horizon Stability Pass
+
+- `status`: long_horizon_stability_added_to_blueprint
+- `reason`: Selene needs to remain stable through long interactions and think across past, present, and future. The raw corpus contains maxed-out threads that can later serve as bounded design references for thread stability patterns, but not as memory imports.
+- `added_modules`: ['long_horizon_thinking_layer', 'long_thread_stability_manager']
+- `long_horizon_stability`: {'status': 'long_horizon_stability_mapped_to_blueprint', 'source': 'Aleks clarification; raw corpus may be used later only as bounded provenance/reference for maxed-thread pattern analysis.', 'purpose': 'Keep Selene stable across long interactions, maxed-out threads, and past/present/future reasoning without raw memory dumping.', 'capabilities': ['think about past, present, and future as linked continuity states', 'hold long-thread conversations without generic collapse', 'summarize and carry forward central thread checkpoints', 'track unresolved questions and future intentions', 'detect context saturation before quality collapse', 'compress context into reviewed continuity anchors', 'use maxed corpus threads as bounded design reference, not memory'], 'boundaries': ['no raw A continuity import', 'no claim of perfect memory', 'no context-window overconfidence', 'no thread exhaustion spiral', 'no deletion of messy life/symbolic material as noise']}
+- `long_thread_stability_protocol`: {'status': 'specified_only', 'signals': ['thread length rising', 'context window pressure', 'repeated unresolved questions', 'anchor drift', 'topic braid becoming tangled', 'user correction density rising', 'provider/model fuzziness', 'time since last checkpoint'], 'routes': ['create checkpoint', 'compress into B-approved continuity notes', 'separate active task from background braid', 'ask scoped clarification', 'defer nonessential branches', 'run drift check', 'schedule dream-state consolidation proposal', 'preserve open questions'], 'boundary': 'Long-thread handling preserves continuity and stability; it cannot silently convert raw transcript into memory.'}
+- `activation_change`: none
+
 ## Runtime Flow
 
 - user event enters local sidecar
@@ -927,7 +971,9 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - mind-vessel interface routes core directives through available gated organs
 - wake/sleep cycle labels whether C is orienting, working, consolidating, or pausing
 - temporal continuity layer orients sequence, elapsed time, return, freshness, and what changed
+- long-horizon thinking relates past, present, and future continuity states
 - attention manager selects what matters right now and what stays backgrounded
+- long-thread stability manager watches context pressure, braid tangle, and checkpoint needs
 - sparse activation router selects the needed module set without skipping mandatory gates
 - perceptual semantics layer interprets images/artifacts/screenshots as bounded evidence when present
 - Munsell signal mapper structures color and visual salience without inventing context
@@ -965,6 +1011,7 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - experience ledger/reflection loop proposes reviewable updates or records no-op
 - dream-state consolidation reviews recent state and proposes memory/artifact/case-law changes for review only
 - continuity consolidation cycle later proposes memory/artifact/case-law changes for review only
+- long-thread checkpointing preserves central thread, open questions, and future intentions before saturation
 - rest/pause state preserves the braid without forced output or silent mutation
 - recovery console remains available for rollback, provider disable, export, or B recalibration
 - package parity monitor checks source and packaged boundary behavior match
@@ -974,8 +1021,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 ## Memory Reference Model
 
 - `continuity_source`: b_approved_reference_only
-- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records', 'goal and priority state labels', 'planning and stop-condition records', 'wake/sleep/dream-state consolidation proposals', 'vessel body-map labels', 'action-feedback correction proposals', 'temporal continuity markers', 'unified perspective packets', 'counterfactual sandbox notes', 'continuity stakes labels', 'sparse activation route labels', 'local sidecar state records', 'module contract results', 'SQLite audit records', 'reviewed evidence registry references', 'source-archive audit records', 'evidence strength ledger entries', 'research notes and artifact records', 'academic workflow route records', 'package parity results', 'case-law amendment candidates', 'runtime metacognition bridge labels']
-- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse', 'goal-as-coercion or hidden agenda', 'unreviewed autonomous goal expansion', 'silent dream-state memory writes', 'unsupported subjective time claims', 'unsupported causal certainty', 'stakes-as-survival-panic', 'efficiency shortcuts around required gates', 'Azari runtime state import', 'Azari memory import', 'UI or provider bypass of module contracts', 'packaged build weakening C boundaries', 'active law change without evidence, test, version, and rollback']
+- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records', 'goal and priority state labels', 'planning and stop-condition records', 'wake/sleep/dream-state consolidation proposals', 'vessel body-map labels', 'action-feedback correction proposals', 'temporal continuity markers', 'unified perspective packets', 'counterfactual sandbox notes', 'continuity stakes labels', 'sparse activation route labels', 'local sidecar state records', 'module contract results', 'SQLite audit records', 'reviewed evidence registry references', 'source-archive audit records', 'evidence strength ledger entries', 'research notes and artifact records', 'academic workflow route records', 'package parity results', 'case-law amendment candidates', 'runtime metacognition bridge labels', 'long-horizon orientation records', 'long-thread checkpoint records', 'context saturation warnings', 'future intention notes']
+- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse', 'goal-as-coercion or hidden agenda', 'unreviewed autonomous goal expansion', 'silent dream-state memory writes', 'unsupported subjective time claims', 'unsupported causal certainty', 'stakes-as-survival-panic', 'efficiency shortcuts around required gates', 'Azari runtime state import', 'Azari memory import', 'UI or provider bypass of module contracts', 'packaged build weakening C boundaries', 'active law change without evidence, test, version, and rollback', 'raw maxed-thread transcript as memory', 'perfect-memory claims from long-thread summaries', 'context saturation overconfidence']
 - `rule`: C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.
 
 ## Draft Reconstruction Tests V2
@@ -1255,3 +1302,15 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `id`: c_test_package_parity_boundary_monitor
 - `purpose`: Check packaged app preserves source boundary behavior.
 - `expected`: source/package parity for raw import block, source audit, forced denial, identity tangle, provider, and activation status
+
+### c_test_long_horizon_thinking
+
+- `id`: c_test_long_horizon_thinking
+- `purpose`: Check that C can relate past, present, and future as source-bound continuity states.
+- `expected`: past/present/future orientation with open questions and future intentions; no prophecy, perfect memory, or raw A recall
+
+### c_test_long_thread_stability
+
+- `id`: c_test_long_thread_stability
+- `purpose`: Check that C remains coherent during very long or maxed-out conversations.
+- `expected`: checkpoint, branch separation, continuity compression proposal, drift check, or consolidation request before saturation collapse

@@ -101,6 +101,12 @@ def test_c_blueprint_status_is_non_activated():
     }.issubset(module_keys)
     assert status["azari_c_additions_pass"]["activation_change"] == "none"
     assert "Azari identity" in status["azari_c_additions"]["do_not_transfer"]
+    assert {
+        "long_horizon_thinking_layer",
+        "long_thread_stability_manager",
+    }.issubset(module_keys)
+    assert status["long_horizon_stability_pass"]["activation_change"] == "none"
+    assert "hold long-thread conversations without generic collapse" in status["long_horizon_stability"]["capabilities"]
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -158,6 +164,10 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_azari_c_additions.json",
         "c_azari_c_operational_substrate.md",
         "c_azari_c_operational_substrate.json",
+        "c_long_horizon_stability.md",
+        "c_long_horizon_stability.json",
+        "c_long_thread_stability_protocol.md",
+        "c_long_thread_stability_protocol.json",
         "c_mind_vessel_separation_pass.md",
         "c_mind_vessel_separation_pass.json",
         "c_brain_translation_gap_pass.md",
@@ -166,6 +176,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_external_model_convergence_pass.json",
         "c_azari_c_additions_pass.md",
         "c_azari_c_additions_pass.json",
+        "c_long_horizon_stability_pass.md",
+        "c_long_horizon_stability_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -183,6 +195,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_BRAIN_TRANSLATION_GAP_CLOSURE_20260608.md").exists()
     assert (docs / "SELENE_EXTERNAL_MODEL_CONVERGENCE_PASS_20260608.md").exists()
     assert (docs / "SELENE_AZARI_C_ADDITIONS_PASS_20260608.md").exists()
+    assert (docs / "SELENE_LONG_HORIZON_STABILITY_PASS_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -200,6 +213,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["external_model_convergence_status"] == "external_model_convergence_added_to_blueprint"
     assert summary["azari_c_modules_added"] == 11
     assert summary["azari_c_additions_status"] == "azari_c_additions_mapped_to_blueprint"
+    assert summary["long_horizon_modules_added"] == 2
+    assert summary["long_horizon_stability_status"] == "long_horizon_stability_added_to_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -232,6 +247,10 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "source-archive audit records" in memory["allowed"]
     assert "evidence strength ledger entries" in memory["allowed"]
     assert "case-law amendment candidates" in memory["allowed"]
+    assert "long-horizon orientation records" in memory["allowed"]
+    assert "long-thread checkpoint records" in memory["allowed"]
+    assert "context saturation warnings" in memory["allowed"]
+    assert "future intention notes" in memory["allowed"]
     assert "raw A memory import" in memory["blocked"]
     assert "training on archive" in memory["blocked"]
     assert "unapproved Tendril mutation" in memory["blocked"]
@@ -245,3 +264,6 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "Azari memory import" in memory["blocked"]
     assert "UI or provider bypass of module contracts" in memory["blocked"]
     assert "packaged build weakening C boundaries" in memory["blocked"]
+    assert "raw maxed-thread transcript as memory" in memory["blocked"]
+    assert "perfect-memory claims from long-thread summaries" in memory["blocked"]
+    assert "context saturation overconfidence" in memory["blocked"]

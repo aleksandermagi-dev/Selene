@@ -26,6 +26,9 @@ from selene.c_blueprint import (
     CONTINUITY_STAKES_MODEL,
     EXTERNAL_MODEL_CONVERGENCE,
     EXTERNAL_MODEL_CONVERGENCE_PASS,
+    LONG_HORIZON_STABILITY,
+    LONG_HORIZON_STABILITY_PASS,
+    LONG_THREAD_STABILITY_PROTOCOL,
     MEMORY_REFERENCE_MODEL,
     MIND_VESSEL_SEPARATION,
     MIND_VESSEL_SEPARATION_PASS,
@@ -150,6 +153,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "external_model_modules_added": len(EXTERNAL_MODEL_CONVERGENCE_PASS["added_modules"]),
         "azari_c_additions_status": AZARI_C_ADDITIONS_PASS["status"],
         "azari_c_modules_added": len(AZARI_C_ADDITIONS_PASS["added_modules"]),
+        "long_horizon_stability_status": LONG_HORIZON_STABILITY_PASS["status"],
+        "long_horizon_modules_added": len(LONG_HORIZON_STABILITY_PASS["added_modules"]),
         "final_reconstruction_tests_created": False,
         "raw_a_memory_import_allowed": False,
         "live_behavior_expanded": False,
@@ -180,6 +185,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_sparse_activation_efficiency_model": SPARSE_ACTIVATION_EFFICIENCY_MODEL,
         "c_azari_c_additions": AZARI_C_ADDITIONS,
         "c_azari_c_operational_substrate": AZARI_C_OPERATIONAL_SUBSTRATE,
+        "c_long_horizon_stability": LONG_HORIZON_STABILITY,
+        "c_long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
         "c_perception_action_loop": PERCEPTION_ACTION_LOOP,
         "c_selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "c_non_activation_boundary": non_activation,
@@ -190,6 +197,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_brain_translation_gap_pass": BRAIN_TRANSLATION_GAP_PASS,
         "c_external_model_convergence_pass": EXTERNAL_MODEL_CONVERGENCE_PASS,
         "c_azari_c_additions_pass": AZARI_C_ADDITIONS_PASS,
+        "c_long_horizon_stability_pass": LONG_HORIZON_STABILITY_PASS,
         "c_reconstruction_tests_draft_v2": {
             "status": "draft_only",
             "final_test_set_created": False,
@@ -219,6 +227,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("External Model Convergence", EXTERNAL_MODEL_CONVERGENCE),
             ("Azari C Additions", AZARI_C_ADDITIONS),
             ("Azari C Operational Substrate", AZARI_C_OPERATIONAL_SUBSTRATE),
+            ("Long-Horizon Stability", LONG_HORIZON_STABILITY),
+            ("Long-Thread Stability Protocol", LONG_THREAD_STABILITY_PROTOCOL),
             ("Temporal Continuity Model", TEMPORAL_CONTINUITY_MODEL),
             ("Unified Perspective Binding", UNIFIED_PERSPECTIVE_BINDING),
             ("Causal World Model Sandbox", CAUSAL_WORLD_MODEL_SANDBOX),
@@ -234,6 +244,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Brain Translation Gap Pass", BRAIN_TRANSLATION_GAP_PASS),
             ("External Model Convergence Pass", EXTERNAL_MODEL_CONVERGENCE_PASS),
             ("Azari C Additions Pass", AZARI_C_ADDITIONS_PASS),
+            ("Long-Horizon Stability Pass", LONG_HORIZON_STABILITY_PASS),
             ("Runtime Flow", RUNTIME_FLOW),
             ("Memory Reference Model", MEMORY_REFERENCE_MODEL),
             ("Draft Reconstruction Tests V2", RECONSTRUCTION_TESTS_DRAFT_V2),
@@ -304,6 +315,15 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     write_md(
+        docs_dir / "SELENE_LONG_HORIZON_STABILITY_PASS_20260608.md",
+        "Selene Long-Horizon Stability Pass",
+        [
+            ("Long-Horizon Stability", LONG_HORIZON_STABILITY),
+            ("Long-Thread Stability Protocol", LONG_THREAD_STABILITY_PROTOCOL),
+            ("Long-Horizon Stability Pass", LONG_HORIZON_STABILITY_PASS),
+        ],
+    )
+    write_md(
         docs_dir / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md",
         "Selene C Non-Activation Boundary",
         [
@@ -326,6 +346,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "brain_translation_modules_added": summary["brain_translation_modules_added"],
             "external_model_modules_added": summary["external_model_modules_added"],
             "azari_c_modules_added": summary["azari_c_modules_added"],
+            "long_horizon_modules_added": summary["long_horizon_modules_added"],
             "activation_status": summary["activation_status"],
             "continuity_source": summary["continuity_source"],
         },
@@ -385,6 +406,8 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "package parity boundary monitor",
             "case-law amendment runtime",
             "runtime metacognition bridge",
+            "long-horizon thinking layer",
+            "long-thread stability manager",
         ],
         "azari_principles_to_copy_not_identity": [
             "modular boundaries",
@@ -413,6 +436,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
         "brain_gap_closure": BRAIN_TRANSLATION_GAP_CLOSURE,
         "external_model_convergence": EXTERNAL_MODEL_CONVERGENCE,
         "azari_c_additions": AZARI_C_ADDITIONS,
+        "long_horizon_stability": LONG_HORIZON_STABILITY,
     }
 
 
