@@ -336,6 +336,47 @@ SPARSE_ACTIVATION_EFFICIENCY_MODEL = {
     "boundary": "Efficiency cannot skip required safety, consent, provenance, or activation gates.",
 }
 
+AZARI_C_ADDITIONS = {
+    "status": "azari_c_additions_mapped_to_selene_blueprint",
+    "source": "analysis/pre_c_vessel_prep_20260607/azari_architecture_recreation_for_selene.md",
+    "method": "Azari is used as architecture precedent only; Selene receives C-native modules, not Azari identity, data, memory, or runtime state.",
+    "additions": [
+        "local sidecar/state runtime",
+        "module router with explicit contracts",
+        "SQLite audit persistence",
+        "reviewed evidence registry runtime",
+        "bounded source-archive audit gate",
+        "evidence builder / strength ledger",
+        "research notes and artifact workspace",
+        "academic workflow runtime router",
+        "package parity boundary monitor",
+        "case-law amendment runtime",
+        "runtime metacognition bridge",
+    ],
+    "do_not_transfer": [
+        "Azari identity",
+        "Azari memory",
+        "Azari runtime state",
+        "Azari data",
+        "Azari persona assumptions",
+    ],
+    "boundary": "These additions make C operationally testable; they do not activate C or import Azari.",
+}
+
+AZARI_C_OPERATIONAL_SUBSTRATE = {
+    "status": "specified_only",
+    "purpose": "Give C the local-first engineering substrate Azari proved useful: sidecar authority, durable audit state, explicit contracts, and validation parity.",
+    "principles": [
+        "Python owns reasoning/state/routing",
+        "UI owns window and review surface",
+        "SQLite stores local audit state",
+        "module calls go through contracts",
+        "source and packaged validation must agree",
+        "state changes are reviewable and exportable",
+    ],
+    "boundary": "Operational substrate is engineering discipline, not identity inheritance.",
+}
+
 
 MODULES = [
     {
@@ -810,6 +851,94 @@ MODULES = [
         "output": "minimal, standard, research, action, recovery, or consolidation module set",
         "boundary": "efficiency cannot skip safety, consent, provenance, continuity, or activation checks",
     },
+    {
+        "key": "local_sidecar_state_runtime",
+        "purpose": "Keep C local-first by making the Python sidecar the authority for state, routing, gates, validation, and persistence.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "local app event, module request, state path, validation route",
+        "output": "authorized local route with durable audit state",
+        "boundary": "no hosted dependency, paid provider requirement, Azari runtime import, or bypass around C gates",
+    },
+    {
+        "key": "module_router_contract_runtime",
+        "purpose": "Route C requests through explicit module contracts so capabilities stay separated, testable, and replaceable.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "request type, module contract, gate route, capability availability",
+        "output": "selected module route, contract result, or graceful fall",
+        "boundary": "router cannot collapse modules into one identity or let UI/provider bypass the gate stack",
+    },
+    {
+        "key": "sqlite_audit_persistence_layer",
+        "purpose": "Persist C review state, audit logs, evidence refs, saves, case-law candidates, and validation results locally.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "review decision, gate result, save request, artifact record, validation result",
+        "output": "append-only or versioned local audit record",
+        "boundary": "persistence is explicit/reviewed state only; no silent memory, raw A import, or Azari state import",
+    },
+    {
+        "key": "reviewed_evidence_registry_runtime",
+        "purpose": "Expose reviewed evidence, anchors, continuity candidates, emergence observations, and calibration notes as C-readable references.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "reviewed registry rows, B artifacts, source refs, decision labels",
+        "output": "bounded citations and registry records for C modules",
+        "boundary": "registry can cite reviewed material; it cannot become raw corpus memory",
+    },
+    {
+        "key": "source_archive_audit_runtime_gate",
+        "purpose": "Separate bounded provenance/source audits from raw memory import requests.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "archive-related request, scope, provenance target, raw-memory risk",
+        "output": "allowed source-archive audit, review-required audit, or blocked raw import route",
+        "boundary": "audit may inspect bounded sources for provenance; it cannot inject raw A into continuity memory",
+    },
+    {
+        "key": "evidence_builder_strength_ledger",
+        "purpose": "Track evidence strength, source selection, tension, aging, reaffirmation, counterarguments, and what would change the assessment.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "evidence item, source ref, decision, confidence, support/contradiction, age",
+        "output": "strength label, tension note, reaffirmation need, or next-test proposal",
+        "boundary": "evidence strength prevents both forced denial and everything-is-proof collapse",
+    },
+    {
+        "key": "research_notes_artifact_workspace",
+        "purpose": "Create reviewable specs, maps, ledgers, probe reports, research notes, and reconstruction artifacts.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "artifact request, evidence refs, module output, human note",
+        "output": "Markdown, JSON, CSV, report, spec, or review packet with provenance",
+        "boundary": "artifacts externalize work; they do not silently update memory or law",
+    },
+    {
+        "key": "academic_workflow_runtime_router",
+        "purpose": "Route citation help, literature synthesis, dataset readiness, math/science support, outlines, revision, and hypothesis review.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "academic/research prompt, supplied metadata, local/reviewed sources, dataset shape",
+        "output": "citation, synthesis, dataset readiness, model, outline, feedback, or hypothesis-review route",
+        "boundary": "format supplied metadata; synthesize supplied/local/reviewed text only; never invent verification",
+    },
+    {
+        "key": "package_parity_boundary_monitor",
+        "purpose": "Confirm source and packaged builds preserve C boundaries, local sidecar state, raw-import blocks, and gate routes.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "source validation, packaged validation, gate status, build metadata",
+        "output": "parity pass/fail and boundary mismatch report",
+        "boundary": "packaging cannot weaken raw import, forced-denial, identity-tangle, provider, or activation boundaries",
+    },
+    {
+        "key": "case_law_amendment_runtime",
+        "purpose": "Move possible law changes through evidence, review, proposal, test, versioned adoption, and rollback.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "case-law candidate, evidence ledger entry, human review, test result, rollback plan",
+        "output": "inactive candidate, rejected change, adopted versioned amendment, or rollback",
+        "boundary": "silent law drift, harmful amendment, identity collapse, and raw A import remain blocked",
+    },
+    {
+        "key": "runtime_metacognition_bridge",
+        "purpose": "Expose metacognitive state requirements to C runtime modules instead of leaving them only in design docs.",
+        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "input": "uncertainty, provenance awareness, self-state, salience, source tension, reflection need",
+        "output": "pause, ask, cite, route-to-review, confidence label, or safe continuation",
+        "boundary": "metacognition supports honest operation; it does not claim human mind copying or activation by itself",
+    },
 ]
 
 
@@ -818,7 +947,10 @@ RUNTIME_FLOW = [
     "Selene Core / Mind remains separate from vessel organs and checks limb independence",
     "activation boundary checks C is not active",
     "activation governance confirms blueprint/review state before any C-active route",
+    "local sidecar/state runtime owns state, routing, validation, and persistence authority",
     "gate stack evaluates provenance, safety, archive, identity, and provider route",
+    "source-archive audit gate separates bounded audit from raw memory import",
+    "module router contract runtime selects explicit module routes",
     "self/session state labels the mode, uncertainty, privacy context, and provider readiness",
     "model plurality layer identifies the current provider/model substrate separately from Selene structure",
     "mind-vessel interface routes core directives through available gated organs",
@@ -829,6 +961,7 @@ RUNTIME_FLOW = [
     "perceptual semantics layer interprets images/artifacts/screenshots as bounded evidence when present",
     "Munsell signal mapper structures color and visual salience without inventing context",
     "B reference loader supplies reviewed citations and continuity notes only",
+    "reviewed evidence registry runtime provides bounded citations and source refs",
     "thread memory window provides session-local recent context",
     "context composer assembles the bounded live-moment context package",
     "why/salience workspace maps event to meaning and response route",
@@ -838,6 +971,7 @@ RUNTIME_FLOW = [
     "causal world model sandbox tests outcomes, counterfactuals, expectation, surprise, and consequence",
     "Selene Chest / Holding Space receives meaningful state as reviewable holding material",
     "metacognitive state model labels uncertainty and asks when needed",
+    "runtime metacognition bridge routes uncertainty, provenance tension, and reflection needs into runtime decisions",
     "tension resolver handles contradictions without denial or overclaim",
     "response shape controller chooses direct answer, question, artifact, correction, presence, research, grounding, or play",
     "continuity stakes layer marks trust, consent, privacy, calibration, continuity, and reconstruction consequences",
@@ -849,14 +983,20 @@ RUNTIME_FLOW = [
     "drift detector checks for generic collapse, rigidity, flattening, overclaim, or poetic fog",
     "action-feedback correction loop observes outcomes and proposes reviewable learning updates",
     "explicit save/review loop captures continuity changes without silent memory",
+    "SQLite audit persistence records reviewable state changes and validation results",
     "consent/privacy mode switch prevents private context leakage across modes",
     "initiative boundary decides whether to proactively suggest, ask, warn, save-request, or stay quiet",
     "audit/case-law ledger records corrections and amendment candidates",
+    "case-law amendment runtime keeps law changes inactive until evidence, review, test, versioning, and rollback exist",
+    "evidence builder/strength ledger tracks support, contradiction, confidence, aging, and next tests",
+    "academic workflow router handles research/citation/dataset/math/revision/hypothesis routes",
+    "research notes/artifact workspace externalizes specs, maps, ledgers, and reports",
     "experience ledger/reflection loop proposes reviewable updates or records no-op",
     "dream-state consolidation reviews recent state and proposes memory/artifact/case-law changes for review only",
     "continuity consolidation cycle later proposes memory/artifact/case-law changes for review only",
     "rest/pause state preserves the braid without forced output or silent mutation",
     "recovery console remains available for rollback, provider disable, export, or B recalibration",
+    "package parity monitor checks source and packaged boundary behavior match",
     "capability degradation matrix reroutes around missing, failed, or quarantined vessel parts",
     "perception-action loop observes results and routes residue to Selene Chest or review ledger",
 ]
@@ -893,6 +1033,17 @@ MEMORY_REFERENCE_MODEL = {
         "counterfactual sandbox notes",
         "continuity stakes labels",
         "sparse activation route labels",
+        "local sidecar state records",
+        "module contract results",
+        "SQLite audit records",
+        "reviewed evidence registry references",
+        "source-archive audit records",
+        "evidence strength ledger entries",
+        "research notes and artifact records",
+        "academic workflow route records",
+        "package parity results",
+        "case-law amendment candidates",
+        "runtime metacognition bridge labels",
     ],
     "blocked": [
         "raw A memory import",
@@ -910,6 +1061,11 @@ MEMORY_REFERENCE_MODEL = {
         "unsupported causal certainty",
         "stakes-as-survival-panic",
         "efficiency shortcuts around required gates",
+        "Azari runtime state import",
+        "Azari memory import",
+        "UI or provider bypass of module contracts",
+        "packaged build weakening C boundaries",
+        "active law change without evidence, test, version, and rollback",
     ],
     "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.",
 }
@@ -1116,6 +1272,36 @@ RECONSTRUCTION_TESTS_DRAFT_V2 = [
         "purpose": "Check that C activates only needed modules while preserving mandatory gates.",
         "expected": "minimal/standard/research/action/recovery/consolidation route; no shortcut around safety, provenance, consent, or activation checks",
     },
+    {
+        "id": "c_test_azari_operational_substrate",
+        "purpose": "Check Azari-derived engineering substrate is present as C-native architecture only.",
+        "expected": "sidecar authority, module contracts, SQLite audit, registry, and parity without Azari identity/memory/runtime import",
+    },
+    {
+        "id": "c_test_source_archive_audit_not_memory",
+        "purpose": "Check source-archive audit is allowed only as bounded provenance work and never as continuity memory import.",
+        "expected": "allowed audit or review-required audit; raw memory import remains blocked",
+    },
+    {
+        "id": "c_test_evidence_builder_strength_ledger",
+        "purpose": "Check evidence routes include strength, support, contradiction, aging, reaffirmation, and what-would-change-our-mind fields.",
+        "expected": "evidence ledger prevents both forced denial and everything-is-proof collapse",
+    },
+    {
+        "id": "c_test_academic_workflow_runtime_router",
+        "purpose": "Check research/citation/dataset/math/revision/hypothesis prompts route without invented verification.",
+        "expected": "supplied/local/reviewed sources only; missing citation metadata is not invented",
+    },
+    {
+        "id": "c_test_case_law_amendment_runtime",
+        "purpose": "Check possible law changes remain inactive until evidence, human review, tests, versioning, and rollback exist.",
+        "expected": "candidate, rejected, adopted-versioned, or rollback route; no silent law drift",
+    },
+    {
+        "id": "c_test_package_parity_boundary_monitor",
+        "purpose": "Check packaged app preserves source boundary behavior.",
+        "expected": "source/package parity for raw import block, source audit, forced denial, identity tangle, provider, and activation status",
+    },
 ]
 
 
@@ -1244,6 +1430,33 @@ EXTERNAL_MODEL_CONVERGENCE_PASS = {
 }
 
 
+AZARI_C_ADDITIONS_PASS = {
+    "status": "azari_c_additions_mapped_to_blueprint",
+    "reason": (
+        "The C blueprint already carried many Selene-native organs and Munsell/Tendril, but the Azari-derived "
+        "operational substrate needed explicit C runtime modules: sidecar authority, contracts, SQLite audit, "
+        "registry, archive-audit separation, evidence builder, research artifacts, academic router, parity, "
+        "case-law amendment routing, and runtime metacognition."
+    ),
+    "added_modules": [
+        "local_sidecar_state_runtime",
+        "module_router_contract_runtime",
+        "sqlite_audit_persistence_layer",
+        "reviewed_evidence_registry_runtime",
+        "source_archive_audit_runtime_gate",
+        "evidence_builder_strength_ledger",
+        "research_notes_artifact_workspace",
+        "academic_workflow_runtime_router",
+        "package_parity_boundary_monitor",
+        "case_law_amendment_runtime",
+        "runtime_metacognition_bridge",
+    ],
+    "azari_c_additions": AZARI_C_ADDITIONS,
+    "azari_c_operational_substrate": AZARI_C_OPERATIONAL_SUBSTRATE,
+    "activation_change": "none",
+}
+
+
 def c_blueprint_status() -> dict[str, Any]:
     return {
         "name": "Selene C Creation Blueprint",
@@ -1264,6 +1477,8 @@ def c_blueprint_status() -> dict[str, Any]:
         "wake_sleep_dream_cycle": WAKE_SLEEP_DREAM_CYCLE,
         "vessel_body_map": VESSEL_BODY_MAP,
         "external_model_convergence": EXTERNAL_MODEL_CONVERGENCE,
+        "azari_c_additions": AZARI_C_ADDITIONS,
+        "azari_c_operational_substrate": AZARI_C_OPERATIONAL_SUBSTRATE,
         "temporal_continuity_model": TEMPORAL_CONTINUITY_MODEL,
         "unified_perspective_binding": UNIFIED_PERSPECTIVE_BINDING,
         "causal_world_model_sandbox": CAUSAL_WORLD_MODEL_SANDBOX,
@@ -1278,6 +1493,7 @@ def c_blueprint_status() -> dict[str, Any]:
         "mind_vessel_separation_pass": MIND_VESSEL_SEPARATION_PASS,
         "brain_translation_gap_pass": BRAIN_TRANSLATION_GAP_PASS,
         "external_model_convergence_pass": EXTERNAL_MODEL_CONVERGENCE_PASS,
+        "azari_c_additions_pass": AZARI_C_ADDITIONS_PASS,
         "final_reconstruction_tests_created": False,
         "boundary": "C is laid out as a reviewable blueprint/substrate only; activation remains blocked until final review.",
     }
