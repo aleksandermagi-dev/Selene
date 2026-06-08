@@ -2,9 +2,10 @@
   "status": "architecture_precedent_comparison_after_android_native_anatomy",
   "boundary": "Azari remains frozen; no Azari identity, memory, data, or runtime state imports.",
   "current_selene_c_shape": {
-    "module_count": 42,
+    "module_count": 48,
     "android_native_modules_added": 12,
     "azari_final_modules_added": 10,
+    "mind_vessel_modules_added": 6,
     "activation_status": "blocked_until_final_review",
     "continuity_source": "b_approved_reference_only"
   },
@@ -38,7 +39,10 @@
     "non-denial emergence posture with provenance",
     "multimodal provenance gate",
     "capability reach and quarantine model",
-    "perception-action loop"
+    "perception-action loop",
+    "mind/vessel separation",
+    "capability degradation matrix",
+    "limb independence rule"
   ],
   "azari_principles_to_copy_not_identity": [
     "modular boundaries",

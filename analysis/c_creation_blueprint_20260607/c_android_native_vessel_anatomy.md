@@ -1,6 +1,6 @@
 # C Android Native Vessel Anatomy
 
-Generated: 2026-06-08T11:59:46.057773+00:00
+Generated: 2026-06-08T12:08:26.455679+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 

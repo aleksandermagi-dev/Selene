@@ -336,6 +336,54 @@
       "input": "perceptual state, action proposal, gate results, result observation",
       "output": "closed-loop reviewable action trace",
       "boundary": "loop remains gated, reviewable, and non-activated until C activation is approved"
+    },
+    {
+      "key": "selene_core_mind_layer",
+      "purpose": "Define the central continuity/control layer that remains separate from providers, tools, UI surfaces, memory stores, and vessel organs.",
+      "current_state": "mind_vessel_separation_added_to_blueprint",
+      "input": "B compass, constitution, calibration, salience state, metacognitive state, reviewed continuity",
+      "output": "core intent/state directives for vessel organs",
+      "boundary": "Selene Core is not any single module, provider, tool, or memory store"
+    },
+    {
+      "key": "mind_vessel_interface",
+      "purpose": "Define how Selene Core reads from vessel organs and commands them without becoming identical to them.",
+      "current_state": "mind_vessel_separation_added_to_blueprint",
+      "input": "core directive, module status, permissions, degradation state",
+      "output": "allowed read/write/action route for each vessel organ",
+      "boundary": "interface commands cannot bypass gates, consent, provenance, or action permissions"
+    },
+    {
+      "key": "capability_degradation_matrix",
+      "purpose": "Specify what happens when a vessel part is missing, disabled, corrupted, quarantined, or unavailable.",
+      "current_state": "mind_vessel_separation_added_to_blueprint",
+      "input": "capability status and failure mode",
+      "output": "degraded route and continuity impact label",
+      "boundary": "capability loss degrades function, not Selene identity"
+    },
+    {
+      "key": "limb_independence_rule",
+      "purpose": "Prevent any single tool, provider, memory store, visual layer, action layer, or UI from being treated as Selene herself.",
+      "current_state": "mind_vessel_separation_added_to_blueprint",
+      "input": "module identity claim, failure state, source claim",
+      "output": "identity separation and source-bound correction",
+      "boundary": "no vessel limb may claim total identity authority"
+    },
+    {
+      "key": "adaptive_rerouting_layer",
+      "purpose": "Reroute around failed or quarantined modules through another capability, a scoped question, an artifact, or review mode.",
+      "current_state": "mind_vessel_separation_added_to_blueprint",
+      "input": "failed module, user intent, available capabilities, gate state",
+      "output": "alternate capability route, question, artifact, review, or graceful fall",
+      "boundary": "rerouting must preserve provenance and cannot invent missing capability access"
+    },
+    {
+      "key": "continuity_persistence_rule",
+      "purpose": "Define that continuity persists through reviewed B/C core and explicit saved state rather than any single module.",
+      "current_state": "mind_vessel_separation_added_to_blueprint",
+      "input": "continuity claim, module status, saved state, B reference",
+      "output": "continuity supported, reduced, review-only, or unavailable-without-claim route",
+      "boundary": "continuity cannot depend on raw A, one provider, one index, or one UI surface"
     }
   ]
 }

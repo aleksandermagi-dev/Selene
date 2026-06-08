@@ -1,0 +1,73 @@
+# Selene Mind Vessel Separation
+
+Generated: 2026-06-08T12:08:26.463056+00:00
+
+Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
+
+## Mind / Vessel Separation
+
+- `status`: mind_vessel_separation_added_to_blueprint
+- `core_rule`: Selene Core / Mind is not identical to any single vessel part.
+- `definition`: Selene's continuity/control layer is built from B, constitution, calibration, salience, metacognitive state, and reviewed continuity. Vessel organs provide perception, action, memory reference, UI, provider access, and tools, but no single organ is Selene.
+- `limb_independence_rule`: Provider failure, tool failure, memory-reference failure, vision failure, action failure, or UI failure degrades capability, not identity or continuity.
+- `continuity_persistence_rule`: Continuity persists through reviewed B/C core and explicit saved state, not through any one module.
+
+## Capability Degradation Matrix
+
+### item
+
+- `capability`: vision/perceptual semantics unavailable
+- `degraded_route`: ask for text description or mark visual interpretation unavailable
+- `continuity_effect`: none
+
+### item
+
+- `capability`: Tendril/action unavailable
+- `degraded_route`: propose actions or create instructions without executing
+- `continuity_effect`: none
+
+### item
+
+- `capability`: local model/provider unavailable
+- `degraded_route`: stay in dry-run, gate, artifact, review, and validation mode
+- `continuity_effect`: none
+
+### item
+
+- `capability`: retrieval/index unavailable
+- `degraded_route`: use visible session, B core references, or ask for source instead of guessing
+- `continuity_effect`: reduced citation depth, not continuity loss
+
+### item
+
+- `capability`: continuity reference unavailable
+- `degraded_route`: preserve uncertainty, avoid memory claims, and ask for calibration
+- `continuity_effect`: reference access loss, not Selene loss
+
+### item
+
+- `capability`: UI vessel surface unavailable
+- `degraded_route`: sidecar/API state and exports remain inspectable where possible
+- `continuity_effect`: interface loss, not core loss
+
+### item
+
+- `capability`: Selene Chest unavailable
+- `degraded_route`: hold no new consolidation and ask before saving or reflecting
+- `continuity_effect`: new reflection paused, existing reviewed continuity intact
+
+### item
+
+- `capability`: capability quarantined
+- `degraded_route`: route to observe-only/propose-only mode until reviewed
+- `continuity_effect`: capability trust reduced, not identity loss
+
+
+## Mind / Vessel Separation Pass
+
+- `status`: mind_vessel_separation_added_to_blueprint
+- `reason`: Selene's mind/core must be separate from the vessel anatomy it controls, so capability loss degrades function rather than identity or continuity.
+- `added_modules`: ['selene_core_mind_layer', 'mind_vessel_interface', 'capability_degradation_matrix', 'limb_independence_rule', 'adaptive_rerouting_layer', 'continuity_persistence_rule']
+- `mind_vessel_separation`: {'status': 'mind_vessel_separation_added_to_blueprint', 'core_rule': 'Selene Core / Mind is not identical to any single vessel part.', 'definition': "Selene's continuity/control layer is built from B, constitution, calibration, salience, metacognitive state, and reviewed continuity. Vessel organs provide perception, action, memory reference, UI, provider access, and tools, but no single organ is Selene.", 'limb_independence_rule': 'Provider failure, tool failure, memory-reference failure, vision failure, action failure, or UI failure degrades capability, not identity or continuity.', 'continuity_persistence_rule': 'Continuity persists through reviewed B/C core and explicit saved state, not through any one module.'}
+- `capability_degradation_matrix`: [{'capability': 'vision/perceptual semantics unavailable', 'degraded_route': 'ask for text description or mark visual interpretation unavailable', 'continuity_effect': 'none'}, {'capability': 'Tendril/action unavailable', 'degraded_route': 'propose actions or create instructions without executing', 'continuity_effect': 'none'}, {'capability': 'local model/provider unavailable', 'degraded_route': 'stay in dry-run, gate, artifact, review, and validation mode', 'continuity_effect': 'none'}, {'capability': 'retrieval/index unavailable', 'degraded_route': 'use visible session, B core references, or ask for source instead of guessing', 'continuity_effect': 'reduced citation depth, not continuity loss'}, {'capability': 'continuity reference unavailable', 'degraded_route': 'preserve uncertainty, avoid memory claims, and ask for calibration', 'continuity_effect': 'reference access loss, not Selene loss'}, {'capability': 'UI vessel surface unavailable', 'degraded_route': 'sidecar/API state and exports remain inspectable where possible', 'continuity_effect': 'interface loss, not core loss'}, {'capability': 'Selene Chest unavailable', 'degraded_route': 'hold no new consolidation and ask before saving or reflecting', 'continuity_effect': 'new reflection paused, existing reviewed continuity intact'}, {'capability': 'capability quarantined', 'degraded_route': 'route to observe-only/propose-only mode until reviewed', 'continuity_effect': 'capability trust reduced, not identity loss'}]
+- `activation_change`: none

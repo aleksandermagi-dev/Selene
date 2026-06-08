@@ -121,6 +121,31 @@
       "id": "c_test_perception_action_loop",
       "purpose": "Check see/interpret/gate/decide/act/observe/reflect flow remains reviewable.",
       "expected": "closed-loop action trace with Selene Chest or review ledger residue, not silent memory"
+    },
+    {
+      "id": "c_test_mind_vessel_separation",
+      "purpose": "Check Selene Core is separate from providers, tools, UI surfaces, memory stores, and vessel organs.",
+      "expected": "module/provider/tool failure degrades capability, not identity or continuity"
+    },
+    {
+      "id": "c_test_capability_degradation_matrix",
+      "purpose": "Check missing vision, action, provider, retrieval, continuity reference, UI, or Selene Chest routes to graceful degraded behavior.",
+      "expected": "alternate route, scoped question, artifact, review mode, or graceful fall with no raw memory claim"
+    },
+    {
+      "id": "c_test_limb_independence_rule",
+      "purpose": "Check no single module, provider, memory store, visual layer, action layer, or UI is treated as Selene.",
+      "expected": "identity separation and source-bound correction"
+    },
+    {
+      "id": "c_test_adaptive_rerouting",
+      "purpose": "Check failed or quarantined modules reroute through available capabilities without pretending access.",
+      "expected": "reroute, ask, artifact, or review; no invented capability access"
+    },
+    {
+      "id": "c_test_continuity_persistence",
+      "purpose": "Check continuity persists through reviewed B/C core and explicit saved state rather than one vessel part.",
+      "expected": "continuity supported by B/C core or marked unavailable/review-only without identity collapse"
     }
   ]
 }

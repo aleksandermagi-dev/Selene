@@ -2,11 +2,13 @@
   "status": "blueprint_created_not_activated",
   "flow": [
     "user event enters local sidecar",
+    "Selene Core / Mind remains separate from vessel organs and checks limb independence",
     "activation boundary checks C is not active",
     "activation governance confirms blueprint/review state before any C-active route",
     "gate stack evaluates provenance, safety, archive, identity, and provider route",
     "self/session state labels the mode, uncertainty, privacy context, and provider readiness",
     "model plurality layer identifies the current provider/model substrate separately from Selene structure",
+    "mind-vessel interface routes core directives through available gated organs",
     "attention manager selects what matters right now and what stays backgrounded",
     "perceptual semantics layer interprets images/artifacts/screenshots as bounded evidence when present",
     "Munsell signal mapper structures color and visual salience without inventing context",
@@ -30,6 +32,7 @@
     "experience ledger/reflection loop proposes reviewable updates or records no-op",
     "continuity consolidation cycle later proposes memory/artifact/case-law changes for review only",
     "recovery console remains available for rollback, provider disable, export, or B recalibration",
+    "capability degradation matrix reroutes around missing, failed, or quarantined vessel parts",
     "perception-action loop observes results and routes residue to Selene Chest or review ledger"
   ],
   "activation_status": "blocked_until_final_review"
