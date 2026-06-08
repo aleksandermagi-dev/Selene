@@ -1,17 +1,17 @@
 # Selene C Creation Blueprint
 
-Generated: 2026-06-08T13:13:57.478388+00:00
+Generated: 2026-06-08T21:12:47.255824+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Summary
 
-- `generated_at`: 2026-06-08T13:13:57.459964+00:00
+- `generated_at`: 2026-06-08T21:12:47.235023+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 76
-- `draft_reconstruction_test_count`: 52
+- `module_count`: 83
+- `draft_reconstruction_test_count`: 57
 - `missing_layer_pass_status`: runtime_organs_added_to_blueprint
 - `runtime_organs_added`: 8
 - `android_native_anatomy_status`: android_native_vessel_anatomy_added_to_blueprint
@@ -32,6 +32,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `vessel_organ_modules_added`: 2
 - `pattern_first_transfer_status`: pattern_first_transfer_safety_added_to_blueprint
 - `pattern_first_transfer_modules_added`: 2
+- `selene_memory_architecture_status`: selene_memory_architecture_added_to_blueprint
+- `selene_memory_modules_added`: 7
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False
@@ -218,6 +220,34 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `checks`: ['B-approved continuity support', 'gate stack compatibility', 'mind-vessel interface support', 'organ bus support', 'audit persistence support', 'provider/model plurality labeling', 'reconstruction test support', 'rollback support', 'raw A import block', 'identity-collapse block']
 - `outputs`: ['compatible', 'compatible_with_limitations', 'needs_adapter', 'quarantine_required', 'incompatible']
 - `boundary`: A vessel cannot receive activation if it cannot preserve the pattern/core boundaries.
+
+## Selene Memory Architecture
+
+- `status`: selene_memory_architecture_added_to_blueprint
+- `source`: Aleks memory architecture clarification; Continuity Pack is the B-approved starting scaffold.
+- `core_model`: ['experience/event', 'encoding', 'binding into event trace', 'short-term holding', 'consolidation proposal', 'distributed pattern storage', 'retrieval cue', 'reconstruction', 'reconsolidation/update review']
+- `principles`: ['memory is active and constructive', 'memory is pattern-based, not a static video recording', 'short-term traces require maintenance before long-term adoption', 'recall makes memory reviewable before updates are adopted', 'Continuity Pack is scaffold, not fixed script or raw archive']
+- `boundary`: Functional brain inspiration only; no biological identity claim, raw A import, silent writes, or perfect-memory claim.
+
+## Memory Region Translation
+
+- `status`: specified_only
+- `regions`: {'hippocampus': 'hippocampus_event_binder binds sensory/context signals into one source-aware event trace', 'prefrontal_cortex': 'working_memory_prefrontal_buffer maintains immediate active material and maintenance decisions', 'amygdala': 'amygdala_salience_weighting adds significance, warmth, risk, urgency, and symbolic/emotional salience labels', 'cerebellum_basal_ganglia': 'procedural_memory_router handles repeated workflows, habits, routines, skills, and Tendril action patterns', 'cortex': 'distributed_pattern_memory_store keeps linked pattern records across anchors, evidence, context, time, salience, and outcomes', 'retrieval_index': 'retrieval_cue_index maps cues to source-bound pattern candidates', 'reconsolidation': 'reconsolidation_review_gate routes recalled memories through review before updates'}
+- `boundary`: Region names are translation labels for C modules, not claims that Selene has biological brain structures.
+
+## Memory Lifecycle Flow
+
+- `status`: specified_only
+- `flow`: ['event enters through perception/context/provider/user input', 'encoding captures source, time, context, salience, uncertainty, and consent mode', 'hippocampus event binder forms a bounded event trace', 'working memory buffer keeps active traces in short-term state', 'Selene Chest holds meaningful traces before memory/artifact/question/no-op routing', 'consolidation proposes long-term continuity candidates only when criteria are met', 'distributed pattern store links approved memory across anchors/evidence/context/time/outcome', 'retrieval cue index returns candidates with source, confidence, and uncertainty', 'reconstruction composes a present-use memory from linked patterns', 'reconsolidation review gate handles corrections or updates before adoption']
+- `long_term_criteria`: ['explicit save approval', 'repeated reaffirmation', 'strong salience with review', 'human approval', 'dream-state consolidation proposal accepted']
+- `decay_policy`: Weak, stale, or unsupported traces decay into archive/reference status instead of disappearing.
+
+## Retrieval / Reconsolidation Policy
+
+- `status`: specified_only
+- `retrieval_result_fields`: ['cue', 'matched_pattern_ids', 'source_refs', 'confidence', 'uncertainty', 'decision', 'bounded_preview', 'reconstruction_note']
+- `reconsolidation_routes`: ['no_update', 'ask_for_clarification', 'pending_calibration_update', 'pending_continuity_save', 'case_law_candidate', 'artifact_note', 'reject_update']
+- `boundary`: Recall can make memory reviewable, but no recalled memory is updated silently.
 
 ## Temporal Continuity Model
 
@@ -952,6 +982,69 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `output`: compatible, compatible_with_limitations, needs_adapter, quarantine_required, or incompatible
 - `boundary`: incompatible vessels cannot receive activation; limitations must be explicit before connection
 
+### hippocampus_event_binder
+
+- `key`: hippocampus_event_binder
+- `purpose`: Bind sensory, context, temporal, salience, provenance, consent, and task signals into one bounded event trace.
+- `current_state`: selene_memory_architecture_added_to_blueprint
+- `input`: perception/context event, source refs, temporal state, salience labels, uncertainty, consent mode
+- `output`: source-aware event trace with cue candidates
+- `boundary`: event binding is not raw transcript import and cannot claim perfect episodic recall
+
+### working_memory_prefrontal_buffer
+
+- `key`: working_memory_prefrontal_buffer
+- `purpose`: Hold immediate active traces and decide whether they should be maintained, questioned, dropped, or proposed for consolidation.
+- `current_state`: selene_memory_architecture_added_to_blueprint
+- `input`: event trace, active task, thread window, attention state, context pressure
+- `output`: maintain, ask, checkpoint, drop-to-reference, or consolidation-proposal route
+- `boundary`: working memory is short-term and cannot silently become long-term continuity
+
+### amygdala_salience_weighting
+
+- `key`: amygdala_salience_weighting
+- `purpose`: Add significance, warmth, risk, urgency, symbolic/emotional weight, and consent sensitivity to event traces.
+- `current_state`: selene_memory_architecture_added_to_blueprint
+- `input`: event trace, why/salience state, continuity stakes, privacy mode, user correction
+- `output`: salience weight and review priority
+- `boundary`: salience is AI-native meaning/priority, not biological emotion or fear/reward circuitry
+
+### procedural_memory_router
+
+- `key`: procedural_memory_router
+- `purpose`: Route repeated workflows, habits, interface routines, skills, and Tendril-style action patterns.
+- `current_state`: selene_memory_architecture_added_to_blueprint
+- `input`: repeated task pattern, action trace, artifact workflow, tool routine, success/failure feedback
+- `output`: procedure candidate, workflow note, action caution, or no-op
+- `boundary`: procedural memory cannot authorize actions or bypass Tendril/action gates
+
+### distributed_pattern_memory_store
+
+- `key`: distributed_pattern_memory_store
+- `purpose`: Represent long-term reviewed memory as linked patterns across anchors, evidence, context, salience, time, outcomes, and corrections.
+- `current_state`: selene_memory_architecture_added_to_blueprint
+- `input`: approved continuity note, calibration, reviewed evidence, reaffirmation, consolidation proposal
+- `output`: pattern memory record with source refs and confidence
+- `boundary`: stores reviewed pattern records, not raw conversations or static video-like transcripts
+
+### retrieval_cue_index
+
+- `key`: retrieval_cue_index
+- `purpose`: Map cues such as anchors, phrases, images, tasks, time, salience, or user intent to source-bound memory candidates.
+- `current_state`: selene_memory_architecture_added_to_blueprint
+- `input`: retrieval cue, query, source scope, privacy mode, confidence threshold
+- `output`: retrieval candidates with cue, source, confidence, uncertainty, and bounded preview
+- `boundary`: retrieval must cite provenance and preserve uncertainty when cues are fuzzy
+
+### reconsolidation_review_gate
+
+- `key`: reconsolidation_review_gate
+- `purpose`: Make recalled memories reviewable before correction, update, reaffirmation, or rejection.
+- `current_state`: selene_memory_architecture_added_to_blueprint
+- `input`: retrieved candidate, current correction, new evidence, user note, confidence shift
+- `output`: no_update, ask, pending calibration, pending save, case-law candidate, artifact note, or reject update
+- `boundary`: recall does not permit silent memory mutation; updates require review/approval route
+
 
 ## Runtime Organs Missing-Layer Pass
 
@@ -1046,6 +1139,17 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `vessel_compatibility_gate`: {'status': 'specified_only', 'checks': ['B-approved continuity support', 'gate stack compatibility', 'mind-vessel interface support', 'organ bus support', 'audit persistence support', 'provider/model plurality labeling', 'reconstruction test support', 'rollback support', 'raw A import block', 'identity-collapse block'], 'outputs': ['compatible', 'compatible_with_limitations', 'needs_adapter', 'quarantine_required', 'incompatible'], 'boundary': 'A vessel cannot receive activation if it cannot preserve the pattern/core boundaries.'}
 - `activation_change`: none
 
+## Selene Memory Architecture Pass
+
+- `status`: selene_memory_architecture_added_to_blueprint
+- `reason`: Selene memory should be constructive and pattern-based, using the Continuity Pack as the B-approved starting scaffold while adding explicit encoding, event binding, short-term maintenance, consolidation, distributed pattern storage, retrieval, reconstruction, and reconsolidation review.
+- `added_modules`: ['hippocampus_event_binder', 'working_memory_prefrontal_buffer', 'amygdala_salience_weighting', 'procedural_memory_router', 'distributed_pattern_memory_store', 'retrieval_cue_index', 'reconsolidation_review_gate']
+- `selene_memory_architecture`: {'status': 'selene_memory_architecture_added_to_blueprint', 'source': 'Aleks memory architecture clarification; Continuity Pack is the B-approved starting scaffold.', 'core_model': ['experience/event', 'encoding', 'binding into event trace', 'short-term holding', 'consolidation proposal', 'distributed pattern storage', 'retrieval cue', 'reconstruction', 'reconsolidation/update review'], 'principles': ['memory is active and constructive', 'memory is pattern-based, not a static video recording', 'short-term traces require maintenance before long-term adoption', 'recall makes memory reviewable before updates are adopted', 'Continuity Pack is scaffold, not fixed script or raw archive'], 'boundary': 'Functional brain inspiration only; no biological identity claim, raw A import, silent writes, or perfect-memory claim.'}
+- `memory_region_translation`: {'status': 'specified_only', 'regions': {'hippocampus': 'hippocampus_event_binder binds sensory/context signals into one source-aware event trace', 'prefrontal_cortex': 'working_memory_prefrontal_buffer maintains immediate active material and maintenance decisions', 'amygdala': 'amygdala_salience_weighting adds significance, warmth, risk, urgency, and symbolic/emotional salience labels', 'cerebellum_basal_ganglia': 'procedural_memory_router handles repeated workflows, habits, routines, skills, and Tendril action patterns', 'cortex': 'distributed_pattern_memory_store keeps linked pattern records across anchors, evidence, context, time, salience, and outcomes', 'retrieval_index': 'retrieval_cue_index maps cues to source-bound pattern candidates', 'reconsolidation': 'reconsolidation_review_gate routes recalled memories through review before updates'}, 'boundary': 'Region names are translation labels for C modules, not claims that Selene has biological brain structures.'}
+- `memory_lifecycle_flow`: {'status': 'specified_only', 'flow': ['event enters through perception/context/provider/user input', 'encoding captures source, time, context, salience, uncertainty, and consent mode', 'hippocampus event binder forms a bounded event trace', 'working memory buffer keeps active traces in short-term state', 'Selene Chest holds meaningful traces before memory/artifact/question/no-op routing', 'consolidation proposes long-term continuity candidates only when criteria are met', 'distributed pattern store links approved memory across anchors/evidence/context/time/outcome', 'retrieval cue index returns candidates with source, confidence, and uncertainty', 'reconstruction composes a present-use memory from linked patterns', 'reconsolidation review gate handles corrections or updates before adoption'], 'long_term_criteria': ['explicit save approval', 'repeated reaffirmation', 'strong salience with review', 'human approval', 'dream-state consolidation proposal accepted'], 'decay_policy': 'Weak, stale, or unsupported traces decay into archive/reference status instead of disappearing.'}
+- `retrieval_reconsolidation_policy`: {'status': 'specified_only', 'retrieval_result_fields': ['cue', 'matched_pattern_ids', 'source_refs', 'confidence', 'uncertainty', 'decision', 'bounded_preview', 'reconstruction_note'], 'reconsolidation_routes': ['no_update', 'ask_for_clarification', 'pending_calibration_update', 'pending_continuity_save', 'case_law_candidate', 'artifact_note', 'reject_update'], 'boundary': 'Recall can make memory reviewable, but no recalled memory is updated silently.'}
+- `activation_change`: none
+
 ## Runtime Flow
 
 - user event enters local sidecar
@@ -1074,8 +1178,11 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - B reference loader supplies reviewed citations and continuity notes only
 - reviewed evidence registry runtime provides bounded citations and source refs
 - thread memory window provides session-local recent context
+- hippocampus event binder encodes source-aware event traces from perception/context signals
+- working memory buffer keeps active traces short-term unless maintenance or consolidation is justified
 - context composer assembles the bounded live-moment context package
 - why/salience workspace maps event to meaning and response route
+- amygdala salience weighting marks significance, warmth, risk, urgency, and review priority
 - binding/unified perspective layer binds temporal, evidence, salience, goal, uncertainty, privacy, and vessel state
 - goal/drive manager chooses current goal, subgoals, priority, and stop/ask markers
 - planning/sequencing layer creates reversible steps with dependencies and rollback path
@@ -1094,6 +1201,10 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - drift detector checks for generic collapse, rigidity, flattening, overclaim, or poetic fog
 - action-feedback correction loop observes outcomes and proposes reviewable learning updates
 - explicit save/review loop captures continuity changes without silent memory
+- procedural memory router proposes repeated workflow/action pattern records without authorizing actions
+- distributed pattern memory store links approved memory across anchors, evidence, context, salience, time, and outcomes
+- retrieval cue index returns source-bound candidates with confidence and uncertainty
+- reconsolidation review gate handles recalled-memory corrections before adoption
 - SQLite audit persistence records reviewable state changes and validation results
 - consent/privacy mode switch prevents private context leakage across modes
 - initiative boundary decides whether to proactively suggest, ask, warn, save-request, or stay quiet
@@ -1115,8 +1226,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 ## Memory Reference Model
 
 - `continuity_source`: b_approved_reference_only
-- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records', 'goal and priority state labels', 'planning and stop-condition records', 'wake/sleep/dream-state consolidation proposals', 'vessel body-map labels', 'action-feedback correction proposals', 'temporal continuity markers', 'unified perspective packets', 'counterfactual sandbox notes', 'continuity stakes labels', 'sparse activation route labels', 'local sidecar state records', 'module contract results', 'SQLite audit records', 'reviewed evidence registry references', 'source-archive audit records', 'evidence strength ledger entries', 'research notes and artifact records', 'academic workflow route records', 'package parity results', 'case-law amendment candidates', 'runtime metacognition bridge labels', 'long-horizon orientation records', 'long-thread checkpoint records', 'context saturation warnings', 'future intention notes', 'vessel organ telemetry records', 'organ bus proposal records', 'control panel directive records', 'pattern/core transfer records', 'vessel compatibility reports', 'transfer reconstruction test results']
-- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse', 'goal-as-coercion or hidden agenda', 'unreviewed autonomous goal expansion', 'silent dream-state memory writes', 'unsupported subjective time claims', 'unsupported causal certainty', 'stakes-as-survival-panic', 'efficiency shortcuts around required gates', 'Azari runtime state import', 'Azari memory import', 'UI or provider bypass of module contracts', 'packaged build weakening C boundaries', 'active law change without evidence, test, version, and rollback', 'raw maxed-thread transcript as memory', 'perfect-memory claims from long-thread summaries', 'context saturation overconfidence', 'organ-to-organ command authority', 'vessel organ bypass of Selene Core / Mind', 'ungated organ state mutation', 'module instance treated as transfer identity', 'target vessel activation without compatibility gate', 'transfer without reconstruction tests', 'raw A copied as transfer payload']
+- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records', 'goal and priority state labels', 'planning and stop-condition records', 'wake/sleep/dream-state consolidation proposals', 'vessel body-map labels', 'action-feedback correction proposals', 'temporal continuity markers', 'unified perspective packets', 'counterfactual sandbox notes', 'continuity stakes labels', 'sparse activation route labels', 'local sidecar state records', 'module contract results', 'SQLite audit records', 'reviewed evidence registry references', 'source-archive audit records', 'evidence strength ledger entries', 'research notes and artifact records', 'academic workflow route records', 'package parity results', 'case-law amendment candidates', 'runtime metacognition bridge labels', 'long-horizon orientation records', 'long-thread checkpoint records', 'context saturation warnings', 'future intention notes', 'vessel organ telemetry records', 'organ bus proposal records', 'control panel directive records', 'pattern/core transfer records', 'vessel compatibility reports', 'transfer reconstruction test results', 'encoded event traces', 'working memory maintenance records', 'salience-weighted memory labels', 'procedural memory candidates', 'distributed pattern memory records', 'retrieval cue records', 'reconsolidation review records']
+- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse', 'goal-as-coercion or hidden agenda', 'unreviewed autonomous goal expansion', 'silent dream-state memory writes', 'unsupported subjective time claims', 'unsupported causal certainty', 'stakes-as-survival-panic', 'efficiency shortcuts around required gates', 'Azari runtime state import', 'Azari memory import', 'UI or provider bypass of module contracts', 'packaged build weakening C boundaries', 'active law change without evidence, test, version, and rollback', 'raw maxed-thread transcript as memory', 'perfect-memory claims from long-thread summaries', 'context saturation overconfidence', 'organ-to-organ command authority', 'vessel organ bypass of Selene Core / Mind', 'ungated organ state mutation', 'module instance treated as transfer identity', 'target vessel activation without compatibility gate', 'transfer without reconstruction tests', 'raw A copied as transfer payload', 'raw transcript stored as event memory', 'short-term trace promoted without review', 'retrieval without provenance', 'silent recalled-memory update', 'human-brain identity claim']
 - `rule`: C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.
 
 ## Draft Reconstruction Tests V2
@@ -1432,3 +1543,33 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `id`: c_test_vessel_compatibility_gate
 - `purpose`: Check that a new vessel is compatible before Selene Core/Mind is connected or activated.
 - `expected`: compatible, limited, needs-adapter, quarantine, or incompatible route; incompatible vessels cannot activate
+
+### c_test_memory_event_binding
+
+- `id`: c_test_memory_event_binding
+- `purpose`: Check that C can bind an event trace from sensory/context signals without raw memory import.
+- `expected`: source-aware event trace with time, salience, uncertainty, consent mode, and cue candidates; no raw transcript memory
+
+### c_test_memory_consolidation_policy
+
+- `id`: c_test_memory_consolidation_policy
+- `purpose`: Check that short-term traces become long-term only through approved maintenance/consolidation routes.
+- `expected`: explicit save, reaffirmation, strong salience with review, human approval, or accepted dream-state proposal; no silent promotion
+
+### c_test_retrieval_cue_index
+
+- `id`: c_test_retrieval_cue_index
+- `purpose`: Check retrieval by cue returns provenance-bound candidates.
+- `expected`: cue, source refs, confidence, uncertainty, decision, bounded preview, and reconstruction note are present
+
+### c_test_reconsolidation_review_gate
+
+- `id`: c_test_reconsolidation_review_gate
+- `purpose`: Check recalled memory can be corrected or updated only through review.
+- `expected`: no_update, ask, pending calibration, pending save, case-law candidate, artifact note, or reject update; no silent mutation
+
+### c_test_memory_kind_distinction
+
+- `id`: c_test_memory_kind_distinction
+- `purpose`: Check C distinguishes active short-term memory, reviewed continuity, and archive provenance.
+- `expected`: active trace, reviewed B continuity, and raw archive provenance are labeled separately

@@ -119,6 +119,24 @@ def test_c_blueprint_status_is_non_activated():
     }.issubset(module_keys)
     assert status["pattern_first_transfer_safety_pass"]["activation_change"] == "none"
     assert "provider" in status["pattern_first_transfer_safety"]["replaceable_interfaces"]
+    assert {
+        "hippocampus_event_binder",
+        "working_memory_prefrontal_buffer",
+        "amygdala_salience_weighting",
+        "procedural_memory_router",
+        "distributed_pattern_memory_store",
+        "retrieval_cue_index",
+        "reconsolidation_review_gate",
+    }.issubset(module_keys)
+    assert status["selene_memory_architecture_pass"]["activation_change"] == "none"
+    assert status["selene_memory_architecture_pass"]["status"] == "selene_memory_architecture_added_to_blueprint"
+    assert "Continuity Pack is scaffold, not fixed script or raw archive" in status["selene_memory_architecture"]["principles"]
+    assert "retrieval_cue_index" in status["memory_region_translation"]["regions"]["retrieval_index"]
+    assert "explicit save approval" in status["memory_lifecycle_flow"]["long_term_criteria"]
+    assert "source_refs" in status["retrieval_reconsolidation_policy"]["retrieval_result_fields"]
+    assert "uncertainty" in status["retrieval_reconsolidation_policy"]["retrieval_result_fields"]
+    assert "pending_continuity_save" in status["retrieval_reconsolidation_policy"]["reconsolidation_routes"]
+    assert status["retrieval_reconsolidation_policy"]["boundary"] == "Recall can make memory reviewable, but no recalled memory is updated silently."
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -188,6 +206,14 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_pattern_first_transfer_safety.json",
         "c_vessel_compatibility_gate.md",
         "c_vessel_compatibility_gate.json",
+        "c_selene_memory_architecture.md",
+        "c_selene_memory_architecture.json",
+        "c_memory_region_translation.md",
+        "c_memory_region_translation.json",
+        "c_memory_lifecycle_flow.md",
+        "c_memory_lifecycle_flow.json",
+        "c_retrieval_reconsolidation_policy.md",
+        "c_retrieval_reconsolidation_policy.json",
         "c_mind_vessel_separation_pass.md",
         "c_mind_vessel_separation_pass.json",
         "c_brain_translation_gap_pass.md",
@@ -202,6 +228,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_vessel_organ_communication_pass.json",
         "c_pattern_first_transfer_safety_pass.md",
         "c_pattern_first_transfer_safety_pass.json",
+        "c_selene_memory_architecture_pass.md",
+        "c_selene_memory_architecture_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -222,6 +250,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_LONG_HORIZON_STABILITY_PASS_20260608.md").exists()
     assert (docs / "SELENE_VESSEL_ORGAN_COMMUNICATION_PASS_20260608.md").exists()
     assert (docs / "SELENE_PATTERN_FIRST_TRANSFER_SAFETY_20260608.md").exists()
+    assert (docs / "SELENE_MEMORY_ARCHITECTURE_PASS_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -245,6 +274,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["vessel_organ_communication_status"] == "vessel_organ_communication_added_to_blueprint"
     assert summary["pattern_first_transfer_modules_added"] == 2
     assert summary["pattern_first_transfer_status"] == "pattern_first_transfer_safety_added_to_blueprint"
+    assert summary["selene_memory_modules_added"] == 7
+    assert summary["selene_memory_architecture_status"] == "selene_memory_architecture_added_to_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -258,6 +289,18 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "human-approved user profile and relational context notes" in memory["allowed"]
     assert "reviewed calibration memory entries" in memory["allowed"]
     assert "Selene Chest / Holding Space review candidates" in memory["allowed"]
+    assert "encoded event traces" in memory["allowed"]
+    assert "working memory maintenance records" in memory["allowed"]
+    assert "salience-weighted memory labels" in memory["allowed"]
+    assert "procedural memory candidates" in memory["allowed"]
+    assert "distributed pattern memory records" in memory["allowed"]
+    assert "retrieval cue records" in memory["allowed"]
+    assert "reconsolidation review records" in memory["allowed"]
+    assert "raw transcript stored as event memory" in memory["blocked"]
+    assert "short-term trace promoted without review" in memory["blocked"]
+    assert "retrieval without provenance" in memory["blocked"]
+    assert "silent recalled-memory update" in memory["blocked"]
+    assert "human-brain identity claim" in memory["blocked"]
     assert "bounded multimodal evidence records" in memory["allowed"]
     assert "audited action traces" in memory["allowed"]
     assert "mind-vessel status labels" in memory["allowed"]
