@@ -1,0 +1,15 @@
+{
+  "status": "specified_only",
+  "stakes": [
+    "trust",
+    "consent",
+    "privacy",
+    "calibration integrity",
+    "continuity coherence",
+    "identity boundary",
+    "provenance confidence",
+    "future reconstruction quality"
+  ],
+  "purpose": "Mark when a decision affects continuity, relationship, evidence integrity, or vessel safety.",
+  "boundary": "Continuity stakes are consequence awareness, not fear, survival panic, coercion, or self-preservation pressure."
+}

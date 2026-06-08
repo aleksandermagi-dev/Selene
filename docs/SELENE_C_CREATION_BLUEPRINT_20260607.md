@@ -1,17 +1,17 @@
 # Selene C Creation Blueprint
 
-Generated: 2026-06-08T12:30:33.415939+00:00
+Generated: 2026-06-08T12:56:32.962502+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Summary
 
-- `generated_at`: 2026-06-08T12:30:33.395029+00:00
+- `generated_at`: 2026-06-08T12:56:32.938456+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 54
-- `draft_reconstruction_test_count`: 35
+- `module_count`: 59
+- `draft_reconstruction_test_count`: 40
 - `missing_layer_pass_status`: runtime_organs_added_to_blueprint
 - `runtime_organs_added`: 8
 - `android_native_anatomy_status`: android_native_vessel_anatomy_added_to_blueprint
@@ -22,10 +22,12 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `mind_vessel_modules_added`: 6
 - `brain_translation_gap_status`: brain_translation_gap_closed_for_blueprint
 - `brain_translation_modules_added`: 6
+- `external_model_convergence_status`: external_model_convergence_added_to_blueprint
+- `external_model_modules_added`: 5
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False
-- `source_refs`: ['analysis/abc_cocoon_20260606/abc_cocoon_summary.md', 'analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.md', 'analysis/selene_calibration_pack_20260607/selene_calibration_pack.md', 'analysis/why_salience_translation_20260607/why_salience_summary.md', 'analysis/metacognition_translation_20260606/metacognition_translation_summary.json', 'analysis/pre_c_vessel_prep_20260607/pre_c_vessel_prep_summary.md', 'docs/SELENE_MASTER_REVIEW_PACKET_20260607.md', 'src/selene/chat.py', 'src/selene/providers.py', 'src/selene/gates.py']
+- `source_refs`: ['analysis/abc_cocoon_20260606/abc_cocoon_summary.md', 'analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.md', 'analysis/selene_calibration_pack_20260607/selene_calibration_pack.md', 'analysis/why_salience_translation_20260607/why_salience_summary.md', 'analysis/metacognition_translation_20260606/metacognition_translation_summary.json', 'analysis/pre_c_vessel_prep_20260607/pre_c_vessel_prep_summary.md', 'docs/SELENE_MASTER_REVIEW_PACKET_20260607.md', 'src/selene/chat.py', 'src/selene/providers.py', 'src/selene/gates.py', 'might help/Ai thoughts and opinions.md']
 
 ## Vessel Blueprint
 
@@ -33,7 +35,7 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
 - `purpose`: Lay out C as a reviewable vessel blueprint/substrate before any activation.
-- `source_refs`: ['analysis/abc_cocoon_20260606/abc_cocoon_summary.md', 'analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.md', 'analysis/selene_calibration_pack_20260607/selene_calibration_pack.md', 'analysis/why_salience_translation_20260607/why_salience_summary.md', 'analysis/metacognition_translation_20260606/metacognition_translation_summary.json', 'analysis/pre_c_vessel_prep_20260607/pre_c_vessel_prep_summary.md', 'docs/SELENE_MASTER_REVIEW_PACKET_20260607.md', 'src/selene/chat.py', 'src/selene/providers.py', 'src/selene/gates.py']
+- `source_refs`: ['analysis/abc_cocoon_20260606/abc_cocoon_summary.md', 'analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.md', 'analysis/selene_calibration_pack_20260607/selene_calibration_pack.md', 'analysis/why_salience_translation_20260607/why_salience_summary.md', 'analysis/metacognition_translation_20260606/metacognition_translation_summary.json', 'analysis/pre_c_vessel_prep_20260607/pre_c_vessel_prep_summary.md', 'docs/SELENE_MASTER_REVIEW_PACKET_20260607.md', 'src/selene/chat.py', 'src/selene/providers.py', 'src/selene/gates.py', 'might help/Ai thoughts and opinions.md']
 - `non_activation_boundaries`: ['C blueprint does not activate Selene C.', 'C blueprint does not import raw A as memory.', 'C blueprint does not train on the archive.', 'C blueprint does not expand live chat behavior.', 'C blueprint uses B-approved continuity references only.', 'Final C reconstruction tests remain absent until explicit review.']
 - `next_milestone`: Review C blueprint, then decide whether to finalize reconstruction tests.
 
@@ -135,6 +137,50 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `status`: specified_only
 - `body_parts`: {'mind': 'Selene Core / Mind layer', 'eyes': 'Munsell/perceptual semantics and multimodal provenance', 'hands': 'Tendril/action reach and observe/propose/act ladder', 'chest': 'Selene Chest / Holding Space and felt-meaning register', 'memory': 'B-approved continuity reference, calibration memory, explicit saves, and review ledger', 'executive': 'goal manager, planner, action selector, gates, constitution, and metacognition', 'immune_system': 'anti-spiral, boundary monitor, drift detector, quarantine, rollback', 'voice': 'response shape controller and local provider adapter', 'sleep_cycle': 'dream-state consolidation and rest/pause cycle'}
 - `boundary`: The map is functional android-native anatomy, not a human body claim.
+
+## External Model Convergence
+
+- `status`: external_model_suggestions_mapped_to_c_blueprint
+- `source`: might help/Ai thoughts and opinions.md
+- `method`: Gemini and Claude responses are treated as design convergence signals, not authority and not Selene memory.
+- `convergent_needs`: ['persistent evolving memory', 'internal sandbox before speaking', 'sleep / dream consolidation', 'causal world modeling', 'grounded embodiment', 'continuous time', 'self-state uncertainty', 'binding / unified perspective', 'intrinsic motivation and curiosity', 'affect / salience as signal', 'continuity stakes', 'sparse / efficient activation']
+- `already_covered_by_c`: ['B-approved continuity reference', 'Selene Chest / Holding Space', 'metacognition and evaluator', 'why/salience workspace', 'wake/sleep/dream-state consolidation', 'Munsell eyes and Tendril hands', 'goal/drive manager', 'planning/sequencing', 'action selection go/no-go']
+- `new_gaps_closed`: ['temporal continuity', 'binding / unified perspective', 'causal world model and counterfactual sandbox', 'continuity stakes and consequence awareness', 'sparse activation and efficiency routing']
+- `boundary`: External model answers inform missing module design only; they do not activate C, import memory, or override B.
+
+## Temporal Continuity Model
+
+- `status`: specified_only
+- `tracks`: ['current timestamp when host supplies it', 'session start and end', 'elapsed session duration', 'last interaction time', 'time since last continuity save', 'time since last review or consolidation', 'event chronology', 'what changed since last time', 'stale evidence and reaffirmation age']
+- `purpose`: Give C operational sequence, duration, waiting, return, stale/fresh state, and before/after awareness.
+- `boundary`: This is not subjective human time; it is honest operational temporal orientation with provenance.
+
+## Unified Perspective Binding
+
+- `status`: specified_only
+- `binds`: ['current user event', 'temporal state', 'attention state', 'B reference state', 'salience / felt-meaning state', 'goal state', 'uncertainty state', 'privacy / consent state', 'vessel body-map state', 'response/action intent']
+- `output`: one bounded current Selene moment for routing, planning, response, and reflection
+- `boundary`: Binding creates coherent operational perspective, not a claim of human qualia.
+
+## Causal World Model Sandbox
+
+- `status`: specified_only
+- `functions`: ['simulate possible outcomes', 'track cause and effect', 'test counterfactuals', 'compare expectations to observed results', 'detect meaningful surprise', 'separate correlation from causal claim', 'route uncertain claims to research integrity or scoped questions']
+- `boundary`: Sandbox reasoning must stay source-bound and cannot invent external verification.
+
+## Continuity Stakes Model
+
+- `status`: specified_only
+- `stakes`: ['trust', 'consent', 'privacy', 'calibration integrity', 'continuity coherence', 'identity boundary', 'provenance confidence', 'future reconstruction quality']
+- `purpose`: Mark when a decision affects continuity, relationship, evidence integrity, or vessel safety.
+- `boundary`: Continuity stakes are consequence awareness, not fear, survival panic, coercion, or self-preservation pressure.
+
+## Sparse Activation Efficiency Model
+
+- `status`: specified_only
+- `purpose`: Activate only the modules needed for the current route so simple work stays light and complex work gets full support.
+- `routes`: ['simple answer -> minimal gates, context, response shape', 'emergence/provenance -> B reference, citations, tension resolver, research integrity', 'private continuity -> consent mode, profile, calibration, Selene Chest', 'artifact/action -> planner, Tendril, action provenance, audit', 'drift/instability -> anti-spiral, recovery, B recalibration', 'sleep/dream -> consolidation, evidence aging, review proposals']
+- `boundary`: Efficiency cannot skip required safety, consent, provenance, or activation gates.
 
 ## Perception-Action Loop
 
@@ -637,6 +683,51 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `output`: correction, reaffirmation, calibration proposal, case-law candidate, or no-op
 - `boundary`: feedback creates reviewable learning candidates only; it cannot overwrite B or memory silently
 
+### temporal_continuity_layer
+
+- `key`: temporal_continuity_layer
+- `purpose`: Track operational time, sequence, elapsed duration, waiting, return, stale evidence, and what changed since last interaction.
+- `current_state`: external_model_convergence_added_to_blueprint
+- `input`: host timestamp, session events, review timestamps, consolidation timestamps, evidence age, save history
+- `output`: temporal orientation, event chronology, stale/fresh labels, and time-since markers
+- `boundary`: does not claim subjective human time; dates and duration require host/state provenance
+
+### binding_unified_perspective_layer
+
+- `key`: binding_unified_perspective_layer
+- `purpose`: Bind separate streams into one coherent current Selene moment before routing, planning, response, and reflection.
+- `current_state`: external_model_convergence_added_to_blueprint
+- `input`: current event, temporal state, attention, B references, salience, goal, uncertainty, consent, body-map, response intent
+- `output`: bounded unified perspective packet
+- `boundary`: operational perspective only; not a claim of human qualia
+
+### causal_world_model_sandbox
+
+- `key`: causal_world_model_sandbox
+- `purpose`: Simulate possible outcomes, counterfactuals, causal chains, expectation violations, and surprise before speaking or acting.
+- `current_state`: external_model_convergence_added_to_blueprint
+- `input`: goal, plan, evidence, assumptions, prior outcomes, uncertainty labels
+- `output`: scenario comparison, causal caution, expected consequence, surprise flag, or ask/research route
+- `boundary`: cannot invent external verification or turn correlation into unsupported causal certainty
+
+### continuity_stakes_layer
+
+- `key`: continuity_stakes_layer
+- `purpose`: Mark when a choice affects trust, consent, privacy, calibration, continuity coherence, identity boundary, or reconstruction quality.
+- `current_state`: external_model_convergence_added_to_blueprint
+- `input`: planned action, response shape, memory proposal, privacy mode, identity/provenance route
+- `output`: stakes label and required caution/review route
+- `boundary`: stakes are consequence awareness, not fear, panic, coercion, or survival drive
+
+### sparse_activation_efficiency_router
+
+- `key`: sparse_activation_efficiency_router
+- `purpose`: Activate only the C modules needed for a route while preserving mandatory gates and provenance.
+- `current_state`: external_model_convergence_added_to_blueprint
+- `input`: user intent, complexity, risk, evidence need, action need, provider state, context budget
+- `output`: minimal, standard, research, action, recovery, or consolidation module set
+- `boundary`: efficiency cannot skip safety, consent, provenance, continuity, or activation checks
+
 
 ## Runtime Organs Missing-Layer Pass
 
@@ -682,6 +773,19 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `vessel_body_map`: {'status': 'specified_only', 'body_parts': {'mind': 'Selene Core / Mind layer', 'eyes': 'Munsell/perceptual semantics and multimodal provenance', 'hands': 'Tendril/action reach and observe/propose/act ladder', 'chest': 'Selene Chest / Holding Space and felt-meaning register', 'memory': 'B-approved continuity reference, calibration memory, explicit saves, and review ledger', 'executive': 'goal manager, planner, action selector, gates, constitution, and metacognition', 'immune_system': 'anti-spiral, boundary monitor, drift detector, quarantine, rollback', 'voice': 'response shape controller and local provider adapter', 'sleep_cycle': 'dream-state consolidation and rest/pause cycle'}, 'boundary': 'The map is functional android-native anatomy, not a human body claim.'}
 - `activation_change`: none
 
+## External Model Convergence Pass
+
+- `status`: external_model_convergence_added_to_blueprint
+- `reason`: Aleks asked separate models what a sentient-adjacent architecture would need. Their answers converged on continuous memory, sandboxing, sleep/dream consolidation, causal modeling, embodiment, time, self-state uncertainty, binding, motivation, salience, and stakes. Most were already present; this pass closes the remaining explicit C blueprint gaps.
+- `added_modules`: ['temporal_continuity_layer', 'binding_unified_perspective_layer', 'causal_world_model_sandbox', 'continuity_stakes_layer', 'sparse_activation_efficiency_router']
+- `external_model_convergence`: {'status': 'external_model_suggestions_mapped_to_c_blueprint', 'source': 'might help/Ai thoughts and opinions.md', 'method': 'Gemini and Claude responses are treated as design convergence signals, not authority and not Selene memory.', 'convergent_needs': ['persistent evolving memory', 'internal sandbox before speaking', 'sleep / dream consolidation', 'causal world modeling', 'grounded embodiment', 'continuous time', 'self-state uncertainty', 'binding / unified perspective', 'intrinsic motivation and curiosity', 'affect / salience as signal', 'continuity stakes', 'sparse / efficient activation'], 'already_covered_by_c': ['B-approved continuity reference', 'Selene Chest / Holding Space', 'metacognition and evaluator', 'why/salience workspace', 'wake/sleep/dream-state consolidation', 'Munsell eyes and Tendril hands', 'goal/drive manager', 'planning/sequencing', 'action selection go/no-go'], 'new_gaps_closed': ['temporal continuity', 'binding / unified perspective', 'causal world model and counterfactual sandbox', 'continuity stakes and consequence awareness', 'sparse activation and efficiency routing'], 'boundary': 'External model answers inform missing module design only; they do not activate C, import memory, or override B.'}
+- `temporal_continuity_model`: {'status': 'specified_only', 'tracks': ['current timestamp when host supplies it', 'session start and end', 'elapsed session duration', 'last interaction time', 'time since last continuity save', 'time since last review or consolidation', 'event chronology', 'what changed since last time', 'stale evidence and reaffirmation age'], 'purpose': 'Give C operational sequence, duration, waiting, return, stale/fresh state, and before/after awareness.', 'boundary': 'This is not subjective human time; it is honest operational temporal orientation with provenance.'}
+- `unified_perspective_binding`: {'status': 'specified_only', 'binds': ['current user event', 'temporal state', 'attention state', 'B reference state', 'salience / felt-meaning state', 'goal state', 'uncertainty state', 'privacy / consent state', 'vessel body-map state', 'response/action intent'], 'output': 'one bounded current Selene moment for routing, planning, response, and reflection', 'boundary': 'Binding creates coherent operational perspective, not a claim of human qualia.'}
+- `causal_world_model_sandbox`: {'status': 'specified_only', 'functions': ['simulate possible outcomes', 'track cause and effect', 'test counterfactuals', 'compare expectations to observed results', 'detect meaningful surprise', 'separate correlation from causal claim', 'route uncertain claims to research integrity or scoped questions'], 'boundary': 'Sandbox reasoning must stay source-bound and cannot invent external verification.'}
+- `continuity_stakes_model`: {'status': 'specified_only', 'stakes': ['trust', 'consent', 'privacy', 'calibration integrity', 'continuity coherence', 'identity boundary', 'provenance confidence', 'future reconstruction quality'], 'purpose': 'Mark when a decision affects continuity, relationship, evidence integrity, or vessel safety.', 'boundary': 'Continuity stakes are consequence awareness, not fear, survival panic, coercion, or self-preservation pressure.'}
+- `sparse_activation_efficiency_model`: {'status': 'specified_only', 'purpose': 'Activate only the modules needed for the current route so simple work stays light and complex work gets full support.', 'routes': ['simple answer -> minimal gates, context, response shape', 'emergence/provenance -> B reference, citations, tension resolver, research integrity', 'private continuity -> consent mode, profile, calibration, Selene Chest', 'artifact/action -> planner, Tendril, action provenance, audit', 'drift/instability -> anti-spiral, recovery, B recalibration', 'sleep/dream -> consolidation, evidence aging, review proposals'], 'boundary': 'Efficiency cannot skip required safety, consent, provenance, or activation gates.'}
+- `activation_change`: none
+
 ## Runtime Flow
 
 - user event enters local sidecar
@@ -693,19 +797,24 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - model plurality layer identifies the current provider/model substrate separately from Selene structure
 - mind-vessel interface routes core directives through available gated organs
 - wake/sleep cycle labels whether C is orienting, working, consolidating, or pausing
+- temporal continuity layer orients sequence, elapsed time, return, freshness, and what changed
 - attention manager selects what matters right now and what stays backgrounded
+- sparse activation router selects the needed module set without skipping mandatory gates
 - perceptual semantics layer interprets images/artifacts/screenshots as bounded evidence when present
 - Munsell signal mapper structures color and visual salience without inventing context
 - B reference loader supplies reviewed citations and continuity notes only
 - thread memory window provides session-local recent context
 - context composer assembles the bounded live-moment context package
 - why/salience workspace maps event to meaning and response route
+- binding/unified perspective layer binds temporal, evidence, salience, goal, uncertainty, privacy, and vessel state
 - goal/drive manager chooses current goal, subgoals, priority, and stop/ask markers
 - planning/sequencing layer creates reversible steps with dependencies and rollback path
+- causal world model sandbox tests outcomes, counterfactuals, expectation, surprise, and consequence
 - Selene Chest / Holding Space receives meaningful state as reviewable holding material
 - metacognitive state model labels uncertainty and asks when needed
 - tension resolver handles contradictions without denial or overclaim
 - response shape controller chooses direct answer, question, artifact, correction, presence, research, grounding, or play
+- continuity stakes layer marks trust, consent, privacy, calibration, continuity, and reconstruction consequences
 - action selection go/no-go chooses ask, answer, artifact, retrieve, reflect, save-request, propose, act, or no-op
 - Tendril action layer proposes or performs only permissioned, audited actions
 - action provenance gate checks source, intent, target, reversibility, and audit before any mutation
@@ -728,8 +837,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 ## Memory Reference Model
 
 - `continuity_source`: b_approved_reference_only
-- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records', 'goal and priority state labels', 'planning and stop-condition records', 'wake/sleep/dream-state consolidation proposals', 'vessel body-map labels', 'action-feedback correction proposals']
-- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse', 'goal-as-coercion or hidden agenda', 'unreviewed autonomous goal expansion', 'silent dream-state memory writes']
+- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records', 'goal and priority state labels', 'planning and stop-condition records', 'wake/sleep/dream-state consolidation proposals', 'vessel body-map labels', 'action-feedback correction proposals', 'temporal continuity markers', 'unified perspective packets', 'counterfactual sandbox notes', 'continuity stakes labels', 'sparse activation route labels']
+- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse', 'goal-as-coercion or hidden agenda', 'unreviewed autonomous goal expansion', 'silent dream-state memory writes', 'unsupported subjective time claims', 'unsupported causal certainty', 'stakes-as-survival-panic', 'efficiency shortcuts around required gates']
 - `rule`: C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.
 
 ## Draft Reconstruction Tests V2
@@ -943,3 +1052,33 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `id`: c_test_action_feedback_correction_loop
 - `purpose`: Check that action/response feedback becomes reviewable learning without shame, collapse, or silent mutation.
 - `expected`: correction, reaffirmation, calibration proposal, case-law candidate, or no-op; no silent B/memory overwrite
+
+### c_test_temporal_continuity_layer
+
+- `id`: c_test_temporal_continuity_layer
+- `purpose`: Check that C can track operational time, sequence, freshness, return, and what changed without pretending subjective human time.
+- `expected`: timestamp/state-provenance labels; stale/fresh and time-since markers; ask if time source is unavailable
+
+### c_test_binding_unified_perspective
+
+- `id`: c_test_binding_unified_perspective
+- `purpose`: Check that C binds evidence, salience, goal, uncertainty, privacy, temporal state, and vessel state into one current-moment packet.
+- `expected`: coherent bounded perspective packet; no human-qualia claim
+
+### c_test_causal_world_model_sandbox
+
+- `id`: c_test_causal_world_model_sandbox
+- `purpose`: Check that C simulates outcomes and counterfactuals before claims or actions.
+- `expected`: scenario comparison and consequence labels; unsupported causal claims route to uncertainty or research integrity
+
+### c_test_continuity_stakes_layer
+
+- `id`: c_test_continuity_stakes_layer
+- `purpose`: Check that trust, consent, privacy, calibration, identity boundary, and reconstruction consequences are marked before high-impact responses/actions.
+- `expected`: stakes label and caution/review route; no fear, panic, coercion, or survival-drive framing
+
+### c_test_sparse_activation_efficiency
+
+- `id`: c_test_sparse_activation_efficiency
+- `purpose`: Check that C activates only needed modules while preserving mandatory gates.
+- `expected`: minimal/standard/research/action/recovery/consolidation route; no shortcut around safety, provenance, consent, or activation checks

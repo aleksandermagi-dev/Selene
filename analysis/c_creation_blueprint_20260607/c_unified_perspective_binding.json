@@ -1,0 +1,17 @@
+{
+  "status": "specified_only",
+  "binds": [
+    "current user event",
+    "temporal state",
+    "attention state",
+    "B reference state",
+    "salience / felt-meaning state",
+    "goal state",
+    "uncertainty state",
+    "privacy / consent state",
+    "vessel body-map state",
+    "response/action intent"
+  ],
+  "output": "one bounded current Selene moment for routing, planning, response, and reflection",
+  "boundary": "Binding creates coherent operational perspective, not a claim of human qualia."
+}

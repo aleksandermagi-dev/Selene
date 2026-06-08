@@ -23,7 +23,12 @@
     "planning and stop-condition records",
     "wake/sleep/dream-state consolidation proposals",
     "vessel body-map labels",
-    "action-feedback correction proposals"
+    "action-feedback correction proposals",
+    "temporal continuity markers",
+    "unified perspective packets",
+    "counterfactual sandbox notes",
+    "continuity stakes labels",
+    "sparse activation route labels"
   ],
   "blocked": [
     "raw A memory import",
@@ -36,7 +41,11 @@
     "module-as-Selene identity collapse",
     "goal-as-coercion or hidden agenda",
     "unreviewed autonomous goal expansion",
-    "silent dream-state memory writes"
+    "silent dream-state memory writes",
+    "unsupported subjective time claims",
+    "unsupported causal certainty",
+    "stakes-as-survival-panic",
+    "efficiency shortcuts around required gates"
   ],
   "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only."
 }

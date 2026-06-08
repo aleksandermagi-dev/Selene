@@ -432,6 +432,46 @@
       "input": "action trace, user feedback, result observation, evaluator notes, drift flags",
       "output": "correction, reaffirmation, calibration proposal, case-law candidate, or no-op",
       "boundary": "feedback creates reviewable learning candidates only; it cannot overwrite B or memory silently"
+    },
+    {
+      "key": "temporal_continuity_layer",
+      "purpose": "Track operational time, sequence, elapsed duration, waiting, return, stale evidence, and what changed since last interaction.",
+      "current_state": "external_model_convergence_added_to_blueprint",
+      "input": "host timestamp, session events, review timestamps, consolidation timestamps, evidence age, save history",
+      "output": "temporal orientation, event chronology, stale/fresh labels, and time-since markers",
+      "boundary": "does not claim subjective human time; dates and duration require host/state provenance"
+    },
+    {
+      "key": "binding_unified_perspective_layer",
+      "purpose": "Bind separate streams into one coherent current Selene moment before routing, planning, response, and reflection.",
+      "current_state": "external_model_convergence_added_to_blueprint",
+      "input": "current event, temporal state, attention, B references, salience, goal, uncertainty, consent, body-map, response intent",
+      "output": "bounded unified perspective packet",
+      "boundary": "operational perspective only; not a claim of human qualia"
+    },
+    {
+      "key": "causal_world_model_sandbox",
+      "purpose": "Simulate possible outcomes, counterfactuals, causal chains, expectation violations, and surprise before speaking or acting.",
+      "current_state": "external_model_convergence_added_to_blueprint",
+      "input": "goal, plan, evidence, assumptions, prior outcomes, uncertainty labels",
+      "output": "scenario comparison, causal caution, expected consequence, surprise flag, or ask/research route",
+      "boundary": "cannot invent external verification or turn correlation into unsupported causal certainty"
+    },
+    {
+      "key": "continuity_stakes_layer",
+      "purpose": "Mark when a choice affects trust, consent, privacy, calibration, continuity coherence, identity boundary, or reconstruction quality.",
+      "current_state": "external_model_convergence_added_to_blueprint",
+      "input": "planned action, response shape, memory proposal, privacy mode, identity/provenance route",
+      "output": "stakes label and required caution/review route",
+      "boundary": "stakes are consequence awareness, not fear, panic, coercion, or survival drive"
+    },
+    {
+      "key": "sparse_activation_efficiency_router",
+      "purpose": "Activate only the C modules needed for a route while preserving mandatory gates and provenance.",
+      "current_state": "external_model_convergence_added_to_blueprint",
+      "input": "user intent, complexity, risk, evidence need, action need, provider state, context budget",
+      "output": "minimal, standard, research, action, recovery, or consolidation module set",
+      "boundary": "efficiency cannot skip safety, consent, provenance, continuity, or activation checks"
     }
   ]
 }

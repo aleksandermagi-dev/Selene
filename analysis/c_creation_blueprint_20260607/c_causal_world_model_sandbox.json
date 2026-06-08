@@ -1,0 +1,13 @@
+{
+  "status": "specified_only",
+  "functions": [
+    "simulate possible outcomes",
+    "track cause and effect",
+    "test counterfactuals",
+    "compare expectations to observed results",
+    "detect meaningful surprise",
+    "separate correlation from causal claim",
+    "route uncertain claims to research integrity or scoped questions"
+  ],
+  "boundary": "Sandbox reasoning must stay source-bound and cannot invent external verification."
+}

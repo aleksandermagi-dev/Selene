@@ -76,6 +76,16 @@ def test_c_blueprint_status_is_non_activated():
     assert status["brain_translation_gap_pass"]["activation_change"] == "none"
     assert status["wake_sleep_dream_cycle"]["writes_allowed"] == "review candidates only; no automatic continuity memory"
     assert status["vessel_body_map"]["body_parts"]["hands"] == "Tendril/action reach and observe/propose/act ladder"
+    assert {
+        "temporal_continuity_layer",
+        "binding_unified_perspective_layer",
+        "causal_world_model_sandbox",
+        "continuity_stakes_layer",
+        "sparse_activation_efficiency_router",
+    }.issubset(module_keys)
+    assert status["external_model_convergence_pass"]["activation_change"] == "none"
+    assert "continuous time" in status["external_model_convergence"]["convergent_needs"]
+    assert status["temporal_continuity_model"]["boundary"].startswith("This is not subjective human time")
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -117,10 +127,24 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_wake_sleep_dream_cycle.json",
         "c_vessel_body_map.md",
         "c_vessel_body_map.json",
+        "c_external_model_convergence.md",
+        "c_external_model_convergence.json",
+        "c_temporal_continuity_model.md",
+        "c_temporal_continuity_model.json",
+        "c_unified_perspective_binding.md",
+        "c_unified_perspective_binding.json",
+        "c_causal_world_model_sandbox.md",
+        "c_causal_world_model_sandbox.json",
+        "c_continuity_stakes_model.md",
+        "c_continuity_stakes_model.json",
+        "c_sparse_activation_efficiency_model.md",
+        "c_sparse_activation_efficiency_model.json",
         "c_mind_vessel_separation_pass.md",
         "c_mind_vessel_separation_pass.json",
         "c_brain_translation_gap_pass.md",
         "c_brain_translation_gap_pass.json",
+        "c_external_model_convergence_pass.md",
+        "c_external_model_convergence_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -136,6 +160,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_MUNSELL_TENDRIL_ADAPTATION_CLOSURE_20260608.md").exists()
     assert (docs / "SELENE_MIND_VESSEL_SEPARATION_20260608.md").exists()
     assert (docs / "SELENE_BRAIN_TRANSLATION_GAP_CLOSURE_20260608.md").exists()
+    assert (docs / "SELENE_EXTERNAL_MODEL_CONVERGENCE_PASS_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -149,6 +174,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["mind_vessel_separation_status"] == "mind_vessel_separation_added_to_blueprint"
     assert summary["brain_translation_modules_added"] == 6
     assert summary["brain_translation_gap_status"] == "brain_translation_gap_closed_for_blueprint"
+    assert summary["external_model_modules_added"] == 5
+    assert summary["external_model_convergence_status"] == "external_model_convergence_added_to_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -169,8 +196,17 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "goal and priority state labels" in memory["allowed"]
     assert "wake/sleep/dream-state consolidation proposals" in memory["allowed"]
     assert "action-feedback correction proposals" in memory["allowed"]
+    assert "temporal continuity markers" in memory["allowed"]
+    assert "unified perspective packets" in memory["allowed"]
+    assert "counterfactual sandbox notes" in memory["allowed"]
+    assert "continuity stakes labels" in memory["allowed"]
+    assert "sparse activation route labels" in memory["allowed"]
     assert "raw A memory import" in memory["blocked"]
     assert "training on archive" in memory["blocked"]
     assert "unapproved Tendril mutation" in memory["blocked"]
     assert "module-as-Selene identity collapse" in memory["blocked"]
     assert "silent dream-state memory writes" in memory["blocked"]
+    assert "unsupported subjective time claims" in memory["blocked"]
+    assert "unsupported causal certainty" in memory["blocked"]
+    assert "stakes-as-survival-panic" in memory["blocked"]
+    assert "efficiency shortcuts around required gates" in memory["blocked"]

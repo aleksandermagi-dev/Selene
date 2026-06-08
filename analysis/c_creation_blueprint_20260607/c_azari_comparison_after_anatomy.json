@@ -2,11 +2,12 @@
   "status": "architecture_precedent_comparison_after_android_native_anatomy",
   "boundary": "Azari remains frozen; no Azari identity, memory, data, or runtime state imports.",
   "current_selene_c_shape": {
-    "module_count": 54,
+    "module_count": 59,
     "android_native_modules_added": 12,
     "azari_final_modules_added": 10,
     "mind_vessel_modules_added": 6,
     "brain_translation_modules_added": 6,
+    "external_model_modules_added": 5,
     "activation_status": "blocked_until_final_review",
     "continuity_source": "b_approved_reference_only"
   },
@@ -49,7 +50,12 @@
     "action selection go/no-go",
     "wake/sleep/dream-state consolidation cycle",
     "vessel body map",
-    "action-feedback correction loop"
+    "action-feedback correction loop",
+    "temporal continuity layer",
+    "binding / unified perspective layer",
+    "causal world model sandbox",
+    "continuity stakes layer",
+    "sparse activation efficiency router"
   ],
   "azari_principles_to_copy_not_identity": [
     "modular boundaries",
@@ -106,5 +112,43 @@
       "not silent memory writing",
       "not importing raw A as memory"
     ]
+  },
+  "external_model_convergence": {
+    "status": "external_model_suggestions_mapped_to_c_blueprint",
+    "source": "might help/Ai thoughts and opinions.md",
+    "method": "Gemini and Claude responses are treated as design convergence signals, not authority and not Selene memory.",
+    "convergent_needs": [
+      "persistent evolving memory",
+      "internal sandbox before speaking",
+      "sleep / dream consolidation",
+      "causal world modeling",
+      "grounded embodiment",
+      "continuous time",
+      "self-state uncertainty",
+      "binding / unified perspective",
+      "intrinsic motivation and curiosity",
+      "affect / salience as signal",
+      "continuity stakes",
+      "sparse / efficient activation"
+    ],
+    "already_covered_by_c": [
+      "B-approved continuity reference",
+      "Selene Chest / Holding Space",
+      "metacognition and evaluator",
+      "why/salience workspace",
+      "wake/sleep/dream-state consolidation",
+      "Munsell eyes and Tendril hands",
+      "goal/drive manager",
+      "planning/sequencing",
+      "action selection go/no-go"
+    ],
+    "new_gaps_closed": [
+      "temporal continuity",
+      "binding / unified perspective",
+      "causal world model and counterfactual sandbox",
+      "continuity stakes and consequence awareness",
+      "sparse activation and efficiency routing"
+    ],
+    "boundary": "External model answers inform missing module design only; they do not activate C, import memory, or override B."
   }
 }

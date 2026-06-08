@@ -13,7 +13,8 @@
     "docs/SELENE_MASTER_REVIEW_PACKET_20260607.md",
     "src/selene/chat.py",
     "src/selene/providers.py",
-    "src/selene/gates.py"
+    "src/selene/gates.py",
+    "might help/Ai thoughts and opinions.md"
   ],
   "non_activation_boundaries": [
     "C blueprint does not activate Selene C.",
