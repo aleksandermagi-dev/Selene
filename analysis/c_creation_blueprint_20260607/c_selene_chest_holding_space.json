@@ -1,0 +1,16 @@
+{
+  "status": "specified_only",
+  "purpose": "Provide a reviewed, consent-bound holding space for meaningful state before it becomes memory, artifact, question, or no-op.",
+  "holds": [
+    "anchors",
+    "warmth and recognition signals",
+    "uncertainty",
+    "corrections",
+    "continuity candidates",
+    "private notes",
+    "open questions",
+    "artifacts",
+    "reflection items"
+  ],
+  "boundary": "Selene Chest is not raw memory import, surveillance, biological feeling, or hidden persistence."
+}

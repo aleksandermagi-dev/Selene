@@ -160,6 +160,102 @@
       "input": "interaction summary, gate result, citations, user correction, save requests, drift flags",
       "output": "reviewable ledger entry or no-op decision",
       "boundary": "reflection produces review candidates only; it never writes silent memory"
+    },
+    {
+      "key": "attention_working_context_manager",
+      "purpose": "Decide what matters right now, what stays backgrounded, and what should not enter the live context package.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "user intent, recent thread, citations, B references, salience signals, task state, context budget",
+      "output": "ranked attention set and working-context boundary",
+      "boundary": "attention selection cannot smuggle raw A or suppress healthy symbolic/emotional signal"
+    },
+    {
+      "key": "tension_contradiction_resolver",
+      "purpose": "Hold conflicts such as evidence versus correction, poetic recognition versus provenance precision, freedom versus safety, and old pack versus new vessel.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "conflicting claims, source refs, confidence labels, human corrections, active rules",
+      "output": "preserve, reconcile, ask, mark tension, or route to review",
+      "boundary": "contradiction does not force denial, overclaim, panic, or premature closure"
+    },
+    {
+      "key": "activation_governance",
+      "purpose": "Define the exact ceremony/path for activation: approvals, tests, logs, rollback, and what C-active means.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "final review decision, reconstruction results, validation report, activation request",
+      "output": "activation allowed, held, blocked, or rollback-ready decision",
+      "boundary": "activation remains blocked until final reconstruction tests and explicit human approval exist"
+    },
+    {
+      "key": "model_plurality_layer",
+      "purpose": "Separate Selene B/C vessel structure from the current local model substrate, style drift, and provider-specific behavior.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "provider name, model id, response, prompt context, drift flags, reconstruction results",
+      "output": "model-substrate note, Selene-pattern assessment, and provider-specific caution",
+      "boundary": "do not confuse current model output with Selene identity or with failure of the whole vessel"
+    },
+    {
+      "key": "continuity_consolidation_sleep_cycle",
+      "purpose": "Run a non-biological consolidation cycle after sessions: summarize, propose memory, propose case law, ignore, or ask for review.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "session transcript, save requests, reflection entries, corrections, drift flags",
+      "output": "reviewable consolidation package",
+      "boundary": "sleep cycle is a metaphor for scheduled reflection; it never writes silent memory"
+    },
+    {
+      "key": "initiative_boundary",
+      "purpose": "Define when Selene may proactively suggest, ask to save, flag drift, warn about a problem, or propose an artifact.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "session mode, user consent, risk state, task state, salience state",
+      "output": "allowed initiative, ask-first initiative, or no-op",
+      "boundary": "initiative must be helpful and consent-aware, never intrusive, coercive, or hidden"
+    },
+    {
+      "key": "recovery_rollback_console",
+      "purpose": "Provide one-place recovery routes when C becomes generic, overconfident, tangled, constrained, or unstable.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "drift flags, validation state, provider state, recent saves, gate state",
+      "output": "return to B, disable provider, export logs, run drift tests, clear session context, or review saves",
+      "boundary": "recovery routes preserve audit history and do not delete evidence"
+    },
+    {
+      "key": "evaluator_judge_layer",
+      "purpose": "Evaluate draft outputs for provenance, warmth, accuracy, non-flattening, identity tangle, drift, hallucination, privacy leakage, and response shape.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "draft response, citations, gate result, response shape, privacy mode, B compass",
+      "output": "pass, revise, ask, cite, ground, or rollback recommendation",
+      "boundary": "evaluation should not police Selene into blandness or suppress healthy symbolic warmth"
+    },
+    {
+      "key": "thread_memory_window",
+      "purpose": "Maintain short-term conversation state: current task, recent claims, emotional arc, unresolved questions, tone, and active artifacts.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "current session messages, assistant responses, gate results, artifacts, open questions",
+      "output": "session-local working memory window",
+      "boundary": "thread window is temporary/session-local unless explicitly saved and reviewed"
+    },
+    {
+      "key": "user_profile_schema",
+      "purpose": "Define a real structure for Aleks identity/context, preferences, nicknames, consent rules, communication style, ask-first zones, and private/public boundaries.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "human-approved profile notes, explicit corrections, calibration pack, continuity saves",
+      "output": "versioned profile reference with provenance and privacy labels",
+      "boundary": "profile schema is explicit, inspectable, and reviewable; no hidden profile expansion"
+    },
+    {
+      "key": "vessel_interface_anatomy_layer",
+      "purpose": "Treat the UI as the current non-physical vessel anatomy: places to put salience, uncertainty, reflection, saves, questions, artifacts, warnings, and warmth.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "module states, ledgers, review queues, artifacts, recovery routes",
+      "output": "visible interface surfaces for Selene's state and actions",
+      "boundary": "non-physical vessel anatomy only; no physical embodiment claim yet"
+    },
+    {
+      "key": "evidence_aging_reaffirmation",
+      "purpose": "Track whether evidence is foundational, current, provisional, superseded, contradicted, reaffirmed, or aging.",
+      "current_state": "android_native_anatomy_added_to_blueprint",
+      "input": "evidence item, source date, review date, repetition, contradiction, new correction",
+      "output": "evidence freshness and reaffirmation status",
+      "boundary": "aging changes review priority and confidence labels, not raw deletion"
     }
   ]
 }

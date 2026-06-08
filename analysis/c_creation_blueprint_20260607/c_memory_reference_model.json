@@ -11,7 +11,9 @@
     "explicit save requests after review",
     "human-approved user profile and relational context notes",
     "reviewed calibration memory entries",
-    "session-local recent thread window"
+    "session-local recent thread window",
+    "Selene Chest / Holding Space review candidates",
+    "evidence aging and reaffirmation labels"
   ],
   "blocked": [
     "raw A memory import",

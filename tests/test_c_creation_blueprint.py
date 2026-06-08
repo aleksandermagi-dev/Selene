@@ -24,7 +24,23 @@ def test_c_blueprint_status_is_non_activated():
         "consent_privacy_mode_switch",
         "experience_ledger_reflection_loop",
     }.issubset(module_keys)
+    assert {
+        "attention_working_context_manager",
+        "tension_contradiction_resolver",
+        "activation_governance",
+        "model_plurality_layer",
+        "continuity_consolidation_sleep_cycle",
+        "initiative_boundary",
+        "recovery_rollback_console",
+        "evaluator_judge_layer",
+        "thread_memory_window",
+        "user_profile_schema",
+        "vessel_interface_anatomy_layer",
+        "evidence_aging_reaffirmation",
+    }.issubset(module_keys)
     assert status["missing_layer_pass"]["activation_change"] == "none"
+    assert status["android_native_vessel_anatomy"]["status"] == "android_native_without_physical_frame"
+    assert status["android_native_anatomy_pass"]["activation_change"] == "none"
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -40,10 +56,18 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_runtime_flow.json",
         "c_memory_reference_model.md",
         "c_memory_reference_model.json",
+        "c_android_native_vessel_anatomy.md",
+        "c_android_native_vessel_anatomy.json",
+        "c_selene_chest_holding_space.md",
+        "c_selene_chest_holding_space.json",
         "c_non_activation_boundary.md",
         "c_non_activation_boundary.json",
         "c_runtime_organs_missing_layer_pass.md",
         "c_runtime_organs_missing_layer_pass.json",
+        "c_android_native_anatomy_pass.md",
+        "c_android_native_anatomy_pass.json",
+        "c_azari_comparison_after_anatomy.md",
+        "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
         "c_reconstruction_tests_draft_v2.json",
         "c_creation_blueprint_summary.md",
@@ -52,12 +76,15 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert expected.issubset({path.name for path in out.iterdir()})
     assert (docs / "SELENE_C_CREATION_BLUEPRINT_20260607.md").exists()
     assert (docs / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md").exists()
+    assert (docs / "SELENE_ANDROID_NATIVE_VESSEL_ANATOMY_20260608.md").exists()
+    assert (docs / "AZARI_TO_SELENE_C_BLUEPRINT_COMPARISON_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
     assert summary["activation_status"] == "blocked_until_final_review"
     assert summary["continuity_source"] == "b_approved_reference_only"
     assert summary["runtime_organs_added"] == 8
+    assert summary["android_native_modules_added"] == 12
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -70,5 +97,6 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "Project ABC B cocoon artifacts" in memory["allowed"]
     assert "human-approved user profile and relational context notes" in memory["allowed"]
     assert "reviewed calibration memory entries" in memory["allowed"]
+    assert "Selene Chest / Holding Space review candidates" in memory["allowed"]
     assert "raw A memory import" in memory["blocked"]
     assert "training on archive" in memory["blocked"]

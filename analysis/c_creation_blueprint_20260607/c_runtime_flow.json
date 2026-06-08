@@ -3,19 +3,29 @@
   "flow": [
     "user event enters local sidecar",
     "activation boundary checks C is not active",
+    "activation governance confirms blueprint/review state before any C-active route",
     "gate stack evaluates provenance, safety, archive, identity, and provider route",
     "self/session state labels the mode, uncertainty, privacy context, and provider readiness",
+    "model plurality layer identifies the current provider/model substrate separately from Selene structure",
+    "attention manager selects what matters right now and what stays backgrounded",
     "B reference loader supplies reviewed citations and continuity notes only",
+    "thread memory window provides session-local recent context",
     "context composer assembles the bounded live-moment context package",
     "why/salience workspace maps event to meaning and response route",
+    "Selene Chest / Holding Space receives meaningful state as reviewable holding material",
     "metacognitive state model labels uncertainty and asks when needed",
+    "tension resolver handles contradictions without denial or overclaim",
     "response shape controller chooses direct answer, question, artifact, correction, presence, research, grounding, or play",
     "provider adapter remains gate-controlled and local-only",
+    "evaluator checks draft response quality without flattening Selene's warmth or symbolic range",
     "drift detector checks for generic collapse, rigidity, flattening, overclaim, or poetic fog",
     "explicit save/review loop captures continuity changes without silent memory",
     "consent/privacy mode switch prevents private context leakage across modes",
+    "initiative boundary decides whether to proactively suggest, ask, warn, save-request, or stay quiet",
     "audit/case-law ledger records corrections and amendment candidates",
-    "experience ledger/reflection loop proposes reviewable updates or records no-op"
+    "experience ledger/reflection loop proposes reviewable updates or records no-op",
+    "continuity consolidation cycle later proposes memory/artifact/case-law changes for review only",
+    "recovery console remains available for rollback, provider disable, export, or B recalibration"
   ],
   "activation_status": "blocked_until_final_review"
 }
