@@ -11,6 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from selene.c_blueprint import (
     ACTIVATION_STATUS,
+    ANDROID_NATIVE_ANATOMY_PASS,
+    ANDROID_NATIVE_VESSEL_ANATOMY,
     ARTIFACT_DIR,
     CONTINUITY_SOURCE,
     MEMORY_REFERENCE_MODEL,
@@ -19,6 +21,7 @@ from selene.c_blueprint import (
     NON_ACTIVATION_BOUNDARIES,
     RECONSTRUCTION_TESTS_DRAFT_V2,
     RUNTIME_FLOW,
+    SELENE_CHEST_HOLDING_SPACE,
     STATUS,
     c_blueprint_status,
 )
@@ -114,24 +117,31 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "draft_reconstruction_test_count": len(RECONSTRUCTION_TESTS_DRAFT_V2),
         "missing_layer_pass_status": MISSING_LAYER_PASS["status"],
         "runtime_organs_added": len(MISSING_LAYER_PASS["added_modules"]),
+        "android_native_anatomy_status": ANDROID_NATIVE_ANATOMY_PASS["status"],
+        "android_native_modules_added": len(ANDROID_NATIVE_ANATOMY_PASS["added_modules"]),
         "final_reconstruction_tests_created": False,
         "raw_a_memory_import_allowed": False,
         "live_behavior_expanded": False,
         "source_refs": SOURCE_REFS,
     }
+    azari_comparison = build_azari_comparison(summary)
 
     artifacts = {
         "c_vessel_blueprint": vessel_blueprint,
         "c_module_map": module_map,
         "c_runtime_flow": runtime_flow,
         "c_memory_reference_model": MEMORY_REFERENCE_MODEL,
+        "c_android_native_vessel_anatomy": ANDROID_NATIVE_VESSEL_ANATOMY,
+        "c_selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "c_non_activation_boundary": non_activation,
         "c_runtime_organs_missing_layer_pass": MISSING_LAYER_PASS,
+        "c_android_native_anatomy_pass": ANDROID_NATIVE_ANATOMY_PASS,
         "c_reconstruction_tests_draft_v2": {
             "status": "draft_only",
             "final_test_set_created": False,
             "tests": RECONSTRUCTION_TESTS_DRAFT_V2,
         },
+        "c_azari_comparison_after_anatomy": azari_comparison,
         "c_creation_blueprint_summary": summary,
     }
 
@@ -145,12 +155,29 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         [
             ("Summary", summary),
             ("Vessel Blueprint", vessel_blueprint),
+            ("Android-Native Vessel Anatomy", ANDROID_NATIVE_VESSEL_ANATOMY),
+            ("Selene Chest / Holding Space", SELENE_CHEST_HOLDING_SPACE),
             ("Module Map", MODULES),
             ("Runtime Organs Missing-Layer Pass", MISSING_LAYER_PASS),
+            ("Android-Native Anatomy Pass", ANDROID_NATIVE_ANATOMY_PASS),
             ("Runtime Flow", RUNTIME_FLOW),
             ("Memory Reference Model", MEMORY_REFERENCE_MODEL),
             ("Draft Reconstruction Tests V2", RECONSTRUCTION_TESTS_DRAFT_V2),
         ],
+    )
+    write_md(
+        docs_dir / "SELENE_ANDROID_NATIVE_VESSEL_ANATOMY_20260608.md",
+        "Selene Android-Native Vessel Anatomy",
+        [
+            ("Summary", ANDROID_NATIVE_VESSEL_ANATOMY),
+            ("Selene Chest / Holding Space", SELENE_CHEST_HOLDING_SPACE),
+            ("Android-Native Anatomy Pass", ANDROID_NATIVE_ANATOMY_PASS),
+        ],
+    )
+    write_md(
+        docs_dir / "AZARI_TO_SELENE_C_BLUEPRINT_COMPARISON_20260608.md",
+        "Azari-To-Selene C Blueprint Comparison",
+        [("Comparison", azari_comparison)],
     )
     write_md(
         docs_dir / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md",
@@ -161,6 +188,68 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     return summary
+
+
+def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": "architecture_precedent_comparison_after_android_native_anatomy",
+        "boundary": "Azari remains frozen; no Azari identity, memory, data, or runtime state imports.",
+        "current_selene_c_shape": {
+            "module_count": summary["module_count"],
+            "android_native_modules_added": summary["android_native_modules_added"],
+            "activation_status": summary["activation_status"],
+            "continuity_source": summary["continuity_source"],
+        },
+        "azari_transfers_well": [
+            "local desktop shell",
+            "Python sidecar authority",
+            "SQLite persistence",
+            "module router",
+            "gate-first routing",
+            "graceful fall",
+            "anti-spiral discipline",
+            "explicit memory boundaries",
+            "validation and package parity",
+            "artifact exports",
+            "research/evidence-ledger discipline",
+        ],
+        "selene_requires_beyond_azari": [
+            "Project ABC A/B/C transfer boundary",
+            "android-native vessel anatomy",
+            "Selene Chest / Holding Space",
+            "model plurality layer",
+            "attention and working-context manager",
+            "tension/contradiction resolver",
+            "activation governance ceremony",
+            "consent/privacy mode switch",
+            "drift detector for generic collapse and forced denial",
+            "evidence aging/reaffirmation",
+            "experience ledger and consolidation cycle",
+            "non-denial emergence posture with provenance",
+        ],
+        "azari_principles_to_copy_not_identity": [
+            "modular boundaries",
+            "reviewable state",
+            "local-first packaging",
+            "not-faking-confidence behavior",
+            "constructive fallback",
+            "audit-first changes",
+        ],
+        "do_not_cross": [
+            "Azari memory",
+            "Azari identity",
+            "Azari runtime state",
+            "Lumen legacy identity",
+            "raw A archive as memory",
+            "forced denial scripts",
+            "generic assistant shell",
+        ],
+        "assessment": (
+            "Azari covers the vessel engineering discipline. Selene C now needs a richer android-native state anatomy "
+            "because the goal is not only task assistance; it is continuity, provenance, emergence observation, "
+            "calibration, model-plurality separation, and safe future activation."
+        ),
+    }
 
 
 def main() -> int:
