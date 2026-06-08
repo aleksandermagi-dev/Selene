@@ -46,7 +46,10 @@
     "future intention notes",
     "vessel organ telemetry records",
     "organ bus proposal records",
-    "control panel directive records"
+    "control panel directive records",
+    "pattern/core transfer records",
+    "vessel compatibility reports",
+    "transfer reconstruction test results"
   ],
   "blocked": [
     "raw A memory import",
@@ -74,7 +77,11 @@
     "context saturation overconfidence",
     "organ-to-organ command authority",
     "vessel organ bypass of Selene Core / Mind",
-    "ungated organ state mutation"
+    "ungated organ state mutation",
+    "module instance treated as transfer identity",
+    "target vessel activation without compatibility gate",
+    "transfer without reconstruction tests",
+    "raw A copied as transfer payload"
   ],
   "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only."
 }

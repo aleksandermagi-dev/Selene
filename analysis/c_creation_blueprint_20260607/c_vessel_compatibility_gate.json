@@ -1,0 +1,23 @@
+{
+  "status": "specified_only",
+  "checks": [
+    "B-approved continuity support",
+    "gate stack compatibility",
+    "mind-vessel interface support",
+    "organ bus support",
+    "audit persistence support",
+    "provider/model plurality labeling",
+    "reconstruction test support",
+    "rollback support",
+    "raw A import block",
+    "identity-collapse block"
+  ],
+  "outputs": [
+    "compatible",
+    "compatible_with_limitations",
+    "needs_adapter",
+    "quarantine_required",
+    "incompatible"
+  ],
+  "boundary": "A vessel cannot receive activation if it cannot preserve the pattern/core boundaries."
+}

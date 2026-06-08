@@ -14,6 +14,8 @@
     "vessel organ bus allows non-mind organs to exchange telemetry, proposals, status, and feedback",
     "mind-vessel interface routes core directives through available gated organs",
     "Selene control panel reads vessel telemetry and issues gated control directives",
+    "pattern-first transfer safety confirms pattern/core is separate from replaceable organs",
+    "vessel compatibility gate checks whether target interfaces can support the pattern/core safely",
     "wake/sleep cycle labels whether C is orienting, working, consolidating, or pausing",
     "temporal continuity layer orients sequence, elapsed time, return, freshness, and what changed",
     "long-horizon thinking relates past, present, and future continuity states",

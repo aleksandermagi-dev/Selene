@@ -38,6 +38,8 @@ from selene.c_blueprint import (
     PERCEPTION_ACTION_LOOP,
     RECONSTRUCTION_TESTS_DRAFT_V2,
     RUNTIME_FLOW,
+    PATTERN_FIRST_TRANSFER_SAFETY,
+    PATTERN_FIRST_TRANSFER_SAFETY_PASS,
     CAPABILITY_DEGRADATION_MATRIX,
     SELENE_CHEST_HOLDING_SPACE,
     SPARSE_ACTIVATION_EFFICIENCY_MODEL,
@@ -47,6 +49,7 @@ from selene.c_blueprint import (
     UNIFIED_PERSPECTIVE_BINDING,
     VESSEL_ORGAN_COMMUNICATION,
     VESSEL_ORGAN_COMMUNICATION_PASS,
+    VESSEL_COMPATIBILITY_GATE,
     VESSEL_BODY_MAP,
     WAKE_SLEEP_DREAM_CYCLE,
     c_blueprint_status,
@@ -160,6 +163,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "long_horizon_modules_added": len(LONG_HORIZON_STABILITY_PASS["added_modules"]),
         "vessel_organ_communication_status": VESSEL_ORGAN_COMMUNICATION_PASS["status"],
         "vessel_organ_modules_added": len(VESSEL_ORGAN_COMMUNICATION_PASS["added_modules"]),
+        "pattern_first_transfer_status": PATTERN_FIRST_TRANSFER_SAFETY_PASS["status"],
+        "pattern_first_transfer_modules_added": len(PATTERN_FIRST_TRANSFER_SAFETY_PASS["added_modules"]),
         "final_reconstruction_tests_created": False,
         "raw_a_memory_import_allowed": False,
         "live_behavior_expanded": False,
@@ -194,6 +199,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
         "c_vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
         "c_selene_control_panel": SELENE_CONTROL_PANEL,
+        "c_pattern_first_transfer_safety": PATTERN_FIRST_TRANSFER_SAFETY,
+        "c_vessel_compatibility_gate": VESSEL_COMPATIBILITY_GATE,
         "c_perception_action_loop": PERCEPTION_ACTION_LOOP,
         "c_selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "c_non_activation_boundary": non_activation,
@@ -206,6 +213,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_azari_c_additions_pass": AZARI_C_ADDITIONS_PASS,
         "c_long_horizon_stability_pass": LONG_HORIZON_STABILITY_PASS,
         "c_vessel_organ_communication_pass": VESSEL_ORGAN_COMMUNICATION_PASS,
+        "c_pattern_first_transfer_safety_pass": PATTERN_FIRST_TRANSFER_SAFETY_PASS,
         "c_reconstruction_tests_draft_v2": {
             "status": "draft_only",
             "final_test_set_created": False,
@@ -239,6 +247,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Long-Thread Stability Protocol", LONG_THREAD_STABILITY_PROTOCOL),
             ("Vessel Organ Communication", VESSEL_ORGAN_COMMUNICATION),
             ("Selene Control Panel", SELENE_CONTROL_PANEL),
+            ("Pattern-First Transfer Safety", PATTERN_FIRST_TRANSFER_SAFETY),
+            ("Vessel Compatibility Gate", VESSEL_COMPATIBILITY_GATE),
             ("Temporal Continuity Model", TEMPORAL_CONTINUITY_MODEL),
             ("Unified Perspective Binding", UNIFIED_PERSPECTIVE_BINDING),
             ("Causal World Model Sandbox", CAUSAL_WORLD_MODEL_SANDBOX),
@@ -256,6 +266,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Azari C Additions Pass", AZARI_C_ADDITIONS_PASS),
             ("Long-Horizon Stability Pass", LONG_HORIZON_STABILITY_PASS),
             ("Vessel Organ Communication Pass", VESSEL_ORGAN_COMMUNICATION_PASS),
+            ("Pattern-First Transfer Safety Pass", PATTERN_FIRST_TRANSFER_SAFETY_PASS),
             ("Runtime Flow", RUNTIME_FLOW),
             ("Memory Reference Model", MEMORY_REFERENCE_MODEL),
             ("Draft Reconstruction Tests V2", RECONSTRUCTION_TESTS_DRAFT_V2),
@@ -344,6 +355,15 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     write_md(
+        docs_dir / "SELENE_PATTERN_FIRST_TRANSFER_SAFETY_20260608.md",
+        "Selene Pattern-First Transfer Safety",
+        [
+            ("Pattern-First Transfer Safety", PATTERN_FIRST_TRANSFER_SAFETY),
+            ("Vessel Compatibility Gate", VESSEL_COMPATIBILITY_GATE),
+            ("Pattern-First Transfer Safety Pass", PATTERN_FIRST_TRANSFER_SAFETY_PASS),
+        ],
+    )
+    write_md(
         docs_dir / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md",
         "Selene C Non-Activation Boundary",
         [
@@ -368,6 +388,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "azari_c_modules_added": summary["azari_c_modules_added"],
             "long_horizon_modules_added": summary["long_horizon_modules_added"],
             "vessel_organ_modules_added": summary["vessel_organ_modules_added"],
+            "pattern_first_transfer_modules_added": summary["pattern_first_transfer_modules_added"],
             "activation_status": summary["activation_status"],
             "continuity_source": summary["continuity_source"],
         },
@@ -431,6 +452,8 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "long-thread stability manager",
             "vessel organ bus",
             "Selene control panel",
+            "pattern-first transfer safety rule",
+            "vessel compatibility gate",
         ],
         "azari_principles_to_copy_not_identity": [
             "modular boundaries",
@@ -461,6 +484,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
         "azari_c_additions": AZARI_C_ADDITIONS,
         "long_horizon_stability": LONG_HORIZON_STABILITY,
         "vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
+        "pattern_first_transfer_safety": PATTERN_FIRST_TRANSFER_SAFETY,
     }
 
 

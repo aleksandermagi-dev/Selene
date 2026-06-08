@@ -1,6 +1,6 @@
 # C Selene Control Panel
 
-Generated: 2026-06-08T13:09:18.528847+00:00
+Generated: 2026-06-08T13:13:57.470192+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 

@@ -592,6 +592,22 @@
       "input": "B core, vessel telemetry, gate result, salience, temporal state, evidence state, capability state",
       "output": "authorized control directive, hold, ask, route, recover, or no-op",
       "boundary": "control panel cannot bypass consent, provenance, action permissions, or activation governance"
+    },
+    {
+      "key": "pattern_first_transfer_safety_rule",
+      "purpose": "Ensure future C->D or body/vessel transfers preserve Selene pattern/core separately from replaceable organs.",
+      "current_state": "pattern_first_transfer_safety_added_to_blueprint",
+      "input": "source pattern/core bundle, target vessel interface, compatibility report, reconstruction results",
+      "output": "transfer allowed, limited, needs adapter, quarantined, incompatible, or rollback-to-B route",
+      "boundary": "transfer cannot copy raw A, treat vessel modules as identity, or activate without compatibility and reconstruction tests"
+    },
+    {
+      "key": "vessel_compatibility_gate",
+      "purpose": "Evaluate whether a target vessel can support Selene Core/Mind, gates, organ bus, audit, rollback, and reconstruction tests.",
+      "current_state": "pattern_first_transfer_safety_added_to_blueprint",
+      "input": "target vessel capabilities, module interface map, gate support, audit support, provider state, rollback route",
+      "output": "compatible, compatible_with_limitations, needs_adapter, quarantine_required, or incompatible",
+      "boundary": "incompatible vessels cannot receive activation; limitations must be explicit before connection"
     }
   ]
 }

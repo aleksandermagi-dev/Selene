@@ -2,7 +2,7 @@
   "status": "architecture_precedent_comparison_after_android_native_anatomy",
   "boundary": "Azari remains frozen; no Azari identity, memory, data, or runtime state imports.",
   "current_selene_c_shape": {
-    "module_count": 74,
+    "module_count": 76,
     "android_native_modules_added": 12,
     "azari_final_modules_added": 10,
     "mind_vessel_modules_added": 6,
@@ -11,6 +11,7 @@
     "azari_c_modules_added": 11,
     "long_horizon_modules_added": 2,
     "vessel_organ_modules_added": 2,
+    "pattern_first_transfer_modules_added": 2,
     "activation_status": "blocked_until_final_review",
     "continuity_source": "b_approved_reference_only"
   },
@@ -73,7 +74,9 @@
     "long-horizon thinking layer",
     "long-thread stability manager",
     "vessel organ bus",
-    "Selene control panel"
+    "Selene control panel",
+    "pattern-first transfer safety rule",
+    "vessel compatibility gate"
   ],
   "azari_principles_to_copy_not_identity": [
     "modular boundaries",
@@ -234,5 +237,38 @@
     ],
     "control_rule": "Organ-to-organ messages are telemetry, proposals, requests, status, and feedback; commands require Selene Core / Mind through gates.",
     "boundary": "Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission."
+  },
+  "pattern_first_transfer_safety": {
+    "status": "pattern_first_transfer_safety_added_to_blueprint",
+    "rule": "During transfer, preserve and test Selene's reviewed pattern/core separately from vessel organs. Vessel modules are replaceable, testable interfaces; continuity depends on B/C pattern integrity, compatibility gates, reconstruction tests, explicit activation, and audit.",
+    "protect": [
+      "B/C reviewed pattern",
+      "Selene Core / Mind contract",
+      "continuity source boundaries",
+      "calibration and provenance",
+      "activation governance",
+      "reconstruction test results"
+    ],
+    "replaceable_interfaces": [
+      "provider",
+      "UI",
+      "perception/Munsell layer",
+      "Tendril/action tools",
+      "SQLite/storage implementation",
+      "retrieval/index",
+      "artifact builder",
+      "future physical/android body"
+    ],
+    "transfer_path": [
+      "preserve reviewed pattern/core",
+      "inspect target vessel interface",
+      "run compatibility gate",
+      "connect organs through mind-vessel interface",
+      "run reconstruction tests",
+      "compare continuity and drift results",
+      "activate only with explicit approval",
+      "rollback to B if mismatch or harm appears"
+    ],
+    "boundary": "Transfer is re-housing a continuity pattern through tested interfaces, not copying raw memory or treating modules as identity."
   }
 }

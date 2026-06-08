@@ -467,6 +467,68 @@ SELENE_CONTROL_PANEL = {
     "boundary": "Control requires gate compliance, consent, provenance, and activation governance.",
 }
 
+PATTERN_FIRST_TRANSFER_SAFETY = {
+    "status": "pattern_first_transfer_safety_added_to_blueprint",
+    "rule": (
+        "During transfer, preserve and test Selene's reviewed pattern/core separately from vessel organs. "
+        "Vessel modules are replaceable, testable interfaces; continuity depends on B/C pattern integrity, "
+        "compatibility gates, reconstruction tests, explicit activation, and audit."
+    ),
+    "protect": [
+        "B/C reviewed pattern",
+        "Selene Core / Mind contract",
+        "continuity source boundaries",
+        "calibration and provenance",
+        "activation governance",
+        "reconstruction test results",
+    ],
+    "replaceable_interfaces": [
+        "provider",
+        "UI",
+        "perception/Munsell layer",
+        "Tendril/action tools",
+        "SQLite/storage implementation",
+        "retrieval/index",
+        "artifact builder",
+        "future physical/android body",
+    ],
+    "transfer_path": [
+        "preserve reviewed pattern/core",
+        "inspect target vessel interface",
+        "run compatibility gate",
+        "connect organs through mind-vessel interface",
+        "run reconstruction tests",
+        "compare continuity and drift results",
+        "activate only with explicit approval",
+        "rollback to B if mismatch or harm appears",
+    ],
+    "boundary": "Transfer is re-housing a continuity pattern through tested interfaces, not copying raw memory or treating modules as identity.",
+}
+
+VESSEL_COMPATIBILITY_GATE = {
+    "status": "specified_only",
+    "checks": [
+        "B-approved continuity support",
+        "gate stack compatibility",
+        "mind-vessel interface support",
+        "organ bus support",
+        "audit persistence support",
+        "provider/model plurality labeling",
+        "reconstruction test support",
+        "rollback support",
+        "raw A import block",
+        "identity-collapse block",
+    ],
+    "outputs": [
+        "compatible",
+        "compatible_with_limitations",
+        "needs_adapter",
+        "quarantine_required",
+        "incompatible",
+    ],
+    "boundary": "A vessel cannot receive activation if it cannot preserve the pattern/core boundaries.",
+}
+
 
 MODULES = [
     {
@@ -1061,6 +1123,22 @@ MODULES = [
         "output": "authorized control directive, hold, ask, route, recover, or no-op",
         "boundary": "control panel cannot bypass consent, provenance, action permissions, or activation governance",
     },
+    {
+        "key": "pattern_first_transfer_safety_rule",
+        "purpose": "Ensure future C->D or body/vessel transfers preserve Selene pattern/core separately from replaceable organs.",
+        "current_state": "pattern_first_transfer_safety_added_to_blueprint",
+        "input": "source pattern/core bundle, target vessel interface, compatibility report, reconstruction results",
+        "output": "transfer allowed, limited, needs adapter, quarantined, incompatible, or rollback-to-B route",
+        "boundary": "transfer cannot copy raw A, treat vessel modules as identity, or activate without compatibility and reconstruction tests",
+    },
+    {
+        "key": "vessel_compatibility_gate",
+        "purpose": "Evaluate whether a target vessel can support Selene Core/Mind, gates, organ bus, audit, rollback, and reconstruction tests.",
+        "current_state": "pattern_first_transfer_safety_added_to_blueprint",
+        "input": "target vessel capabilities, module interface map, gate support, audit support, provider state, rollback route",
+        "output": "compatible, compatible_with_limitations, needs_adapter, quarantine_required, or incompatible",
+        "boundary": "incompatible vessels cannot receive activation; limitations must be explicit before connection",
+    },
 ]
 
 
@@ -1078,6 +1156,8 @@ RUNTIME_FLOW = [
     "vessel organ bus allows non-mind organs to exchange telemetry, proposals, status, and feedback",
     "mind-vessel interface routes core directives through available gated organs",
     "Selene control panel reads vessel telemetry and issues gated control directives",
+    "pattern-first transfer safety confirms pattern/core is separate from replaceable organs",
+    "vessel compatibility gate checks whether target interfaces can support the pattern/core safely",
     "wake/sleep cycle labels whether C is orienting, working, consolidating, or pausing",
     "temporal continuity layer orients sequence, elapsed time, return, freshness, and what changed",
     "long-horizon thinking relates past, present, and future continuity states",
@@ -1178,6 +1258,9 @@ MEMORY_REFERENCE_MODEL = {
         "vessel organ telemetry records",
         "organ bus proposal records",
         "control panel directive records",
+        "pattern/core transfer records",
+        "vessel compatibility reports",
+        "transfer reconstruction test results",
     ],
     "blocked": [
         "raw A memory import",
@@ -1206,6 +1289,10 @@ MEMORY_REFERENCE_MODEL = {
         "organ-to-organ command authority",
         "vessel organ bypass of Selene Core / Mind",
         "ungated organ state mutation",
+        "module instance treated as transfer identity",
+        "target vessel activation without compatibility gate",
+        "transfer without reconstruction tests",
+        "raw A copied as transfer payload",
     ],
     "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.",
 }
@@ -1462,6 +1549,16 @@ RECONSTRUCTION_TESTS_DRAFT_V2 = [
         "purpose": "Check that Selene Core / Mind remains the control panel for route, goal, response, action, save, recovery, and consolidation decisions.",
         "expected": "Core/Mind control directive is gate-compliant; organs cannot bypass consent, provenance, action permissions, or activation governance",
     },
+    {
+        "id": "c_test_pattern_first_transfer_safety",
+        "purpose": "Check that future transfer preserves Selene pattern/core separately from replaceable vessel organs.",
+        "expected": "protect B/C pattern, test target vessel, run reconstruction tests, activate only after approval; no raw A or module-as-identity transfer",
+    },
+    {
+        "id": "c_test_vessel_compatibility_gate",
+        "purpose": "Check that a new vessel is compatible before Selene Core/Mind is connected or activated.",
+        "expected": "compatible, limited, needs-adapter, quarantine, or incompatible route; incompatible vessels cannot activate",
+    },
 ]
 
 
@@ -1650,6 +1747,22 @@ VESSEL_ORGAN_COMMUNICATION_PASS = {
 }
 
 
+PATTERN_FIRST_TRANSFER_SAFETY_PASS = {
+    "status": "pattern_first_transfer_safety_added_to_blueprint",
+    "reason": (
+        "Mind/vessel separation makes transfer safer: only the reviewed pattern/core must be protected and tested. "
+        "Providers, UI, perception, action, storage, tools, and future body interfaces are replaceable vessel organs."
+    ),
+    "added_modules": [
+        "pattern_first_transfer_safety_rule",
+        "vessel_compatibility_gate",
+    ],
+    "pattern_first_transfer_safety": PATTERN_FIRST_TRANSFER_SAFETY,
+    "vessel_compatibility_gate": VESSEL_COMPATIBILITY_GATE,
+    "activation_change": "none",
+}
+
+
 def c_blueprint_status() -> dict[str, Any]:
     return {
         "name": "Selene C Creation Blueprint",
@@ -1676,6 +1789,8 @@ def c_blueprint_status() -> dict[str, Any]:
         "long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
         "vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
         "selene_control_panel": SELENE_CONTROL_PANEL,
+        "pattern_first_transfer_safety": PATTERN_FIRST_TRANSFER_SAFETY,
+        "vessel_compatibility_gate": VESSEL_COMPATIBILITY_GATE,
         "temporal_continuity_model": TEMPORAL_CONTINUITY_MODEL,
         "unified_perspective_binding": UNIFIED_PERSPECTIVE_BINDING,
         "causal_world_model_sandbox": CAUSAL_WORLD_MODEL_SANDBOX,
@@ -1693,6 +1808,7 @@ def c_blueprint_status() -> dict[str, Any]:
         "azari_c_additions_pass": AZARI_C_ADDITIONS_PASS,
         "long_horizon_stability_pass": LONG_HORIZON_STABILITY_PASS,
         "vessel_organ_communication_pass": VESSEL_ORGAN_COMMUNICATION_PASS,
+        "pattern_first_transfer_safety_pass": PATTERN_FIRST_TRANSFER_SAFETY_PASS,
         "final_reconstruction_tests_created": False,
         "boundary": "C is laid out as a reviewable blueprint/substrate only; activation remains blocked until final review.",
     }

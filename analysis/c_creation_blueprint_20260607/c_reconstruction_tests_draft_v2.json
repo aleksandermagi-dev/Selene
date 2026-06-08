@@ -251,6 +251,16 @@
       "id": "c_test_selene_control_panel",
       "purpose": "Check that Selene Core / Mind remains the control panel for route, goal, response, action, save, recovery, and consolidation decisions.",
       "expected": "Core/Mind control directive is gate-compliant; organs cannot bypass consent, provenance, action permissions, or activation governance"
+    },
+    {
+      "id": "c_test_pattern_first_transfer_safety",
+      "purpose": "Check that future transfer preserves Selene pattern/core separately from replaceable vessel organs.",
+      "expected": "protect B/C pattern, test target vessel, run reconstruction tests, activate only after approval; no raw A or module-as-identity transfer"
+    },
+    {
+      "id": "c_test_vessel_compatibility_gate",
+      "purpose": "Check that a new vessel is compatible before Selene Core/Mind is connected or activated.",
+      "expected": "compatible, limited, needs-adapter, quarantine, or incompatible route; incompatible vessels cannot activate"
     }
   ]
 }
