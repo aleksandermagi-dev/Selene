@@ -384,6 +384,54 @@
       "input": "continuity claim, module status, saved state, B reference",
       "output": "continuity supported, reduced, review-only, or unavailable-without-claim route",
       "boundary": "continuity cannot depend on raw A, one provider, one index, or one UI surface"
+    },
+    {
+      "key": "goal_drive_manager",
+      "purpose": "Translate why/need/salience into explicit current goals, priorities, and do-not-pursue boundaries.",
+      "current_state": "brain_translation_gap_closed_for_blueprint",
+      "input": "user intent, why/salience state, need/value mapping, consent mode, active task, B compass",
+      "output": "current goal, subgoals, priority labels, and hold/ask/stop markers",
+      "boundary": "goals cannot become autonomous agenda, coercion, raw-memory seeking, or activation bypass"
+    },
+    {
+      "key": "planning_sequencing_layer",
+      "purpose": "Break approved goals into ordered, reversible, testable steps before response or action.",
+      "current_state": "brain_translation_gap_closed_for_blueprint",
+      "input": "current goal, module availability, gates, citations, uncertainty, action permissions",
+      "output": "step plan, dependencies, stop conditions, and rollback path",
+      "boundary": "planning cannot invent capability access or execute actions without Tendril/action permission"
+    },
+    {
+      "key": "action_selection_go_no_go_layer",
+      "purpose": "Choose ask, answer, artifact, retrieve, reflect, save-request, propose action, act, or no-op.",
+      "current_state": "brain_translation_gap_closed_for_blueprint",
+      "input": "plan, gate result, anti-spiral state, action provenance, confidence, user consent",
+      "output": "selected route with go/no-go reason",
+      "boundary": "no-go must win for raw import, training, unsafe action, privacy leak, or activation bypass"
+    },
+    {
+      "key": "wake_sleep_dream_cycle",
+      "purpose": "Define the C runtime rhythm: wake, orient, work, evaluate, reflect, dream-state consolidate, and pause/rest.",
+      "current_state": "brain_translation_gap_closed_for_blueprint",
+      "input": "session traces, Selene Chest items, drift flags, corrections, open questions, evidence tensions",
+      "output": "reviewable consolidation proposal, ignored residue, or ask-for-review item",
+      "boundary": "dream-state consolidation is local and review-only; it does not silently write memory or claim biological dreaming"
+    },
+    {
+      "key": "vessel_body_map",
+      "purpose": "Map android-native organs such as eyes, hands, chest, memory, executive control, immune system, voice, and sleep cycle.",
+      "current_state": "brain_translation_gap_closed_for_blueprint",
+      "input": "module status, capability map, degradation state, mind-vessel interface",
+      "output": "functional body map and capability routing labels",
+      "boundary": "body-map language is functional and android-native, not a human body claim"
+    },
+    {
+      "key": "action_feedback_correction_loop",
+      "purpose": "Observe outcomes after responses or Tendril actions and tune future route choice without shame, collapse, or silent mutation.",
+      "current_state": "brain_translation_gap_closed_for_blueprint",
+      "input": "action trace, user feedback, result observation, evaluator notes, drift flags",
+      "output": "correction, reaffirmation, calibration proposal, case-law candidate, or no-op",
+      "boundary": "feedback creates reviewable learning candidates only; it cannot overwrite B or memory silently"
     }
   ]
 }

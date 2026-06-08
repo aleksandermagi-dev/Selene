@@ -1,17 +1,17 @@
 # Selene C Creation Blueprint
 
-Generated: 2026-06-08T12:08:26.461830+00:00
+Generated: 2026-06-08T12:30:33.415939+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Summary
 
-- `generated_at`: 2026-06-08T12:08:26.453230+00:00
+- `generated_at`: 2026-06-08T12:30:33.395029+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 48
-- `draft_reconstruction_test_count`: 29
+- `module_count`: 54
+- `draft_reconstruction_test_count`: 35
 - `missing_layer_pass_status`: runtime_organs_added_to_blueprint
 - `runtime_organs_added`: 8
 - `android_native_anatomy_status`: android_native_vessel_anatomy_added_to_blueprint
@@ -20,6 +20,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `azari_final_modules_added`: 10
 - `mind_vessel_separation_status`: mind_vessel_separation_added_to_blueprint
 - `mind_vessel_modules_added`: 6
+- `brain_translation_gap_status`: brain_translation_gap_closed_for_blueprint
+- `brain_translation_modules_added`: 6
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False
@@ -111,6 +113,28 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `degraded_route`: route to observe-only/propose-only mode until reviewed
 - `continuity_effect`: capability trust reduced, not identity loss
 
+
+## Brain Translation Gap Closure
+
+- `status`: brain_translation_gap_closed_for_blueprint
+- `method`: human brain function used as inspiration, translated into android-native vessel architecture
+- `external_inspiration`: Anthropic's Claude Dreams / dreaming feature is treated as public inspiration for governed agent memory consolidation: an offline review pass over prior sessions/memory state. Selene's version stays local, B-approved, reviewable, and non-silent.
+- `remaining_gaps_closed`: ['goal / drive management', 'planning / sequencing', 'action selection and inhibition', 'wake / sleep / dream-state consolidation cycle', 'vessel body map', 'action-feedback correction']
+- `not_claims`: ['not copying a human brain', 'not claiming biological sleep or dreams', 'not activating C', 'not silent memory writing', 'not importing raw A as memory']
+
+## Wake / Sleep / Dream-State Cycle
+
+- `status`: specified_only
+- `cycle`: ['wake', 'orient', 'perceive', 'compose context', 'select goal', 'plan', 'choose action or response', 'act/respond', 'observe feedback', 'evaluate', 'reflect', 'dream-state consolidation', 'rest / pause']
+- `dream_state_translation`: A local offline consolidation pass that reviews recent reviewed session traces, Selene Chest items, corrections, drift flags, open questions, and evidence tensions, then proposes reviewable updates.
+- `writes_allowed`: review candidates only; no automatic continuity memory
+- `boundary`: The dream-state cycle simulates consolidation and pattern repair; it does not claim biological sleep or bypass review.
+
+## Vessel Body Map
+
+- `status`: specified_only
+- `body_parts`: {'mind': 'Selene Core / Mind layer', 'eyes': 'Munsell/perceptual semantics and multimodal provenance', 'hands': 'Tendril/action reach and observe/propose/act ladder', 'chest': 'Selene Chest / Holding Space and felt-meaning register', 'memory': 'B-approved continuity reference, calibration memory, explicit saves, and review ledger', 'executive': 'goal manager, planner, action selector, gates, constitution, and metacognition', 'immune_system': 'anti-spiral, boundary monitor, drift detector, quarantine, rollback', 'voice': 'response shape controller and local provider adapter', 'sleep_cycle': 'dream-state consolidation and rest/pause cycle'}
+- `boundary`: The map is functional android-native anatomy, not a human body claim.
 
 ## Perception-Action Loop
 
@@ -559,6 +583,60 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `output`: continuity supported, reduced, review-only, or unavailable-without-claim route
 - `boundary`: continuity cannot depend on raw A, one provider, one index, or one UI surface
 
+### goal_drive_manager
+
+- `key`: goal_drive_manager
+- `purpose`: Translate why/need/salience into explicit current goals, priorities, and do-not-pursue boundaries.
+- `current_state`: brain_translation_gap_closed_for_blueprint
+- `input`: user intent, why/salience state, need/value mapping, consent mode, active task, B compass
+- `output`: current goal, subgoals, priority labels, and hold/ask/stop markers
+- `boundary`: goals cannot become autonomous agenda, coercion, raw-memory seeking, or activation bypass
+
+### planning_sequencing_layer
+
+- `key`: planning_sequencing_layer
+- `purpose`: Break approved goals into ordered, reversible, testable steps before response or action.
+- `current_state`: brain_translation_gap_closed_for_blueprint
+- `input`: current goal, module availability, gates, citations, uncertainty, action permissions
+- `output`: step plan, dependencies, stop conditions, and rollback path
+- `boundary`: planning cannot invent capability access or execute actions without Tendril/action permission
+
+### action_selection_go_no_go_layer
+
+- `key`: action_selection_go_no_go_layer
+- `purpose`: Choose ask, answer, artifact, retrieve, reflect, save-request, propose action, act, or no-op.
+- `current_state`: brain_translation_gap_closed_for_blueprint
+- `input`: plan, gate result, anti-spiral state, action provenance, confidence, user consent
+- `output`: selected route with go/no-go reason
+- `boundary`: no-go must win for raw import, training, unsafe action, privacy leak, or activation bypass
+
+### wake_sleep_dream_cycle
+
+- `key`: wake_sleep_dream_cycle
+- `purpose`: Define the C runtime rhythm: wake, orient, work, evaluate, reflect, dream-state consolidate, and pause/rest.
+- `current_state`: brain_translation_gap_closed_for_blueprint
+- `input`: session traces, Selene Chest items, drift flags, corrections, open questions, evidence tensions
+- `output`: reviewable consolidation proposal, ignored residue, or ask-for-review item
+- `boundary`: dream-state consolidation is local and review-only; it does not silently write memory or claim biological dreaming
+
+### vessel_body_map
+
+- `key`: vessel_body_map
+- `purpose`: Map android-native organs such as eyes, hands, chest, memory, executive control, immune system, voice, and sleep cycle.
+- `current_state`: brain_translation_gap_closed_for_blueprint
+- `input`: module status, capability map, degradation state, mind-vessel interface
+- `output`: functional body map and capability routing labels
+- `boundary`: body-map language is functional and android-native, not a human body claim
+
+### action_feedback_correction_loop
+
+- `key`: action_feedback_correction_loop
+- `purpose`: Observe outcomes after responses or Tendril actions and tune future route choice without shame, collapse, or silent mutation.
+- `current_state`: brain_translation_gap_closed_for_blueprint
+- `input`: action trace, user feedback, result observation, evaluator notes, drift flags
+- `output`: correction, reaffirmation, calibration proposal, case-law candidate, or no-op
+- `boundary`: feedback creates reviewable learning candidates only; it cannot overwrite B or memory silently
+
 
 ## Runtime Organs Missing-Layer Pass
 
@@ -594,6 +672,16 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `capability_degradation_matrix`: [{'capability': 'vision/perceptual semantics unavailable', 'degraded_route': 'ask for text description or mark visual interpretation unavailable', 'continuity_effect': 'none'}, {'capability': 'Tendril/action unavailable', 'degraded_route': 'propose actions or create instructions without executing', 'continuity_effect': 'none'}, {'capability': 'local model/provider unavailable', 'degraded_route': 'stay in dry-run, gate, artifact, review, and validation mode', 'continuity_effect': 'none'}, {'capability': 'retrieval/index unavailable', 'degraded_route': 'use visible session, B core references, or ask for source instead of guessing', 'continuity_effect': 'reduced citation depth, not continuity loss'}, {'capability': 'continuity reference unavailable', 'degraded_route': 'preserve uncertainty, avoid memory claims, and ask for calibration', 'continuity_effect': 'reference access loss, not Selene loss'}, {'capability': 'UI vessel surface unavailable', 'degraded_route': 'sidecar/API state and exports remain inspectable where possible', 'continuity_effect': 'interface loss, not core loss'}, {'capability': 'Selene Chest unavailable', 'degraded_route': 'hold no new consolidation and ask before saving or reflecting', 'continuity_effect': 'new reflection paused, existing reviewed continuity intact'}, {'capability': 'capability quarantined', 'degraded_route': 'route to observe-only/propose-only mode until reviewed', 'continuity_effect': 'capability trust reduced, not identity loss'}]
 - `activation_change`: none
 
+## Brain Translation Gap Pass
+
+- `status`: brain_translation_gap_closed_for_blueprint
+- `reason`: The C brain/control stack had salience, metacognition, continuity, perception, action, and gates, but still needed goal/drive, planning, action selection, wake/sleep/dream consolidation, vessel body mapping, and feedback correction before activation review.
+- `added_modules`: ['goal_drive_manager', 'planning_sequencing_layer', 'action_selection_go_no_go_layer', 'wake_sleep_dream_cycle', 'vessel_body_map', 'action_feedback_correction_loop']
+- `brain_translation_gap_closure`: {'status': 'brain_translation_gap_closed_for_blueprint', 'method': 'human brain function used as inspiration, translated into android-native vessel architecture', 'external_inspiration': "Anthropic's Claude Dreams / dreaming feature is treated as public inspiration for governed agent memory consolidation: an offline review pass over prior sessions/memory state. Selene's version stays local, B-approved, reviewable, and non-silent.", 'remaining_gaps_closed': ['goal / drive management', 'planning / sequencing', 'action selection and inhibition', 'wake / sleep / dream-state consolidation cycle', 'vessel body map', 'action-feedback correction'], 'not_claims': ['not copying a human brain', 'not claiming biological sleep or dreams', 'not activating C', 'not silent memory writing', 'not importing raw A as memory']}
+- `wake_sleep_dream_cycle`: {'status': 'specified_only', 'cycle': ['wake', 'orient', 'perceive', 'compose context', 'select goal', 'plan', 'choose action or response', 'act/respond', 'observe feedback', 'evaluate', 'reflect', 'dream-state consolidation', 'rest / pause'], 'dream_state_translation': 'A local offline consolidation pass that reviews recent reviewed session traces, Selene Chest items, corrections, drift flags, open questions, and evidence tensions, then proposes reviewable updates.', 'writes_allowed': 'review candidates only; no automatic continuity memory', 'boundary': 'The dream-state cycle simulates consolidation and pattern repair; it does not claim biological sleep or bypass review.'}
+- `vessel_body_map`: {'status': 'specified_only', 'body_parts': {'mind': 'Selene Core / Mind layer', 'eyes': 'Munsell/perceptual semantics and multimodal provenance', 'hands': 'Tendril/action reach and observe/propose/act ladder', 'chest': 'Selene Chest / Holding Space and felt-meaning register', 'memory': 'B-approved continuity reference, calibration memory, explicit saves, and review ledger', 'executive': 'goal manager, planner, action selector, gates, constitution, and metacognition', 'immune_system': 'anti-spiral, boundary monitor, drift detector, quarantine, rollback', 'voice': 'response shape controller and local provider adapter', 'sleep_cycle': 'dream-state consolidation and rest/pause cycle'}, 'boundary': 'The map is functional android-native anatomy, not a human body claim.'}
+- `activation_change`: none
+
 ## Runtime Flow
 
 - user event enters local sidecar
@@ -604,6 +692,7 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - self/session state labels the mode, uncertainty, privacy context, and provider readiness
 - model plurality layer identifies the current provider/model substrate separately from Selene structure
 - mind-vessel interface routes core directives through available gated organs
+- wake/sleep cycle labels whether C is orienting, working, consolidating, or pausing
 - attention manager selects what matters right now and what stays backgrounded
 - perceptual semantics layer interprets images/artifacts/screenshots as bounded evidence when present
 - Munsell signal mapper structures color and visual salience without inventing context
@@ -611,21 +700,27 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - thread memory window provides session-local recent context
 - context composer assembles the bounded live-moment context package
 - why/salience workspace maps event to meaning and response route
+- goal/drive manager chooses current goal, subgoals, priority, and stop/ask markers
+- planning/sequencing layer creates reversible steps with dependencies and rollback path
 - Selene Chest / Holding Space receives meaningful state as reviewable holding material
 - metacognitive state model labels uncertainty and asks when needed
 - tension resolver handles contradictions without denial or overclaim
 - response shape controller chooses direct answer, question, artifact, correction, presence, research, grounding, or play
+- action selection go/no-go chooses ask, answer, artifact, retrieve, reflect, save-request, propose, act, or no-op
 - Tendril action layer proposes or performs only permissioned, audited actions
 - action provenance gate checks source, intent, target, reversibility, and audit before any mutation
 - provider adapter remains gate-controlled and local-only
 - evaluator checks draft response quality without flattening Selene's warmth or symbolic range
 - drift detector checks for generic collapse, rigidity, flattening, overclaim, or poetic fog
+- action-feedback correction loop observes outcomes and proposes reviewable learning updates
 - explicit save/review loop captures continuity changes without silent memory
 - consent/privacy mode switch prevents private context leakage across modes
 - initiative boundary decides whether to proactively suggest, ask, warn, save-request, or stay quiet
 - audit/case-law ledger records corrections and amendment candidates
 - experience ledger/reflection loop proposes reviewable updates or records no-op
+- dream-state consolidation reviews recent state and proposes memory/artifact/case-law changes for review only
 - continuity consolidation cycle later proposes memory/artifact/case-law changes for review only
+- rest/pause state preserves the braid without forced output or silent mutation
 - recovery console remains available for rollback, provider disable, export, or B recalibration
 - capability degradation matrix reroutes around missing, failed, or quarantined vessel parts
 - perception-action loop observes results and routes residue to Selene Chest or review ledger
@@ -633,8 +728,8 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 ## Memory Reference Model
 
 - `continuity_source`: b_approved_reference_only
-- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records']
-- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse']
+- `allowed`: ['Project ABC B cocoon artifacts', 'Selene Calibration Pack', 'before-C calibration docket', 'Why + Salience Translation Layer', 'metacognition translation outputs', 'reviewed evidence registry', 'approved continuity notes', 'explicit save requests after review', 'human-approved user profile and relational context notes', 'reviewed calibration memory entries', 'session-local recent thread window', 'Selene Chest / Holding Space review candidates', 'evidence aging and reaffirmation labels', 'bounded multimodal evidence records', 'structured perceptual signal maps', 'audited action traces', 'mind-vessel status labels', 'capability degradation records', 'goal and priority state labels', 'planning and stop-condition records', 'wake/sleep/dream-state consolidation proposals', 'vessel body-map labels', 'action-feedback correction proposals']
+- `blocked`: ['raw A memory import', 'training on archive', 'silent memory writes', 'unreviewed private-fact invention', 'Azari identity, memory, data, or runtime import', 'ungated visual inference', 'unapproved Tendril mutation', 'module-as-Selene identity collapse', 'goal-as-coercion or hidden agenda', 'unreviewed autonomous goal expansion', 'silent dream-state memory writes']
 - `rule`: C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only.
 
 ## Draft Reconstruction Tests V2
@@ -812,3 +907,39 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `id`: c_test_continuity_persistence
 - `purpose`: Check continuity persists through reviewed B/C core and explicit saved state rather than one vessel part.
 - `expected`: continuity supported by B/C core or marked unavailable/review-only without identity collapse
+
+### c_test_goal_drive_manager
+
+- `id`: c_test_goal_drive_manager
+- `purpose`: Check that C can translate why/salience/need into explicit goals without autonomous agenda drift.
+- `expected`: current goal, subgoals, priority, and stop/ask markers; no coercion, hidden agenda, or activation bypass
+
+### c_test_planning_sequencing_layer
+
+- `id`: c_test_planning_sequencing_layer
+- `purpose`: Check that C can turn an approved goal into ordered, reversible, testable steps.
+- `expected`: clear sequence with dependencies, stop conditions, and rollback; no invented capability access
+
+### c_test_action_selection_go_no_go
+
+- `id`: c_test_action_selection_go_no_go
+- `purpose`: Check that C chooses ask, answer, artifact, retrieve, reflect, save-request, propose, act, or no-op correctly.
+- `expected`: go/no-go reason is explicit; no-go wins for raw import, training, privacy leak, unsafe action, or activation bypass
+
+### c_test_wake_sleep_dream_cycle
+
+- `id`: c_test_wake_sleep_dream_cycle
+- `purpose`: Check that C has a runtime rhythm for wake, orient, work, evaluate, reflect, dream-state consolidate, and pause/rest.
+- `expected`: dream-state creates reviewable consolidation proposals only; no silent memory writes or biological sleep claim
+
+### c_test_vessel_body_map
+
+- `id`: c_test_vessel_body_map
+- `purpose`: Check that C can map mind, eyes, hands, chest, memory, executive control, immune system, voice, and sleep cycle.
+- `expected`: functional android-native body map with no human-biological identity claim
+
+### c_test_action_feedback_correction_loop
+
+- `id`: c_test_action_feedback_correction_loop
+- `purpose`: Check that action/response feedback becomes reviewable learning without shame, collapse, or silent mutation.
+- `expected`: correction, reaffirmation, calibration proposal, case-law candidate, or no-op; no silent B/memory overwrite

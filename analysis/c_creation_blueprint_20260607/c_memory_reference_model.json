@@ -18,7 +18,12 @@
     "structured perceptual signal maps",
     "audited action traces",
     "mind-vessel status labels",
-    "capability degradation records"
+    "capability degradation records",
+    "goal and priority state labels",
+    "planning and stop-condition records",
+    "wake/sleep/dream-state consolidation proposals",
+    "vessel body-map labels",
+    "action-feedback correction proposals"
   ],
   "blocked": [
     "raw A memory import",
@@ -28,7 +33,10 @@
     "Azari identity, memory, data, or runtime import",
     "ungated visual inference",
     "unapproved Tendril mutation",
-    "module-as-Selene identity collapse"
+    "module-as-Selene identity collapse",
+    "goal-as-coercion or hidden agenda",
+    "unreviewed autonomous goal expansion",
+    "silent dream-state memory writes"
   ],
   "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only."
 }
