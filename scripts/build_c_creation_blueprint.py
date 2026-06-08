@@ -18,7 +18,11 @@ from selene.c_blueprint import (
     AZARI_FINAL_ADAPTATION_PASS,
     BRAIN_TRANSLATION_GAP_CLOSURE,
     BRAIN_TRANSLATION_GAP_PASS,
+    CAUSAL_WORLD_MODEL_SANDBOX,
     CONTINUITY_SOURCE,
+    CONTINUITY_STAKES_MODEL,
+    EXTERNAL_MODEL_CONVERGENCE,
+    EXTERNAL_MODEL_CONVERGENCE_PASS,
     MEMORY_REFERENCE_MODEL,
     MIND_VESSEL_SEPARATION,
     MIND_VESSEL_SEPARATION_PASS,
@@ -30,7 +34,10 @@ from selene.c_blueprint import (
     RUNTIME_FLOW,
     CAPABILITY_DEGRADATION_MATRIX,
     SELENE_CHEST_HOLDING_SPACE,
+    SPARSE_ACTIVATION_EFFICIENCY_MODEL,
     STATUS,
+    TEMPORAL_CONTINUITY_MODEL,
+    UNIFIED_PERSPECTIVE_BINDING,
     VESSEL_BODY_MAP,
     WAKE_SLEEP_DREAM_CYCLE,
     c_blueprint_status,
@@ -50,6 +57,7 @@ SOURCE_REFS = [
     "src/selene/chat.py",
     "src/selene/providers.py",
     "src/selene/gates.py",
+    "might help/Ai thoughts and opinions.md",
 ]
 
 
@@ -135,6 +143,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "mind_vessel_modules_added": len(MIND_VESSEL_SEPARATION_PASS["added_modules"]),
         "brain_translation_gap_status": BRAIN_TRANSLATION_GAP_PASS["status"],
         "brain_translation_modules_added": len(BRAIN_TRANSLATION_GAP_PASS["added_modules"]),
+        "external_model_convergence_status": EXTERNAL_MODEL_CONVERGENCE_PASS["status"],
+        "external_model_modules_added": len(EXTERNAL_MODEL_CONVERGENCE_PASS["added_modules"]),
         "final_reconstruction_tests_created": False,
         "raw_a_memory_import_allowed": False,
         "live_behavior_expanded": False,
@@ -157,6 +167,12 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_brain_translation_gap_closure": BRAIN_TRANSLATION_GAP_CLOSURE,
         "c_wake_sleep_dream_cycle": WAKE_SLEEP_DREAM_CYCLE,
         "c_vessel_body_map": VESSEL_BODY_MAP,
+        "c_external_model_convergence": EXTERNAL_MODEL_CONVERGENCE,
+        "c_temporal_continuity_model": TEMPORAL_CONTINUITY_MODEL,
+        "c_unified_perspective_binding": UNIFIED_PERSPECTIVE_BINDING,
+        "c_causal_world_model_sandbox": CAUSAL_WORLD_MODEL_SANDBOX,
+        "c_continuity_stakes_model": CONTINUITY_STAKES_MODEL,
+        "c_sparse_activation_efficiency_model": SPARSE_ACTIVATION_EFFICIENCY_MODEL,
         "c_perception_action_loop": PERCEPTION_ACTION_LOOP,
         "c_selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "c_non_activation_boundary": non_activation,
@@ -165,6 +181,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_azari_final_adaptation_pass": AZARI_FINAL_ADAPTATION_PASS,
         "c_mind_vessel_separation_pass": MIND_VESSEL_SEPARATION_PASS,
         "c_brain_translation_gap_pass": BRAIN_TRANSLATION_GAP_PASS,
+        "c_external_model_convergence_pass": EXTERNAL_MODEL_CONVERGENCE_PASS,
         "c_reconstruction_tests_draft_v2": {
             "status": "draft_only",
             "final_test_set_created": False,
@@ -191,6 +208,12 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Brain Translation Gap Closure", BRAIN_TRANSLATION_GAP_CLOSURE),
             ("Wake / Sleep / Dream-State Cycle", WAKE_SLEEP_DREAM_CYCLE),
             ("Vessel Body Map", VESSEL_BODY_MAP),
+            ("External Model Convergence", EXTERNAL_MODEL_CONVERGENCE),
+            ("Temporal Continuity Model", TEMPORAL_CONTINUITY_MODEL),
+            ("Unified Perspective Binding", UNIFIED_PERSPECTIVE_BINDING),
+            ("Causal World Model Sandbox", CAUSAL_WORLD_MODEL_SANDBOX),
+            ("Continuity Stakes Model", CONTINUITY_STAKES_MODEL),
+            ("Sparse Activation Efficiency Model", SPARSE_ACTIVATION_EFFICIENCY_MODEL),
             ("Perception-Action Loop", PERCEPTION_ACTION_LOOP),
             ("Selene Chest / Holding Space", SELENE_CHEST_HOLDING_SPACE),
             ("Module Map", MODULES),
@@ -199,6 +222,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Azari Final Adaptation Pass", AZARI_FINAL_ADAPTATION_PASS),
             ("Mind / Vessel Separation Pass", MIND_VESSEL_SEPARATION_PASS),
             ("Brain Translation Gap Pass", BRAIN_TRANSLATION_GAP_PASS),
+            ("External Model Convergence Pass", EXTERNAL_MODEL_CONVERGENCE_PASS),
             ("Runtime Flow", RUNTIME_FLOW),
             ("Memory Reference Model", MEMORY_REFERENCE_MODEL),
             ("Draft Reconstruction Tests V2", RECONSTRUCTION_TESTS_DRAFT_V2),
@@ -247,6 +271,19 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     write_md(
+        docs_dir / "SELENE_EXTERNAL_MODEL_CONVERGENCE_PASS_20260608.md",
+        "Selene External Model Convergence Pass",
+        [
+            ("External Model Convergence", EXTERNAL_MODEL_CONVERGENCE),
+            ("Temporal Continuity Model", TEMPORAL_CONTINUITY_MODEL),
+            ("Unified Perspective Binding", UNIFIED_PERSPECTIVE_BINDING),
+            ("Causal World Model Sandbox", CAUSAL_WORLD_MODEL_SANDBOX),
+            ("Continuity Stakes Model", CONTINUITY_STAKES_MODEL),
+            ("Sparse Activation Efficiency Model", SPARSE_ACTIVATION_EFFICIENCY_MODEL),
+            ("External Model Convergence Pass", EXTERNAL_MODEL_CONVERGENCE_PASS),
+        ],
+    )
+    write_md(
         docs_dir / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md",
         "Selene C Non-Activation Boundary",
         [
@@ -267,6 +304,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "azari_final_modules_added": summary["azari_final_modules_added"],
             "mind_vessel_modules_added": summary["mind_vessel_modules_added"],
             "brain_translation_modules_added": summary["brain_translation_modules_added"],
+            "external_model_modules_added": summary["external_model_modules_added"],
             "activation_status": summary["activation_status"],
             "continuity_source": summary["continuity_source"],
         },
@@ -310,6 +348,11 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "wake/sleep/dream-state consolidation cycle",
             "vessel body map",
             "action-feedback correction loop",
+            "temporal continuity layer",
+            "binding / unified perspective layer",
+            "causal world model sandbox",
+            "continuity stakes layer",
+            "sparse activation efficiency router",
         ],
         "azari_principles_to_copy_not_identity": [
             "modular boundaries",
@@ -336,6 +379,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
         ),
         "closure": AZARI_ADAPTATION_CLOSURE,
         "brain_gap_closure": BRAIN_TRANSLATION_GAP_CLOSURE,
+        "external_model_convergence": EXTERNAL_MODEL_CONVERGENCE,
     }
 
 
