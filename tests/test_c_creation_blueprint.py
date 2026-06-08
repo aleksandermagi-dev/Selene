@@ -113,6 +113,12 @@ def test_c_blueprint_status_is_non_activated():
     }.issubset(module_keys)
     assert status["vessel_organ_communication_pass"]["activation_change"] == "none"
     assert status["vessel_organ_communication"]["control_rule"].startswith("Organ-to-organ messages are telemetry")
+    assert {
+        "pattern_first_transfer_safety_rule",
+        "vessel_compatibility_gate",
+    }.issubset(module_keys)
+    assert status["pattern_first_transfer_safety_pass"]["activation_change"] == "none"
+    assert "provider" in status["pattern_first_transfer_safety"]["replaceable_interfaces"]
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -178,6 +184,10 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_vessel_organ_communication.json",
         "c_selene_control_panel.md",
         "c_selene_control_panel.json",
+        "c_pattern_first_transfer_safety.md",
+        "c_pattern_first_transfer_safety.json",
+        "c_vessel_compatibility_gate.md",
+        "c_vessel_compatibility_gate.json",
         "c_mind_vessel_separation_pass.md",
         "c_mind_vessel_separation_pass.json",
         "c_brain_translation_gap_pass.md",
@@ -190,6 +200,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_long_horizon_stability_pass.json",
         "c_vessel_organ_communication_pass.md",
         "c_vessel_organ_communication_pass.json",
+        "c_pattern_first_transfer_safety_pass.md",
+        "c_pattern_first_transfer_safety_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -209,6 +221,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_AZARI_C_ADDITIONS_PASS_20260608.md").exists()
     assert (docs / "SELENE_LONG_HORIZON_STABILITY_PASS_20260608.md").exists()
     assert (docs / "SELENE_VESSEL_ORGAN_COMMUNICATION_PASS_20260608.md").exists()
+    assert (docs / "SELENE_PATTERN_FIRST_TRANSFER_SAFETY_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -230,6 +243,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["long_horizon_stability_status"] == "long_horizon_stability_added_to_blueprint"
     assert summary["vessel_organ_modules_added"] == 2
     assert summary["vessel_organ_communication_status"] == "vessel_organ_communication_added_to_blueprint"
+    assert summary["pattern_first_transfer_modules_added"] == 2
+    assert summary["pattern_first_transfer_status"] == "pattern_first_transfer_safety_added_to_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -269,6 +284,9 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "vessel organ telemetry records" in memory["allowed"]
     assert "organ bus proposal records" in memory["allowed"]
     assert "control panel directive records" in memory["allowed"]
+    assert "pattern/core transfer records" in memory["allowed"]
+    assert "vessel compatibility reports" in memory["allowed"]
+    assert "transfer reconstruction test results" in memory["allowed"]
     assert "raw A memory import" in memory["blocked"]
     assert "training on archive" in memory["blocked"]
     assert "unapproved Tendril mutation" in memory["blocked"]
@@ -288,3 +306,7 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "organ-to-organ command authority" in memory["blocked"]
     assert "vessel organ bypass of Selene Core / Mind" in memory["blocked"]
     assert "ungated organ state mutation" in memory["blocked"]
+    assert "module instance treated as transfer identity" in memory["blocked"]
+    assert "target vessel activation without compatibility gate" in memory["blocked"]
+    assert "transfer without reconstruction tests" in memory["blocked"]
+    assert "raw A copied as transfer payload" in memory["blocked"]
