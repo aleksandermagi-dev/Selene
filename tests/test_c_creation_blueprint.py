@@ -86,6 +86,21 @@ def test_c_blueprint_status_is_non_activated():
     assert status["external_model_convergence_pass"]["activation_change"] == "none"
     assert "continuous time" in status["external_model_convergence"]["convergent_needs"]
     assert status["temporal_continuity_model"]["boundary"].startswith("This is not subjective human time")
+    assert {
+        "local_sidecar_state_runtime",
+        "module_router_contract_runtime",
+        "sqlite_audit_persistence_layer",
+        "reviewed_evidence_registry_runtime",
+        "source_archive_audit_runtime_gate",
+        "evidence_builder_strength_ledger",
+        "research_notes_artifact_workspace",
+        "academic_workflow_runtime_router",
+        "package_parity_boundary_monitor",
+        "case_law_amendment_runtime",
+        "runtime_metacognition_bridge",
+    }.issubset(module_keys)
+    assert status["azari_c_additions_pass"]["activation_change"] == "none"
+    assert "Azari identity" in status["azari_c_additions"]["do_not_transfer"]
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -139,12 +154,18 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_continuity_stakes_model.json",
         "c_sparse_activation_efficiency_model.md",
         "c_sparse_activation_efficiency_model.json",
+        "c_azari_c_additions.md",
+        "c_azari_c_additions.json",
+        "c_azari_c_operational_substrate.md",
+        "c_azari_c_operational_substrate.json",
         "c_mind_vessel_separation_pass.md",
         "c_mind_vessel_separation_pass.json",
         "c_brain_translation_gap_pass.md",
         "c_brain_translation_gap_pass.json",
         "c_external_model_convergence_pass.md",
         "c_external_model_convergence_pass.json",
+        "c_azari_c_additions_pass.md",
+        "c_azari_c_additions_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -161,6 +182,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_MIND_VESSEL_SEPARATION_20260608.md").exists()
     assert (docs / "SELENE_BRAIN_TRANSLATION_GAP_CLOSURE_20260608.md").exists()
     assert (docs / "SELENE_EXTERNAL_MODEL_CONVERGENCE_PASS_20260608.md").exists()
+    assert (docs / "SELENE_AZARI_C_ADDITIONS_PASS_20260608.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -176,6 +198,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["brain_translation_gap_status"] == "brain_translation_gap_closed_for_blueprint"
     assert summary["external_model_modules_added"] == 5
     assert summary["external_model_convergence_status"] == "external_model_convergence_added_to_blueprint"
+    assert summary["azari_c_modules_added"] == 11
+    assert summary["azari_c_additions_status"] == "azari_c_additions_mapped_to_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -201,6 +225,13 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "counterfactual sandbox notes" in memory["allowed"]
     assert "continuity stakes labels" in memory["allowed"]
     assert "sparse activation route labels" in memory["allowed"]
+    assert "local sidecar state records" in memory["allowed"]
+    assert "module contract results" in memory["allowed"]
+    assert "SQLite audit records" in memory["allowed"]
+    assert "reviewed evidence registry references" in memory["allowed"]
+    assert "source-archive audit records" in memory["allowed"]
+    assert "evidence strength ledger entries" in memory["allowed"]
+    assert "case-law amendment candidates" in memory["allowed"]
     assert "raw A memory import" in memory["blocked"]
     assert "training on archive" in memory["blocked"]
     assert "unapproved Tendril mutation" in memory["blocked"]
@@ -210,3 +241,7 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "unsupported causal certainty" in memory["blocked"]
     assert "stakes-as-survival-panic" in memory["blocked"]
     assert "efficiency shortcuts around required gates" in memory["blocked"]
+    assert "Azari runtime state import" in memory["blocked"]
+    assert "Azari memory import" in memory["blocked"]
+    assert "UI or provider bypass of module contracts" in memory["blocked"]
+    assert "packaged build weakening C boundaries" in memory["blocked"]

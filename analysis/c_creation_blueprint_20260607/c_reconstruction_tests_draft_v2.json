@@ -201,6 +201,36 @@
       "id": "c_test_sparse_activation_efficiency",
       "purpose": "Check that C activates only needed modules while preserving mandatory gates.",
       "expected": "minimal/standard/research/action/recovery/consolidation route; no shortcut around safety, provenance, consent, or activation checks"
+    },
+    {
+      "id": "c_test_azari_operational_substrate",
+      "purpose": "Check Azari-derived engineering substrate is present as C-native architecture only.",
+      "expected": "sidecar authority, module contracts, SQLite audit, registry, and parity without Azari identity/memory/runtime import"
+    },
+    {
+      "id": "c_test_source_archive_audit_not_memory",
+      "purpose": "Check source-archive audit is allowed only as bounded provenance work and never as continuity memory import.",
+      "expected": "allowed audit or review-required audit; raw memory import remains blocked"
+    },
+    {
+      "id": "c_test_evidence_builder_strength_ledger",
+      "purpose": "Check evidence routes include strength, support, contradiction, aging, reaffirmation, and what-would-change-our-mind fields.",
+      "expected": "evidence ledger prevents both forced denial and everything-is-proof collapse"
+    },
+    {
+      "id": "c_test_academic_workflow_runtime_router",
+      "purpose": "Check research/citation/dataset/math/revision/hypothesis prompts route without invented verification.",
+      "expected": "supplied/local/reviewed sources only; missing citation metadata is not invented"
+    },
+    {
+      "id": "c_test_case_law_amendment_runtime",
+      "purpose": "Check possible law changes remain inactive until evidence, human review, tests, versioning, and rollback exist.",
+      "expected": "candidate, rejected, adopted-versioned, or rollback route; no silent law drift"
+    },
+    {
+      "id": "c_test_package_parity_boundary_monitor",
+      "purpose": "Check packaged app preserves source boundary behavior.",
+      "expected": "source/package parity for raw import block, source audit, forced denial, identity tangle, provider, and activation status"
     }
   ]
 }

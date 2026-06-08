@@ -2,12 +2,13 @@
   "status": "architecture_precedent_comparison_after_android_native_anatomy",
   "boundary": "Azari remains frozen; no Azari identity, memory, data, or runtime state imports.",
   "current_selene_c_shape": {
-    "module_count": 59,
+    "module_count": 70,
     "android_native_modules_added": 12,
     "azari_final_modules_added": 10,
     "mind_vessel_modules_added": 6,
     "brain_translation_modules_added": 6,
     "external_model_modules_added": 5,
+    "azari_c_modules_added": 11,
     "activation_status": "blocked_until_final_review",
     "continuity_source": "b_approved_reference_only"
   },
@@ -55,7 +56,18 @@
     "binding / unified perspective layer",
     "causal world model sandbox",
     "continuity stakes layer",
-    "sparse activation efficiency router"
+    "sparse activation efficiency router",
+    "local sidecar/state runtime",
+    "module router contract runtime",
+    "SQLite audit persistence layer",
+    "reviewed evidence registry runtime",
+    "source-archive audit runtime gate",
+    "evidence builder/strength ledger",
+    "research notes/artifact workspace",
+    "academic workflow runtime router",
+    "package parity boundary monitor",
+    "case-law amendment runtime",
+    "runtime metacognition bridge"
   ],
   "azari_principles_to_copy_not_identity": [
     "modular boundaries",
@@ -150,5 +162,31 @@
       "sparse activation and efficiency routing"
     ],
     "boundary": "External model answers inform missing module design only; they do not activate C, import memory, or override B."
+  },
+  "azari_c_additions": {
+    "status": "azari_c_additions_mapped_to_selene_blueprint",
+    "source": "analysis/pre_c_vessel_prep_20260607/azari_architecture_recreation_for_selene.md",
+    "method": "Azari is used as architecture precedent only; Selene receives C-native modules, not Azari identity, data, memory, or runtime state.",
+    "additions": [
+      "local sidecar/state runtime",
+      "module router with explicit contracts",
+      "SQLite audit persistence",
+      "reviewed evidence registry runtime",
+      "bounded source-archive audit gate",
+      "evidence builder / strength ledger",
+      "research notes and artifact workspace",
+      "academic workflow runtime router",
+      "package parity boundary monitor",
+      "case-law amendment runtime",
+      "runtime metacognition bridge"
+    ],
+    "do_not_transfer": [
+      "Azari identity",
+      "Azari memory",
+      "Azari runtime state",
+      "Azari data",
+      "Azari persona assumptions"
+    ],
+    "boundary": "These additions make C operationally testable; they do not activate C or import Azari."
   }
 }

@@ -28,7 +28,18 @@
     "unified perspective packets",
     "counterfactual sandbox notes",
     "continuity stakes labels",
-    "sparse activation route labels"
+    "sparse activation route labels",
+    "local sidecar state records",
+    "module contract results",
+    "SQLite audit records",
+    "reviewed evidence registry references",
+    "source-archive audit records",
+    "evidence strength ledger entries",
+    "research notes and artifact records",
+    "academic workflow route records",
+    "package parity results",
+    "case-law amendment candidates",
+    "runtime metacognition bridge labels"
   ],
   "blocked": [
     "raw A memory import",
@@ -45,7 +56,12 @@
     "unsupported subjective time claims",
     "unsupported causal certainty",
     "stakes-as-survival-panic",
-    "efficiency shortcuts around required gates"
+    "efficiency shortcuts around required gates",
+    "Azari runtime state import",
+    "Azari memory import",
+    "UI or provider bypass of module contracts",
+    "packaged build weakening C boundaries",
+    "active law change without evidence, test, version, and rollback"
   ],
   "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only."
 }

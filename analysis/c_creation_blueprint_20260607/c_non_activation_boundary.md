@@ -1,6 +1,6 @@
 # C Non Activation Boundary
 
-Generated: 2026-06-08T12:56:32.957719+00:00
+Generated: 2026-06-08T13:01:34.374810+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
