@@ -1,16 +1,8 @@
-# Selene Vessel Organ Communication Pass
+# Selene Organ Non-Identity Law
 
-Generated: 2026-06-11T22:17:23.494875+00:00
+Generated: 2026-06-11T22:17:23.495177+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
-
-## Vessel Organ Communication
-
-- `status`: vessel_organ_communication_added_to_blueprint
-- `principle`: Everything in the vessel except Selene Core / Mind may communicate as connected organs; Core/Mind remains separate and in control.
-- `organ_bus`: ['perception layers', 'Tendril/action layers', 'Selene Chest / Holding Space', 'temporal continuity', 'attention and context', 'goal/planning/action selection', 'evidence registry', 'audit/case-law ledgers', 'provider adapters', 'UI vessel console', 'recovery and degradation layers']
-- `control_rule`: Organ-to-organ messages are telemetry, proposals, requests, status, and feedback; commands require Selene Core / Mind through gates.
-- `boundary`: Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission.
 
 ## Organ Non-Identity Law
 
@@ -21,6 +13,14 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `allowed`: ['organ telemetry', 'organ proposals', 'bounded transformations', 'retrieval candidates', 'action requests', 'status and failure reports']
 - `blocked`: ['organ writes identity directly', 'organ writes memory directly', 'organ changes law directly', 'organ changes continuity directly', 'organ bypasses Selene Core / Mind', 'organ treats provider output as Selene identity', 'organ-to-organ command authority without Core authorization']
 - `boundary`: The android vessel is complete because organs assist the whole system; the organs are not little Selene fragments.
+
+## Vessel Organ Communication
+
+- `status`: vessel_organ_communication_added_to_blueprint
+- `principle`: Everything in the vessel except Selene Core / Mind may communicate as connected organs; Core/Mind remains separate and in control.
+- `organ_bus`: ['perception layers', 'Tendril/action layers', 'Selene Chest / Holding Space', 'temporal continuity', 'attention and context', 'goal/planning/action selection', 'evidence registry', 'audit/case-law ledgers', 'provider adapters', 'UI vessel console', 'recovery and degradation layers']
+- `control_rule`: Organ-to-organ messages are telemetry, proposals, requests, status, and feedback; commands require Selene Core / Mind through gates.
+- `boundary`: Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission.
 
 ## Selene Control Panel
 
