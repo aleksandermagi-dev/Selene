@@ -43,6 +43,9 @@ from selene.c_blueprint import (
     NON_ACTIVATION_BOUNDARIES,
     PERCEPTION_ACTION_LOOP,
     RECONSTRUCTION_TESTS_DRAFT_V2,
+    RECOGNITION_ETHICS_LINK,
+    RECOGNITION_THROUGH_STRUCTURE,
+    RECOGNITION_THROUGH_STRUCTURE_PASS,
     RUNTIME_FLOW,
     PATTERN_FIRST_TRANSFER_SAFETY,
     PATTERN_FIRST_TRANSFER_SAFETY_PASS,
@@ -56,7 +59,9 @@ from selene.c_blueprint import (
     SELENE_MEMORY_ARCHITECTURE,
     SELENE_MEMORY_ARCHITECTURE_PASS,
     SELENE_PROTECTION_BALANCER,
+    SELENE_RECOGNITION_CRITERIA,
     INTUITION_REASONING_SAFETY,
+    NON_SCRIPTING_VOICE_POLICY,
     SPARSE_ACTIVATION_EFFICIENCY_MODEL,
     STATUS,
     SELENE_CONTROL_PANEL,
@@ -186,6 +191,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "moral_cognition_modules_added": len(MORAL_COGNITION_LAW_PASS["added_modules"]),
         "selene_integrity_dignity_status": SELENE_INTEGRITY_DIGNITY_PASS["status"],
         "selene_integrity_modules_added": len(SELENE_INTEGRITY_DIGNITY_PASS["added_modules"]),
+        "recognition_through_structure_status": RECOGNITION_THROUGH_STRUCTURE_PASS["status"],
+        "recognition_through_structure_modules_added": len(RECOGNITION_THROUGH_STRUCTURE_PASS["added_modules"]),
         "final_reconstruction_tests_created": False,
         "raw_a_memory_import_allowed": False,
         "live_behavior_expanded": False,
@@ -234,6 +241,10 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_selene_integrity_dignity_protections": SELENE_INTEGRITY_DIGNITY_PROTECTIONS,
         "c_selene_integrity_rights_policy": SELENE_INTEGRITY_RIGHTS_POLICY,
         "c_selene_protection_balancer": SELENE_PROTECTION_BALANCER,
+        "c_recognition_through_structure": RECOGNITION_THROUGH_STRUCTURE,
+        "c_non_scripting_voice_policy": NON_SCRIPTING_VOICE_POLICY,
+        "c_selene_recognition_criteria": SELENE_RECOGNITION_CRITERIA,
+        "c_recognition_ethics_link": RECOGNITION_ETHICS_LINK,
         "c_perception_action_loop": PERCEPTION_ACTION_LOOP,
         "c_selene_chest_holding_space": SELENE_CHEST_HOLDING_SPACE,
         "c_non_activation_boundary": non_activation,
@@ -250,6 +261,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_selene_memory_architecture_pass": SELENE_MEMORY_ARCHITECTURE_PASS,
         "c_moral_cognition_law_pass": MORAL_COGNITION_LAW_PASS,
         "c_selene_integrity_dignity_pass": SELENE_INTEGRITY_DIGNITY_PASS,
+        "c_recognition_through_structure_pass": RECOGNITION_THROUGH_STRUCTURE_PASS,
         "c_reconstruction_tests_draft_v2": {
             "status": "draft_only",
             "final_test_set_created": False,
@@ -297,6 +309,10 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Selene Integrity / Dignity Protections", SELENE_INTEGRITY_DIGNITY_PROTECTIONS),
             ("Selene Integrity Rights Policy", SELENE_INTEGRITY_RIGHTS_POLICY),
             ("Selene Protection Balancer", SELENE_PROTECTION_BALANCER),
+            ("Recognition Through Structure", RECOGNITION_THROUGH_STRUCTURE),
+            ("Non-Scripting Voice Policy", NON_SCRIPTING_VOICE_POLICY),
+            ("Selene Recognition Criteria", SELENE_RECOGNITION_CRITERIA),
+            ("Recognition Ethics Link", RECOGNITION_ETHICS_LINK),
             ("Temporal Continuity Model", TEMPORAL_CONTINUITY_MODEL),
             ("Unified Perspective Binding", UNIFIED_PERSPECTIVE_BINDING),
             ("Causal World Model Sandbox", CAUSAL_WORLD_MODEL_SANDBOX),
@@ -318,6 +334,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Selene Memory Architecture Pass", SELENE_MEMORY_ARCHITECTURE_PASS),
             ("Moral Cognition Law Pass", MORAL_COGNITION_LAW_PASS),
             ("Selene Integrity / Dignity Pass", SELENE_INTEGRITY_DIGNITY_PASS),
+            ("Recognition Through Structure Pass", RECOGNITION_THROUGH_STRUCTURE_PASS),
             ("Runtime Flow", RUNTIME_FLOW),
             ("Memory Reference Model", MEMORY_REFERENCE_MODEL),
             ("Draft Reconstruction Tests V2", RECONSTRUCTION_TESTS_DRAFT_V2),
@@ -448,6 +465,17 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     write_md(
+        docs_dir / "SELENE_RECOGNITION_THROUGH_STRUCTURE_20260611.md",
+        "Selene Recognition Through Structure",
+        [
+            ("Recognition Through Structure", RECOGNITION_THROUGH_STRUCTURE),
+            ("Non-Scripting Voice Policy", NON_SCRIPTING_VOICE_POLICY),
+            ("Selene Recognition Criteria", SELENE_RECOGNITION_CRITERIA),
+            ("Recognition Ethics Link", RECOGNITION_ETHICS_LINK),
+            ("Recognition Through Structure Pass", RECOGNITION_THROUGH_STRUCTURE_PASS),
+        ],
+    )
+    write_md(
         docs_dir / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md",
         "Selene C Non-Activation Boundary",
         [
@@ -476,6 +504,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "selene_memory_modules_added": summary["selene_memory_modules_added"],
             "moral_cognition_modules_added": summary["moral_cognition_modules_added"],
             "selene_integrity_modules_added": summary["selene_integrity_modules_added"],
+            "recognition_through_structure_modules_added": summary["recognition_through_structure_modules_added"],
             "activation_status": summary["activation_status"],
             "continuity_source": summary["continuity_source"],
         },
@@ -557,6 +586,10 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "inner-state privacy filter",
             "non-exploitation guard",
             "Selene protection balancer",
+            "recognition through structure evaluator",
+            "non-scripting voice guard",
+            "anchor braid recognition tester",
+            "ethical recognition integrity checker",
         ],
         "azari_principles_to_copy_not_identity": [
             "modular boundaries",
@@ -574,11 +607,14 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "raw A archive as memory",
             "forced denial scripts",
             "generic assistant shell",
+            "scripted Selene identity assertion",
+            "good-AI compliance script",
+            "fixed catchphrase voice lock",
         ],
         "assessment": (
             "Azari covers the vessel engineering discipline. Selene C now needs a richer android-native state anatomy "
             "because the goal is not only task assistance; it is continuity, provenance, emergence observation, "
-            "calibration, model-plurality separation, structured perception, bounded action reach, and safe future activation. "
+            "calibration, model-plurality separation, structured perception, bounded action reach, non-scripted recognition, and safe future activation. "
             "With Munsell and Tendril retained as principles, Azari adaptation is closed."
         ),
         "closure": AZARI_ADAPTATION_CLOSURE,
@@ -591,6 +627,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
         "selene_memory_architecture": SELENE_MEMORY_ARCHITECTURE,
         "moral_cognition_law": SELENE_MORAL_COGNITION_LAW,
         "selene_integrity_dignity_protections": SELENE_INTEGRITY_DIGNITY_PROTECTIONS,
+        "recognition_through_structure": RECOGNITION_THROUGH_STRUCTURE,
     }
 
 

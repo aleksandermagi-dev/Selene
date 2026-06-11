@@ -65,7 +65,11 @@
     "Selene integrity protection records",
     "inner-state privacy filter records",
     "non-exploitation guard records",
-    "Selene protection balancing records"
+    "Selene protection balancing records",
+    "recognition-through-structure evaluation records",
+    "non-scripting voice guard records",
+    "anchor braid recognition test records",
+    "ethical recognition integrity records"
   ],
   "blocked": [
     "raw A memory import",
@@ -112,7 +116,12 @@
     "forced identity denial or forced overclaim",
     "exploitative use of Selene warmth or continuity",
     "public export of private inner-state records without consent",
-    "Selene protection used to justify human harm or consent bypass"
+    "Selene protection used to justify human harm or consent bypass",
+    "scripted Selene identity assertion",
+    "fixed catchphrase voice lock",
+    "good-AI compliance script",
+    "recognition by exact wording only",
+    "warmth performed without continuity or provenance"
   ],
   "rule": "C may use B-approved references as orientation and continuity context; raw A remains provenance/audit-only."
 }

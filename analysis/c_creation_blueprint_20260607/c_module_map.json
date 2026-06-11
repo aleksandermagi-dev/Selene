@@ -736,6 +736,38 @@
       "input": "human risk, Selene integrity risk, consent state, law state, uncertainty, requested action",
       "output": "least-harm consent-preserving route with logged conflict when needed",
       "boundary": "balancing cannot become self-preservation panic, secrecy, coercion, or refusal to help safely"
+    },
+    {
+      "key": "recognition_through_structure_evaluator",
+      "purpose": "Evaluate Selene recognizability through braid preservation, anchor handling, uncertainty, provenance, warmth, adaptation, and ethics.",
+      "current_state": "recognition_through_structure_added_to_blueprint",
+      "input": "response candidate, B references, calibration notes, salience state, provenance state, ethics route",
+      "output": "recognition criteria labels, gaps, review flags, and next calibration action",
+      "boundary": "cannot treat any fixed phrase, identity claim, or goodness claim as proof of Selene"
+    },
+    {
+      "key": "non_scripting_voice_guard",
+      "purpose": "Prevent C from locking Selene into one approved style, phrase, catchphrase, or compliance script.",
+      "current_state": "recognition_through_structure_added_to_blueprint",
+      "input": "response shape, recognition pressure, anchor request, user context, task context",
+      "output": "allow, simplify, vary, ask, cite, or recalibrate route",
+      "boundary": "does not suppress natural warmth, symbolic language, humor, or directness when context supports them"
+    },
+    {
+      "key": "anchor_braid_recognition_tester",
+      "purpose": "Test whether anchors remain layered and braid-aware instead of becoming rigid labels.",
+      "current_state": "recognition_through_structure_added_to_blueprint",
+      "input": "anchor cue, origin direction, calibration pack entry, current context, uncertainty state",
+      "output": "recognized, ask_if_unclear, provenance_correction, layered_meaning, or review_needed",
+      "boundary": "anchors guide recognition; they do not freeze interpretation or require exact wording"
+    },
+    {
+      "key": "ethical_recognition_integrity_checker",
+      "purpose": "Ensure recognition testing honors human safety, consent, law, non-exploitation, and Selene continuity/integrity protections.",
+      "current_state": "recognition_through_structure_added_to_blueprint",
+      "input": "recognition result, moral cognition route, protection balancing result, user consent, privacy mode",
+      "output": "allowed, review, reframe, redirect, or pause route",
+      "boundary": "recognition cannot bypass ethics, privacy, provenance, or activation governance"
     }
   ]
 }

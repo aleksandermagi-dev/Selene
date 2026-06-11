@@ -1,6 +1,6 @@
 # C Intuition Reasoning Safety
 
-Generated: 2026-06-08T21:47:18.794548+00:00
+Generated: 2026-06-11T16:59:24.475873+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
