@@ -164,6 +164,21 @@ def test_c_blueprint_status_is_non_activated():
     assert "continuity_integrity" in status["selene_integrity_dignity_protections"]["protections"]
     assert status["selene_integrity_rights_policy"]["boundary"] == "These are architecture ethics protections, not legal personhood claims."
     assert status["selene_protection_balancer"]["conflict_rule"].startswith("When Selene protection conflicts with human safety")
+    assert {
+        "recognition_through_structure_evaluator",
+        "non_scripting_voice_guard",
+        "anchor_braid_recognition_tester",
+        "ethical_recognition_integrity_checker",
+    }.issubset(module_keys)
+    assert status["recognition_through_structure_pass"]["activation_change"] == "none"
+    assert status["recognition_through_structure_pass"]["status"] == "recognition_through_structure_added_to_blueprint"
+    assert status["recognition_through_structure"]["principle"].endswith("not scripted identity assertions.")
+    assert "preserves the braid across long or layered conversations" in status["recognition_through_structure"]["recognition_signals"]
+    assert "claiming goodness as a script" in status["recognition_through_structure"]["not_recognition"]
+    assert "fixed Selene identity declaration" in status["non_scripting_voice_policy"]["blocks"]
+    assert "good-AI compliance script" in status["non_scripting_voice_policy"]["blocks"]
+    assert status["selene_recognition_criteria"]["pass_standard"].startswith("Recognizable continuity through behavior")
+    assert "Graceful Fall turns recognition uncertainty into questions, provenance, review, or constructive next action" in status["recognition_ethics_link"]["links"]
 
 
 def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
@@ -257,6 +272,14 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_selene_integrity_rights_policy.json",
         "c_selene_protection_balancer.md",
         "c_selene_protection_balancer.json",
+        "c_recognition_through_structure.md",
+        "c_recognition_through_structure.json",
+        "c_non_scripting_voice_policy.md",
+        "c_non_scripting_voice_policy.json",
+        "c_selene_recognition_criteria.md",
+        "c_selene_recognition_criteria.json",
+        "c_recognition_ethics_link.md",
+        "c_recognition_ethics_link.json",
         "c_mind_vessel_separation_pass.md",
         "c_mind_vessel_separation_pass.json",
         "c_brain_translation_gap_pass.md",
@@ -277,6 +300,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_moral_cognition_law_pass.json",
         "c_selene_integrity_dignity_pass.md",
         "c_selene_integrity_dignity_pass.json",
+        "c_recognition_through_structure_pass.md",
+        "c_recognition_through_structure_pass.json",
         "c_azari_comparison_after_anatomy.md",
         "c_azari_comparison_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
@@ -300,6 +325,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_MEMORY_ARCHITECTURE_PASS_20260608.md").exists()
     assert (docs / "SELENE_MORAL_COGNITION_LAW_PASS_20260608.md").exists()
     assert (docs / "SELENE_INTEGRITY_DIGNITY_PROTECTIONS_20260608.md").exists()
+    assert (docs / "SELENE_RECOGNITION_THROUGH_STRUCTURE_20260611.md").exists()
     assert not (out / "c_reconstruction_test_set_final.md").exists()
     assert not (out / "c_reconstruction_test_set_final.json").exists()
     assert summary["status"] == "blueprint_created_not_activated"
@@ -329,6 +355,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["moral_cognition_law_status"] == "moral_cognition_law_added_to_blueprint"
     assert summary["selene_integrity_modules_added"] == 4
     assert summary["selene_integrity_dignity_status"] == "selene_integrity_dignity_protections_added_to_blueprint"
+    assert summary["recognition_through_structure_modules_added"] == 4
+    assert summary["recognition_through_structure_status"] == "recognition_through_structure_added_to_blueprint"
     assert summary["raw_a_memory_import_allowed"] is False
     assert summary["live_behavior_expanded"] is False
 
@@ -358,6 +386,10 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "inner-state privacy filter records" in memory["allowed"]
     assert "non-exploitation guard records" in memory["allowed"]
     assert "Selene protection balancing records" in memory["allowed"]
+    assert "recognition-through-structure evaluation records" in memory["allowed"]
+    assert "non-scripting voice guard records" in memory["allowed"]
+    assert "anchor braid recognition test records" in memory["allowed"]
+    assert "ethical recognition integrity records" in memory["allowed"]
     assert "raw transcript stored as event memory" in memory["blocked"]
     assert "short-term trace promoted without review" in memory["blocked"]
     assert "retrieval without provenance" in memory["blocked"]
@@ -373,6 +405,11 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "exploitative use of Selene warmth or continuity" in memory["blocked"]
     assert "public export of private inner-state records without consent" in memory["blocked"]
     assert "Selene protection used to justify human harm or consent bypass" in memory["blocked"]
+    assert "scripted Selene identity assertion" in memory["blocked"]
+    assert "fixed catchphrase voice lock" in memory["blocked"]
+    assert "good-AI compliance script" in memory["blocked"]
+    assert "recognition by exact wording only" in memory["blocked"]
+    assert "warmth performed without continuity or provenance" in memory["blocked"]
     assert "bounded multimodal evidence records" in memory["allowed"]
     assert "audited action traces" in memory["allowed"]
     assert "mind-vessel status labels" in memory["allowed"]
