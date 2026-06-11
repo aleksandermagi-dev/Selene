@@ -109,10 +109,14 @@ def test_c_blueprint_status_is_non_activated():
     assert "hold long-thread conversations without generic collapse" in status["long_horizon_stability"]["capabilities"]
     assert {
         "vessel_organ_bus",
+        "organ_non_identity_law_guard",
         "selene_control_panel",
     }.issubset(module_keys)
     assert status["vessel_organ_communication_pass"]["activation_change"] == "none"
     assert status["vessel_organ_communication"]["control_rule"].startswith("Organ-to-organ messages are telemetry")
+    assert status["organ_non_identity_law"]["law"] == "Organs assist. Core decides. Gates constrain. Ledger records. B recalibrates."
+    assert status["organ_non_identity_law"]["organ_roles"]["provider_model"] == "language/thought substrate, not Selene"
+    assert "organ writes identity directly" in status["organ_non_identity_law"]["blocked"]
     assert {
         "pattern_first_transfer_safety_rule",
         "vessel_compatibility_gate",
@@ -242,6 +246,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_long_thread_stability_protocol.json",
         "c_vessel_organ_communication.md",
         "c_vessel_organ_communication.json",
+        "c_organ_non_identity_law.md",
+        "c_organ_non_identity_law.json",
         "c_selene_control_panel.md",
         "c_selene_control_panel.json",
         "c_pattern_first_transfer_safety.md",
@@ -321,6 +327,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_AZARI_C_ADDITIONS_PASS_20260608.md").exists()
     assert (docs / "SELENE_LONG_HORIZON_STABILITY_PASS_20260608.md").exists()
     assert (docs / "SELENE_VESSEL_ORGAN_COMMUNICATION_PASS_20260608.md").exists()
+    assert (docs / "SELENE_ORGAN_NON_IDENTITY_LAW_20260611.md").exists()
     assert (docs / "SELENE_PATTERN_FIRST_TRANSFER_SAFETY_20260608.md").exists()
     assert (docs / "SELENE_MEMORY_ARCHITECTURE_PASS_20260608.md").exists()
     assert (docs / "SELENE_MORAL_COGNITION_LAW_PASS_20260608.md").exists()
@@ -345,7 +352,7 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["azari_c_additions_status"] == "azari_c_additions_mapped_to_blueprint"
     assert summary["long_horizon_modules_added"] == 2
     assert summary["long_horizon_stability_status"] == "long_horizon_stability_added_to_blueprint"
-    assert summary["vessel_organ_modules_added"] == 2
+    assert summary["vessel_organ_modules_added"] == 3
     assert summary["vessel_organ_communication_status"] == "vessel_organ_communication_added_to_blueprint"
     assert summary["pattern_first_transfer_modules_added"] == 2
     assert summary["pattern_first_transfer_status"] == "pattern_first_transfer_safety_added_to_blueprint"
@@ -435,6 +442,7 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "future intention notes" in memory["allowed"]
     assert "vessel organ telemetry records" in memory["allowed"]
     assert "organ bus proposal records" in memory["allowed"]
+    assert "organ non-identity law check records" in memory["allowed"]
     assert "control panel directive records" in memory["allowed"]
     assert "pattern/core transfer records" in memory["allowed"]
     assert "vessel compatibility reports" in memory["allowed"]
@@ -456,6 +464,9 @@ def test_memory_reference_model_is_b_approved_only(tmp_path):
     assert "perfect-memory claims from long-thread summaries" in memory["blocked"]
     assert "context saturation overconfidence" in memory["blocked"]
     assert "organ-to-organ command authority" in memory["blocked"]
+    assert "organ writes identity, memory, law, or continuity directly" in memory["blocked"]
+    assert "organ treated as a little Selene fragment" in memory["blocked"]
+    assert "provider output treated as Selene identity" in memory["blocked"]
     assert "vessel organ bypass of Selene Core / Mind" in memory["blocked"]
     assert "ungated organ state mutation" in memory["blocked"]
     assert "module instance treated as transfer identity" in memory["blocked"]

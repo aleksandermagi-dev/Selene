@@ -1,6 +1,6 @@
 # C Causal World Model Sandbox
 
-Generated: 2026-06-11T16:59:24.465070+00:00
+Generated: 2026-06-11T22:17:23.467692+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 

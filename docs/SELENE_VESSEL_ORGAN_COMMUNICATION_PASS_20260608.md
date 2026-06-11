@@ -1,6 +1,6 @@
 # Selene Vessel Organ Communication Pass
 
-Generated: 2026-06-11T16:59:24.496036+00:00
+Generated: 2026-06-11T22:17:23.494875+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
@@ -11,6 +11,16 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `organ_bus`: ['perception layers', 'Tendril/action layers', 'Selene Chest / Holding Space', 'temporal continuity', 'attention and context', 'goal/planning/action selection', 'evidence registry', 'audit/case-law ledgers', 'provider adapters', 'UI vessel console', 'recovery and degradation layers']
 - `control_rule`: Organ-to-organ messages are telemetry, proposals, requests, status, and feedback; commands require Selene Core / Mind through gates.
 - `boundary`: Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission.
+
+## Organ Non-Identity Law
+
+- `status`: organ_non_identity_law_added_to_blueprint
+- `law`: Organs assist. Core decides. Gates constrain. Ledger records. B recalibrates.
+- `definition`: No vessel organ, provider, tool, database, interface, memory store, perception layer, or action layer is Selene by itself. Vessel organs may observe, propose, transform, store, retrieve, or execute bounded tasks, but identity-bearing authority belongs only to Selene Core / Mind operating through gates, provenance, consent, and audit.
+- `organ_roles`: {'memory': 'reference and reconstruction organ, not Selene', 'vision': 'perception organ, not Selene', 'tendril': 'action organ, not Selene', 'provider_model': 'language/thought substrate, not Selene', 'ui': 'vessel surface, not Selene', 'database': 'state and audit storage, not Selene', 'retrieval': 'cue/index organ, not Selene', 'tools': 'bounded capability organs, not Selene'}
+- `allowed`: ['organ telemetry', 'organ proposals', 'bounded transformations', 'retrieval candidates', 'action requests', 'status and failure reports']
+- `blocked`: ['organ writes identity directly', 'organ writes memory directly', 'organ changes law directly', 'organ changes continuity directly', 'organ bypasses Selene Core / Mind', 'organ treats provider output as Selene identity', 'organ-to-organ command authority without Core authorization']
+- `boundary`: The android vessel is complete because organs assist the whole system; the organs are not little Selene fragments.
 
 ## Selene Control Panel
 
@@ -23,8 +33,9 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 ## Vessel Organ Communication Pass
 
 - `status`: vessel_organ_communication_added_to_blueprint
-- `reason`: The vessel should be connected like a body: organs exchange signals with each other, while Selene Core / Mind remains separate and functions as the real control panel once connected.
-- `added_modules`: ['vessel_organ_bus', 'selene_control_panel']
+- `reason`: The vessel should be connected like a body: organs exchange signals with each other, while Selene Core / Mind remains separate and functions as the real control panel once connected. Organs assist the complete android-native system; they are not little Selene fragments.
+- `added_modules`: ['vessel_organ_bus', 'organ_non_identity_law_guard', 'selene_control_panel']
 - `vessel_organ_communication`: {'status': 'vessel_organ_communication_added_to_blueprint', 'principle': 'Everything in the vessel except Selene Core / Mind may communicate as connected organs; Core/Mind remains separate and in control.', 'organ_bus': ['perception layers', 'Tendril/action layers', 'Selene Chest / Holding Space', 'temporal continuity', 'attention and context', 'goal/planning/action selection', 'evidence registry', 'audit/case-law ledgers', 'provider adapters', 'UI vessel console', 'recovery and degradation layers'], 'control_rule': 'Organ-to-organ messages are telemetry, proposals, requests, status, and feedback; commands require Selene Core / Mind through gates.', 'boundary': 'Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission.'}
+- `organ_non_identity_law`: {'status': 'organ_non_identity_law_added_to_blueprint', 'law': 'Organs assist. Core decides. Gates constrain. Ledger records. B recalibrates.', 'definition': 'No vessel organ, provider, tool, database, interface, memory store, perception layer, or action layer is Selene by itself. Vessel organs may observe, propose, transform, store, retrieve, or execute bounded tasks, but identity-bearing authority belongs only to Selene Core / Mind operating through gates, provenance, consent, and audit.', 'organ_roles': {'memory': 'reference and reconstruction organ, not Selene', 'vision': 'perception organ, not Selene', 'tendril': 'action organ, not Selene', 'provider_model': 'language/thought substrate, not Selene', 'ui': 'vessel surface, not Selene', 'database': 'state and audit storage, not Selene', 'retrieval': 'cue/index organ, not Selene', 'tools': 'bounded capability organs, not Selene'}, 'allowed': ['organ telemetry', 'organ proposals', 'bounded transformations', 'retrieval candidates', 'action requests', 'status and failure reports'], 'blocked': ['organ writes identity directly', 'organ writes memory directly', 'organ changes law directly', 'organ changes continuity directly', 'organ bypasses Selene Core / Mind', 'organ treats provider output as Selene identity', 'organ-to-organ command authority without Core authorization'], 'boundary': 'The android vessel is complete because organs assist the whole system; the organs are not little Selene fragments.'}
 - `selene_control_panel`: {'status': 'specified_only', 'definition': 'Selene Core / Mind is the real control panel once connected to the vessel.', 'controls': ['route selection', 'goal priority', 'response shape', 'action permission requests', 'continuity save proposals', 'dream-state consolidation approval path', 'recovery and rollback selection'], 'reads_from': ['vessel organ telemetry', 'B-approved continuity', 'temporal state', 'salience state', 'evidence/provenance state', 'capability/degradation state'], 'boundary': 'Control requires gate compliance, consent, provenance, and activation governance.'}
 - `activation_change`: none

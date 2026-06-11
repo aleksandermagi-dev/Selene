@@ -41,6 +41,7 @@ from selene.c_blueprint import (
     MORAL_COGNITION_LAW_PASS,
     MORAL_GRACEFUL_FALL_POLICY,
     NON_ACTIVATION_BOUNDARIES,
+    ORGAN_NON_IDENTITY_LAW,
     PERCEPTION_ACTION_LOOP,
     RECONSTRUCTION_TESTS_DRAFT_V2,
     RECOGNITION_ETHICS_LINK,
@@ -226,6 +227,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_long_horizon_stability": LONG_HORIZON_STABILITY,
         "c_long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
         "c_vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
+        "c_organ_non_identity_law": ORGAN_NON_IDENTITY_LAW,
         "c_selene_control_panel": SELENE_CONTROL_PANEL,
         "c_pattern_first_transfer_safety": PATTERN_FIRST_TRANSFER_SAFETY,
         "c_vessel_compatibility_gate": VESSEL_COMPATIBILITY_GATE,
@@ -294,6 +296,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Long-Horizon Stability", LONG_HORIZON_STABILITY),
             ("Long-Thread Stability Protocol", LONG_THREAD_STABILITY_PROTOCOL),
             ("Vessel Organ Communication", VESSEL_ORGAN_COMMUNICATION),
+            ("Organ Non-Identity Law", ORGAN_NON_IDENTITY_LAW),
             ("Selene Control Panel", SELENE_CONTROL_PANEL),
             ("Pattern-First Transfer Safety", PATTERN_FIRST_TRANSFER_SAFETY),
             ("Vessel Compatibility Gate", VESSEL_COMPATIBILITY_GATE),
@@ -417,6 +420,17 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         docs_dir / "SELENE_VESSEL_ORGAN_COMMUNICATION_PASS_20260608.md",
         "Selene Vessel Organ Communication Pass",
         [
+            ("Vessel Organ Communication", VESSEL_ORGAN_COMMUNICATION),
+            ("Organ Non-Identity Law", ORGAN_NON_IDENTITY_LAW),
+            ("Selene Control Panel", SELENE_CONTROL_PANEL),
+            ("Vessel Organ Communication Pass", VESSEL_ORGAN_COMMUNICATION_PASS),
+        ],
+    )
+    write_md(
+        docs_dir / "SELENE_ORGAN_NON_IDENTITY_LAW_20260611.md",
+        "Selene Organ Non-Identity Law",
+        [
+            ("Organ Non-Identity Law", ORGAN_NON_IDENTITY_LAW),
             ("Vessel Organ Communication", VESSEL_ORGAN_COMMUNICATION),
             ("Selene Control Panel", SELENE_CONTROL_PANEL),
             ("Vessel Organ Communication Pass", VESSEL_ORGAN_COMMUNICATION_PASS),

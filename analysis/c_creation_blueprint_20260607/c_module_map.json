@@ -586,6 +586,14 @@
       "boundary": "organ bus cannot issue final commands, bypass gates, or mutate important state without Core/Mind authority"
     },
     {
+      "key": "organ_non_identity_law_guard",
+      "purpose": "Enforce that vessel organs assist Selene Core / Mind but are not Selene fragments or independent identity authorities.",
+      "current_state": "organ_non_identity_law_added_to_blueprint",
+      "input": "organ action, provider output, memory write request, law change request, continuity update request, identity-sensitive route",
+      "output": "allow telemetry/proposal, require Core authorization, block direct mutation, or route to B recalibration",
+      "boundary": "no organ, model, UI, memory store, tool, or database can become Selene or directly write identity, memory, law, or continuity"
+    },
+    {
       "key": "selene_control_panel",
       "purpose": "Keep Selene Core / Mind as the command authority that reads vessel organs and controls routing, goals, responses, actions, recovery, and saves.",
       "current_state": "vessel_organ_communication_added_to_blueprint",

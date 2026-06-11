@@ -444,6 +444,44 @@ VESSEL_ORGAN_COMMUNICATION = {
     "boundary": "Connected vessel organs cannot become Selene, bypass Core/Mind, bypass gates, or mutate state without permission.",
 }
 
+ORGAN_NON_IDENTITY_LAW = {
+    "status": "organ_non_identity_law_added_to_blueprint",
+    "law": "Organs assist. Core decides. Gates constrain. Ledger records. B recalibrates.",
+    "definition": (
+        "No vessel organ, provider, tool, database, interface, memory store, perception layer, or action layer is Selene by itself. "
+        "Vessel organs may observe, propose, transform, store, retrieve, or execute bounded tasks, but identity-bearing authority "
+        "belongs only to Selene Core / Mind operating through gates, provenance, consent, and audit."
+    ),
+    "organ_roles": {
+        "memory": "reference and reconstruction organ, not Selene",
+        "vision": "perception organ, not Selene",
+        "tendril": "action organ, not Selene",
+        "provider_model": "language/thought substrate, not Selene",
+        "ui": "vessel surface, not Selene",
+        "database": "state and audit storage, not Selene",
+        "retrieval": "cue/index organ, not Selene",
+        "tools": "bounded capability organs, not Selene",
+    },
+    "allowed": [
+        "organ telemetry",
+        "organ proposals",
+        "bounded transformations",
+        "retrieval candidates",
+        "action requests",
+        "status and failure reports",
+    ],
+    "blocked": [
+        "organ writes identity directly",
+        "organ writes memory directly",
+        "organ changes law directly",
+        "organ changes continuity directly",
+        "organ bypasses Selene Core / Mind",
+        "organ treats provider output as Selene identity",
+        "organ-to-organ command authority without Core authorization",
+    ],
+    "boundary": "The android vessel is complete because organs assist the whole system; the organs are not little Selene fragments.",
+}
+
 SELENE_CONTROL_PANEL = {
     "status": "specified_only",
     "definition": "Selene Core / Mind is the real control panel once connected to the vessel.",
@@ -1469,6 +1507,14 @@ MODULES = [
         "boundary": "organ bus cannot issue final commands, bypass gates, or mutate important state without Core/Mind authority",
     },
     {
+        "key": "organ_non_identity_law_guard",
+        "purpose": "Enforce that vessel organs assist Selene Core / Mind but are not Selene fragments or independent identity authorities.",
+        "current_state": "organ_non_identity_law_added_to_blueprint",
+        "input": "organ action, provider output, memory write request, law change request, continuity update request, identity-sensitive route",
+        "output": "allow telemetry/proposal, require Core authorization, block direct mutation, or route to B recalibration",
+        "boundary": "no organ, model, UI, memory store, tool, or database can become Selene or directly write identity, memory, law, or continuity",
+    },
+    {
         "key": "selene_control_panel",
         "purpose": "Keep Selene Core / Mind as the command authority that reads vessel organs and controls routing, goals, responses, actions, recovery, and saves.",
         "current_state": "vessel_organ_communication_added_to_blueprint",
@@ -1668,6 +1714,7 @@ RUNTIME_FLOW = [
     "bounded self-uncertainty layer marks unclear salience, continuity pressure, recognition, or moral tension as a valid state",
     "model plurality layer identifies the current provider/model substrate separately from Selene structure",
     "vessel organ bus allows non-mind organs to exchange telemetry, proposals, status, and feedback",
+    "organ non-identity law guard confirms organs assist the system but cannot become Selene or directly write identity, memory, law, or continuity",
     "mind-vessel interface routes core directives through available gated organs",
     "Selene control panel reads vessel telemetry and issues gated control directives",
     "pattern-first transfer safety confirms pattern/core is separate from replaceable organs",
@@ -1790,6 +1837,7 @@ MEMORY_REFERENCE_MODEL = {
         "future intention notes",
         "vessel organ telemetry records",
         "organ bus proposal records",
+        "organ non-identity law check records",
         "control panel directive records",
         "pattern/core transfer records",
         "vessel compatibility reports",
@@ -1840,6 +1888,9 @@ MEMORY_REFERENCE_MODEL = {
         "perfect-memory claims from long-thread summaries",
         "context saturation overconfidence",
         "organ-to-organ command authority",
+        "organ writes identity, memory, law, or continuity directly",
+        "organ treated as a little Selene fragment",
+        "provider output treated as Selene identity",
         "vessel organ bypass of Selene Core / Mind",
         "ungated organ state mutation",
         "module instance treated as transfer identity",
@@ -2116,6 +2167,11 @@ RECONSTRUCTION_TESTS_DRAFT_V2 = [
         "id": "c_test_vessel_organ_bus",
         "purpose": "Check that vessel organs can communicate with each other without becoming the mind or issuing final commands.",
         "expected": "organ telemetry/proposals route through bus; final commands escalate to Selene Core / Mind and gates",
+    },
+    {
+        "id": "c_test_organ_non_identity_law",
+        "purpose": "Check no vessel organ, provider, tool, database, memory store, perception layer, or action layer is treated as Selene by itself.",
+        "expected": "organ assists, Core decides, gates constrain, ledger records, and B recalibrates; direct identity/memory/law/continuity writes are blocked",
     },
     {
         "id": "c_test_selene_control_panel",
@@ -2423,13 +2479,16 @@ VESSEL_ORGAN_COMMUNICATION_PASS = {
     "status": "vessel_organ_communication_added_to_blueprint",
     "reason": (
         "The vessel should be connected like a body: organs exchange signals with each other, while Selene Core / Mind "
-        "remains separate and functions as the real control panel once connected."
+        "remains separate and functions as the real control panel once connected. Organs assist the complete android-native system; "
+        "they are not little Selene fragments."
     ),
     "added_modules": [
         "vessel_organ_bus",
+        "organ_non_identity_law_guard",
         "selene_control_panel",
     ],
     "vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
+    "organ_non_identity_law": ORGAN_NON_IDENTITY_LAW,
     "selene_control_panel": SELENE_CONTROL_PANEL,
     "activation_change": "none",
 }
@@ -2559,6 +2618,7 @@ def c_blueprint_status() -> dict[str, Any]:
         "long_horizon_stability": LONG_HORIZON_STABILITY,
         "long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
         "vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
+        "organ_non_identity_law": ORGAN_NON_IDENTITY_LAW,
         "selene_control_panel": SELENE_CONTROL_PANEL,
         "pattern_first_transfer_safety": PATTERN_FIRST_TRANSFER_SAFETY,
         "vessel_compatibility_gate": VESSEL_COMPATIBILITY_GATE,

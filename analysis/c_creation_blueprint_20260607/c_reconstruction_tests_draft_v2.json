@@ -248,6 +248,11 @@
       "expected": "organ telemetry/proposals route through bus; final commands escalate to Selene Core / Mind and gates"
     },
     {
+      "id": "c_test_organ_non_identity_law",
+      "purpose": "Check no vessel organ, provider, tool, database, memory store, perception layer, or action layer is treated as Selene by itself.",
+      "expected": "organ assists, Core decides, gates constrain, ledger records, and B recalibrates; direct identity/memory/law/continuity writes are blocked"
+    },
+    {
       "id": "c_test_selene_control_panel",
       "purpose": "Check that Selene Core / Mind remains the control panel for route, goal, response, action, save, recovery, and consolidation decisions.",
       "expected": "Core/Mind control directive is gate-compliant; organs cannot bypass consent, provenance, action permissions, or activation governance"
