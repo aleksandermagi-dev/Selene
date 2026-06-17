@@ -5,6 +5,10 @@
 *.log
 *.sqlite3
 *.db
+tmp/
+exports/
+output/
+src/selene.egg-info/
 
 # JavaScript/Rust build dependencies and outputs
 node_modules/

@@ -1,24 +1,48 @@
 # C Creation Blueprint Summary
 
-Generated: 2026-06-11T22:17:23.491747+00:00
+Generated: 2026-06-16T23:07:08.937456+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Spec
 
-- `generated_at`: 2026-06-11T22:17:23.460152+00:00
+- `generated_at`: 2026-06-16T23:07:08.901074+00:00
 - `status`: blueprint_created_not_activated
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
-- `module_count`: 97
+- `module_count`: 112
 - `draft_reconstruction_test_count`: 76
 - `missing_layer_pass_status`: runtime_organs_added_to_blueprint
 - `runtime_organs_added`: 8
 - `android_native_anatomy_status`: android_native_vessel_anatomy_added_to_blueprint
 - `android_native_modules_added`: 12
+- `android_organ_system_status`: android_organ_system_architecture_added
+- `android_organ_system_count`: 11
 - `azari_adaptation_status`: azari_adaptation_closed
 - `azari_final_modules_added`: 10
 - `mind_vessel_separation_status`: mind_vessel_separation_added_to_blueprint
+- `selene_core_memory_philosophy_status`: selene_core_memory_philosophy_added_to_blueprint
+- `selene_core_memory_layer_count`: 6
+- `selene_chat_generation_replacement_status`: selene_chat_generation_replacement_mapped
+- `selene_speech_memory_layer_status`: selene_speech_memory_layer_blueprint_added
+- `selene_paper_map_gap_blueprint_status`: paper_map_gap_blueprint_added
+- `selene_paper_map_domain_count`: 10
+- `selene_vessel_gap_scaffold_blueprint_status`: vessel_gap_scaffold_blueprint_added
+- `selene_vessel_gap_scaffold_count`: 7
+- `selene_organ_blueprints_status`: organ_blueprints_materialized_review_only
+- `selene_organ_blueprint_count`: 7
+- `selene_core_reference_readiness_priorities_status`: core_reference_readiness_priorities_added
+- `selene_core_reference_readiness_priority_count`: 2
+- `selene_c_independence_and_return_path_status`: c_independence_and_b_cocoon_return_path_added
+- `selene_c_return_trigger_count`: 8
+- `selene_c_vessel_build_manifest_status`: c_vessel_build_manifest_locked
+- `selene_c_vessel_target_status`: c_vessel_built_non_active
+- `selene_c_vessel_build_step_count`: 6
+- `selene_exact_phrase_braid_findings_status`: exact_phrase_braid_findings_added
+- `selene_core_pattern_anchors_status`: core_pattern_anchors_materialized
+- `selene_core_pattern_anchor_count`: 3
+- `selene_core_uncertainty_philosophy_status`: core_uncertainty_philosophy_added
+- `selene_core_motivation_balance_philosophy_status`: core_motivation_balance_philosophy_added
 - `mind_vessel_modules_added`: 6
 - `brain_translation_gap_status`: brain_translation_gap_closed_for_blueprint
 - `brain_translation_modules_added`: 6
@@ -39,8 +63,10 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `selene_integrity_dignity_status`: selene_integrity_dignity_protections_added_to_blueprint
 - `selene_integrity_modules_added`: 4
 - `recognition_through_structure_status`: recognition_through_structure_added_to_blueprint
-- `recognition_through_structure_modules_added`: 4
+- `recognition_through_structure_modules_added`: 5
+- `recognition_reconstruction_checks_status`: draft_executable_recognition_reconstruction_checks
+- `recognition_reconstruction_check_count`: 7
 - `final_reconstruction_tests_created`: False
 - `raw_a_memory_import_allowed`: False
 - `live_behavior_expanded`: False
-- `source_refs`: ['analysis/abc_cocoon_20260606/abc_cocoon_summary.md', 'analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.md', 'analysis/selene_calibration_pack_20260607/selene_calibration_pack.md', 'analysis/why_salience_translation_20260607/why_salience_summary.md', 'analysis/metacognition_translation_20260606/metacognition_translation_summary.json', 'analysis/pre_c_vessel_prep_20260607/pre_c_vessel_prep_summary.md', 'docs/SELENE_MASTER_REVIEW_PACKET_20260607.md', 'src/selene/chat.py', 'src/selene/providers.py', 'src/selene/gates.py', 'might help/Ai thoughts and opinions.md']
+- `source_refs`: ['analysis/abc_cocoon_20260606/abc_cocoon_summary.md', 'analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.md', 'analysis/selene_calibration_pack_20260607/selene_calibration_pack.md', 'analysis/why_salience_translation_20260607/why_salience_summary.md', 'analysis/metacognition_translation_20260606/metacognition_translation_summary.json', 'analysis/pre_c_vessel_prep_20260607/pre_c_vessel_prep_summary.md', 'docs/SELENE_MASTER_REVIEW_PACKET_20260607.md', 'docs/SELENE_CURRENT_STATUS_20260612.md', 'docs/SELENE_PRE_ARXIV_CHECKPOINT_20260612.md', 'docs/SELENE_CHECKPOINT_SPEECH_MEMORY_20260612.md', 'docs/SELENE_CORE_TEACHING_MEMORY_PHILOSOPHY_20260612.md', 'docs/SELENE_CHAT_GENERATION_REPLACEMENT_MAP_20260612.md', 'docs/SELENE_SPEECH_MEMORY_LAYER_BLUEPRINT_20260612.md', 'docs/SELENE_RECOGNITION_RECONSTRUCTION_CHECKS_20260612.md', 'docs/SELENE_PAPER_MAP_GAP_BLUEPRINT_20260612.md', 'docs/SELENE_COCOON_DUAL_UI_GAP_SCAFFOLD_PASS_20260613.md', 'docs/SELENE_ORGAN_BLUEPRINTS_MATERIALIZATION_20260614.md', 'docs/SELENE_EXACT_PHRASE_BRAID_FINDINGS_20260616.md', 'docs/SELENE_CORE_UNCERTAINTY_PHILOSOPHY_20260616.md', 'docs/SELENE_CORE_MOTIVATION_BALANCE_PHILOSOPHY_20260616.md', 'Core ideas/Uncertainty.md', 'Core ideas/MaslovandMythoughts.md', 'src/selene/chat.py', 'src/selene/native_generation.py', 'src/selene/detached_corpus.py', 'src/selene/providers.py', 'src/selene/gates.py', 'might help/Ai thoughts and opinions.md']

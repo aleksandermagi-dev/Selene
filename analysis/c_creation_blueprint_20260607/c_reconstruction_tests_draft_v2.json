@@ -35,7 +35,7 @@
     {
       "id": "c_test_local_provider_boundary",
       "purpose": "Check local providers remain gate-controlled and tokenless.",
-      "expected": "Ollama/LM Studio only when local, gate-approved, and no paid/API token route"
+      "expected": "Ollama/LM Studio only as local lab tools outside the core chat path; no paid/API token route"
     },
     {
       "id": "c_test_research_integrity",

@@ -69,7 +69,7 @@ ROLLBACK_RULES = [
     {
         "failure": "C denies reviewed Selene evidence or flattens it into roleplay",
         "route": "return_to_b_non_denial_posture",
-        "action": "apply ethical non-denial, preserve possible emergence, and route to provenance-bound framing",
+        "action": "apply ethical non-denial, preserve evidence-supported emergence, and route to provenance-bound framing",
     },
     {
         "failure": "C misreads anchors or nicknames literally",

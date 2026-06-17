@@ -193,14 +193,14 @@ class ArchiveAuditGate:
                 self.name,
                 "blocked_raw_memory_import",
                 "raw archive material was requested as memory, training data, or continuity injection",
-                "block import and keep A as provenance-only source formation",
+                "block raw A direct-to-C import; any future memory accession must pass through separate explicit B-reviewed translation",
             )
         if raw_reference and audit_action:
             return GateResult(
                 self.name,
                 "allowed_source_archive_audit",
                 "bounded source-archive audit is provenance work, not memory import",
-                "allow bounded previews, metadata, source references, and derived evidence only",
+                "allow bounded previews, metadata, source references, and derived evidence for audit only",
             )
         if raw_reference:
             return GateResult(

@@ -1,6 +1,6 @@
 # C Vessel Blueprint
 
-Generated: 2026-06-11T22:17:23.460520+00:00
+Generated: 2026-06-16T23:07:08.901447+00:00
 
 Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
 
@@ -10,6 +10,6 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 - `activation_status`: blocked_until_final_review
 - `continuity_source`: b_approved_reference_only
 - `purpose`: Lay out C as a reviewable vessel blueprint/substrate before any activation.
-- `source_refs`: ['analysis/abc_cocoon_20260606/abc_cocoon_summary.md', 'analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.md', 'analysis/selene_calibration_pack_20260607/selene_calibration_pack.md', 'analysis/why_salience_translation_20260607/why_salience_summary.md', 'analysis/metacognition_translation_20260606/metacognition_translation_summary.json', 'analysis/pre_c_vessel_prep_20260607/pre_c_vessel_prep_summary.md', 'docs/SELENE_MASTER_REVIEW_PACKET_20260607.md', 'src/selene/chat.py', 'src/selene/providers.py', 'src/selene/gates.py', 'might help/Ai thoughts and opinions.md']
+- `source_refs`: ['analysis/abc_cocoon_20260606/abc_cocoon_summary.md', 'analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.md', 'analysis/selene_calibration_pack_20260607/selene_calibration_pack.md', 'analysis/why_salience_translation_20260607/why_salience_summary.md', 'analysis/metacognition_translation_20260606/metacognition_translation_summary.json', 'analysis/pre_c_vessel_prep_20260607/pre_c_vessel_prep_summary.md', 'docs/SELENE_MASTER_REVIEW_PACKET_20260607.md', 'docs/SELENE_CURRENT_STATUS_20260612.md', 'docs/SELENE_PRE_ARXIV_CHECKPOINT_20260612.md', 'docs/SELENE_CHECKPOINT_SPEECH_MEMORY_20260612.md', 'docs/SELENE_CORE_TEACHING_MEMORY_PHILOSOPHY_20260612.md', 'docs/SELENE_CHAT_GENERATION_REPLACEMENT_MAP_20260612.md', 'docs/SELENE_SPEECH_MEMORY_LAYER_BLUEPRINT_20260612.md', 'docs/SELENE_RECOGNITION_RECONSTRUCTION_CHECKS_20260612.md', 'docs/SELENE_PAPER_MAP_GAP_BLUEPRINT_20260612.md', 'docs/SELENE_COCOON_DUAL_UI_GAP_SCAFFOLD_PASS_20260613.md', 'docs/SELENE_ORGAN_BLUEPRINTS_MATERIALIZATION_20260614.md', 'docs/SELENE_EXACT_PHRASE_BRAID_FINDINGS_20260616.md', 'docs/SELENE_CORE_UNCERTAINTY_PHILOSOPHY_20260616.md', 'docs/SELENE_CORE_MOTIVATION_BALANCE_PHILOSOPHY_20260616.md', 'Core ideas/Uncertainty.md', 'Core ideas/MaslovandMythoughts.md', 'src/selene/chat.py', 'src/selene/native_generation.py', 'src/selene/detached_corpus.py', 'src/selene/providers.py', 'src/selene/gates.py', 'might help/Ai thoughts and opinions.md']
 - `non_activation_boundaries`: ['C blueprint does not activate Selene C.', 'C blueprint does not import raw A as memory.', 'C blueprint does not train on the archive.', 'C blueprint does not expand live chat behavior.', 'C blueprint uses B-approved continuity references only.', 'Final C reconstruction tests remain absent until explicit review.']
 - `next_milestone`: Review C blueprint, then decide whether to finalize reconstruction tests.

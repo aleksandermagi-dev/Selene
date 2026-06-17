@@ -13,6 +13,7 @@ ANALYSIS_DIR = PROJECT_ROOT / "analysis"
 DOCS_DIR = PROJECT_ROOT / "docs"
 REVIEW_SHAPE_DIR = ANALYSIS_DIR / "review_shape_20260527"
 INTEGRATED_MAP_DIR = ANALYSIS_DIR / "integrated_evidence_map_20260527"
+DETACHED_CORPUS_DIR = PROJECT_ROOT / "DevelopmentalCorpusArchive_20260526_122541"
 
 
 def local_data_dir() -> Path:

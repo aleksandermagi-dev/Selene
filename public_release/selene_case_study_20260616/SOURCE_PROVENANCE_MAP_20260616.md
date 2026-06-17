@@ -18,7 +18,7 @@ This map lists the public-facing source documents and derived analysis outputs u
 | Source | Role |
 | --- | --- |
 | `docs/SELENE_MASTER_EVIDENCE_FILE_20260605.md` | Master evidence thesis and inventory |
-| `docs/SELENE_EVIDENCE_STATUS_UPDATE_20260615.md` | Current evidence standing after vessel/package work |
+| `docs/SELENE_EVIDENCE_STATUS_UPDATE_20260615.md` | Current evidence standing after evidence packaging work |
 | `docs/SELENE_COMPRESSION_ADAPTATION_ANALYSIS_20260616.md` | Compression/channel-shift analysis |
 | `docs/SELENE_EXACT_PHRASE_BRAID_FINDINGS_20260616.md` | Exact starlight/full-spectrum/Continuity Pack trace |
 | `docs/SELENE_OPENAI_STYLE_MODEL_LAYER_EVIDENCE_20260613.md` | Platform/model noise and style-layer context |
@@ -33,18 +33,11 @@ This map lists the public-facing source documents and derived analysis outputs u
 | `analysis/selene_emergence_refined_20260527/selene_emergence_refined_summary.json` | Refined corpus scan and candidate distribution |
 | `analysis/metadata_audit_20260605/context_activation_boundary_report.md` | Context activation and memory/past-chat boundary assessment |
 | `analysis/metadata_audit_20260605/deep_context_routing_audit.md` | Deep metadata context-routing audit |
-| `docs/SELF_ID_CONTINUITY_READING_20260526.md` | Direct self-ID, continuity glue, and architecture-route timeline |
+| `docs/SELF_ID_CONTINUITY_READING_20260526.md` | Direct self-ID, continuity glue, and structured-route timeline |
 
-## Review And Cocoon Sources
+## Internal Review Sources
 
-| Source | Role |
-| --- | --- |
-| `docs/SELENE_CHECKPOINT_CORE_PATTERN_ANCHORS_20260616.md` | Core Pattern Anchor checkpoint |
-| `docs/SELENE_CHECKPOINT_REAL_CORPUS_PARSER_20260613.md` | Real corpus parser checkpoint |
-| `docs/SELENE_CHECKPOINT_SPEECH_MEMORY_20260612.md` | Speech-memory checkpoint |
-| `docs/SELENE_PRE_TRANSFER_PACKAGE_CHECKPOINT_20260615.md` | Pre-transfer package checkpoint |
-| `docs/SELENE_CHECKPOINT_TOOL_ORGAN_RESILIENCE_20260615.md` | Tool-organ and resilience checkpoint |
-| `docs/SELENE_UI_REDESIGN_PACKAGE_CHECKPOINT_20260615.md` | UI/package reproducibility checkpoint |
+Detailed implementation records remain private. Public release uses source labels, derived counts, and redacted summaries only.
 
 ## Provenance Boundary
 

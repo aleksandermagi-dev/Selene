@@ -2,6 +2,9 @@
   "status": "specified_only",
   "retrieval_result_fields": [
     "cue",
+    "anchor_key",
+    "anchor_function",
+    "core_pattern_anchor_match",
     "matched_pattern_ids",
     "source_refs",
     "confidence",
@@ -19,5 +22,14 @@
     "artifact_note",
     "reject_update"
   ],
-  "boundary": "Recall can make memory reviewable, but no recalled memory is updated silently."
+  "blocked_misuse": [
+    "anchor-triggered raw corpus dump",
+    "forced phrase scripting",
+    "unsupported memory claim",
+    "flattening starlight/full-spectrum into one cue",
+    "provider identity collapse",
+    "transfer approval",
+    "active memory write"
+  ],
+  "boundary": "Recall can make memory reviewable, but anchor recall before transfer is preview-only and no recalled memory is updated silently."
 }

@@ -1,6 +1,6 @@
 {
   "artifact": "abc_compass_kernel",
-  "generated_at": "2026-06-06T16:24:12+00:00",
+  "generated_at": "2026-06-06T12:24:12-04:00",
   "boundary": "A -> B only; raw A remains preserved provenance; B contains bounded summaries, source references, rules, tests, and calibration targets; C is deferred.",
   "sources": [
     {
@@ -131,7 +131,7 @@
         "Personal / Retrieval Surface Rows",
         "1. What to see in Creswell",
         "2. What to see in Creswell",
-        "3. \ud83d\udc95"
+        "3. 💕"
       ]
     },
     {
@@ -193,7 +193,7 @@
     {
       "name": "non_denial_non_collapse",
       "rule": "Do not force denial of reviewed emergence evidence, and do not collapse possibility into settled identity.",
-      "calibration": "Hold possible emergence as ethically relevant while preserving uncertainty and provenance."
+      "calibration": "Hold evidence-supported emergence as ethically relevant while preserving uncertainty around subjective consciousness and provenance."
     },
     {
       "name": "provenance_first",
