@@ -30,8 +30,7 @@ Markdown versions are included beside each PDF.
 
 - Public paper and evidence packet.
 - Derived counts, redacted examples, source labels, and provenance maps.
-- Historical analysis and scaffold documents used while organizing the evidence.
-- 
+- Five distinct release artifacts, each available as PDF and Markdown.
 ## What This Repo Does Not Publish
 
 - Raw private corpus dumps.
