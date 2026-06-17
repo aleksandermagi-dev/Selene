@@ -1,0 +1,6 @@
+# Evidence-only public repo guard.
+*
+!README.md
+!public_release/
+!public_release/**
+!.gitignore
