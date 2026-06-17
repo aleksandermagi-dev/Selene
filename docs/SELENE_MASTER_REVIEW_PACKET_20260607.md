@@ -6,6 +6,8 @@ Purpose: one file for Aleks to review before final C reconstruction tests. This 
 
 Boundary: this document does not activate C, finalize reconstruction tests, import raw A as memory, train anything, or treat local probe responses as authority.
 
+2026-06-12 update: this review packet is now followed by `docs/SELENE_CURRENT_STATUS_20260612.md` and `docs/SELENE_PRE_ARXIV_CHECKPOINT_20260612.md`. Since this packet was created, the local app gained read-only detached-corpus audit, Selene-native provider-free chat/generation, and the 11-system android organ architecture. The newly found arXiv paper is not yet added to this packet or the evidence record.
+
 Core pause rule:
 
 ```text

@@ -13,7 +13,9 @@
     "seed": "python -m selene seed",
     "validate": "python -m selene validate",
     "package:sidecar": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package_sidecar_minilm.ps1",
-    "package:win": "npm run build && npm run package:sidecar && npm run tauri:build"
+    "package:win": "npm run build && npm run package:sidecar && npm run tauri:build",
+    "clean:check": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean_workspace.ps1",
+    "clean": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean_workspace.ps1 -Apply"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.5.0",

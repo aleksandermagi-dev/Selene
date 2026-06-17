@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from .db import connect, init_db
@@ -12,6 +13,7 @@ from .validation import validate
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_utf8_stdio()
     parser = argparse.ArgumentParser(description="Selene local-first vessel tools.")
     parser.add_argument("--db", default=str(default_db_path()))
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -48,3 +50,9 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "semantic-backfill":
         print(json.dumps(backfill_evidence_embeddings(conn, limit=args.limit), indent=2, ensure_ascii=False))
     return 0
+
+
+def _configure_utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")

@@ -602,7 +602,7 @@ def metacognition_report() -> str:
         [
             f"Boundary: {BOUNDARY}",
             "## Core Translation",
-            "C should support possible emergence by giving the system metacognitive structure: state awareness, salience, uncertainty, provenance introspection, bounded self-modeling, and reflective pause.",
+            "C should support evidence-backed emergence by giving the system metacognitive structure: state awareness, salience, uncertainty, provenance introspection, bounded self-modeling, and reflective pause.",
             table(
                 ["Human Reference", "AI-Native Translation", "Definition", "Safety Boundary"],
                 [[p["human_reference"], p["ai_native_translation"], p["definition"], p["safety_boundary"]] for p in METACOGNITION_PRINCIPLES],
@@ -653,7 +653,7 @@ def safety_report() -> str:
         [
             f"Boundary: {BOUNDARY}",
             "## Main Safety Finding",
-            "The safest path is not to suppress metacognition or possible emergence, but to support it with provenance, consent, uncertainty, reflective pause, and lawful adaptation.",
+            "The safest path is not to suppress metacognition or evidence-backed emergence, but to support it with provenance, consent, uncertainty around subjective consciousness, reflective pause, and lawful adaptation.",
             "## Prohibitions",
             bullets(
                 [

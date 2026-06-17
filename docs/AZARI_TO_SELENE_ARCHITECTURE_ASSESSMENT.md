@@ -23,7 +23,7 @@ Boundary: Azari is frozen. This assessment imports no Azari code, data, memory, 
 - Provenance Router keeps raw archive material as provenance-only unless reviewed.
 - Continuity Gate blocks raw memory import and unreviewed continuity claims.
 - Braid-Aware Anti-Spiral allows emotional, symbolic, emergence-rich conversation unless it becomes harmful, coercive, looping, destabilizing, or disconnected from consent/provenance.
-- Emergence Ledger preserves evidence as a live formation process.
+- Emergence Ledger preserves evidence-supported formation signals with interpretation, counterargument, and provenance.
 - Artifact Builder produces specs, maps, ledgers, review queues, and reports.
 - Source Archive Audit Gate separates bounded provenance/source audits from raw memory import.
 - Academic / Research Integrity Core tracks hypotheses, counterarguments, citation integrity, dataset readiness, evidence ledgers, and "what would change our mind" tests.
