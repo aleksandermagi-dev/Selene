@@ -267,7 +267,8 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .sidebarCollapsed .navGroupLabel,
 .sidebarCollapsed .navText,
 .sidebarCollapsed .workspaceText,
-.sidebarCollapsed .status {
+.sidebarCollapsed .status,
+.sidebarCollapsed .buildStamp {
   display: none;
 }
 
@@ -335,13 +336,15 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .errorText { color: #ffb1a3; font-weight: 700; }
 
 .metrics { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(140px, 1fr)); margin-bottom: 18px; }
-.miniMetrics { margin-bottom: 0; }
+.miniMetrics { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin-bottom: 0; }
 .metric { display: grid; gap: 6px; padding: 16px; }
 .metric span { color: var(--text-muted); }
 .metric strong { font-size: 28px; }
 
 .filters { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 14px; }
 .split { align-items: start; display: grid; gap: 14px; grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr); }
+.aleksReviewGrid { align-items: start; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) minmax(300px, 0.8fr); }
+.officeGrid { align-items: start; display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .phase, .row { align-items: baseline; display: flex; gap: 12px; justify-content: space-between; }
 .phase { border-top: 1px solid var(--soft-border); padding: 10px 0; }
 .list, .ruleGrid { display: grid; gap: 12px; }
@@ -354,6 +357,28 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .surfaceIntro { margin: 0; }
 .surfaceIntro h2 { font-size: 28px; margin: 2px 0 0; }
 .surfaceIntro p { color: var(--text-muted); margin: 0; }
+.buildStamp {
+  border-top: 1px solid var(--soft-border);
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 10px 4px 0;
+  padding-top: 10px;
+  word-break: break-word;
+}
+.officeActionLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.officeActionLegend span {
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 5px 8px;
+}
 
 .chatSurface { display: grid; gap: 14px; grid-template-rows: minmax(420px, 1fr) auto; min-height: calc(100vh - 210px); }
 .messages { overflow: auto; padding: 18px; }
@@ -366,14 +391,43 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .composer { display: grid; gap: 10px; padding: 12px; }
 .composer textarea { min-height: 82px; }
 .composerActions, .reviewActions, .rowActions { display: flex; flex-wrap: wrap; gap: 8px; }
-.reviewActions { justify-self: stretch; max-width: 100%; min-width: 0; width: min(100%, calc(100vw - 316px)); }
+.reviewActions { justify-self: stretch; max-width: 100%; min-width: 0; width: 100%; }
 .reviewActions button { flex: 1 1 180px; min-width: min(100%, 180px); }
 
 .modeLine { color: var(--accent-2); display: block; font-size: 13px; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; }
 
 .reviewDeskCard { border-color: var(--accent); }
+.pendingReviewCallout,
+.decisionHint {
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel-bg));
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+}
+.pendingReviewCallout p,
+.decisionHint p { color: var(--text-muted); margin: 0; }
+.surroundingContext {
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.contextTimeline { display: grid; gap: 8px; margin-top: 8px; }
+.contextTimeline article {
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  padding: 10px;
+}
+.contextTimeline .targetTurn {
+  border-color: var(--accent-2);
+  box-shadow: inset 3px 0 0 var(--accent-2);
+}
 .leadInContext { background: var(--row-bg); border-left: 3px solid var(--accent-2); display: grid; gap: 6px; padding: 8px 10px; }
 .reviewSteps { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.reviewSteps article { background: var(--row-bg); border: 1px solid var(--soft-border); border-radius: 8px; display: grid; gap: 6px; padding: 10px; }
+.reviewSteps article p { color: var(--text-muted); margin: 0; }
 .reviewSteps span { background: var(--row-bg); border: 1px solid var(--soft-border); border-radius: 8px; color: var(--text-muted); padding: 8px 10px; }
 
 .settingsPanel { max-width: 980px; }
@@ -395,7 +449,7 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   .sidebarCollapsed .sidebar { display: none; }
   .topbar { grid-template-columns: minmax(0, 1fr); }
   .topLocks { grid-column: 1 / -1; }
-  .settingRow, .summaryGrid, .split { grid-template-columns: 1fr; }
+  .settingRow, .summaryGrid, .split, .aleksReviewGrid, .officeGrid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 860px) {

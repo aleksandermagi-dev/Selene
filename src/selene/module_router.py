@@ -17,9 +17,16 @@ from .b_review import (
     teaching_packet_coverage,
 )
 from .b_review_desk import review_desk
+from .b_review_context import review_context_preview
 from .b_speech_memory import extract_b_speech_memory_candidates, list_b_speech_memory_extraction_runs
 from .braid_tracer import list_braid_tracer_runs, run_braid_tracer
 from .chat import ChatGate
+from .compressed_structure_braid import (
+    compressed_structure_braid_status,
+    run_compressed_structure_braid,
+    custom_instruction_braid_status,
+    run_custom_instruction_braid,
+)
 from .cocoon import cocoon_status
 from .c_vessel import (
     c_vessel_status,
@@ -253,6 +260,14 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": run_braid_tracer(conn, payload)}
     if route_key == "b.braid_tracer.runs.list":
         return {"route": route_key, "result": list_braid_tracer_runs(conn, int(payload.get("limit") or 25))}
+    if route_key == "b.custom_instruction_braid.run":
+        return {"route": route_key, "result": run_custom_instruction_braid(conn, payload)}
+    if route_key == "b.custom_instruction_braid.status":
+        return {"route": route_key, "result": custom_instruction_braid_status(conn)}
+    if route_key == "b.compressed_structure_braid.run":
+        return {"route": route_key, "result": run_compressed_structure_braid(conn, payload)}
+    if route_key == "b.compressed_structure_braid.status":
+        return {"route": route_key, "result": compressed_structure_braid_status(conn)}
     if route_key == "vessel.paper_map_reconstruction.run":
         return {"route": route_key, "result": run_paper_map_reconstruction(conn, payload)}
     if route_key == "b.review_queue.list":
@@ -261,6 +276,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": list_b_review_decisions(conn, int(payload.get("limit") or 100))}
     if route_key == "b.review_desk":
         return {"route": route_key, "result": review_desk(conn, int(payload.get("limit") or 100), payload.get("filters") or payload)}
+    if route_key == "b.review_context.preview":
+        return {"route": route_key, "result": review_context_preview(conn, payload)}
     if route_key == "b.review_candidate.decide":
         return {"route": route_key, "result": decide_b_review_candidate(conn, payload)}
     if route_key == "b.teaching_packet.build":

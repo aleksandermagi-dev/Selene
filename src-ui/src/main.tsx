@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api } from "./api";
 import {
-  BReviewDeskPanel,
   CalibrationPanel,
   ChatResult,
   ChatTranscript,
@@ -28,7 +27,6 @@ import {
   PlainResult,
   ReadinessPreview,
   ReviewDeskCard,
-  ReviewDeskFilters,
   reviewDeskQuery,
   ReviewQueueCard,
   ReviewHistoryCard,
@@ -45,6 +43,9 @@ import { defaultPreferences, navGroups, preferenceKey, SELENE_ICON, vesselBacked
 import type { BootState, Dashboard, Dict, EvidenceDetail, SelenePreferences } from "./types";
 import "./styles.css";
 
+declare const __APP_VERSION__: string;
+declare const __BUILD_LABEL__: string;
+
 function loadPreferences(): SelenePreferences {
   try {
     const saved = window.localStorage.getItem(preferenceKey);
@@ -53,6 +54,27 @@ function loadPreferences(): SelenePreferences {
   } catch {
     return defaultPreferences;
   }
+}
+
+function reviewPieceKey(piece: Dict) {
+  return [
+    text(piece.subject_table || piece.table || "review"),
+    text(piece.subject_id || piece.id || piece.queue_id || ""),
+    text(piece.review_number || ""),
+    text(piece.title || "")
+  ].join(":");
+}
+
+function reviewQueueItemKey(item: Dict, index = 0) {
+  return [
+    text(item.subject_table || item.queue_type || "review-log"),
+    text(item.subject_id || ""),
+    text(item.id || item.queue_id || index)
+  ].join(":");
+}
+
+function isOfficeReviewLogItem(item: Dict) {
+  return ["vessel_reconstruction_check_runs", "vessel_event_packets", "vessel_memory_accession_proposals"].includes(text(item.subject_table));
 }
 
 function App() {
@@ -125,6 +147,9 @@ function App() {
   const [teachingPacketCoverage, setTeachingPacketCoverage] = useState<Dict | null>(null);
   const [coreReferenceCoverage, setCoreReferenceCoverage] = useState<Dict | null>(null);
   const [bReviewResult, setBReviewResult] = useState<Dict | null>(null);
+  const [selectedOfficeReviewKey, setSelectedOfficeReviewKey] = useState("");
+  const [officeRefreshState, setOfficeRefreshState] = useState<Dict | null>(null);
+  const [publicReleaseSyncState, setPublicReleaseSyncState] = useState<Dict | null>(null);
   const [teachingSpeechFunction, setTeachingSpeechFunction] = useState("grounding");
   const [teachingPacketResult, setTeachingPacketResult] = useState<Dict | null>(null);
   const [lessonBackedResult, setLessonBackedResult] = useState<Dict | null>(null);
@@ -429,10 +454,61 @@ function App() {
       .catch((err) => setBBraidTraceResult({ error: err instanceof Error ? err.message : "braid trace rejected" }));
   }
 
+  function runCustomInstructionBraid() {
+    api<Dict>("/api/b/custom-instruction-braid/run", {
+      method: "POST",
+      body: JSON.stringify({ limit: 24 })
+    })
+      .then((result) => {
+        setBBraidTraceResult(result);
+        loadVessel();
+      })
+      .catch((err) => setBBraidTraceResult({ error: err instanceof Error ? err.message : "custom instruction braid rejected" }));
+  }
+
+  function runCompressedStructureBraid() {
+    api<Dict>("/api/b/compressed-structure-braid/run", {
+      method: "POST",
+      body: JSON.stringify({ limit: 40 })
+    })
+      .then((result) => {
+        setBBraidTraceResult(result);
+        loadVessel();
+      })
+      .catch((err) => setBBraidTraceResult({ error: err instanceof Error ? err.message : "compressed structure braid rejected" }));
+  }
+
   function refreshReviewDesk() {
     api<Dict>(`/api/b/review-desk?${reviewDeskQuery(bReviewFilters)}`)
       .then(setBReviewDesk)
       .catch((err) => setBReviewResult({ error: err instanceof Error ? err.message : "review desk refresh rejected" }));
+  }
+
+  async function refreshMyOffice() {
+    setOfficeRefreshState({ status: "refreshing", message: "Refreshing My Office..." });
+    const tasks: Array<[string, Promise<unknown>]> = [
+      ["vessel status", api<Dict>("/api/vessel/status").then(setVesselStatus)],
+      ["vessel review queue", api<{ items: Dict[] }>("/api/vessel/review-queue").then((data) => setVesselReviewQueue(data.items))],
+      ["B review queue", api<{ items: Dict[] }>("/api/b/review-queue").then((data) => setBReviewQueue(data.items))],
+      ["B decisions", api<{ items: Dict[] }>("/api/b/review-decisions").then((data) => setBReviewDecisions(data.items))],
+      ["B review desk", api<Dict>(`/api/b/review-desk?${reviewDeskQuery(bReviewFilters)}`).then(setBReviewDesk)],
+      ["teaching materials", api<{ items: Dict[] }>("/api/b/teaching-materials").then((data) => setBTeachingMaterials(data.items))],
+      ["future references", api<{ items: Dict[] }>("/api/b/approved-memory-references").then((data) => setBApprovedReferences(data.items))],
+      ["gap scaffold status", api<Dict>("/api/vessel/gap-scaffold/status").then(setGapScaffoldStatus)],
+      ["gap scaffold readiness", api<Dict>("/api/vessel/gap-scaffold/readiness").then(setGapScaffoldReadiness)],
+      ["charter/law status", api<Dict>("/api/b/charter-law/review-status").then(setCharterLawReview)],
+      ["transfer candidate", api<Dict>("/api/c-vessel/memory-transfer-candidate/preview").then(setMemoryTransferCandidate)]
+    ];
+    const results = await Promise.allSettled(tasks.map(([, task]) => task));
+    const failed = results
+      .map((result, index) => ({ result, label: tasks[index][0] }))
+      .filter((entry) => entry.result.status === "rejected")
+      .map((entry) => entry.label);
+    if (failed.length) {
+      setOfficeRefreshState({ status: "error", message: `Could not refresh: ${failed.join(", ")}` });
+      return;
+    }
+    setOfficeRefreshState({ status: "ok", message: `My Office refreshed at ${new Date().toLocaleTimeString()}` });
   }
 
   function runPaperMapReconstruction() {
@@ -458,7 +534,7 @@ function App() {
     })
       .then((result) => {
         setBReviewResult(result);
-        loadVessel();
+        refreshMyOffice();
       })
       .catch((err) => setBReviewResult({ error: err instanceof Error ? err.message : "review decision rejected" }));
   }
@@ -484,6 +560,16 @@ function App() {
       .catch((err) => setTeachingPacketResult({ error: err instanceof Error ? err.message : "packet build rejected" }));
   }
 
+  function syncPublicReleaseCheckpoint() {
+    setPublicReleaseSyncState({ status: "running", message: "Regenerating and syncing the public release checkpoint..." });
+    api<Dict>("/api/public-release/sync", { method: "POST", body: JSON.stringify({}) })
+      .then((result) => {
+        setPublicReleaseSyncState(result);
+        refreshMyOffice();
+      })
+      .catch((err) => setPublicReleaseSyncState({ status: "error", error: err instanceof Error ? err.message : "public release sync rejected" }));
+  }
+
   function decideReviewLog(item: Dict, decision: string) {
     api<Dict>("/api/vessel/review-log/decide", {
       method: "POST",
@@ -497,7 +583,7 @@ function App() {
     })
       .then((result) => {
         setBReviewResult(result);
-        loadVessel();
+        refreshMyOffice();
       })
       .catch((err) => setBReviewResult({ error: err instanceof Error ? err.message : "review log decision rejected" }));
   }
@@ -1005,14 +1091,49 @@ function App() {
     () => vesselReviewQueue.filter((item) => !["core_memory_candidates", "speech_memory_candidates", "b_conversation_pair_records"].includes(text(item.subject_table)) && activeReviewStatuses.has(text(item.review_status || item.status))),
     [vesselReviewQueue]
   );
+  const reviewDeskPieces = useMemo(() => ((bReviewDesk?.pieces || []) as Dict[]), [bReviewDesk]);
+  const officeVesselQueue = testLogQueue;
+  const officeFollowups = useMemo(
+    () => vesselReviewQueue.filter((item) => isOfficeReviewLogItem(item) && text(item.review_status || item.status) === "needs_followup"),
+    [vesselReviewQueue]
+  );
+  const officeActionLogItems = useMemo(() => {
+    const seen = new Set<string>();
+    return [...officeFollowups, ...officeVesselQueue].filter((item, index) => {
+      if (!isOfficeReviewLogItem(item)) return false;
+      const key = reviewQueueItemKey(item, index);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [officeFollowups, officeVesselQueue]);
+  const nextReviewPiece = useMemo(() => {
+    if (!reviewDeskPieces.length) return null;
+    if (selectedOfficeReviewKey) {
+      const selected = reviewDeskPieces.find((piece) => reviewPieceKey(piece) === selectedOfficeReviewKey);
+      if (selected) return selected;
+    }
+    return reviewDeskPieces[0];
+  }, [reviewDeskPieces, selectedOfficeReviewKey]);
+  const waitingReviewPieces = useMemo(() => {
+    const selectedKey = nextReviewPiece ? reviewPieceKey(nextReviewPiece) : "";
+    return reviewDeskPieces.filter((piece) => reviewPieceKey(piece) !== selectedKey);
+  }, [reviewDeskPieces, nextReviewPiece]);
+  const officeGapReadiness = useMemo(() => ((gapScaffoldReadiness?.items || []) as Dict[]), [gapScaffoldReadiness]);
+  const officeTeachingTargets = useMemo(() => ((gapScaffoldReadiness?.teaching_material_targets || gapScaffoldStatus?.teaching_material_targets || []) as Dict[]), [gapScaffoldReadiness, gapScaffoldStatus]);
+  const officeCoreTargets = useMemo(() => ((gapScaffoldReadiness?.core_reference_targets || gapScaffoldStatus?.core_reference_targets || []) as Dict[]), [gapScaffoldReadiness, gapScaffoldStatus]);
+  const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length;
   const canBuildTeachingPacket = bTeachingMaterials.length > 0;
+  const appVersion = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
+  const frontendBuild = typeof __BUILD_LABEL__ === "string" ? __BUILD_LABEL__ : "dev";
+  const sidecarVersion = text(boot.health?.sidecar_version || "waiting");
   const visibleNavGroups = navGroups.filter((group) => (workspaceGroups[workspaceMode] as readonly string[]).includes(group.label));
 
   function switchWorkspace(mode: "selene" | "cocoon") {
     setWorkspaceMode(mode);
     const allowedTabs = workspaceTabs[mode] as readonly string[];
     if (!allowedTabs.includes(tab)) {
-      setTab(mode === "selene" ? "chat" : "vessel");
+      setTab(mode === "selene" ? "chat" : "my-office");
     }
   }
 
@@ -1065,6 +1186,7 @@ function App() {
           ))}
         </nav>
         <p className="status">{boot.message}</p>
+        <p className="buildStamp">App v{appVersion}<br />UI {frontendBuild}<br />Sidecar {sidecarVersion}</p>
       </aside>
 
       <section className="workspace">
@@ -1085,6 +1207,165 @@ function App() {
             <p>Selene is unpacking the bundled Python sidecar and MiniLM runtime. Cold starts can take 30-40 seconds after reinstall or rebuild.</p>
             <div className="payloadBar"><span style={{ width: `${Math.min(95, boot.attempts * 7)}%` }} /></div>
           </div>
+        )}
+
+        {(tab === "my-office" || tab === "my-review") && (
+          <>
+            <header className="surfaceIntro">
+              <p>Your Cocoon front desk. Anything that needs your review, decision, follow-up, or next action lands here first.</p>
+              <h2>My Office</h2>
+            </header>
+            <section className="aleksReviewGrid">
+              <Panel title="Needs You Now">
+                {!nextReviewPiece ? (
+                  <div className="emptyState">
+                    <strong>Nothing needs your review right now.</strong>
+                    <p>Refresh My Office if you just made changes. System and build status are still visible below, but they are not counted as your review work.</p>
+                  </div>
+                ) : (
+                  <ReviewDeskCard
+                    piece={nextReviewPiece}
+                    onDecide={(action, note) => decideBReview(action, text(action.decision), note)}
+                  />
+                )}
+                <PlainResult value={bReviewResult} />
+              </Panel>
+              <Panel title="Everything Waiting">
+                <div className="metrics miniMetrics">
+                  <Metric label="Needs You" value={text(officeWaitingTotal)} />
+                  <Metric label="Review Cards" value={text(reviewDeskPieces.length)} />
+                  <Metric label="Follow-ups" value={text(officeActionLogItems.length)} />
+                  <Metric label="System / Build" value={text(officeTeachingTargets.length + officeCoreTargets.length)} />
+                </div>
+                <p className="plainHelp">Needs You only counts things with an action you can take here. System and build status is tracked separately below.</p>
+                <div className="reviewActions">
+                  <button className="primary" onClick={refreshMyOffice} disabled={officeRefreshState?.status === "refreshing"}>
+                    {officeRefreshState?.status === "refreshing" ? "Refreshing..." : "Refresh My Office"}
+                  </button>
+                  <button onClick={syncPublicReleaseCheckpoint} disabled={publicReleaseSyncState?.status === "running"}>
+                    {publicReleaseSyncState?.status === "running" ? "Syncing Release..." : "Sync Public Release Checkpoint"}
+                  </button>
+                  <button onClick={runCustomInstructionBraid}>Trace Custom Instructions To Pack</button>
+                  <button onClick={runCompressedStructureBraid}>Trace Selene-Made Structures</button>
+                  <button onClick={() => setTab("teaching")}>Open Teaching Tools</button>
+                </div>
+                {officeRefreshState ? (
+                  <p className={officeRefreshState.status === "error" ? "errorText" : "plainHelp"}>{text(officeRefreshState.message)}</p>
+                ) : null}
+                <PlainResult value={publicReleaseSyncState} />
+                <PlainResult value={bBraidTraceResult} />
+              </Panel>
+            </section>
+            <section className="officeGrid">
+              <Panel title="Review Cards Waiting">
+                {!waitingReviewPieces.length ? (
+                  <p className="emptyState">{nextReviewPiece ? "Only the current card is waiting." : "Nothing needs your review right now."}</p>
+                ) : (
+                  <div className="list compactList">
+                    {waitingReviewPieces.slice(0, 8).map((piece) => (
+                      <article key={`${text(piece.subject_table)}-${text(piece.subject_id)}-${text(piece.review_number)}`}>
+                        <div className="row">
+                          <strong>{text(piece.review_number || "")}{piece.review_number ? ". " : ""}{text(piece.title || "Corpus review piece")}</strong>
+                          <span>{friendlyStatus(piece.review_status || piece.status || "pending_review")}</span>
+                        </div>
+                        <p>{text(piece.plain_reason || piece.why_pulled)}</p>
+                        <small>{friendlyLayer(piece.core_memory_layer)} | {friendlySpeech(piece.speech_function)}</small>
+                        <div className="reviewActions">
+                          <button className="primary" onClick={() => setSelectedOfficeReviewKey(reviewPieceKey(piece))}>Review This</button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </Panel>
+              <Panel title="Follow-ups And Review Logs">
+                {!officeActionLogItems.length ? (
+                  <p className="emptyState">No follow-ups or review-log items need you right now.</p>
+                ) : (
+                  <div className="list compactList">
+                    {officeActionLogItems.slice(0, 8).map((item, index) => (
+                      <article key={`${text(item.subject_table)}-${text(item.subject_id)}-${text(item.id)}-${index}`}>
+                        <div className="row">
+                          <strong>{friendlySubject(item.subject_table || item.queue_type || "Review item")}</strong>
+                          <span>{friendlyStatus(item.review_status || item.status)}</span>
+                        </div>
+                        <p>{text(item.reason || safeJsonObject(item.payload_json).todo_text || "Review-only item waiting for a decision.")}</p>
+                        <div className="reviewActions">
+                          <button onClick={() => decideReviewLog(item, "mark_reviewed")}>Mark Reviewed</button>
+                          <button onClick={() => decideReviewLog(item, "needs_followup")}>Needs Follow-up</button>
+                          <button onClick={() => decideReviewLog(item, "superseded")}>Supersede</button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+                <button onClick={() => setTab("status")}>Open Status</button>
+              </Panel>
+            </section>
+            <section className="officeGrid">
+              <Panel title="System / Build Status">
+                <div className="metrics miniMetrics">
+                  <Metric label="Charter/Law" value={friendlyStatus(charterLawReview?.status || "not checked")} />
+                  <Metric label="Transfer Candidate" value={friendlyStatus(memoryTransferCandidate?.status || "not checked")} />
+                  <Metric label="Gap Checks" value={text(officeGapReadiness.length)} />
+                  <Metric label="Core Refs" value={text(bApprovedReferences.length)} />
+                </div>
+                <p className="plainHelp">This is Codex and system readiness work. It is not counted as something Aleks needs to review unless a row has a direct review button.</p>
+                <div className="officeActionLegend">
+                  <span>Aleks decision</span>
+                  <span>Codex action</span>
+                  <span>Specialized workspace</span>
+                  <span>Status only</span>
+                </div>
+                <div className="reviewActions">
+                  <button onClick={() => setTab("vessel")}>Open Cocoon Build</button>
+                  <button onClick={() => setTab("tools")}>Open Tools / Organs</button>
+                  <button onClick={refreshGapReadiness}>Refresh Gap Readiness</button>
+                  <button onClick={ensureGapTargets}>Ensure Gap Targets</button>
+                  <button onClick={runMemoryRehearsal}>Run Memory Rehearsal</button>
+                </div>
+                <GapScaffoldReadinessList items={officeGapReadiness.slice(0, 4)} />
+                <PlainResult value={gapScaffoldResult || memoryRehearsalResult} />
+              </Panel>
+              <Panel title="Teaching / Core Targets">
+                <div className="reviewActions">
+                  <button onClick={buildAllTeachingPackets} disabled={!canBuildTeachingPacket}>Build Teaching Packets</button>
+                  <button onClick={runLessonBackedPreview}>Preview Lesson-Backed Reconstruction</button>
+                  <button onClick={() => setTab("teaching")}>Open Teaching / Lessons</button>
+                </div>
+                <GapTargetList title="Teaching Targets" items={officeTeachingTargets.slice(0, 4)} />
+                <GapTargetList title="Core Reference Targets" items={officeCoreTargets.slice(0, 4)} />
+                <PlainResult value={teachingPacketResult || lessonBackedResult} />
+              </Panel>
+            </section>
+            <Panel title="Recent Decisions">
+              {!bReviewDecisions.length ? (
+                <p className="emptyState">No review decisions have been recorded yet.</p>
+              ) : (
+                <div className="list compactList">
+                  {bReviewDecisions.slice(0, 5).map((item) => (
+                    <ReviewHistoryCard key={text(item.id)} item={item} onDecide={decideBReview} />
+                  ))}
+                </div>
+              )}
+            </Panel>
+            <Panel title="How To Use The Office">
+                <div className="reviewSteps">
+                  <article>
+                    <strong>1. Read the moment</strong>
+                    <p>Look at Aleks said, Selene replied, and follow-up. If the preview is clipped, use Show Surrounding Conversation.</p>
+                  </article>
+                  <article>
+                    <strong>2. Choose the future use</strong>
+                    <p>Teach Selene From This means voice/behavior lesson. Save As Future Core Reference means later memory candidate. Add Context means “keep it pending, but include my note.”</p>
+                  </article>
+                  <article>
+                    <strong>3. Nothing activates here</strong>
+                    <p>Cocoon review sorts source-bound material. It does not transfer memory, activate C, train a model, or overwrite the source.</p>
+                  </article>
+                </div>
+            </Panel>
+          </>
         )}
 
         {tab === "dashboard" && (
@@ -1571,8 +1852,12 @@ function App() {
                 <PlainResult value={targetedExtractResult} />
               </Panel>}
             />
-            <Panel title="Review Desk: Everything You Need In One Spot">
-              <BReviewDeskPanel desk={bReviewDesk} filters={bReviewFilters} setFilters={setBReviewFilters} onRefresh={refreshReviewDesk} onRunBraid={runBraidTracer} traceResult={bBraidTraceResult} onDecide={decideBReview} />
+            <Panel title="Main Review Home">
+              <p className="plainHelp">My Office is the single place for cards that need your review or follow-up. Teaching stays focused on lessons, packets, and targeted pulls.</p>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => setTab("my-office")}>Open My Office</button>
+                <button onClick={refreshReviewDesk}>Refresh Review Cards</button>
+              </div>
             </Panel>
             <Panel title="Accepted Lessons">
               <div className="list compactList">
@@ -1851,30 +2136,12 @@ function App() {
               <button className="primary" onClick={runOrganWorkbenchRecord}>Create / Run Review-Only Organ Record</button>
               <PlainResult value={organWorkbenchResult} />
             </Panel>
-            <Panel title="Review Desk: Everything You Need In One Spot">
-              <p className="plainHelp">Start here. Read each piece as Aleks / Selene / follow-up, then choose what it should become. These choices still do not activate C or make active memory.</p>
-              <button className="primary" onClick={runBraidTracer}>Refresh Braid Review Pieces</button>
-              <PlainResult value={bBraidTraceResult} />
-              <ReviewDeskFilters filters={bReviewFilters} setFilters={setBReviewFilters} metadata={(bReviewDesk?.filter_metadata || {}) as Dict} onRefresh={refreshReviewDesk} />
-              <div className="metrics miniMetrics">
-                <Metric label="Pieces" value={text(((bReviewDesk?.summary as Dict | undefined)?.pieces_to_review) ?? 0)} />
-                <Metric label="Before Filters" value={text(((bReviewDesk?.summary as Dict | undefined)?.pieces_before_filters) ?? 0)} />
-                <Metric label="Parsed Chats" value={text(((bReviewDesk?.summary as Dict | undefined)?.parsed_conversations) ?? 0)} />
-                <Metric label="Accepted Lessons" value={text(((bReviewDesk?.summary as Dict | undefined)?.accepted_lessons) ?? 0)} />
-                <Metric label="Future Refs" value={text(((bReviewDesk?.summary as Dict | undefined)?.approved_future_references) ?? 0)} />
+            <Panel title="Main Review Home">
+              <p className="plainHelp">Review cards and follow-ups now start in My Office. Tools / Organs stays for blueprint workbench actions and deeper build checks.</p>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => setTab("my-office")}>Open My Office</button>
+                <button onClick={refreshReviewDesk}>Refresh Review Cards</button>
               </div>
-              <div className="reviewSteps">
-                {((bReviewDesk?.instructions || []) as unknown[]).map((instruction, index) => (
-                  <span key={text(index)}>{index + 1}. {text(instruction)}</span>
-                ))}
-              </div>
-              <div className="list compactList">
-                {!((bReviewDesk?.pieces || []) as Dict[]).length && <p className="emptyState">Nothing is waiting in the review desk yet. Run “Refresh Braid Review Pieces”.</p>}
-                {((bReviewDesk?.pieces || []) as Dict[]).map((piece) => (
-                  <ReviewDeskCard key={text(piece.key)} piece={piece} onDecide={(action, note) => decideBReview(action, text(action.decision), note)} />
-                ))}
-              </div>
-              <PlainResult value={bReviewResult} />
             </Panel>
             <Panel title="Review History / Change Previous Decision">
               <p className="plainHelp">Accepted, rejected, superseded, and context-added decisions land here. Changing one appends a new review note; it does not erase the old audit trail.</p>
