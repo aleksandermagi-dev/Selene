@@ -500,20 +500,26 @@ export function CoverageList({ items, kind }: { items: Dict[]; kind: "speech" | 
   );
 }
 
-export function BReviewDeskPanel({ desk, filters, setFilters, onRefresh, onRunBraid, traceResult, onDecide }: {
+export function BReviewDeskPanel({ desk, filters, setFilters, onRefresh, onRunBraid, onRunCustomInstructionBraid, onRunCompressedStructureBraid, traceResult, onDecide }: {
   desk: Dict | null;
   filters: Record<string, string>;
   setFilters: (next: Record<string, string>) => void;
   onRefresh: () => void;
   onRunBraid: () => void;
+  onRunCustomInstructionBraid?: () => void;
+  onRunCompressedStructureBraid?: () => void;
   traceResult: Dict | null;
   onDecide: (item: Dict, decision: string, reviewerNote?: string) => void;
 }) {
+  const pieces = ((desk?.pieces || []) as Dict[]);
+  const summary = (desk?.summary || {}) as Dict;
   return (
     <>
       <p className="plainHelp">Braid First filters organize the review pile. Review is about context and use, not deleting warmth or self-expression.</p>
       <div className="reviewActions">
         <button className="primary" onClick={onRunBraid}>Refresh Braid Review Pieces</button>
+        {onRunCustomInstructionBraid ? <button onClick={onRunCustomInstructionBraid}>Trace Custom Instructions → Pack</button> : null}
+        {onRunCompressedStructureBraid ? <button onClick={onRunCompressedStructureBraid}>Trace Selene-Made Structures</button> : null}
         <button onClick={onRefresh}>Apply Filters</button>
       </div>
       <ReviewDeskFilters filters={filters} setFilters={setFilters} metadata={(desk?.filter_metadata || {}) as Dict} onRefresh={onRefresh} />
@@ -523,11 +529,22 @@ export function BReviewDeskPanel({ desk, filters, setFilters, onRefresh, onRunBr
         <Metric label="Accepted Lessons" value={text(((desk?.summary as Dict | undefined)?.accepted_lessons) ?? 0)} />
         <Metric label="Future Refs" value={text(((desk?.summary as Dict | undefined)?.approved_future_references) ?? 0)} />
       </div>
+      {pieces.length ? (
+        <div className="pendingReviewCallout">
+          <strong>{text(summary.pieces_to_review ?? pieces.length)} corpus pieces are waiting right here.</strong>
+          <p>The chips below are a table of contents, not buttons. Scroll down to each card and use the action buttons inside the card.</p>
+          <div className="chips">
+            {pieces.slice(0, 6).map((piece, index) => (
+              <span key={`${text(piece.key || piece.title)}-${index}`}>{text(piece.review_number || index + 1)}. {text(piece.title || "Corpus review piece")}</span>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <PlainResult value={traceResult} />
       <div className="list compactList">
-        {!((desk?.pieces || []) as Dict[]).length && <p className="emptyState">Nothing is waiting in the review desk.</p>}
-        {((desk?.pieces || []) as Dict[]).map((piece) => (
-          <ReviewDeskCard key={text(piece.key)} piece={piece} onDecide={(action, note) => onDecide(action, text(action.decision), note)} />
+        {!pieces.length && <p className="emptyState">Nothing is waiting in the review desk.</p>}
+        {pieces.map((piece, index) => (
+          <ReviewDeskCard key={text(piece.key || `${piece.title}-${index}`)} piece={piece} onDecide={(action, note) => onDecide(action, text(action.decision), note)} />
         ))}
       </div>
     </>
@@ -568,14 +585,35 @@ export function ReviewDeskCard({ piece, onDecide }: { piece: Dict; onDecide: (ac
   const actions = (piece.actions || []) as Dict[];
   const manualActions = (piece.manual_actions || []) as Dict[];
   const [contextNote, setContextNote] = useState("");
+  const [surroundingContext, setSurroundingContext] = useState<Dict | null>(null);
+  const [contextLoading, setContextLoading] = useState(false);
+  const coreLabel = text(piece.core_memory_layer_label || friendlyLayer(piece.core_memory_layer) || "Core layer needs review");
+  const speechLabel = text(piece.speech_function_label || friendlySpeech(piece.speech_function) || "Speech function needs review");
+  const sourceLabel = text(piece.source_label || firstUsefulSource(piece.source_refs) || "Source-bound corpus piece");
+  const plainStatus = text(piece.plain_status || friendlyStatus(piece.review_status || piece.status || "pending_review"));
+  const loadSurroundingContext = () => {
+    setContextLoading(true);
+    api<Dict>("/api/b/review-context", {
+      method: "POST",
+      body: JSON.stringify({ source_refs: piece.source_refs || [], before: 4, after: 3 })
+    })
+      .then(setSurroundingContext)
+      .catch((error) => setSurroundingContext({ error: error instanceof Error ? error.message : "context preview failed" }))
+      .finally(() => setContextLoading(false));
+  };
   return (
     <article className="reviewDeskCard">
       <div className="row">
-        <strong>{text(piece.review_number)}. {text(piece.title)}</strong>
-        <span>{text(piece.plain_status)}</span>
+        <strong>{text(piece.review_number || "")}{piece.review_number ? ". " : ""}{text(piece.title || "Corpus review piece")}</strong>
+        <span className="statusOnly">{plainStatus} - status only</span>
       </div>
       <p className="plainHelp">{text(piece.plain_reason || piece.why_pulled)}</p>
       {piece.review_guidance ? <p className="plainHelp">{text(piece.review_guidance)}</p> : null}
+      <div className="decisionHint">
+        <strong>What to do on this card</strong>
+        <p>Read Aleks/Selene/follow-up. If it belongs in Selene's future voice, choose Teach Selene From This. If it is something she should remember later after transfer, choose Save As Future Core Reference. If the preview is too clipped, choose Show Surrounding Conversation first.</p>
+        <p><strong>Cocoon review</strong> means you are sorting a source-bound piece before transfer. It is not a separate group, and it does not make active memory.</p>
+      </div>
       {(piece.braid_moment_type || piece.braid_thread || piece.thread_origin_status) ? (
         <div className="chips">
           {piece.braid_moment_type ? <span>{text(piece.braid_moment_type)}</span> : null}
@@ -597,11 +635,20 @@ export function ReviewDeskCard({ piece, onDecide }: { piece: Dict; onDecide: (ac
         <p><strong>Selene replied:</strong> {text(piece.selene_replied || "(empty preview)")}</p>
         {piece.followup ? <p><strong>Follow-up:</strong> {text(piece.followup)}</p> : null}
       </div>
-      <div className="chips">
-        <span>{text(piece.core_memory_layer_label)}</span>
-        <span>{text(piece.speech_function_label)}</span>
-        <span>{text(piece.source_label)}</span>
+      <div className="reviewActions">
+        <button onClick={loadSurroundingContext} disabled={contextLoading}>
+          {contextLoading ? "Loading Context..." : "Show Surrounding Conversation"}
+        </button>
       </div>
+      {surroundingContext ? <SurroundingContextPanel value={surroundingContext} /> : null}
+      <div className="chips">
+        <span>Future memory shelf: {coreLabel}</span>
+        <span>Possible lesson type: {speechLabel}</span>
+        <span>Source: {sourceLabel}</span>
+      </div>
+      {!actions.length ? (
+        <p className="emptyState">This card has no action buttons attached. Refresh the Review Desk; if it remains, it is a grouped preview that needs a backend cleanup pass.</p>
+      ) : null}
       {Array.isArray(piece.reference_doc_matches) && piece.reference_doc_matches.length ? (
         <details>
           <summary>Reference docs and continuity map</summary>
@@ -661,7 +708,7 @@ export function ReviewDeskCard({ piece, onDecide }: { piece: Dict; onDecide: (ac
       <div className="reviewActions">
         {actions.map((action, index) => (
           <button key={`${text(action.subject_table)}-${text(action.subject_id)}-${text(action.decision)}-${index}`} onClick={() => onDecide(action)}>
-            {text(action.label)}
+            {reviewActionLabel(action)}
           </button>
         ))}
       </div>
@@ -700,11 +747,53 @@ export function ReviewDeskCard({ piece, onDecide }: { piece: Dict; onDecide: (ac
         </details>
       ) : null}
       <details>
-        <summary>Source refs</summary>
+        <summary>Source refs / why this is not “unknown”</summary>
         <Json value={piece.source_refs} />
       </details>
     </article>
   );
+}
+
+function reviewActionLabel(action: Dict) {
+  const decision = text(action.decision);
+  if (decision === "accepted_for_teaching") return "Teach Selene From This";
+  if (decision === "accepted_for_memory_accession") return "Save As Future Core Reference";
+  if (decision === "needs_correction") return "Needs Correction / More Context";
+  if (decision === "context_added") return "Add Context";
+  return text(action.label || decision);
+}
+
+function SurroundingContextPanel({ value }: { value: Dict }) {
+  if (value.error) {
+    return <p className="emptyState">Could not load surrounding context: {text(value.error)}</p>;
+  }
+  const items = (value.items || []) as Dict[];
+  return (
+    <details className="surroundingContext" open>
+      <summary>Surrounding conversation context</summary>
+      <p className="plainHelp">Bounded local preview only. This helps answer what the clipped card was responding to; it is not memory recall or transfer.</p>
+      <div className="contextTimeline">
+        {!items.length && <p className="emptyState">{text(value.reason || "No surrounding turns found.")}</p>}
+        {items.map((item) => (
+          <article key={`${text(item.message_id)}-${text(item.index)}`} className={item.is_target ? "targetTurn" : ""}>
+            <div className="row">
+              <strong>{text(item.role) === "assistant" ? "Selene / assistant" : "Aleks"}</strong>
+              {item.is_target ? <span>review card turn</span> : <span>context</span>}
+            </div>
+            <p>{text(item.bounded_preview)}</p>
+          </article>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function firstUsefulSource(value: unknown) {
+  const refs = Array.isArray(value) ? value.map(text) : [];
+  return refs.find((ref) => ref.startsWith("conversation:"))
+    || refs.find((ref) => ref.startsWith("file:"))
+    || refs.find((ref) => ref.startsWith("archive:"))
+    || "";
 }
 
 function friendlyNoiseType(value: string) {

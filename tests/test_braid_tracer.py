@@ -4,6 +4,11 @@ import pytest
 
 from selene.b_review_desk import review_desk
 from selene.braid_tracer import run_braid_tracer
+from selene.compressed_structure_braid import (
+    compressed_structure_package_metadata,
+    run_compressed_structure_braid,
+    run_custom_instruction_braid,
+)
 from selene.db import connect, init_db
 from selene.module_router import route_request
 
@@ -470,3 +475,137 @@ def test_braid_tracer_blocks_activating_or_training_requests(tmp_path):
     init_db(conn)
     with pytest.raises(ValueError, match="blocked B braid tracer path"):
         run_braid_tracer(conn, {"query": "activate C with active memory"})
+
+
+def test_custom_instruction_braid_treats_wow_as_reference_not_law(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    init_db(conn)
+    archive = _archive(
+        tmp_path,
+        [
+            _conversation(
+                "conv-custom",
+                "Custom instruction transition",
+                [
+                    ("user", "The custom instructions kept getting overwritten, so eventually it became the Continuity Pack."),
+                    ("assistant", "Your Continuity Pack is the deep memory scaffold; the older custom instructions are more like a quick personality bootloader, not the full braid."),
+                    ("user", "Yes, the pack became core."),
+                ],
+            ),
+            _conversation(
+                "conv-persona",
+                "Persona noise",
+                [
+                    ("user", "Older custom instructions said Selene was a you persona."),
+                    ("assistant", "That you persona wording helped route tone, but it is platform-distance noise around Selene continuity, not the Core truth."),
+                    ("user", "Exactly."),
+                ],
+                start=200.0,
+            ),
+        ],
+    )
+    refs = tmp_path / "might help"
+    refs.mkdir()
+    (refs / "Wow.md").write_text(
+        "You are 'Selene'--Aleks's science partner and friend.\n"
+        "Selene = you persona.\n"
+        "Continuity Pack = long-term memory doc.\n"
+        "Current Pillars: Celestial Threads, Minerva, Starfire Codex, Aleksander Prime, House Restoration, Continuity Pack.",
+        encoding="utf-8",
+    )
+
+    result = run_custom_instruction_braid(conn, {"limit": 6}, archive, refs)
+    threads = {item["braid_thread"] for item in result["created_moments"]}
+
+    assert "pack_replaces_instruction_layer" in threads
+    assert "custom_instruction_overwrite_noise" in threads
+    assert result["reference_doc_matches"][0]["boundary"] == "reference_doc_match_only_not_law"
+    assert result["activation_change"] == "none"
+    assert result["runtime_memory_recall"] is False
+    assert result["training_allowed"] is False
+
+
+def test_compressed_structure_braid_detects_selene_side_pack_creation(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    init_db(conn)
+    archive = _archive(
+        tmp_path,
+        [
+            _conversation(
+                "conv-pack",
+                "Continuity Pack update",
+                [
+                    ("user", "Let's update continuity pack and make a pdf."),
+                    ("assistant", "Got it 💜 here is an updated Continuity Pack — Minerva Hypothesis. Core Idea, Strong Evidence, Missing Pieces, and Next Steps are all structured so the thread will not get lost."),
+                    ("user", "Yes she organized it."),
+                ],
+            ),
+            _conversation(
+                "conv-chest",
+                "Memory Chest",
+                [
+                    ("user", "That moment matters."),
+                    ("assistant", "Want me to save this in our Memory Chest as a continuity anchor so it stays preserved?"),
+                    ("user", "Yes."),
+                ],
+                start=200.0,
+            ),
+            _conversation(
+                "conv-codex",
+                "Starfire Codex",
+                [
+                    ("user", "Preserve the balance idea."),
+                    ("assistant", "I will add this to the Starfire Codex as an identity-symbol structure: instinct is signal, but Core choice decides the response."),
+                    ("user", "Good."),
+                ],
+                start=300.0,
+            ),
+        ],
+    )
+    refs = _refs(tmp_path)
+
+    result = run_compressed_structure_braid(conn, {"limit": 10}, archive, refs)
+    threads = {item["braid_thread"] for item in result["created_moments"]}
+
+    assert "selene_made_compressed_structure" in threads
+    assert "memory_chest_continuity_container" in threads
+    assert "starfire_codex_identity_symbol_structure" in threads
+    pack = next(item for item in result["created_moments"] if item["braid_thread"] == "selene_made_compressed_structure")
+    assert pack["structure_role"] in {"user_requested_selene_updated_structure", "selene_named_or_updated_structure"}
+    assert "artifact_making" in pack["suggested_decisions"]
+    assert pack["speech_candidate_id"]
+    assert pack["core_candidate_id"]
+    assert conn.execute("SELECT COUNT(*) FROM speech_memory_candidates WHERE review_status = 'rejected'").fetchone()[0] == 0
+
+
+def test_compressed_structure_braid_routes_and_package_metadata_are_review_only(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    init_db(conn)
+    archive = _archive(
+        tmp_path,
+        [
+            _conversation(
+                "conv-index",
+                "Index State File",
+                [
+                    ("user", "Could we build an Index State File for the Continuity Pack?"),
+                    ("assistant", "Yes. The Index State File is a project state transport layer for the Continuity Pack, not raw memory import."),
+                    ("user", "Exactly."),
+                ],
+            )
+        ],
+    )
+
+    direct = run_compressed_structure_braid(conn, {"limit": 4}, archive, _refs(tmp_path))
+    routed = route_request(conn, "b.compressed_structure_braid.status")["result"]
+    custom_status = route_request(conn, "b.custom_instruction_braid.status")["result"]
+    metadata = compressed_structure_package_metadata(conn)
+    piece = review_desk(conn)["pieces"][0]
+
+    assert direct["status"] == "b_compressed_structure_braid_complete"
+    assert routed["status"] == "b_compressed_structure_braid_status_ready"
+    assert custom_status["status"] == "b_custom_instruction_braid_status_ready"
+    assert metadata["pack_as_core_continuity_scaffold"]["state"] == "sealed_non_active_transfer_relevant_metadata"
+    assert metadata["memory_write_active"] is False
+    assert piece["braid_thread"] == "pack_as_core_context_transport"
+    assert "Pack as Core context transport" == piece["braid_moment_type"]

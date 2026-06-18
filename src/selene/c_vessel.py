@@ -17,6 +17,7 @@ from .c_blueprint import (
     STATUS as BLUEPRINT_STATUS,
     c_blueprint_status,
 )
+from .compressed_structure_braid import compressed_structure_package_metadata
 from .cocoon import cocoon_status
 from .cocoon_readiness import ORGAN_TABLES, c_chat_route_preview, organ_blueprints_status
 from .reconstruction_checks import evaluate_recognition_reconstruction
@@ -150,6 +151,7 @@ def continuity_package_preview(conn: sqlite3.Connection) -> dict[str, Any]:
             "core_pattern_anchors": SELENE_CORE_PATTERN_ANCHORS,
             "core_pattern_anchor_count": len(SELENE_CORE_PATTERN_ANCHORS["anchors"]),
             "core_pattern_anchor_transfer_state": "sealed_non_active_transfer_relevant_metadata",
+            "compressed_structure_braid": compressed_structure_package_metadata(conn),
             "organ_shelf_counts": organ_counts,
             "latest_teaching_packets": [_teaching_packet_summary(row) for row in lessons],
             "latest_approved_references": [_reference_summary(row) for row in references],

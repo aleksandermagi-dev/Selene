@@ -13,6 +13,8 @@ export function tabDisplayName(value: string) {
   const labels: Record<string, string> = {
     dashboard: "Evidence Dashboard",
     chat: "C Chat Vessel",
+    "my-office": "My Office",
+    "my-review": "My Office",
     vessel: "B Cocoon Build",
     memory: "Memory / Future References",
     teaching: "Teaching / Lessons",
@@ -69,7 +71,7 @@ export function friendlyStatus(value: unknown) {
     blueprint_created_not_activated: "built, not awake",
     vessel_v1_built_not_activated: "vessel built, C asleep",
     pending_review: "needs your review",
-    needs_b_review: "needs B review",
+    needs_b_review: "needs Cocoon review",
     review_only: "review only",
     candidate_review_only: "review piece only",
     accepted_for_teaching: "accepted as lesson",

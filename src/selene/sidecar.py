@@ -4,6 +4,8 @@ import argparse
 import ctypes
 import json
 import os
+import subprocess
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -56,13 +58,74 @@ SIDECAR_CAPABILITIES = [
     "corpus_pair_preservation_review_only",
     "plain_english_review_desk",
     "braid_tracer_thread_origins_review_only",
+    "custom_instruction_braid_review_only",
+    "compressed_structure_braid_review_only",
     "cocoon_dual_ui_gap_scaffolds",
     "c_vessel_build_non_active",
     "b_pattern_backup_restore_point",
     "b_memory_accession_rehearsal",
     "b_charter_law_review_gate",
     "c_memory_transfer_candidate_preview",
+    "public_release_sync_checkpoint",
 ]
+
+
+def public_release_sync_checkpoint(db_path: Path) -> dict[str, object]:
+    root = Path(__file__).resolve().parents[2]
+    script = root / "scripts" / "sync_public_release.py"
+    public_repo = root / "tmp" / "selene_public_evidence_repo"
+    if not script.exists():
+        return {
+            "status": "public_release_sync_unavailable",
+            "error": f"missing script: {script}",
+            "committed": False,
+            "pushed": False,
+        }
+
+    command = [
+        sys.executable,
+        str(script),
+        "--db",
+        str(db_path),
+        "--public-repo",
+        str(public_repo),
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return {
+            "status": "public_release_sync_timeout",
+            "error": f"public release sync exceeded {exc.timeout} seconds",
+            "committed": False,
+            "pushed": False,
+        }
+
+    stdout = completed.stdout.strip()
+    stderr = completed.stderr.strip()
+    parsed: object = None
+    if stdout:
+        try:
+            parsed = json.loads(stdout)
+        except json.JSONDecodeError:
+            parsed = {"raw_stdout": stdout[-4000:]}
+
+    return {
+        "status": "public_release_sync_complete" if completed.returncode == 0 else "public_release_sync_failed",
+        "returncode": completed.returncode,
+        "command": [Path(part).name if part == sys.executable else part for part in command],
+        "public_repo": str(public_repo),
+        "committed": False,
+        "pushed": False,
+        "result": parsed,
+        "stderr": stderr[-4000:] if stderr else "",
+    }
 
 
 def json_bytes(payload: object, status: int = 200) -> tuple[int, bytes]:
@@ -199,6 +262,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/b/braid-tracer/runs":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "b.braid_tracer.runs.list", {"limit": int(qs["limit"]) if qs.get("limit") else 25})["result"]))
+        elif parsed.path == "/api/b/custom-instruction-braid/status":
+            self._send(*json_bytes(route_request(conn, "b.custom_instruction_braid.status")["result"]))
+        elif parsed.path == "/api/b/compressed-structure-braid/status":
+            self._send(*json_bytes(route_request(conn, "b.compressed_structure_braid.status")["result"]))
         elif parsed.path == "/api/b/review-queue":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "b.review_queue.list", {"limit": int(qs["limit"]) if qs.get("limit") else 100})["result"]))
@@ -510,6 +577,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "b.braid_tracer.run", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/b/custom-instruction-braid/run":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "b.custom_instruction_braid.run", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/b/compressed-structure-braid/run":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "b.compressed_structure_braid.run", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/paper-map-reconstruction":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.paper_map_reconstruction.run", body)["result"]))
@@ -528,6 +605,13 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/b/teaching-packet/build-all":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "b.teaching_packet.build_all", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/public-release/sync":
+            self._send(*json_bytes(public_release_sync_checkpoint(self.server.db_path)))
+        elif request_path == "/api/b/review-context":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "b.review_context.preview", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/b/pattern-backup/create":
