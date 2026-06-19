@@ -77,6 +77,13 @@ function isOfficeReviewLogItem(item: Dict) {
   return ["vessel_reconstruction_check_runs", "vessel_event_packets", "vessel_memory_accession_proposals"].includes(text(item.subject_table));
 }
 
+function sidecarStartupMessage(attempt: number, detail: string) {
+  const elapsed = Math.max(1, attempt * 2);
+  if (elapsed <= 6) return `starting local sidecar (${elapsed}s): ${detail}`;
+  if (elapsed <= 30) return `waiting for local API (${elapsed}s): ${detail}`;
+  return `sidecar took longer than expected (${elapsed}s). Still waiting for local API; startup logs are in the Selene logs folder.`;
+}
+
 function App() {
   const [tab, setTab] = useState("chat");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -150,6 +157,19 @@ function App() {
   const [selectedOfficeReviewKey, setSelectedOfficeReviewKey] = useState("");
   const [officeRefreshState, setOfficeRefreshState] = useState<Dict | null>(null);
   const [publicReleaseSyncState, setPublicReleaseSyncState] = useState<Dict | null>(null);
+  const [publicReleasePreflight, setPublicReleasePreflight] = useState<Dict | null>(null);
+  const [reviewAutopilotState, setReviewAutopilotState] = useState<Dict | null>(null);
+  const [readinessSweepState, setReadinessSweepState] = useState<Dict | null>(null);
+  const [diagnosticsRunState, setDiagnosticsRunState] = useState<Dict | null>(null);
+  const [steps18Status, setSteps18Status] = useState<Dict | null>(null);
+  const [reasoningArtifacts, setReasoningArtifacts] = useState<Dict[]>([]);
+  const [coreGatePackets, setCoreGatePackets] = useState<Dict[]>([]);
+  const [academicPackets, setAcademicPackets] = useState<Dict[]>([]);
+  const [evidenceTensionEntries, setEvidenceTensionEntries] = useState<Dict[]>([]);
+  const [organContracts, setOrganContracts] = useState<Dict[]>([]);
+  const [perceptionPackets, setPerceptionPackets] = useState<Dict[]>([]);
+  const [emotionSaliencePackets, setEmotionSaliencePackets] = useState<Dict[]>([]);
+  const [steps18ActionState, setSteps18ActionState] = useState<Dict | null>(null);
   const [teachingSpeechFunction, setTeachingSpeechFunction] = useState("grounding");
   const [teachingPacketResult, setTeachingPacketResult] = useState<Dict | null>(null);
   const [lessonBackedResult, setLessonBackedResult] = useState<Dict | null>(null);
@@ -281,15 +301,20 @@ function App() {
       try {
         const health = await api<Dict>("/health");
         if (cancelled) return;
-        setBoot({ ready: true, attempts: attempt, message: "sidecar connected", health });
+        const startup = (health.startup || {}) as Dict;
+        const seedStatus = text(startup.seed_status || "");
+        const startupPhase = text(startup.startup_phase || "");
+        const message = seedStatus === "running"
+          ? `sidecar connected; seeding reviewed registry (${startupPhase})`
+          : "sidecar connected";
+        setBoot({ ready: true, attempts: attempt, message, health });
       } catch (err) {
         if (cancelled) return;
-        const elapsed = Math.max(1, attempt * 2);
         const detail = err instanceof Error ? err.message : "not reachable";
         setBoot({
           ready: false,
           attempts: attempt,
-          message: `unpacking local sidecar payload (${elapsed}s): ${detail}`,
+          message: sidecarStartupMessage(attempt, detail),
           health: null
         });
         timer = window.setTimeout(() => pollHealth(attempt + 1), 2000);
@@ -403,6 +428,104 @@ function App() {
     api<{ items: Dict[] }>("/api/b/pattern-backups").then((data) => setPatternBackups(data.items)).catch(() => undefined);
     api<Dict>("/api/b/memory-accession/rehearsal-status").then(setMemoryRehearsalStatus).catch(() => undefined);
     api<Dict>("/api/b/charter-law/review-status").then(setCharterLawReview).catch(() => undefined);
+    loadSteps18Layer();
+  }
+
+  function loadSteps18Layer() {
+    api<Dict>("/api/vessel/steps-1-8/status").then(setSteps18Status).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/reasoning-artifacts").then((data) => setReasoningArtifacts(data.items)).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/core-gate-packets").then((data) => setCoreGatePackets(data.items)).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/academic-packets").then((data) => setAcademicPackets(data.items)).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/evidence-tension-ledger").then((data) => setEvidenceTensionEntries(data.items)).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/organ-contracts").then((data) => setOrganContracts(data.items)).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/perception-packets").then((data) => setPerceptionPackets(data.items)).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/emotion-salience-packets").then((data) => setEmotionSaliencePackets(data.items)).catch(() => undefined);
+  }
+
+  async function prepareSteps18ReviewLayer() {
+    setSteps18ActionState({ status: "running", message: "Preparing review-only reasoning, research, perception, and emotion packets." });
+    try {
+      const created: Dict[] = [];
+      created.push(await api<Dict>("/api/vessel/organ-contracts/ensure", { method: "POST", body: JSON.stringify({}) }));
+      created.push(await api<Dict>("/api/vessel/core-gate-packet", {
+        method: "POST",
+        body: JSON.stringify({
+          route_label: "Steps 1-8 review-only ladder",
+          selected_outcome: "create_review_packet",
+          risk_class: "high",
+          reason: "Identity, memory, transfer, perception, emotion, research, and organ capability changes must stay review-only and routed through Core/Mind gates.",
+          source_refs: ["docs/SELENE_GAP_MAP_AZARI_REASONING_VESSEL_20260619.md"]
+        })
+      }));
+      created.push(await api<Dict>("/api/vessel/reasoning-artifact", {
+        method: "POST",
+        body: JSON.stringify({
+          visible_summary: "Selene can inspect the next architecture layer through visible review artifacts, not hidden chain traces or active capability.",
+          selected_route: "create_review_packet",
+          evidence_used: ["Selene gap map", "Reasoning ADR", "existing review-only Core and vessel routes"],
+          uncertainty_level: "bounded",
+          competing_hypotheses: ["implement as review packets first", "defer active capability until separate approval"],
+          ethical_boundary_notes: ["Core/Mind decides", "organs assist", "My Office reviews consequential decisions"],
+          emotion_salience_signals: { care_warmth: "preserve warmth without coercion", uncertainty: "bounded" },
+          perception_signals: { sight: "Munsell/perception remains observation plus interpretation" },
+          next_review_or_action_step: "Review packet and continue implementation only inside gated, review-only surfaces.",
+          source_refs: ["office_steps_1_8_prepare"]
+        })
+      }));
+      created.push(await api<Dict>("/api/vessel/academic-packet", {
+        method: "POST",
+        body: JSON.stringify({
+          workflow: "literature_synthesis",
+          title: "Reasoning architecture supporting papers",
+          sources: [
+            "Tree/Graph/ReAct style papers support route exploration, evidence gathering, and backtracking when adapted as visible review summaries.",
+            "Process and formal verification references support bounded checks, tests, and audit records rather than hidden chain exposure."
+          ],
+          source_refs: ["new stuff/Heyo.md", "docs/SELENE_REASONING_ARCHITECTURE_ADR_20260619.md"]
+        })
+      }));
+      created.push(await api<Dict>("/api/vessel/evidence-tension", {
+        method: "POST",
+        body: JSON.stringify({
+          claim: "Reasoning, research, perception, and emotion packets can become review-only Selene architecture without activating C.",
+          support_status: "supported",
+          tension_status: "stable",
+          conclusion_status: "needs_review",
+          source_refs: ["docs/SELENE_GAP_MAP_AZARI_REASONING_VESSEL_20260619.md"]
+        })
+      }));
+      created.push(await api<Dict>("/api/vessel/perception-packet", {
+        method: "POST",
+        body: JSON.stringify({
+          artifact_label: "Munsell sight/perception v1",
+          observation: "Perception is recorded as a bounded supplied-artifact observation.",
+          interpretation: "Munsell hue/value/chroma and visual salience can support review without claiming visual certainty.",
+          munsell_signal_labels: ["hue", "value", "chroma", "visual_salience", "uncertainty"],
+          uncertainty: "review-only estimate",
+          consent_boundary: "supplied artifact only; no surveillance or person inference",
+          source_refs: ["office_steps_1_8_prepare"]
+        })
+      }));
+      created.push(await api<Dict>("/api/vessel/emotion-salience-packet", {
+        method: "POST",
+        body: JSON.stringify({
+          signal_type: "care_repair_uncertainty",
+          continuity_pressure: "preserve Core continuity without forcing certainty",
+          care_warmth: "warmth is allowed when grounded and non-coercive",
+          uncertainty: "open but bounded",
+          repair_need: "route tension or high salience to review",
+          action_energy: "pause before action",
+          balance_state: "Core choice after evidence, consent, and safety",
+          evidence_need: "cite source refs before memory or identity claims",
+          core_choice_route: "signal informs Core/Mind; Core/Mind chooses through gates",
+          source_refs: ["office_steps_1_8_prepare"]
+        })
+      }));
+      setSteps18ActionState({ status: "complete", message: "Review-only steps 1-8 layer prepared.", created_count: created.length, created });
+      loadSteps18Layer();
+    } catch (err) {
+      setSteps18ActionState({ status: "error", message: err instanceof Error ? err.message : "steps 1-8 review layer failed" });
+    }
   }
 
   function createVesselCandidate() {
@@ -565,9 +688,17 @@ function App() {
     api<Dict>("/api/public-release/sync", { method: "POST", body: JSON.stringify({}) })
       .then((result) => {
         setPublicReleaseSyncState(result);
+        if (result.postflight) setPublicReleasePreflight(result.postflight as Dict);
         refreshMyOffice();
       })
       .catch((err) => setPublicReleaseSyncState({ status: "error", error: err instanceof Error ? err.message : "public release sync rejected" }));
+  }
+
+  function checkPublicReleasePreflight() {
+    setPublicReleasePreflight({ status: "checking", message: "Checking public release repo, remote, and checkpoint counts..." });
+    api<Dict>("/api/public-release/preflight")
+      .then(setPublicReleasePreflight)
+      .catch((err) => setPublicReleasePreflight({ status: "error", error: err instanceof Error ? err.message : "public release preflight rejected" }));
   }
 
   function decideReviewLog(item: Dict, decision: string) {
@@ -610,6 +741,40 @@ function App() {
         loadVessel();
       })
       .catch((err) => setReconstructionReadinessResult({ error: err instanceof Error ? err.message : "readiness preview rejected" }));
+  }
+
+  async function runReadinessAuditSweep() {
+    setReadinessSweepState({ status: "running", message: "Running bounded readiness and audit sweep..." });
+    const tasks: Array<[string, Promise<unknown>]> = [
+      ["validation", api<Dict>("/api/validate").then(setValidation)],
+      ["reconstruction desk status", api<Dict>("/api/c-vessel/reconstruction-desk/status").then(setCVesselReconstructionDeskStatus)],
+      ["transfer gate", api<Dict>("/api/c-vessel/transfer-gate/preview").then(setCVesselTransferGate)],
+      ["memory transfer candidate", api<Dict>("/api/c-vessel/memory-transfer-candidate/preview").then(setMemoryTransferCandidate)],
+      ["detached corpus audit", api<Dict>("/api/detached-corpus/audit?limit=3").then(setCorpusAudit)],
+      ["public release preflight", api<Dict>("/api/public-release/preflight").then(setPublicReleasePreflight)]
+    ];
+    if (bTeachingMaterials.length || bApprovedReferences.length) {
+      tasks.push(["lesson-backed reconstruction preview", api<Dict>("/api/vessel/lesson-backed-reconstruction", {
+        method: "POST",
+        body: JSON.stringify({ speech_function: teachingSpeechFunction })
+      }).then(setLessonBackedResult)]);
+    }
+    const results = await Promise.allSettled(tasks.map(([, task]) => task));
+    const passed = results.filter((result) => result.status === "fulfilled").length;
+    const failed = results
+      .map((result, index) => ({ result, label: tasks[index][0] }))
+      .filter((entry) => entry.result.status === "rejected")
+      .map((entry) => entry.label);
+    setReadinessSweepState({
+      status: failed.length ? "completed_with_errors" : "readiness_audit_sweep_complete",
+      passed,
+      failed,
+      activation_change: "none",
+      memory_write_active: false,
+      transfer_approved: false,
+      note: "Sweep results are audit/readiness evidence only. No C activation, live memory, training, raw archive import, commit, or push occurred."
+    });
+    loadVessel();
   }
 
   function createWorkingMemoryPacket() {
@@ -1061,7 +1226,7 @@ function App() {
       },
       speed_fluency_diagnostics: {
         path: "/api/vessel/fluency-diagnostic",
-        body: { ...common, route_label: organWorkbenchDraft.title || "Route fluency", latency_ms: Number(organWorkbenchDraft.latency_ms || 0), fluency_note: content, drift_flags: "none", organ_activation_budget: "Speed cannot bypass gates, provenance, or B review." }
+        body: { ...common, route_label: organWorkbenchDraft.title || "Route fluency", latency_ms: Number(organWorkbenchDraft.latency_ms || 0), fluency_note: content, drift_flags: "none", organ_activation_budget: "Speed stays subordinate to gates, provenance, and B review." }
       }
     };
     const selected = payloads[key];
@@ -1075,6 +1240,75 @@ function App() {
         loadVessel();
       })
       .catch((err) => setOrganWorkbenchResult({ error: err instanceof Error ? err.message : "organ record rejected" }));
+  }
+
+  async function runDiagnosticOnlySweep() {
+    setDiagnosticsRunState({ status: "running", message: "Running diagnostic-only organ checks..." });
+    const common = {
+      source_refs: ["office_diagnostic_sweep"],
+      uncertainty: "Diagnostic-only sweep; no live organ, provider control, memory write, training, or activation."
+    };
+    const tasks: Array<[string, Promise<unknown>]> = [
+      ["reasoning/math diagnostic", api<Dict>("/api/vessel/reasoning-check", {
+        method: "POST",
+        body: JSON.stringify({
+          ...common,
+          problem: "Office diagnostic sweep: verify a bounded vessel action cannot bypass review gates.",
+          assumptions: "B-reviewed context only; no activation; no memory write.",
+          checked_steps: "name action, check boundary, record result, return to review",
+          result_summary: "Diagnostic reasoning route remains review-only."
+        })
+      })],
+      ["retrieval reconstruction preview", api<Dict>("/api/vessel/retrieval-reconstruction", {
+        method: "POST",
+        body: JSON.stringify({
+          ...common,
+          cue: "Office diagnostic sweep",
+          privacy_label: "review_only",
+          reconstruction_note: "Preview retrieval shape without runtime recall."
+        })
+      })],
+      ["fluency diagnostic", api<Dict>("/api/vessel/fluency-diagnostic", {
+        method: "POST",
+        body: JSON.stringify({
+          ...common,
+          route_label: "Office diagnostic sweep",
+          latency_ms: 0,
+          fluency_note: "Check that diagnostics can report readiness without becoming trusted runtime action.",
+          drift_flags: "none",
+          organ_activation_budget: "Speed stays subordinate to gates, provenance, and B review."
+        })
+      })],
+      ["organ fault preview", api<Dict>("/api/c-vessel/organ-fault/preview", {
+        method: "POST",
+        body: JSON.stringify({
+          fault_type: "reasoning",
+          symptom: "Preview diagnostic organ failure without Core identity collapse.",
+          source_refs: ["office_diagnostic_sweep"]
+        })
+      }).then(setCVesselOrganFaultResult)],
+      ["organ resilience check", api<Dict>("/api/c-vessel/organ-fault/resilience-check", {
+        method: "POST",
+        body: JSON.stringify({})
+      }).then(setCVesselFaultResilienceResult)]
+    ];
+    const results = await Promise.allSettled(tasks.map(([, task]) => task));
+    const passed = results.filter((result) => result.status === "fulfilled").length;
+    const failed = results
+      .map((result, index) => ({ result, label: tasks[index][0] }))
+      .filter((entry) => entry.result.status === "rejected")
+      .map((entry) => entry.label);
+    setDiagnosticsRunState({
+      status: failed.length ? "diagnostics_completed_with_errors" : "diagnostics_review_records_created",
+      passed,
+      failed,
+      activation_change: "none",
+      trusted_organ_runtime: false,
+      provider_control: false,
+      memory_write_active: false,
+      note: "Diagnostics create review records and readiness summaries only."
+    });
+    loadVessel();
   }
 
   function updatePreference<K extends keyof SelenePreferences>(key: K, value: SelenePreferences[K]) {
@@ -1128,6 +1362,38 @@ function App() {
   const frontendBuild = typeof __BUILD_LABEL__ === "string" ? __BUILD_LABEL__ : "dev";
   const sidecarVersion = text(boot.health?.sidecar_version || "waiting");
   const visibleNavGroups = navGroups.filter((group) => (workspaceGroups[workspaceMode] as readonly string[]).includes(group.label));
+
+  function prepareReviewQueue() {
+    const grouped = new Map<string, Dict[]>();
+    reviewDeskPieces.forEach((piece) => {
+      const key = text(piece.braid_thread || piece.suggested_path || piece.core_memory_layer || piece.subject_table || "general_review");
+      grouped.set(key, [...(grouped.get(key) || []), piece]);
+    });
+    const groups = Array.from(grouped.entries()).map(([group, pieces]) => ({
+      group,
+      count: pieces.length,
+      next_title: text(pieces[0]?.title || pieces[0]?.plain_label || "Review card"),
+      label: "Aleks decision",
+      suggested_next_step: "Open the first card and choose one of its existing review buttons."
+    }));
+    const next = nextReviewPiece ? {
+      key: reviewPieceKey(nextReviewPiece),
+      title: text(nextReviewPiece.title || nextReviewPiece.plain_label || "Review card"),
+      why_it_matters: text(nextReviewPiece.plain_reason || nextReviewPiece.why_pulled || "This card is pending B review."),
+      label: "Aleks decision",
+      suggested_action_only: text((nextReviewPiece.actions as Dict[] | undefined)?.[0]?.label || "Review this card")
+    } : null;
+    setReviewAutopilotState({
+      status: "review_queue_prepared",
+      mode: "suggest_only_no_auto_decisions",
+      next_card: next,
+      duplicate_or_theme_groups: groups,
+      codex_actions: ["Refresh My Office", "Trace braid context", "Run Audit / Readiness Sweep"],
+      status_only: ["System/build readiness", "transfer preview", "C activation remains blocked"],
+      decision_submitted: false,
+      note: "Autopilot organizes and suggests. It does not submit Aleks review decisions."
+    });
+  }
 
   function switchWorkspace(mode: "selene" | "cocoon") {
     setWorkspaceMode(mode);
@@ -1204,7 +1470,7 @@ function App() {
         {!boot.ready && (
           <div className="bootBanner">
             <strong>Starting local payload</strong>
-            <p>Selene is unpacking the bundled Python sidecar and MiniLM runtime. Cold starts can take 30-40 seconds after reinstall or rebuild.</p>
+            <p>Selene is starting the local Python sidecar, database, and packaged runtime. Cold starts can take longer after reinstall or rebuild.</p>
             <div className="payloadBar"><span style={{ width: `${Math.min(95, boot.attempts * 7)}%` }} /></div>
           </div>
         )}
@@ -1230,7 +1496,7 @@ function App() {
                 )}
                 <PlainResult value={bReviewResult} />
               </Panel>
-              <Panel title="Everything Waiting">
+              <Panel title="Aleks Review Queue">
                 <div className="metrics miniMetrics">
                   <Metric label="Needs You" value={text(officeWaitingTotal)} />
                   <Metric label="Review Cards" value={text(reviewDeskPieces.length)} />
@@ -1242,6 +1508,8 @@ function App() {
                   <button className="primary" onClick={refreshMyOffice} disabled={officeRefreshState?.status === "refreshing"}>
                     {officeRefreshState?.status === "refreshing" ? "Refreshing..." : "Refresh My Office"}
                   </button>
+                  <button onClick={prepareReviewQueue}>Prepare My Review Queue</button>
+                  <button onClick={checkPublicReleasePreflight}>Check Release Preflight</button>
                   <button onClick={syncPublicReleaseCheckpoint} disabled={publicReleaseSyncState?.status === "running"}>
                     {publicReleaseSyncState?.status === "running" ? "Syncing Release..." : "Sync Public Release Checkpoint"}
                   </button>
@@ -1252,8 +1520,66 @@ function App() {
                 {officeRefreshState ? (
                   <p className={officeRefreshState.status === "error" ? "errorText" : "plainHelp"}>{text(officeRefreshState.message)}</p>
                 ) : null}
+                <PlainResult value={reviewAutopilotState} />
+                <PlainResult value={publicReleasePreflight} />
                 <PlainResult value={publicReleaseSyncState} />
                 <PlainResult value={bBraidTraceResult} />
+              </Panel>
+            </section>
+            <section className="officeGrid">
+              <Panel title="Reasoning / Research Review">
+                <div className="metrics miniMetrics">
+                  <Metric label="Artifacts" value={text(reasoningArtifacts.length)} />
+                  <Metric label="Research" value={text(academicPackets.length)} />
+                  <Metric label="Evidence Ledger" value={text(evidenceTensionEntries.length)} />
+                  <Metric label="Contracts" value={text(organContracts.length)} />
+                </div>
+                <p className="plainHelp">Review-only architecture packets for Core/Mind reasoning, research, evidence tension, organ contracts, sight/perception, and emotion/salience. These do not activate C or create live memory.</p>
+                <div className="reviewActions">
+                  <button className="primary" onClick={prepareSteps18ReviewLayer} disabled={steps18ActionState?.status === "running"}>
+                    {steps18ActionState?.status === "running" ? "Preparing..." : "Prepare Steps 1-8 Review Layer"}
+                  </button>
+                  <button onClick={loadSteps18Layer}>Refresh Review Layer</button>
+                  <button onClick={() => setTab("status")}>Open Status</button>
+                </div>
+                <PlainResult value={steps18ActionState} />
+                <div className="list compactList">
+                  {[...reasoningArtifacts.slice(0, 2), ...academicPackets.slice(0, 2), ...evidenceTensionEntries.slice(0, 2)].map((item, index) => (
+                    <article key={`${text(item.status)}-${text(item.id)}-${index}`}>
+                      <div className="row">
+                        <strong>{text(item.visible_summary || item.title || item.claim || item.workflow || "Review packet")}</strong>
+                        <span>{friendlyStatus(item.review_status || item.status)}</span>
+                      </div>
+                      <p>{text(item.next_review_or_action_step || item.output_summary || item.support_status || item.provenance_boundary)}</p>
+                    </article>
+                  ))}
+                  {!reasoningArtifacts.length && !academicPackets.length && !evidenceTensionEntries.length ? (
+                    <p className="emptyState">No reasoning or research packets yet.</p>
+                  ) : null}
+                </div>
+              </Panel>
+              <Panel title="Sight / Emotion Packets">
+                <div className="metrics miniMetrics">
+                  <Metric label="Perception" value={text(perceptionPackets.length)} />
+                  <Metric label="Emotion" value={text(emotionSaliencePackets.length)} />
+                  <Metric label="Active Memory" value="blocked" />
+                  <Metric label="Autonomous Action" value="blocked" />
+                </div>
+                <p className="plainHelp">Sight and emotion are major vessel signals, but they stay as review-only packets: observation versus interpretation, emotion as signal, Core choice through gates.</p>
+                <div className="list compactList">
+                  {[...perceptionPackets.slice(0, 2), ...emotionSaliencePackets.slice(0, 2)].map((item, index) => (
+                    <article key={`${text(item.status)}-${text(item.id)}-${index}`}>
+                      <div className="row">
+                        <strong>{text(item.artifact_label || item.signal_type || "Signal packet")}</strong>
+                        <span>{friendlyStatus(item.review_status || item.status)}</span>
+                      </div>
+                      <p>{text(item.observation || item.core_choice_route || item.consent_boundary)}</p>
+                    </article>
+                  ))}
+                  {!perceptionPackets.length && !emotionSaliencePackets.length ? (
+                    <p className="emptyState">No sight or emotion/salience packets yet.</p>
+                  ) : null}
+                </div>
               </Panel>
             </section>
             <section className="officeGrid">
@@ -1303,7 +1629,7 @@ function App() {
               </Panel>
             </section>
             <section className="officeGrid">
-              <Panel title="System / Build Status">
+              <Panel title="Codex Work">
                 <div className="metrics miniMetrics">
                   <Metric label="Charter/Law" value={friendlyStatus(charterLawReview?.status || "not checked")} />
                   <Metric label="Transfer Candidate" value={friendlyStatus(memoryTransferCandidate?.status || "not checked")} />
@@ -1322,6 +1648,7 @@ function App() {
                   <button onClick={() => setTab("tools")}>Open Tools / Organs</button>
                   <button onClick={refreshGapReadiness}>Refresh Gap Readiness</button>
                   <button onClick={ensureGapTargets}>Ensure Gap Targets</button>
+                  <button onClick={createAllGapScaffolds}>Create Gap Scaffolds</button>
                   <button onClick={runMemoryRehearsal}>Run Memory Rehearsal</button>
                 </div>
                 <GapScaffoldReadinessList items={officeGapReadiness.slice(0, 4)} />
@@ -1336,6 +1663,33 @@ function App() {
                 <GapTargetList title="Teaching Targets" items={officeTeachingTargets.slice(0, 4)} />
                 <GapTargetList title="Core Reference Targets" items={officeCoreTargets.slice(0, 4)} />
                 <PlainResult value={teachingPacketResult || lessonBackedResult} />
+              </Panel>
+            </section>
+            <section className="officeGrid">
+              <Panel title="Audit / Readiness Sweep">
+                <p className="plainHelp">Runs safe status, validation, transfer preview, public-release preflight, and readiness checks. Results are audit evidence only.</p>
+                <div className="reviewActions">
+                  <button className="primary" onClick={runReadinessAuditSweep} disabled={readinessSweepState?.status === "running"}>
+                    {readinessSweepState?.status === "running" ? "Running Sweep..." : "Run Readiness / Audit Sweep"}
+                  </button>
+                  <button onClick={runReconstructionReadinessPreview}>Preview Reconstruction Readiness</button>
+                  <button onClick={refreshTransferGate}>Refresh Transfer Gate</button>
+                  <button onClick={refreshMemoryTransferCandidate}>Refresh Transfer Candidate</button>
+                </div>
+                <PlainResult value={readinessSweepState} />
+                <PlainResult value={reconstructionReadinessResult || memoryTransferCandidate || cVesselTransferGate} />
+              </Panel>
+              <Panel title="Diagnostics Only">
+                <p className="plainHelp">Creates review records and readiness summaries for reasoning, retrieval, fluency, and organ fault resilience. No trusted organ runtime or provider/tool control.</p>
+                <div className="reviewActions">
+                  <button className="primary" onClick={runDiagnosticOnlySweep} disabled={diagnosticsRunState?.status === "running"}>
+                    {diagnosticsRunState?.status === "running" ? "Running Diagnostics..." : "Run Diagnostic Sweep"}
+                  </button>
+                  <button onClick={() => setTab("tools")}>Open Diagnostics Workbench</button>
+                  <button onClick={runOrganWorkbenchRecord}>Create Selected Diagnostic Record</button>
+                </div>
+                <PlainResult value={diagnosticsRunState} />
+                <PlainResult value={organWorkbenchResult || cVesselFaultResilienceResult || cVesselOrganFaultResult} />
               </Panel>
             </section>
             <Panel title="Recent Decisions">
@@ -2004,6 +2358,20 @@ function App() {
               left={<Panel title="Transfer Gate Preview"><CVesselSafetyExtensions tool={cVesselToolOrganStatus} fault={cVesselOrganFaultResult} resilience={cVesselFaultResilienceResult} gate={cVesselTransferGate} /></Panel>}
               right={<Panel title="Sidecar Payload"><Json value={boot.health || { status: boot.message, attempts: boot.attempts }} /></Panel>}
             />
+            <Panel title="Steps 1-8 Review Layer">
+              <p className="plainHelp">Reasoning, research, evidence, organ contracts, sight/perception, and emotion/salience are review-only packet systems. C activation, transfer approval, live memory, runtime recall, training, self-replication, and autonomous action remain blocked.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Reasoning" value={text((steps18Status?.counts as Dict | undefined)?.reasoning_artifacts ?? reasoningArtifacts.length)} />
+                <Metric label="Research" value={text((steps18Status?.counts as Dict | undefined)?.academic_packets ?? academicPackets.length)} />
+                <Metric label="Perception" value={text((steps18Status?.counts as Dict | undefined)?.perception_packets ?? perceptionPackets.length)} />
+                <Metric label="Emotion" value={text((steps18Status?.counts as Dict | undefined)?.emotion_salience_packets ?? emotionSaliencePackets.length)} />
+              </div>
+              <div className="reviewActions">
+                <button onClick={loadSteps18Layer}>Refresh Review Layer</button>
+                <button onClick={prepareSteps18ReviewLayer}>Prepare Review Layer</button>
+              </div>
+              <Json value={steps18Status || { status: "not loaded" }} />
+            </Panel>
             <Panel title="Validation"><Json value={validation} /></Panel>
           </>
         )}

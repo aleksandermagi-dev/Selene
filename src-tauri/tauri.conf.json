@@ -26,7 +26,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "resources": [],
-    "externalBin": ["../dist-sidecar/selene-sidecar"]
+    "resources": ["../dist-sidecar/selene-sidecar"],
+    "externalBin": []
   }
 }
