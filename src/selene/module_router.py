@@ -97,6 +97,24 @@ from .remaining_runtime import (
     remaining_runtime_status,
     voice_policy_evaluate,
 )
+from .reasoning_artifacts import (
+    create_academic_packet,
+    create_core_gate_packet,
+    create_emotion_salience_packet,
+    create_evidence_tension_entry,
+    create_perception_packet,
+    create_reasoning_artifact,
+    ensure_organ_contracts,
+    list_academic_packets,
+    list_core_gate_packets,
+    list_emotion_salience_packets,
+    list_evidence_tension_entries,
+    list_organ_contracts,
+    list_perception_packets,
+    list_reasoning_artifacts,
+    steps_1_8_status,
+    upsert_organ_contract,
+)
 from .vessel import (
     create_core_memory_candidate,
     create_speech_memory_candidate,
@@ -164,6 +182,38 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": native_generation_rehearsal_run(conn, payload)}
     if route_key == "native_generation.rehearsal.status":
         return {"route": route_key, "result": native_generation_rehearsal_status(conn)}
+    if route_key == "vessel.steps_1_8.status":
+        return {"route": route_key, "result": steps_1_8_status(conn)}
+    if route_key == "vessel.reasoning_artifact.create":
+        return {"route": route_key, "result": create_reasoning_artifact(conn, payload)}
+    if route_key == "vessel.reasoning_artifact.list":
+        return {"route": route_key, "result": list_reasoning_artifacts(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.core_gate_packet.create":
+        return {"route": route_key, "result": create_core_gate_packet(conn, payload)}
+    if route_key == "vessel.core_gate_packet.list":
+        return {"route": route_key, "result": list_core_gate_packets(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.academic_packet.create":
+        return {"route": route_key, "result": create_academic_packet(conn, payload)}
+    if route_key == "vessel.academic_packet.list":
+        return {"route": route_key, "result": list_academic_packets(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.evidence_tension.create":
+        return {"route": route_key, "result": create_evidence_tension_entry(conn, payload)}
+    if route_key == "vessel.evidence_tension.list":
+        return {"route": route_key, "result": list_evidence_tension_entries(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.organ_contract.ensure":
+        return {"route": route_key, "result": ensure_organ_contracts(conn)}
+    if route_key == "vessel.organ_contract.upsert":
+        return {"route": route_key, "result": upsert_organ_contract(conn, payload)}
+    if route_key == "vessel.organ_contract.list":
+        return {"route": route_key, "result": list_organ_contracts(conn)}
+    if route_key == "vessel.perception_packet.create":
+        return {"route": route_key, "result": create_perception_packet(conn, payload)}
+    if route_key == "vessel.perception_packet.list":
+        return {"route": route_key, "result": list_perception_packets(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.emotion_salience_packet.create":
+        return {"route": route_key, "result": create_emotion_salience_packet(conn, payload)}
+    if route_key == "vessel.emotion_salience_packet.list":
+        return {"route": route_key, "result": list_emotion_salience_packets(conn, int(payload.get("limit") or 50))}
     if route_key == "c_remaining.runtime.status":
         return {"route": route_key, "result": remaining_runtime_status(conn)}
     if route_key == "c_core.graceful_fall.run":

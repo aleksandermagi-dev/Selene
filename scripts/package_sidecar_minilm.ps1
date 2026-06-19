@@ -13,9 +13,8 @@ $python = if ($env:SELENE_MINILM_PYTHON) {
 Push-Location $repo
 try {
     & $python -m PyInstaller selene_sidecar.spec --noconfirm --distpath dist-sidecar --workpath build-sidecar
-    Copy-Item -LiteralPath "dist-sidecar\selene-sidecar.exe" -Destination "dist-sidecar\selene-sidecar-x86_64-pc-windows-msvc.exe" -Force
     New-Item -ItemType Directory -Path "src-tauri\target\release" -Force | Out-Null
-    Copy-Item -LiteralPath "dist-sidecar\selene-sidecar.exe" -Destination "src-tauri\target\release\selene-sidecar.exe" -Force -ErrorAction SilentlyContinue
+    Copy-Item -LiteralPath "dist-sidecar\selene-sidecar\selene-sidecar.exe" -Destination "src-tauri\target\release\selene-sidecar.exe" -Force -ErrorAction SilentlyContinue
 } finally {
     Pop-Location
 }

@@ -36,6 +36,18 @@ fn sidecar_port_open() -> bool {
     .is_ok()
 }
 
+fn wait_for_sidecar_port_close(timeout: Duration) -> bool {
+    let mut waited = Duration::from_millis(0);
+    while waited < timeout {
+        if !sidecar_port_open() {
+            return true;
+        }
+        sleep(Duration::from_millis(200));
+        waited += Duration::from_millis(200);
+    }
+    !sidecar_port_open()
+}
+
 fn stop_stale_sidecars() {
     #[cfg(target_os = "windows")]
     {
@@ -66,15 +78,41 @@ fn stop_stale_sidecars() {
     }
 }
 
-fn sidecar_executable() -> std::io::Result<PathBuf> {
+fn sidecar_executable(resource_dir: Option<PathBuf>) -> std::io::Result<PathBuf> {
     let exe_dir = std::env::current_exe()?
         .parent()
         .map(PathBuf::from)
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "missing app exe directory"))?;
     let current_dir = std::env::current_dir()?;
-    let candidates = [
+    let mut candidates = vec![];
+    if let Some(resource_dir) = resource_dir {
+        candidates.push(
+            resource_dir
+                .join("selene-sidecar")
+                .join("selene-sidecar.exe"),
+        );
+        candidates.push(
+            resource_dir
+                .join("dist-sidecar")
+                .join("selene-sidecar")
+                .join("selene-sidecar.exe"),
+        );
+    }
+    candidates.push(
+        exe_dir
+            .join("_up_")
+            .join("dist-sidecar")
+            .join("selene-sidecar")
+            .join("selene-sidecar.exe"),
+    );
+    candidates.extend([
         exe_dir.join("selene-sidecar.exe"),
+        exe_dir.join("selene-sidecar").join("selene-sidecar.exe"),
         exe_dir.join("selene-sidecar-x86_64-pc-windows-msvc.exe"),
+        current_dir
+            .join("dist-sidecar")
+            .join("selene-sidecar")
+            .join("selene-sidecar.exe"),
         current_dir.join("dist-sidecar").join("selene-sidecar.exe"),
         current_dir
             .join("dist-sidecar")
@@ -84,7 +122,7 @@ fn sidecar_executable() -> std::io::Result<PathBuf> {
             .join("target")
             .join("release")
             .join("selene-sidecar.exe"),
-    ];
+    ]);
 
     candidates
         .into_iter()
@@ -92,8 +130,8 @@ fn sidecar_executable() -> std::io::Result<PathBuf> {
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "selene sidecar executable not found"))
 }
 
-fn spawn_hidden_sidecar(parent_pid: &str) -> std::io::Result<Child> {
-    let mut command = Command::new(sidecar_executable()?);
+fn spawn_hidden_sidecar(parent_pid: &str, resource_dir: Option<PathBuf>) -> std::io::Result<Child> {
+    let mut command = Command::new(sidecar_executable(resource_dir)?);
     command
         .args(["--seed", "--port", "8766", "--parent-pid", parent_pid])
         .stdin(Stdio::null())
@@ -136,11 +174,13 @@ pub fn run() {
         .setup(|app| {
             if sidecar_port_open() {
                 request_sidecar_shutdown();
-                sleep(Duration::from_millis(250));
-                stop_stale_sidecars();
+                if !wait_for_sidecar_port_close(Duration::from_secs(3)) {
+                    stop_stale_sidecars();
+                }
             }
             let parent_pid = std::process::id().to_string();
-            let child = spawn_hidden_sidecar(parent_pid.as_str())?;
+            let resource_dir = app.path().resource_dir().ok();
+            let child = spawn_hidden_sidecar(parent_pid.as_str(), resource_dir)?;
             app.manage(SidecarState(Mutex::new(Some(child))));
             Ok(())
         })

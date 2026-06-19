@@ -7,6 +7,8 @@ import os
 import subprocess
 import sys
 import threading
+import time
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -34,6 +36,14 @@ ALLOWED_ORIGINS = {
 }
 
 SIDECAR_VERSION = "0.1.1"
+STARTUP_STARTED_AT = time.perf_counter()
+STARTUP_LOCK = threading.Lock()
+STARTUP_STATE: dict[str, object] = {
+    "startup_phase": "module_loaded",
+    "ready": False,
+    "seed_status": "not_started",
+    "timings_ms": {},
+}
 SIDECAR_CAPABILITIES = [
     "reviewed_registry",
     "chat_gate",
@@ -67,17 +77,116 @@ SIDECAR_CAPABILITIES = [
     "b_charter_law_review_gate",
     "c_memory_transfer_candidate_preview",
     "public_release_sync_checkpoint",
+    "public_release_preflight_status",
+    "vessel_capability_graduation_console",
+    "steps_1_8_reasoning_research_perception_emotion_review_layer",
 ]
+
+
+def mark_startup_phase(phase: str, **extra: object) -> None:
+    elapsed_ms = round((time.perf_counter() - STARTUP_STARTED_AT) * 1000, 1)
+    with STARTUP_LOCK:
+        timings = dict(STARTUP_STATE.get("timings_ms") or {})
+        timings[phase] = elapsed_ms
+        STARTUP_STATE.update({
+            "startup_phase": phase,
+            "last_phase_at": datetime.now(timezone.utc).isoformat(),
+            "timings_ms": timings,
+            **extra,
+        })
+    write_startup_log(phase, elapsed_ms, extra)
+
+
+def startup_snapshot() -> dict[str, object]:
+    with STARTUP_LOCK:
+        return dict(STARTUP_STATE)
+
+
+def write_startup_log(phase: str, elapsed_ms: float, extra: dict[str, object] | None = None) -> None:
+    try:
+        log_dir = local_log_dir()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "phase": phase,
+            "elapsed_ms": elapsed_ms,
+            **(extra or {}),
+        }
+        with (log_dir / "sidecar-startup.log").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+    except OSError:
+        return
+
+
+mark_startup_phase("module_imported")
+
+
+def _run_local_command(command: list[str], cwd: Path, timeout: int = 30) -> dict[str, object]:
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"ok": False, "error": str(exc), "stdout": "", "stderr": "", "returncode": -1}
+    return {
+        "ok": completed.returncode == 0,
+        "returncode": completed.returncode,
+        "stdout": completed.stdout.strip(),
+        "stderr": completed.stderr.strip(),
+    }
+
+
+def public_release_preflight_status() -> dict[str, object]:
+    root = Path(__file__).resolve().parents[2]
+    public_repo = root / "tmp" / "selene_public_evidence_repo"
+    release_name = "selene_case_study_20260616"
+    checkpoint_json = public_repo / "public_release" / release_name / "PUBLIC_RELEASE_CHECKPOINT_20260616.json"
+    status = _run_local_command(["git", "status", "--short"], public_repo) if (public_repo / ".git").exists() else {"stdout": ""}
+    remote = _run_local_command(["git", "remote", "get-url", "origin"], public_repo) if (public_repo / ".git").exists() else {"stdout": ""}
+    remote_url = str(remote.get("stdout") or "")
+    remote_warning = ""
+    if not (public_repo / ".git").exists():
+        remote_warning = "Public evidence checkout is missing."
+    elif remote_url.endswith("/Selene.git") or remote_url.endswith("\\Selene.git"):
+        remote_warning = "Public evidence checkout origin points at the private Selene repo; do not push until corrected."
+
+    counts: object = {}
+    if checkpoint_json.exists():
+        try:
+            counts = json.loads(checkpoint_json.read_text(encoding="utf-8")).get("counts", {})
+        except (OSError, json.JSONDecodeError):
+            counts = {"error": "checkpoint counts could not be read"}
+
+    changed_files = [line[3:] for line in str(status.get("stdout") or "").splitlines() if len(line) > 3]
+    return {
+        "status": "public_release_preflight_ready",
+        "public_repo": str(public_repo),
+        "remote": remote_url or "not configured",
+        "remote_warning": remote_warning,
+        "changed_file_count": len(changed_files),
+        "changed_files": changed_files[:30],
+        "checkpoint_json": str(checkpoint_json),
+        "checkpoint_counts": counts,
+        "committed": False,
+        "pushed": False,
+    }
 
 
 def public_release_sync_checkpoint(db_path: Path) -> dict[str, object]:
     root = Path(__file__).resolve().parents[2]
     script = root / "scripts" / "sync_public_release.py"
     public_repo = root / "tmp" / "selene_public_evidence_repo"
+    before = public_release_preflight_status()
     if not script.exists():
         return {
             "status": "public_release_sync_unavailable",
             "error": f"missing script: {script}",
+            "preflight": before,
             "committed": False,
             "pushed": False,
         }
@@ -103,6 +212,7 @@ def public_release_sync_checkpoint(db_path: Path) -> dict[str, object]:
         return {
             "status": "public_release_sync_timeout",
             "error": f"public release sync exceeded {exc.timeout} seconds",
+            "preflight": before,
             "committed": False,
             "pushed": False,
         }
@@ -121,6 +231,8 @@ def public_release_sync_checkpoint(db_path: Path) -> dict[str, object]:
         "returncode": completed.returncode,
         "command": [Path(part).name if part == sys.executable else part for part in command],
         "public_repo": str(public_repo),
+        "preflight": before,
+        "postflight": public_release_preflight_status(),
         "committed": False,
         "pushed": False,
         "result": parsed,
@@ -171,12 +283,15 @@ class SeleneHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         conn = self.server.conn
         if parsed.path == "/health":
+            if not startup_snapshot().get("first_health_ms"):
+                mark_startup_phase("first_health", first_health_ms=round((time.perf_counter() - STARTUP_STARTED_AT) * 1000, 1))
             self._send(*json_bytes({
                 "status": "ok",
                 "bind": "127.0.0.1",
                 "tokenless": True,
                 "sidecar_version": SIDECAR_VERSION,
                 "capabilities": SIDECAR_CAPABILITIES,
+                "startup": startup_snapshot(),
             }))
         elif parsed.path == "/api/dashboard":
             self._send(*json_bytes(dashboard(conn)))
@@ -233,6 +348,28 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "c_vessel.memory_transfer_candidate.preview")["result"]))
         elif parsed.path == "/api/c-core/native-generation/rehearsal-status":
             self._send(*json_bytes(route_request(conn, "native_generation.rehearsal.status")["result"]))
+        elif parsed.path == "/api/vessel/steps-1-8/status":
+            self._send(*json_bytes(route_request(conn, "vessel.steps_1_8.status")["result"]))
+        elif parsed.path == "/api/vessel/reasoning-artifacts":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "vessel.reasoning_artifact.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+        elif parsed.path == "/api/vessel/core-gate-packets":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "vessel.core_gate_packet.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+        elif parsed.path == "/api/vessel/academic-packets":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "vessel.academic_packet.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+        elif parsed.path == "/api/vessel/evidence-tension-ledger":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "vessel.evidence_tension.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+        elif parsed.path == "/api/vessel/organ-contracts":
+            self._send(*json_bytes(route_request(conn, "vessel.organ_contract.list")["result"]))
+        elif parsed.path == "/api/vessel/perception-packets":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "vessel.perception_packet.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+        elif parsed.path == "/api/vessel/emotion-salience-packets":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "vessel.emotion_salience_packet.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
         elif parsed.path == "/api/c-remaining/runtime-status":
             self._send(*json_bytes(route_request(conn, "c_remaining.runtime.status")["result"]))
         elif parsed.path == "/api/c-vessel/reconstruction-desk/status":
@@ -295,6 +432,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "b.memory_accession.rehearsal.status")["result"]))
         elif parsed.path == "/api/b/charter-law/review-status":
             self._send(*json_bytes(route_request(conn, "b.charter_law.review_status")["result"]))
+        elif parsed.path == "/api/public-release/preflight":
+            self._send(*json_bytes(public_release_preflight_status()))
         elif parsed.path == "/api/detached-corpus/audit":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(detached_corpus_audit(
@@ -512,6 +651,46 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "native_generation.rehearsal.run", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/reasoning-artifact":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.reasoning_artifact.create", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/core-gate-packet":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.core_gate_packet.create", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/academic-packet":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.academic_packet.create", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/evidence-tension":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.evidence_tension.create", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/organ-contracts/ensure":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.organ_contract.ensure", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/organ-contract":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.organ_contract.upsert", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/perception-packet":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.perception_packet.create", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/emotion-salience-packet":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.emotion_salience_packet.create", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/c-core/graceful-fall":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "c_core.graceful_fall.run", body)["result"]))
@@ -675,25 +854,57 @@ class SeleneHandler(BaseHTTPRequestHandler):
 
 class SeleneServer(ThreadingHTTPServer):
     def __init__(self, address: tuple[str, int], handler: type[BaseHTTPRequestHandler], db_path: Path):
+        mark_startup_phase("db_connect_start", db_path=str(db_path))
         super().__init__(address, handler)
+        mark_startup_phase("server_bound", bind=f"{address[0]}:{address[1]}", ready=True)
         self.db_path = db_path
         self.conn = connect(db_path)
+        mark_startup_phase("db_connected", db_path=str(db_path))
         init_db(self.conn)
+        mark_startup_phase("db_initialized", db_path=str(db_path))
+
+
+def start_seed_thread(db_path: Path) -> None:
+    def seed_worker() -> None:
+        mark_startup_phase("seed_start", seed_status="running")
+        conn = connect(db_path)
+        try:
+            summary = seed_registry(conn, force=False)
+            mark_startup_phase(
+                "seed_complete",
+                seed_status="complete",
+                seed_summary={
+                    "evidence_items": summary.get("evidence_items"),
+                    "anchors": summary.get("anchors"),
+                    "continuity_candidates": summary.get("continuity_candidates"),
+                },
+            )
+        except Exception as exc:  # pragma: no cover - defensive startup telemetry
+            mark_startup_phase("seed_failed", seed_status="failed", seed_error=str(exc))
+        finally:
+            conn.close()
+
+    threading.Thread(target=seed_worker, name="selene-seed-startup", daemon=True).start()
 
 
 def main(argv: list[str] | None = None) -> int:
+    mark_startup_phase("main_start")
     parser = argparse.ArgumentParser(description="Run the Selene local sidecar API.")
     parser.add_argument("--port", type=int, default=int(os.environ.get("SELENE_PORT", "8766")))
     parser.add_argument("--db", type=Path, default=default_db_path())
     parser.add_argument("--seed", action="store_true", help="Seed reviewed registry before serving.")
     parser.add_argument("--parent-pid", type=int, help="Exit when the owning desktop process exits.")
     args = parser.parse_args(argv)
+    mark_startup_phase("args_parsed", seed_requested=bool(args.seed), port=args.port, db_path=str(args.db))
     watch_parent_process(args.parent_pid)
     server = SeleneServer(("127.0.0.1", args.port), SeleneHandler, args.db)
     if args.seed:
-        seed_registry(server.conn, force=False)
+        start_seed_thread(args.db)
+    else:
+        mark_startup_phase("seed_skipped", seed_status="skipped")
     print(f"Selene sidecar listening on http://127.0.0.1:{args.port}")
     print("Selene sidecar is tokenless and local-only.")
+    mark_startup_phase("serve_forever_start", ready=True)
     try:
         server.serve_forever()
     finally:

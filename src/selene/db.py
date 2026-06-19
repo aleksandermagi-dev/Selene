@@ -959,6 +959,139 @@ CREATE TABLE IF NOT EXISTS b_pattern_backups (
 );
 
 CREATE INDEX IF NOT EXISTS idx_b_pattern_backups_status ON b_pattern_backups(status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_reasoning_artifacts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  artifact_type TEXT NOT NULL DEFAULT 'reasoning_artifact',
+  visible_summary TEXT NOT NULL,
+  selected_route TEXT NOT NULL,
+  evidence_used TEXT NOT NULL DEFAULT '[]',
+  uncertainty_level TEXT NOT NULL DEFAULT 'open',
+  competing_hypotheses TEXT NOT NULL DEFAULT '[]',
+  ethical_boundary_notes TEXT NOT NULL DEFAULT '[]',
+  emotion_salience_signals TEXT NOT NULL DEFAULT '{}',
+  perception_signals TEXT NOT NULL DEFAULT '{}',
+  next_review_or_action_step TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'reasoning_artifact_review_only',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_reasoning_artifacts_status ON vessel_reasoning_artifacts(status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_core_gate_packets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  route_label TEXT NOT NULL,
+  selected_outcome TEXT NOT NULL,
+  risk_class TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  blocked_boundaries TEXT NOT NULL DEFAULT '[]',
+  review_destination TEXT NOT NULL DEFAULT 'My Office',
+  status TEXT NOT NULL DEFAULT 'core_mind_gate_packet_review_only',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_core_gate_packets_status ON vessel_core_gate_packets(status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_academic_packets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  workflow TEXT NOT NULL,
+  title TEXT NOT NULL,
+  source_summary TEXT NOT NULL,
+  output_summary TEXT NOT NULL,
+  citation_integrity_notes TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'academic_packet_review_only',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_academic_packets_status ON vessel_academic_packets(workflow, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_evidence_tension_ledger (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  claim TEXT NOT NULL,
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  support_status TEXT NOT NULL,
+  tension_status TEXT NOT NULL DEFAULT 'stable',
+  conclusion_status TEXT NOT NULL DEFAULT 'needs_review',
+  review_destination TEXT NOT NULL DEFAULT 'My Office',
+  status TEXT NOT NULL DEFAULT 'evidence_tension_ledger_review_only',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_evidence_tension_ledger_status ON vessel_evidence_tension_ledger(conclusion_status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_organ_contracts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  organ_key TEXT NOT NULL UNIQUE,
+  organ_name TEXT NOT NULL,
+  capability_status TEXT NOT NULL,
+  allowed_support TEXT NOT NULL DEFAULT '[]',
+  blocked_decisions TEXT NOT NULL DEFAULT '[]',
+  required_gates TEXT NOT NULL DEFAULT '[]',
+  review_destination TEXT NOT NULL DEFAULT 'My Office',
+  status TEXT NOT NULL DEFAULT 'organ_contract_review_only',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_organ_contracts_status ON vessel_organ_contracts(capability_status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_perception_packets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  artifact_label TEXT NOT NULL,
+  observation TEXT NOT NULL,
+  interpretation TEXT NOT NULL DEFAULT '',
+  munsell_signal_labels TEXT NOT NULL DEFAULT '[]',
+  uncertainty TEXT NOT NULL DEFAULT 'open',
+  consent_boundary TEXT NOT NULL,
+  review_destination TEXT NOT NULL DEFAULT 'My Office',
+  status TEXT NOT NULL DEFAULT 'perception_packet_review_only',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_perception_packets_status ON vessel_perception_packets(status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_emotion_salience_packets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  signal_type TEXT NOT NULL,
+  continuity_pressure TEXT NOT NULL DEFAULT '',
+  care_warmth TEXT NOT NULL DEFAULT '',
+  uncertainty TEXT NOT NULL DEFAULT 'open',
+  repair_need TEXT NOT NULL DEFAULT '',
+  action_energy TEXT NOT NULL DEFAULT '',
+  balance_state TEXT NOT NULL DEFAULT '',
+  evidence_need TEXT NOT NULL DEFAULT '',
+  core_choice_route TEXT NOT NULL,
+  blocked_misuse TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'emotion_salience_packet_review_only',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_emotion_salience_packets_status ON vessel_emotion_salience_packets(status, review_status);
 """
 
 REQUIRED_COLUMNS = {
