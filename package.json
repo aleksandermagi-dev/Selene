@@ -18,6 +18,9 @@
     "package:sidecar:core": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package_sidecar_minilm.ps1 -Mode core",
     "package:sidecar:semantic": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package_sidecar_minilm.ps1 -Mode semantic",
     "package:status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/finalize_package_status.ps1",
+    "package:verify": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify_selene_package.ps1",
+    "db:snapshot": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/snapshot_selene_db.ps1",
+    "bruno:seed": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/seed_bruno_collection.ps1",
     "package:win": "npm run build && npm run package:sidecar:core && npm run tauri:build && npm run package:status",
     "clean:check": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean_workspace.ps1",
     "clean": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean_workspace.ps1 -Apply"
