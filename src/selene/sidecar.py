@@ -20,6 +20,7 @@ from .db import connect, init_db
 from .detached_corpus import detached_corpus_audit, detached_corpus_metadata, detached_corpus_previews
 from .kernel import kernel_state
 from .module_router import chat_gate_preview, route_request
+from .mobile_chat import mobile_blocked_action, mobile_capture_review, mobile_get_session, mobile_health, mobile_list_sessions, mobile_send_chat
 from .paths import default_db_path, export_dir, local_data_dir, local_log_dir
 from .providers import provider_statuses
 from .registry import audit_rows, dashboard, evidence_detail, search_evidence, seed_registry, update_review_record
@@ -101,6 +102,17 @@ def mark_startup_phase(phase: str, **extra: object) -> None:
 def startup_snapshot() -> dict[str, object]:
     with STARTUP_LOCK:
         return dict(STARTUP_STATE)
+
+
+def health_payload() -> dict[str, object]:
+    return {
+        "status": "ok",
+        "bind": "127.0.0.1",
+        "tokenless": True,
+        "sidecar_version": SIDECAR_VERSION,
+        "capabilities": SIDECAR_CAPABILITIES,
+        "startup": startup_snapshot(),
+    }
 
 
 def write_startup_log(phase: str, elapsed_ms: float, extra: dict[str, object] | None = None) -> None:
@@ -286,14 +298,20 @@ class SeleneHandler(BaseHTTPRequestHandler):
         if parsed.path == "/health":
             if not startup_snapshot().get("first_health_ms"):
                 mark_startup_phase("first_health", first_health_ms=round((time.perf_counter() - STARTUP_STARTED_AT) * 1000, 1))
-            self._send(*json_bytes({
-                "status": "ok",
-                "bind": "127.0.0.1",
-                "tokenless": True,
-                "sidecar_version": SIDECAR_VERSION,
-                "capabilities": SIDECAR_CAPABILITIES,
-                "startup": startup_snapshot(),
-            }))
+            self._send(*json_bytes(health_payload()))
+        elif parsed.path == "/api/mobile/health":
+            if not startup_snapshot().get("first_health_ms"):
+                mark_startup_phase("first_health", first_health_ms=round((time.perf_counter() - STARTUP_STARTED_AT) * 1000, 1))
+            self._send(*json_bytes(mobile_health(health_payload())))
+        elif parsed.path == "/api/mobile/chat/sessions":
+            self._send(*json_bytes(mobile_list_sessions(conn)))
+        elif parsed.path.startswith("/api/mobile/chat/sessions/"):
+            try:
+                session_id = int(parsed.path.removeprefix("/api/mobile/chat/sessions/"))
+                session = mobile_get_session(conn, session_id)
+                self._send(*json_bytes(session or {"error": "not found"}, 200 if session else 404))
+            except ValueError:
+                self._send(*json_bytes({"error": "invalid session id"}, 400))
         elif parsed.path == "/api/dashboard":
             self._send(*json_bytes(dashboard(conn)))
         elif parsed.path == "/api/evidence":
@@ -491,6 +509,18 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/evaluate":
             text = str(body.get("text", ""))
             self._send(*json_bytes(chat_gate_preview(self.server.conn, text, str(body.get("provider") or "disabled"))))
+        elif request_path == "/api/mobile/chat/send":
+            try:
+                self._send(*json_bytes(mobile_send_chat(self.server.conn, body)))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/mobile/review-capture":
+            try:
+                self._send(*json_bytes(mobile_capture_review(self.server.conn, body)))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path.startswith("/api/mobile/"):
+            self._send(*json_bytes(mobile_blocked_action(request_path), 403))
         elif request_path == "/api/route":
             self._send(*json_bytes(route_request(self.server.conn, str(body.get("route_key", "")), body.get("payload") or {})))
         elif request_path == "/api/native-generation/compose":

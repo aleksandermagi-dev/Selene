@@ -76,6 +76,9 @@ Core checks:
 - `/api/vessel/review-queue?limit=10`
 - `/api/vessel/gap-scaffold/readiness`
 - `/api/semantic/status`
+- `/api/mobile/health`
+- `/api/mobile/chat/send`
+- `/api/mobile/review-capture`
 - `/api/vessel/construction/prepare`
 - `/api/vessel/organ-contracts/ensure`
 - `/api/vessel/gap-targets/ensure`
