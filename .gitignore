@@ -43,4 +43,5 @@ analysis/*
 .env
 .env.*
 .venv/
+.venv-selene-package/
 venv/

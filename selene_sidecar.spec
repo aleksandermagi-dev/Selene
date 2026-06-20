@@ -1,12 +1,33 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-block_cipher = None
+import os
 
-try:
-    from PyInstaller.utils.hooks import collect_submodules
-    semantic_hiddenimports = collect_submodules("sentence_transformers")
-except Exception:
-    semantic_hiddenimports = []
+block_cipher = None
+sidecar_mode = os.environ.get("SELENE_SIDECAR_MODE", "core").strip().lower() or "core"
+semantic_enabled = sidecar_mode == "semantic"
+
+semantic_hiddenimports = []
+if semantic_enabled:
+    try:
+        from PyInstaller.utils.hooks import collect_submodules
+        semantic_hiddenimports = collect_submodules("sentence_transformers")
+    except Exception:
+        semantic_hiddenimports = []
+
+core_excludes = [
+    "sentence_transformers",
+    "transformers",
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "tensorflow",
+    "sklearn",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "PIL",
+    "numpy",
+]
 
 a = Analysis(
     ["packaging/selene_sidecar_entry.py"],
@@ -16,11 +37,11 @@ a = Analysis(
         ("analysis/review_shape_20260527", "analysis/review_shape_20260527"),
         ("analysis/integrated_evidence_map_20260527", "analysis/integrated_evidence_map_20260527")
     ],
-    hiddenimports=["selene", "sentence_transformers", *semantic_hiddenimports],
+    hiddenimports=["selene", *(["sentence_transformers"] if semantic_enabled else []), *semantic_hiddenimports],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[] if semantic_enabled else core_excludes,
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
