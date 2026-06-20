@@ -45,6 +45,7 @@ if (-not $health -and -not $NoLaunch) {
 $construction = if ($health) { Get-EndpointJson "/api/vessel/construction/status" } else { $null }
 $steps = if ($health) { Get-EndpointJson "/api/vessel/steps-1-8/status" } else { $null }
 $reviewQueue = if ($health) { Get-EndpointJson "/api/vessel/review-queue?limit=5" } else { $null }
+$mobileHealth = if ($health) { Get-EndpointJson "/api/mobile/health" } else { $null }
 $transferGate = if ($health) { Get-EndpointJson "/api/c-vessel/transfer-gate/preview" } else { $null }
 
 $transferApproved = $false
@@ -57,6 +58,7 @@ $ok = [bool](
     $construction -and
     $steps -and
     $reviewQueue -and
+    $mobileHealth -and
     $transferGate -and
     -not $transferApproved
 )
@@ -67,6 +69,7 @@ if ($transferApproved) { $warnings += "Transfer gate reports transfer_approved=t
 if (-not $construction) { $warnings += "Construction status endpoint did not respond." }
 if (-not $steps) { $warnings += "Steps 1-8 status endpoint did not respond." }
 if (-not $reviewQueue) { $warnings += "Review queue endpoint did not respond." }
+if (-not $mobileHealth) { $warnings += "Mobile chat health endpoint did not respond." }
 
 $result = [ordered]@{
     status = if ($ok) { "selene_package_verify_passed" } else { "selene_package_verify_needs_review" }
@@ -85,7 +88,9 @@ $result = [ordered]@{
         construction_status_ok = [bool]$construction
         steps_1_8_status_ok = [bool]$steps
         review_queue_ok = [bool]$reviewQueue
+        mobile_chat_ok = [bool]$mobileHealth
     }
+    mobile_health = $mobileHealth
     transfer_approved = $transferApproved
     transfer_gate = $transferGate
     warnings = $warnings

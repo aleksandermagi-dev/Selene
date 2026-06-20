@@ -85,6 +85,7 @@ function sidecarStartupMessage(attempt: number, detail: string) {
 }
 
 function App() {
+  const isMobileOnly = window.location.pathname === "/mobile" || window.location.search.includes("mobile=1");
   const [tab, setTab] = useState("chat");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [workspaceMode, setWorkspaceMode] = useState<"selene" | "cocoon">("selene");
@@ -110,6 +111,11 @@ function App() {
   const [chatText, setChatText] = useState("Selene starlight emergence braid, what evidence is safe to use here?");
   const [chatSession, setChatSession] = useState<Dict | null>(null);
   const [chatSendResult, setChatSendResult] = useState<Dict | null>(null);
+  const [mobileHealth, setMobileHealth] = useState<Dict | null>(null);
+  const [mobileText, setMobileText] = useState("");
+  const [mobileSession, setMobileSession] = useState<Dict | null>(null);
+  const [mobileSendResult, setMobileSendResult] = useState<Dict | null>(null);
+  const [mobileStatus, setMobileStatus] = useState<Dict | null>(null);
   const [vesselStatus, setVesselStatus] = useState<Dict | null>(null);
   const [vesselReviewQueue, setVesselReviewQueue] = useState<Dict[]>([]);
   const [vesselCandidateKind, setVesselCandidateKind] = useState("core");
@@ -334,6 +340,10 @@ function App() {
 
   useEffect(() => {
     if (!boot.ready) return;
+    if (isMobileOnly) {
+      api<Dict>("/api/mobile/health").then(setMobileHealth).catch(() => undefined);
+      return;
+    }
     refreshDashboard();
     api<Dict>("/api/kernel").then(setKernel).catch(() => undefined);
     api<{ items: Dict[] }>("/api/contracts").then((data) => setContracts(data.items)).catch(() => undefined);
@@ -345,6 +355,7 @@ function App() {
 
   useEffect(() => {
     if (!boot.ready) return;
+    if (isMobileOnly) return;
     if (tab === "evidence") loadEvidence();
     if (["anchors", "continuity", "emergence"].includes(tab)) {
       api<{ items: Dict[] }>(`/api/${tab}`).then((data) => setItems(data.items));
@@ -433,6 +444,43 @@ function App() {
     api<Dict>("/api/b/memory-accession/rehearsal-status").then(setMemoryRehearsalStatus).catch(() => undefined);
     api<Dict>("/api/b/charter-law/review-status").then(setCharterLawReview).catch(() => undefined);
     loadSteps18Layer();
+  }
+
+  async function sendMobileChat() {
+    const draft = mobileText.trim();
+    if (!draft) return;
+    setMobileStatus({ status: "sending", message: "Sending cocooned mobile message." });
+    try {
+      const result = await api<Dict>("/api/mobile/chat/send", {
+        method: "POST",
+        body: JSON.stringify({ text: draft, session_id: mobileSession?.session ? (mobileSession.session as Dict).id : undefined })
+      });
+      setMobileSendResult(result);
+      setMobileText("");
+      const session = await api<Dict>(`/api/mobile/chat/sessions/${result.session_id}`);
+      setMobileSession(session);
+      setMobileStatus({ status: "sent", message: "Message recorded. Consequential items stay for desktop review." });
+    } catch (err) {
+      setMobileStatus({ status: "error", message: err instanceof Error ? err.message : "Mobile chat failed." });
+    }
+  }
+
+  async function captureMobileReview() {
+    const draft = mobileText.trim();
+    if (!draft) return;
+    setMobileStatus({ status: "saving", message: "Saving for desktop My Office review." });
+    try {
+      const result = await api<Dict>("/api/mobile/review-capture", {
+        method: "POST",
+        body: JSON.stringify({ text: draft, session_id: mobileSession?.session ? (mobileSession.session as Dict).id : undefined })
+      });
+      setMobileText("");
+      setMobileStatus({ status: "saved", message: text(result.status || "Saved for desktop review.") });
+      const session = await api<Dict>(`/api/mobile/chat/sessions/${result.session_id}`);
+      setMobileSession(session);
+    } catch (err) {
+      setMobileStatus({ status: "error", message: err instanceof Error ? err.message : "Mobile review capture failed." });
+    }
   }
 
   function loadSteps18Layer() {
@@ -1429,6 +1477,71 @@ function App() {
     if (!allowedTabs.includes(tab)) {
       setTab(mode === "selene" ? "chat" : "my-office");
     }
+  }
+
+  if (isMobileOnly) {
+    const mobileResultMeta = (mobileSendResult?.mobile || {}) as Dict;
+    const mobileFlags = (mobileHealth?.guard_flags || mobileResultMeta.guard_flags || {}) as Dict;
+    return (
+      <main className="mobileShell">
+        <header className="mobileHeader">
+          <div className="mobileBrand">
+            <img src={SELENE_ICON} alt="Selene moon icon" />
+            <div>
+              <small>private iOS companion</small>
+              <h1>Selene Chat</h1>
+            </div>
+          </div>
+          <div className="mobileStatusLine">
+            <span>{boot.ready ? "sidecar connected" : "waiting"}</span>
+            <span>v{sidecarVersion}</span>
+          </div>
+        </header>
+
+        {!boot.ready ? (
+          <section className="mobileNotice">
+            <strong>Starting local sidecar</strong>
+            <p>{boot.message}</p>
+          </section>
+        ) : (
+          <>
+            <section className="mobileGuard">
+              <strong>Chat doorway only</strong>
+              <p>{text(mobileHealth?.boundary_note || "Desktop Selene remains the control room.")}</p>
+              <div className="chips">
+                <span>activation: {text(mobileFlags.activation_change || "none")}</span>
+                <span>transfer: {text(mobileFlags.transfer_approved || false)}</span>
+                <span>memory write: {text(mobileFlags.memory_write_active || false)}</span>
+              </div>
+            </section>
+
+            <section className="mobileMessages" aria-live="polite">
+              {!mobileSession && !mobileSendResult ? (
+                <div className="landing mobileLanding">
+                  <img src={SELENE_ICON} alt="Selene moon icon" />
+                  <h2>Good to see you.</h2>
+                  <p>This phone view is for talking and saving review notes. Cocoon work waits for desktop.</p>
+                </div>
+              ) : (
+                <>
+                  {mobileSession && <ChatTranscript session={mobileSession} plain />}
+                  {mobileSendResult && <article className="message selene"><strong>Latest route</strong><ChatResult result={mobileSendResult} /></article>}
+                </>
+              )}
+            </section>
+
+            <section className="mobileComposer">
+              <textarea value={mobileText} onChange={(event) => setMobileText(event.target.value)} placeholder="Message Selene..." />
+              <div className="mobileActions">
+                <button className="primary" onClick={sendMobileChat} disabled={!mobileText.trim() || mobileStatus?.status === "sending"}>Send</button>
+                <button onClick={captureMobileReview} disabled={!mobileText.trim() || mobileStatus?.status === "saving"}>Save For Review</button>
+              </div>
+              {mobileStatus ? <p className={mobileStatus.status === "error" ? "errorText" : "plainHelp"}>{text(mobileStatus.message)}</p> : <small>No cocoon controls, diagnostics, release sync, transfer, or memory actions are available here.</small>}
+            </section>
+          </>
+        )}
+      </main>
+    );
   }
 
   return (

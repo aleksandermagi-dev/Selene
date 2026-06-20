@@ -239,6 +239,106 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   padding: 22px;
 }
 
+.mobileShell {
+  background: var(--app-bg);
+  color: var(--text-strong);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  min-height: 100svh;
+  padding: 14px;
+}
+
+.mobileHeader {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.mobileBrand {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mobileBrand img {
+  border: 1px solid rgba(216, 220, 255, 0.45);
+  border-radius: 16px;
+  height: 48px;
+  width: 48px;
+}
+
+.mobileBrand h1 {
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.mobileStatusLine {
+  color: var(--text-muted);
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.mobileNotice,
+.mobileGuard,
+.mobileComposer {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.mobileGuard {
+  margin-bottom: 12px;
+}
+
+.mobileGuard p {
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.mobileMessages {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 0 12px;
+}
+
+.mobileLanding {
+  min-height: 260px;
+}
+
+.mobileComposer {
+  bottom: 0;
+  position: sticky;
+}
+
+.mobileComposer textarea {
+  min-height: 92px;
+}
+
+.mobileActions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.mobileShell .message,
+.mobileShell .linked,
+.mobileShell .chatResult {
+  max-width: 100%;
+}
+
+.mobileShell details {
+  overflow-wrap: anywhere;
+}
+
 .topbar {
   align-items: center;
   background: rgba(18, 23, 53, 0.78);
