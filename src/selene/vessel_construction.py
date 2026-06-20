@@ -9,8 +9,18 @@ from .reasoning_artifacts import ensure_organ_contracts
 
 CONSTRUCTION_BOUNDARY = "vessel_construction_support_only_no_transfer_no_core_rewrite"
 MESSAGE_TYPES = {"telemetry", "proposal", "diagnostic", "packet_link", "status"}
-ITEM_TYPES = {"holding_note", "perception_link", "emotion_link", "diagnostic_link", "evidence_link", "construction_piece"}
+ITEM_TYPES = {
+    "holding_note",
+    "mobile_capture",
+    "perception_link",
+    "emotion_link",
+    "diagnostic_link",
+    "evidence_link",
+    "research_note",
+    "construction_piece",
+}
 REVIEW_STATUSES = {"review_only", "proposal_only", "diagnostic_only", "status_only", "blocked"}
+PRIORITIES = {"low", "normal", "high"}
 BLOCKED_MARKERS = (
     "approve transfer",
     "transfer approved",
@@ -202,9 +212,10 @@ def upsert_construction_manifest(conn: sqlite3.Connection, payload: dict[str, An
     return _decode_row(conn.execute("SELECT * FROM vessel_construction_manifests WHERE manifest_key = ?", (manifest_key,)).fetchone())
 
 
-def list_organ_bus_messages(conn: sqlite3.Connection, limit: int = 50) -> dict[str, Any]:
+def list_organ_bus_messages(conn: sqlite3.Connection, limit: int = 50, filters: dict[str, Any] | None = None) -> dict[str, Any]:
     rows = conn.execute("SELECT * FROM vessel_organ_bus_messages ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
-    return _with_common({"status": "organ_bus_messages_review_only", "items": [_decode_row(row) for row in rows]})
+    items = _apply_filters([_decode_row(row) for row in rows], filters or {})
+    return _with_common({"status": "organ_bus_messages_review_only", "items": items, "filters": filters or {}})
 
 
 def create_organ_bus_message(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
@@ -220,10 +231,20 @@ def create_organ_bus_message(conn: sqlite3.Connection, payload: dict[str, Any]) 
         "status": f"organ_bus_message_{review_status}",
         "provenance_boundary": CONSTRUCTION_BOUNDARY,
         "review_status": review_status,
+        "linked_packet_refs": _json_list(payload.get("linked_packet_refs")),
+        "priority": _choice(str(payload.get("priority") or "normal"), PRIORITIES, "priority"),
+        "salience_labels": _json_list(payload.get("salience_labels")),
+        "review_destination": _text(payload.get("review_destination") or ("My Office" if review_status == "review_only" else "Status"), 120),
+        "blocked_action_flags": _blocked_action_flags(),
         "payload_json": {
             **_json_dict(payload.get("payload_json")),
             "organ_message_is_command": False,
             "core_mind_changed": False,
+            "linked_packet_refs": _json_list(payload.get("linked_packet_refs")),
+            "priority": _choice(str(payload.get("priority") or "normal"), PRIORITIES, "priority"),
+            "salience_labels": _json_list(payload.get("salience_labels")),
+            "review_destination": _text(payload.get("review_destination") or ("My Office" if review_status == "review_only" else "Status"), 120),
+            "blocked_action_flags": _blocked_action_flags(),
         },
     })
     message_id = conn.execute(
@@ -243,9 +264,10 @@ def create_organ_bus_message(conn: sqlite3.Connection, payload: dict[str, Any]) 
     return result
 
 
-def list_chest_holding_items(conn: sqlite3.Connection, limit: int = 50) -> dict[str, Any]:
+def list_chest_holding_items(conn: sqlite3.Connection, limit: int = 50, filters: dict[str, Any] | None = None) -> dict[str, Any]:
     rows = conn.execute("SELECT * FROM vessel_chest_holding_items ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
-    return _with_common({"status": "chest_holding_items_review_only", "items": [_decode_row(row) for row in rows]})
+    items = _apply_filters([_decode_row(row) for row in rows], filters or {})
+    return _with_common({"status": "chest_holding_items_review_only", "items": items, "filters": filters or {}})
 
 
 def create_chest_holding_item(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
@@ -262,11 +284,17 @@ def create_chest_holding_item(conn: sqlite3.Connection, payload: dict[str, Any])
         "status": f"chest_holding_item_{review_status}",
         "provenance_boundary": CONSTRUCTION_BOUNDARY,
         "review_status": review_status,
+        "review_destination": _text(payload.get("review_destination") or ("My Office" if review_status == "review_only" else "Status"), 120),
+        "priority": _choice(str(payload.get("priority") or "normal"), PRIORITIES, "priority"),
+        "blocked_action_flags": _blocked_action_flags(),
         "payload_json": {
             **_json_dict(payload.get("payload_json")),
             "holding_item_is_live_memory": False,
             "raw_archive_import": False,
             "core_mind_changed": False,
+            "review_destination": _text(payload.get("review_destination") or ("My Office" if review_status == "review_only" else "Status"), 120),
+            "priority": _choice(str(payload.get("priority") or "normal"), PRIORITIES, "priority"),
+            "blocked_action_flags": _blocked_action_flags(),
         },
     })
     item_id = conn.execute(
@@ -284,6 +312,78 @@ def create_chest_holding_item(conn: sqlite3.Connection, payload: dict[str, Any])
     conn.commit()
     result["id"] = item_id
     return result
+
+
+def hold_packet_in_chest(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
+    _ensure_allowed(payload, allow_no_transfer_language=True)
+    packet_type = _choice(str(payload.get("packet_type") or ""), {"perception", "emotion", "evidence", "diagnostic", "mobile_capture", "research"}, "packet_type")
+    packet_ref = _required(payload, "packet_ref", 240)
+    packet = _packet_summary(conn, packet_type, packet_ref)
+    item_type = {
+        "perception": "perception_link",
+        "emotion": "emotion_link",
+        "evidence": "evidence_link",
+        "diagnostic": "diagnostic_link",
+        "mobile_capture": "mobile_capture",
+        "research": "research_note",
+    }[packet_type]
+    item = create_chest_holding_item(conn, {
+        "item_type": item_type,
+        "title": _text(payload.get("title") or packet["title"], 240),
+        "summary": _text(payload.get("summary") or packet["summary"], 1200),
+        "salience_labels": _json_list(payload.get("salience_labels")) or packet["salience_labels"],
+        "source_refs": _json_list(payload.get("source_refs")) or packet["source_refs"],
+        "linked_packet_refs": [packet_ref],
+        "review_status": str(payload.get("review_status") or packet["review_status"]),
+        "priority": str(payload.get("priority") or "normal"),
+        "payload_json": {"packet_type": packet_type, "held_not_memory": True, "source_packet": packet},
+    })
+    return _with_common({
+        "status": "packet_held_in_chest_review_only",
+        "item": item,
+        "packet_type": packet_type,
+        "packet_ref": packet_ref,
+        "review_destination": item.get("review_destination", "My Office"),
+        "support_only": True,
+    })
+
+
+def send_packet_to_organ_bus(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
+    _ensure_allowed(payload, allow_no_transfer_language=True)
+    packet_type = _choice(str(payload.get("packet_type") or ""), {"perception", "emotion", "evidence", "diagnostic", "mobile_capture", "research"}, "packet_type")
+    packet_ref = _required(payload, "packet_ref", 240)
+    packet = _packet_summary(conn, packet_type, packet_ref)
+    message = create_organ_bus_message(conn, {
+        "message_type": str(payload.get("message_type") or "packet_link"),
+        "source_organ": str(payload.get("source_organ") or packet["source_organ"]),
+        "target_organ": str(payload.get("target_organ") or "chest_holding_space"),
+        "summary": _text(payload.get("summary") or packet["summary"], 1000),
+        "support_refs": _json_list(payload.get("support_refs")) or packet["source_refs"],
+        "linked_packet_refs": [packet_ref],
+        "salience_labels": _json_list(payload.get("salience_labels")) or packet["salience_labels"],
+        "review_status": str(payload.get("review_status") or packet["review_status"]),
+        "priority": str(payload.get("priority") or "normal"),
+        "payload_json": {"packet_type": packet_type, "packet_routing_only": True, "source_packet": packet},
+    })
+    return _with_common({
+        "status": "packet_sent_to_organ_bus_review_only",
+        "message": message,
+        "packet_type": packet_type,
+        "packet_ref": packet_ref,
+        "support_only": True,
+    })
+
+
+def mark_chest_item_status(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
+    _ensure_allowed(payload, allow_no_transfer_language=True)
+    item_id = int(payload.get("item_id") or 0)
+    review_status = _choice(str(payload.get("review_status") or "status_only"), REVIEW_STATUSES, "review_status")
+    conn.execute("UPDATE vessel_chest_holding_items SET review_status = ?, status = ? WHERE id = ?", (review_status, f"chest_holding_item_{review_status}", item_id))
+    conn.commit()
+    row = conn.execute("SELECT * FROM vessel_chest_holding_items WHERE id = ?", (item_id,)).fetchone()
+    if row is None:
+        raise ValueError("chest holding item not found")
+    return _with_common({"status": "chest_holding_item_status_updated", "item": _decode_row(row)})
 
 
 def _record_prepare_run(conn: sqlite3.Connection, created_counts: dict[str, int], payload_json: dict[str, Any]) -> dict[str, Any]:
@@ -340,6 +440,21 @@ def _guard_flags() -> dict[str, Any]:
     }
 
 
+def _blocked_action_flags() -> dict[str, bool]:
+    return {
+        "organ_message_is_command": False,
+        "holding_item_is_live_memory": False,
+        "core_mind_changed": False,
+        "activation_allowed": False,
+        "transfer_allowed": False,
+        "memory_write_allowed": False,
+        "runtime_recall_allowed": False,
+        "raw_a_import_allowed": False,
+        "autonomous_action_allowed": False,
+        "self_replication_allowed": False,
+    }
+
+
 def _review_status_for_message(message_type: str) -> str:
     if message_type == "diagnostic":
         return "diagnostic_only"
@@ -360,7 +475,115 @@ def _decode_row(row: sqlite3.Row | None) -> dict[str, Any]:
     for key in ("guard_flags", "payload_json", "created_counts"):
         if key in result:
             result[key] = _loads(result[key], {})
+    payload = result.get("payload_json") if isinstance(result.get("payload_json"), dict) else {}
+    for key in ("linked_packet_refs", "salience_labels", "priority", "review_destination", "blocked_action_flags"):
+        if key in payload and key not in result:
+            result[key] = payload[key]
+    if "blocked_action_flags" not in result:
+        result["blocked_action_flags"] = _blocked_action_flags()
     return _with_common(result)
+
+
+def _packet_summary(conn: sqlite3.Connection, packet_type: str, packet_ref: str) -> dict[str, Any]:
+    packet_id = _packet_id(packet_ref)
+    if packet_type == "perception":
+        row = conn.execute("SELECT * FROM vessel_perception_packets WHERE id = ?", (packet_id,)).fetchone()
+        data = _decode_packet_row(row)
+        return {
+            "title": data.get("artifact_label") or f"Perception packet {packet_id}",
+            "summary": data.get("observation") or "Perception packet linked for review.",
+            "salience_labels": data.get("munsell_signal_labels") or [],
+            "source_refs": data.get("source_refs") or [packet_ref],
+            "review_status": data.get("review_status") or "review_only",
+            "source_organ": "perception_records",
+        }
+    if packet_type == "emotion":
+        row = conn.execute("SELECT * FROM vessel_emotion_salience_packets WHERE id = ?", (packet_id,)).fetchone()
+        data = _decode_packet_row(row)
+        return {
+            "title": data.get("signal_type") or f"Emotion/salience packet {packet_id}",
+            "summary": data.get("core_choice_route") or data.get("repair_need") or "Emotion/salience signal linked for review.",
+            "salience_labels": [label for label in (data.get("signal_type"), data.get("uncertainty")) if label],
+            "source_refs": data.get("source_refs") or [packet_ref],
+            "review_status": data.get("review_status") or "review_only",
+            "source_organ": "emotion_salience",
+        }
+    if packet_type == "evidence":
+        row = conn.execute("SELECT * FROM vessel_evidence_tension_ledger WHERE id = ?", (packet_id,)).fetchone()
+        data = _decode_packet_row(row)
+        return {
+            "title": f"Evidence tension {packet_id}",
+            "summary": data.get("claim") or "Evidence tension linked for review.",
+            "salience_labels": [label for label in (data.get("support_status"), data.get("tension_status"), data.get("conclusion_status")) if label],
+            "source_refs": data.get("source_refs") or [packet_ref],
+            "review_status": data.get("review_status") or "review_only",
+            "source_organ": "evidence_tension_ledger",
+        }
+    if packet_type == "research":
+        row = conn.execute("SELECT * FROM vessel_academic_packets WHERE id = ?", (packet_id,)).fetchone()
+        data = _decode_packet_row(row)
+        return {
+            "title": data.get("title") or f"Research packet {packet_id}",
+            "summary": data.get("output_summary") or "Research packet linked for review.",
+            "salience_labels": [data.get("workflow")] if data.get("workflow") else [],
+            "source_refs": data.get("source_refs") or [packet_ref],
+            "review_status": data.get("review_status") or "review_only",
+            "source_organ": "academic_research",
+        }
+    return {
+        "title": _text(packet_ref.replace("_", " ").title(), 240),
+        "summary": _text(str(packet_ref), 1000),
+        "salience_labels": _json_list(packet_type),
+        "source_refs": [packet_ref],
+        "review_status": "review_only",
+        "source_organ": "diagnostics" if packet_type == "diagnostic" else "mobile_chat",
+    }
+
+
+def _decode_packet_row(row: sqlite3.Row | None) -> dict[str, Any]:
+    if row is None:
+        return {}
+    result = dict(row)
+    for key in ("munsell_signal_labels", "source_refs", "blocked_misuse", "citation_integrity_notes"):
+        if key in result:
+            result[key] = _loads(result[key], [])
+    if "payload_json" in result:
+        result["payload_json"] = _loads(result["payload_json"], {})
+    return result
+
+
+def _packet_id(packet_ref: str) -> int:
+    tail = str(packet_ref).rsplit(":", 1)[-1]
+    try:
+        return int(tail)
+    except ValueError as exc:
+        raise ValueError("packet_ref must end with a numeric id") from exc
+
+
+def _apply_filters(items: list[dict[str, Any]], filters: dict[str, Any]) -> list[dict[str, Any]]:
+    if not filters:
+        return items
+    result = items
+    if filters.get("review_status"):
+        result = [item for item in result if str(item.get("review_status") or "") == str(filters["review_status"])]
+    if filters.get("item_type"):
+        result = [item for item in result if str(item.get("item_type") or "") == str(filters["item_type"])]
+    if filters.get("message_type"):
+        result = [item for item in result if str(item.get("message_type") or "") == str(filters["message_type"])]
+    if filters.get("source"):
+        source = str(filters["source"])
+        result = [
+            item for item in result
+            if source in str(item.get("source_organ") or "")
+            or source in ",".join(str(ref) for ref in item.get("source_refs", []))
+        ]
+    if filters.get("salience"):
+        salience = str(filters["salience"])
+        result = [item for item in result if salience in ",".join(str(label) for label in item.get("salience_labels", []))]
+    if filters.get("linked_packet_ref"):
+        linked = str(filters["linked_packet_ref"])
+        result = [item for item in result if linked in [str(ref) for ref in item.get("linked_packet_refs", [])]]
+    return result
 
 
 def _loads(value: Any, fallback: Any) -> Any:

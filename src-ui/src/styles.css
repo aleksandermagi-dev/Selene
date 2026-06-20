@@ -453,6 +453,32 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .list article:hover, .linked { border-color: var(--accent); }
 .linked { border: 1px solid var(--soft-border); border-radius: 8px; display: grid; gap: 6px; padding: 10px; }
 .ruleGrid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.packetList article {
+  cursor: default;
+}
+.packetCard {
+  align-content: start;
+}
+.packetFields {
+  display: grid;
+  gap: 8px;
+}
+.packetFields p {
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  display: grid;
+  gap: 4px;
+  line-height: 1.45;
+  margin: 0;
+  padding: 9px;
+}
+.packetFields b {
+  color: var(--text-strong);
+  font-size: 12px;
+  text-transform: uppercase;
+}
 
 .surfaceIntro { margin: 0; }
 .surfaceIntro h2 { font-size: 28px; margin: 2px 0 0; }

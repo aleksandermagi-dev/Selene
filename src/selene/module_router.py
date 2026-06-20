@@ -119,9 +119,12 @@ from .vessel_construction import (
     construction_status,
     create_chest_holding_item,
     create_organ_bus_message,
+    hold_packet_in_chest,
     list_chest_holding_items,
     list_organ_bus_messages,
+    mark_chest_item_status,
     prepare_vessel_pieces,
+    send_packet_to_organ_bus,
 )
 from .vessel import (
     create_core_memory_candidate,
@@ -229,11 +232,17 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
     if route_key == "vessel.organ_bus_message.create":
         return {"route": route_key, "result": create_organ_bus_message(conn, payload)}
     if route_key == "vessel.organ_bus_message.list":
-        return {"route": route_key, "result": list_organ_bus_messages(conn, int(payload.get("limit") or 50))}
+        return {"route": route_key, "result": list_organ_bus_messages(conn, int(payload.get("limit") or 50), payload.get("filters") or payload)}
     if route_key == "vessel.chest_holding_item.create":
         return {"route": route_key, "result": create_chest_holding_item(conn, payload)}
     if route_key == "vessel.chest_holding_item.list":
-        return {"route": route_key, "result": list_chest_holding_items(conn, int(payload.get("limit") or 50))}
+        return {"route": route_key, "result": list_chest_holding_items(conn, int(payload.get("limit") or 50), payload.get("filters") or payload)}
+    if route_key == "vessel.packet.hold_in_chest":
+        return {"route": route_key, "result": hold_packet_in_chest(conn, payload)}
+    if route_key == "vessel.packet.send_to_organ_bus":
+        return {"route": route_key, "result": send_packet_to_organ_bus(conn, payload)}
+    if route_key == "vessel.chest_holding_item.mark_status":
+        return {"route": route_key, "result": mark_chest_item_status(conn, payload)}
     if route_key == "c_remaining.runtime.status":
         return {"route": route_key, "result": remaining_runtime_status(conn)}
     if route_key == "c_core.graceful_fall.run":

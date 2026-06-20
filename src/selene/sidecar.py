@@ -393,10 +393,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "vessel.construction.status")["result"]))
         elif parsed.path == "/api/vessel/organ-bus/messages":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
-            self._send(*json_bytes(route_request(conn, "vessel.organ_bus_message.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+            self._send(*json_bytes(route_request(conn, "vessel.organ_bus_message.list", {**qs, "limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
         elif parsed.path == "/api/vessel/chest/items":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
-            self._send(*json_bytes(route_request(conn, "vessel.chest_holding_item.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+            self._send(*json_bytes(route_request(conn, "vessel.chest_holding_item.list", {**qs, "limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
         elif parsed.path == "/api/c-remaining/runtime-status":
             self._send(*json_bytes(route_request(conn, "c_remaining.runtime.status")["result"]))
         elif parsed.path == "/api/c-vessel/reconstruction-desk/status":
@@ -743,6 +743,21 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/vessel/chest/item":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.chest_holding_item.create", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/packet/hold-in-chest":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.packet.hold_in_chest", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/packet/send-to-organ-bus":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.packet.send_to_organ_bus", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/chest/item/status":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.chest_holding_item.mark_status", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/c-core/graceful-fall":
