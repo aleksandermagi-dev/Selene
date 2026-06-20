@@ -1,5 +1,4 @@
 @echo off
 setlocal
 cd /d "%~dp0\.."
-python -m pip install -e .[packaging]
-pyinstaller selene_sidecar.spec --distpath dist-sidecar --workpath build-sidecar --noconfirm
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package_sidecar_minilm.ps1 -Mode core
