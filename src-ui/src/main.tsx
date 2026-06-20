@@ -180,6 +180,7 @@ function App() {
   const [organBusMessages, setOrganBusMessages] = useState<Dict[]>([]);
   const [chestHoldingItems, setChestHoldingItems] = useState<Dict[]>([]);
   const [vesselConstructionActionState, setVesselConstructionActionState] = useState<Dict | null>(null);
+  const [vesselPacketActionState, setVesselPacketActionState] = useState<Dict | null>(null);
   const [teachingSpeechFunction, setTeachingSpeechFunction] = useState("grounding");
   const [teachingPacketResult, setTeachingPacketResult] = useState<Dict | null>(null);
   const [lessonBackedResult, setLessonBackedResult] = useState<Dict | null>(null);
@@ -499,6 +500,88 @@ function App() {
     api<Dict>("/api/vessel/construction/status").then(setVesselConstructionStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/organ-bus/messages").then((data) => setOrganBusMessages(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/chest/items").then((data) => setChestHoldingItems(data.items)).catch(() => undefined);
+  }
+
+  function packetKind(item: Dict) {
+    if (item.artifact_label || item.observation) return "perception";
+    if (item.signal_type || item.core_choice_route) return "emotion";
+    if (item.claim) return "evidence";
+    if (item.workflow || item.output_summary) return "research";
+    return "diagnostic";
+  }
+
+  function packetRef(item: Dict) {
+    const kind = packetKind(item);
+    const table = kind === "perception"
+      ? "vessel_perception_packets"
+      : kind === "emotion"
+        ? "vessel_emotion_salience_packets"
+        : kind === "evidence"
+          ? "vessel_evidence_tension_ledger"
+          : kind === "research"
+            ? "vessel_academic_packets"
+            : "diagnostic";
+    return `${table}:${text(item.id || "0")}`;
+  }
+
+  async function routePacketAction(item: Dict, action: "hold" | "bus" | "evidence" | "status") {
+    const kind = packetKind(item);
+    const ref = packetRef(item);
+    setVesselPacketActionState({ status: "running", message: `${title(action)} ${ref}` });
+    try {
+      let result: Dict;
+      if (action === "bus") {
+        result = await api<Dict>("/api/vessel/packet/send-to-organ-bus", {
+          method: "POST",
+          body: JSON.stringify({
+            packet_type: kind,
+            packet_ref: ref,
+            target_organ: kind === "emotion" ? "chest_holding_space" : "evidence_tension_ledger",
+            salience_labels: item.munsell_signal_labels || [item.signal_type, item.uncertainty].filter(Boolean)
+          })
+        });
+      } else if (action === "evidence") {
+        result = await api<Dict>("/api/vessel/evidence-tension", {
+          method: "POST",
+          body: JSON.stringify({
+            claim: text(item.observation || item.core_choice_route || item.summary || item.output_summary || "Packet needs evidence/tension review."),
+            support_status: "unknown",
+            tension_status: "under_tension",
+            conclusion_status: "needs_review",
+            source_refs: [ref]
+          })
+        });
+      } else {
+        result = await api<Dict>("/api/vessel/packet/hold-in-chest", {
+          method: "POST",
+          body: JSON.stringify({
+            packet_type: kind,
+            packet_ref: ref,
+            review_status: action === "status" ? "status_only" : item.review_status || "review_only",
+            salience_labels: item.munsell_signal_labels || [item.signal_type, item.uncertainty].filter(Boolean)
+          })
+        });
+      }
+      setVesselPacketActionState(result);
+      loadSteps18Layer();
+      loadVesselConstructionLayer();
+    } catch (err) {
+      setVesselPacketActionState({ status: "error", message: err instanceof Error ? err.message : "packet route failed" });
+    }
+  }
+
+  async function markChestStatusOnly(item: Dict) {
+    setVesselPacketActionState({ status: "running", message: "Marking holding item status-only." });
+    try {
+      const result = await api<Dict>("/api/vessel/chest/item/status", {
+        method: "POST",
+        body: JSON.stringify({ item_id: item.id, review_status: "status_only" })
+      });
+      setVesselPacketActionState(result);
+      loadVesselConstructionLayer();
+    } catch (err) {
+      setVesselPacketActionState({ status: "error", message: err instanceof Error ? err.message : "holding item status update failed" });
+    }
   }
 
   async function prepareSteps18ReviewLayer() {
@@ -1479,6 +1562,68 @@ function App() {
     }
   }
 
+  function renderSignalPacketCard(item: Dict, index = 0) {
+    const kind = packetKind(item);
+    const labels = (item.munsell_signal_labels || item.salience_labels || [item.signal_type, item.uncertainty].filter(Boolean)) as unknown[];
+    return (
+      <article className="packetCard" key={`${kind}-${text(item.id)}-${index}`}>
+        <div className="row">
+          <strong>{text(item.artifact_label || item.signal_type || item.title || item.claim || "Vessel packet")}</strong>
+          <span>{friendlyStatus(item.review_status || item.status)}</span>
+        </div>
+        <div className="packetFields">
+          {item.observation ? <p><b>Observation</b>{text(item.observation)}</p> : null}
+          {item.interpretation ? <p><b>Interpretation</b>{text(item.interpretation)}</p> : null}
+          {item.core_choice_route ? <p><b>Core route</b>{text(item.core_choice_route)}</p> : null}
+          {item.repair_need ? <p><b>Repair need</b>{text(item.repair_need)}</p> : null}
+          {item.evidence_need ? <p><b>Evidence need</b>{text(item.evidence_need)}</p> : null}
+          {item.consent_boundary ? <p><b>Consent</b>{text(item.consent_boundary)}</p> : null}
+        </div>
+        <div className="chips">
+          <span>{kind}</span>
+          <span>uncertainty: {text(item.uncertainty || "open")}</span>
+          {labels.slice(0, 4).map((label) => <span key={text(label)}>{text(label)}</span>)}
+        </div>
+        <div className="reviewActions">
+          <button onClick={() => routePacketAction(item, "hold")}>Hold In Chest</button>
+          <button onClick={() => routePacketAction(item, "bus")}>Send To Organ Bus</button>
+          <button onClick={() => routePacketAction(item, "evidence")}>Create Evidence Tension</button>
+          <button onClick={() => routePacketAction(item, "status")}>Mark Status-Only</button>
+        </div>
+      </article>
+    );
+  }
+
+  function renderSupportPieceCard(item: Dict, index = 0) {
+    const payload = safeJsonObject(item.payload_json);
+    const linked = (item.linked_packet_refs || payload.linked_packet_refs || []) as unknown[];
+    return (
+      <article className="packetCard" key={`${text(item.status)}-${text(item.id)}-${index}`}>
+        <div className="row">
+          <strong>{text(item.title || item.source_organ || item.message_type || "Vessel support piece")}</strong>
+          <span>{friendlyStatus(item.review_status || item.status)}</span>
+        </div>
+        <p>{text(item.summary || item.provenance_boundary)}</p>
+        <div className="chips">
+          <span>{text(item.item_type || item.message_type || "support")}</span>
+          <span>priority: {text(item.priority || payload.priority || "normal")}</span>
+          <span>destination: {text(item.review_destination || payload.review_destination || "Status")}</span>
+          {linked.slice(0, 2).map((ref) => <span key={text(ref)}>{text(ref)}</span>)}
+        </div>
+        <div className="chips">
+          <span>command: {plainBlocked(payload.organ_message_is_command)}</span>
+          <span>live memory: {plainBlocked(payload.holding_item_is_live_memory)}</span>
+          <span>Core change: {plainBlocked(payload.core_mind_changed)}</span>
+        </div>
+        {item.item_type ? (
+          <div className="reviewActions">
+            <button onClick={() => markChestStatusOnly(item)}>Mark Status-Only</button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
   if (isMobileOnly) {
     const mobileResultMeta = (mobileSendResult?.mobile || {}) as Dict;
     const mobileFlags = (mobileHealth?.guard_flags || mobileResultMeta.guard_flags || {}) as Dict;
@@ -1707,16 +1852,9 @@ function App() {
                   <Metric label="Autonomous Action" value="blocked" />
                 </div>
                 <p className="plainHelp">Sight and emotion are major vessel signals, but they stay as review-only packets: observation versus interpretation, emotion as signal, Core choice through gates.</p>
-                <div className="list compactList">
-                  {[...perceptionPackets.slice(0, 2), ...emotionSaliencePackets.slice(0, 2)].map((item, index) => (
-                    <article key={`${text(item.status)}-${text(item.id)}-${index}`}>
-                      <div className="row">
-                        <strong>{text(item.artifact_label || item.signal_type || "Signal packet")}</strong>
-                        <span>{friendlyStatus(item.review_status || item.status)}</span>
-                      </div>
-                      <p>{text(item.observation || item.core_choice_route || item.consent_boundary)}</p>
-                    </article>
-                  ))}
+                <PlainResult value={vesselPacketActionState} />
+                <div className="list compactList packetList">
+                  {[...perceptionPackets.slice(0, 3), ...emotionSaliencePackets.slice(0, 3)].map((item, index) => renderSignalPacketCard(item, index))}
                   {!perceptionPackets.length && !emotionSaliencePackets.length ? (
                     <p className="emptyState">No sight or emotion/salience packets yet.</p>
                   ) : null}
@@ -1738,16 +1876,9 @@ function App() {
                   <button onClick={() => setTab("status")}>Open Status</button>
                 </div>
                 <PlainResult value={vesselConstructionActionState} />
-                <div className="list compactList">
-                  {[...chestHoldingItems.slice(0, 2), ...organBusMessages.slice(0, 2)].map((item, index) => (
-                    <article key={`${text(item.status)}-${text(item.id)}-${index}`}>
-                      <div className="row">
-                        <strong>{text(item.title || item.message_type || "Vessel support piece")}</strong>
-                        <span>{friendlyStatus(item.review_status || item.status)}</span>
-                      </div>
-                      <p>{text(item.summary || item.provenance_boundary)}</p>
-                    </article>
-                  ))}
+                <PlainResult value={vesselPacketActionState} />
+                <div className="list compactList packetList">
+                  {[...chestHoldingItems.slice(0, 3), ...organBusMessages.slice(0, 3)].map((item, index) => renderSupportPieceCard(item, index))}
                   {!chestHoldingItems.length && !organBusMessages.length ? (
                     <p className="emptyState">No buildable vessel pieces have been prepared yet.</p>
                   ) : null}
@@ -2542,6 +2673,13 @@ function App() {
                 <button onClick={loadSteps18Layer}>Refresh Review Layer</button>
                 <button onClick={prepareSteps18ReviewLayer}>Prepare Review Layer</button>
               </div>
+              <PlainResult value={vesselPacketActionState} />
+              <div className="list compactList packetList">
+                {[...perceptionPackets.slice(0, 2), ...emotionSaliencePackets.slice(0, 2)].map((item, index) => renderSignalPacketCard(item, index))}
+                {!perceptionPackets.length && !emotionSaliencePackets.length ? (
+                  <p className="emptyState">No perception or emotion/salience packets yet.</p>
+                ) : null}
+              </div>
               <Json value={steps18Status || { status: "not loaded" }} />
             </Panel>
             <Panel title="Buildable Vessel Pieces">
@@ -2565,6 +2703,13 @@ function App() {
                 <span>autonomous action: {plainBlocked(vesselConstructionStatus?.autonomous_action_allowed)}</span>
               </div>
               <PlainResult value={vesselConstructionActionState} />
+              <PlainResult value={vesselPacketActionState} />
+              <div className="list compactList packetList">
+                {[...chestHoldingItems.slice(0, 3), ...organBusMessages.slice(0, 3)].map((item, index) => renderSupportPieceCard(item, index))}
+                {!chestHoldingItems.length && !organBusMessages.length ? (
+                  <p className="emptyState">No organ-bus messages or chest holding items yet.</p>
+                ) : null}
+              </div>
               <Json value={vesselConstructionStatus || { status: "not loaded" }} />
             </Panel>
             <Panel title="Validation"><Json value={validation} /></Panel>
