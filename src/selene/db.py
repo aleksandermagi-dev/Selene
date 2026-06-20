@@ -1092,6 +1092,70 @@ CREATE TABLE IF NOT EXISTS vessel_emotion_salience_packets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_vessel_emotion_salience_packets_status ON vessel_emotion_salience_packets(status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_construction_manifests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  manifest_key TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  construction_status TEXT NOT NULL DEFAULT 'support_pieces_review_only',
+  support_pieces TEXT NOT NULL DEFAULT '[]',
+  guard_flags TEXT NOT NULL DEFAULT '{}',
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  status TEXT NOT NULL DEFAULT 'vessel_construction_support_only',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_construction_manifests_status ON vessel_construction_manifests(construction_status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_organ_bus_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  message_type TEXT NOT NULL,
+  source_organ TEXT NOT NULL,
+  target_organ TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  support_refs TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'organ_bus_message_review_only',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_organ_bus_messages_status ON vessel_organ_bus_messages(status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_chest_holding_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  salience_labels TEXT NOT NULL DEFAULT '[]',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  linked_packet_refs TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'chest_holding_item_review_only',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_chest_holding_items_status ON vessel_chest_holding_items(status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_construction_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_label TEXT NOT NULL,
+  created_counts TEXT NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'vessel_construction_prepare_complete',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_construction_runs_status ON vessel_construction_runs(status, review_status);
 """
 
 REQUIRED_COLUMNS = {

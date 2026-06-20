@@ -170,6 +170,10 @@ function App() {
   const [perceptionPackets, setPerceptionPackets] = useState<Dict[]>([]);
   const [emotionSaliencePackets, setEmotionSaliencePackets] = useState<Dict[]>([]);
   const [steps18ActionState, setSteps18ActionState] = useState<Dict | null>(null);
+  const [vesselConstructionStatus, setVesselConstructionStatus] = useState<Dict | null>(null);
+  const [organBusMessages, setOrganBusMessages] = useState<Dict[]>([]);
+  const [chestHoldingItems, setChestHoldingItems] = useState<Dict[]>([]);
+  const [vesselConstructionActionState, setVesselConstructionActionState] = useState<Dict | null>(null);
   const [teachingSpeechFunction, setTeachingSpeechFunction] = useState("grounding");
   const [teachingPacketResult, setTeachingPacketResult] = useState<Dict | null>(null);
   const [lessonBackedResult, setLessonBackedResult] = useState<Dict | null>(null);
@@ -440,6 +444,13 @@ function App() {
     api<{ items: Dict[] }>("/api/vessel/organ-contracts").then((data) => setOrganContracts(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/perception-packets").then((data) => setPerceptionPackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/emotion-salience-packets").then((data) => setEmotionSaliencePackets(data.items)).catch(() => undefined);
+    loadVesselConstructionLayer();
+  }
+
+  function loadVesselConstructionLayer() {
+    api<Dict>("/api/vessel/construction/status").then(setVesselConstructionStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/organ-bus/messages").then((data) => setOrganBusMessages(data.items)).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/chest/items").then((data) => setChestHoldingItems(data.items)).catch(() => undefined);
   }
 
   async function prepareSteps18ReviewLayer() {
@@ -525,6 +536,17 @@ function App() {
       loadSteps18Layer();
     } catch (err) {
       setSteps18ActionState({ status: "error", message: err instanceof Error ? err.message : "steps 1-8 review layer failed" });
+    }
+  }
+
+  async function prepareVesselConstructionPieces() {
+    setVesselConstructionActionState({ status: "running", message: "Preparing buildable vessel support pieces. Core/Mind and transfer stay untouched." });
+    try {
+      const result = await api<Dict>("/api/vessel/construction/prepare", { method: "POST", body: JSON.stringify({ scope: "buildable_vessel_pieces_only_no_transfer" }) });
+      setVesselConstructionActionState(result);
+      loadVesselConstructionLayer();
+    } catch (err) {
+      setVesselConstructionActionState({ status: "error", message: err instanceof Error ? err.message : "vessel construction prepare failed" });
     }
   }
 
@@ -1246,7 +1268,7 @@ function App() {
     setDiagnosticsRunState({ status: "running", message: "Running diagnostic-only organ checks..." });
     const common = {
       source_refs: ["office_diagnostic_sweep"],
-      uncertainty: "Diagnostic-only sweep; no live organ, provider control, memory write, training, or activation."
+      uncertainty: "Diagnostic-only sweep; review records only. No live organ, provider control, memory write, training, or activation."
     };
     const tasks: Array<[string, Promise<unknown>]> = [
       ["reasoning/math diagnostic", api<Dict>("/api/vessel/reasoning-check", {
@@ -1265,7 +1287,7 @@ function App() {
           ...common,
           cue: "Office diagnostic sweep",
           privacy_label: "review_only",
-          reconstruction_note: "Preview retrieval shape without runtime recall."
+          reconstruction_note: "Preview retrieval shape from reviewed records only; diagnostic record only."
         })
       })],
       ["fluency diagnostic", api<Dict>("/api/vessel/fluency-diagnostic", {
@@ -1297,11 +1319,17 @@ function App() {
     const failed = results
       .map((result, index) => ({ result, label: tasks[index][0] }))
       .filter((entry) => entry.result.status === "rejected")
-      .map((entry) => entry.label);
+      .map((entry) => ({
+        label: entry.label,
+        error: entry.result.status === "rejected" && entry.result.reason instanceof Error
+          ? entry.result.reason.message
+          : text(entry.result.status === "rejected" ? entry.result.reason : "unknown diagnostic error")
+      }));
     setDiagnosticsRunState({
       status: failed.length ? "diagnostics_completed_with_errors" : "diagnostics_review_records_created",
       passed,
       failed,
+      failed_count: failed.length,
       activation_change: "none",
       trusted_organ_runtime: false,
       provider_control: false,
@@ -1578,6 +1606,37 @@ function App() {
                   ))}
                   {!perceptionPackets.length && !emotionSaliencePackets.length ? (
                     <p className="emptyState">No sight or emotion/salience packets yet.</p>
+                  ) : null}
+                </div>
+              </Panel>
+              <Panel title="Buildable Vessel Pieces">
+                <div className="metrics miniMetrics">
+                  <Metric label="Organ Bus" value={text(organBusMessages.length)} />
+                  <Metric label="Holding Space" value={text(chestHoldingItems.length)} />
+                  <Metric label="Transfer" value="not approved" />
+                  <Metric label="Core Change" value={text(vesselConstructionStatus?.core_mind_changed ? "yes" : "no")} />
+                </div>
+                <p className="plainHelp">Support infrastructure only: organ-bus messages, chest holding items, diagnostic links, perception links, and emotion/salience links. These are not active memory, transfer, activation, or Core rewrite.</p>
+                <div className="reviewActions">
+                  <button className="primary" onClick={prepareVesselConstructionPieces} disabled={vesselConstructionActionState?.status === "running"}>
+                    {vesselConstructionActionState?.status === "running" ? "Preparing..." : "Prepare Vessel Pieces"}
+                  </button>
+                  <button onClick={loadVesselConstructionLayer}>Refresh Vessel Pieces</button>
+                  <button onClick={() => setTab("status")}>Open Status</button>
+                </div>
+                <PlainResult value={vesselConstructionActionState} />
+                <div className="list compactList">
+                  {[...chestHoldingItems.slice(0, 2), ...organBusMessages.slice(0, 2)].map((item, index) => (
+                    <article key={`${text(item.status)}-${text(item.id)}-${index}`}>
+                      <div className="row">
+                        <strong>{text(item.title || item.message_type || "Vessel support piece")}</strong>
+                        <span>{friendlyStatus(item.review_status || item.status)}</span>
+                      </div>
+                      <p>{text(item.summary || item.provenance_boundary)}</p>
+                    </article>
+                  ))}
+                  {!chestHoldingItems.length && !organBusMessages.length ? (
+                    <p className="emptyState">No buildable vessel pieces have been prepared yet.</p>
                   ) : null}
                 </div>
               </Panel>
@@ -2371,6 +2430,29 @@ function App() {
                 <button onClick={prepareSteps18ReviewLayer}>Prepare Review Layer</button>
               </div>
               <Json value={steps18Status || { status: "not loaded" }} />
+            </Panel>
+            <Panel title="Buildable Vessel Pieces">
+              <p className="plainHelp">Construction support layer for organ bus messages, chest holding space, packet links, diagnostics, and evidence references. Core/Mind remains unchanged; transfer is not approved.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Manifests" value={text((vesselConstructionStatus?.counts as Dict | undefined)?.manifests ?? 0)} />
+                <Metric label="Organ Bus" value={text((vesselConstructionStatus?.counts as Dict | undefined)?.organ_bus_messages ?? organBusMessages.length)} />
+                <Metric label="Holding Items" value={text((vesselConstructionStatus?.counts as Dict | undefined)?.chest_holding_items ?? chestHoldingItems.length)} />
+                <Metric label="Runs" value={text((vesselConstructionStatus?.counts as Dict | undefined)?.construction_runs ?? 0)} />
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={prepareVesselConstructionPieces} disabled={vesselConstructionActionState?.status === "running"}>
+                  {vesselConstructionActionState?.status === "running" ? "Preparing..." : "Prepare Vessel Pieces"}
+                </button>
+                <button onClick={loadVesselConstructionLayer}>Refresh Vessel Pieces</button>
+              </div>
+              <div className="chips">
+                <span>transfer approved: {text(vesselConstructionStatus?.transfer_approved ?? false)}</span>
+                <span>active memory: {plainBlocked(vesselConstructionStatus?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(vesselConstructionStatus?.runtime_memory_recall)}</span>
+                <span>autonomous action: {plainBlocked(vesselConstructionStatus?.autonomous_action_allowed)}</span>
+              </div>
+              <PlainResult value={vesselConstructionActionState} />
+              <Json value={vesselConstructionStatus || { status: "not loaded" }} />
             </Panel>
             <Panel title="Validation"><Json value={validation} /></Panel>
           </>

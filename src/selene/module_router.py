@@ -115,6 +115,14 @@ from .reasoning_artifacts import (
     steps_1_8_status,
     upsert_organ_contract,
 )
+from .vessel_construction import (
+    construction_status,
+    create_chest_holding_item,
+    create_organ_bus_message,
+    list_chest_holding_items,
+    list_organ_bus_messages,
+    prepare_vessel_pieces,
+)
 from .vessel import (
     create_core_memory_candidate,
     create_speech_memory_candidate,
@@ -214,6 +222,18 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": create_emotion_salience_packet(conn, payload)}
     if route_key == "vessel.emotion_salience_packet.list":
         return {"route": route_key, "result": list_emotion_salience_packets(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.construction.status":
+        return {"route": route_key, "result": construction_status(conn)}
+    if route_key == "vessel.construction.prepare":
+        return {"route": route_key, "result": prepare_vessel_pieces(conn, payload)}
+    if route_key == "vessel.organ_bus_message.create":
+        return {"route": route_key, "result": create_organ_bus_message(conn, payload)}
+    if route_key == "vessel.organ_bus_message.list":
+        return {"route": route_key, "result": list_organ_bus_messages(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.chest_holding_item.create":
+        return {"route": route_key, "result": create_chest_holding_item(conn, payload)}
+    if route_key == "vessel.chest_holding_item.list":
+        return {"route": route_key, "result": list_chest_holding_items(conn, int(payload.get("limit") or 50))}
     if route_key == "c_remaining.runtime.status":
         return {"route": route_key, "result": remaining_runtime_status(conn)}
     if route_key == "c_core.graceful_fall.run":
