@@ -14,9 +14,14 @@ def test_mobile_health_is_chat_only_and_guarded():
     health = mobile_health({"sidecar_version": "test"})
     flags = health["guard_flags"]
     assert health["status"] == "mobile_chat_ready"
+    assert health["access_mode"] == "local_only"
+    assert health["lan_pairing_enabled"] is False
+    assert health["same_device_or_dev_preview"] is True
     assert health["allowed_actions"] == ["chat_send", "session_list", "session_detail", "review_capture"]
     assert "cocoon_build_actions" in health["blocked_actions"]
     assert flags["mobile_surface"] == "chat_only"
+    assert flags["access_mode"] == "local_only"
+    assert flags["lan_pairing_enabled"] is False
     assert flags["desktop_remains_control_room"] is True
     assert flags["transfer_approved"] is False
     assert flags["activation_change"] == "none"

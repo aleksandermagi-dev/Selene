@@ -10,6 +10,9 @@ from .vessel_construction import create_chest_holding_item
 
 MOBILE_BOUNDARY_FLAGS: dict[str, Any] = {
     "mobile_surface": "chat_only",
+    "access_mode": "local_only",
+    "lan_pairing_enabled": False,
+    "same_device_or_dev_preview": True,
     "desktop_remains_control_room": True,
     "activation_change": "none",
     "transfer_approved": False,
@@ -32,7 +35,10 @@ def mobile_guard_flags() -> dict[str, Any]:
 def mobile_health(health: dict[str, Any] | None = None) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "status": "mobile_chat_ready",
-        "surface": "ios_private_web_companion",
+        "surface": "mobile_chat_same_device_dev_preview",
+        "access_mode": "local_only",
+        "lan_pairing_enabled": False,
+        "same_device_or_dev_preview": True,
         "allowed_actions": ["chat_send", "session_list", "session_detail", "review_capture"],
         "blocked_actions": [
             "my_office_decisions",
@@ -47,7 +53,7 @@ def mobile_health(health: dict[str, Any] | None = None) -> dict[str, Any]:
             "file_browsing",
             "admin_routes",
         ],
-        "boundary_note": "Phone is a chat doorway; desktop Selene remains the control room.",
+        "boundary_note": "Mobile v1 is a same-device/dev preview for chat and saving review notes. Desktop Selene remains the control room; private LAN/iPhone pairing is not enabled yet.",
         "guard_flags": mobile_guard_flags(),
     }
     if health is not None:

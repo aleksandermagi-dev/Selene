@@ -89,3 +89,46 @@ def test_mobile_capture_creates_review_only_chest_item_without_memory(tmp_path):
     assert result["guard_flags"]["memory_write_active"] is False
     assert len(chest_items) == 1
     assert chest_items[0]["item_type"] == "mobile_capture"
+
+
+def test_diagnostic_sweep_support_records_remain_review_or_status_only(tmp_path):
+    conn = _conn(tmp_path)
+
+    bus = route_request(conn, "vessel.organ_bus_message.create", {
+        "message_type": "diagnostic",
+        "source_organ": "diagnostics",
+        "target_organ": "chest_holding_space",
+        "summary": "Diagnostic sweep completed with all checks passing.",
+        "support_refs": ["office_diagnostic_sweep"],
+        "salience_labels": ["diagnostic", "status_only"],
+        "review_status": "diagnostic_only",
+    })["result"]
+    chest = route_request(conn, "vessel.chest_holding_item.create", {
+        "item_type": "diagnostic_link",
+        "title": "Office diagnostic sweep",
+        "summary": "Diagnostic sweep support record.",
+        "salience_labels": ["diagnostic", "support_only"],
+        "source_refs": ["office_diagnostic_sweep"],
+        "linked_packet_refs": ["office_diagnostic_sweep"],
+        "review_status": "diagnostic_only",
+    })["result"]
+    ledger = route_request(conn, "vessel.evidence_tension.create", {
+        "claim": "Diagnostic sweep has one check needing review.",
+        "support_status": "partial",
+        "tension_status": "under_tension",
+        "conclusion_status": "needs_review",
+        "source_refs": ["office_diagnostic_sweep"],
+        "linked_packet_refs": ["office_diagnostic_sweep"],
+    })["result"]
+
+    assert bus["payload_json"]["organ_message_is_command"] is False
+    assert bus["review_status"] == "diagnostic_only"
+    assert bus["memory_write_active"] is False
+    assert bus["transfer_approved"] is False
+    assert chest["payload_json"]["holding_item_is_live_memory"] is False
+    assert chest["review_status"] == "diagnostic_only"
+    assert chest["runtime_memory_recall"] is False
+    assert ledger["review_status"] == "pending_review"
+    assert ledger["decision_label"] == "Aleks decision"
+    assert ledger["memory_write_active"] is False
+    assert ledger["transfer_approved"] is False

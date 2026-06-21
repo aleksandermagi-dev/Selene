@@ -92,6 +92,7 @@ from .pre_transfer_runtime import (
     perception_intake_preview,
     retrieval_reconstruction_runtime_preview,
     route_speech_rehearsal_to_review,
+    update_speech_rehearsal_review_status,
     working_memory_runtime_preview,
 )
 from .research_integrity import AcademicWorkflowRouter, CitationIntegrity, ResearchIntegrityCore, research_integrity_report
@@ -218,6 +219,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": compare_speech_generation_rehearsals(conn, payload)}
     if route_key == "vessel.speech_rehearsal.route_review":
         return {"route": route_key, "result": route_speech_rehearsal_to_review(conn, payload)}
+    if route_key == "vessel.speech_rehearsal.update_review_status":
+        return {"route": route_key, "result": update_speech_rehearsal_review_status(conn, payload)}
     if route_key == "vessel.working_memory_runtime.preview":
         return {"route": route_key, "result": working_memory_runtime_preview(conn, payload)}
     if route_key == "vessel.retrieval_runtime.preview":

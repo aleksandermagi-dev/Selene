@@ -561,6 +561,27 @@ function App() {
     }
   }
 
+  async function updateSpeechRehearsalReviewStatus(item: Dict, reviewStatus: string) {
+    setSpeechRehearsalResult({ status: "running", message: `Updating speech rehearsal to ${friendlyStatus(reviewStatus)}.` });
+    try {
+      const result = await api<Dict>("/api/vessel/speech-rehearsal/review-status", {
+        method: "POST",
+        body: JSON.stringify({
+          id: item.id,
+          review_status: reviewStatus,
+          review_note: reviewStatus === "accepted_for_review_use"
+            ? "Candidate marked as useful rehearsal material only; not activation or memory."
+            : "Candidate review status updated from desktop review."
+        })
+      });
+      setSpeechRehearsalResult(result);
+      refreshMyOffice();
+      loadPreTransferRuntimeLayer();
+    } catch (err) {
+      setSpeechRehearsalResult({ status: "error", message: err instanceof Error ? err.message : "speech rehearsal status update failed" });
+    }
+  }
+
   async function runRetrievalRuntimePreview() {
     setRetrievalRuntimePreview({ status: "running", message: "Running retrieval runtime preview." });
     try {
@@ -1536,8 +1557,8 @@ function App() {
       source_refs: ["office_diagnostic_sweep"],
       uncertainty: "Diagnostic-only sweep; review records only. No live organ, provider control, memory write, training, or activation."
     };
-    const tasks: Array<[string, Promise<unknown>]> = [
-      ["reasoning/math diagnostic", api<Dict>("/api/vessel/reasoning-check", {
+    const tasks: Array<[string, () => Promise<unknown>]> = [
+      ["reasoning/math diagnostic", () => api<Dict>("/api/vessel/reasoning-check", {
         method: "POST",
         body: JSON.stringify({
           ...common,
@@ -1547,7 +1568,7 @@ function App() {
           result_summary: "Diagnostic reasoning route remains review-only."
         })
       })],
-      ["retrieval reconstruction preview", api<Dict>("/api/vessel/retrieval-reconstruction", {
+      ["retrieval reconstruction preview", () => api<Dict>("/api/vessel/retrieval-reconstruction", {
         method: "POST",
         body: JSON.stringify({
           ...common,
@@ -1556,7 +1577,7 @@ function App() {
           reconstruction_note: "Preview retrieval shape from reviewed records only; diagnostic record only."
         })
       })],
-      ["fluency diagnostic", api<Dict>("/api/vessel/fluency-diagnostic", {
+      ["fluency diagnostic", () => api<Dict>("/api/vessel/fluency-diagnostic", {
         method: "POST",
         body: JSON.stringify({
           ...common,
@@ -1567,7 +1588,7 @@ function App() {
           organ_activation_budget: "Speed stays subordinate to gates, provenance, and B review."
         })
       })],
-      ["organ fault preview", api<Dict>("/api/c-vessel/organ-fault/preview", {
+      ["organ fault preview", () => api<Dict>("/api/c-vessel/organ-fault/preview", {
         method: "POST",
         body: JSON.stringify({
           fault_type: "reasoning",
@@ -1575,12 +1596,19 @@ function App() {
           source_refs: ["office_diagnostic_sweep"]
         })
       }).then(setCVesselOrganFaultResult)],
-      ["organ resilience check", api<Dict>("/api/c-vessel/organ-fault/resilience-check", {
+      ["organ resilience check", () => api<Dict>("/api/c-vessel/organ-fault/resilience-check", {
         method: "POST",
         body: JSON.stringify({})
       }).then(setCVesselFaultResilienceResult)]
     ];
-    const results = await Promise.allSettled(tasks.map(([, task]) => task));
+    const results: PromiseSettledResult<unknown>[] = [];
+    for (const [, task] of tasks) {
+      try {
+        results.push({ status: "fulfilled", value: await task() });
+      } catch (reason) {
+        results.push({ status: "rejected", reason });
+      }
+    }
     const diagnosticMeta: Record<string, { affected_organ: string; suggested_next_step: string }> = {
       "reasoning/math diagnostic": { affected_organ: "reasoning_math_verification", suggested_next_step: "Inspect the reasoning record and keep it review-only." },
       "retrieval reconstruction preview": { affected_organ: "long_term_retrieval_reconstruction", suggested_next_step: "Inspect provenance and keep retrieval as preview-only." },
@@ -1601,8 +1629,8 @@ function App() {
           ? entry.result.reason.message
           : text(entry.result.status === "rejected" ? entry.result.reason : "unknown diagnostic error")
       }));
-    const supportRecordResults = await Promise.allSettled([
-      api<Dict>("/api/vessel/organ-bus/message", {
+    const supportRecordTasks: Array<() => Promise<Dict>> = [
+      () => api<Dict>("/api/vessel/organ-bus/message", {
         method: "POST",
         body: JSON.stringify({
           message_type: "diagnostic",
@@ -1614,7 +1642,7 @@ function App() {
           review_status: failed.length ? "review_only" : "diagnostic_only"
         })
       }),
-      api<Dict>("/api/vessel/chest/item", {
+      () => api<Dict>("/api/vessel/chest/item", {
         method: "POST",
         body: JSON.stringify({
           item_type: "diagnostic_link",
@@ -1626,7 +1654,7 @@ function App() {
           review_status: failed.length ? "review_only" : "diagnostic_only"
         })
       }),
-      ...(failed.length ? [api<Dict>("/api/vessel/evidence-tension", {
+      ...(failed.length ? [() => api<Dict>("/api/vessel/evidence-tension", {
         method: "POST",
         body: JSON.stringify({
           claim: `Diagnostic sweep has ${failed.length} check(s) needing review.`,
@@ -1637,7 +1665,15 @@ function App() {
           linked_packet_refs: ["office_diagnostic_sweep"]
         })
       })] : [])
-    ]);
+    ];
+    const supportRecordResults: PromiseSettledResult<Dict>[] = [];
+    for (const task of supportRecordTasks) {
+      try {
+        supportRecordResults.push({ status: "fulfilled", value: await task() });
+      } catch (reason) {
+        supportRecordResults.push({ status: "rejected", reason });
+      }
+    }
     setDiagnosticsRunState({
       status: failed.length ? "diagnostics_completed_with_errors" : "diagnostics_review_records_created",
       passed,
@@ -1882,6 +1918,10 @@ function App() {
         </div>
         <div className="reviewActions">
           <button onClick={() => routeSpeechRehearsalToReview(item)}>Send To My Office</button>
+          <button onClick={() => updateSpeechRehearsalReviewStatus(item, "accepted_for_review_use")}>Mark Useful</button>
+          <button onClick={() => updateSpeechRehearsalReviewStatus(item, "needs_revision")}>Needs Revision</button>
+          <button onClick={() => updateSpeechRehearsalReviewStatus(item, "returned_to_b")}>Return To B</button>
+          <button onClick={() => updateSpeechRehearsalReviewStatus(item, "status_only")}>Status-Only</button>
           <button onClick={compareSpeechRehearsals}>Compare Candidates</button>
         </div>
       </article>
@@ -1918,6 +1958,8 @@ function App() {
               <strong>Chat doorway only</strong>
               <p>{text(mobileHealth?.boundary_note || "Desktop Selene remains the control room.")}</p>
               <div className="chips">
+                <span>access: {friendlyStatus(mobileHealth?.access_mode || mobileFlags.access_mode || "local_only")}</span>
+                <span>LAN pairing: {plainBlocked(mobileHealth?.lan_pairing_enabled ?? mobileFlags.lan_pairing_enabled)}</span>
                 <span>activation: {text(mobileFlags.activation_change || "none")}</span>
                 <span>transfer: {text(mobileFlags.transfer_approved || false)}</span>
                 <span>memory write: {text(mobileFlags.memory_write_active || false)}</span>
@@ -1929,7 +1971,7 @@ function App() {
                 <div className="landing mobileLanding">
                   <img src={SELENE_ICON} alt="Selene moon icon" />
                   <h2>Good to see you.</h2>
-                  <p>This phone view is for talking and saving review notes. Cocoon work waits for desktop.</p>
+                  <p>This mobile view is a local dev preview for talking and saving review notes. Cocoon work waits for desktop.</p>
                 </div>
               ) : (
                 <>
@@ -1945,7 +1987,7 @@ function App() {
                 <button className="primary" onClick={sendMobileChat} disabled={!mobileText.trim() || mobileStatus?.status === "sending"}>Send</button>
                 <button onClick={captureMobileReview} disabled={!mobileText.trim() || mobileStatus?.status === "saving"}>Save For Review</button>
               </div>
-              {mobileStatus ? <p className={mobileStatus.status === "error" ? "errorText" : "plainHelp"}>{text(mobileStatus.message)}</p> : <small>No cocoon controls, diagnostics, release sync, transfer, or memory actions are available here.</small>}
+              {mobileStatus ? <p className={mobileStatus.status === "error" ? "errorText" : "plainHelp"}>{text(mobileStatus.message)}</p> : <small>Same-device/dev preview only. No cocoon controls, diagnostics, release sync, transfer, or memory actions are available here.</small>}
             </section>
           </>
         )}
