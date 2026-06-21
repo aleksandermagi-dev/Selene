@@ -746,6 +746,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.speech_rehearsal.route_review", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/speech-rehearsal/review-status":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.speech_rehearsal.update_review_status", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/retrieval-runtime-preview":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.retrieval_runtime.preview", body)["result"]))

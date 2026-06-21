@@ -22,6 +22,7 @@
     "db:snapshot": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/snapshot_selene_db.ps1",
     "bruno:seed": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/seed_bruno_collection.ps1",
     "package:win": "npm run build && npm run package:sidecar:core && npm run tauri:build && npm run package:status",
+    "package:win:verified": "npm run package:win && npm run package:verify",
     "clean:check": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean_workspace.ps1",
     "clean": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean_workspace.ps1 -Apply"
   },

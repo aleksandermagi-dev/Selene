@@ -175,6 +175,42 @@ def test_speech_rehearsal_shapes_focused_prompt_concisely(tmp_path):
     assert len(result["candidate_text"]) < 900
 
 
+def test_speech_rehearsal_review_status_updates_without_activation_or_memory(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_continuity_pack(conn)
+    result = route_request(conn, "vessel.speech_rehearsal.create", {
+        "prompt": "Review this candidate before any future use.",
+        "speech_function": "grounding",
+    })["result"]
+
+    updated = route_request(conn, "vessel.speech_rehearsal.update_review_status", {
+        "id": result["id"],
+        "review_status": "needs_revision",
+        "review_note": "Keep this in review as a rehearsal only.",
+    })["result"]
+    listed = route_request(conn, "vessel.speech_rehearsal.list", {})["result"]["items"][0]
+    queue_row = conn.execute(
+        "SELECT status, review_status FROM vessel_review_queue WHERE subject_table = 'vessel_speech_generation_rehearsals' AND subject_id = ?",
+        (result["id"],),
+    ).fetchone()
+
+    assert updated["status"] == "speech_rehearsal_review_status_updated"
+    assert updated["review_status"] == "needs_revision"
+    assert updated["transfer_approved"] is False
+    assert updated["memory_write_active"] is False
+    assert updated["runtime_memory_recall"] is False
+    assert listed["review_status"] == "needs_revision"
+    assert listed["payload_json"]["review_only"] is True
+    assert queue_row["status"] == "closed"
+    assert queue_row["review_status"] == "needs_revision"
+
+    with pytest.raises(ValueError):
+        route_request(conn, "vessel.speech_rehearsal.update_review_status", {
+            "id": result["id"],
+            "review_status": "transfer approved",
+        })
+
+
 def test_working_memory_runtime_preview_is_short_term_only(tmp_path):
     conn = _conn(tmp_path)
     create_working_memory_packet(conn, {

@@ -27,6 +27,14 @@ ACCESSION_PROPOSAL_STATES = {
     "blocked",
 }
 
+SPEECH_REHEARSAL_REVIEW_STATUSES = {
+    "pending_review",
+    "needs_revision",
+    "status_only",
+    "returned_to_b",
+    "accepted_for_review_use",
+}
+
 BLOCKED_MARKERS = (
     "activate c",
     "transfer approved",
@@ -162,6 +170,42 @@ def route_speech_rehearsal_to_review(conn: sqlite3.Connection, payload: dict[str
     _enqueue_review(conn, rehearsal_id, item.get("source_refs") or [])
     conn.commit()
     return _with_guards({"status": "speech_rehearsal_sent_to_my_office", "item": item, "review_destination": "My Office"})
+
+
+def update_speech_rehearsal_review_status(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
+    _ensure_allowed(payload)
+    rehearsal_id = int(payload.get("id") or payload.get("rehearsal_id") or 0)
+    review_status = _choice(str(payload.get("review_status") or ""), SPEECH_REHEARSAL_REVIEW_STATUSES, "speech rehearsal review_status")
+    review_note = _text(payload.get("review_note") or "", 600)
+    item = get_speech_generation_rehearsal(conn, rehearsal_id)
+    if not item:
+        raise ValueError("speech rehearsal not found")
+    payload_json = dict(item.get("payload_json") or {})
+    payload_json["review_note"] = review_note
+    payload_json["review_action"] = review_status
+    payload_json["review_only"] = True
+    payload_json.update(_guards())
+    conn.execute(
+        "UPDATE vessel_speech_generation_rehearsals SET review_status = ?, payload_json = ? WHERE id = ?",
+        (review_status, json.dumps(payload_json), rehearsal_id),
+    )
+    queue_status = "pending_review" if review_status == "pending_review" else "closed"
+    conn.execute(
+        """
+        UPDATE vessel_review_queue
+        SET status = ?, review_status = ?, payload_json = ?
+        WHERE subject_table = 'vessel_speech_generation_rehearsals' AND subject_id = ?
+        """,
+        (queue_status, review_status, json.dumps({"review_note": review_note, **_guards()}), rehearsal_id),
+    )
+    conn.commit()
+    updated = get_speech_generation_rehearsal(conn, rehearsal_id)
+    return _with_guards({
+        "status": "speech_rehearsal_review_status_updated",
+        "review_status": review_status,
+        "item": updated,
+        "review_destination": "My Office" if review_status == "pending_review" else "Status",
+    })
 
 
 def working_memory_runtime_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:

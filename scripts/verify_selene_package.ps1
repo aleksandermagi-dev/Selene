@@ -1,5 +1,5 @@
 param(
-    [string]$InstalledExe = "C:\Users\aleks\AppData\Local\Selene\selene-vessel.exe",
+    [string]$InstalledExe = "",
     [string]$Installer = "",
     [int]$WarmupSeconds = 35,
     [switch]$NoLaunch
@@ -10,6 +10,41 @@ $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 if (-not $Installer) {
     $Installer = Join-Path $repo "src-tauri\target\release\bundle\nsis\Selene_0.1.1_x64-setup.exe"
+}
+
+function Get-TauriProductName {
+    $configPath = Join-Path $repo "src-tauri\tauri.conf.json"
+    if (-not (Test-Path -LiteralPath $configPath)) {
+        return $null
+    }
+    try {
+        return (Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json).productName
+    } catch {
+        return $null
+    }
+}
+
+function Resolve-InstalledSeleneExe([string]$ExplicitPath) {
+    $candidates = New-Object System.Collections.Generic.List[string]
+    if ($ExplicitPath) {
+        $candidates.Add($ExplicitPath)
+    }
+    $installDir = Join-Path $env:LOCALAPPDATA "Selene"
+    $candidates.Add((Join-Path $installDir "selene-vessel.exe"))
+    $candidates.Add((Join-Path $installDir "Selene.exe"))
+    $productName = Get-TauriProductName
+    if ($productName) {
+        $candidates.Add((Join-Path $installDir "$productName.exe"))
+    }
+    foreach ($candidate in ($candidates | Select-Object -Unique)) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+    if ($ExplicitPath) {
+        return $ExplicitPath
+    }
+    return (Join-Path $installDir "selene-vessel.exe")
 }
 
 function Get-EndpointJson([string]$Path) {
@@ -27,13 +62,14 @@ function Get-Sidecars {
 $startedProcess = $null
 $launched = $false
 $closedStartedApp = $false
+$resolvedInstalledExe = Resolve-InstalledSeleneExe $InstalledExe
 $health = Get-EndpointJson "/health"
 
 if (-not $health -and -not $NoLaunch) {
-    if (-not (Test-Path -LiteralPath $InstalledExe)) {
-        throw "Installed Selene executable not found: $InstalledExe"
+    if (-not (Test-Path -LiteralPath $resolvedInstalledExe)) {
+        throw "Installed Selene executable not found. Checked explicit path and LocalAppData Selene candidates; selected fallback: $resolvedInstalledExe"
     }
-    $startedProcess = Start-Process -FilePath $InstalledExe -PassThru
+    $startedProcess = Start-Process -FilePath $resolvedInstalledExe -PassThru
     $launched = $true
     $deadline = (Get-Date).AddSeconds($WarmupSeconds)
     while ((Get-Date) -lt $deadline -and -not $health) {
@@ -76,8 +112,8 @@ $result = [ordered]@{
     ok = $ok
     launched_installed_app = $launched
     closed_started_app = $false
-    installed_exe_path = $InstalledExe
-    installed_exe_last_write_time = if (Test-Path -LiteralPath $InstalledExe) { (Get-Item -LiteralPath $InstalledExe).LastWriteTimeUtc.ToString("o") } else { $null }
+    installed_exe_path = $resolvedInstalledExe
+    installed_exe_last_write_time = if (Test-Path -LiteralPath $resolvedInstalledExe) { (Get-Item -LiteralPath $resolvedInstalledExe).LastWriteTimeUtc.ToString("o") } else { $null }
     installer_path = $Installer
     installer_size_bytes = if (Test-Path -LiteralPath $Installer) { [int64](Get-Item -LiteralPath $Installer).Length } else { 0 }
     sidecar_process_count = (Get-Sidecars).Count
