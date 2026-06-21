@@ -167,6 +167,12 @@ function App() {
   const [reviewAutopilotState, setReviewAutopilotState] = useState<Dict | null>(null);
   const [readinessSweepState, setReadinessSweepState] = useState<Dict | null>(null);
   const [diagnosticsRunState, setDiagnosticsRunState] = useState<Dict | null>(null);
+  const [expandedDiagnosticsState, setExpandedDiagnosticsState] = useState<Dict | null>(null);
+  const [preCoreReviewPackets, setPreCoreReviewPackets] = useState<Dict | null>(null);
+  const [temporalChanges, setTemporalChanges] = useState<Dict | null>(null);
+  const [nightCycleResult, setNightCycleResult] = useState<Dict | null>(null);
+  const [mobileCaptureHistory, setMobileCaptureHistory] = useState<Dict[]>([]);
+  const [tendrilPlanResult, setTendrilPlanResult] = useState<Dict | null>(null);
   const [steps18Status, setSteps18Status] = useState<Dict | null>(null);
   const [reasoningArtifacts, setReasoningArtifacts] = useState<Dict[]>([]);
   const [coreGatePackets, setCoreGatePackets] = useState<Dict[]>([]);
@@ -365,6 +371,7 @@ function App() {
     if (!boot.ready) return;
     if (isMobileOnly) {
       api<Dict>("/api/mobile/health").then(setMobileHealth).catch(() => undefined);
+      api<{ items: Dict[] }>("/api/mobile/review-captures").then((data) => setMobileCaptureHistory(data.items)).catch(() => undefined);
       return;
     }
     refreshDashboard();
@@ -501,6 +508,7 @@ function App() {
       setMobileStatus({ status: "saved", message: text(result.status || "Saved for desktop review.") });
       const session = await api<Dict>(`/api/mobile/chat/sessions/${result.session_id}`);
       setMobileSession(session);
+      api<{ items: Dict[] }>("/api/mobile/review-captures").then((data) => setMobileCaptureHistory(data.items)).catch(() => undefined);
     } catch (err) {
       setMobileStatus({ status: "error", message: err instanceof Error ? err.message : "Mobile review capture failed." });
     }
@@ -516,6 +524,8 @@ function App() {
     api<{ items: Dict[] }>("/api/vessel/organ-contracts").then((data) => setOrganContracts(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/perception-packets").then((data) => setPerceptionPackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/emotion-salience-packets").then((data) => setEmotionSaliencePackets(data.items)).catch(() => undefined);
+    api<Dict>("/api/vessel/pre-core-review-packets").then(setPreCoreReviewPackets).catch(() => undefined);
+    api<Dict>("/api/vessel/temporal-continuity/changes").then(setTemporalChanges).catch(() => undefined);
     loadVesselConstructionLayer();
   }
 
@@ -707,6 +717,28 @@ function App() {
       loadVesselConstructionLayer();
     } catch (err) {
       setVesselPacketActionState({ status: "error", message: err instanceof Error ? err.message : "packet route failed" });
+    }
+  }
+
+  async function routeSupportPacket(kind: "perception" | "research", item: Dict, actions: string[]) {
+    const ref = packetRef(item);
+    setVesselPacketActionState({ status: "running", message: `Routing ${kind} packet ${ref}` });
+    try {
+      const result = await api<Dict>(kind === "perception" ? "/api/vessel/perception-intake/route" : "/api/vessel/research/route", {
+        method: "POST",
+        body: JSON.stringify({
+          packet_type: kind,
+          packet_ref: ref,
+          actions,
+          review_status: item.review_status || "review_only",
+          source_refs: [ref],
+          claim: text(item.observation || item.output_summary || item.summary || "Support packet routed for review.")
+        })
+      });
+      setVesselPacketActionState(result);
+      loadSteps18Layer();
+    } catch (err) {
+      setVesselPacketActionState({ status: "error", message: err instanceof Error ? err.message : `${kind} route failed` });
     }
   }
 
@@ -1306,6 +1338,19 @@ function App() {
       .catch((err) => setCycleRunResult({ error: err instanceof Error ? err.message : "cycle run rejected" }));
   }
 
+  function prepareNightCycle() {
+    setNightCycleResult({ status: "running", message: "Preparing manual pre-Core night cycle bundle." });
+    api<Dict>("/api/vessel/cycle/prepare-night", {
+      method: "POST",
+      body: JSON.stringify({ cycle_label: remainingRuntimeDraft.cycle_label || "Prepare Night Cycle" })
+    })
+      .then((result) => {
+        setNightCycleResult(result);
+        loadVessel();
+      })
+      .catch((err) => setNightCycleResult({ error: err instanceof Error ? err.message : "prepare night cycle rejected" }));
+  }
+
   function runCausalSandbox() {
     api<Dict>("/api/vessel/causal-sandbox/run", {
       method: "POST",
@@ -1342,6 +1387,39 @@ function App() {
         loadVessel();
       })
       .catch((err) => setGoalDriveResult({ error: err instanceof Error ? err.message : "goal/drive preview rejected" }));
+  }
+
+  function runExpandedDiagnosticsSweep() {
+    setExpandedDiagnosticsState({ status: "running", message: "Running expanded diagnostic-only sweep." });
+    api<Dict>("/api/vessel/diagnostics/expanded-sweep", {
+      method: "POST",
+      body: JSON.stringify({ source_refs: ["manual_expanded_diagnostics"] })
+    })
+      .then((result) => {
+        setExpandedDiagnosticsState(result);
+        loadVessel();
+      })
+      .catch((err) => setExpandedDiagnosticsState({ error: err instanceof Error ? err.message : "expanded diagnostic sweep rejected" }));
+  }
+
+  function previewTendrilPlan() {
+    setTendrilPlanResult({ status: "running", message: "Preparing Tendril plan preview." });
+    api<Dict>("/api/vessel/tendril/plan-preview", {
+      method: "POST",
+      body: JSON.stringify({
+        intent: "Prepare a reversible support-only plan for the next vessel construction task.",
+        required_approval: "Aleks review before any real-world execution.",
+        reversible_steps: ["draft proposal", "verify source refs", "route for review", "pause"],
+        verification_plan: "Confirm source refs, route destination, expected output, and safety flags.",
+        rollback_plan: "Mark the plan blocked and return it to My Office if any check fails.",
+        source_refs: ["manual_tendril_preview"]
+      })
+    })
+      .then((result) => {
+        setTendrilPlanResult(result);
+        loadVessel();
+      })
+      .catch((err) => setTendrilPlanResult({ error: err instanceof Error ? err.message : "tendril preview rejected" }));
   }
 
   function runLongHorizonStability() {
@@ -1846,7 +1924,7 @@ function App() {
     return (
       <article className="packetCard" key={`${kind}-${text(item.id)}-${index}`}>
         <div className="row">
-          <strong>{text(item.artifact_label || item.signal_type || item.title || item.claim || "Vessel packet")}</strong>
+          <strong>{text(item.artifact_label || item.signal_type || item.workflow || item.title || item.claim || "Vessel packet")}</strong>
           <span>{friendlyStatus(item.review_status || item.status)}</span>
         </div>
         <div className="packetFields">
@@ -2030,6 +2108,22 @@ function App() {
                 <button onClick={captureMobileReview} disabled={!mobileText.trim() || mobileStatus?.status === "saving"}>Save For Review</button>
               </div>
               {mobileStatus ? <p className={mobileStatus.status === "error" ? "errorText" : "plainHelp"}>{text(mobileStatus.message)}</p> : <small>Same-device/dev preview only. No cocoon controls, diagnostics, release sync, transfer, or memory actions are available here.</small>}
+            </section>
+
+            <section className="mobileNotice">
+              <strong>Saved for desktop review</strong>
+              <p>{mobileCaptureHistory.length ? `${mobileCaptureHistory.length} capture(s) in Chest / Holding Space.` : "No mobile captures saved yet."}</p>
+              <div className="list compactList">
+                {mobileCaptureHistory.slice(0, 3).map((item, index) => (
+                  <article key={`mobile-capture-${text(item.id)}-${index}`}>
+                    <div className="row">
+                      <strong>{text(item.title || "Mobile capture")}</strong>
+                      <span>{friendlyStatus(item.review_status || item.status)}</span>
+                    </div>
+                    <p>{text(item.summary || "Saved for desktop review.")}</p>
+                  </article>
+                ))}
+              </div>
             </section>
           </>
         )}
@@ -2248,6 +2342,41 @@ function App() {
                   {officeDiagnosticPackets.slice(0, 2).map((item, index) => renderSupportPieceCard(item, index))}
                   {!officeLedgerNeedsReview.length && !officeMobileCaptures.length && !academicPackets.length && !officeDiagnosticPackets.length ? (
                     <p className="emptyState">No vessel review packets need attention right now.</p>
+                  ) : null}
+                </div>
+              </Panel>
+              <Panel title="Pre-Core Review Packets">
+                <div className="metrics miniMetrics">
+                  <Metric label="Aleks Decisions" value={text(safeJsonObject(preCoreReviewPackets?.counts).aleks_decision ?? 0)} />
+                  <Metric label="Status-Only" value={text(safeJsonObject(preCoreReviewPackets?.counts).status_only ?? 0)} />
+                  <Metric label="Codex Actions" value={text(safeJsonObject(preCoreReviewPackets?.counts).codex_action ?? 0)} />
+                  <Metric label="Blocked" value={text(safeJsonObject(preCoreReviewPackets?.counts).blocked ?? 0)} />
+                </div>
+                <p className="plainHelp">Cycle, lifecycle, temporal, causal, goal/drive, research, perception, mobile, diagnostic, and Tendril proposal rows grouped by what kind of attention they need. Status-only rows stay calm.</p>
+                <div className="reviewActions">
+                  <button className="primary" onClick={prepareNightCycle} disabled={nightCycleResult?.status === "running"}>{nightCycleResult?.status === "running" ? "Preparing..." : "Prepare Night Cycle"}</button>
+                  <button onClick={() => api<Dict>("/api/vessel/pre-core-review-packets").then(setPreCoreReviewPackets).catch(() => undefined)}>Refresh Packets</button>
+                  <button onClick={() => setTab("status")}>Open Status</button>
+                </div>
+                <PlainResult value={nightCycleResult} />
+                <div className="list compactList packetList">
+                  {((preCoreReviewPackets?.items || []) as Dict[]).slice(0, 8).map((item, index) => (
+                    <article className="packetCard" key={`pre-core-${text(item.source_ref)}-${index}`}>
+                      <div className="row">
+                        <strong>{text(item.title || item.capability || "Pre-Core packet")}</strong>
+                        <span>{text(item.row_state || "status-only")}</span>
+                      </div>
+                      <p>{text(item.summary || item.source_ref)}</p>
+                      <div className="chips">
+                        <span>{friendlyStatus(item.capability)}</span>
+                        <span>{friendlyStatus(item.review_status)}</span>
+                        <span>destination: {text(item.review_destination || "Status")}</span>
+                        <span>{text(item.source_ref)}</span>
+                      </div>
+                    </article>
+                  ))}
+                  {!((preCoreReviewPackets?.items || []) as Dict[]).length ? (
+                    <p className="emptyState">Nothing needs pre-Core review right now.</p>
                   ) : null}
                 </div>
               </Panel>
@@ -3085,6 +3214,19 @@ function App() {
                 <span>autonomous action: {plainBlocked(remainingRuntimeStatus?.autonomous_action_allowed)}</span>
                 <span>transfer: {plainBlocked(remainingRuntimeStatus?.transfer_approved)}</span>
               </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={prepareNightCycle} disabled={nightCycleResult?.status === "running"}>{nightCycleResult?.status === "running" ? "Preparing Night Cycle..." : "Prepare Night Cycle"}</button>
+                <button onClick={runExpandedDiagnosticsSweep} disabled={expandedDiagnosticsState?.status === "running"}>{expandedDiagnosticsState?.status === "running" ? "Running Expanded Sweep..." : "Run Expanded Diagnostics"}</button>
+                <button onClick={previewTendrilPlan} disabled={tendrilPlanResult?.status === "running"}>{tendrilPlanResult?.status === "running" ? "Preparing Tendril Plan..." : "Preview Tendril Plan"}</button>
+                <button onClick={() => api<Dict>("/api/vessel/temporal-continuity/changes").then(setTemporalChanges).catch(() => undefined)}>Refresh Temporal Dashboard</button>
+              </div>
+              <div className="packetFields">
+                <p><b>What Changed</b>{(((temporalChanges?.what_changed_since_last_checkpoint || []) as unknown[]).map(text).join(", ") || "No timestamped changes after the last package marker.")}</p>
+                <p><b>Resume Note</b>{(((temporalChanges?.resume_notes || []) as unknown[]).map(text).join(" ")) || text(safeJsonObject(remainingRuntimeStatus?.temporal_continuity).return_resume_note || "Use real timestamps only.")}</p>
+              </div>
+              <PlainResult value={nightCycleResult} />
+              <PlainResult value={expandedDiagnosticsState} />
+              <PlainResult value={tendrilPlanResult} />
               <PlainResult value={safeJsonObject(remainingRuntimeStatus?.temporal_continuity)} />
             </Panel>
             <SplitView
@@ -3145,8 +3287,23 @@ function App() {
               </div>
               <div className="reviewActions">
                 <button className="primary" onClick={runPerceptionIntakePreview}>Create Perception Intake Preview</button>
+                {perceptionPackets[0] ? <button onClick={() => routeSupportPacket("perception", perceptionPackets[0], ["hold", "bus"])}>Route Latest To Chest / Organ Bus</button> : null}
+                {perceptionPackets[0] ? <button onClick={() => routeSupportPacket("perception", perceptionPackets[0], ["ledger", "office"])}>Create Review Ledger Entry</button> : null}
               </div>
               <PlainResult value={perceptionIntakePreview} />
+            </Panel>
+            <Panel title="Research / Academic Routing">
+              <p className="plainHelp">Supplied-source research packets can be held, linked, or turned into evidence/tension review. They do not fabricate citations or override vessel ethics.</p>
+              <div className="reviewActions">
+                {academicPackets[0] ? <button onClick={() => routeSupportPacket("research", academicPackets[0], ["hold", "bus"])}>Route Latest Research Packet</button> : null}
+                {academicPackets[0] ? <button onClick={() => routeSupportPacket("research", academicPackets[0], ["ledger", "office"])}>Create Research Ledger Review</button> : null}
+                <button onClick={loadSteps18Layer}>Refresh Research Packets</button>
+              </div>
+              <PlainResult value={vesselPacketActionState} />
+              <div className="list compactList packetList">
+                {academicPackets.slice(0, 3).map((item, index) => renderSignalPacketCard(item, index))}
+                {!academicPackets.length ? <p className="emptyState">No supplied-source research packets yet.</p> : null}
+              </div>
             </Panel>
             <Panel title="Buildable Vessel Pieces">
               <p className="plainHelp">Construction support layer for organ bus messages, chest holding space, packet links, diagnostics, and evidence references. Core/Mind remains unchanged; transfer is not approved.</p>

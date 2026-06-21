@@ -126,6 +126,26 @@ def mobile_capture_review(conn: sqlite3.Connection, payload: dict[str, Any]) -> 
     }
 
 
+def mobile_review_captures(conn: sqlite3.Connection, limit: int = 25) -> dict[str, Any]:
+    rows = conn.execute(
+        """
+        SELECT * FROM vessel_chest_holding_items
+        WHERE item_type = 'mobile_capture'
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    items = [dict(row) for row in rows]
+    return {
+        "status": "mobile_review_captures_listed",
+        "items": items,
+        "capture_only": True,
+        "review_destination": "desktop_my_office",
+        "guard_flags": mobile_guard_flags(),
+    }
+
+
 def mobile_blocked_action(action: str) -> dict[str, Any]:
     return {
         "status": "mobile_action_blocked",

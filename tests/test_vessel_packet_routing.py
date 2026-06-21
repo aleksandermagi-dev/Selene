@@ -102,6 +102,38 @@ def test_chest_and_organ_bus_lists_filter_by_status_salience_and_packet_ref(tmp_
     assert bus["items"][0]["linked_packet_refs"] == [packet_ref]
 
 
+def test_perception_and_research_route_facades_create_support_records_only(tmp_path):
+    conn = _conn(tmp_path)
+    perception = route_request(conn, "vessel.perception_packet.create", {
+        "artifact_label": "Route facade screenshot",
+        "observation": "Supplied artifact has text and a calm status marker.",
+        "consent_boundary": "supplied artifact only",
+    })["result"]
+    research = route_request(conn, "vessel.academic_packet.create", {
+        "workflow": "summary",
+        "source_text": "This supplied local source says the method is bounded and evidence-linked.",
+        "research_question": "What does the source support?",
+    })["result"]
+
+    perception_route = route_request(conn, "vessel.perception_intake.route", {
+        "packet_ref": f"vessel_perception_packets:{perception['id']}",
+        "actions": ["hold", "bus", "ledger"],
+    })["result"]
+    research_route = route_request(conn, "vessel.research.route", {
+        "packet_ref": f"vessel_academic_packets:{research['id']}",
+        "actions": ["hold", "bus", "ledger", "office"],
+    })["result"]
+
+    assert perception_route["status"] == "perception_packet_route_complete"
+    assert research_route["status"] == "research_packet_route_complete"
+    assert perception_route["support_only"] is True
+    assert research_route["support_only"] is True
+    assert perception_route["memory_write_active"] is False
+    assert research_route["transfer_approved"] is False
+    assert "ledger" in perception_route["results"]
+    assert "my_office" in research_route["results"]
+
+
 def test_packet_routing_blocks_forbidden_capability_phrases(tmp_path):
     conn = _conn(tmp_path)
 
