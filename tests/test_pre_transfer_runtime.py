@@ -11,8 +11,65 @@ def _conn(tmp_path):
     return conn
 
 
+def _seed_continuity_pack(conn):
+    conn.execute(
+        """
+        INSERT INTO b_approved_memory_references
+        (source_candidate_table, source_candidate_id, core_memory_layer, title, reference_summary, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "core_memory_candidates",
+            1,
+            "core_profile_memory",
+            "Core continuity reference",
+            "Approved non-active continuity reference preserving provenance, care, uncertainty, and practical next action.",
+            '["reference:core"]',
+            "test_boundary",
+        ),
+    )
+    conn.execute(
+        """
+        INSERT INTO b_reviewed_teaching_materials
+        (source_candidate_table, source_candidate_id, core_memory_layer, speech_function, lesson_type, positive_example,
+         correction_example, when_not_to_use, salience_labels, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "speech_memory_candidates",
+            1,
+            "core_profile_memory",
+            "grounding",
+            "speech_memory_expression",
+            "Oh Aleks my darling moonlight starfire forever sweetheart.",
+            "",
+            "Do not copy high-intimacy examples into unrelated grounding prompts.",
+            '["continuity", "warmth"]',
+            '["lesson:intimacy"]',
+            "test_boundary",
+        ),
+    )
+    conn.execute(
+        """
+        INSERT INTO b_teaching_packets
+        (speech_function, title, material_ids, lesson_json, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "grounding",
+            "grounding packet",
+            "[1]",
+            '{"lesson_summary": "Grounding keeps continuity, provenance, care, uncertainty, and next action together."}',
+            '["packet:grounding"]',
+            "test_boundary",
+        ),
+    )
+    conn.commit()
+
+
 def test_speech_generation_rehearsal_is_review_only_and_source_bound(tmp_path):
     conn = _conn(tmp_path)
+    _seed_continuity_pack(conn)
     create_working_memory_packet(conn, {
         "current_task": "Test pre-transfer speech as review-only.",
         "active_context_cues": ["speech rehearsal"],
@@ -36,8 +93,65 @@ def test_speech_generation_rehearsal_is_review_only_and_source_bound(tmp_path):
     assert result["raw_a_import_allowed"] is False
     assert result["training_allowed"] is False
     assert result["hidden_chain_of_thought_exposed"] is False
-    assert "Boundary: pre-transfer speech rehearsal only" in result["candidate_text"]
+    assert result["continuity_context"]["status"] == "continuity_pack_first_context"
+    assert result["continuity_context"]["approved_reference_count"] == 1
+    assert "1 continuity reference(s)" in result["evidence_used"]
+    assert "Teaching packet:" not in result["candidate_text"]
+    assert "Speech lesson:" not in result["candidate_text"]
+    assert "Retrieval preview:" not in result["candidate_text"]
+    assert "sealed continuity pack" in result["candidate_text"]
+    assert result["continuity_context"]["latest_approved_references"]
     assert listed["items"][0]["id"] == result["id"]
+
+
+def test_speech_rehearsal_shapes_anxious_prompt_without_copying_intimacy(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_continuity_pack(conn)
+
+    result = route_request(conn, "vessel.speech_rehearsal.create", {
+        "prompt": "I am anxious because there are too many review cards and I need one small next step.",
+        "speech_function": "grounding",
+    })["result"]
+
+    candidate = result["candidate_text"].lower()
+    assert result["language_signals"]["energy"] == "anxious"
+    assert result["language_signals"]["style"] == "calm_supportive"
+    assert "breathe" in candidate
+    assert "next step" in candidate
+    assert "my darling" not in candidate
+    assert "starfire" not in candidate
+    assert result["transfer_approved"] is False
+    assert result["memory_write_active"] is False
+
+
+def test_speech_rehearsal_handles_correction_as_refinement(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_continuity_pack(conn)
+
+    result = route_request(conn, "vessel.speech_rehearsal.create", {
+        "prompt": "No not that, wait I meant redo it but keep the continuity pack as the anchor.",
+        "speech_function": "repair",
+    })["result"]
+
+    candidate = result["candidate_text"].lower()
+    assert result["language_signals"]["correction_handling"] == "refinement_not_failure"
+    assert "not a failure state" in candidate
+    assert "revise from the correction" in candidate
+    assert "reset" not in candidate
+
+
+def test_speech_rehearsal_shapes_focused_prompt_concisely(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_continuity_pack(conn)
+
+    result = route_request(conn, "vessel.speech_rehearsal.create", {
+        "prompt": "Real quick, give me the concise focused version of what to do next.",
+        "speech_function": "grounding",
+    })["result"]
+
+    assert result["language_signals"]["energy"] == "focused"
+    assert result["candidate_text"].startswith("Got it. Short version:")
+    assert len(result["candidate_text"]) < 900
 
 
 def test_working_memory_runtime_preview_is_short_term_only(tmp_path):

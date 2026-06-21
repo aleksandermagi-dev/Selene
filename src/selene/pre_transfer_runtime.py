@@ -4,7 +4,9 @@ import json
 import sqlite3
 from typing import Any
 
+from .c_vessel import continuity_package_preview
 from .cocoon_readiness import create_visual_observation, retrieval_reconstruction_preview
+from .continuity import retrieve_continuity_notes
 from .native_generation import compose_native_response
 from .reconstruction_checks import evaluate_recognition_reconstruction
 from .registry import truncate
@@ -40,22 +42,29 @@ def create_speech_generation_rehearsal(conn: sqlite3.Connection, payload: dict[s
     _ensure_allowed(payload)
     prompt = _required(payload, "prompt", 1600)
     speech_function = _text(payload.get("speech_function") or "grounding", 120)
+    continuity_pack = _continuity_context(conn, prompt)
     working = working_memory_runtime_preview(conn, {"limit": payload.get("working_memory_limit") or 3})
     retrieval = retrieval_reconstruction_runtime_preview(conn, {"cue": prompt, "limit": payload.get("retrieval_limit") or 5})
     teaching = _teaching_context(conn, speech_function)
     lessons = _speech_lessons(conn, speech_function)
+    language = _language_signals(prompt, speech_function)
     gate = {
         "route": "allowed",
         "matched_evidence": retrieval.get("source_candidates") or [],
-        "continuity_notes": [{"label": "pre_transfer_speech_rehearsal", "meaning": "Generated candidate speech is review-only and non-activating."}],
+        "continuity_notes": continuity_pack["continuity_notes"] or [
+            {"label": "pre_transfer_speech_rehearsal", "meaning": "Generated candidate speech is review-only and non-activating."}
+        ],
     }
     native = compose_native_response(prompt, gate, gate["matched_evidence"], gate["continuity_notes"])
-    candidate = _compose_candidate(prompt, speech_function, native["content"], working, retrieval, teaching, lessons)
+    candidate = _compose_candidate(prompt, speech_function, language, continuity_pack, working, retrieval, teaching, lessons)
     check = evaluate_recognition_reconstruction(candidate, {"route": "speech_generation_rehearsal", "source_boundary": SPEECH_REHEARSAL_BOUNDARY})
-    source_refs = sorted(set(teaching["source_refs"] + lessons["source_refs"] + retrieval["source_refs"] + working["source_refs"]))
+    source_refs = sorted(set(continuity_pack["source_refs"] + teaching["source_refs"] + lessons["source_refs"] + retrieval["source_refs"] + working["source_refs"]))
     evidence_used = [
+        f"{continuity_pack['approved_reference_count']} continuity reference(s)",
+        f"{continuity_pack['continuity_note_count']} continuity note(s)",
+        f"{continuity_pack['core_pattern_anchor_count']} Core Pattern Anchor(s)",
         f"{len(teaching['items'])} teaching packet(s)",
-        f"{len(lessons['items'])} speech lesson(s)",
+        f"{len(lessons['items'])} speech rhythm hint(s)",
         f"{len(working['items'])} working-memory packet(s)",
         f"{len(retrieval['source_candidates'])} retrieval candidate(s)",
     ]
@@ -70,6 +79,8 @@ def create_speech_generation_rehearsal(conn: sqlite3.Connection, payload: dict[s
         "status": "speech_generation_rehearsal_review_only",
         "provenance_boundary": SPEECH_REHEARSAL_BOUNDARY,
         "review_status": "pending_review",
+        "language_signals": language,
+        "continuity_context": continuity_pack,
         "working_memory_preview": working,
         "retrieval_preview": retrieval,
         "teaching_context": teaching,
@@ -236,24 +247,187 @@ def perception_intake_preview(conn: sqlite3.Connection, payload: dict[str, Any])
     })
 
 
-def _compose_candidate(prompt: str, speech_function: str, native_text: str, working: dict[str, Any], retrieval: dict[str, Any], teaching: dict[str, Any], lessons: dict[str, Any]) -> str:
-    lesson = lessons["items"][0] if lessons["items"] else {}
-    teaching_item = teaching["items"][0] if teaching["items"] else {}
-    working_task = (working["items"][0] or {}).get("current_task") if working["items"] else ""
-    retrieval_text = truncate(str(retrieval.get("bounded_preview") or ""), 280)
-    lesson_note = truncate(str(lesson.get("positive_example") or lesson.get("correction_example") or ""), 220)
-    teaching_note = truncate(str((teaching_item.get("lesson_json") or {}).get("lesson_summary") or teaching_item.get("title") or ""), 220)
-    return truncate(
-        "\n".join(part for part in [
-            f"[{speech_function}] {native_text}",
-            f"Working moment: {working_task}" if working_task else "",
-            f"Teaching packet: {teaching_note}" if teaching_note else "",
-            f"Speech lesson: {lesson_note}" if lesson_note else "",
-            f"Retrieval preview: {retrieval_text}" if retrieval_text else "",
-            "Boundary: pre-transfer speech rehearsal only; review before use.",
-        ] if part),
-        4000,
-    )
+def _compose_candidate(
+    prompt: str,
+    speech_function: str,
+    language: dict[str, Any],
+    continuity: dict[str, Any],
+    working: dict[str, Any],
+    retrieval: dict[str, Any],
+    teaching: dict[str, Any],
+    lessons: dict[str, Any],
+) -> str:
+    question = _clean_user_prompt(prompt)
+    continuity_line = _continuity_line(continuity)
+    working_line = _working_line(working)
+    retrieval_line = _retrieval_line(retrieval)
+    next_step = _next_step_line(language, speech_function)
+    opener = _opener(language)
+    body = _body_line(language, question, continuity_line, working_line, retrieval_line)
+    boundary = "This stays a pre-transfer review candidate, not activation or memory write."
+    parts = [opener, body, next_step, boundary]
+    return truncate("\n\n".join(part for part in parts if part), 2200)
+
+
+def _continuity_context(conn: sqlite3.Connection, prompt: str) -> dict[str, Any]:
+    package = continuity_package_preview(conn)
+    notes = retrieve_continuity_notes(conn, prompt, limit=6)
+    references = package.get("latest_approved_references") or []
+    teaching_packets = package.get("latest_teaching_packets") or []
+    return {
+        "status": "continuity_pack_first_context",
+        "package_status": package.get("status"),
+        "package_ready_for_future_transfer_review": bool(package.get("package_ready_for_future_transfer_review")),
+        "sealed": bool(package.get("sealed")),
+        "continuity_source": package.get("continuity_source"),
+        "approved_reference_count": len(references),
+        "teaching_packet_count": package.get("teaching_packet_count", 0),
+        "accepted_lesson_count": package.get("accepted_lesson_count", 0),
+        "core_pattern_anchor_count": package.get("core_pattern_anchor_count", 0),
+        "latest_approved_references": references[:5],
+        "latest_teaching_packets": teaching_packets[:5],
+        "continuity_notes": notes,
+        "continuity_note_count": len(notes),
+        "source_refs": list(package.get("source_refs") or []),
+        "boundary": "sealed_b_continuity_package_preview_only_not_live_memory",
+    }
+
+
+def _language_signals(prompt: str, speech_function: str) -> dict[str, Any]:
+    lower = prompt.lower()
+    if any(term in lower for term in ("anxious", "anxiety", "overwhelmed", "worried", "scared")):
+        energy = "anxious"
+        style = "calm_supportive"
+    elif any(term in lower for term in ("frustrated", "annoyed", "mad", "angry", "stuck")):
+        energy = "frustrated"
+        style = "calm_supportive"
+    elif any(term in lower for term in ("excited", "awesome", "nice", "sweet", "let's go", "lets go")):
+        energy = "excited"
+        style = "engaged_responsive"
+    elif any(term in lower for term in ("what if", "maybe", "could", "wonder", "curious")):
+        energy = "exploratory"
+        style = "curious_thinking_partner"
+    elif any(term in lower for term in ("focus", "direct", "concise", "quick", "real quick")):
+        energy = "focused"
+        style = "concise_direct"
+    elif any(term in lower for term in ("confused", "lost", "not clicking")):
+        energy = "confused"
+        style = "clarifying_grounded"
+    else:
+        energy = "casual"
+        style = "relaxed_loose"
+
+    correction = any(term in lower for term in ("no not", "not that", "wait", "redo", "i meant", "one sec"))
+    if correction:
+        style = "repair_oriented"
+
+    stance = "exploratory" if energy in {"exploratory", "confused", "anxious"} else "assertive" if any(term in lower for term in ("this is", "we need", "i know", "absolutely")) else "unsure"
+    confidence = "high" if stance == "assertive" else "low" if energy in {"confused", "anxious"} else "medium"
+    return {
+        "status": "human_language_signals",
+        "energy": energy,
+        "style": style,
+        "stance": stance,
+        "confidence": confidence,
+        "correction_handling": "refinement_not_failure" if correction else "none",
+        "speech_function": speech_function,
+    }
+
+
+def _clean_user_prompt(prompt: str) -> str:
+    text = prompt.strip()
+    if ":" in text and text.lower().startswith(("aleks asks", "user asks")):
+        text = text.split(":", 1)[1].strip()
+    return truncate(text, 260)
+
+
+def _opener(language: dict[str, Any]) -> str:
+    energy = language.get("energy")
+    if language.get("correction_handling") == "refinement_not_failure":
+        return "Yeah, I see the correction. That is not a failure state; it is us tightening the route."
+    if energy == "anxious":
+        return "Yeah, breathe for a second. We can make this smaller and less sharp."
+    if energy == "frustrated":
+        return "Yeah, I hear the friction. Let us narrow it without turning it into a whole storm."
+    if energy == "excited":
+        return "Oh, yes. This has momentum."
+    if energy == "exploratory":
+        return "Interesting. I can see the shape of that possibility."
+    if energy == "focused":
+        return "Got it. Short version:"
+    if energy == "confused":
+        return "Yeah, something is not lining up yet. We can sort it without resetting the whole thread."
+    return "Yeah, I am with you."
+
+
+def _body_line(
+    language: dict[str, Any],
+    question: str,
+    continuity_line: str,
+    working_line: str,
+    retrieval_line: str,
+) -> str:
+    continuity_phrase = continuity_line or "I am keeping the continuity pack as the anchor, not loose style imitation."
+    if language.get("energy") == "focused":
+        return f"{continuity_phrase} The current ask is: {question}"
+    if language.get("energy") in {"anxious", "frustrated", "confused"}:
+        return f"{continuity_phrase} I would not treat the pile as one giant obligation; I would take the next reviewable piece, name what is actually actionable, and leave the rest as status."
+    if language.get("energy") == "exploratory":
+        return f"{continuity_phrase} The useful move is to test the idea against evidence, keep uncertainty visible, and follow the part that still holds up."
+    if language.get("energy") == "excited":
+        return f"{continuity_phrase} We can follow the spark, but still keep provenance and boundaries doing their job."
+    if working_line:
+        return f"{continuity_phrase} {working_line}"
+    if retrieval_line:
+        return f"{continuity_phrase} {retrieval_line}"
+    return f"{continuity_phrase} I can answer from the reviewed thread and keep the next step practical."
+
+
+def _continuity_line(continuity: dict[str, Any]) -> str:
+    refs = continuity.get("latest_approved_references") or []
+    notes = continuity.get("continuity_notes") or []
+    if notes:
+        note = notes[0]
+        meaning = _sentence(note.get("meaning"), 180)
+        return f"I am anchoring this in a reviewed continuity note: {meaning}" if meaning else "I am anchoring this in reviewed continuity notes from the continuity pack."
+    if refs:
+        ref = refs[0]
+        summary = _sentence(ref.get("reference_summary"), 180)
+        return f"I am anchoring this in the sealed continuity pack: {summary}" if summary else "I am anchoring this in the sealed continuity pack and approved future-memory references."
+    if continuity.get("core_pattern_anchor_count"):
+        return "I am anchoring this in the sealed continuity package and Core Pattern Anchors, not in copied voice snippets."
+    return ""
+
+
+def _working_line(working: dict[str, Any]) -> str:
+    item = (working.get("items") or [{}])[0]
+    task = item.get("current_task")
+    task_text = _sentence(task, 180)
+    return f"The current working moment is {task_text}" if task_text else ""
+
+
+def _retrieval_line(retrieval: dict[str, Any]) -> str:
+    preview = str(retrieval.get("bounded_preview") or "")
+    if not preview or "No approved B-reviewed candidate surfaced" in preview:
+        return ""
+    return f"The retrieval preview gives us a bounded clue: {_sentence(preview, 180)}"
+
+
+def _next_step_line(language: dict[str, Any], speech_function: str) -> str:
+    if language.get("correction_handling") == "refinement_not_failure":
+        return "Next I would revise from the correction, preserve what still fits, and ask before changing anything consequential."
+    if language.get("energy") in {"anxious", "frustrated", "confused"}:
+        return "Next step: pick one item, decide whether it is Aleks decision, Codex action, or status-only, then move on."
+    if speech_function == "repair":
+        return "Next step: repair the route, name the changed assumption, and keep the relationship between evidence and care intact."
+    return "Next step: keep this as a reviewable candidate, then accept, revise, or return it to B."
+
+
+def _sentence(value: Any, limit: int) -> str:
+    text = truncate(str(value or "").strip(), limit).strip()
+    if not text:
+        return ""
+    return text if text[-1] in ".!?" else f"{text}."
 
 
 def _teaching_context(conn: sqlite3.Connection, speech_function: str) -> dict[str, Any]:

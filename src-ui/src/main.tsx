@@ -1854,7 +1854,11 @@ function App() {
   }
 
   function renderSpeechRehearsalCard(item: Dict, index = 0) {
+    const payload = safeJsonObject(item.payload_json);
     const recognition = safeJsonObject(item.recognition_check || item.recognition_check_json);
+    const language = safeJsonObject(item.language_signals || payload.language_signals);
+    const continuity = safeJsonObject(item.continuity_context || payload.continuity_context);
+    const evidence = (item.evidence_used || payload.evidence_used || []) as unknown[];
     return (
       <article className="packetCard" key={`speech-${text(item.id)}-${index}`}>
         <div className="row">
@@ -1867,6 +1871,10 @@ function App() {
           <p><b>Uncertainty</b>{text(item.uncertainty || "pre-transfer review only")}</p>
         </div>
         <div className="chips">
+          <span>continuity pack: {text(continuity.sealed ?? false)}</span>
+          <span>energy: {friendlyStatus(language.energy || "unknown")}</span>
+          <span>stance: {friendlyStatus(language.stance || "unknown")}</span>
+          <span>evidence: {text(evidence.length)}</span>
           <span>recognition: {friendlyStatus(recognition.decision || "unchecked")}</span>
           <span>transfer: {text(item.transfer_approved ?? false)}</span>
           <span>memory write: {plainBlocked(item.memory_write_active)}</span>
