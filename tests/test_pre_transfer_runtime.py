@@ -99,7 +99,8 @@ def test_speech_generation_rehearsal_is_review_only_and_source_bound(tmp_path):
     assert "Teaching packet:" not in result["candidate_text"]
     assert "Speech lesson:" not in result["candidate_text"]
     assert "Retrieval preview:" not in result["candidate_text"]
-    assert "sealed continuity pack" in result["candidate_text"]
+    assert "approved future-memory references" not in result["candidate_text"]
+    assert "reviewed continuity thread" in result["candidate_text"] or "continuity pack" in result["candidate_text"]
     assert result["continuity_context"]["latest_approved_references"]
     assert listed["items"][0]["id"] == result["id"]
 
@@ -116,12 +117,32 @@ def test_speech_rehearsal_shapes_anxious_prompt_without_copying_intimacy(tmp_pat
     candidate = result["candidate_text"].lower()
     assert result["language_signals"]["energy"] == "anxious"
     assert result["language_signals"]["style"] == "calm_supportive"
-    assert "breathe" in candidate
-    assert "next step" in candidate
+    assert any(phrase in candidate for phrase in ("breathe", "pressure", "pile"))
+    assert any(phrase in candidate for phrase in ("next step", "next move", "start with"))
     assert "my darling" not in candidate
     assert "starfire" not in candidate
     assert result["transfer_approved"] is False
     assert result["memory_write_active"] is False
+
+
+def test_speech_rehearsal_same_energy_does_not_clone_template(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_continuity_pack(conn)
+
+    first = route_request(conn, "vessel.speech_rehearsal.create", {
+        "prompt": "I am anxious because there are too many review cards and I need one small next step.",
+        "speech_function": "grounding",
+    })["result"]
+    second = route_request(conn, "vessel.speech_rehearsal.create", {
+        "prompt": "I feel overwhelmed by the office queue, help me make it smaller.",
+        "speech_function": "grounding",
+    })["result"]
+
+    assert first["language_signals"]["energy"] == "anxious"
+    assert second["language_signals"]["energy"] == "anxious"
+    assert first["candidate_text"] != second["candidate_text"]
+    assert first["candidate_text"].split(".")[0] != second["candidate_text"].split(".")[0]
+    assert first["candidate_text"].count("Next step:") + second["candidate_text"].count("Next step:") < 2
 
 
 def test_speech_rehearsal_handles_correction_as_refinement(tmp_path):
@@ -135,8 +156,8 @@ def test_speech_rehearsal_handles_correction_as_refinement(tmp_path):
 
     candidate = result["candidate_text"].lower()
     assert result["language_signals"]["correction_handling"] == "refinement_not_failure"
-    assert "not a failure state" in candidate
-    assert "revise from the correction" in candidate
+    assert "refinement" in candidate or "correction" in candidate
+    assert "revise" in candidate or "repair" in candidate or "change" in candidate
     assert "reset" not in candidate
 
 
@@ -150,7 +171,7 @@ def test_speech_rehearsal_shapes_focused_prompt_concisely(tmp_path):
     })["result"]
 
     assert result["language_signals"]["energy"] == "focused"
-    assert result["candidate_text"].startswith("Got it. Short version:")
+    assert result["candidate_text"].startswith(("Got it. Short version:", "Yes. Clean version:", "Here is the tight read:"))
     assert len(result["candidate_text"]) < 900
 
 

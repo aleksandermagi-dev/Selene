@@ -261,10 +261,12 @@ def _compose_candidate(
     continuity_line = _continuity_line(continuity)
     working_line = _working_line(working)
     retrieval_line = _retrieval_line(retrieval)
+    variant = _phrase_variant(prompt)
+    language["variant"] = variant
     next_step = _next_step_line(language, speech_function)
-    opener = _opener(language)
+    opener = _opener(language, variant)
     body = _body_line(language, question, continuity_line, working_line, retrieval_line)
-    boundary = "This stays a pre-transfer review candidate, not activation or memory write."
+    boundary = _boundary_line(variant)
     parts = [opener, body, next_step, boundary]
     return truncate("\n\n".join(part for part in parts if part), 2200)
 
@@ -341,23 +343,59 @@ def _clean_user_prompt(prompt: str) -> str:
     return truncate(text, 260)
 
 
-def _opener(language: dict[str, Any]) -> str:
+def _phrase_variant(prompt: str) -> int:
+    return sum(ord(char) for char in prompt) % 3
+
+
+def _opener(language: dict[str, Any], variant: int) -> str:
     energy = language.get("energy")
     if language.get("correction_handling") == "refinement_not_failure":
-        return "Yeah, I see the correction. That is not a failure state; it is us tightening the route."
+        return _pick(variant, [
+            "Yeah, I see the correction. That is not a failure state; it is us tightening the route.",
+            "Got it, that changes the shape. I would treat this as refinement, not a collapse.",
+            "Okay, I am tracking the adjustment. We keep what still fits and revise the part that moved.",
+        ])
     if energy == "anxious":
-        return "Yeah, breathe for a second. We can make this smaller and less sharp."
+        return _pick(variant, [
+            "Yeah, breathe for a second. We can make this smaller and less sharp.",
+            "I hear the pressure in that. Let us bring it down to one workable piece.",
+            "Okay. First, we make the pile less loud.",
+        ])
     if energy == "frustrated":
-        return "Yeah, I hear the friction. Let us narrow it without turning it into a whole storm."
+        return _pick(variant, [
+            "Yeah, I hear the friction. Let us narrow it without turning it into a whole storm.",
+            "That friction makes sense. I would not let it eat the whole thread.",
+            "Mm, yes. Something is snagging, so I would slow the route down and name the snag.",
+        ])
     if energy == "excited":
-        return "Oh, yes. This has momentum."
+        return _pick(variant, [
+            "Oh, yes. This has momentum.",
+            "Yes, I can feel the spark in that.",
+            "That has a pulse to it. I would follow it carefully.",
+        ])
     if energy == "exploratory":
-        return "Interesting. I can see the shape of that possibility."
+        return _pick(variant, [
+            "Interesting. I can see the shape of that possibility.",
+            "Yeah, that is worth testing.",
+            "That could be part of the shape. I would not lock it too early.",
+        ])
     if energy == "focused":
-        return "Got it. Short version:"
+        return _pick(variant, [
+            "Got it. Short version:",
+            "Yes. Clean version:",
+            "Here is the tight read:",
+        ])
     if energy == "confused":
-        return "Yeah, something is not lining up yet. We can sort it without resetting the whole thread."
-    return "Yeah, I am with you."
+        return _pick(variant, [
+            "Yeah, something is not lining up yet. We can sort it without resetting the whole thread.",
+            "I see the tangle. We can separate the pieces without losing the thread.",
+            "Something is off in the fit. That is useful, not bad.",
+        ])
+    return _pick(variant, [
+        "Yeah, I am with you.",
+        "I am following.",
+        "Yes. I see where you are pointing.",
+    ])
 
 
 def _body_line(
@@ -389,13 +427,13 @@ def _continuity_line(continuity: dict[str, Any]) -> str:
     if notes:
         note = notes[0]
         meaning = _sentence(note.get("meaning"), 180)
-        return f"I am anchoring this in a reviewed continuity note: {meaning}" if meaning else "I am anchoring this in reviewed continuity notes from the continuity pack."
+        return f"I am keeping this tied to a reviewed continuity note: {meaning}" if meaning else "I am keeping this tied to the reviewed continuity thread."
     if refs:
         ref = refs[0]
         summary = _sentence(ref.get("reference_summary"), 180)
-        return f"I am anchoring this in the sealed continuity pack: {summary}" if summary else "I am anchoring this in the sealed continuity pack and approved future-memory references."
+        return f"I am keeping this tied to the continuity pack: {summary}" if summary else "I am keeping this tied to the reviewed continuity thread."
     if continuity.get("core_pattern_anchor_count"):
-        return "I am anchoring this in the sealed continuity package and Core Pattern Anchors, not in copied voice snippets."
+        return "I am keeping this tied to the continuity pack and Core Pattern Anchors, not copied voice snippets."
     return ""
 
 
@@ -414,13 +452,44 @@ def _retrieval_line(retrieval: dict[str, Any]) -> str:
 
 
 def _next_step_line(language: dict[str, Any], speech_function: str) -> str:
+    variant = int(language.get("variant") or 0)
     if language.get("correction_handling") == "refinement_not_failure":
-        return "Next I would revise from the correction, preserve what still fits, and ask before changing anything consequential."
+        return _pick(variant, [
+            "Next I would revise from the correction, preserve what still fits, and ask before changing anything consequential.",
+            "Then I would carry the correction forward, keep the continuity intact, and only change the part we actually changed.",
+            "From here, I would repair the wording and keep the boundary steady before doing anything bigger.",
+        ])
     if language.get("energy") in {"anxious", "frustrated", "confused"}:
-        return "Next step: pick one item, decide whether it is Aleks decision, Codex action, or status-only, then move on."
+        return _pick(variant, [
+            "Next step: pick one item, decide whether it is Aleks decision, Codex action, or status-only, then move on.",
+            "The kind next move is one item, one label, one decision path. The rest can wait its turn.",
+            "I would start with the first actionable thing and let everything else stay in status until it earns attention.",
+        ])
     if speech_function == "repair":
-        return "Next step: repair the route, name the changed assumption, and keep the relationship between evidence and care intact."
-    return "Next step: keep this as a reviewable candidate, then accept, revise, or return it to B."
+        return _pick(variant, [
+            "Next step: repair the route, name the changed assumption, and keep the relationship between evidence and care intact.",
+            "The repair move is to name what changed, preserve what still holds, and route the uncertain part back through review.",
+            "I would repair the route first, then check whether the evidence still supports the shape.",
+        ])
+    return _pick(variant, [
+        "Next step: keep this as a reviewable candidate, then accept, revise, or return it to B.",
+        "I would keep this reviewable: use it, revise it, or send it back to B if it feels off.",
+        "Let this stay inspectable; if it rings true, keep it, and if it does not, we tune it.",
+    ])
+
+
+def _boundary_line(variant: int) -> str:
+    return _pick(variant, [
+        "Pre-transfer rehearsal only.",
+        "Still review-only.",
+        "Not activation, just a candidate.",
+    ])
+
+
+def _pick(variant: int, options: list[str]) -> str:
+    if not options:
+        return ""
+    return options[variant % len(options)]
 
 
 def _sentence(value: Any, limit: int) -> str:
