@@ -410,6 +410,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "vessel.chest_holding_item.list", {**qs, "limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
         elif parsed.path == "/api/c-remaining/runtime-status":
             self._send(*json_bytes(route_request(conn, "c_remaining.runtime.status")["result"]))
+        elif parsed.path == "/api/vessel/memory-lifecycle/status":
+            self._send(*json_bytes(route_request(conn, "vessel.memory_lifecycle.status")["result"]))
+        elif parsed.path == "/api/vessel/temporal-continuity/status":
+            self._send(*json_bytes(route_request(conn, "vessel.temporal_continuity.status")["result"]))
         elif parsed.path == "/api/c-vessel/reconstruction-desk/status":
             self._send(*json_bytes(route_request(conn, "c_vessel.reconstruction_desk.status")["result"]))
         elif parsed.path == "/api/c-vessel/reconstruction-desk/cases":
@@ -836,9 +840,24 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "c_memory.dream_consolidation.propose", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/cycle/run":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.cycle.run", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/c-core/causal-sandbox":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "c_core.causal_sandbox.run", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/causal-sandbox/run":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.causal_sandbox.run", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/goal-drive/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.goal_drive.preview", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/c-core/long-horizon-stability":

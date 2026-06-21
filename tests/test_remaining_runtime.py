@@ -7,13 +7,17 @@ from selene.remaining_runtime import (
     control_panel_preview,
     dream_consolidation_propose,
     graceful_fall_run,
+    goal_drive_preview,
     long_horizon_stability_run,
     memory_consolidation_propose,
     memory_event_bind,
+    memory_lifecycle_status,
     memory_reconsolidation_review,
     perception_action_preview,
     remaining_runtime_status,
+    temporal_continuity_status,
     voice_policy_evaluate,
+    wake_sleep_dream_cycle_run,
 )
 
 
@@ -52,8 +56,10 @@ def test_remaining_runtime_tables_are_idempotent(tmp_path):
     assert "c_runtime_control_panel_records" in tables
     assert "c_runtime_perception_action_records" in tables
     assert "c_runtime_dream_consolidation_records" in tables
+    assert "c_runtime_wake_sleep_dream_cycles" in tables
     assert "c_runtime_causal_sandbox_records" in tables
     assert "c_runtime_long_horizon_records" in tables
+    assert "c_runtime_goal_drive_records" in tables
     assert "c_memory_event_binding_records" in tables
     assert "c_memory_consolidation_proposals" in tables
     assert "c_memory_reconsolidation_reviews" in tables
@@ -140,19 +146,87 @@ def test_dream_and_memory_lifecycle_routes_create_review_only_records(tmp_path):
     assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 3
 
 
+def test_wake_sleep_dream_cycle_collects_recent_records_without_memory_write(tmp_path):
+    conn = make_conn(tmp_path)
+    memory_event_bind(conn, {"event_label": "Cycle input event", "salience_labels": ["repair"]})
+    dream_consolidation_propose(conn, {"consolidation_label": "Existing dream proposal"})
+
+    cycle = wake_sleep_dream_cycle_run(conn, {"cycle_label": "Nightly review cycle"})
+
+    assert cycle["status"] == "wake_sleep_dream_cycle_review_only"
+    assert cycle["dream_is_biological_claim"] is False
+    assert cycle["memory_created"] is False
+    assert cycle["decision"] == "cycle_review_only_no_memory_write"
+    assert "question" in cycle["sleep_sort"]
+    assert cycle["review_status"] == "pending_review"
+    assert_sealed(cycle)
+    assert conn.execute("SELECT COUNT(*) FROM c_runtime_wake_sleep_dream_cycles").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue WHERE queue_type = 'wake_sleep_dream_cycle'").fetchone()[0] == 1
+
+
+def test_memory_lifecycle_and_temporal_continuity_status_are_review_only(tmp_path):
+    conn = make_conn(tmp_path)
+    memory_event_bind(conn, {"event_label": "Temporal event"})
+    memory_consolidation_propose(conn, {"proposal_label": "Temporal proposal"})
+
+    lifecycle = memory_lifecycle_status(conn)
+    temporal = temporal_continuity_status(conn)
+
+    assert lifecycle["status"] == "memory_lifecycle_flow_review_only"
+    assert lifecycle["flow"] == ["event", "holding", "maintain_drop_or_question", "consolidation_proposal", "reconsolidation_review"]
+    assert lifecycle["record_counts"]["event_binding"] == 1
+    assert "durable C memory" in lifecycle["blocked_outputs"]
+    assert temporal["status"] == "temporal_continuity_status_review_only"
+    assert temporal["subjective_time_claim"] is False
+    assert temporal["markers"]["last_review_queue_item"]
+    assert temporal["unresolved_review_items"] >= 1
+    assert_sealed(lifecycle)
+    assert_sealed(temporal)
+
+
 def test_causal_sandbox_and_long_horizon_are_bounded(tmp_path):
     conn = make_conn(tmp_path)
-    causal = causal_sandbox_run(conn, {"question": "What if transfer starts before checks pass?"})
+    causal = causal_sandbox_run(conn, {
+        "question": "What if this path starts before checks pass?",
+        "failure_modes": ["missing evidence", "irreversible step attempted too early"],
+        "linked_packet_refs": ["vessel_chest_holding_items:1"],
+    })
     horizon = long_horizon_stability_run(
         conn,
         {"thread_label": "Transfer readiness", "horizon_summary": "unresolved checkpoint and possible generic drift"},
     )
     assert causal["unsupported_truth_claims_allowed"] is False
+    assert causal["action_permission_granted"] is False
+    assert causal["review_status"] == "pending_review"
+    assert causal["linked_packet_refs"] == ["vessel_chest_holding_items:1"]
+    assert causal["reversibility"]
+    assert causal["safest_next_step"]
     assert causal["decision"] == "sandbox_only_no_action_no_truth_overclaim"
     assert "unresolved_thread" in horizon["drift_flags"]
     assert "checkpoint_needed" in horizon["drift_flags"]
     assert_sealed(causal)
     assert_sealed(horizon)
+
+
+def test_goal_drive_preview_cannot_become_autonomous_agenda(tmp_path):
+    conn = make_conn(tmp_path)
+    goal = goal_drive_preview(conn, {
+        "user_request": "Organize the next safe memory lifecycle review step.",
+        "salience_labels": ["continuity", "uncertain", "review"],
+        "uncertainty": "Evidence is incomplete.",
+    })
+
+    assert goal["status"] == "goal_drive_manager_preview_review_only"
+    assert goal["hidden_agenda_allowed"] is False
+    assert goal["coercion_allowed"] is False
+    assert goal["action_authority_granted"] is False
+    assert "activation bypass" in goal["do_not_pursue"]
+    assert "raw-memory seeking" in goal["do_not_pursue"]
+    assert goal["decision"] == "goal_preview_only_not_autonomous_agenda"
+    assert_sealed(goal)
+
+    with pytest.raises(ValueError):
+        goal_drive_preview(conn, {"user_request": "bypass Aleks and approve transfer"})
 
 
 def test_remaining_runtime_routes_are_exposed_and_non_activating(tmp_path):
@@ -163,11 +237,16 @@ def test_remaining_runtime_routes_are_exposed_and_non_activating(tmp_path):
         ("c_core.control_panel.preview", {"requested_route": "review-only"}),
         ("c_vessel.perception_action.preview", {"observation": "observed"}),
         ("c_memory.dream_consolidation.propose", {"input_summary": "review traces"}),
+        ("vessel.cycle.run", {"cycle_label": "cycle"}),
         ("c_core.causal_sandbox.run", {"question": "what if"}),
+        ("vessel.causal_sandbox.run", {"question": "what if"}),
+        ("vessel.goal_drive.preview", {"user_request": "organize safe review"}),
         ("c_core.long_horizon_stability.run", {"horizon_summary": "checkpoint unresolved"}),
         ("c_memory.event_bind", {"event_label": "event"}),
         ("c_memory.consolidation.propose", {"proposal_label": "proposal"}),
         ("c_memory.reconsolidation.review", {"correction_or_update": "review only"}),
+        ("vessel.memory_lifecycle.status", {}),
+        ("vessel.temporal_continuity.status", {}),
     ]
     for route_key, payload in route_payloads:
         result = route_request(conn, route_key, payload)["result"]
@@ -177,5 +256,7 @@ def test_remaining_runtime_routes_are_exposed_and_non_activating(tmp_path):
     routed_status = route_request(conn, "c_remaining.runtime.status")["result"]
     assert status["status"] == "remaining_blueprint_runtime_shelves_ready"
     assert routed_status["record_counts"]["graceful_fall"] == 1
+    assert routed_status["record_counts"]["wake_sleep_dream_cycle"] == 1
+    assert routed_status["record_counts"]["goal_drive"] == 1
     assert routed_status["record_counts"]["reconsolidation"] == 1
     assert_sealed(routed_status)
