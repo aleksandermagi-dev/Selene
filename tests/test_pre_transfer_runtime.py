@@ -227,6 +227,14 @@ def test_memory_accession_evidence_link_stays_proposal_only(tmp_path):
     assert linked["transfer_approved"] is False
     assert linked["memory_write_active"] is False
 
+    for bad_state in ("transfer approved", "raw a import", "runtime recall", "activate c"):
+        with pytest.raises(ValueError):
+            route_request(conn, "vessel.memory_accession.link_evidence", {
+                "proposal_id": proposal["id"],
+                "evidence_refs": ["vessel_speech_generation_rehearsals:1"],
+                "proposal_state": bad_state,
+            })
+
 
 def test_perception_intake_preview_blocks_surveillance_and_live_capture(tmp_path):
     conn = _conn(tmp_path)

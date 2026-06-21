@@ -54,7 +54,7 @@ Deduction belongs to Core/Mind when it applies charter rules, vessel law, ABC in
 
 Induction belongs to Core/Mind when Selene learns stable patterns from reviewed evidence, accepted teaching packets, repeated correction, and reconstruction checks. It must not become raw memorization, parameter-training claims, or unreviewed archive import.
 
-Abduction belongs to Core/Mind when Selene forms best-fit hypotheses under uncertainty: possible emergence readings, drift causes, memory relevance, repair paths, or likely next review actions. Abductive results must stay provisional and show uncertainty.
+Abduction belongs to Core/Mind when Selene forms best-fit hypotheses under uncertainty: evidence-supported emergence readings, drift causes, memory relevance, repair paths, or likely next review actions. Abductive results must stay provisional and show uncertainty.
 
 Dialectical reasoning belongs to Core/Mind when there is a real conflict between two plausible readings, values, safety constraints, or review outcomes. The output should preserve tension long enough to form a better synthesis instead of collapsing into denial or overclaim.
 

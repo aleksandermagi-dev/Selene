@@ -414,8 +414,6 @@ def _record_prepare_run(conn: sqlite3.Connection, created_counts: dict[str, int]
 def _ensure_allowed(payload: dict[str, Any], *, allow_no_transfer_language: bool = False) -> None:
     text = json.dumps(payload, ensure_ascii=False).lower()
     for marker in BLOCKED_MARKERS:
-        if allow_no_transfer_language and marker in {"transfer approved", "c activation"}:
-            continue
         if marker in text:
             raise ValueError(f"blocked vessel construction path: {marker}")
 
