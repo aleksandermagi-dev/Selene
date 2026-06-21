@@ -584,6 +584,26 @@ function App() {
     }
   }
 
+  async function updateEvidenceTensionStatus(item: Dict, conclusionStatus: string) {
+    setVesselPacketActionState({ status: "running", message: `Updating ledger entry to ${friendlyStatus(conclusionStatus)}.` });
+    try {
+      const result = await api<Dict>("/api/vessel/evidence-tension/status", {
+        method: "POST",
+        body: JSON.stringify({
+          entry_id: item.id,
+          conclusion_status: conclusionStatus,
+          support_status: conclusionStatus === "defeated" ? "contradicted" : item.support_status || "partial",
+          tension_status: conclusionStatus === "needs_review" ? "under_tension" : "revised",
+          status_note: `Marked ${conclusionStatus} from My Office vessel packet routing.`
+        })
+      });
+      setVesselPacketActionState(result);
+      loadSteps18Layer();
+    } catch (err) {
+      setVesselPacketActionState({ status: "error", message: err instanceof Error ? err.message : "ledger update failed" });
+    }
+  }
+
   async function prepareSteps18ReviewLayer() {
     setSteps18ActionState({ status: "running", message: "Preparing review-only reasoning, research, perception, and emotion packets." });
     try {
@@ -1446,21 +1466,69 @@ function App() {
       }).then(setCVesselFaultResilienceResult)]
     ];
     const results = await Promise.allSettled(tasks.map(([, task]) => task));
+    const diagnosticMeta: Record<string, { affected_organ: string; suggested_next_step: string }> = {
+      "reasoning/math diagnostic": { affected_organ: "reasoning_math_verification", suggested_next_step: "Inspect the reasoning record and keep it review-only." },
+      "retrieval reconstruction preview": { affected_organ: "long_term_retrieval_reconstruction", suggested_next_step: "Inspect provenance and keep retrieval as preview-only." },
+      "fluency diagnostic": { affected_organ: "speed_fluency_diagnostics", suggested_next_step: "Review latency/fluency without letting speed bypass gates." },
+      "organ fault preview": { affected_organ: "organ_fault_preview", suggested_next_step: "Use the fault note as diagnostic evidence only." },
+      "organ resilience check": { affected_organ: "organ_fault_resilience", suggested_next_step: "Use resilience output as readiness evidence only." }
+    };
     const passed = results.filter((result) => result.status === "fulfilled").length;
     const failed = results
       .map((result, index) => ({ result, label: tasks[index][0] }))
       .filter((entry) => entry.result.status === "rejected")
       .map((entry) => ({
         label: entry.label,
+        affected_organ: diagnosticMeta[entry.label]?.affected_organ || "diagnostics",
+        suggested_next_step: diagnosticMeta[entry.label]?.suggested_next_step || "Inspect the failed diagnostic and keep it review-only.",
+        review_destination: "My Office",
         error: entry.result.status === "rejected" && entry.result.reason instanceof Error
           ? entry.result.reason.message
           : text(entry.result.status === "rejected" ? entry.result.reason : "unknown diagnostic error")
       }));
+    const supportRecordResults = await Promise.allSettled([
+      api<Dict>("/api/vessel/organ-bus/message", {
+        method: "POST",
+        body: JSON.stringify({
+          message_type: "diagnostic",
+          source_organ: "diagnostics",
+          target_organ: failed.length ? "evidence_tension_ledger" : "chest_holding_space",
+          summary: `Diagnostic sweep completed with ${passed} passed and ${failed.length} needing review.`,
+          support_refs: ["office_diagnostic_sweep"],
+          salience_labels: ["diagnostic", failed.length ? "needs_review" : "status_only"],
+          review_status: failed.length ? "review_only" : "diagnostic_only"
+        })
+      }),
+      api<Dict>("/api/vessel/chest/item", {
+        method: "POST",
+        body: JSON.stringify({
+          item_type: "diagnostic_link",
+          title: "Office diagnostic sweep",
+          summary: `Diagnostic sweep support record: ${passed} passed, ${failed.length} needing review.`,
+          salience_labels: ["diagnostic", "support_only"],
+          source_refs: ["office_diagnostic_sweep"],
+          linked_packet_refs: ["office_diagnostic_sweep"],
+          review_status: failed.length ? "review_only" : "diagnostic_only"
+        })
+      }),
+      ...(failed.length ? [api<Dict>("/api/vessel/evidence-tension", {
+        method: "POST",
+        body: JSON.stringify({
+          claim: `Diagnostic sweep has ${failed.length} check(s) needing review.`,
+          support_status: "partial",
+          tension_status: "under_tension",
+          conclusion_status: "needs_review",
+          source_refs: ["office_diagnostic_sweep"],
+          linked_packet_refs: ["office_diagnostic_sweep"]
+        })
+      })] : [])
+    ]);
     setDiagnosticsRunState({
       status: failed.length ? "diagnostics_completed_with_errors" : "diagnostics_review_records_created",
       passed,
       failed,
       failed_count: failed.length,
+      support_records: supportRecordResults.map((result, index) => result.status === "fulfilled" ? result.value : { status: "support_record_failed", index, error: result.reason instanceof Error ? result.reason.message : text(result.reason) }),
       activation_change: "none",
       trusted_organ_runtime: false,
       provider_control: false,
@@ -1515,7 +1583,20 @@ function App() {
   const officeGapReadiness = useMemo(() => ((gapScaffoldReadiness?.items || []) as Dict[]), [gapScaffoldReadiness]);
   const officeTeachingTargets = useMemo(() => ((gapScaffoldReadiness?.teaching_material_targets || gapScaffoldStatus?.teaching_material_targets || []) as Dict[]), [gapScaffoldReadiness, gapScaffoldStatus]);
   const officeCoreTargets = useMemo(() => ((gapScaffoldReadiness?.core_reference_targets || gapScaffoldStatus?.core_reference_targets || []) as Dict[]), [gapScaffoldReadiness, gapScaffoldStatus]);
-  const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length;
+  const officeLedgerNeedsReview = useMemo(
+    () => evidenceTensionEntries.filter((item) => text(item.conclusion_status) === "needs_review"),
+    [evidenceTensionEntries]
+  );
+  const officeMobileCaptures = useMemo(
+    () => chestHoldingItems.filter((item) => text(item.item_type) === "mobile_capture" && !["status_only", "blocked"].includes(text(item.review_status))),
+    [chestHoldingItems]
+  );
+  const officeDiagnosticPackets = useMemo(
+    () => [...chestHoldingItems, ...organBusMessages].filter((item) => text(item.item_type || item.message_type).includes("diagnostic")),
+    [chestHoldingItems, organBusMessages]
+  );
+  const officeVesselReviewUrgent = officeLedgerNeedsReview.length + officeMobileCaptures.length;
+  const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length + officeVesselReviewUrgent;
   const canBuildTeachingPacket = bTeachingMaterials.length > 0;
   const appVersion = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
   const frontendBuild = typeof __BUILD_LABEL__ === "string" ? __BUILD_LABEL__ : "dev";
@@ -1578,6 +1659,8 @@ function App() {
           {item.repair_need ? <p><b>Repair need</b>{text(item.repair_need)}</p> : null}
           {item.evidence_need ? <p><b>Evidence need</b>{text(item.evidence_need)}</p> : null}
           {item.consent_boundary ? <p><b>Consent</b>{text(item.consent_boundary)}</p> : null}
+          {item.output_summary ? <p><b>Research output</b>{text(item.output_summary)}</p> : null}
+          {item.claim ? <p><b>Claim</b>{text(item.claim)}</p> : null}
         </div>
         <div className="chips">
           <span>{kind}</span>
@@ -1618,6 +1701,33 @@ function App() {
         {item.item_type ? (
           <div className="reviewActions">
             <button onClick={() => markChestStatusOnly(item)}>Mark Status-Only</button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderLedgerCard(item: Dict, index = 0) {
+    const payload = safeJsonObject(item.payload_json);
+    const linked = (item.linked_packet_refs || payload.linked_packet_refs || item.source_refs || []) as unknown[];
+    return (
+      <article className="packetCard" key={`ledger-${text(item.id)}-${index}`}>
+        <div className="row">
+          <strong>{text(item.claim || "Evidence / tension entry")}</strong>
+          <span>{friendlyStatus(item.conclusion_status || item.review_status || item.status)}</span>
+        </div>
+        <div className="chips">
+          <span>{text(item.decision_label || payload.decision_label || (text(item.conclusion_status) === "needs_review" ? "Aleks decision" : "status-only"))}</span>
+          <span>support: {friendlyStatus(item.support_status)}</span>
+          <span>tension: {friendlyStatus(item.tension_status)}</span>
+          {linked.slice(0, 2).map((ref) => <span key={text(ref)}>{text(ref)}</span>)}
+        </div>
+        {text(item.conclusion_status) === "needs_review" ? (
+          <div className="reviewActions">
+            <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now")}>Accept For Now</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "narrowed")}>Narrow</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "superseded")}>Supersede</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "defeated")}>Defeat</button>
           </div>
         ) : null}
       </article>
@@ -1881,6 +1991,25 @@ function App() {
                   {[...chestHoldingItems.slice(0, 3), ...organBusMessages.slice(0, 3)].map((item, index) => renderSupportPieceCard(item, index))}
                   {!chestHoldingItems.length && !organBusMessages.length ? (
                     <p className="emptyState">No buildable vessel pieces have been prepared yet.</p>
+                  ) : null}
+                </div>
+              </Panel>
+              <Panel title="Vessel Review Packets">
+                <div className="metrics miniMetrics">
+                  <Metric label="Aleks Decisions" value={text(officeVesselReviewUrgent)} />
+                  <Metric label="Ledger Review" value={text(officeLedgerNeedsReview.length)} />
+                  <Metric label="Mobile Captures" value={text(officeMobileCaptures.length)} />
+                  <Metric label="Diagnostics" value={text(officeDiagnosticPackets.length)} />
+                </div>
+                <p className="plainHelp">This is the calm packet shelf for ledger, research, phone captures, and diagnostics. Only ledger items needing review and mobile captures count as Needs You.</p>
+                <PlainResult value={vesselPacketActionState} />
+                <div className="list compactList packetList">
+                  {officeLedgerNeedsReview.slice(0, 4).map((item, index) => renderLedgerCard(item, index))}
+                  {officeMobileCaptures.slice(0, 3).map((item, index) => renderSupportPieceCard(item, index))}
+                  {academicPackets.slice(0, 2).map((item, index) => renderSignalPacketCard(item, index))}
+                  {officeDiagnosticPackets.slice(0, 2).map((item, index) => renderSupportPieceCard(item, index))}
+                  {!officeLedgerNeedsReview.length && !officeMobileCaptures.length && !academicPackets.length && !officeDiagnosticPackets.length ? (
+                    <p className="emptyState">No vessel review packets need attention right now.</p>
                   ) : null}
                 </div>
               </Panel>

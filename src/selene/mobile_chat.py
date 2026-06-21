@@ -5,6 +5,7 @@ from typing import Any
 
 from .chat import get_session, list_sessions, send_chat_message
 from .registry import truncate
+from .vessel_construction import create_chest_holding_item
 
 
 MOBILE_BOUNDARY_FLAGS: dict[str, Any] = {
@@ -90,10 +91,30 @@ def mobile_capture_review(conn: sqlite3.Connection, payload: dict[str, Any]) -> 
         raise ValueError("capture text is required")
     session_id = int(payload["session_id"]) if payload.get("session_id") else None
     result = send_chat_message(conn, f"save this for desktop My Office review: {text}", session_id, "disabled")
+    save_request = result.get("save_request") or {}
+    refs = [f"mobile_chat_session:{result['session_id']}"]
+    if save_request.get("id"):
+        refs.append(f"continuity_save_requests:{save_request['id']}")
+    chest_item = create_chest_holding_item(conn, {
+        "item_type": "mobile_capture",
+        "title": "Mobile review capture",
+        "summary": "Phone capture saved for desktop review as holding-space material. It is not durable memory.",
+        "salience_labels": ["mobile_capture", "desktop_review", "not_memory_yet"],
+        "source_refs": refs,
+        "linked_packet_refs": refs,
+        "review_status": "review_only",
+        "payload_json": {
+            "mobile_capture": True,
+            "session_id": result["session_id"],
+            "save_request_id": save_request.get("id"),
+            "desktop_review_only": True,
+        },
+    })
     return {
         "status": "mobile_review_capture_recorded",
         "session_id": result["session_id"],
-        "save_request": result.get("save_request"),
+        "save_request": save_request,
+        "chest_item": chest_item,
         "review_destination": "desktop_my_office",
         "guard_flags": mobile_guard_flags(),
     }

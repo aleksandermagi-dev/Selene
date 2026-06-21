@@ -113,6 +113,7 @@ from .reasoning_artifacts import (
     list_perception_packets,
     list_reasoning_artifacts,
     steps_1_8_status,
+    update_evidence_tension_entry,
     upsert_organ_contract,
 )
 from .vessel_construction import (
@@ -211,6 +212,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": create_evidence_tension_entry(conn, payload)}
     if route_key == "vessel.evidence_tension.list":
         return {"route": route_key, "result": list_evidence_tension_entries(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.evidence_tension.update":
+        return {"route": route_key, "result": update_evidence_tension_entry(conn, payload)}
     if route_key == "vessel.organ_contract.ensure":
         return {"route": route_key, "result": ensure_organ_contracts(conn)}
     if route_key == "vessel.organ_contract.upsert":
