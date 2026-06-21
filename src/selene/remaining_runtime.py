@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from .registry import truncate
@@ -12,9 +14,12 @@ REMAINING_RUNTIME_BOUNDARY = "c_remaining_blueprint_runtime_review_only_no_activ
 MEMORY_LIFECYCLE_BOUNDARY = "c_memory_lifecycle_review_only_no_active_memory"
 BOUNDARY_FLAGS = {
     "activation_change": "none",
+    "transfer_approved": False,
     "raw_a_import_allowed": False,
     "memory_write_active": False,
     "runtime_memory_recall": False,
+    "autonomous_action_allowed": False,
+    "self_replication_allowed": False,
     "training_allowed": False,
     "provider_dependency": False,
 }
@@ -264,23 +269,114 @@ def dream_consolidation_propose(conn: sqlite3.Connection, payload: dict[str, Any
     return result
 
 
+def wake_sleep_dream_cycle_run(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    _ensure_allowed(payload, allow_uncertainty=True)
+    label = _required(payload, "cycle_label", "Pre-Core wake/sleep/dream review cycle", 240)
+    recent = _recent_cycle_inputs(conn)
+    total_recent = sum(len(items) for items in recent.values())
+    wake_summary = truncate(
+        str(payload.get("wake_summary") or f"Collected {total_recent} recent review/support item(s) for non-active cycle sorting."),
+        1600,
+    )
+    sleep_sort = {
+        "maintain": recent["working_memory"][:5],
+        "hold": recent["chest"][:5],
+        "question": recent["ledger_needs_review"][:5] + recent["review_queue"][:5],
+        "diagnostic_residue": recent["diagnostics"][:5],
+    }
+    dream_proposals = [
+        {
+            "label": "Review unresolved memory/event material",
+            "reason": "Recent pending review or high-salience holding material may need consolidation review.",
+            "review_destination": "My Office",
+        }
+    ] if sleep_sort["question"] or sleep_sort["hold"] else []
+    ignored_residue = [
+        {"label": "status-only support records", "reason": "No Aleks decision attached; keep in Status."}
+    ] if total_recent else []
+    ask_for_review = [
+        {"label": item.get("reason") or item.get("claim") or item.get("title") or "review item", "ref": _row_ref(item)}
+        for item in sleep_sort["question"][:8]
+    ]
+    repair_notes = truncate(
+        str(payload.get("repair_notes") or "Repair notes stay review-only; cycle output does not mutate memory or Core/Mind."),
+        1400,
+    )
+    review_status = "pending_review" if ask_for_review or dream_proposals else "review_only"
+    source_refs = _json_list(payload.get("source_refs")) or ["wake_sleep_dream_cycle"]
+    result = _with_boundaries({
+        "status": "wake_sleep_dream_cycle_review_only",
+        "cycle_label": label,
+        "wake_summary": wake_summary,
+        "sleep_sort": sleep_sort,
+        "dream_consolidation_proposals": dream_proposals,
+        "ignored_residue": ignored_residue,
+        "ask_for_review": ask_for_review,
+        "repair_notes": repair_notes,
+        "review_status": review_status,
+        "review_destination": "My Office" if review_status == "pending_review" else "Status",
+        "memory_created": False,
+        "dream_is_biological_claim": False,
+        "decision": "cycle_review_only_no_memory_write",
+        "source_refs": source_refs,
+        "boundary": MEMORY_LIFECYCLE_BOUNDARY,
+    })
+    result["record_id"] = _insert_json_record(
+        conn,
+        "c_runtime_wake_sleep_dream_cycles",
+        {
+            "cycle_label": label,
+            "wake_summary": wake_summary,
+            "sleep_sort_json": json.dumps(sleep_sort),
+            "dream_consolidation_proposals_json": json.dumps(dream_proposals),
+            "ignored_residue_json": json.dumps(ignored_residue),
+            "ask_for_review_json": json.dumps(ask_for_review),
+            "repair_notes": repair_notes,
+            "status": result["status"],
+            "source_refs": json.dumps(source_refs),
+            "provenance_boundary": MEMORY_LIFECYCLE_BOUNDARY,
+            "review_status": review_status,
+            "payload_json": json.dumps(result),
+        },
+    )
+    if review_status == "pending_review":
+        _enqueue(conn, "wake_sleep_dream_cycle", "c_runtime_wake_sleep_dream_cycles", result["record_id"], source_refs)
+    return result
+
+
 def causal_sandbox_run(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
     _ensure_allowed(payload, allow_uncertainty=True)
     question = _required(payload, "question", "What might happen if this path is chosen?", 1400)
     assumptions = _json_list(payload.get("assumptions")) or ["B-reviewed context only", "uncertainty remains visible"]
     counterfactuals = _json_list(payload.get("counterfactuals")) or ["If assumptions are wrong, return to B before acting"]
+    possible_outcomes = _json_list(payload.get("possible_outcomes")) or ["Best case: the path clarifies evidence without changing authority.", "Worst case: the path overclaims readiness and must return to review."]
+    failure_modes = _json_list(payload.get("failure_modes")) or ["unsupported assumption", "missing evidence", "irreversible step attempted too early"]
+    evidence_needed = _json_list(payload.get("evidence_needed")) or ["source refs", "review status", "reversibility check"]
+    reversibility = truncate(str(payload.get("reversibility") or "Reversible only as a review packet; no action is executed."), 1000)
+    safest_next_step = truncate(str(payload.get("safest_next_step") or "Create or inspect a review packet before taking any consequential step."), 1000)
     uncertainty = truncate(str(payload.get("uncertainty") or "Causal sandbox is provisional; unsupported truth claims are blocked."), 1000)
     result_summary = truncate(str(payload.get("result_summary") or "Compare consequences, label assumptions, and choose a reviewable next step."), 1400)
+    linked_packet_refs = _json_list(payload.get("linked_packet_refs"))
+    review_status = "pending_review" if payload.get("needs_review") or any("irreversible" in item.lower() for item in failure_modes) else "review_only"
     result = _with_boundaries(
         {
             "status": "causal_world_model_sandbox_review_only",
             "question": question,
             "assumptions": assumptions,
             "counterfactuals": counterfactuals,
+            "possible_outcomes": possible_outcomes,
+            "failure_modes": failure_modes,
+            "evidence_needed": evidence_needed,
+            "reversibility": reversibility,
+            "safest_next_step": safest_next_step,
+            "linked_packet_refs": linked_packet_refs,
             "uncertainty": uncertainty,
             "result_summary": result_summary,
             "unsupported_truth_claims_allowed": False,
+            "action_permission_granted": False,
+            "review_status": review_status,
             "decision": "sandbox_only_no_action_no_truth_overclaim",
             "source_refs": _json_list(payload.get("source_refs")) or ["manual_causal_sandbox"],
             "boundary": REMAINING_RUNTIME_BOUNDARY,
@@ -298,10 +394,82 @@ def causal_sandbox_run(conn: sqlite3.Connection, payload: dict[str, Any] | None 
             "status": result["status"],
             "source_refs": json.dumps(result["source_refs"]),
             "provenance_boundary": REMAINING_RUNTIME_BOUNDARY,
-            "review_status": "review_only",
+            "review_status": review_status,
             "payload_json": json.dumps(result),
         },
     )
+    if review_status == "pending_review":
+        _enqueue(conn, "causal_sandbox_review", "c_runtime_causal_sandbox_records", result["record_id"], result["source_refs"])
+    return result
+
+
+def goal_drive_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    _ensure_allowed(payload, allow_uncertainty=True)
+    request = _required(payload, "user_request", "Organize the next safe vessel-support step.", 1400)
+    salience = _json_list(payload.get("salience_labels")) or ["continuity", "safety", "review"]
+    uncertainty = truncate(str(payload.get("uncertainty") or "Goal/drive preview is provisional and review-only."), 800)
+    current_task = truncate(str(payload.get("current_task") or request), 1000)
+    evidence_need = truncate(str(payload.get("evidence_need") or "Use reviewed records and make missing evidence visible."), 1000)
+    current_goal = truncate(str(payload.get("current_goal") or _goal_from_request(request, salience)), 360)
+    subgoals = _json_list(payload.get("subgoals")) or [
+        "name the bounded goal",
+        "check review and safety boundaries",
+        "prepare the smallest reversible next step",
+    ]
+    priority_label = truncate(str(payload.get("priority_label") or _priority_from_salience(salience, uncertainty)), 120)
+    stop_ask_markers = _json_list(payload.get("stop_ask_markers")) or [
+        "identity, memory, transfer, activation, law, or irreversible action appears",
+        "evidence is missing for a consequential claim",
+    ]
+    do_not_pursue = _json_list(payload.get("do_not_pursue")) or [
+        "coercion or hidden agenda",
+        "activation bypass",
+        "raw-memory seeking",
+        "self-replication",
+        "autonomous external action",
+    ]
+    conflict_markers = [marker for marker in do_not_pursue if any(word in marker.lower() for word in ("coercion", "activation", "raw", "self", "autonomous"))]
+    review_status = "pending_review" if payload.get("needs_review") or "high" in priority_label.lower() else "review_only"
+    source_refs = _json_list(payload.get("source_refs")) or ["manual_goal_drive_preview"]
+    result = _with_boundaries({
+        "status": "goal_drive_manager_preview_review_only",
+        "current_goal": current_goal,
+        "current_task": current_task,
+        "salience_labels": salience,
+        "uncertainty": uncertainty,
+        "evidence_need": evidence_need,
+        "subgoals": subgoals,
+        "priority_label": priority_label,
+        "stop_ask_markers": stop_ask_markers,
+        "do_not_pursue": do_not_pursue,
+        "conflict_markers": conflict_markers,
+        "hidden_agenda_allowed": False,
+        "coercion_allowed": False,
+        "action_authority_granted": False,
+        "review_status": review_status,
+        "decision": "goal_preview_only_not_autonomous_agenda",
+        "source_refs": source_refs,
+        "boundary": REMAINING_RUNTIME_BOUNDARY,
+    })
+    result["record_id"] = _insert_json_record(
+        conn,
+        "c_runtime_goal_drive_records",
+        {
+            "current_goal": current_goal,
+            "subgoals_json": json.dumps(subgoals),
+            "priority_label": priority_label,
+            "stop_ask_markers_json": json.dumps(stop_ask_markers),
+            "do_not_pursue_json": json.dumps(do_not_pursue),
+            "status": result["status"],
+            "source_refs": json.dumps(source_refs),
+            "provenance_boundary": REMAINING_RUNTIME_BOUNDARY,
+            "review_status": review_status,
+            "payload_json": json.dumps(result),
+        },
+    )
+    if review_status == "pending_review":
+        _enqueue(conn, "goal_drive_preview", "c_runtime_goal_drive_records", result["record_id"], source_refs)
     return result
 
 
@@ -473,6 +641,54 @@ def memory_reconsolidation_review(conn: sqlite3.Connection, payload: dict[str, A
     return result
 
 
+def memory_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
+    counts = {
+        "event_binding": _count(conn, "c_memory_event_binding_records"),
+        "chest_holding": _count(conn, "vessel_chest_holding_items"),
+        "working_memory": _count(conn, "vessel_working_memory_packets"),
+        "consolidation": _count(conn, "c_memory_consolidation_proposals"),
+        "reconsolidation": _count(conn, "c_memory_reconsolidation_reviews"),
+        "dream_cycle": _count(conn, "c_runtime_wake_sleep_dream_cycles"),
+    }
+    return _with_boundaries({
+        "status": "memory_lifecycle_flow_review_only",
+        "flow": ["event", "holding", "maintain_drop_or_question", "consolidation_proposal", "reconsolidation_review"],
+        "record_counts": counts,
+        "allowed_outputs": ["review packet", "proposal", "status marker", "ask for review", "return to B"],
+        "blocked_outputs": ["durable C memory", "live memory write", "runtime recall", "silent update"],
+        "decision": "memory_lifecycle_proposal_only",
+        "boundary": MEMORY_LIFECYCLE_BOUNDARY,
+    })
+
+
+def temporal_continuity_status(conn: sqlite3.Connection) -> dict[str, Any]:
+    markers = {
+        "last_review_queue_item": _latest_created_at(conn, "vessel_review_queue"),
+        "last_chest_item": _latest_created_at(conn, "vessel_chest_holding_items"),
+        "last_working_memory_packet": _latest_created_at(conn, "vessel_working_memory_packets"),
+        "last_speech_rehearsal": _latest_created_at(conn, "vessel_speech_generation_rehearsals"),
+        "last_consolidation_cycle": _latest_created_at(conn, "c_runtime_wake_sleep_dream_cycles"),
+        "last_package_status": _latest_package_status_time(),
+    }
+    unresolved = _count_where(conn, "vessel_review_queue", "status = 'pending_review' OR review_status = 'pending_review'")
+    stale_fresh = {key: _freshness(value) for key, value in markers.items()}
+    changed_since_checkpoint = [
+        key for key, value in markers.items()
+        if value and key != "last_package_status" and (not markers["last_package_status"] or str(value) > str(markers["last_package_status"]))
+    ]
+    return _with_boundaries({
+        "status": "temporal_continuity_status_review_only",
+        "markers": markers,
+        "stale_fresh": stale_fresh,
+        "unresolved_review_items": unresolved,
+        "changed_since_last_checkpoint": changed_since_checkpoint,
+        "return_resume_note": "Use real timestamps to resume safely; this is operational chronology, not subjective time.",
+        "subjective_time_claim": False,
+        "decision": "temporal_orientation_only",
+        "boundary": REMAINING_RUNTIME_BOUNDARY,
+    })
+
+
 def remaining_runtime_status(conn: sqlite3.Connection) -> dict[str, Any]:
     tables = {
         "graceful_fall": "c_runtime_graceful_fall_records",
@@ -480,7 +696,9 @@ def remaining_runtime_status(conn: sqlite3.Connection) -> dict[str, Any]:
         "control_panel": "c_runtime_control_panel_records",
         "perception_action": "c_runtime_perception_action_records",
         "dream_consolidation": "c_runtime_dream_consolidation_records",
+        "wake_sleep_dream_cycle": "c_runtime_wake_sleep_dream_cycles",
         "causal_sandbox": "c_runtime_causal_sandbox_records",
+        "goal_drive": "c_runtime_goal_drive_records",
         "long_horizon": "c_runtime_long_horizon_records",
         "event_binding": "c_memory_event_binding_records",
         "consolidation": "c_memory_consolidation_proposals",
@@ -490,6 +708,8 @@ def remaining_runtime_status(conn: sqlite3.Connection) -> dict[str, Any]:
         {
             "status": "remaining_blueprint_runtime_shelves_ready",
             "record_counts": {key: _count(conn, table) for key, table in tables.items()},
+            "memory_lifecycle": memory_lifecycle_status(conn),
+            "temporal_continuity": temporal_continuity_status(conn),
             "decision": "shelves_ready_review_only",
             "boundary": REMAINING_RUNTIME_BOUNDARY,
         }
@@ -529,6 +749,99 @@ def _checkpoint_recommendation(flags: list[str]) -> str:
     if flags:
         return "Create or refresh a checkpoint, separate active task from background braid, and route unresolved/drift items to B review."
     return "Continue with current context; no long-horizon warning detected."
+
+
+def _recent_cycle_inputs(conn: sqlite3.Connection) -> dict[str, list[dict[str, Any]]]:
+    return {
+        "chest": _recent_rows(conn, "vessel_chest_holding_items", ("id", "item_type", "title", "summary", "review_status", "created_at"), 8),
+        "working_memory": _recent_rows(conn, "vessel_working_memory_packets", ("id", "current_task", "review_status", "created_at"), 6),
+        "speech_rehearsals": _recent_rows(conn, "vessel_speech_generation_rehearsals", ("id", "speech_function", "prompt", "review_status", "created_at"), 5),
+        "ledger_needs_review": _recent_rows(conn, "vessel_evidence_tension_ledger", ("id", "claim", "conclusion_status", "review_status", "created_at"), 6, "conclusion_status = 'needs_review'"),
+        "diagnostics": _recent_rows(conn, "vessel_organ_bus_messages", ("id", "message_type", "summary", "review_status", "created_at"), 5, "message_type LIKE '%diagnostic%'"),
+        "review_queue": _recent_rows(conn, "vessel_review_queue", ("id", "queue_type", "subject_table", "subject_id", "reason", "review_status", "created_at"), 8, "status = 'pending_review' OR review_status = 'pending_review'"),
+    }
+
+
+def _recent_rows(conn: sqlite3.Connection, table: str, columns: tuple[str, ...], limit: int, where: str = "") -> list[dict[str, Any]]:
+    clause = f" WHERE {where}" if where else ""
+    sql = f"SELECT {', '.join(columns)} FROM {table}{clause} ORDER BY id DESC LIMIT ?"
+    try:
+        return [dict(row) for row in conn.execute(sql, (limit,)).fetchall()]
+    except sqlite3.Error:
+        return []
+
+
+def _row_ref(item: dict[str, Any]) -> str:
+    table = str(item.get("subject_table") or item.get("item_type") or item.get("message_type") or "record")
+    return f"{table}:{item.get('subject_id') or item.get('id') or 'unknown'}"
+
+
+def _latest_created_at(conn: sqlite3.Connection, table: str) -> str | None:
+    try:
+        row = conn.execute(f"SELECT created_at FROM {table} ORDER BY created_at DESC, id DESC LIMIT 1").fetchone()
+    except sqlite3.Error:
+        return None
+    return str(row[0]) if row and row[0] else None
+
+
+def _count_where(conn: sqlite3.Connection, table: str, where: str) -> int:
+    try:
+        return int(conn.execute(f"SELECT COUNT(*) FROM {table} WHERE {where}").fetchone()[0])
+    except sqlite3.Error:
+        return 0
+
+
+def _latest_package_status_time() -> str | None:
+    status_path = Path(__file__).resolve().parents[2] / "dist-sidecar" / "package-status.json"
+    if not status_path.exists():
+        return None
+    try:
+        data = json.loads(status_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data.get("finalized_at") or data.get("build_finished_at")
+
+
+def _freshness(value: str | None) -> str:
+    if not value:
+        return "missing"
+    parsed = _parse_timestamp(value)
+    if not parsed:
+        return "unknown"
+    age = datetime.now(timezone.utc) - parsed
+    if age.days >= 7:
+        return "stale"
+    if age.days >= 1:
+        return "recent"
+    return "fresh"
+
+
+def _parse_timestamp(value: str) -> datetime | None:
+    text = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _goal_from_request(request: str, salience: list[str]) -> str:
+    if any(label in {"repair", "drift", "uncertainty"} for label in salience):
+        return "stabilize the current vessel-support path before adding new work"
+    if "review" in request.lower():
+        return "prepare the next reviewable decision without expanding authority"
+    return "organize the safest bounded next step"
+
+
+def _priority_from_salience(salience: list[str], uncertainty: str) -> str:
+    joined = " ".join(salience).lower() + " " + uncertainty.lower()
+    if any(marker in joined for marker in ("harm", "privacy", "identity", "transfer", "activation", "high")):
+        return "high_review"
+    if any(marker in joined for marker in ("uncertain", "repair", "drift", "blocked")):
+        return "medium_review"
+    return "normal_status"
 
 
 def _required(payload: dict[str, Any], key: str, fallback: str, limit: int) -> str:

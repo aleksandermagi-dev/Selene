@@ -280,8 +280,10 @@ function App() {
   const [voicePolicyResult, setVoicePolicyResult] = useState<Dict | null>(null);
   const [coreControlResult, setCoreControlResult] = useState<Dict | null>(null);
   const [perceptionActionResult, setPerceptionActionResult] = useState<Dict | null>(null);
+  const [cycleRunResult, setCycleRunResult] = useState<Dict | null>(null);
   const [dreamConsolidationResult, setDreamConsolidationResult] = useState<Dict | null>(null);
   const [causalSandboxResult, setCausalSandboxResult] = useState<Dict | null>(null);
+  const [goalDriveResult, setGoalDriveResult] = useState<Dict | null>(null);
   const [longHorizonResult, setLongHorizonResult] = useState<Dict | null>(null);
   const [memoryEventBindResult, setMemoryEventBindResult] = useState<Dict | null>(null);
   const [memoryConsolidationResult, setMemoryConsolidationResult] = useState<Dict | null>(null);
@@ -292,9 +294,11 @@ function App() {
     command_label: "Core route preview",
     requested_route: "Preview a safe route through Core, coordination, boundary, and return-to-B checks.",
     observation: "A source-bound observation needs interpretation, approval, verification, and rollback before action.",
+    cycle_label: "Pre-Core cycle review",
     dream_label: "Dream-state consolidation proposal",
     memory_event: "A review-only event binding for something important that may later need consolidation.",
     causal_question: "What could go wrong if this path is chosen too early?",
+    goal_request: "Organize the next safe vessel-support step from current review context.",
     horizon_thread: "Long-horizon Selene stability thread"
   });
   const [coreReflectionDraft, setCoreReflectionDraft] = useState<Record<string, string>>({
@@ -1285,13 +1289,33 @@ function App() {
       .catch((err) => setDreamConsolidationResult({ error: err instanceof Error ? err.message : "dream proposal rejected" }));
   }
 
+  function runWakeSleepDreamCycle() {
+    api<Dict>("/api/vessel/cycle/run", {
+      method: "POST",
+      body: JSON.stringify({
+        cycle_label: remainingRuntimeDraft.cycle_label,
+        wake_summary: "Collect recent review/support records into a non-active pre-Core cycle pass.",
+        repair_notes: "Sort residue, questions, and repair material without writing memory.",
+        source_refs: ["manual_cycle_ui"]
+      })
+    })
+      .then((result) => {
+        setCycleRunResult(result);
+        loadVessel();
+      })
+      .catch((err) => setCycleRunResult({ error: err instanceof Error ? err.message : "cycle run rejected" }));
+  }
+
   function runCausalSandbox() {
-    api<Dict>("/api/c-core/causal-sandbox", {
+    api<Dict>("/api/vessel/causal-sandbox/run", {
       method: "POST",
       body: JSON.stringify({
         question: remainingRuntimeDraft.causal_question,
         assumptions: ["B-reviewed material only", "uncertainty remains visible", "no action is taken"],
         counterfactuals: ["If the assumption fails, return to B before transfer review"],
+        possible_outcomes: ["Clarifies evidence", "Reveals missing review", "Routes back to Status or My Office"],
+        failure_modes: ["missing evidence", "irreversible step attempted too early"],
+        evidence_needed: ["source refs", "review status", "reversibility check"],
         source_refs: ["manual_causal_sandbox_ui"]
       })
     })
@@ -1300,6 +1324,24 @@ function App() {
         loadVessel();
       })
       .catch((err) => setCausalSandboxResult({ error: err instanceof Error ? err.message : "causal sandbox rejected" }));
+  }
+
+  function runGoalDrivePreview() {
+    api<Dict>("/api/vessel/goal-drive/preview", {
+      method: "POST",
+      body: JSON.stringify({
+        user_request: remainingRuntimeDraft.goal_request,
+        salience_labels: ["continuity", "review", "uncertainty"],
+        uncertainty: "Goal/drive preview is review-only and cannot become agenda or authority.",
+        evidence_need: "Use reviewed records, visible uncertainty, and My Office only for real decisions.",
+        source_refs: ["manual_goal_drive_ui"]
+      })
+    })
+      .then((result) => {
+        setGoalDriveResult(result);
+        loadVessel();
+      })
+      .catch((err) => setGoalDriveResult({ error: err instanceof Error ? err.message : "goal/drive preview rejected" }));
   }
 
   function runLongHorizonStability() {
@@ -2744,6 +2786,7 @@ function App() {
               <p className="plainHelp">Event binding, dream consolidation, consolidation, and reconsolidation are now real shelves. They organize possible memory material for B review only; nothing becomes active recall or silent memory.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Event Bindings" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.event_binding) ?? 0)} />
+                <Metric label="Cycle Runs" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.wake_sleep_dream_cycle) ?? 0)} />
                 <Metric label="Dream Proposals" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.dream_consolidation) ?? 0)} />
                 <Metric label="Consolidations" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.consolidation) ?? 0)} />
                 <Metric label="Reconsolidations" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.reconsolidation) ?? 0)} />
@@ -2754,12 +2797,17 @@ function App() {
                   <textarea value={remainingRuntimeDraft.memory_event} onChange={(event) => setRemainingRuntimeDraft({ ...remainingRuntimeDraft, memory_event: event.target.value })} />
                 </label>
                 <label>
+                  <span>Cycle label</span>
+                  <input value={remainingRuntimeDraft.cycle_label} onChange={(event) => setRemainingRuntimeDraft({ ...remainingRuntimeDraft, cycle_label: event.target.value })} />
+                </label>
+                <label>
                   <span>Dream label</span>
                   <input value={remainingRuntimeDraft.dream_label} onChange={(event) => setRemainingRuntimeDraft({ ...remainingRuntimeDraft, dream_label: event.target.value })} />
                 </label>
               </div>
               <div className="reviewActions">
                 <button className="primary" onClick={bindMemoryEvent}>Bind Event</button>
+                <button onClick={runWakeSleepDreamCycle}>Run Cycle Review</button>
                 <button onClick={proposeDreamConsolidation}>Propose Dream Consolidation</button>
                 <button onClick={proposeMemoryConsolidation}>Propose Consolidation</button>
                 <button onClick={reviewReconsolidation}>Review Reconsolidation</button>
@@ -2769,6 +2817,7 @@ function App() {
                 <span>runtime recall: {plainBlocked(remainingRuntimeStatus?.runtime_memory_recall)}</span>
                 <span>raw A: {plainBlocked(remainingRuntimeStatus?.raw_a_import_allowed)}</span>
               </div>
+              <PlainResult value={cycleRunResult} />
               <PlainResult value={memoryEventBindResult} />
               <PlainResult value={dreamConsolidationResult} />
               <PlainResult value={memoryConsolidationResult} />
@@ -2941,7 +2990,13 @@ function App() {
                 <Metric label="Control Previews" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.control_panel) ?? 0)} />
                 <Metric label="Perception Loops" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.perception_action) ?? 0)} />
                 <Metric label="Causal Sandboxes" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.causal_sandbox) ?? 0)} />
+                <Metric label="Goal / Drive" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.goal_drive) ?? 0)} />
                 <Metric label="Long Horizon" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.long_horizon) ?? 0)} />
+              </div>
+              <div className="chips">
+                <span>unresolved: {text(safeJsonObject(remainingRuntimeStatus?.temporal_continuity).unresolved_review_items ?? 0)}</span>
+                <span>last cycle: {friendlyStatus(safeJsonObject(safeJsonObject(remainingRuntimeStatus?.temporal_continuity).stale_fresh).last_consolidation_cycle || "missing")}</span>
+                <span>last package: {friendlyStatus(safeJsonObject(safeJsonObject(remainingRuntimeStatus?.temporal_continuity).stale_fresh).last_package_status || "missing")}</span>
               </div>
               <div className="filters">
                 <label>
@@ -2969,6 +3024,10 @@ function App() {
                   <textarea value={remainingRuntimeDraft.causal_question} onChange={(event) => setRemainingRuntimeDraft({ ...remainingRuntimeDraft, causal_question: event.target.value })} />
                 </label>
                 <label>
+                  <span>Goal / drive request</span>
+                  <textarea value={remainingRuntimeDraft.goal_request} onChange={(event) => setRemainingRuntimeDraft({ ...remainingRuntimeDraft, goal_request: event.target.value })} />
+                </label>
+                <label>
                   <span>Long-horizon thread</span>
                   <input value={remainingRuntimeDraft.horizon_thread} onChange={(event) => setRemainingRuntimeDraft({ ...remainingRuntimeDraft, horizon_thread: event.target.value })} />
                 </label>
@@ -2979,6 +3038,7 @@ function App() {
                 <button onClick={previewCoreControl}>Preview Core Control</button>
                 <button onClick={previewPerceptionAction}>Preview Perception {"->"} Action</button>
                 <button onClick={runCausalSandbox}>Run Causal Sandbox</button>
+                <button onClick={runGoalDrivePreview}>Preview Goal / Drive</button>
                 <button onClick={runLongHorizonStability}>Run Long-Horizon Stability</button>
               </div>
               <div className="chips">
@@ -2992,6 +3052,7 @@ function App() {
               <PlainResult value={coreControlResult} />
               <PlainResult value={perceptionActionResult} />
               <PlainResult value={causalSandboxResult} />
+              <PlainResult value={goalDriveResult} />
               <PlainResult value={longHorizonResult} />
             </Panel>
           </>
@@ -3009,6 +3070,23 @@ function App() {
               <Metric label="Validation" value={text(validation?.ok ?? "unknown")} />
               <Metric label="Transfer" value={text(cVesselTransferGate?.transfer_approved ? "approved" : "not approved")} />
             </div>
+            <Panel title="Pre-Core Vessel Layers">
+              <p className="plainHelp">Dream cycle, memory lifecycle, temporal continuity, causal sandbox, and goal/drive are support layers only. They organize review packets and status markers without changing Core/Mind, memory, transfer, or action authority.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Cycle Runs" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.wake_sleep_dream_cycle) ?? 0)} />
+                <Metric label="Lifecycle Events" value={text(safeJsonObject(remainingRuntimeStatus?.memory_lifecycle).record_counts ? safeJsonObject(safeJsonObject(remainingRuntimeStatus?.memory_lifecycle).record_counts).event_binding ?? 0 : 0)} />
+                <Metric label="Causal Packets" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.causal_sandbox) ?? 0)} />
+                <Metric label="Goal Packets" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.goal_drive) ?? 0)} />
+                <Metric label="Unresolved" value={text(safeJsonObject(remainingRuntimeStatus?.temporal_continuity).unresolved_review_items ?? 0)} />
+              </div>
+              <div className="chips">
+                <span>active memory: {plainBlocked(remainingRuntimeStatus?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(remainingRuntimeStatus?.runtime_memory_recall)}</span>
+                <span>autonomous action: {plainBlocked(remainingRuntimeStatus?.autonomous_action_allowed)}</span>
+                <span>transfer: {plainBlocked(remainingRuntimeStatus?.transfer_approved)}</span>
+              </div>
+              <PlainResult value={safeJsonObject(remainingRuntimeStatus?.temporal_continuity)} />
+            </Panel>
             <SplitView
               left={<Panel title="Transfer Gate Preview"><CVesselSafetyExtensions tool={cVesselToolOrganStatus} fault={cVesselOrganFaultResult} resilience={cVesselFaultResilienceResult} gate={cVesselTransferGate} /></Panel>}
               right={<Panel title="Sidecar Payload"><Json value={boot.health || { status: boot.message, attempts: boot.attempts }} /></Panel>}

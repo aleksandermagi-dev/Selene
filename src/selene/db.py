@@ -691,6 +691,25 @@ CREATE TABLE IF NOT EXISTS c_runtime_dream_consolidation_records (
 
 CREATE INDEX IF NOT EXISTS idx_c_runtime_dream_consolidation_records_status ON c_runtime_dream_consolidation_records(status, review_status);
 
+CREATE TABLE IF NOT EXISTS c_runtime_wake_sleep_dream_cycles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cycle_label TEXT NOT NULL,
+  wake_summary TEXT NOT NULL,
+  sleep_sort_json TEXT NOT NULL DEFAULT '{}',
+  dream_consolidation_proposals_json TEXT NOT NULL DEFAULT '[]',
+  ignored_residue_json TEXT NOT NULL DEFAULT '[]',
+  ask_for_review_json TEXT NOT NULL DEFAULT '[]',
+  repair_notes TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'wake_sleep_dream_cycle_review_only',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_c_runtime_wake_sleep_dream_cycles_status ON c_runtime_wake_sleep_dream_cycles(status, review_status);
+
 CREATE TABLE IF NOT EXISTS c_runtime_causal_sandbox_records (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   question TEXT NOT NULL,
@@ -723,6 +742,23 @@ CREATE TABLE IF NOT EXISTS c_runtime_long_horizon_records (
 );
 
 CREATE INDEX IF NOT EXISTS idx_c_runtime_long_horizon_records_status ON c_runtime_long_horizon_records(status, review_status);
+
+CREATE TABLE IF NOT EXISTS c_runtime_goal_drive_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  current_goal TEXT NOT NULL,
+  subgoals_json TEXT NOT NULL DEFAULT '[]',
+  priority_label TEXT NOT NULL,
+  stop_ask_markers_json TEXT NOT NULL DEFAULT '[]',
+  do_not_pursue_json TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'goal_drive_manager_preview_review_only',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_c_runtime_goal_drive_records_status ON c_runtime_goal_drive_records(status, review_status);
 
 CREATE TABLE IF NOT EXISTS c_memory_event_binding_records (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

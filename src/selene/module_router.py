@@ -101,13 +101,17 @@ from .remaining_runtime import (
     control_panel_preview,
     dream_consolidation_propose,
     graceful_fall_run,
+    goal_drive_preview,
     long_horizon_stability_run,
     memory_consolidation_propose,
     memory_event_bind,
+    memory_lifecycle_status,
     memory_reconsolidation_review,
     perception_action_preview,
     remaining_runtime_status,
+    temporal_continuity_status,
     voice_policy_evaluate,
+    wake_sleep_dream_cycle_run,
 )
 from .reasoning_artifacts import (
     create_academic_packet,
@@ -291,8 +295,18 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": perception_action_preview(conn, payload)}
     if route_key == "c_memory.dream_consolidation.propose":
         return {"route": route_key, "result": dream_consolidation_propose(conn, payload)}
+    if route_key == "vessel.cycle.run":
+        return {"route": route_key, "result": wake_sleep_dream_cycle_run(conn, payload)}
     if route_key == "c_core.causal_sandbox.run":
         return {"route": route_key, "result": causal_sandbox_run(conn, payload)}
+    if route_key == "vessel.causal_sandbox.run":
+        return {"route": route_key, "result": causal_sandbox_run(conn, payload)}
+    if route_key == "vessel.goal_drive.preview":
+        return {"route": route_key, "result": goal_drive_preview(conn, payload)}
+    if route_key == "vessel.temporal_continuity.status":
+        return {"route": route_key, "result": temporal_continuity_status(conn)}
+    if route_key == "vessel.memory_lifecycle.status":
+        return {"route": route_key, "result": memory_lifecycle_status(conn)}
     if route_key == "c_core.long_horizon_stability.run":
         return {"route": route_key, "result": long_horizon_stability_run(conn, payload)}
     if route_key == "c_memory.event_bind":
