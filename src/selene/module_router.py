@@ -83,6 +83,17 @@ from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
 from .kernel import kernel_state
 from .native_generation import compose_native_response
 from .paper_map_reconstruction import run_paper_map_reconstruction
+from .pre_transfer_runtime import (
+    compare_speech_generation_rehearsals,
+    create_speech_generation_rehearsal,
+    get_speech_generation_rehearsal,
+    link_accession_evidence,
+    list_speech_generation_rehearsals,
+    perception_intake_preview,
+    retrieval_reconstruction_runtime_preview,
+    route_speech_rehearsal_to_review,
+    working_memory_runtime_preview,
+)
 from .research_integrity import AcademicWorkflowRouter, CitationIntegrity, ResearchIntegrityCore, research_integrity_report
 from .remaining_runtime import (
     causal_sandbox_run,
@@ -196,6 +207,25 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": native_generation_rehearsal_status(conn)}
     if route_key == "vessel.steps_1_8.status":
         return {"route": route_key, "result": steps_1_8_status(conn)}
+    if route_key == "vessel.speech_rehearsal.create":
+        return {"route": route_key, "result": create_speech_generation_rehearsal(conn, payload)}
+    if route_key == "vessel.speech_rehearsal.list":
+        return {"route": route_key, "result": list_speech_generation_rehearsals(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.speech_rehearsal.detail":
+        item = get_speech_generation_rehearsal(conn, int(payload.get("id") or payload.get("rehearsal_id") or 0))
+        return {"route": route_key, "result": item or {"error": "not found"}}
+    if route_key == "vessel.speech_rehearsal.compare":
+        return {"route": route_key, "result": compare_speech_generation_rehearsals(conn, payload)}
+    if route_key == "vessel.speech_rehearsal.route_review":
+        return {"route": route_key, "result": route_speech_rehearsal_to_review(conn, payload)}
+    if route_key == "vessel.working_memory_runtime.preview":
+        return {"route": route_key, "result": working_memory_runtime_preview(conn, payload)}
+    if route_key == "vessel.retrieval_runtime.preview":
+        return {"route": route_key, "result": retrieval_reconstruction_runtime_preview(conn, payload)}
+    if route_key == "vessel.memory_accession.link_evidence":
+        return {"route": route_key, "result": link_accession_evidence(conn, payload)}
+    if route_key == "vessel.perception_intake.preview":
+        return {"route": route_key, "result": perception_intake_preview(conn, payload)}
     if route_key == "vessel.reasoning_artifact.create":
         return {"route": route_key, "result": create_reasoning_artifact(conn, payload)}
     if route_key == "vessel.reasoning_artifact.list":

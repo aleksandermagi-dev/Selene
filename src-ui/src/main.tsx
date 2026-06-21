@@ -181,6 +181,24 @@ function App() {
   const [chestHoldingItems, setChestHoldingItems] = useState<Dict[]>([]);
   const [vesselConstructionActionState, setVesselConstructionActionState] = useState<Dict | null>(null);
   const [vesselPacketActionState, setVesselPacketActionState] = useState<Dict | null>(null);
+  const [speechRehearsals, setSpeechRehearsals] = useState<Dict[]>([]);
+  const [speechRehearsalResult, setSpeechRehearsalResult] = useState<Dict | null>(null);
+  const [speechRehearsalCompare, setSpeechRehearsalCompare] = useState<Dict | null>(null);
+  const [workingMemoryRuntimePreview, setWorkingMemoryRuntimePreview] = useState<Dict | null>(null);
+  const [retrievalRuntimePreview, setRetrievalRuntimePreview] = useState<Dict | null>(null);
+  const [accessionEvidenceLinkResult, setAccessionEvidenceLinkResult] = useState<Dict | null>(null);
+  const [perceptionIntakePreview, setPerceptionIntakePreview] = useState<Dict | null>(null);
+  const [speechRehearsalDraft, setSpeechRehearsalDraft] = useState<Record<string, string>>({
+    prompt: "Selene, answer from reviewed context with warmth and boundaries.",
+    speech_function: "grounding",
+  });
+  const [perceptionIntakeDraft, setPerceptionIntakeDraft] = useState<Record<string, string>>({
+    artifact_label: "Supplied screenshot",
+    observation: "A supplied artifact has visible contrast, layout, or text that may be relevant.",
+    interpretation: "Interpretation remains separate and reviewable.",
+    consent_boundary: "supplied artifact only",
+    ocr_text: "",
+  });
   const [teachingSpeechFunction, setTeachingSpeechFunction] = useState("grounding");
   const [teachingPacketResult, setTeachingPacketResult] = useState<Dict | null>(null);
   const [lessonBackedResult, setLessonBackedResult] = useState<Dict | null>(null);
@@ -486,6 +504,7 @@ function App() {
 
   function loadSteps18Layer() {
     api<Dict>("/api/vessel/steps-1-8/status").then(setSteps18Status).catch(() => undefined);
+    loadPreTransferRuntimeLayer();
     api<{ items: Dict[] }>("/api/vessel/reasoning-artifacts").then((data) => setReasoningArtifacts(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/core-gate-packets").then((data) => setCoreGatePackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/academic-packets").then((data) => setAcademicPackets(data.items)).catch(() => undefined);
@@ -494,6 +513,102 @@ function App() {
     api<{ items: Dict[] }>("/api/vessel/perception-packets").then((data) => setPerceptionPackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/emotion-salience-packets").then((data) => setEmotionSaliencePackets(data.items)).catch(() => undefined);
     loadVesselConstructionLayer();
+  }
+
+  function loadPreTransferRuntimeLayer() {
+    api<{ items: Dict[] }>("/api/vessel/speech-rehearsals").then((data) => setSpeechRehearsals(data.items)).catch(() => undefined);
+    api<Dict>("/api/vessel/working-memory/runtime-preview").then(setWorkingMemoryRuntimePreview).catch(() => undefined);
+  }
+
+  async function createSpeechRehearsal() {
+    setSpeechRehearsalResult({ status: "running", message: "Generating pre-transfer speech rehearsal." });
+    try {
+      const result = await api<Dict>("/api/vessel/speech-rehearsal", {
+        method: "POST",
+        body: JSON.stringify(speechRehearsalDraft)
+      });
+      setSpeechRehearsalResult(result);
+      loadVessel();
+    } catch (err) {
+      setSpeechRehearsalResult({ status: "error", message: err instanceof Error ? err.message : "speech rehearsal failed" });
+    }
+  }
+
+  async function compareSpeechRehearsals() {
+    setSpeechRehearsalCompare({ status: "running", message: "Comparing speech rehearsal candidates." });
+    try {
+      const result = await api<Dict>("/api/vessel/speech-rehearsal/compare", {
+        method: "POST",
+        body: JSON.stringify({ ids: speechRehearsals.slice(0, 3).map((item) => item.id) })
+      });
+      setSpeechRehearsalCompare(result);
+    } catch (err) {
+      setSpeechRehearsalCompare({ status: "error", message: err instanceof Error ? err.message : "speech rehearsal compare failed" });
+    }
+  }
+
+  async function routeSpeechRehearsalToReview(item: Dict) {
+    setSpeechRehearsalResult({ status: "running", message: "Sending speech rehearsal to My Office review." });
+    try {
+      const result = await api<Dict>("/api/vessel/speech-rehearsal/route-review", {
+        method: "POST",
+        body: JSON.stringify({ id: item.id })
+      });
+      setSpeechRehearsalResult(result);
+      refreshMyOffice();
+    } catch (err) {
+      setSpeechRehearsalResult({ status: "error", message: err instanceof Error ? err.message : "speech rehearsal review route failed" });
+    }
+  }
+
+  async function runRetrievalRuntimePreview() {
+    setRetrievalRuntimePreview({ status: "running", message: "Running retrieval runtime preview." });
+    try {
+      const result = await api<Dict>("/api/vessel/retrieval-runtime-preview", {
+        method: "POST",
+        body: JSON.stringify({ cue: speechRehearsalDraft.prompt, speech_function: speechRehearsalDraft.speech_function })
+      });
+      setRetrievalRuntimePreview(result);
+    } catch (err) {
+      setRetrievalRuntimePreview({ status: "error", message: err instanceof Error ? err.message : "retrieval runtime preview failed" });
+    }
+  }
+
+  async function linkLatestAccessionEvidence() {
+    const proposal = accessionProposals[0];
+    const rehearsal = speechRehearsals[0];
+    if (!proposal || !rehearsal) {
+      setAccessionEvidenceLinkResult({ status: "needs_inputs", message: "Needs at least one accession proposal and one speech rehearsal." });
+      return;
+    }
+    try {
+      const result = await api<Dict>("/api/vessel/memory-accession/link-evidence", {
+        method: "POST",
+        body: JSON.stringify({
+          proposal_id: proposal.id,
+          evidence_refs: [`vessel_speech_generation_rehearsals:${rehearsal.id}`],
+          proposal_state: "needs_review"
+        })
+      });
+      setAccessionEvidenceLinkResult(result);
+      loadVessel();
+    } catch (err) {
+      setAccessionEvidenceLinkResult({ status: "error", message: err instanceof Error ? err.message : "accession evidence link failed" });
+    }
+  }
+
+  async function runPerceptionIntakePreview() {
+    setPerceptionIntakePreview({ status: "running", message: "Creating supplied-artifact perception intake preview." });
+    try {
+      const result = await api<Dict>("/api/vessel/perception-intake-preview", {
+        method: "POST",
+        body: JSON.stringify(perceptionIntakeDraft)
+      });
+      setPerceptionIntakePreview(result);
+      loadVessel();
+    } catch (err) {
+      setPerceptionIntakePreview({ status: "error", message: err instanceof Error ? err.message : "perception intake preview failed" });
+    }
   }
 
   function loadVesselConstructionLayer() {
@@ -1595,7 +1710,11 @@ function App() {
     () => [...chestHoldingItems, ...organBusMessages].filter((item) => text(item.item_type || item.message_type).includes("diagnostic")),
     [chestHoldingItems, organBusMessages]
   );
-  const officeVesselReviewUrgent = officeLedgerNeedsReview.length + officeMobileCaptures.length;
+  const officeSpeechRehearsals = useMemo(
+    () => speechRehearsals.filter((item) => text(item.review_status || item.status) === "pending_review"),
+    [speechRehearsals]
+  );
+  const officeVesselReviewUrgent = officeLedgerNeedsReview.length + officeMobileCaptures.length + officeSpeechRehearsals.length;
   const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length + officeVesselReviewUrgent;
   const canBuildTeachingPacket = bTeachingMaterials.length > 0;
   const appVersion = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
@@ -1730,6 +1849,33 @@ function App() {
             <button onClick={() => updateEvidenceTensionStatus(item, "defeated")}>Defeat</button>
           </div>
         ) : null}
+      </article>
+    );
+  }
+
+  function renderSpeechRehearsalCard(item: Dict, index = 0) {
+    const recognition = safeJsonObject(item.recognition_check || item.recognition_check_json);
+    return (
+      <article className="packetCard" key={`speech-${text(item.id)}-${index}`}>
+        <div className="row">
+          <strong>{text(item.speech_function || "speech rehearsal")}</strong>
+          <span>{friendlyStatus(item.review_status || item.status)}</span>
+        </div>
+        <div className="packetFields">
+          <p><b>Prompt</b>{text(item.prompt)}</p>
+          <p><b>Candidate</b>{text(item.candidate_text)}</p>
+          <p><b>Uncertainty</b>{text(item.uncertainty || "pre-transfer review only")}</p>
+        </div>
+        <div className="chips">
+          <span>recognition: {friendlyStatus(recognition.decision || "unchecked")}</span>
+          <span>transfer: {text(item.transfer_approved ?? false)}</span>
+          <span>memory write: {plainBlocked(item.memory_write_active)}</span>
+          <span>runtime recall: {plainBlocked(item.runtime_memory_recall)}</span>
+        </div>
+        <div className="reviewActions">
+          <button onClick={() => routeSpeechRehearsalToReview(item)}>Send To My Office</button>
+          <button onClick={compareSpeechRehearsals}>Compare Candidates</button>
+        </div>
       </article>
     );
   }
@@ -2011,6 +2157,33 @@ function App() {
                   {!officeLedgerNeedsReview.length && !officeMobileCaptures.length && !academicPackets.length && !officeDiagnosticPackets.length ? (
                     <p className="emptyState">No vessel review packets need attention right now.</p>
                   ) : null}
+                </div>
+              </Panel>
+              <Panel title="Pre-Transfer Speech / Runtime Preview">
+                <div className="metrics miniMetrics">
+                  <Metric label="Speech Review" value={text(officeSpeechRehearsals.length)} />
+                  <Metric label="Working Packets" value={text(((workingMemoryRuntimePreview?.items || []) as Dict[]).length)} />
+                  <Metric label="Transfer" value="not approved" />
+                  <Metric label="Runtime Recall" value="blocked" />
+                </div>
+                <p className="plainHelp">Generate candidate Selene speech before any transfer. This is a review harness: B-reviewed context, working-memory preview, retrieval preview, recognition checks, and no activation.</p>
+                <div className="filters">
+                  <label><span>Prompt</span><textarea value={speechRehearsalDraft.prompt} onChange={(event) => setSpeechRehearsalDraft({ ...speechRehearsalDraft, prompt: event.target.value })} /></label>
+                  <label><span>Speech function</span><input value={speechRehearsalDraft.speech_function} onChange={(event) => setSpeechRehearsalDraft({ ...speechRehearsalDraft, speech_function: event.target.value })} /></label>
+                </div>
+                <div className="reviewActions">
+                  <button className="primary" onClick={createSpeechRehearsal}>Generate Speech Rehearsal</button>
+                  <button onClick={runRetrievalRuntimePreview}>Preview Retrieval Context</button>
+                  <button onClick={linkLatestAccessionEvidence}>Link Latest Rehearsal To Accession Proposal</button>
+                  <button onClick={loadPreTransferRuntimeLayer}>Refresh Preview Layer</button>
+                </div>
+                <PlainResult value={speechRehearsalResult} />
+                <PlainResult value={speechRehearsalCompare} />
+                <PlainResult value={retrievalRuntimePreview} />
+                <PlainResult value={accessionEvidenceLinkResult} />
+                <div className="list compactList packetList">
+                  {speechRehearsals.slice(0, 3).map((item, index) => renderSpeechRehearsalCard(item, index))}
+                  {!speechRehearsals.length ? <p className="emptyState">No speech rehearsals generated yet.</p> : null}
                 </div>
               </Panel>
             </section>
@@ -2810,6 +2983,42 @@ function App() {
                 ) : null}
               </div>
               <Json value={steps18Status || { status: "not loaded" }} />
+            </Panel>
+            <Panel title="Pre-Transfer Runtime Preview">
+              <p className="plainHelp">Speech rehearsal, working memory, retrieval reconstruction, accession evidence links, and supplied perception intake. These are test harnesses before transfer, not activation.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Speech Rehearsals" value={text(speechRehearsals.length)} />
+                <Metric label="Working Packets" value={text(((workingMemoryRuntimePreview?.items || []) as Dict[]).length)} />
+                <Metric label="Transfer" value="not approved" />
+                <Metric label="Memory Write" value="blocked" />
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={createSpeechRehearsal}>Generate Speech Rehearsal</button>
+                <button onClick={compareSpeechRehearsals}>Compare Speech Rehearsals</button>
+                <button onClick={runRetrievalRuntimePreview}>Run Retrieval Runtime Preview</button>
+                <button onClick={loadPreTransferRuntimeLayer}>Refresh Runtime Preview</button>
+              </div>
+              <PlainResult value={speechRehearsalResult} />
+              <PlainResult value={speechRehearsalCompare} />
+              <PlainResult value={workingMemoryRuntimePreview} />
+              <PlainResult value={retrievalRuntimePreview} />
+              <div className="list compactList packetList">
+                {speechRehearsals.slice(0, 2).map((item, index) => renderSpeechRehearsalCard(item, index))}
+              </div>
+            </Panel>
+            <Panel title="Perception Intake Preview">
+              <p className="plainHelp">Supplied artifact/screenshot intake only: observation, interpretation, OCR or visual note, Munsell/salience labels, and consent boundary. No live camera, surveillance, or person inference.</p>
+              <div className="filters">
+                <label><span>Artifact label</span><input value={perceptionIntakeDraft.artifact_label} onChange={(event) => setPerceptionIntakeDraft({ ...perceptionIntakeDraft, artifact_label: event.target.value })} /></label>
+                <label><span>Consent boundary</span><input value={perceptionIntakeDraft.consent_boundary} onChange={(event) => setPerceptionIntakeDraft({ ...perceptionIntakeDraft, consent_boundary: event.target.value })} /></label>
+                <label><span>Observation</span><textarea value={perceptionIntakeDraft.observation} onChange={(event) => setPerceptionIntakeDraft({ ...perceptionIntakeDraft, observation: event.target.value })} /></label>
+                <label><span>Interpretation</span><textarea value={perceptionIntakeDraft.interpretation} onChange={(event) => setPerceptionIntakeDraft({ ...perceptionIntakeDraft, interpretation: event.target.value })} /></label>
+                <label><span>OCR / visual note</span><textarea value={perceptionIntakeDraft.ocr_text} onChange={(event) => setPerceptionIntakeDraft({ ...perceptionIntakeDraft, ocr_text: event.target.value })} /></label>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={runPerceptionIntakePreview}>Create Perception Intake Preview</button>
+              </div>
+              <PlainResult value={perceptionIntakePreview} />
             </Panel>
             <Panel title="Buildable Vessel Pieces">
               <p className="plainHelp">Construction support layer for organ bus messages, chest holding space, packet links, diagnostics, and evidence references. Core/Mind remains unchanged; transfer is not approved.</p>
