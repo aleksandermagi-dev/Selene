@@ -1,5 +1,6 @@
 import pytest
 
+import selene.remaining_runtime as remaining_runtime
 from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.remaining_runtime import (
@@ -239,6 +240,20 @@ def test_tendril_plan_preview_cannot_execute_or_grant_authority(tmp_path):
     assert "transfer approval" in result["blocked_misuse"]
     assert conn.execute("SELECT COUNT(*) FROM vessel_tendril_plan_previews").fetchone()[0] == 1
     assert_sealed(result)
+
+
+def test_package_status_time_falls_back_to_installed_exe_timestamp(tmp_path, monkeypatch):
+    local_app_data = tmp_path / "local"
+    installed = local_app_data / "Selene" / "selene-vessel.exe"
+    installed.parent.mkdir(parents=True)
+    installed.write_bytes(b"selene")
+    monkeypatch.setenv("LOCALAPPDATA", str(local_app_data))
+    monkeypatch.setattr(remaining_runtime, "_package_status_candidates", lambda: [])
+
+    timestamp = remaining_runtime._latest_package_status_time()
+
+    assert timestamp
+    assert remaining_runtime._freshness(timestamp) == "fresh"
 
 
 def test_causal_sandbox_and_long_horizon_are_bounded(tmp_path):

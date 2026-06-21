@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -1102,14 +1104,28 @@ def _count_where(conn: sqlite3.Connection, table: str, where: str) -> int:
 
 
 def _latest_package_status_time() -> str | None:
-    status_path = Path(__file__).resolve().parents[2] / "dist-sidecar" / "package-status.json"
-    if not status_path.exists():
-        return None
-    try:
-        data = json.loads(status_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    return data.get("finalized_at") or data.get("build_finished_at")
+    for status_path in _package_status_candidates():
+        if not status_path.exists():
+            continue
+        try:
+            data = json.loads(status_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        timestamp = data.get("finalized_at") or data.get("build_finished_at")
+        if timestamp:
+            return str(timestamp)
+    installed_exe = Path(os.environ.get("LOCALAPPDATA", "")) / "Selene" / "selene-vessel.exe"
+    if installed_exe.exists():
+        return datetime.fromtimestamp(installed_exe.stat().st_mtime, tz=timezone.utc).isoformat()
+    return None
+
+
+def _package_status_candidates() -> list[Path]:
+    candidates = [Path(__file__).resolve().parents[2] / "dist-sidecar" / "package-status.json"]
+    executable = Path(sys.executable).resolve()
+    candidates.extend(parent / "package-status.json" for parent in executable.parents[:4])
+    candidates.extend(parent / "dist-sidecar" / "package-status.json" for parent in executable.parents[:4])
+    return candidates
 
 
 def _freshness(value: str | None) -> str:
