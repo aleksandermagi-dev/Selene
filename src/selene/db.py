@@ -477,6 +477,24 @@ CREATE TABLE IF NOT EXISTS vessel_fluency_diagnostic_records (
 
 CREATE INDEX IF NOT EXISTS idx_vessel_fluency_diagnostic_records_status ON vessel_fluency_diagnostic_records(status, review_status);
 
+CREATE TABLE IF NOT EXISTS vessel_speech_generation_rehearsals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  prompt TEXT NOT NULL,
+  speech_function TEXT NOT NULL DEFAULT 'grounding',
+  candidate_text TEXT NOT NULL,
+  uncertainty TEXT NOT NULL DEFAULT '',
+  evidence_used TEXT NOT NULL DEFAULT '[]',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  recognition_check_json TEXT NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'speech_generation_rehearsal_review_only',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'pending_review',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_speech_generation_rehearsals_status ON vessel_speech_generation_rehearsals(status, review_status);
+
 CREATE TABLE IF NOT EXISTS c_core_deliberation_previews (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   prompt TEXT NOT NULL,

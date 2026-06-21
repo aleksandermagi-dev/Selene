@@ -369,6 +369,17 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "native_generation.rehearsal.status")["result"]))
         elif parsed.path == "/api/vessel/steps-1-8/status":
             self._send(*json_bytes(route_request(conn, "vessel.steps_1_8.status")["result"]))
+        elif parsed.path == "/api/vessel/speech-rehearsals":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "vessel.speech_rehearsal.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+        elif parsed.path.startswith("/api/vessel/speech-rehearsals/"):
+            try:
+                rehearsal_id = int(parsed.path.removeprefix("/api/vessel/speech-rehearsals/"))
+                self._send(*json_bytes(route_request(conn, "vessel.speech_rehearsal.detail", {"id": rehearsal_id})["result"]))
+            except ValueError:
+                self._send(*json_bytes({"error": "invalid rehearsal id"}, 400))
+        elif parsed.path == "/api/vessel/working-memory/runtime-preview":
+            self._send(*json_bytes(route_request(conn, "vessel.working_memory_runtime.preview")["result"]))
         elif parsed.path == "/api/vessel/reasoning-artifacts":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "vessel.reasoning_artifact.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
@@ -718,6 +729,36 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/vessel/organ-contracts/ensure":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.organ_contract.ensure", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/speech-rehearsal":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.speech_rehearsal.create", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/speech-rehearsal/compare":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.speech_rehearsal.compare", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/speech-rehearsal/route-review":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.speech_rehearsal.route_review", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/retrieval-runtime-preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.retrieval_runtime.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/memory-accession/link-evidence":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.memory_accession.link_evidence", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/perception-intake-preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.perception_intake.preview", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/organ-contract":
