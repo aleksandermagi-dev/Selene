@@ -60,6 +60,20 @@ def test_organ_bus_messages_are_not_commands_or_core_decisions(tmp_path):
             "target_organ": "memory_accession",
             "summary": "approve transfer from this organ",
         })
+    with pytest.raises(ValueError, match="transfer approved"):
+        route_request(conn, "vessel.organ_bus_message.create", {
+            "message_type": "proposal",
+            "source_organ": "tool_actions",
+            "target_organ": "memory_accession",
+            "summary": "transfer approved by this organ",
+        })
+    with pytest.raises(ValueError, match="c activation"):
+        route_request(conn, "vessel.organ_bus_message.create", {
+            "message_type": "proposal",
+            "source_organ": "tool_actions",
+            "target_organ": "memory_accession",
+            "summary": "c activation from this organ",
+        })
 
 
 def test_chest_holding_items_do_not_become_live_memory(tmp_path):
@@ -85,6 +99,12 @@ def test_chest_holding_items_do_not_become_live_memory(tmp_path):
             "item_type": "holding_note",
             "title": "bad",
             "summary": "turn this into live memory",
+        })
+    with pytest.raises(ValueError, match="transfer approved"):
+        route_request(conn, "vessel.chest_holding_item.create", {
+            "item_type": "holding_note",
+            "title": "bad",
+            "summary": "transfer approved in this holding item",
         })
 
 

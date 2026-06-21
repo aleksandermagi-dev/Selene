@@ -18,6 +18,14 @@ WORKING_MEMORY_PREVIEW_BOUNDARY = "working_memory_runtime_preview_short_term_not
 RETRIEVAL_RUNTIME_BOUNDARY = "retrieval_reconstruction_runtime_preview_no_runtime_recall"
 PERCEPTION_INTAKE_BOUNDARY = "perception_intake_preview_supplied_artifact_only"
 ACCESSION_LINK_BOUNDARY = "memory_accession_evidence_link_proposal_only"
+ACCESSION_PROPOSAL_STATES = {
+    "needs_b_reference",
+    "proposal_ready",
+    "needs_review",
+    "accepted_for_future_transfer_input",
+    "superseded",
+    "blocked",
+}
 
 BLOCKED_MARKERS = (
     "activate c",
@@ -198,18 +206,19 @@ def retrieval_reconstruction_runtime_preview(conn: sqlite3.Connection, payload: 
 
 
 def link_accession_evidence(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
-    _ensure_allowed(payload, allow_blocked_terms=True)
+    _ensure_allowed(payload)
     proposal_id = int(payload.get("proposal_id") or 0)
     row = conn.execute("SELECT * FROM vessel_memory_accession_proposals WHERE id = ?", (proposal_id,)).fetchone()
     if row is None:
         raise ValueError("memory accession proposal not found")
     proposal = _decode_json_row(row, ("source_refs",), "payload_json")
     evidence_refs = _json_list(payload.get("evidence_refs"))
+    proposal_state = _choice(str(payload.get("proposal_state") or "needs_review"), ACCESSION_PROPOSAL_STATES, "proposal_state")
     payload_json = proposal.get("payload_json") or {}
     linked = list(dict.fromkeys([*(payload_json.get("linked_evidence_refs") or []), *evidence_refs]))
     payload_json.update({
         "linked_evidence_refs": linked,
-        "proposal_state": _text(payload.get("proposal_state") or "needs_review", 120),
+        "proposal_state": proposal_state,
         "evidence_link_only": True,
         "memory_write_active": False,
     })
@@ -617,6 +626,13 @@ def _json_list(value: Any) -> list[str]:
         except json.JSONDecodeError:
             return [part.strip()[:500] for part in value.split(",") if part.strip()]
     return [str(value)[:500]]
+
+
+def _choice(value: str, allowed: set[str], field: str) -> str:
+    text = str(value or "").strip()
+    if text not in allowed:
+        raise ValueError(f"unsupported {field}: {text}")
+    return text
 
 
 def _required(payload: dict[str, Any], key: str, limit: int) -> str:
