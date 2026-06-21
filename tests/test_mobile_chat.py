@@ -51,6 +51,8 @@ def test_mobile_review_capture_creates_pending_review_request_only(tmp_path):
     assert result["status"] == "mobile_review_capture_recorded"
     assert result["review_destination"] == "desktop_my_office"
     assert result["save_request"]["status"] == "pending_review"
+    assert result["chest_item"]["item_type"] == "mobile_capture"
+    assert result["chest_item"]["payload_json"]["holding_item_is_live_memory"] is False
     assert result["guard_flags"]["memory_write_active"] is False
     assert conn.execute("SELECT COUNT(*) FROM continuity_candidates").fetchone()[0] == before
 

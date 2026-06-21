@@ -710,6 +710,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.evidence_tension.create", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/evidence-tension/status":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.evidence_tension.update", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/organ-contracts/ensure":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.organ_contract.ensure", body)["result"]))

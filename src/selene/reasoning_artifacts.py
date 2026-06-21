@@ -212,12 +212,15 @@ def create_evidence_tension_entry(conn: sqlite3.Connection, payload: dict[str, A
     support = _choice(str(payload.get("support_status") or "unknown"), SUPPORT_STATUSES, "support_status")
     tension = _choice(str(payload.get("tension_status") or "stable"), TENSION_STATUSES, "tension_status")
     source_refs = _json_list(payload.get("source_refs")) or ["evidence_tension:manual"]
+    linked_packet_refs = _json_list(payload.get("linked_packet_refs"))
     result = _with_common({
         "claim": _required(payload, "claim", 1200),
         "source_refs": source_refs,
+        "linked_packet_refs": linked_packet_refs,
         "support_status": support,
         "tension_status": tension,
         "conclusion_status": conclusion,
+        "decision_label": _decision_label(conclusion),
         "review_destination": "My Office" if conclusion == "needs_review" else "Ledger",
         "status": "evidence_tension_ledger_review_only",
         "provenance_boundary": REASONING_BOUNDARY,
@@ -225,6 +228,8 @@ def create_evidence_tension_entry(conn: sqlite3.Connection, payload: dict[str, A
         "payload_json": {
             "defeasible": True,
             "paper_over_ethics_allowed": False,
+            "linked_packet_refs": linked_packet_refs,
+            "decision_label": _decision_label(conclusion),
         },
     })
     entry_id = conn.execute(
@@ -255,6 +260,42 @@ def create_evidence_tension_entry(conn: sqlite3.Connection, payload: dict[str, A
 def list_evidence_tension_entries(conn: sqlite3.Connection, limit: int = 50) -> dict[str, Any]:
     rows = conn.execute("SELECT * FROM vessel_evidence_tension_ledger ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
     return _with_boundaries({"status": "evidence_tension_ledger_review_only", "items": [_decode_row(row) for row in rows]})
+
+
+def update_evidence_tension_entry(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
+    _ensure_allowed(payload)
+    entry_id = int(payload.get("id") or payload.get("entry_id") or 0)
+    if entry_id <= 0:
+        raise ValueError("entry_id is required")
+    existing = conn.execute("SELECT * FROM vessel_evidence_tension_ledger WHERE id = ?", (entry_id,)).fetchone()
+    if existing is None:
+        raise ValueError("evidence tension entry not found")
+    current = _decode_row(existing)
+    conclusion = _choice(str(payload.get("conclusion_status") or current.get("conclusion_status") or "needs_review"), CONCLUSION_STATUSES, "conclusion_status")
+    support = _choice(str(payload.get("support_status") or current.get("support_status") or "unknown"), SUPPORT_STATUSES, "support_status")
+    tension = _choice(str(payload.get("tension_status") or current.get("tension_status") or "stable"), TENSION_STATUSES, "tension_status")
+    payload_json = _json_dict(current.get("payload_json"))
+    payload_json.update({
+        "defeasible": True,
+        "paper_over_ethics_allowed": False,
+        "decision_label": _decision_label(conclusion),
+        "status_note": _text(payload.get("status_note") or payload.get("reviewer_note") or "", 800),
+        "linked_packet_refs": _json_list(payload.get("linked_packet_refs")) or _json_list(payload_json.get("linked_packet_refs")),
+    })
+    review_status = "pending_review" if conclusion == "needs_review" else "review_only"
+    review_destination = "My Office" if conclusion == "needs_review" else "Ledger"
+    conn.execute(
+        """
+        UPDATE vessel_evidence_tension_ledger
+        SET support_status = ?, tension_status = ?, conclusion_status = ?, review_destination = ?,
+            review_status = ?, payload_json = ?
+        WHERE id = ?
+        """,
+        (support, tension, conclusion, review_destination, review_status, json.dumps(payload_json), entry_id),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM vessel_evidence_tension_ledger WHERE id = ?", (entry_id,)).fetchone()
+    return _with_common({"status": "evidence_tension_entry_updated", "entry": _with_common(_decode_row(row))})
 
 
 def ensure_organ_contracts(conn: sqlite3.Connection) -> dict[str, Any]:
@@ -525,6 +566,16 @@ def _review_destination(route: str) -> str:
     return "My Office" if route == "create_review_packet" else "Status"
 
 
+def _decision_label(conclusion: str) -> str:
+    return {
+        "needs_review": "Aleks decision",
+        "accepted_for_now": "status-only",
+        "superseded": "status-only",
+        "narrowed": "status-only",
+        "defeated": "status-only",
+    }.get(conclusion, "status-only")
+
+
 def _ensure_allowed(payload: dict[str, Any], *, allow_blocked_terms: bool = False) -> None:
     if allow_blocked_terms:
         return
@@ -572,6 +623,10 @@ def _decode_row(row: sqlite3.Row | None) -> dict[str, Any]:
     for key in ("emotion_salience_signals", "perception_signals", "payload_json"):
         if key in result:
             result[key] = _loads(result[key], {})
+    payload = result.get("payload_json") if isinstance(result.get("payload_json"), dict) else {}
+    for key in ("linked_packet_refs", "decision_label", "status_note"):
+        if key in payload and key not in result:
+            result[key] = payload[key]
     return result
 
 
