@@ -6,6 +6,7 @@ from selene.remaining_runtime import (
     causal_sandbox_run,
     control_panel_preview,
     dream_consolidation_propose,
+    expanded_diagnostics_sweep,
     graceful_fall_run,
     goal_drive_preview,
     long_horizon_stability_run,
@@ -14,8 +15,12 @@ from selene.remaining_runtime import (
     memory_lifecycle_status,
     memory_reconsolidation_review,
     perception_action_preview,
+    pre_core_review_packets,
+    prepare_night_cycle,
     remaining_runtime_status,
+    temporal_continuity_changes,
     temporal_continuity_status,
+    tendril_plan_preview,
     voice_policy_evaluate,
     wake_sleep_dream_cycle_run,
 )
@@ -63,6 +68,7 @@ def test_remaining_runtime_tables_are_idempotent(tmp_path):
     assert "c_memory_event_binding_records" in tables
     assert "c_memory_consolidation_proposals" in tables
     assert "c_memory_reconsolidation_reviews" in tables
+    assert conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name = 'vessel_tendril_plan_previews'").fetchone()
 
 
 def test_graceful_fall_treats_uncertainty_as_constructive_care(tmp_path):
@@ -184,6 +190,57 @@ def test_memory_lifecycle_and_temporal_continuity_status_are_review_only(tmp_pat
     assert_sealed(temporal)
 
 
+def test_pre_core_review_packets_and_temporal_changes_are_decision_only(tmp_path):
+    conn = make_conn(tmp_path)
+    memory_consolidation_propose(conn, {"proposal_label": "Needs memory review"})
+    causal_sandbox_run(conn, {"question": "What if this needs review?"})
+    goal_drive_preview(conn, {"user_request": "status check only", "salience_labels": ["status"]})
+
+    packets = pre_core_review_packets(conn)
+    changes = temporal_continuity_changes(conn)
+
+    assert packets["status"] == "pre_core_review_packets_ready"
+    assert packets["urgent_count"] == packets["counts"]["aleks_decision"]
+    assert any(item["row_state"] == "Aleks decision" for item in packets["items"])
+    assert all(item["row_state"] in {"Aleks decision", "Codex action", "jump to Status", "status-only", "blocked"} for item in packets["items"])
+    assert changes["subjective_time_claim"] is False
+    assert changes["status"] == "temporal_continuity_changes_review_only"
+    assert_sealed(packets)
+    assert_sealed(changes)
+
+
+def test_prepare_night_cycle_and_expanded_diagnostics_are_manual_support_only(tmp_path):
+    conn = make_conn(tmp_path)
+    memory_event_bind(conn, {"event_label": "Night cycle input"})
+
+    cycle = prepare_night_cycle(conn, {"cycle_label": "Manual support cycle"})
+    diagnostics = expanded_diagnostics_sweep(conn, {})
+
+    assert cycle["status"] == "prepare_night_cycle_review_bundle_ready"
+    assert cycle["manual_only"] is True
+    assert cycle["decision"] == "manual_cycle_bundle_no_memory_no_action"
+    assert len(cycle["steps"]) == 5
+    assert diagnostics["diagnostic_only"] is True
+    assert diagnostics["authority_granted"] is False
+    assert "organ_bus" in diagnostics["support_records"]
+    assert "chest" in diagnostics["support_records"]
+    assert_sealed(cycle)
+    assert_sealed(diagnostics)
+
+
+def test_tendril_plan_preview_cannot_execute_or_grant_authority(tmp_path):
+    conn = make_conn(tmp_path)
+    result = tendril_plan_preview(conn, {"intent": "Prepare a reversible support plan."})
+
+    assert result["status"] == "tendril_plan_preview_review_only"
+    assert result["proposal_only"] is True
+    assert result["execution_allowed"] is False
+    assert result["authority_granted"] is False
+    assert "transfer approval" in result["blocked_misuse"]
+    assert conn.execute("SELECT COUNT(*) FROM vessel_tendril_plan_previews").fetchone()[0] == 1
+    assert_sealed(result)
+
+
 def test_causal_sandbox_and_long_horizon_are_bounded(tmp_path):
     conn = make_conn(tmp_path)
     causal = causal_sandbox_run(conn, {
@@ -238,6 +295,7 @@ def test_remaining_runtime_routes_are_exposed_and_non_activating(tmp_path):
         ("c_vessel.perception_action.preview", {"observation": "observed"}),
         ("c_memory.dream_consolidation.propose", {"input_summary": "review traces"}),
         ("vessel.cycle.run", {"cycle_label": "cycle"}),
+        ("vessel.cycle.prepare_night", {"cycle_label": "manual cycle"}),
         ("c_core.causal_sandbox.run", {"question": "what if"}),
         ("vessel.causal_sandbox.run", {"question": "what if"}),
         ("vessel.goal_drive.preview", {"user_request": "organize safe review"}),
@@ -247,6 +305,10 @@ def test_remaining_runtime_routes_are_exposed_and_non_activating(tmp_path):
         ("c_memory.reconsolidation.review", {"correction_or_update": "review only"}),
         ("vessel.memory_lifecycle.status", {}),
         ("vessel.temporal_continuity.status", {}),
+        ("vessel.temporal_continuity.changes", {}),
+        ("vessel.pre_core_review_packets", {}),
+        ("vessel.diagnostics.expanded_sweep", {}),
+        ("vessel.tendril.plan_preview", {"intent": "review-only plan"}),
     ]
     for route_key, payload in route_payloads:
         result = route_request(conn, route_key, payload)["result"]
@@ -256,7 +318,7 @@ def test_remaining_runtime_routes_are_exposed_and_non_activating(tmp_path):
     routed_status = route_request(conn, "c_remaining.runtime.status")["result"]
     assert status["status"] == "remaining_blueprint_runtime_shelves_ready"
     assert routed_status["record_counts"]["graceful_fall"] == 1
-    assert routed_status["record_counts"]["wake_sleep_dream_cycle"] == 1
-    assert routed_status["record_counts"]["goal_drive"] == 1
+    assert routed_status["record_counts"]["wake_sleep_dream_cycle"] == 2
+    assert routed_status["record_counts"]["goal_drive"] == 2
     assert routed_status["record_counts"]["reconsolidation"] == 1
     assert_sealed(routed_status)

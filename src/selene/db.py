@@ -1210,6 +1210,25 @@ CREATE TABLE IF NOT EXISTS vessel_construction_runs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_vessel_construction_runs_status ON vessel_construction_runs(status, review_status);
+
+CREATE TABLE IF NOT EXISTS vessel_tendril_plan_previews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  intent TEXT NOT NULL,
+  required_approval TEXT NOT NULL,
+  reversible_steps TEXT NOT NULL DEFAULT '[]',
+  verification_plan TEXT NOT NULL,
+  rollback_plan TEXT NOT NULL,
+  blocked_misuse TEXT NOT NULL DEFAULT '[]',
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  status TEXT NOT NULL DEFAULT 'tendril_plan_preview_review_only',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'proposal_only',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_tendril_plan_previews_status ON vessel_tendril_plan_previews(status, review_status);
 """
 
 REQUIRED_COLUMNS = {

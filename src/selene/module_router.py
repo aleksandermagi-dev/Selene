@@ -100,6 +100,7 @@ from .remaining_runtime import (
     causal_sandbox_run,
     control_panel_preview,
     dream_consolidation_propose,
+    expanded_diagnostics_sweep,
     graceful_fall_run,
     goal_drive_preview,
     long_horizon_stability_run,
@@ -108,8 +109,12 @@ from .remaining_runtime import (
     memory_lifecycle_status,
     memory_reconsolidation_review,
     perception_action_preview,
+    pre_core_review_packets,
+    prepare_night_cycle,
     remaining_runtime_status,
+    temporal_continuity_changes,
     temporal_continuity_status,
+    tendril_plan_preview,
     voice_policy_evaluate,
     wake_sleep_dream_cycle_run,
 )
@@ -141,6 +146,7 @@ from .vessel_construction import (
     list_organ_bus_messages,
     mark_chest_item_status,
     prepare_vessel_pieces,
+    route_packet_to_support,
     send_packet_to_organ_bus,
 )
 from .vessel import (
@@ -281,6 +287,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": hold_packet_in_chest(conn, payload)}
     if route_key == "vessel.packet.send_to_organ_bus":
         return {"route": route_key, "result": send_packet_to_organ_bus(conn, payload)}
+    if route_key == "vessel.perception_intake.route":
+        return {"route": route_key, "result": route_packet_to_support(conn, payload, default_packet_type="perception")}
+    if route_key == "vessel.research.route":
+        return {"route": route_key, "result": route_packet_to_support(conn, payload, default_packet_type="research")}
     if route_key == "vessel.chest_holding_item.mark_status":
         return {"route": route_key, "result": mark_chest_item_status(conn, payload)}
     if route_key == "c_remaining.runtime.status":
@@ -297,6 +307,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": dream_consolidation_propose(conn, payload)}
     if route_key == "vessel.cycle.run":
         return {"route": route_key, "result": wake_sleep_dream_cycle_run(conn, payload)}
+    if route_key == "vessel.cycle.prepare_night":
+        return {"route": route_key, "result": prepare_night_cycle(conn, payload)}
     if route_key == "c_core.causal_sandbox.run":
         return {"route": route_key, "result": causal_sandbox_run(conn, payload)}
     if route_key == "vessel.causal_sandbox.run":
@@ -305,8 +317,16 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": goal_drive_preview(conn, payload)}
     if route_key == "vessel.temporal_continuity.status":
         return {"route": route_key, "result": temporal_continuity_status(conn)}
+    if route_key == "vessel.temporal_continuity.changes":
+        return {"route": route_key, "result": temporal_continuity_changes(conn)}
     if route_key == "vessel.memory_lifecycle.status":
         return {"route": route_key, "result": memory_lifecycle_status(conn)}
+    if route_key == "vessel.pre_core_review_packets":
+        return {"route": route_key, "result": pre_core_review_packets(conn, int(payload.get("limit") or 80))}
+    if route_key == "vessel.diagnostics.expanded_sweep":
+        return {"route": route_key, "result": expanded_diagnostics_sweep(conn, payload)}
+    if route_key == "vessel.tendril.plan_preview":
+        return {"route": route_key, "result": tendril_plan_preview(conn, payload)}
     if route_key == "c_core.long_horizon_stability.run":
         return {"route": route_key, "result": long_horizon_stability_run(conn, payload)}
     if route_key == "c_memory.event_bind":

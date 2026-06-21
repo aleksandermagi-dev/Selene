@@ -374,6 +374,79 @@ def send_packet_to_organ_bus(conn: sqlite3.Connection, payload: dict[str, Any]) 
     })
 
 
+def route_packet_to_support(conn: sqlite3.Connection, payload: dict[str, Any], *, default_packet_type: str) -> dict[str, Any]:
+    _ensure_allowed(payload, allow_no_transfer_language=True)
+    packet_type = _choice(str(payload.get("packet_type") or default_packet_type), {"perception", "emotion", "evidence", "diagnostic", "mobile_capture", "research"}, "packet_type")
+    packet_ref = _required(payload, "packet_ref", 240)
+    actions = set(_json_list(payload.get("actions")) or _json_list(payload.get("route_actions")) or ["hold", "bus"])
+    allowed_actions = {"hold", "bus", "ledger", "office"}
+    unsupported = sorted(actions - allowed_actions)
+    if unsupported:
+        raise ValueError(f"route actions must be drawn from {sorted(allowed_actions)}")
+
+    results: dict[str, Any] = {}
+    if "hold" in actions:
+        results["chest"] = hold_packet_in_chest(conn, {
+            **payload,
+            "packet_type": packet_type,
+            "packet_ref": packet_ref,
+            "review_status": str(payload.get("review_status") or "review_only"),
+        })
+    if "bus" in actions:
+        results["organ_bus"] = send_packet_to_organ_bus(conn, {
+            **payload,
+            "packet_type": packet_type,
+            "packet_ref": packet_ref,
+            "message_type": str(payload.get("message_type") or "packet_link"),
+        })
+    if "ledger" in actions:
+        from .reasoning_artifacts import create_evidence_tension_entry
+
+        packet = _packet_summary(conn, packet_type, packet_ref)
+        results["ledger"] = create_evidence_tension_entry(conn, {
+            "claim": _text(payload.get("claim") or packet["summary"] or f"{packet_type} packet needs evidence review", 1000),
+            "source_refs": _json_list(payload.get("source_refs")) or [packet_ref],
+            "linked_packet_refs": [packet_ref],
+            "support_status": str(payload.get("support_status") or "unknown"),
+            "tension_status": str(payload.get("tension_status") or "under_tension"),
+            "conclusion_status": str(payload.get("conclusion_status") or "needs_review"),
+            "review_destination": str(payload.get("review_destination") or "My Office"),
+        })
+    if "office" in actions:
+        try:
+            subject_id = int(str(packet_ref.rsplit(":", 1)[-1]).strip() or 0)
+        except ValueError:
+            subject_id = 0
+        conn.execute(
+            """
+            INSERT INTO vessel_review_queue(queue_type, subject_table, subject_id, status, source_refs, provenance_boundary, review_status, reason, payload_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                f"{packet_type}_packet_route",
+                str(payload.get("subject_table") or packet_ref.split(":", 1)[0]),
+                subject_id,
+                "pending_review",
+                json.dumps(_json_list(payload.get("source_refs")) or [packet_ref]),
+                CONSTRUCTION_BOUNDARY,
+                "pending_review",
+                "Packet routed to My Office for a real Aleks review decision.",
+                json.dumps({"packet_type": packet_type, "packet_ref": packet_ref, "support_only": True}),
+            ),
+        )
+        conn.commit()
+        results["my_office"] = {"status": "packet_routed_to_my_office", "packet_ref": packet_ref, "review_status": "pending_review"}
+
+    return _with_common({
+        "status": f"{packet_type}_packet_route_complete",
+        "packet_type": packet_type,
+        "packet_ref": packet_ref,
+        "actions": sorted(actions),
+        "results": results,
+        "support_only": True,
+    })
+
+
 def mark_chest_item_status(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
     _ensure_allowed(payload, allow_no_transfer_language=True)
     item_id = int(payload.get("item_id") or 0)

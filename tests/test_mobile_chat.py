@@ -5,7 +5,7 @@ import json
 import threading
 
 from selene.db import connect
-from selene.mobile_chat import mobile_capture_review, mobile_guard_flags, mobile_health, mobile_send_chat
+from selene.mobile_chat import mobile_capture_review, mobile_guard_flags, mobile_health, mobile_review_captures, mobile_send_chat
 from selene.registry import seed_registry
 from selene.sidecar import SeleneHandler, SeleneServer
 
@@ -62,6 +62,20 @@ def test_mobile_review_capture_creates_pending_review_request_only(tmp_path):
     assert conn.execute("SELECT COUNT(*) FROM continuity_candidates").fetchone()[0] == before
 
 
+def test_mobile_review_captures_lists_chest_items_without_memory_write(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    seed_registry(conn)
+    mobile_capture_review(conn, {"text": "Save this for desktop, please."})
+
+    result = mobile_review_captures(conn)
+
+    assert result["status"] == "mobile_review_captures_listed"
+    assert result["capture_only"] is True
+    assert result["items"][0]["item_type"] == "mobile_capture"
+    assert result["guard_flags"]["memory_write_active"] is False
+    assert result["guard_flags"]["review_decisions_allowed"] is False
+
+
 def test_mobile_sidecar_routes_block_non_chat_actions(tmp_path):
     server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.sqlite3")
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -74,6 +88,12 @@ def test_mobile_sidecar_routes_block_non_chat_actions(tmp_path):
         response = conn.getresponse()
         health = json.loads(response.read().decode("utf-8"))
         conn.close()
+
+        captures_conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        captures_conn.request("GET", "/api/mobile/review-captures")
+        captures_response = captures_conn.getresponse()
+        captures = json.loads(captures_response.read().decode("utf-8"))
+        captures_conn.close()
 
         blocked_conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
         blocked_conn.request(
@@ -93,6 +113,8 @@ def test_mobile_sidecar_routes_block_non_chat_actions(tmp_path):
 
     assert response.status == 200
     assert health["guard_flags"]["public_release_sync_allowed"] is False
+    assert captures_response.status == 200
+    assert captures["capture_only"] is True
     assert blocked_response.status == 403
     assert blocked["status"] == "mobile_action_blocked"
     assert blocked["guard_flags"]["transfer_approved"] is False

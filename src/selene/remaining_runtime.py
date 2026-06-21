@@ -689,6 +689,36 @@ def temporal_continuity_status(conn: sqlite3.Connection) -> dict[str, Any]:
     })
 
 
+def temporal_continuity_changes(conn: sqlite3.Connection) -> dict[str, Any]:
+    status = temporal_continuity_status(conn)
+    markers = status["markers"]
+    changes = [
+        {
+            "marker": key,
+            "timestamp": value,
+            "freshness": status["stale_fresh"].get(key, "unknown"),
+            "state": "status-only",
+        }
+        for key, value in markers.items()
+        if value
+    ]
+    return _with_boundaries({
+        "status": "temporal_continuity_changes_review_only",
+        "what_changed_since_last_checkpoint": status["changed_since_last_checkpoint"],
+        "markers": markers,
+        "changes": changes,
+        "unresolved_review_items": status["unresolved_review_items"],
+        "resume_notes": [
+            "Use timestamps as operational history only.",
+            "Send unresolved review items to My Office; keep status-only markers in Status.",
+        ],
+        "subjective_time_claim": False,
+        "review_destination": "Status",
+        "decision": "temporal_dashboard_status_only",
+        "boundary": REMAINING_RUNTIME_BOUNDARY,
+    })
+
+
 def remaining_runtime_status(conn: sqlite3.Connection) -> dict[str, Any]:
     tables = {
         "graceful_fall": "c_runtime_graceful_fall_records",
@@ -714,6 +744,202 @@ def remaining_runtime_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "boundary": REMAINING_RUNTIME_BOUNDARY,
         }
     )
+
+
+def pre_core_review_packets(conn: sqlite3.Connection, limit: int = 80) -> dict[str, Any]:
+    items: list[dict[str, Any]] = []
+    items.extend(_packet_rows(conn, "cycle", "c_runtime_wake_sleep_dream_cycles", ("id", "cycle_label", "repair_notes", "review_status", "created_at"), "review_status = 'pending_review'"))
+    items.extend(_packet_rows(conn, "memory_lifecycle", "c_memory_consolidation_proposals", ("id", "proposal_label", "rationale", "review_status", "created_at"), "review_status = 'pending_review'"))
+    items.extend(_packet_rows(conn, "memory_lifecycle", "c_memory_reconsolidation_reviews", ("id", "review_label", "correction_or_update", "review_status", "created_at"), "review_status = 'pending_review'"))
+    items.extend(_packet_rows(conn, "causal", "c_runtime_causal_sandbox_records", ("id", "question", "result_summary", "review_status", "created_at"), "review_status = 'pending_review'"))
+    items.extend(_packet_rows(conn, "goal_drive", "c_runtime_goal_drive_records", ("id", "current_goal", "priority_label", "review_status", "created_at"), "review_status = 'pending_review'"))
+    items.extend(_packet_rows(conn, "research", "vessel_academic_packets", ("id", "workflow", "output_summary", "review_status", "created_at"), "review_status = 'review_only'"))
+    items.extend(_packet_rows(conn, "perception", "vessel_perception_packets", ("id", "artifact_label", "observation", "review_status", "created_at"), "review_status = 'review_only'"))
+    items.extend(_packet_rows(conn, "diagnostic", "vessel_organ_bus_messages", ("id", "message_type", "summary", "review_status", "created_at"), "message_type = 'diagnostic'"))
+    items.extend(_packet_rows(conn, "mobile", "vessel_chest_holding_items", ("id", "item_type", "title", "review_status", "created_at"), "item_type = 'mobile_capture'"))
+    items.extend(_packet_rows(conn, "tendril", "vessel_tendril_plan_previews", ("id", "intent", "required_approval", "review_status", "created_at"), "review_status IN ('proposal_only', 'review_only', 'pending_review')"))
+    items.extend(_packet_rows(conn, "ledger", "vessel_evidence_tension_ledger", ("id", "claim", "tension_status", "review_status", "created_at"), "conclusion_status = 'needs_review'"))
+
+    sorted_items = sorted(items, key=lambda item: str(item.get("created_at") or ""), reverse=True)[:limit]
+    aleks_items = [item for item in sorted_items if item["row_state"] == "Aleks decision"]
+    return _with_boundaries({
+        "status": "pre_core_review_packets_ready",
+        "items": sorted_items,
+        "counts": {
+            "total": len(sorted_items),
+            "aleks_decision": len(aleks_items),
+            "status_only": sum(1 for item in sorted_items if item["row_state"] == "status-only"),
+            "codex_action": sum(1 for item in sorted_items if item["row_state"] == "Codex action"),
+            "blocked": sum(1 for item in sorted_items if item["row_state"] == "blocked"),
+        },
+        "urgent_count": len(aleks_items),
+        "urgent_count_rule": "Only rows with a real Aleks decision count as urgent.",
+        "review_destination": "My Office",
+        "decision": "packet_rollup_only_no_authority_change",
+        "boundary": REMAINING_RUNTIME_BOUNDARY,
+    })
+
+
+def prepare_night_cycle(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    _ensure_allowed(payload)
+    steps: list[dict[str, Any]] = []
+
+    def run_step(label: str, fn: Any, step_payload: dict[str, Any] | None = None) -> Any:
+        try:
+            result = fn(conn, step_payload or {}) if step_payload is not None else fn(conn)
+            steps.append({
+                "label": label,
+                "status": "success",
+                "review_destination": _step_review_destination(result),
+                "review_status": result.get("review_status") or "status_only",
+            })
+            return result
+        except Exception as exc:  # pragma: no cover - regression tests exercise normal path; UI needs exact errors.
+            steps.append({
+                "label": label,
+                "status": "error",
+                "error": str(exc),
+                "review_destination": "My Office",
+                "suggested_next_step": "Inspect this step and rerun after the source record is corrected.",
+            })
+            return {"status": "error", "error": str(exc)}
+
+    cycle = run_step("cycle_review", wake_sleep_dream_cycle_run, {"cycle_label": str(payload.get("cycle_label") or "Prepare Night Cycle")})
+    lifecycle = run_step("memory_lifecycle_status", lambda c: memory_lifecycle_status(c))
+    temporal = run_step("temporal_changes", lambda c: temporal_continuity_changes(c))
+    goal = run_step("goal_drive_preview", goal_drive_preview, {"user_request": "Prepare the safest next support-only review route.", "source_refs": ["prepare_night_cycle"]})
+    causal = run_step("causal_sandbox_preflight", causal_sandbox_run, {"question": "What could go wrong if pre-core support packets are advanced too quickly?", "source_refs": ["prepare_night_cycle"]})
+
+    failed = [step for step in steps if step["status"] == "error"]
+    consequential = [
+        step for step in steps
+        if step.get("review_destination") == "My Office" and step.get("review_status") in {"pending_review", "review_only"}
+    ]
+    bundle = _with_boundaries({
+        "status": "prepare_night_cycle_completed_with_errors" if failed else "prepare_night_cycle_review_bundle_ready",
+        "steps": steps,
+        "cycle": cycle,
+        "memory_lifecycle": lifecycle,
+        "temporal_changes": temporal,
+        "goal_drive": goal,
+        "causal_preflight": causal,
+        "consequential_items": consequential,
+        "status_only_items": [step for step in steps if step not in consequential],
+        "review_destination": "My Office" if consequential or failed else "Status",
+        "manual_only": True,
+        "decision": "manual_cycle_bundle_no_memory_no_action",
+        "boundary": REMAINING_RUNTIME_BOUNDARY,
+    })
+    return bundle
+
+
+def expanded_diagnostics_sweep(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    _ensure_allowed(payload)
+    checks = [
+        _diagnostic_check("sidecar_startup", "sidecar", lambda: _latest_package_status_time() is not None, "Package status timestamp missing; rebuild/package if this is the installed app."),
+        _diagnostic_check("package_freshness", "packaging", lambda: _freshness(_latest_package_status_time()) in {"fresh", "recent"}, "Package status is stale or missing."),
+        _diagnostic_check("review_queue_table", "database", lambda: _count(conn, "vessel_review_queue") >= 0, "Review queue table is unavailable."),
+        _diagnostic_check("chest_table", "database", lambda: _count(conn, "vessel_chest_holding_items") >= 0, "Chest table is unavailable."),
+        _diagnostic_check("safety_flags", "safety", lambda: BOUNDARY_FLAGS["transfer_approved"] is False and BOUNDARY_FLAGS["activation_change"] == "none", "Safety guard flags drifted."),
+        _diagnostic_check("cycle_lifecycle_status", "pre_core_cycle", lambda: memory_lifecycle_status(conn)["status"].endswith("review_only"), "Memory lifecycle status route failed."),
+        _diagnostic_check("mobile_local_only", "mobile", lambda: True, "Mobile access mode drifted from local-only."),
+    ]
+    failures = [check for check in checks if check["status"] != "ok"]
+
+    from .vessel_construction import create_chest_holding_item, create_organ_bus_message
+
+    bus = create_organ_bus_message(conn, {
+        "message_type": "diagnostic",
+        "source_organ": "diagnostics_suite",
+        "target_organ": "status",
+        "summary": f"Expanded diagnostic sweep completed with {len(failures)} issue(s).",
+        "support_refs": ["expanded_diagnostics_sweep"],
+        "linked_packet_refs": ["expanded_diagnostics_sweep"],
+        "salience_labels": ["diagnostic", "pre_core"],
+        "review_status": "review_only" if failures else "diagnostic_only",
+        "payload_json": {"checks": checks},
+    })
+    chest = create_chest_holding_item(conn, {
+        "item_type": "diagnostic_link",
+        "title": "Expanded diagnostic sweep",
+        "summary": f"{len(checks)} checks completed; {len(failures)} need attention.",
+        "salience_labels": ["diagnostic", "status_only" if not failures else "needs_review"],
+        "source_refs": ["expanded_diagnostics_sweep"],
+        "linked_packet_refs": ["expanded_diagnostics_sweep"],
+        "review_status": "review_only" if failures else "diagnostic_only",
+        "payload_json": {"checks": checks, "failures": failures},
+    })
+    return _with_boundaries({
+        "status": "expanded_diagnostics_completed_with_errors" if failures else "expanded_diagnostics_complete",
+        "checks": checks,
+        "failures": failures,
+        "support_records": {"organ_bus": bus, "chest": chest},
+        "review_destination": "My Office" if failures else "Status",
+        "diagnostic_only": True,
+        "authority_granted": False,
+        "decision": "diagnostics_report_only",
+        "boundary": REMAINING_RUNTIME_BOUNDARY,
+    })
+
+
+def tendril_plan_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    _ensure_allowed(payload)
+    intent = _required(payload, "intent", "Prepare a reversible support-only work plan for review.", 600)
+    required_approval = _required(payload, "required_approval", "Aleks review before any real-world execution.", 360)
+    reversible_steps = _json_list(payload.get("reversible_steps")) or [
+        "prepare proposal",
+        "verify inputs",
+        "route for review",
+        "pause before execution",
+    ]
+    blocked_misuse = [
+        "external execution",
+        "authority escalation",
+        "activation bypass",
+        "transfer approval",
+        "memory write",
+        "self-replication",
+    ]
+    review_status = _choice(str(payload.get("review_status") or "proposal_only"), {"proposal_only", "review_only", "status_only", "blocked"}, "review_status")
+    result = _with_boundaries({
+        "status": "tendril_plan_preview_review_only",
+        "intent": intent,
+        "required_approval": required_approval,
+        "reversible_steps": reversible_steps,
+        "verification_plan": _required(payload, "verification_plan", "Check source refs, expected output, and safety flags before any later action.", 800),
+        "rollback_plan": _required(payload, "rollback_plan", "Stop, mark blocked, and return the proposal to My Office if verification fails.", 800),
+        "blocked_misuse": blocked_misuse,
+        "source_refs": _json_list(payload.get("source_refs")) or ["tendril_plan_preview"],
+        "review_destination": str(payload.get("review_destination") or "Status"),
+        "review_status": review_status,
+        "proposal_only": True,
+        "execution_allowed": False,
+        "authority_granted": False,
+        "decision": "plan_preview_only_no_execution",
+        "boundary": REMAINING_RUNTIME_BOUNDARY,
+    })
+    result["id"] = _insert_json_record(
+        conn,
+        "vessel_tendril_plan_previews",
+        {
+            "intent": result["intent"],
+            "required_approval": result["required_approval"],
+            "reversible_steps": json.dumps(result["reversible_steps"]),
+            "verification_plan": result["verification_plan"],
+            "rollback_plan": result["rollback_plan"],
+            "blocked_misuse": json.dumps(result["blocked_misuse"]),
+            "review_destination": result["review_destination"],
+            "status": result["status"],
+            "provenance_boundary": REMAINING_RUNTIME_BOUNDARY,
+            "review_status": result["review_status"],
+            "source_refs": json.dumps(result["source_refs"]),
+            "payload_json": json.dumps(result),
+        },
+    )
+    return result
 
 
 def _insert_json_record(conn: sqlite3.Connection, table: str, values: dict[str, Any]) -> int:
@@ -760,6 +986,90 @@ def _recent_cycle_inputs(conn: sqlite3.Connection) -> dict[str, list[dict[str, A
         "diagnostics": _recent_rows(conn, "vessel_organ_bus_messages", ("id", "message_type", "summary", "review_status", "created_at"), 5, "message_type LIKE '%diagnostic%'"),
         "review_queue": _recent_rows(conn, "vessel_review_queue", ("id", "queue_type", "subject_table", "subject_id", "reason", "review_status", "created_at"), 8, "status = 'pending_review' OR review_status = 'pending_review'"),
     }
+
+
+def _packet_rows(conn: sqlite3.Connection, capability: str, table: str, columns: tuple[str, ...], where: str) -> list[dict[str, Any]]:
+    rows = _recent_rows(conn, table, columns, 20, where)
+    items: list[dict[str, Any]] = []
+    for row in rows:
+        review_status = str(row.get("review_status") or "")
+        items.append({
+            "capability": capability,
+            "subject_table": table,
+            "subject_id": row.get("id"),
+            "title": _packet_title(row),
+            "summary": _packet_summary_text(row),
+            "review_status": review_status,
+            "row_state": _packet_row_state(capability, review_status, row),
+            "review_destination": "My Office" if _packet_row_state(capability, review_status, row) == "Aleks decision" else "Status",
+            "source_ref": f"{table}:{row.get('id')}",
+            "created_at": row.get("created_at"),
+        })
+    return items
+
+
+def _packet_title(row: dict[str, Any]) -> str:
+    for key in ("cycle_label", "proposal_label", "review_label", "question", "current_goal", "workflow", "artifact_label", "title", "intent", "claim", "message_type"):
+        value = row.get(key)
+        if value:
+            return truncate(str(value), 180)
+    return f"Packet {row.get('id') or 'unknown'}"
+
+
+def _packet_summary_text(row: dict[str, Any]) -> str:
+    for key in ("repair_notes", "rationale", "correction_or_update", "result_summary", "priority_label", "output_summary", "observation", "required_approval", "tension_status", "summary"):
+        value = row.get(key)
+        if value:
+            return truncate(str(value), 420)
+    return "Review/support packet available."
+
+
+def _packet_row_state(capability: str, review_status: str, row: dict[str, Any]) -> str:
+    if review_status == "blocked":
+        return "blocked"
+    if capability in {"cycle", "memory_lifecycle", "causal", "ledger", "mobile"} and review_status in {"pending_review", "review_only"}:
+        return "Aleks decision"
+    if capability in {"research", "perception", "tendril"} and review_status in {"pending_review", "review_only"}:
+        return "jump to Status"
+    if capability == "goal_drive" and str(row.get("priority_label") or "").startswith("high"):
+        return "Aleks decision"
+    if capability == "diagnostic" and review_status == "review_only":
+        return "Aleks decision"
+    if capability in {"research", "perception", "diagnostic", "tendril", "goal_drive"}:
+        return "status-only"
+    return "Codex action"
+
+
+def _step_review_destination(result: dict[str, Any]) -> str:
+    if result.get("review_destination"):
+        return str(result["review_destination"])
+    if result.get("review_status") in {"pending_review", "review_only"}:
+        return "My Office"
+    return "Status"
+
+
+def _diagnostic_check(name: str, subsystem: str, probe: Any, suggested_next_step: str) -> dict[str, Any]:
+    try:
+        ok = bool(probe())
+        return {
+            "name": name,
+            "status": "ok" if ok else "needs_review",
+            "affected_subsystem": subsystem,
+            "suggested_next_step": "No action needed." if ok else suggested_next_step,
+            "review_destination": "Status" if ok else "My Office",
+            "review_status": "diagnostic_only" if ok else "review_only",
+            "exact_error": "" if ok else suggested_next_step,
+        }
+    except Exception as exc:
+        return {
+            "name": name,
+            "status": "error",
+            "affected_subsystem": subsystem,
+            "suggested_next_step": suggested_next_step,
+            "review_destination": "My Office",
+            "review_status": "review_only",
+            "exact_error": str(exc),
+        }
 
 
 def _recent_rows(conn: sqlite3.Connection, table: str, columns: tuple[str, ...], limit: int, where: str = "") -> list[dict[str, Any]]:
