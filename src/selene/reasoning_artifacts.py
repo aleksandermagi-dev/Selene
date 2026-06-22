@@ -281,9 +281,11 @@ def update_evidence_tension_entry(conn: sqlite3.Connection, payload: dict[str, A
         "decision_label": _decision_label(conclusion),
         "status_note": _text(payload.get("status_note") or payload.get("reviewer_note") or "", 800),
         "linked_packet_refs": _json_list(payload.get("linked_packet_refs")) or _json_list(payload_json.get("linked_packet_refs")),
+        "context_needed": bool(payload.get("context_needed") or payload.get("return_to_corpus_context")),
+        "return_to_corpus_context": bool(payload.get("return_to_corpus_context")),
     })
     review_status = "pending_review" if conclusion == "needs_review" else "review_only"
-    review_destination = "My Office" if conclusion == "needs_review" else "Ledger"
+    review_destination = "Corpus Context" if payload_json["context_needed"] else ("My Office" if conclusion == "needs_review" else "Ledger")
     conn.execute(
         """
         UPDATE vessel_evidence_tension_ledger

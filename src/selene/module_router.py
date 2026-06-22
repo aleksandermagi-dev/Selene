@@ -21,6 +21,13 @@ from .b_review_context import review_context_preview
 from .b_speech_memory import extract_b_speech_memory_candidates, list_b_speech_memory_extraction_runs
 from .braid_tracer import list_braid_tracer_runs, run_braid_tracer
 from .chat import ChatGate
+from .chronological_corpus import (
+    attach_teaching_context,
+    chronological_corpus_preview,
+    chronological_corpus_status,
+    list_chronological_corpus_arcs,
+    route_chronological_corpus_review,
+)
 from .compressed_structure_braid import (
     compressed_structure_braid_status,
     run_compressed_structure_braid,
@@ -323,6 +330,16 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": memory_lifecycle_status(conn)}
     if route_key == "vessel.pre_core_review_packets":
         return {"route": route_key, "result": pre_core_review_packets(conn, int(payload.get("limit") or 80))}
+    if route_key == "vessel.chronological_corpus.status":
+        return {"route": route_key, "result": chronological_corpus_status(conn)}
+    if route_key == "vessel.chronological_corpus.preview":
+        return {"route": route_key, "result": chronological_corpus_preview(conn, payload)}
+    if route_key == "vessel.chronological_corpus.arcs":
+        return {"route": route_key, "result": list_chronological_corpus_arcs(conn, int(payload.get("limit") or 50))}
+    if route_key == "vessel.chronological_corpus.route_review":
+        return {"route": route_key, "result": route_chronological_corpus_review(conn, payload)}
+    if route_key == "vessel.teaching_context.attach":
+        return {"route": route_key, "result": attach_teaching_context(conn, payload)}
     if route_key == "vessel.diagnostics.expanded_sweep":
         return {"route": route_key, "result": expanded_diagnostics_sweep(conn, payload)}
     if route_key == "vessel.tendril.plan_preview":

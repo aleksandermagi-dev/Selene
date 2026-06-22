@@ -162,6 +162,7 @@ def build_teaching_packet(conn: sqlite3.Connection, payload: dict[str, Any]) -> 
     if not materials:
         raise ValueError("cannot build teaching packet before at least one accepted lesson exists")
     material_ids = [item["id"] for item in materials]
+    teaching_contexts = _teaching_contexts_for_materials(conn, material_ids)
     source_refs = sorted({ref for item in materials for ref in _loads_list(item.get("source_refs"))})
     noise_context = _merge_noise_contexts([_loads_json_dict(item.get("noise_context_json")) for item in materials])
     lesson = {
@@ -170,6 +171,8 @@ def build_teaching_packet(conn: sqlite3.Connection, payload: dict[str, Any]) -> 
         "positive_examples": [truncate(item.get("positive_example") or "", 360) for item in materials],
         "correction_examples": [truncate(item.get("correction_example") or "", 300) for item in materials if item.get("correction_example")],
         "when_not_to_use": [truncate(item.get("when_not_to_use") or "", 300) for item in materials if item.get("when_not_to_use")],
+        "teaching_contexts": teaching_contexts,
+        "teaching_context_count": len(teaching_contexts),
         "noise_context": noise_context,
         "boundary": "teaching_packet_review_only_not_training",
     }
@@ -323,6 +326,38 @@ def _speech_packet_coverage(conn: sqlite3.Connection, speech_function: str) -> d
         "latest_packet_created_at": str(packet["created_at"]) if packet else None,
         "readiness": "packet_ready" if packet else ("packet_missing" if accepted_count else "no_accepted_lessons_yet"),
     }
+
+
+def _teaching_contexts_for_materials(conn: sqlite3.Connection, material_ids: list[int]) -> list[dict[str, Any]]:
+    if not material_ids:
+        return []
+    placeholders = ",".join("?" for _ in material_ids)
+    try:
+        rows = conn.execute(
+            f"""
+            SELECT material_id, context_window_json, chronological_note, why_this_matters, source_refs
+            FROM vessel_teaching_context_attachments
+            WHERE material_id IN ({placeholders})
+            ORDER BY material_id
+            """,
+            material_ids,
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return []
+    contexts: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        contexts.append(
+            {
+                "material_id": item["material_id"],
+                "context_window": _loads_json_dict(item.get("context_window_json")),
+                "chronological_note": item.get("chronological_note"),
+                "why_this_matters": item.get("why_this_matters"),
+                "source_refs": _loads_list(item.get("source_refs")),
+                "boundary": "bounded_teaching_context_review_only_not_training",
+            }
+        )
+    return contexts
 
 
 def corpus_coverage_status(conn: sqlite3.Connection) -> dict[str, Any]:

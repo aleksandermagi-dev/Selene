@@ -39,6 +39,34 @@ def test_evidence_tension_entry_can_transition_without_memory_or_transfer(tmp_pa
     assert updated["transfer_approved"] is False
 
 
+def test_evidence_tension_needs_context_routes_to_corpus_context_without_memory(tmp_path):
+    conn = _conn(tmp_path)
+    entry = route_request(conn, "vessel.evidence_tension.create", {
+        "claim": "A chronological evidence item needs its surrounding thread before Aleks can decide.",
+        "support_status": "partial",
+        "tension_status": "under_tension",
+        "conclusion_status": "needs_review",
+        "source_refs": ["vessel_chronological_corpus_arcs:1"],
+        "linked_packet_refs": ["vessel_chronological_corpus_arcs:1"],
+    })["result"]
+
+    updated = route_request(conn, "vessel.evidence_tension.update", {
+        "entry_id": entry["id"],
+        "conclusion_status": "needs_review",
+        "context_needed": True,
+        "return_to_corpus_context": True,
+        "status_note": "Need the surrounding corpus context before yes/no.",
+    })["result"]["entry"]
+
+    assert updated["conclusion_status"] == "needs_review"
+    assert updated["review_destination"] == "Corpus Context"
+    assert updated["review_status"] == "pending_review"
+    assert updated["payload_json"]["context_needed"] is True
+    assert updated["payload_json"]["return_to_corpus_context"] is True
+    assert updated["memory_write_active"] is False
+    assert updated["transfer_approved"] is False
+
+
 def test_academic_packet_can_route_to_ledger_chest_and_organ_bus(tmp_path):
     conn = _conn(tmp_path)
     packet = route_request(conn, "vessel.academic_packet.create", {
