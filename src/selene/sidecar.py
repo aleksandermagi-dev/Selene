@@ -422,6 +422,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/vessel/pre-core-review-packets":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "vessel.pre_core_review_packets", {"limit": int(qs["limit"]) if qs.get("limit") else 80})["result"]))
+        elif parsed.path == "/api/vessel/chronological-corpus/status":
+            self._send(*json_bytes(route_request(conn, "vessel.chronological_corpus.status")["result"]))
+        elif parsed.path == "/api/vessel/chronological-corpus/arcs":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "vessel.chronological_corpus.arcs", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
         elif parsed.path == "/api/c-vessel/reconstruction-desk/status":
             self._send(*json_bytes(route_request(conn, "c_vessel.reconstruction_desk.status")["result"]))
         elif parsed.path == "/api/c-vessel/reconstruction-desk/cases":
@@ -866,6 +871,21 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/vessel/cycle/prepare-night":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.cycle.prepare_night", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/chronological-corpus/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.chronological_corpus.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/chronological-corpus/route-review":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.chronological_corpus.route_review", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/teaching-context/attach":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.teaching_context.attach", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/c-core/causal-sandbox":

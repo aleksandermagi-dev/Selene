@@ -178,6 +178,10 @@ function App() {
   const [coreGatePackets, setCoreGatePackets] = useState<Dict[]>([]);
   const [academicPackets, setAcademicPackets] = useState<Dict[]>([]);
   const [evidenceTensionEntries, setEvidenceTensionEntries] = useState<Dict[]>([]);
+  const [chronologicalCorpusStatus, setChronologicalCorpusStatus] = useState<Dict | null>(null);
+  const [chronologicalCorpusArcs, setChronologicalCorpusArcs] = useState<Dict[]>([]);
+  const [chronologicalCorpusResult, setChronologicalCorpusResult] = useState<Dict | null>(null);
+  const [teachingContextResult, setTeachingContextResult] = useState<Dict | null>(null);
   const [organContracts, setOrganContracts] = useState<Dict[]>([]);
   const [perceptionPackets, setPerceptionPackets] = useState<Dict[]>([]);
   const [emotionSaliencePackets, setEmotionSaliencePackets] = useState<Dict[]>([]);
@@ -521,6 +525,8 @@ function App() {
     api<{ items: Dict[] }>("/api/vessel/core-gate-packets").then((data) => setCoreGatePackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/academic-packets").then((data) => setAcademicPackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/evidence-tension-ledger").then((data) => setEvidenceTensionEntries(data.items)).catch(() => undefined);
+    api<Dict>("/api/vessel/chronological-corpus/status").then(setChronologicalCorpusStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/vessel/chronological-corpus/arcs").then((data) => setChronologicalCorpusArcs(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/organ-contracts").then((data) => setOrganContracts(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/perception-packets").then((data) => setPerceptionPackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/emotion-salience-packets").then((data) => setEmotionSaliencePackets(data.items)).catch(() => undefined);
@@ -756,7 +762,7 @@ function App() {
     }
   }
 
-  async function updateEvidenceTensionStatus(item: Dict, conclusionStatus: string) {
+  async function updateEvidenceTensionStatus(item: Dict, conclusionStatus: string, reviewAction = "") {
     setVesselPacketActionState({ status: "running", message: `Updating ledger entry to ${friendlyStatus(conclusionStatus)}.` });
     try {
       const result = await api<Dict>("/api/vessel/evidence-tension/status", {
@@ -766,13 +772,64 @@ function App() {
           conclusion_status: conclusionStatus,
           support_status: conclusionStatus === "defeated" ? "contradicted" : item.support_status || "partial",
           tension_status: conclusionStatus === "needs_review" ? "under_tension" : "revised",
-          status_note: `Marked ${conclusionStatus} from My Office vessel packet routing.`
+          context_needed: reviewAction === "needs_more_context" || reviewAction === "return_to_corpus_context",
+          return_to_corpus_context: reviewAction === "return_to_corpus_context",
+          status_note: reviewAction
+            ? `Marked ${reviewAction} from My Office vessel packet routing.`
+            : `Marked ${conclusionStatus} from My Office vessel packet routing.`
         })
       });
       setVesselPacketActionState(result);
       loadSteps18Layer();
     } catch (err) {
       setVesselPacketActionState({ status: "error", message: err instanceof Error ? err.message : "ledger update failed" });
+    }
+  }
+
+  async function prepareChronologicalCorpusPreview() {
+    setChronologicalCorpusResult({ status: "running", message: "Preparing chronological corpus preview arcs." });
+    try {
+      const result = await api<Dict>("/api/vessel/chronological-corpus/preview", {
+        method: "POST",
+        body: JSON.stringify({ limit: 40, context_radius: 3 })
+      });
+      setChronologicalCorpusResult(result);
+      loadSteps18Layer();
+    } catch (err) {
+      setChronologicalCorpusResult({ status: "error", message: err instanceof Error ? err.message : "chronological preview failed" });
+    }
+  }
+
+  async function attachTeachingContext() {
+    setTeachingContextResult({ status: "running", message: "Attaching bounded corpus context to teaching material." });
+    try {
+      const result = await api<Dict>("/api/vessel/teaching-context/attach", {
+        method: "POST",
+        body: JSON.stringify({ limit: 80 })
+      });
+      setTeachingContextResult(result);
+      loadSteps18Layer();
+      loadVessel();
+    } catch (err) {
+      setTeachingContextResult({ status: "error", message: err instanceof Error ? err.message : "teaching context attach failed" });
+    }
+  }
+
+  async function routeChronologicalCorpusArc(item: Dict, action: string) {
+    setChronologicalCorpusResult({ status: "running", message: `Routing corpus arc: ${friendlyStatus(action)}.` });
+    try {
+      const result = await api<Dict>("/api/vessel/chronological-corpus/route-review", {
+        method: "POST",
+        body: JSON.stringify({
+          arc_id: item.id,
+          action,
+          reviewer_note: `Marked ${action} from My Office chronological corpus review.`
+        })
+      });
+      setChronologicalCorpusResult(result);
+      loadSteps18Layer();
+    } catch (err) {
+      setChronologicalCorpusResult({ status: "error", message: err instanceof Error ? err.message : "corpus review route failed" });
     }
   }
 
@@ -962,6 +1019,8 @@ function App() {
       ["B review desk", api<Dict>(`/api/b/review-desk?${reviewDeskQuery(bReviewFilters)}`).then(setBReviewDesk)],
       ["teaching materials", api<{ items: Dict[] }>("/api/b/teaching-materials").then((data) => setBTeachingMaterials(data.items))],
       ["future references", api<{ items: Dict[] }>("/api/b/approved-memory-references").then((data) => setBApprovedReferences(data.items))],
+      ["chronological corpus status", api<Dict>("/api/vessel/chronological-corpus/status").then(setChronologicalCorpusStatus)],
+      ["chronological corpus arcs", api<{ items: Dict[] }>("/api/vessel/chronological-corpus/arcs").then((data) => setChronologicalCorpusArcs(data.items))],
       ["gap scaffold status", api<Dict>("/api/vessel/gap-scaffold/status").then(setGapScaffoldStatus)],
       ["gap scaffold readiness", api<Dict>("/api/vessel/gap-scaffold/readiness").then(setGapScaffoldReadiness)],
       ["charter/law status", api<Dict>("/api/b/charter-law/review-status").then(setCharterLawReview)],
@@ -1870,7 +1929,11 @@ function App() {
     () => speechRehearsals.filter((item) => text(item.review_status || item.status) === "pending_review"),
     [speechRehearsals]
   );
-  const officeVesselReviewUrgent = officeLedgerNeedsReview.length + officeMobileCaptures.length + officeSpeechRehearsals.length;
+  const officeChronologicalCorpusNeedsReview = useMemo(
+    () => chronologicalCorpusArcs.filter((item) => text(item.review_status || item.status) === "pending_review"),
+    [chronologicalCorpusArcs]
+  );
+  const officeVesselReviewUrgent = officeLedgerNeedsReview.length + officeMobileCaptures.length + officeSpeechRehearsals.length + officeChronologicalCorpusNeedsReview.length;
   const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length + officeVesselReviewUrgent;
   const canBuildTeachingPacket = bTeachingMaterials.length > 0;
   const appVersion = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
@@ -1999,10 +2062,53 @@ function App() {
         </div>
         {text(item.conclusion_status) === "needs_review" ? (
           <div className="reviewActions">
-            <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now")}>Accept For Now</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now")}>Yes / Use This</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "needs_review", "needs_more_context")}>Needs More Context</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "defeated")}>No / Not This</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "narrowed")}>Narrow</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "superseded")}>Supersede</button>
-            <button onClick={() => updateEvidenceTensionStatus(item, "defeated")}>Defeat</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "needs_review", "return_to_corpus_context")}>Return To Corpus Context</button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderChronologicalCorpusArcCard(item: Dict, index = 0) {
+    const context = safeJsonObject(item.context_window || item.context_window_json);
+    const payload = safeJsonObject(item.payload_json || item.payload);
+    const messages = ((context.messages || []) as Dict[]).slice(0, 3);
+    return (
+      <article className="packetCard" key={`chrono-${text(item.id)}-${index}`}>
+        <div className="row">
+          <strong>{text(item.title || "Chronological corpus arc")}</strong>
+          <span>{friendlyStatus(item.review_status || item.status)}</span>
+        </div>
+        <p>{text(item.summary || item.teaching_relevance || "Bounded chronological preview.")}</p>
+        <div className="packetFields">
+          {messages.map((message, messageIndex) => (
+            <p key={`chrono-message-${text(message.message_id)}-${messageIndex}`}>
+              <b>{friendlyStatus(message.role || "message")}</b>{text(message.preview)}
+            </p>
+          ))}
+        </div>
+        <div className="chips">
+          <span>destination: {text(item.review_destination || "Status")}</span>
+          <span>start: {text(item.start_time || "unknown")}</span>
+          <span>end: {text(item.end_time || "unknown")}</span>
+          <span>bounded: {text(context.bounded ?? true)}</span>
+          <span>transfer: {text(item.transfer_approved ?? payload.transfer_approved ?? false)}</span>
+          <span>memory write: {plainBlocked(item.memory_write_active ?? payload.memory_write_active)}</span>
+          <span>runtime recall: {plainBlocked(item.runtime_memory_recall ?? payload.runtime_memory_recall)}</span>
+        </div>
+        {text(item.review_status) === "pending_review" ? (
+          <div className="reviewActions">
+            <button onClick={() => routeChronologicalCorpusArc(item, "use_this")}>Yes / Use This</button>
+            <button onClick={() => routeChronologicalCorpusArc(item, "needs_more_context")}>Needs More Context</button>
+            <button onClick={() => routeChronologicalCorpusArc(item, "not_this")}>No / Not This</button>
+            <button onClick={() => routeChronologicalCorpusArc(item, "narrow")}>Narrow</button>
+            <button onClick={() => routeChronologicalCorpusArc(item, "supersede")}>Supersede</button>
+            <button onClick={() => routeChronologicalCorpusArc(item, "return_to_corpus_context")}>Return To Corpus Context</button>
           </div>
         ) : null}
       </article>
@@ -2342,6 +2448,32 @@ function App() {
                   {officeDiagnosticPackets.slice(0, 2).map((item, index) => renderSupportPieceCard(item, index))}
                   {!officeLedgerNeedsReview.length && !officeMobileCaptures.length && !academicPackets.length && !officeDiagnosticPackets.length ? (
                     <p className="emptyState">No vessel review packets need attention right now.</p>
+                  ) : null}
+                </div>
+              </Panel>
+              <Panel title="Corpus / Evidence Decisions">
+                <div className="metrics miniMetrics">
+                  <Metric label="Corpus Decisions" value={text(officeChronologicalCorpusNeedsReview.length)} />
+                  <Metric label="Preview Arcs" value={text(chronologicalCorpusArcs.length)} />
+                  <Metric label="Teaching Contexts" value={text(chronologicalCorpusStatus?.teaching_context_attachments ?? 0)} />
+                  <Metric label="Transfer" value="not approved" />
+                </div>
+                <p className="plainHelp">Chronological corpus material stays preview-only. Use these rows to say yes, no, narrow it, supersede it, or ask for more surrounding context before anything becomes future memory evidence.</p>
+                <div className="reviewActions">
+                  <button className="primary" onClick={prepareChronologicalCorpusPreview} disabled={chronologicalCorpusResult?.status === "running"}>
+                    {chronologicalCorpusResult?.status === "running" ? "Preparing..." : "Prepare Corpus Preview"}
+                  </button>
+                  <button onClick={attachTeachingContext} disabled={teachingContextResult?.status === "running"}>
+                    {teachingContextResult?.status === "running" ? "Attaching..." : "Attach Teaching Context"}
+                  </button>
+                  <button onClick={() => setTab("status")}>Open Status</button>
+                </div>
+                <PlainResult value={chronologicalCorpusResult} />
+                <PlainResult value={teachingContextResult} />
+                <div className="list compactList packetList">
+                  {officeChronologicalCorpusNeedsReview.slice(0, 4).map((item, index) => renderChronologicalCorpusArcCard(item, index))}
+                  {!officeChronologicalCorpusNeedsReview.length ? (
+                    <p className="emptyState">No chronological corpus evidence needs a decision right now.</p>
                   ) : null}
                 </div>
               </Panel>
@@ -3233,6 +3365,37 @@ function App() {
               left={<Panel title="Transfer Gate Preview"><CVesselSafetyExtensions tool={cVesselToolOrganStatus} fault={cVesselOrganFaultResult} resilience={cVesselFaultResilienceResult} gate={cVesselTransferGate} /></Panel>}
               right={<Panel title="Sidecar Payload"><Json value={boot.health || { status: boot.message, attempts: boot.attempts }} /></Panel>}
             />
+            <Panel title="Chronological Corpus Preview">
+              <p className="plainHelp">Start-to-end detached corpus organization for future review. This uses indexed bounded previews only; it does not import raw A, write memory, train, activate C, or approve transfer.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Conversations" value={text(chronologicalCorpusStatus?.parsed_conversations ?? 0)} />
+                <Metric label="Messages" value={text(chronologicalCorpusStatus?.parsed_messages ?? 0)} />
+                <Metric label="Preview Arcs" value={text(chronologicalCorpusStatus?.arc_count ?? chronologicalCorpusArcs.length)} />
+                <Metric label="Pending Review" value={text(chronologicalCorpusStatus?.pending_arc_reviews ?? officeChronologicalCorpusNeedsReview.length)} />
+                <Metric label="Teaching Context" value={text(chronologicalCorpusStatus?.teaching_context_attachments ?? 0)} />
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={prepareChronologicalCorpusPreview} disabled={chronologicalCorpusResult?.status === "running"}>
+                  {chronologicalCorpusResult?.status === "running" ? "Preparing Corpus Preview..." : "Prepare Corpus Preview"}
+                </button>
+                <button onClick={attachTeachingContext} disabled={teachingContextResult?.status === "running"}>
+                  {teachingContextResult?.status === "running" ? "Attaching Teaching Context..." : "Attach Teaching Context"}
+                </button>
+                <button onClick={loadSteps18Layer}>Refresh Corpus Status</button>
+              </div>
+              <div className="chips">
+                <span>transfer: {plainBlocked(chronologicalCorpusStatus?.transfer_approved)}</span>
+                <span>memory write: {plainBlocked(chronologicalCorpusStatus?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(chronologicalCorpusStatus?.runtime_memory_recall)}</span>
+                <span>training: {plainBlocked(chronologicalCorpusStatus?.training_allowed)}</span>
+              </div>
+              <PlainResult value={chronologicalCorpusResult} />
+              <PlainResult value={teachingContextResult} />
+              <div className="list compactList packetList">
+                {chronologicalCorpusArcs.slice(0, 3).map((item, index) => renderChronologicalCorpusArcCard(item, index))}
+                {!chronologicalCorpusArcs.length ? <p className="emptyState">No chronological corpus arcs have been prepared yet.</p> : null}
+              </div>
+            </Panel>
             <Panel title="Steps 1-8 Review Layer">
               <p className="plainHelp">Reasoning, research, evidence, organ contracts, sight/perception, and emotion/salience are review-only packet systems. C activation, transfer approval, live memory, runtime recall, training, self-replication, and autonomous action remain blocked.</p>
               <div className="metrics miniMetrics">

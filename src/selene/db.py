@@ -1000,6 +1000,49 @@ CREATE TABLE IF NOT EXISTS b_teaching_packets (
 
 CREATE INDEX IF NOT EXISTS idx_b_teaching_packets_function ON b_teaching_packets(speech_function, review_status);
 
+CREATE TABLE IF NOT EXISTS vessel_chronological_corpus_arcs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  arc_key TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  start_time REAL,
+  end_time REAL,
+  conversation_refs TEXT NOT NULL DEFAULT '[]',
+  selected_message_refs TEXT NOT NULL DEFAULT '[]',
+  context_window_json TEXT NOT NULL DEFAULT '{}',
+  summary TEXT NOT NULL,
+  teaching_relevance TEXT NOT NULL,
+  memory_accession_relevance TEXT NOT NULL,
+  uncertainty TEXT NOT NULL DEFAULT 'bounded preview only',
+  review_destination TEXT NOT NULL DEFAULT 'My Office',
+  status TEXT NOT NULL DEFAULT 'chronological_corpus_arc_review_only',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'pending_review',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_chronological_corpus_arcs_status ON vessel_chronological_corpus_arcs(status, review_status);
+CREATE INDEX IF NOT EXISTS idx_vessel_chronological_corpus_arcs_time ON vessel_chronological_corpus_arcs(start_time, end_time);
+
+CREATE TABLE IF NOT EXISTS vessel_teaching_context_attachments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  material_id INTEGER NOT NULL UNIQUE,
+  packet_id INTEGER,
+  context_window_json TEXT NOT NULL DEFAULT '{}',
+  chronological_note TEXT NOT NULL,
+  why_this_matters TEXT NOT NULL,
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'teaching_context_attachment_review_only',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_teaching_context_attachments_status ON vessel_teaching_context_attachments(status, review_status);
+
 CREATE TABLE IF NOT EXISTS b_pattern_backups (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   backup_label TEXT NOT NULL,
