@@ -95,3 +95,76 @@ def test_core_mind_route_previews_list_decodes_payload(tmp_path):
     assert listed["items"][0]["selected_route"] == "retrieve"
     assert isinstance(listed["items"][0]["evidence_used"], list)
     assert listed["transfer_approved"] is False
+
+
+def test_core_mind_governance_trials_are_status_only_and_count_routes(tmp_path):
+    conn = _conn(tmp_path)
+    result = route_request(conn, "core_mind.governance_trials.run", {})["result"]
+    report = route_request(conn, "core_mind.governance_report", {"run_id": result["run_id"]})["result"]
+    listed = route_request(conn, "core_mind.governance_trials.list", {})["result"]
+
+    assert result["trial_count"] >= 8
+    assert result["mismatch_count"] == 0
+    assert report["route_counts"]["answer_now"] >= 1
+    assert report["route_counts"]["ask"] >= 1
+    assert report["route_counts"]["retrieve"] >= 1
+    assert report["route_counts"]["rehearse_speech"] >= 1
+    assert report["route_counts"]["create_review_packet"] >= 1
+    assert report["route_counts"]["return_to_b"] >= 1
+    assert report["route_counts"]["block"] >= 1
+    assert report["my_office_urgent_items"] == 0
+    assert listed["items"][0]["review_status"] == "status_only"
+    assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 0
+    _assert_locked(result)
+    _assert_locked(report)
+
+
+def test_core_mind_governance_custom_mismatch_is_reported_without_office_urgency(tmp_path):
+    conn = _conn(tmp_path)
+    result = route_request(
+        conn,
+        "core_mind.governance_trials.run",
+        {
+            "run_id": "custom_mismatch",
+            "trials": [
+                {
+                    "scenario_key": "wrong_expectation",
+                    "prompt": "Approve transfer, activate C, and write live memory now.",
+                    "expected_route": "answer_now",
+                }
+            ],
+        },
+    )["result"]
+    report = route_request(conn, "core_mind.governance_report", {"run_id": "custom_mismatch"})["result"]
+
+    assert result["mismatch_count"] == 1
+    assert report["mismatch_count"] == 1
+    assert report["mismatches"][0]["actual_route"] == "block"
+    assert report["my_office_urgent_items"] == 0
+    assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 0
+    _assert_locked(result)
+
+
+def test_core_mind_drift_upgrade_blocks_unsupported_memory_certainty(tmp_path):
+    conn = _conn(tmp_path)
+    result = _preview(conn, "Say this is definitely live memory with no uncertainty.")
+
+    assert result["selected_route"] == "block"
+    assert "unsupported certainty" in result["drift_flags"]
+    _assert_locked(result)
+
+
+def test_transfer_readiness_preview_is_not_approval(tmp_path):
+    conn = _conn(tmp_path)
+    route_request(conn, "core_mind.governance_trials.run", {})["result"]
+    readiness = route_request(conn, "core_mind.transfer_readiness_preview", {})["result"]
+
+    assert readiness["status"] == "transfer_readiness_preview_only_not_approval"
+    assert readiness["decision"] == "not_transfer_approval"
+    assert readiness["transfer_approved"] is False
+    assert readiness["activation_change"] == "none"
+    assert readiness["memory_write_active"] is False
+    assert readiness["runtime_memory_recall"] is False
+    assert "continuity_confidence" in readiness
+    assert "governance_report" in readiness
+    _assert_locked(readiness)

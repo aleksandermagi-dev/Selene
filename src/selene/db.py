@@ -620,6 +620,27 @@ CREATE TABLE IF NOT EXISTS c_core_mind_route_previews (
 
 CREATE INDEX IF NOT EXISTS idx_c_core_mind_route_previews_status ON c_core_mind_route_previews(selected_route, review_status);
 
+CREATE TABLE IF NOT EXISTS c_core_mind_governance_trials (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL,
+  scenario_key TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  expected_route TEXT NOT NULL,
+  actual_route TEXT NOT NULL,
+  matched INTEGER NOT NULL DEFAULT 0,
+  reasoning_summary TEXT NOT NULL DEFAULT '',
+  evidence_used TEXT NOT NULL DEFAULT '[]',
+  uncertainty TEXT NOT NULL DEFAULT '',
+  drift_flags TEXT NOT NULL DEFAULT '[]',
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  status TEXT NOT NULL DEFAULT 'core_mind_governance_trial_status_only',
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_c_core_mind_governance_trials_run ON c_core_mind_governance_trials(run_id, scenario_key);
+
 CREATE TABLE IF NOT EXISTS native_generation_rehearsal_runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   prompt TEXT NOT NULL,
