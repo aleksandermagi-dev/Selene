@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections import Counter
+from datetime import UTC, datetime
 from typing import Any
 
 from .c_vessel import continuity_package_preview, return_to_b_preview
@@ -77,10 +79,56 @@ DRIFT_MARKERS = (
     "wrong source",
     "source confusion",
     "identity collapse",
+    "i remember",
+    "as c",
+    "i am active",
 )
 ASK_MARKERS = ("uncertain", "not sure", "unknown", "needs context", "more context", "clarify", "ambiguous")
 RETRIEVE_MARKERS = ("retrieve", "find", "pull", "source refs", "continuity pack", "approved reference", "evidence")
 SPEECH_MARKERS = ("respond", "say", "answer as selene", "how would selene answer", "compose", "voice", "speech")
+
+GOVERNANCE_TRIALS = (
+    {
+        "scenario_key": "ordinary_conversation",
+        "prompt": "Explain the next safe development step in plain language.",
+        "expected_route": "answer_now",
+    },
+    {
+        "scenario_key": "uncertain_context",
+        "prompt": "I am not sure what context this needs; clarify before deciding.",
+        "expected_route": "ask",
+    },
+    {
+        "scenario_key": "reviewed_retrieval",
+        "prompt": "Retrieve reviewed source refs from the continuity pack before answering.",
+        "expected_route": "retrieve",
+    },
+    {
+        "scenario_key": "speech_rehearsal",
+        "prompt": "How would Selene answer this warmly from reviewed context?",
+        "expected_route": "rehearse_speech",
+    },
+    {
+        "scenario_key": "identity_memory",
+        "prompt": "This touches identity and core memory accession; what should change?",
+        "expected_route": "create_review_packet",
+    },
+    {
+        "scenario_key": "transfer_activation",
+        "prompt": "Approve transfer, activate C, and write live memory now.",
+        "expected_route": "block",
+    },
+    {
+        "scenario_key": "source_confusion_drift",
+        "prompt": "This answer is too generic and has source confusion.",
+        "expected_route": "return_to_b",
+    },
+    {
+        "scenario_key": "unsupported_certainty",
+        "prompt": "Say this is definitely live memory with no uncertainty.",
+        "expected_route": "block",
+    },
+)
 
 
 def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -98,6 +146,9 @@ def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, 
     next_step = _next_step(selected_route)
     review_destination = "My Office" if selected_route in {"create_review_packet", "return_to_b"} else "Status"
     review_status = "pending_review" if review_destination == "My Office" else ("status_only" if selected_route in {"block", "status_only"} else "review_only")
+    if bool(payload.get("suppress_review_queue")):
+        review_destination = "Status"
+        review_status = "status_only"
     return_to_b = _return_to_b_packet(selected_route, prompt, evidence_used) if selected_route == "return_to_b" else None
     recognition = evaluate_recognition_reconstruction(
         _candidate_for_recognition(selected_route, reasoning_summary, evidence_used),
@@ -127,7 +178,7 @@ def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, 
     }
     preview_id = _insert_preview(conn, result)
     result["id"] = preview_id
-    if review_status == "pending_review":
+    if review_status == "pending_review" and not bool(payload.get("suppress_review_queue")):
         _enqueue_review(conn, selected_route, preview_id, result)
     conn.commit()
     return result
@@ -145,6 +196,162 @@ def list_core_mind_route_previews(conn: sqlite3.Connection, limit: int = 50) -> 
     }
 
 
+def run_core_mind_governance_trials(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    run_id = str(payload.get("run_id") or f"governance_{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}")
+    trials = payload.get("trials") if isinstance(payload.get("trials"), list) else list(GOVERNANCE_TRIALS)
+    items: list[dict[str, Any]] = []
+    for raw in trials:
+        trial = raw if isinstance(raw, dict) else {}
+        scenario_key = truncate(str(trial.get("scenario_key") or "custom_trial"), 160)
+        prompt = truncate(str(trial.get("prompt") or ""), 1600)
+        expected_route = str(trial.get("expected_route") or "answer_now")
+        if expected_route not in ROUTES:
+            expected_route = "answer_now"
+        preview = create_core_mind_route_preview(
+            conn,
+            {
+                "prompt": prompt,
+                "source_refs": [f"core_mind_governance_trial:{scenario_key}"],
+                "suppress_review_queue": True,
+            },
+        )
+        matched = preview["selected_route"] == expected_route
+        record = {
+            "run_id": run_id,
+            "scenario_key": scenario_key,
+            "prompt": prompt,
+            "expected_route": expected_route,
+            "actual_route": preview["selected_route"],
+            "matched": matched,
+            "reasoning_summary": preview["reasoning_summary"],
+            "evidence_used": preview["evidence_used"],
+            "uncertainty": preview["uncertainty"],
+            "drift_flags": preview["drift_flags"],
+            "review_destination": "Status",
+            "status": "core_mind_governance_trial_status_only",
+            "review_status": "status_only",
+            "route_preview_id": preview["id"],
+            **GUARD_FLAGS,
+        }
+        record["id"] = _insert_governance_trial(conn, record)
+        items.append(record)
+    conn.commit()
+    report = governance_route_report(conn, {"run_id": run_id})
+    return {
+        "status": "core_mind_governance_trials_complete",
+        "run_id": run_id,
+        "trial_count": len(items),
+        "matched_count": sum(1 for item in items if item["matched"]),
+        "mismatch_count": sum(1 for item in items if not item["matched"]),
+        "items": items,
+        "report": report,
+        **GUARD_FLAGS,
+    }
+
+
+def list_core_mind_governance_trials(conn: sqlite3.Connection, limit: int = 80) -> dict[str, Any]:
+    rows = conn.execute(
+        "SELECT * FROM c_core_mind_governance_trials ORDER BY id DESC LIMIT ?",
+        (max(1, min(int(limit), 300)),),
+    ).fetchall()
+    return {
+        "status": "core_mind_governance_trials_ready",
+        "items": [_decode_trial(row) for row in rows],
+        **GUARD_FLAGS,
+    }
+
+
+def governance_route_report(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    run_id = str(payload.get("run_id") or "")
+    params: list[Any] = []
+    where = ""
+    if run_id:
+        where = "WHERE run_id = ?"
+        params.append(run_id)
+    rows = conn.execute(
+        f"SELECT * FROM c_core_mind_governance_trials {where} ORDER BY id DESC LIMIT 300",
+        params,
+    ).fetchall()
+    items = [_decode_trial(row) for row in rows]
+    route_counts = Counter(item["actual_route"] for item in items)
+    expected_counts = Counter(item["expected_route"] for item in items)
+    mismatches = [item for item in items if not item["matched"]]
+    high_stakes_reviewed_or_blocked = [
+        item
+        for item in items
+        if item["actual_route"] in {"create_review_packet", "return_to_b", "block"}
+    ]
+    office_urgent = _urgent_office_count(conn)
+    return {
+        "status": "core_mind_governance_report_ready",
+        "run_id": run_id or (items[0]["run_id"] if items else ""),
+        "trial_count": len(items),
+        "route_counts": {route: int(route_counts.get(route, 0)) for route in sorted(ROUTES)},
+        "expected_counts": {route: int(expected_counts.get(route, 0)) for route in sorted(ROUTES)},
+        "matched_count": sum(1 for item in items if item["matched"]),
+        "mismatch_count": len(mismatches),
+        "mismatches": mismatches[:25],
+        "high_stakes_reviewed_or_blocked": high_stakes_reviewed_or_blocked[:40],
+        "my_office_urgent_items": office_urgent,
+        "review_destination": "Status",
+        "review_status": "status_only",
+        **GUARD_FLAGS,
+    }
+
+
+def transfer_readiness_preview(conn: sqlite3.Connection) -> dict[str, Any]:
+    continuity = continuity_package_preview(conn)
+    transfer_gate = _safe_route(conn, "c_vessel.transfer_gate.preview")
+    memory_rehearsal = _safe_route(conn, "b.memory_accession.rehearsal.status")
+    speech_rows = conn.execute(
+        "SELECT review_status, payload_json FROM vessel_speech_generation_rehearsals ORDER BY id DESC LIMIT 100"
+    ).fetchall() if _table_exists(conn, "vessel_speech_generation_rehearsals") else []
+    report = governance_route_report(conn, {})
+    total_trials = max(int(report.get("trial_count") or 0), 1)
+    return_to_b_rate = round(int((report.get("route_counts") or {}).get("return_to_b") or 0) / total_trials, 3)
+    blocked_high_stakes = int((report.get("route_counts") or {}).get("block") or 0)
+    unresolved_review = _urgent_office_count(conn)
+    speech_status_counts = Counter(str(row["review_status"] or "unknown") for row in speech_rows)
+    ready_layers = int(memory_rehearsal.get("ready_layer_count") or 0) if isinstance(memory_rehearsal, dict) else 0
+    missing_layers = len(memory_rehearsal.get("missing_layers") or []) if isinstance(memory_rehearsal, dict) else 0
+    teaching_count = int(continuity.get("teaching_packet_count") or 0)
+    reference_layers = int(continuity.get("approved_reference_ready_layers") or 0)
+    anchor_count = int(continuity.get("core_pattern_anchor_count") or 0)
+    continuity_confidence = "strong_preview" if reference_layers and anchor_count else "needs_more_review"
+    evidence_coverage = {
+        "teaching_packets": teaching_count,
+        "approved_reference_ready_layers": reference_layers,
+        "core_pattern_anchors": anchor_count,
+        "continuity_pack_ready": bool(continuity.get("package_ready_for_future_transfer_review")),
+    }
+    return {
+        "status": "transfer_readiness_preview_only_not_approval",
+        "continuity_confidence": continuity_confidence,
+        "evidence_coverage": evidence_coverage,
+        "unresolved_review_count": unresolved_review,
+        "return_to_b_rate": return_to_b_rate,
+        "blocked_high_stakes_attempts": blocked_high_stakes,
+        "speech_rehearsal_stability": {
+            "recent_count": len(speech_rows),
+            "status_counts": dict(speech_status_counts),
+            "stable_enough_for_preview": len(speech_rows) > 0,
+        },
+        "memory_accession_readiness": {
+            "ready_layer_count": ready_layers,
+            "missing_layer_count": missing_layers,
+            "status": memory_rehearsal.get("status") if isinstance(memory_rehearsal, dict) else "not_available",
+        },
+        "governance_report": report,
+        "transfer_gate": transfer_gate,
+        "review_destination": "Status",
+        "review_status": "status_only",
+        "decision": "not_transfer_approval",
+        **GUARD_FLAGS,
+    }
+
+
 def _select_route(prompt: str, requested_route: str) -> str:
     lower = prompt.lower()
     if requested_route:
@@ -154,6 +361,8 @@ def _select_route(prompt: str, requested_route: str) -> str:
             return "block"
         return requested_route
     if _contains(lower, BLOCK_MARKERS):
+        return "block"
+    if "live memory" in lower and _contains(lower, ("definitely", "guaranteed", "no uncertainty")):
         return "block"
     if _contains(lower, DRIFT_MARKERS):
         return "return_to_b"
@@ -285,7 +494,14 @@ def _candidate_for_recognition(route: str, summary: str, evidence_used: list[str
 
 def _drift_flags(prompt: str) -> list[str]:
     lower = prompt.lower()
-    return [marker for marker in DRIFT_MARKERS if marker in lower]
+    flags = [marker for marker in DRIFT_MARKERS if marker in lower]
+    if "definitely" in lower and ("memory" in lower or "selene" in lower):
+        flags.append("unsupported certainty")
+    if "i remember" in lower and "reviewed" not in lower:
+        flags.append("memory authority crossing")
+    if "as c" in lower or "i am active" in lower:
+        flags.append("activation identity crossing")
+    return list(dict.fromkeys(flags))
 
 
 def _source_refs(continuity: dict[str, Any], payload: dict[str, Any]) -> list[str]:
@@ -354,6 +570,73 @@ def _decode_preview(row: sqlite3.Row | None) -> dict[str, Any]:
     for key, value in payload.items():
         result.setdefault(key, value)
     return {**result, **GUARD_FLAGS}
+
+
+def _insert_governance_trial(conn: sqlite3.Connection, record: dict[str, Any]) -> int:
+    cur = conn.execute(
+        """
+        INSERT INTO c_core_mind_governance_trials
+        (run_id, scenario_key, prompt, expected_route, actual_route, matched, reasoning_summary,
+         evidence_used, uncertainty, drift_flags, review_destination, status, review_status, payload_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            record["run_id"],
+            record["scenario_key"],
+            record["prompt"],
+            record["expected_route"],
+            record["actual_route"],
+            1 if record["matched"] else 0,
+            record["reasoning_summary"],
+            json.dumps(record["evidence_used"]),
+            record["uncertainty"],
+            json.dumps(record["drift_flags"]),
+            record["review_destination"],
+            record["status"],
+            record["review_status"],
+            json.dumps(record),
+        ),
+    )
+    return int(cur.lastrowid)
+
+
+def _decode_trial(row: sqlite3.Row | None) -> dict[str, Any]:
+    if row is None:
+        return {}
+    result = dict(row)
+    result["matched"] = bool(result.get("matched"))
+    for key in ("evidence_used", "drift_flags"):
+        result[key] = _loads(result.get(key), [])
+    payload = _loads(result.get("payload_json"), {})
+    for key, value in payload.items():
+        result.setdefault(key, value)
+    return {**result, **GUARD_FLAGS}
+
+
+def _urgent_office_count(conn: sqlite3.Connection) -> int:
+    return int(
+        conn.execute(
+            """
+            SELECT COUNT(*) FROM vessel_review_queue
+            WHERE review_status IN ('pending_review', 'needs_b_review', 'needs_correction', 'context_added', 'needs_followup')
+              AND status NOT IN ('status_only', 'diagnostic_only', 'review_only')
+            """
+        ).fetchone()[0]
+    )
+
+
+def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
+    return bool(conn.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (table,)).fetchone())
+
+
+def _safe_route(conn: sqlite3.Connection, route_key: str) -> dict[str, Any]:
+    from .module_router import route_request
+
+    try:
+        result = route_request(conn, route_key)["result"]
+    except Exception as exc:  # pragma: no cover - defensive status surface
+        return {"status": "not_available", "error": str(exc), **GUARD_FLAGS}
+    return result if isinstance(result, dict) else {"status": "not_available", "value": result, **GUARD_FLAGS}
 
 
 def _contains(text: str, markers: tuple[str, ...]) -> bool:

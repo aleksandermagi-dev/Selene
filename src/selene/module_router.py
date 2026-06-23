@@ -86,7 +86,14 @@ from .core_deliberation import (
     repair_reflection_create,
     uncertainty_preview,
 )
-from .core_mind import create_core_mind_route_preview, list_core_mind_route_previews
+from .core_mind import (
+    create_core_mind_route_preview,
+    governance_route_report,
+    list_core_mind_governance_trials,
+    list_core_mind_route_previews,
+    run_core_mind_governance_trials,
+    transfer_readiness_preview,
+)
 from .detached_corpus import detached_corpus_audit
 from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
 from .kernel import kernel_state
@@ -230,6 +237,14 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": create_core_mind_route_preview(conn, payload)}
     if route_key == "core_mind.route_previews.list":
         return {"route": route_key, "result": list_core_mind_route_previews(conn, int(payload.get("limit") or 50))}
+    if route_key == "core_mind.governance_trials.run":
+        return {"route": route_key, "result": run_core_mind_governance_trials(conn, payload)}
+    if route_key == "core_mind.governance_trials.list":
+        return {"route": route_key, "result": list_core_mind_governance_trials(conn, int(payload.get("limit") or 80))}
+    if route_key == "core_mind.governance_report":
+        return {"route": route_key, "result": governance_route_report(conn, payload)}
+    if route_key == "core_mind.transfer_readiness_preview":
+        return {"route": route_key, "result": transfer_readiness_preview(conn)}
     if route_key == "vessel.steps_1_8.status":
         return {"route": route_key, "result": steps_1_8_status(conn)}
     if route_key == "vessel.speech_rehearsal.create":

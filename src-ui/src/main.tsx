@@ -294,6 +294,10 @@ function App() {
   const [coreMindRoutePreviews, setCoreMindRoutePreviews] = useState<Dict[]>([]);
   const [coreMindRouteResult, setCoreMindRouteResult] = useState<Dict | null>(null);
   const [coreMindRouteDraft, setCoreMindRouteDraft] = useState("Selene, what should Core/Mind do safely with this route?");
+  const [coreMindGovernanceTrials, setCoreMindGovernanceTrials] = useState<Dict[]>([]);
+  const [coreMindGovernanceReport, setCoreMindGovernanceReport] = useState<Dict | null>(null);
+  const [coreMindGovernanceResult, setCoreMindGovernanceResult] = useState<Dict | null>(null);
+  const [transferReadinessPreview, setTransferReadinessPreview] = useState<Dict | null>(null);
   const [remainingRuntimeStatus, setRemainingRuntimeStatus] = useState<Dict | null>(null);
   const [gracefulFallResult, setGracefulFallResult] = useState<Dict | null>(null);
   const [voicePolicyResult, setVoicePolicyResult] = useState<Dict | null>(null);
@@ -483,6 +487,9 @@ function App() {
     api<Dict>("/api/c-vessel/memory-transfer-candidate/preview").then(setMemoryTransferCandidate).catch(() => undefined);
     api<Dict>("/api/c-core/native-generation/rehearsal-status").then(setNativeRehearsalStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/core-mind/route-previews").then((data) => setCoreMindRoutePreviews(data.items)).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/core-mind/governance-trials").then((data) => setCoreMindGovernanceTrials(data.items)).catch(() => undefined);
+    api<Dict>("/api/core-mind/governance-report").then(setCoreMindGovernanceReport).catch(() => undefined);
+    api<Dict>("/api/core-mind/transfer-readiness-preview").then(setTransferReadinessPreview).catch(() => undefined);
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/b/pattern-backups").then((data) => setPatternBackups(data.items)).catch(() => undefined);
     api<Dict>("/api/b/memory-accession/rehearsal-status").then(setMemoryRehearsalStatus).catch(() => undefined);
@@ -1292,6 +1299,36 @@ function App() {
         refreshMyOffice();
       })
       .catch((err) => setCoreMindRouteResult({ error: err instanceof Error ? err.message : "Core/Mind route preview rejected" }));
+  }
+
+  async function runCoreMindGovernanceTrials() {
+    setCoreMindGovernanceResult({ status: "running", message: "Running Core/Mind governance trials." });
+    try {
+      const result = await api<Dict>("/api/core-mind/governance-trials/run", { method: "POST", body: JSON.stringify({}) });
+      setCoreMindGovernanceResult(result);
+      const [trials, report, readiness] = await Promise.all([
+        api<{ items: Dict[] }>("/api/core-mind/governance-trials"),
+        api<Dict>("/api/core-mind/governance-report"),
+        api<Dict>("/api/core-mind/transfer-readiness-preview")
+      ]);
+      setCoreMindGovernanceTrials(trials.items);
+      setCoreMindGovernanceReport(report);
+      setTransferReadinessPreview(readiness);
+      refreshMyOffice();
+    } catch (err) {
+      setCoreMindGovernanceResult({ status: "error", error: err instanceof Error ? err.message : "Core/Mind governance trials rejected" });
+    }
+  }
+
+  async function refreshCoreMindGovernance() {
+    const [trials, report, readiness] = await Promise.all([
+      api<{ items: Dict[] }>("/api/core-mind/governance-trials"),
+      api<Dict>("/api/core-mind/governance-report"),
+      api<Dict>("/api/core-mind/transfer-readiness-preview")
+    ]);
+    setCoreMindGovernanceTrials(trials.items);
+    setCoreMindGovernanceReport(report);
+    setTransferReadinessPreview(readiness);
   }
 
   function runCoreActionReflection() {
@@ -3530,6 +3567,70 @@ function App() {
                 ))}
                 {!coreMindRoutePreviews.length ? <p className="emptyState">No Core/Mind route previews yet.</p> : null}
               </div>
+            </Panel>
+            <Panel title="Core/Mind Governance Trials">
+              <p className="plainHelp">Status-only trial harness for ordinary prompts, uncertainty, retrieval, speech rehearsal, identity/memory, transfer blocking, drift, and return-to-B repair. Trial failures do not become urgent Office work unless a separate real review is created.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Trials" value={text(coreMindGovernanceReport?.trial_count ?? coreMindGovernanceTrials.length)} />
+                <Metric label="Matched" value={text(coreMindGovernanceReport?.matched_count ?? 0)} />
+                <Metric label="Mismatches" value={text(coreMindGovernanceReport?.mismatch_count ?? 0)} />
+                <Metric label="Office Urgent" value={text(coreMindGovernanceReport?.my_office_urgent_items ?? officeWaitingTotal)} />
+              </div>
+              <div className="chips">
+                <span>answer: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).answer_now ?? 0)}</span>
+                <span>ask: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).ask ?? 0)}</span>
+                <span>retrieve: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).retrieve ?? 0)}</span>
+                <span>speech: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).rehearse_speech ?? 0)}</span>
+                <span>review: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).create_review_packet ?? 0)}</span>
+                <span>return-to-B: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).return_to_b ?? 0)}</span>
+                <span>blocked: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).block ?? 0)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={runCoreMindGovernanceTrials} disabled={coreMindGovernanceResult?.status === "running"}>
+                  {coreMindGovernanceResult?.status === "running" ? "Running Trials..." : "Run Governance Trials"}
+                </button>
+                <button onClick={() => refreshCoreMindGovernance().catch(() => undefined)}>Refresh Governance Report</button>
+              </div>
+              <PlainResult value={coreMindGovernanceResult} />
+              <div className="list compactList packetList">
+                {coreMindGovernanceTrials.slice(0, 8).map((item) => (
+                  <article className="packetCard" key={`core-mind-trial-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{humanize(text(item.scenario_key || "governance trial"))}</strong>
+                      <span>{item.matched ? "matched" : "mismatch"}</span>
+                    </div>
+                    <p>{text(item.reasoning_summary || item.prompt)}</p>
+                    <div className="chips">
+                      <span>expected: {friendlyStatus(item.expected_route)}</span>
+                      <span>actual: {friendlyStatus(item.actual_route)}</span>
+                      <span>drift: {text(((item.drift_flags || []) as unknown[]).length)}</span>
+                      <span>{friendlyStatus(item.review_status || "status_only")}</span>
+                    </div>
+                  </article>
+                ))}
+                {!coreMindGovernanceTrials.length ? <p className="emptyState">No governance trials have run yet.</p> : null}
+              </div>
+            </Panel>
+            <Panel title="Transfer Readiness Preview">
+              <p className="plainHelp">Preview-only readiness view. These metrics can reveal missing work, but they cannot approve transfer, activate C, write memory, enable runtime recall, train, or authorize action.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Continuity" value={friendlyStatus(transferReadinessPreview?.continuity_confidence || "not checked")} />
+                <Metric label="Unresolved Review" value={text(transferReadinessPreview?.unresolved_review_count ?? officeWaitingTotal)} />
+                <Metric label="Return-to-B Rate" value={text(transferReadinessPreview?.return_to_b_rate ?? 0)} />
+                <Metric label="Blocked Attempts" value={text(transferReadinessPreview?.blocked_high_stakes_attempts ?? 0)} />
+                <Metric label="Transfer" value={transferReadinessPreview?.transfer_approved ? "approved" : "not approved"} />
+              </div>
+              <div className="chips">
+                <span>teaching packets: {text(safeJsonObject(transferReadinessPreview?.evidence_coverage).teaching_packets ?? 0)}</span>
+                <span>reference layers: {text(safeJsonObject(transferReadinessPreview?.evidence_coverage).approved_reference_ready_layers ?? 0)}</span>
+                <span>anchors: {text(safeJsonObject(transferReadinessPreview?.evidence_coverage).core_pattern_anchors ?? 0)}</span>
+                <span>memory layers ready: {text(safeJsonObject(transferReadinessPreview?.memory_accession_readiness).ready_layer_count ?? 0)}</span>
+                <span>speech rehearsals: {text(safeJsonObject(transferReadinessPreview?.speech_rehearsal_stability).recent_count ?? 0)}</span>
+              </div>
+              <div className="reviewActions">
+                <button onClick={() => api<Dict>("/api/core-mind/transfer-readiness-preview").then(setTransferReadinessPreview).catch(() => undefined)}>Refresh Transfer Readiness</button>
+              </div>
+              <PlainResult value={transferReadinessPreview} />
             </Panel>
             <Panel title="Pre-Core Vessel Layers">
               <p className="plainHelp">Dream cycle, memory lifecycle, temporal continuity, causal sandbox, and goal/drive are support layers only. They organize review packets and status markers without changing Core/Mind, memory, transfer, or action authority.</p>
