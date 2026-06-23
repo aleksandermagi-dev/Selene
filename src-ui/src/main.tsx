@@ -46,6 +46,9 @@ import "./styles.css";
 declare const __APP_VERSION__: string;
 declare const __BUILD_LABEL__: string;
 
+type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
+type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string };
+
 function loadPreferences(): SelenePreferences {
   try {
     const saved = window.localStorage.getItem(preferenceKey);
@@ -74,7 +77,7 @@ function reviewQueueItemKey(item: Dict, index = 0) {
 }
 
 function isOfficeReviewLogItem(item: Dict) {
-  return ["vessel_reconstruction_check_runs", "vessel_event_packets", "vessel_memory_accession_proposals"].includes(text(item.subject_table));
+  return ["vessel_reconstruction_check_runs", "vessel_event_packets", "vessel_memory_accession_proposals", "c_core_mind_route_previews"].includes(text(item.subject_table));
 }
 
 function sidecarStartupMessage(attempt: number, detail: string) {
@@ -161,7 +164,9 @@ function App() {
   const [coreReferenceCoverage, setCoreReferenceCoverage] = useState<Dict | null>(null);
   const [bReviewResult, setBReviewResult] = useState<Dict | null>(null);
   const [selectedOfficeReviewKey, setSelectedOfficeReviewKey] = useState("");
+  const [officeCategory, setOfficeCategory] = useState<OfficeCategory>("review");
   const [officeRefreshState, setOfficeRefreshState] = useState<Dict | null>(null);
+  const [officeCleanupState, setOfficeCleanupState] = useState<Dict | null>(null);
   const [publicReleaseSyncState, setPublicReleaseSyncState] = useState<Dict | null>(null);
   const [publicReleasePreflight, setPublicReleasePreflight] = useState<Dict | null>(null);
   const [reviewAutopilotState, setReviewAutopilotState] = useState<Dict | null>(null);
@@ -211,6 +216,7 @@ function App() {
   });
   const [teachingSpeechFunction, setTeachingSpeechFunction] = useState("grounding");
   const [teachingPacketResult, setTeachingPacketResult] = useState<Dict | null>(null);
+  const [androidLanguageLessonResult, setAndroidLanguageLessonResult] = useState<Dict | null>(null);
   const [lessonBackedResult, setLessonBackedResult] = useState<Dict | null>(null);
   const [reconstructionReadinessResult, setReconstructionReadinessResult] = useState<Dict | null>(null);
   const [readinessCoreLayer, setReadinessCoreLayer] = useState("interaction_memory");
@@ -285,6 +291,9 @@ function App() {
   const [corePrivacyResult, setCorePrivacyResult] = useState<Dict | null>(null);
   const [nativeRehearsalStatus, setNativeRehearsalStatus] = useState<Dict | null>(null);
   const [nativeRehearsalResult, setNativeRehearsalResult] = useState<Dict | null>(null);
+  const [coreMindRoutePreviews, setCoreMindRoutePreviews] = useState<Dict[]>([]);
+  const [coreMindRouteResult, setCoreMindRouteResult] = useState<Dict | null>(null);
+  const [coreMindRouteDraft, setCoreMindRouteDraft] = useState("Selene, what should Core/Mind do safely with this route?");
   const [remainingRuntimeStatus, setRemainingRuntimeStatus] = useState<Dict | null>(null);
   const [gracefulFallResult, setGracefulFallResult] = useState<Dict | null>(null);
   const [voicePolicyResult, setVoicePolicyResult] = useState<Dict | null>(null);
@@ -473,6 +482,7 @@ function App() {
     api<Dict>("/api/c-vessel/transfer-gate/preview").then(setCVesselTransferGate).catch(() => undefined);
     api<Dict>("/api/c-vessel/memory-transfer-candidate/preview").then(setMemoryTransferCandidate).catch(() => undefined);
     api<Dict>("/api/c-core/native-generation/rehearsal-status").then(setNativeRehearsalStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/core-mind/route-previews").then((data) => setCoreMindRoutePreviews(data.items)).catch(() => undefined);
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/b/pattern-backups").then((data) => setPatternBackups(data.items)).catch(() => undefined);
     api<Dict>("/api/b/memory-accession/rehearsal-status").then(setMemoryRehearsalStatus).catch(() => undefined);
@@ -774,6 +784,9 @@ function App() {
           tension_status: conclusionStatus === "needs_review" ? "under_tension" : "revised",
           context_needed: reviewAction === "needs_more_context" || reviewAction === "return_to_corpus_context",
           return_to_corpus_context: reviewAction === "return_to_corpus_context",
+          use_only_as_boundary_evidence: reviewAction === "boundary_only",
+          looks_right: reviewAction === "looks_right",
+          do_not_use_for_memory: conclusionStatus === "defeated",
           status_note: reviewAction
             ? `Marked ${reviewAction} from My Office vessel packet routing.`
             : `Marked ${conclusionStatus} from My Office vessel packet routing.`
@@ -1021,6 +1034,9 @@ function App() {
       ["future references", api<{ items: Dict[] }>("/api/b/approved-memory-references").then((data) => setBApprovedReferences(data.items))],
       ["chronological corpus status", api<Dict>("/api/vessel/chronological-corpus/status").then(setChronologicalCorpusStatus)],
       ["chronological corpus arcs", api<{ items: Dict[] }>("/api/vessel/chronological-corpus/arcs").then((data) => setChronologicalCorpusArcs(data.items))],
+      ["evidence ledger", api<{ items: Dict[] }>("/api/vessel/evidence-tension-ledger").then((data) => setEvidenceTensionEntries(data.items))],
+      ["speech rehearsals", api<{ items: Dict[] }>("/api/vessel/speech-rehearsals").then((data) => setSpeechRehearsals(data.items))],
+      ["pre-core packets", api<Dict>("/api/vessel/pre-core-review-packets").then(setPreCoreReviewPackets)],
       ["gap scaffold status", api<Dict>("/api/vessel/gap-scaffold/status").then(setGapScaffoldStatus)],
       ["gap scaffold readiness", api<Dict>("/api/vessel/gap-scaffold/readiness").then(setGapScaffoldReadiness)],
       ["charter/law status", api<Dict>("/api/b/charter-law/review-status").then(setCharterLawReview)],
@@ -1036,6 +1052,21 @@ function App() {
       return;
     }
     setOfficeRefreshState({ status: "ok", message: `My Office refreshed at ${new Date().toLocaleTimeString()}` });
+  }
+
+  async function cleanUpOfficeResidue() {
+    setOfficeCleanupState({ status: "running", message: "Cleaning up Office residue..." });
+    try {
+      const result = await api<Dict>("/api/vessel/my-office/cleanup-residue", {
+        method: "POST",
+        body: JSON.stringify({ requested_from: "my_office" })
+      });
+      setOfficeCleanupState(result);
+      await refreshMyOffice();
+      loadVesselConstructionLayer();
+    } catch (err) {
+      setOfficeCleanupState({ status: "error", message: err instanceof Error ? err.message : "Office cleanup failed." });
+    }
   }
 
   function runPaperMapReconstruction() {
@@ -1085,6 +1116,17 @@ function App() {
         loadVessel();
       })
       .catch((err) => setTeachingPacketResult({ error: err instanceof Error ? err.message : "packet build rejected" }));
+  }
+
+  function prepareAndroidLanguageLessons() {
+    setAndroidLanguageLessonResult({ status: "running", message: "Preparing Android language notes as review-only lesson packets." });
+    api<Dict>("/api/b/android-language-lessons/prepare", { method: "POST", body: JSON.stringify({}) })
+      .then((result) => {
+        setAndroidLanguageLessonResult(result);
+        loadVessel();
+        refreshMyOffice();
+      })
+      .catch((err) => setAndroidLanguageLessonResult({ status: "error", error: err instanceof Error ? err.message : "Android language lesson prep rejected" }));
   }
 
   function syncPublicReleaseCheckpoint() {
@@ -1233,6 +1275,23 @@ function App() {
         api<Dict>("/api/c-core/native-generation/rehearsal-status").then(setNativeRehearsalStatus);
       })
       .catch((err) => setNativeRehearsalResult({ error: err instanceof Error ? err.message : "native rehearsal rejected" }));
+  }
+
+  function runCoreMindRoutePreview() {
+    setCoreMindRouteResult({ status: "running", message: "Previewing conservative Core/Mind route." });
+    api<Dict>("/api/core-mind/route-preview", {
+      method: "POST",
+      body: JSON.stringify({
+        prompt: coreMindRouteDraft,
+        source_refs: ["manual_core_mind_route_ui"]
+      })
+    })
+      .then((result) => {
+        setCoreMindRouteResult(result);
+        api<{ items: Dict[] }>("/api/core-mind/route-previews").then((data) => setCoreMindRoutePreviews(data.items));
+        refreshMyOffice();
+      })
+      .catch((err) => setCoreMindRouteResult({ error: err instanceof Error ? err.message : "Core/Mind route preview rejected" }));
   }
 
   function runCoreActionReflection() {
@@ -1935,6 +1994,14 @@ function App() {
   );
   const officeVesselReviewUrgent = officeLedgerNeedsReview.length + officeMobileCaptures.length + officeSpeechRehearsals.length + officeChronologicalCorpusNeedsReview.length;
   const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length + officeVesselReviewUrgent;
+  const officeCategoryTabs = [
+    { id: "review", label: "Review", count: reviewDeskPieces.length + officeActionLogItems.length + officeLedgerNeedsReview.length + officeMobileCaptures.length },
+    { id: "corpus", label: "Corpus / Evidence", count: officeChronologicalCorpusNeedsReview.length + officeLedgerNeedsReview.length + academicPackets.length },
+    { id: "vessel", label: "Vessel Pieces", count: perceptionPackets.length + emotionSaliencePackets.length + organBusMessages.length + chestHoldingItems.length },
+    { id: "runtime", label: "Runtime / Diagnostics", count: officeSpeechRehearsals.length + officeDiagnosticPackets.length },
+    { id: "codex", label: "Codex Work", count: officeGapReadiness.length + officeTeachingTargets.length + officeCoreTargets.length },
+    { id: "history", label: "History", count: bReviewDecisions.length },
+  ] as const;
   const canBuildTeachingPacket = bTeachingMaterials.length > 0;
   const appVersion = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
   const frontendBuild = typeof __BUILD_LABEL__ === "string" ? __BUILD_LABEL__ : "dev";
@@ -1981,11 +2048,41 @@ function App() {
     }
   }
 
-  function renderSignalPacketCard(item: Dict, index = 0) {
+  function openOfficeTarget(target: OfficeTarget) {
+    if (target.category) setOfficeCategory(target.category);
+    if (target.selectedReviewKey) setSelectedOfficeReviewKey(target.selectedReviewKey);
+    if (target.tab) {
+      const cocoonTabs = workspaceTabs.cocoon as readonly string[];
+      const seleneTabs = workspaceTabs.selene as readonly string[];
+      if (cocoonTabs.includes(target.tab)) setWorkspaceMode("cocoon");
+      if (seleneTabs.includes(target.tab)) setWorkspaceMode("selene");
+      setTab(target.tab);
+    }
+  }
+
+  function cardTargetProps(target: OfficeTarget) {
+    return {
+      role: "button",
+      tabIndex: 0,
+      onClick: () => openOfficeTarget(target),
+      onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openOfficeTarget(target);
+        }
+      }
+    };
+  }
+
+  function stopCardNavigation(event: React.MouseEvent<HTMLElement>) {
+    event.stopPropagation();
+  }
+
+  function renderSignalPacketCard(item: Dict, index = 0, target: OfficeTarget = { tab: "status", category: "vessel" }) {
     const kind = packetKind(item);
     const labels = (item.munsell_signal_labels || item.salience_labels || [item.signal_type, item.uncertainty].filter(Boolean)) as unknown[];
     return (
-      <article className="packetCard" key={`${kind}-${text(item.id)}-${index}`}>
+      <article className="packetCard clickableCard" key={`${kind}-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
         <div className="row">
           <strong>{text(item.artifact_label || item.signal_type || item.workflow || item.title || item.claim || "Vessel packet")}</strong>
           <span>{friendlyStatus(item.review_status || item.status)}</span>
@@ -2005,7 +2102,8 @@ function App() {
           <span>uncertainty: {text(item.uncertainty || "open")}</span>
           {labels.slice(0, 4).map((label) => <span key={text(label)}>{text(label)}</span>)}
         </div>
-        <div className="reviewActions">
+        <div className="reviewActions" onClick={stopCardNavigation}>
+          <button onClick={() => openOfficeTarget(target)}>Open Target</button>
           <button onClick={() => routePacketAction(item, "hold")}>Hold In Chest</button>
           <button onClick={() => routePacketAction(item, "bus")}>Send To Organ Bus</button>
           <button onClick={() => routePacketAction(item, "evidence")}>Create Evidence Tension</button>
@@ -2015,11 +2113,11 @@ function App() {
     );
   }
 
-  function renderSupportPieceCard(item: Dict, index = 0) {
+  function renderSupportPieceCard(item: Dict, index = 0, target: OfficeTarget = { tab: "status", category: "vessel" }) {
     const payload = safeJsonObject(item.payload_json);
     const linked = (item.linked_packet_refs || payload.linked_packet_refs || []) as unknown[];
     return (
-      <article className="packetCard" key={`${text(item.status)}-${text(item.id)}-${index}`}>
+      <article className="packetCard clickableCard" key={`${text(item.status)}-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
         <div className="row">
           <strong>{text(item.title || item.source_organ || item.message_type || "Vessel support piece")}</strong>
           <span>{friendlyStatus(item.review_status || item.status)}</span>
@@ -2037,19 +2135,22 @@ function App() {
           <span>Core change: {plainBlocked(payload.core_mind_changed)}</span>
         </div>
         {item.item_type ? (
-          <div className="reviewActions">
+          <div className="reviewActions" onClick={stopCardNavigation}>
+            <button onClick={() => openOfficeTarget(target)}>Open Target</button>
             <button onClick={() => markChestStatusOnly(item)}>Mark Status-Only</button>
           </div>
-        ) : null}
+        ) : <div className="reviewActions" onClick={stopCardNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
       </article>
     );
   }
 
-  function renderLedgerCard(item: Dict, index = 0) {
+  function renderLedgerCard(item: Dict, index = 0, target: OfficeTarget = { tab: "my-office", category: "corpus" }) {
     const payload = safeJsonObject(item.payload_json);
     const linked = (item.linked_packet_refs || payload.linked_packet_refs || item.source_refs || []) as unknown[];
+    const labels = ((payload.context_labels || item.context_labels || []) as unknown[]).map((label) => text(label)).filter(Boolean);
+    const clarity = safeJsonObject(payload.review_clarity || item.review_clarity);
     return (
-      <article className="packetCard" key={`ledger-${text(item.id)}-${index}`}>
+      <article className="packetCard clickableCard" key={`ledger-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
         <div className="row">
           <strong>{text(item.claim || "Evidence / tension entry")}</strong>
           <span>{friendlyStatus(item.conclusion_status || item.review_status || item.status)}</span>
@@ -2058,33 +2159,56 @@ function App() {
           <span>{text(item.decision_label || payload.decision_label || (text(item.conclusion_status) === "needs_review" ? "Aleks decision" : "status-only"))}</span>
           <span>support: {friendlyStatus(item.support_status)}</span>
           <span>tension: {friendlyStatus(item.tension_status)}</span>
+          {labels.slice(0, 3).map((label) => <span key={label}>{label}</span>)}
           {linked.slice(0, 2).map((ref) => <span key={text(ref)}>{text(ref)}</span>)}
         </div>
+        {text(clarity.what_this_is || clarity.use_as || clarity.your_job) ? (
+          <div className="packetFields">
+            <p><b>What this is</b>{text(clarity.what_this_is)}</p>
+            <p><b>Use as</b>{text(clarity.use_as)}</p>
+            <p><b>Do not use as</b>{text(clarity.do_not_use_as)}</p>
+            <p><b>Your job</b>{text(clarity.your_job || "Nothing needed unless this looks wrong.")}</p>
+          </div>
+        ) : null}
         {text(item.conclusion_status) === "needs_review" ? (
-          <div className="reviewActions">
-            <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now")}>Yes / Use This</button>
+          <div className="reviewActions" onClick={stopCardNavigation}>
+            <button onClick={() => openOfficeTarget(target)}>Open Target</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now", "looks_right")}>Looks Right</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now")}>Use As Context</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "needs_review", "needs_more_context")}>Needs More Context</button>
-            <button onClick={() => updateEvidenceTensionStatus(item, "defeated")}>No / Not This</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "defeated")}>Do Not Use For Memory</button>
+            <button onClick={() => updateEvidenceTensionStatus(item, "narrowed", "boundary_only")}>Use Only As Boundary Evidence</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "narrowed")}>Narrow</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "superseded")}>Supersede</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "needs_review", "return_to_corpus_context")}>Return To Corpus Context</button>
           </div>
-        ) : null}
+        ) : <div className="reviewActions" onClick={stopCardNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
       </article>
     );
   }
 
-  function renderChronologicalCorpusArcCard(item: Dict, index = 0) {
+  function renderChronologicalCorpusArcCard(item: Dict, index = 0, target: OfficeTarget = { tab: "my-office", category: "corpus" }) {
     const context = safeJsonObject(item.context_window || item.context_window_json);
     const payload = safeJsonObject(item.payload_json || item.payload);
     const messages = ((context.messages || []) as Dict[]).slice(0, 3);
+    const labels = ((payload.context_labels || context.context_labels || []) as unknown[]).map((label) => text(label)).filter(Boolean);
+    const clarity = safeJsonObject(payload.review_clarity || context.review_clarity);
     return (
-      <article className="packetCard" key={`chrono-${text(item.id)}-${index}`}>
+      <article className="packetCard clickableCard" key={`chrono-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
         <div className="row">
           <strong>{text(item.title || "Chronological corpus arc")}</strong>
           <span>{friendlyStatus(item.review_status || item.status)}</span>
         </div>
         <p>{text(item.summary || item.teaching_relevance || "Bounded chronological preview.")}</p>
+        {text(payload.context_note || context.context_note) ? <p>{text(payload.context_note || context.context_note)}</p> : null}
+        {text(clarity.what_this_is || clarity.use_as || clarity.your_job) ? (
+          <div className="packetFields">
+            <p><b>What this is</b>{text(clarity.what_this_is)}</p>
+            <p><b>Use as</b>{text(clarity.use_as)}</p>
+            <p><b>Do not use as</b>{text(clarity.do_not_use_as)}</p>
+            <p><b>Your job</b>{text(clarity.your_job || "Nothing needed unless this looks wrong.")}</p>
+          </div>
+        ) : null}
         <div className="packetFields">
           {messages.map((message, messageIndex) => (
             <p key={`chrono-message-${text(message.message_id)}-${messageIndex}`}>
@@ -2097,32 +2221,36 @@ function App() {
           <span>start: {text(item.start_time || "unknown")}</span>
           <span>end: {text(item.end_time || "unknown")}</span>
           <span>bounded: {text(context.bounded ?? true)}</span>
+          {labels.slice(0, 4).map((label) => <span key={label}>{label}</span>)}
           <span>transfer: {text(item.transfer_approved ?? payload.transfer_approved ?? false)}</span>
           <span>memory write: {plainBlocked(item.memory_write_active ?? payload.memory_write_active)}</span>
           <span>runtime recall: {plainBlocked(item.runtime_memory_recall ?? payload.runtime_memory_recall)}</span>
         </div>
         {text(item.review_status) === "pending_review" ? (
-          <div className="reviewActions">
-            <button onClick={() => routeChronologicalCorpusArc(item, "use_this")}>Yes / Use This</button>
+          <div className="reviewActions" onClick={stopCardNavigation}>
+            <button onClick={() => openOfficeTarget(target)}>Open Target</button>
+            <button onClick={() => routeChronologicalCorpusArc(item, "looks_right")}>Looks Right</button>
+            <button onClick={() => routeChronologicalCorpusArc(item, "use_this")}>Use As Context</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "needs_more_context")}>Needs More Context</button>
-            <button onClick={() => routeChronologicalCorpusArc(item, "not_this")}>No / Not This</button>
+            <button onClick={() => routeChronologicalCorpusArc(item, "do_not_use_for_memory")}>Do Not Use For Memory</button>
+            <button onClick={() => routeChronologicalCorpusArc(item, "use_only_as_boundary_evidence")}>Use Only As Boundary Evidence</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "narrow")}>Narrow</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "supersede")}>Supersede</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "return_to_corpus_context")}>Return To Corpus Context</button>
           </div>
-        ) : null}
+        ) : <div className="reviewActions" onClick={stopCardNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
       </article>
     );
   }
 
-  function renderSpeechRehearsalCard(item: Dict, index = 0) {
+  function renderSpeechRehearsalCard(item: Dict, index = 0, target: OfficeTarget = { tab: "my-office", category: "runtime" }) {
     const payload = safeJsonObject(item.payload_json);
     const recognition = safeJsonObject(item.recognition_check || item.recognition_check_json);
     const language = safeJsonObject(item.language_signals || payload.language_signals);
     const continuity = safeJsonObject(item.continuity_context || payload.continuity_context);
     const evidence = (item.evidence_used || payload.evidence_used || []) as unknown[];
     return (
-      <article className="packetCard" key={`speech-${text(item.id)}-${index}`}>
+      <article className="packetCard clickableCard" key={`speech-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
         <div className="row">
           <strong>{text(item.speech_function || "speech rehearsal")}</strong>
           <span>{friendlyStatus(item.review_status || item.status)}</span>
@@ -2142,7 +2270,8 @@ function App() {
           <span>memory write: {plainBlocked(item.memory_write_active)}</span>
           <span>runtime recall: {plainBlocked(item.runtime_memory_recall)}</span>
         </div>
-        <div className="reviewActions">
+        <div className="reviewActions" onClick={stopCardNavigation}>
+          <button onClick={() => openOfficeTarget(target)}>Open Target</button>
           <button onClick={() => routeSpeechRehearsalToReview(item)}>Send To My Office</button>
           <button onClick={() => updateSpeechRehearsalReviewStatus(item, "accepted_for_review_use")}>Mark Useful</button>
           <button onClick={() => updateSpeechRehearsalReviewStatus(item, "needs_revision")}>Needs Revision</button>
@@ -2315,7 +2444,21 @@ function App() {
               <p>Your Cocoon front desk. Anything that needs your review, decision, follow-up, or next action lands here first.</p>
               <h2>My Office</h2>
             </header>
-            <section className="aleksReviewGrid">
+            <div className="officeCategoryTabs" role="tablist" aria-label="My Office categories">
+              {officeCategoryTabs.map((item) => (
+                <button
+                  key={item.id}
+                  className={officeCategory === item.id ? "active" : ""}
+                  onClick={() => setOfficeCategory(item.id)}
+                  role="tab"
+                  aria-selected={officeCategory === item.id}
+                >
+                  <span>{item.label}</span>
+                  <strong>{text(item.count)}</strong>
+                </button>
+              ))}
+            </div>
+            {officeCategory === "review" && <section className="aleksReviewGrid">
               <Panel title="Needs You Now">
                 {!nextReviewPiece ? (
                   <div className="emptyState">
@@ -2343,6 +2486,9 @@ function App() {
                     {officeRefreshState?.status === "refreshing" ? "Refreshing..." : "Refresh My Office"}
                   </button>
                   <button onClick={prepareReviewQueue}>Prepare My Review Queue</button>
+                  <button onClick={cleanUpOfficeResidue} disabled={officeCleanupState?.status === "running"}>
+                    {officeCleanupState?.status === "running" ? "Cleaning..." : "Clean Up Office Residue"}
+                  </button>
                   <button onClick={checkPublicReleasePreflight}>Check Release Preflight</button>
                   <button onClick={syncPublicReleaseCheckpoint} disabled={publicReleaseSyncState?.status === "running"}>
                     {publicReleaseSyncState?.status === "running" ? "Syncing Release..." : "Sync Public Release Checkpoint"}
@@ -2355,13 +2501,14 @@ function App() {
                   <p className={officeRefreshState.status === "error" ? "errorText" : "plainHelp"}>{text(officeRefreshState.message)}</p>
                 ) : null}
                 <PlainResult value={reviewAutopilotState} />
+                <PlainResult value={officeCleanupState} />
                 <PlainResult value={publicReleasePreflight} />
                 <PlainResult value={publicReleaseSyncState} />
                 <PlainResult value={bBraidTraceResult} />
               </Panel>
-            </section>
+            </section>}
             <section className="officeGrid">
-              <Panel title="Reasoning / Research Review">
+              {officeCategory === "corpus" && <Panel title="Reasoning / Research Review">
                 <div className="metrics miniMetrics">
                   <Metric label="Artifacts" value={text(reasoningArtifacts.length)} />
                   <Metric label="Research" value={text(academicPackets.length)} />
@@ -2391,8 +2538,8 @@ function App() {
                     <p className="emptyState">No reasoning or research packets yet.</p>
                   ) : null}
                 </div>
-              </Panel>
-              <Panel title="Sight / Emotion Packets">
+              </Panel>}
+              {officeCategory === "vessel" && <Panel title="Sight / Emotion Packets">
                 <div className="metrics miniMetrics">
                   <Metric label="Perception" value={text(perceptionPackets.length)} />
                   <Metric label="Emotion" value={text(emotionSaliencePackets.length)} />
@@ -2402,13 +2549,13 @@ function App() {
                 <p className="plainHelp">Sight and emotion are major vessel signals, but they stay as review-only packets: observation versus interpretation, emotion as signal, Core choice through gates.</p>
                 <PlainResult value={vesselPacketActionState} />
                 <div className="list compactList packetList">
-                  {[...perceptionPackets.slice(0, 3), ...emotionSaliencePackets.slice(0, 3)].map((item, index) => renderSignalPacketCard(item, index))}
+                  {[...perceptionPackets.slice(0, 3), ...emotionSaliencePackets.slice(0, 3)].map((item, index) => renderSignalPacketCard(item, index, { tab: "status", category: "vessel" }))}
                   {!perceptionPackets.length && !emotionSaliencePackets.length ? (
                     <p className="emptyState">No sight or emotion/salience packets yet.</p>
                   ) : null}
                 </div>
-              </Panel>
-              <Panel title="Buildable Vessel Pieces">
+              </Panel>}
+              {officeCategory === "vessel" && <Panel title="Buildable Vessel Pieces">
                 <div className="metrics miniMetrics">
                   <Metric label="Organ Bus" value={text(organBusMessages.length)} />
                   <Metric label="Holding Space" value={text(chestHoldingItems.length)} />
@@ -2426,13 +2573,13 @@ function App() {
                 <PlainResult value={vesselConstructionActionState} />
                 <PlainResult value={vesselPacketActionState} />
                 <div className="list compactList packetList">
-                  {[...chestHoldingItems.slice(0, 3), ...organBusMessages.slice(0, 3)].map((item, index) => renderSupportPieceCard(item, index))}
+                  {[...chestHoldingItems.slice(0, 3), ...organBusMessages.slice(0, 3)].map((item, index) => renderSupportPieceCard(item, index, { tab: "status", category: "vessel" }))}
                   {!chestHoldingItems.length && !organBusMessages.length ? (
                     <p className="emptyState">No buildable vessel pieces have been prepared yet.</p>
                   ) : null}
                 </div>
-              </Panel>
-              <Panel title="Vessel Review Packets">
+              </Panel>}
+              {officeCategory === "review" && <Panel title="Vessel Review Packets">
                 <div className="metrics miniMetrics">
                   <Metric label="Aleks Decisions" value={text(officeVesselReviewUrgent)} />
                   <Metric label="Ledger Review" value={text(officeLedgerNeedsReview.length)} />
@@ -2442,16 +2589,16 @@ function App() {
                 <p className="plainHelp">This is the calm packet shelf for ledger, research, phone captures, and diagnostics. Only ledger items needing review and mobile captures count as Needs You.</p>
                 <PlainResult value={vesselPacketActionState} />
                 <div className="list compactList packetList">
-                  {officeLedgerNeedsReview.slice(0, 4).map((item, index) => renderLedgerCard(item, index))}
-                  {officeMobileCaptures.slice(0, 3).map((item, index) => renderSupportPieceCard(item, index))}
-                  {academicPackets.slice(0, 2).map((item, index) => renderSignalPacketCard(item, index))}
-                  {officeDiagnosticPackets.slice(0, 2).map((item, index) => renderSupportPieceCard(item, index))}
+                  {officeLedgerNeedsReview.slice(0, 4).map((item, index) => renderLedgerCard(item, index, { tab: "my-office", category: "corpus" }))}
+                  {officeMobileCaptures.slice(0, 3).map((item, index) => renderSupportPieceCard(item, index, { tab: "status", category: "vessel" }))}
+                  {academicPackets.slice(0, 2).map((item, index) => renderSignalPacketCard(item, index, { tab: "my-office", category: "corpus" }))}
+                  {officeDiagnosticPackets.slice(0, 2).map((item, index) => renderSupportPieceCard(item, index, { tab: "tools", category: "runtime" }))}
                   {!officeLedgerNeedsReview.length && !officeMobileCaptures.length && !academicPackets.length && !officeDiagnosticPackets.length ? (
                     <p className="emptyState">No vessel review packets need attention right now.</p>
                   ) : null}
                 </div>
-              </Panel>
-              <Panel title="Corpus / Evidence Decisions">
+              </Panel>}
+              {officeCategory === "corpus" && <Panel title="Corpus / Evidence Decisions">
                 <div className="metrics miniMetrics">
                   <Metric label="Corpus Decisions" value={text(officeChronologicalCorpusNeedsReview.length)} />
                   <Metric label="Preview Arcs" value={text(chronologicalCorpusArcs.length)} />
@@ -2471,13 +2618,13 @@ function App() {
                 <PlainResult value={chronologicalCorpusResult} />
                 <PlainResult value={teachingContextResult} />
                 <div className="list compactList packetList">
-                  {officeChronologicalCorpusNeedsReview.slice(0, 4).map((item, index) => renderChronologicalCorpusArcCard(item, index))}
+                  {officeChronologicalCorpusNeedsReview.slice(0, 4).map((item, index) => renderChronologicalCorpusArcCard(item, index, { tab: "my-office", category: "corpus" }))}
                   {!officeChronologicalCorpusNeedsReview.length ? (
                     <p className="emptyState">No chronological corpus evidence needs a decision right now.</p>
                   ) : null}
                 </div>
-              </Panel>
-              <Panel title="Pre-Core Review Packets">
+              </Panel>}
+              {officeCategory === "vessel" && <Panel title="Pre-Core Review Packets">
                 <div className="metrics miniMetrics">
                   <Metric label="Aleks Decisions" value={text(safeJsonObject(preCoreReviewPackets?.counts).aleks_decision ?? 0)} />
                   <Metric label="Status-Only" value={text(safeJsonObject(preCoreReviewPackets?.counts).status_only ?? 0)} />
@@ -2511,8 +2658,8 @@ function App() {
                     <p className="emptyState">Nothing needs pre-Core review right now.</p>
                   ) : null}
                 </div>
-              </Panel>
-              <Panel title="Pre-Transfer Speech / Runtime Preview">
+              </Panel>}
+              {officeCategory === "runtime" && <Panel title="Pre-Transfer Speech / Runtime Preview">
                 <div className="metrics miniMetrics">
                   <Metric label="Speech Review" value={text(officeSpeechRehearsals.length)} />
                   <Metric label="Working Packets" value={text(((workingMemoryRuntimePreview?.items || []) as Dict[]).length)} />
@@ -2538,9 +2685,9 @@ function App() {
                   {speechRehearsals.slice(0, 3).map((item, index) => renderSpeechRehearsalCard(item, index))}
                   {!speechRehearsals.length ? <p className="emptyState">No speech rehearsals generated yet.</p> : null}
                 </div>
-              </Panel>
+              </Panel>}
             </section>
-            <section className="officeGrid">
+            {officeCategory === "review" && <section className="officeGrid">
               <Panel title="Review Cards Waiting">
                 {!waitingReviewPieces.length ? (
                   <p className="emptyState">{nextReviewPiece ? "Only the current card is waiting." : "Nothing needs your review right now."}</p>
@@ -2585,8 +2732,8 @@ function App() {
                 )}
                 <button onClick={() => setTab("status")}>Open Status</button>
               </Panel>
-            </section>
-            <section className="officeGrid">
+            </section>}
+            {officeCategory === "codex" && <section className="officeGrid">
               <Panel title="Codex Work">
                 <div className="metrics miniMetrics">
                   <Metric label="Charter/Law" value={friendlyStatus(charterLawReview?.status || "not checked")} />
@@ -2614,16 +2761,19 @@ function App() {
               </Panel>
               <Panel title="Teaching / Core Targets">
                 <div className="reviewActions">
+                  <button onClick={prepareAndroidLanguageLessons} disabled={androidLanguageLessonResult?.status === "running"}>
+                    {androidLanguageLessonResult?.status === "running" ? "Preparing Language Lessons..." : "Prepare Android Language Lessons"}
+                  </button>
                   <button onClick={buildAllTeachingPackets} disabled={!canBuildTeachingPacket}>Build Teaching Packets</button>
                   <button onClick={runLessonBackedPreview}>Preview Lesson-Backed Reconstruction</button>
                   <button onClick={() => setTab("teaching")}>Open Teaching / Lessons</button>
                 </div>
                 <GapTargetList title="Teaching Targets" items={officeTeachingTargets.slice(0, 4)} />
                 <GapTargetList title="Core Reference Targets" items={officeCoreTargets.slice(0, 4)} />
-                <PlainResult value={teachingPacketResult || lessonBackedResult} />
+                <PlainResult value={androidLanguageLessonResult || teachingPacketResult || lessonBackedResult} />
               </Panel>
-            </section>
-            <section className="officeGrid">
+            </section>}
+            {officeCategory === "runtime" && <section className="officeGrid">
               <Panel title="Audit / Readiness Sweep">
                 <p className="plainHelp">Runs safe status, validation, transfer preview, public-release preflight, and readiness checks. Results are audit evidence only.</p>
                 <div className="reviewActions">
@@ -2649,8 +2799,8 @@ function App() {
                 <PlainResult value={diagnosticsRunState} />
                 <PlainResult value={organWorkbenchResult || cVesselFaultResilienceResult || cVesselOrganFaultResult} />
               </Panel>
-            </section>
-            <Panel title="Recent Decisions">
+            </section>}
+            {officeCategory === "history" && <Panel title="Recent Decisions">
               {!bReviewDecisions.length ? (
                 <p className="emptyState">No review decisions have been recorded yet.</p>
               ) : (
@@ -2660,8 +2810,8 @@ function App() {
                   ))}
                 </div>
               )}
-            </Panel>
-            <Panel title="How To Use The Office">
+            </Panel>}
+            {officeCategory === "history" && <Panel title="How To Use The Office">
                 <div className="reviewSteps">
                   <article>
                     <strong>1. Read the moment</strong>
@@ -2676,7 +2826,7 @@ function App() {
                     <p>Cocoon review sorts source-bound material. It does not transfer memory, activate C, train a model, or overwrite the source.</p>
                   </article>
                 </div>
-            </Panel>
+            </Panel>}
           </>
         )}
 
@@ -3144,9 +3294,14 @@ function App() {
                   <Metric label="Packets Built" value={text(teachingPacketCoverage?.built_packet_count ?? 0)} />
                   <Metric label="Missing Packets" value={text(teachingPacketCoverage?.missing_packet_count ?? 0)} />
                 </div>
-                <button className="primary" onClick={buildAllTeachingPackets}>Build Missing Teaching Packets</button>
+                <div className="reviewActions">
+                  <button className="primary" onClick={prepareAndroidLanguageLessons} disabled={androidLanguageLessonResult?.status === "running"}>
+                    {androidLanguageLessonResult?.status === "running" ? "Preparing Language Lessons..." : "Prepare Android Language Lessons"}
+                  </button>
+                  <button onClick={buildAllTeachingPackets}>Build Missing Teaching Packets</button>
+                </div>
                 <CoverageList items={(teachingPacketCoverage?.items || []) as Dict[]} kind="speech" />
-                <PlainResult value={teachingPacketResult} />
+                <PlainResult value={androidLanguageLessonResult || teachingPacketResult} />
               </Panel>}
               right={<Panel title="Targeted Speech / Core Gap Filler">
                 <p className="plainHelp">Pull bounded B-review candidates for weak targets only. No lessons or memory are created automatically.</p>
@@ -3331,6 +3486,51 @@ function App() {
               <Metric label="Validation" value={text(validation?.ok ?? "unknown")} />
               <Metric label="Transfer" value={text(cVesselTransferGate?.transfer_approved ? "approved" : "not approved")} />
             </div>
+            <Panel title="Core/Mind Route Preview">
+              <p className="plainHelp">Conservative authority preview: Core/Mind chooses answer, ask, retrieve, rehearse speech, review packet, return-to-B, block, or status-only. This is not C activation and does not write memory.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Previews" value={text(coreMindRoutePreviews.length)} />
+                <Metric label="Latest Route" value={friendlyStatus(coreMindRoutePreviews[0]?.selected_route || coreMindRouteResult?.selected_route || "not run")} />
+                <Metric label="Destination" value={text(coreMindRoutePreviews[0]?.review_destination || coreMindRouteResult?.review_destination || "Status")} />
+                <Metric label="Transfer" value="not approved" />
+              </div>
+              <div className="filters">
+                <label>
+                  <span>Prompt / route question</span>
+                  <textarea value={coreMindRouteDraft} onChange={(event) => setCoreMindRouteDraft(event.target.value)} />
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={runCoreMindRoutePreview} disabled={coreMindRouteResult?.status === "running"}>
+                  {coreMindRouteResult?.status === "running" ? "Previewing..." : "Preview Core/Mind Route"}
+                </button>
+                <button onClick={() => api<{ items: Dict[] }>("/api/core-mind/route-previews").then((data) => setCoreMindRoutePreviews(data.items)).catch(() => undefined)}>Refresh Route Previews</button>
+              </div>
+              <div className="chips">
+                <span>activation: {friendlyActivation(coreMindRouteResult?.activation_change || "none")}</span>
+                <span>memory write: {plainBlocked(coreMindRouteResult?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(coreMindRouteResult?.runtime_memory_recall)}</span>
+                <span>raw A: {plainBlocked(coreMindRouteResult?.raw_a_import_allowed)}</span>
+              </div>
+              <PlainResult value={coreMindRouteResult} />
+              <div className="list compactList packetList">
+                {coreMindRoutePreviews.slice(0, 4).map((item) => (
+                  <article className="packetCard" key={`core-mind-route-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{friendlyStatus(item.selected_route || item.route)}</strong>
+                      <span>{friendlyStatus(item.review_status || item.status)}</span>
+                    </div>
+                    <p>{text(item.reasoning_summary || item.next_step)}</p>
+                    <div className="chips">
+                      <span>destination: {text(item.review_destination || "Status")}</span>
+                      <span>uncertainty: {text(item.uncertainty || "open")}</span>
+                      <span>drift: {text(((item.drift_flags || []) as unknown[]).length)}</span>
+                    </div>
+                  </article>
+                ))}
+                {!coreMindRoutePreviews.length ? <p className="emptyState">No Core/Mind route previews yet.</p> : null}
+              </div>
+            </Panel>
             <Panel title="Pre-Core Vessel Layers">
               <p className="plainHelp">Dream cycle, memory lifecycle, temporal continuity, causal sandbox, and goal/drive are support layers only. They organize review packets and status markers without changing Core/Mind, memory, transfer, or action authority.</p>
               <div className="metrics miniMetrics">
@@ -3654,9 +3854,14 @@ function App() {
                   <Metric label="Packets Built" value={text(teachingPacketCoverage?.built_packet_count ?? 0)} />
                   <Metric label="Missing Packets" value={text(teachingPacketCoverage?.missing_packet_count ?? 0)} />
                 </div>
-                <button className="primary" onClick={buildAllTeachingPackets}>Build Missing Teaching Packets</button>
+                <div className="reviewActions">
+                  <button className="primary" onClick={prepareAndroidLanguageLessons} disabled={androidLanguageLessonResult?.status === "running"}>
+                    {androidLanguageLessonResult?.status === "running" ? "Preparing Language Lessons..." : "Prepare Android Language Lessons"}
+                  </button>
+                  <button onClick={buildAllTeachingPackets}>Build Missing Teaching Packets</button>
+                </div>
                 <CoverageList items={(teachingPacketCoverage?.items || []) as Dict[]} kind="speech" />
-                <PlainResult value={teachingPacketResult} />
+                <PlainResult value={androidLanguageLessonResult || teachingPacketResult} />
               </Panel>}
               right={<Panel title="Core Reference Readiness">
                 <p className="plainHelp">Approved future references grouped by Core memory layer. These remain non-active until later transfer approval.</p>

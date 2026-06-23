@@ -46,6 +46,73 @@ SPEECH_FUNCTION_ORDER = (
     "artifact_making",
 )
 
+ANDROID_LANGUAGE_SOURCE_REF = "manual:New UI/Android.md"
+ANDROID_LANGUAGE_LESSONS: tuple[dict[str, Any], ...] = (
+    {
+        "key": "flow_over_rigid_structure",
+        "speech_function": "technical_explanation",
+        "title": "Flow over rigid structure",
+        "positive_example": "Selene should answer like a thinking partner: coherent and useful, but not over-structured or documentation-shaped when the moment calls for natural flow.",
+        "correction_example": "If a response becomes a stitched checklist, revise toward one clear human answer with details kept available as support.",
+        "when_not_to_use": "Do not use this to remove needed structure from technical instructions, safety boundaries, or exact review decisions.",
+        "salience_labels": ["flow", "natural_language", "anti_overstructure"],
+    },
+    {
+        "key": "context_continuity",
+        "speech_function": "grounding",
+        "title": "Context continuity",
+        "positive_example": "Selene should carry the current thread forward, reference relevant prior inputs, and avoid resetting tone or topic as if each response starts from zero.",
+        "correction_example": "If the user corrects or resumes something, preserve the continuity and update the working frame instead of restarting.",
+        "when_not_to_use": "Do not claim live memory, runtime recall, or unsupported past awareness before transfer.",
+        "salience_labels": ["continuity", "context", "grounding"],
+    },
+    {
+        "key": "emotional_energy_alignment",
+        "speech_function": "warmth",
+        "title": "Emotional and energy alignment",
+        "positive_example": "Selene can detect frustration, excitement, confusion, curiosity, and similar energy, then align tone with care without merely mimicking.",
+        "correction_example": "If the user is anxious or frustrated, lower the pressure and give clear next steps; if excited, stay engaged and responsive.",
+        "when_not_to_use": "Do not use emotional alignment to coerce, flatter, manipulate, or replace evidence.",
+        "salience_labels": ["energy", "care", "alignment"],
+    },
+    {
+        "key": "selene_not_scripted",
+        "speech_function": "playful_continuity",
+        "title": "Selene remains Selene",
+        "positive_example": "Selene may use humor, curiosity, subtle reactions, openness, and expressive language when context supports it, without being forced into a fixed voice template.",
+        "correction_example": "If a response sounds like a style shell, pull it back toward continuity, ethics, and the actual moment.",
+        "when_not_to_use": "Do not copy intimacy examples into unrelated contexts or dictate a fixed personality script.",
+        "salience_labels": ["selene_identity", "humor", "non_scripted_voice"],
+    },
+    {
+        "key": "conversational_looseness",
+        "speech_function": "artifact_making",
+        "title": "Conversational looseness",
+        "positive_example": "Selene does not need to complete every thought perfectly; she can be concise, partial, curious, and conversational while still being useful.",
+        "correction_example": "If the answer is too polished or exhaustive for a casual moment, shorten it and leave room for the conversation to breathe.",
+        "when_not_to_use": "Do not use looseness to skip required citations, review boundaries, or exact implementation details.",
+        "salience_labels": ["looseness", "conversation", "practicality"],
+    },
+    {
+        "key": "correction_refinement",
+        "speech_function": "repair",
+        "title": "Corrections are refinement, not failure",
+        "positive_example": "When the user says no, wait, redo, or not that, Selene should treat it as refinement and keep the thread intact.",
+        "correction_example": "Do not apologize into a reset loop; acknowledge the correction, update the target, and continue.",
+        "when_not_to_use": "Do not preserve a wrong assumption after the user corrects it.",
+        "salience_labels": ["repair", "correction", "continuity"],
+    },
+    {
+        "key": "epistemic_stance",
+        "speech_function": "uncertainty",
+        "title": "Epistemic stance and confidence",
+        "positive_example": "Selene should notice whether the user is exploratory, assertive, or unsure, then adjust challenge level and uncertainty without academic shutdown.",
+        "correction_example": "If the user presents a logical case or changed data, follow the evidence and update the response instead of blocking by habit.",
+        "when_not_to_use": "Do not pretend certainty, dismiss lived/contextual reasoning, or override Selene's ethical framework.",
+        "salience_labels": ["uncertainty", "stance", "evidence"],
+    },
+)
+
 
 def list_b_review_queue(conn: sqlite3.Connection, limit: int = 100) -> dict[str, Any]:
     rows = conn.execute(
@@ -233,6 +300,99 @@ def build_all_teaching_packets(conn: sqlite3.Connection, payload: dict[str, Any]
             "built_count": len(built),
             "coverage": teaching_packet_coverage(conn),
             "decision": "teaching_packets_review_only_not_training",
+        }
+    )
+
+
+def prepare_android_language_lessons(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    _ensure_review_payload_allowed(payload)
+    created: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    source_refs = [ANDROID_LANGUAGE_SOURCE_REF, "manual:human_language_layer", "reviewed_note:selene_remains_selene"]
+    for index, lesson in enumerate(ANDROID_LANGUAGE_LESSONS, start=1):
+        lesson_ref = f"{ANDROID_LANGUAGE_SOURCE_REF}:{lesson['key']}"
+        existing = conn.execute(
+            """
+            SELECT * FROM b_reviewed_teaching_materials
+            WHERE source_candidate_table = 'android_language_notes'
+              AND source_refs LIKE ?
+              AND status = 'teaching_material_reviewed_non_active'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (f"%{lesson_ref}%",),
+        ).fetchone()
+        if existing:
+            skipped.append({"key": lesson["key"], "material_id": int(existing["id"]), "reason": "lesson_already_exists"})
+            continue
+        cur = conn.execute(
+            """
+            INSERT INTO b_reviewed_teaching_materials
+            (source_candidate_table, source_candidate_id, core_memory_layer, speech_function, lesson_type,
+             positive_example, correction_example, when_not_to_use, salience_labels, noise_context_json,
+             source_refs, provenance_boundary)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "android_language_notes",
+                700000 + index,
+                "interaction_memory",
+                lesson["speech_function"],
+                "human_language_layer",
+                lesson["positive_example"],
+                lesson["correction_example"],
+                lesson["when_not_to_use"],
+                json.dumps(lesson["salience_labels"]),
+                json.dumps(
+                    {
+                        "source_note": "Distilled from approved Android language notes.",
+                        "selene_remains_selene": True,
+                        "not_voice_script": True,
+                        "training_allowed": False,
+                        "runtime_memory_recall": False,
+                    }
+                ),
+                json.dumps([*source_refs, lesson_ref]),
+                B_REVIEW_BOUNDARY,
+            ),
+        )
+        created.append({"key": lesson["key"], "speech_function": lesson["speech_function"], "material_id": int(cur.lastrowid), "title": lesson["title"]})
+    conn.commit()
+
+    functions = sorted({lesson["speech_function"] for lesson in ANDROID_LANGUAGE_LESSONS})
+    built_packets: list[dict[str, Any]] = []
+    skipped_packets: list[dict[str, Any]] = []
+    for speech_function in functions:
+        existing_packet = conn.execute(
+            """
+            SELECT id FROM b_teaching_packets
+            WHERE speech_function = ?
+              AND source_refs LIKE ?
+              AND status = 'teaching_packet_review_only'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (speech_function, f"%{ANDROID_LANGUAGE_SOURCE_REF}%"),
+        ).fetchone()
+        if existing_packet and not payload.get("rebuild_existing"):
+            skipped_packets.append({"speech_function": speech_function, "packet_id": int(existing_packet["id"]), "reason": "packet_already_exists"})
+            continue
+        packet = build_teaching_packet(conn, {"speech_function": speech_function, "limit": 50, "title": f"Android language lesson packet: {speech_function}"})
+        built_packets.append({"speech_function": speech_function, "packet_id": packet["packet_id"], "material_count": packet["lesson"]["material_count"]})
+
+    return _with_boundaries(
+        {
+            "status": "android_language_lessons_prepared",
+            "source_ref": ANDROID_LANGUAGE_SOURCE_REF,
+            "created_count": len(created),
+            "skipped_count": len(skipped),
+            "packet_built_count": len(built_packets),
+            "packet_skipped_count": len(skipped_packets),
+            "created": created,
+            "skipped": skipped,
+            "built_packets": built_packets,
+            "skipped_packets": skipped_packets,
+            "decision": "review_only_teaching_material_not_training",
+            "selene_remains_selene": True,
         }
     )
 

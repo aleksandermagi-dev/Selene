@@ -459,6 +459,17 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .packetCard {
   align-content: start;
 }
+.packetCard.clickableCard {
+  cursor: pointer;
+}
+.packetCard.clickableCard:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+.packetCard.clickableCard:hover {
+  border-color: var(--accent);
+}
 .packetFields {
   display: grid;
   gap: 8px;
@@ -483,6 +494,37 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .surfaceIntro { margin: 0; }
 .surfaceIntro h2 { font-size: 28px; margin: 2px 0 0; }
 .surfaceIntro p { color: var(--text-muted); margin: 0; }
+.officeCategoryTabs {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.officeCategoryTabs button {
+  align-items: center;
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 9px 10px;
+  text-align: left;
+}
+.officeCategoryTabs button.active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel-bg));
+  border-color: var(--accent);
+  color: var(--text-strong);
+}
+.officeCategoryTabs strong {
+  background: var(--panel-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 999px;
+  color: var(--text-strong);
+  font-size: 12px;
+  min-width: 28px;
+  padding: 3px 7px;
+  text-align: center;
+}
 .buildStamp {
   border-top: 1px solid var(--soft-border);
   color: var(--text-muted);

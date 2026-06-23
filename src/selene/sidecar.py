@@ -370,6 +370,9 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "c_vessel.memory_transfer_candidate.preview")["result"]))
         elif parsed.path == "/api/c-core/native-generation/rehearsal-status":
             self._send(*json_bytes(route_request(conn, "native_generation.rehearsal.status")["result"]))
+        elif parsed.path == "/api/core-mind/route-previews":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "core_mind.route_previews.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
         elif parsed.path == "/api/vessel/steps-1-8/status":
             self._send(*json_bytes(route_request(conn, "vessel.steps_1_8.status")["result"]))
         elif parsed.path == "/api/vessel/speech-rehearsals":
@@ -718,6 +721,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "native_generation.rehearsal.run", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/core-mind/route-preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "core_mind.route_preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/reasoning-artifact":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.reasoning_artifact.create", body)["result"]))
@@ -873,6 +881,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.cycle.prepare_night", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/my-office/cleanup-residue":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.my_office.cleanup_residue", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/chronological-corpus/preview":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.chronological_corpus.preview", body)["result"]))
@@ -976,6 +989,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/b/teaching-packet/build-all":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "b.teaching_packet.build_all", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/b/android-language-lessons/prepare":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "b.android_language_lessons.prepare", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/public-release/sync":

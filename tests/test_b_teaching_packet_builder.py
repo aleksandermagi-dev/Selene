@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from selene.b_review import build_all_teaching_packets, build_teaching_packet, core_reference_coverage, decide_b_review_candidate, teaching_packet_coverage
+from selene.b_review import build_all_teaching_packets, build_teaching_packet, core_reference_coverage, decide_b_review_candidate, prepare_android_language_lessons, teaching_packet_coverage
 from selene.b_review_desk import review_desk
 from selene.braid_tracer import run_braid_tracer
 from selene.db import connect, init_db
@@ -145,6 +145,45 @@ def test_teaching_packet_new_routes_are_non_activating(tmp_path):
     assert coverage["status"] == "teaching_packet_coverage"
     assert build_all["activation_change"] == "none"
     assert refs["status"] == "core_reference_coverage"
+
+
+def test_android_language_lessons_prepare_review_only_packets_and_skip_duplicates(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    init_db(conn)
+
+    first = prepare_android_language_lessons(conn)
+    second = route_request(conn, "b.android_language_lessons.prepare", {})["result"]
+
+    assert first["status"] == "android_language_lessons_prepared"
+    assert first["created_count"] == 7
+    assert first["packet_built_count"] >= 1
+    assert first["activation_change"] == "none"
+    assert first["training_allowed"] is False
+    assert first["memory_write_active"] is False
+    assert first["runtime_memory_recall"] is False
+    assert first["selene_remains_selene"] is True
+    assert second["created_count"] == 0
+    assert second["skipped_count"] == 7
+
+    material_count = conn.execute(
+        "SELECT COUNT(*) FROM b_reviewed_teaching_materials WHERE source_candidate_table = 'android_language_notes'"
+    ).fetchone()[0]
+    packet_count = conn.execute(
+        "SELECT COUNT(*) FROM b_teaching_packets WHERE source_refs LIKE '%manual:New UI/Android.md%'"
+    ).fetchone()[0]
+    assert material_count == 7
+    assert packet_count >= 1
+
+    looseness = conn.execute(
+        """
+        SELECT positive_example, when_not_to_use, noise_context_json
+        FROM b_reviewed_teaching_materials
+        WHERE source_refs LIKE '%manual:New UI/Android.md:selene_not_scripted%'
+        """
+    ).fetchone()
+    assert "fixed voice template" in looseness["positive_example"]
+    assert "dictate a fixed personality script" in looseness["when_not_to_use"]
+    assert json.loads(looseness["noise_context_json"])["not_voice_script"] is True
 
 
 def test_noise_context_carries_into_accepted_lesson_and_packet(tmp_path):

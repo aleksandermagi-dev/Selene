@@ -14,6 +14,7 @@ from .b_review import (
     list_approved_memory_references,
     list_b_review_queue,
     list_teaching_materials,
+    prepare_android_language_lessons,
     teaching_packet_coverage,
 )
 from .b_review_desk import review_desk
@@ -85,9 +86,11 @@ from .core_deliberation import (
     repair_reflection_create,
     uncertainty_preview,
 )
+from .core_mind import create_core_mind_route_preview, list_core_mind_route_previews
 from .detached_corpus import detached_corpus_audit
 from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
 from .kernel import kernel_state
+from .my_office_cleanup import clean_up_my_office_residue
 from .native_generation import compose_native_response
 from .paper_map_reconstruction import run_paper_map_reconstruction
 from .pre_transfer_runtime import (
@@ -223,6 +226,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": native_generation_rehearsal_run(conn, payload)}
     if route_key == "native_generation.rehearsal.status":
         return {"route": route_key, "result": native_generation_rehearsal_status(conn)}
+    if route_key == "core_mind.route_preview":
+        return {"route": route_key, "result": create_core_mind_route_preview(conn, payload)}
+    if route_key == "core_mind.route_previews.list":
+        return {"route": route_key, "result": list_core_mind_route_previews(conn, int(payload.get("limit") or 50))}
     if route_key == "vessel.steps_1_8.status":
         return {"route": route_key, "result": steps_1_8_status(conn)}
     if route_key == "vessel.speech_rehearsal.create":
@@ -330,6 +337,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": memory_lifecycle_status(conn)}
     if route_key == "vessel.pre_core_review_packets":
         return {"route": route_key, "result": pre_core_review_packets(conn, int(payload.get("limit") or 80))}
+    if route_key == "vessel.my_office.cleanup_residue":
+        return {"route": route_key, "result": clean_up_my_office_residue(conn, payload)}
     if route_key == "vessel.chronological_corpus.status":
         return {"route": route_key, "result": chronological_corpus_status(conn)}
     if route_key == "vessel.chronological_corpus.preview":
@@ -452,6 +461,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": build_all_teaching_packets(conn, payload)}
     if route_key == "b.teaching_packet.coverage":
         return {"route": route_key, "result": teaching_packet_coverage(conn)}
+    if route_key == "b.android_language_lessons.prepare":
+        return {"route": route_key, "result": prepare_android_language_lessons(conn, payload)}
     if route_key == "b.core_reference.coverage":
         return {"route": route_key, "result": core_reference_coverage(conn)}
     if route_key == "b.teaching_materials.list":
