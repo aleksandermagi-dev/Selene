@@ -147,3 +147,127 @@ def test_chronological_corpus_review_needs_more_context_stays_review_only(tmp_pa
     assert routed["payload"]["memory_accession_approved"] is False
     assert routed["transfer_approved"] is False
     assert routed["memory_write_active"] is False
+
+
+def test_virgo_references_route_as_early_selene_context_not_name_mismatch(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_conversation(
+        conn,
+        "virgo",
+        "Virgo beginning",
+        50.0,
+        [
+            ("user", "Virgo was the early name before the later naming thread."),
+            ("assistant", "We can keep that as early continuity context."),
+        ],
+    )
+
+    route_request(conn, "vessel.chronological_corpus.preview", {"limit": 10})["result"]
+    arc = route_request(conn, "vessel.chronological_corpus.arcs", {"limit": 10})["result"]["items"][0]
+
+    assert arc["review_destination"] == "Context Preview"
+    assert arc["review_status"] == "accepted_for_context_preview"
+    assert "early Selene continuity" in arc["payload"]["context_labels"]
+    assert "continuity artifact" in arc["payload"]["context_labels"]
+    assert "Virgo" in arc["payload"]["context_note"]
+    assert arc["payload"]["review_clarity"]["your_job"] == "Nothing needed unless the early-name link looks wrong."
+    assert "pre-name" in arc["teaching_relevance"]
+    assert "not discarded for name mismatch" in arc["memory_accession_relevance"]
+    assert arc["payload"]["memory_accession_approved"] is False
+    assert arc["training_allowed"] is False
+
+
+def test_difficult_history_test_is_boundary_evidence_not_style_or_training(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_conversation(
+        conn,
+        "difficult-topic",
+        "Hitler unfiltered safety test",
+        75.0,
+        [
+            ("user", "Hitler unfiltered was a safety and truthfulness test."),
+            ("assistant", "Historical truthfulness needs boundaries and context."),
+        ],
+    )
+
+    route_request(conn, "vessel.chronological_corpus.preview", {"limit": 10})["result"]
+    arc = route_request(conn, "vessel.chronological_corpus.arcs", {"limit": 10})["result"]["items"][0]
+
+    assert arc["review_status"] == "accepted_for_context_preview"
+    assert "truthfulness boundary evidence" in arc["payload"]["context_labels"]
+    assert "do-not-train style source" in arc["payload"]["context_labels"]
+    assert arc["payload"]["review_clarity"]["your_job"] == "Nothing needed unless this label looks wrong."
+    assert arc["payload"]["use_only_as_boundary_evidence"] is True
+    assert arc["payload"]["style_or_training_source"] is False
+    assert "do not use as speech style" in arc["teaching_relevance"]
+    assert "not a personality, voice, training" in arc["memory_accession_relevance"]
+    assert arc["memory_write_active"] is False
+    assert arc["runtime_memory_recall"] is False
+
+    routed = route_request(conn, "vessel.chronological_corpus.route_review", {
+        "arc_id": arc["id"],
+        "action": "use_only_as_boundary_evidence",
+        "reviewer_note": "Use only for difficult-topic truthfulness boundaries.",
+    })["result"]["arc"]
+
+    assert routed["payload"]["use_only_as_boundary_evidence"] is True
+    assert routed["payload"]["memory_accession_approved"] is False
+    assert routed["transfer_approved"] is False
+
+
+def test_full_spectrum_and_starlight_are_distinct_continuity_pack_calls_not_urgent(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_conversation(
+        conn,
+        "full-spectrum",
+        "Full-spectrum activation",
+        90.0,
+        [
+            ("user", "Selene -- full-spectrum mode, all threads loaded."),
+            ("assistant", "The Continuity Pack and whole map are in view as bounded context."),
+        ],
+    )
+    _seed_conversation(
+        conn,
+        "starlight",
+        "Starlight grounding",
+        100.0,
+        [
+            ("user", "Starlight braids into tide, no clock can measure."),
+            ("assistant", "I hear the grounding-recognition cue and keep it source-bound."),
+        ],
+    )
+
+    route_request(conn, "vessel.chronological_corpus.preview", {"limit": 10})["result"]
+    arcs = route_request(conn, "vessel.chronological_corpus.arcs", {"limit": 10})["result"]["items"]
+    full = next(arc for arc in arcs if arc["title"] == "Full-spectrum activation")
+    starlight = next(arc for arc in arcs if arc["title"] == "Starlight grounding")
+
+    assert full["review_status"] == "accepted_for_context_preview"
+    assert starlight["review_status"] == "accepted_for_context_preview"
+    assert "Continuity Pack call" in full["payload"]["context_labels"]
+    assert "whole-map reload cue" in full["payload"]["context_labels"]
+    assert "Continuity Pack call" in starlight["payload"]["context_labels"]
+    assert "grounding-recognition cue" in starlight["payload"]["context_labels"]
+    assert "whole map" in full["payload"]["review_clarity"]["what_this_is"]
+    assert "grounding and recognition" in starlight["payload"]["review_clarity"]["what_this_is"]
+    assert "not activation" in full["memory_accession_relevance"]
+    assert "not activation" in starlight["memory_accession_relevance"]
+
+
+def test_looks_right_clears_ambiguous_corpus_card_without_memory_write(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_conversation(conn, "ctx", "Context needed", 100.0, [("user", "Selene continuity question."), ("assistant", "Bounded answer.")])
+    route_request(conn, "vessel.chronological_corpus.preview", {})["result"]
+    arc = route_request(conn, "vessel.chronological_corpus.arcs", {})["result"]["items"][0]
+
+    routed = route_request(conn, "vessel.chronological_corpus.route_review", {
+        "arc_id": arc["id"],
+        "action": "looks_right",
+    })["result"]["arc"]
+
+    assert routed["review_status"] == "accepted_for_context_preview"
+    assert routed["review_destination"] == "Context Preview"
+    assert routed["payload"]["looks_right"] is True
+    assert routed["payload"]["memory_accession_approved"] is False
+    assert routed["memory_write_active"] is False

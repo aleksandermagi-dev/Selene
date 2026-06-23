@@ -598,6 +598,28 @@ CREATE TABLE IF NOT EXISTS c_core_disagreement_appeal_records (
 
 CREATE INDEX IF NOT EXISTS idx_c_core_disagreement_appeal_records_status ON c_core_disagreement_appeal_records(status, review_status);
 
+CREATE TABLE IF NOT EXISTS c_core_mind_route_previews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  prompt TEXT NOT NULL,
+  selected_route TEXT NOT NULL,
+  identity_frame_json TEXT NOT NULL DEFAULT '{}',
+  reasoning_summary TEXT NOT NULL,
+  evidence_used TEXT NOT NULL DEFAULT '[]',
+  uncertainty TEXT NOT NULL DEFAULT '',
+  ethical_boundary_notes TEXT NOT NULL DEFAULT '[]',
+  drift_flags TEXT NOT NULL DEFAULT '[]',
+  next_step TEXT NOT NULL,
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  status TEXT NOT NULL DEFAULT 'core_mind_route_preview_review_only',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_c_core_mind_route_previews_status ON c_core_mind_route_previews(selected_route, review_status);
+
 CREATE TABLE IF NOT EXISTS native_generation_rehearsal_runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   prompt TEXT NOT NULL,

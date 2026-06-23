@@ -283,6 +283,8 @@ def update_evidence_tension_entry(conn: sqlite3.Connection, payload: dict[str, A
         "linked_packet_refs": _json_list(payload.get("linked_packet_refs")) or _json_list(payload_json.get("linked_packet_refs")),
         "context_needed": bool(payload.get("context_needed") or payload.get("return_to_corpus_context")),
         "return_to_corpus_context": bool(payload.get("return_to_corpus_context")),
+        "use_only_as_boundary_evidence": bool(payload.get("use_only_as_boundary_evidence") or payload_json.get("use_only_as_boundary_evidence")),
+        "do_not_use_for_memory": bool(payload.get("do_not_use_for_memory") or payload_json.get("do_not_use_for_memory")),
     })
     review_status = "pending_review" if conclusion == "needs_review" else "review_only"
     review_destination = "Corpus Context" if payload_json["context_needed"] else ("My Office" if conclusion == "needs_review" else "Ledger")

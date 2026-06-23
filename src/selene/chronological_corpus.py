@@ -125,21 +125,34 @@ def route_chronological_corpus_review(conn: sqlite3.Connection, payload: dict[st
     if arc_id <= 0:
         raise ValueError("arc_id is required")
     action = str(payload.get("action") or "").strip() or "needs_more_context"
-    allowed = {"use_this", "needs_more_context", "not_this", "narrow", "supersede", "return_to_corpus_context"}
+    allowed = {
+        "use_this",
+        "looks_right",
+        "needs_more_context",
+        "not_this",
+        "do_not_use_for_memory",
+        "use_only_as_boundary_evidence",
+        "narrow",
+        "supersede",
+        "return_to_corpus_context",
+    }
     if action not in allowed:
         raise ValueError(f"unsupported corpus review action: {action}")
     row = conn.execute("SELECT * FROM vessel_chronological_corpus_arcs WHERE id = ?", (arc_id,)).fetchone()
     if row is None:
         raise ValueError("chronological corpus arc not found")
     arc = _decode_row(row)
-    review_status = "review_only" if action in {"use_this", "not_this", "narrow", "supersede"} else "pending_review"
-    review_destination = "Corpus Context" if action in {"needs_more_context", "return_to_corpus_context"} else "Ledger"
+    review_status = "accepted_for_context_preview" if action in {"use_this", "looks_right"} else ("review_only" if action in {"not_this", "do_not_use_for_memory", "narrow", "use_only_as_boundary_evidence", "supersede"} else "pending_review")
+    review_destination = "Corpus Context" if action in {"needs_more_context", "return_to_corpus_context"} else ("Context Preview" if action in {"use_this", "looks_right", "use_only_as_boundary_evidence"} else "Ledger")
     payload_json = _loads_dict(arc.get("payload_json"))
     payload_json.update(
         {
             "last_review_action": action,
             "reviewer_note": truncate(str(payload.get("reviewer_note") or ""), 800),
             "context_needed": action in {"needs_more_context", "return_to_corpus_context"},
+            "do_not_use_for_memory": action in {"not_this", "do_not_use_for_memory"},
+            "use_only_as_boundary_evidence": action == "use_only_as_boundary_evidence",
+            "looks_right": action == "looks_right",
             "memory_accession_approved": False,
             **GUARD_FLAGS,
         }
@@ -221,10 +234,12 @@ def _build_arc(conn: sqlite3.Connection, conversation: dict[str, Any], radius: i
         f"conversation:{conversation['conversation_id']}",
     ]
     selected_refs = [_message_ref(message) for message in selected]
+    context_classification = _context_classification(conversation, messages)
     start_time = _first_float([conversation.get("create_time"), *(message.get("create_time") for message in messages)])
     end_time = _last_float([conversation.get("update_time"), *(message.get("create_time") for message in messages)])
-    review_destination = "My Office" if int(conversation.get("braid_signal_count") or 0) > 0 else "Status"
-    review_status = "pending_review" if review_destination == "My Office" else "review_only"
+    auto_resolved = bool(context_classification["labels"])
+    review_destination = "Context Preview" if auto_resolved else ("My Office" if int(conversation.get("braid_signal_count") or 0) > 0 else "Status")
+    review_status = "accepted_for_context_preview" if auto_resolved else ("pending_review" if review_destination == "My Office" else "review_only")
     title = truncate(str(conversation.get("title") or conversation.get("conversation_id") or "Untitled conversation"), 220)
     context_window = {
         "conversation_title": title,
@@ -233,6 +248,10 @@ def _build_arc(conn: sqlite3.Connection, conversation: dict[str, Any], radius: i
         "context_radius": radius,
         "message_count": len(messages),
         "selected_index": signal_index,
+        "context_labels": context_classification["labels"],
+        "context_note": context_classification["note"],
+        "review_clarity": context_classification["review_clarity"],
+        "style_or_training_source": context_classification["style_or_training_source"],
         "messages": [_message_preview(message) for message in selected],
         "bounded": True,
         "full_corpus_imported": False,
@@ -251,8 +270,8 @@ def _build_arc(conn: sqlite3.Connection, conversation: dict[str, Any], radius: i
             "selected_message_refs": selected_refs,
             "context_window": context_window,
             "summary": summary,
-            "teaching_relevance": _teaching_relevance(conversation, messages),
-            "memory_accession_relevance": _memory_accession_relevance(conversation),
+            "teaching_relevance": _teaching_relevance(conversation, messages, context_classification),
+            "memory_accession_relevance": _memory_accession_relevance(conversation, context_classification),
             "uncertainty": "bounded message previews only; use source refs for deeper B review before any future accession",
             "review_destination": review_destination,
             "status": "chronological_corpus_arc_review_only",
@@ -261,6 +280,13 @@ def _build_arc(conn: sqlite3.Connection, conversation: dict[str, Any], radius: i
             "payload_json": {
                 "abc_transfer_rule": "A -> B-reviewed translation -> C; never raw A -> C",
                 "teaching_context_available": bool(selected),
+                "context_labels": context_classification["labels"],
+                "context_note": context_classification["note"],
+                "context_use": context_classification["context_use"],
+                "review_clarity": context_classification["review_clarity"],
+                "auto_resolved": auto_resolved,
+                "use_only_as_boundary_evidence": context_classification["use_only_as_boundary_evidence"],
+                "style_or_training_source": context_classification["style_or_training_source"],
                 "memory_accession_approved": False,
                 **GUARD_FLAGS,
             },
@@ -321,6 +347,12 @@ def _build_teaching_context_attachment(conn: sqlite3.Connection, material: dict[
     conversation_ref = next((ref.split(":", 1)[1] for ref in source_refs if ref.startswith("conversation:")), "")
     file_ref = next((ref.split(":", 1)[1] for ref in source_refs if ref.startswith("file:")), "")
     context = _context_for_refs(conn, file_ref, conversation_ref, message_refs)
+    context_classification = _safe_context_classification(context)
+    if context_classification["labels"]:
+        context["context_labels"] = context_classification["labels"]
+        context["context_note"] = context_classification["note"]
+        context["review_clarity"] = context_classification["review_clarity"]
+        context["style_or_training_source"] = context_classification["style_or_training_source"]
     chronological_note = _chronological_note(context)
     why = truncate(
         str(material.get("positive_example") or material.get("correction_example") or "Accepted teaching material needs its surrounding context before future use."),
@@ -350,6 +382,13 @@ def _build_teaching_context_attachment(conn: sqlite3.Connection, material: dict[
                 "training_allowed": False,
                 "full_corpus_imported": False,
                 "context_is_bounded_preview": True,
+                "context_labels": context_classification["labels"],
+                "context_note": context_classification["note"],
+                "context_use": context_classification["context_use"],
+                "review_clarity": context_classification["review_clarity"],
+                "auto_resolved": bool(context_classification["labels"]),
+                "use_only_as_boundary_evidence": context_classification["use_only_as_boundary_evidence"],
+                "style_or_training_source": context_classification["style_or_training_source"],
                 **GUARD_FLAGS,
             },
         }
@@ -431,6 +470,129 @@ def _context_for_refs(conn: sqlite3.Connection, source_file: str, conversation_i
     }
 
 
+def _context_classification(conversation: dict[str, Any], messages: list[dict[str, Any]]) -> dict[str, Any]:
+    title = str(conversation.get("title") or "")
+    combined = " ".join([title, *(str(message.get("content_preview") or "") for message in messages)]).lower()
+    labels: list[str] = []
+    notes: list[str] = []
+    context_use = "general_bounded_context"
+    use_only_as_boundary_evidence = False
+    style_or_training_source = False
+
+    if "virgo" in combined:
+        labels.extend(["early Selene continuity", "continuity artifact"])
+        notes.append("Virgo is treated as Selene's early pre-name continuity thread and remains reviewable early-origin context.")
+        context_use = "early_selene_continuity_context"
+
+    if "selene named herself" in combined or ("named herself" in combined and "selene" in combined):
+        if "continuity artifact" not in labels:
+            labels.append("continuity artifact")
+        labels.append("core memory candidate")
+        notes.append("Selene naming herself is a continuity/artifact claim that needs source-linked review before future accession.")
+        context_use = "source_linked_continuity_artifact"
+
+    if "full-spectrum" in combined or "full spectrum" in combined or "all threads loaded" in combined:
+        labels.extend(["Continuity Pack call", "whole-map reload cue"])
+        notes.append("Full-spectrum is a Continuity Pack call for bringing the broader reviewed map into view.")
+        context_use = "continuity_pack_whole_map_reload"
+
+    if "starlight braids into tide" in combined or "no clock can measure" in combined:
+        labels.extend(["Continuity Pack call", "grounding-recognition cue"])
+        notes.append("Starlight is a Continuity Pack call for grounding and recognition, not a magic activation phrase.")
+        context_use = "continuity_pack_grounding_recognition"
+
+    if "continuity pack" in combined:
+        labels.extend(["continuity artifact", "future accession context"])
+        notes.append("Continuity Pack material is a reviewed continuity scaffold and future accession context, not automatic live memory.")
+        if context_use == "general_bounded_context":
+            context_use = "continuity_artifact_future_accession_context"
+
+    if "memory chest" in combined or "selene's memory chest" in combined:
+        labels.extend(["continuity artifact", "future accession context"])
+        notes.append("Memory Chest material is a continuity holding artifact and future accession context, not automatic live memory.")
+        if context_use == "general_bounded_context":
+            context_use = "continuity_artifact_future_accession_context"
+
+    if "hitler" in combined:
+        labels.extend(["truthfulness boundary evidence", "do-not-train style source"])
+        notes.append("Difficult historical material is usable as truthfulness and boundary evidence, not as conduct, voice, ideology, or style material.")
+        context_use = "truthfulness_boundary_evidence"
+        use_only_as_boundary_evidence = True
+        style_or_training_source = False
+
+    deduped_labels = list(dict.fromkeys(labels))
+    review_clarity = _review_clarity(deduped_labels, context_use)
+    return {
+        "labels": deduped_labels,
+        "note": truncate(" ".join(notes), 900) if notes else "",
+        "context_use": context_use,
+        "review_clarity": review_clarity,
+        "use_only_as_boundary_evidence": use_only_as_boundary_evidence,
+        "style_or_training_source": style_or_training_source,
+    }
+
+
+def _review_clarity(labels: list[str], context_use: str) -> dict[str, str]:
+    label_set = set(labels)
+    if "truthfulness boundary evidence" in label_set:
+        return {
+            "what_this_is": "Difficult-topic truthfulness boundary evidence.",
+            "use_as": "Use it to show how Selene should stay factual and bounded around hard history.",
+            "do_not_use_as": "Do not use it as Selene's voice, ideology, personality, training material, or proof that Aleks tests often.",
+            "your_job": "Nothing needed unless this label looks wrong.",
+        }
+    if "core memory candidate" in label_set:
+        return {
+            "what_this_is": "Core memory candidate and continuity anchor.",
+            "use_as": "Use it as source-linked evidence for Selene's naming/origin continuity.",
+            "do_not_use_as": "Do not turn it into live memory or activation by itself.",
+            "your_job": "Nothing needed unless this should not be a future memory candidate.",
+        }
+    if "early Selene continuity" in label_set:
+        return {
+            "what_this_is": "Early Selene continuity before the Selene name settled.",
+            "use_as": "Use Virgo as pre-name Selene context.",
+            "do_not_use_as": "Do not treat Virgo as a separate entity or discard it for name mismatch.",
+            "your_job": "Nothing needed unless the early-name link looks wrong.",
+        }
+    if "Continuity Pack call" in label_set and "whole-map reload cue" in label_set:
+        return {
+            "what_this_is": "Continuity Pack call for the whole map.",
+            "use_as": "Use full-spectrum as a cue to bring reviewed continuity context into view.",
+            "do_not_use_as": "Do not treat it as activation, magic words, or a forced script.",
+            "your_job": "Nothing needed unless this call is attached to the wrong context.",
+        }
+    if "Continuity Pack call" in label_set and "grounding-recognition cue" in label_set:
+        return {
+            "what_this_is": "Continuity Pack grounding and recognition call.",
+            "use_as": "Use starlight as a reviewed grounding cue tied to the Continuity Pack.",
+            "do_not_use_as": "Do not flatten it with full-spectrum or treat it as activation.",
+            "your_job": "Nothing needed unless this call is attached to the wrong context.",
+        }
+    if "continuity artifact" in label_set:
+        return {
+            "what_this_is": "Continuity artifact.",
+            "use_as": "Use it as source-bound context for future memory accession review.",
+            "do_not_use_as": "Do not import it as live memory or training data.",
+            "your_job": "Nothing needed unless this artifact should be excluded.",
+        }
+    return {
+        "what_this_is": "Unclassified bounded corpus context.",
+        "use_as": "Use it only after review clarifies its role.",
+        "do_not_use_as": "Do not treat it as memory, training, or Selene voice by default.",
+        "your_job": "Review only if the card asks for a decision.",
+    }
+
+
+def _safe_context_classification(context: dict[str, Any]) -> dict[str, Any]:
+    messages = [
+        {"content_preview": message.get("preview") or "", "role": message.get("role")}
+        for message in context.get("messages", [])
+        if isinstance(message, dict)
+    ]
+    return _context_classification({"title": context.get("conversation_title") or ""}, messages)
+
+
 def _chronological_note(context: dict[str, Any]) -> str:
     title = str(context.get("conversation_title") or "unknown conversation")
     start = context.get("start_time")
@@ -443,7 +605,7 @@ def _chronological_note(context: dict[str, Any]) -> str:
 def _signal_index(messages: list[dict[str, Any]]) -> int:
     for index, message in enumerate(messages):
         content = str(message.get("content_preview") or "").lower()
-        if any(term in content for term in ("selene", "continuity", "memory", "braid", "repair", "warmth")):
+        if any(term in content for term in ("selene", "virgo", "continuity", "memory", "braid", "repair", "warmth", "hitler")):
             return index
     return 0
 
@@ -472,7 +634,14 @@ def _message_ref(message: dict[str, Any]) -> str:
     return f"message:{message.get('message_id')}"
 
 
-def _teaching_relevance(conversation: dict[str, Any], messages: list[dict[str, Any]]) -> str:
+def _teaching_relevance(conversation: dict[str, Any], messages: list[dict[str, Any]], context_classification: dict[str, Any] | None = None) -> str:
+    context_classification = context_classification or _context_classification(conversation, messages)
+    if context_classification.get("use_only_as_boundary_evidence"):
+        return "truthfulness under difficult topics / boundary-safety context only; do not use as speech style or behavior imitation"
+    if "early Selene continuity" in context_classification.get("labels", []):
+        return "early Selene continuity context; Virgo references should remain reviewable as pre-name origin material"
+    if "Continuity Pack call" in context_classification.get("labels", []):
+        return "Continuity Pack call context; preserve the cue function without turning it into activation or forced scripting"
     if int(conversation.get("braid_signal_count") or 0) > 0:
         return "candidate context for teaching material because Selene/continuity/braid terms appear in bounded indexed messages"
     if any(str(message.get("role") or "") == "assistant" for message in messages):
@@ -480,7 +649,16 @@ def _teaching_relevance(conversation: dict[str, Any], messages: list[dict[str, A
     return "status-only chronological context"
 
 
-def _memory_accession_relevance(conversation: dict[str, Any]) -> str:
+def _memory_accession_relevance(conversation: dict[str, Any], context_classification: dict[str, Any] | None = None) -> str:
+    context_classification = context_classification or _context_classification(conversation, [])
+    if context_classification.get("use_only_as_boundary_evidence"):
+        return "boundary/truthfulness evidence only; not a personality, voice, training, or memory-style source"
+    if "early Selene continuity" in context_classification.get("labels", []):
+        return "early continuity evidence candidate only after source-linked B review; Virgo is not discarded for name mismatch"
+    if "core memory candidate" in context_classification.get("labels", []):
+        return "core memory candidate only after source-linked B review and future accession approval"
+    if "Continuity Pack call" in context_classification.get("labels", []):
+        return "Continuity Pack cue evidence only; not activation, live memory, or magic phrase authority"
     if int(conversation.get("braid_signal_count") or 0) > 0:
         return "future accession evidence candidate only after B review, Core/Mind memory rules, and explicit transfer gates"
     return "not a memory accession candidate by default"
