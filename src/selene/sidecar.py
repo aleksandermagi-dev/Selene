@@ -381,6 +381,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "core_mind.governance_report", qs)["result"]))
         elif parsed.path == "/api/core-mind/transfer-readiness-preview":
             self._send(*json_bytes(route_request(conn, "core_mind.transfer_readiness_preview")["result"]))
+        elif parsed.path == "/api/core-mind/runtime-readiness":
+            self._send(*json_bytes(route_request(conn, "core_mind.runtime_readiness")["result"]))
+        elif parsed.path == "/api/core-mind/runtime-records":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "core_mind.runtime_records.list", {"limit": int(qs["limit"]) if qs.get("limit") else 80})["result"]))
         elif parsed.path == "/api/vessel/steps-1-8/status":
             self._send(*json_bytes(route_request(conn, "vessel.steps_1_8.status")["result"]))
         elif parsed.path == "/api/vessel/speech-rehearsals":
@@ -737,6 +742,46 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/core-mind/governance-trials/run":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "core_mind.governance_trials.run", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/core-mind/context/compose":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "core_mind.context.compose", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/core-mind/session-state/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "core_mind.session_state.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/core-mind/response-shape/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "core_mind.response_shape.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/core-mind/evaluator/review-draft":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "core_mind.evaluator.review_draft", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/core-mind/recovery/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "core_mind.recovery.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/core-mind/activation-governance/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "core_mind.activation_governance.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/core-mind/case-law/propose":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "core_mind.case_law.propose", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/core-mind/memory-index/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "core_mind.memory_index.preview", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/reasoning-artifact":
