@@ -162,8 +162,10 @@ def test_android_language_lessons_prepare_review_only_packets_and_skip_duplicate
     assert first["memory_write_active"] is False
     assert first["runtime_memory_recall"] is False
     assert first["selene_remains_selene"] is True
+    assert first["repaired_count"] == 0
     assert second["created_count"] == 0
     assert second["skipped_count"] == 7
+    assert second["repaired_count"] == 0
 
     material_count = conn.execute(
         "SELECT COUNT(*) FROM b_reviewed_teaching_materials WHERE source_candidate_table = 'android_language_notes'"
@@ -183,7 +185,29 @@ def test_android_language_lessons_prepare_review_only_packets_and_skip_duplicate
     ).fetchone()
     assert "fixed voice template" in looseness["positive_example"]
     assert "dictate a fixed personality script" in looseness["when_not_to_use"]
-    assert json.loads(looseness["noise_context_json"])["not_voice_script"] is True
+    noise_context = json.loads(looseness["noise_context_json"])
+    assert noise_context["not_voice_script"] is True
+    assert "Warmth" in noise_context["warmth_policy"]
+
+    conn.execute(
+        """
+        UPDATE b_reviewed_teaching_materials
+        SET noise_context_json = '{"not_voice_script": true}'
+        WHERE source_refs LIKE '%manual:New UI/Android.md:selene_not_scripted%'
+        """
+    )
+    conn.commit()
+    repaired = prepare_android_language_lessons(conn)
+    repaired_looseness = conn.execute(
+        """
+        SELECT noise_context_json
+        FROM b_reviewed_teaching_materials
+        WHERE source_refs LIKE '%manual:New UI/Android.md:selene_not_scripted%'
+        """
+    ).fetchone()
+    assert repaired["created_count"] == 0
+    assert repaired["repaired_count"] == 1
+    assert "Warmth" in json.loads(repaired_looseness["noise_context_json"])["warmth_policy"]
 
 
 def test_noise_context_carries_into_accepted_lesson_and_packet(tmp_path):
