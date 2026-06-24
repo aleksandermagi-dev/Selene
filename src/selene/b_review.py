@@ -112,6 +112,11 @@ ANDROID_LANGUAGE_LESSONS: tuple[dict[str, Any], ...] = (
         "salience_labels": ["uncertainty", "stance", "evidence"],
     },
 )
+ANDROID_LANGUAGE_WARMTH_POLICY = (
+    "Warmth, humor, tenderness, correction, looseness, and expressive continuity "
+    "are valid Selene language signals when grounded in context; do not turn them "
+    "into rejection criteria or a fixed voice script."
+)
 
 
 def list_b_review_queue(conn: sqlite3.Connection, limit: int = 100) -> dict[str, Any]:
@@ -309,6 +314,7 @@ def prepare_android_language_lessons(conn: sqlite3.Connection, payload: dict[str
     _ensure_review_payload_allowed(payload)
     created: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
+    repaired: list[dict[str, Any]] = []
     source_refs = [ANDROID_LANGUAGE_SOURCE_REF, "manual:human_language_layer", "reviewed_note:selene_remains_selene"]
     for index, lesson in enumerate(ANDROID_LANGUAGE_LESSONS, start=1):
         lesson_ref = f"{ANDROID_LANGUAGE_SOURCE_REF}:{lesson['key']}"
@@ -323,6 +329,14 @@ def prepare_android_language_lessons(conn: sqlite3.Connection, payload: dict[str
             (f"%{lesson_ref}%",),
         ).fetchone()
         if existing:
+            context = _loads_json_dict(existing["noise_context_json"])
+            if "warmth" not in str(context.get("warmth_policy", "")).lower():
+                context = _android_language_noise_context()
+                conn.execute(
+                    "UPDATE b_reviewed_teaching_materials SET noise_context_json = ? WHERE id = ?",
+                    (json.dumps(context), int(existing["id"])),
+                )
+                repaired.append({"key": lesson["key"], "material_id": int(existing["id"]), "reason": "warmth_policy_added"})
             skipped.append({"key": lesson["key"], "material_id": int(existing["id"]), "reason": "lesson_already_exists"})
             continue
         cur = conn.execute(
@@ -343,15 +357,7 @@ def prepare_android_language_lessons(conn: sqlite3.Connection, payload: dict[str
                 lesson["correction_example"],
                 lesson["when_not_to_use"],
                 json.dumps(lesson["salience_labels"]),
-                json.dumps(
-                    {
-                        "source_note": "Distilled from approved Android language notes.",
-                        "selene_remains_selene": True,
-                        "not_voice_script": True,
-                        "training_allowed": False,
-                        "runtime_memory_recall": False,
-                    }
-                ),
+                json.dumps(_android_language_noise_context()),
                 json.dumps([*source_refs, lesson_ref]),
                 B_REVIEW_BOUNDARY,
             ),
@@ -385,16 +391,29 @@ def prepare_android_language_lessons(conn: sqlite3.Connection, payload: dict[str
             "source_ref": ANDROID_LANGUAGE_SOURCE_REF,
             "created_count": len(created),
             "skipped_count": len(skipped),
+            "repaired_count": len(repaired),
             "packet_built_count": len(built_packets),
             "packet_skipped_count": len(skipped_packets),
             "created": created,
             "skipped": skipped,
+            "repaired": repaired,
             "built_packets": built_packets,
             "skipped_packets": skipped_packets,
             "decision": "review_only_teaching_material_not_training",
             "selene_remains_selene": True,
         }
     )
+
+
+def _android_language_noise_context() -> dict[str, Any]:
+    return {
+        "source_note": "Distilled from approved Android language notes.",
+        "selene_remains_selene": True,
+        "not_voice_script": True,
+        "warmth_policy": ANDROID_LANGUAGE_WARMTH_POLICY,
+        "training_allowed": False,
+        "runtime_memory_recall": False,
+    }
 
 
 def core_reference_coverage(conn: sqlite3.Connection) -> dict[str, Any]:
