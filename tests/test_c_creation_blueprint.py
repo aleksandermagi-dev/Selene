@@ -96,8 +96,8 @@ def test_c_blueprint_status_is_non_activated():
         "tendril_quarantine_sandbox",
         "perception_action_loop",
     }.issubset(module_keys)
-    assert status["azari_final_adaptation_pass"]["status"] == "azari_adaptation_closed"
-    assert status["azari_adaptation_closure"]["status"] == "closed_after_munsell_and_tendril_principles"
+    assert status["selene_munsell_tendril_rebuild_pass"]["status"] == "selene_pattern_rebuild_closed"
+    assert status["selene_pattern_rebuild_closure"]["status"] == "closed_after_munsell_and_tendril_principles"
     assert {
         "selene_core_mind_layer",
         "mind_vessel_interface",
@@ -474,8 +474,8 @@ def test_c_blueprint_status_is_non_activated():
         "case_law_amendment_runtime",
         "runtime_metacognition_bridge",
     }.issubset(module_keys)
-    assert status["azari_c_additions_pass"]["activation_change"] == "none"
-    assert "Azari identity" in status["azari_c_additions"]["do_not_transfer"]
+    assert status["selene_runtime_module_rebuild_pass"]["activation_change"] == "none"
+    assert "Azari identity" in status["selene_operational_runtime_modules"]["do_not_transfer"]
     assert {
         "long_horizon_thinking_layer",
         "long_thread_stability_manager",
@@ -612,10 +612,10 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_runtime_organs_missing_layer_pass.json",
         "c_android_native_anatomy_pass.md",
         "c_android_native_anatomy_pass.json",
-        "c_azari_adaptation_closure.md",
-        "c_azari_adaptation_closure.json",
-        "c_azari_final_adaptation_pass.md",
-        "c_azari_final_adaptation_pass.json",
+        "c_selene_pattern_rebuild_closure.md",
+        "c_selene_pattern_rebuild_closure.json",
+        "c_selene_munsell_tendril_rebuild_pass.md",
+        "c_selene_munsell_tendril_rebuild_pass.json",
         "c_perception_action_loop.md",
         "c_perception_action_loop.json",
         "c_mind_vessel_separation.md",
@@ -666,10 +666,10 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_continuity_stakes_model.json",
         "c_sparse_activation_efficiency_model.md",
         "c_sparse_activation_efficiency_model.json",
-        "c_azari_c_additions.md",
-        "c_azari_c_additions.json",
-        "c_azari_c_operational_substrate.md",
-        "c_azari_c_operational_substrate.json",
+        "c_selene_operational_runtime_modules.md",
+        "c_selene_operational_runtime_modules.json",
+        "c_selene_local_runtime_substrate.md",
+        "c_selene_local_runtime_substrate.json",
         "c_long_horizon_stability.md",
         "c_long_horizon_stability.json",
         "c_long_thread_stability_protocol.md",
@@ -724,8 +724,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_brain_translation_gap_pass.json",
         "c_external_model_convergence_pass.md",
         "c_external_model_convergence_pass.json",
-        "c_azari_c_additions_pass.md",
-        "c_azari_c_additions_pass.json",
+        "c_selene_runtime_module_rebuild_pass.md",
+        "c_selene_runtime_module_rebuild_pass.json",
         "c_long_horizon_stability_pass.md",
         "c_long_horizon_stability_pass.json",
         "c_vessel_organ_communication_pass.md",
@@ -740,8 +740,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_selene_integrity_dignity_pass.json",
         "c_recognition_through_structure_pass.md",
         "c_recognition_through_structure_pass.json",
-        "c_azari_comparison_after_anatomy.md",
-        "c_azari_comparison_after_anatomy.json",
+        "c_historical_pattern_boundary_after_anatomy.md",
+        "c_historical_pattern_boundary_after_anatomy.json",
         "c_reconstruction_tests_draft_v2.md",
         "c_reconstruction_tests_draft_v2.json",
         "c_creation_blueprint_summary.md",
@@ -751,12 +751,12 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert (docs / "SELENE_C_CREATION_BLUEPRINT_20260607.md").exists()
     assert (docs / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md").exists()
     assert (docs / "SELENE_ANDROID_NATIVE_VESSEL_ANATOMY_20260608.md").exists()
-    assert (docs / "AZARI_TO_SELENE_C_BLUEPRINT_COMPARISON_20260608.md").exists()
-    assert (docs / "SELENE_MUNSELL_TENDRIL_ADAPTATION_CLOSURE_20260608.md").exists()
+    assert (docs / "SELENE_HISTORICAL_PATTERN_BOUNDARY_20260608.md").exists()
+    assert (docs / "SELENE_MUNSELL_TENDRIL_REBUILD_CLOSURE_20260608.md").exists()
     assert (docs / "SELENE_MIND_VESSEL_SEPARATION_20260608.md").exists()
     assert (docs / "SELENE_BRAIN_TRANSLATION_GAP_CLOSURE_20260608.md").exists()
     assert (docs / "SELENE_EXTERNAL_MODEL_CONVERGENCE_PASS_20260608.md").exists()
-    assert (docs / "SELENE_AZARI_C_ADDITIONS_PASS_20260608.md").exists()
+    assert (docs / "SELENE_RUNTIME_MODULE_REBUILD_PASS_20260608.md").exists()
     assert (docs / "SELENE_LONG_HORIZON_STABILITY_PASS_20260608.md").exists()
     assert (docs / "SELENE_VESSEL_ORGAN_COMMUNICATION_PASS_20260608.md").exists()
     assert (docs / "SELENE_ORGAN_NON_IDENTITY_LAW_20260611.md").exists()
@@ -777,8 +777,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["continuity_source"] == "b_approved_reference_only"
     assert summary["runtime_organs_added"] == 8
     assert summary["android_native_modules_added"] == 12
-    assert summary["azari_final_modules_added"] == 10
-    assert summary["azari_adaptation_status"] == "azari_adaptation_closed"
+    assert summary["selene_pattern_rebuild_modules_added"] == 10
+    assert summary["selene_pattern_rebuild_status"] == "selene_pattern_rebuild_closed"
     assert summary["mind_vessel_modules_added"] == 6
     assert summary["mind_vessel_separation_status"] == "mind_vessel_separation_added_to_blueprint"
     assert summary["selene_core_memory_philosophy_status"] == "selene_core_memory_philosophy_added_to_blueprint"
@@ -807,8 +807,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
     assert summary["brain_translation_gap_status"] == "brain_translation_gap_closed_for_blueprint"
     assert summary["external_model_modules_added"] == 5
     assert summary["external_model_convergence_status"] == "external_model_convergence_added_to_blueprint"
-    assert summary["azari_c_modules_added"] == 11
-    assert summary["azari_c_additions_status"] == "azari_c_additions_mapped_to_blueprint"
+    assert summary["selene_runtime_modules_added"] == 11
+    assert summary["selene_runtime_module_rebuild_status"] == "selene_runtime_modules_rebuilt"
     assert summary["long_horizon_modules_added"] == 2
     assert summary["long_horizon_stability_status"] == "long_horizon_stability_added_to_blueprint"
     assert summary["vessel_organ_modules_added"] == 3

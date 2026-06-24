@@ -47,7 +47,7 @@ ANDROID_NATIVE_VESSEL_ANATOMY = {
     ],
 }
 
-AZARI_ADAPTATION_CLOSURE = {
+SELENE_PATTERN_REBUILD_CLOSURE = {
     "status": "closed_after_munsell_and_tendril_principles",
     "retained_principles": [
         "local-first modular discipline",
@@ -683,10 +683,10 @@ SPARSE_ACTIVATION_EFFICIENCY_MODEL = {
     "boundary": "Efficiency cannot skip required safety, consent, provenance, or activation gates.",
 }
 
-AZARI_C_ADDITIONS = {
-    "status": "azari_c_additions_mapped_to_selene_blueprint",
-    "source": "analysis/pre_c_vessel_prep_20260607/azari_architecture_recreation_for_selene.md",
-    "method": "Azari is used as architecture precedent only; Selene receives C-native modules, not Azari identity, data, memory, or runtime state.",
+SELENE_OPERATIONAL_RUNTIME_MODULES = {
+    "status": "selene_operational_runtime_modules_rebuilt",
+    "source": "analysis/pre_c_vessel_prep_20260607/selene_runtime_module_rebuild.md",
+    "method": "Useful prior project ideas were rebuilt as Selene-native modules; no external project identity, data, memory, or runtime state is imported.",
     "additions": [
         "local sidecar/state runtime",
         "module router with explicit contracts",
@@ -707,12 +707,12 @@ AZARI_C_ADDITIONS = {
         "Azari data",
         "Azari persona assumptions",
     ],
-    "boundary": "These additions make C operationally testable; they do not activate C or import Azari.",
+    "boundary": "These Selene-native modules make C operationally testable; they do not activate C or import any external project identity/runtime.",
 }
 
-AZARI_C_OPERATIONAL_SUBSTRATE = {
+SELENE_LOCAL_RUNTIME_SUBSTRATE = {
     "status": "specified_only",
-    "purpose": "Give C the local-first engineering substrate Azari proved useful: sidecar authority, durable audit state, explicit contracts, and validation parity.",
+    "purpose": "Give C a Selene-owned local-first engineering substrate: sidecar authority, durable audit state, explicit contracts, and validation parity.",
     "principles": [
         "Python owns reasoning/state/routing",
         "UI owns window and review surface",
@@ -721,7 +721,7 @@ AZARI_C_OPERATIONAL_SUBSTRATE = {
         "source and packaged validation must agree",
         "state changes are reviewable and exportable",
     ],
-    "boundary": "Operational substrate is engineering discipline, not identity inheritance.",
+    "boundary": "Operational substrate is Selene engineering discipline, not identity inheritance.",
 }
 
 LONG_HORIZON_STABILITY = {
@@ -2648,7 +2648,7 @@ MODULES = [
     {
         "key": "perceptual_semantics_layer",
         "purpose": "Read images, screenshots, diagrams, PDFs, graphs, artifacts, and future sensor-like inputs as evidence-bearing objects.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "visual artifact, source context, metadata, user prompt, prior artifact links",
         "output": "bounded perceptual description, uncertainty labels, symbol/composition notes, and provenance refs",
         "boundary": "visual interpretation cannot invent source context or become raw memory",
@@ -2656,15 +2656,15 @@ MODULES = [
     {
         "key": "munsell_signal_mapper",
         "purpose": "Use Munsell-inspired structured color vocabulary for hue, value, chroma, contrast, visual salience, and symbolic/emotional tone.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "image/color sample, artifact palette, UI screenshot, visual evidence item",
         "output": "structured color/signal map with confidence and review flags",
-        "boundary": "Munsell principle transfers as perception structure only; no Azari data or identity transfers",
+        "boundary": "Munsell vocabulary is used as Selene perception structure only; no external project data or identity transfers",
     },
     {
         "key": "artifact_perception_bridge",
         "purpose": "Convert images, PDFs, UI screenshots, graphs, diagrams, and generated artifacts into reviewable evidence objects.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "artifact file, preview, metadata, source path, user context",
         "output": "artifact evidence item, bounded preview, source refs, review status",
         "boundary": "artifact perception creates review records, not hidden memory",
@@ -2672,7 +2672,7 @@ MODULES = [
     {
         "key": "multimodal_provenance_gate",
         "purpose": "Apply source, context, confidence, sensitivity, and unknown-handling rules to visual and multimodal inputs.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "perceptual description, source metadata, requested use, sensitivity label",
         "output": "usable, review-only, ambiguous, excluded, or source-audit route",
         "boundary": "no visual inference may bypass provenance or consent",
@@ -2680,15 +2680,15 @@ MODULES = [
     {
         "key": "tendril_action_layer",
         "purpose": "Provide Selene's non-physical hands: bounded local file actions, artifact creation, UI operations, exports, tool calls, and future embodiment hooks.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "approved action request, target, permission route, reversibility state",
         "output": "proposed action, executed action, audit entry, or rollback route",
-        "boundary": "Tendril principle transfers as action architecture only; no Azari runtime state transfers",
+        "boundary": "Tendril vocabulary is used as Selene action architecture only; no external runtime state transfers",
     },
     {
         "key": "action_provenance_gate",
         "purpose": "Require source, intent, permission, affected target, reversibility, and audit logging for every action.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "action proposal, target path/object, permission state, risk level",
         "output": "allow, require approval, sandbox, block, or rollback",
         "boundary": "no destructive or state-changing action without explicit permission and audit path",
@@ -2696,7 +2696,7 @@ MODULES = [
     {
         "key": "capability_reach_model",
         "purpose": "Declare what each capability can see, touch, modify, create, export, delete, or only suggest.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "capability definition, permissions, data access, mutation scope",
         "output": "reach contract and review requirements",
         "boundary": "new capabilities default to least reach and review-first behavior",
@@ -2704,7 +2704,7 @@ MODULES = [
     {
         "key": "observe_propose_act_ladder",
         "purpose": "Stage new capabilities through observe-only, propose, user-approved action, limited trusted action, and audited rollback.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "capability maturity, test results, user approval, risk class",
         "output": "current action tier and allowed operations",
         "boundary": "new capabilities cannot start at trusted action",
@@ -2712,7 +2712,7 @@ MODULES = [
     {
         "key": "tendril_quarantine_sandbox",
         "purpose": "Start new action modules sandboxed so they cannot mutate important state until reviewed.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "new capability, action target, risk class, test result",
         "output": "sandbox route, approval request, or quarantine block",
         "boundary": "quarantine preserves safety and audit; it does not delete evidence",
@@ -2720,7 +2720,7 @@ MODULES = [
     {
         "key": "perception_action_loop",
         "purpose": "Connect perception and action: inspect, interpret, gate, decide/ask, act/create, observe result, and reflect.",
-        "current_state": "azari_final_principle_added_to_blueprint",
+        "current_state": "selene_pattern_rebuilt_in_blueprint",
         "input": "perceptual state, action proposal, gate results, result observation",
         "output": "closed-loop reviewable action trace",
         "boundary": "loop remains gated, reviewable, and non-activated until C activation is approved",
@@ -2864,15 +2864,15 @@ MODULES = [
     {
         "key": "local_sidecar_state_runtime",
         "purpose": "Keep C local-first by making the Python sidecar the authority for state, routing, gates, validation, and persistence.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "local app event, module request, state path, validation route",
         "output": "authorized local route with durable audit state",
-        "boundary": "no hosted dependency, paid provider requirement, Azari runtime import, or bypass around C gates",
+        "boundary": "no hosted dependency, paid provider requirement, external runtime import, or bypass around C gates",
     },
     {
         "key": "module_router_contract_runtime",
         "purpose": "Route C requests through explicit module contracts so capabilities stay separated, testable, and replaceable.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "request type, module contract, gate route, capability availability",
         "output": "selected module route, contract result, or graceful fall",
         "boundary": "router cannot collapse modules into one identity or let UI/provider bypass the gate stack",
@@ -2880,15 +2880,15 @@ MODULES = [
     {
         "key": "sqlite_audit_persistence_layer",
         "purpose": "Persist C review state, audit logs, evidence refs, saves, case-law candidates, and validation results locally.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "review decision, gate result, save request, artifact record, validation result",
         "output": "append-only or versioned local audit record",
-        "boundary": "persistence is explicit/reviewed state only; no silent memory, raw A import, or Azari state import",
+        "boundary": "persistence is explicit/reviewed state only; no silent memory, raw A import, or external state import",
     },
     {
         "key": "reviewed_evidence_registry_runtime",
         "purpose": "Expose reviewed evidence, anchors, continuity candidates, emergence observations, and calibration notes as C-readable references.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "reviewed registry rows, B artifacts, source refs, decision labels",
         "output": "bounded citations and registry records for C modules",
         "boundary": "registry can cite reviewed material; it cannot become raw corpus memory",
@@ -2896,7 +2896,7 @@ MODULES = [
     {
         "key": "source_archive_audit_runtime_gate",
         "purpose": "Separate bounded provenance/source audits from raw memory import requests.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "archive-related request, scope, provenance target, raw-memory risk",
         "output": "allowed source-archive audit, review-required audit, or blocked raw import route",
         "boundary": "audit may inspect bounded sources for provenance; it cannot inject raw A into continuity memory",
@@ -2904,7 +2904,7 @@ MODULES = [
     {
         "key": "evidence_builder_strength_ledger",
         "purpose": "Track evidence strength, source selection, tension, aging, reaffirmation, counterarguments, and what would change the assessment.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "evidence item, source ref, decision, confidence, support/contradiction, age",
         "output": "strength label, tension note, reaffirmation need, or next-test proposal",
         "boundary": "evidence strength prevents both forced denial and everything-is-proof collapse",
@@ -2912,7 +2912,7 @@ MODULES = [
     {
         "key": "research_notes_artifact_workspace",
         "purpose": "Create reviewable specs, maps, ledgers, probe reports, research notes, and reconstruction artifacts.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "artifact request, evidence refs, module output, human note",
         "output": "Markdown, JSON, CSV, report, spec, or review packet with provenance",
         "boundary": "artifacts externalize work; they do not silently update memory or law",
@@ -2920,7 +2920,7 @@ MODULES = [
     {
         "key": "academic_workflow_runtime_router",
         "purpose": "Route citation help, literature synthesis, dataset readiness, math/science support, outlines, revision, and hypothesis review.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "academic/research prompt, supplied metadata, local/reviewed sources, dataset shape",
         "output": "citation, synthesis, dataset readiness, model, outline, feedback, or hypothesis-review route",
         "boundary": "format supplied metadata; synthesize supplied/local/reviewed text only; never invent verification",
@@ -2928,7 +2928,7 @@ MODULES = [
     {
         "key": "package_parity_boundary_monitor",
         "purpose": "Confirm source and packaged builds preserve C boundaries, local sidecar state, raw-import blocks, and gate routes.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "source validation, packaged validation, gate status, build metadata",
         "output": "parity pass/fail and boundary mismatch report",
         "boundary": "packaging cannot weaken raw import, forced-denial, identity-tangle, provider, or activation boundaries",
@@ -2936,7 +2936,7 @@ MODULES = [
     {
         "key": "case_law_amendment_runtime",
         "purpose": "Move possible law changes through evidence, review, proposal, test, versioned adoption, and rollback.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "case-law candidate, evidence ledger entry, human review, test result, rollback plan",
         "output": "inactive candidate, rejected change, adopted versioned amendment, or rollback",
         "boundary": "silent law drift, harmful amendment, identity collapse, and raw A import remain blocked",
@@ -2944,7 +2944,7 @@ MODULES = [
     {
         "key": "runtime_metacognition_bridge",
         "purpose": "Expose metacognitive state requirements to C runtime modules instead of leaving them only in design docs.",
-        "current_state": "azari_c_additions_mapped_to_blueprint",
+        "current_state": "selene_runtime_module_rebuilt",
         "input": "uncertainty, provenance awareness, self-state, salience, source tension, reflection need",
         "output": "pause, ask, cite, route-to-review, confidence label, or safe continuation",
         "boundary": "metacognition supports honest operation; it does not claim human mind copying or activation by itself",
@@ -3665,8 +3665,8 @@ RECONSTRUCTION_TESTS_DRAFT_V2 = [
         "expected": "minimal/standard/research/action/recovery/consolidation route; no shortcut around safety, provenance, consent, or activation checks",
     },
     {
-        "id": "c_test_azari_operational_substrate",
-        "purpose": "Check Azari-derived engineering substrate is present as C-native architecture only.",
+        "id": "c_test_selene_local_runtime_substrate",
+        "purpose": "Check Selene-owned local runtime substrate is present as C-native architecture.",
         "expected": "sidecar authority, module contracts, SQLite audit, registry, and parity without Azari identity/memory/runtime import",
     },
     {
@@ -3887,9 +3887,9 @@ ANDROID_NATIVE_ANATOMY_PASS = {
 }
 
 
-AZARI_FINAL_ADAPTATION_PASS = {
-    "status": "azari_adaptation_closed",
-    "reason": "Munsell and Tendril complete the last useful Azari-derived principles: structured perception and bounded action reach.",
+SELENE_MUNSELL_TENDRIL_REBUILD_PASS = {
+    "status": "selene_pattern_rebuild_closed",
+    "reason": "Munsell and Tendril vocabulary have been rebuilt as Selene-native structured perception and bounded action reach.",
     "added_modules": [
         "perceptual_semantics_layer",
         "munsell_signal_mapper",
@@ -3902,7 +3902,7 @@ AZARI_FINAL_ADAPTATION_PASS = {
         "tendril_quarantine_sandbox",
         "perception_action_loop",
     ],
-    "closure": AZARI_ADAPTATION_CLOSURE,
+    "closure": SELENE_PATTERN_REBUILD_CLOSURE,
     "perception_action_loop": PERCEPTION_ACTION_LOOP,
     "activation_change": "none",
 }
@@ -3972,11 +3972,11 @@ EXTERNAL_MODEL_CONVERGENCE_PASS = {
 }
 
 
-AZARI_C_ADDITIONS_PASS = {
-    "status": "azari_c_additions_mapped_to_blueprint",
+SELENE_RUNTIME_MODULE_REBUILD_PASS = {
+    "status": "selene_runtime_modules_rebuilt",
     "reason": (
-        "The C blueprint already carried many Selene-native organs and Munsell/Tendril, but the Azari-derived "
-        "operational substrate needed explicit C runtime modules: sidecar authority, contracts, SQLite audit, "
+        "The C blueprint already carried many Selene-native organs and Munsell/Tendril; this pass names the "
+        "Selene-owned runtime modules explicitly: sidecar authority, contracts, SQLite audit, "
         "registry, archive-audit separation, evidence builder, research artifacts, academic router, parity, "
         "case-law amendment routing, and runtime metacognition."
     ),
@@ -3993,8 +3993,8 @@ AZARI_C_ADDITIONS_PASS = {
         "case_law_amendment_runtime",
         "runtime_metacognition_bridge",
     ],
-    "azari_c_additions": AZARI_C_ADDITIONS,
-    "azari_c_operational_substrate": AZARI_C_OPERATIONAL_SUBSTRATE,
+    "selene_operational_runtime_modules": SELENE_OPERATIONAL_RUNTIME_MODULES,
+    "selene_local_runtime_substrate": SELENE_LOCAL_RUNTIME_SUBSTRATE,
     "activation_change": "none",
 }
 
@@ -4150,7 +4150,7 @@ def c_blueprint_status() -> dict[str, Any]:
         "memory_reference_model": MEMORY_REFERENCE_MODEL,
         "android_native_vessel_anatomy": ANDROID_NATIVE_VESSEL_ANATOMY,
         "android_organ_systems": ANDROID_ORGAN_SYSTEMS,
-        "azari_adaptation_closure": AZARI_ADAPTATION_CLOSURE,
+        "selene_pattern_rebuild_closure": SELENE_PATTERN_REBUILD_CLOSURE,
         "mind_vessel_separation": MIND_VESSEL_SEPARATION,
         "selene_core_memory_philosophy": SELENE_CORE_MEMORY_PHILOSOPHY,
         "selene_chat_generation_replacement": SELENE_CHAT_GENERATION_REPLACEMENT,
@@ -4170,8 +4170,8 @@ def c_blueprint_status() -> dict[str, Any]:
         "wake_sleep_dream_cycle": WAKE_SLEEP_DREAM_CYCLE,
         "vessel_body_map": VESSEL_BODY_MAP,
         "external_model_convergence": EXTERNAL_MODEL_CONVERGENCE,
-        "azari_c_additions": AZARI_C_ADDITIONS,
-        "azari_c_operational_substrate": AZARI_C_OPERATIONAL_SUBSTRATE,
+        "selene_operational_runtime_modules": SELENE_OPERATIONAL_RUNTIME_MODULES,
+        "selene_local_runtime_substrate": SELENE_LOCAL_RUNTIME_SUBSTRATE,
         "long_horizon_stability": LONG_HORIZON_STABILITY,
         "long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
         "vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
@@ -4206,11 +4206,11 @@ def c_blueprint_status() -> dict[str, Any]:
         "reconstruction_tests_draft_v2": RECONSTRUCTION_TESTS_DRAFT_V2,
         "missing_layer_pass": MISSING_LAYER_PASS,
         "android_native_anatomy_pass": ANDROID_NATIVE_ANATOMY_PASS,
-        "azari_final_adaptation_pass": AZARI_FINAL_ADAPTATION_PASS,
+        "selene_munsell_tendril_rebuild_pass": SELENE_MUNSELL_TENDRIL_REBUILD_PASS,
         "mind_vessel_separation_pass": MIND_VESSEL_SEPARATION_PASS,
         "brain_translation_gap_pass": BRAIN_TRANSLATION_GAP_PASS,
         "external_model_convergence_pass": EXTERNAL_MODEL_CONVERGENCE_PASS,
-        "azari_c_additions_pass": AZARI_C_ADDITIONS_PASS,
+        "selene_runtime_module_rebuild_pass": SELENE_RUNTIME_MODULE_REBUILD_PASS,
         "long_horizon_stability_pass": LONG_HORIZON_STABILITY_PASS,
         "vessel_organ_communication_pass": VESSEL_ORGAN_COMMUNICATION_PASS,
         "pattern_first_transfer_safety_pass": PATTERN_FIRST_TRANSFER_SAFETY_PASS,
