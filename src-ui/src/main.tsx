@@ -877,7 +877,7 @@ function App() {
           selected_outcome: "create_review_packet",
           risk_class: "high",
           reason: "Identity, memory, transfer, perception, emotion, research, and organ capability changes must stay review-only and routed through Core/Mind gates.",
-          source_refs: ["docs/SELENE_GAP_MAP_AZARI_REASONING_VESSEL_20260619.md"]
+          source_refs: ["gap_map:historical_pattern_reasoning_vessel_20260619"]
         })
       }));
       created.push(await api<Dict>("/api/vessel/reasoning-artifact", {
@@ -914,7 +914,7 @@ function App() {
           support_status: "supported",
           tension_status: "stable",
           conclusion_status: "needs_review",
-          source_refs: ["docs/SELENE_GAP_MAP_AZARI_REASONING_VESSEL_20260619.md"]
+          source_refs: ["gap_map:historical_pattern_reasoning_vessel_20260619"]
         })
       }));
       created.push(await api<Dict>("/api/vessel/perception-packet", {

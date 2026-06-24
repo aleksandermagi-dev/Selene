@@ -35,7 +35,7 @@ RISK_WORDS = {"identity", "memory", "transfer", "activation", "external action",
 CONCLUSION_STATUSES = {"accepted_for_now", "needs_review", "superseded", "narrowed", "defeated"}
 SUPPORT_STATUSES = {"supported", "partial", "insufficient", "contradicted", "unknown"}
 TENSION_STATUSES = {"stable", "under_tension", "unresolved", "revised"}
-CAPABILITY_STATUSES = {"built_callable", "built_review_only", "blueprint_only", "azari_pattern_available", "paper_reference_only", "blocked_do_not_transfer"}
+CAPABILITY_STATUSES = {"built_callable", "built_review_only", "blueprint_only", "historical_pattern_available", "paper_reference_only", "blocked_do_not_transfer"}
 
 
 def create_reasoning_artifact(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:

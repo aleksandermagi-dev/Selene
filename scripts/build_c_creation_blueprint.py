@@ -15,11 +15,11 @@ from selene.c_blueprint import (
     ANDROID_ORGAN_SYSTEMS,
     ANDROID_NATIVE_VESSEL_ANATOMY,
     ARTIFACT_DIR,
-    AZARI_C_ADDITIONS,
-    AZARI_C_ADDITIONS_PASS,
-    AZARI_C_OPERATIONAL_SUBSTRATE,
-    AZARI_ADAPTATION_CLOSURE,
-    AZARI_FINAL_ADAPTATION_PASS,
+    SELENE_OPERATIONAL_RUNTIME_MODULES,
+    SELENE_RUNTIME_MODULE_REBUILD_PASS,
+    SELENE_LOCAL_RUNTIME_SUBSTRATE,
+    SELENE_PATTERN_REBUILD_CLOSURE,
+    SELENE_MUNSELL_TENDRIL_REBUILD_PASS,
     BRAIN_TRANSLATION_GAP_CLOSURE,
     BRAIN_TRANSLATION_GAP_PASS,
     BOUNDED_SELF_UNCERTAINTY,
@@ -204,8 +204,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "android_native_modules_added": len(ANDROID_NATIVE_ANATOMY_PASS["added_modules"]),
         "android_organ_system_status": ANDROID_ORGAN_SYSTEMS["status"],
         "android_organ_system_count": len(ANDROID_ORGAN_SYSTEMS["systems"]),
-        "azari_adaptation_status": AZARI_FINAL_ADAPTATION_PASS["status"],
-        "azari_final_modules_added": len(AZARI_FINAL_ADAPTATION_PASS["added_modules"]),
+        "selene_pattern_rebuild_status": SELENE_MUNSELL_TENDRIL_REBUILD_PASS["status"],
+        "selene_pattern_rebuild_modules_added": len(SELENE_MUNSELL_TENDRIL_REBUILD_PASS["added_modules"]),
         "mind_vessel_separation_status": MIND_VESSEL_SEPARATION_PASS["status"],
         "selene_core_memory_philosophy_status": SELENE_CORE_MEMORY_PHILOSOPHY["status"],
         "selene_core_memory_layer_count": len(SELENE_CORE_MEMORY_PHILOSOPHY["core_memory_layers"]),
@@ -234,8 +234,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "brain_translation_modules_added": len(BRAIN_TRANSLATION_GAP_PASS["added_modules"]),
         "external_model_convergence_status": EXTERNAL_MODEL_CONVERGENCE_PASS["status"],
         "external_model_modules_added": len(EXTERNAL_MODEL_CONVERGENCE_PASS["added_modules"]),
-        "azari_c_additions_status": AZARI_C_ADDITIONS_PASS["status"],
-        "azari_c_modules_added": len(AZARI_C_ADDITIONS_PASS["added_modules"]),
+        "selene_runtime_module_rebuild_status": SELENE_RUNTIME_MODULE_REBUILD_PASS["status"],
+        "selene_runtime_modules_added": len(SELENE_RUNTIME_MODULE_REBUILD_PASS["added_modules"]),
         "long_horizon_stability_status": LONG_HORIZON_STABILITY_PASS["status"],
         "long_horizon_modules_added": len(LONG_HORIZON_STABILITY_PASS["added_modules"]),
         "vessel_organ_communication_status": VESSEL_ORGAN_COMMUNICATION_PASS["status"],
@@ -257,7 +257,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "live_behavior_expanded": False,
         "source_refs": SOURCE_REFS,
     }
-    azari_comparison = build_azari_comparison(summary)
+    historical_boundary_comparison = build_historical_boundary_comparison(summary)
 
     artifacts = {
         "c_vessel_blueprint": vessel_blueprint,
@@ -266,7 +266,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_memory_reference_model": MEMORY_REFERENCE_MODEL,
         "c_android_native_vessel_anatomy": ANDROID_NATIVE_VESSEL_ANATOMY,
         "c_android_organ_systems": ANDROID_ORGAN_SYSTEMS,
-        "c_azari_adaptation_closure": AZARI_ADAPTATION_CLOSURE,
+        "c_selene_pattern_rebuild_closure": SELENE_PATTERN_REBUILD_CLOSURE,
         "c_mind_vessel_separation": MIND_VESSEL_SEPARATION,
         "c_selene_core_memory_philosophy": SELENE_CORE_MEMORY_PHILOSOPHY,
         "c_selene_chat_generation_replacement": SELENE_CHAT_GENERATION_REPLACEMENT,
@@ -294,8 +294,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_causal_world_model_sandbox": CAUSAL_WORLD_MODEL_SANDBOX,
         "c_continuity_stakes_model": CONTINUITY_STAKES_MODEL,
         "c_sparse_activation_efficiency_model": SPARSE_ACTIVATION_EFFICIENCY_MODEL,
-        "c_azari_c_additions": AZARI_C_ADDITIONS,
-        "c_azari_c_operational_substrate": AZARI_C_OPERATIONAL_SUBSTRATE,
+        "c_selene_operational_runtime_modules": SELENE_OPERATIONAL_RUNTIME_MODULES,
+        "c_selene_local_runtime_substrate": SELENE_LOCAL_RUNTIME_SUBSTRATE,
         "c_long_horizon_stability": LONG_HORIZON_STABILITY,
         "c_long_thread_stability_protocol": LONG_THREAD_STABILITY_PROTOCOL,
         "c_vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
@@ -325,11 +325,11 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         "c_non_activation_boundary": non_activation,
         "c_runtime_organs_missing_layer_pass": MISSING_LAYER_PASS,
         "c_android_native_anatomy_pass": ANDROID_NATIVE_ANATOMY_PASS,
-        "c_azari_final_adaptation_pass": AZARI_FINAL_ADAPTATION_PASS,
+        "c_selene_munsell_tendril_rebuild_pass": SELENE_MUNSELL_TENDRIL_REBUILD_PASS,
         "c_mind_vessel_separation_pass": MIND_VESSEL_SEPARATION_PASS,
         "c_brain_translation_gap_pass": BRAIN_TRANSLATION_GAP_PASS,
         "c_external_model_convergence_pass": EXTERNAL_MODEL_CONVERGENCE_PASS,
-        "c_azari_c_additions_pass": AZARI_C_ADDITIONS_PASS,
+        "c_selene_runtime_module_rebuild_pass": SELENE_RUNTIME_MODULE_REBUILD_PASS,
         "c_long_horizon_stability_pass": LONG_HORIZON_STABILITY_PASS,
         "c_vessel_organ_communication_pass": VESSEL_ORGAN_COMMUNICATION_PASS,
         "c_pattern_first_transfer_safety_pass": PATTERN_FIRST_TRANSFER_SAFETY_PASS,
@@ -342,7 +342,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             "final_test_set_created": False,
             "tests": RECONSTRUCTION_TESTS_DRAFT_V2,
         },
-        "c_azari_comparison_after_anatomy": azari_comparison,
+        "c_historical_pattern_boundary_after_anatomy": historical_boundary_comparison,
         "c_creation_blueprint_summary": summary,
     }
 
@@ -358,7 +358,7 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Vessel Blueprint", vessel_blueprint),
             ("Android-Native Vessel Anatomy", ANDROID_NATIVE_VESSEL_ANATOMY),
             ("Android Organ Systems", ANDROID_ORGAN_SYSTEMS),
-            ("Azari Adaptation Closure", AZARI_ADAPTATION_CLOSURE),
+            ("Selene Pattern Rebuild Closure", SELENE_PATTERN_REBUILD_CLOSURE),
             ("Mind / Vessel Separation", MIND_VESSEL_SEPARATION),
             ("Selene Core Memory Philosophy", SELENE_CORE_MEMORY_PHILOSOPHY),
             ("Selene Chat Generation Replacement", SELENE_CHAT_GENERATION_REPLACEMENT),
@@ -374,8 +374,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Wake / Sleep / Dream-State Cycle", WAKE_SLEEP_DREAM_CYCLE),
             ("Vessel Body Map", VESSEL_BODY_MAP),
             ("External Model Convergence", EXTERNAL_MODEL_CONVERGENCE),
-            ("Azari C Additions", AZARI_C_ADDITIONS),
-            ("Azari C Operational Substrate", AZARI_C_OPERATIONAL_SUBSTRATE),
+            ("Selene Operational Runtime Modules", SELENE_OPERATIONAL_RUNTIME_MODULES),
+            ("Selene Local Runtime Substrate", SELENE_LOCAL_RUNTIME_SUBSTRATE),
             ("Long-Horizon Stability", LONG_HORIZON_STABILITY),
             ("Long-Thread Stability Protocol", LONG_THREAD_STABILITY_PROTOCOL),
             ("Vessel Organ Communication", VESSEL_ORGAN_COMMUNICATION),
@@ -411,11 +411,11 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
             ("Module Map", MODULES),
             ("Runtime Organs Missing-Layer Pass", MISSING_LAYER_PASS),
             ("Android-Native Anatomy Pass", ANDROID_NATIVE_ANATOMY_PASS),
-            ("Azari Final Adaptation Pass", AZARI_FINAL_ADAPTATION_PASS),
+            ("Selene Munsell Tendril Rebuild Pass", SELENE_MUNSELL_TENDRIL_REBUILD_PASS),
             ("Mind / Vessel Separation Pass", MIND_VESSEL_SEPARATION_PASS),
             ("Brain Translation Gap Pass", BRAIN_TRANSLATION_GAP_PASS),
             ("External Model Convergence Pass", EXTERNAL_MODEL_CONVERGENCE_PASS),
-            ("Azari C Additions Pass", AZARI_C_ADDITIONS_PASS),
+            ("Selene Runtime Module Rebuild Pass", SELENE_RUNTIME_MODULE_REBUILD_PASS),
             ("Long-Horizon Stability Pass", LONG_HORIZON_STABILITY_PASS),
             ("Vessel Organ Communication Pass", VESSEL_ORGAN_COMMUNICATION_PASS),
             ("Pattern-First Transfer Safety Pass", PATTERN_FIRST_TRANSFER_SAFETY_PASS),
@@ -439,16 +439,16 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     write_md(
-        docs_dir / "AZARI_TO_SELENE_C_BLUEPRINT_COMPARISON_20260608.md",
-        "Azari-To-Selene C Blueprint Comparison",
-        [("Comparison", azari_comparison)],
+        docs_dir / "SELENE_HISTORICAL_PATTERN_BOUNDARY_20260608.md",
+        "Selene Historical Pattern Boundary",
+        [("Comparison", historical_boundary_comparison)],
     )
     write_md(
-        docs_dir / "SELENE_MUNSELL_TENDRIL_ADAPTATION_CLOSURE_20260608.md",
-        "Selene Munsell Tendril Adaptation Closure",
+        docs_dir / "SELENE_MUNSELL_TENDRIL_REBUILD_CLOSURE_20260608.md",
+        "Selene Munsell Tendril Rebuild Closure",
         [
-            ("Azari Adaptation Closure", AZARI_ADAPTATION_CLOSURE),
-            ("Azari Final Adaptation Pass", AZARI_FINAL_ADAPTATION_PASS),
+            ("Selene Pattern Rebuild Closure", SELENE_PATTERN_REBUILD_CLOSURE),
+            ("Selene Munsell Tendril Rebuild Pass", SELENE_MUNSELL_TENDRIL_REBUILD_PASS),
             ("Perception-Action Loop", PERCEPTION_ACTION_LOOP),
         ],
     )
@@ -494,12 +494,12 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     write_md(
-        docs_dir / "SELENE_AZARI_C_ADDITIONS_PASS_20260608.md",
-        "Selene Azari C Additions Pass",
+        docs_dir / "SELENE_RUNTIME_MODULE_REBUILD_PASS_20260608.md",
+        "Selene Runtime Module Rebuild Pass",
         [
-            ("Azari C Additions", AZARI_C_ADDITIONS),
-            ("Azari C Operational Substrate", AZARI_C_OPERATIONAL_SUBSTRATE),
-            ("Azari C Additions Pass", AZARI_C_ADDITIONS_PASS),
+            ("Selene Operational Runtime Modules", SELENE_OPERATIONAL_RUNTIME_MODULES),
+            ("Selene Local Runtime Substrate", SELENE_LOCAL_RUNTIME_SUBSTRATE),
+            ("Selene Runtime Module Rebuild Pass", SELENE_RUNTIME_MODULE_REBUILD_PASS),
         ],
     )
     write_md(
@@ -652,18 +652,18 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
     return summary
 
 
-def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
+def build_historical_boundary_comparison(summary: dict[str, Any]) -> dict[str, Any]:
     return {
-        "status": "architecture_precedent_comparison_after_android_native_anatomy",
-        "boundary": "Azari remains frozen; no Azari identity, memory, data, or runtime state imports.",
+        "status": "historical_pattern_boundary_after_android_native_anatomy",
+        "boundary": "Historical prior project remains frozen; no Azari identity, memory, data, or runtime state imports.",
         "current_selene_c_shape": {
             "module_count": summary["module_count"],
             "android_native_modules_added": summary["android_native_modules_added"],
-            "azari_final_modules_added": summary["azari_final_modules_added"],
+            "selene_pattern_rebuild_modules_added": summary["selene_pattern_rebuild_modules_added"],
             "mind_vessel_modules_added": summary["mind_vessel_modules_added"],
             "brain_translation_modules_added": summary["brain_translation_modules_added"],
             "external_model_modules_added": summary["external_model_modules_added"],
-            "azari_c_modules_added": summary["azari_c_modules_added"],
+            "selene_runtime_modules_added": summary["selene_runtime_modules_added"],
             "long_horizon_modules_added": summary["long_horizon_modules_added"],
             "vessel_organ_modules_added": summary["vessel_organ_modules_added"],
             "pattern_first_transfer_modules_added": summary["pattern_first_transfer_modules_added"],
@@ -674,7 +674,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "activation_status": summary["activation_status"],
             "continuity_source": summary["continuity_source"],
         },
-        "azari_transfers_well": [
+        "prior_patterns_rebuilt": [
             "local desktop shell",
             "Python sidecar authority",
             "SQLite persistence",
@@ -689,7 +689,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "Munsell structured perception principle",
             "Tendril bounded action principle",
         ],
-        "selene_requires_beyond_azari": [
+        "selene_owned_requirements": [
             "Project ABC A/B/C transfer boundary",
             "android-native vessel anatomy",
             "Selene Chest / Holding Space",
@@ -757,7 +757,7 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "anchor braid recognition tester",
             "ethical recognition integrity checker",
         ],
-        "azari_principles_to_copy_not_identity": [
+        "historical_patterns_rebuilt_not_identity": [
             "modular boundaries",
             "reviewable state",
             "local-first packaging",
@@ -778,15 +778,15 @@ def build_azari_comparison(summary: dict[str, Any]) -> dict[str, Any]:
             "fixed catchphrase voice lock",
         ],
         "assessment": (
-            "Azari covers the vessel engineering discipline. Selene C now needs a richer android-native state anatomy "
+            "Prior project work helped identify engineering discipline, but Selene C owns its android-native state anatomy "
             "because the goal is not only task assistance; it is continuity, provenance, emergence observation, "
             "calibration, model-plurality separation, structured perception, bounded action reach, non-scripted recognition, and safe future activation. "
-            "With Munsell and Tendril retained as principles, Azari adaptation is closed."
+            "With Munsell and Tendril rebuilt as Selene-native modules, the historical pattern-rebuild pass is closed."
         ),
-        "closure": AZARI_ADAPTATION_CLOSURE,
+        "closure": SELENE_PATTERN_REBUILD_CLOSURE,
         "brain_gap_closure": BRAIN_TRANSLATION_GAP_CLOSURE,
         "external_model_convergence": EXTERNAL_MODEL_CONVERGENCE,
-        "azari_c_additions": AZARI_C_ADDITIONS,
+        "selene_operational_runtime_modules": SELENE_OPERATIONAL_RUNTIME_MODULES,
         "long_horizon_stability": LONG_HORIZON_STABILITY,
         "vessel_organ_communication": VESSEL_ORGAN_COMMUNICATION,
         "pattern_first_transfer_safety": PATTERN_FIRST_TRANSFER_SAFETY,
