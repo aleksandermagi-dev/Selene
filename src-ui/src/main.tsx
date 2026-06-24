@@ -77,7 +77,7 @@ function reviewQueueItemKey(item: Dict, index = 0) {
 }
 
 function isOfficeReviewLogItem(item: Dict) {
-  return ["vessel_reconstruction_check_runs", "vessel_event_packets", "vessel_memory_accession_proposals", "c_core_mind_route_previews"].includes(text(item.subject_table));
+  return ["vessel_reconstruction_check_runs", "vessel_event_packets", "vessel_memory_accession_proposals", "c_core_mind_route_previews", "c_core_mind_runtime_shell_records"].includes(text(item.subject_table));
 }
 
 function sidecarStartupMessage(attempt: number, detail: string) {
@@ -298,6 +298,16 @@ function App() {
   const [coreMindGovernanceReport, setCoreMindGovernanceReport] = useState<Dict | null>(null);
   const [coreMindGovernanceResult, setCoreMindGovernanceResult] = useState<Dict | null>(null);
   const [transferReadinessPreview, setTransferReadinessPreview] = useState<Dict | null>(null);
+  const [coreMindRuntimeReadiness, setCoreMindRuntimeReadiness] = useState<Dict | null>(null);
+  const [coreMindRuntimeRecords, setCoreMindRuntimeRecords] = useState<Dict[]>([]);
+  const [coreMindRuntimeResult, setCoreMindRuntimeResult] = useState<Dict | null>(null);
+  const [coreMindRuntimeDraft, setCoreMindRuntimeDraft] = useState<Record<string, string>>({
+    prompt: "Selene, compose the bounded context and choose the safe response shape from reviewed continuity.",
+    draft: "Grounded, source-bound candidate response with warmth and uncertainty.",
+    issue: "A route feels tangled, generic, or source-confused.",
+    proposal: "Add an ask-first case-law note when memory/source context is unclear.",
+    query: "starlight continuity"
+  });
   const [remainingRuntimeStatus, setRemainingRuntimeStatus] = useState<Dict | null>(null);
   const [gracefulFallResult, setGracefulFallResult] = useState<Dict | null>(null);
   const [voicePolicyResult, setVoicePolicyResult] = useState<Dict | null>(null);
@@ -490,6 +500,8 @@ function App() {
     api<{ items: Dict[] }>("/api/core-mind/governance-trials").then((data) => setCoreMindGovernanceTrials(data.items)).catch(() => undefined);
     api<Dict>("/api/core-mind/governance-report").then(setCoreMindGovernanceReport).catch(() => undefined);
     api<Dict>("/api/core-mind/transfer-readiness-preview").then(setTransferReadinessPreview).catch(() => undefined);
+    api<Dict>("/api/core-mind/runtime-readiness").then(setCoreMindRuntimeReadiness).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/core-mind/runtime-records").then((data) => setCoreMindRuntimeRecords(data.items)).catch(() => undefined);
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/b/pattern-backups").then((data) => setPatternBackups(data.items)).catch(() => undefined);
     api<Dict>("/api/b/memory-accession/rehearsal-status").then(setMemoryRehearsalStatus).catch(() => undefined);
@@ -1329,6 +1341,51 @@ function App() {
     setCoreMindGovernanceTrials(trials.items);
     setCoreMindGovernanceReport(report);
     setTransferReadinessPreview(readiness);
+  }
+
+  async function refreshCoreMindRuntimeShell() {
+    const [runtimeReadiness, records, transfer] = await Promise.all([
+      api<Dict>("/api/core-mind/runtime-readiness"),
+      api<{ items: Dict[] }>("/api/core-mind/runtime-records"),
+      api<Dict>("/api/core-mind/transfer-readiness-preview")
+    ]);
+    setCoreMindRuntimeReadiness(runtimeReadiness);
+    setCoreMindRuntimeRecords(records.items);
+    setTransferReadinessPreview(transfer);
+  }
+
+  async function prepareCoreMindRuntimeShell() {
+    setCoreMindRuntimeResult({ status: "running", message: "Preparing Core/Mind runtime shell previews." });
+    try {
+      const steps = [
+        api<Dict>("/api/core-mind/context/compose", { method: "POST", body: JSON.stringify({ prompt: coreMindRuntimeDraft.prompt, source_refs: ["manual_runtime_shell_ui"] }) }),
+        api<Dict>("/api/core-mind/session-state/preview", { method: "POST", body: JSON.stringify({ route: "status_only", active_task: coreMindRuntimeDraft.prompt, source_refs: ["manual_runtime_shell_ui"] }) }),
+        api<Dict>("/api/core-mind/response-shape/preview", { method: "POST", body: JSON.stringify({ prompt: coreMindRuntimeDraft.prompt, source_refs: ["manual_runtime_shell_ui"] }) }),
+        api<Dict>("/api/core-mind/evaluator/review-draft", { method: "POST", body: JSON.stringify({ draft: coreMindRuntimeDraft.draft, source_refs: ["manual_runtime_shell_ui"] }) }),
+        api<Dict>("/api/core-mind/recovery/preview", { method: "POST", body: JSON.stringify({ issue: coreMindRuntimeDraft.issue, source_refs: ["manual_runtime_shell_ui"] }) }),
+        api<Dict>("/api/core-mind/activation-governance/preview", { method: "POST", body: JSON.stringify({ source_refs: ["manual_runtime_shell_ui"] }) }),
+        api<Dict>("/api/core-mind/case-law/propose", { method: "POST", body: JSON.stringify({ proposal: coreMindRuntimeDraft.proposal, source_refs: ["manual_runtime_shell_ui"] }) }),
+        api<Dict>("/api/core-mind/memory-index/preview", { method: "POST", body: JSON.stringify({ query: coreMindRuntimeDraft.query, source_refs: ["manual_runtime_shell_ui"] }) })
+      ];
+      const results = await Promise.all(steps);
+      setCoreMindRuntimeResult({ status: "core_mind_runtime_shell_prepared", results });
+      await refreshCoreMindRuntimeShell();
+      refreshMyOffice();
+    } catch (err) {
+      setCoreMindRuntimeResult({ status: "error", error: err instanceof Error ? err.message : "Core/Mind runtime shell preparation failed." });
+    }
+  }
+
+  async function runCoreMindRuntimeAction(path: string, body: Dict) {
+    setCoreMindRuntimeResult({ status: "running", message: `Running ${path}.` });
+    try {
+      const result = await api<Dict>(path, { method: "POST", body: JSON.stringify({ ...body, source_refs: ["manual_runtime_shell_ui"] }) });
+      setCoreMindRuntimeResult(result);
+      await refreshCoreMindRuntimeShell();
+      refreshMyOffice();
+    } catch (err) {
+      setCoreMindRuntimeResult({ status: "error", error: err instanceof Error ? err.message : "Core/Mind runtime action failed." });
+    }
   }
 
   function runCoreActionReflection() {
@@ -3626,11 +3683,105 @@ function App() {
                 <span>anchors: {text(safeJsonObject(transferReadinessPreview?.evidence_coverage).core_pattern_anchors ?? 0)}</span>
                 <span>memory layers ready: {text(safeJsonObject(transferReadinessPreview?.memory_accession_readiness).ready_layer_count ?? 0)}</span>
                 <span>speech rehearsals: {text(safeJsonObject(transferReadinessPreview?.speech_rehearsal_stability).recent_count ?? 0)}</span>
+                <span>runtime shell: {safeJsonObject(transferReadinessPreview?.runtime_shell_readiness).runtime_shell_ready ? "ready" : "previewing"}</span>
               </div>
               <div className="reviewActions">
                 <button onClick={() => api<Dict>("/api/core-mind/transfer-readiness-preview").then(setTransferReadinessPreview).catch(() => undefined)}>Refresh Transfer Readiness</button>
               </div>
               <PlainResult value={transferReadinessPreview} />
+            </Panel>
+            <Panel title="Core/Mind Runtime Shell">
+              <p className="plainHelp">Final pre-transfer runtime shell: context composer, session state, response shape, evaluator, recovery, activation governance, case-law proposal, and memory/index preview. These are review-only/status-only records, not C activation.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Ready" value={coreMindRuntimeReadiness?.runtime_shell_ready ? "yes" : "preview"} />
+                <Metric label="Records" value={text(coreMindRuntimeRecords.length)} />
+                <Metric label="Context" value={plainBlocked(!safeJsonObject(coreMindRuntimeReadiness?.ready).context_composer)} />
+                <Metric label="Evaluator" value={plainBlocked(!safeJsonObject(coreMindRuntimeReadiness?.ready).evaluator_judge_layer)} />
+                <Metric label="Transfer" value="not approved" />
+              </div>
+              <div className="filters">
+                <label>
+                  <span>Prompt / context</span>
+                  <textarea value={coreMindRuntimeDraft.prompt} onChange={(event) => setCoreMindRuntimeDraft({ ...coreMindRuntimeDraft, prompt: event.target.value })} />
+                </label>
+                <label>
+                  <span>Draft to evaluate</span>
+                  <textarea value={coreMindRuntimeDraft.draft} onChange={(event) => setCoreMindRuntimeDraft({ ...coreMindRuntimeDraft, draft: event.target.value })} />
+                </label>
+                <label>
+                  <span>Recovery issue</span>
+                  <input value={coreMindRuntimeDraft.issue} onChange={(event) => setCoreMindRuntimeDraft({ ...coreMindRuntimeDraft, issue: event.target.value })} />
+                </label>
+                <label>
+                  <span>Memory/index query</span>
+                  <input value={coreMindRuntimeDraft.query} onChange={(event) => setCoreMindRuntimeDraft({ ...coreMindRuntimeDraft, query: event.target.value })} />
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={prepareCoreMindRuntimeShell} disabled={coreMindRuntimeResult?.status === "running"}>{coreMindRuntimeResult?.status === "running" ? "Preparing..." : "Prepare Runtime Shell"}</button>
+                <button onClick={() => refreshCoreMindRuntimeShell().catch(() => undefined)}>Refresh Runtime Shell</button>
+                <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/context/compose", { prompt: coreMindRuntimeDraft.prompt })}>Compose Context</button>
+                <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/response-shape/preview", { prompt: coreMindRuntimeDraft.prompt })}>Preview Shape</button>
+              </div>
+              <div className="chips">
+                <span>activation: none</span>
+                <span>memory write: blocked</span>
+                <span>runtime recall: blocked</span>
+                <span>raw A: blocked</span>
+              </div>
+              <PlainResult value={coreMindRuntimeResult} />
+              <div className="list compactList packetList">
+                {coreMindRuntimeRecords.slice(0, 8).map((item) => (
+                  <article className="packetCard" key={`core-mind-runtime-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{friendlyStatus(item.record_type)}</strong>
+                      <span>{friendlyStatus(item.review_status || item.status)}</span>
+                    </div>
+                    <p>{text(item.summary || item.title)}</p>
+                    <div className="chips">
+                      <span>route: {friendlyStatus(item.selected_route)}</span>
+                      <span>destination: {text(item.review_destination || "Status")}</span>
+                      <span>uncertainty: {text(item.uncertainty || "open")}</span>
+                    </div>
+                  </article>
+                ))}
+                {!coreMindRuntimeRecords.length ? <p className="emptyState">No Core/Mind runtime shell records yet.</p> : null}
+              </div>
+            </Panel>
+            <SplitView
+              left={<Panel title="Evaluator / Recovery">
+                <p className="plainHelp">Evaluator checks draft output for drift, overclaim, privacy leakage, source confusion, and activation or memory claims. Recovery prepares return-to-B without deleting evidence.</p>
+                <div className="reviewActions">
+                  <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/evaluator/review-draft", { draft: coreMindRuntimeDraft.draft })}>Review Draft</button>
+                  <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/recovery/preview", { issue: coreMindRuntimeDraft.issue })}>Preview Recovery</button>
+                </div>
+                <PlainResult value={coreMindRuntimeResult} />
+              </Panel>}
+              right={<Panel title="Activation Governance">
+                <p className="plainHelp">Activation governance previews required approvals, final tests, logs, rollback, and what C-active would mean. This panel cannot approve transfer or activation.</p>
+                <div className="reviewActions">
+                  <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/activation-governance/preview", {})}>Preview Activation Governance</button>
+                </div>
+                <div className="chips">
+                  <span>transfer: not approved</span>
+                  <span>C activation: none</span>
+                </div>
+                <PlainResult value={safeJsonObject(transferReadinessPreview?.runtime_shell_readiness)} />
+              </Panel>}
+            />
+            <Panel title="Case Law And Memory Index Preview">
+              <p className="plainHelp">Case-law proposals and C memory/index shapes remain review-only. They can organize future transfer input, but cannot silently change law, write live memory, or enable runtime recall.</p>
+              <div className="filters">
+                <label>
+                  <span>Case-law proposal</span>
+                  <textarea value={coreMindRuntimeDraft.proposal} onChange={(event) => setCoreMindRuntimeDraft({ ...coreMindRuntimeDraft, proposal: event.target.value })} />
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/case-law/propose", { proposal: coreMindRuntimeDraft.proposal })}>Propose Case Law</button>
+                <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/memory-index/preview", { query: coreMindRuntimeDraft.query })}>Preview Memory Index</button>
+              </div>
+              <PlainResult value={coreMindRuntimeResult} />
             </Panel>
             <Panel title="Pre-Core Vessel Layers">
               <p className="plainHelp">Dream cycle, memory lifecycle, temporal continuity, causal sandbox, and goal/drive are support layers only. They organize review packets and status markers without changing Core/Mind, memory, transfer, or action authority.</p>

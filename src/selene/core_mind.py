@@ -305,6 +305,7 @@ def transfer_readiness_preview(conn: sqlite3.Connection) -> dict[str, Any]:
     continuity = continuity_package_preview(conn)
     transfer_gate = _safe_route(conn, "c_vessel.transfer_gate.preview")
     memory_rehearsal = _safe_route(conn, "b.memory_accession.rehearsal.status")
+    runtime_shell = _safe_route(conn, "core_mind.runtime_readiness")
     speech_rows = conn.execute(
         "SELECT review_status, payload_json FROM vessel_speech_generation_rehearsals ORDER BY id DESC LIMIT 100"
     ).fetchall() if _table_exists(conn, "vessel_speech_generation_rehearsals") else []
@@ -343,6 +344,7 @@ def transfer_readiness_preview(conn: sqlite3.Connection) -> dict[str, Any]:
             "missing_layer_count": missing_layers,
             "status": memory_rehearsal.get("status") if isinstance(memory_rehearsal, dict) else "not_available",
         },
+        "runtime_shell_readiness": runtime_shell,
         "governance_report": report,
         "transfer_gate": transfer_gate,
         "review_destination": "Status",

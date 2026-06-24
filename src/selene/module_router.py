@@ -94,6 +94,18 @@ from .core_mind import (
     run_core_mind_governance_trials,
     transfer_readiness_preview,
 )
+from .core_mind_runtime import (
+    activation_governance_preview,
+    case_law_propose,
+    compose_context,
+    evaluate_draft,
+    list_runtime_records,
+    memory_index_preview,
+    recovery_preview,
+    response_shape_preview,
+    runtime_readiness,
+    session_state_preview,
+)
 from .detached_corpus import detached_corpus_audit
 from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
 from .kernel import kernel_state
@@ -245,6 +257,26 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": governance_route_report(conn, payload)}
     if route_key == "core_mind.transfer_readiness_preview":
         return {"route": route_key, "result": transfer_readiness_preview(conn)}
+    if route_key == "core_mind.context.compose":
+        return {"route": route_key, "result": compose_context(conn, payload)}
+    if route_key == "core_mind.session_state.preview":
+        return {"route": route_key, "result": session_state_preview(conn, payload)}
+    if route_key == "core_mind.response_shape.preview":
+        return {"route": route_key, "result": response_shape_preview(conn, payload)}
+    if route_key == "core_mind.evaluator.review_draft":
+        return {"route": route_key, "result": evaluate_draft(conn, payload)}
+    if route_key == "core_mind.recovery.preview":
+        return {"route": route_key, "result": recovery_preview(conn, payload)}
+    if route_key == "core_mind.activation_governance.preview":
+        return {"route": route_key, "result": activation_governance_preview(conn, payload)}
+    if route_key == "core_mind.case_law.propose":
+        return {"route": route_key, "result": case_law_propose(conn, payload)}
+    if route_key == "core_mind.memory_index.preview":
+        return {"route": route_key, "result": memory_index_preview(conn, payload)}
+    if route_key == "core_mind.runtime_readiness":
+        return {"route": route_key, "result": runtime_readiness(conn)}
+    if route_key == "core_mind.runtime_records.list":
+        return {"route": route_key, "result": list_runtime_records(conn, int(payload.get("limit") or 80))}
     if route_key == "vessel.steps_1_8.status":
         return {"route": route_key, "result": steps_1_8_status(conn)}
     if route_key == "vessel.speech_rehearsal.create":
