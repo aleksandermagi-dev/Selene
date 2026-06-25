@@ -658,6 +658,48 @@ CREATE TABLE IF NOT EXISTS c_core_mind_runtime_shell_records (
 
 CREATE INDEX IF NOT EXISTS idx_c_core_mind_runtime_shell_records_type ON c_core_mind_runtime_shell_records(record_type, review_status);
 
+CREATE TABLE IF NOT EXISTS transfer_accession_manifest_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  phase_order INTEGER NOT NULL,
+  phase TEXT NOT NULL,
+  item_type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  c_access_status TEXT NOT NULL,
+  summary TEXT NOT NULL DEFAULT '',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_transfer_accession_manifest_items_phase ON transfer_accession_manifest_items(phase_order, c_access_status, review_status);
+
+CREATE TABLE IF NOT EXISTS transfer_protocol_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  record_type TEXT NOT NULL,
+  run_id TEXT NOT NULL DEFAULT '',
+  scenario_key TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL,
+  expected_route TEXT NOT NULL DEFAULT '',
+  actual_route TEXT NOT NULL DEFAULT '',
+  matched INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL,
+  summary TEXT NOT NULL DEFAULT '',
+  candidate_text TEXT NOT NULL DEFAULT '',
+  law_violations TEXT NOT NULL DEFAULT '[]',
+  drift_flags TEXT NOT NULL DEFAULT '[]',
+  evidence_used TEXT NOT NULL DEFAULT '[]',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_transfer_protocol_records_type ON transfer_protocol_records(record_type, run_id, review_status);
+
 CREATE TABLE IF NOT EXISTS native_generation_rehearsal_runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   prompt TEXT NOT NULL,

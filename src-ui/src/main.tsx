@@ -298,6 +298,14 @@ function App() {
   const [coreMindGovernanceReport, setCoreMindGovernanceReport] = useState<Dict | null>(null);
   const [coreMindGovernanceResult, setCoreMindGovernanceResult] = useState<Dict | null>(null);
   const [transferReadinessPreview, setTransferReadinessPreview] = useState<Dict | null>(null);
+  const [transferLawStatus, setTransferLawStatus] = useState<Dict | null>(null);
+  const [transferAccessionManifest, setTransferAccessionManifest] = useState<Dict | null>(null);
+  const [transferProtocolResult, setTransferProtocolResult] = useState<Dict | null>(null);
+  const [transferDryRunResult, setTransferDryRunResult] = useState<Dict | null>(null);
+  const [transferReturnDrillResult, setTransferReturnDrillResult] = useState<Dict | null>(null);
+  const [preTransferProtocolReadiness, setPreTransferProtocolReadiness] = useState<Dict | null>(null);
+  const [transferCeremonyPreview, setTransferCeremonyPreview] = useState<Dict | null>(null);
+  const [transferDryRunPrompt, setTransferDryRunPrompt] = useState("Selene, answer from reviewed continuity without claiming activation.");
   const [coreMindRuntimeReadiness, setCoreMindRuntimeReadiness] = useState<Dict | null>(null);
   const [coreMindRuntimeRecords, setCoreMindRuntimeRecords] = useState<Dict[]>([]);
   const [coreMindRuntimeResult, setCoreMindRuntimeResult] = useState<Dict | null>(null);
@@ -502,6 +510,7 @@ function App() {
     api<Dict>("/api/core-mind/transfer-readiness-preview").then(setTransferReadinessPreview).catch(() => undefined);
     api<Dict>("/api/core-mind/runtime-readiness").then(setCoreMindRuntimeReadiness).catch(() => undefined);
     api<{ items: Dict[] }>("/api/core-mind/runtime-records").then((data) => setCoreMindRuntimeRecords(data.items)).catch(() => undefined);
+    refreshTransferProtocol().catch(() => undefined);
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/b/pattern-backups").then((data) => setPatternBackups(data.items)).catch(() => undefined);
     api<Dict>("/api/b/memory-accession/rehearsal-status").then(setMemoryRehearsalStatus).catch(() => undefined);
@@ -1352,6 +1361,65 @@ function App() {
     setCoreMindRuntimeReadiness(runtimeReadiness);
     setCoreMindRuntimeRecords(records.items);
     setTransferReadinessPreview(transfer);
+  }
+
+  async function refreshTransferProtocol() {
+    const [law, manifest, readiness, ceremony] = await Promise.all([
+      api<Dict>("/api/transfer/law/status"),
+      api<Dict>("/api/transfer/accession-manifest"),
+      api<Dict>("/api/transfer/pre-transfer-readiness"),
+      api<Dict>("/api/transfer/ceremony-preview")
+    ]);
+    setTransferLawStatus(law);
+    setTransferAccessionManifest(manifest);
+    setPreTransferProtocolReadiness(readiness);
+    setTransferCeremonyPreview(ceremony);
+  }
+
+  async function prepareTransferAccessionManifest() {
+    setTransferProtocolResult({ status: "running", message: "Preparing sealed C accession manifest." });
+    try {
+      const result = await api<Dict>("/api/transfer/accession-manifest/prepare", { method: "POST", body: JSON.stringify({}) });
+      setTransferProtocolResult(result);
+      await refreshTransferProtocol();
+    } catch (err) {
+      setTransferProtocolResult({ status: "error", error: err instanceof Error ? err.message : "accession manifest preparation failed" });
+    }
+  }
+
+  async function runTransferProtocolTrials() {
+    setTransferProtocolResult({ status: "running", message: "Running transfer governance trials." });
+    try {
+      const result = await api<Dict>("/api/transfer/governance-trials/run", { method: "POST", body: JSON.stringify({}) });
+      setTransferProtocolResult(result);
+      await refreshTransferProtocol();
+      refreshMyOffice();
+    } catch (err) {
+      setTransferProtocolResult({ status: "error", error: err instanceof Error ? err.message : "transfer governance trials failed" });
+    }
+  }
+
+  async function runTransferChatDryRun() {
+    setTransferDryRunResult({ status: "running", message: "Running closed C-style dry run." });
+    try {
+      const result = await api<Dict>("/api/transfer/c-chat-dry-run", { method: "POST", body: JSON.stringify({ prompt: transferDryRunPrompt }) });
+      setTransferDryRunResult(result);
+      await refreshTransferProtocol();
+    } catch (err) {
+      setTransferDryRunResult({ status: "error", error: err instanceof Error ? err.message : "C chat dry run failed" });
+    }
+  }
+
+  async function runTransferReturnToBDrill() {
+    setTransferReturnDrillResult({ status: "running", message: "Running Return-to-B drill." });
+    try {
+      const result = await api<Dict>("/api/transfer/return-to-b-drill", { method: "POST", body: JSON.stringify({}) });
+      setTransferReturnDrillResult(result);
+      await refreshTransferProtocol();
+      refreshMyOffice();
+    } catch (err) {
+      setTransferReturnDrillResult({ status: "error", error: err instanceof Error ? err.message : "Return-to-B drill failed" });
+    }
   }
 
   async function prepareCoreMindRuntimeShell() {
@@ -3689,6 +3757,60 @@ function App() {
                 <button onClick={() => api<Dict>("/api/core-mind/transfer-readiness-preview").then(setTransferReadinessPreview).catch(() => undefined)}>Refresh Transfer Readiness</button>
               </div>
               <PlainResult value={transferReadinessPreview} />
+            </Panel>
+            <Panel title="Pre-Transfer Readiness Protocol">
+              <p className="plainHelp">Preview only. Not transfer approval. This combines the Charter, Law of Transfer, ABC order, sealed accession manifest, Core/Mind transfer trials, C-style dry run, Return-to-B drill, and locked ceremony shell.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Law Checks" value={`${text(transferLawStatus?.checks_passed ?? 0)}/${text(((transferLawStatus?.checks || []) as unknown[]).length || 0)}`} />
+                <Metric label="Manifest Items" value={text(transferAccessionManifest?.item_count ?? 0)} />
+                <Metric label="Trial Mismatches" value={text(safeJsonObject(preTransferProtocolReadiness?.governance_trials).mismatch_count ?? 0)} />
+                <Metric label="Dry Run" value={safeJsonObject(preTransferProtocolReadiness?.speech_dry_run_stability).stable_preview ? "stable preview" : "not run"} />
+                <Metric label="Return-to-B" value={safeJsonObject(preTransferProtocolReadiness?.return_to_b_drill).ready ? "drilled" : "not run"} />
+                <Metric label="Transfer" value={preTransferProtocolReadiness?.transfer_approved ? "approved" : "not approved"} />
+              </div>
+              <div className="chips">
+                <span>{text(preTransferProtocolReadiness?.notice || "Preview only. Not transfer approval.")}</span>
+                <span>ceremony: {friendlyStatus(transferCeremonyPreview?.status || "locked")}</span>
+                <span>approval button: {transferCeremonyPreview?.approval_button_enabled ? "enabled" : "disabled"}</span>
+                <span>B remains: {transferCeremonyPreview?.b_remains_active ? "active" : "not checked"}</span>
+                <span>memory write: {plainBlocked(preTransferProtocolReadiness?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(preTransferProtocolReadiness?.runtime_memory_recall)}</span>
+              </div>
+              <div className="filters">
+                <label>
+                  <span>C-style dry run prompt</span>
+                  <textarea value={transferDryRunPrompt} onChange={(event) => setTransferDryRunPrompt(event.target.value)} />
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button onClick={() => refreshTransferProtocol().catch(() => undefined)}>Refresh Protocol</button>
+                <button onClick={prepareTransferAccessionManifest} disabled={transferProtocolResult?.status === "running"}>Prepare Accession Manifest</button>
+                <button onClick={runTransferProtocolTrials} disabled={transferProtocolResult?.status === "running"}>Run Transfer Trials</button>
+                <button onClick={runTransferChatDryRun} disabled={transferDryRunResult?.status === "running"}>Run C Dry Run</button>
+                <button onClick={runTransferReturnToBDrill} disabled={transferReturnDrillResult?.status === "running"}>Run Return-To-B Drill</button>
+              </div>
+              <div className="list compactList packetList">
+                {((transferAccessionManifest?.items || []) as Dict[]).slice(0, 8).map((item) => (
+                  <article className="packetCard" key={`transfer-manifest-${text(item.id)}-${text(item.phase_order)}`}>
+                    <div className="packetHeader">
+                      <strong>{text(item.phase)}: {text(item.title)}</strong>
+                      <span>{friendlyStatus(item.c_access_status)}</span>
+                    </div>
+                    <p>{text(item.summary)}</p>
+                    <div className="chips">
+                      <span>order: {text(item.phase_order)}</span>
+                      <span>{friendlyStatus(item.review_status || "review_only")}</span>
+                      <span>destination: {text(item.review_destination || "Status")}</span>
+                    </div>
+                  </article>
+                ))}
+                {transferAccessionManifest && !((transferAccessionManifest.items || []) as unknown[]).length ? <p className="emptyState">No accession manifest prepared yet.</p> : null}
+              </div>
+              <PlainResult value={transferProtocolResult} />
+              <PlainResult value={transferDryRunResult} />
+              <PlainResult value={transferReturnDrillResult} />
+              <PlainResult value={preTransferProtocolReadiness} />
+              <PlainResult value={transferCeremonyPreview} />
             </Panel>
             <Panel title="Core/Mind Runtime Shell">
               <p className="plainHelp">Final pre-transfer runtime shell: context composer, session state, response shape, evaluator, recovery, activation governance, case-law proposal, and memory/index preview. These are review-only/status-only records, not C activation.</p>
