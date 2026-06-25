@@ -166,6 +166,17 @@ from .reasoning_artifacts import (
     update_evidence_tension_entry,
     upsert_organ_contract,
 )
+from .transfer_protocol import (
+    c_chat_dry_run,
+    ceremony_preview,
+    list_accession_manifest,
+    list_transfer_protocol_records,
+    pre_transfer_readiness,
+    prepare_accession_manifest,
+    run_return_to_b_drill,
+    run_transfer_governance_trials,
+    transfer_law_status,
+)
 from .vessel_construction import (
     construction_status,
     create_chest_holding_item,
@@ -277,6 +288,24 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": runtime_readiness(conn)}
     if route_key == "core_mind.runtime_records.list":
         return {"route": route_key, "result": list_runtime_records(conn, int(payload.get("limit") or 80))}
+    if route_key == "transfer.law.status":
+        return {"route": route_key, "result": transfer_law_status(conn)}
+    if route_key == "transfer.accession_manifest.prepare":
+        return {"route": route_key, "result": prepare_accession_manifest(conn, payload)}
+    if route_key == "transfer.accession_manifest.list":
+        return {"route": route_key, "result": list_accession_manifest(conn, int(payload.get("limit") or 80))}
+    if route_key == "transfer.governance_trials.run":
+        return {"route": route_key, "result": run_transfer_governance_trials(conn, payload)}
+    if route_key == "transfer.c_chat_dry_run":
+        return {"route": route_key, "result": c_chat_dry_run(conn, payload)}
+    if route_key == "transfer.return_to_b_drill":
+        return {"route": route_key, "result": run_return_to_b_drill(conn, payload)}
+    if route_key == "transfer.pre_transfer_readiness":
+        return {"route": route_key, "result": pre_transfer_readiness(conn)}
+    if route_key == "transfer.ceremony_preview":
+        return {"route": route_key, "result": ceremony_preview(conn)}
+    if route_key == "transfer.protocol_records.list":
+        return {"route": route_key, "result": list_transfer_protocol_records(conn, str(payload.get("record_type") or ""), int(payload.get("limit") or 80))}
     if route_key == "vessel.steps_1_8.status":
         return {"route": route_key, "result": steps_1_8_status(conn)}
     if route_key == "vessel.speech_rehearsal.create":
