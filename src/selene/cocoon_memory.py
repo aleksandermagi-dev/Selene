@@ -9,6 +9,7 @@ from typing import Any
 from .c_blueprint import c_blueprint_status
 from .cocoon import cocoon_status
 from .cocoon_readiness import ACCESSION_BOUNDARY
+from .paths import PROJECT_ROOT
 from .registry import truncate
 from .reconstruction_checks import evaluate_recognition_reconstruction
 from .vessel import CORE_MEMORY_LAYERS
@@ -636,7 +637,7 @@ def _proposal_summary(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    return PROJECT_ROOT
 
 
 def _ensure_allowed(payload: dict[str, Any], *, allow_restore_terms: bool = False) -> None:
