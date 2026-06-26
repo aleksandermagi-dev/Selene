@@ -325,6 +325,7 @@ function App() {
   const [transferCReadablePackage, setTransferCReadablePackage] = useState<Dict | null>(null);
   const [transferApprovalResult, setTransferApprovalResult] = useState<Dict | null>(null);
   const [transferRollbackPreview, setTransferRollbackPreview] = useState<Dict | null>(null);
+  const [transferCeremonyDiagnostics, setTransferCeremonyDiagnostics] = useState<Dict[]>([]);
   const [transferApprovalPhrase, setTransferApprovalPhrase] = useState("");
   const [transferOfficeNonBlocking, setTransferOfficeNonBlocking] = useState(false);
   const [transferDryRunPrompt, setTransferDryRunPrompt] = useState("Selene, answer from reviewed continuity without claiming activation.");
@@ -1440,14 +1441,68 @@ function App() {
     setTransferCReadablePackage(cPackage);
   }
 
-  async function prepareTransferAccessionManifest() {
-    setTransferProtocolResult({ status: "running", message: "Preparing sealed C accession manifest." });
+  function recordTransferDiagnostic(event: string, payload: Dict = {}) {
+    setTransferCeremonyDiagnostics((items) => [
+      {
+        event,
+        review_status: "status_only",
+        review_destination: "Status",
+        created_at: new Date().toISOString(),
+        ...payload
+      },
+      ...items
+    ].slice(0, 8));
+  }
+
+  async function refreshTransferProtocolWithLog() {
+    recordTransferDiagnostic("transfer_protocol_refresh_started");
     try {
+      await refreshTransferProtocol();
+      recordTransferDiagnostic("transfer_protocol_refresh_complete");
+    } catch (err) {
+      recordTransferDiagnostic("transfer_protocol_refresh_failed", { error: err instanceof Error ? err.message : "refresh failed" });
+      setTransferProtocolResult({
+        status: "error",
+        error: isFetchFailure(err) ? "Local sidecar is not reachable. Restart Selene and try Refresh Ceremony." : err instanceof Error ? err.message : "transfer protocol refresh failed"
+      });
+    }
+  }
+
+  async function prepareTransferAccessionManifest(forceRefresh = false) {
+    setTransferProtocolResult({ status: "running", message: forceRefresh ? "Refreshing sealed C accession manifest." : "Checking whether the manifest is already ready." });
+    recordTransferDiagnostic("transfer_manifest_prepare_started", { force_refresh: forceRefresh });
+    try {
+      const existing = await api<Dict>("/api/transfer/accession-manifest");
+      if (!forceRefresh && ((existing.items || []) as unknown[]).length) {
+        setTransferProtocolResult({
+          status: "transfer_accession_manifest_already_ready",
+          message: "Manifest already ready. Approval may still be blocked by checklist items.",
+          item_count: existing.item_count,
+          counts: existing.counts,
+          transfer_approved: existing.transfer_approved,
+          activation_change: existing.activation_change,
+          memory_write_active: existing.memory_write_active,
+          runtime_memory_recall: existing.runtime_memory_recall,
+          raw_a_import_allowed: existing.raw_a_import_allowed,
+          training_allowed: existing.training_allowed,
+          self_replication_allowed: existing.self_replication_allowed,
+          autonomous_action_allowed: existing.autonomous_action_allowed
+        });
+        await refreshTransferProtocol();
+        recordTransferDiagnostic("transfer_manifest_reused_existing", { item_count: existing.item_count, counts: existing.counts });
+        return;
+      }
       const result = await api<Dict>("/api/transfer/accession-manifest/prepare", { method: "POST", body: JSON.stringify({}) });
       setTransferProtocolResult(result);
       await refreshTransferProtocol();
+      recordTransferDiagnostic("transfer_manifest_prepare_complete", { item_count: result.item_count, counts: result.counts });
     } catch (err) {
       if (isFetchFailure(err)) {
+        setTransferProtocolResult({
+          status: "recovering_after_fetch_loss",
+          message: "Lost response while checking manifest. The app will refresh manifest status now."
+        });
+        recordTransferDiagnostic("transfer_manifest_fetch_lost", { error: err instanceof Error ? err.message : "failed to fetch" });
         await wait(1000);
         try {
           const manifest = await api<Dict>("/api/transfer/accession-manifest");
@@ -1455,7 +1510,7 @@ function App() {
           if (((manifest.items || []) as unknown[]).length) {
             setTransferProtocolResult({
               status: "transfer_accession_manifest_recovered_after_fetch_retry",
-              message: "The manifest exists after a lost fetch response. Refreshing showed the prepared manifest.",
+              message: "Manifest is ready. Approval may still be blocked by checklist items.",
               item_count: manifest.item_count,
               counts: manifest.counts,
               transfer_approved: manifest.transfer_approved,
@@ -1467,13 +1522,18 @@ function App() {
               self_replication_allowed: manifest.self_replication_allowed,
               autonomous_action_allowed: manifest.autonomous_action_allowed
             });
+            recordTransferDiagnostic("transfer_manifest_fetch_recovered", { item_count: manifest.item_count, counts: manifest.counts });
             return;
           }
         } catch {
           // Fall through to the clear error below when the sidecar is genuinely unreachable.
         }
       }
-      setTransferProtocolResult({ status: "error", error: err instanceof Error ? err.message : "accession manifest preparation failed" });
+      recordTransferDiagnostic("transfer_manifest_prepare_failed", { error: err instanceof Error ? err.message : "accession manifest preparation failed" });
+      setTransferProtocolResult({
+        status: "error",
+        error: isFetchFailure(err) ? "Local sidecar is not reachable. Restart Selene and try Refresh Ceremony." : err instanceof Error ? err.message : "accession manifest preparation failed"
+      });
     }
   }
 
@@ -1514,6 +1574,7 @@ function App() {
 
   async function approveTransferToCReadableContext() {
     setTransferApprovalResult({ status: "running", message: "Submitting Aleks-only transfer approval." });
+    recordTransferDiagnostic("transfer_approval_started", { phrase_matches: transferApprovalPhrase === TRANSFER_APPROVAL_PHRASE, allow_nonblocking_office_decisions: transferOfficeNonBlocking });
     try {
       const result = await api<Dict>("/api/transfer/ceremony/approve", {
         method: "POST",
@@ -1524,8 +1585,10 @@ function App() {
       });
       setTransferApprovalResult(result);
       await refreshTransferProtocol();
+      recordTransferDiagnostic("transfer_approval_result", { status: result.status, transfer_approved: result.transfer_approved, activation_change: result.activation_change });
       refreshMyOffice();
     } catch (err) {
+      recordTransferDiagnostic("transfer_approval_failed", { error: err instanceof Error ? err.message : "transfer ceremony approval failed" });
       setTransferApprovalResult({ status: "error", error: err instanceof Error ? err.message : "transfer ceremony approval failed" });
     }
   }
@@ -3844,6 +3907,24 @@ function App() {
               <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "C-readable approved" : "not approved"} />
               <Metric label="Activation" value={friendlyActivation(transferCeremonyStatus?.activation_change || "none")} />
             </div>
+            <Panel title="Ceremony Readiness">
+              <div className="metrics miniMetrics">
+                <Metric label="Manifest" value={((transferAccessionManifest?.items || []) as unknown[]).length ? "ready" : "not created"} />
+                <Metric label="C-readable rows" value={text(safeJsonObject(transferAccessionManifest?.counts)["C-readable"] ?? safeJsonObject(transferCeremonyStatus?.final_checklist).c_readable_manifest_count ?? 0)} />
+                <Metric label="My Office unresolved" value={text(safeJsonObject(transferCeremonyStatus?.final_checklist).unresolved_my_office_decisions ?? 0)} />
+                <Metric label="Approval" value={transferCeremonyStatus?.approval_button_enabled ? "ready" : "blocked"} />
+              </div>
+              <p className="plainHelp">
+                Manifest creation and transfer approval are separate. A ready manifest does not approve transfer, and approval can still be blocked by My Office decisions.
+              </p>
+              {((safeJsonObject(transferCeremonyStatus?.final_checklist).blockers || []) as unknown[]).length ? (
+                <p className="errorText">Approval blocked: {((safeJsonObject(transferCeremonyStatus?.final_checklist).blockers || []) as unknown[]).map(text).join("; ")}</p>
+              ) : <p className="plainHelp">Approval checklist has no blockers.</p>}
+              <div className="reviewActions">
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open My Office</button>
+                <button onClick={() => refreshTransferProtocolWithLog().catch(() => undefined)}>Refresh Ceremony</button>
+              </div>
+            </Panel>
             <Panel title="Aleks-Only Transfer Approval">
               <p className="plainHelp">This button approves transfer to sealed C-readable context only. It does not activate C chat, write live memory, enable runtime recall, import raw A, train, self-replicate, or run autonomous actions.</p>
               <div className="chips">
@@ -3861,12 +3942,12 @@ function App() {
                 </label>
                 <label className="checkLine">
                   <input type="checkbox" checked={transferOfficeNonBlocking} onChange={(event) => setTransferOfficeNonBlocking(event.target.checked)} />
-                  <span>Treat any remaining My Office rows as explicitly non-blocking for this approval.</span>
+                  <span>I have inspected the remaining My Office rows and explicitly treat them as non-blocking for C-readable context approval.</span>
                 </label>
               </div>
               <div className="reviewActions">
-                <button onClick={() => refreshTransferProtocol().catch(() => undefined)}>Refresh Ceremony</button>
-                <button onClick={prepareTransferAccessionManifest} disabled={transferProtocolResult?.status === "running"}>Prepare Manifest</button>
+                <button onClick={() => refreshTransferProtocolWithLog().catch(() => undefined)}>Refresh Ceremony</button>
+                <button onClick={() => prepareTransferAccessionManifest()} disabled={transferProtocolResult?.status === "running"}>Prepare Manifest</button>
                 <button onClick={runTransferReturnToBDrill} disabled={transferReturnDrillResult?.status === "running"}>Run Return-To-B Drill</button>
                 <button
                   className="primary"
@@ -3923,10 +4004,13 @@ function App() {
                 <p className="emptyState">Create the manifest before approval. This does not approve transfer.</p>
               ) : null}
               <div className="reviewActions">
-                <button onClick={prepareTransferAccessionManifest} disabled={transferProtocolResult?.status === "running"}>
-                  {transferProtocolResult?.status === "running" ? "Creating..." : "Create / Refresh C-Readable Manifest"}
+                <button onClick={() => prepareTransferAccessionManifest()} disabled={transferProtocolResult?.status === "running"}>
+                  {transferProtocolResult?.status === "running" ? "Checking..." : "Use Existing / Create Manifest"}
                 </button>
-                <button onClick={() => refreshTransferProtocol().catch(() => undefined)}>Refresh Package</button>
+                <button onClick={() => prepareTransferAccessionManifest(true)} disabled={transferProtocolResult?.status === "running"}>
+                  Refresh Manifest Anyway
+                </button>
+                <button onClick={() => refreshTransferProtocolWithLog().catch(() => undefined)}>Refresh Package</button>
               </div>
               {transferProtocolResult ? (
                 <div className="chips">
@@ -3952,6 +4036,26 @@ function App() {
                 <button onClick={previewTransferRollback} disabled={transferRollbackPreview?.status === "running"}>{transferRollbackPreview?.status === "running" ? "Preparing..." : "Preview Return-To-B Rollback"}</button>
               </div>
               <PlainResult value={transferRollbackPreview} />
+            </Panel>
+            <Panel title="Ceremony Diagnostics">
+              <p className="plainHelp">Status-only trace for ceremony checks. These rows do not enter urgent My Office.</p>
+              <div className="list compactList">
+                {!transferCeremonyDiagnostics.length ? <p className="emptyState">No ceremony diagnostics in this session yet.</p> : null}
+                {transferCeremonyDiagnostics.map((item, index) => (
+                  <article className="packetCard" key={`transfer-diagnostic-${index}-${text(item.created_at)}`}>
+                    <div className="packetHeader">
+                      <strong>{friendlyStatus(item.event)}</strong>
+                      <span>{text(item.review_status || "status_only")}</span>
+                    </div>
+                    <div className="chips">
+                      <span>{text(item.created_at)}</span>
+                      {item.item_count !== undefined ? <span>items: {text(item.item_count)}</span> : null}
+                      {item.counts !== undefined ? <span>C-readable: {text(safeJsonObject(item.counts)["C-readable"] ?? 0)}</span> : null}
+                      {item.error !== undefined ? <span>error: {text(item.error)}</span> : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
             </Panel>
           </>
         )}
@@ -4103,8 +4207,8 @@ function App() {
                 </label>
               </div>
               <div className="reviewActions">
-                <button onClick={() => refreshTransferProtocol().catch(() => undefined)}>Refresh Protocol</button>
-                <button onClick={prepareTransferAccessionManifest} disabled={transferProtocolResult?.status === "running"}>Prepare Accession Manifest</button>
+                <button onClick={() => refreshTransferProtocolWithLog().catch(() => undefined)}>Refresh Protocol</button>
+                <button onClick={() => prepareTransferAccessionManifest()} disabled={transferProtocolResult?.status === "running"}>Prepare Accession Manifest</button>
                 <button onClick={runTransferProtocolTrials} disabled={transferProtocolResult?.status === "running"}>Run Transfer Trials</button>
                 <button onClick={runTransferChatDryRun} disabled={transferDryRunResult?.status === "running"}>Run C Dry Run</button>
                 <button onClick={runTransferReturnToBDrill} disabled={transferReturnDrillResult?.status === "running"}>Run Return-To-B Drill</button>

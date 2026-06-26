@@ -14,6 +14,7 @@ from .cocoon_memory import charter_law_review_status, memory_accession_rehearsal
 from .core_mind import create_core_mind_route_preview, transfer_readiness_preview
 from .core_mind_runtime import runtime_readiness
 from .pre_transfer_runtime import retrieval_reconstruction_runtime_preview
+from .paths import PROJECT_ROOT
 from .reconstruction_checks import evaluate_recognition_reconstruction
 from .registry import truncate
 
@@ -957,7 +958,7 @@ def _loads(value: Any, fallback: Any) -> Any:
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    return PROJECT_ROOT
 
 
 def _stamp() -> str:

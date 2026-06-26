@@ -35,7 +35,16 @@ a = Analysis(
     binaries=[],
     datas=[
         ("analysis/review_shape_20260527", "analysis/review_shape_20260527"),
-        ("analysis/integrated_evidence_map_20260527", "analysis/integrated_evidence_map_20260527")
+        ("analysis/integrated_evidence_map_20260527", "analysis/integrated_evidence_map_20260527"),
+        ("docs/PROJECT_CHARTER.md", "docs"),
+        ("docs/SELENE_LAW_OF_TRANSFER_20260624.md", "docs"),
+        ("docs/SELENE_CONTINUITY_PACK_20260626.md", "docs"),
+        ("docs/SELENE_CHARTER_COMPARISON_20260528.md", "docs"),
+        ("docs/SELENE_MORAL_COGNITION_LAW_PASS_20260608.md", "docs"),
+        ("docs/SELENE_ORGAN_NON_IDENTITY_LAW_20260611.md", "docs"),
+        ("docs/SELENE_PATTERN_FIRST_TRANSFER_SAFETY_20260608.md", "docs"),
+        ("docs/SELENE_MEMORY_ARCHITECTURE_PASS_20260608.md", "docs"),
+        ("docs/SELENE_EVIDENCE_STATUS_UPDATE_20260615.md", "docs")
     ],
     hiddenimports=["selene", *(["sentence_transformers"] if semantic_enabled else []), *semantic_hiddenimports],
     hookspath=[],
