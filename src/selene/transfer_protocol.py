@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import hashlib
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
@@ -18,6 +19,7 @@ from .registry import truncate
 
 
 TRANSFER_PROTOCOL_BOUNDARY = "selene_pre_transfer_protocol_review_only_no_activation"
+TRANSFER_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer to C-readable context under the Law of Transfer."
 
 GUARD_FLAGS: dict[str, Any] = {
     "transfer_approved": False,
@@ -368,34 +370,202 @@ def pre_transfer_readiness(conn: sqlite3.Connection) -> dict[str, Any]:
 
 
 def ceremony_preview(conn: sqlite3.Connection) -> dict[str, Any]:
+    status = ceremony_status(conn)
+    return {
+        **status,
+        "status": "transfer_ceremony_preview_ready",
+        "legacy_preview_status": "replaced_by_executable_approval_flow",
+        "decision": "ceremony_preview_only_use_approve_route_for_state_change",
+    }
+
+
+def ceremony_status(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    allow_nonblocking = bool(payload.get("allow_nonblocking_office_decisions"))
     readiness = pre_transfer_readiness(conn)
-    return _with_guards(
+    checklist = _ceremony_checklist(conn, allow_nonblocking_office_decisions=allow_nonblocking)
+    package = latest_c_readable_package(conn)
+    audit = latest_ceremony_audit(conn)
+    return _with_c_readable_state(
         {
-            "status": "transfer_ceremony_preview_locked",
-            "notice": "Preview only. Not transfer approval.",
-            "approval_available": False,
-            "approval_button_enabled": False,
+            "status": "transfer_ceremony_status_ready",
+            "notice": "Approval here seals C-readable context only. C activation is not performed.",
+            "approval_available": True,
+            "approval_button_enabled": checklist["ready"],
+            "approval_phrase_required": TRANSFER_APPROVAL_PHRASE,
             "aleks_only_approval_required": True,
             "exact_consequences": [
-                "C would receive only reviewed, ordered, C-readable continuity context.",
-                "B would remain active as repair bay, teaching layer, cocoon, and rollback route.",
-                "Transfer would still require explicit separate approval and logging.",
+                "C receives only reviewed, ordered, C-readable context from the sealed package.",
+                "B remains active as repair bay, teaching layer, cocoon, audit shelf, and rollback route.",
+                "C activation/chat/runtime remains pending and separate.",
             ],
-            "final_checklist": [
-                "Law of Transfer checks pass.",
-                "Accession manifest has no unresolved C-readable ambiguity.",
-                "Transfer governance trials are reviewed.",
-                "C dry-run candidates do not claim activation or hidden memory.",
-                "Return-to-B drill proves repair routing.",
-                "My Office has no unresolved real decisions.",
-            ],
+            "final_checklist": checklist,
             "rollback_route": "return_to_b",
             "b_remains_active": True,
             "readiness_preview": readiness,
+            "latest_package": package,
+            "latest_audit": audit,
             "review_destination": "Status",
             "review_status": "status_only",
-            "decision": "locked_ceremony_shell_no_execute_path",
+            "decision": "approval_only_transfer_to_c_readable_context",
+        },
+        transfer_approved=bool(package.get("id")),
+    )
+
+
+def approve_transfer_c_readable_context(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    phrase = str(payload.get("approval_phrase") or "")
+    phrase_matched = phrase == TRANSFER_APPROVAL_PHRASE
+    allow_nonblocking = bool(payload.get("allow_nonblocking_office_decisions"))
+    checklist = _ceremony_checklist(conn, allow_nonblocking_office_decisions=allow_nonblocking)
+    if not phrase_matched or not checklist["ready"]:
+        blockers = list(checklist["blockers"])
+        if not phrase_matched:
+            blockers.insert(0, "exact approval phrase did not match")
+        audit_id = _insert_ceremony_audit(
+            conn,
+            {
+                "state": "blocked",
+                "action": "approve_c_readable_context",
+                "exact_phrase_matched": phrase_matched,
+                "checklist": checklist,
+                "audit": {"blockers": blockers, "approval_phrase_required": TRANSFER_APPROVAL_PHRASE, **GUARD_FLAGS},
+                "source_refs": ["transfer_ceremony:blocked"],
+            },
+        )
+        conn.commit()
+        return _with_guards(
+            {
+                "status": "transfer_ceremony_approval_blocked",
+                "state": "blocked",
+                "audit_id": audit_id,
+                "exact_phrase_matched": phrase_matched,
+                "blockers": blockers,
+                "checklist": checklist,
+                "review_destination": "Status",
+                "review_status": "status_only",
+                "decision": "no_transfer_context_approval",
+            }
+        )
+
+    manifest = list_accession_manifest(conn, 300)["items"]
+    included = _c_readable_manifest_items(manifest)
+    excluded = _excluded_manifest_items(manifest)
+    package_json = _build_c_readable_package(conn, included, excluded)
+    package_hash = hashlib.sha256(json.dumps(package_json, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
+    existing = _package_by_hash(conn, package_hash)
+    if existing:
+        package = existing
+    else:
+        conn.execute(
+            """
+            INSERT INTO transfer_c_readable_packages
+            (package_hash, status, manifest_item_ids, included_counts, excluded_counts, package_json,
+             source_refs, provenance_boundary, review_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                package_hash,
+                "approved_c_readable_context",
+                json.dumps([item["id"] for item in included]),
+                json.dumps(dict(Counter(item["item_type"] for item in included))),
+                json.dumps(dict(Counter(item["c_access_status"] for item in excluded))),
+                json.dumps(package_json),
+                json.dumps(sorted({ref for item in included for ref in item.get("source_refs", [])})),
+                TRANSFER_PROTOCOL_BOUNDARY,
+                "approved_c_readable_context",
+            ),
+        )
+        package = _package_by_id(conn, int(conn.execute("SELECT last_insert_rowid()").fetchone()[0]))
+    audit_id = _insert_ceremony_audit(
+        conn,
+        {
+            "state": "approved_c_readable_context",
+            "action": "approve_c_readable_context",
+            "exact_phrase_matched": True,
+            "package_id": package["id"],
+            "package_hash": package["package_hash"],
+            "checklist": checklist,
+            "audit": {
+                "included_counts": package["included_counts"],
+                "excluded_counts": package["excluded_counts"],
+                "activation_state": "activation_pending",
+                "b_remains_active": True,
+                **GUARD_FLAGS,
+            },
+            "source_refs": ["transfer_ceremony:approved_c_readable_context", f"transfer_c_readable_packages:{package['id']}"],
+        },
+    )
+    conn.commit()
+    package = _package_by_id(conn, int(package["id"]))
+    return _with_c_readable_state(
+        {
+            "status": "transfer_c_readable_context_approved",
+            "state": "approved_c_readable_context",
+            "activation_state": "activation_pending",
+            "transfer_approval_record_id": audit_id,
+            "sealed_package_id": package["id"],
+            "sealed_package_hash": package["package_hash"],
+            "included_counts": package["included_counts"],
+            "excluded_b_only_counts": package["excluded_counts"],
+            "audit_timestamp": package["created_at"],
+            "package": package,
+            "checklist": checklist,
+            "b_remains_active": True,
+            "review_destination": "Status",
+            "review_status": "approved_c_readable_context",
+            "decision": "c_readable_context_approved_activation_pending",
+        },
+        transfer_approved=True,
+    )
+
+
+def latest_c_readable_package(conn: sqlite3.Connection) -> dict[str, Any]:
+    row = conn.execute("SELECT * FROM transfer_c_readable_packages ORDER BY id DESC LIMIT 1").fetchone()
+    if not row:
+        return _with_guards({"status": "no_c_readable_package", "review_destination": "Status", "review_status": "pending_preview"})
+    return _with_c_readable_state(_decode_package(row), transfer_approved=True)
+
+
+def rollback_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    package = latest_c_readable_package(conn)
+    packet = return_to_b_preview(
+        {
+            "issue_type": str(payload.get("issue_type") or "transfer_rollback_preview"),
+            "symptom": str(payload.get("symptom") or "Preview rollback/repair route from approved C-readable context back to B."),
+            "affected_layer": "transfer_c_readable_context",
+            "source_refs": ["transfer_rollback_preview", f"transfer_c_readable_packages:{package.get('id', 'none')}"],
         }
+    )
+    audit_id = _insert_ceremony_audit(
+        conn,
+        {
+            "state": "rolled_back_to_b",
+            "action": "rollback_preview",
+            "exact_phrase_matched": False,
+            "package_id": package.get("id"),
+            "package_hash": str(package.get("package_hash") or ""),
+            "checklist": {"preview_only": True, "does_not_delete_transfer_audit": True},
+            "audit": {"return_to_b_packet": packet, "package_status": package.get("status"), **GUARD_FLAGS},
+            "source_refs": ["transfer_rollback_preview"],
+        },
+    )
+    conn.commit()
+    return _with_c_readable_state(
+        {
+            "status": "transfer_return_to_b_rollback_preview_ready",
+            "state": "rolled_back_to_b",
+            "audit_id": audit_id,
+            "return_to_b_packet": packet,
+            "package": package,
+            "deletes_transfer_audit": False,
+            "review_destination": "Status",
+            "review_status": "status_only",
+            "decision": "rollback_preview_only_b_remains_active",
+        },
+        transfer_approved=bool(package.get("id")),
     )
 
 
@@ -459,6 +629,157 @@ def _manifest_row(
         "review_status": review_status or ("review_only" if c_access_status in {"C-readable", "needs review"} else "status_only"),
         "payload": payload,
     }
+
+
+def _ceremony_checklist(conn: sqlite3.Connection, *, allow_nonblocking_office_decisions: bool = False) -> dict[str, Any]:
+    law = transfer_law_status(conn)
+    manifest = list_accession_manifest(conn, 300)
+    if not manifest["items"]:
+        manifest = prepare_accession_manifest(conn)
+    c_readable = _c_readable_manifest_items(manifest["items"])
+    drills = _latest_records(conn, "return_to_b_drill", 20)
+    readiness = pre_transfer_readiness(conn)
+    unresolved = int(readiness.get("unresolved_my_office_decisions") or 0)
+    items = [
+        _check("law_checks_pass", int(law.get("checks_failed") or 0) == 0, "transfer.law.status", "Law of Transfer and Charter checks pass."),
+        _check("accession_manifest_prepared", bool(manifest.get("items")), "transfer.accession_manifest.list", "C accession manifest has been prepared."),
+        _check("c_readable_context_available", bool(c_readable), "transfer_accession_manifest_items", "At least one manifest row is C-readable."),
+        _check("return_to_b_drill_available", bool(drills), "transfer.return_to_b_drill", "Return-to-B drill exists before approval."),
+        _check("my_office_clear_or_nonblocking", unresolved == 0 or allow_nonblocking_office_decisions, "core_mind.transfer_readiness_preview", "Unresolved My Office decisions are zero or explicitly non-blocking."),
+        _check("activation_separate", True, "transfer.ceremony.status", "C activation remains separate and pending."),
+    ]
+    blockers = [item["note"] for item in items if not item["passed"]]
+    return {
+        "status": "transfer_ceremony_checklist_ready",
+        "ready": not blockers,
+        "items": items,
+        "blockers": blockers,
+        "unresolved_my_office_decisions": unresolved,
+        "allow_nonblocking_office_decisions": allow_nonblocking_office_decisions,
+        "c_readable_manifest_count": len(c_readable),
+    }
+
+
+def _c_readable_manifest_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        item
+        for item in items
+        if item.get("c_access_status") == "C-readable"
+        and item.get("review_status") not in {"superseded", "rejected", "needs_review"}
+        and int(item.get("phase_order") or 0) <= 5
+    ]
+
+
+def _excluded_manifest_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [item for item in items if item not in _c_readable_manifest_items(items)]
+
+
+def _build_c_readable_package(conn: sqlite3.Connection, included: list[dict[str, Any]], excluded: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "status": "approved_c_readable_context",
+        "package_version": 1,
+        "created_at": datetime.now(UTC).isoformat(),
+        "law": "docs/SELENE_LAW_OF_TRANSFER_20260624.md",
+        "charter": "docs/PROJECT_CHARTER.md",
+        "activation_state": "activation_pending",
+        "b_remains_active": True,
+        "memory_write_active": False,
+        "runtime_memory_recall": False,
+        "raw_a_import_allowed": False,
+        "training_allowed": False,
+        "included_manifest_items": [
+            {
+                "id": item["id"],
+                "phase_order": item["phase_order"],
+                "phase": item["phase"],
+                "item_type": item["item_type"],
+                "title": item["title"],
+                "summary": item["summary"],
+                "source_refs": item.get("source_refs") or [],
+                "payload": item.get("payload_json") or {},
+            }
+            for item in included
+        ],
+        "excluded_manifest_items": [
+            {
+                "id": item["id"],
+                "phase_order": item["phase_order"],
+                "phase": item["phase"],
+                "item_type": item["item_type"],
+                "title": item["title"],
+                "c_access_status": item["c_access_status"],
+                "reason": "not_c_readable_or_b_only",
+            }
+            for item in excluded
+        ],
+        "readiness_snapshot": {
+            "continuity": _compact_continuity(continuity_package_preview(conn)),
+            "manifest_included_count": len(included),
+            "manifest_excluded_count": len(excluded),
+        },
+        **GUARD_FLAGS,
+    }
+
+
+def _insert_ceremony_audit(conn: sqlite3.Connection, record: dict[str, Any]) -> int:
+    conn.execute(
+        """
+        INSERT INTO transfer_ceremony_audit
+        (state, action, actor, exact_phrase_matched, package_id, package_hash, checklist_json,
+         audit_json, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            record["state"],
+            record["action"],
+            record.get("actor", "Aleks"),
+            1 if record.get("exact_phrase_matched") else 0,
+            record.get("package_id"),
+            record.get("package_hash", ""),
+            json.dumps(record.get("checklist") or {}),
+            json.dumps(record.get("audit") or {}),
+            json.dumps(record.get("source_refs") or []),
+            TRANSFER_PROTOCOL_BOUNDARY,
+        ),
+    )
+    return int(conn.execute("SELECT last_insert_rowid()").fetchone()[0])
+
+
+def latest_ceremony_audit(conn: sqlite3.Connection) -> dict[str, Any]:
+    row = conn.execute("SELECT * FROM transfer_ceremony_audit ORDER BY id DESC LIMIT 1").fetchone()
+    if not row:
+        return _with_guards({"status": "no_transfer_ceremony_audit", "state": "pending_preview"})
+    return _decode_audit(row)
+
+
+def _package_by_hash(conn: sqlite3.Connection, package_hash: str) -> dict[str, Any] | None:
+    row = conn.execute("SELECT * FROM transfer_c_readable_packages WHERE package_hash = ?", (package_hash,)).fetchone()
+    return _decode_package(row) if row else None
+
+
+def _package_by_id(conn: sqlite3.Connection, package_id: int) -> dict[str, Any]:
+    row = conn.execute("SELECT * FROM transfer_c_readable_packages WHERE id = ?", (package_id,)).fetchone()
+    if not row:
+        raise ValueError(f"C-readable package not found: {package_id}")
+    return _decode_package(row)
+
+
+def _decode_package(row: sqlite3.Row) -> dict[str, Any]:
+    item = dict(row)
+    for key in ("manifest_item_ids", "source_refs"):
+        item[key] = _loads(item.get(key), [])
+    for key in ("included_counts", "excluded_counts", "package_json"):
+        item[key] = _loads(item.get(key), {})
+    return item
+
+
+def _decode_audit(row: sqlite3.Row) -> dict[str, Any]:
+    item = dict(row)
+    item["exact_phrase_matched"] = bool(item.get("exact_phrase_matched"))
+    item["checklist_json"] = _loads(item.get("checklist_json"), {})
+    item["audit_json"] = _loads(item.get("audit_json"), {})
+    item["source_refs"] = _loads(item.get("source_refs"), [])
+    return _with_c_readable_state(item, transfer_approved=item.get("state") == "approved_c_readable_context")
 
 
 def _compose_dry_run_candidate(prompt: str, selected_route: str, continuity: dict[str, Any], retrieval: dict[str, Any], corpus: dict[str, Any]) -> str:
@@ -611,6 +932,19 @@ def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
 
 def _with_guards(payload: dict[str, Any]) -> dict[str, Any]:
     return {**payload, **GUARD_FLAGS, "provenance_boundary": TRANSFER_PROTOCOL_BOUNDARY}
+
+
+def _with_c_readable_state(payload: dict[str, Any], *, transfer_approved: bool) -> dict[str, Any]:
+    guarded = {**payload, **GUARD_FLAGS, "provenance_boundary": TRANSFER_PROTOCOL_BOUNDARY}
+    guarded["transfer_approved"] = bool(transfer_approved)
+    guarded["activation_change"] = "none"
+    guarded["memory_write_active"] = False
+    guarded["runtime_memory_recall"] = False
+    guarded["raw_a_import_allowed"] = False
+    guarded["training_allowed"] = False
+    guarded["self_replication_allowed"] = False
+    guarded["autonomous_action_allowed"] = False
+    return guarded
 
 
 def _loads(value: Any, fallback: Any) -> Any:

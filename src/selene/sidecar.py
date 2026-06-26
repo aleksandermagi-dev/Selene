@@ -386,6 +386,18 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/core-mind/runtime-records":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "core_mind.runtime_records.list", {"limit": int(qs["limit"]) if qs.get("limit") else 80})["result"]))
+        elif parsed.path == "/api/selene-chat/status":
+            self._send(*json_bytes(route_request(conn, "selene_chat.status")["result"]))
+        elif parsed.path == "/api/selene-chat/sessions":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "selene_chat.sessions.list", {"limit": int(qs["limit"]) if qs.get("limit") else 25})["result"]))
+        elif parsed.path.startswith("/api/selene-chat/sessions/"):
+            try:
+                session_id = int(parsed.path.removeprefix("/api/selene-chat/sessions/"))
+                session = route_request(conn, "selene_chat.session.detail", {"session_id": session_id})["result"]
+                self._send(*json_bytes(session, 404 if session.get("error") else 200))
+            except ValueError:
+                self._send(*json_bytes({"error": "invalid session id"}, 400))
         elif parsed.path == "/api/transfer/law/status":
             self._send(*json_bytes(route_request(conn, "transfer.law.status")["result"]))
         elif parsed.path == "/api/transfer/accession-manifest":
@@ -395,6 +407,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "transfer.pre_transfer_readiness")["result"]))
         elif parsed.path == "/api/transfer/ceremony-preview":
             self._send(*json_bytes(route_request(conn, "transfer.ceremony_preview")["result"]))
+        elif parsed.path == "/api/transfer/ceremony/status":
+            self._send(*json_bytes(route_request(conn, "transfer.ceremony.status")["result"]))
+        elif parsed.path == "/api/transfer/c-readable-package":
+            self._send(*json_bytes(route_request(conn, "transfer.c_readable_package.latest")["result"]))
         elif parsed.path == "/api/vessel/steps-1-8/status":
             self._send(*json_bytes(route_request(conn, "vessel.steps_1_8.status")["result"]))
         elif parsed.path == "/api/vessel/speech-rehearsals":
@@ -793,6 +809,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "core_mind.memory_index.preview", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/selene-chat/send-dry-run":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "selene_chat.send_dry_run", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/selene-chat/route-to-b":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "selene_chat.route_to_b", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/transfer/accession-manifest/prepare":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "transfer.accession_manifest.prepare", body)["result"]))
@@ -811,6 +837,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/transfer/return-to-b-drill":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "transfer.return_to_b_drill", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/transfer/ceremony/approve":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "transfer.ceremony.approve", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/transfer/return-to-b/rollback-preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "transfer.return_to_b.rollback_preview", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/reasoning-artifact":
@@ -1081,6 +1117,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/b/android-language-lessons/prepare":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "b.android_language_lessons.prepare", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/b/selene-reasoning-lessons/prepare":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "b.selene_reasoning_lessons.prepare", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/public-release/sync":

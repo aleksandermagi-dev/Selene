@@ -181,6 +181,30 @@ CREATE TABLE IF NOT EXISTS chat_citations (
   FOREIGN KEY (message_id) REFERENCES chat_messages(id)
 );
 
+CREATE TABLE IF NOT EXISTS selene_chat_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pre_transfer_dry_run',
+  source_mode TEXT NOT NULL DEFAULT 'selene_dry_run',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS selene_chat_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id INTEGER NOT NULL,
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  selected_route TEXT NOT NULL DEFAULT 'status_only',
+  source_class TEXT NOT NULL DEFAULT 'current_turn_context',
+  package_hash TEXT NOT NULL DEFAULT '',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES selene_chat_sessions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_chat_messages_session ON selene_chat_messages(session_id, id);
+
 CREATE TABLE IF NOT EXISTS continuity_save_requests (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   message_id INTEGER NOT NULL,
@@ -699,6 +723,39 @@ CREATE TABLE IF NOT EXISTS transfer_protocol_records (
 );
 
 CREATE INDEX IF NOT EXISTS idx_transfer_protocol_records_type ON transfer_protocol_records(record_type, run_id, review_status);
+
+CREATE TABLE IF NOT EXISTS transfer_c_readable_packages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  package_hash TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'approved_c_readable_context',
+  manifest_item_ids TEXT NOT NULL DEFAULT '[]',
+  included_counts TEXT NOT NULL DEFAULT '{}',
+  excluded_counts TEXT NOT NULL DEFAULT '{}',
+  package_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'approved_c_readable_context',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_transfer_c_readable_packages_status ON transfer_c_readable_packages(status, review_status);
+
+CREATE TABLE IF NOT EXISTS transfer_ceremony_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  state TEXT NOT NULL,
+  action TEXT NOT NULL,
+  actor TEXT NOT NULL DEFAULT 'Aleks',
+  exact_phrase_matched INTEGER NOT NULL DEFAULT 0,
+  package_id INTEGER,
+  package_hash TEXT NOT NULL DEFAULT '',
+  checklist_json TEXT NOT NULL DEFAULT '{}',
+  audit_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_transfer_ceremony_audit_state ON transfer_ceremony_audit(state, created_at);
 
 CREATE TABLE IF NOT EXISTS native_generation_rehearsal_runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -12,9 +12,11 @@ export function title(value: string) {
 export function tabDisplayName(value: string) {
   const labels: Record<string, string> = {
     dashboard: "Evidence Dashboard",
-    chat: "C Chat Vessel",
+    "selene-chat": "Selene Chat",
+    chat: "Chat Preview",
     "my-office": "My Office",
     "my-review": "My Office",
+    "transfer-ceremony": "Transfer Ceremony",
     vessel: "B Cocoon Build",
     memory: "Memory / Future References",
     teaching: "Teaching / Lessons",

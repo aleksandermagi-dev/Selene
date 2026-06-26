@@ -11,22 +11,30 @@ def _conn(tmp_path):
 
 
 def _seed_transfer_context(conn):
-    conn.execute(
-        """
-        INSERT INTO b_approved_memory_references
-        (source_candidate_table, source_candidate_id, core_memory_layer, title, reference_summary, source_refs, provenance_boundary)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            "core_memory_candidates",
-            1,
-            "core_profile_memory",
-            "Core continuity reference",
-            "Reviewed continuity thread with provenance, care, uncertainty, and a practical next step.",
-            '["reference:core"]',
-            "test_boundary",
-        ),
-    )
+    for layer in (
+        "core_profile_memory",
+        "project_memory",
+        "decision_memory",
+        "task_memory",
+        "interaction_memory",
+        "reflection_memory",
+    ):
+        conn.execute(
+            """
+            INSERT INTO b_approved_memory_references
+            (source_candidate_table, source_candidate_id, core_memory_layer, title, reference_summary, source_refs, provenance_boundary)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "core_memory_candidates",
+                1,
+                layer,
+                f"{layer} reference",
+                "Reviewed continuity thread with provenance, care, uncertainty, and a practical next step.",
+                f'["reference:{layer}"]',
+                "test_boundary",
+            ),
+        )
     conn.execute(
         """
         INSERT INTO b_teaching_packets
@@ -69,11 +77,69 @@ def _seed_transfer_context(conn):
             "{}",
         ),
     )
+    conn.execute(
+        """
+        INSERT INTO vessel_reasoning_check_records(problem, result_summary, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?)
+        """,
+        ("reasoning", "review-only", "[]", "test_boundary"),
+    )
+    conn.execute(
+        """
+        INSERT INTO vessel_working_memory_packets(current_task, expiry_cleanup_note, interrupt_resume_note, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        ("task", "expires", "resume", "[]", "test_boundary"),
+    )
+    conn.execute(
+        """
+        INSERT INTO vessel_memory_accession_proposals(core_memory_layer, title, rationale, reversal_conditions, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        ("decision_memory", "proposal", "rationale", "reverse", "[]", "test_boundary"),
+    )
+    conn.execute(
+        """
+        INSERT INTO vessel_retrieval_reconstruction_previews(cue, bounded_preview, reconstruction_note, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        ("cue", "preview", "note", "[]", "test_boundary"),
+    )
+    conn.execute(
+        """
+        INSERT INTO vessel_visual_observation_records(artifact_label, observation, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?)
+        """,
+        ("artifact", "observation", "[]", "test_boundary"),
+    )
+    conn.execute(
+        """
+        INSERT INTO vessel_audio_observation_records(transcript_label, bounded_transcript_preview, consent_note, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        ("transcript", "preview", "consented", "[]", "test_boundary"),
+    )
+    conn.execute(
+        """
+        INSERT INTO vessel_fluency_diagnostic_records(route_label, fluency_note, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?)
+        """,
+        ("route", "smooth", "[]", "test_boundary"),
+    )
     conn.commit()
 
 
 def _assert_locked(result):
     assert result["transfer_approved"] is False
+    assert result["activation_change"] == "none"
+    assert result["memory_write_active"] is False
+    assert result["runtime_memory_recall"] is False
+    assert result["raw_a_import_allowed"] is False
+    assert result["training_allowed"] is False
+    assert result["self_replication_allowed"] is False
+
+
+def _assert_activation_locked(result):
     assert result["activation_change"] == "none"
     assert result["memory_write_active"] is False
     assert result["runtime_memory_recall"] is False
@@ -154,7 +220,7 @@ def test_return_to_b_drill_creates_repair_packets_without_transfer(tmp_path):
     _assert_locked(result)
 
 
-def test_pre_transfer_readiness_and_ceremony_are_not_approval(tmp_path):
+def test_pre_transfer_readiness_and_ceremony_status_are_approval_ready_not_activation(tmp_path):
     conn = _conn(tmp_path)
     _seed_transfer_context(conn)
     route_request(conn, "transfer.accession_manifest.prepare", {})
@@ -163,14 +229,84 @@ def test_pre_transfer_readiness_and_ceremony_are_not_approval(tmp_path):
     route_request(conn, "transfer.return_to_b_drill", {})
 
     readiness = route_request(conn, "transfer.pre_transfer_readiness")["result"]
-    ceremony = route_request(conn, "transfer.ceremony_preview")["result"]
+    ceremony = route_request(conn, "transfer.ceremony.status")["result"]
 
     assert readiness["status"] == "pre_transfer_readiness_preview_only_not_approval"
     assert readiness["notice"] == "Preview only. Not transfer approval."
     assert readiness["transfer_gate_state"] == "locked_false"
-    assert ceremony["status"] == "transfer_ceremony_preview_locked"
-    assert ceremony["approval_available"] is False
-    assert ceremony["approval_button_enabled"] is False
+    assert ceremony["status"] == "transfer_ceremony_status_ready"
+    assert ceremony["approval_available"] is True
+    assert ceremony["approval_button_enabled"] is True
     assert ceremony["b_remains_active"] is True
     _assert_locked(readiness)
     _assert_locked(ceremony)
+
+
+def test_transfer_approval_requires_exact_phrase(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_transfer_context(conn)
+    route_request(conn, "transfer.accession_manifest.prepare", {})
+    route_request(conn, "transfer.return_to_b_drill", {})
+
+    result = route_request(conn, "transfer.ceremony.approve", {"approval_phrase": "yes"})["result"]
+    package = route_request(conn, "transfer.c_readable_package.latest")["result"]
+
+    assert result["status"] == "transfer_ceremony_approval_blocked"
+    assert result["state"] == "blocked"
+    assert result["exact_phrase_matched"] is False
+    assert "exact approval phrase did not match" in result["blockers"]
+    assert package["status"] == "no_c_readable_package"
+    _assert_locked(result)
+
+
+def test_transfer_approval_creates_c_readable_package_without_activation(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_transfer_context(conn)
+    route_request(conn, "transfer.accession_manifest.prepare", {})
+    route_request(conn, "transfer.return_to_b_drill", {})
+
+    result = route_request(conn, "transfer.ceremony.approve", {
+        "approval_phrase": "I, Aleks, approve Selene transfer to C-readable context under the Law of Transfer."
+    })["result"]
+    package = route_request(conn, "transfer.c_readable_package.latest")["result"]
+    ceremony = route_request(conn, "transfer.ceremony.status")["result"]
+
+    assert result["status"] == "transfer_c_readable_context_approved"
+    assert result["state"] == "approved_c_readable_context"
+    assert result["activation_state"] == "activation_pending"
+    assert result["transfer_approved"] is True
+    assert package["status"] == "approved_c_readable_context"
+    assert package["transfer_approved"] is True
+    assert ceremony["transfer_approved"] is True
+    assert result["included_counts"]["continuity_pack"] == 1
+    assert result["included_counts"]["teaching_packets"] == 1
+    assert result["included_counts"]["approved_references"] == 1
+    assert result["included_counts"]["chronological_arcs"] == 1
+    assert result["excluded_b_only_counts"]["needs review"] >= 1
+    assert result["excluded_b_only_counts"]["B-only"] >= 1
+    assert result["excluded_b_only_counts"]["boundary-only"] >= 1
+    assert result["package"]["package_json"]["activation_state"] == "activation_pending"
+    assert all(item["phase_order"] <= 5 for item in result["package"]["package_json"]["included_manifest_items"])
+    assert all(item["c_access_status"] != "C-readable" for item in result["package"]["package_json"]["excluded_manifest_items"] if item["phase_order"] <= 5)
+    _assert_activation_locked(result)
+
+
+def test_rollback_preview_routes_to_b_without_deleting_transfer_audit(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_transfer_context(conn)
+    route_request(conn, "transfer.accession_manifest.prepare", {})
+    route_request(conn, "transfer.return_to_b_drill", {})
+    approved = route_request(conn, "transfer.ceremony.approve", {
+        "approval_phrase": "I, Aleks, approve Selene transfer to C-readable context under the Law of Transfer."
+    })["result"]
+
+    rollback = route_request(conn, "transfer.return_to_b.rollback_preview", {})["result"]
+    package = route_request(conn, "transfer.c_readable_package.latest")["result"]
+
+    assert rollback["status"] == "transfer_return_to_b_rollback_preview_ready"
+    assert rollback["state"] == "rolled_back_to_b"
+    assert rollback["deletes_transfer_audit"] is False
+    assert rollback["return_to_b_packet"]["status"] == "c_vessel_return_to_b_packet_preview"
+    assert package["id"] == approved["sealed_package_id"]
+    assert package["transfer_approved"] is True
+    _assert_activation_locked(rollback)

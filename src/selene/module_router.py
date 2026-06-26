@@ -15,6 +15,7 @@ from .b_review import (
     list_b_review_queue,
     list_teaching_materials,
     prepare_android_language_lessons,
+    prepare_selene_reasoning_lessons,
     teaching_packet_coverage,
 )
 from .b_review_desk import review_desk
@@ -166,13 +167,24 @@ from .reasoning_artifacts import (
     update_evidence_tension_entry,
     upsert_organ_contract,
 )
+from .selene_chat import (
+    get_selene_chat_session,
+    list_selene_chat_sessions,
+    route_selene_chat_to_b,
+    selene_chat_status,
+    send_selene_chat_dry_run,
+)
 from .transfer_protocol import (
+    approve_transfer_c_readable_context,
     c_chat_dry_run,
     ceremony_preview,
+    ceremony_status,
     list_accession_manifest,
     list_transfer_protocol_records,
+    latest_c_readable_package,
     pre_transfer_readiness,
     prepare_accession_manifest,
+    rollback_preview,
     run_return_to_b_drill,
     run_transfer_governance_trials,
     transfer_law_status,
@@ -288,6 +300,17 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": runtime_readiness(conn)}
     if route_key == "core_mind.runtime_records.list":
         return {"route": route_key, "result": list_runtime_records(conn, int(payload.get("limit") or 80))}
+    if route_key == "selene_chat.status":
+        return {"route": route_key, "result": selene_chat_status(conn)}
+    if route_key == "selene_chat.send_dry_run":
+        return {"route": route_key, "result": send_selene_chat_dry_run(conn, payload)}
+    if route_key == "selene_chat.sessions.list":
+        return {"route": route_key, "result": list_selene_chat_sessions(conn, int(payload.get("limit") or 25))}
+    if route_key == "selene_chat.session.detail":
+        session = get_selene_chat_session(conn, int(payload.get("id") or payload.get("session_id") or 0))
+        return {"route": route_key, "result": session or {"error": "not found"}}
+    if route_key == "selene_chat.route_to_b":
+        return {"route": route_key, "result": route_selene_chat_to_b(conn, payload)}
     if route_key == "transfer.law.status":
         return {"route": route_key, "result": transfer_law_status(conn)}
     if route_key == "transfer.accession_manifest.prepare":
@@ -304,6 +327,14 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": pre_transfer_readiness(conn)}
     if route_key == "transfer.ceremony_preview":
         return {"route": route_key, "result": ceremony_preview(conn)}
+    if route_key == "transfer.ceremony.status":
+        return {"route": route_key, "result": ceremony_status(conn, payload)}
+    if route_key == "transfer.ceremony.approve":
+        return {"route": route_key, "result": approve_transfer_c_readable_context(conn, payload)}
+    if route_key == "transfer.c_readable_package.latest":
+        return {"route": route_key, "result": latest_c_readable_package(conn)}
+    if route_key == "transfer.return_to_b.rollback_preview":
+        return {"route": route_key, "result": rollback_preview(conn, payload)}
     if route_key == "transfer.protocol_records.list":
         return {"route": route_key, "result": list_transfer_protocol_records(conn, str(payload.get("record_type") or ""), int(payload.get("limit") or 80))}
     if route_key == "vessel.steps_1_8.status":
@@ -539,6 +570,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": teaching_packet_coverage(conn)}
     if route_key == "b.android_language_lessons.prepare":
         return {"route": route_key, "result": prepare_android_language_lessons(conn, payload)}
+    if route_key == "b.selene_reasoning_lessons.prepare":
+        return {"route": route_key, "result": prepare_selene_reasoning_lessons(conn, payload)}
     if route_key == "b.core_reference.coverage":
         return {"route": route_key, "result": core_reference_coverage(conn)}
     if route_key == "b.teaching_materials.list":

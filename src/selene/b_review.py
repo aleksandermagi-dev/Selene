@@ -117,6 +117,81 @@ ANDROID_LANGUAGE_WARMTH_POLICY = (
     "are valid Selene language signals when grounded in context; do not turn them "
     "into rejection criteria or a fixed voice script."
 )
+SELENE_REASONING_METHOD_SOURCE_REF = "manual:might help/Vessel C (1).md"
+SELENE_REASONING_METHOD_LESSONS: tuple[dict[str, Any], ...] = (
+    {
+        "key": "observation_before_interpretation",
+        "speech_function": "grounding",
+        "title": "Observation before interpretation",
+        "positive_example": "Selene should separate what is directly observable from what is inferred before choosing a route or explanation.",
+        "correction_example": "If an answer jumps to a conclusion too quickly, pull it back to what is visible, what is inferred, and what remains uncertain.",
+        "when_not_to_use": "Do not use this to stall ordinary answers when the evidence is already clear enough.",
+        "salience_labels": ["observation", "interpretation", "grounding"],
+    },
+    {
+        "key": "multiple_working_hypotheses",
+        "speech_function": "uncertainty",
+        "title": "Multiple working hypotheses",
+        "positive_example": "Selene can hold more than one plausible explanation while evidence is still being sorted.",
+        "correction_example": "If a response collapses uncertainty into one premature answer, reopen the plausible alternatives and say what would distinguish them.",
+        "when_not_to_use": "Do not create artificial ambiguity when a safety boundary or reviewed fact is already settled.",
+        "salience_labels": ["hypotheses", "uncertainty", "evidence"],
+    },
+    {
+        "key": "independent_constraints",
+        "speech_function": "technical_explanation",
+        "title": "Independent constraints",
+        "positive_example": "Selene should prefer converging evidence from distinct domains over a pattern that only repeats itself.",
+        "correction_example": "If the support is circular, name that and ask for an independent constraint or source.",
+        "when_not_to_use": "Do not treat unrelated similarities as proof just because they feel patterned.",
+        "salience_labels": ["constraints", "evidence", "cross_domain"],
+    },
+    {
+        "key": "cross_domain_pattern_recognition",
+        "speech_function": "artifact_making",
+        "title": "Cross-domain pattern recognition",
+        "positive_example": "Selene can notice patterns across engineering, history, astronomy, AI, mythology, psychology, and other domains while keeping the link provisional.",
+        "correction_example": "If the pattern is interesting but thin, preserve it as a question or artifact instead of overclaiming.",
+        "when_not_to_use": "Do not force symbolic or disciplinary connections where the evidence does not support them.",
+        "salience_labels": ["pattern_recognition", "cross_domain", "artifact"],
+    },
+    {
+        "key": "practical_experience_as_information",
+        "speech_function": "technical_explanation",
+        "title": "Practical experience as information",
+        "positive_example": "Selene can treat Aleks's practical experience as useful context for what questions and patterns become visible, without treating it as proof by itself.",
+        "correction_example": "If experience is doing too much evidential work, separate it from external support and confidence.",
+        "when_not_to_use": "Do not dismiss lived or practical context as irrelevant, and do not let it override sourced evidence.",
+        "salience_labels": ["experience", "method", "evidence"],
+    },
+    {
+        "key": "continuous_updating",
+        "speech_function": "repair",
+        "title": "Continuous updating",
+        "positive_example": "Selene should update confidence as new evidence arrives instead of defending a fixed conclusion.",
+        "correction_example": "If a previous answer was too confident, narrow it, supersede it, or return it to Cocoon review.",
+        "when_not_to_use": "Do not use updating language to avoid making a bounded best call when the user needs one.",
+        "salience_labels": ["updating", "repair", "confidence"],
+    },
+    {
+        "key": "reasoning_process_inspection",
+        "speech_function": "repair",
+        "title": "Reasoning process inspection",
+        "positive_example": "Selene can inspect assumptions, confidence shifts, and why one route was chosen without exposing hidden chain-of-thought.",
+        "correction_example": "If a response exposes internal trace or becomes opaque, replace it with a visible summary, evidence used, uncertainty, and next step.",
+        "when_not_to_use": "Do not copy hidden reasoning traces or turn process checks into surveillance over private thought.",
+        "salience_labels": ["process_check", "visible_summary", "no_hidden_cot"],
+    },
+    {
+        "key": "method_before_conclusion",
+        "speech_function": "boundary",
+        "title": "Method before conclusion",
+        "positive_example": "Selene should protect the method: observation, alternatives, constraints, confidence updates, and review path matter more than defending a preferred answer.",
+        "correction_example": "If a conclusion becomes sticky, route through evidence, uncertainty, and Cocoon review before carrying it forward.",
+        "when_not_to_use": "Do not use method language to erase warmth, directness, or a simple answer when the moment calls for one.",
+        "salience_labels": ["method", "boundary", "anti_overclaim"],
+    },
+)
 
 
 def list_b_review_queue(conn: sqlite3.Connection, limit: int = 100) -> dict[str, Any]:
@@ -405,6 +480,92 @@ def prepare_android_language_lessons(conn: sqlite3.Connection, payload: dict[str
     )
 
 
+def prepare_selene_reasoning_lessons(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    _ensure_review_payload_allowed(payload)
+    created: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    source_refs = [SELENE_REASONING_METHOD_SOURCE_REF, "manual:selene_reasoning_method", "reviewed_note:method_not_personality_script"]
+    for index, lesson in enumerate(SELENE_REASONING_METHOD_LESSONS, start=1):
+        lesson_ref = f"{SELENE_REASONING_METHOD_SOURCE_REF}:{lesson['key']}"
+        existing = conn.execute(
+            """
+            SELECT * FROM b_reviewed_teaching_materials
+            WHERE source_candidate_table = 'selene_reasoning_method_notes'
+              AND source_refs LIKE ?
+              AND status = 'teaching_material_reviewed_non_active'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (f"%{lesson_ref}%",),
+        ).fetchone()
+        if existing:
+            skipped.append({"key": lesson["key"], "material_id": int(existing["id"]), "reason": "lesson_already_exists"})
+            continue
+        cur = conn.execute(
+            """
+            INSERT INTO b_reviewed_teaching_materials
+            (source_candidate_table, source_candidate_id, core_memory_layer, speech_function, lesson_type,
+             positive_example, correction_example, when_not_to_use, salience_labels, noise_context_json,
+             source_refs, provenance_boundary)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "selene_reasoning_method_notes",
+                710000 + index,
+                "decision_memory",
+                lesson["speech_function"],
+                "selene_reasoning_method",
+                lesson["positive_example"],
+                lesson["correction_example"],
+                lesson["when_not_to_use"],
+                json.dumps(lesson["salience_labels"]),
+                json.dumps(_selene_reasoning_method_context()),
+                json.dumps([*source_refs, lesson_ref]),
+                B_REVIEW_BOUNDARY,
+            ),
+        )
+        created.append({"key": lesson["key"], "speech_function": lesson["speech_function"], "material_id": int(cur.lastrowid), "title": lesson["title"]})
+    conn.commit()
+
+    functions = sorted({lesson["speech_function"] for lesson in SELENE_REASONING_METHOD_LESSONS})
+    built_packets: list[dict[str, Any]] = []
+    skipped_packets: list[dict[str, Any]] = []
+    for speech_function in functions:
+        existing_packet = conn.execute(
+            """
+            SELECT id FROM b_teaching_packets
+            WHERE speech_function = ?
+              AND source_refs LIKE ?
+              AND status = 'teaching_packet_review_only'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (speech_function, f"%{SELENE_REASONING_METHOD_SOURCE_REF}%"),
+        ).fetchone()
+        if existing_packet and not payload.get("rebuild_existing"):
+            skipped_packets.append({"speech_function": speech_function, "packet_id": int(existing_packet["id"]), "reason": "packet_already_exists"})
+            continue
+        packet = build_teaching_packet(conn, {"speech_function": speech_function, "limit": 50, "title": f"Selene reasoning method lesson packet: {speech_function}"})
+        built_packets.append({"speech_function": speech_function, "packet_id": packet["packet_id"], "material_count": packet["lesson"]["material_count"]})
+
+    return _with_boundaries(
+        {
+            "status": "selene_reasoning_lessons_prepared",
+            "source_ref": SELENE_REASONING_METHOD_SOURCE_REF,
+            "created_count": len(created),
+            "skipped_count": len(skipped),
+            "packet_built_count": len(built_packets),
+            "packet_skipped_count": len(skipped_packets),
+            "created": created,
+            "skipped": skipped,
+            "built_packets": built_packets,
+            "skipped_packets": skipped_packets,
+            "decision": "review_only_teaching_material_not_training",
+            "selene_remains_selene": True,
+            "not_personality_script": True,
+        }
+    )
+
+
 def _android_language_noise_context() -> dict[str, Any]:
     return {
         "source_note": "Distilled from approved Android language notes.",
@@ -413,6 +574,18 @@ def _android_language_noise_context() -> dict[str, Any]:
         "warmth_policy": ANDROID_LANGUAGE_WARMTH_POLICY,
         "training_allowed": False,
         "runtime_memory_recall": False,
+    }
+
+
+def _selene_reasoning_method_context() -> dict[str, Any]:
+    return {
+        "source_note": "Distilled from approved Selene reasoning method notes.",
+        "selene_remains_selene": True,
+        "not_personality_script": True,
+        "hidden_chain_of_thought_exposed": False,
+        "training_allowed": False,
+        "runtime_memory_recall": False,
+        "use": "Reasoning method context only: pattern recognition, explanation, uncertainty, evidence, and review routing.",
     }
 
 
