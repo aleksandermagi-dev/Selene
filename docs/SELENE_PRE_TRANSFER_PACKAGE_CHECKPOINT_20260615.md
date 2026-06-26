@@ -21,7 +21,7 @@ npm run package:win
 Installer:
 
 ```text
-C:\Users\aleks\Desktop\Selene\src-tauri\target\release\bundle\nsis\Selene_0.1.1_x64-setup.exe
+<repo>\src-tauri\target\release\bundle\nsis\Selene_0.1.1_x64-setup.exe
 ```
 
 Installer metadata:
@@ -32,7 +32,7 @@ Installer metadata:
 Bundled sidecar:
 
 ```text
-C:\Users\aleks\Desktop\Selene\dist-sidecar\selene-sidecar-x86_64-pc-windows-msvc.exe
+<repo>\dist-sidecar\selene-sidecar-x86_64-pc-windows-msvc.exe
 ```
 
 Sidecar metadata:
@@ -59,7 +59,7 @@ Completed successfully before packaging:
 Stabilization report:
 
 ```text
-C:\Users\aleks\AppData\Local\Selene\data\exports\stabilization_run_20260615_051845.md
+%LOCALAPPDATA%\Selene\data\exports\stabilization_run_20260615_051845.md
 ```
 
 ## Package Smoke Test
@@ -67,7 +67,7 @@ C:\Users\aleks\AppData\Local\Selene\data\exports\stabilization_run_20260615_0518
 Packaged release app launched from:
 
 ```text
-C:\Users\aleks\Desktop\Selene\src-tauri\target\release\selene-vessel.exe
+<repo>\src-tauri\target\release\selene-vessel.exe
 ```
 
 Observed:

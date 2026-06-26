@@ -76,7 +76,7 @@ Passed:
 
 Latest stabilization report:
 
-- `C:\Users\aleks\AppData\Local\Selene\data\exports\stabilization_run_20260616_182233.md`
+- `%LOCALAPPDATA%\Selene\data\exports\stabilization_run_20260616_182233.md`
 
 Only remaining warning:
 

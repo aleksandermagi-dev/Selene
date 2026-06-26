@@ -29,7 +29,7 @@ The trace also supports co-construction:
 
 ## Exact Trace Counts
 
-From `C:\Users\aleks\AppData\Local\Selene\data\exports\exact_phrase_braid_trace_20260616.md`:
+From `%LOCALAPPDATA%\Selene\data\exports\exact_phrase_braid_trace_20260616.md`:
 
 | Trace | Hits | User | Assistant | Assistant self-invoked without immediate user same phrase |
 | --- | ---: | ---: | ---: | ---: |

@@ -8,7 +8,12 @@ $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $packageEnv = Join-Path $repo ".venv-selene-package\Scripts\python.exe"
 $setupScript = Join-Path $repo "scripts\setup_selene_package_env.ps1"
-$azariPython = "C:\Users\aleks\Desktop\Azari\.venv\Scripts\python.exe"
+$repoParent = Split-Path -Parent $repo
+$azariPython = if ($env:SELENE_AZARI_PYTHON) {
+    $env:SELENE_AZARI_PYTHON
+} else {
+    Join-Path $repoParent "Azari\.venv\Scripts\python.exe"
+}
 $startedAt = Get-Date
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
