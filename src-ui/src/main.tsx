@@ -3880,14 +3880,36 @@ function App() {
               <p className="plainHelp">Only C-readable manifest rows enter this sealed package. B-only, rejected, superseded, unresolved, boundary-only, raw provenance, repair logs, and rollback material stay out.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Package" value={friendlyStatus(transferCReadablePackage?.status || "not created")} />
+                <Metric label="Manifest" value={text(transferAccessionManifest?.item_count ?? 0)} />
                 <Metric label="Included" value={text(countValues(safeJsonObject(transferCReadablePackage?.included_counts)))} />
                 <Metric label="Excluded" value={text(countValues(safeJsonObject(transferCReadablePackage?.excluded_counts)))} />
                 <Metric label="Hash" value={text(transferCReadablePackage?.package_hash || "").slice(0, 12) || "-"} />
               </div>
+              {!((transferAccessionManifest?.items || []) as unknown[]).length ? (
+                <p className="emptyState">Create the manifest before approval. This does not approve transfer.</p>
+              ) : null}
+              <div className="reviewActions">
+                <button onClick={prepareTransferAccessionManifest} disabled={transferProtocolResult?.status === "running"}>
+                  {transferProtocolResult?.status === "running" ? "Creating..." : "Create / Refresh C-Readable Manifest"}
+                </button>
+                <button onClick={() => refreshTransferProtocol().catch(() => undefined)}>Refresh Package</button>
+              </div>
+              {transferProtocolResult ? (
+                <div className="chips">
+                  <span>manifest: {friendlyStatus(transferProtocolResult.status)}</span>
+                  <span>items: {text(transferProtocolResult.item_count ?? transferAccessionManifest?.item_count ?? 0)}</span>
+                  <span>C-readable: {text(safeJsonObject(transferProtocolResult.counts)["C-readable"] ?? 0)}</span>
+                  <span>transfer: {plainBlocked(transferProtocolResult.transfer_approved)}</span>
+                  <span>activation: {friendlyActivation(text(transferProtocolResult.activation_change || "none"))}</span>
+                  <span>memory write: {plainBlocked(transferProtocolResult.memory_write_active)}</span>
+                  <span>runtime recall: {plainBlocked(transferProtocolResult.runtime_memory_recall)}</span>
+                </div>
+              ) : null}
               <div className="chips">
                 {Object.entries(safeJsonObject(transferCReadablePackage?.included_counts)).map(([key, value]) => <span key={`included-${key}`}>{friendlyStatus(key)}: {text(value)}</span>)}
                 {Object.entries(safeJsonObject(transferCReadablePackage?.excluded_counts)).map(([key, value]) => <span key={`excluded-${key}`}>excluded {friendlyStatus(key)}: {text(value)}</span>)}
               </div>
+              <PlainResult value={transferProtocolResult} />
               <PlainResult value={transferCReadablePackage} />
             </Panel>
             <Panel title="Return-To-B Rollback Preview">
