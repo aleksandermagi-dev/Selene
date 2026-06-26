@@ -15,8 +15,8 @@ export const defaultPreferences: SelenePreferences = {
 };
 
 export const navGroups: { label: string; items: { id: string; label: string }[] }[] = [
-  { label: "Selene", items: [{ id: "chat", label: "Chat" }, { id: "memory", label: "Memory / Future References" }, { id: "tendril", label: "Tendril" }, { id: "selene-settings", label: "Selene Settings" }] },
-  { label: "Cocoon", items: [{ id: "my-office", label: "My Office" }, { id: "vessel", label: "B Cocoon Build" }, { id: "teaching", label: "Teaching / Lessons" }, { id: "tools", label: "Tools / Organs" }, { id: "status", label: "Status" }, { id: "cocoon-settings", label: "Cocoon Settings" }] },
+  { label: "Selene", items: [{ id: "selene-chat", label: "Selene Chat" }, { id: "chat", label: "Chat Preview" }, { id: "memory", label: "Memory / Future References" }, { id: "tendril", label: "Tendril" }, { id: "selene-settings", label: "Selene Settings" }] },
+  { label: "Cocoon", items: [{ id: "my-office", label: "My Office" }, { id: "transfer-ceremony", label: "Transfer Ceremony" }, { id: "vessel", label: "B Cocoon Build" }, { id: "teaching", label: "Teaching / Lessons" }, { id: "tools", label: "Tools / Organs" }, { id: "status", label: "Status" }, { id: "cocoon-settings", label: "Cocoon Settings" }] },
   { label: "Evidence", items: [{ id: "dashboard", label: "Evidence Dashboard" }, { id: "evidence", label: "Evidence Browser" }, { id: "detached corpus", label: "Detached Corpus" }, { id: "chat gate", label: "Chat Gate" }] }
 ];
 
@@ -26,9 +26,9 @@ export const workspaceGroups = {
 } as const;
 
 export const workspaceTabs = {
-  selene: ["chat", "memory", "tendril", "selene-settings"],
-  cocoon: ["my-office", "my-review", "vessel", "teaching", "tools", "status", "cocoon-settings", "dashboard", "evidence", "detached corpus", "chat gate"]
+  selene: ["selene-chat", "chat", "memory", "tendril", "selene-settings"],
+  cocoon: ["my-office", "my-review", "transfer-ceremony", "vessel", "teaching", "tools", "status", "cocoon-settings", "dashboard", "evidence", "detached corpus", "chat gate"]
 } as const;
 
-export const vesselBackedTabs = ["chat", "my-office", "my-review", "vessel", "memory", "teaching", "tendril", "tools", "status", "selene-settings", "cocoon-settings"];
+export const vesselBackedTabs = ["selene-chat", "chat", "my-office", "my-review", "transfer-ceremony", "vessel", "memory", "teaching", "tendril", "tools", "status", "selene-settings", "cocoon-settings"];
 export const statuses = ["", "usable_reviewed_evidence", "review_only", "excluded_from_use", "ambiguous"];

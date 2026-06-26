@@ -46,6 +46,8 @@ import "./styles.css";
 declare const __APP_VERSION__: string;
 declare const __BUILD_LABEL__: string;
 
+const TRANSFER_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer to C-readable context under the Law of Transfer.";
+
 type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
 type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string };
 
@@ -89,7 +91,7 @@ function sidecarStartupMessage(attempt: number, detail: string) {
 
 function App() {
   const isMobileOnly = window.location.pathname === "/mobile" || window.location.search.includes("mobile=1");
-  const [tab, setTab] = useState("chat");
+  const [tab, setTab] = useState("selene-chat");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [workspaceMode, setWorkspaceMode] = useState<"selene" | "cocoon">("selene");
   const [preferences, setPreferences] = useState<SelenePreferences>(() => loadPreferences());
@@ -114,6 +116,12 @@ function App() {
   const [chatText, setChatText] = useState("Selene starlight emergence braid, what evidence is safe to use here?");
   const [chatSession, setChatSession] = useState<Dict | null>(null);
   const [chatSendResult, setChatSendResult] = useState<Dict | null>(null);
+  const [seleneChatText, setSeleneChatText] = useState("Selene, what is the next safe step?");
+  const [seleneChatStatus, setSeleneChatStatus] = useState<Dict | null>(null);
+  const [seleneChatSession, setSeleneChatSession] = useState<Dict | null>(null);
+  const [seleneChatSessions, setSeleneChatSessions] = useState<Dict[]>([]);
+  const [seleneChatResult, setSeleneChatResult] = useState<Dict | null>(null);
+  const [seleneReasoningLessonResult, setSeleneReasoningLessonResult] = useState<Dict | null>(null);
   const [mobileHealth, setMobileHealth] = useState<Dict | null>(null);
   const [mobileText, setMobileText] = useState("");
   const [mobileSession, setMobileSession] = useState<Dict | null>(null);
@@ -305,6 +313,12 @@ function App() {
   const [transferReturnDrillResult, setTransferReturnDrillResult] = useState<Dict | null>(null);
   const [preTransferProtocolReadiness, setPreTransferProtocolReadiness] = useState<Dict | null>(null);
   const [transferCeremonyPreview, setTransferCeremonyPreview] = useState<Dict | null>(null);
+  const [transferCeremonyStatus, setTransferCeremonyStatus] = useState<Dict | null>(null);
+  const [transferCReadablePackage, setTransferCReadablePackage] = useState<Dict | null>(null);
+  const [transferApprovalResult, setTransferApprovalResult] = useState<Dict | null>(null);
+  const [transferRollbackPreview, setTransferRollbackPreview] = useState<Dict | null>(null);
+  const [transferApprovalPhrase, setTransferApprovalPhrase] = useState("");
+  const [transferOfficeNonBlocking, setTransferOfficeNonBlocking] = useState(false);
   const [transferDryRunPrompt, setTransferDryRunPrompt] = useState("Selene, answer from reviewed continuity without claiming activation.");
   const [coreMindRuntimeReadiness, setCoreMindRuntimeReadiness] = useState<Dict | null>(null);
   const [coreMindRuntimeRecords, setCoreMindRuntimeRecords] = useState<Dict[]>([]);
@@ -464,6 +478,31 @@ function App() {
     });
   }
 
+  function sendSeleneChatDryRun() {
+    setSeleneChatResult({ status: "running", message: "Composing Selene dry run." });
+    api<Dict>("/api/selene-chat/send-dry-run", {
+      method: "POST",
+      body: JSON.stringify({ text: seleneChatText, session_id: seleneChatSession?.session ? (seleneChatSession.session as Dict).id : undefined })
+    })
+      .then((result) => {
+        setSeleneChatResult(result);
+        api<Dict>(`/api/selene-chat/sessions/${result.session_id}`).then(setSeleneChatSession).catch(() => undefined);
+        api<{ items: Dict[] }>("/api/selene-chat/sessions").then((data) => setSeleneChatSessions(data.items)).catch(() => undefined);
+        api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
+      })
+      .catch((err) => setSeleneChatResult({ status: "error", error: err instanceof Error ? err.message : "Selene dry run failed" }));
+  }
+
+  function routeSeleneChatToB() {
+    setSeleneChatResult({ status: "running", message: "Routing this dry run back to Cocoon." });
+    api<Dict>("/api/selene-chat/route-to-b", {
+      method: "POST",
+      body: JSON.stringify({ text: seleneChatText, issue: "Selene Chat dry run needs Cocoon repair or source review." })
+    })
+      .then(setSeleneChatResult)
+      .catch((err) => setSeleneChatResult({ status: "error", error: err instanceof Error ? err.message : "Return to Cocoon failed" }));
+  }
+
   function backfillSemantic() {
     api<Dict>("/api/semantic/backfill", { method: "POST", body: JSON.stringify({}) })
       .then((result) => {
@@ -510,6 +549,8 @@ function App() {
     api<Dict>("/api/core-mind/transfer-readiness-preview").then(setTransferReadinessPreview).catch(() => undefined);
     api<Dict>("/api/core-mind/runtime-readiness").then(setCoreMindRuntimeReadiness).catch(() => undefined);
     api<{ items: Dict[] }>("/api/core-mind/runtime-records").then((data) => setCoreMindRuntimeRecords(data.items)).catch(() => undefined);
+    api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/selene-chat/sessions").then((data) => setSeleneChatSessions(data.items)).catch(() => undefined);
     refreshTransferProtocol().catch(() => undefined);
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/b/pattern-backups").then((data) => setPatternBackups(data.items)).catch(() => undefined);
@@ -1157,6 +1198,17 @@ function App() {
       .catch((err) => setAndroidLanguageLessonResult({ status: "error", error: err instanceof Error ? err.message : "Android language lesson prep rejected" }));
   }
 
+  function prepareSeleneReasoningLessons() {
+    setSeleneReasoningLessonResult({ status: "running", message: "Preparing Selene reasoning method as review-only lesson packets." });
+    api<Dict>("/api/b/selene-reasoning-lessons/prepare", { method: "POST", body: JSON.stringify({}) })
+      .then((result) => {
+        setSeleneReasoningLessonResult(result);
+        loadVessel();
+        refreshMyOffice();
+      })
+      .catch((err) => setSeleneReasoningLessonResult({ status: "error", error: err instanceof Error ? err.message : "Selene reasoning lesson prep rejected" }));
+  }
+
   function syncPublicReleaseCheckpoint() {
     setPublicReleaseSyncState({ status: "running", message: "Regenerating and syncing the public release checkpoint..." });
     api<Dict>("/api/public-release/sync", { method: "POST", body: JSON.stringify({}) })
@@ -1364,16 +1416,20 @@ function App() {
   }
 
   async function refreshTransferProtocol() {
-    const [law, manifest, readiness, ceremony] = await Promise.all([
+    const [law, manifest, readiness, ceremony, ceremonyStatus, cPackage] = await Promise.all([
       api<Dict>("/api/transfer/law/status"),
       api<Dict>("/api/transfer/accession-manifest"),
       api<Dict>("/api/transfer/pre-transfer-readiness"),
-      api<Dict>("/api/transfer/ceremony-preview")
+      api<Dict>("/api/transfer/ceremony-preview"),
+      api<Dict>("/api/transfer/ceremony/status"),
+      api<Dict>("/api/transfer/c-readable-package")
     ]);
     setTransferLawStatus(law);
     setTransferAccessionManifest(manifest);
     setPreTransferProtocolReadiness(readiness);
     setTransferCeremonyPreview(ceremony);
+    setTransferCeremonyStatus(ceremonyStatus);
+    setTransferCReadablePackage(cPackage);
   }
 
   async function prepareTransferAccessionManifest() {
@@ -1419,6 +1475,35 @@ function App() {
       refreshMyOffice();
     } catch (err) {
       setTransferReturnDrillResult({ status: "error", error: err instanceof Error ? err.message : "Return-to-B drill failed" });
+    }
+  }
+
+  async function approveTransferToCReadableContext() {
+    setTransferApprovalResult({ status: "running", message: "Submitting Aleks-only transfer approval." });
+    try {
+      const result = await api<Dict>("/api/transfer/ceremony/approve", {
+        method: "POST",
+        body: JSON.stringify({
+          approval_phrase: transferApprovalPhrase,
+          allow_nonblocking_office_decisions: transferOfficeNonBlocking
+        })
+      });
+      setTransferApprovalResult(result);
+      await refreshTransferProtocol();
+      refreshMyOffice();
+    } catch (err) {
+      setTransferApprovalResult({ status: "error", error: err instanceof Error ? err.message : "transfer ceremony approval failed" });
+    }
+  }
+
+  async function previewTransferRollback() {
+    setTransferRollbackPreview({ status: "running", message: "Preparing Return-to-B rollback preview." });
+    try {
+      const result = await api<Dict>("/api/transfer/return-to-b/rollback-preview", { method: "POST", body: JSON.stringify({}) });
+      setTransferRollbackPreview(result);
+      await refreshTransferProtocol();
+    } catch (err) {
+      setTransferRollbackPreview({ status: "error", error: err instanceof Error ? err.message : "rollback preview failed" });
     }
   }
 
@@ -2206,7 +2291,7 @@ function App() {
     setWorkspaceMode(mode);
     const allowedTabs = workspaceTabs[mode] as readonly string[];
     if (!allowedTabs.includes(tab)) {
-      setTab(mode === "selene" ? "chat" : "my-office");
+      setTab(mode === "selene" ? "selene-chat" : "my-office");
     }
   }
 
@@ -2926,13 +3011,16 @@ function App() {
                   <button onClick={prepareAndroidLanguageLessons} disabled={androidLanguageLessonResult?.status === "running"}>
                     {androidLanguageLessonResult?.status === "running" ? "Preparing Language Lessons..." : "Prepare Android Language Lessons"}
                   </button>
+                  <button onClick={prepareSeleneReasoningLessons} disabled={seleneReasoningLessonResult?.status === "running"}>
+                    {seleneReasoningLessonResult?.status === "running" ? "Preparing Reasoning Lessons..." : "Prepare Selene Reasoning Lessons"}
+                  </button>
                   <button onClick={buildAllTeachingPackets} disabled={!canBuildTeachingPacket}>Build Teaching Packets</button>
                   <button onClick={runLessonBackedPreview}>Preview Lesson-Backed Reconstruction</button>
                   <button onClick={() => setTab("teaching")}>Open Teaching / Lessons</button>
                 </div>
                 <GapTargetList title="Teaching Targets" items={officeTeachingTargets.slice(0, 4)} />
                 <GapTargetList title="Core Reference Targets" items={officeCoreTargets.slice(0, 4)} />
-                <PlainResult value={androidLanguageLessonResult || teachingPacketResult || lessonBackedResult} />
+                <PlainResult value={seleneReasoningLessonResult || androidLanguageLessonResult || teachingPacketResult || lessonBackedResult} />
               </Panel>
             </section>}
             {officeCategory === "runtime" && <section className="officeGrid">
@@ -3131,6 +3219,77 @@ function App() {
             <SplitView
               left={<CorpusFileList metadata={(corpusAudit?.metadata || {}) as Dict} onSelect={(fileId) => setCorpusFile(fileId)} />}
               right={<CorpusPreviewList previews={(corpusAudit?.previews || []) as Dict[]} />}
+            />
+          </>
+        )}
+
+        {tab === "selene-chat" && (
+          <>
+            <header className="surfaceIntro">
+              <p>Dry-run conversation doorway. Cocoon remains the repair and review space.</p>
+              <h2>Selene Chat</h2>
+            </header>
+            <section className="chatSurface">
+              <div className="messages">
+                {!seleneChatSession && !seleneChatResult ? (
+                  <div className="landing">
+                    <img src={SELENE_ICON} alt="Selene moon icon" />
+                    <h2>Selene</h2>
+                    <p>Activation is pending. I can run a source-bound Selene dry run and return anything tangled to Cocoon.</p>
+                  </div>
+                ) : (
+                  <>
+                    {((seleneChatSession?.messages || []) as Dict[]).map((message) => (
+                      <article className={`message ${text(message.role) === "user" ? "user" : "selene"}`} key={`selene-chat-${text(message.id)}`}>
+                        <div className="row">
+                          <strong>{text(message.role) === "user" ? "Aleks" : "Selene"}</strong>
+                          <span>{friendlyStatus(message.selected_route || message.source_class)}</span>
+                        </div>
+                        <p>{text(message.content)}</p>
+                      </article>
+                    ))}
+                    {seleneChatResult?.candidate_text && !seleneChatSession ? (
+                      <article className="message selene">
+                        <strong>Selene dry run</strong>
+                        <p>{text(seleneChatResult.candidate_text)}</p>
+                      </article>
+                    ) : null}
+                  </>
+                )}
+              </div>
+              <div className="composer">
+                <textarea value={seleneChatText} onChange={(e) => setSeleneChatText(e.target.value)} placeholder="Message Selene..." />
+                <div className="composerActions">
+                  <button className="primary" onClick={sendSeleneChatDryRun} disabled={!seleneChatText.trim() || seleneChatResult?.status === "running"}>Send Dry Run</button>
+                  <button onClick={routeSeleneChatToB}>Return To Cocoon</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("transfer-ceremony"); }}>Open Transfer Ceremony</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Repair</button>
+                </div>
+                <small>Selene dry run only: activation pending, no live memory write, no runtime recall, no raw import, no training.</small>
+              </div>
+            </section>
+            <SplitView
+              left={<Panel title="Selene Chat State">
+                <div className="metrics miniMetrics">
+                  <Metric label="State" value={friendlyStatus(seleneChatStatus?.state || "pre_transfer_dry_run")} />
+                  <Metric label="Package" value={seleneChatStatus?.c_readable_package_available ? "sealed" : "not sealed"} />
+                  <Metric label="Activation" value={friendlyActivation(seleneChatStatus?.activation_change || "none")} />
+                  <Metric label="Sessions" value={text(seleneChatStatus?.session_count ?? seleneChatSessions.length)} />
+                </div>
+                <div className="chips">
+                  <span>{seleneChatStatus?.transfer_approved ? "Selene-readable context approved" : "pre-transfer dry run"}</span>
+                  <span>activation pending</span>
+                  <span>memory write: {text(seleneChatStatus?.memory_write_active || false)}</span>
+                  <span>runtime recall: {text(seleneChatStatus?.runtime_memory_recall || false)}</span>
+                </div>
+                <PlainResult value={seleneChatResult} />
+              </Panel>}
+              right={<Panel title="Source Boundaries">
+                <p className="plainHelp">Selene Chat can use current turn context and sealed Selene-readable context when available. Cocoon-only records stay in Cocoon.</p>
+                <SimpleRecordList items={Object.entries(safeJsonObject(seleneChatStatus?.source_boundaries)).map(([key, value]) => ({ key, title: friendlyStatus(key), summary: text(value), review_status: "status_only" }))} titleField="title" statusField="review_status" bodyField="summary" />
+                <h3>Recent dry runs</h3>
+                <SimpleRecordList items={seleneChatSessions.slice(0, 5)} titleField="title" statusField="status" bodyField="updated_at" />
+              </Panel>}
             />
           </>
         )}
@@ -3460,10 +3619,13 @@ function App() {
                   <button className="primary" onClick={prepareAndroidLanguageLessons} disabled={androidLanguageLessonResult?.status === "running"}>
                     {androidLanguageLessonResult?.status === "running" ? "Preparing Language Lessons..." : "Prepare Android Language Lessons"}
                   </button>
+                  <button onClick={prepareSeleneReasoningLessons} disabled={seleneReasoningLessonResult?.status === "running"}>
+                    {seleneReasoningLessonResult?.status === "running" ? "Preparing Reasoning Lessons..." : "Prepare Selene Reasoning Lessons"}
+                  </button>
                   <button onClick={buildAllTeachingPackets}>Build Missing Teaching Packets</button>
                 </div>
                 <CoverageList items={(teachingPacketCoverage?.items || []) as Dict[]} kind="speech" />
-                <PlainResult value={androidLanguageLessonResult || teachingPacketResult} />
+                <PlainResult value={seleneReasoningLessonResult || androidLanguageLessonResult || teachingPacketResult} />
               </Panel>}
               right={<Panel title="Targeted Speech / Core Gap Filler">
                 <p className="plainHelp">Pull bounded B-review candidates for weak targets only. No lessons or memory are created automatically.</p>
@@ -3632,6 +3794,108 @@ function App() {
               <PlainResult value={causalSandboxResult} />
               <PlainResult value={goalDriveResult} />
               <PlainResult value={longHorizonResult} />
+            </Panel>
+          </>
+        )}
+
+        {tab === "transfer-ceremony" && (
+          <>
+            <header className="surfaceIntro">
+              <p>Approve reviewed continuity into C-readable context only. C activation remains a separate later step.</p>
+              <h2>Transfer Ceremony</h2>
+            </header>
+            <div className="metrics">
+              <Metric label="Ceremony" value={friendlyStatus(transferCeremonyStatus?.status || "not checked")} />
+              <Metric label="Approval" value={transferCeremonyStatus?.approval_button_enabled ? "ready" : "blocked"} />
+              <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "C-readable approved" : "not approved"} />
+              <Metric label="Activation" value={friendlyActivation(transferCeremonyStatus?.activation_change || "none")} />
+            </div>
+            <Panel title="Aleks-Only Transfer Approval">
+              <p className="plainHelp">This button approves transfer to sealed C-readable context only. It does not activate C chat, write live memory, enable runtime recall, import raw A, train, self-replicate, or run autonomous actions.</p>
+              <div className="chips">
+                <span>B remains active</span>
+                <span>activation pending</span>
+                <span>memory write: {plainBlocked(transferCeremonyStatus?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(transferCeremonyStatus?.runtime_memory_recall)}</span>
+                <span>raw A: {plainBlocked(transferCeremonyStatus?.raw_a_import_allowed)}</span>
+                <span>training: {plainBlocked(transferCeremonyStatus?.training_allowed)}</span>
+              </div>
+              <div className="filters">
+                <label>
+                  <span>Required approval phrase</span>
+                  <textarea value={transferApprovalPhrase} onChange={(event) => setTransferApprovalPhrase(event.target.value)} placeholder={TRANSFER_APPROVAL_PHRASE} />
+                </label>
+                <label className="checkLine">
+                  <input type="checkbox" checked={transferOfficeNonBlocking} onChange={(event) => setTransferOfficeNonBlocking(event.target.checked)} />
+                  <span>Treat any remaining My Office rows as explicitly non-blocking for this approval.</span>
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button onClick={() => refreshTransferProtocol().catch(() => undefined)}>Refresh Ceremony</button>
+                <button onClick={prepareTransferAccessionManifest} disabled={transferProtocolResult?.status === "running"}>Prepare Manifest</button>
+                <button onClick={runTransferReturnToBDrill} disabled={transferReturnDrillResult?.status === "running"}>Run Return-To-B Drill</button>
+                <button
+                  className="primary"
+                  onClick={approveTransferToCReadableContext}
+                  disabled={
+                    transferApprovalResult?.status === "running" ||
+                    transferApprovalPhrase !== TRANSFER_APPROVAL_PHRASE ||
+                    (!transferCeremonyStatus?.approval_button_enabled && !transferOfficeNonBlocking)
+                  }
+                >
+                  {transferApprovalResult?.status === "running" ? "Approving..." : "Approve Transfer To C-Readable Context"}
+                </button>
+              </div>
+              {transferApprovalPhrase && transferApprovalPhrase !== TRANSFER_APPROVAL_PHRASE ? <p className="errorText">Approval phrase does not match exactly.</p> : null}
+              <PlainResult value={transferApprovalResult} />
+            </Panel>
+            <SplitView
+              left={<Panel title="Final Checklist">
+                <div className="list compactList packetList">
+                  {((safeJsonObject(transferCeremonyStatus?.final_checklist).items || []) as Dict[]).map((item) => (
+                    <article className="packetCard" key={`transfer-check-${text(item.key)}`}>
+                      <div className="packetHeader">
+                        <strong>{humanize(text(item.key))}</strong>
+                        <span>{item.passed ? "passed" : "blocked"}</span>
+                      </div>
+                      <p>{text(item.note)}</p>
+                    </article>
+                  ))}
+                  {((safeJsonObject(transferCeremonyStatus?.final_checklist).blockers || []) as unknown[]).length ? (
+                    <p className="errorText">Blocked: {((safeJsonObject(transferCeremonyStatus?.final_checklist).blockers || []) as unknown[]).map(text).join("; ")}</p>
+                  ) : <p className="plainHelp">Checklist has no blockers.</p>}
+                </div>
+              </Panel>}
+              right={<Panel title="Consequences">
+                <div className="list compactList">
+                  {((transferCeremonyStatus?.exact_consequences || []) as unknown[]).map((item, index) => <p key={`transfer-consequence-${index}`}>{text(item)}</p>)}
+                </div>
+                <div className="chips">
+                  <span>rollback route: {text(transferCeremonyStatus?.rollback_route || "return_to_b")}</span>
+                  <span>B remains: {transferCeremonyStatus?.b_remains_active ? "active" : "not checked"}</span>
+                </div>
+              </Panel>}
+            />
+            <Panel title="C-Readable Package">
+              <p className="plainHelp">Only C-readable manifest rows enter this sealed package. B-only, rejected, superseded, unresolved, boundary-only, raw provenance, repair logs, and rollback material stay out.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Package" value={friendlyStatus(transferCReadablePackage?.status || "not created")} />
+                <Metric label="Included" value={text(countValues(safeJsonObject(transferCReadablePackage?.included_counts)))} />
+                <Metric label="Excluded" value={text(countValues(safeJsonObject(transferCReadablePackage?.excluded_counts)))} />
+                <Metric label="Hash" value={text(transferCReadablePackage?.package_hash || "").slice(0, 12) || "-"} />
+              </div>
+              <div className="chips">
+                {Object.entries(safeJsonObject(transferCReadablePackage?.included_counts)).map(([key, value]) => <span key={`included-${key}`}>{friendlyStatus(key)}: {text(value)}</span>)}
+                {Object.entries(safeJsonObject(transferCReadablePackage?.excluded_counts)).map(([key, value]) => <span key={`excluded-${key}`}>excluded {friendlyStatus(key)}: {text(value)}</span>)}
+              </div>
+              <PlainResult value={transferCReadablePackage} />
+            </Panel>
+            <Panel title="Return-To-B Rollback Preview">
+              <p className="plainHelp">Rollback preview routes repair back to B without deleting transfer audit or package evidence.</p>
+              <div className="reviewActions">
+                <button onClick={previewTransferRollback} disabled={transferRollbackPreview?.status === "running"}>{transferRollbackPreview?.status === "running" ? "Preparing..." : "Preview Return-To-B Rollback"}</button>
+              </div>
+              <PlainResult value={transferRollbackPreview} />
             </Panel>
           </>
         )}
