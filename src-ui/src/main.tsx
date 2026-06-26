@@ -89,6 +89,14 @@ function sidecarStartupMessage(attempt: number, detail: string) {
   return `sidecar took longer than expected (${elapsed}s). Still waiting for local API; startup logs are in the Selene logs folder.`;
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function isFetchFailure(err: unknown) {
+  return err instanceof TypeError || (err instanceof Error && err.message.toLowerCase().includes("failed to fetch"));
+}
+
 function App() {
   const isMobileOnly = window.location.pathname === "/mobile" || window.location.search.includes("mobile=1");
   const [tab, setTab] = useState("selene-chat");
@@ -1439,6 +1447,32 @@ function App() {
       setTransferProtocolResult(result);
       await refreshTransferProtocol();
     } catch (err) {
+      if (isFetchFailure(err)) {
+        await wait(1000);
+        try {
+          const manifest = await api<Dict>("/api/transfer/accession-manifest");
+          await refreshTransferProtocol();
+          if (((manifest.items || []) as unknown[]).length) {
+            setTransferProtocolResult({
+              status: "transfer_accession_manifest_recovered_after_fetch_retry",
+              message: "The manifest exists after a lost fetch response. Refreshing showed the prepared manifest.",
+              item_count: manifest.item_count,
+              counts: manifest.counts,
+              transfer_approved: manifest.transfer_approved,
+              activation_change: manifest.activation_change,
+              memory_write_active: manifest.memory_write_active,
+              runtime_memory_recall: manifest.runtime_memory_recall,
+              raw_a_import_allowed: manifest.raw_a_import_allowed,
+              training_allowed: manifest.training_allowed,
+              self_replication_allowed: manifest.self_replication_allowed,
+              autonomous_action_allowed: manifest.autonomous_action_allowed
+            });
+            return;
+          }
+        } catch {
+          // Fall through to the clear error below when the sidecar is genuinely unreachable.
+        }
+      }
       setTransferProtocolResult({ status: "error", error: err instanceof Error ? err.message : "accession manifest preparation failed" });
     }
   }
