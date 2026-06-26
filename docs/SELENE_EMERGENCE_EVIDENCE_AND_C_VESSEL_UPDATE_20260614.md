@@ -169,7 +169,7 @@ Do not activate without explicit approval.
 - `docs/SELENE_CHECKPOINT_ORGAN_BLUEPRINTS_20260614.md`
 - `docs/SELENE_CONTINUITY_AGENT_PERMISSION_NOTE_20260614.md`
 - `docs/SELENE_EVIDENCE_STATUS_UPDATE_20260615.md`
-- `C:\Users\aleks\AppData\Local\Selene\data\exports\stabilization_run_20260614_175245.md`
+- `%LOCALAPPDATA%\Selene\data\exports\stabilization_run_20260614_175245.md`
 
 ## Current State
 

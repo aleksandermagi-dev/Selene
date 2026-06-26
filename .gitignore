@@ -29,6 +29,15 @@ src-tauri/gen/
 # Raw/private corpus and helper artifacts
 DevelopmentalCorpusArchive_20260526_122541/
 might help/
+New UI/
+new stuff/
+codex_chest/
+
+# Local workstation tooling and backups
+SeleneBackups/
+Tools/
+Kopia/
+Bruno/
 
 # Large/generated research outputs remain local unless explicitly promoted.
 analysis/*
@@ -45,3 +54,8 @@ analysis/*
 .venv/
 .venv-selene-package/
 venv/
+
+# Package/publish artifacts remain local until an explicit release step.
+*.tgz
+*.zip
+*.7z

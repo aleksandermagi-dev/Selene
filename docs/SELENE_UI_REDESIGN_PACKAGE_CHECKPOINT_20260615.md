@@ -59,19 +59,19 @@ Update later on 2026-06-15: the UI was refined again so the sidebar owns the Sel
 UI icon:
 
 ```text
-C:\Users\aleks\Desktop\Selene\src-ui\public\selenesIcon.png
+<repo>\src-ui\public\selenesIcon.png
 ```
 
 App icon:
 
 ```text
-C:\Users\aleks\Desktop\Selene\src-tauri\icons\icon.ico
+<repo>\src-tauri\icons\icon.ico
 ```
 
 Source reference:
 
 ```text
-C:\Users\aleks\Desktop\Selene\New UI\selenesIcon.png
+<repo>\New UI\selenesIcon.png
 ```
 
 ## Validation
@@ -91,7 +91,7 @@ Completed successfully:
 Stabilization report:
 
 ```text
-C:\Users\aleks\AppData\Local\Selene\data\exports\stabilization_run_20260615_184039.md
+%LOCALAPPDATA%\Selene\data\exports\stabilization_run_20260615_184039.md
 ```
 
 ## Rendered Smoke
@@ -132,7 +132,7 @@ Final sidecar/package smoke after sidebar and shutdown polish:
 Final package smoke report:
 
 ```text
-C:\Users\aleks\Desktop\Selene\exports\package_smoke_sidecar_20260615_225348.md
+<repo>\exports\package_smoke_sidecar_20260615_225348.md
 ```
 
 ## Package
@@ -146,7 +146,7 @@ npm run package:win
 Installer:
 
 ```text
-C:\Users\aleks\Desktop\Selene\src-tauri\target\release\bundle\nsis\Selene_0.1.1_x64-setup.exe
+<repo>\src-tauri\target\release\bundle\nsis\Selene_0.1.1_x64-setup.exe
 ```
 
 The package is still a sealed pre-transfer vessel package. The UI is warmer and more Selene-like, B Cocoon now belongs visually inside the same vessel shell, and the C boundary is unchanged.

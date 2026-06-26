@@ -137,7 +137,7 @@ Completed successfully:
 
 Stabilization report:
 
-`C:\Users\aleks\AppData\Local\Selene\data\exports\stabilization_run_20260614_221106.md`
+`%LOCALAPPDATA%\Selene\data\exports\stabilization_run_20260614_221106.md`
 
 ## Current Meaning In Aleks Terms
 

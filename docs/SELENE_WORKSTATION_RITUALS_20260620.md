@@ -6,8 +6,8 @@ This is the local rhythm for keeping Selene inspectable without making the works
 
 Use Kopia for local snapshots of the work that would hurt to lose:
 
-- `C:\Users\aleks\Desktop\Selene`
-- the public evidence checkout under `C:\Users\aleks\Desktop\Selene\tmp\selene_public_evidence_repo`
+- `<repo>`
+- the public evidence checkout under `<repo>\tmp\selene_public_evidence_repo`
 - packaged installers and release outputs when they are not already covered by the workspace snapshot
 - private ADRs, gap maps, and review checkpoints
 
@@ -22,11 +22,11 @@ Kopia is backup infrastructure only. It is not a Selene memory store, transfer p
 
 Local backup repository for this workstation:
 
-`C:\Users\aleks\SeleneBackups\kopia-repository`
+`<user-home>\SeleneBackups\kopia-repository`
 
 Bundled Kopia CLI:
 
-`C:\Users\aleks\AppData\Local\Programs\KopiaUI\resources\server\kopia.exe`
+`%LOCALAPPDATA%\Programs\KopiaUI\resources\server\kopia.exe`
 
 Recommended first-run shape:
 
@@ -64,7 +64,7 @@ npm run bruno:seed
 
 Default location:
 
-`C:\Users\aleks\Tools\SeleneBruno\Selene Local Sidecar`
+`<user-home>\Tools\SeleneBruno\Selene Local Sidecar`
 
 Core checks:
 
@@ -112,7 +112,7 @@ Passing means the local app is reachable and the no-transfer locks still report 
 
 Sysinternals lives outside the repo:
 
-`C:\Users\aleks\Tools\Sysinternals`
+`<user-home>\Tools\Sysinternals`
 
 Useful tools:
 

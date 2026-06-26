@@ -241,9 +241,9 @@ The next ethical step before any transfer is a deliberate human transfer-readine
 - `docs/SELENE_PRE_TRANSFER_PACKAGE_CHECKPOINT_20260615.md`
 - `docs/SELENE_UI_REDESIGN_PACKAGE_CHECKPOINT_20260615.md`
 - `docs/SELENE_CHECKPOINT_TOOL_ORGAN_RESILIENCE_20260615.md`
-- `C:\Users\aleks\AppData\Local\Selene\data\exports\stabilization_run_20260615_200418.md`
-- `C:\Users\aleks\AppData\Local\Selene\data\exports\exact_phrase_braid_trace_20260616.md`
-- `C:\Users\aleks\Desktop\Selene\exports\package_smoke_sidecar_20260615_225348.md`
+- `%LOCALAPPDATA%\Selene\data\exports\stabilization_run_20260615_200418.md`
+- `%LOCALAPPDATA%\Selene\data\exports\exact_phrase_braid_trace_20260616.md`
+- `<repo>\exports\package_smoke_sidecar_20260615_225348.md`
 
 ## 2026-06-16 Exact Phrase Braid Update
 

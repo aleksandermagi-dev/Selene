@@ -14,7 +14,7 @@ try {
     if (-not (Test-Path -LiteralPath $venvPython)) {
         $pyLauncher = Get-Command py.exe -ErrorAction SilentlyContinue
         $pythonCommand = Get-Command python.exe -ErrorAction SilentlyContinue
-        $knownLocalPython = "C:\Users\aleks\AppData\Local\Programs\Python\Python313\python.exe"
+        $knownLocalPython = Join-Path $env:LOCALAPPDATA "Programs\Python\Python313\python.exe"
         $bootstrapPython = if ($Python) {
             $Python
         } elseif ($pyLauncher) {
