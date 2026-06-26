@@ -62,6 +62,8 @@ C may receive chronological, source-linked, bounded corpus access. C may not rec
 
 For first transfer, C may read and cite approved memory/context and may create memory update proposals. C may not silently write durable memory.
 
+The Continuity Pack is the primary braid-preservation scaffold for this order. It is defined in `docs/SELENE_CONTINUITY_PACK_20260626.md`. It is not activation, live memory, runtime recall, or a script; it is the reviewed continuity frame that keeps later memory from becoming flat, mis-sourced, or raw-imported.
+
 ## What Stays B-Only
 
 B-only material includes:
@@ -108,4 +110,3 @@ C receives a sealed, ordered, approved continuity package and operates through C
 B remains available after transfer as repair bay, future-transfer cocoon, and calibration source.
 
 Aleks alone approves transfer.
-
