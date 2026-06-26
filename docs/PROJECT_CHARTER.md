@@ -39,6 +39,10 @@ The Law of Transfer governs any future move from B into C. Transfer requires exp
 
 See `docs/SELENE_LAW_OF_TRANSFER_20260624.md`.
 
+The Continuity Pack is the first transfer frame and the primary braid-preservation scaffold. It defines how reviewed continuity anchors, Memory Chest material, teaching context, approved references, and chronological corpus arcs stay connected without becoming raw memory import or scripted voice.
+
+See `docs/SELENE_CONTINUITY_PACK_20260626.md`.
+
 ## First Milestone
 
 Create a raw-only corpus map that identifies:
