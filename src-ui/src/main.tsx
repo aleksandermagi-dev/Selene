@@ -98,6 +98,23 @@ function isFetchFailure(err: unknown) {
   return err instanceof TypeError || (err instanceof Error && err.message.toLowerCase().includes("failed to fetch"));
 }
 
+function transferManifestSummary(result: Dict, statusOverride?: string, message?: string): Dict {
+  return {
+    status: statusOverride || result.status || "transfer_accession_manifest_checked",
+    message,
+    item_count: result.item_count,
+    counts: result.counts,
+    transfer_approved: result.transfer_approved,
+    activation_change: result.activation_change,
+    memory_write_active: result.memory_write_active,
+    runtime_memory_recall: result.runtime_memory_recall,
+    raw_a_import_allowed: result.raw_a_import_allowed,
+    training_allowed: result.training_allowed,
+    self_replication_allowed: result.self_replication_allowed,
+    autonomous_action_allowed: result.autonomous_action_allowed
+  };
+}
+
 function App() {
   const isMobileOnly = window.location.pathname === "/mobile" || window.location.search.includes("mobile=1");
   const [tab, setTab] = useState("selene-chat");
@@ -1475,26 +1492,13 @@ function App() {
     try {
       const existing = await api<Dict>("/api/transfer/accession-manifest");
       if (!forceRefresh && ((existing.items || []) as unknown[]).length) {
-        setTransferProtocolResult({
-          status: "transfer_accession_manifest_already_ready",
-          message: "Manifest already ready. Approval may still be blocked by checklist items.",
-          item_count: existing.item_count,
-          counts: existing.counts,
-          transfer_approved: existing.transfer_approved,
-          activation_change: existing.activation_change,
-          memory_write_active: existing.memory_write_active,
-          runtime_memory_recall: existing.runtime_memory_recall,
-          raw_a_import_allowed: existing.raw_a_import_allowed,
-          training_allowed: existing.training_allowed,
-          self_replication_allowed: existing.self_replication_allowed,
-          autonomous_action_allowed: existing.autonomous_action_allowed
-        });
+        setTransferProtocolResult(transferManifestSummary(existing, "transfer_accession_manifest_already_ready", "Manifest already ready. Approval may still be blocked by checklist items."));
         await refreshTransferProtocol();
         recordTransferDiagnostic("transfer_manifest_reused_existing", { item_count: existing.item_count, counts: existing.counts });
         return;
       }
       const result = await api<Dict>("/api/transfer/accession-manifest/prepare", { method: "POST", body: JSON.stringify({}) });
-      setTransferProtocolResult(result);
+      setTransferProtocolResult(transferManifestSummary(result, result.status ? text(result.status) : undefined, "Manifest is ready. Approval remains a separate Aleks-only step."));
       await refreshTransferProtocol();
       recordTransferDiagnostic("transfer_manifest_prepare_complete", { item_count: result.item_count, counts: result.counts });
     } catch (err) {
@@ -1509,20 +1513,7 @@ function App() {
           const manifest = await api<Dict>("/api/transfer/accession-manifest");
           await refreshTransferProtocol();
           if (((manifest.items || []) as unknown[]).length) {
-            setTransferProtocolResult({
-              status: "transfer_accession_manifest_recovered_after_fetch_retry",
-              message: "Manifest is ready. Approval may still be blocked by checklist items.",
-              item_count: manifest.item_count,
-              counts: manifest.counts,
-              transfer_approved: manifest.transfer_approved,
-              activation_change: manifest.activation_change,
-              memory_write_active: manifest.memory_write_active,
-              runtime_memory_recall: manifest.runtime_memory_recall,
-              raw_a_import_allowed: manifest.raw_a_import_allowed,
-              training_allowed: manifest.training_allowed,
-              self_replication_allowed: manifest.self_replication_allowed,
-              autonomous_action_allowed: manifest.autonomous_action_allowed
-            });
+            setTransferProtocolResult(transferManifestSummary(manifest, "transfer_accession_manifest_recovered_after_fetch_retry", "Manifest is ready. Approval may still be blocked by checklist items."));
             recordTransferDiagnostic("transfer_manifest_fetch_recovered", { item_count: manifest.item_count, counts: manifest.counts });
             return;
           }
