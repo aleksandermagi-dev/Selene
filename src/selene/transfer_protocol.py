@@ -120,13 +120,14 @@ def prepare_accession_manifest(conn: sqlite3.Connection, payload: dict[str, Any]
             ),
         )
     conn.commit()
+    compact = bool(payload.get("compact")) if isinstance(payload, dict) else False
     return _with_guards(
         {
             "status": "transfer_accession_manifest_prepared",
             "run_id": run_id,
             "item_count": len(rows),
             "counts": dict(Counter(row["c_access_status"] for row in rows)),
-            "items": list_accession_manifest(conn)["items"],
+            "items": list_accession_manifest(conn, compact=compact)["items"],
             "review_destination": "Status",
             "review_status": "review_only",
             "decision": "sealed_manifest_review_only_no_memory_write",
@@ -134,7 +135,7 @@ def prepare_accession_manifest(conn: sqlite3.Connection, payload: dict[str, Any]
     )
 
 
-def list_accession_manifest(conn: sqlite3.Connection, limit: int = 80) -> dict[str, Any]:
+def list_accession_manifest(conn: sqlite3.Connection, limit: int = 80, compact: bool = False) -> dict[str, Any]:
     rows = conn.execute(
         """
         SELECT * FROM transfer_accession_manifest_items
@@ -144,7 +145,8 @@ def list_accession_manifest(conn: sqlite3.Connection, limit: int = 80) -> dict[s
         """,
         (max(1, min(int(limit), 300)),),
     ).fetchall()
-    items = [_decode_manifest(row) for row in rows]
+    decoded = [_decode_manifest(row) for row in rows]
+    items = [_compact_manifest_item(item) for item in decoded] if compact else decoded
     return _with_guards(
         {
             "status": "transfer_accession_manifest_ready",
@@ -873,6 +875,25 @@ def _decode_manifest(row: sqlite3.Row) -> dict[str, Any]:
     item["source_refs"] = _loads(item.get("source_refs"), [])
     item["payload_json"] = _loads(item.get("payload_json"), {})
     return _with_guards(item)
+
+
+def _compact_manifest_item(item: dict[str, Any]) -> dict[str, Any]:
+    return _with_guards(
+        {
+            "id": item.get("id"),
+            "phase_order": item.get("phase_order"),
+            "phase": item.get("phase"),
+            "item_type": item.get("item_type"),
+            "title": item.get("title"),
+            "c_access_status": item.get("c_access_status"),
+            "summary": item.get("summary"),
+            "review_destination": item.get("review_destination"),
+            "provenance_boundary": item.get("provenance_boundary"),
+            "review_status": item.get("review_status"),
+            "source_ref_count": len(item.get("source_refs") or []),
+            "payload_keys": sorted((item.get("payload_json") or {}).keys()),
+        }
+    )
 
 
 def _public_record(record: dict[str, Any]) -> dict[str, Any]:

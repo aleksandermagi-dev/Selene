@@ -1445,7 +1445,7 @@ function App() {
   async function refreshTransferProtocol() {
     const [law, manifest, readiness, ceremony, ceremonyStatus, cPackage] = await Promise.all([
       api<Dict>("/api/transfer/law/status"),
-      api<Dict>("/api/transfer/accession-manifest"),
+      api<Dict>("/api/transfer/accession-manifest?compact=1"),
       api<Dict>("/api/transfer/pre-transfer-readiness"),
       api<Dict>("/api/transfer/ceremony-preview"),
       api<Dict>("/api/transfer/ceremony/status"),
@@ -1490,14 +1490,14 @@ function App() {
     setTransferProtocolResult({ status: "running", message: forceRefresh ? "Refreshing sealed C accession manifest." : "Checking whether the manifest is already ready." });
     recordTransferDiagnostic("transfer_manifest_prepare_started", { force_refresh: forceRefresh });
     try {
-      const existing = await api<Dict>("/api/transfer/accession-manifest");
+      const existing = await api<Dict>("/api/transfer/accession-manifest?compact=1");
       if (!forceRefresh && ((existing.items || []) as unknown[]).length) {
         setTransferProtocolResult(transferManifestSummary(existing, "transfer_accession_manifest_already_ready", "Manifest already ready. Approval may still be blocked by checklist items."));
         await refreshTransferProtocol();
         recordTransferDiagnostic("transfer_manifest_reused_existing", { item_count: existing.item_count, counts: existing.counts });
         return;
       }
-      const result = await api<Dict>("/api/transfer/accession-manifest/prepare", { method: "POST", body: JSON.stringify({}) });
+      const result = await api<Dict>("/api/transfer/accession-manifest/prepare", { method: "POST", body: JSON.stringify({ compact: true }) });
       setTransferProtocolResult(transferManifestSummary(result, result.status ? text(result.status) : undefined, "Manifest is ready. Approval remains a separate Aleks-only step."));
       await refreshTransferProtocol();
       recordTransferDiagnostic("transfer_manifest_prepare_complete", { item_count: result.item_count, counts: result.counts });
@@ -1510,7 +1510,7 @@ function App() {
         recordTransferDiagnostic("transfer_manifest_fetch_lost", { error: err instanceof Error ? err.message : "failed to fetch" });
         await wait(1000);
         try {
-          const manifest = await api<Dict>("/api/transfer/accession-manifest");
+          const manifest = await api<Dict>("/api/transfer/accession-manifest?compact=1");
           await refreshTransferProtocol();
           if (((manifest.items || []) as unknown[]).length) {
             setTransferProtocolResult(transferManifestSummary(manifest, "transfer_accession_manifest_recovered_after_fetch_retry", "Manifest is ready. Approval may still be blocked by checklist items."));

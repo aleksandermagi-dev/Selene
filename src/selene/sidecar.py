@@ -402,7 +402,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "transfer.law.status")["result"]))
         elif parsed.path == "/api/transfer/accession-manifest":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
-            self._send(*json_bytes(route_request(conn, "transfer.accession_manifest.list", {"limit": int(qs["limit"]) if qs.get("limit") else 80})["result"]))
+            compact = qs.get("compact", "1").lower() not in {"0", "false", "no"}
+            self._send(*json_bytes(route_request(conn, "transfer.accession_manifest.list", {"limit": int(qs["limit"]) if qs.get("limit") else 80, "compact": compact})["result"]))
         elif parsed.path == "/api/transfer/pre-transfer-readiness":
             self._send(*json_bytes(route_request(conn, "transfer.pre_transfer_readiness")["result"]))
         elif parsed.path == "/api/transfer/ceremony-preview":
@@ -821,6 +822,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/transfer/accession-manifest/prepare":
             try:
+                body["compact"] = True
                 self._send(*json_bytes(route_request(self.server.conn, "transfer.accession_manifest.prepare", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))

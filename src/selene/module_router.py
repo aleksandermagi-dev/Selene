@@ -316,7 +316,7 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
     if route_key == "transfer.accession_manifest.prepare":
         return {"route": route_key, "result": prepare_accession_manifest(conn, payload)}
     if route_key == "transfer.accession_manifest.list":
-        return {"route": route_key, "result": list_accession_manifest(conn, int(payload.get("limit") or 80))}
+        return {"route": route_key, "result": list_accession_manifest(conn, int(payload.get("limit") or 80), bool(payload.get("compact")))}
     if route_key == "transfer.governance_trials.run":
         return {"route": route_key, "result": run_transfer_governance_trials(conn, payload)}
     if route_key == "transfer.c_chat_dry_run":
