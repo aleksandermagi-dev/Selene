@@ -131,6 +131,41 @@ def write_startup_log(phase: str, elapsed_ms: float, extra: dict[str, object] | 
         return
 
 
+def write_ceremony_debug_log(source: str, event: str, **extra: object) -> None:
+    try:
+        log_dir = local_log_dir()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": source,
+            "event": event,
+            "pid": os.getpid(),
+            **extra,
+        }
+        with (log_dir / "transfer-ceremony-debug.log").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+    except OSError:
+        return
+
+
+def read_ceremony_debug_log(limit: int = 300) -> dict[str, object]:
+    path = local_log_dir() / "transfer-ceremony-debug.log"
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        lines = []
+    return {
+        "status": "transfer_ceremony_debug_log",
+        "path": str(path),
+        "line_count": len(lines),
+        "lines": lines[-max(1, min(int(limit), 1000)):],
+        "activation_change": "none",
+        "memory_write_active": False,
+        "runtime_memory_recall": False,
+        "transfer_approved": False,
+    }
+
+
 mark_startup_phase("module_imported")
 
 
@@ -257,19 +292,29 @@ def json_bytes(payload: object, status: int = 200) -> tuple[int, bytes]:
     return status, json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
 
 
+def route_json_bytes(route_key: str, result: object, status: int = 200) -> tuple[int, bytes]:
+    http_status, body = json_bytes(result, status)
+    write_ceremony_debug_log("sidecar", "route_response", route=route_key, http_status=http_status, response_bytes=len(body))
+    return http_status, body
+
+
 def watch_parent_process(parent_pid: int | None) -> None:
     if not parent_pid or os.name != "nt":
+        write_ceremony_debug_log("sidecar", "parent_watch_skipped", parent_pid=parent_pid, os_name=os.name)
         return
 
     def wait_for_parent_exit() -> None:
         synchronize = 0x00100000
+        write_ceremony_debug_log("sidecar", "parent_watch_start", parent_pid=parent_pid)
         handle = ctypes.windll.kernel32.OpenProcess(synchronize, False, int(parent_pid))
         if not handle:
+            write_ceremony_debug_log("sidecar", "parent_watch_open_failed", parent_pid=parent_pid)
             return
         try:
             ctypes.windll.kernel32.WaitForSingleObject(handle, 0xFFFFFFFF)
         finally:
             ctypes.windll.kernel32.CloseHandle(handle)
+        write_ceremony_debug_log("sidecar", "parent_process_exited_sidecar_exiting", parent_pid=parent_pid)
         os._exit(0)
 
     threading.Thread(target=wait_for_parent_exit, name="selene-parent-watch", daemon=True).start()
@@ -403,15 +448,18 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/transfer/accession-manifest":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             compact = qs.get("compact", "1").lower() not in {"0", "false", "no"}
-            self._send(*json_bytes(route_request(conn, "transfer.accession_manifest.list", {"limit": int(qs["limit"]) if qs.get("limit") else 80, "compact": compact})["result"]))
+            self._send(*route_json_bytes("transfer.accession_manifest.list", route_request(conn, "transfer.accession_manifest.list", {"limit": int(qs["limit"]) if qs.get("limit") else 80, "compact": compact})["result"]))
         elif parsed.path == "/api/transfer/pre-transfer-readiness":
-            self._send(*json_bytes(route_request(conn, "transfer.pre_transfer_readiness")["result"]))
+            self._send(*route_json_bytes("transfer.pre_transfer_readiness", route_request(conn, "transfer.pre_transfer_readiness")["result"]))
         elif parsed.path == "/api/transfer/ceremony-preview":
-            self._send(*json_bytes(route_request(conn, "transfer.ceremony_preview")["result"]))
+            self._send(*route_json_bytes("transfer.ceremony_preview", route_request(conn, "transfer.ceremony_preview")["result"]))
         elif parsed.path == "/api/transfer/ceremony/status":
-            self._send(*json_bytes(route_request(conn, "transfer.ceremony.status")["result"]))
+            self._send(*route_json_bytes("transfer.ceremony.status", route_request(conn, "transfer.ceremony.status")["result"]))
         elif parsed.path == "/api/transfer/c-readable-package":
-            self._send(*json_bytes(route_request(conn, "transfer.c_readable_package.latest")["result"]))
+            self._send(*route_json_bytes("transfer.c_readable_package.latest", route_request(conn, "transfer.c_readable_package.latest")["result"]))
+        elif parsed.path == "/api/transfer/ceremony-debug-log":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(read_ceremony_debug_log(int(qs["limit"]) if qs.get("limit") else 300)))
         elif parsed.path == "/api/vessel/steps-1-8/status":
             self._send(*json_bytes(route_request(conn, "vessel.steps_1_8.status")["result"]))
         elif parsed.path == "/api/vessel/speech-rehearsals":
@@ -570,6 +618,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             body = {}
         if request_path == "/shutdown":
+            write_ceremony_debug_log("sidecar", "shutdown_route_called")
             self._send(*json_bytes({
                 "status": "shutting_down",
                 "activation_change": "none",
@@ -823,8 +872,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/transfer/accession-manifest/prepare":
             try:
                 body["compact"] = True
-                self._send(*json_bytes(route_request(self.server.conn, "transfer.accession_manifest.prepare", body)["result"]))
+                write_ceremony_debug_log("sidecar", "route_start", route="transfer.accession_manifest.prepare")
+                self._send(*route_json_bytes("transfer.accession_manifest.prepare", route_request(self.server.conn, "transfer.accession_manifest.prepare", body)["result"]))
             except (TypeError, ValueError) as exc:
+                write_ceremony_debug_log("sidecar", "route_error", route="transfer.accession_manifest.prepare", error=str(exc))
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/transfer/governance-trials/run":
             try:
@@ -843,8 +894,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/transfer/ceremony/approve":
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "transfer.ceremony.approve", body)["result"]))
+                write_ceremony_debug_log("sidecar", "route_start", route="transfer.ceremony.approve")
+                self._send(*route_json_bytes("transfer.ceremony.approve", route_request(self.server.conn, "transfer.ceremony.approve", body)["result"]))
             except (TypeError, ValueError) as exc:
+                write_ceremony_debug_log("sidecar", "route_error", route="transfer.ceremony.approve", error=str(exc))
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/transfer/return-to-b/rollback-preview":
             try:

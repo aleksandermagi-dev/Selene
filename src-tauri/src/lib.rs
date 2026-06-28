@@ -1,40 +1,102 @@
+use std::fs::{create_dir_all, OpenOptions};
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::Manager;
 
 struct SidecarState(Mutex<Option<Child>>);
 
+fn debug_log_path() -> PathBuf {
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        return PathBuf::from(local)
+            .join("Selene")
+            .join("logs")
+            .join("transfer-ceremony-debug.log");
+    }
+    std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(".selene_logs")
+        .join("transfer-ceremony-debug.log")
+}
+
+fn now_ms() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_else(|_| Duration::from_secs(0))
+        .as_millis()
+}
+
+fn log_debug(source: &str, event: &str, detail: &str) {
+    let path = debug_log_path();
+    if let Some(parent) = path.parent() {
+        let _ = create_dir_all(parent);
+    }
+    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) {
+        let safe_detail = detail.replace('\r', "\\r").replace('\n', "\\n");
+        let _ = writeln!(
+            file,
+            "{{\"ts_ms\":{},\"source\":\"{}\",\"event\":\"{}\",\"detail\":\"{}\"}}",
+            now_ms(),
+            source,
+            event,
+            safe_detail.replace('"', "\\\"")
+        );
+    }
+}
+
+#[tauri::command]
+fn log_transfer_ceremony_event(event: String, detail: String) {
+    log_debug("frontend", &event, &detail);
+}
+
+#[tauri::command]
+fn read_transfer_ceremony_debug_log() -> String {
+    std::fs::read_to_string(debug_log_path()).unwrap_or_default()
+}
+
 impl SidecarState {
     fn stop(&self) {
+        log_debug("tauri", "sidecar_state_stop_called", "");
         if let Ok(mut child) = self.0.lock() {
             if let Some(mut child) = child.take() {
+                let child_id = child.id();
+                log_debug("tauri", "sidecar_owned_child_shutdown_start", &format!("pid={child_id}"));
                 request_sidecar_shutdown();
                 sleep(Duration::from_millis(500));
                 let _ = child.kill();
                 let _ = child.wait();
+                log_debug("tauri", "sidecar_owned_child_shutdown_complete", &format!("pid={child_id}"));
+            } else {
+                log_debug("tauri", "sidecar_state_no_owned_child", "");
             }
+        } else {
+            log_debug("tauri", "sidecar_state_lock_failed", "");
         }
     }
 }
 
 impl Drop for SidecarState {
     fn drop(&mut self) {
+        log_debug("tauri", "sidecar_state_drop", "");
         self.stop();
     }
 }
 
 fn sidecar_health_ok() -> bool {
+    log_debug("tauri", "sidecar_health_check_start", "");
     let mut stream = match TcpStream::connect_timeout(
         &"127.0.0.1:8766".parse().expect("valid sidecar address"),
         Duration::from_millis(500),
     ) {
         Ok(stream) => stream,
-        Err(_) => return false,
+        Err(err) => {
+            log_debug("tauri", "sidecar_health_check_connect_failed", &err.to_string());
+            return false;
+        }
     };
     let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(2)));
@@ -44,13 +106,16 @@ fn sidecar_health_ok() -> bool {
         "Connection: close\r\n",
         "\r\n"
     );
-    if stream.write_all(request.as_bytes()).is_err() {
+    if let Err(err) = stream.write_all(request.as_bytes()) {
+        log_debug("tauri", "sidecar_health_check_write_failed", &err.to_string());
         return false;
     }
     let mut response = String::new();
-    stream.read_to_string(&mut response).is_ok()
+    let ok = stream.read_to_string(&mut response).is_ok()
         && response.starts_with("HTTP/1.0 200")
-        && response.contains("\"status\":\"ok\"")
+        && response.contains("\"status\":\"ok\"");
+    log_debug("tauri", "sidecar_health_check_complete", &format!("ok={ok}; bytes={}", response.len()));
+    ok
 }
 
 fn sidecar_port_open() -> bool {
@@ -74,6 +139,7 @@ fn wait_for_sidecar_port_close(timeout: Duration) -> bool {
 }
 
 fn stop_stale_sidecars() {
+    log_debug("tauri", "stop_stale_sidecars_start", "");
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
@@ -101,6 +167,7 @@ fn stop_stale_sidecars() {
             .output();
         sleep(Duration::from_millis(750));
     }
+    log_debug("tauri", "stop_stale_sidecars_complete", "");
 }
 
 fn sidecar_executable(resource_dir: Option<PathBuf>) -> std::io::Result<PathBuf> {
@@ -156,7 +223,9 @@ fn sidecar_executable(resource_dir: Option<PathBuf>) -> std::io::Result<PathBuf>
 }
 
 fn spawn_hidden_sidecar(parent_pid: &str, resource_dir: Option<PathBuf>) -> std::io::Result<Child> {
-    let mut command = Command::new(sidecar_executable(resource_dir)?);
+    let exe = sidecar_executable(resource_dir)?;
+    log_debug("tauri", "sidecar_spawn_start", &format!("exe={}; parent_pid={parent_pid}", exe.display()));
+    let mut command = Command::new(exe);
     command
         .args(["--seed", "--port", "8766", "--parent-pid", parent_pid])
         .stdin(Stdio::null())
@@ -170,10 +239,16 @@ fn spawn_hidden_sidecar(parent_pid: &str, resource_dir: Option<PathBuf>) -> std:
         command.creation_flags(CREATE_NO_WINDOW);
     }
 
-    command.spawn()
+    let child = command.spawn();
+    match &child {
+        Ok(child) => log_debug("tauri", "sidecar_spawn_complete", &format!("pid={}", child.id())),
+        Err(err) => log_debug("tauri", "sidecar_spawn_failed", &err.to_string()),
+    }
+    child
 }
 
 fn request_sidecar_shutdown() {
+    log_debug("tauri", "sidecar_shutdown_request_start", "");
     let address = "127.0.0.1:8766";
     if let Ok(mut stream) = TcpStream::connect_timeout(
         &address.parse().expect("valid sidecar address"),
@@ -190,18 +265,30 @@ fn request_sidecar_shutdown() {
             "{}"
         );
         let _ = stream.write_all(request.as_bytes());
+        log_debug("tauri", "sidecar_shutdown_request_sent", "");
+    } else {
+        log_debug("tauri", "sidecar_shutdown_request_connect_failed", "");
     }
 }
 
 pub fn run() {
+    log_debug("tauri", "app_builder_start", "");
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            log_transfer_ceremony_event,
+            read_transfer_ceremony_debug_log
+        ])
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            log_debug("tauri", "setup_start", &format!("pid={}", std::process::id()));
             if sidecar_port_open() {
+                log_debug("tauri", "setup_sidecar_port_open", "");
                 if sidecar_health_ok() {
+                    log_debug("tauri", "setup_reuse_healthy_sidecar", "");
                     app.manage(SidecarState(Mutex::new(None)));
                     return Ok(());
                 } else {
+                    log_debug("tauri", "setup_unhealthy_sidecar_restart", "");
                     request_sidecar_shutdown();
                     if !wait_for_sidecar_port_close(Duration::from_secs(3)) {
                         stop_stale_sidecars();
@@ -212,8 +299,15 @@ pub fn run() {
             let resource_dir = app.path().resource_dir().ok();
             let child = spawn_hidden_sidecar(parent_pid.as_str(), resource_dir)?;
             app.manage(SidecarState(Mutex::new(Some(child))));
+            log_debug("tauri", "setup_complete", "");
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Selene vessel");
+        .on_window_event(|_window, event| {
+            log_debug("tauri", "window_event", &format!("{event:?}"));
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building Selene vessel")
+        .run(|_app_handle, event| {
+            log_debug("tauri", "run_event", &format!("{event:?}"));
+        });
 }

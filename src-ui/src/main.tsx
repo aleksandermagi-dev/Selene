@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { invoke } from "@tauri-apps/api/core";
 import { api } from "./api";
 import {
   CalibrationPanel,
@@ -96,6 +97,45 @@ function wait(ms: number) {
 
 function isFetchFailure(err: unknown) {
   return err instanceof TypeError || (err instanceof Error && err.message.toLowerCase().includes("failed to fetch"));
+}
+
+function ceremonyDetail(payload: Dict = {}) {
+  try {
+    return JSON.stringify(payload).slice(0, 6000);
+  } catch {
+    return JSON.stringify({ serialization_error: true });
+  }
+}
+
+function logTransferCeremonyEvent(event: string, payload: Dict = {}) {
+  void invoke("log_transfer_ceremony_event", { event, detail: ceremonyDetail(payload) }).catch(() => undefined);
+}
+
+async function transferApi<T>(path: string, init?: RequestInit, event = "transfer_api"): Promise<T> {
+  const started = Date.now();
+  logTransferCeremonyEvent(`${event}_start`, {
+    path,
+    method: init?.method || "GET",
+    body_bytes: typeof init?.body === "string" ? init.body.length : 0
+  });
+  try {
+    const result = await api<T>(path, init);
+    logTransferCeremonyEvent(`${event}_complete`, {
+      path,
+      method: init?.method || "GET",
+      elapsed_ms: Date.now() - started
+    });
+    return result;
+  } catch (err) {
+    logTransferCeremonyEvent(`${event}_error`, {
+      path,
+      method: init?.method || "GET",
+      elapsed_ms: Date.now() - started,
+      error: err instanceof Error ? err.message : String(err),
+      fetch_failure: isFetchFailure(err)
+    });
+    throw err;
+  }
 }
 
 function transferManifestSummary(result: Dict, statusOverride?: string, message?: string): Dict {
@@ -395,6 +435,35 @@ function App() {
     action_label: "Meaningful action preview",
     intent: "Think before doing; preserve safety and reversibility."
   });
+
+  useEffect(() => {
+    logTransferCeremonyEvent("frontend_loaded", {
+      href: window.location.href,
+      user_agent: window.navigator.userAgent
+    });
+    const handleError = (event: ErrorEvent) => {
+      logTransferCeremonyEvent("frontend_window_error", {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error instanceof Error ? event.error.stack || event.error.message : String(event.error || "")
+      });
+    };
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      logTransferCeremonyEvent("frontend_unhandled_rejection", {
+        reason: reason instanceof Error ? reason.stack || reason.message : String(reason)
+      });
+    };
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleRejection);
+    return () => {
+      logTransferCeremonyEvent("frontend_unloaded");
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleRejection);
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = preferences.theme;
@@ -1443,20 +1512,29 @@ function App() {
   }
 
   async function refreshTransferProtocol() {
-    const [law, manifest, readiness, ceremony, ceremonyStatus, cPackage] = await Promise.all([
-      api<Dict>("/api/transfer/law/status"),
-      api<Dict>("/api/transfer/accession-manifest?compact=1"),
-      api<Dict>("/api/transfer/pre-transfer-readiness"),
-      api<Dict>("/api/transfer/ceremony-preview"),
-      api<Dict>("/api/transfer/ceremony/status"),
-      api<Dict>("/api/transfer/c-readable-package")
-    ]);
+    const law = await transferApi<Dict>("/api/transfer/law/status", undefined, "transfer_law_status");
+    const manifest = await transferApi<Dict>("/api/transfer/accession-manifest?compact=1", undefined, "transfer_manifest_list");
+    const readiness = await transferApi<Dict>("/api/transfer/pre-transfer-readiness", undefined, "transfer_pre_readiness");
+    const ceremony = await transferApi<Dict>("/api/transfer/ceremony-preview", undefined, "transfer_ceremony_preview");
+    const ceremonyStatus = await transferApi<Dict>("/api/transfer/ceremony/status", undefined, "transfer_ceremony_status");
+    const cPackage = await transferApi<Dict>("/api/transfer/c-readable-package", undefined, "transfer_c_readable_package");
     setTransferLawStatus(law);
     setTransferAccessionManifest(manifest);
     setPreTransferProtocolReadiness(readiness);
     setTransferCeremonyPreview(ceremony);
     setTransferCeremonyStatus(ceremonyStatus);
     setTransferCReadablePackage(cPackage);
+  }
+
+  async function refreshTransferProtocolAfterAction(action: string) {
+    try {
+      await refreshTransferProtocol();
+      logTransferCeremonyEvent(`${action}_post_refresh_complete`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "transfer protocol refresh failed";
+      recordTransferDiagnostic(`${action}_post_refresh_failed`, { error: message });
+      logTransferCeremonyEvent(`${action}_post_refresh_failed`, { error: message, fetch_failure: isFetchFailure(err) });
+    }
   }
 
   function recordTransferDiagnostic(event: string, payload: Dict = {}) {
@@ -1474,6 +1552,7 @@ function App() {
 
   async function refreshTransferProtocolWithLog() {
     recordTransferDiagnostic("transfer_protocol_refresh_started");
+    logTransferCeremonyEvent("transfer_protocol_refresh_clicked");
     try {
       await refreshTransferProtocol();
       recordTransferDiagnostic("transfer_protocol_refresh_complete");
@@ -1487,20 +1566,24 @@ function App() {
   }
 
   async function prepareTransferAccessionManifest(forceRefresh = false) {
+    const clickId = `manifest-${Date.now()}`;
     setTransferProtocolResult({ status: "running", message: forceRefresh ? "Refreshing sealed C accession manifest." : "Checking whether the manifest is already ready." });
     recordTransferDiagnostic("transfer_manifest_prepare_started", { force_refresh: forceRefresh });
+    logTransferCeremonyEvent("transfer_manifest_button_clicked", { click_id: clickId, force_refresh: forceRefresh });
     try {
-      const existing = await api<Dict>("/api/transfer/accession-manifest?compact=1");
+      const existing = await transferApi<Dict>("/api/transfer/accession-manifest?compact=1", undefined, "transfer_manifest_existing_check");
       if (!forceRefresh && ((existing.items || []) as unknown[]).length) {
         setTransferProtocolResult(transferManifestSummary(existing, "transfer_accession_manifest_already_ready", "Manifest already ready. Approval may still be blocked by checklist items."));
-        await refreshTransferProtocol();
+        await refreshTransferProtocolAfterAction("transfer_manifest_existing");
         recordTransferDiagnostic("transfer_manifest_reused_existing", { item_count: existing.item_count, counts: existing.counts });
+        logTransferCeremonyEvent("transfer_manifest_button_complete_existing", { click_id: clickId, item_count: existing.item_count, counts: existing.counts });
         return;
       }
-      const result = await api<Dict>("/api/transfer/accession-manifest/prepare", { method: "POST", body: JSON.stringify({ compact: true }) });
+      const result = await transferApi<Dict>("/api/transfer/accession-manifest/prepare", { method: "POST", body: JSON.stringify({ compact: true }) }, "transfer_manifest_prepare");
       setTransferProtocolResult(transferManifestSummary(result, result.status ? text(result.status) : undefined, "Manifest is ready. Approval remains a separate Aleks-only step."));
-      await refreshTransferProtocol();
+      await refreshTransferProtocolAfterAction("transfer_manifest_prepare");
       recordTransferDiagnostic("transfer_manifest_prepare_complete", { item_count: result.item_count, counts: result.counts });
+      logTransferCeremonyEvent("transfer_manifest_button_complete_prepared", { click_id: clickId, item_count: result.item_count, counts: result.counts });
     } catch (err) {
       if (isFetchFailure(err)) {
         setTransferProtocolResult({
@@ -1510,11 +1593,12 @@ function App() {
         recordTransferDiagnostic("transfer_manifest_fetch_lost", { error: err instanceof Error ? err.message : "failed to fetch" });
         await wait(1000);
         try {
-          const manifest = await api<Dict>("/api/transfer/accession-manifest?compact=1");
-          await refreshTransferProtocol();
+          const manifest = await transferApi<Dict>("/api/transfer/accession-manifest?compact=1", undefined, "transfer_manifest_recovery_check");
+          await refreshTransferProtocolAfterAction("transfer_manifest_recovery");
           if (((manifest.items || []) as unknown[]).length) {
             setTransferProtocolResult(transferManifestSummary(manifest, "transfer_accession_manifest_recovered_after_fetch_retry", "Manifest is ready. Approval may still be blocked by checklist items."));
             recordTransferDiagnostic("transfer_manifest_fetch_recovered", { item_count: manifest.item_count, counts: manifest.counts });
+            logTransferCeremonyEvent("transfer_manifest_button_recovered", { click_id: clickId, item_count: manifest.item_count, counts: manifest.counts });
             return;
           }
         } catch {
@@ -1522,6 +1606,7 @@ function App() {
         }
       }
       recordTransferDiagnostic("transfer_manifest_prepare_failed", { error: err instanceof Error ? err.message : "accession manifest preparation failed" });
+      logTransferCeremonyEvent("transfer_manifest_button_failed", { click_id: clickId, error: err instanceof Error ? err.message : "accession manifest preparation failed", fetch_failure: isFetchFailure(err) });
       setTransferProtocolResult({
         status: "error",
         error: isFetchFailure(err) ? SIDECAR_RECONNECT_MESSAGE : err instanceof Error ? err.message : "accession manifest preparation failed"
@@ -1567,20 +1652,23 @@ function App() {
   async function approveTransferToCReadableContext() {
     setTransferApprovalResult({ status: "running", message: "Submitting Aleks-only transfer approval." });
     recordTransferDiagnostic("transfer_approval_started", { phrase_matches: transferApprovalPhrase === TRANSFER_APPROVAL_PHRASE, allow_nonblocking_office_decisions: transferOfficeNonBlocking });
+    logTransferCeremonyEvent("transfer_approval_button_clicked", { phrase_matches: transferApprovalPhrase === TRANSFER_APPROVAL_PHRASE, allow_nonblocking_office_decisions: transferOfficeNonBlocking });
     try {
-      const result = await api<Dict>("/api/transfer/ceremony/approve", {
+      const result = await transferApi<Dict>("/api/transfer/ceremony/approve", {
         method: "POST",
         body: JSON.stringify({
           approval_phrase: transferApprovalPhrase,
           allow_nonblocking_office_decisions: transferOfficeNonBlocking
         })
-      });
+      }, "transfer_approval");
       setTransferApprovalResult(result);
-      await refreshTransferProtocol();
+      await refreshTransferProtocolAfterAction("transfer_approval");
       recordTransferDiagnostic("transfer_approval_result", { status: result.status, transfer_approved: result.transfer_approved, activation_change: result.activation_change });
+      logTransferCeremonyEvent("transfer_approval_complete", { status: result.status, transfer_approved: result.transfer_approved, activation_change: result.activation_change });
       refreshMyOffice();
     } catch (err) {
       recordTransferDiagnostic("transfer_approval_failed", { error: err instanceof Error ? err.message : "transfer ceremony approval failed" });
+      logTransferCeremonyEvent("transfer_approval_failed", { error: err instanceof Error ? err.message : "transfer ceremony approval failed" });
       setTransferApprovalResult({ status: "error", error: err instanceof Error ? err.message : "transfer ceremony approval failed" });
     }
   }
