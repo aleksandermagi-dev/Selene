@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
@@ -26,6 +26,31 @@ impl Drop for SidecarState {
     fn drop(&mut self) {
         self.stop();
     }
+}
+
+fn sidecar_health_ok() -> bool {
+    let mut stream = match TcpStream::connect_timeout(
+        &"127.0.0.1:8766".parse().expect("valid sidecar address"),
+        Duration::from_millis(500),
+    ) {
+        Ok(stream) => stream,
+        Err(_) => return false,
+    };
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(2)));
+    let request = concat!(
+        "GET /health HTTP/1.1\r\n",
+        "Host: 127.0.0.1:8766\r\n",
+        "Connection: close\r\n",
+        "\r\n"
+    );
+    if stream.write_all(request.as_bytes()).is_err() {
+        return false;
+    }
+    let mut response = String::new();
+    stream.read_to_string(&mut response).is_ok()
+        && response.starts_with("HTTP/1.0 200")
+        && response.contains("\"status\":\"ok\"")
 }
 
 fn sidecar_port_open() -> bool {
@@ -173,9 +198,14 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             if sidecar_port_open() {
-                request_sidecar_shutdown();
-                if !wait_for_sidecar_port_close(Duration::from_secs(3)) {
-                    stop_stale_sidecars();
+                if sidecar_health_ok() {
+                    app.manage(SidecarState(Mutex::new(None)));
+                    return Ok(());
+                } else {
+                    request_sidecar_shutdown();
+                    if !wait_for_sidecar_port_close(Duration::from_secs(3)) {
+                        stop_stale_sidecars();
+                    }
                 }
             }
             let parent_pid = std::process::id().to_string();
@@ -183,13 +213,6 @@ pub fn run() {
             let child = spawn_hidden_sidecar(parent_pid.as_str(), resource_dir)?;
             app.manage(SidecarState(Mutex::new(Some(child))));
             Ok(())
-        })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                let state = window.state::<SidecarState>();
-                state.stop();
-                stop_stale_sidecars();
-            }
         })
         .run(tauri::generate_context!())
         .expect("error while running Selene vessel");

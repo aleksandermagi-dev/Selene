@@ -47,6 +47,7 @@ declare const __APP_VERSION__: string;
 declare const __BUILD_LABEL__: string;
 
 const TRANSFER_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer to C-readable context under the Law of Transfer.";
+const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reopen Selene, or use Refresh Ceremony after the app reconnects.";
 
 type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
 type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string };
@@ -1463,7 +1464,7 @@ function App() {
       recordTransferDiagnostic("transfer_protocol_refresh_failed", { error: err instanceof Error ? err.message : "refresh failed" });
       setTransferProtocolResult({
         status: "error",
-        error: isFetchFailure(err) ? "Local sidecar is not reachable. Restart Selene and try Refresh Ceremony." : err instanceof Error ? err.message : "transfer protocol refresh failed"
+        error: isFetchFailure(err) ? SIDECAR_RECONNECT_MESSAGE : err instanceof Error ? err.message : "transfer protocol refresh failed"
       });
     }
   }
@@ -1532,7 +1533,7 @@ function App() {
       recordTransferDiagnostic("transfer_manifest_prepare_failed", { error: err instanceof Error ? err.message : "accession manifest preparation failed" });
       setTransferProtocolResult({
         status: "error",
-        error: isFetchFailure(err) ? "Local sidecar is not reachable. Restart Selene and try Refresh Ceremony." : err instanceof Error ? err.message : "accession manifest preparation failed"
+        error: isFetchFailure(err) ? SIDECAR_RECONNECT_MESSAGE : err instanceof Error ? err.message : "accession manifest preparation failed"
       });
     }
   }
