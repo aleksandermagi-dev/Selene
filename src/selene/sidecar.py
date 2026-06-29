@@ -148,6 +148,23 @@ def write_ceremony_debug_log(source: str, event: str, **extra: object) -> None:
         return
 
 
+def write_stabilization_debug_log(source: str, event: str, **extra: object) -> None:
+    try:
+        log_dir = local_log_dir()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": source,
+            "event": event,
+            "pid": os.getpid(),
+            **extra,
+        }
+        with (log_dir / "system-stabilization-debug.log").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+    except OSError:
+        return
+
+
 def read_ceremony_debug_log(limit: int = 300) -> dict[str, object]:
     path = local_log_dir() / "transfer-ceremony-debug.log"
     try:
@@ -296,6 +313,17 @@ def route_json_bytes(route_key: str, result: object, status: int = 200) -> tuple
     http_status, body = json_bytes(result, status)
     write_ceremony_debug_log("sidecar", "route_response", route=route_key, http_status=http_status, response_bytes=len(body))
     return http_status, body
+
+
+def logged_route_json_bytes(route_key: str, result: object, status: int = 200) -> tuple[int, bytes]:
+    http_status, body = json_bytes(result, status)
+    write_stabilization_debug_log("sidecar", "route_response", route=route_key, http_status=http_status, response_bytes=len(body))
+    return http_status, body
+
+
+def logged_route_error(route_key: str, exc: Exception) -> tuple[int, bytes]:
+    write_stabilization_debug_log("sidecar", "route_error", route=route_key, error=str(exc))
+    return json_bytes({"error": str(exc)}, 400)
 
 
 def watch_parent_process(parent_pid: int | None) -> None:
@@ -815,60 +843,82 @@ class SeleneHandler(BaseHTTPRequestHandler):
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/core-mind/governance-trials/run":
+            route_key = "core_mind.governance_trials.run"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "core_mind.governance_trials.run", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/core-mind/context/compose":
+            route_key = "core_mind.context.compose"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "core_mind.context.compose", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/core-mind/session-state/preview":
+            route_key = "core_mind.session_state.preview"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "core_mind.session_state.preview", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/core-mind/response-shape/preview":
+            route_key = "core_mind.response_shape.preview"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "core_mind.response_shape.preview", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/core-mind/evaluator/review-draft":
+            route_key = "core_mind.evaluator.review_draft"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "core_mind.evaluator.review_draft", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/core-mind/recovery/preview":
+            route_key = "core_mind.recovery.preview"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "core_mind.recovery.preview", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/core-mind/activation-governance/preview":
+            route_key = "core_mind.activation_governance.preview"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "core_mind.activation_governance.preview", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/core-mind/case-law/propose":
+            route_key = "core_mind.case_law.propose"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "core_mind.case_law.propose", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/core-mind/memory-index/preview":
+            route_key = "core_mind.memory_index.preview"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "core_mind.memory_index.preview", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/selene-chat/send-dry-run":
+            route_key = "selene_chat.send_dry_run"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "selene_chat.send_dry_run", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/selene-chat/route-to-b":
+            route_key = "selene_chat.route_to_b"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "selene_chat.route_to_b", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/transfer/accession-manifest/prepare":
             try:
                 body["compact"] = True
@@ -1060,10 +1110,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/my-office/cleanup-residue":
+            route_key = "vessel.my_office.cleanup_residue"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "vessel.my_office.cleanup_residue", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/vessel/chronological-corpus/preview":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.chronological_corpus.preview", body)["result"]))
@@ -1095,10 +1147,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/diagnostics/expanded-sweep":
+            route_key = "vessel.diagnostics.expanded_sweep"
             try:
-                self._send(*json_bytes(route_request(self.server.conn, "vessel.diagnostics.expanded_sweep", body)["result"]))
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
-                self._send(*json_bytes({"error": str(exc)}, 400))
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/vessel/tendril/plan-preview":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.tendril.plan_preview", body)["result"]))

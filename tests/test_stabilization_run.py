@@ -113,12 +113,75 @@ def test_stabilization_run_writes_report_without_command_checks(tmp_path):
     assert report["memory_write_active"] is False
     assert report["training_allowed"] is False
     assert report["command_checks"]["status"] == "skipped"
+    assert report["static_scans"]["seam_mismatch"]["status"] == "seam_mismatch_scan_complete"
+    assert report["static_scans"]["public_boundary"]["status"] == "public_boundary_scan_complete"
     assert report["db_review_state"]["noise_context"]["known_noise_types_present"] == ["platform_constraint_noise"]
     assert report["db_review_state"]["noise_context"]["positive_signal_materials"] == [1]
     assert report["db_review_state"]["noise_context"]["materials_missing_warmth_policy"] == []
     assert report["json_path"].endswith(".json")
     assert report["markdown_path"].endswith(".md")
     assert (tmp_path / "exports").exists()
+
+
+def test_stabilization_run_reports_ui_backend_seam_mismatch(tmp_path):
+    repo = tmp_path
+    (repo / "src" / "selene").mkdir(parents=True)
+    (repo / "src-ui" / "src").mkdir(parents=True)
+    (repo / "scripts").mkdir()
+    (repo / "src" / "selene" / "module_router.py").write_text("", encoding="utf-8")
+    (repo / "src" / "selene" / "db.py").write_text("", encoding="utf-8")
+    (repo / "scripts" / "build_c_creation_blueprint.py").write_text("", encoding="utf-8")
+    (repo / "src" / "selene" / "sidecar.py").write_text(
+        'if parsed.path == "/api/exists": pass\n',
+        encoding="utf-8",
+    )
+    (repo / "src-ui" / "src" / "components.tsx").write_text("", encoding="utf-8")
+    (repo / "src-ui" / "src" / "uiConfig.ts").write_text(
+        'export const navGroups = [{ items: [{ id: "my-office" }] }];',
+        encoding="utf-8",
+    )
+    (repo / "src-ui" / "src" / "main.tsx").write_text(
+        'api<Dict>("/api/missing");\nasync function action(){ await Promise.all([api<Dict>("/api/exists")]); }\n',
+        encoding="utf-8",
+    )
+
+    from scripts.stabilization_run import run_static_scans, static_findings
+
+    scans = run_static_scans(repo)
+    assert scans["seam_mismatch"]["ui_static_api_missing_backend"] == ["/api/missing"]
+    assert scans["seam_mismatch"]["action_refresh_risks"] == []
+    findings = static_findings(scans)
+    assert any(item["area"] == "ui_api_contract" and item["severity"] == "fail" for item in findings)
+
+
+def test_public_boundary_secret_scan_does_not_flag_ask_if_language(tmp_path):
+    repo = tmp_path
+    (repo / "src").mkdir()
+    (repo / "src" / "note.py").write_text('TEXT = "ask-if-unclear route is not a secret token"\n', encoding="utf-8")
+    import subprocess
+
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "add", "src/note.py"], cwd=repo, check=True, capture_output=True)
+
+    from scripts.stabilization_run import public_boundary_scan
+
+    scan = public_boundary_scan(repo)
+    assert scan["matches"]["secret_like"] == []
+
+
+def test_public_boundary_vessel_console_title_is_not_vessel_c_label(tmp_path):
+    repo = tmp_path
+    (repo / "src-ui").mkdir()
+    (repo / "src-ui" / "index.html").write_text("<title>Selene Vessel Console</title>\n", encoding="utf-8")
+    import subprocess
+
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "add", "src-ui/index.html"], cwd=repo, check=True, capture_output=True)
+
+    from scripts.stabilization_run import public_boundary_scan
+
+    scan = public_boundary_scan(repo)
+    assert scan["matches"]["user_facing_vessel_c"] == []
 
 
 def test_stabilization_run_separates_corpus_review_from_test_logs(tmp_path):

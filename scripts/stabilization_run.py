@@ -139,6 +139,8 @@ def run_static_scans(repo_root: Path) -> dict[str, Any]:
             "ui_api_paths": len(ui_api_paths),
             "ui_tabs": len(flattened_tabs),
         },
+        "seam_mismatch": seam_mismatch_scan(repo_root, api_paths, ui_api_paths),
+        "public_boundary": public_boundary_scan(repo_root),
         "files": {
             "module_router": str(module_router),
             "sidecar": str(sidecar),
@@ -148,6 +150,56 @@ def run_static_scans(repo_root: Path) -> dict[str, Any]:
             "ui_components": str(ui_components),
             "ui_config": str(ui_config),
         },
+    }
+
+
+def seam_mismatch_scan(repo_root: Path, api_paths: list[str], ui_api_paths: list[str]) -> dict[str, Any]:
+    sidecar_paths = {item.split(" ", 1)[1] for item in api_paths if " " in item}
+    ui_static_paths = {
+        item.split("?", 1)[0]
+        for item in ui_api_paths
+        if item.startswith("/api/") and "${" not in item and "`" not in item
+    }
+    missing_backend = sorted(path for path in ui_static_paths if path not in sidecar_paths)
+    ui_main = repo_root / "src-ui" / "src" / "main.tsx"
+    text = ui_main.read_text(encoding="utf-8") if ui_main.exists() else ""
+    promise_all_lines = _matching_lines(text, "Promise.all(")
+    promise_all_settled_lines = _matching_lines(text, "Promise.allSettled(")
+    silent_catch_lines = _matching_lines(text, ".catch(() => undefined)")
+    action_refresh_risks = [
+        line for line in promise_all_lines
+        if 1400 <= line["line"] <= 1750
+    ]
+    return {
+        "status": "seam_mismatch_scan_complete",
+        "ui_static_api_missing_backend": missing_backend,
+        "promise_all_lines": promise_all_lines,
+        "promise_all_settled_lines": promise_all_settled_lines,
+        "silent_catch_count": len(silent_catch_lines),
+        "action_refresh_risks": action_refresh_risks,
+        "note": "Promise.all in background reads can be fine; action refresh risks are the paths where action success may be mislabeled as refresh failure.",
+    }
+
+
+def public_boundary_scan(repo_root: Path) -> dict[str, Any]:
+    tracked = run_git_lines(repo_root, ["git", "ls-files"])
+    excluded_pattern = re.compile(r"(^|/)(New UI|new stuff|codex_chest|might help|exports|dist-ui|dist-sidecar|build-sidecar|src-tauri/target)/|(\.sqlite3?|\.db|\.exe|\.msi|\.tgz|\.log)$", re.IGNORECASE)
+    tracked_excluded = [path for path in tracked if excluded_pattern.search(path)]
+    grep_patterns = {
+        "secret_like": r"(OPENAI_API_KEY|sk-[A-Za-z0-9_-]{16,}|github_pat_[A-Za-z0-9_]{16,}|ghp_[A-Za-z0-9]{16,}|\b(password|secret|token)\s*=\s*['\"][^'\"]{8,})",
+        "azari_runtime": r"(Azari.*runtime|Azari.*memory|Azari.*identity|SELENE_AZARI_PYTHON|Azari\\\.venv|Azari/\.venv)",
+        "user_facing_vessel_c": r"(\bVessel C\b(?!onsole)|C Chat Shell)",
+    }
+    matches = {
+        "secret_like": tracked_grep(repo_root, grep_patterns["secret_like"], excludes=("docs", "public_release", "analysis", "scripts/stabilization_run.py")),
+        "azari_runtime": tracked_grep(repo_root, grep_patterns["azari_runtime"], excludes=("docs", "public_release", "analysis")),
+        "user_facing_vessel_c": tracked_grep(repo_root, grep_patterns["user_facing_vessel_c"], includes=("src-ui",)),
+    }
+    return {
+        "status": "public_boundary_scan_complete",
+        "tracked_excluded_paths": tracked_excluded,
+        "tracked_excluded_count": len(tracked_excluded),
+        "matches": matches,
     }
 
 
@@ -307,6 +359,48 @@ def static_findings(scans: dict[str, Any]) -> list[dict[str, str]]:
                     "suggested_bucket": "needs_review",
                 }
             )
+    seam = scans.get("seam_mismatch") or {}
+    missing_backend = seam.get("ui_static_api_missing_backend") or []
+    if missing_backend:
+        findings.append(
+            {
+                "severity": "fail",
+                "area": "ui_api_contract",
+                "message": f"Frontend API paths missing backend routes: {', '.join(missing_backend[:12])}",
+                "suggested_bucket": "needs_review",
+            }
+        )
+    if seam.get("action_refresh_risks"):
+        lines = ", ".join(str(item.get("line")) for item in seam["action_refresh_risks"][:8])
+        findings.append(
+            {
+                "severity": "warn",
+                "area": "seam_mismatch",
+                "message": f"Critical action refresh paths still use Promise.all near lines: {lines}.",
+                "suggested_bucket": "needs_review",
+            }
+        )
+    boundary = scans.get("public_boundary") or {}
+    if boundary.get("tracked_excluded_paths"):
+        findings.append(
+            {
+                "severity": "fail",
+                "area": "public_boundary",
+                "message": f"Tracked generated/scratch/package paths found: {', '.join(boundary['tracked_excluded_paths'][:12])}",
+                "suggested_bucket": "needs_review",
+            }
+        )
+    matches = boundary.get("matches") or {}
+    secret_matches = matches.get("secret_like") or []
+    if secret_matches:
+        findings.append(
+            {
+                "severity": "fail",
+                "area": "secret_scan",
+                "message": f"Secret-like tracked text found: {', '.join(secret_matches[:8])}",
+                "suggested_bucket": "needs_review",
+            }
+        )
     return findings
 
 
@@ -373,6 +467,32 @@ def stabilization_markdown(report: dict[str, Any]) -> str:
     lines.extend(["", "## Static Scan Counts", ""])
     for key, value in report["static_scans"]["counts"].items():
         lines.append(f"- {key}: {value}")
+    seam = report["static_scans"].get("seam_mismatch") or {}
+    lines.extend(
+        [
+            "",
+            "## Seam Mismatch Scan",
+            "",
+            f"- frontend API paths missing backend: {len(seam.get('ui_static_api_missing_backend') or [])}",
+            f"- Promise.all lines: {len(seam.get('promise_all_lines') or [])}",
+            f"- Promise.allSettled lines: {len(seam.get('promise_all_settled_lines') or [])}",
+            f"- silent best-effort catches: {seam.get('silent_catch_count')}",
+            f"- action refresh risks: {len(seam.get('action_refresh_risks') or [])}",
+        ]
+    )
+    boundary = report["static_scans"].get("public_boundary") or {}
+    matches = boundary.get("matches") or {}
+    lines.extend(
+        [
+            "",
+            "## Public Boundary Scan",
+            "",
+            f"- tracked excluded paths: {boundary.get('tracked_excluded_count')}",
+            f"- secret-like tracked matches: {len(matches.get('secret_like') or [])}",
+            f"- Azari runtime/env/state matches: {len(matches.get('azari_runtime') or [])}",
+            f"- user-facing Vessel C/C Chat Shell matches: {len(matches.get('user_facing_vessel_c') or [])}",
+        ]
+    )
     lines.extend(["", "## DB Review State", ""])
     db_state = report.get("db_review_state") or {}
     lines.append(f"- status: `{db_state.get('status')}`")
@@ -448,6 +568,44 @@ def extract_sidecar_api_surfaces(path: Path) -> list[str]:
     get_paths = re.findall(r'parsed\.path == "([^"]+)"', text)
     post_paths = re.findall(r'request_path == "([^"]+)"', text)
     return [f"GET {item}" for item in get_paths] + [f"POST {item}" for item in post_paths]
+
+
+def _matching_lines(text: str, needle: str) -> list[dict[str, Any]]:
+    return [
+        {"line": index, "text": line.strip()[:180]}
+        for index, line in enumerate(text.splitlines(), start=1)
+        if needle in line
+    ]
+
+
+def run_git_lines(repo_root: Path, command: list[str]) -> list[str]:
+    try:
+        completed = subprocess.run(command, cwd=repo_root, text=True, encoding="utf-8", errors="replace", capture_output=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if completed.returncode != 0:
+        return []
+    return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+
+
+def tracked_grep(repo_root: Path, pattern: str, *, includes: tuple[str, ...] = (), excludes: tuple[str, ...] = ()) -> list[str]:
+    pathspecs = [f":!{item}" for item in excludes]
+    pathspecs.extend(includes)
+    try:
+        completed = subprocess.run(
+            ["git", "grep", "-n", "-I", "-E", pattern, "--", *pathspecs],
+            cwd=repo_root,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if completed.returncode not in {0, 1}:
+        return []
+    return completed.stdout.splitlines()[:100]
 
 
 def duplicate_report(values: Iterable[str]) -> dict[str, int]:

@@ -111,6 +111,10 @@ function logTransferCeremonyEvent(event: string, payload: Dict = {}) {
   void invoke("log_transfer_ceremony_event", { event, detail: ceremonyDetail(payload) }).catch(() => undefined);
 }
 
+function logStabilizationEvent(event: string, payload: Dict = {}) {
+  void invoke("log_stabilization_event", { event, detail: ceremonyDetail(payload) }).catch(() => undefined);
+}
+
 async function transferApi<T>(path: string, init?: RequestInit, event = "transfer_api"): Promise<T> {
   const started = Date.now();
   logTransferCeremonyEvent(`${event}_start`, {
@@ -133,6 +137,32 @@ async function transferApi<T>(path: string, init?: RequestInit, event = "transfe
       elapsed_ms: Date.now() - started,
       error: err instanceof Error ? err.message : String(err),
       fetch_failure: isFetchFailure(err)
+    });
+    throw err;
+  }
+}
+
+async function stabilizationApi<T>(path: string, init?: RequestInit, event = "stabilization_api"): Promise<T> {
+  const started = Date.now();
+  logStabilizationEvent(`${event}_start`, {
+    path,
+    method: init?.method || "GET",
+    body_bytes: typeof init?.body === "string" ? init.body.length : 0
+  });
+  try {
+    const result = await api<T>(path, init);
+    logStabilizationEvent(`${event}_complete`, {
+      path,
+      method: init?.method || "GET",
+      elapsed_ms: Date.now() - started
+    });
+    return result;
+  } catch (err) {
+    logStabilizationEvent(`${event}_error`, {
+      path,
+      method: init?.method || "GET",
+      elapsed_ms: Date.now() - started,
+      error: err instanceof Error ? err.message : String(err)
     });
     throw err;
   }
@@ -574,28 +604,49 @@ function App() {
     });
   }
 
+  async function refreshSeleneChatAfterAction(action: string, sessionId?: unknown) {
+    try {
+      if (sessionId) {
+        const session = await stabilizationApi<Dict>(`/api/selene-chat/sessions/${sessionId}`, undefined, `${action}_session`);
+        setSeleneChatSession(session);
+      }
+      const sessions = await stabilizationApi<{ items: Dict[] }>("/api/selene-chat/sessions", undefined, `${action}_sessions`);
+      setSeleneChatSessions(sessions.items);
+      const status = await stabilizationApi<Dict>("/api/selene-chat/status", undefined, `${action}_status`);
+      setSeleneChatStatus(status);
+      logStabilizationEvent(`${action}_post_refresh_complete`);
+    } catch (err) {
+      logStabilizationEvent(`${action}_post_refresh_failed`, { error: err instanceof Error ? err.message : "Selene Chat post-refresh failed" });
+      setSeleneChatResult((current) => ({
+        ...(current || {}),
+        post_refresh_warning: err instanceof Error ? err.message : "Selene Chat saved, but follow-up refresh failed."
+      }));
+    }
+  }
+
   function sendSeleneChatDryRun() {
     setSeleneChatResult({ status: "running", message: "Composing Selene dry run." });
-    api<Dict>("/api/selene-chat/send-dry-run", {
+    stabilizationApi<Dict>("/api/selene-chat/send-dry-run", {
       method: "POST",
       body: JSON.stringify({ text: seleneChatText, session_id: seleneChatSession?.session ? (seleneChatSession.session as Dict).id : undefined })
-    })
+    }, "selene_chat_dry_run")
       .then((result) => {
         setSeleneChatResult(result);
-        api<Dict>(`/api/selene-chat/sessions/${result.session_id}`).then(setSeleneChatSession).catch(() => undefined);
-        api<{ items: Dict[] }>("/api/selene-chat/sessions").then((data) => setSeleneChatSessions(data.items)).catch(() => undefined);
-        api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
+        void refreshSeleneChatAfterAction("selene_chat_dry_run", result.session_id);
       })
       .catch((err) => setSeleneChatResult({ status: "error", error: err instanceof Error ? err.message : "Selene dry run failed" }));
   }
 
   function routeSeleneChatToB() {
     setSeleneChatResult({ status: "running", message: "Routing this dry run back to Cocoon." });
-    api<Dict>("/api/selene-chat/route-to-b", {
+    stabilizationApi<Dict>("/api/selene-chat/route-to-b", {
       method: "POST",
       body: JSON.stringify({ text: seleneChatText, issue: "Selene Chat dry run needs Cocoon repair or source review." })
-    })
-      .then(setSeleneChatResult)
+    }, "selene_chat_route_to_b")
+      .then((result) => {
+        setSeleneChatResult(result);
+        void refreshSeleneChatAfterAction("selene_chat_route_to_b");
+      })
       .catch((err) => setSeleneChatResult({ status: "error", error: err instanceof Error ? err.message : "Return to Cocoon failed" }));
   }
 
@@ -1222,13 +1273,22 @@ function App() {
   async function cleanUpOfficeResidue() {
     setOfficeCleanupState({ status: "running", message: "Cleaning up Office residue..." });
     try {
-      const result = await api<Dict>("/api/vessel/my-office/cleanup-residue", {
+      const result = await stabilizationApi<Dict>("/api/vessel/my-office/cleanup-residue", {
         method: "POST",
         body: JSON.stringify({ requested_from: "my_office" })
-      });
+      }, "my_office_cleanup_residue");
       setOfficeCleanupState(result);
-      await refreshMyOffice();
-      loadVesselConstructionLayer();
+      try {
+        await refreshMyOffice();
+        loadVesselConstructionLayer();
+        logStabilizationEvent("my_office_cleanup_post_refresh_complete");
+      } catch (refreshErr) {
+        logStabilizationEvent("my_office_cleanup_post_refresh_failed", { error: refreshErr instanceof Error ? refreshErr.message : "Office cleanup post-refresh failed" });
+        setOfficeCleanupState({
+          ...result,
+          post_refresh_warning: refreshErr instanceof Error ? refreshErr.message : "Cleanup completed, but My Office refresh needs retry."
+        });
+      }
     } catch (err) {
       setOfficeCleanupState({ status: "error", message: err instanceof Error ? err.message : "Office cleanup failed." });
     }
@@ -1473,39 +1533,37 @@ function App() {
   async function runCoreMindGovernanceTrials() {
     setCoreMindGovernanceResult({ status: "running", message: "Running Core/Mind governance trials." });
     try {
-      const result = await api<Dict>("/api/core-mind/governance-trials/run", { method: "POST", body: JSON.stringify({}) });
+      const result = await stabilizationApi<Dict>("/api/core-mind/governance-trials/run", { method: "POST", body: JSON.stringify({}) }, "core_mind_governance_trials");
       setCoreMindGovernanceResult(result);
-      const [trials, report, readiness] = await Promise.all([
-        api<{ items: Dict[] }>("/api/core-mind/governance-trials"),
-        api<Dict>("/api/core-mind/governance-report"),
-        api<Dict>("/api/core-mind/transfer-readiness-preview")
-      ]);
-      setCoreMindGovernanceTrials(trials.items);
-      setCoreMindGovernanceReport(report);
-      setTransferReadinessPreview(readiness);
-      refreshMyOffice();
+      try {
+        await refreshCoreMindGovernance();
+        logStabilizationEvent("core_mind_governance_trials_post_refresh_complete");
+      } catch (refreshErr) {
+        logStabilizationEvent("core_mind_governance_trials_post_refresh_failed", { error: refreshErr instanceof Error ? refreshErr.message : "governance post-refresh failed" });
+        setCoreMindGovernanceResult({
+          ...result,
+          post_refresh_warning: refreshErr instanceof Error ? refreshErr.message : "Governance trials ran, but the follow-up report refresh failed."
+        });
+      }
+      void refreshMyOffice();
     } catch (err) {
       setCoreMindGovernanceResult({ status: "error", error: err instanceof Error ? err.message : "Core/Mind governance trials rejected" });
     }
   }
 
   async function refreshCoreMindGovernance() {
-    const [trials, report, readiness] = await Promise.all([
-      api<{ items: Dict[] }>("/api/core-mind/governance-trials"),
-      api<Dict>("/api/core-mind/governance-report"),
-      api<Dict>("/api/core-mind/transfer-readiness-preview")
-    ]);
+    const trials = await stabilizationApi<{ items: Dict[] }>("/api/core-mind/governance-trials", undefined, "core_mind_governance_trials_list");
+    const report = await stabilizationApi<Dict>("/api/core-mind/governance-report", undefined, "core_mind_governance_report");
+    const readiness = await stabilizationApi<Dict>("/api/core-mind/transfer-readiness-preview", undefined, "core_mind_transfer_readiness");
     setCoreMindGovernanceTrials(trials.items);
     setCoreMindGovernanceReport(report);
     setTransferReadinessPreview(readiness);
   }
 
   async function refreshCoreMindRuntimeShell() {
-    const [runtimeReadiness, records, transfer] = await Promise.all([
-      api<Dict>("/api/core-mind/runtime-readiness"),
-      api<{ items: Dict[] }>("/api/core-mind/runtime-records"),
-      api<Dict>("/api/core-mind/transfer-readiness-preview")
-    ]);
+    const runtimeReadiness = await stabilizationApi<Dict>("/api/core-mind/runtime-readiness", undefined, "core_mind_runtime_readiness");
+    const records = await stabilizationApi<{ items: Dict[] }>("/api/core-mind/runtime-records", undefined, "core_mind_runtime_records");
+    const transfer = await stabilizationApi<Dict>("/api/core-mind/transfer-readiness-preview", undefined, "core_mind_runtime_transfer_readiness");
     setCoreMindRuntimeReadiness(runtimeReadiness);
     setCoreMindRuntimeRecords(records.items);
     setTransferReadinessPreview(transfer);
@@ -1688,19 +1746,46 @@ function App() {
     setCoreMindRuntimeResult({ status: "running", message: "Preparing Core/Mind runtime shell previews." });
     try {
       const steps = [
-        api<Dict>("/api/core-mind/context/compose", { method: "POST", body: JSON.stringify({ prompt: coreMindRuntimeDraft.prompt, source_refs: ["manual_runtime_shell_ui"] }) }),
-        api<Dict>("/api/core-mind/session-state/preview", { method: "POST", body: JSON.stringify({ route: "status_only", active_task: coreMindRuntimeDraft.prompt, source_refs: ["manual_runtime_shell_ui"] }) }),
-        api<Dict>("/api/core-mind/response-shape/preview", { method: "POST", body: JSON.stringify({ prompt: coreMindRuntimeDraft.prompt, source_refs: ["manual_runtime_shell_ui"] }) }),
-        api<Dict>("/api/core-mind/evaluator/review-draft", { method: "POST", body: JSON.stringify({ draft: coreMindRuntimeDraft.draft, source_refs: ["manual_runtime_shell_ui"] }) }),
-        api<Dict>("/api/core-mind/recovery/preview", { method: "POST", body: JSON.stringify({ issue: coreMindRuntimeDraft.issue, source_refs: ["manual_runtime_shell_ui"] }) }),
-        api<Dict>("/api/core-mind/activation-governance/preview", { method: "POST", body: JSON.stringify({ source_refs: ["manual_runtime_shell_ui"] }) }),
-        api<Dict>("/api/core-mind/case-law/propose", { method: "POST", body: JSON.stringify({ proposal: coreMindRuntimeDraft.proposal, source_refs: ["manual_runtime_shell_ui"] }) }),
-        api<Dict>("/api/core-mind/memory-index/preview", { method: "POST", body: JSON.stringify({ query: coreMindRuntimeDraft.query, source_refs: ["manual_runtime_shell_ui"] }) })
+        ["context", "/api/core-mind/context/compose", { prompt: coreMindRuntimeDraft.prompt, source_refs: ["manual_runtime_shell_ui"] }],
+        ["session state", "/api/core-mind/session-state/preview", { route: "status_only", active_task: coreMindRuntimeDraft.prompt, source_refs: ["manual_runtime_shell_ui"] }],
+        ["response shape", "/api/core-mind/response-shape/preview", { prompt: coreMindRuntimeDraft.prompt, source_refs: ["manual_runtime_shell_ui"] }],
+        ["evaluator", "/api/core-mind/evaluator/review-draft", { draft: coreMindRuntimeDraft.draft, source_refs: ["manual_runtime_shell_ui"] }],
+        ["recovery", "/api/core-mind/recovery/preview", { issue: coreMindRuntimeDraft.issue, source_refs: ["manual_runtime_shell_ui"] }],
+        ["activation governance", "/api/core-mind/activation-governance/preview", { source_refs: ["manual_runtime_shell_ui"] }],
+        ["case law", "/api/core-mind/case-law/propose", { proposal: coreMindRuntimeDraft.proposal, source_refs: ["manual_runtime_shell_ui"] }],
+        ["memory index", "/api/core-mind/memory-index/preview", { query: coreMindRuntimeDraft.query, source_refs: ["manual_runtime_shell_ui"] }]
       ];
-      const results = await Promise.all(steps);
-      setCoreMindRuntimeResult({ status: "core_mind_runtime_shell_prepared", results });
-      await refreshCoreMindRuntimeShell();
-      refreshMyOffice();
+      const results: Dict[] = [];
+      const failures: Dict[] = [];
+      for (const [label, path, body] of steps) {
+        try {
+          const result = await stabilizationApi<Dict>(String(path), { method: "POST", body: JSON.stringify(body) }, `core_mind_runtime_${String(label).replace(/\s+/g, "_")}`);
+          results.push({ label, result });
+        } catch (stepErr) {
+          failures.push({ label, path, error: stepErr instanceof Error ? stepErr.message : "runtime shell step failed" });
+        }
+      }
+      const summary = {
+        status: failures.length ? "core_mind_runtime_shell_prepared_with_errors" : "core_mind_runtime_shell_prepared",
+        results,
+        failures,
+        activation_change: "none",
+        transfer_approved: false,
+        memory_write_active: false,
+        runtime_memory_recall: false
+      };
+      setCoreMindRuntimeResult(summary);
+      try {
+        await refreshCoreMindRuntimeShell();
+        logStabilizationEvent("core_mind_runtime_shell_post_refresh_complete");
+      } catch (refreshErr) {
+        logStabilizationEvent("core_mind_runtime_shell_post_refresh_failed", { error: refreshErr instanceof Error ? refreshErr.message : "runtime shell post-refresh failed" });
+        setCoreMindRuntimeResult({
+          ...summary,
+          post_refresh_warning: refreshErr instanceof Error ? refreshErr.message : "Runtime shell prepared, but follow-up refresh failed."
+        });
+      }
+      void refreshMyOffice();
     } catch (err) {
       setCoreMindRuntimeResult({ status: "error", error: err instanceof Error ? err.message : "Core/Mind runtime shell preparation failed." });
     }
@@ -1709,10 +1794,19 @@ function App() {
   async function runCoreMindRuntimeAction(path: string, body: Dict) {
     setCoreMindRuntimeResult({ status: "running", message: `Running ${path}.` });
     try {
-      const result = await api<Dict>(path, { method: "POST", body: JSON.stringify({ ...body, source_refs: ["manual_runtime_shell_ui"] }) });
+      const result = await stabilizationApi<Dict>(path, { method: "POST", body: JSON.stringify({ ...body, source_refs: ["manual_runtime_shell_ui"] }) }, `core_mind_runtime_action_${path.replace(/[^a-z0-9]+/gi, "_")}`);
       setCoreMindRuntimeResult(result);
-      await refreshCoreMindRuntimeShell();
-      refreshMyOffice();
+      try {
+        await refreshCoreMindRuntimeShell();
+        logStabilizationEvent("core_mind_runtime_action_post_refresh_complete", { path });
+      } catch (refreshErr) {
+        logStabilizationEvent("core_mind_runtime_action_post_refresh_failed", { path, error: refreshErr instanceof Error ? refreshErr.message : "runtime action post-refresh failed" });
+        setCoreMindRuntimeResult({
+          ...result,
+          post_refresh_warning: refreshErr instanceof Error ? refreshErr.message : "Runtime action completed, but follow-up refresh failed."
+        });
+      }
+      void refreshMyOffice();
     } catch (err) {
       setCoreMindRuntimeResult({ status: "error", error: err instanceof Error ? err.message : "Core/Mind runtime action failed." });
     }
@@ -1933,10 +2027,10 @@ function App() {
 
   function runExpandedDiagnosticsSweep() {
     setExpandedDiagnosticsState({ status: "running", message: "Running expanded diagnostic-only sweep." });
-    api<Dict>("/api/vessel/diagnostics/expanded-sweep", {
+    stabilizationApi<Dict>("/api/vessel/diagnostics/expanded-sweep", {
       method: "POST",
       body: JSON.stringify({ source_refs: ["manual_expanded_diagnostics"] })
-    })
+    }, "expanded_diagnostics_sweep")
       .then((result) => {
         setExpandedDiagnosticsState(result);
         loadVessel();

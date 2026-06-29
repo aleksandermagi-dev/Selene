@@ -10,17 +10,25 @@ use tauri::Manager;
 
 struct SidecarState(Mutex<Option<Child>>);
 
-fn debug_log_path() -> PathBuf {
+fn local_log_path(file_name: &str) -> PathBuf {
     if let Some(local) = std::env::var_os("LOCALAPPDATA") {
         return PathBuf::from(local)
             .join("Selene")
             .join("logs")
-            .join("transfer-ceremony-debug.log");
+            .join(file_name);
     }
     std::env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
         .join(".selene_logs")
-        .join("transfer-ceremony-debug.log")
+        .join(file_name)
+}
+
+fn debug_log_path() -> PathBuf {
+    local_log_path("transfer-ceremony-debug.log")
+}
+
+fn stabilization_log_path() -> PathBuf {
+    local_log_path("system-stabilization-debug.log")
 }
 
 fn now_ms() -> u128 {
@@ -31,7 +39,14 @@ fn now_ms() -> u128 {
 }
 
 fn log_debug(source: &str, event: &str, detail: &str) {
-    let path = debug_log_path();
+    write_debug_log(debug_log_path(), source, event, detail);
+}
+
+fn log_stabilization_debug(source: &str, event: &str, detail: &str) {
+    write_debug_log(stabilization_log_path(), source, event, detail);
+}
+
+fn write_debug_log(path: PathBuf, source: &str, event: &str, detail: &str) {
     if let Some(parent) = path.parent() {
         let _ = create_dir_all(parent);
     }
@@ -51,6 +66,11 @@ fn log_debug(source: &str, event: &str, detail: &str) {
 #[tauri::command]
 fn log_transfer_ceremony_event(event: String, detail: String) {
     log_debug("frontend", &event, &detail);
+}
+
+#[tauri::command]
+fn log_stabilization_event(event: String, detail: String) {
+    log_stabilization_debug("frontend", &event, &detail);
 }
 
 #[tauri::command]
@@ -276,6 +296,7 @@ pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             log_transfer_ceremony_event,
+            log_stabilization_event,
             read_transfer_ceremony_debug_log
         ])
         .plugin(tauri_plugin_shell::init())
