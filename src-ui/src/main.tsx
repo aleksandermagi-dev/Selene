@@ -3721,8 +3721,9 @@ function App() {
               </div>
               <div className="chips">
                 {Object.entries(safeJsonObject(voiceEvidenceTriageStatus?.counts)).map(([key, value]) => <span key={`voice-triage-chip-${key}`}>{friendlyStatus(key)}: {text(value)}</span>)}
-                <span>Office: {text(voiceEvidenceTriageStatus?.my_office_actionable_count ?? 0)}</span>
+                <span>Needs review: {text(voiceEvidenceTriageStatus?.my_office_actionable_count ?? 0)}</span>
               </div>
+              <p className="plainHelp">Identity-law-resolved rows are status-only. Nothing for Aleks unless one looks wrong.</p>
               <div className="list compactList">
                 {voiceModulePatterns.slice(0, 6).map((item) => (
                   <article className="packetCard" key={`voice-pattern-${text(item.id || item.pattern_key)}`}>
@@ -4505,8 +4506,9 @@ function App() {
               </div>
               <div className="chips">
                 {Object.entries(safeJsonObject(voiceEvidenceTriageStatus?.counts)).map(([key, value]) => <span key={`voice-status-triage-${key}`}>{friendlyStatus(key)}: {text(value)}</span>)}
-                <span>Office: {text(voiceEvidenceTriageStatus?.my_office_actionable_count ?? 0)}</span>
+                <span>Cocoon review needed: {text(voiceEvidenceTriageStatus?.my_office_actionable_count ?? 0)}</span>
               </div>
+              <p className="plainHelp">Identity-law-resolved rows are status-only. Nothing for Aleks unless one looks wrong.</p>
               <SimpleRecordList items={voiceEvidenceTriageItems.slice(0, 8)} titleField="title" statusField="category" bodyField="summary" />
               <PlainResult value={voiceModuleResult} />
             </Panel>

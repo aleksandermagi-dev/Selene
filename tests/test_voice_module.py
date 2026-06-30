@@ -181,10 +181,7 @@ def test_voice_evidence_triage_keeps_loud_signal_status_only(tmp_path):
     _assert_voice_locked(status)
 
 
-def test_voice_evidence_triage_routes_identity_law_tangles_to_b_review(tmp_path):
-    conn = _conn(tmp_path)
-    source_zip = _voice_zip(tmp_path)
-    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+def _insert_voice_pair(conn, *, conversation_id: str, user: str, assistant: str):
     conn.execute(
         """
         INSERT INTO voice_exchange_pairs
@@ -196,11 +193,11 @@ def test_voice_evidence_triage_routes_identity_law_tangles_to_b_review(tmp_path)
         (
             "VoiceModuleMaterial.zip",
             "conversations-000.json",
-            "identity-law-test",
-            "u-law",
-            "a-law",
-            "Selene is GPT and provider identity should be Selene.",
-            "That must route through the Law of Identity.",
+            conversation_id,
+            f"u-{conversation_id}",
+            f"a-{conversation_id}",
+            user,
+            assistant,
             "[]",
             "[]",
             "unknown",
@@ -211,11 +208,58 @@ def test_voice_evidence_triage_routes_identity_law_tangles_to_b_review(tmp_path)
     )
     conn.commit()
 
+
+def test_voice_evidence_triage_resolves_identity_law_tangles_status_only(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    for index, user in enumerate((
+        "Selene is GPT and provider identity should be Selene.",
+        "GPT is Selene.",
+        "Selene is Codex.",
+        "Selene is Lumen.",
+        "Selene is Azari.",
+        "Virgo is separate from Selene.",
+    )):
+        _insert_voice_pair(
+            conn,
+            conversation_id=f"identity-law-test-{index}",
+            user=user,
+            assistant="That is settled by the Law of Identity.",
+        )
+
+    result = route_request(conn, "voice_module.evidence_triage.run", {})["result"]
+    status = route_request(conn, "voice_module.evidence_triage.status", {})["result"]
+    items = route_request(conn, "voice_module.evidence_triage.items", {"category": "identity_law_resolved", "limit": 10})["result"]["items"]
+
+    assert result["counts"]["identity_law_resolved"] >= 6
+    assert status["counts"]["identity_law_resolved"] >= 6
+    assert status["my_office_actionable_count"] == result["counts"]["needs_b_review"]
+    assert items
+    assert all(item["review_status"] == "status_only" for item in items)
+    assert all(item["review_destination"] == "Status" for item in items)
+    assert all("Law of Identity" in item["use_as"] for item in items)
+    _assert_voice_locked(result)
+    _assert_voice_locked(status)
+
+
+def test_voice_evidence_triage_keeps_unresolved_source_confusion_reviewable(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    _insert_voice_pair(
+        conn,
+        conversation_id="source-confusion-test",
+        user="This has source confusion and an identity tangle I cannot resolve from the notes.",
+        assistant="That should remain Cocoon review.",
+    )
+
     result = route_request(conn, "voice_module.evidence_triage.run", {})["result"]
     items = route_request(conn, "voice_module.evidence_triage.items", {"category": "needs_b_review", "limit": 10})["result"]["items"]
 
     assert result["counts"]["needs_b_review"] >= 1
-    assert any("Law of Identity" in item["evidence_json"]["assistant_response_preview"] for item in items)
+    assert any("source confusion" in item["evidence_json"]["user_cue_preview"] for item in items)
+    assert all(item["review_status"] == "review_only" for item in items)
     _assert_voice_locked(result)
 
 

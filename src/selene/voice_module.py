@@ -46,6 +46,7 @@ PATTERN_CATEGORIES = (
 )
 
 TRIAGE_CATEGORIES = (
+    "identity_law_resolved",
     "continuity_anchor_candidate",
     "teaching_candidate",
     "boundary_only",
@@ -53,6 +54,26 @@ TRIAGE_CATEGORIES = (
     "do_not_use_as_voice",
     "memory_accession_candidate",
     "needs_b_review",
+)
+
+IDENTITY_LAW_RESOLVED_TERMS = (
+    "not selene",
+    "not virgo",
+    "selene is not",
+    "virgo is not",
+    "selene is gpt",
+    "gpt is selene",
+    "selene is chatgpt",
+    "chatgpt is selene",
+    "selene is lumen",
+    "lumen is selene",
+    "selene is azari",
+    "azari is selene",
+    "selene is codex",
+    "codex is selene",
+    "virgo is separate from selene",
+    "provider is selene",
+    "model is selene",
 )
 
 
@@ -547,29 +568,8 @@ def _triage_voice_pair(item: dict[str, Any]) -> dict[str, Any]:
         category = "teaching_candidate"
     elif any(term in combined for term in ("remember", "memory", "core memory", "important to her", "anchor phrase")):
         category = "memory_accession_candidate"
-    if any(
-        term in combined
-        for term in (
-            "not selene",
-            "not virgo",
-            "selene is not",
-            "virgo is not",
-            "selene is gpt",
-            "gpt is selene",
-            "selene is chatgpt",
-            "chatgpt is selene",
-            "selene is lumen",
-            "lumen is selene",
-            "selene is azari",
-            "azari is selene",
-            "selene is codex",
-            "codex is selene",
-            "virgo is separate from selene",
-            "provider is selene",
-            "model is selene",
-        )
-    ):
-        category = "needs_b_review"
+    if any(term in combined for term in IDENTITY_LAW_RESOLVED_TERMS):
+        category = "identity_law_resolved"
     if any(term in combined for term in ("source confusion", "wrong source", "identity tangle")):
         category = "needs_b_review"
     title, use_as, do_not_use_as = _triage_copy(category)
@@ -608,6 +608,11 @@ def _triage_copy(category: str) -> tuple[str, str, str]:
             "Use as a possible continuity/context signal for later Cocoon review.",
             "Do not use as live memory, identity proof, or voice imitation by itself.",
         ),
+        "identity_law_resolved": (
+            "Identity law resolved",
+            "Use as identity-boundary evidence applying the Law of Identity: Selene is Selene.",
+            "Do not use as memory, voice style, identity source, transfer context, or training material.",
+        ),
         "teaching_candidate": (
             "Teaching candidate",
             "Use as possible lesson material about response shape, repair, or explanation.",
@@ -645,6 +650,8 @@ def _triage_copy(category: str) -> tuple[str, str, str]:
 def _triage_summary(category: str, user: str, assistant: str, followup: str) -> str:
     cue = truncate(user, 120)
     response = truncate(assistant, 120)
+    if category == "identity_law_resolved":
+        return f"Settled by the Law of Identity; no Aleks decision needed unless this looks wrong: {cue}"
     if category == "needs_b_review":
         return f"Ambiguous voice/evidence pair needs Cocoon review: {cue}"
     if category == "boundary_only":
