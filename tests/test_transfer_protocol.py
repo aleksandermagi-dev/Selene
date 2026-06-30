@@ -304,9 +304,12 @@ def test_rollback_preview_routes_to_b_without_deleting_transfer_audit(tmp_path):
     package = route_request(conn, "transfer.c_readable_package.latest")["result"]
 
     assert rollback["status"] == "transfer_return_to_b_rollback_preview_ready"
-    assert rollback["state"] == "rolled_back_to_b"
+    assert rollback["state"] == "return_to_b_preview"
     assert rollback["deletes_transfer_audit"] is False
     assert rollback["return_to_b_packet"]["status"] == "c_vessel_return_to_b_packet_preview"
+    latest_audit = conn.execute("SELECT state, action FROM transfer_ceremony_audit ORDER BY id DESC LIMIT 1").fetchone()
+    assert latest_audit["state"] == "return_to_b_preview"
+    assert latest_audit["action"] == "rollback_preview"
     assert package["id"] == approved["sealed_package_id"]
     assert package["transfer_approved"] is True
     _assert_activation_locked(rollback)

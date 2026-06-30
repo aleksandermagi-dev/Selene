@@ -545,7 +545,7 @@ def rollback_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     audit_id = _insert_ceremony_audit(
         conn,
         {
-            "state": "rolled_back_to_b",
+            "state": "return_to_b_preview",
             "action": "rollback_preview",
             "exact_phrase_matched": False,
             "package_id": package.get("id"),
@@ -559,7 +559,7 @@ def rollback_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     return _with_c_readable_state(
         {
             "status": "transfer_return_to_b_rollback_preview_ready",
-            "state": "rolled_back_to_b",
+            "state": "return_to_b_preview",
             "audit_id": audit_id,
             "return_to_b_packet": packet,
             "package": package,
