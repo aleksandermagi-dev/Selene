@@ -466,6 +466,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/voice-module/status":
             self._send(*json_bytes(route_request(conn, "voice_module.status")["result"]))
         elif parsed.path == "/api/voice-module/patterns":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "voice_module.patterns", {"limit": int(qs["limit"]) if qs.get("limit") else 100})["result"]))
         elif parsed.path == "/api/selene-chat/status":
             self._send(*json_bytes(route_request(conn, "selene_chat.status")["result"]))
