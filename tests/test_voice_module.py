@@ -161,6 +161,57 @@ def test_voice_generator_composes_original_candidate_and_evaluator_blocks_bad_sh
     _assert_voice_locked(bad)
 
 
+def test_voice_evidence_triage_keeps_loud_signal_status_only(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+
+    result = route_request(conn, "voice_module.evidence_triage.run", {})["result"]
+    status = route_request(conn, "voice_module.evidence_triage.status", {})["result"]
+    items = route_request(conn, "voice_module.evidence_triage.items", {"limit": 20})["result"]["items"]
+
+    assert result["status"] == "voice_evidence_triage_complete"
+    assert status["total_items"] == 3
+    assert status["counts"]["boundary_only"] == 1
+    assert any(item["category"] == "boundary_only" for item in items)
+    assert all(item["review_status"] in {"status_only", "review_only"} for item in items)
+    assert conn.execute("SELECT COUNT(*) FROM b_corpus_messages").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM b_approved_memory_references").fetchone()[0] == 0
+    _assert_voice_locked(result)
+    _assert_voice_locked(status)
+
+
+def test_voice_generator_varies_candidate_shape_and_flags_repetition(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    route_request(conn, "voice_module.extract_patterns", {})
+
+    first = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "I am nervous, can we keep this clear?", "route": "answer_now", "context_summary": "the transfer thread"},
+    )["result"]
+    second = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "I am nervous and confused about the next step.", "route": "answer_now", "context_summary": "the transfer thread"},
+    )["result"]
+    repeated = route_request(
+        conn,
+        "voice_module.evaluate_candidate",
+        {"candidate_text": "Next I would keep it inspectable. Next I would keep it inspectable. Next I would keep it inspectable."},
+    )["result"]
+
+    assert first["candidate_text"] != second["candidate_text"]
+    assert "Next I would keep it inspectable" not in first["candidate_text"]
+    assert repeated["voice_evaluator_passed"] is False
+    assert "repetitive_template_shape" in repeated["flags"]
+    _assert_voice_locked(first)
+    _assert_voice_locked(second)
+    _assert_voice_locked(repeated)
+
+
 def test_selene_chat_uses_voice_module_candidate_when_available(tmp_path):
     conn = _conn(tmp_path)
     source_zip = _voice_zip(tmp_path)

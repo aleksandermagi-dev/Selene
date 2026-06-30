@@ -203,7 +203,10 @@ from .voice_module import (
     extract_voice_patterns,
     generate_voice_preview,
     index_voice_source,
+    list_voice_evidence_triage_items,
     list_voice_patterns,
+    run_voice_evidence_triage,
+    voice_evidence_triage_status,
     voice_module_status,
 )
 from .vessel_construction import (
@@ -249,6 +252,12 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": extract_voice_patterns(conn, payload)}
     if route_key == "voice_module.patterns":
         return {"route": route_key, "result": list_voice_patterns(conn, int(payload.get("limit") or 100))}
+    if route_key == "voice_module.evidence_triage.status":
+        return {"route": route_key, "result": voice_evidence_triage_status(conn, payload)}
+    if route_key == "voice_module.evidence_triage.run":
+        return {"route": route_key, "result": run_voice_evidence_triage(conn, payload)}
+    if route_key == "voice_module.evidence_triage.items":
+        return {"route": route_key, "result": list_voice_evidence_triage_items(conn, payload)}
     if route_key == "voice_module.generate_preview":
         return {"route": route_key, "result": generate_voice_preview(conn, payload)}
     if route_key == "voice_module.evaluate_candidate":

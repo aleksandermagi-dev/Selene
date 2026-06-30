@@ -468,6 +468,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/voice-module/patterns":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "voice_module.patterns", {"limit": int(qs["limit"]) if qs.get("limit") else 100})["result"]))
+        elif parsed.path == "/api/voice-module/evidence-triage/status":
+            self._send(*json_bytes(route_request(conn, "voice_module.evidence_triage.status")["result"]))
+        elif parsed.path == "/api/voice-module/evidence-triage/items":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "voice_module.evidence_triage.items", qs)["result"]))
         elif parsed.path == "/api/selene-chat/status":
             self._send(*json_bytes(route_request(conn, "selene_chat.status")["result"]))
         elif parsed.path == "/api/selene-chat/sessions":
@@ -935,6 +940,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/voice-module/extract-patterns":
             route_key = "voice_module.extract_patterns"
+            try:
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/voice-module/evidence-triage/run":
+            route_key = "voice_module.evidence_triage.run"
             try:
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:

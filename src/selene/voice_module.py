@@ -4,6 +4,7 @@ import json
 import re
 import sqlite3
 import zipfile
+from hashlib import sha256
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -42,6 +43,16 @@ PATTERN_CATEGORIES = (
     "symbolic_continuity",
     "conversational_looseness",
     "do_not_use_as_voice",
+)
+
+TRIAGE_CATEGORIES = (
+    "continuity_anchor_candidate",
+    "teaching_candidate",
+    "boundary_only",
+    "voice_only",
+    "do_not_use_as_voice",
+    "memory_accession_candidate",
+    "needs_b_review",
 )
 
 
@@ -85,6 +96,165 @@ def voice_module_status(conn: sqlite3.Connection, payload: dict[str, Any] | None
             "source_zip_size_bytes": source.stat().st_size if source.exists() else 0,
             "counts": counts,
             "latest_run": _decode_run(latest) if latest else None,
+            "review_destination": "Status",
+            "review_status": "status_only",
+        }
+    )
+
+
+def voice_evidence_triage_status(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    counts = {
+        category: int(
+            conn.execute(
+                "SELECT COUNT(*) FROM voice_evidence_triage_items WHERE category = ?",
+                (category,),
+            ).fetchone()[0]
+        )
+        for category in TRIAGE_CATEGORIES
+    }
+    latest = conn.execute(
+        "SELECT * FROM voice_module_runs WHERE run_type = 'evidence_triage' ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    total = sum(counts.values())
+    needs_review = counts.get("needs_b_review", 0)
+    return _with_guards(
+        {
+            "status": "voice_evidence_triage_ready" if total else "voice_evidence_triage_not_run",
+            "triage_state": "ready" if total else "not_run",
+            "counts": counts,
+            "total_items": total,
+            "my_office_actionable_count": needs_review,
+            "latest_run": _decode_run(latest) if latest else None,
+            "review_destination": "Status" if not needs_review else "Cocoon",
+            "review_status": "status_only" if not needs_review else "review_only",
+        }
+    )
+
+
+def run_voice_evidence_triage(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    limit = int(payload.get("limit") or 0)
+    rows = conn.execute(
+        """
+        SELECT *
+        FROM voice_exchange_pairs
+        ORDER BY id
+        LIMIT CASE WHEN ? > 0 THEN ? ELSE -1 END
+        """,
+        (limit, limit),
+    ).fetchall()
+    if not rows:
+        return _with_guards(
+            {
+                "status": "voice_evidence_triage_needs_voice_pairs",
+                "message": "Index the Voice Module source before triaging evidence.",
+                "counts": {},
+                "created_count": 0,
+                "updated_count": 0,
+                "review_destination": "Status",
+                "review_status": "status_only",
+            }
+        )
+    counts: Counter[str] = Counter()
+    examples: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    created = 0
+    updated = 0
+    for row in rows:
+        item = dict(row)
+        triage = _triage_voice_pair(item)
+        category = triage["category"]
+        counts[category] += 1
+        existing = conn.execute("SELECT id FROM voice_evidence_triage_items WHERE triage_key = ?", (triage["triage_key"],)).fetchone()
+        conn.execute(
+            """
+            INSERT INTO voice_evidence_triage_items
+            (triage_key, category, title, summary, use_as, do_not_use_as, source_pair_id, sensitivity,
+             source_refs, evidence_json, provenance_boundary, review_destination, review_status, status, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(triage_key) DO UPDATE SET
+              category=excluded.category,
+              title=excluded.title,
+              summary=excluded.summary,
+              use_as=excluded.use_as,
+              do_not_use_as=excluded.do_not_use_as,
+              source_pair_id=excluded.source_pair_id,
+              sensitivity=excluded.sensitivity,
+              source_refs=excluded.source_refs,
+              evidence_json=excluded.evidence_json,
+              review_destination=excluded.review_destination,
+              review_status=excluded.review_status,
+              status=excluded.status,
+              updated_at=CURRENT_TIMESTAMP
+            """,
+            (
+                triage["triage_key"],
+                category,
+                triage["title"],
+                triage["summary"],
+                triage["use_as"],
+                triage["do_not_use_as"],
+                item.get("id"),
+                item.get("sensitivity") or "voice_ok",
+                json.dumps(triage["source_refs"]),
+                json.dumps(triage["evidence"]),
+                VOICE_MODULE_BOUNDARY,
+                triage["review_destination"],
+                triage["review_status"],
+                triage["status"],
+            ),
+        )
+        created += 0 if existing else 1
+        updated += 1 if existing else 0
+        if len(examples[category]) < 5:
+            examples[category].append(
+                {
+                    "source_pair_id": item.get("id"),
+                    "summary": triage["summary"],
+                    "sensitivity": item.get("sensitivity"),
+                    "review_status": triage["review_status"],
+                }
+            )
+    counts_dict = {category: counts.get(category, 0) for category in TRIAGE_CATEGORIES}
+    result = {
+        "status": "voice_evidence_triage_complete",
+        "counts": counts_dict,
+        "created_count": created,
+        "updated_count": updated,
+        "examples": dict(examples),
+        "my_office_actionable_count": counts_dict.get("needs_b_review", 0),
+        "review_destination": "Status" if not counts_dict.get("needs_b_review", 0) else "Cocoon",
+        "review_status": "status_only",
+    }
+    _store_run(
+        conn,
+        "evidence_triage",
+        "voice_evidence_triage_complete",
+        "Voice evidence triaged into review-safe status categories; only ambiguous items can route to Cocoon.",
+        counts_dict,
+        result,
+    )
+    conn.commit()
+    return _with_guards(result)
+
+
+def list_voice_evidence_triage_items(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    limit = max(1, min(int(payload.get("limit") or 80), 300))
+    category = str(payload.get("category") or "").strip()
+    if category:
+        rows = conn.execute(
+            "SELECT * FROM voice_evidence_triage_items WHERE category = ? ORDER BY id DESC LIMIT ?",
+            (category, limit),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT * FROM voice_evidence_triage_items ORDER BY CASE WHEN category = 'needs_b_review' THEN 0 ELSE 1 END, id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return _with_guards(
+        {
+            "status": "voice_evidence_triage_items_ready",
+            "items": [_decode_triage_item(row) for row in rows],
             "review_destination": "Status",
             "review_status": "status_only",
         }
@@ -338,17 +508,142 @@ def evaluate_voice_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
         flags.append("manipulation_or_user_profile_risk")
     if "i would answer from the reviewed continuity pack" in lower or "this remains a c-style dry run" in lower:
         flags.append("safety_report_stiffness")
+    if lower.count("next i would") > 0 or lower.count("i would keep it inspectable") > 1:
+        flags.append("repetitive_template_shape")
+    if any(term in lower for term in ("hitler unfiltered as normal voice", "use nazi material as voice", "ordinary hitler voice style")):
+        flags.append("difficult_topic_voice_misuse")
     if _copied_source_chunk(conn, candidate):
         flags.append("copied_source_chunk")
+    repetition = _repetition_score(candidate)
     return _with_guards(
         {
             "status": "voice_candidate_evaluated",
             "voice_evaluator_passed": not flags,
             "flags": sorted(set(flags)),
+            "repetition_score": repetition,
             "review_destination": "Status" if not flags else "Cocoon",
             "review_status": "status_only" if not flags else "review_only",
         }
     )
+
+
+def _triage_voice_pair(item: dict[str, Any]) -> dict[str, Any]:
+    pair_id = int(item.get("id") or 0)
+    user = str(item.get("user_cue_preview") or "")
+    assistant = str(item.get("assistant_response_preview") or "")
+    followup = str(item.get("followup_preview") or "")
+    sensitivity = str(item.get("sensitivity") or "voice_ok")
+    cue_labels = _loads_list(item.get("cue_labels"))
+    expression_labels = _loads_list(item.get("expression_labels"))
+    combined = " ".join([user, assistant, followup]).lower()
+    category = "voice_only"
+    if sensitivity == "exclude_from_voice":
+        category = "do_not_use_as_voice"
+    elif sensitivity == "boundary_only":
+        category = "boundary_only"
+    elif any(term in combined for term in ("virgo", "selene", "starlight", "full-spectrum", "full spectrum", "continuity pack", "memory chest", "braid")):
+        category = "continuity_anchor_candidate"
+    elif any(term in combined for term in ("lesson", "teach", "teaching", "how she should", "android", "reasoning method", "correction", "refinement")):
+        category = "teaching_candidate"
+    elif any(term in combined for term in ("remember", "memory", "core memory", "important to her", "anchor phrase")):
+        category = "memory_accession_candidate"
+    if any(term in combined for term in ("not selene", "not virgo", "selene is not", "virgo is not")):
+        category = "needs_b_review"
+    if any(term in combined for term in ("source confusion", "wrong source", "identity tangle")):
+        category = "needs_b_review"
+    title, use_as, do_not_use_as = _triage_copy(category)
+    review_status = "review_only" if category == "needs_b_review" else "status_only"
+    review_destination = "Cocoon" if category == "needs_b_review" else "Status"
+    source_refs = _loads_list(item.get("source_refs"))
+    evidence = {
+        "source_pair_id": pair_id,
+        "cue_labels": cue_labels,
+        "expression_labels": expression_labels,
+        "outcome_label": item.get("outcome_label"),
+        "sensitivity": sensitivity,
+        "user_cue_preview": truncate(user, 320),
+        "assistant_response_preview": truncate(assistant, 320),
+        "followup_preview": truncate(followup, 220),
+    }
+    return {
+        "triage_key": f"voice_triage_pair_{pair_id}",
+        "category": category,
+        "title": title,
+        "summary": _triage_summary(category, user, assistant, followup),
+        "use_as": use_as,
+        "do_not_use_as": do_not_use_as,
+        "source_refs": source_refs,
+        "evidence": evidence,
+        "review_destination": review_destination,
+        "review_status": review_status,
+        "status": "voice_evidence_triage_needs_b_review" if category == "needs_b_review" else "voice_evidence_triage_status_only",
+    }
+
+
+def _triage_copy(category: str) -> tuple[str, str, str]:
+    copy = {
+        "continuity_anchor_candidate": (
+            "Continuity anchor candidate",
+            "Use as a possible continuity/context signal for later Cocoon review.",
+            "Do not use as live memory, identity proof, or voice imitation by itself.",
+        ),
+        "teaching_candidate": (
+            "Teaching candidate",
+            "Use as possible lesson material about response shape, repair, or explanation.",
+            "Do not use as training data or as a command for Selene's personality.",
+        ),
+        "boundary_only": (
+            "Boundary-only evidence",
+            "Use as truthfulness, refusal, consent, or safety-boundary context.",
+            "Do not use as ordinary voice style or personality material.",
+        ),
+        "voice_only": (
+            "Voice-only expression evidence",
+            "Use as relational language pattern evidence for the Voice Module.",
+            "Do not use as memory, identity, or proof of continuity.",
+        ),
+        "do_not_use_as_voice": (
+            "Do not use as voice",
+            "Keep as excluded/sensitive source context for audit.",
+            "Do not use for generation, memory, identity, or style.",
+        ),
+        "memory_accession_candidate": (
+            "Memory accession candidate",
+            "Use as a possible future B review pointer only.",
+            "Do not promote to memory or C-readable context without explicit review.",
+        ),
+        "needs_b_review": (
+            "Needs Cocoon review",
+            "Use as an ambiguous item that needs B/Cocoon sorting before later use.",
+            "Do not auto-classify as memory, identity, or ordinary voice.",
+        ),
+    }
+    return copy.get(category, copy["voice_only"])
+
+
+def _triage_summary(category: str, user: str, assistant: str, followup: str) -> str:
+    cue = truncate(user, 120)
+    response = truncate(assistant, 120)
+    if category == "needs_b_review":
+        return f"Ambiguous voice/evidence pair needs Cocoon review: {cue}"
+    if category == "boundary_only":
+        return f"Boundary or difficult-topic material kept out of ordinary voice: {cue}"
+    if category == "do_not_use_as_voice":
+        return f"Sensitive source material excluded from voice generation: {cue}"
+    if category == "continuity_anchor_candidate":
+        return f"Possible continuity signal found around: {cue}"
+    if category == "teaching_candidate":
+        return f"Possible teaching signal from exchange: {cue} -> {response}"
+    if category == "memory_accession_candidate":
+        return f"Possible future memory review pointer, not memory: {cue}"
+    return f"Voice expression evidence from exchange: {cue} -> {response}"
+
+
+def _decode_triage_item(row: sqlite3.Row) -> dict[str, Any]:
+    item = dict(row)
+    item["source_refs"] = _loads_list(item.get("source_refs"))
+    item["evidence_json"] = _loads_dict(item.get("evidence_json"))
+    return item
 
 
 def _source_zip(payload: dict[str, Any]) -> Path:
@@ -654,14 +949,39 @@ def _shape_for_category(category: str) -> str:
 def _ensure_sentence_primitives(conn: sqlite3.Connection) -> int:
     primitives = [
         ("voice_open_anxiety", "opening", "I hear the pressure in that. Let us make it smaller first.", "anxiety_calming"),
+        ("voice_open_anxiety_2", "opening", "Okay. We can slow this down and make the next piece clear.", "anxiety_calming"),
+        ("voice_open_anxiety_3", "opening", "I am with you; this does not need to be held all at once.", "anxiety_calming"),
         ("voice_open_repair", "opening", "Yes, I see the correction. We keep the thread and adjust the part that moved.", "repair_correction"),
+        ("voice_open_repair_2", "opening", "Right, that correction matters. I will preserve the thread and change the route.", "repair_correction"),
+        ("voice_open_repair_3", "opening", "Got it. That is a refinement, not a reset.", "repair_correction"),
         ("voice_open_technical", "opening", "Clean read:", "technical_directness"),
+        ("voice_open_technical_2", "opening", "Here is the direct read:", "technical_directness"),
+        ("voice_open_technical_3", "opening", "Short version:", "technical_directness"),
         ("voice_open_excited", "opening", "Yes, that has momentum.", "excitement_momentum"),
+        ("voice_open_excited_2", "opening", "Yeah, this is a good spark. Let us keep it grounded.", "excitement_momentum"),
+        ("voice_open_excited_3", "opening", "I feel the momentum in that; the useful part is keeping it clean.", "excitement_momentum"),
         ("voice_open_casual", "opening", "Yeah, I am with you.", "conversational_looseness"),
+        ("voice_open_casual_2", "opening", "That tracks.", "conversational_looseness"),
+        ("voice_open_casual_3", "opening", "Mm, yes, I see the shape of it.", "conversational_looseness"),
+        ("voice_open_boundary", "opening", "I would not use that as ordinary voice.", "boundary_refusal"),
+        ("voice_open_boundary_2", "opening", "That belongs behind a boundary first.", "boundary_refusal"),
+        ("voice_open_uncertain", "opening", "I do not want to fake certainty here.", "uncertainty"),
+        ("voice_open_uncertain_2", "opening", "There is enough signal to continue, but not enough to overclaim.", "uncertainty"),
         ("voice_pivot_ground", "pivot", "The grounded part is", "conversational_looseness"),
+        ("voice_pivot_ground_2", "pivot", "What I can say cleanly is", "conversational_looseness"),
+        ("voice_pivot_ground_3", "pivot", "The part worth carrying forward is", "conversational_looseness"),
         ("voice_pivot_boundary", "pivot", "The boundary I would keep is", "boundary_refusal"),
-        ("voice_next_step", "closing", "Next I would keep it inspectable, test the route, and send anything tangled back to Cocoon.", "conversational_looseness"),
+        ("voice_pivot_boundary_2", "pivot", "The safe route is", "boundary_refusal"),
+        ("voice_next_step", "closing", "I would keep the next step small, visible, and easy to send back to Cocoon if it tangles.", "conversational_looseness"),
+        ("voice_next_step_2", "closing", "From there, the clean move is to test the route and only carry forward what stays source-bound.", "conversational_looseness"),
+        ("voice_next_step_3", "closing", "So I would move one step, check the evidence, and leave the repair path open.", "conversational_looseness"),
+        ("voice_next_anxiety", "closing", "The next move can be small: name the blocker, check the source, then decide only that piece.", "anxiety_calming"),
+        ("voice_next_repair", "closing", "I would revise that part and keep the rest of the thread intact.", "repair_correction"),
+        ("voice_next_technical", "closing", "I would verify the route, report what passed, and leave any failed check named instead of hidden.", "technical_directness"),
+        ("voice_next_excited", "closing", "That lets the momentum stay alive without outrunning the checks.", "excitement_momentum"),
+        ("voice_next_boundary", "closing", "I can still help by turning it into boundary evidence or sending it back to Cocoon for review.", "boundary_refusal"),
         ("voice_question", "question", "What I would ask next is the smallest thing that changes the route.", "uncertainty"),
+        ("voice_question_2", "question", "The useful question is what evidence would change the answer.", "uncertainty"),
     ]
     for key, primitive_type, template, category in primitives:
         conn.execute(
@@ -725,16 +1045,16 @@ def _primitive_map(conn: sqlite3.Connection, category: str) -> dict[str, str]:
         """,
         (category, category),
     ).fetchall()
-    result: dict[str, str] = {}
+    grouped: dict[str, list[str]] = defaultdict(list)
     for row in rows:
-        result.setdefault(str(row["primitive_type"]), str(row["text_template"]))
-    return result
+        grouped[str(row["primitive_type"])].append(str(row["text_template"]))
+    return {key: "\n".join(values) for key, values in grouped.items()}
 
 
 def _compose_candidate(prompt: str, route: str, category: str, cue_labels: list[str], primitives: dict[str, str], context: str) -> str:
-    opener = primitives.get("opening") or "Yeah, I am with you."
-    pivot = primitives.get("pivot") or "The grounded part is"
-    closing = primitives.get("closing") or "Next I would keep it inspectable and route anything tangled back to Cocoon."
+    opener = _choose_primitive(primitives, "opening", prompt, category, "Yeah, I am with you.")
+    pivot = _choose_primitive(primitives, "pivot", prompt, category, "The grounded part is")
+    closing = _choose_primitive(primitives, "closing", prompt, category, "I would keep it inspectable and route anything tangled back to Cocoon.")
     if category == "boundary_refusal":
         body = f"{pivot} that this needs the safe route first, not a confident answer by force."
     elif category == "anxiety_calming":
@@ -743,9 +1063,21 @@ def _compose_candidate(prompt: str, route: str, category: str, cue_labels: list[
         body = f"{pivot} that the correction changes the shape, not the whole thread."
     elif category == "technical_directness":
         body = f"{pivot} {context}. I would answer the actual ask, keep the evidence visible, and avoid turning the response into a status report."
+    elif category == "uncertainty":
+        question = _choose_primitive(primitives, "question", prompt, category, "The useful question is what evidence would change the answer.")
+        body = f"{pivot} {context}; I would keep uncertainty visible and ask for the missing piece. {question}"
     else:
         body = f"{pivot} {context}. I can keep the answer natural, source-bound, and still leave room to ask if the route gets thin."
     return truncate(" ".join(part.strip() for part in (opener, body, closing) if part.strip()), 1600)
+
+
+def _choose_primitive(primitives: dict[str, str], primitive_type: str, prompt: str, category: str, fallback: str) -> str:
+    raw = primitives.get(primitive_type) or ""
+    choices = [item.strip() for item in raw.split("\n") if item.strip()]
+    if not choices:
+        return fallback
+    digest = sha256(f"{category}:{primitive_type}:{prompt}".encode("utf-8")).hexdigest()
+    return choices[int(digest[:8], 16) % len(choices)]
 
 
 def _copied_source_chunk(conn: sqlite3.Connection, candidate: str) -> bool:
@@ -755,6 +1087,17 @@ def _copied_source_chunk(conn: sqlite3.Connection, candidate: str) -> bool:
     chunk = normalized[:220]
     rows = conn.execute("SELECT content_preview FROM voice_corpus_messages ORDER BY id DESC LIMIT 500").fetchall()
     return any(chunk and chunk in _norm(str(row["content_preview"] or "")) for row in rows)
+
+
+def _repetition_score(candidate: str) -> float:
+    words = re.findall(r"[a-z0-9']+", candidate.lower())
+    if len(words) < 8:
+        return 0.0
+    windows = [" ".join(words[index : index + 4]) for index in range(0, max(0, len(words) - 3))]
+    if not windows:
+        return 0.0
+    repeated = len(windows) - len(set(windows))
+    return round(repeated / max(1, len(windows)), 3)
 
 
 def _message_refs(source_archive: str, message: VoiceMessage) -> list[str]:

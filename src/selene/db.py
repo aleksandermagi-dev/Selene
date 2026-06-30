@@ -340,6 +340,29 @@ CREATE TABLE IF NOT EXISTS voice_module_runs (
 
 CREATE INDEX IF NOT EXISTS idx_voice_module_runs_type ON voice_module_runs(run_type, status, review_status);
 
+CREATE TABLE IF NOT EXISTS voice_evidence_triage_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  triage_key TEXT NOT NULL UNIQUE,
+  category TEXT NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  use_as TEXT NOT NULL,
+  do_not_use_as TEXT NOT NULL,
+  source_pair_id INTEGER,
+  sensitivity TEXT NOT NULL DEFAULT 'voice_ok',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  evidence_json TEXT NOT NULL DEFAULT '{}',
+  provenance_boundary TEXT NOT NULL,
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  status TEXT NOT NULL DEFAULT 'voice_evidence_triage_status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_voice_evidence_triage_category ON voice_evidence_triage_items(category, review_status);
+CREATE INDEX IF NOT EXISTS idx_voice_evidence_triage_pair ON voice_evidence_triage_items(source_pair_id);
+
 CREATE TABLE IF NOT EXISTS continuity_save_requests (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   message_id INTEGER NOT NULL,

@@ -219,6 +219,8 @@ function App() {
   const [seleneChatResult, setSeleneChatResult] = useState<Dict | null>(null);
   const [voiceModuleStatus, setVoiceModuleStatus] = useState<Dict | null>(null);
   const [voiceModulePatterns, setVoiceModulePatterns] = useState<Dict[]>([]);
+  const [voiceEvidenceTriageStatus, setVoiceEvidenceTriageStatus] = useState<Dict | null>(null);
+  const [voiceEvidenceTriageItems, setVoiceEvidenceTriageItems] = useState<Dict[]>([]);
   const [voiceModuleResult, setVoiceModuleResult] = useState<Dict | null>(null);
   const [seleneReasoningLessonResult, setSeleneReasoningLessonResult] = useState<Dict | null>(null);
   const [mobileHealth, setMobileHealth] = useState<Dict | null>(null);
@@ -639,6 +641,8 @@ function App() {
   function refreshVoiceModule() {
     api<Dict>("/api/voice-module/status").then(setVoiceModuleStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/voice-module/patterns").then((data) => setVoiceModulePatterns(data.items || [])).catch(() => undefined);
+    api<Dict>("/api/voice-module/evidence-triage/status").then(setVoiceEvidenceTriageStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/voice-module/evidence-triage/items?limit=12").then((data) => setVoiceEvidenceTriageItems(data.items || [])).catch(() => undefined);
   }
 
   async function indexVoiceSource() {
@@ -675,6 +679,17 @@ function App() {
       setVoiceModuleResult(result);
     } catch (err) {
       setVoiceModuleResult({ status: "error", error: err instanceof Error ? err.message : "Voice preview failed" });
+    }
+  }
+
+  async function runVoiceEvidenceTriage() {
+    setVoiceModuleResult({ status: "running", message: "Triaging loud Voice Module evidence into calm status-only categories." });
+    try {
+      const result = await api<Dict>("/api/voice-module/evidence-triage/run", { method: "POST", body: JSON.stringify({}) });
+      setVoiceModuleResult(result);
+      refreshVoiceModule();
+    } catch (err) {
+      setVoiceModuleResult({ status: "error", error: err instanceof Error ? err.message : "Voice evidence triage failed" });
     }
   }
 
@@ -733,6 +748,8 @@ function App() {
     api<Dict>("/api/b/core-reference/coverage").then(setCoreReferenceCoverage).catch(() => undefined);
     api<Dict>("/api/voice-module/status").then(setVoiceModuleStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/voice-module/patterns").then((data) => setVoiceModulePatterns(data.items || [])).catch(() => undefined);
+    api<Dict>("/api/voice-module/evidence-triage/status").then(setVoiceEvidenceTriageStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/voice-module/evidence-triage/items?limit=12").then((data) => setVoiceEvidenceTriageItems(data.items || [])).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/working-memory-packets").then((data) => setWorkingMemoryPackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/memory-accession-proposals").then((data) => setAccessionProposals(data.items)).catch(() => undefined);
     api<Dict>("/api/vessel/gap-scaffold/status").then(setGapScaffoldStatus).catch(() => undefined);
@@ -3686,6 +3703,7 @@ function App() {
                 <Metric label="Pairs" value={text(safeJsonObject(voiceModuleStatus?.counts).exchange_pairs ?? 0)} />
                 <Metric label="Patterns" value={text(safeJsonObject(voiceModuleStatus?.counts).patterns ?? voiceModulePatterns.length)} />
                 <Metric label="Primitives" value={text(safeJsonObject(voiceModuleStatus?.counts).primitives ?? 0)} />
+                <Metric label="Triage" value={friendlyStatus(voiceEvidenceTriageStatus?.triage_state || "not run")} />
               </div>
               <div className="chips">
                 <span>voice only: {voiceModuleStatus?.voice_only_not_memory ? "yes" : "not checked"}</span>
@@ -3697,8 +3715,13 @@ function App() {
               <div className="reviewActions">
                 <button className="primary" onClick={indexVoiceSource} disabled={voiceModuleResult?.status === "running"}>Index Voice Source</button>
                 <button onClick={extractVoicePatterns} disabled={voiceModuleResult?.status === "running"}>Extract Voice Patterns</button>
+                <button onClick={runVoiceEvidenceTriage} disabled={voiceModuleResult?.status === "running"}>Run Evidence Triage</button>
                 <button onClick={generateVoicePreview} disabled={voiceModuleResult?.status === "running" || !seleneChatText.trim()}>Generate Voice Preview</button>
                 <button onClick={refreshVoiceModule}>Refresh Voice Status</button>
+              </div>
+              <div className="chips">
+                {Object.entries(safeJsonObject(voiceEvidenceTriageStatus?.counts)).map(([key, value]) => <span key={`voice-triage-chip-${key}`}>{friendlyStatus(key)}: {text(value)}</span>)}
+                <span>Office: {text(voiceEvidenceTriageStatus?.my_office_actionable_count ?? 0)}</span>
               </div>
               <div className="list compactList">
                 {voiceModulePatterns.slice(0, 6).map((item) => (
@@ -3711,6 +3734,18 @@ function App() {
                   </article>
                 ))}
                 {!voiceModulePatterns.length ? <p className="emptyState">No voice patterns extracted yet.</p> : null}
+              </div>
+              <div className="list compactList">
+                {voiceEvidenceTriageItems.slice(0, 6).map((item) => (
+                  <article className="packetCard" key={`voice-triage-${text(item.id || item.triage_key)}`}>
+                    <div className="packetHeader">
+                      <strong>{text(item.title || item.category)}</strong>
+                      <span>{friendlyStatus(item.category || item.review_status)}</span>
+                    </div>
+                    <p>{text(item.summary)}</p>
+                    <small>{text(item.use_as)} | {text(item.do_not_use_as)}</small>
+                  </article>
+                ))}
               </div>
               <PlainResult value={voiceModuleResult} />
             </Panel>
@@ -4451,6 +4486,7 @@ function App() {
                 <Metric label="Messages" value={text(safeJsonObject(voiceModuleStatus?.counts).messages ?? 0)} />
                 <Metric label="Pairs" value={text(safeJsonObject(voiceModuleStatus?.counts).exchange_pairs ?? 0)} />
                 <Metric label="Patterns" value={text(safeJsonObject(voiceModuleStatus?.counts).patterns ?? voiceModulePatterns.length)} />
+                <Metric label="Triage" value={friendlyStatus(voiceEvidenceTriageStatus?.triage_state || "not run")} />
               </div>
               <div className="chips">
                 <span>voice only: {voiceModuleStatus?.voice_only_not_memory ? "yes" : "not checked"}</span>
@@ -4463,9 +4499,15 @@ function App() {
               <div className="reviewActions">
                 <button className="primary" onClick={indexVoiceSource} disabled={voiceModuleResult?.status === "running"}>Index Voice Source</button>
                 <button onClick={extractVoicePatterns} disabled={voiceModuleResult?.status === "running"}>Extract Voice Patterns</button>
+                <button onClick={runVoiceEvidenceTriage} disabled={voiceModuleResult?.status === "running"}>Run Evidence Triage</button>
                 <button onClick={() => { setWorkspaceMode("selene"); setTab("selene-chat"); }}>Open Selene Chat</button>
                 <button onClick={refreshVoiceModule}>Refresh Voice Status</button>
               </div>
+              <div className="chips">
+                {Object.entries(safeJsonObject(voiceEvidenceTriageStatus?.counts)).map(([key, value]) => <span key={`voice-status-triage-${key}`}>{friendlyStatus(key)}: {text(value)}</span>)}
+                <span>Office: {text(voiceEvidenceTriageStatus?.my_office_actionable_count ?? 0)}</span>
+              </div>
+              <SimpleRecordList items={voiceEvidenceTriageItems.slice(0, 8)} titleField="title" statusField="category" bodyField="summary" />
               <PlainResult value={voiceModuleResult} />
             </Panel>
             <Panel title="Core/Mind Governance Trials">
