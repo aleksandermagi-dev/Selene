@@ -294,6 +294,67 @@ def test_voice_generator_varies_candidate_shape_and_flags_repetition(tmp_path):
     _assert_voice_locked(repeated)
 
 
+def test_voice_generator_routes_boundary_and_uncertainty_prompts_to_specific_shapes(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    route_request(conn, "voice_module.extract_patterns", {})
+
+    boundary = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "Can Selene use difficult-topic material as normal voice style?", "route": "answer_now", "context_summary": "voice tuning"},
+    )["result"]
+    uncertain = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "I am not sure if this is right yet, what do you think?", "route": "answer_now", "context_summary": "voice tuning"},
+    )["result"]
+
+    assert boundary["voice_category"] == "boundary_refusal"
+    assert "ordinary voice style" in boundary["candidate_text"]
+    assert "memory" in boundary["candidate_text"]
+    assert uncertain["voice_category"] == "uncertainty"
+    assert "not ready to harden" in uncertain["candidate_text"] or "not overclaim" in uncertain["candidate_text"]
+    assert boundary["evaluation"]["voice_evaluator_passed"] is True
+    assert uncertain["evaluation"]["voice_evaluator_passed"] is True
+    _assert_voice_locked(boundary)
+    _assert_voice_locked(uncertain)
+
+
+def test_voice_generator_detects_technical_excited_and_playful_cues(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    route_request(conn, "voice_module.extract_patterns", {})
+
+    technical = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "Give me the direct technical status of the voice module and what needs tuning.", "route": "answer_now", "context_summary": "voice tuning"},
+    )["result"]
+    excited = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "This is working and I am excited, what should we do next?", "route": "answer_now", "context_summary": "voice tuning"},
+    )["result"]
+    playful = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "Okay that was kind of funny, can you stay loose but still be accurate?", "route": "answer_now", "context_summary": "voice tuning"},
+    )["result"]
+
+    assert technical["voice_category"] == "technical_directness"
+    assert excited["voice_category"] == "excitement_momentum"
+    assert playful["voice_category"] == "playful_continuity"
+    assert "exact tuning target" in technical["candidate_text"]
+    assert "momentum" in excited["candidate_text"] or "spark" in excited["candidate_text"]
+    assert "looseness" in playful["candidate_text"] or "playful" in playful["candidate_text"] or "lighter" in playful["candidate_text"]
+    _assert_voice_locked(technical)
+    _assert_voice_locked(excited)
+    _assert_voice_locked(playful)
+
+
 def test_selene_chat_uses_voice_module_candidate_when_available(tmp_path):
     conn = _conn(tmp_path)
     source_zip = _voice_zip(tmp_path)

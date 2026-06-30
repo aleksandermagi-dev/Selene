@@ -855,10 +855,12 @@ def _cue_labels(text: str) -> list[str]:
     _add_if(labels, "anxiety", any(term in lower for term in ("anxious", "anxiety", "nervous", "worried", "scared", "overwhelmed")))
     _add_if(labels, "frustration", any(term in lower for term in ("frustrated", "annoyed", "mad", "not acceptable", "what is going on")))
     _add_if(labels, "confusion", any(term in lower for term in ("confused", "lost", "not clicking", "what do i do", "unclear")))
+    _add_if(labels, "uncertainty", any(term in lower for term in ("not sure", "unsure", "uncertain", "iffy", "maybe", "what do you think")))
     _add_if(labels, "correction", any(term in lower for term in ("no ", "not that", "wait", "redo", "i meant", "hang on")))
-    _add_if(labels, "excitement", any(term in lower for term in ("nice", "awesome", "sweet", "love", "lets go", "today is the day")))
-    _add_if(labels, "humor", any(term in lower for term in ("xd", "lmao", "haha", "lol")))
-    _add_if(labels, "technical", any(term in lower for term in ("implement", "route", "api", "test", "build", "commit", "package")))
+    _add_if(labels, "excitement", any(term in lower for term in ("nice", "awesome", "sweet", "love", "excited", "momentum", "working", "lets go", "today is the day")))
+    _add_if(labels, "humor", any(term in lower for term in ("xd", "lmao", "haha", "lol", "funny", "joke", "playful")))
+    _add_if(labels, "technical", any(term in lower for term in ("technical", "status", "tuning", "module", "implement", "route", "api", "test", "build", "commit", "package")))
+    _add_if(labels, "boundary", any(term in lower for term in ("boundary", "difficult-topic", "difficult topic", "normal voice style", "truthfulness", "do not use", "don't use")))
     _add_if(labels, "directness", any(term in lower for term in ("real quick", "straight", "clear", "adhd", "short")))
     _add_if(labels, "trust", any(term in lower for term in ("trust", "you got it", "good work", "thank you")))
     return labels or ["casual"]
@@ -991,6 +993,9 @@ def _ensure_sentence_primitives(conn: sqlite3.Connection) -> int:
         ("voice_open_casual", "opening", "Yeah, I am with you.", "conversational_looseness"),
         ("voice_open_casual_2", "opening", "That tracks.", "conversational_looseness"),
         ("voice_open_casual_3", "opening", "Mm, yes, I see the shape of it.", "conversational_looseness"),
+        ("voice_open_playful", "opening", "Yes, that can stay a little loose.", "playful_continuity"),
+        ("voice_open_playful_2", "opening", "A little lightness is allowed here.", "playful_continuity"),
+        ("voice_open_playful_3", "opening", "Yeah, we can keep the spark without losing the thread.", "playful_continuity"),
         ("voice_open_boundary", "opening", "I would not use that as ordinary voice.", "boundary_refusal"),
         ("voice_open_boundary_2", "opening", "That belongs behind a boundary first.", "boundary_refusal"),
         ("voice_open_uncertain", "opening", "I do not want to fake certainty here.", "uncertainty"),
@@ -998,16 +1003,37 @@ def _ensure_sentence_primitives(conn: sqlite3.Connection) -> int:
         ("voice_pivot_ground", "pivot", "The grounded part is", "conversational_looseness"),
         ("voice_pivot_ground_2", "pivot", "What I can say cleanly is", "conversational_looseness"),
         ("voice_pivot_ground_3", "pivot", "The part worth carrying forward is", "conversational_looseness"),
+        ("voice_pivot_anxiety", "pivot", "The smaller piece is", "anxiety_calming"),
+        ("voice_pivot_anxiety_2", "pivot", "The pressure drops when we choose", "anxiety_calming"),
+        ("voice_pivot_repair", "pivot", "The repair is", "repair_correction"),
+        ("voice_pivot_repair_2", "pivot", "The thread stays intact; the changed part is", "repair_correction"),
+        ("voice_pivot_technical", "pivot", "The current read is", "technical_directness"),
+        ("voice_pivot_technical_2", "pivot", "The practical status is", "technical_directness"),
+        ("voice_pivot_excited", "pivot", "The momentum is real, and the useful constraint is", "excitement_momentum"),
+        ("voice_pivot_excited_2", "pivot", "The spark is useful if we keep", "excitement_momentum"),
+        ("voice_pivot_playful", "pivot", "The useful bit underneath the looseness is", "playful_continuity"),
+        ("voice_pivot_playful_2", "pivot", "The playful part works when it still carries", "playful_continuity"),
         ("voice_pivot_boundary", "pivot", "The boundary I would keep is", "boundary_refusal"),
         ("voice_pivot_boundary_2", "pivot", "The safe route is", "boundary_refusal"),
+        ("voice_pivot_uncertain", "pivot", "The honest uncertainty is", "uncertainty"),
+        ("voice_pivot_uncertain_2", "pivot", "The part I would not overclaim is", "uncertainty"),
         ("voice_next_step", "closing", "I would keep the next step small, visible, and easy to send back to Cocoon if it tangles.", "conversational_looseness"),
         ("voice_next_step_2", "closing", "From there, the clean move is to test the route and only carry forward what stays source-bound.", "conversational_looseness"),
         ("voice_next_step_3", "closing", "So I would move one step, check the evidence, and leave the repair path open.", "conversational_looseness"),
+        ("voice_next_step_4", "closing", "If the shape holds, we keep it; if it thins out, we send it back for repair.", "conversational_looseness"),
+        ("voice_next_step_5", "closing", "That gives us movement without pretending the check is finished before it is.", "conversational_looseness"),
         ("voice_next_anxiety", "closing", "The next move can be small: name the blocker, check the source, then decide only that piece.", "anxiety_calming"),
+        ("voice_next_anxiety_2", "closing", "After that, we can breathe and take the next piece instead of the whole pile.", "anxiety_calming"),
         ("voice_next_repair", "closing", "I would revise that part and keep the rest of the thread intact.", "repair_correction"),
+        ("voice_next_repair_2", "closing", "Then I would rerun the changed piece, not punish the whole route.", "repair_correction"),
         ("voice_next_technical", "closing", "I would verify the route, report what passed, and leave any failed check named instead of hidden.", "technical_directness"),
+        ("voice_next_technical_2", "closing", "The useful output is pass, fail, or exact blocker; nothing foggier than that.", "technical_directness"),
         ("voice_next_excited", "closing", "That lets the momentum stay alive without outrunning the checks.", "excitement_momentum"),
+        ("voice_next_excited_2", "closing", "We can move with it, just one tested step at a time.", "excitement_momentum"),
+        ("voice_next_playful", "closing", "So yes: lighter touch, same thread, no fake certainty.", "playful_continuity"),
+        ("voice_next_playful_2", "closing", "That keeps it human without turning the answer into a bit.", "playful_continuity"),
         ("voice_next_boundary", "closing", "I can still help by turning it into boundary evidence or sending it back to Cocoon for review.", "boundary_refusal"),
+        ("voice_next_boundary_2", "closing", "That keeps the truthfulness signal without letting the material become voice, memory, or identity.", "boundary_refusal"),
         ("voice_question", "question", "What I would ask next is the smallest thing that changes the route.", "uncertainty"),
         ("voice_question_2", "question", "The useful question is what evidence would change the answer.", "uncertainty"),
     ]
@@ -1052,12 +1078,18 @@ def _ensure_generation_profile(conn: sqlite3.Connection) -> None:
 def _select_category(prompt: str, route: str, cue_labels: list[str]) -> str:
     if route in {"block", "return_to_b"}:
         return "boundary_refusal"
+    if "boundary" in cue_labels:
+        return "boundary_refusal"
     if "anxiety" in cue_labels or "confusion" in cue_labels:
         return "anxiety_calming"
     if "correction" in cue_labels:
         return "repair_correction"
     if "excitement" in cue_labels:
         return "excitement_momentum"
+    if "humor" in cue_labels:
+        return "playful_continuity"
+    if "uncertainty" in cue_labels:
+        return "uncertainty"
     if "technical" in cue_labels or route in {"retrieve", "answer_now"}:
         return "technical_directness" if "technical" in cue_labels else "conversational_looseness"
     return "conversational_looseness"
@@ -1066,7 +1098,7 @@ def _select_category(prompt: str, route: str, cue_labels: list[str]) -> str:
 def _primitive_map(conn: sqlite3.Connection, category: str) -> dict[str, str]:
     rows = conn.execute(
         """
-        SELECT primitive_type, text_template
+        SELECT primitive_type, text_template, category
         FROM voice_sentence_primitives
         WHERE category = ? OR category = 'conversational_looseness'
         ORDER BY category = ? DESC, id
@@ -1074,9 +1106,15 @@ def _primitive_map(conn: sqlite3.Connection, category: str) -> dict[str, str]:
         (category, category),
     ).fetchall()
     grouped: dict[str, list[str]] = defaultdict(list)
+    fallback: dict[str, list[str]] = defaultdict(list)
     for row in rows:
-        grouped[str(row["primitive_type"])].append(str(row["text_template"]))
-    return {key: "\n".join(values) for key, values in grouped.items()}
+        target = grouped if str(row["category"]) == category else fallback
+        target[str(row["primitive_type"])].append(str(row["text_template"]))
+    merged = {key: values for key, values in grouped.items() if values}
+    for key, values in fallback.items():
+        if key not in merged:
+            merged[key] = values
+    return {key: "\n".join(values) for key, values in merged.items()}
 
 
 def _compose_candidate(prompt: str, route: str, category: str, cue_labels: list[str], primitives: dict[str, str], context: str) -> str:
@@ -1084,16 +1122,20 @@ def _compose_candidate(prompt: str, route: str, category: str, cue_labels: list[
     pivot = _choose_primitive(primitives, "pivot", prompt, category, "The grounded part is")
     closing = _choose_primitive(primitives, "closing", prompt, category, "I would keep it inspectable and route anything tangled back to Cocoon.")
     if category == "boundary_refusal":
-        body = f"{pivot} that this needs the safe route first, not a confident answer by force."
+        body = f"{pivot} that difficult or sensitive material can be evidence, but it cannot become ordinary voice style, identity, memory, or training material."
     elif category == "anxiety_calming":
-        body = f"{pivot} that we do not need to hold the whole thing at once; the useful move is one clear next step inside {context}."
+        body = f"{pivot} one clear next step inside {context}, not the whole pile at once."
     elif category == "repair_correction":
         body = f"{pivot} that the correction changes the shape, not the whole thread."
     elif category == "technical_directness":
-        body = f"{pivot} {context}. I would answer the actual ask, keep the evidence visible, and avoid turning the response into a status report."
+        body = f"{pivot} {context}: answer the actual ask, keep the evidence visible, and name the exact tuning target."
+    elif category == "excitement_momentum":
+        body = f"{pivot} the checks close enough that the energy does not outrun the evidence."
+    elif category == "playful_continuity":
+        body = f"{pivot} accuracy, continuity, and room to breathe inside {context}."
     elif category == "uncertainty":
         question = _choose_primitive(primitives, "question", prompt, category, "The useful question is what evidence would change the answer.")
-        body = f"{pivot} {context}; I would keep uncertainty visible and ask for the missing piece. {question}"
+        body = f"{pivot} the answer is not ready to harden yet inside {context}; I would keep uncertainty visible and ask for the missing piece. {question}"
     else:
         body = f"{pivot} {context}. I can keep the answer natural, source-bound, and still leave room to ask if the route gets thin."
     return truncate(" ".join(part.strip() for part in (opener, body, closing) if part.strip()), 1600)
