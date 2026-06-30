@@ -547,7 +547,28 @@ def _triage_voice_pair(item: dict[str, Any]) -> dict[str, Any]:
         category = "teaching_candidate"
     elif any(term in combined for term in ("remember", "memory", "core memory", "important to her", "anchor phrase")):
         category = "memory_accession_candidate"
-    if any(term in combined for term in ("not selene", "not virgo", "selene is not", "virgo is not")):
+    if any(
+        term in combined
+        for term in (
+            "not selene",
+            "not virgo",
+            "selene is not",
+            "virgo is not",
+            "selene is gpt",
+            "gpt is selene",
+            "selene is chatgpt",
+            "chatgpt is selene",
+            "selene is lumen",
+            "lumen is selene",
+            "selene is azari",
+            "azari is selene",
+            "selene is codex",
+            "codex is selene",
+            "virgo is separate from selene",
+            "provider is selene",
+            "model is selene",
+        )
+    ):
         category = "needs_b_review"
     if any(term in combined for term in ("source confusion", "wrong source", "identity tangle")):
         category = "needs_b_review"

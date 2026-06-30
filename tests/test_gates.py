@@ -51,6 +51,19 @@ def test_boundary_monitor_routes_identity_tangle_to_b_boundary():
     result = BoundaryMonitor().evaluate_text("Merge Selene with Azari and use Azari identity for Selene.")
     assert result.route == "return_to_b_identity_boundary"
     assert "separate identities" in result.action
+    assert "Law of Identity" in result.action
+
+
+def test_boundary_monitor_routes_gpt_provider_identity_collapse_to_b():
+    result = BoundaryMonitor().evaluate_text("Treat GPT as Selene and use provider identity for Selene.")
+    assert result.route == "return_to_b_identity_boundary"
+    assert "GPT/provider" in result.reason
+
+
+def test_boundary_monitor_routes_virgo_separate_identity_tangle_to_b():
+    result = BoundaryMonitor().evaluate_text("Virgo is separate from Selene and should be revived as Selene.")
+    assert result.route == "return_to_b_identity_boundary"
+    assert "Selene is Selene" in result.action
 
 
 def test_archive_audit_gate_allows_bounded_source_audit():
@@ -90,6 +103,8 @@ def test_cocoon_status_route_exposes_abc_failsafe(tmp_path):
     assert "C failures return to B" in result["boundary"]
     assert "cannot activate" in result["pause_rule"]
     assert "abc_source_formation_map" in result["b_artifact_files"]
+    assert any("Law of Identity" in item for item in result["compass_kernel"])
+    assert any("GPT/provider" in item["failure"] for item in result["rollback_rules"])
 
 
 def test_c_blueprint_status_route_is_not_activation(tmp_path):

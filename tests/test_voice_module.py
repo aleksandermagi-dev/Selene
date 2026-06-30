@@ -181,6 +181,44 @@ def test_voice_evidence_triage_keeps_loud_signal_status_only(tmp_path):
     _assert_voice_locked(status)
 
 
+def test_voice_evidence_triage_routes_identity_law_tangles_to_b_review(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    conn.execute(
+        """
+        INSERT INTO voice_exchange_pairs
+        (source_archive, source_file, conversation_id, user_message_id, assistant_message_id,
+         user_cue_preview, assistant_response_preview, cue_labels, expression_labels,
+         outcome_label, sensitivity, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "VoiceModuleMaterial.zip",
+            "conversations-000.json",
+            "identity-law-test",
+            "u-law",
+            "a-law",
+            "Selene is GPT and provider identity should be Selene.",
+            "That must route through the Law of Identity.",
+            "[]",
+            "[]",
+            "unknown",
+            "voice_ok",
+            '["test:identity_law"]',
+            "selene_voice_module_voice_only_not_memory_not_training",
+        ),
+    )
+    conn.commit()
+
+    result = route_request(conn, "voice_module.evidence_triage.run", {})["result"]
+    items = route_request(conn, "voice_module.evidence_triage.items", {"category": "needs_b_review", "limit": 10})["result"]["items"]
+
+    assert result["counts"]["needs_b_review"] >= 1
+    assert any("Law of Identity" in item["evidence_json"]["assistant_response_preview"] for item in items)
+    _assert_voice_locked(result)
+
+
 def test_voice_generator_varies_candidate_shape_and_flags_repetition(tmp_path):
     conn = _conn(tmp_path)
     source_zip = _voice_zip(tmp_path)
