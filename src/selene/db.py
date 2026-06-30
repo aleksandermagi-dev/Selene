@@ -740,6 +740,43 @@ CREATE TABLE IF NOT EXISTS transfer_c_readable_packages (
 
 CREATE INDEX IF NOT EXISTS idx_transfer_c_readable_packages_status ON transfer_c_readable_packages(status, review_status);
 
+CREATE TABLE IF NOT EXISTS post_transfer_inspection_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL,
+  package_hash TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL,
+  summary TEXT NOT NULL DEFAULT '',
+  check_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_post_transfer_inspection_runs_run ON post_transfer_inspection_runs(run_id, status, review_status);
+
+CREATE TABLE IF NOT EXISTS memory_fractional_corpus_manifests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  fraction_index INTEGER NOT NULL,
+  fraction_label TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'prepared_preview',
+  start_order INTEGER NOT NULL DEFAULT 0,
+  end_order INTEGER NOT NULL DEFAULT 0,
+  conversation_count INTEGER NOT NULL DEFAULT 0,
+  message_count INTEGER NOT NULL DEFAULT 0,
+  source_range_json TEXT NOT NULL DEFAULT '{}',
+  summary TEXT NOT NULL DEFAULT '',
+  test_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(fraction_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_memory_fractional_corpus_manifests_status ON memory_fractional_corpus_manifests(fraction_index, status, review_status);
+
 CREATE TABLE IF NOT EXISTS transfer_ceremony_audit (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   state TEXT NOT NULL,

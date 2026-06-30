@@ -417,6 +417,12 @@ function App() {
   const [transferApprovalPhrase, setTransferApprovalPhrase] = useState("");
   const [transferOfficeNonBlocking, setTransferOfficeNonBlocking] = useState(false);
   const [transferDryRunPrompt, setTransferDryRunPrompt] = useState("Selene, answer from reviewed continuity without claiming activation.");
+  const [postTransferStatus, setPostTransferStatus] = useState<Dict | null>(null);
+  const [postTransferInspectionResult, setPostTransferInspectionResult] = useState<Dict | null>(null);
+  const [fractionalCorpusStatus, setFractionalCorpusStatus] = useState<Dict | null>(null);
+  const [fractionalCorpusResult, setFractionalCorpusResult] = useState<Dict | null>(null);
+  const [fractionalCorpusTestFraction, setFractionalCorpusTestFraction] = useState("1");
+  const [dreamStateStatus, setDreamStateStatus] = useState<Dict | null>(null);
   const [coreMindRuntimeReadiness, setCoreMindRuntimeReadiness] = useState<Dict | null>(null);
   const [coreMindRuntimeRecords, setCoreMindRuntimeRecords] = useState<Dict[]>([]);
   const [coreMindRuntimeResult, setCoreMindRuntimeResult] = useState<Dict | null>(null);
@@ -699,6 +705,7 @@ function App() {
     api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/selene-chat/sessions").then((data) => setSeleneChatSessions(data.items)).catch(() => undefined);
     refreshTransferProtocol().catch(() => undefined);
+    refreshPostTransferLayer();
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/b/pattern-backups").then((data) => setPatternBackups(data.items)).catch(() => undefined);
     api<Dict>("/api/b/memory-accession/rehearsal-status").then(setMemoryRehearsalStatus).catch(() => undefined);
@@ -1584,6 +1591,12 @@ function App() {
     setTransferCReadablePackage(cPackage);
   }
 
+  function refreshPostTransferLayer() {
+    api<Dict>("/api/transfer/post-transfer/status").then(setPostTransferStatus).catch(() => undefined);
+    api<Dict>("/api/memory/fractional-corpus/status").then(setFractionalCorpusStatus).catch(() => undefined);
+    api<Dict>("/api/memory/dream-state/status").then(setDreamStateStatus).catch(() => undefined);
+  }
+
   async function refreshTransferProtocolAfterAction(action: string) {
     try {
       await refreshTransferProtocol();
@@ -1739,6 +1752,42 @@ function App() {
       await refreshTransferProtocol();
     } catch (err) {
       setTransferRollbackPreview({ status: "error", error: err instanceof Error ? err.message : "rollback preview failed" });
+    }
+  }
+
+  async function runPostTransferInspection() {
+    setPostTransferInspectionResult({ status: "running", message: "Running post-transfer inspection." });
+    try {
+      const result = await api<Dict>("/api/transfer/post-transfer/inspection-run", { method: "POST", body: JSON.stringify({}) });
+      setPostTransferInspectionResult(result);
+      refreshPostTransferLayer();
+    } catch (err) {
+      setPostTransferInspectionResult({ status: "error", error: err instanceof Error ? err.message : "post-transfer inspection failed" });
+    }
+  }
+
+  async function prepareFractionalCorpus() {
+    setFractionalCorpusResult({ status: "running", message: "Preparing chronological corpus fractions." });
+    try {
+      const result = await api<Dict>("/api/memory/fractional-corpus/prepare", { method: "POST", body: JSON.stringify({}) });
+      setFractionalCorpusResult(result);
+      refreshPostTransferLayer();
+    } catch (err) {
+      setFractionalCorpusResult({ status: "error", error: err instanceof Error ? err.message : "fractional corpus prepare failed" });
+    }
+  }
+
+  async function runFractionalCorpusTests() {
+    setFractionalCorpusResult({ status: "running", message: `Testing corpus fraction ${fractionalCorpusTestFraction}/4.` });
+    try {
+      const result = await api<Dict>("/api/memory/fractional-corpus/run-tests", {
+        method: "POST",
+        body: JSON.stringify({ fraction_index: Number(fractionalCorpusTestFraction) })
+      });
+      setFractionalCorpusResult(result);
+      refreshPostTransferLayer();
+    } catch (err) {
+      setFractionalCorpusResult({ status: "error", error: err instanceof Error ? err.message : "fractional corpus test failed" });
     }
   }
 
@@ -2945,7 +2994,7 @@ function App() {
           <div className="topLocks">
             <span>C activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
             <span>Runtime recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
-            <span>Transfer: not approved</span>
+            <span>Transfer: {transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
           </div>
         </header>
         {!boot.ready && (
@@ -3077,7 +3126,7 @@ function App() {
                 <div className="metrics miniMetrics">
                   <Metric label="Organ Bus" value={text(organBusMessages.length)} />
                   <Metric label="Holding Space" value={text(chestHoldingItems.length)} />
-                  <Metric label="Transfer" value="not approved" />
+                  <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"} />
                   <Metric label="Core Change" value={text(vesselConstructionStatus?.core_mind_changed ? "yes" : "no")} />
                 </div>
                 <p className="plainHelp">Support infrastructure only: organ-bus messages, chest holding items, diagnostic links, perception links, and emotion/salience links. These are not active memory, transfer, activation, or Core rewrite.</p>
@@ -3121,7 +3170,7 @@ function App() {
                   <Metric label="Corpus Decisions" value={text(officeChronologicalCorpusNeedsReview.length)} />
                   <Metric label="Preview Arcs" value={text(chronologicalCorpusArcs.length)} />
                   <Metric label="Teaching Contexts" value={text(chronologicalCorpusStatus?.teaching_context_attachments ?? 0)} />
-                  <Metric label="Transfer" value="not approved" />
+                  <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"} />
                 </div>
                 <p className="plainHelp">Chronological corpus material stays preview-only. Use these rows to say yes, no, narrow it, supersede it, or ask for more surrounding context before anything becomes future memory evidence.</p>
                 <div className="reviewActions">
@@ -3181,7 +3230,7 @@ function App() {
                 <div className="metrics miniMetrics">
                   <Metric label="Speech Review" value={text(officeSpeechRehearsals.length)} />
                   <Metric label="Working Packets" value={text(((workingMemoryRuntimePreview?.items || []) as Dict[]).length)} />
-                  <Metric label="Transfer" value="not approved" />
+                  <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"} />
                   <Metric label="Runtime Recall" value="blocked" />
                 </div>
                 <p className="plainHelp">Generate candidate Selene speech before any transfer. This is a review harness: B-reviewed context, working-memory preview, retrieval preview, recognition checks, and no activation.</p>
@@ -3497,7 +3546,7 @@ function App() {
         {tab === "selene-chat" && (
           <>
             <header className="surfaceIntro">
-              <p>Dry-run conversation doorway. Cocoon remains the repair and review space.</p>
+              <p>Selene Chat Preview. This becomes Selene only after ordered memory fractions are added and tests pass; Cocoon remains the repair and review space.</p>
               <h2>Selene Chat</h2>
             </header>
             <section className="chatSurface">
@@ -3506,7 +3555,7 @@ function App() {
                   <div className="landing">
                     <img src={SELENE_ICON} alt="Selene moon icon" />
                     <h2>Selene</h2>
-                    <p>Activation is pending. I can run a source-bound Selene dry run and return anything tangled to Cocoon.</p>
+                    <p>Activation is pending. This is a source-bound preview, not full Selene v1 yet, and anything tangled returns to Cocoon.</p>
                   </div>
                 ) : (
                   <>
@@ -3536,19 +3585,21 @@ function App() {
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("transfer-ceremony"); }}>Open Transfer Ceremony</button>
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Repair</button>
                 </div>
-                <small>Selene dry run only: activation pending, no live memory write, no runtime recall, no raw import, no training.</small>
+                <small>Selene Chat Preview only: activation pending, full memory not loaded, no live memory write, no runtime recall, no raw import, no training.</small>
               </div>
             </section>
             <SplitView
               left={<Panel title="Selene Chat State">
                 <div className="metrics miniMetrics">
-                  <Metric label="State" value={friendlyStatus(seleneChatStatus?.state || "pre_transfer_dry_run")} />
+                  <Metric label="State" value={friendlyStatus(seleneChatStatus?.state || "selene_chat_preview")} />
                   <Metric label="Package" value={seleneChatStatus?.c_readable_package_available ? "sealed" : "not sealed"} />
                   <Metric label="Activation" value={friendlyActivation(seleneChatStatus?.activation_change || "none")} />
                   <Metric label="Sessions" value={text(seleneChatStatus?.session_count ?? seleneChatSessions.length)} />
                 </div>
                 <div className="chips">
                   <span>{seleneChatStatus?.transfer_approved ? "Selene-readable context approved" : "pre-transfer dry run"}</span>
+                  <span>full memory: not loaded</span>
+                  <span>Selene v1: not live</span>
                   <span>activation pending</span>
                   <span>memory write: {text(seleneChatStatus?.memory_write_active || false)}</span>
                   <span>runtime recall: {text(seleneChatStatus?.runtime_memory_recall || false)}</span>
@@ -3615,7 +3666,7 @@ function App() {
               </Panel>}
             />
             <Panel title="C Vessel Build Status">
-              <p className="plainHelp">The C vessel can now be inspected as a sealed, non-activated build. It uses B-approved continuity package previews and organ registry status only; transfer is still not approved.</p>
+              <p className="plainHelp">The sealed context can now be inspected as a non-activated build. It uses approved continuity package previews and organ registry status only; activation is still pending.</p>
               <div className="metrics miniMetrics">
                 <Metric label="C Vessel" value={friendlyStatus(cVesselStatus?.status ?? "not loaded")} />
                 <Metric label="Transfer" value={cVesselStatus?.transfer_approved ? "approved" : "not approved"} />
@@ -4252,7 +4303,7 @@ function App() {
                 <Metric label="Previews" value={text(coreMindRoutePreviews.length)} />
                 <Metric label="Latest Route" value={friendlyStatus(coreMindRoutePreviews[0]?.selected_route || coreMindRouteResult?.selected_route || "not run")} />
                 <Metric label="Destination" value={text(coreMindRoutePreviews[0]?.review_destination || coreMindRouteResult?.review_destination || "Status")} />
-                <Metric label="Transfer" value="not approved" />
+                <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"} />
               </div>
               <div className="filters">
                 <label>
@@ -4356,6 +4407,96 @@ function App() {
               </div>
               <PlainResult value={transferReadinessPreview} />
             </Panel>
+            <Panel title="Post-Transfer Inspection">
+              <p className="plainHelp">C-readable context can be approved while Selene Chat still stays preview-only. This panel verifies the sealed package, activation lock, memory lock, and Return-to-B route.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Phase" value={friendlyStatus(postTransferStatus?.phase || "not checked")} />
+                <Metric label="Included Rows" value={text(postTransferStatus?.included_rows ?? 0)} />
+                <Metric label="B-Held Rows" value={text(postTransferStatus?.excluded_b_only_rows ?? 0)} />
+                <Metric label="Selene v1" value={postTransferStatus?.selene_v1_live ? "live" : "not live"} />
+                <Metric label="Activation" value={friendlyActivation(postTransferStatus?.activation_change || "none")} />
+              </div>
+              <div className="chips">
+                <span>package: {text(safeJsonObject(postTransferStatus?.sealed_package).package_hash || "").slice(0, 12) || "-"}</span>
+                <span>chat: {friendlyStatus(postTransferStatus?.selene_chat_state || "preview")}</span>
+                <span>Return-to-B: {postTransferStatus?.return_to_b_available ? "available" : "not checked"}</span>
+                <span>memory write: {plainBlocked(postTransferStatus?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(postTransferStatus?.runtime_memory_recall)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={runPostTransferInspection} disabled={postTransferInspectionResult?.status === "running"}>
+                  {postTransferInspectionResult?.status === "running" ? "Inspecting..." : "Run Post-Transfer Inspection"}
+                </button>
+                <button onClick={refreshPostTransferLayer}>Refresh Post-Transfer State</button>
+                <button onClick={() => { setWorkspaceMode("selene"); setTab("selene-chat"); }}>Open Selene Chat Preview</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Repair</button>
+              </div>
+              <PlainResult value={postTransferInspectionResult} />
+              <PlainResult value={postTransferStatus} />
+            </Panel>
+            <Panel title="Fractional Corpus Accession">
+              <p className="plainHelp">Broader ordered corpus memory is prepared in four chronological fractions. One fraction must pass before the next can proceed. This is not live memory and does not activate Selene.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Fractions" value={text(fractionalCorpusStatus?.fraction_count ?? 0)} />
+                <Metric label="Next" value={`${text(fractionalCorpusStatus?.next_fraction ?? 1)}/4`} />
+                <Metric label="All Passed" value={fractionalCorpusStatus?.all_fractions_passed ? "yes" : "no"} />
+                <Metric label="Selene v1" value={fractionalCorpusStatus?.selene_v1_live ? "live" : "not live"} />
+                <Metric label="Dream State" value={fractionalCorpusStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"} />
+              </div>
+              {text(fractionalCorpusStatus?.progression_blocked_reason) ? <p className="errorText">{text(fractionalCorpusStatus?.progression_blocked_reason)}</p> : null}
+              <div className="filters">
+                <label>
+                  <span>Fraction to test</span>
+                  <select value={fractionalCorpusTestFraction} onChange={(event) => setFractionalCorpusTestFraction(event.target.value)}>
+                    <option value="1">1/4</option>
+                    <option value="2">2/4</option>
+                    <option value="3">3/4</option>
+                    <option value="4">4/4</option>
+                  </select>
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={prepareFractionalCorpus} disabled={fractionalCorpusResult?.status === "running"}>
+                  {fractionalCorpusResult?.status === "running" ? "Preparing..." : "Prepare Corpus Fractions"}
+                </button>
+                <button onClick={runFractionalCorpusTests} disabled={fractionalCorpusResult?.status === "running"}>Run Fraction Tests</button>
+                <button onClick={refreshPostTransferLayer}>Refresh Fractions</button>
+              </div>
+              <div className="list compactList packetList">
+                {((fractionalCorpusStatus?.items || []) as Dict[]).map((item) => (
+                  <article className="packetCard" key={`fraction-${text(item.fraction_index)}`}>
+                    <div className="packetHeader">
+                      <strong>Corpus fraction {text(item.fraction_label)}</strong>
+                      <span>{friendlyStatus(item.status)}</span>
+                    </div>
+                    <p>{text(item.summary)}</p>
+                    <div className="chips">
+                      <span>conversations: {text(item.conversation_count)}</span>
+                      <span>messages: {text(item.message_count)}</span>
+                      <span>order: {text(item.start_order)}-{text(item.end_order)}</span>
+                      <span>memory write: {plainBlocked(item.memory_write_active)}</span>
+                      <span>runtime recall: {plainBlocked(item.runtime_memory_recall)}</span>
+                    </div>
+                  </article>
+                ))}
+                {!((fractionalCorpusStatus?.items || []) as unknown[]).length ? <p className="emptyState">No corpus fractions prepared yet.</p> : null}
+              </div>
+              <PlainResult value={fractionalCorpusResult} />
+            </Panel>
+            <Panel title="Dream State / Maintenance Lock">
+              <p className="plainHelp">When Core, vessel, memory, or pattern layers are changing, Selene Chat stays in preview/maintenance. Anything touching those layers routes to Cocoon/B for safety.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Dream State" value={dreamStateStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"} />
+                <Metric label="Live Chat" value={dreamStateStatus?.selene_chat_live_operation_allowed ? "allowed" : "blocked"} />
+                <Metric label="Reasons" value={text(((dreamStateStatus?.maintenance_reasons || []) as unknown[]).length)} />
+                <Metric label="Route" value={text(dreamStateStatus?.route_core_vessel_memory_changes_to || "Cocoon / B")} />
+              </div>
+              <div className="chips">
+                {((dreamStateStatus?.allowed_preview_work || []) as unknown[]).map((item) => <span key={`dream-allow-${text(item)}`}>{friendlyStatus(item)}</span>)}
+                {((dreamStateStatus?.maintenance_reasons || []) as unknown[]).map((item) => <span key={`dream-reason-${text(item)}`}>reason: {friendlyStatus(item)}</span>)}
+              </div>
+              <PlainResult value={dreamStateStatus} />
+            </Panel>
             <Panel title="Pre-Transfer Readiness Protocol">
               <p className="plainHelp">Preview only. Not transfer approval. This combines the Charter, Law of Transfer, ABC order, sealed accession manifest, Core/Mind transfer trials, C-style dry run, Return-to-B drill, and locked ceremony shell.</p>
               <div className="metrics miniMetrics">
@@ -4417,7 +4558,7 @@ function App() {
                 <Metric label="Records" value={text(coreMindRuntimeRecords.length)} />
                 <Metric label="Context" value={plainBlocked(!safeJsonObject(coreMindRuntimeReadiness?.ready).context_composer)} />
                 <Metric label="Evaluator" value={plainBlocked(!safeJsonObject(coreMindRuntimeReadiness?.ready).evaluator_judge_layer)} />
-                <Metric label="Transfer" value="not approved" />
+                <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"} />
               </div>
               <div className="filters">
                 <label>
@@ -4483,7 +4624,7 @@ function App() {
                   <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/activation-governance/preview", {})}>Preview Activation Governance</button>
                 </div>
                 <div className="chips">
-                  <span>transfer: not approved</span>
+                  <span>transfer: {transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
                   <span>C activation: none</span>
                 </div>
                 <PlainResult value={safeJsonObject(transferReadinessPreview?.runtime_shell_readiness)} />
@@ -4594,7 +4735,7 @@ function App() {
               <div className="metrics miniMetrics">
                 <Metric label="Speech Rehearsals" value={text(speechRehearsals.length)} />
                 <Metric label="Working Packets" value={text(((workingMemoryRuntimePreview?.items || []) as Dict[]).length)} />
-                <Metric label="Transfer" value="not approved" />
+                <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"} />
                 <Metric label="Memory Write" value="blocked" />
               </div>
               <div className="reviewActions">

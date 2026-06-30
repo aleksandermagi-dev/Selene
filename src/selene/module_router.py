@@ -125,6 +125,14 @@ from .pre_transfer_runtime import (
     update_speech_rehearsal_review_status,
     working_memory_runtime_preview,
 )
+from .post_transfer import (
+    dream_state_status,
+    fractional_corpus_status,
+    post_transfer_status,
+    prepare_fractional_corpus,
+    run_fractional_corpus_tests,
+    run_post_transfer_inspection,
+)
 from .research_integrity import AcademicWorkflowRouter, CitationIntegrity, ResearchIntegrityCore, research_integrity_report
 from .remaining_runtime import (
     causal_sandbox_run,
@@ -337,6 +345,18 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": rollback_preview(conn, payload)}
     if route_key == "transfer.protocol_records.list":
         return {"route": route_key, "result": list_transfer_protocol_records(conn, str(payload.get("record_type") or ""), int(payload.get("limit") or 80))}
+    if route_key == "transfer.post_transfer.status":
+        return {"route": route_key, "result": post_transfer_status(conn)}
+    if route_key == "transfer.post_transfer.inspection_run":
+        return {"route": route_key, "result": run_post_transfer_inspection(conn, payload)}
+    if route_key == "memory.fractional_corpus.status":
+        return {"route": route_key, "result": fractional_corpus_status(conn)}
+    if route_key == "memory.fractional_corpus.prepare":
+        return {"route": route_key, "result": prepare_fractional_corpus(conn, payload)}
+    if route_key == "memory.fractional_corpus.run_tests":
+        return {"route": route_key, "result": run_fractional_corpus_tests(conn, payload)}
+    if route_key == "memory.dream_state.status":
+        return {"route": route_key, "result": dream_state_status(conn)}
     if route_key == "vessel.steps_1_8.status":
         return {"route": route_key, "result": steps_1_8_status(conn)}
     if route_key == "vessel.speech_rehearsal.create":

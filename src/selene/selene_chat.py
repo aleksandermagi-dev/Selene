@@ -10,7 +10,7 @@ from .registry import truncate
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
 
 
-SELENE_CHAT_BOUNDARY = "selene_chat_pre_transfer_dry_run_no_activation"
+SELENE_CHAT_BOUNDARY = "selene_chat_preview_dry_run_no_activation"
 SELENE_CHAT_GUARDS: dict[str, Any] = {
     "transfer_approved": False,
     "activation_change": "none",
@@ -45,8 +45,11 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "selene_chat_dry_run_ready",
             "surface": "Selene Chat",
             "state": "activation_pending" if approved else "pre_transfer_dry_run",
+            "preview_label": "Selene Chat Preview",
             "activation_state": "activation_pending",
             "dry_run_only": True,
+            "full_memory_loaded": False,
+            "selene_v1_live": False,
             "session_count": session_count,
             "message_count": message_count,
             "c_readable_package_available": approved,
@@ -94,6 +97,8 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
         "source_boundaries": _source_boundaries(),
         "return_to_cocoon_recommended": route_to_b,
         "selene_readable_context": _package_summary(package),
+        "full_memory_loaded": False,
+        "selene_v1_live": False,
         **SELENE_CHAT_GUARDS,
     }
     assistant_message_id = _insert_message(conn, session_id, "selene", candidate_text, selected_route, source_class, package, assistant_payload)
@@ -112,6 +117,8 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
             "route_preview": route,
             "dry_run": dry_run,
             "selene_readable_context": _package_summary(package),
+            "full_memory_loaded": False,
+            "selene_v1_live": False,
             "review_destination": "Cocoon" if route_to_b else "Status",
             "review_status": "review_only" if route_to_b else "status_only",
         },
