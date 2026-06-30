@@ -463,6 +463,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "android_system.workflow.status")["result"]))
         elif parsed.path == "/api/android-system/workflow/report":
             self._send(*json_bytes(route_request(conn, "android_system.workflow.report")["result"]))
+        elif parsed.path == "/api/voice-module/status":
+            self._send(*json_bytes(route_request(conn, "voice_module.status")["result"]))
+        elif parsed.path == "/api/voice-module/patterns":
+            self._send(*json_bytes(route_request(conn, "voice_module.patterns", {"limit": int(qs["limit"]) if qs.get("limit") else 100})["result"]))
         elif parsed.path == "/api/selene-chat/status":
             self._send(*json_bytes(route_request(conn, "selene_chat.status")["result"]))
         elif parsed.path == "/api/selene-chat/sessions":
@@ -919,6 +923,30 @@ class SeleneHandler(BaseHTTPRequestHandler):
             route_key = "android_system.workflow.check"
             try:
                 write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/voice-module/index-source":
+            route_key = "voice_module.index_source"
+            try:
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/voice-module/extract-patterns":
+            route_key = "voice_module.extract_patterns"
+            try:
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/voice-module/generate-preview":
+            route_key = "voice_module.generate_preview"
+            try:
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/voice-module/evaluate-candidate":
+            route_key = "voice_module.evaluate_candidate"
+            try:
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*logged_route_error(route_key, exc))

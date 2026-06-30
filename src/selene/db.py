@@ -205,6 +205,141 @@ CREATE TABLE IF NOT EXISTS selene_chat_messages (
 
 CREATE INDEX IF NOT EXISTS idx_selene_chat_messages_session ON selene_chat_messages(session_id, id);
 
+CREATE TABLE IF NOT EXISTS voice_corpus_conversations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_archive TEXT NOT NULL,
+  source_file TEXT NOT NULL,
+  conversation_id TEXT NOT NULL,
+  title TEXT,
+  create_time REAL,
+  update_time REAL,
+  message_count INTEGER NOT NULL DEFAULT 0,
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  status TEXT NOT NULL DEFAULT 'voice_only_indexed',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(source_archive, source_file, conversation_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_voice_corpus_conversations_status ON voice_corpus_conversations(status, review_status);
+CREATE INDEX IF NOT EXISTS idx_voice_corpus_conversations_source ON voice_corpus_conversations(source_archive, source_file, conversation_id);
+
+CREATE TABLE IF NOT EXISTS voice_corpus_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_archive TEXT NOT NULL,
+  source_file TEXT NOT NULL,
+  conversation_id TEXT NOT NULL,
+  message_id TEXT NOT NULL,
+  parent_id TEXT,
+  role TEXT NOT NULL,
+  author_name TEXT,
+  content_preview TEXT NOT NULL,
+  create_time REAL,
+  model_slug TEXT,
+  cue_labels TEXT NOT NULL DEFAULT '[]',
+  expression_labels TEXT NOT NULL DEFAULT '[]',
+  sensitivity TEXT NOT NULL DEFAULT 'voice_ok',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  status TEXT NOT NULL DEFAULT 'voice_only_indexed',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(source_archive, source_file, conversation_id, message_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_voice_corpus_messages_conversation ON voice_corpus_messages(source_archive, source_file, conversation_id);
+CREATE INDEX IF NOT EXISTS idx_voice_corpus_messages_role ON voice_corpus_messages(role, review_status);
+
+CREATE TABLE IF NOT EXISTS voice_exchange_pairs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_archive TEXT NOT NULL,
+  source_file TEXT NOT NULL,
+  conversation_id TEXT NOT NULL,
+  user_message_id TEXT NOT NULL,
+  assistant_message_id TEXT NOT NULL,
+  followup_message_id TEXT,
+  user_cue_preview TEXT NOT NULL,
+  assistant_response_preview TEXT NOT NULL,
+  followup_preview TEXT,
+  cue_labels TEXT NOT NULL DEFAULT '[]',
+  expression_labels TEXT NOT NULL DEFAULT '[]',
+  outcome_label TEXT NOT NULL DEFAULT 'unknown',
+  sensitivity TEXT NOT NULL DEFAULT 'voice_ok',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  status TEXT NOT NULL DEFAULT 'voice_pair_review_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(source_archive, source_file, conversation_id, user_message_id, assistant_message_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_voice_exchange_pairs_labels ON voice_exchange_pairs(outcome_label, sensitivity, review_status);
+
+CREATE TABLE IF NOT EXISTS voice_language_patterns (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pattern_key TEXT NOT NULL,
+  category TEXT NOT NULL,
+  title TEXT NOT NULL,
+  cue_labels TEXT NOT NULL DEFAULT '[]',
+  expression_labels TEXT NOT NULL DEFAULT '[]',
+  sentence_shape TEXT NOT NULL,
+  use_guidance TEXT NOT NULL,
+  avoid_guidance TEXT NOT NULL,
+  example_refs TEXT NOT NULL DEFAULT '[]',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  status TEXT NOT NULL DEFAULT 'voice_pattern_review_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(pattern_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_voice_language_patterns_category ON voice_language_patterns(category, review_status);
+
+CREATE TABLE IF NOT EXISTS voice_sentence_primitives (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  primitive_key TEXT NOT NULL,
+  primitive_type TEXT NOT NULL,
+  text_template TEXT NOT NULL,
+  category TEXT NOT NULL,
+  source_pattern_keys TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  status TEXT NOT NULL DEFAULT 'voice_primitive_review_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(primitive_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_voice_sentence_primitives_type ON voice_sentence_primitives(primitive_type, category);
+
+CREATE TABLE IF NOT EXISTS voice_generation_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  profile_key TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  profile_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'review_only',
+  status TEXT NOT NULL DEFAULT 'voice_generation_profile_review_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS voice_module_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  counts_json TEXT NOT NULL DEFAULT '{}',
+  result_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_voice_module_runs_type ON voice_module_runs(run_type, status, review_status);
+
 CREATE TABLE IF NOT EXISTS continuity_save_requests (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   message_id INTEGER NOT NULL,

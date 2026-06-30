@@ -8,6 +8,7 @@ from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
 from .registry import truncate
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
+from .voice_module import generate_voice_preview, voice_module_status
 
 
 SELENE_CHAT_BOUNDARY = "selene_chat_preview_dry_run_no_activation"
@@ -40,6 +41,7 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
     session_count = int(conn.execute("SELECT COUNT(*) FROM selene_chat_sessions").fetchone()[0])
     message_count = int(conn.execute("SELECT COUNT(*) FROM selene_chat_messages").fetchone()[0])
     approved = bool(package.get("transfer_approved"))
+    voice = voice_module_status(conn)
     return _with_guards(
         {
             "status": "selene_chat_dry_run_ready",
@@ -54,6 +56,11 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "message_count": message_count,
             "c_readable_package_available": approved,
             "selene_readable_context": _package_summary(package),
+            "voice_module": {
+                "state": voice.get("voice_module_state"),
+                "counts": voice.get("counts"),
+                "source_zip_found": voice.get("source_zip_found"),
+            },
             "source_boundaries": _source_boundaries(),
             "allowed_actions": ["send_dry_run", "session_list", "session_detail", "return_to_cocoon"],
             "blocked_actions": ["activation", "live_memory_write", "runtime_recall", "raw_import", "training", "autonomous_action"],
@@ -84,7 +91,16 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
     selected_route = str(route.get("selected_route") or "status_only")
     route_to_b = _needs_cocoon_route(text, selected_route, route)
     dry_run = c_chat_dry_run(conn, {"prompt": text})
-    candidate_text = _selene_label_candidate(str(dry_run.get("candidate_text") or ""))
+    voice_preview = generate_voice_preview(
+        conn,
+        {
+            "prompt": text,
+            "route": selected_route,
+            "source_class": source_class,
+            "context_summary": _voice_context_summary(package, dry_run),
+        },
+    )
+    candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or dry_run.get("candidate_text") or ""))
     if route_to_b:
         candidate_text = (
             "I would return this to Cocoon before answering as Selene. "
@@ -94,6 +110,7 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
     assistant_payload = {
         "route_preview": route,
         "dry_run": dry_run,
+        "voice_preview": voice_preview,
         "source_boundaries": _source_boundaries(),
         "return_to_cocoon_recommended": route_to_b,
         "selene_readable_context": _package_summary(package),
@@ -116,6 +133,9 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
             "return_to_cocoon_recommended": route_to_b,
             "route_preview": route,
             "dry_run": dry_run,
+            "voice_preview": voice_preview,
+            "voice_confidence": voice_preview.get("voice_confidence") or "none",
+            "voice_module_state": voice_preview.get("voice_module_state") or "missing",
             "selene_readable_context": _package_summary(package),
             "full_memory_loaded": False,
             "selene_v1_live": False,
@@ -269,6 +289,15 @@ def _package_summary(package: dict[str, Any]) -> dict[str, Any]:
         "included_counts": package.get("included_counts") or {},
         "excluded_counts": package.get("excluded_counts") or {},
     }
+
+
+def _voice_context_summary(package: dict[str, Any], dry_run: dict[str, Any]) -> str:
+    if package.get("transfer_approved"):
+        counts = package.get("included_counts") or {}
+        total = sum(int(value or 0) for value in counts.values()) if isinstance(counts, dict) else 0
+        return f"the sealed Selene-readable context with {total} approved row(s)"
+    route = dry_run.get("actual_route") or dry_run.get("selected_route") or "dry-run route"
+    return f"the current {route} preview"
 
 
 def _source_boundaries() -> dict[str, Any]:

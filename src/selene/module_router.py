@@ -198,6 +198,14 @@ from .transfer_protocol import (
     run_transfer_governance_trials,
     transfer_law_status,
 )
+from .voice_module import (
+    evaluate_voice_candidate,
+    extract_voice_patterns,
+    generate_voice_preview,
+    index_voice_source,
+    list_voice_patterns,
+    voice_module_status,
+)
 from .vessel_construction import (
     construction_status,
     create_chest_holding_item,
@@ -233,6 +241,18 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": run_android_workflow_check(conn, payload)}
     if route_key == "android_system.workflow.report":
         return {"route": route_key, "result": android_workflow_report(conn)}
+    if route_key == "voice_module.status":
+        return {"route": route_key, "result": voice_module_status(conn, payload)}
+    if route_key == "voice_module.index_source":
+        return {"route": route_key, "result": index_voice_source(conn, payload)}
+    if route_key == "voice_module.extract_patterns":
+        return {"route": route_key, "result": extract_voice_patterns(conn, payload)}
+    if route_key == "voice_module.patterns":
+        return {"route": route_key, "result": list_voice_patterns(conn, int(payload.get("limit") or 100))}
+    if route_key == "voice_module.generate_preview":
+        return {"route": route_key, "result": generate_voice_preview(conn, payload)}
+    if route_key == "voice_module.evaluate_candidate":
+        return {"route": route_key, "result": evaluate_voice_candidate(conn, payload)}
     if route_key == "cocoon.status":
         return {"route": route_key, "result": cocoon_status()}
     if route_key == "c_blueprint.status":

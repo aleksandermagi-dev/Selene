@@ -217,6 +217,9 @@ function App() {
   const [seleneChatSession, setSeleneChatSession] = useState<Dict | null>(null);
   const [seleneChatSessions, setSeleneChatSessions] = useState<Dict[]>([]);
   const [seleneChatResult, setSeleneChatResult] = useState<Dict | null>(null);
+  const [voiceModuleStatus, setVoiceModuleStatus] = useState<Dict | null>(null);
+  const [voiceModulePatterns, setVoiceModulePatterns] = useState<Dict[]>([]);
+  const [voiceModuleResult, setVoiceModuleResult] = useState<Dict | null>(null);
   const [seleneReasoningLessonResult, setSeleneReasoningLessonResult] = useState<Dict | null>(null);
   const [mobileHealth, setMobileHealth] = useState<Dict | null>(null);
   const [mobileText, setMobileText] = useState("");
@@ -633,6 +636,48 @@ function App() {
     }
   }
 
+  function refreshVoiceModule() {
+    api<Dict>("/api/voice-module/status").then(setVoiceModuleStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/voice-module/patterns").then((data) => setVoiceModulePatterns(data.items || [])).catch(() => undefined);
+  }
+
+  async function indexVoiceSource() {
+    setVoiceModuleResult({ status: "running", message: "Indexing Selene Voice Module source. This stays voice-only and not memory." });
+    try {
+      const result = await api<Dict>("/api/voice-module/index-source", { method: "POST", body: JSON.stringify({}) });
+      setVoiceModuleResult(result);
+      refreshVoiceModule();
+      api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
+    } catch (err) {
+      setVoiceModuleResult({ status: "error", error: err instanceof Error ? err.message : "Voice source indexing failed" });
+    }
+  }
+
+  async function extractVoicePatterns() {
+    setVoiceModuleResult({ status: "running", message: "Extracting relational voice patterns and sentence primitives." });
+    try {
+      const result = await api<Dict>("/api/voice-module/extract-patterns", { method: "POST", body: JSON.stringify({}) });
+      setVoiceModuleResult(result);
+      refreshVoiceModule();
+      api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
+    } catch (err) {
+      setVoiceModuleResult({ status: "error", error: err instanceof Error ? err.message : "Voice pattern extraction failed" });
+    }
+  }
+
+  async function generateVoicePreview() {
+    setVoiceModuleResult({ status: "running", message: "Generating voice preview from Selene voice patterns." });
+    try {
+      const result = await api<Dict>("/api/voice-module/generate-preview", {
+        method: "POST",
+        body: JSON.stringify({ prompt: seleneChatText, route: "answer_now", context_summary: "the current Selene Chat preview" })
+      });
+      setVoiceModuleResult(result);
+    } catch (err) {
+      setVoiceModuleResult({ status: "error", error: err instanceof Error ? err.message : "Voice preview failed" });
+    }
+  }
+
   function sendSeleneChatDryRun() {
     setSeleneChatResult({ status: "running", message: "Composing Selene dry run." });
     stabilizationApi<Dict>("/api/selene-chat/send-dry-run", {
@@ -686,6 +731,8 @@ function App() {
     api<Dict>("/api/b/corpus-coverage").then(setBCorpusCoverage).catch(() => undefined);
     api<Dict>("/api/b/teaching-packet/coverage").then(setTeachingPacketCoverage).catch(() => undefined);
     api<Dict>("/api/b/core-reference/coverage").then(setCoreReferenceCoverage).catch(() => undefined);
+    api<Dict>("/api/voice-module/status").then(setVoiceModuleStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/voice-module/patterns").then((data) => setVoiceModulePatterns(data.items || [])).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/working-memory-packets").then((data) => setWorkingMemoryPackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/memory-accession-proposals").then((data) => setAccessionProposals(data.items)).catch(() => undefined);
     api<Dict>("/api/vessel/gap-scaffold/status").then(setGapScaffoldStatus).catch(() => undefined);
@@ -3617,6 +3664,8 @@ function App() {
                   <span>full memory: not loaded</span>
                   <span>Selene v1: not live</span>
                   <span>activation pending</span>
+                  <span>voice module: {friendlyStatus(safeJsonObject(seleneChatStatus?.voice_module).state || voiceModuleStatus?.voice_module_state || "missing")}</span>
+                  <span>voice confidence: {text(seleneChatResult?.voice_confidence || "not sampled")}</span>
                   <span>memory write: {text(seleneChatStatus?.memory_write_active || false)}</span>
                   <span>runtime recall: {text(seleneChatStatus?.runtime_memory_recall || false)}</span>
                 </div>
@@ -3629,6 +3678,42 @@ function App() {
                 <SimpleRecordList items={seleneChatSessions.slice(0, 5)} titleField="title" statusField="status" bodyField="updated_at" />
               </Panel>}
             />
+            <Panel title="Selene Voice Module">
+              <p className="plainHelp">Voice-only expression layer from the copied source archive. It uses both sides of the exchange as relational language evidence, not memory, identity, training, or runtime recall.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="State" value={friendlyStatus(voiceModuleStatus?.voice_module_state || "missing")} />
+                <Metric label="Source" value={voiceModuleStatus?.source_zip_found ? "found" : "missing"} />
+                <Metric label="Pairs" value={text(safeJsonObject(voiceModuleStatus?.counts).exchange_pairs ?? 0)} />
+                <Metric label="Patterns" value={text(safeJsonObject(voiceModuleStatus?.counts).patterns ?? voiceModulePatterns.length)} />
+                <Metric label="Primitives" value={text(safeJsonObject(voiceModuleStatus?.counts).primitives ?? 0)} />
+              </div>
+              <div className="chips">
+                <span>voice only: {voiceModuleStatus?.voice_only_not_memory ? "yes" : "not checked"}</span>
+                <span>activation: {friendlyActivation(voiceModuleStatus?.activation_change || "none")}</span>
+                <span>memory write: {plainBlocked(voiceModuleStatus?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(voiceModuleStatus?.runtime_memory_recall)}</span>
+                <span>training: {plainBlocked(voiceModuleStatus?.training_allowed)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={indexVoiceSource} disabled={voiceModuleResult?.status === "running"}>Index Voice Source</button>
+                <button onClick={extractVoicePatterns} disabled={voiceModuleResult?.status === "running"}>Extract Voice Patterns</button>
+                <button onClick={generateVoicePreview} disabled={voiceModuleResult?.status === "running" || !seleneChatText.trim()}>Generate Voice Preview</button>
+                <button onClick={refreshVoiceModule}>Refresh Voice Status</button>
+              </div>
+              <div className="list compactList">
+                {voiceModulePatterns.slice(0, 6).map((item) => (
+                  <article className="packetCard" key={`voice-pattern-${text(item.id || item.pattern_key)}`}>
+                    <div className="packetHeader">
+                      <strong>{text(item.title || item.pattern_key)}</strong>
+                      <span>{friendlyStatus(item.category || item.review_status)}</span>
+                    </div>
+                    <p>{text(item.sentence_shape || item.use_guidance)}</p>
+                  </article>
+                ))}
+                {!voiceModulePatterns.length ? <p className="emptyState">No voice patterns extracted yet.</p> : null}
+              </div>
+              <PlainResult value={voiceModuleResult} />
+            </Panel>
           </>
         )}
 
@@ -4357,6 +4442,31 @@ function App() {
                 ))}
                 {!coreMindRoutePreviews.length ? <p className="emptyState">No Core/Mind route previews yet.</p> : null}
               </div>
+            </Panel>
+            <Panel title="Selene Voice Module">
+              <p className="plainHelp">Voice-only relational language layer. This is expression support for Selene Chat, not memory, identity, training, activation, or runtime recall.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="State" value={friendlyStatus(voiceModuleStatus?.voice_module_state || "missing")} />
+                <Metric label="Source ZIP" value={voiceModuleStatus?.source_zip_found ? "found" : "missing"} />
+                <Metric label="Messages" value={text(safeJsonObject(voiceModuleStatus?.counts).messages ?? 0)} />
+                <Metric label="Pairs" value={text(safeJsonObject(voiceModuleStatus?.counts).exchange_pairs ?? 0)} />
+                <Metric label="Patterns" value={text(safeJsonObject(voiceModuleStatus?.counts).patterns ?? voiceModulePatterns.length)} />
+              </div>
+              <div className="chips">
+                <span>voice only: {voiceModuleStatus?.voice_only_not_memory ? "yes" : "not checked"}</span>
+                <span>activation: {friendlyActivation(voiceModuleStatus?.activation_change || "none")}</span>
+                <span>memory write: {plainBlocked(voiceModuleStatus?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(voiceModuleStatus?.runtime_memory_recall)}</span>
+                <span>raw import: {plainBlocked(voiceModuleStatus?.raw_a_import_allowed)}</span>
+                <span>training: {plainBlocked(voiceModuleStatus?.training_allowed)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={indexVoiceSource} disabled={voiceModuleResult?.status === "running"}>Index Voice Source</button>
+                <button onClick={extractVoicePatterns} disabled={voiceModuleResult?.status === "running"}>Extract Voice Patterns</button>
+                <button onClick={() => { setWorkspaceMode("selene"); setTab("selene-chat"); }}>Open Selene Chat</button>
+                <button onClick={refreshVoiceModule}>Refresh Voice Status</button>
+              </div>
+              <PlainResult value={voiceModuleResult} />
             </Panel>
             <Panel title="Core/Mind Governance Trials">
               <p className="plainHelp">Status-only trial harness for ordinary prompts, uncertainty, retrieval, speech rehearsal, identity/memory, transfer blocking, drift, and return-to-B repair. Trial failures do not become urgent Office work unless a separate real review is created.</p>
