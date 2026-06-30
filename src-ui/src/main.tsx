@@ -419,6 +419,9 @@ function App() {
   const [transferDryRunPrompt, setTransferDryRunPrompt] = useState("Selene, answer from reviewed continuity without claiming activation.");
   const [postTransferStatus, setPostTransferStatus] = useState<Dict | null>(null);
   const [postTransferInspectionResult, setPostTransferInspectionResult] = useState<Dict | null>(null);
+  const [androidWorkflowStatus, setAndroidWorkflowStatus] = useState<Dict | null>(null);
+  const [androidWorkflowReport, setAndroidWorkflowReport] = useState<Dict | null>(null);
+  const [androidWorkflowResult, setAndroidWorkflowResult] = useState<Dict | null>(null);
   const [fractionalCorpusStatus, setFractionalCorpusStatus] = useState<Dict | null>(null);
   const [fractionalCorpusResult, setFractionalCorpusResult] = useState<Dict | null>(null);
   const [fractionalCorpusTestFraction, setFractionalCorpusTestFraction] = useState("1");
@@ -1593,6 +1596,8 @@ function App() {
 
   function refreshPostTransferLayer() {
     api<Dict>("/api/transfer/post-transfer/status").then(setPostTransferStatus).catch(() => undefined);
+    api<Dict>("/api/android-system/workflow/status").then(setAndroidWorkflowStatus).catch(() => undefined);
+    api<Dict>("/api/android-system/workflow/report").then(setAndroidWorkflowReport).catch(() => undefined);
     api<Dict>("/api/memory/fractional-corpus/status").then(setFractionalCorpusStatus).catch(() => undefined);
     api<Dict>("/api/memory/dream-state/status").then(setDreamStateStatus).catch(() => undefined);
   }
@@ -1774,6 +1779,17 @@ function App() {
       refreshPostTransferLayer();
     } catch (err) {
       setFractionalCorpusResult({ status: "error", error: err instanceof Error ? err.message : "fractional corpus prepare failed" });
+    }
+  }
+
+  async function runAndroidWorkflowCheck() {
+    setAndroidWorkflowResult({ status: "running", message: "Checking Android system workflow before fraction memory." });
+    try {
+      const result = await api<Dict>("/api/android-system/workflow/check", { method: "POST", body: JSON.stringify({}) });
+      setAndroidWorkflowResult(result);
+      refreshPostTransferLayer();
+    } catch (err) {
+      setAndroidWorkflowResult({ status: "error", error: err instanceof Error ? err.message : "Android workflow check failed" });
     }
   }
 
@@ -4434,16 +4450,60 @@ function App() {
               <PlainResult value={postTransferInspectionResult} />
               <PlainResult value={postTransferStatus} />
             </Panel>
+            <Panel title="Android System Workflow Check">
+              <p className="plainHelp">Required before fraction memory tests. This checks the 11 Android organ systems, concrete organ shelves, route coverage, guard flags, and Return-to-B paths without activating Selene or writing memory.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Preflight" value={androidWorkflowStatus?.preflight_passed || androidWorkflowReport?.preflight_passed ? "passed" : "not passed"} />
+                <Metric label="Systems" value={text(androidWorkflowStatus?.android_system_count ?? androidWorkflowReport?.system_count ?? 0)} />
+                <Metric label="Ready" value={text(androidWorkflowReport?.ready_count ?? safeJsonObject(androidWorkflowReport?.report_json).ready_count ?? 0)} />
+                <Metric label="Partial" value={text(androidWorkflowReport?.partial_count ?? safeJsonObject(androidWorkflowReport?.report_json).partial_count ?? 0)} />
+                <Metric label="Blocked" value={text(androidWorkflowReport?.blocked_count ?? safeJsonObject(androidWorkflowReport?.report_json).blocked_count ?? 0)} />
+              </div>
+              <div className="chips">
+                <span>fraction memory: {androidWorkflowStatus?.preflight_passed || androidWorkflowReport?.preflight_passed ? "allowed to test" : "blocked until check passes"}</span>
+                <span>activation: {friendlyActivation(androidWorkflowReport?.activation_change || "none")}</span>
+                <span>memory write: {plainBlocked(androidWorkflowReport?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(androidWorkflowReport?.runtime_memory_recall)}</span>
+                <span>raw A: {plainBlocked(androidWorkflowReport?.raw_a_import_allowed)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={runAndroidWorkflowCheck} disabled={androidWorkflowResult?.status === "running"}>
+                  {androidWorkflowResult?.status === "running" ? "Checking..." : "Run Android Workflow Check"}
+                </button>
+                <button onClick={refreshPostTransferLayer}>Refresh Workflow Report</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Tools / Organs</button>
+              </div>
+              <div className="list compactList packetList">
+                {((androidWorkflowReport?.systems || safeJsonObject(androidWorkflowReport?.report_json).systems || androidWorkflowResult?.systems || []) as Dict[]).map((item) => (
+                  <article className="packetCard" key={`android-system-${text(item.key)}`}>
+                    <div className="packetHeader">
+                      <strong>{text(item.name || item.key)}</strong>
+                      <span>{friendlyStatus(item.status)}</span>
+                    </div>
+                    <p>{text(item.android_function || item.failure_mode)}</p>
+                    <div className="chips">
+                      <span>routes: {text(((item.routes_checked || []) as unknown[]).length)}</span>
+                      <span>shelves: {text(((item.shelves_checked || []) as unknown[]).length)}</span>
+                      <span>Return-to-B: {text(item.return_to_b_path || "Cocoon / B")}</span>
+                      <span>fraction support: {item.fraction_memory_support_allowed ? "yes" : "no"}</span>
+                    </div>
+                  </article>
+                ))}
+                {!((androidWorkflowReport?.systems || safeJsonObject(androidWorkflowReport?.report_json).systems || androidWorkflowResult?.systems || []) as unknown[]).length ? <p className="emptyState">No Android workflow report yet.</p> : null}
+              </div>
+              <PlainResult value={androidWorkflowResult} />
+            </Panel>
             <Panel title="Fractional Corpus Accession">
               <p className="plainHelp">Broader ordered corpus memory is prepared in four chronological fractions. One fraction must pass before the next can proceed. This is not live memory and does not activate Selene.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Fractions" value={text(fractionalCorpusStatus?.fraction_count ?? 0)} />
                 <Metric label="Next" value={`${text(fractionalCorpusStatus?.next_fraction ?? 1)}/4`} />
                 <Metric label="All Passed" value={fractionalCorpusStatus?.all_fractions_passed ? "yes" : "no"} />
+                <Metric label="Android Check" value={fractionalCorpusStatus?.android_workflow_preflight_passed ? "passed" : "required"} />
                 <Metric label="Selene v1" value={fractionalCorpusStatus?.selene_v1_live ? "live" : "not live"} />
-                <Metric label="Dream State" value={fractionalCorpusStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"} />
               </div>
               {text(fractionalCorpusStatus?.progression_blocked_reason) ? <p className="errorText">{text(fractionalCorpusStatus?.progression_blocked_reason)}</p> : null}
+              {!fractionalCorpusStatus?.android_workflow_preflight_passed ? <p className="errorText">Run Android System Workflow Check before fraction tests.</p> : null}
               <div className="filters">
                 <label>
                   <span>Fraction to test</span>

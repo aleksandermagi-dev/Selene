@@ -777,6 +777,24 @@ CREATE TABLE IF NOT EXISTS memory_fractional_corpus_manifests (
 
 CREATE INDEX IF NOT EXISTS idx_memory_fractional_corpus_manifests_status ON memory_fractional_corpus_manifests(fraction_index, status, review_status);
 
+CREATE TABLE IF NOT EXISTS android_system_workflow_reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  ready_count INTEGER NOT NULL DEFAULT 0,
+  partial_count INTEGER NOT NULL DEFAULT 0,
+  blocked_count INTEGER NOT NULL DEFAULT 0,
+  system_count INTEGER NOT NULL DEFAULT 0,
+  fraction_memory_preflight_passed INTEGER NOT NULL DEFAULT 0,
+  report_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_android_system_workflow_reports_status ON android_system_workflow_reports(status, fraction_memory_preflight_passed, review_status);
+
 CREATE TABLE IF NOT EXISTS transfer_ceremony_audit (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   state TEXT NOT NULL,

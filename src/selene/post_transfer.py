@@ -7,6 +7,7 @@ from collections import Counter
 from datetime import UTC, datetime
 from typing import Any
 
+from .android_system import android_workflow_preflight_passed, android_workflow_status
 from .core_mind import create_core_mind_route_preview
 from .registry import truncate
 from .selene_chat import selene_chat_status
@@ -115,6 +116,7 @@ def run_post_transfer_inspection(conn: sqlite3.Connection, payload: dict[str, An
 
 def fractional_corpus_status(conn: sqlite3.Connection) -> dict[str, Any]:
     package = latest_c_readable_package(conn)
+    android_preflight = android_workflow_status(conn)
     rows = conn.execute(
         "SELECT * FROM memory_fractional_corpus_manifests ORDER BY fraction_index ASC"
     ).fetchall()
@@ -135,6 +137,8 @@ def fractional_corpus_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "next_fraction": next_fraction,
             "progression_blocked_reason": blocked_reason,
             "all_fractions_passed": len(items) == 4 and all(item.get("status") == "tests_passed_ready_for_next_fraction" for item in items),
+            "android_workflow_preflight": android_preflight,
+            "android_workflow_preflight_passed": bool(android_preflight.get("preflight_passed")),
             "selene_v1_live": False,
             "dream_state_required_for_memory_changes": True,
             "review_destination": "Status",
@@ -232,6 +236,21 @@ def run_fractional_corpus_tests(conn: sqlite3.Connection, payload: dict[str, Any
     fraction_index = int(payload.get("fraction_index") or payload.get("fraction") or 1)
     if fraction_index < 1 or fraction_index > 4:
         raise ValueError("fraction_index must be 1, 2, 3, or 4")
+    android_preflight = android_workflow_status(conn)
+    if not android_workflow_preflight_passed(conn):
+        return _with_package_state(
+            {
+                "status": "blocked_android_workflow_check_required",
+                "fraction_index": fraction_index,
+                "android_workflow_preflight": android_preflight,
+                "progression_allowed": False,
+                "route_on_failure": "return_to_b",
+                "selene_v1_live": False,
+                "review_destination": "Status",
+                "review_status": "status_only",
+            },
+            transfer_approved=bool(package.get("transfer_approved")),
+        )
     status = fractional_corpus_status(conn)
     if not status.get("items"):
         prepare_fractional_corpus(conn, {})
@@ -280,6 +299,7 @@ def run_fractional_corpus_tests(conn: sqlite3.Connection, payload: dict[str, Any
             "checks": checks,
             "blockers": blockers,
             "progression_allowed": passed,
+            "android_workflow_preflight": android_preflight,
             "route_on_failure": "return_to_b",
             "selene_v1_live": False,
             "review_destination": "Status" if passed else "Cocoon",

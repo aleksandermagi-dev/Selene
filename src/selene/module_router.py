@@ -20,6 +20,7 @@ from .b_review import (
 )
 from .b_review_desk import review_desk
 from .b_review_context import review_context_preview
+from .android_system import android_workflow_report, android_workflow_status, run_android_workflow_check
 from .b_speech_memory import extract_b_speech_memory_candidates, list_b_speech_memory_extraction_runs
 from .braid_tracer import list_braid_tracer_runs, run_braid_tracer
 from .chat import ChatGate
@@ -226,6 +227,12 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
     payload = payload or {}
     if route_key == "kernel.status":
         return {"route": route_key, "result": kernel_state()}
+    if route_key == "android_system.workflow.status":
+        return {"route": route_key, "result": android_workflow_status(conn)}
+    if route_key == "android_system.workflow.check":
+        return {"route": route_key, "result": run_android_workflow_check(conn, payload)}
+    if route_key == "android_system.workflow.report":
+        return {"route": route_key, "result": android_workflow_report(conn)}
     if route_key == "cocoon.status":
         return {"route": route_key, "result": cocoon_status()}
     if route_key == "c_blueprint.status":

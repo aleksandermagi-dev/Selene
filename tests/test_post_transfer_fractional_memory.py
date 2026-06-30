@@ -155,6 +155,16 @@ def test_fraction_progression_blocks_jump_ahead_and_allows_next_after_pass(tmp_p
     _seed_corpus(conn, 8)
     route_request(conn, "memory.fractional_corpus.prepare", {})
 
+    missing_preflight = route_request(conn, "memory.fractional_corpus.run_tests", {"fraction_index": 1})["result"]
+    assert missing_preflight["status"] == "blocked_android_workflow_check_required"
+    assert missing_preflight["progression_allowed"] is False
+    assert missing_preflight["route_on_failure"] == "return_to_b"
+    assert missing_preflight["android_workflow_preflight"]["preflight_passed"] is False
+    _assert_locked(missing_preflight, transfer_approved=True)
+
+    workflow = route_request(conn, "android_system.workflow.check", {})["result"]
+    assert workflow["status"] == "android_system_workflow_check_passed"
+
     blocked = route_request(conn, "memory.fractional_corpus.run_tests", {"fraction_index": 2})["result"]
     first = route_request(conn, "memory.fractional_corpus.run_tests", {"fraction_index": 1})["result"]
     second = route_request(conn, "memory.fractional_corpus.run_tests", {"fraction_index": 2})["result"]
