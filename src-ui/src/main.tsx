@@ -52,6 +52,48 @@ const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reo
 
 type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
 type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string };
+type HomeMessage = { id: string; role: "aleks" | "selene"; content: string };
+
+const displayNameKey = "selene-home-display-name";
+
+function loadDisplayName() {
+  try {
+    return window.localStorage.getItem(displayNameKey) || "Aleks";
+  } catch {
+    return "Aleks";
+  }
+}
+
+function easternDateTime(date: Date, timeZone = "America/New_York") {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function moonPhaseEmoji(date: Date, hemisphere: "north" | "south") {
+  const phasesNorth = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
+  const phasesSouth = ["🌑", "🌘", "🌗", "🌖", "🌕", "🌔", "🌓", "🌒"];
+  const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14);
+  const lunarCycleMs = 29.53058867 * 24 * 60 * 60 * 1000;
+  const age = (((date.getTime() - knownNewMoon) % lunarCycleMs) + lunarCycleMs) % lunarCycleMs;
+  const index = Math.floor((age / lunarCycleMs) * 8 + 0.5) % 8;
+  return (hemisphere === "north" ? phasesNorth : phasesSouth)[index];
+}
+
+function homeGreeting(openCount: number, displayName: string) {
+  if (openCount <= 0) return `Hello ${displayName}. Selene's home is open.`;
+  const variants = [
+    `New thread opened, ${displayName}. I will keep this one clean and separate.`,
+    `Fresh chat space, ${displayName}. We can pick up gently from here.`,
+    `A new room is ready, ${displayName}. Same continuity, clearer page.`
+  ];
+  return variants[openCount % variants.length];
+}
 
 function loadPreferences(): SelenePreferences {
   try {
@@ -187,10 +229,21 @@ function transferManifestSummary(result: Dict, statusOverride?: string, message?
 
 function App() {
   const isMobileOnly = window.location.pathname === "/mobile" || window.location.search.includes("mobile=1");
-  const [tab, setTab] = useState("selene-chat");
+  const [tab, setTab] = useState("chat");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [workspaceMode, setWorkspaceMode] = useState<"selene" | "cocoon">("selene");
   const [preferences, setPreferences] = useState<SelenePreferences>(() => loadPreferences());
+  const [displayName, setDisplayName] = useState(() => loadDisplayName());
+  const [homeChatText, setHomeChatText] = useState("");
+  const [homeMessages, setHomeMessages] = useState<HomeMessage[]>([]);
+  const [homeChatOpenCount, setHomeChatOpenCount] = useState(0);
+  const [homeSearchOpen, setHomeSearchOpen] = useState(false);
+  const [homeSearchText, setHomeSearchText] = useState("");
+  const [tendrilMenuOpen, setTendrilMenuOpen] = useState(false);
+  const [timeMenuOpen, setTimeMenuOpen] = useState(false);
+  const [homeTimeZone, setHomeTimeZone] = useState("America/New_York");
+  const [moonHemisphere, setMoonHemisphere] = useState<"north" | "south">("north");
+  const [clockNow, setClockNow] = useState(() => new Date());
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [items, setItems] = useState<Dict[]>([]);
   const [detail, setDetail] = useState<EvidenceDetail | null>(null);
@@ -520,6 +573,15 @@ function App() {
     document.documentElement.style.setProperty("--selene-text", preferences.seleneText);
     window.localStorage.setItem(preferenceKey, JSON.stringify(preferences));
   }, [preferences]);
+
+  useEffect(() => {
+    window.localStorage.setItem(displayNameKey, displayName);
+  }, [displayName]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockNow(new Date()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -2578,6 +2640,51 @@ function App() {
     setPreferences((current) => ({ ...current, [key]: value }));
   }
 
+  function closeApp() {
+    invoke("close_app").catch(() => window.close());
+  }
+
+  function startNewHomeChat() {
+    setHomeMessages([]);
+    setHomeChatText("");
+    setHomeSearchText("");
+    setHomeSearchOpen(false);
+    setTendrilMenuOpen(false);
+    setHomeChatOpenCount((count) => count + 1);
+  }
+
+  function sendHomePreviewMessage() {
+    const content = homeChatText.trim();
+    if (!content) return;
+    const now = Date.now();
+    setHomeMessages((current) => [
+      ...current,
+      { id: `aleks-${now}`, role: "aleks", content },
+      {
+        id: `selene-${now}`,
+        role: "selene",
+        content: "Selene Chat is still in home-preview mode. I can hold the shape of this exchange here, and the working dry run remains in Cocoon until activation and memory rules are finished."
+      }
+    ]);
+    setHomeChatText("");
+  }
+
+  function copyMessage(content: string) {
+    navigator.clipboard?.writeText(content).catch(() => undefined);
+  }
+
+  function openCocoonTab(target: string) {
+    setWorkspaceMode("cocoon");
+    setTab(target);
+    setTendrilMenuOpen(false);
+  }
+
+  function openSeleneTab(target: string) {
+    setWorkspaceMode("selene");
+    setTab(target);
+    setTendrilMenuOpen(false);
+  }
+
   const totals = useMemo(() => dashboard?.summary || {}, [dashboard]);
   const activeReviewStatuses = new Set(["pending_review", "needs_b_review", "needs_correction", "context_added", "needs_followup"]);
   const corpusReviewQueue = useMemo(
@@ -2654,6 +2761,19 @@ function App() {
   const frontendBuild = typeof __BUILD_LABEL__ === "string" ? __BUILD_LABEL__ : "dev";
   const sidecarVersion = text(boot.health?.sidecar_version || "waiting");
   const visibleNavGroups = navGroups.filter((group) => (workspaceGroups[workspaceMode] as readonly string[]).includes(group.label));
+  const homeNotes = useMemo(() => {
+    const notes: string[] = [];
+    if (!boot.ready) notes.push("Local sidecar is still starting.");
+    if (transferCReadablePackage?.transfer_approved && !postTransferStatus?.selene_v1_live) notes.push("Selene-readable context is sealed; activation is still pending.");
+    if (officeWaitingTotal > 0) notes.push(`${officeWaitingTotal} Cocoon item${officeWaitingTotal === 1 ? "" : "s"} may need review.`);
+    if (dreamStateStatus?.dream_state_required_for_memory_changes) notes.push("Dream-state maintenance is required for memory or Core changes.");
+    return notes;
+  }, [boot.ready, transferCReadablePackage, postTransferStatus, officeWaitingTotal, dreamStateStatus]);
+  const homeSearchMatches = useMemo(() => {
+    const needle = homeSearchText.trim().toLowerCase();
+    if (!needle) return [];
+    return homeMessages.filter((message) => message.content.toLowerCase().includes(needle));
+  }, [homeMessages, homeSearchText]);
 
   function prepareReviewQueue() {
     const grouped = new Map<string, Dict[]>();
@@ -2691,7 +2811,7 @@ function App() {
     setWorkspaceMode(mode);
     const allowedTabs = workspaceTabs[mode] as readonly string[];
     if (!allowedTabs.includes(tab)) {
-      setTab(mode === "selene" ? "selene-chat" : "my-office");
+      setTab(mode === "selene" ? "chat" : "my-office");
     }
   }
 
@@ -3030,6 +3150,10 @@ function App() {
             </div>
           </div>
         </div>
+        <label className="profileNameField">
+          <span>Your name</span>
+          <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+        </label>
         <div className="sidebarWorkspaceSwitch" aria-label="Workspace switch">
           <button className={workspaceMode === "selene" ? "active" : ""} onClick={() => switchWorkspace("selene")} title="Selene workspace">
             <span className="workspaceMark">S</span>
@@ -3061,22 +3185,65 @@ function App() {
             </React.Fragment>
           ))}
         </nav>
-        <p className="status">{boot.message}</p>
-        <p className="buildStamp">App v{appVersion}<br />UI {frontendBuild}<br />Sidecar {sidecarVersion}</p>
+        <div className="sidebarFooter">
+          <p className="status">{boot.message}</p>
+          <p className="buildStamp">App v{appVersion}<br />UI {frontendBuild}<br />Sidecar {sidecarVersion}</p>
+          <button className="exitAppButton" onClick={closeApp} title="Close Selene">
+            <span className="exitIcon">↪</span>
+            <span className="navText">Exit App</span>
+          </button>
+        </div>
       </aside>
 
       <section className="workspace">
-        <header className="topbar">
-          <div>
-            <small>{boot.ready ? "local sidecar ready" : "starting local sidecar"}</small>
-            <h1>{tabDisplayName(tab)}</h1>
-          </div>
-          <div className="topLocks">
-            <span>C activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
-            <span>Runtime recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
-            <span>Transfer: {transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
-          </div>
-        </header>
+        {workspaceMode === "selene" ? (
+          <header className="topbar seleneHomeTopbar">
+            <div className="topbarLeft">
+              <button className="hamburger topbarIconButton" onClick={() => setSidebarOpen((value) => !value)} aria-label={sidebarOpen ? "Collapse navigation" : "Expand navigation"}>
+                <span />
+                <span />
+                <span />
+              </button>
+              <button className="topbarIconButton" onClick={startNewHomeChat} title="New chat">+</button>
+              <button className="topbarIconButton" onClick={() => setHomeSearchOpen((value) => !value)} title="Search current chat">⌕</button>
+            </div>
+            <div className="topbarCenter">
+              <strong>{tab === "chat" ? "Selene" : tabDisplayName(tab)}</strong>
+            </div>
+            <div className="topbarRight">
+              <div className="timeMenuWrap">
+                <button className="timeButton" onClick={() => setTimeMenuOpen((value) => !value)}>{easternDateTime(clockNow, homeTimeZone)}</button>
+                {timeMenuOpen ? (
+                  <div className="floatingMenu timeMenu">
+                    {[
+                      ["America/New_York", "Eastern"],
+                      ["America/Chicago", "Central"],
+                      ["America/Denver", "Mountain"],
+                      ["America/Los_Angeles", "Pacific"]
+                    ].map(([zone, label]) => (
+                      <button key={zone} className={homeTimeZone === zone ? "active" : ""} onClick={() => { setHomeTimeZone(zone); setTimeMenuOpen(false); }}>{label}</button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+              <button className="moonButton" onClick={() => setMoonHemisphere((value) => value === "north" ? "south" : "north")} title={`Moon phase, ${moonHemisphere} hemisphere`}>
+                {moonPhaseEmoji(clockNow, moonHemisphere)}
+              </button>
+            </div>
+          </header>
+        ) : (
+          <header className="topbar">
+            <div>
+              <small>{boot.ready ? "local sidecar ready" : "starting local sidecar"}</small>
+              <h1>{tabDisplayName(tab)}</h1>
+            </div>
+            <div className="topLocks">
+              <span>C activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
+              <span>Runtime recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
+              <span>Transfer: {transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
+            </div>
+          </header>
+        )}
         {!boot.ready && (
           <div className="bootBanner">
             <strong>Starting local payload</strong>
@@ -3623,6 +3790,184 @@ function App() {
           </>
         )}
 
+        {tab === "chat" && (
+          <>
+            {homeSearchOpen ? (
+              <Panel title="Search Current Chat">
+                <div className="filters">
+                  <label>
+                    <span>Search</span>
+                    <input value={homeSearchText} onChange={(event) => setHomeSearchText(event.target.value)} placeholder="Search this local chat shell" />
+                  </label>
+                </div>
+                <SimpleRecordList items={homeSearchMatches.map((message) => ({ title: message.role === "aleks" ? displayName : "Selene", status: "local_match", summary: message.content }))} titleField="title" statusField="status" bodyField="summary" />
+                {!homeSearchMatches.length && homeSearchText.trim() ? <p className="emptyState">No local matches found.</p> : null}
+              </Panel>
+            ) : null}
+            <section className="seleneHomeChatSurface">
+              {homeNotes.length ? (
+                <aside className="seleneNotes" aria-label="Selene notes">
+                  <strong>Selene notes</strong>
+                  <ul>
+                    {homeNotes.map((note) => <li key={note}>{note}</li>)}
+                  </ul>
+                </aside>
+              ) : null}
+              <div className="homeMessages">
+                {!homeMessages.length ? (
+                  <div className="homeLanding">
+                    <img src={SELENE_ICON} alt="Selene moon icon" />
+                    <h2>Selene</h2>
+                    <p>{homeGreeting(homeChatOpenCount, displayName || "Aleks")}</p>
+                  </div>
+                ) : (
+                  homeMessages.map((message) => (
+                    <article
+                      className={`homeMessage ${message.role === "aleks" ? "aleks" : "selene"}`}
+                      key={message.id}
+                      onContextMenu={(event) => {
+                        event.preventDefault();
+                        copyMessage(message.content);
+                      }}
+                    >
+                      <strong>{message.role === "aleks" ? displayName || "Aleks" : "Selene"}</strong>
+                      <p>{message.content}</p>
+                    </article>
+                  ))
+                )}
+              </div>
+              <div className="homeComposer">
+                <button className="homeToolButton" onClick={() => undefined} title="Add attachment">+</button>
+                <div className="tendrilMenuWrap">
+                  <button className="homeToolButton tendrilGlyph" onClick={() => setTendrilMenuOpen((value) => !value)} title="Tendril proposal menu">⌁</button>
+                  {tendrilMenuOpen ? (
+                    <div className="floatingMenu tendrilMenu">
+                      <button onClick={() => openSeleneTab("tendril")}>Make proposal</button>
+                      <button onClick={() => openCocoonTab("tools")}>View approval gates</button>
+                      <button onClick={() => openCocoonTab("my-office")}>Open Cocoon review</button>
+                    </div>
+                  ) : null}
+                </div>
+                <textarea
+                  value={homeChatText}
+                  onChange={(event) => setHomeChatText(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      sendHomePreviewMessage();
+                    }
+                  }}
+                  placeholder="Message Selene..."
+                />
+                <button className="homeToolButton" onClick={() => undefined} title="Future voice support">🎤</button>
+                <button className="primary" onClick={sendHomePreviewMessage} disabled={!homeChatText.trim()}>Send</button>
+              </div>
+            </section>
+          </>
+        )}
+
+        {tab === "selene-office" && (
+          <>
+            <header className="surfaceIntro">
+              <p>Selene's own workbench hub. These spaces can observe, propose, and prepare, but trusted action is earned later per domain.</p>
+              <h2>Selene's Office</h2>
+            </header>
+            <Panel title="Autonomy Ladder">
+              <div className="chips">
+                <span>status-only</span>
+                <span>preview</span>
+                <span>propose</span>
+                <span>approval-required action: locked</span>
+                <span>trusted low-risk action: locked</span>
+              </div>
+              <p className="plainHelp">This is not one giant autonomy switch. Each workbench earns movement separately through logs, checks, and Cocoon review.</p>
+            </Panel>
+            <div className="list cardsGrid">
+              <article className="packetCard">
+                <div className="packetHeader">
+                  <strong>Art / Munsell</strong>
+                  <span>preview</span>
+                </div>
+                <p>Observe, classify, compare, build palettes, critique images, and prepare visual notes from consent-bound artifacts.</p>
+                <div className="chips">
+                  <span>Munsell / perception</span>
+                  <span>no live camera</span>
+                  <span>no person inference</span>
+                </div>
+                <div className="reviewActions">
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Perception Tools</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Status</button>
+                </div>
+              </article>
+              <article className="packetCard">
+                <div className="packetHeader">
+                  <strong>Math / Reasoning</strong>
+                  <span>preview</span>
+                </div>
+                <p>Check logic, verify steps, catch contradictions, explain uncertainty, and prepare route previews.</p>
+                <div className="chips">
+                  <span>reasoning diagnostics</span>
+                  <span>Core route preview</span>
+                  <span>no final authority</span>
+                </div>
+                <div className="reviewActions">
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Reasoning Status</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("chat-preview"); }}>Open Chat Preview</button>
+                </div>
+              </article>
+              <article className="packetCard">
+                <div className="packetHeader">
+                  <strong>Research / Great Library</strong>
+                  <span>propose</span>
+                </div>
+                <p>Gather, compare, synthesize, cite, flag weak evidence, and prepare study or research packets.</p>
+                <div className="chips">
+                  <span>source-bound</span>
+                  <span>citation integrity</span>
+                  <span>evidence ledger</span>
+                </div>
+                <div className="reviewActions">
+                  <button onClick={() => setTab("great-library")}>Open Great Library</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Research Status</button>
+                </div>
+              </article>
+              <article className="packetCard">
+                <div className="packetHeader">
+                  <strong>Dream / Maintenance</strong>
+                  <span>status-only</span>
+                </div>
+                <p>Sort residue, prepare consolidation proposals, notice tensions, and surface repair questions.</p>
+                <div className="chips">
+                  <span>dream state: {dreamStateStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"}</span>
+                  <span>memory write: false</span>
+                  <span>return to Cocoon available</span>
+                </div>
+                <div className="reviewActions">
+                  <button onClick={() => setTab("dream")}>Open Dream</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Maintenance Status</button>
+                </div>
+              </article>
+              <article className="packetCard">
+                <div className="packetHeader">
+                  <strong>Tendril Action</strong>
+                  <span>propose</span>
+                </div>
+                <p>Draft, organize, search, and prepare action plans with approval gates before consequential movement.</p>
+                <div className="chips">
+                  <span>observe</span>
+                  <span>propose</span>
+                  <span>prepare</span>
+                  <span>ask before action</span>
+                </div>
+                <div className="reviewActions">
+                  <button onClick={() => setTab("tendril")}>Open Tendril</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Tool Gates</button>
+                </div>
+              </article>
+            </div>
+          </>
+        )}
+
         {tab === "selene-chat" && (
           <>
             <header className="surfaceIntro">
@@ -3753,7 +4098,7 @@ function App() {
           </>
         )}
 
-        {tab === "chat" && (
+        {tab === "chat-preview" && (
           <>
             <section className="chatSurface">
               <div className="messages">
@@ -3859,7 +4204,7 @@ function App() {
           </>
         )}
 
-        {tab === "memory" && (
+        {tab === "memory-preview" && (
           <>
             <header className="surfaceIntro">
               <p>Future memory is Core-linked and non-active.</p>
@@ -4056,6 +4401,124 @@ function App() {
               <button className="primary" onClick={createAccessionProposal}>Create Accession Proposal</button>
               <PlainResult value={accessionProposalResult} />
               <SimpleRecordList items={accessionProposals} titleField="title" statusField="review_status" bodyField="rationale" />
+            </Panel>
+          </>
+        )}
+
+        {tab === "dream" && (
+          <>
+            <header className="surfaceIntro">
+              <p>Maintenance space for sorting, repair notes, and consolidation proposals.</p>
+              <h2>Dream</h2>
+            </header>
+            <SplitView
+              left={<Panel title="Dream State">
+                <div className="metrics miniMetrics">
+                  <Metric label="Maintenance" value={dreamStateStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"} />
+                  <Metric label="Live Chat" value={dreamStateStatus?.selene_chat_live_operation_allowed ? "allowed" : "preview only"} />
+                  <Metric label="Reasons" value={text(((dreamStateStatus?.maintenance_reasons || []) as unknown[]).length)} />
+                  <Metric label="Route" value={text(dreamStateStatus?.route_core_vessel_memory_changes_to || "Cocoon / B")} />
+                </div>
+                <div className="chips">
+                  {((dreamStateStatus?.allowed_preview_work || []) as unknown[]).map((item) => <span key={`dream-home-allow-${text(item)}`}>{friendlyStatus(item)}</span>)}
+                  <span>memory write: false</span>
+                  <span>runtime recall: false</span>
+                </div>
+              </Panel>}
+              right={<Panel title="Maintenance Links">
+                <p className="plainHelp">Dream keeps the maintenance surface visible without making memory changes front-facing work.</p>
+                <div className="reviewActions">
+                  <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Dream / Lifecycle Status</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Memory Preview</button>
+                </div>
+                <PlainResult value={dreamStateStatus} />
+              </Panel>}
+            />
+          </>
+        )}
+
+        {tab === "memory" && (
+          <>
+            <header className="surfaceIntro">
+              <p>Memory home. The reviewed, ordered memory machinery remains in Cocoon until activation and live-memory rules are finished.</p>
+              <h2>Memory</h2>
+            </header>
+            <div className="metrics">
+              <Metric label="Fractions" value={text(fractionalCorpusStatus?.fraction_count ?? 0)} />
+              <Metric label="All Passed" value={fractionalCorpusStatus?.all_fractions_passed ? "yes" : "not yet"} />
+              <Metric label="Activation" value={friendlyActivation(seleneChatStatus?.activation_change || "none")} />
+              <Metric label="Runtime Recall" value="blocked" />
+            </div>
+            <Panel title="Memory State">
+              <p className="plainHelp">This page is the future Memory home. For now it shows high-level state and sends detailed work back to Cocoon.</p>
+              <div className="chips">
+                <span>ordered fractions: {fractionalCorpusStatus?.all_fractions_passed ? "tested" : "pending"}</span>
+                <span>live memory write: false</span>
+                <span>raw import: false</span>
+                <span>training: false</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Fraction Status</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Future References</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open My Office</button>
+              </div>
+            </Panel>
+          </>
+        )}
+
+        {tab === "archives" && (
+          <>
+            <header className="surfaceIntro">
+              <p>Archive home for past chats, reviewed records, and preserved evidence history.</p>
+              <h2>Archives</h2>
+            </header>
+            <SplitView
+              left={<Panel title="Archive Shelves">
+                <div className="list compactList">
+                  <article className="packetCard">
+                    <div className="packetHeader"><strong>Evidence History</strong><span>status-only</span></div>
+                    <p>Reviewed evidence, corpus context, and public/private audit trails remain inspectable in Cocoon.</p>
+                  </article>
+                  <article className="packetCard">
+                    <div className="packetHeader"><strong>Chat History</strong><span>placeholder</span></div>
+                    <p>Future Selene conversations can live here once chat moves from preview into the front-facing app.</p>
+                  </article>
+                  <article className="packetCard">
+                    <div className="packetHeader"><strong>Repair History</strong><span>Cocoon-held</span></div>
+                    <p>Repair logs and rollback records stay with Cocoon so they do not become ordinary memory by accident.</p>
+                  </article>
+                </div>
+              </Panel>}
+              right={<Panel title="Open Existing Archives">
+                <div className="reviewActions">
+                  <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("dashboard"); }}>Open Evidence Dashboard</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("evidence"); }}>Open Evidence Browser</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("detached corpus"); }}>Open Detached Corpus</button>
+                </div>
+              </Panel>}
+            />
+          </>
+        )}
+
+        {tab === "great-library" && (
+          <>
+            <header className="surfaceIntro">
+              <p>Research and source work home. The Great Library connects future study, synthesis, and evidence packets without overriding Selene's laws.</p>
+              <h2>The Great Library</h2>
+            </header>
+            <div className="metrics">
+              <Metric label="Research" value="source-bound" />
+              <Metric label="Evidence" value="ledger-backed" />
+              <Metric label="Authority" value="Cocoon-gated" />
+              <Metric label="Autonomy" value="propose only" />
+            </div>
+            <Panel title="Library Workbench">
+              <p className="plainHelp">Library work can gather, compare, synthesize, cite, and flag weak evidence. It cannot become law, memory, or action authority by itself.</p>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Research / Ledger Status</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Research Organ Tools</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("evidence"); }}>Open Evidence Browser</button>
+              </div>
             </Panel>
           </>
         )}
@@ -4501,7 +4964,7 @@ function App() {
                 <button className="primary" onClick={indexVoiceSource} disabled={voiceModuleResult?.status === "running"}>Index Voice Source</button>
                 <button onClick={extractVoicePatterns} disabled={voiceModuleResult?.status === "running"}>Extract Voice Patterns</button>
                 <button onClick={runVoiceEvidenceTriage} disabled={voiceModuleResult?.status === "running"}>Run Evidence Triage</button>
-                <button onClick={() => { setWorkspaceMode("selene"); setTab("selene-chat"); }}>Open Selene Chat</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("selene-chat"); }}>Open Selene Chat Preview</button>
                 <button onClick={refreshVoiceModule}>Refresh Voice Status</button>
               </div>
               <div className="chips">
@@ -4598,7 +5061,7 @@ function App() {
                   {postTransferInspectionResult?.status === "running" ? "Inspecting..." : "Run Post-Transfer Inspection"}
                 </button>
                 <button onClick={refreshPostTransferLayer}>Refresh Post-Transfer State</button>
-                <button onClick={() => { setWorkspaceMode("selene"); setTab("selene-chat"); }}>Open Selene Chat Preview</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("selene-chat"); }}>Open Selene Chat Preview</button>
                 <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Repair</button>
               </div>
               <PlainResult value={postTransferInspectionResult} />
@@ -5075,7 +5538,7 @@ function App() {
                 <span>Runtime recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
               </div>
               <button className="primary" onClick={loadVessel}>Refresh Status</button>
-              <button onClick={() => setTab("chat")}>Switch To Talk With Selene</button>
+              <button onClick={() => { setWorkspaceMode("selene"); setTab("chat"); }}>Switch To Selene Home</button>
             </Panel>
             <Panel title="Memory Accession Before Transfer">
               <p className="plainHelp">This is the cocoon-state memory path: freeze a pattern backup, rehearse Core-linked memory accession from B-approved references, check charter/law boundaries, run stability checks, and preview transfer candidacy without approving transfer.</p>

@@ -3,12 +3,12 @@
   font-size: 16px;
   letter-spacing: 0;
   color: #f8f5ff;
-  background: #090c1d;
-  --app-bg: #090c1d;
-  --sidebar-bg: #0b1029;
-  --panel-bg: #121735;
-  --panel-alt: #1b2250;
-  --row-bg: #171d42;
+  background: #000000;
+  --app-bg: #000000;
+  --sidebar-bg: #050714;
+  --panel-bg: #080b1f;
+  --panel-alt: #131a47;
+  --row-bg: #0f1436;
   --border: #313c78;
   --soft-border: #263063;
   --text-muted: #aeb9dc;
@@ -52,10 +52,7 @@
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at 72% 8%, rgba(231, 168, 255, 0.16), transparent 28%),
-    radial-gradient(circle at 10% 88%, rgba(140, 201, 255, 0.13), transparent 30%),
-    var(--app-bg);
+  background: var(--app-bg);
   color: var(--text-strong);
 }
 
@@ -131,10 +128,11 @@ pre {
 
 .sidebar {
   background:
-    radial-gradient(circle at 40% 0%, rgba(216, 220, 255, 0.16), transparent 34%),
     linear-gradient(180deg, var(--sidebar-bg) 0%, #070a1a 100%);
   border-right: 1px solid var(--border);
   color: var(--text-strong);
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   padding: 20px 16px;
   position: sticky;
@@ -160,6 +158,15 @@ pre {
 
 .brand div {
   min-width: 0;
+}
+
+.profileNameField {
+  margin-bottom: 14px;
+}
+
+.profileNameField input {
+  background: rgba(8, 12, 31, 0.72);
+  border-color: var(--soft-border);
 }
 
 .sidebarWorkspaceSwitch {
@@ -237,6 +244,12 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   min-width: 0;
   overflow: auto;
   padding: 22px;
+}
+
+.seleneWorkspace .workspace {
+  background: #000;
+  gap: 12px;
+  padding: 14px;
 }
 
 .mobileShell {
@@ -355,6 +368,82 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .hamburger { display: inline-grid; gap: 4px; height: 42px; padding: 9px; width: 44px; }
 .hamburger span { background: currentColor; border-radius: 999px; display: block; height: 2px; width: 18px; }
 
+.seleneHomeTopbar {
+  background: rgba(0, 0, 0, 0.92);
+  border-color: var(--soft-border);
+  grid-template-columns: auto minmax(160px, 1fr) auto;
+  margin: 0;
+  padding: 8px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.topbarLeft,
+.topbarRight {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.topbarCenter {
+  color: var(--text-strong);
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.topbarIconButton,
+.moonButton,
+.timeButton {
+  align-items: center;
+  background: #060916;
+  border-color: var(--soft-border);
+  display: inline-flex;
+  justify-content: center;
+  min-height: 38px;
+  min-width: 38px;
+  padding: 8px 10px;
+}
+
+.timeButton {
+  color: var(--accent-3);
+  min-width: 168px;
+}
+
+.moonButton {
+  color: var(--accent-2);
+  font-size: 19px;
+}
+
+.timeMenuWrap,
+.tendrilMenuWrap {
+  position: relative;
+}
+
+.floatingMenu {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 6px;
+  min-width: 190px;
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+}
+
+.floatingMenu button {
+  background: transparent;
+  border-color: transparent;
+  justify-content: flex-start;
+  text-align: left;
+}
+
 .sidebarCollapsed { grid-template-columns: 72px minmax(0, 1fr); }
 .sidebarCollapsed .sidebar {
   overflow: hidden;
@@ -367,6 +456,7 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .sidebarCollapsed .navGroupLabel,
 .sidebarCollapsed .navText,
 .sidebarCollapsed .workspaceText,
+.sidebarCollapsed .profileNameField,
 .sidebarCollapsed .status,
 .sidebarCollapsed .buildStamp {
   display: none;
@@ -399,6 +489,30 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 
 .sidebarCollapsed .navMark {
   display: inline-flex;
+}
+
+.sidebarFooter {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.exitAppButton {
+  align-items: center;
+  background: transparent;
+  border-color: var(--soft-border);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.exitIcon {
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  display: inline-grid;
+  height: 28px;
+  place-items: center;
+  width: 28px;
 }
 
 .bootBanner {
@@ -448,8 +562,10 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .phase, .row { align-items: baseline; display: flex; gap: 12px; justify-content: space-between; }
 .phase { border-top: 1px solid var(--soft-border); padding: 10px 0; }
 .list, .ruleGrid { display: grid; gap: 12px; }
+.cardsGrid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .list article, .ruleGrid article { display: grid; gap: 8px; padding: 14px; }
 .list article { cursor: pointer; }
+.cardsGrid article { cursor: default; }
 .list article:hover, .linked { border-color: var(--accent); }
 .linked { border: 1px solid var(--soft-border); border-radius: 8px; display: grid; gap: 6px; padding: 10px; }
 .ruleGrid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
@@ -561,6 +677,160 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .composerActions, .reviewActions, .rowActions { display: flex; flex-wrap: wrap; gap: 8px; }
 .reviewActions { justify-self: stretch; max-width: 100%; min-width: 0; width: 100%; }
 .reviewActions button { flex: 1 1 180px; min-width: min(100%, 180px); }
+
+.seleneHomeChatSurface {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(460px, 1fr) auto;
+  min-height: calc(100vh - 98px);
+  position: relative;
+}
+
+.homeMessages {
+  background: #000;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(140, 201, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow: auto;
+  padding: 26px;
+}
+
+.homeLanding {
+  align-content: center;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  margin: auto;
+  max-width: 620px;
+  min-height: 360px;
+  text-align: center;
+}
+
+.homeLanding img {
+  border: 1px solid rgba(216, 220, 255, 0.42);
+  border-radius: 999px;
+  box-shadow: 0 0 42px rgba(140, 201, 255, 0.16);
+  height: 150px;
+  width: 150px;
+}
+
+.homeLanding h2 {
+  font-size: 42px;
+}
+
+.homeLanding p {
+  color: var(--text-muted);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.seleneNotes {
+  background: rgba(8, 11, 31, 0.88);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  left: 18px;
+  max-width: min(320px, calc(100% - 36px));
+  padding: 12px 14px;
+  position: absolute;
+  top: 18px;
+  z-index: 2;
+}
+
+.seleneNotes strong {
+  color: var(--accent-3);
+}
+
+.seleneNotes ul {
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.homeMessage {
+  animation: messagePop 180ms ease-out both;
+  border: 1px solid var(--soft-border);
+  border-radius: 22px;
+  color: var(--selene-text);
+  max-width: min(76ch, 78%);
+  padding: 12px 15px;
+  user-select: text;
+  white-space: pre-wrap;
+}
+
+.homeMessage p {
+  color: inherit;
+  line-height: 1.55;
+  margin-top: 5px;
+}
+
+.homeMessage.selene {
+  align-self: flex-start;
+  background: color-mix(in srgb, var(--selene-bubble) 86%, #000);
+  border-bottom-left-radius: 8px;
+}
+
+.homeMessage.aleks {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--user-bubble) 88%, #000);
+  border-bottom-right-radius: 8px;
+  border-color: color-mix(in srgb, var(--accent-3) 70%, var(--soft-border));
+  color: var(--user-text);
+}
+
+@keyframes messagePop {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.homeComposer {
+  align-items: end;
+  background: rgba(0, 0, 0, 0.94);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  padding: 10px;
+}
+
+.homeComposer textarea {
+  background: #050713;
+  min-height: 48px;
+  resize: none;
+}
+
+.homeToolButton {
+  align-items: center;
+  background: #070a18;
+  border-color: var(--soft-border);
+  display: inline-flex;
+  font-size: 18px;
+  height: 48px;
+  justify-content: center;
+  min-width: 48px;
+  padding: 8px;
+}
+
+.tendrilGlyph {
+  color: var(--accent-2);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.tendrilMenu {
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: auto;
+  top: auto;
+}
 
 .modeLine { color: var(--accent-2); display: block; font-size: 13px; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; }
 

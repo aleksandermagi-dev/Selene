@@ -1121,8 +1121,8 @@ export function SeleneSettingsPanel({ preferences, updatePreference, reset }: {
     <section className="panel settingsPanel">
       <div className="settingsHeader">
         <div>
-          <h2>Selene Settings</h2>
-          <p>Chat-facing preferences only. These shape the local Selene UI; they do not activate C, enable recall, or change memory behavior.</p>
+          <h2>Settings</h2>
+          <p>Chat-facing preferences for Selene's home UI.</p>
         </div>
         <button onClick={reset}>Reset</button>
       </div>
@@ -1157,9 +1157,6 @@ export function SeleneSettingsPanel({ preferences, updatePreference, reset }: {
       <SettingRow label="Aleks Text Color"><input type="color" value={preferences.userText} onChange={(event) => updatePreference("userText", event.target.value)} /></SettingRow>
       <SettingRow label="Selene Bubble Color"><input type="color" value={preferences.seleneBubble} onChange={(event) => updatePreference("seleneBubble", event.target.value)} /></SettingRow>
       <SettingRow label="Selene Text Color"><input type="color" value={preferences.seleneText} onChange={(event) => updatePreference("seleneText", event.target.value)} /></SettingRow>
-      <SettingRow label="Boundary">
-        <p>Selene chat remains cocooned: C activation none, runtime recall blocked, transfer not approved.</p>
-      </SettingRow>
     </section>
   );
 }

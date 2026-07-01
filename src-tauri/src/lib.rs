@@ -78,6 +78,12 @@ fn read_transfer_ceremony_debug_log() -> String {
     std::fs::read_to_string(debug_log_path()).unwrap_or_default()
 }
 
+#[tauri::command]
+fn close_app(app: tauri::AppHandle) {
+    log_stabilization_debug("frontend", "close_app_requested", "");
+    app.exit(0);
+}
+
 impl SidecarState {
     fn stop(&self) {
         log_debug("tauri", "sidecar_state_stop_called", "");
@@ -297,7 +303,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             log_transfer_ceremony_event,
             log_stabilization_event,
-            read_transfer_ceremony_debug_log
+            read_transfer_ceremony_debug_log,
+            close_app
         ])
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
