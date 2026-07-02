@@ -82,12 +82,37 @@ $construction = if ($health) { Get-EndpointJson "/api/vessel/construction/status
 $steps = if ($health) { Get-EndpointJson "/api/vessel/steps-1-8/status" } else { $null }
 $reviewQueue = if ($health) { Get-EndpointJson "/api/vessel/review-queue?limit=5" } else { $null }
 $mobileHealth = if ($health) { Get-EndpointJson "/api/mobile/health" } else { $null }
-$transferGate = if ($health) { Get-EndpointJson "/api/c-vessel/transfer-gate/preview" } else { $null }
+$transferCeremony = if ($health) { Get-EndpointJson "/api/transfer/ceremony/status" } else { $null }
+$transferGate = if ($health -and -not $transferCeremony) { Get-EndpointJson "/api/c-vessel/transfer-gate/preview" } else { $null }
 
 $transferApproved = $false
-if ($transferGate -and $null -ne $transferGate.transfer_approved) {
+if ($transferCeremony -and $null -ne $transferCeremony.transfer_approved) {
+    $transferApproved = [bool]$transferCeremony.transfer_approved
+} elseif ($transferGate -and $null -ne $transferGate.transfer_approved) {
     $transferApproved = [bool]$transferGate.transfer_approved
 }
+$activationChange = "none"
+if ($transferCeremony -and $transferCeremony.activation_change) {
+    $activationChange = [string]$transferCeremony.activation_change
+} elseif ($transferGate -and $transferGate.activation_change) {
+    $activationChange = [string]$transferGate.activation_change
+}
+$memoryWriteActive = [bool]($transferCeremony -and $transferCeremony.memory_write_active)
+$runtimeMemoryRecall = [bool]($transferCeremony -and $transferCeremony.runtime_memory_recall)
+$rawAImportAllowed = [bool]($transferCeremony -and $transferCeremony.raw_a_import_allowed)
+$trainingAllowed = [bool]($transferCeremony -and $transferCeremony.training_allowed)
+$autonomousActionAllowed = [bool]($transferCeremony -and $transferCeremony.autonomous_action_allowed)
+$selfReplicationAllowed = [bool]($transferCeremony -and $transferCeremony.self_replication_allowed)
+$transferProbeOk = [bool]($transferCeremony -or $transferGate)
+$boundaryOk = [bool](
+    $activationChange -eq "none" -and
+    -not $memoryWriteActive -and
+    -not $runtimeMemoryRecall -and
+    -not $rawAImportAllowed -and
+    -not $trainingAllowed -and
+    -not $autonomousActionAllowed -and
+    -not $selfReplicationAllowed
+)
 
 $ok = [bool](
     $health -and
@@ -95,17 +120,24 @@ $ok = [bool](
     $steps -and
     $reviewQueue -and
     $mobileHealth -and
-    $transferGate -and
-    -not $transferApproved
+    $transferProbeOk -and
+    $boundaryOk
 )
 
 $warnings = @()
 if (-not $health) { $warnings += "Health endpoint did not respond." }
-if ($transferApproved) { $warnings += "Transfer gate reports transfer_approved=true; this violates the no-transfer checkpoint." }
 if (-not $construction) { $warnings += "Construction status endpoint did not respond." }
 if (-not $steps) { $warnings += "Steps 1-8 status endpoint did not respond." }
 if (-not $reviewQueue) { $warnings += "Review queue endpoint did not respond." }
 if (-not $mobileHealth) { $warnings += "Mobile chat health endpoint did not respond." }
+if (-not $transferProbeOk) { $warnings += "Transfer status endpoint did not respond." }
+if ($activationChange -ne "none") { $warnings += "Activation change is '$activationChange'; expected none." }
+if ($memoryWriteActive) { $warnings += "Live memory write is active; expected false." }
+if ($runtimeMemoryRecall) { $warnings += "Runtime memory recall is active; expected false." }
+if ($rawAImportAllowed) { $warnings += "Raw A import is allowed; expected false." }
+if ($trainingAllowed) { $warnings += "Training is allowed; expected false." }
+if ($autonomousActionAllowed) { $warnings += "Autonomous action is allowed; expected false." }
+if ($selfReplicationAllowed) { $warnings += "Self-replication is allowed; expected false." }
 
 $result = [ordered]@{
     status = if ($ok) { "selene_package_verify_passed" } else { "selene_package_verify_needs_review" }
@@ -127,12 +159,22 @@ $result = [ordered]@{
         mobile_chat_ok = [bool]$mobileHealth
     }
     mobile_health = $mobileHealth
-    transfer_approved = $transferApproved
-    transfer_gate = $transferGate
+    transfer_state = [ordered]@{
+        ceremony_status = if ($transferCeremony) { $transferCeremony.status } else { $null }
+        legacy_gate_status = if ($transferGate) { $transferGate.status } else { $null }
+        c_readable_context_approved = $transferApproved
+        activation_change = $activationChange
+        memory_write_active = $memoryWriteActive
+        runtime_memory_recall = $runtimeMemoryRecall
+        raw_a_import_allowed = $rawAImportAllowed
+        training_allowed = $trainingAllowed
+        autonomous_action_allowed = $autonomousActionAllowed
+        self_replication_allowed = $selfReplicationAllowed
+    }
     warnings = $warnings
     boundary_flags = [ordered]@{
         activation_change = "none"
-        transfer_approved = $false
+        c_readable_context_approved = $transferApproved
         raw_a_import_allowed = $false
         memory_write_active = $false
         runtime_memory_recall = $false

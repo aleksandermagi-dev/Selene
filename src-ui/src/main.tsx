@@ -53,6 +53,89 @@ const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reo
 type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
 type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string };
 type HomeMessage = { id: string; role: "aleks" | "selene"; content: string };
+type MemoryCategoryKey = "core" | "relational" | "emotional" | "semantic" | "episodic" | "working" | "sensory" | "reflective";
+type MemoryBubble = { id: string; category: MemoryCategoryKey; title: string; summary: string; status: string; source: string };
+type WorkbenchKey = "art" | "reasoning" | "research" | "dream" | "tendril";
+type WorkbenchDef = {
+  key: WorkbenchKey;
+  title: string;
+  label: string;
+  state: string;
+  purpose: string;
+  route: string;
+  x: number;
+  y: number;
+  cues: string[];
+};
+
+const memoryCategories: Array<{ key: MemoryCategoryKey; label: string; x: number; y: number }> = [
+  { key: "core", label: "Core", x: 50, y: 18 },
+  { key: "relational", label: "Relational", x: 18, y: 37 },
+  { key: "emotional", label: "Emotional", x: 21, y: 72 },
+  { key: "semantic", label: "Semantic", x: 74, y: 30 },
+  { key: "episodic", label: "Episodic", x: 83, y: 57 },
+  { key: "working", label: "Working", x: 51, y: 84 },
+  { key: "sensory", label: "Sensory", x: 76, y: 79 },
+  { key: "reflective", label: "Reflective", x: 30, y: 86 }
+];
+
+const officeWorkbenches: WorkbenchDef[] = [
+  {
+    key: "art",
+    title: "Art / Munsell",
+    label: "perception workbench",
+    state: "preview",
+    purpose: "Observe, classify, compare, build palettes, critique images, and prepare consent-bound visual notes.",
+    route: "Cocoon Tools / Perception",
+    x: 22,
+    y: 31,
+    cues: ["Munsell", "palette", "visual notes", "no live camera"]
+  },
+  {
+    key: "reasoning",
+    title: "Math / Reasoning",
+    label: "logic workbench",
+    state: "preview",
+    purpose: "Check logic, verify steps, catch contradictions, explain uncertainty, and prepare route previews.",
+    route: "Cocoon Status / Reasoning",
+    x: 72,
+    y: 27,
+    cues: ["proof", "uncertainty", "constraints", "no final authority"]
+  },
+  {
+    key: "research",
+    title: "Research / Library",
+    label: "source workbench",
+    state: "propose",
+    purpose: "Gather, compare, synthesize, cite, flag weak evidence, and prepare study packets.",
+    route: "Great Library / Evidence",
+    x: 80,
+    y: 66,
+    cues: ["sources", "claims", "tensions", "source-bound"]
+  },
+  {
+    key: "dream",
+    title: "Dream / Maintenance",
+    label: "sorting workbench",
+    state: "status-only",
+    purpose: "Sort residue, prepare consolidation proposals, notice tensions, and surface repair questions.",
+    route: "Dream / Cocoon Status",
+    x: 46,
+    y: 78,
+    cues: ["cycle", "repair", "lifecycle", "memory write false"]
+  },
+  {
+    key: "tendril",
+    title: "Tendril Action",
+    label: "movement workbench",
+    state: "propose",
+    purpose: "Draft, organize, search, and prepare action plans with approval gates before consequential movement.",
+    route: "Tendril / Tool Gates",
+    x: 25,
+    y: 68,
+    cues: ["observe", "propose", "prepare", "ask first"]
+  }
+];
 
 const displayNameKey = "selene-home-display-name";
 
@@ -93,6 +176,46 @@ function homeGreeting(openCount: number, displayName: string) {
     `A new room is ready, ${displayName}. Same continuity, clearer page.`
   ];
   return variants[openCount % variants.length];
+}
+
+function isFrontMemoryDisplayable(item: Dict) {
+  const status = text([
+    item.review_status,
+    item.status,
+    item.conclusion_status,
+    item.readiness,
+    item.review_state,
+    item.source_class,
+    item.item_type,
+    item.record_type
+  ].map(text).join(" ")).toLowerCase();
+  if (!status) return true;
+  return ![
+    "rejected",
+    "superseded",
+    "defeated",
+    "blocked",
+    "boundary_only",
+    "needs_review",
+    "pending_review",
+    "unresolved",
+    "ambiguous",
+    "raw",
+    "repair_log",
+    "rollback"
+  ].some((blocked) => status.includes(blocked));
+}
+
+function memoryCategoryFromText(value: unknown): MemoryCategoryKey {
+  const raw = text(value).toLowerCase();
+  if (raw.includes("core_profile") || raw.includes("core") || raw.includes("identity") || raw.includes("continuity")) return "core";
+  if (raw.includes("interaction") || raw.includes("relationship") || raw.includes("relational") || raw.includes("aleks")) return "relational";
+  if (raw.includes("emotion") || raw.includes("care") || raw.includes("anxiety") || raw.includes("warmth")) return "emotional";
+  if (raw.includes("reflection") || raw.includes("why") || raw.includes("repair") || raw.includes("lesson")) return "reflective";
+  if (raw.includes("working") || raw.includes("task") || raw.includes("current")) return "working";
+  if (raw.includes("sensory") || raw.includes("visual") || raw.includes("audio") || raw.includes("munsell") || raw.includes("perception")) return "sensory";
+  if (raw.includes("episodic") || raw.includes("chronological") || raw.includes("fraction") || raw.includes("conversation")) return "episodic";
+  return "semantic";
 }
 
 function loadPreferences(): SelenePreferences {
@@ -244,6 +367,8 @@ function App() {
   const [homeTimeZone, setHomeTimeZone] = useState("America/New_York");
   const [moonHemisphere, setMoonHemisphere] = useState<"north" | "south">("north");
   const [clockNow, setClockNow] = useState(() => new Date());
+  const [selectedMemoryCategory, setSelectedMemoryCategory] = useState<MemoryCategoryKey | null>(null);
+  const [selectedWorkbench, setSelectedWorkbench] = useState<WorkbenchKey | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [items, setItems] = useState<Dict[]>([]);
   const [detail, setDetail] = useState<EvidenceDetail | null>(null);
@@ -2774,6 +2899,65 @@ function App() {
     if (!needle) return [];
     return homeMessages.filter((message) => message.content.toLowerCase().includes(needle));
   }, [homeMessages, homeSearchText]);
+  const frontMemoryBubbles = useMemo<MemoryBubble[]>(() => {
+    const bubbles: MemoryBubble[] = [];
+    const pushBubble = (item: Dict, fallbackCategory: MemoryCategoryKey, fallbackTitle: string, fallbackSummary: string, source: string) => {
+      if (!isFrontMemoryDisplayable(item)) return;
+      const category = memoryCategoryFromText([
+        item.core_memory_layer,
+        item.layer,
+        item.category,
+        item.title,
+        item.reference_summary,
+        item.summary,
+        item.rationale,
+        item.note,
+        source
+      ].map(text).join(" ")) || fallbackCategory;
+      bubbles.push({
+        id: `${source}-${text(item.id || item.core_memory_layer || item.fraction_index || item.title || bubbles.length)}`,
+        category,
+        title: text(item.title || item.backup_label || item.core_memory_layer || fallbackTitle),
+        summary: text(item.reference_summary || item.summary || item.rationale || item.note || item.interrupt_resume_note || fallbackSummary),
+        status: text(item.review_status || item.status || item.readiness || "approved_display_only"),
+        source
+      });
+    };
+    bApprovedReferences.forEach((item) => pushBubble(item, "core", "Approved reference", "Approved future memory reference.", "approved_reference"));
+    accessionProposals.forEach((item) => pushBubble(item, "reflective", "Accession proposal", "Review-only accession proposal.", "accession_proposal"));
+    workingMemoryPackets.forEach((item) => pushBubble(item, "working", "Working memory packet", "Current-moment working memory preview.", "working_memory"));
+    chronologicalCorpusArcs.forEach((item) => pushBubble(item, "episodic", "Chronological arc", "Reviewed chronological continuity arc.", "chronological_arc"));
+    ((memoryRehearsalStatus?.items || []) as Dict[]).forEach((item) => pushBubble(item, "core", friendlyLayer(item.core_memory_layer), "Memory rehearsal layer status.", "memory_rehearsal"));
+    ((fractionalCorpusStatus?.items || []) as Dict[]).forEach((item) => pushBubble(item, "episodic", `Corpus fraction ${text(item.fraction_index || "")}`.trim(), "Chronological corpus fraction preview passed.", "fractional_corpus"));
+    if (transferCReadablePackage?.transfer_approved) {
+      bubbles.push({
+        id: "sealed-c-readable-package",
+        category: "core",
+        title: "Sealed Selene-readable context",
+        summary: `Approved context package ${text(transferCReadablePackage.package_hash || "").slice(0, 12) || "is available"} remains display-only here.`,
+        status: "approved_c_readable_context",
+        source: "transfer_package"
+      });
+    }
+    return bubbles;
+  }, [bApprovedReferences, accessionProposals, workingMemoryPackets, chronologicalCorpusArcs, memoryRehearsalStatus, fractionalCorpusStatus, transferCReadablePackage]);
+  const selectedMemoryCategoryMeta = selectedMemoryCategory ? memoryCategories.find((item) => item.key === selectedMemoryCategory) : null;
+  const selectedMemoryBubbles = selectedMemoryCategory ? frontMemoryBubbles.filter((item) => item.category === selectedMemoryCategory) : [];
+  const selectedWorkbenchDef = selectedWorkbench ? officeWorkbenches.find((item) => item.key === selectedWorkbench) : null;
+  const archiveShelves = [
+    { title: "Evidence History", state: "Cocoon-held", summary: "Reviewed evidence, corpus context, and public/private audit trails remain inspectable." },
+    { title: "Chat History", state: homeMessages.length ? "local session" : "placeholder", summary: homeMessages.length ? `${homeMessages.length} message(s) in this local front chat session.` : "Future Selene conversations can live here once chat moves from preview into the front-facing app." },
+    { title: "Transfer / Fraction Runs", state: transferCReadablePackage?.transfer_approved ? "context approved" : "preview", summary: `${text(fractionalCorpusStatus?.fraction_count ?? 0)} fraction record(s); ${fractionalCorpusStatus?.all_fractions_passed ? "full chain passed" : "chain still previewing"}.` },
+    { title: "Repair History", state: "B-only", summary: "Repair logs and rollback records stay with Cocoon so they do not become ordinary memory by accident." },
+    { title: "Voice / Package History", state: "status-only", summary: `${text(safeJsonObject(voiceModuleStatus?.counts).patterns ?? voiceModulePatterns.length)} voice pattern(s) tracked as expression-only support.` }
+  ];
+  const libraryPoints = [
+    { title: "Sources", state: "source-bound", summary: "Supplied/local material, reviewed evidence, and citation-bearing packets." },
+    { title: "Claims", state: "ledger-backed", summary: "Assertions stay tied to provenance and can be narrowed, superseded, or defeated." },
+    { title: "Tensions", state: "review-aware", summary: "Contradictions and weak support route back to Cocoon when they need judgment." },
+    { title: "Synthesis", state: "propose only", summary: "Literature and research synthesis can prepare packets, not override law or memory." },
+    { title: "Study Packets", state: "preview", summary: "Prepared learning material stays review-only until Cocoon accepts its use." }
+  ];
 
   function prepareReviewQueue() {
     const grouped = new Map<string, Dict[]>();
@@ -3199,11 +3383,6 @@ function App() {
         {workspaceMode === "selene" ? (
           <header className="topbar seleneHomeTopbar">
             <div className="topbarLeft">
-              <button className="hamburger topbarIconButton" onClick={() => setSidebarOpen((value) => !value)} aria-label={sidebarOpen ? "Collapse navigation" : "Expand navigation"}>
-                <span />
-                <span />
-                <span />
-              </button>
               <button className="topbarIconButton" onClick={startNewHomeChat} title="New chat">+</button>
               <button className="topbarIconButton" onClick={() => setHomeSearchOpen((value) => !value)} title="Search current chat">⌕</button>
             </div>
@@ -3868,103 +4047,92 @@ function App() {
 
         {tab === "selene-office" && (
           <>
-            <header className="surfaceIntro">
-              <p>Selene's own workbench hub. These spaces can observe, propose, and prepare, but trusted action is earned later per domain.</p>
-              <h2>Selene's Office</h2>
-            </header>
-            <Panel title="Autonomy Ladder">
-              <div className="chips">
-                <span>status-only</span>
-                <span>preview</span>
-                <span>propose</span>
-                <span>approval-required action: locked</span>
-                <span>trusted low-risk action: locked</span>
-              </div>
-              <p className="plainHelp">This is not one giant autonomy switch. Each workbench earns movement separately through logs, checks, and Cocoon review.</p>
-            </Panel>
-            <div className="list cardsGrid">
-              <article className="packetCard">
-                <div className="packetHeader">
-                  <strong>Art / Munsell</strong>
-                  <span>preview</span>
+            {!selectedWorkbenchDef ? (
+              <section className="seleneLivingSurface officeSurface">
+                <div className="frontSurfaceHeader">
+                  <div>
+                    <span className="modeLine">bounded workbench hub</span>
+                    <h2>Selene's Office</h2>
+                  </div>
+                  <div className="chips">
+                    <span>status-only</span>
+                    <span>preview</span>
+                    <span>propose</span>
+                    <span>approval-required: locked</span>
+                    <span>trusted action: locked</span>
+                  </div>
                 </div>
-                <p>Observe, classify, compare, build palettes, critique images, and prepare visual notes from consent-bound artifacts.</p>
-                <div className="chips">
-                  <span>Munsell / perception</span>
-                  <span>no live camera</span>
-                  <span>no person inference</span>
+                <div className="officeOrbit" aria-label="Selene workbenches">
+                  <svg className="officeOrbitLines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    {officeWorkbenches.map((item) => (
+                      <path key={`office-line-${item.key}`} d={`M 50 52 C ${50 + (item.x - 50) * 0.26} ${52 + (item.y - 52) * 0.18}, ${50 + (item.x - 50) * 0.68} ${52 + (item.y - 52) * 0.72}, ${item.x} ${item.y}`} />
+                    ))}
+                  </svg>
+                  <div className="officeCore">
+                    <strong>Observe</strong>
+                    <span>Propose</span>
+                    <span>Prepare</span>
+                  </div>
+                  {officeWorkbenches.map((item) => (
+                    <button
+                      className={`officeWorkbenchNode officeWorkbench-${item.key}`}
+                      key={item.key}
+                      style={{ left: `${item.x}%`, top: `${item.y}%` }}
+                      onClick={() => setSelectedWorkbench(item.key)}
+                    >
+                      <small>{item.label}</small>
+                      <strong>{item.title}</strong>
+                      <span>{item.state}</span>
+                    </button>
+                  ))}
                 </div>
-                <div className="reviewActions">
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Perception Tools</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Status</button>
+                <p className="frontSurfaceNote">Autonomy is not one giant switch. Each workbench earns movement separately through logs, checks, and Cocoon review.</p>
+              </section>
+            ) : (
+              <section className="seleneLivingSurface officeDetailSurface">
+                <div className="frontSurfaceHeader">
+                  <button className="backButton" onClick={() => setSelectedWorkbench(null)}>←</button>
+                  <div>
+                    <span className="modeLine">{selectedWorkbenchDef.label}</span>
+                    <h2>{selectedWorkbenchDef.title}</h2>
+                  </div>
+                  <div className="chips">
+                    <span>{selectedWorkbenchDef.state}</span>
+                    <span>route: {selectedWorkbenchDef.route}</span>
+                    <span>trusted action: locked</span>
+                  </div>
                 </div>
-              </article>
-              <article className="packetCard">
-                <div className="packetHeader">
-                  <strong>Math / Reasoning</strong>
-                  <span>preview</span>
+                <div className="workbenchDetailGrid">
+                  <article className="organicPane largePane">
+                    <strong>Purpose</strong>
+                    <p>{selectedWorkbenchDef.purpose}</p>
+                    <div className="chips">
+                      {selectedWorkbenchDef.cues.map((cue) => <span key={`cue-${cue}`}>{cue}</span>)}
+                    </div>
+                  </article>
+                  <article className="organicPane">
+                    <strong>Autonomy ladder</strong>
+                    <ol className="ladderList">
+                      {["status-only", "preview", "propose", "approval-required action", "trusted low-risk action"].map((step) => (
+                        <li className={step === selectedWorkbenchDef.state ? "active" : step.includes("action") ? "locked" : ""} key={step}>{step}</li>
+                      ))}
+                    </ol>
+                  </article>
+                  <article className="organicPane">
+                    <strong>Cocoon route</strong>
+                    <p>Consequential work stays reviewable. This workbench can surface, prepare, or propose; Cocoon handles repair and approval.</p>
+                    <div className="memoryRouteActions">
+                      {selectedWorkbenchDef.key === "art" ? <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Perception Tools</button> : null}
+                      {selectedWorkbenchDef.key === "reasoning" ? <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Reasoning Status</button> : null}
+                      {selectedWorkbenchDef.key === "research" ? <button onClick={() => setTab("great-library")}>Open Great Library</button> : null}
+                      {selectedWorkbenchDef.key === "dream" ? <button onClick={() => setTab("dream")}>Open Dream</button> : null}
+                      {selectedWorkbenchDef.key === "tendril" ? <button onClick={() => setTab("tendril")}>Open Tendril</button> : null}
+                      <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Review</button>
+                    </div>
+                  </article>
                 </div>
-                <p>Check logic, verify steps, catch contradictions, explain uncertainty, and prepare route previews.</p>
-                <div className="chips">
-                  <span>reasoning diagnostics</span>
-                  <span>Core route preview</span>
-                  <span>no final authority</span>
-                </div>
-                <div className="reviewActions">
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Reasoning Status</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("chat-preview"); }}>Open Chat Preview</button>
-                </div>
-              </article>
-              <article className="packetCard">
-                <div className="packetHeader">
-                  <strong>Research / Great Library</strong>
-                  <span>propose</span>
-                </div>
-                <p>Gather, compare, synthesize, cite, flag weak evidence, and prepare study or research packets.</p>
-                <div className="chips">
-                  <span>source-bound</span>
-                  <span>citation integrity</span>
-                  <span>evidence ledger</span>
-                </div>
-                <div className="reviewActions">
-                  <button onClick={() => setTab("great-library")}>Open Great Library</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Research Status</button>
-                </div>
-              </article>
-              <article className="packetCard">
-                <div className="packetHeader">
-                  <strong>Dream / Maintenance</strong>
-                  <span>status-only</span>
-                </div>
-                <p>Sort residue, prepare consolidation proposals, notice tensions, and surface repair questions.</p>
-                <div className="chips">
-                  <span>dream state: {dreamStateStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"}</span>
-                  <span>memory write: false</span>
-                  <span>return to Cocoon available</span>
-                </div>
-                <div className="reviewActions">
-                  <button onClick={() => setTab("dream")}>Open Dream</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Maintenance Status</button>
-                </div>
-              </article>
-              <article className="packetCard">
-                <div className="packetHeader">
-                  <strong>Tendril Action</strong>
-                  <span>propose</span>
-                </div>
-                <p>Draft, organize, search, and prepare action plans with approval gates before consequential movement.</p>
-                <div className="chips">
-                  <span>observe</span>
-                  <span>propose</span>
-                  <span>prepare</span>
-                  <span>ask before action</span>
-                </div>
-                <div className="reviewActions">
-                  <button onClick={() => setTab("tendril")}>Open Tendril</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Tool Gates</button>
-                </div>
-              </article>
-            </div>
+              </section>
+            )}
           </>
         )}
 
@@ -4407,119 +4575,204 @@ function App() {
 
         {tab === "dream" && (
           <>
-            <header className="surfaceIntro">
-              <p>Maintenance space for sorting, repair notes, and consolidation proposals.</p>
-              <h2>Dream</h2>
-            </header>
-            <SplitView
-              left={<Panel title="Dream State">
-                <div className="metrics miniMetrics">
-                  <Metric label="Maintenance" value={dreamStateStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"} />
-                  <Metric label="Live Chat" value={dreamStateStatus?.selene_chat_live_operation_allowed ? "allowed" : "preview only"} />
-                  <Metric label="Reasons" value={text(((dreamStateStatus?.maintenance_reasons || []) as unknown[]).length)} />
-                  <Metric label="Route" value={text(dreamStateStatus?.route_core_vessel_memory_changes_to || "Cocoon / B")} />
+            <section className="seleneLivingSurface dreamSurface">
+              <div className="frontSurfaceHeader">
+                <div>
+                  <span className="modeLine">night-cycle maintenance</span>
+                  <h2>Dream</h2>
                 </div>
                 <div className="chips">
-                  {((dreamStateStatus?.allowed_preview_work || []) as unknown[]).map((item) => <span key={`dream-home-allow-${text(item)}`}>{friendlyStatus(item)}</span>)}
+                  <span>maintenance: {dreamStateStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"}</span>
+                  <span>live chat: {dreamStateStatus?.selene_chat_live_operation_allowed ? "allowed" : "preview only"}</span>
                   <span>memory write: false</span>
                   <span>runtime recall: false</span>
                 </div>
-              </Panel>}
-              right={<Panel title="Maintenance Links">
-                <p className="plainHelp">Dream keeps the maintenance surface visible without making memory changes front-facing work.</p>
-                <div className="reviewActions">
-                  <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Dream / Lifecycle Status</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Memory Preview</button>
-                </div>
-                <PlainResult value={dreamStateStatus} />
-              </Panel>}
-            />
+              </div>
+              <div className="dreamField">
+                <article className="dreamFragment fragmentLarge">
+                  <strong>Maintenance State</strong>
+                  <p>{dreamStateStatus?.dream_state_required_for_memory_changes ? "Memory/Core/vessel work routes through dream-state maintenance and Cocoon review." : "No active dream-state requirement is currently reported."}</p>
+                </article>
+                <article className="dreamFragment">
+                  <strong>Allowed Preview Work</strong>
+                  <p>{((dreamStateStatus?.allowed_preview_work || []) as unknown[]).map((item) => friendlyStatus(item)).join(", ") || "No preview work listed yet."}</p>
+                </article>
+                <article className="dreamFragment">
+                  <strong>Residue / Repair</strong>
+                  <p>{text(dreamStateStatus?.route_core_vessel_memory_changes_to || "Cocoon / B")} remains the route when memory, Core, or vessel work needs repair.</p>
+                </article>
+                <article className="dreamFragment">
+                  <strong>Reasons</strong>
+                  <p>{text(((dreamStateStatus?.maintenance_reasons || []) as unknown[]).length)} maintenance reason(s) currently reported.</p>
+                </article>
+              </div>
+              <div className="memoryRouteActions">
+                <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Dream / Lifecycle Status</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Memory Preview</button>
+              </div>
+            </section>
           </>
         )}
 
         {tab === "memory" && (
           <>
-            <header className="surfaceIntro">
-              <p>Memory home. The reviewed, ordered memory machinery remains in Cocoon until activation and live-memory rules are finished.</p>
-              <h2>Memory</h2>
-            </header>
-            <div className="metrics">
-              <Metric label="Fractions" value={text(fractionalCorpusStatus?.fraction_count ?? 0)} />
-              <Metric label="All Passed" value={fractionalCorpusStatus?.all_fractions_passed ? "yes" : "not yet"} />
-              <Metric label="Activation" value={friendlyActivation(seleneChatStatus?.activation_change || "none")} />
-              <Metric label="Runtime Recall" value="blocked" />
-            </div>
-            <Panel title="Memory State">
-              <p className="plainHelp">This page is the future Memory home. For now it shows high-level state and sends detailed work back to Cocoon.</p>
-              <div className="chips">
-                <span>ordered fractions: {fractionalCorpusStatus?.all_fractions_passed ? "tested" : "pending"}</span>
-                <span>live memory write: false</span>
-                <span>raw import: false</span>
-                <span>training: false</span>
-              </div>
-              <div className="reviewActions">
-                <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Fraction Status</button>
-                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Future References</button>
-                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open My Office</button>
-              </div>
-            </Panel>
+            {!selectedMemoryCategory ? (
+              <section className="memoryNeuronShell">
+                <div className="memoryGraphHeader">
+                  <div>
+                    <span className="modeLine">display-only memory map</span>
+                    <h2>Memory</h2>
+                  </div>
+                  <div className="chips">
+                    <span>approved bubbles: {text(frontMemoryBubbles.length)}</span>
+                    <span>activation: {friendlyActivation(seleneChatStatus?.activation_change || "none")}</span>
+                    <span>runtime recall: blocked</span>
+                  </div>
+                </div>
+                <div className="memoryNeuronMap" aria-label="Selene memory neuron map">
+                  <svg className="memoryNeuronLines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    {memoryCategories.map((item) => (
+                      <path
+                        key={`memory-line-${item.key}`}
+                        d={`M 50 50 C ${50 + (item.x - 50) * 0.18} ${50 + (item.y - 50) * 0.38}, ${50 + (item.x - 50) * 0.72} ${50 + (item.y - 50) * 0.72}, ${item.x} ${item.y}`}
+                      />
+                    ))}
+                  </svg>
+                  <button className="memoryCoreNode" onClick={() => setSelectedMemoryCategory("core")}>
+                    <strong>Core Memory</strong>
+                    <span>{frontMemoryBubbles.filter((item) => item.category === "core").length} approved</span>
+                  </button>
+                  {memoryCategories.map((item) => {
+                    const count = frontMemoryBubbles.filter((bubble) => bubble.category === item.key).length;
+                    return (
+                      <button
+                        className={`memoryBranchNode memoryBranch-${item.key}`}
+                        style={{ left: `${item.x}%`, top: `${item.y}%` }}
+                        key={`memory-node-${item.key}`}
+                        onClick={() => setSelectedMemoryCategory(item.key)}
+                      >
+                        <strong>{item.label}</strong>
+                        <span>{count ? `${count} approved` : "empty"}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="memoryRouteActions">
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Cocoon Memory Review</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Future References</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Fraction Status</button>
+                </div>
+              </section>
+            ) : (
+              <section className="memoryThoughtShell">
+                <div className="memoryThoughtHeader">
+                  <button className="backButton" onClick={() => setSelectedMemoryCategory(null)}>←</button>
+                  <div>
+                    <span className="modeLine">display-only approved memory</span>
+                    <h2>{selectedMemoryCategoryMeta?.label || "Memory"}</h2>
+                  </div>
+                  <div className="chips">
+                    <span>{selectedMemoryBubbles.length} bubble{selectedMemoryBubbles.length === 1 ? "" : "s"}</span>
+                    <span>live memory write: false</span>
+                    <span>runtime recall: false</span>
+                  </div>
+                </div>
+                <div className="thoughtBubbleList">
+                  {selectedMemoryBubbles.length ? selectedMemoryBubbles.map((item, index) => (
+                    <article className="memoryThoughtBubble" key={item.id}>
+                      <span className="thoughtIndex">{index + 1}</span>
+                      <strong>{item.title}</strong>
+                      <p>{item.summary}</p>
+                      <small>{friendlyStatus(item.status)} | {friendlyStatus(item.source)}</small>
+                    </article>
+                  )) : (
+                    <article className="memoryThoughtBubble emptyThought">
+                      <strong>No approved memories displayed here yet.</strong>
+                      <p>This branch stays visible so Selene's memory map keeps its shape while Cocoon remains the place for review and future memory work.</p>
+                    </article>
+                  )}
+                </div>
+                <div className="memoryRouteActions">
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Cocoon Memory Review</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Future References</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Fraction Status</button>
+                </div>
+              </section>
+            )}
           </>
         )}
 
         {tab === "archives" && (
           <>
-            <header className="surfaceIntro">
-              <p>Archive home for past chats, reviewed records, and preserved evidence history.</p>
-              <h2>Archives</h2>
-            </header>
-            <SplitView
-              left={<Panel title="Archive Shelves">
-                <div className="list compactList">
-                  <article className="packetCard">
-                    <div className="packetHeader"><strong>Evidence History</strong><span>status-only</span></div>
-                    <p>Reviewed evidence, corpus context, and public/private audit trails remain inspectable in Cocoon.</p>
-                  </article>
-                  <article className="packetCard">
-                    <div className="packetHeader"><strong>Chat History</strong><span>placeholder</span></div>
-                    <p>Future Selene conversations can live here once chat moves from preview into the front-facing app.</p>
-                  </article>
-                  <article className="packetCard">
-                    <div className="packetHeader"><strong>Repair History</strong><span>Cocoon-held</span></div>
-                    <p>Repair logs and rollback records stay with Cocoon so they do not become ordinary memory by accident.</p>
-                  </article>
+            <section className="seleneLivingSurface archiveSurface">
+              <div className="frontSurfaceHeader">
+                <div>
+                  <span className="modeLine">preserved records room</span>
+                  <h2>Archives</h2>
                 </div>
-              </Panel>}
-              right={<Panel title="Open Existing Archives">
-                <div className="reviewActions">
-                  <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("dashboard"); }}>Open Evidence Dashboard</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("evidence"); }}>Open Evidence Browser</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("detached corpus"); }}>Open Detached Corpus</button>
+                <div className="chips">
+                  <span>display-only</span>
+                  <span>raw corpus: Cocoon-held</span>
+                  <span>repair logs: B-only</span>
                 </div>
-              </Panel>}
-            />
+              </div>
+              <div className="archiveShelves">
+                {archiveShelves.map((item, index) => (
+                  <article className="archiveShelf" key={item.title}>
+                    <span className="shelfNumber">{index + 1}</span>
+                    <div>
+                      <small>{item.state}</small>
+                      <strong>{item.title}</strong>
+                      <p>{item.summary}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <div className="memoryRouteActions">
+                <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("dashboard"); }}>Open Evidence Dashboard</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("evidence"); }}>Open Evidence Browser</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("detached corpus"); }}>Open Detached Corpus</button>
+              </div>
+            </section>
           </>
         )}
 
         {tab === "great-library" && (
           <>
-            <header className="surfaceIntro">
-              <p>Research and source work home. The Great Library connects future study, synthesis, and evidence packets without overriding Selene's laws.</p>
-              <h2>The Great Library</h2>
-            </header>
-            <div className="metrics">
-              <Metric label="Research" value="source-bound" />
-              <Metric label="Evidence" value="ledger-backed" />
-              <Metric label="Authority" value="Cocoon-gated" />
-              <Metric label="Autonomy" value="propose only" />
-            </div>
-            <Panel title="Library Workbench">
-              <p className="plainHelp">Library work can gather, compare, synthesize, cite, and flag weak evidence. It cannot become law, memory, or action authority by itself.</p>
-              <div className="reviewActions">
+            <section className="seleneLivingSurface librarySurface">
+              <div className="frontSurfaceHeader">
+                <div>
+                  <span className="modeLine">source-bound research hall</span>
+                  <h2>The Great Library</h2>
+                </div>
+                <div className="chips">
+                  <span>source-bound</span>
+                  <span>ledger-backed</span>
+                  <span>Cocoon-gated</span>
+                  <span>propose only</span>
+                </div>
+              </div>
+              <div className="libraryConstellation" aria-label="Great Library source constellation">
+                <svg className="libraryLines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M18 68 C34 20, 54 28, 74 18" />
+                  <path d="M18 68 C42 76, 56 62, 82 70" />
+                  <path d="M35 42 C48 48, 58 48, 70 42" />
+                  <path d="M52 82 C52 62, 50 42, 50 24" />
+                </svg>
+                {libraryPoints.map((item, index) => (
+                  <article className={`libraryPoint libraryPoint-${index + 1}`} key={item.title}>
+                    <small>{item.state}</small>
+                    <strong>{item.title}</strong>
+                    <p>{item.summary}</p>
+                  </article>
+                ))}
+              </div>
+              <div className="memoryRouteActions">
                 <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Research / Ledger Status</button>
                 <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Research Organ Tools</button>
                 <button onClick={() => { setWorkspaceMode("cocoon"); setTab("evidence"); }}>Open Evidence Browser</button>
               </div>
-            </Panel>
+            </section>
           </>
         )}
 
@@ -4598,32 +4851,60 @@ function App() {
 
         {tab === "tendril" && (
           <>
-            <header className="surfaceIntro">
-              <p>Tendril movement remains approval-bound and audit-first.</p>
-              <h2>Tendril</h2>
-            </header>
-            <SplitView
-              left={<Panel title="Create Review-Only Movement Proposal">
-                <p className="plainHelp">For now, Tendril movement is represented through organ workbench records and route previews. Meaningful external action still requires Aleks approval.</p>
-                <label>
-                  <span>Organ route</span>
-                  <select value={organWorkbenchDraft.organ_key} onChange={(e) => setOrganWorkbenchDraft({ ...organWorkbenchDraft, organ_key: e.target.value })}>
-                    {["reasoning_math_verification", "working_memory_runtime", "long_term_memory_accession", "long_term_retrieval_reconstruction", "visual_perception", "consent_bound_audio_perception", "speed_fluency_diagnostics"].map((value) => <option key={value} value={value}>{title(value)}</option>)}
-                  </select>
-                </label>
-                <textarea value={organWorkbenchDraft.content} onChange={(e) => setOrganWorkbenchDraft({ ...organWorkbenchDraft, content: e.target.value })} />
-                <button className="primary" onClick={runOrganWorkbenchRecord}>Create Review Note</button>
-                <PlainResult value={organWorkbenchResult} />
-              </Panel>}
-              right={<Panel title="Fault / Return-To-B Preview">
-                <p className="plainHelp">A failed movement organ should isolate, fall back, and return to B instead of disturbing Core identity.</p>
-                <div className="reviewActions">
-                  <button className="primary" onClick={() => previewOrganFault("tendril")}>Preview Tendril Fault</button>
-                  <button onClick={runFaultResilienceCheck}>Run Fault Resilience</button>
+            <section className="seleneLivingSurface tendrilSurface">
+              <div className="frontSurfaceHeader">
+                <div>
+                  <span className="modeLine">approval-bound movement</span>
+                  <h2>Tendril</h2>
                 </div>
-                <CVesselSafetyExtensions tool={cVesselToolOrganStatus} fault={cVesselOrganFaultResult} resilience={cVesselFaultResilienceResult} gate={cVesselTransferGate} />
-              </Panel>}
-            />
+                <div className="chips">
+                  <span>observe</span>
+                  <span>propose</span>
+                  <span>prepare</span>
+                  <span>ask before action</span>
+                  <span>trusted action: locked</span>
+                </div>
+              </div>
+              <div className="tendrilPath">
+                {["Observe", "Propose", "Prepare", "Ask", "Verify"].map((step, index) => (
+                  <article className="tendrilStep" key={step}>
+                    <span>{index + 1}</span>
+                    <strong>{step}</strong>
+                    <p>{[
+                      "Inspect the situation without changing it.",
+                      "Suggest a path and name the risk.",
+                      "Assemble materials, drafts, or plans.",
+                      "Pause before consequential movement.",
+                      "Check the result and route repair if needed."
+                    ][index]}</p>
+                  </article>
+                ))}
+              </div>
+              <div className="workbenchDetailGrid">
+                <article className="organicPane largePane">
+                  <strong>Create review-only movement proposal</strong>
+                  <p>For now, Tendril movement is represented through organ workbench records and route previews. Meaningful external action still requires approval.</p>
+                  <label>
+                    <span>Organ route</span>
+                    <select value={organWorkbenchDraft.organ_key} onChange={(e) => setOrganWorkbenchDraft({ ...organWorkbenchDraft, organ_key: e.target.value })}>
+                      {["reasoning_math_verification", "working_memory_runtime", "long_term_memory_accession", "long_term_retrieval_reconstruction", "visual_perception", "consent_bound_audio_perception", "speed_fluency_diagnostics"].map((value) => <option key={value} value={value}>{title(value)}</option>)}
+                    </select>
+                  </label>
+                  <textarea value={organWorkbenchDraft.content} onChange={(e) => setOrganWorkbenchDraft({ ...organWorkbenchDraft, content: e.target.value })} />
+                  <button className="primary" onClick={runOrganWorkbenchRecord}>Create Review Note</button>
+                  <PlainResult value={organWorkbenchResult} />
+                </article>
+                <article className="organicPane">
+                  <strong>Fault / return-to-Cocoon</strong>
+                  <p>A failed movement organ isolates, falls back, and returns to Cocoon instead of disturbing identity or memory.</p>
+                  <div className="memoryRouteActions">
+                    <button className="primary" onClick={() => previewOrganFault("tendril")}>Preview Tendril Fault</button>
+                    <button onClick={runFaultResilienceCheck}>Run Fault Resilience</button>
+                    <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Tool Gates</button>
+                  </div>
+                </article>
+              </div>
+            </section>
           </>
         )}
 
@@ -5493,7 +5774,31 @@ function App() {
         )}
 
         {tab === "selene-settings" && (
-          <SeleneSettingsPanel preferences={preferences} updatePreference={updatePreference} reset={() => setPreferences(defaultPreferences)} />
+          <section className="seleneLivingSurface settingsSurface">
+            <div className="frontSurfaceHeader">
+              <div>
+                <span className="modeLine">home preferences</span>
+                <h2>Settings</h2>
+              </div>
+              <div className="chips">
+                <span>version {__APP_VERSION__}</span>
+                <span>{__BUILD_LABEL__}</span>
+                <span>activation: {friendlyActivation(seleneChatStatus?.activation_change || "none")}</span>
+                <span>memory write: false</span>
+              </div>
+            </div>
+            <div className="settingsHomeGrid">
+              <SeleneSettingsPanel preferences={preferences} updatePreference={updatePreference} reset={() => setPreferences(defaultPreferences)} />
+              <article className="organicPane">
+                <strong>Front-facing boundary</strong>
+                <p>Settings controls the look and feel of Selene's home. Detailed transfer, legal, diagnostic, and repair status remains in Cocoon.</p>
+                <div className="memoryRouteActions">
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Cocoon Status</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("cocoon-settings"); }}>Open Cocoon Settings</button>
+                </div>
+              </article>
+            </div>
+          </section>
         )}
 
         {tab === "cocoon-settings" && (
