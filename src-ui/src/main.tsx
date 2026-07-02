@@ -3336,7 +3336,16 @@ function App() {
         </div>
         <label className="profileNameField">
           <span>Your name</span>
-          <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+          <input
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
+          />
         </label>
         <div className="sidebarWorkspaceSwitch" aria-label="Workspace switch">
           <button className={workspaceMode === "selene" ? "active" : ""} onClick={() => switchWorkspace("selene")} title="Selene workspace">
@@ -4017,16 +4026,6 @@ function App() {
               </div>
               <div className="homeComposer">
                 <button className="homeToolButton" onClick={() => undefined} title="Add attachment">+</button>
-                <div className="tendrilMenuWrap">
-                  <button className="homeToolButton tendrilGlyph" onClick={() => setTendrilMenuOpen((value) => !value)} title="Tendril proposal menu">⌁</button>
-                  {tendrilMenuOpen ? (
-                    <div className="floatingMenu tendrilMenu">
-                      <button onClick={() => openSeleneTab("tendril")}>Make proposal</button>
-                      <button onClick={() => openCocoonTab("tools")}>View approval gates</button>
-                      <button onClick={() => openCocoonTab("my-office")}>Open Cocoon review</button>
-                    </div>
-                  ) : null}
-                </div>
                 <textarea
                   value={homeChatText}
                   onChange={(event) => setHomeChatText(event.target.value)}
@@ -4038,6 +4037,16 @@ function App() {
                   }}
                   placeholder="Message Selene..."
                 />
+                <div className="tendrilMenuWrap">
+                  <button className="homeToolButton tendrilGlyph" onClick={() => setTendrilMenuOpen((value) => !value)} title="Tendril proposal menu">⌁</button>
+                  {tendrilMenuOpen ? (
+                    <div className="floatingMenu tendrilMenu">
+                      <button onClick={() => openSeleneTab("tendril")}>Make proposal</button>
+                      <button onClick={() => openCocoonTab("tools")}>View approval gates</button>
+                      <button onClick={() => openCocoonTab("my-office")}>Open Cocoon review</button>
+                    </div>
+                  ) : null}
+                </div>
                 <button className="homeToolButton" onClick={() => undefined} title="Future voice support">🎤</button>
                 <button className="primary" onClick={sendHomePreviewMessage} disabled={!homeChatText.trim()}>Send</button>
               </div>
