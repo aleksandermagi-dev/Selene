@@ -435,6 +435,16 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   line-height: 1;
 }
 
+.topbarIconButton.hamburger {
+  gap: 4px;
+  padding: 8px;
+}
+
+.homeHamburger span {
+  background: currentColor;
+  width: 18px;
+}
+
 .timeButton {
   color: var(--accent-3);
   min-width: 168px;
@@ -603,16 +613,23 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .packetCard {
   align-content: start;
 }
-.packetCard.clickableCard {
+.clickableCard {
   cursor: pointer;
 }
-.packetCard.clickableCard:focus-visible {
+.clickableCard:focus-visible {
   border-color: var(--accent);
   outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
   outline-offset: 2px;
 }
-.packetCard.clickableCard:hover {
+.clickableCard:hover {
   border-color: var(--accent);
+}
+.targetHint {
+  color: var(--text-muted);
+  display: block;
+  font-size: 12px;
+  line-height: 1.35;
+  margin-top: 8px;
 }
 .packetFields {
   display: grid;

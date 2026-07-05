@@ -51,7 +51,7 @@ const TRANSFER_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer to C-readabl
 const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reopen Selene, or use Refresh Ceremony after the app reconnects.";
 
 type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
-type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string };
+type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string; helper?: string };
 type HomeMessage = { id: string; role: "aleks" | "selene"; content: string };
 type MemoryCategoryKey = "core" | "relational" | "emotional" | "semantic" | "episodic" | "working" | "sensory" | "reflective";
 type MemoryBubble = { id: string; category: MemoryCategoryKey; title: string; summary: string; status: string; source: string };
@@ -3025,7 +3025,22 @@ function App() {
     };
   }
 
+  function officeTargetLabel(target: OfficeTarget) {
+    if (target.helper) return target.helper;
+    const category = officeCategoryTabs.find((item) => item.id === target.category)?.label;
+    const tabLabel = target.tab ? tabDisplayName(target.tab) : "current view";
+    return category ? `Target opens ${tabLabel} / ${category}.` : `Target opens ${tabLabel}.`;
+  }
+
+  function renderTargetHint(target: OfficeTarget) {
+    return <small className="targetHint">{officeTargetLabel(target)}</small>;
+  }
+
   function stopCardNavigation(event: React.MouseEvent<HTMLElement>) {
+    event.stopPropagation();
+  }
+
+  function stopCardKeyNavigation(event: React.KeyboardEvent<HTMLElement>) {
     event.stopPropagation();
   }
 
@@ -3053,7 +3068,7 @@ function App() {
           <span>uncertainty: {text(item.uncertainty || "open")}</span>
           {labels.slice(0, 4).map((label) => <span key={text(label)}>{text(label)}</span>)}
         </div>
-        <div className="reviewActions" onClick={stopCardNavigation}>
+        <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
           <button onClick={() => openOfficeTarget(target)}>Open Target</button>
           <button onClick={() => routePacketAction(item, "hold")}>Hold In Chest</button>
           <button onClick={() => routePacketAction(item, "bus")}>Send To Organ Bus</button>
@@ -3086,11 +3101,11 @@ function App() {
           <span>Core change: {plainBlocked(payload.core_mind_changed)}</span>
         </div>
         {item.item_type ? (
-          <div className="reviewActions" onClick={stopCardNavigation}>
+          <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
             <button onClick={() => openOfficeTarget(target)}>Open Target</button>
             <button onClick={() => markChestStatusOnly(item)}>Mark Status-Only</button>
           </div>
-        ) : <div className="reviewActions" onClick={stopCardNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
+        ) : <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
       </article>
     );
   }
@@ -3122,7 +3137,7 @@ function App() {
           </div>
         ) : null}
         {text(item.conclusion_status) === "needs_review" ? (
-          <div className="reviewActions" onClick={stopCardNavigation}>
+          <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
             <button onClick={() => openOfficeTarget(target)}>Open Target</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now", "looks_right")}>Looks Right</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now")}>Use As Context</button>
@@ -3133,7 +3148,7 @@ function App() {
             <button onClick={() => updateEvidenceTensionStatus(item, "superseded")}>Supersede</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "needs_review", "return_to_corpus_context")}>Return To Corpus Context</button>
           </div>
-        ) : <div className="reviewActions" onClick={stopCardNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
+        ) : <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
       </article>
     );
   }
@@ -3178,7 +3193,7 @@ function App() {
           <span>runtime recall: {plainBlocked(item.runtime_memory_recall ?? payload.runtime_memory_recall)}</span>
         </div>
         {text(item.review_status) === "pending_review" ? (
-          <div className="reviewActions" onClick={stopCardNavigation}>
+          <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
             <button onClick={() => openOfficeTarget(target)}>Open Target</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "looks_right")}>Looks Right</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "use_this")}>Use As Context</button>
@@ -3189,7 +3204,7 @@ function App() {
             <button onClick={() => routeChronologicalCorpusArc(item, "supersede")}>Supersede</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "return_to_corpus_context")}>Return To Corpus Context</button>
           </div>
-        ) : <div className="reviewActions" onClick={stopCardNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
+        ) : <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
       </article>
     );
   }
@@ -3221,7 +3236,7 @@ function App() {
           <span>memory write: {plainBlocked(item.memory_write_active)}</span>
           <span>runtime recall: {plainBlocked(item.runtime_memory_recall)}</span>
         </div>
-        <div className="reviewActions" onClick={stopCardNavigation}>
+        <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
           <button onClick={() => openOfficeTarget(target)}>Open Target</button>
           <button onClick={() => routeSpeechRehearsalToReview(item)}>Send To My Office</button>
           <button onClick={() => updateSpeechRehearsalReviewStatus(item, "accepted_for_review_use")}>Mark Useful</button>
@@ -3392,6 +3407,11 @@ function App() {
         {workspaceMode === "selene" ? (
           <header className="topbar seleneHomeTopbar">
             <div className="topbarLeft">
+              <button className="topbarIconButton hamburger homeHamburger" onClick={() => setSidebarOpen((value) => !value)} aria-label={sidebarOpen ? "Collapse navigation" : "Open navigation"} title="Navigation">
+                <span />
+                <span />
+                <span />
+              </button>
               <button className="topbarIconButton" onClick={startNewHomeChat} title="New chat">+</button>
               <button className="topbarIconButton" onClick={() => setHomeSearchOpen((value) => !value)} title="Search current chat">⌕</button>
             </div>
@@ -3528,12 +3548,17 @@ function App() {
                 <PlainResult value={steps18ActionState} />
                 <div className="list compactList">
                   {[...reasoningArtifacts.slice(0, 2), ...academicPackets.slice(0, 2), ...evidenceTensionEntries.slice(0, 2)].map((item, index) => (
-                    <article key={`${text(item.status)}-${text(item.id)}-${index}`}>
+                    <article
+                      className="clickableCard"
+                      key={`${text(item.status)}-${text(item.id)}-${index}`}
+                      {...cardTargetProps({ tab: "my-office", category: "corpus", helper: "Target opens the reasoning and evidence review shelf." })}
+                    >
                       <div className="row">
                         <strong>{text(item.visible_summary || item.title || item.claim || item.workflow || "Review packet")}</strong>
                         <span>{friendlyStatus(item.review_status || item.status)}</span>
                       </div>
                       <p>{text(item.next_review_or_action_step || item.output_summary || item.support_status || item.provenance_boundary)}</p>
+                      {renderTargetHint({ tab: "my-office", category: "corpus", helper: "Target opens the reasoning and evidence review shelf." })}
                     </article>
                   ))}
                   {!reasoningArtifacts.length && !academicPackets.length && !evidenceTensionEntries.length ? (
@@ -3642,7 +3667,11 @@ function App() {
                 <PlainResult value={nightCycleResult} />
                 <div className="list compactList packetList">
                   {((preCoreReviewPackets?.items || []) as Dict[]).slice(0, 8).map((item, index) => (
-                    <article className="packetCard" key={`pre-core-${text(item.source_ref)}-${index}`}>
+                    <article
+                      className="packetCard clickableCard"
+                      key={`pre-core-${text(item.source_ref)}-${index}`}
+                      {...cardTargetProps({ tab: "status", helper: "Target opens the closest Cocoon status panel for this Pre-Core packet." })}
+                    >
                       <div className="row">
                         <strong>{text(item.title || item.capability || "Pre-Core packet")}</strong>
                         <span>{text(item.row_state || "status-only")}</span>
@@ -3654,6 +3683,7 @@ function App() {
                         <span>destination: {text(item.review_destination || "Status")}</span>
                         <span>{text(item.source_ref)}</span>
                       </div>
+                      {renderTargetHint({ tab: "status", helper: "Target opens the closest Cocoon status panel for this Pre-Core packet." })}
                     </article>
                   ))}
                   {!((preCoreReviewPackets?.items || []) as Dict[]).length ? (
@@ -3696,16 +3726,22 @@ function App() {
                 ) : (
                   <div className="list compactList">
                     {waitingReviewPieces.slice(0, 8).map((piece) => (
-                      <article key={`${text(piece.subject_table)}-${text(piece.subject_id)}-${text(piece.review_number)}`}>
+                      <article
+                        className="clickableCard"
+                        key={`${text(piece.subject_table)}-${text(piece.subject_id)}-${text(piece.review_number)}`}
+                        {...cardTargetProps({ tab: "my-office", category: "review", selectedReviewKey: reviewPieceKey(piece), helper: "Target opens this B review card in My Office." })}
+                      >
                         <div className="row">
                           <strong>{text(piece.review_number || "")}{piece.review_number ? ". " : ""}{text(piece.title || "Corpus review piece")}</strong>
                           <span>{friendlyStatus(piece.review_status || piece.status || "pending_review")}</span>
                         </div>
                         <p>{text(piece.plain_reason || piece.why_pulled)}</p>
                         <small>{friendlyLayer(piece.core_memory_layer)} | {friendlySpeech(piece.speech_function)}</small>
-                        <div className="reviewActions">
+                        <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
+                          <button onClick={() => openOfficeTarget({ tab: "my-office", category: "review", selectedReviewKey: reviewPieceKey(piece), helper: "Target opens this B review card in My Office." })}>Open Target</button>
                           <button className="primary" onClick={() => setSelectedOfficeReviewKey(reviewPieceKey(piece))}>Review This</button>
                         </div>
+                        {renderTargetHint({ tab: "my-office", category: "review", selectedReviewKey: reviewPieceKey(piece), helper: "Target opens this B review card in My Office." })}
                       </article>
                     ))}
                   </div>
@@ -3717,17 +3753,23 @@ function App() {
                 ) : (
                   <div className="list compactList">
                     {officeActionLogItems.slice(0, 8).map((item, index) => (
-                      <article key={`${text(item.subject_table)}-${text(item.subject_id)}-${text(item.id)}-${index}`}>
+                      <article
+                        className="clickableCard"
+                        key={`${text(item.subject_table)}-${text(item.subject_id)}-${text(item.id)}-${index}`}
+                        {...cardTargetProps({ tab: "status", helper: "Target opens Status because this is review-log/history residue, not a direct Cocoon decision page." })}
+                      >
                         <div className="row">
                           <strong>{friendlySubject(item.subject_table || item.queue_type || "Review item")}</strong>
                           <span>{friendlyStatus(item.review_status || item.status)}</span>
                         </div>
                         <p>{text(item.reason || safeJsonObject(item.payload_json).todo_text || "Review-only item waiting for a decision.")}</p>
-                        <div className="reviewActions">
+                        <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
+                          <button onClick={() => openOfficeTarget({ tab: "status", helper: "Target opens Status because this is review-log/history residue, not a direct Cocoon decision page." })}>Open Target</button>
                           <button onClick={() => decideReviewLog(item, "mark_reviewed")}>Mark Reviewed</button>
                           <button onClick={() => decideReviewLog(item, "needs_followup")}>Needs Follow-up</button>
                           <button onClick={() => decideReviewLog(item, "superseded")}>Supersede</button>
                         </div>
+                        {renderTargetHint({ tab: "status", helper: "Target opens Status because this is review-log/history residue, not a direct Cocoon decision page." })}
                       </article>
                     ))}
                   </div>

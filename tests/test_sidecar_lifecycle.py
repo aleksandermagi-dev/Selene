@@ -3,6 +3,7 @@ from __future__ import annotations
 import http.client
 import json
 import threading
+from pathlib import Path
 
 from selene.sidecar import SeleneHandler, SeleneServer
 
@@ -70,3 +71,16 @@ def test_voice_evidence_triage_status_endpoint_is_reachable(tmp_path):
     assert payload["status"] == "voice_evidence_triage_not_run"
     assert payload["activation_change"] == "none"
     assert payload["memory_write_active"] is False
+
+
+def test_tauri_release_and_sidecar_helpers_are_configured_without_console_windows():
+    repo = Path(__file__).resolve().parents[1]
+    main_rs = (repo / "src-tauri" / "src" / "main.rs").read_text(encoding="utf-8")
+    lib_rs = (repo / "src-tauri" / "src" / "lib.rs").read_text(encoding="utf-8")
+
+    assert 'windows_subsystem = "windows"' in main_rs
+    assert "CREATE_NO_WINDOW" in lib_rs
+    assert ".stdout(Stdio::null())" in lib_rs
+    assert ".stderr(Stdio::null())" in lib_rs
+    assert "command.creation_flags(CREATE_NO_WINDOW)" in lib_rs
+    assert ".creation_flags(CREATE_NO_WINDOW)" in lib_rs
