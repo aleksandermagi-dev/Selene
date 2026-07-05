@@ -435,14 +435,10 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   line-height: 1;
 }
 
-.topbarIconButton.hamburger {
-  gap: 4px;
-  padding: 8px;
-}
-
-.homeHamburger span {
-  background: currentColor;
-  width: 18px;
+.cocoonQuickButton {
+  color: var(--accent-2);
+  font-size: 18px;
+  letter-spacing: 0;
 }
 
 .timeButton {

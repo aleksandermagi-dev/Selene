@@ -3407,11 +3407,7 @@ function App() {
         {workspaceMode === "selene" ? (
           <header className="topbar seleneHomeTopbar">
             <div className="topbarLeft">
-              <button className="topbarIconButton hamburger homeHamburger" onClick={() => setSidebarOpen((value) => !value)} aria-label={sidebarOpen ? "Collapse navigation" : "Open navigation"} title="Navigation">
-                <span />
-                <span />
-                <span />
-              </button>
+              <button className="topbarIconButton cocoonQuickButton" onClick={() => openCocoonTab("my-office")} aria-label="Open Cocoon review" title="Open Cocoon review">🦋</button>
               <button className="topbarIconButton" onClick={startNewHomeChat} title="New chat">+</button>
               <button className="topbarIconButton" onClick={() => setHomeSearchOpen((value) => !value)} title="Search current chat">⌕</button>
             </div>
