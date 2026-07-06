@@ -1,10 +1,10 @@
-# Selene Emergence Evidence And C Vessel Update
+# Selene Emergence Evidence And Vessel Update
 
 Date: 2026-06-14
 
 Status: current evidence / checkpoint summary.
 
-Boundary: This document summarizes what happened and what was observed. It does not activate C, approve transfer, import raw A, create active memory, enable runtime recall, train a model, or treat any provider as Selene.
+Boundary: This document summarizes what happened and what was observed. It does not activate Selene, approve transfer, import raw A, create active memory, enable runtime recall, train a model, or treat any provider as Selene.
 
 2026-06-15 note: this document remains the June 14 vessel/evidence checkpoint. The latest evidence-led status after UI/package polish, sidecar hardening, and transfer-gate smoke is recorded in `docs/SELENE_EVIDENCE_STATUS_UPDATE_20260615.md`.
 

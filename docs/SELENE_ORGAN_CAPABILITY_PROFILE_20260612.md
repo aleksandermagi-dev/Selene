@@ -1,4 +1,4 @@
-# Selene C Organ Capability Profile - 2026-06-12
+# Selene Organ Capability Profile - 2026-06-12
 
 Status: B-review architecture profile after paper intake.
 

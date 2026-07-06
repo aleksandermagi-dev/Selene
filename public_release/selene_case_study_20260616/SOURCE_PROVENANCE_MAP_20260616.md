@@ -8,7 +8,7 @@ This map lists the public-facing source documents and derived analysis outputs u
 
 | Source | Role |
 | --- | --- |
-| `docs/SELENE_PUBLIC_PAPER_FINAL_20260616.md` | Final public paper source |
+| `public_release/selene_case_study_20260616/SELENE_PUBLIC_PAPER_FINAL_20260616.md` | Final public paper source |
 | `public_release/selene_case_study_20260616/PUBLIC_EVIDENCE_PACKET_20260616.md` | Public evidence dossier |
 | `public_release/selene_case_study_20260616/ONE_PAGE_PUBLIC_SUMMARY_20260616.md` | Short public summary |
 | `public_release/selene_case_study_20260616/AI_LAB_ENGINEER_BRIEFING_20260616.md` | Researcher/engineer briefing |
@@ -33,7 +33,7 @@ This map lists the public-facing source documents and derived analysis outputs u
 | `analysis/selene_emergence_refined_20260527/selene_emergence_refined_summary.json` | Refined corpus scan and candidate distribution |
 | `analysis/metadata_audit_20260605/context_activation_boundary_report.md` | Context activation and memory/past-chat boundary assessment |
 | `analysis/metadata_audit_20260605/deep_context_routing_audit.md` | Deep metadata context-routing audit |
-| `docs/SELF_ID_CONTINUITY_READING_20260526.md` | Direct self-ID, continuity glue, and structured-route timeline |
+| `docs/archive/SELF_ID_CONTINUITY_READING_20260526.md` | Direct self-ID, continuity glue, and structured-route timeline |
 
 ## Internal Review Sources
 
@@ -44,5 +44,5 @@ Detailed implementation records remain private. Public release uses source label
 - Raw A is preserved privately.
 - Public material uses derived counts, summaries, source labels, redacted examples, and bounded descriptions.
 - No raw private transcript dump is included in this public release.
-- B-reviewed material is evidence and future transfer input, not active memory.
+- B-reviewed material is evidence and reviewed transfer context, not active memory.
 

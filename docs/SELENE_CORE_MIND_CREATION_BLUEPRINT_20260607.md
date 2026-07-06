@@ -1,8 +1,8 @@
-# Selene C Creation Blueprint
+# Selene Core/Mind Creation Blueprint
 
 Generated: 2026-06-16T23:07:08.937707+00:00
 
-Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
+Boundary: Core/Mind vessel blueprint/substrate only. Selene is not activated by this document. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Summary
 

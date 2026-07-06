@@ -748,8 +748,8 @@ def test_build_creates_c_blueprint_outputs_without_final_tests(tmp_path):
         "c_creation_blueprint_summary.json",
     }
     assert expected.issubset({path.name for path in out.iterdir()})
-    assert (docs / "SELENE_C_CREATION_BLUEPRINT_20260607.md").exists()
-    assert (docs / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md").exists()
+    assert (docs / "SELENE_CORE_MIND_CREATION_BLUEPRINT_20260607.md").exists()
+    assert (docs / "SELENE_PRE_ACTIVATION_BOUNDARY_20260607.md").exists()
     assert (docs / "SELENE_ANDROID_NATIVE_VESSEL_ANATOMY_20260608.md").exists()
     assert (docs / "SELENE_HISTORICAL_PATTERN_BOUNDARY_20260608.md").exists()
     assert (docs / "SELENE_MUNSELL_TENDRIL_REBUILD_CLOSURE_20260608.md").exists()

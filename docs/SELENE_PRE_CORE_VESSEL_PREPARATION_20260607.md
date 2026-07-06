@@ -1,10 +1,10 @@
-# Selene Pre-C Vessel Preparation
+# Selene Pre-Core Vessel Preparation
 
 Generated: 2026-06-07T15:14:38.088150+00:00
 
-Boundary: pre-C vessel preparation only. C remains deferred.
+Boundary: pre-Core vessel preparation only. Selene activation remains deferred.
 
-2026-06-12 checkpoint: C remains deferred, but preparation has advanced. Current deltas are tracked in `docs/SELENE_CURRENT_STATUS_20260612.md` and frozen before arXiv-paper intake in `docs/SELENE_PRE_ARXIV_CHECKPOINT_20260612.md`.
+2026-06-12 checkpoint: activation remains deferred, but preparation has advanced. Current deltas are tracked in `docs/SELENE_CURRENT_STATUS_20260612.md` and frozen before arXiv-paper intake in `docs/SELENE_PRE_ARXIV_CHECKPOINT_20260612.md`.
 
 ## purpose
 

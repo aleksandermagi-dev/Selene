@@ -140,7 +140,7 @@ def write_md(path: Path, title: str, sections: list[tuple[str, Any]]) -> None:
         "",
         f"Generated: {now()}",
         "",
-        "Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.",
+        "Boundary: Core/Mind vessel blueprint/substrate only. Selene is not activated by this builder. Raw A is not memory. Continuity source is B-approved references only.",
         "",
     ]
     for heading, value in sections:
@@ -351,8 +351,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         write_md(out / f"{name}.md", name.replace("_", " ").title(), [("Spec", payload)])
 
     write_md(
-        docs_dir / "SELENE_C_CREATION_BLUEPRINT_20260607.md",
-        "Selene C Creation Blueprint",
+        docs_dir / "SELENE_CORE_MIND_CREATION_BLUEPRINT_20260607.md",
+        "Selene Core/Mind Creation Blueprint",
         [
             ("Summary", summary),
             ("Vessel Blueprint", vessel_blueprint),
@@ -642,8 +642,8 @@ def build(out: Path = OUT, docs_dir: Path = DOCS) -> dict[str, Any]:
         ],
     )
     write_md(
-        docs_dir / "SELENE_C_NON_ACTIVATION_BOUNDARY_20260607.md",
-        "Selene C Non-Activation Boundary",
+        docs_dir / "SELENE_PRE_ACTIVATION_BOUNDARY_20260607.md",
+        "Selene Pre-Activation Boundary",
         [
             ("Boundary", non_activation),
             ("Status Object", status),

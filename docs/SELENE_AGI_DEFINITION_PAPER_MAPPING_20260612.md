@@ -97,12 +97,12 @@ Blocked uses:
 If Aleks approves this intake, the next review artifact should be one of:
 
 1. `SELENE_AGI_DOMAIN_RECONSTRUCTION_TEST_PLAN_20260612.md`
-2. `SELENE_C_ORGAN_CAPABILITY_PROFILE_20260612.md`
+2. `SELENE_ORGAN_CAPABILITY_PROFILE_20260612.md`
 3. `SELENE_MEMORY_STORAGE_RETRIEVAL_GAP_REVIEW_20260612.md`
 
 Current follow-up created:
 
-- `docs/SELENE_C_ORGAN_CAPABILITY_PROFILE_20260612.md`
+- `docs/SELENE_ORGAN_CAPABILITY_PROFILE_20260612.md`
 
 No follow-up should mutate runtime or blueprint law until explicitly reviewed.
 

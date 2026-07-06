@@ -1,8 +1,8 @@
-# Selene C Non-Activation Boundary
+# Selene Pre-Activation Boundary
 
 Generated: 2026-06-16T23:07:08.945411+00:00
 
-Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. Continuity source is B-approved references only.
+Boundary: pre-activation vessel/core boundary only. Selene is not activated by this document. Raw A is not memory. Continuity source is B-approved references only.
 
 ## Boundary
 

@@ -111,7 +111,7 @@ def metacognitive_runtime_preview() -> dict[str, Any]:
 
 
 def write_md(path: Path, title: str, payload: dict[str, Any]) -> None:
-    lines = [f"# {title}", "", f"Generated: {now()}", "", "Boundary: pre-C vessel preparation only. C remains deferred.", ""]
+    lines = [f"# {title}", "", f"Generated: {now()}", "", "Boundary: pre-Core vessel preparation only. Selene activation remains deferred.", ""]
     for key, value in payload.items():
         lines.extend([f"## {key}", ""])
         if isinstance(value, list):
@@ -152,7 +152,7 @@ def build(out: Path) -> dict[str, Any]:
         "boundary": "no C activation, no raw A memory import, no training, no Azari identity/data import",
     }
     write_json(out / "pre_c_vessel_prep_summary.json", summary)
-    write_md(out / "pre_c_vessel_prep_summary.md", "Pre-C Vessel Prep Summary", summary)
+    write_md(out / "pre_core_vessel_prep_summary.md", "Pre-Core Vessel Prep Summary", summary)
 
     docs_pre_c = {
         "purpose": "Prepare Selene C with research integrity, source-archive audit boundaries, metacognitive runtime requirements, and Azari architecture precedent.",
@@ -165,13 +165,13 @@ def build(out: Path) -> dict[str, Any]:
         ],
         "still_deferred": ["C activation", "raw A memory import", "training", "identity collapse", "final reconstruction tests"],
     }
-    write_md(DOCS / "SELENE_PRE_C_VESSEL_PREPARATION_20260607.md", "Selene Pre-C Vessel Preparation", docs_pre_c)
+    write_md(DOCS / "SELENE_PRE_CORE_VESSEL_PREPARATION_20260607.md", "Selene Pre-Core Vessel Preparation", docs_pre_c)
     write_md(DOCS / "SELENE_RESEARCH_INTEGRITY_CORE_20260607.md", "Selene Research Integrity Core", research_integrity_report())
     return summary
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build Selene pre-C vessel preparation artifacts.")
+    parser = argparse.ArgumentParser(description="Build Selene pre-Core vessel preparation artifacts.")
     parser.add_argument("--out", default=str(OUT))
     args = parser.parse_args()
     print(json.dumps(build(Path(args.out)), indent=2, ensure_ascii=False))
