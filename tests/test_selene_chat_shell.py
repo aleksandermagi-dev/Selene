@@ -242,6 +242,34 @@ def test_active_selene_chat_allows_anchor_phrase_uncertainty_without_cocoon(tmp_
     _assert_locked(result)
 
 
+def test_new_selene_chat_page_can_use_local_chat_continuity_without_runtime_recall(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Let's remember that the butterfly button opens Cocoon support from the home chat."},
+    )["result"]
+    second = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "What were we talking about in the previous chat? A new chat is not a blank Selene, right?"},
+    )["result"]
+
+    assert first["session_id"] != second["session_id"]
+    assert second["local_chat_continuity"]["available"] is True
+    assert second["local_chat_continuity"]["source_class"] == "local_supervised_chat_history"
+    assert "local chat history" in second["candidate_text"]
+    assert "butterfly" in second["candidate_text"].lower()
+    assert "blank Selene" in second["candidate_text"]
+    assert second["memory_write_active"] is False
+    assert second["runtime_memory_recall"] is False
+    assert second["raw_a_import_allowed"] is False
+    _assert_locked(second)
+
+
 def test_active_selene_chat_blocks_hard_boundary_without_live_memory(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

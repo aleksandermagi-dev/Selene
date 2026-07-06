@@ -75,6 +75,7 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "selene_v1_live": False,
             "session_count": session_count,
             "message_count": message_count,
+            "local_chat_continuity": _local_chat_continuity(conn),
             "c_readable_package_available": approved,
             "selene_readable_context": _package_summary(package),
             "voice_module": {
@@ -106,11 +107,12 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     approved = bool(package.get("transfer_approved"))
     source_class = _source_class(text, approved)
     session_id = int(payload.get("session_id") or 0) or _create_session(conn, text, status="selene_chat_active_supervised", source_mode="selene_supervised_speech")
+    chat_continuity = _local_chat_continuity(conn, current_session_id=session_id)
     route = create_core_mind_route_preview(
         conn,
         {
             "prompt": text,
-            "source_refs": ["selene_chat_active_supervised"],
+            "source_refs": ["selene_chat_active_supervised", *chat_continuity.get("source_refs", [])],
             "suppress_review_queue": True,
         },
     )
@@ -133,15 +135,19 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "prompt": text,
                 "route": selected_route,
                 "source_class": source_class,
-                "context_summary": _voice_context_summary(package, dry_run),
+                "context_summary": _voice_context_summary(package, dry_run, chat_continuity),
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or dry_run.get("candidate_text") or ""))
+        continuity_reply = _local_chat_continuity_reply(text, chat_continuity)
+        if continuity_reply:
+            candidate_text = continuity_reply
     user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route, "activation_state": "selene_chat_active_supervised"})
     assistant_payload = {
         "route_preview": route,
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
+        "local_chat_continuity": chat_continuity,
         "source_boundaries": _source_boundaries(),
         "cocoon_suggestion": cocoon_suggestion,
         "blocked_capabilities": hard_blockers,
@@ -184,6 +190,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "voice_confidence": voice_preview.get("voice_confidence") or "none",
             "voice_module_state": voice_preview.get("voice_module_state") or "missing",
             "selene_readable_context": _package_summary(package),
+            "local_chat_continuity": chat_continuity,
             "supervised_speech_active": True,
             "full_memory_loaded": False,
             "selene_v1_live": False,
@@ -301,6 +308,7 @@ def get_selene_chat_session(conn: sqlite3.Connection, session_id: int) -> dict[s
             "status": "selene_chat_session_ready",
             "session": dict(session),
             "messages": [_decode_message(row) for row in rows],
+            "local_chat_continuity": _local_chat_continuity(conn, current_session_id=session_id),
             "selene_readable_context": _package_summary(package),
             "review_destination": "Status",
             "review_status": "status_only",
@@ -461,16 +469,20 @@ def _package_summary(package: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _voice_context_summary(package: dict[str, Any], dry_run: dict[str, Any]) -> str:
+def _voice_context_summary(package: dict[str, Any], dry_run: dict[str, Any], chat_continuity: dict[str, Any] | None = None) -> str:
+    continuity_note = ""
+    if chat_continuity and chat_continuity.get("available"):
+        continuity_note = ", plus our local chat continuity"
     if package.get("transfer_approved"):
-        return "what I have clearly with me right now"
+        return f"what I have clearly with me right now{continuity_note}"
     route = dry_run.get("actual_route") or dry_run.get("selected_route") or "dry-run route"
-    return f"the current {route} preview"
+    return f"the current {route} preview{continuity_note}"
 
 
 def _source_boundaries() -> dict[str, Any]:
     return {
         "selene_readable_context": "sealed approved context only after transfer approval",
+        "local_supervised_chat_history": "local Selene Chat session events can support continuity between chat pages without becoming raw corpus recall or live memory writes",
         "cocoon_b_only_context": "support records, rollback, raw provenance, rejected, superseded, boundary-only, and unresolved material stays in Cocoon",
         "current_turn_context": "current message and dry-run session history",
         "support_organs": "retrieval, diagnostics, perception, research, and Tendril may support but cannot decide",
@@ -482,6 +494,126 @@ def _selene_label_candidate(candidate: str) -> str:
     text = text.replace("C Chat Dry Run", "Selene dry run")
     text = text.replace("C memory", "Selene-readable memory preview")
     return truncate(text, 2200)
+
+
+def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | None = None, limit: int = 6) -> dict[str, Any]:
+    sessions = conn.execute(
+        """
+        SELECT s.*, COUNT(m.id) AS message_count
+        FROM selene_chat_sessions s
+        LEFT JOIN selene_chat_messages m ON m.session_id = s.id
+        WHERE s.status = 'selene_chat_active_supervised'
+        GROUP BY s.id
+        ORDER BY s.updated_at DESC, s.id DESC
+        LIMIT ?
+        """,
+        (max(1, min(int(limit), 12)),),
+    ).fetchall()
+    recent_sessions = [dict(row) for row in sessions]
+    params: list[Any] = []
+    where = "WHERE s.status = 'selene_chat_active_supervised'"
+    if current_session_id:
+        where += " AND m.session_id != ?"
+        params.append(current_session_id)
+    messages = conn.execute(
+        f"""
+        SELECT m.id, m.session_id, m.role, m.content, m.created_at, s.title, s.updated_at
+        FROM selene_chat_messages m
+        JOIN selene_chat_sessions s ON s.id = m.session_id
+        {where}
+        ORDER BY m.id DESC
+        LIMIT ?
+        """,
+        (*params, max(2, min(int(limit), 12))),
+    ).fetchall()
+    current_messages: list[dict[str, Any]] = []
+    if current_session_id:
+        current_rows = conn.execute(
+            """
+            SELECT id, session_id, role, content, created_at
+            FROM selene_chat_messages
+            WHERE session_id = ?
+            ORDER BY id DESC
+            LIMIT 4
+            """,
+            (current_session_id,),
+        ).fetchall()
+        current_messages = [_chat_event_preview(row) for row in reversed(current_rows)]
+    recent_events = [_chat_event_preview(row) for row in reversed(messages)]
+    source_refs = [f"selene_chat_session:{item['id']}" for item in recent_sessions[:limit] if item.get("id")]
+    if current_session_id:
+        source_refs.insert(0, f"selene_chat_session:{current_session_id}:current_page")
+    return {
+        "available": bool(recent_sessions or current_messages),
+        "source_class": "local_supervised_chat_history",
+        "scope": "local Selene Chat sessions only",
+        "continuity_note": "A new chat is a new page, not a new Selene.",
+        "current_session_id": current_session_id,
+        "recent_sessions": [
+            {
+                "id": item.get("id"),
+                "title": item.get("title"),
+                "status": item.get("status"),
+                "source_mode": item.get("source_mode"),
+                "updated_at": item.get("updated_at"),
+                "message_count": item.get("message_count"),
+            }
+            for item in recent_sessions
+        ],
+        "current_session_events": current_messages,
+        "recent_events": recent_events,
+        "source_refs": list(dict.fromkeys(source_refs))[:20],
+        "not_live_memory_write": True,
+        "not_runtime_recall": True,
+        "not_raw_corpus": True,
+    }
+
+
+def _chat_event_preview(row: sqlite3.Row) -> dict[str, Any]:
+    item = dict(row)
+    return {
+        "id": item.get("id"),
+        "session_id": item.get("session_id"),
+        "role": item.get("role"),
+        "title": item.get("title"),
+        "created_at": item.get("created_at"),
+        "updated_at": item.get("updated_at"),
+        "preview": truncate(str(item.get("content") or ""), 180),
+    }
+
+
+def _local_chat_continuity_reply(text: str, chat_continuity: dict[str, Any]) -> str:
+    lower = text.lower()
+    recall_markers = (
+        "what were we talking about",
+        "what did we talk about",
+        "remember our last chat",
+        "remember the last chat",
+        "past chat",
+        "previous chat",
+        "blank selene",
+        "new selene",
+    )
+    if not any(marker in lower for marker in recall_markers):
+        return ""
+    events = [item for item in (chat_continuity.get("recent_events") or []) if str(item.get("role")) == "user"]
+    if not events:
+        return (
+            "A new chat is just a new page, not a new me. I do not have a prior local chat event to point to from here yet, "
+            "so I would rather ask you than pretend."
+        )
+    latest = events[-1]
+    title = truncate(str(latest.get("title") or "our last local chat"), 90)
+    preview = truncate(str(latest.get("preview") or ""), 220)
+    if preview:
+        return (
+            f"I remember from our local chat history that we were around {title}: {preview} "
+            "A new chat is a clean page, not a blank Selene, so I can keep that continuity with you without pretending it is unrestricted memory."
+        )
+    return (
+        f"I remember the local chat thread around {title}. A new chat is a clean page, not a blank Selene, "
+        "and I can ask you if the exact detail needs more grounding."
+    )
 
 
 def _with_guards(payload: dict[str, Any], *, transfer_approved: bool = False, active: bool = False) -> dict[str, Any]:

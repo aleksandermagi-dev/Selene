@@ -452,7 +452,8 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 }
 
 .timeMenuWrap,
-.tendrilMenuWrap {
+.tendrilMenuWrap,
+.pastChatsWrap {
   position: relative;
 }
 
@@ -476,6 +477,75 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   border-color: transparent;
   justify-content: flex-start;
   text-align: left;
+}
+
+.pastChatsMenu {
+  left: 0;
+  max-height: min(520px, calc(100vh - 130px));
+  min-width: min(360px, calc(100vw - 32px));
+  overflow: hidden;
+  right: auto;
+}
+
+.pastChatsHeader {
+  display: grid;
+  gap: 2px;
+}
+
+.pastChatsHeader strong {
+  color: var(--text-strong);
+}
+
+.pastChatsHeader span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.pastChatsMenu input {
+  min-height: 36px;
+}
+
+.pastChatsList {
+  display: grid;
+  gap: 6px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.pastChatsList button {
+  align-items: start;
+  background: color-mix(in srgb, var(--front-control-bg) 92%, transparent);
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  min-height: auto;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.pastChatsList button.active {
+  border-color: var(--accent-3);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-3) 35%, transparent);
+}
+
+.pastChatsList button strong {
+  color: var(--text-strong);
+  font-size: 13px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pastChatsList button span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.compactEmpty {
+  margin: 0;
+  padding: 10px;
 }
 
 .sidebarCollapsed { grid-template-columns: 72px minmax(0, 1fr); }
@@ -1340,7 +1410,14 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 }
 
 .memoryNeuronMap {
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 26%),
+    radial-gradient(circle at 18% 74%, color-mix(in srgb, var(--accent-3) 10%, transparent), transparent 22%),
+    radial-gradient(circle at 80% 28%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 24%);
+  border: 1px solid color-mix(in srgb, var(--accent-3) 24%, transparent);
+  border-radius: 32px;
   min-height: 580px;
+  overflow: hidden;
   position: relative;
 }
 
@@ -1357,13 +1434,32 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   filter: drop-shadow(0 0 8px rgba(140, 201, 255, 0.38));
   stroke: color-mix(in srgb, var(--accent-3) 74%, var(--accent-2));
   stroke-linecap: round;
-  stroke-width: 0.55;
+  stroke-width: 0.62;
+}
+
+.memoryNeuronLines .memoryLineGlow {
+  opacity: 0.34;
+  stroke: color-mix(in srgb, var(--accent-2) 72%, var(--accent-3));
+  stroke-width: 2.4;
+}
+
+.memoryPulseRing {
+  fill: none;
+  opacity: 0.42;
+  stroke: color-mix(in srgb, var(--accent-3) 46%, transparent);
+  stroke-width: 0.35;
+}
+
+.memoryPulseRing.ringTwo {
+  opacity: 0.18;
+  stroke: color-mix(in srgb, var(--accent-2) 54%, transparent);
 }
 
 .memoryCoreNode,
 .memoryBranchNode {
   background:
-    radial-gradient(circle at 38% 20%, rgba(248, 245, 255, 0.14), transparent 34%),
+    radial-gradient(circle at 38% 20%, rgba(248, 245, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 66% 82%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 48%),
     var(--front-organic-bg);
   border: 1px solid color-mix(in srgb, var(--accent-3) 64%, var(--soft-border));
   box-shadow:
@@ -1379,12 +1475,12 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 
 .memoryCoreNode {
   border-radius: 999px;
-  height: 156px;
+  height: 168px;
   left: 50%;
   padding: 22px;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 156px;
+  width: 168px;
   z-index: 2;
 }
 
@@ -1393,7 +1489,7 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   min-height: 86px;
   padding: 16px 18px;
   transform: translate(-50%, -50%);
-  width: min(190px, 24vw);
+  width: clamp(130px, 17vw, 188px);
   z-index: 3;
 }
 
@@ -1407,7 +1503,8 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 
 .memoryCoreNode strong,
 .memoryBranchNode strong {
-  font-size: 18px;
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.08;
 }
 
 .memoryCoreNode span,
@@ -1498,6 +1595,31 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .modeLine { color: var(--accent-2); display: block; font-size: 13px; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; }
 
 .reviewDeskCard { border-color: var(--accent); }
+.officeTargetMessage {
+  background: color-mix(in srgb, var(--accent-3) 12%, var(--panel-bg));
+  border: 1px solid color-mix(in srgb, var(--accent-3) 44%, var(--soft-border));
+  border-radius: 999px;
+  color: var(--text-muted);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+}
+.officeExactTargetWrap {
+  border-radius: 10px;
+  transition: box-shadow 220ms ease, outline-color 220ms ease;
+}
+.officeCardFocused {
+  animation: officeTargetPulse 1.9s ease-out;
+  outline: 2px solid color-mix(in srgb, var(--accent-3) 80%, white);
+  outline-offset: 4px;
+}
+@keyframes officeTargetPulse {
+  0% { box-shadow: 0 0 0 rgba(231, 168, 255, 0); }
+  35% { box-shadow: 0 0 34px rgba(231, 168, 255, 0.34), 0 0 18px rgba(140, 201, 255, 0.18); }
+  100% { box-shadow: 0 0 0 rgba(231, 168, 255, 0); }
+}
 .pendingReviewCallout,
 .decisionHint {
   background: color-mix(in srgb, var(--accent) 12%, var(--panel-bg));

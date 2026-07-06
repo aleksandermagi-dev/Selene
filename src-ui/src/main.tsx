@@ -51,7 +51,7 @@ const TRANSFER_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer to C-readabl
 const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reopen Selene, or use Refresh Ceremony after the app reconnects.";
 
 type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
-type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string; helper?: string };
+type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string; domId?: string; helper?: string };
 type HomeMessage = { id: string; role: "aleks" | "selene"; content: string };
 type MemoryCategoryKey = "core" | "relational" | "emotional" | "semantic" | "episodic" | "working" | "sensory" | "reflective";
 type MemoryBubble = { id: string; category: MemoryCategoryKey; title: string; summary: string; status: string; source: string };
@@ -78,6 +78,23 @@ const memoryCategories: Array<{ key: MemoryCategoryKey; label: string; x: number
   { key: "sensory", label: "Sensory", x: 76, y: 79 },
   { key: "reflective", label: "Reflective", x: 30, y: 86 }
 ];
+
+function domSafe(value: unknown) {
+  return text(value || "item").toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 90) || "item";
+}
+
+function officeDomId(prefix: string, item: Dict, index = 0) {
+  return `office-card-${domSafe(prefix)}-${domSafe(item.id || item.subject_id || item.fraction_index || item.title || item.claim || index)}`;
+}
+
+function sessionMessagesToHomeMessages(session: Dict | null): HomeMessage[] {
+  const messages = ((session?.messages || []) as Dict[]);
+  return messages.map((message, index) => ({
+    id: `local-${text(message.id || index)}`,
+    role: (text(message.role) === "user" ? "aleks" : "selene") as HomeMessage["role"],
+    content: text(message.content)
+  })).filter((message) => message.content.trim());
+}
 
 const officeWorkbenches: WorkbenchDef[] = [
   {
@@ -362,6 +379,8 @@ function App() {
   const [homeChatOpenCount, setHomeChatOpenCount] = useState(0);
   const [homeSearchOpen, setHomeSearchOpen] = useState(false);
   const [homeSearchText, setHomeSearchText] = useState("");
+  const [pastChatsOpen, setPastChatsOpen] = useState(false);
+  const [pastChatSearchText, setPastChatSearchText] = useState("");
   const [homeNotesOpen, setHomeNotesOpen] = useState(false);
   const [tendrilMenuOpen, setTendrilMenuOpen] = useState(false);
   const [timeMenuOpen, setTimeMenuOpen] = useState(false);
@@ -458,6 +477,8 @@ function App() {
   const [bReviewResult, setBReviewResult] = useState<Dict | null>(null);
   const [selectedOfficeReviewKey, setSelectedOfficeReviewKey] = useState("");
   const [officeCategory, setOfficeCategory] = useState<OfficeCategory>("review");
+  const [focusedOfficeDomId, setFocusedOfficeDomId] = useState("");
+  const [officeTargetMessage, setOfficeTargetMessage] = useState("");
   const [officeRefreshState, setOfficeRefreshState] = useState<Dict | null>(null);
   const [officeCleanupState, setOfficeCleanupState] = useState<Dict | null>(null);
   const [publicReleaseSyncState, setPublicReleaseSyncState] = useState<Dict | null>(null);
@@ -778,6 +799,34 @@ function App() {
     if (tab === "detached corpus") loadDetachedCorpusAudit();
     if (vesselBackedTabs.includes(tab)) loadVessel();
   }, [tab, filters, boot.ready]);
+
+  useEffect(() => {
+    if (homeChatOpenCount > 0) return;
+    if (seleneChatSession) return;
+    const latest = seleneChatSessions[0];
+    if (!latest?.id) return;
+    api<Dict>(`/api/selene-chat/sessions/${latest.id}`).then(setSeleneChatSession).catch(() => undefined);
+  }, [seleneChatSessions, seleneChatSession, homeChatOpenCount]);
+
+  useEffect(() => {
+    setHomeMessages(sessionMessagesToHomeMessages(seleneChatSession));
+  }, [seleneChatSession]);
+
+  useEffect(() => {
+    if (!focusedOfficeDomId || workspaceMode !== "cocoon" || tab !== "my-office") return;
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(focusedOfficeDomId);
+      if (!element) {
+        setOfficeTargetMessage("Opened closest Cocoon support panel.");
+        return;
+      }
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("officeCardFocused");
+      setOfficeTargetMessage("Opened exact My Office card.");
+      window.setTimeout(() => element.classList.remove("officeCardFocused"), 2200);
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [focusedOfficeDomId, workspaceMode, tab, officeCategory, selectedOfficeReviewKey]);
 
   function refreshDashboard() {
     api<Dashboard>("/api/dashboard")
@@ -2890,20 +2939,49 @@ function App() {
   }
 
   function startNewHomeChat() {
+    setSeleneChatSession(null);
     setHomeMessages([]);
     setHomeChatText("");
     setHomeSearchText("");
     setHomeSearchOpen(false);
+    setPastChatsOpen(false);
     setTendrilMenuOpen(false);
     setHomeChatOpenCount((count) => count + 1);
+  }
+
+  async function openPastSeleneChat(sessionId: unknown) {
+    const id = text(sessionId);
+    if (!id) return;
+    try {
+      const session = await stabilizationApi<Dict>(`/api/selene-chat/sessions/${id}`, undefined, "selene_chat_open_past_session");
+      setSeleneChatSession(session);
+      setSeleneChatResult({ status: "local_chat_session_loaded", message: "Opened local chat continuity.", session_id: id });
+      setHomeSearchOpen(false);
+      setPastChatsOpen(false);
+      setHomeChatOpenCount(0);
+    } catch (err) {
+      setSeleneChatResult({ status: "error", error: err instanceof Error ? err.message : "Could not open local chat session." });
+    }
+  }
+
+  async function togglePastChats() {
+    setPastChatsOpen((value) => !value);
+    setHomeSearchOpen(false);
+    try {
+      const sessions = await stabilizationApi<{ items: Dict[] }>("/api/selene-chat/sessions", undefined, "selene_chat_refresh_past_sessions");
+      setSeleneChatSessions(sessions.items);
+    } catch (err) {
+      setSeleneChatResult((current) => ({
+        ...(current || {}),
+        past_chat_warning: err instanceof Error ? err.message : "Could not refresh local chat sessions."
+      }));
+    }
   }
 
   async function sendHomePreviewMessage() {
     const content = homeChatText.trim();
     if (!content) return;
-    const now = Date.now();
     setHomeChatText("");
-    setHomeMessages((current) => [...current, { id: `aleks-${now}`, role: "aleks", content }]);
     if (activationStatus?.selene_chat_active) {
       setSeleneChatResult({ status: "running", message: "Selene is answering in supervised speech mode." });
       try {
@@ -2912,23 +2990,14 @@ function App() {
           body: JSON.stringify({ text: content, session_id: seleneChatSession?.session ? (seleneChatSession.session as Dict).id : undefined })
         }, "selene_chat_supervised_send");
         setSeleneChatResult(result);
-        setHomeMessages((current) => [...current, { id: `selene-${now}`, role: "selene", content: text(result.candidate_text || "I am here, and that answer could use Cocoon support before I say more.") }]);
         await refreshSeleneChatAfterAction("selene_chat_supervised_send", result.session_id);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Selene supervised chat failed";
         setSeleneChatResult({ status: "error", error: message });
-        setHomeMessages((current) => [...current, { id: `selene-${now}`, role: "selene", content: `I hit a local activation/chat error: ${message}` }]);
       }
       return;
     }
-    setHomeMessages((current) => [
-      ...current,
-      {
-        id: `selene-${now}`,
-        role: "selene",
-        content: "Selene Chat is still in home-preview mode. I can hold the shape of this exchange here, and the working dry runs now live in Cocoon until supervised speech activation is approved."
-      }
-    ]);
+    setSeleneChatResult({ status: "preview_only", message: "Selene Chat is not supervised-active. Use Cocoon Chat Dry Runs for test/workflow material." });
   }
 
   function copyMessage(content: string) {
@@ -3040,6 +3109,17 @@ function App() {
     if (!needle) return [];
     return homeMessages.filter((message) => message.content.toLowerCase().includes(needle));
   }, [homeMessages, homeSearchText]);
+  const pastChatMatches = useMemo(() => {
+    const needle = pastChatSearchText.trim().toLowerCase();
+    if (!needle) return seleneChatSessions;
+    return seleneChatSessions.filter((session) => {
+      return [session.title, session.status, session.source_mode, session.updated_at]
+        .map((value) => text(value).toLowerCase())
+        .some((value) => value.includes(needle));
+    });
+  }, [pastChatSearchText, seleneChatSessions]);
+  const localChatContinuity = safeJsonObject(seleneChatStatus?.local_chat_continuity || seleneChatSession?.local_chat_continuity || seleneChatResult?.local_chat_continuity);
+  const localChatContinuityAvailable = Boolean(localChatContinuity.available || seleneChatSessions.length > 0);
   const frontMemoryBubbles = useMemo<MemoryBubble[]>(() => {
     const bubbles: MemoryBubble[] = [];
     const pushBubble = (item: Dict, fallbackCategory: MemoryCategoryKey, fallbackTitle: string, fallbackSummary: string, source: string) => {
@@ -3143,6 +3223,8 @@ function App() {
   function openOfficeTarget(target: OfficeTarget) {
     if (target.category) setOfficeCategory(target.category);
     if (target.selectedReviewKey) setSelectedOfficeReviewKey(target.selectedReviewKey);
+    setFocusedOfficeDomId(target.domId || (target.selectedReviewKey ? `office-card-review-${domSafe(target.selectedReviewKey)}` : ""));
+    setOfficeTargetMessage(target.domId || target.selectedReviewKey ? "Opening exact My Office card..." : "Opened closest Cocoon support panel.");
     if (target.tab) {
       const cocoonTabs = workspaceTabs.cocoon as readonly string[];
       const seleneTabs = workspaceTabs.selene as readonly string[];
@@ -3154,6 +3236,7 @@ function App() {
 
   function cardTargetProps(target: OfficeTarget) {
     return {
+      id: target.domId,
       role: "button",
       tabIndex: 0,
       onClick: () => openOfficeTarget(target),
@@ -3177,6 +3260,21 @@ function App() {
     return <small className="targetHint">{officeTargetLabel(target)}</small>;
   }
 
+  function officeCardClass(base: string, domId?: string) {
+    return `${base}${domId && focusedOfficeDomId === domId ? " officeCardFocused" : ""}`;
+  }
+
+  function reviewOfficeTarget(piece: Dict): OfficeTarget {
+    const key = reviewPieceKey(piece);
+    return {
+      tab: "my-office",
+      category: "review",
+      selectedReviewKey: key,
+      domId: `office-card-review-${domSafe(key)}`,
+      helper: "Target opens this exact B review card in My Office."
+    };
+  }
+
   function stopCardNavigation(event: React.MouseEvent<HTMLElement>) {
     event.stopPropagation();
   }
@@ -3188,8 +3286,9 @@ function App() {
   function renderSignalPacketCard(item: Dict, index = 0, target: OfficeTarget = { tab: "status", category: "vessel" }) {
     const kind = packetKind(item);
     const labels = (item.munsell_signal_labels || item.salience_labels || [item.signal_type, item.uncertainty].filter(Boolean)) as unknown[];
+    const resolvedTarget = { ...target, domId: target.domId || officeDomId(kind, item, index) };
     return (
-      <article className="packetCard clickableCard" key={`${kind}-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
+      <article className={officeCardClass("packetCard clickableCard", resolvedTarget.domId)} key={`${kind}-${text(item.id)}-${index}`} {...cardTargetProps(resolvedTarget)}>
         <div className="row">
           <strong>{text(item.artifact_label || item.signal_type || item.workflow || item.title || item.claim || "Vessel packet")}</strong>
           <span>{friendlyStatus(item.review_status || item.status)}</span>
@@ -3210,7 +3309,7 @@ function App() {
           {labels.slice(0, 4).map((label) => <span key={text(label)}>{text(label)}</span>)}
         </div>
         <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
-          <button onClick={() => openOfficeTarget(target)}>Open Target</button>
+          <button onClick={() => openOfficeTarget(resolvedTarget)}>Open Target</button>
           <button onClick={() => routePacketAction(item, "hold")}>Hold In Chest</button>
           <button onClick={() => routePacketAction(item, "bus")}>Send To Organ Bus</button>
           <button onClick={() => routePacketAction(item, "evidence")}>Create Evidence Tension</button>
@@ -3223,8 +3322,9 @@ function App() {
   function renderSupportPieceCard(item: Dict, index = 0, target: OfficeTarget = { tab: "status", category: "vessel" }) {
     const payload = safeJsonObject(item.payload_json);
     const linked = (item.linked_packet_refs || payload.linked_packet_refs || []) as unknown[];
+    const resolvedTarget = { ...target, domId: target.domId || officeDomId("support", item, index) };
     return (
-      <article className="packetCard clickableCard" key={`${text(item.status)}-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
+      <article className={officeCardClass("packetCard clickableCard", resolvedTarget.domId)} key={`${text(item.status)}-${text(item.id)}-${index}`} {...cardTargetProps(resolvedTarget)}>
         <div className="row">
           <strong>{text(item.title || item.source_organ || item.message_type || "Vessel support piece")}</strong>
           <span>{friendlyStatus(item.review_status || item.status)}</span>
@@ -3243,10 +3343,10 @@ function App() {
         </div>
         {item.item_type ? (
           <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
-            <button onClick={() => openOfficeTarget(target)}>Open Target</button>
+            <button onClick={() => openOfficeTarget(resolvedTarget)}>Open Target</button>
             <button onClick={() => markChestStatusOnly(item)}>Mark Status-Only</button>
           </div>
-        ) : <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
+        ) : <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}><button onClick={() => openOfficeTarget(resolvedTarget)}>Open Target</button></div>}
       </article>
     );
   }
@@ -3256,8 +3356,9 @@ function App() {
     const linked = (item.linked_packet_refs || payload.linked_packet_refs || item.source_refs || []) as unknown[];
     const labels = ((payload.context_labels || item.context_labels || []) as unknown[]).map((label) => text(label)).filter(Boolean);
     const clarity = safeJsonObject(payload.review_clarity || item.review_clarity);
+    const resolvedTarget = { ...target, domId: target.domId || officeDomId("ledger", item, index) };
     return (
-      <article className="packetCard clickableCard" key={`ledger-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
+      <article className={officeCardClass("packetCard clickableCard", resolvedTarget.domId)} key={`ledger-${text(item.id)}-${index}`} {...cardTargetProps(resolvedTarget)}>
         <div className="row">
           <strong>{text(item.claim || "Evidence / tension entry")}</strong>
           <span>{friendlyStatus(item.conclusion_status || item.review_status || item.status)}</span>
@@ -3279,7 +3380,7 @@ function App() {
         ) : null}
         {text(item.conclusion_status) === "needs_review" ? (
           <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
-            <button onClick={() => openOfficeTarget(target)}>Open Target</button>
+            <button onClick={() => openOfficeTarget(resolvedTarget)}>Open Target</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now", "looks_right")}>Looks Right</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "accepted_for_now")}>Use As Context</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "needs_review", "needs_more_context")}>Needs More Context</button>
@@ -3289,7 +3390,7 @@ function App() {
             <button onClick={() => updateEvidenceTensionStatus(item, "superseded")}>Supersede</button>
             <button onClick={() => updateEvidenceTensionStatus(item, "needs_review", "return_to_corpus_context")}>Return To Corpus Context</button>
           </div>
-        ) : <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
+        ) : <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}><button onClick={() => openOfficeTarget(resolvedTarget)}>Open Target</button></div>}
       </article>
     );
   }
@@ -3300,8 +3401,9 @@ function App() {
     const messages = ((context.messages || []) as Dict[]).slice(0, 3);
     const labels = ((payload.context_labels || context.context_labels || []) as unknown[]).map((label) => text(label)).filter(Boolean);
     const clarity = safeJsonObject(payload.review_clarity || context.review_clarity);
+    const resolvedTarget = { ...target, domId: target.domId || officeDomId("chronological", item, index) };
     return (
-      <article className="packetCard clickableCard" key={`chrono-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
+      <article className={officeCardClass("packetCard clickableCard", resolvedTarget.domId)} key={`chrono-${text(item.id)}-${index}`} {...cardTargetProps(resolvedTarget)}>
         <div className="row">
           <strong>{text(item.title || "Chronological corpus arc")}</strong>
           <span>{friendlyStatus(item.review_status || item.status)}</span>
@@ -3335,7 +3437,7 @@ function App() {
         </div>
         {text(item.review_status) === "pending_review" ? (
           <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
-            <button onClick={() => openOfficeTarget(target)}>Open Target</button>
+            <button onClick={() => openOfficeTarget(resolvedTarget)}>Open Target</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "looks_right")}>Looks Right</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "use_this")}>Use As Context</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "needs_more_context")}>Needs More Context</button>
@@ -3345,7 +3447,7 @@ function App() {
             <button onClick={() => routeChronologicalCorpusArc(item, "supersede")}>Supersede</button>
             <button onClick={() => routeChronologicalCorpusArc(item, "return_to_corpus_context")}>Return To Corpus Context</button>
           </div>
-        ) : <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}><button onClick={() => openOfficeTarget(target)}>Open Target</button></div>}
+        ) : <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}><button onClick={() => openOfficeTarget(resolvedTarget)}>Open Target</button></div>}
       </article>
     );
   }
@@ -3356,8 +3458,9 @@ function App() {
     const language = safeJsonObject(item.language_signals || payload.language_signals);
     const continuity = safeJsonObject(item.continuity_context || payload.continuity_context);
     const evidence = (item.evidence_used || payload.evidence_used || []) as unknown[];
+    const resolvedTarget = { ...target, domId: target.domId || officeDomId("speech", item, index) };
     return (
-      <article className="packetCard clickableCard" key={`speech-${text(item.id)}-${index}`} {...cardTargetProps(target)}>
+      <article className={officeCardClass("packetCard clickableCard", resolvedTarget.domId)} key={`speech-${text(item.id)}-${index}`} {...cardTargetProps(resolvedTarget)}>
         <div className="row">
           <strong>{text(item.speech_function || "speech rehearsal")}</strong>
           <span>{friendlyStatus(item.review_status || item.status)}</span>
@@ -3378,7 +3481,7 @@ function App() {
           <span>runtime recall: {plainBlocked(item.runtime_memory_recall)}</span>
         </div>
         <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
-          <button onClick={() => openOfficeTarget(target)}>Open Target</button>
+          <button onClick={() => openOfficeTarget(resolvedTarget)}>Open Target</button>
           <button onClick={() => routeSpeechRehearsalToReview(item)}>Send To My Office</button>
           <button onClick={() => updateSpeechRehearsalReviewStatus(item, "accepted_for_review_use")}>Mark Useful</button>
           <button onClick={() => updateSpeechRehearsalReviewStatus(item, "needs_revision")}>Needs Revision</button>
@@ -3550,6 +3653,33 @@ function App() {
             <div className="topbarLeft">
               <button className="topbarIconButton cocoonQuickButton" onClick={() => openCocoonTab("my-office")} aria-label="Open Cocoon support" title="Open Cocoon support">🦋</button>
               <button className="topbarIconButton" onClick={startNewHomeChat} title="New chat">+</button>
+              <div className="pastChatsWrap">
+                <button className="topbarIconButton pastChatsButton" onClick={togglePastChats} aria-expanded={pastChatsOpen} title="Past local chats">◷</button>
+                {pastChatsOpen ? (
+                  <div className="floatingMenu pastChatsMenu">
+                    <div className="pastChatsHeader">
+                      <strong>Past chats</strong>
+                      <span>same Selene, local pages</span>
+                    </div>
+                    <input
+                      value={pastChatSearchText}
+                      onChange={(event) => setPastChatSearchText(event.target.value)}
+                      placeholder="Find a local chat..."
+                    />
+                    <div className="pastChatsList">
+                      {pastChatMatches.length ? pastChatMatches.map((session) => {
+                        const selected = text((seleneChatSession?.session as Dict | undefined)?.id) === text(session.id);
+                        return (
+                          <button className={selected ? "active" : ""} key={`past-chat-${text(session.id)}`} onClick={() => openPastSeleneChat(session.id)}>
+                            <strong>{text(session.title || "Selene chat")}</strong>
+                            <span>{text(session.updated_at || "local session")}</span>
+                          </button>
+                        );
+                      }) : <p className="emptyState compactEmpty">No past local chats yet.</p>}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
               <button className="topbarIconButton" onClick={() => setHomeSearchOpen((value) => !value)} title="Search current chat">⌕</button>
             </div>
             <div className="topbarCenter">
@@ -3617,6 +3747,7 @@ function App() {
                 </button>
               ))}
             </div>
+            {officeTargetMessage ? <p className="officeTargetMessage">{officeTargetMessage}</p> : null}
             {officeCategory === "review" && <section className="aleksReviewGrid">
               <Panel title="Needs You Now">
                 {!nextReviewPiece ? (
@@ -3625,10 +3756,15 @@ function App() {
                     <p>Refresh My Office if you just made changes. System and build status are still visible below, but they are not counted as your review work.</p>
                   </div>
                 ) : (
-                  <ReviewDeskCard
-                    piece={nextReviewPiece}
-                    onDecide={(action, note) => decideBReview(action, text(action.decision), note)}
-                  />
+                  <div
+                    id={reviewOfficeTarget(nextReviewPiece).domId}
+                    className={officeCardClass("officeExactTargetWrap", reviewOfficeTarget(nextReviewPiece).domId)}
+                  >
+                    <ReviewDeskCard
+                      piece={nextReviewPiece}
+                      onDecide={(action, note) => decideBReview(action, text(action.decision), note)}
+                    />
+                  </div>
                 )}
                 <PlainResult value={bReviewResult} />
               </Panel>
@@ -3686,16 +3822,16 @@ function App() {
                 <div className="list compactList">
                   {[...reasoningArtifacts.slice(0, 2), ...academicPackets.slice(0, 2), ...evidenceTensionEntries.slice(0, 2)].map((item, index) => (
                     <article
-                      className="clickableCard"
+                      className={officeCardClass("clickableCard", officeDomId("reasoning-research", item, index))}
                       key={`${text(item.status)}-${text(item.id)}-${index}`}
-                      {...cardTargetProps({ tab: "my-office", category: "corpus", helper: "Target opens the reasoning and evidence review shelf." })}
+                      {...cardTargetProps({ tab: "my-office", category: "corpus", domId: officeDomId("reasoning-research", item, index), helper: "Target opens this reasoning or evidence card." })}
                     >
                       <div className="row">
                         <strong>{text(item.visible_summary || item.title || item.claim || item.workflow || "Review packet")}</strong>
                         <span>{friendlyStatus(item.review_status || item.status)}</span>
                       </div>
                       <p>{text(item.next_review_or_action_step || item.output_summary || item.support_status || item.provenance_boundary)}</p>
-                      {renderTargetHint({ tab: "my-office", category: "corpus", helper: "Target opens the reasoning and evidence review shelf." })}
+                      {renderTargetHint({ tab: "my-office", category: "corpus", domId: officeDomId("reasoning-research", item, index), helper: "Target opens this reasoning or evidence card." })}
                     </article>
                   ))}
                   {!reasoningArtifacts.length && !academicPackets.length && !evidenceTensionEntries.length ? (
@@ -3805,9 +3941,9 @@ function App() {
                 <div className="list compactList packetList">
                   {((preCoreReviewPackets?.items || []) as Dict[]).slice(0, 8).map((item, index) => (
                     <article
-                      className="packetCard clickableCard"
+                      className={officeCardClass("packetCard clickableCard", officeDomId("pre-core", item, index))}
                       key={`pre-core-${text(item.source_ref)}-${index}`}
-                      {...cardTargetProps({ tab: "status", helper: "Target opens the closest Cocoon status panel for this Pre-Core packet." })}
+                      {...cardTargetProps({ tab: "my-office", category: "vessel", domId: officeDomId("pre-core", item, index), helper: "Target opens this Pre-Core packet row." })}
                     >
                       <div className="row">
                         <strong>{text(item.title || item.capability || "Pre-Core packet")}</strong>
@@ -3820,7 +3956,7 @@ function App() {
                         <span>destination: {text(item.review_destination || "Status")}</span>
                         <span>{text(item.source_ref)}</span>
                       </div>
-                      {renderTargetHint({ tab: "status", helper: "Target opens the closest Cocoon status panel for this Pre-Core packet." })}
+                      {renderTargetHint({ tab: "my-office", category: "vessel", domId: officeDomId("pre-core", item, index), helper: "Target opens this Pre-Core packet row." })}
                     </article>
                   ))}
                   {!((preCoreReviewPackets?.items || []) as Dict[]).length ? (
@@ -3864,9 +4000,9 @@ function App() {
                   <div className="list compactList">
                     {waitingReviewPieces.slice(0, 8).map((piece) => (
                       <article
-                        className="clickableCard"
+                        className={officeCardClass("clickableCard", reviewOfficeTarget(piece).domId)}
                         key={`${text(piece.subject_table)}-${text(piece.subject_id)}-${text(piece.review_number)}`}
-                        {...cardTargetProps({ tab: "my-office", category: "review", selectedReviewKey: reviewPieceKey(piece), helper: "Target opens this B review card in My Office." })}
+                        {...cardTargetProps(reviewOfficeTarget(piece))}
                       >
                         <div className="row">
                           <strong>{text(piece.review_number || "")}{piece.review_number ? ". " : ""}{text(piece.title || "Corpus review piece")}</strong>
@@ -3875,10 +4011,10 @@ function App() {
                         <p>{text(piece.plain_reason || piece.why_pulled)}</p>
                         <small>{friendlyLayer(piece.core_memory_layer)} | {friendlySpeech(piece.speech_function)}</small>
                         <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
-                          <button onClick={() => openOfficeTarget({ tab: "my-office", category: "review", selectedReviewKey: reviewPieceKey(piece), helper: "Target opens this B review card in My Office." })}>Open Target</button>
+                          <button onClick={() => openOfficeTarget(reviewOfficeTarget(piece))}>Open Target</button>
                           <button className="primary" onClick={() => setSelectedOfficeReviewKey(reviewPieceKey(piece))}>Review This</button>
                         </div>
-                        {renderTargetHint({ tab: "my-office", category: "review", selectedReviewKey: reviewPieceKey(piece), helper: "Target opens this B review card in My Office." })}
+                        {renderTargetHint(reviewOfficeTarget(piece))}
                       </article>
                     ))}
                   </div>
@@ -3891,9 +4027,9 @@ function App() {
                   <div className="list compactList">
                     {officeActionLogItems.slice(0, 8).map((item, index) => (
                       <article
-                        className="clickableCard"
+                        className={officeCardClass("clickableCard", officeDomId("followup", item, index))}
                         key={`${text(item.subject_table)}-${text(item.subject_id)}-${text(item.id)}-${index}`}
-                        {...cardTargetProps({ tab: "status", helper: "Target opens Status because this is review-log/history residue, not a direct Cocoon decision page." })}
+                        {...cardTargetProps({ tab: "my-office", category: "review", domId: officeDomId("followup", item, index), helper: "Target opens this follow-up row." })}
                       >
                         <div className="row">
                           <strong>{friendlySubject(item.subject_table || item.queue_type || "Review item")}</strong>
@@ -3901,12 +4037,12 @@ function App() {
                         </div>
                         <p>{text(item.reason || safeJsonObject(item.payload_json).todo_text || "Review-only item waiting for a decision.")}</p>
                         <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
-                          <button onClick={() => openOfficeTarget({ tab: "status", helper: "Target opens Status because this is review-log/history residue, not a direct Cocoon decision page." })}>Open Target</button>
+                          <button onClick={() => openOfficeTarget({ tab: "my-office", category: "review", domId: officeDomId("followup", item, index), helper: "Target opens this follow-up row." })}>Open Target</button>
                           <button onClick={() => decideReviewLog(item, "mark_reviewed")}>Mark Reviewed</button>
                           <button onClick={() => decideReviewLog(item, "needs_followup")}>Needs Follow-up</button>
                           <button onClick={() => decideReviewLog(item, "superseded")}>Supersede</button>
                         </div>
-                        {renderTargetHint({ tab: "status", helper: "Target opens Status because this is review-log/history residue, not a direct Cocoon decision page." })}
+                        {renderTargetHint({ tab: "my-office", category: "review", domId: officeDomId("followup", item, index), helper: "Target opens this follow-up row." })}
                       </article>
                     ))}
                   </div>
@@ -4212,11 +4348,13 @@ function App() {
               <div className="homeChatStateBar">
                 <div className="chips">
                   <span>{activationStatus?.selene_chat_active ? "Selene speech active / supervised" : "Selene home preview"}</span>
+                  <span>{localChatContinuityAvailable ? "continuity available" : "continuity starts here"}</span>
                   <span>activation: {friendlyActivation(activationStatus?.activation_change || "none")}</span>
                   <span>voice: {friendlyStatus(seleneChatResult?.voice_confidence || safeJsonObject(seleneChatStatus?.voice_module).state || "not sampled")}</span>
                   <span>memory write: {text(activationStatus?.memory_write_active || false)}</span>
                   <span>runtime recall: {text(activationStatus?.runtime_memory_recall || false)}</span>
                 </div>
+                {!homeMessages.length ? <p className="plainHelp">New chat is a new page, not a new Selene.</p> : null}
                 {safeJsonObject(seleneChatResult?.cocoon_suggestion).recommended ? (
                   <div className="pendingReviewCallout">
                     <strong>Cocoon support is available</strong>
@@ -4845,18 +4983,25 @@ function App() {
                 </div>
                 <div className="memoryNeuronMap" aria-label="Selene memory neuron map">
                   <svg className="memoryNeuronLines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                    {memoryCategories.map((item) => (
-                      <path
-                        key={`memory-line-${item.key}`}
-                        d={`M 50 50 C ${50 + (item.x - 50) * 0.18} ${50 + (item.y - 50) * 0.38}, ${50 + (item.x - 50) * 0.72} ${50 + (item.y - 50) * 0.72}, ${item.x} ${item.y}`}
-                      />
+                    {memoryCategories.filter((item) => item.key !== "core").map((item, index) => (
+                      <g key={`memory-line-${item.key}`}>
+                        <path
+                          className="memoryLineGlow"
+                          d={`M 50 50 C ${50 + (item.x - 50) * 0.18 + (index % 2 ? 4 : -4)} ${50 + (item.y - 50) * 0.34}, ${50 + (item.x - 50) * 0.72} ${50 + (item.y - 50) * 0.72 + (index % 3 ? -3 : 3)}, ${item.x} ${item.y}`}
+                        />
+                        <path
+                          d={`M 50 50 C ${50 + (item.x - 50) * 0.18 + (index % 2 ? 4 : -4)} ${50 + (item.y - 50) * 0.34}, ${50 + (item.x - 50) * 0.72} ${50 + (item.y - 50) * 0.72 + (index % 3 ? -3 : 3)}, ${item.x} ${item.y}`}
+                        />
+                      </g>
                     ))}
+                    <circle className="memoryPulseRing ringOne" cx="50" cy="50" r="15" />
+                    <circle className="memoryPulseRing ringTwo" cx="50" cy="50" r="24" />
                   </svg>
                   <button className="memoryCoreNode" onClick={() => setSelectedMemoryCategory("core")}>
                     <strong>Core Memory</strong>
                     <span>{frontMemoryBubbles.filter((item) => item.category === "core").length} approved</span>
                   </button>
-                  {memoryCategories.map((item) => {
+                  {memoryCategories.filter((item) => item.key !== "core").map((item) => {
                     const count = frontMemoryBubbles.filter((bubble) => bubble.category === item.key).length;
                     return (
                       <button
