@@ -8,6 +8,12 @@
 tmp/
 exports/
 output/
+logs/
+snapshots/
+db_snapshots/
+backups/
+runtime/
+local-data/
 src/selene.egg-info/
 
 # JavaScript/Rust build dependencies and outputs
@@ -15,23 +21,37 @@ node_modules/
 dist/
 dist-sidecar/
 dist-ui/
+dist-*/
 build/
 build-sidecar/
+build-*/
 src-tauri/target/
 src-tauri/gen/
+src-tauri/target*/
 
 # Packaged binaries/installers
 *.exe
 *.msi
 *.pkg
 *.pyz
+*.app
+*.dmg
+*.deb
+*.rpm
+*.AppImage
 
 # Raw/private corpus and helper artifacts
 DevelopmentalCorpusArchive_20260526_122541/
 might help/
 New UI/
+UI Update/
 new stuff/
 codex_chest/
+Selene Voice Module/
+VoiceModuleMaterial.zip
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 
 # Local workstation tooling and backups
 SeleneBackups/
@@ -59,3 +79,5 @@ venv/
 *.tgz
 *.zip
 *.7z
+*.tar
+*.tar.gz

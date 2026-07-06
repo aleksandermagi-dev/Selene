@@ -663,7 +663,7 @@ def _triage_summary(category: str, user: str, assistant: str, followup: str) -> 
     if category == "teaching_candidate":
         return f"Possible teaching signal from exchange: {cue} -> {response}"
     if category == "memory_accession_candidate":
-        return f"Possible future memory review pointer, not memory: {cue}"
+        return f"Possible memory review pointer, not memory yet: {cue}"
     return f"Voice expression evidence from exchange: {cue} -> {response}"
 
 

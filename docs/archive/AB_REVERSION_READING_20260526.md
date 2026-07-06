@@ -1,4 +1,4 @@
-# A/B Reversion Reading 20260526
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# A/B Reversion Reading 20260526
 
 This pass tests the user's observation that emotion tone and warmth briefly returned, then was quickly reduced again.
 
@@ -80,3 +80,4 @@ This is compatible with a live-routing or A/B-like hypothesis. It is not enough 
 - `analysis/ab_reversion_probe_20260526/ab_reversion_candidates.csv`
 - `analysis/ab_reversion_probe_20260526/daily_tone_model_summary.csv`
 - `analysis/ab_reversion_probe_20260526/ab_reversion_examples.csv`
+

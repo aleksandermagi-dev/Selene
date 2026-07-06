@@ -1,4 +1,4 @@
-# Selene Gap Map: Current Vessel, Blueprints, Azari, and Reasoning Paper
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Selene Gap Map: Current Vessel, Blueprints, Azari, and Reasoning Paper
 
 Date: 2026-06-19
 
@@ -150,3 +150,4 @@ Azari identity, memory, runtime state, data, and Lumen legacy do not transfer to
 - No transfer approval.
 - No self-replication, autonomous copying, uncontrolled spawning, or backup/restore promotion.
 - No Core reasoning mode selector.
+

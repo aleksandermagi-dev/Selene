@@ -333,7 +333,7 @@ def source_refs() -> list[dict[str, Any]]:
         ("external_artifact_summary", ROOT / "analysis" / "external_artifacts_20260526" / "external_artifact_summary.json", "external artifact inventory summary"),
         ("constitutional_framework", ROOT / "docs" / "SELENE_CONSTITUTIONAL_VESSEL_FRAMEWORK_20260606.md", "constitutional vessel framework"),
         ("abc_cocoon_summary", ROOT / "analysis" / "abc_cocoon_20260606" / "abc_cocoon_summary.json", "B cocoon summary"),
-        ("module_inventory", ROOT / "docs" / "AZARI_TO_SELENE_MODULE_INVENTORY_20260606.md", "module inventory and C build order"),
+        ("module_inventory", ROOT / "docs" / "archive" / "AZARI_TO_SELENE_MODULE_INVENTORY_20260606.md", "historical module inventory and C build order"),
     ]
     refs = []
     for key, path, role in paths:

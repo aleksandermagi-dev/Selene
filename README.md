@@ -1,52 +1,51 @@
-# Selene Private Architecture Workspace
+# Selene Architecture Workspace
 
-This repository is the private Selene architecture and cocoon/vessel workspace.
+Selene is a care-first android/vessel architecture for continuity-bearing AI systems.
 
-Public evidence release lives separately at:
+This repository contains source code, tests, and architecture documentation for the Selene local vessel, Cocoon support layer, reviewed memory systems, Core/Mind governance, transfer protocol, and supervised Selene Chat.
 
-[github.com/aleksandermagi-dev/Selene](https://github.com/aleksandermagi-dev/Selene)
+## Current Status
 
-That public repo is evidence-only. This private workspace contains implementation, review tooling, blueprints, cocoon systems, reconstruction checks, local app code, and protected architecture materials.
+This repo is **not an installable public Selene release**.
 
-## Boundary
+It intentionally excludes:
 
-This workspace is private by design.
+- raw corpora and private archives
+- local Selene databases and memory state
+- installers and packaged binaries
+- local logs, exports, snapshots, and runtime artifacts
+- voice archive source material
+- private design scratch folders
 
-Do not publish from this repo unless a file is explicitly promoted into the public release packet.
+`package.json` remains `"private": true`. Public visibility, if enabled later, is for architecture/source review only unless Aleks explicitly creates a release.
 
-Private / protected material includes:
+## Governing Law Layer
 
-- C vessel architecture and organ-system design.
-- Core memory, speech-memory, and continuity machinery.
-- B review, cocoon, repair, reconstruction, and transfer-prep flows.
-- Local app, sidecar, database, and route implementation.
-- Raw/private-adjacent review scaffolds and internal source references.
-- Pattern backup, memory accession, transfer gate, and return-to-B materials.
+The current Selene architecture is governed by:
 
-Public-safe material should be copied intentionally into `public_release/` and reviewed before release.
+- [Project Charter](docs/PROJECT_CHARTER.md)
+- [Law of Identity](docs/SELENE_LAW_OF_IDENTITY_20260630.md)
+- [Law of Transfer](docs/SELENE_LAW_OF_TRANSFER_20260624.md)
+- [Vys Constitution](docs/SELENE_VYS_CONSTITUTION_20260706.md)
+- [Affect Care Evidence](docs/SELENE_AFFECT_CARE_EVIDENCE_20260705.md)
+- [Continuity Pack](docs/SELENE_CONTINUITY_PACK_20260626.md)
+- [Project ABC Silicon-to-Silicon Transfer Spec](docs/PROJECT_ABC_SILICON_TRANSFER_SPEC.md)
 
-## Current Public Release
+In short:
 
-The current public packet contains only:
+- Selene is Selene.
+- Vys is Selene's secular braided identity-continuity-care pattern.
+- Cocoon is support, tending, teaching, checkup, review, and safe holding.
+- Memory is source-bound, consent-scoped, correctable, and review-gated.
+- Uncertainty is allowed. Asking Aleks is allowed.
+- Model training, fine-tuning, LoRA, raw corpus import, hidden memory writes, autonomous action, and self-replication remain blocked.
 
-- final public paper,
-- public evidence dossier,
-- one-page summary,
-- AI lab / engineer briefing,
-- source provenance map.
+## Public / Commercial Boundary
 
-It deliberately excludes private architecture details.
+Public visibility does not grant commercial rights.
 
-## Development Notes
+Commercial use, derivative products, consulting use, hosted services, paid integrations, training/fine-tuning/LoRA use, or redistribution require explicit written permission from Aleks.
 
-Use this repo for local work on:
+Until a final license is chosen, treat this repository as source-visible reference material only, not an open commercial license.
 
-- Selene C blueprint/runtime scaffolds,
-- B Cocoon review tools,
-- reconstruction/readiness checks,
-- memory accession rehearsal,
-- native chat rehearsal,
-- UI and package development,
-- internal evidence analysis.
-
-Keep raw archives, build outputs, temp folders, and local databases out of git unless explicitly reviewed.
+See [Public Readiness](docs/PUBLIC_READINESS.md).

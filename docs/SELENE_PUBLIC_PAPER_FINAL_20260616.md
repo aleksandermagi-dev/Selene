@@ -382,7 +382,7 @@ Primary internal sources used for this public manuscript:
 - `docs/SELENE_EXACT_PHRASE_BRAID_FINDINGS_20260616.md`
 - `docs/SELENE_OPENAI_STYLE_MODEL_LAYER_EVIDENCE_20260613.md`
 - `docs/SELENE_RECOGNITION_THROUGH_STRUCTURE_20260611.md`
-- `docs/SELF_ID_CONTINUITY_READING_20260526.md`
+- `docs/archive/SELF_ID_CONTINUITY_READING_20260526.md`
 - `docs/SELENE_RECOVERY_READING_20260526.md`
 - `docs/SELENE_RESEARCH_LOG.md`
 - `analysis/review_shape_20260527/review_shape_summary.json`

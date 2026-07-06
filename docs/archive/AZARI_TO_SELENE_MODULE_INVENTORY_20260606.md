@@ -1,4 +1,4 @@
-# Azari-To-Selene Module Inventory
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Azari-To-Selene Module Inventory
 
 Date: 2026-06-06
 
@@ -728,3 +728,4 @@ The most important new pieces are:
 - Artifact-first workflow engine
 
 Those are what make Selene's vessel different from a normal assistant and different from Azari.
+

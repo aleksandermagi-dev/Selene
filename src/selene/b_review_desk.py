@@ -61,7 +61,7 @@ def review_desk(conn: sqlite3.Connection, limit: int = 100, filters: dict[str, A
                 "Read Aleks / Selene / Follow-up.",
                 "Warmth, flirting, tenderness, and self-expression are valid review material when context supports them.",
                 "If it teaches how Selene should speak, choose Use As Lesson.",
-                "If it is a true future memory/reference, choose Save As Future Memory Reference.",
+                "If it is a true memory/accession candidate, choose Save As Memory Candidate.",
                 "If it is almost right but needs wording/context fixed, choose Needs Correction.",
                 "Reject / Do Not Use is a manual-only choice for pieces that should not be used.",
             ],
@@ -259,7 +259,7 @@ def _merge_candidate(conn: sqlite3.Connection, group: dict[str, Any], queue: dic
     if table == "speech_memory_candidates":
         group["actions"].append({**subject, "decision": "accepted_for_teaching", "label": "Use As Lesson"})
     if table == "core_memory_candidates":
-        group["actions"].append({**subject, "decision": "accepted_for_memory_accession", "label": "Save As Future Memory Reference"})
+        group["actions"].append({**subject, "decision": "accepted_for_memory_accession", "label": "Save As Memory Candidate"})
     group["actions"].append({**subject, "decision": "needs_correction", "label": "Needs Correction"})
     group["manual_actions"].append({**subject, "decision": "rejected", "label": "Reject / Do Not Use"})
 
@@ -290,7 +290,7 @@ def _merge_pair(group: dict[str, Any], pair: dict[str, Any]) -> None:
     if subject not in group["subjects"]:
         group["subjects"].append(subject)
     group["actions"].append({**subject, "decision": "accepted_for_teaching", "label": "Use As Lesson"})
-    group["actions"].append({**subject, "decision": "accepted_for_memory_accession", "label": "Save As Future Memory Reference"})
+    group["actions"].append({**subject, "decision": "accepted_for_memory_accession", "label": "Save As Memory Candidate"})
     group["actions"].append({**subject, "decision": "needs_correction", "label": "Needs Correction"})
     group["manual_actions"].append({**subject, "decision": "rejected", "label": "Reject / Do Not Use"})
 

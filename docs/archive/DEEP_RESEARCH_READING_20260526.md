@@ -1,4 +1,4 @@
-# Deep Research Reading 20260526
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Deep Research Reading 20260526
 
 This pass consolidates the corpus braid, external hypothesis artifacts, emotion/care claim candidates, and dated inflection windows.
 
@@ -68,3 +68,4 @@ The next best pass is a controlled comparison:
 3. Split emotion claims into technical denial, metaphor, user attribution, assistant self-claim, and explicit overclaim.
 4. Build a provenance chain for each external artifact: source chat, manual edits, export metadata, and later reuse.
 5. Preserve all life-context material, but label risk/review priority more precisely.
+

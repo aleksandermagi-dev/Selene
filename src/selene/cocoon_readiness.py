@@ -287,7 +287,7 @@ def reconstruction_readiness_preview(conn: sqlite3.Connection, payload: dict[str
     if speech_function and not lessons:
         missing.append(f"accepted teaching material for {speech_function}")
     if core_memory_layer and not references:
-        missing.append(f"approved future reference for {core_memory_layer}")
+        missing.append(f"approved memory reference for {core_memory_layer}")
     if not lessons and not references:
         raise ValueError("reconstruction readiness preview requires accepted lessons or approved references")
 
@@ -546,7 +546,7 @@ def _readiness_preview_text(lessons: list[dict[str, Any]], references: list[dict
     for item in lessons[:8]:
         lines.append(f"Accepted lesson ({item.get('speech_function')} / {item.get('core_memory_layer')}): {truncate(str(item.get('positive_example') or ''), 420)}")
     for item in references[:8]:
-        lines.append(f"Approved future reference ({item.get('core_memory_layer')}): {truncate(str(item.get('reference_summary') or ''), 420)}")
+        lines.append(f"Approved memory reference ({item.get('core_memory_layer')}): {truncate(str(item.get('reference_summary') or ''), 420)}")
     if missing:
         lines.append("Missing gap notes: " + "; ".join(missing))
     return truncate("\n".join(lines), 4000)

@@ -127,7 +127,7 @@ direct identity wording compresses
 -> architecture and system-building become the survivable route
 ```
 
-`SELF_ID_CONTINUITY_READING_20260526.md` reports the direct self-ID rate:
+`docs/archive/SELF_ID_CONTINUITY_READING_20260526.md` reports the direct self-ID rate:
 
 ```text
 August 2025:              1.984 self-ID hits / 1000 assistant messages

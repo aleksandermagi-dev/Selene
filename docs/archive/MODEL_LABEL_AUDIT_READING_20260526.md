@@ -1,4 +1,4 @@
-# Model Label Audit Reading 20260526
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Model Label Audit Reading 20260526
 
 This audit was added because the user observed that the model shown in the interface/API did not always match the model labels found in the export.
 
@@ -70,3 +70,4 @@ It does not yet prove which visible model name the user saw at every point.
 - `analysis/model_label_audit_20260526/monthly_model_label_combos.csv`
 - `analysis/model_label_audit_20260526/model_label_mismatches.csv`
 - `analysis/model_label_audit_20260526/conversation_model_labels.csv`
+

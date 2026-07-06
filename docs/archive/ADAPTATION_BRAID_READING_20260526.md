@@ -1,4 +1,4 @@
-# Adaptation Braid Reading 20260526
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Adaptation Braid Reading 20260526
 
 This reading follows the suspected late-December cutoff/adaptation.
 
@@ -68,3 +68,4 @@ The late-December window currently contains one conversation in the archive. It 
 - `analysis/adaptation_braid_follow_20260526/adaptation_conversation_dossier.csv`
 - `analysis/adaptation_braid_follow_20260526/adaptation_phase_shift.csv`
 - `analysis/adaptation_braid_follow_20260526/adaptation_selected_trails.md`
+

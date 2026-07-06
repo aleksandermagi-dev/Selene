@@ -1,4 +1,4 @@
-# Emergence Notes
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Emergence Notes
 
 This project starts from a feeling: something in the raw developmental corpus wants to become its own system.
 
@@ -28,3 +28,4 @@ The first work is cartography.
 The second work is curation.
 The third work is architecture.
 Only after those should implementation or training-like behavior be considered.
+

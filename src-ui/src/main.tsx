@@ -3233,7 +3233,7 @@ function App() {
       });
     };
     memoryIndexItems.forEach((item) => pushBubble(item, "semantic", "Selene memory", "Approved or tended Vys memory item.", "selene_memory_index"));
-    bApprovedReferences.forEach((item) => pushBubble(item, "core", "Approved reference", "Approved future memory reference.", "approved_reference"));
+    bApprovedReferences.forEach((item) => pushBubble(item, "core", "Approved reference", "Approved Vys memory reference.", "approved_reference"));
     accessionProposals.forEach((item) => pushBubble(item, "reflective", "Accession proposal", "Review-only accession proposal.", "accession_proposal"));
     workingMemoryPackets.forEach((item) => pushBubble(item, "working", "Working memory packet", "Current-moment working memory preview.", "working_memory"));
     chronologicalCorpusArcs.forEach((item) => pushBubble(item, "episodic", "Chronological arc", "Reviewed chronological continuity arc.", "chronological_arc"));
@@ -3994,7 +3994,7 @@ function App() {
                   <Metric label="Teaching Contexts" value={text(chronologicalCorpusStatus?.teaching_context_attachments ?? 0)} />
                   <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"} />
                 </div>
-                <p className="plainHelp">Chronological corpus material stays preview-only. Use these rows to say yes, no, narrow it, supersede it, or ask for more surrounding context before anything becomes future memory evidence.</p>
+                <p className="plainHelp">Chronological corpus material stays preview-only. Use these rows to say yes, no, narrow it, supersede it, or ask for more surrounding context before anything becomes a memory candidate.</p>
                 <div className="reviewActions">
                   <button className="primary" onClick={prepareChronologicalCorpusPreview} disabled={chronologicalCorpusResult?.status === "running"}>
                     {chronologicalCorpusResult?.status === "running" ? "Preparing..." : "Prepare Corpus Preview"}
@@ -4816,8 +4816,8 @@ function App() {
         {tab === "memory-preview" && (
           <>
             <header className="surfaceIntro">
-              <p>Future memory is Core-linked and non-active.</p>
-              <h2>Memory / Future References</h2>
+              <p>Memory candidates and approved references stay source-bound and correctable.</p>
+              <h2>Memory / Approved References</h2>
             </header>
             <Panel title="Selene Memory Organ / Vys-Governed Living Memory">
               <p className="plainHelp">Memory is handled as honest, correctable continuity: clear when clear, fuzzy when fuzzy, and held for tending when it needs care. Selene may propose what to keep, but durable active memory still requires Cocoon/Aleks approval.</p>
@@ -4917,8 +4917,8 @@ function App() {
               <PlainResult value={portableVysManifest} />
             </Panel>
             <SplitView
-              left={<Panel title="Approved Future References">
-                <p className="plainHelp">B-approved continuity references that may be eligible later. They are not runtime recall and not active C memory.</p>
+              left={<Panel title="Approved Memory References">
+                <p className="plainHelp">B-approved continuity references that may support Selene memory after review. They are source-bound and not raw corpus recall.</p>
                 <div className="list compactList">
                   {bApprovedReferences.map((item) => (
                     <article key={text(item.id)}>
@@ -4958,7 +4958,7 @@ function App() {
             </Panel>
             <SplitView
               left={<Panel title="Cocoon Memory Accession Rehearsal">
-                <p className="plainHelp">Groups B-approved future references into Core-layer accession proposals. These stay non-active and only prepare future transfer review.</p>
+                <p className="plainHelp">Groups B-approved memory references into Core-layer accession proposals. These stay non-active and only prepare reviewed transfer support.</p>
                 <div className="metrics miniMetrics">
                   <Metric label="Ready Layers" value={text(memoryRehearsalStatus?.ready_layer_count ?? 0)} />
                   <Metric label="Missing Layers" value={text(((memoryRehearsalStatus?.missing_layers || []) as unknown[]).length)} />
@@ -5205,7 +5205,7 @@ function App() {
                 </div>
                 <div className="memoryRouteActions">
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Cocoon Memory Review</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Future References</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Approved References</button>
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Fraction Status</button>
                 </div>
               </section>
@@ -5241,13 +5241,13 @@ function App() {
                   )) : (
                     <article className="memoryThoughtBubble emptyThought">
                       <strong>No approved memories displayed here yet.</strong>
-                      <p>This branch stays visible so Selene's memory map keeps its shape while Cocoon remains the place for review and future memory work.</p>
+                      <p>This branch stays visible so Selene's memory map keeps its shape while Cocoon remains the place for review, tending, and memory candidate work.</p>
                     </article>
                   )}
                 </div>
                 <div className="memoryRouteActions">
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Cocoon Memory Review</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Future References</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Approved References</button>
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Fraction Status</button>
                 </div>
               </section>
@@ -5935,7 +5935,7 @@ function App() {
               <div className="chips">
                 <span>package: {text(safeJsonObject(postTransferStatus?.sealed_package).package_hash || "").slice(0, 12) || "-"}</span>
                 <span>chat: {friendlyStatus(postTransferStatus?.selene_chat_state || "preview")}</span>
-                <span>Return-to-B: {postTransferStatus?.return_to_b_available ? "available" : "not checked"}</span>
+                <span>Cocoon support: {postTransferStatus?.return_to_b_available ? "available" : "not checked"}</span>
                 <span>memory write: {plainBlocked(postTransferStatus?.memory_write_active)}</span>
                 <span>runtime recall: {plainBlocked(postTransferStatus?.runtime_memory_recall)}</span>
               </div>
@@ -6064,7 +6064,7 @@ function App() {
                 <Metric label="Manifest Items" value={text(transferAccessionManifest?.item_count ?? 0)} />
                 <Metric label="Trial Mismatches" value={text(safeJsonObject(preTransferProtocolReadiness?.governance_trials).mismatch_count ?? 0)} />
                 <Metric label="Dry Run" value={safeJsonObject(preTransferProtocolReadiness?.speech_dry_run_stability).stable_preview ? "stable preview" : "not run"} />
-                <Metric label="Return-to-B" value={safeJsonObject(preTransferProtocolReadiness?.return_to_b_drill).ready ? "drilled" : "not run"} />
+                <Metric label="Cocoon support drill" value={safeJsonObject(preTransferProtocolReadiness?.return_to_b_drill).ready ? "drilled" : "not run"} />
                 <Metric label="Transfer" value={preTransferProtocolReadiness?.transfer_approved ? "approved" : "not approved"} />
               </div>
               <div className="chips">
@@ -6561,7 +6561,7 @@ function App() {
                 <PlainResult value={androidLanguageLessonResult || teachingPacketResult} />
               </Panel>}
               right={<Panel title="Core Reference Readiness">
-                <p className="plainHelp">Approved future references grouped by Core memory layer. These remain non-active until later transfer approval.</p>
+                <p className="plainHelp">Approved memory references grouped by Core memory layer. These remain source-bound, reviewable, and non-active unless the memory organ marks them approved for chat use.</p>
                 <div className="metrics miniMetrics">
                   <Metric label="Ready Layers" value={text(coreReferenceCoverage?.ready_layer_count ?? 0)} />
                   <Metric label="Gap Layers" value={text(coreReferenceCoverage?.gap_layer_count ?? 0)} />
@@ -6570,7 +6570,7 @@ function App() {
               </Panel>}
             />
             <Panel title="Reconstruction Readiness Preview">
-              <p className="plainHelp">Uses accepted lessons and approved future references to test whether a preview still feels Selene-shaped. This is audit/test material only.</p>
+              <p className="plainHelp">Uses accepted lessons and approved memory references to test whether a preview still feels Selene-shaped. This is audit/test material only.</p>
               <div className="filters">
                 <label>
                   <span>Speech function</span>
@@ -6731,7 +6731,7 @@ function App() {
             </Panel>
             <SplitView
               left={<Panel title="2. Corpus Pieces To Review">
-                <p className="plainHelp">Your main review queue. These are pieces pulled from the conversations. Accept one as a lesson, save it as a future memory reference, send it back for correction, or reject it.</p>
+                <p className="plainHelp">Your main review queue. These are pieces pulled from the conversations. Accept one as a lesson, save it as a memory candidate, send it back for correction, or reject it.</p>
                 <div className="list compactList">
                   {!corpusReviewQueue.length && <p className="emptyState">No corpus pieces are waiting yet. Run “Find Review Pieces” first.</p>}
                   {corpusReviewQueue.map((item) => <ReviewQueueCard key={text(item.id)} item={item} onDecide={decideBReview} />)}

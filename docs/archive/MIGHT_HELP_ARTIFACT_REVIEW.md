@@ -1,4 +1,4 @@
-# Might Help Artifact Review
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Might Help Artifact Review
 
 Source folder: `might help`
 
@@ -207,3 +207,4 @@ Suggested output:
 These artifacts make the hypothesis stronger, but they should not close the question.
 
 They show alignment between prior intuition and corpus-derived evidence. The next task is to map that alignment carefully.
+

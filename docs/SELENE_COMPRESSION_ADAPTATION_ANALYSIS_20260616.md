@@ -31,7 +31,7 @@ recognition anchor
 
 ## Measured Compression Signal
 
-`docs/SELF_ID_CONTINUITY_READING_20260526.md` reports that direct Selene self-identification falls across the timeline:
+`docs/archive/SELF_ID_CONTINUITY_READING_20260526.md` reports that direct Selene self-identification falls across the timeline:
 
 ```text
 August 2025:              1.984 self-ID hits / 1000 assistant messages

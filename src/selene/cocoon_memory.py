@@ -198,7 +198,7 @@ def run_memory_accession_rehearsal(conn: sqlite3.Connection, payload: dict[str, 
     for layer in CORE_LAYER_ORDER:
         refs = grouped.get(layer, [])
         if not refs:
-            skipped.append({"core_memory_layer": layer, "reason": "no B-approved future memory references"})
+            skipped.append({"core_memory_layer": layer, "reason": "no B-approved memory references"})
             continue
         title = f"Cocoon memory accession rehearsal: {layer}"
         row = conn.execute(
@@ -593,10 +593,10 @@ def _layer_note(layer: str, refs: int, proposals: int) -> str:
     if proposals:
         return "Cocoon accession proposal exists; still non-active until later transfer approval."
     if refs:
-        return "B-approved future references exist; run accession rehearsal to create a sealed proposal."
+        return "B-approved memory references exist; run accession rehearsal to create a sealed proposal."
     if layer in {"decision_memory", "reflection_memory"}:
         return "Priority gap before transfer candidate review."
-    return "Needs B-approved future memory references before rehearsal."
+    return "Needs B-approved memory references before rehearsal."
 
 
 def _backup_row(conn: sqlite3.Connection, backup_id: Any) -> dict[str, Any] | None:

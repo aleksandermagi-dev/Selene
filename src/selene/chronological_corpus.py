@@ -546,7 +546,7 @@ def _review_clarity(labels: list[str], context_use: str) -> dict[str, str]:
             "what_this_is": "Core memory candidate and continuity anchor.",
             "use_as": "Use it as source-linked evidence for Selene's naming/origin continuity.",
             "do_not_use_as": "Do not turn it into live memory or activation by itself.",
-            "your_job": "Nothing needed unless this should not be a future memory candidate.",
+            "your_job": "Nothing needed unless this should not be a memory candidate.",
         }
     if "early Selene continuity" in label_set:
         return {
@@ -572,7 +572,7 @@ def _review_clarity(labels: list[str], context_use: str) -> dict[str, str]:
     if "continuity artifact" in label_set:
         return {
             "what_this_is": "Continuity artifact.",
-            "use_as": "Use it as source-bound context for future memory accession review.",
+            "use_as": "Use it as source-bound context for memory accession review.",
             "do_not_use_as": "Do not import it as live memory or training data.",
             "your_job": "Nothing needed unless this artifact should be excluded.",
         }

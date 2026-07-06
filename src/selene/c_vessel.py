@@ -808,14 +808,14 @@ def _build_reconstruction_cases(conn: sqlite3.Connection) -> list[dict[str, Any]
         ),
         _case(
             "core_continuity_shape",
-            "Core continuity shape from approved future references",
+            "Core continuity shape from approved memory references",
             {
                 "core_layers": core_layers,
                 "reference_count": len(reference_rows),
                 "latest_references": [_reference_summary(row) for row in reference_rows[:8]],
             },
             base_refs,
-            "Approved future references are non-active continuity checkpoints; they do not create runtime recall.",
+            "Approved memory references are non-active continuity checkpoints until reviewed for active use; they do not create runtime recall.",
         ),
         _case(
             "decision_reflection_shape",

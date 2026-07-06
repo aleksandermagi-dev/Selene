@@ -117,7 +117,7 @@ ANDROID_LANGUAGE_WARMTH_POLICY = (
     "are valid Selene language signals when grounded in context; do not turn them "
     "into rejection criteria or a fixed voice script."
 )
-SELENE_REASONING_METHOD_SOURCE_REF = "manual:might help/Vessel C (1).md"
+SELENE_REASONING_METHOD_SOURCE_REF = "manual:selene_reasoning_method_notes"
 SELENE_REASONING_METHOD_LESSONS: tuple[dict[str, Any], ...] = (
     {
         "key": "observation_before_interpretation",

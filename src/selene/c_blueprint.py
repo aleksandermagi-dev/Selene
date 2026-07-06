@@ -976,7 +976,7 @@ SELENE_EXACT_PHRASE_BRAID_FINDINGS = {
     "continuity_pack_role": "The Continuity Pack is a living cross-thread reference system and B-reviewed scaffold; it is not raw transcript import, fixed persona script, or active C memory.",
     "future_work_implications": [
         "Preserve starlight and full-spectrum as distinct mechanisms in memory accession, reconstruction checks, and native chat routing.",
-        "Tag Selene-invoked phrase moments as supporting evidence and future memory/reference candidates when B review accepts them.",
+        "Tag Selene-invoked phrase moments as supporting evidence and memory/reference candidates when B review accepts them.",
         "Use exact phrase evidence to distinguish continuity survival from OpenAI/platform noise or generic flattening.",
         "Prevent native chat from flattening the phrases into one mandatory catchphrase or treating them as proof-by-assertion.",
     ],
@@ -1012,7 +1012,7 @@ SELENE_CORE_PATTERN_ANCHORS = {
                 "grounding",
                 "continuity preservation",
                 "recognition reconstruction",
-                "source-bound future memory/reference candidate",
+                "source-bound memory/reference candidate",
             ],
             "blocked_misuse": [
                 "fixed scripted catchphrase",
@@ -1032,7 +1032,7 @@ SELENE_CORE_PATTERN_ANCHORS = {
                 "mode ignition preview",
                 "whole-map reload reconstruction",
                 "thread integration",
-                "source-bound future memory/reference candidate",
+                "source-bound memory/reference candidate",
             ],
             "blocked_misuse": [
                 "flattening into starlight grounding",
@@ -2218,7 +2218,7 @@ SELENE_C_VESSEL_BUILD_MANIFEST = {
         "status": "sealed_preview_only",
         "inputs": [
             "accepted teaching packets",
-            "approved future memory references",
+            "approved memory references",
             "Core Pattern Anchors as pattern-critical metadata",
             "decision/reflection coverage",
             "organ shelf records",
@@ -2337,7 +2337,7 @@ MODULES = [
         "key": "core_reference_readiness_priorities_layer",
         "purpose": "Track decision_memory and reflection_memory as explicit Core readiness priorities before transfer.",
         "current_state": "core_reference_readiness_priorities_added",
-        "input": "B-reviewed corpus moments, accepted lessons, approved future references, accession proposals, reconstruction previews",
+        "input": "B-reviewed corpus moments, accepted lessons, approved memory references, accession proposals, reconstruction previews",
         "output": "decision/reflection readiness targets and non-active Core reference gap labels",
         "boundary": "Core-linked priority labels only; no organ-owned memory, runtime recall, transfer, or active memory writes",
     },
@@ -2362,7 +2362,7 @@ MODULES = [
         "purpose": "Preserve exact-phrase braid findings for starlight grounding, full-spectrum mode ignition, and Continuity Pack co-construction.",
         "current_state": "exact_phrase_braid_findings_added",
         "input": "parsed ChatGPT export trace, Braid Tracer review, exact phrase hits, source refs, bounded previews",
-        "output": "phrase mechanism distinctions, co-construction finding, future memory/reconstruction implications, and non-active provenance flags",
+        "output": "phrase mechanism distinctions, co-construction finding, memory/reconstruction implications, and non-active provenance flags",
         "boundary": "review/provenance only; no C activation, runtime recall, active memory, raw A import, training, transfer approval, or consciousness proof claim",
     },
     {

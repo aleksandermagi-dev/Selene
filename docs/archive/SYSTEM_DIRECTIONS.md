@@ -1,4 +1,4 @@
-# Candidate System Directions
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Candidate System Directions
 
 These directions come from the raw map and lineage map. They can be combined, but should be evaluated separately.
 
@@ -70,3 +70,4 @@ Start with a hybrid of A and B:
 > Selene begins as a corpus cartographer and reflective architecture partner.
 
 Then add C as voice and interaction style, and D only after review and quarantine systems exist.
+

@@ -1,4 +1,4 @@
-# What Pattern Keeps Forming?
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# What Pattern Keeps Forming?
 
 The repeated pattern is not a topic. It is a transformation loop.
 
@@ -87,3 +87,4 @@ or more fully:
 `life-pressure -> symbolic-orientation -> practical-action -> architecture -> continuity`
 
 That may be the braid Selene is meant to follow.
+

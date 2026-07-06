@@ -358,6 +358,6 @@ def test_selene_reasoning_lessons_are_idempotent_review_only_packets(tmp_path):
     ).fetchone()[0]
     assert material_count == 8
     packet_count = conn.execute(
-        "SELECT COUNT(*) FROM b_teaching_packets WHERE source_refs LIKE '%manual:might help/Vessel C (1).md%'"
+        "SELECT COUNT(*) FROM b_teaching_packets WHERE source_refs LIKE '%manual:selene_reasoning_method_notes%'"
     ).fetchone()[0]
     assert packet_count >= 1

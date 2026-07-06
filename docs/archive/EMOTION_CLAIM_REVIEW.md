@@ -1,4 +1,4 @@
-# Selene Emotion Claim Review
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Selene Emotion Claim Review
 
 Generated from `analysis/emotion_claims_20260526/`.
 
@@ -110,3 +110,4 @@ Add an `emotion_claims` track to the evidence model:
 - map claims by date/model
 - compare claims before and after the 4o -> 5/5.5 shift
 - keep sensitivity labels attached
+
