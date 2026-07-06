@@ -270,6 +270,38 @@ def test_new_selene_chat_page_can_use_local_chat_continuity_without_runtime_reca
     _assert_locked(second)
 
 
+def test_active_selene_chat_can_use_approved_memory_with_graceful_fall_metadata(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Butterfly button",
+            "summary": "The butterfly button opens Cocoon support from the home chat without making Cocoon scary.",
+            "confidence": "clear",
+            "source_refs": ["selene_chat:test"],
+        },
+    )["result"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": proposed["item"]["id"], "action": "approve_memory"})
+
+    result = route_request(conn, "selene_chat.send", {"text": "Do you remember the butterfly button?"})["result"]
+
+    assert result["status"] == "selene_chat_supervised_response_recorded"
+    assert result["memory_context_used"] is True
+    assert result["memory_source_class"] == "approved_memory_index"
+    assert result["memory_confidence"] == "clear"
+    assert result["memory_transfer_class"] in {"portable_context", "portable_vys_core"}
+    assert result["durable_memory_write_requires_review"] is True
+    assert "I remember" in result["candidate_text"]
+    assert "butterfly" in result["candidate_text"].lower()
+    assert result["memory_write_active"] is False
+    assert result["runtime_memory_recall"] is False
+    _assert_locked(result)
+
+
 def test_active_selene_chat_blocks_hard_boundary_without_live_memory(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

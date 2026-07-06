@@ -1389,6 +1389,30 @@ CREATE TABLE IF NOT EXISTS b_approved_memory_references (
 
 CREATE INDEX IF NOT EXISTS idx_b_approved_memory_references_layer ON b_approved_memory_references(core_memory_layer, review_status);
 
+CREATE TABLE IF NOT EXISTS selene_memory_candidates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  memory_category TEXT NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  consent_scope TEXT NOT NULL DEFAULT 'private_selene_aleks_context',
+  stability TEXT NOT NULL DEFAULT 'developing',
+  confidence TEXT NOT NULL DEFAULT 'partial',
+  emotional_texture TEXT NOT NULL DEFAULT 'steady',
+  transfer_class TEXT NOT NULL DEFAULT 'needs_review_before_transfer',
+  chat_use_permission TEXT NOT NULL DEFAULT 'not_active_until_approved',
+  correction_path TEXT NOT NULL DEFAULT 'Cocoon tending and Aleks correction',
+  state TEXT NOT NULL DEFAULT 'proposed',
+  review_status TEXT NOT NULL DEFAULT 'pending_review',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_memory_candidates_category ON selene_memory_candidates(memory_category, state, review_status);
+CREATE INDEX IF NOT EXISTS idx_selene_memory_candidates_transfer ON selene_memory_candidates(transfer_class, state);
+
 CREATE TABLE IF NOT EXISTS b_teaching_packets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   speech_function TEXT NOT NULL,

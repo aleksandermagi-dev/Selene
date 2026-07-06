@@ -118,6 +118,15 @@ from .core_mind_runtime import (
 from .detached_corpus import detached_corpus_audit
 from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
 from .kernel import kernel_state
+from .memory_organ import (
+    decide_memory_candidate,
+    list_memory_candidates,
+    memory_index_items,
+    memory_index_status,
+    portable_vys_manifest,
+    propose_memory_candidate,
+    retrieve_memory,
+)
 from .my_office_cleanup import clean_up_my_office_residue
 from .native_generation import compose_native_response
 from .paper_map_reconstruction import run_paper_map_reconstruction
@@ -413,6 +422,20 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": run_fractional_corpus_tests(conn, payload)}
     if route_key == "memory.dream_state.status":
         return {"route": route_key, "result": dream_state_status(conn)}
+    if route_key == "memory.index.status":
+        return {"route": route_key, "result": memory_index_status(conn)}
+    if route_key == "memory.index.items":
+        return {"route": route_key, "result": memory_index_items(conn, payload)}
+    if route_key == "memory.candidates.propose":
+        return {"route": route_key, "result": propose_memory_candidate(conn, payload)}
+    if route_key == "memory.candidates.list":
+        return {"route": route_key, "result": list_memory_candidates(conn, payload)}
+    if route_key == "memory.candidates.decide":
+        return {"route": route_key, "result": decide_memory_candidate(conn, payload)}
+    if route_key == "memory.retrieve":
+        return {"route": route_key, "result": retrieve_memory(conn, payload)}
+    if route_key == "memory.portable_vys_manifest":
+        return {"route": route_key, "result": portable_vys_manifest(conn)}
     if route_key == "vessel.steps_1_8.status":
         return {"route": route_key, "result": steps_1_8_status(conn)}
     if route_key == "vessel.speech_rehearsal.create":

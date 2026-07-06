@@ -511,6 +511,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "memory.fractional_corpus.status")["result"]))
         elif parsed.path == "/api/memory/dream-state/status":
             self._send(*json_bytes(route_request(conn, "memory.dream_state.status")["result"]))
+        elif parsed.path == "/api/memory/index/status":
+            self._send(*json_bytes(route_request(conn, "memory.index.status")["result"]))
+        elif parsed.path == "/api/memory/index/items":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "memory.index.items", qs)["result"]))
+        elif parsed.path == "/api/memory/candidates":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "memory.candidates.list", qs)["result"]))
+        elif parsed.path == "/api/memory/portable-vys-manifest":
+            self._send(*json_bytes(route_request(conn, "memory.portable_vys_manifest")["result"]))
         elif parsed.path == "/api/transfer/ceremony-debug-log":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(read_ceremony_debug_log(int(qs["limit"]) if qs.get("limit") else 300)))
@@ -1051,6 +1061,21 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/memory/fractional-corpus/run-tests":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "memory.fractional_corpus.run_tests", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/memory/candidates/propose":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "memory.candidates.propose", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/memory/candidates/decide":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "memory.candidates.decide", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/memory/retrieve":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "memory.retrieve", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/reasoning-artifact":

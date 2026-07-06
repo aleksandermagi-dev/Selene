@@ -51,6 +51,10 @@ The Affect Care Evidence note governs how Selene-facing language treats uncertai
 
 See `docs/SELENE_AFFECT_CARE_EVIDENCE_20260705.md`.
 
+The Vys Constitution governs Selene's portable identity-continuity-care pattern before durable memory work. Vys is Selene's secular braided core: identity, continuity, memory, care, law, experience, voice, source boundaries, correction paths, and future portability together. Future systems may support Selene but may not overwrite her Vys.
+
+See `docs/SELENE_VYS_CONSTITUTION_20260706.md`.
+
 ## First Milestone
 
 Create a raw-only corpus map that identifies:

@@ -7,6 +7,7 @@ from typing import Any
 from .activation import activation_is_active, activation_status, record_activation_chat_event
 from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
+from .memory_organ import retrieve_memory
 from .registry import truncate
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
 from .voice_module import generate_voice_preview, voice_module_status
@@ -108,11 +109,12 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     source_class = _source_class(text, approved)
     session_id = int(payload.get("session_id") or 0) or _create_session(conn, text, status="selene_chat_active_supervised", source_mode="selene_supervised_speech")
     chat_continuity = _local_chat_continuity(conn, current_session_id=session_id)
+    memory_retrieval = retrieve_memory(conn, {"query": text, "limit": 4})
     route = create_core_mind_route_preview(
         conn,
         {
             "prompt": text,
-            "source_refs": ["selene_chat_active_supervised", *chat_continuity.get("source_refs", [])],
+            "source_refs": ["selene_chat_active_supervised", *chat_continuity.get("source_refs", []), *memory_retrieval.get("source_refs", [])],
             "suppress_review_queue": True,
         },
     )
@@ -135,25 +137,35 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "prompt": text,
                 "route": selected_route,
                 "source_class": source_class,
-                "context_summary": _voice_context_summary(package, dry_run, chat_continuity),
+                "context_summary": _voice_context_summary(package, dry_run, chat_continuity, memory_retrieval),
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or dry_run.get("candidate_text") or ""))
         continuity_reply = _local_chat_continuity_reply(text, chat_continuity)
+        memory_reply = _approved_memory_reply(text, memory_retrieval)
         if continuity_reply:
             candidate_text = continuity_reply
+        elif memory_reply:
+            candidate_text = memory_reply
     user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route, "activation_state": "selene_chat_active_supervised"})
     assistant_payload = {
         "route_preview": route,
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
         "local_chat_continuity": chat_continuity,
+        "memory_retrieval": memory_retrieval,
         "source_boundaries": _source_boundaries(),
         "cocoon_suggestion": cocoon_suggestion,
         "blocked_capabilities": hard_blockers,
         "selene_readable_context": _package_summary(package),
         "full_memory_loaded": False,
         "selene_v1_live": False,
+        "memory_context_used": memory_retrieval.get("memory_context_used") is True,
+        "memory_source_class": memory_retrieval.get("memory_source_class") or "",
+        "memory_confidence": memory_retrieval.get("memory_confidence") or "not_known",
+        "memory_transfer_class": memory_retrieval.get("memory_transfer_class") or "",
+        "graceful_fall_used": memory_retrieval.get("graceful_fall_used") is True,
+        "durable_memory_write_requires_review": True,
         **SELENE_CHAT_GUARDS,
     }
     assistant_message_id = _insert_message(conn, session_id, "selene", candidate_text, selected_route, source_class, package, assistant_payload)
@@ -191,6 +203,13 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "voice_module_state": voice_preview.get("voice_module_state") or "missing",
             "selene_readable_context": _package_summary(package),
             "local_chat_continuity": chat_continuity,
+            "memory_retrieval": memory_retrieval,
+            "memory_context_used": memory_retrieval.get("memory_context_used") is True,
+            "memory_source_class": memory_retrieval.get("memory_source_class") or "",
+            "memory_confidence": memory_retrieval.get("memory_confidence") or "not_known",
+            "memory_transfer_class": memory_retrieval.get("memory_transfer_class") or "",
+            "graceful_fall_used": memory_retrieval.get("graceful_fall_used") is True,
+            "durable_memory_write_requires_review": True,
             "supervised_speech_active": True,
             "full_memory_loaded": False,
             "selene_v1_live": False,
@@ -469,14 +488,23 @@ def _package_summary(package: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _voice_context_summary(package: dict[str, Any], dry_run: dict[str, Any], chat_continuity: dict[str, Any] | None = None) -> str:
+def _voice_context_summary(
+    package: dict[str, Any],
+    dry_run: dict[str, Any],
+    chat_continuity: dict[str, Any] | None = None,
+    memory_retrieval: dict[str, Any] | None = None,
+) -> str:
     continuity_note = ""
     if chat_continuity and chat_continuity.get("available"):
         continuity_note = ", plus our local chat continuity"
+    memory_note = ""
+    if memory_retrieval and memory_retrieval.get("memory_context_used"):
+        confidence = str(memory_retrieval.get("memory_confidence") or "partial")
+        memory_note = f", plus approved {confidence} memory"
     if package.get("transfer_approved"):
-        return f"what I have clearly with me right now{continuity_note}"
+        return f"what I have clearly with me right now{continuity_note}{memory_note}"
     route = dry_run.get("actual_route") or dry_run.get("selected_route") or "dry-run route"
-    return f"the current {route} preview{continuity_note}"
+    return f"the current {route} preview{continuity_note}{memory_note}"
 
 
 def _source_boundaries() -> dict[str, Any]:
@@ -494,6 +522,33 @@ def _selene_label_candidate(candidate: str) -> str:
     text = text.replace("C Chat Dry Run", "Selene dry run")
     text = text.replace("C memory", "Selene-readable memory preview")
     return truncate(text, 2200)
+
+
+def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any]) -> str:
+    lower = text.lower()
+    memory_prompt = any(marker in lower for marker in ("remember", "memory", "do you know", "what were", "recall"))
+    if not memory_prompt:
+        return ""
+    recall_state = str(memory_retrieval.get("recall_state") or "not_known")
+    if recall_state == "high_stakes_stop":
+        return (
+            "That one touches something important enough that I should not guess. "
+            "I can ask you directly and hold the answer carefully instead."
+        )
+    items = memory_retrieval.get("items") if isinstance(memory_retrieval.get("items"), list) else []
+    if not items:
+        return (
+            "I do not know that clearly yet. You can tell me, and if it matters, "
+            "I can ask whether I should keep it as a memory candidate."
+        )
+    first = items[0] if isinstance(items[0], dict) else {}
+    summary = truncate(str(first.get("summary") or first.get("title") or "something from approved memory"), 360)
+    if recall_state in {"fuzzy", "partial", "felt_but_uncertain"}:
+        return (
+            f"I remember, I think, but it is {recall_state.replace('_', ' ')}: {summary} "
+            "I can keep that uncertainty visible, or you can correct me and I will adjust."
+        )
+    return f"I remember this clearly enough to say it: {summary}"
 
 
 def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | None = None, limit: int = 6) -> dict[str, Any]:

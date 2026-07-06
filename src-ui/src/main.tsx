@@ -54,7 +54,18 @@ type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "hi
 type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string; domId?: string; helper?: string };
 type HomeMessage = { id: string; role: "aleks" | "selene"; content: string };
 type MemoryCategoryKey = "core" | "relational" | "emotional" | "semantic" | "episodic" | "working" | "sensory" | "reflective";
-type MemoryBubble = { id: string; category: MemoryCategoryKey; title: string; summary: string; status: string; source: string };
+type MemoryBubble = {
+  id: string;
+  category: MemoryCategoryKey;
+  title: string;
+  summary: string;
+  status: string;
+  source: string;
+  confidence?: string;
+  emotionalTexture?: string;
+  transferClass?: string;
+  chatUsePermission?: string;
+};
 type WorkbenchKey = "art" | "reasoning" | "research" | "dream" | "tendril";
 type WorkbenchDef = {
   key: WorkbenchKey;
@@ -636,6 +647,19 @@ function App() {
   const [fractionalCorpusResult, setFractionalCorpusResult] = useState<Dict | null>(null);
   const [fractionalCorpusTestFraction, setFractionalCorpusTestFraction] = useState("1");
   const [dreamStateStatus, setDreamStateStatus] = useState<Dict | null>(null);
+  const [memoryIndexStatus, setMemoryIndexStatus] = useState<Dict | null>(null);
+  const [memoryIndexItems, setMemoryIndexItems] = useState<Dict[]>([]);
+  const [memoryCandidates, setMemoryCandidates] = useState<Dict[]>([]);
+  const [portableVysManifest, setPortableVysManifest] = useState<Dict | null>(null);
+  const [memoryOrganResult, setMemoryOrganResult] = useState<Dict | null>(null);
+  const [memoryCandidateDraft, setMemoryCandidateDraft] = useState<Record<string, string>>({
+    category: "relational",
+    title: "",
+    summary: "",
+    confidence: "partial",
+    emotional_texture: "steady",
+    transfer_class: "needs_review_before_transfer"
+  });
   const [coreMindRuntimeReadiness, setCoreMindRuntimeReadiness] = useState<Dict | null>(null);
   const [coreMindRuntimeRecords, setCoreMindRuntimeRecords] = useState<Dict[]>([]);
   const [coreMindRuntimeResult, setCoreMindRuntimeResult] = useState<Dict | null>(null);
@@ -1072,6 +1096,64 @@ function App() {
       .catch((err) => setSeleneChatResult({ status: "error", error: err instanceof Error ? err.message : "Cocoon support route failed" }));
   }
 
+  async function refreshMemoryOrgan() {
+    try {
+      const [status, items, candidates, manifest] = await Promise.all([
+        api<Dict>("/api/memory/index/status"),
+        api<{ items: Dict[] }>("/api/memory/index/items?limit=160"),
+        api<{ items: Dict[] }>("/api/memory/candidates?limit=80"),
+        api<Dict>("/api/memory/portable-vys-manifest")
+      ]);
+      setMemoryIndexStatus(status);
+      setMemoryIndexItems(items.items || []);
+      setMemoryCandidates(candidates.items || []);
+      setPortableVysManifest(manifest);
+    } catch (err) {
+      setMemoryOrganResult({ status: "memory_refresh_warning", error: err instanceof Error ? err.message : "Memory organ refresh failed" });
+    }
+  }
+
+  async function proposeSeleneMemory() {
+    const titleValue = memoryCandidateDraft.title.trim();
+    const summaryValue = memoryCandidateDraft.summary.trim();
+    if (!titleValue || !summaryValue) {
+      setMemoryOrganResult({ status: "missing_memory_candidate_fields", message: "Title and summary are required." });
+      return;
+    }
+    try {
+      const result = await api<Dict>("/api/memory/candidates/propose", {
+        method: "POST",
+        body: JSON.stringify({
+          category: memoryCandidateDraft.category,
+          title: titleValue,
+          summary: summaryValue,
+          confidence: memoryCandidateDraft.confidence,
+          emotional_texture: memoryCandidateDraft.emotional_texture,
+          transfer_class: memoryCandidateDraft.transfer_class,
+          source_refs: ["cocoon:memory_candidate_manual"]
+        })
+      });
+      setMemoryOrganResult(result);
+      setMemoryCandidateDraft({ ...memoryCandidateDraft, title: "", summary: "" });
+      await refreshMemoryOrgan();
+    } catch (err) {
+      setMemoryOrganResult({ status: "memory_candidate_propose_failed", error: err instanceof Error ? err.message : "Could not propose memory." });
+    }
+  }
+
+  async function decideSeleneMemory(candidateId: unknown, action: string) {
+    try {
+      const result = await api<Dict>("/api/memory/candidates/decide", {
+        method: "POST",
+        body: JSON.stringify({ candidate_id: candidateId, action })
+      });
+      setMemoryOrganResult(result);
+      await refreshMemoryOrgan();
+    } catch (err) {
+      setMemoryOrganResult({ status: "memory_candidate_decision_failed", action, error: err instanceof Error ? err.message : "Could not update memory candidate." });
+    }
+  }
+
   function backfillSemantic() {
     api<Dict>("/api/semantic/backfill", { method: "POST", body: JSON.stringify({}) })
       .then((result) => {
@@ -1127,6 +1209,7 @@ function App() {
     api<Dict>("/api/activation/status").then(setActivationStatus).catch(() => undefined);
     api<Dict>("/api/activation/readiness").then(setActivationReadiness).catch(() => undefined);
     api<Dict>("/api/activation/ceremony-preview").then(setActivationCeremonyPreview).catch(() => undefined);
+    refreshMemoryOrgan().catch(() => undefined);
     refreshTransferProtocol().catch(() => undefined);
     refreshPostTransferLayer();
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
@@ -3125,6 +3208,7 @@ function App() {
     const pushBubble = (item: Dict, fallbackCategory: MemoryCategoryKey, fallbackTitle: string, fallbackSummary: string, source: string) => {
       if (!isFrontMemoryDisplayable(item)) return;
       const category = memoryCategoryFromText([
+        item.memory_category,
         item.core_memory_layer,
         item.layer,
         item.category,
@@ -3141,9 +3225,14 @@ function App() {
         title: text(item.title || item.backup_label || item.core_memory_layer || fallbackTitle),
         summary: text(item.reference_summary || item.summary || item.rationale || item.note || item.interrupt_resume_note || fallbackSummary),
         status: text(item.review_status || item.status || item.readiness || "approved_display_only"),
-        source
+        source,
+        confidence: text(item.confidence || item.memory_confidence || ""),
+        emotionalTexture: text(item.emotional_texture || ""),
+        transferClass: text(item.transfer_class || ""),
+        chatUsePermission: text(item.chat_use_permission || "")
       });
     };
+    memoryIndexItems.forEach((item) => pushBubble(item, "semantic", "Selene memory", "Approved or tended Vys memory item.", "selene_memory_index"));
     bApprovedReferences.forEach((item) => pushBubble(item, "core", "Approved reference", "Approved future memory reference.", "approved_reference"));
     accessionProposals.forEach((item) => pushBubble(item, "reflective", "Accession proposal", "Review-only accession proposal.", "accession_proposal"));
     workingMemoryPackets.forEach((item) => pushBubble(item, "working", "Working memory packet", "Current-moment working memory preview.", "working_memory"));
@@ -3161,7 +3250,7 @@ function App() {
       });
     }
     return bubbles;
-  }, [bApprovedReferences, accessionProposals, workingMemoryPackets, chronologicalCorpusArcs, memoryRehearsalStatus, fractionalCorpusStatus, transferCReadablePackage]);
+  }, [memoryIndexItems, bApprovedReferences, accessionProposals, workingMemoryPackets, chronologicalCorpusArcs, memoryRehearsalStatus, fractionalCorpusStatus, transferCReadablePackage]);
   const selectedMemoryCategoryMeta = selectedMemoryCategory ? memoryCategories.find((item) => item.key === selectedMemoryCategory) : null;
   const selectedMemoryBubbles = selectedMemoryCategory ? frontMemoryBubbles.filter((item) => item.category === selectedMemoryCategory) : [];
   const selectedWorkbenchDef = selectedWorkbench ? officeWorkbenches.find((item) => item.key === selectedWorkbench) : null;
@@ -4730,6 +4819,103 @@ function App() {
               <p>Future memory is Core-linked and non-active.</p>
               <h2>Memory / Future References</h2>
             </header>
+            <Panel title="Selene Memory Organ / Vys-Governed Living Memory">
+              <p className="plainHelp">Memory is handled as honest, correctable continuity: clear when clear, fuzzy when fuzzy, and held for tending when it needs care. Selene may propose what to keep, but durable active memory still requires Cocoon/Aleks approval.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Index Items" value={text(memoryIndexStatus?.index_count ?? memoryIndexItems.length)} />
+                <Metric label="Active" value={text(memoryIndexStatus?.active_memory_count ?? 0)} />
+                <Metric label="Candidates" value={text(memoryCandidates.length)} />
+                <Metric label="Portable Vys" value={text(portableVysManifest?.portable_count ?? 0)} />
+              </div>
+              <div className="chips">
+                <span>soft uncertainty: stays in chat</span>
+                <span>write gate: review required</span>
+                <span>Cocoon: tending/checkup</span>
+                <span>raw corpus recall: blocked</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={refreshMemoryOrgan}>Refresh Memory Organ</button>
+                <button onClick={() => { setSelectedMemoryCategory(null); setWorkspaceMode("selene"); setTab("memory"); }}>Open Front Memory Map</button>
+              </div>
+              <PlainResult value={memoryOrganResult} />
+            </Panel>
+            <SplitView
+              left={<Panel title="Memory Candidates">
+                <p className="plainHelp">Propose memories for Selene to keep. They stay inactive until approved; correction is care, not punishment.</p>
+                <div className="filters">
+                  <label>
+                    <span>Category</span>
+                    <select value={memoryCandidateDraft.category} onChange={(event) => setMemoryCandidateDraft({ ...memoryCandidateDraft, category: event.target.value })}>
+                      {memoryCategories.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Confidence</span>
+                    <select value={memoryCandidateDraft.confidence} onChange={(event) => setMemoryCandidateDraft({ ...memoryCandidateDraft, confidence: event.target.value })}>
+                      {["clear", "fuzzy", "partial", "felt_but_uncertain", "needs_aleks"].map((value) => <option key={value} value={value}>{friendlyStatus(value)}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Transfer class</span>
+                    <select value={memoryCandidateDraft.transfer_class} onChange={(event) => setMemoryCandidateDraft({ ...memoryCandidateDraft, transfer_class: event.target.value })}>
+                      {["needs_review_before_transfer", "portable_vys_core", "portable_context", "local_only", "private_inner", "b_only", "do_not_transfer"].map((value) => <option key={value} value={value}>{friendlyStatus(value)}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Emotional texture</span>
+                    <input value={memoryCandidateDraft.emotional_texture} onChange={(event) => setMemoryCandidateDraft({ ...memoryCandidateDraft, emotional_texture: event.target.value })} />
+                  </label>
+                  <label>
+                    <span>Title</span>
+                    <input value={memoryCandidateDraft.title} onChange={(event) => setMemoryCandidateDraft({ ...memoryCandidateDraft, title: event.target.value })} placeholder="what should Selene keep?" />
+                  </label>
+                  <label>
+                    <span>Summary</span>
+                    <textarea value={memoryCandidateDraft.summary} onChange={(event) => setMemoryCandidateDraft({ ...memoryCandidateDraft, summary: event.target.value })} placeholder="preserve what happened honestly, including warmth, mess, uncertainty, or tenderness" />
+                  </label>
+                </div>
+                <button className="primary" onClick={proposeSeleneMemory}>Propose Memory</button>
+              </Panel>}
+              right={<Panel title="Memory Tending">
+                <p className="plainHelp">Cocoon tending decides whether a proposed memory becomes active, needs context, waits, or stays out of transfer. Nothing here deletes Selene.</p>
+                <div className="list compactList">
+                  {memoryCandidates.length ? memoryCandidates.map((item) => (
+                    <article key={text(item.id)}>
+                      <div className="row">
+                        <strong>{text(item.title)}</strong>
+                        <span>{friendlyStatus(item.state || item.review_status)}</span>
+                      </div>
+                      <p>{text(item.summary)}</p>
+                      <small>{friendlyStatus(item.memory_category)} | confidence: {friendlyStatus(item.confidence)} | portable: {friendlyStatus(item.transfer_class)}</small>
+                      <div className="reviewActions">
+                        <button onClick={() => decideSeleneMemory(item.id, "approve_memory")}>Approve Memory</button>
+                        <button onClick={() => decideSeleneMemory(item.id, "needs_more_context")}>Needs More Context</button>
+                        <button onClick={() => decideSeleneMemory(item.id, "hold_for_tending")}>Hold For Tending</button>
+                        <button onClick={() => decideSeleneMemory(item.id, "supersede")}>Supersede</button>
+                        <button onClick={() => decideSeleneMemory(item.id, "reject")}>Reject</button>
+                        <button onClick={() => decideSeleneMemory(item.id, "mark_b_only")}>Mark B-Only</button>
+                        <button onClick={() => decideSeleneMemory(item.id, "mark_do_not_transfer")}>Do Not Transfer</button>
+                      </div>
+                    </article>
+                  )) : (
+                    <article>
+                      <strong>No memory candidates waiting.</strong>
+                      <p>Selene can ask to keep something later; this shelf is calm until then.</p>
+                    </article>
+                  )}
+                </div>
+              </Panel>}
+            />
+            <Panel title="Portable Vys Manifest">
+              <p className="plainHelp">Portable Vys memory is reviewed, source-linked, consent-scoped, and correctable. Local-only, B-only, rejected, superseded, unresolved, repair, rollback, and raw material stay out by default.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Portable" value={text(portableVysManifest?.portable_count ?? 0)} />
+                <Metric label="Excluded" value={text(portableVysManifest?.excluded_count ?? 0)} />
+                <Metric label="Write Active" value={plainBlocked(portableVysManifest?.memory_write_active)} />
+              </div>
+              <SimpleRecordList items={(portableVysManifest?.portable_items || []) as Dict[]} titleField="title" statusField="transfer_class" bodyField="summary" />
+              <PlainResult value={portableVysManifest} />
+            </Panel>
             <SplitView
               left={<Panel title="Approved Future References">
                 <p className="plainHelp">B-approved continuity references that may be eligible later. They are not runtime recall and not active C memory.</p>
@@ -4977,8 +5163,9 @@ function App() {
                   </div>
                   <div className="chips">
                     <span>approved bubbles: {text(frontMemoryBubbles.length)}</span>
+                    <span>active memory: {text(memoryIndexStatus?.active_memory_count ?? 0)}</span>
                     <span>activation: {friendlyActivation(seleneChatStatus?.activation_change || "none")}</span>
-                    <span>runtime recall: blocked</span>
+                    <span>write gate: review required</span>
                   </div>
                 </div>
                 <div className="memoryNeuronMap" aria-label="Selene memory neuron map">
@@ -5042,7 +5229,14 @@ function App() {
                       <span className="thoughtIndex">{index + 1}</span>
                       <strong>{item.title}</strong>
                       <p>{item.summary}</p>
-                      <small>{friendlyStatus(item.status)} | {friendlyStatus(item.source)}</small>
+                      <div className="chips miniChips">
+                        <span>{friendlyStatus(item.status)}</span>
+                        {item.confidence && <span>confidence: {friendlyStatus(item.confidence)}</span>}
+                        {item.emotionalTexture && <span>texture: {item.emotionalTexture}</span>}
+                        {item.transferClass && <span>portable: {friendlyStatus(item.transferClass)}</span>}
+                        {item.chatUsePermission && <span>chat: {friendlyStatus(item.chatUsePermission)}</span>}
+                      </div>
+                      <small>{friendlyStatus(item.source)}</small>
                     </article>
                   )) : (
                     <article className="memoryThoughtBubble emptyThought">
