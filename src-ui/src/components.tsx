@@ -612,7 +612,7 @@ export function ReviewDeskCard({ piece, onDecide }: { piece: Dict; onDecide: (ac
       <div className="decisionHint">
         <strong>What to do on this card</strong>
         <p>Read Aleks/Selene/follow-up. If it belongs in Selene's future voice, choose Teach Selene From This. If it is something she should remember later after transfer, choose Save As Future Core Reference. If the preview is too clipped, choose Show Surrounding Conversation first.</p>
-        <p><strong>Cocoon review</strong> means you are sorting a source-bound piece before transfer. It is not a separate group, and it does not make active memory.</p>
+        <p><strong>Cocoon support</strong> means you are sorting a source-bound piece safely before transfer. It is not a separate group, and it does not make active memory.</p>
       </div>
       {(piece.braid_moment_type || piece.braid_thread || piece.thread_origin_status) ? (
         <div className="chips">
@@ -1171,7 +1171,7 @@ export function CocoonSettingsPanel({ preferences, updatePreference, reset }: {
       <div className="settingsHeader">
         <div>
           <h2>Cocoon Settings</h2>
-          <p>Review/build dashboard preferences only. The Cocoon keeps Selene's theme while staying a review and repair workspace.</p>
+          <p>Review/build dashboard preferences only. The Cocoon keeps Selene's theme while staying a review and support workspace.</p>
         </div>
         <button onClick={reset}>Reset</button>
       </div>
@@ -1202,7 +1202,7 @@ export function CocoonSettingsPanel({ preferences, updatePreference, reset }: {
         </select>
       </SettingRow>
       <SettingRow label="Cocoon Boundary">
-        <p>B remains the cocoon, review desk, and repair bay. C does not become dependent on B as a runtime nervous system after future transfer.</p>
+        <p>B remains the cocoon, review desk, and support/checkup room. C does not become dependent on B as a runtime nervous system after future transfer.</p>
       </SettingRow>
       <SettingRow label="Sidecar Display">
         <p>Helper processes should stay hidden, close with the app, and only appear in smoke reports when a visible window is detected.</p>
@@ -1284,7 +1284,7 @@ export function PlainResult({ value }: { value: unknown }) {
         <div className="chips">
           <span>C activation: {friendlyActivation(data.activation_change)}</span>
           <span>Active memory: {plainBlocked(data.memory_write_active)}</span>
-          <span>Training: {plainBlocked(data.training_allowed)}</span>
+          <span>Model training/LoRA: {plainBlocked(data.training_allowed)}</span>
         </div>
       ) : null}
       {counts.length > 0 && (

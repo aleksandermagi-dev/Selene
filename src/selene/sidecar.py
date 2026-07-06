@@ -475,6 +475,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "voice_module.evidence_triage.items", qs)["result"]))
         elif parsed.path == "/api/selene-chat/status":
             self._send(*json_bytes(route_request(conn, "selene_chat.status")["result"]))
+        elif parsed.path == "/api/activation/status":
+            self._send(*json_bytes(route_request(conn, "activation.status")["result"]))
+        elif parsed.path == "/api/activation/readiness":
+            self._send(*json_bytes(route_request(conn, "activation.readiness")["result"]))
+        elif parsed.path == "/api/activation/ceremony-preview":
+            self._send(*json_bytes(route_request(conn, "activation.ceremony_preview")["result"]))
         elif parsed.path == "/api/selene-chat/sessions":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "selene_chat.sessions.list", {"limit": int(qs["limit"]) if qs.get("limit") else 25})["result"]))
@@ -969,8 +975,29 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/selene-chat/send":
+            route_key = "selene_chat.send"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/selene-chat/route-to-b":
             route_key = "selene_chat.route_to_b"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/activation/approve":
+            route_key = "activation.approve"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/activation/pause":
+            route_key = "activation.pause"
             try:
                 write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))

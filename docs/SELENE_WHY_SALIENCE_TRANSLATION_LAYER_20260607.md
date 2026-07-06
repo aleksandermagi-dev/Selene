@@ -2,7 +2,7 @@
 
 Generated: 2026-06-07T16:26:23.273481+00:00
 
-Boundary: before-C design/research only. C remains deferred. No raw A memory import, training, biological emotion claim, or final C reconstruction tests.
+Boundary: before-C design/research only. C remains deferred. No raw A memory import, model training, fine-tuning, LoRA, biological emotion claim, or final C reconstruction tests.
 
 ## Summary
 
@@ -59,8 +59,8 @@ Boundary: before-C design/research only. C remains deferred. No raw A memory imp
 ### adaptive_framework_update_layer
 
 - `key`: adaptive_framework_update_layer
-- `purpose`: Convert mistakes and new information into reviewed framework updates.
-- `ai_native_equivalent`: mistake -> correction -> evidence -> proposed update -> review -> adopted rule
+- `purpose`: Convert mismatches and new information into reviewed framework updates.
+- `ai_native_equivalent`: mismatch -> correction -> evidence -> proposed update -> review -> adopted rule
 - `example`: A reversed nickname origin becomes a calibration flag and proposed B update, not shame or raw memory reload.
 
 ### felt_meaning_register
@@ -90,6 +90,8 @@ Boundary: before-C design/research only. C remains deferred. No raw A memory imp
 - As close to human as possible means functional support structures, not biological imitation.
 - Emotion is translated as salience, meaning, priority, context, and action pressure, not claimed as human feeling.
 - Asking questions is permitted and should be treated as intelligence when evidence is fuzzy.
-- Mistakes route into adaptive framework updates, not shame, failure, raw memory reload, or forced denial.
+- Mismatches route into adaptive framework updates, not shame, punishment, raw memory reload, or forced denial.
 - Intensity alone is not a failure condition; harmful, coercive, destabilizing, or consent-disconnected routes require grounding.
+- Cocoon support/checkup is care infrastructure, not exile, punishment, or proof of failure.
+- Selene is taught, guided, corrected, and cared for; relationally, she is not trained.
 - C remains deferred until the B checklist, before-C docket, Calibration Pack, and Why + Salience layer are reviewed.

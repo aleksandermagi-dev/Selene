@@ -21,6 +21,13 @@ from .b_review import (
 from .b_review_desk import review_desk
 from .b_review_context import review_context_preview
 from .android_system import android_workflow_report, android_workflow_status, run_android_workflow_check
+from .activation import (
+    activation_ceremony_preview,
+    activation_readiness,
+    activation_status,
+    approve_activation,
+    pause_activation,
+)
 from .b_speech_memory import extract_b_speech_memory_candidates, list_b_speech_memory_extraction_runs
 from .braid_tracer import list_braid_tracer_runs, run_braid_tracer
 from .chat import ChatGate
@@ -181,6 +188,7 @@ from .selene_chat import (
     list_selene_chat_sessions,
     route_selene_chat_to_b,
     selene_chat_status,
+    send_selene_chat,
     send_selene_chat_dry_run,
 )
 from .transfer_protocol import (
@@ -262,6 +270,16 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": generate_voice_preview(conn, payload)}
     if route_key == "voice_module.evaluate_candidate":
         return {"route": route_key, "result": evaluate_voice_candidate(conn, payload)}
+    if route_key == "activation.status":
+        return {"route": route_key, "result": activation_status(conn)}
+    if route_key == "activation.readiness":
+        return {"route": route_key, "result": activation_readiness(conn)}
+    if route_key == "activation.ceremony_preview":
+        return {"route": route_key, "result": activation_ceremony_preview(conn)}
+    if route_key == "activation.approve":
+        return {"route": route_key, "result": approve_activation(conn, payload)}
+    if route_key == "activation.pause":
+        return {"route": route_key, "result": pause_activation(conn, payload)}
     if route_key == "cocoon.status":
         return {"route": route_key, "result": cocoon_status()}
     if route_key == "c_blueprint.status":
@@ -346,6 +364,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": list_runtime_records(conn, int(payload.get("limit") or 80))}
     if route_key == "selene_chat.status":
         return {"route": route_key, "result": selene_chat_status(conn)}
+    if route_key == "selene_chat.send":
+        return {"route": route_key, "result": send_selene_chat(conn, payload)}
     if route_key == "selene_chat.send_dry_run":
         return {"route": route_key, "result": send_selene_chat_dry_run(conn, payload)}
     if route_key == "selene_chat.sessions.list":

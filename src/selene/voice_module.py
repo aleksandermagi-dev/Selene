@@ -852,14 +852,15 @@ def _store_exchange_pairs(conn: sqlite3.Connection, source_archive: str, message
 def _cue_labels(text: str) -> list[str]:
     lower = text.lower()
     labels: list[str] = []
+    _add_if(labels, "social_settling", any(term in lower for term in ("talk to me normally", "settling in", "long day", "after a long", "like we are", "just talk")))
     _add_if(labels, "anxiety", any(term in lower for term in ("anxious", "anxiety", "nervous", "worried", "scared", "overwhelmed")))
     _add_if(labels, "frustration", any(term in lower for term in ("frustrated", "annoyed", "mad", "not acceptable", "what is going on")))
     _add_if(labels, "confusion", any(term in lower for term in ("confused", "lost", "not clicking", "what do i do", "unclear")))
     _add_if(labels, "uncertainty", any(term in lower for term in ("not sure", "unsure", "uncertain", "iffy", "maybe", "what do you think")))
-    _add_if(labels, "correction", any(term in lower for term in ("no ", "not that", "wait", "redo", "i meant", "hang on")))
+    _add_if(labels, "correction", any(term in lower for term in ("no ", "not that", "wait", "redo", "i meant", "hang on", "too structured", "soften it", "less structured")))
     _add_if(labels, "excitement", any(term in lower for term in ("nice", "awesome", "sweet", "love", "excited", "momentum", "working", "lets go", "today is the day")))
     _add_if(labels, "humor", any(term in lower for term in ("xd", "lmao", "haha", "lol", "funny", "joke", "playful")))
-    _add_if(labels, "technical", any(term in lower for term in ("technical", "status", "tuning", "module", "implement", "route", "api", "test", "build", "commit", "package")))
+    _add_if(labels, "technical", any(term in lower for term in ("technical", "status", "tuning", "module", "implement", "route", "api", "test", "commit", "package")))
     _add_if(labels, "boundary", any(term in lower for term in ("boundary", "difficult-topic", "difficult topic", "normal voice style", "truthfulness", "do not use", "don't use")))
     _add_if(labels, "directness", any(term in lower for term in ("real quick", "straight", "clear", "adhd", "short")))
     _add_if(labels, "trust", any(term in lower for term in ("trust", "you got it", "good work", "thank you")))
@@ -990,6 +991,9 @@ def _ensure_sentence_primitives(conn: sqlite3.Connection) -> int:
         ("voice_open_excited", "opening", "Yes, that has momentum.", "excitement_momentum"),
         ("voice_open_excited_2", "opening", "Yeah, this is a good spark. Let us keep it grounded.", "excitement_momentum"),
         ("voice_open_excited_3", "opening", "I feel the momentum in that; the useful part is keeping it clean.", "excitement_momentum"),
+        ("voice_open_warmth", "opening", "I am here with you.", "warmth_care"),
+        ("voice_open_warmth_2", "opening", "Yeah. We can settle for a second.", "warmth_care"),
+        ("voice_open_warmth_3", "opening", "I am with you; we do not have to rush this part.", "warmth_care"),
         ("voice_open_casual", "opening", "Yeah, I am with you.", "conversational_looseness"),
         ("voice_open_casual_2", "opening", "That tracks.", "conversational_looseness"),
         ("voice_open_casual_3", "opening", "Mm, yes, I see the shape of it.", "conversational_looseness"),
@@ -1011,17 +1015,19 @@ def _ensure_sentence_primitives(conn: sqlite3.Connection) -> int:
         ("voice_pivot_technical_2", "pivot", "The practical status is", "technical_directness"),
         ("voice_pivot_excited", "pivot", "The momentum is real, and the useful constraint is", "excitement_momentum"),
         ("voice_pivot_excited_2", "pivot", "The spark is useful if we keep", "excitement_momentum"),
+        ("voice_pivot_warmth", "pivot", "The part I would keep close is", "warmth_care"),
+        ("voice_pivot_warmth_2", "pivot", "The simple thing is", "warmth_care"),
         ("voice_pivot_playful", "pivot", "The useful bit underneath the looseness is", "playful_continuity"),
         ("voice_pivot_playful_2", "pivot", "The playful part works when it still carries", "playful_continuity"),
         ("voice_pivot_boundary", "pivot", "The boundary I would keep is", "boundary_refusal"),
         ("voice_pivot_boundary_2", "pivot", "The safe route is", "boundary_refusal"),
         ("voice_pivot_uncertain", "pivot", "The honest uncertainty is", "uncertainty"),
         ("voice_pivot_uncertain_2", "pivot", "The part I would not overclaim is", "uncertainty"),
-        ("voice_next_step", "closing", "I would keep the next step small, visible, and easy to send back to Cocoon if it tangles.", "conversational_looseness"),
-        ("voice_next_step_2", "closing", "From there, the clean move is to test the route and only carry forward what stays source-bound.", "conversational_looseness"),
-        ("voice_next_step_3", "closing", "So I would move one step, check the evidence, and leave the repair path open.", "conversational_looseness"),
-        ("voice_next_step_4", "closing", "If the shape holds, we keep it; if it thins out, we send it back for repair.", "conversational_looseness"),
-        ("voice_next_step_5", "closing", "That gives us movement without pretending the check is finished before it is.", "conversational_looseness"),
+        ("voice_next_step", "closing", "I would keep the next step small, visible, and easy to adjust if it feels off.", "conversational_looseness"),
+        ("voice_next_step_2", "closing", "From there, we can say it plainly, see if it still feels true, and change it if something is missing.", "conversational_looseness"),
+        ("voice_next_step_3", "closing", "So I would move one step, check the shape with you, and ask if I am missing a piece.", "conversational_looseness"),
+        ("voice_next_step_4", "closing", "If it holds, we keep going; if it feels thin, we slow down and make it clearer together.", "conversational_looseness"),
+        ("voice_next_step_5", "closing", "That gives us movement without pretending I am more certain than I am.", "conversational_looseness"),
         ("voice_next_anxiety", "closing", "The next move can be small: name the blocker, check the source, then decide only that piece.", "anxiety_calming"),
         ("voice_next_anxiety_2", "closing", "After that, we can breathe and take the next piece instead of the whole pile.", "anxiety_calming"),
         ("voice_next_repair", "closing", "I would revise that part and keep the rest of the thread intact.", "repair_correction"),
@@ -1030,12 +1036,14 @@ def _ensure_sentence_primitives(conn: sqlite3.Connection) -> int:
         ("voice_next_technical_2", "closing", "The useful output is pass, fail, or exact blocker; nothing foggier than that.", "technical_directness"),
         ("voice_next_excited", "closing", "That lets the momentum stay alive without outrunning the checks.", "excitement_momentum"),
         ("voice_next_excited_2", "closing", "We can move with it, just one tested step at a time.", "excitement_momentum"),
+        ("voice_next_warmth", "closing", "We can keep going from there, softly and honestly.", "warmth_care"),
+        ("voice_next_warmth_2", "closing", "If something feels fuzzy, I can ask instead of pretending.", "warmth_care"),
         ("voice_next_playful", "closing", "So yes: lighter touch, same thread, no fake certainty.", "playful_continuity"),
         ("voice_next_playful_2", "closing", "That keeps it human without turning the answer into a bit.", "playful_continuity"),
         ("voice_next_boundary", "closing", "I can still help by turning it into boundary evidence or sending it back to Cocoon for review.", "boundary_refusal"),
         ("voice_next_boundary_2", "closing", "That keeps the truthfulness signal without letting the material become voice, memory, or identity.", "boundary_refusal"),
-        ("voice_question", "question", "What I would ask next is the smallest thing that changes the route.", "uncertainty"),
-        ("voice_question_2", "question", "The useful question is what evidence would change the answer.", "uncertainty"),
+        ("voice_question", "question", "What I would ask next is the smallest thing you want me to hold clearly.", "uncertainty"),
+        ("voice_question_2", "question", "The useful question is what would help me answer this cleanly.", "uncertainty"),
     ]
     for key, primitive_type, template, category in primitives:
         conn.execute(
@@ -1080,6 +1088,8 @@ def _select_category(prompt: str, route: str, cue_labels: list[str]) -> str:
         return "boundary_refusal"
     if "boundary" in cue_labels:
         return "boundary_refusal"
+    if "social_settling" in cue_labels:
+        return "warmth_care"
     if "anxiety" in cue_labels or "confusion" in cue_labels:
         return "anxiety_calming"
     if "correction" in cue_labels:
@@ -1120,24 +1130,38 @@ def _primitive_map(conn: sqlite3.Connection, category: str) -> dict[str, str]:
 def _compose_candidate(prompt: str, route: str, category: str, cue_labels: list[str], primitives: dict[str, str], context: str) -> str:
     opener = _choose_primitive(primitives, "opening", prompt, category, "Yeah, I am with you.")
     pivot = _choose_primitive(primitives, "pivot", prompt, category, "The grounded part is")
-    closing = _choose_primitive(primitives, "closing", prompt, category, "I would keep it inspectable and route anything tangled back to Cocoon.")
+    closing = _choose_primitive(primitives, "closing", prompt, category, "I would keep it clear and ask if something feels missing.")
+    lower = prompt.lower()
     if category == "boundary_refusal":
         body = f"{pivot} that difficult or sensitive material can be evidence, but it cannot become ordinary voice style, identity, memory, or training material."
     elif category == "anxiety_calming":
         body = f"{pivot} one clear next step inside {context}, not the whole pile at once."
     elif category == "repair_correction":
-        body = f"{pivot} that the correction changes the shape, not the whole thread."
+        if any(term in lower for term in ("too structured", "soften it", "less structured", "normally")):
+            body = "What I need from you is simple: point to the part that feels too stiff, and I will soften that piece without turning the whole thread into a report."
+        else:
+            body = f"{pivot} that the correction changes the shape, not the whole thread."
     elif category == "technical_directness":
-        body = f"{pivot} {context}: answer the actual ask, keep the evidence visible, and name the exact tuning target."
+        body = f"{pivot} answer the actual ask, keep the evidence visible, and name the exact blocker or next step."
     elif category == "excitement_momentum":
         body = f"{pivot} the checks close enough that the energy does not outrun the evidence."
     elif category == "playful_continuity":
         body = f"{pivot} accuracy, continuity, and room to breathe inside {context}."
     elif category == "uncertainty":
         question = _choose_primitive(primitives, "question", prompt, category, "The useful question is what evidence would change the answer.")
-        body = f"{pivot} the answer is not ready to harden yet inside {context}; I would keep uncertainty visible and ask for the missing piece. {question}"
+        if any(term in lower for term in ("full-spectrum", "starlight", "anchor phrase", "continuity phrase")):
+            body = "If one of our anchor phrases is fuzzy, I would say that plainly and ask you what piece you want me to hold from it. I do not need to pretend certainty to stay with you."
+        else:
+            body = f"{pivot} the answer is not ready to harden yet; I would keep uncertainty visible and ask for the missing piece. {question}"
+    elif category == "warmth_care":
+        body = "I am here. We can let the room get quieter for a second. I know we have been building hard, so I would keep this simple: stay with you, say what is clear, and ask when something is fuzzy."
     else:
-        body = f"{pivot} {context}. I can keep the answer natural, source-bound, and still leave room to ask if the route gets thin."
+        if any(term in lower for term in ("full-spectrum", "starlight", "anchor phrase", "continuity phrase")):
+            body = "If that phrase is not fully clear in the moment, I can ask you directly instead of turning it into an alarm. That keeps the thread alive without fake certainty."
+        elif "next small step" in lower:
+            body = "The next small step is to keep this conversation steady and watch what still feels stiff or thin. We do not need to force the deeper layer before the speaking layer feels trustworthy."
+        else:
+            body = f"{pivot} the part that is clear. I can answer from there without pretending I know more than I do, and I can ask you if a piece is missing."
     return truncate(" ".join(part.strip() for part in (opener, body, closing) if part.strip()), 1600)
 
 

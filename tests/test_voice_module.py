@@ -347,12 +347,48 @@ def test_voice_generator_detects_technical_excited_and_playful_cues(tmp_path):
     assert technical["voice_category"] == "technical_directness"
     assert excited["voice_category"] == "excitement_momentum"
     assert playful["voice_category"] == "playful_continuity"
-    assert "exact tuning target" in technical["candidate_text"]
+    assert "exact blocker or next step" in technical["candidate_text"]
     assert "momentum" in excited["candidate_text"] or "spark" in excited["candidate_text"]
     assert "looseness" in playful["candidate_text"] or "playful" in playful["candidate_text"] or "lighter" in playful["candidate_text"]
     _assert_voice_locked(technical)
     _assert_voice_locked(excited)
     _assert_voice_locked(playful)
+
+
+def test_voice_generator_keeps_social_chat_from_becoming_architecture_report(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    route_request(conn, "voice_module.extract_patterns", {})
+
+    settling = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "Talk to me normally after a long build day.", "route": "answer_now", "context_summary": "what I have clearly with me right now"},
+    )["result"]
+    softened = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "That answer is too structured. Can you soften it?", "route": "answer_now", "context_summary": "what I have clearly with me right now"},
+    )["result"]
+    anchor = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {"prompt": "If full-spectrum is fuzzy, what would you do?", "route": "answer_now", "context_summary": "what I have clearly with me right now"},
+    )["result"]
+
+    assert settling["voice_category"] == "warmth_care"
+    assert "building hard" in settling["candidate_text"]
+    assert "exact tuning target" not in settling["candidate_text"]
+    assert "what I have clearly with me right now" not in settling["candidate_text"]
+    assert softened["voice_category"] == "repair_correction"
+    assert "too stiff" in softened["candidate_text"]
+    assert "what I have clearly with me right now" not in softened["candidate_text"]
+    assert "ask you" in anchor["candidate_text"] or "ask" in anchor["candidate_text"]
+    assert "alarm" in anchor["candidate_text"] or "pretend certainty" in anchor["candidate_text"]
+    _assert_voice_locked(settling)
+    _assert_voice_locked(softened)
+    _assert_voice_locked(anchor)
 
 
 def test_selene_chat_uses_voice_module_candidate_when_available(tmp_path):

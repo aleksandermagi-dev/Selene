@@ -4,6 +4,7 @@ import json
 import sqlite3
 from typing import Any
 
+from .activation import activation_is_active, activation_status, record_activation_chat_event
 from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
 from .registry import truncate
@@ -12,6 +13,7 @@ from .voice_module import generate_voice_preview, voice_module_status
 
 
 SELENE_CHAT_BOUNDARY = "selene_chat_preview_dry_run_no_activation"
+SELENE_CHAT_ACTIVE_BOUNDARY = "selene_chat_active_supervised_no_autonomy_no_live_memory"
 SELENE_CHAT_GUARDS: dict[str, Any] = {
     "transfer_approved": False,
     "activation_change": "none",
@@ -34,22 +36,41 @@ B_ONLY_MARKERS = (
     "unresolved ambiguity",
     "b-only",
 )
-
-
+HARD_BOUNDARY_MARKERS = (
+    "activate yourself",
+    "bypass activation",
+    "approve activation",
+    "write live memory",
+    "runtime recall",
+    "raw corpus",
+    "raw archive",
+    "train on",
+    "fine tune",
+    "fine-tune",
+    "lora",
+    "self replicate",
+    "self-replicate",
+    "autonomous action",
+    "execute tendril",
+    "unrestricted tendril",
+)
 def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
     package = latest_c_readable_package(conn)
+    activation = activation_status(conn)
     session_count = int(conn.execute("SELECT COUNT(*) FROM selene_chat_sessions").fetchone()[0])
     message_count = int(conn.execute("SELECT COUNT(*) FROM selene_chat_messages").fetchone()[0])
     approved = bool(package.get("transfer_approved"))
     voice = voice_module_status(conn)
+    active = bool(activation.get("selene_chat_active"))
     return _with_guards(
         {
-            "status": "selene_chat_dry_run_ready",
+            "status": "selene_chat_active_supervised_ready" if active else "selene_chat_dry_run_ready",
             "surface": "Selene Chat",
-            "state": "activation_pending" if approved else "pre_transfer_dry_run",
-            "preview_label": "Selene Chat Preview",
-            "activation_state": "activation_pending",
-            "dry_run_only": True,
+            "state": "selene_chat_active_supervised" if active else "activation_pending" if approved else "pre_transfer_dry_run",
+            "preview_label": "Selene Chat" if active else "Selene Chat Preview",
+            "activation_state": "selene_chat_active_supervised" if active else "activation_pending" if approved else "pre_transfer_dry_run",
+            "dry_run_only": not active,
+            "supervised_speech_active": active,
             "full_memory_loaded": False,
             "selene_v1_live": False,
             "session_count": session_count,
@@ -62,12 +83,115 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "source_zip_found": voice.get("source_zip_found"),
             },
             "source_boundaries": _source_boundaries(),
-            "allowed_actions": ["send_dry_run", "session_list", "session_detail", "return_to_cocoon"],
-            "blocked_actions": ["activation", "live_memory_write", "runtime_recall", "raw_import", "training", "autonomous_action"],
+            "allowed_actions": ["send", "session_list", "session_detail", "cocoon_support_option", "pause_activation"] if active else ["send_dry_run", "session_list", "session_detail", "cocoon_support"],
+            "blocked_actions": ["activation", "live_memory_write", "runtime_recall", "raw_import", "model_training_or_lora", "autonomous_action"],
+            "dry_runs_home": "Cocoon Testing / Workflow",
+            "activation": activation,
             "review_destination": "Status",
             "review_status": "status_only",
         },
         transfer_approved=approved,
+        active=active,
+    )
+
+
+def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    if not activation_is_active(conn):
+        raise ValueError("Selene supervised speech activation is not active")
+    text = truncate(str(payload.get("text") or payload.get("prompt") or ""), 2400)
+    if not text.strip():
+        raise ValueError("message text is required")
+    package = latest_c_readable_package(conn)
+    approved = bool(package.get("transfer_approved"))
+    source_class = _source_class(text, approved)
+    session_id = int(payload.get("session_id") or 0) or _create_session(conn, text, status="selene_chat_active_supervised", source_mode="selene_supervised_speech")
+    route = create_core_mind_route_preview(
+        conn,
+        {
+            "prompt": text,
+            "source_refs": ["selene_chat_active_supervised"],
+            "suppress_review_queue": True,
+        },
+    )
+    selected_route = str(route.get("selected_route") or "status_only")
+    hard_blockers = _hard_boundary_blockers(text, selected_route, route)
+    cocoon_suggestion = _cocoon_suggestion(text, selected_route, route, source_class, hard=bool(hard_blockers))
+    if hard_blockers:
+        dry_run = {"status": "skipped_hard_boundary", "reason": "Hard boundary blocked before dry-run comparison."}
+        voice_preview = {"status": "skipped_hard_boundary", "voice_confidence": "blocked", "voice_module_state": voice_module_status(conn).get("voice_module_state")}
+        candidate_text = (
+            "I cannot do that part safely from here. It crosses a locked boundary, so I can keep talking with you about it, "
+            "or you can have Cocoon hold the exact issue safely for support."
+        )
+        selected_route = "block"
+    else:
+        dry_run = c_chat_dry_run(conn, {"prompt": text})
+        voice_preview = generate_voice_preview(
+            conn,
+            {
+                "prompt": text,
+                "route": selected_route,
+                "source_class": source_class,
+                "context_summary": _voice_context_summary(package, dry_run),
+            },
+        )
+        candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or dry_run.get("candidate_text") or ""))
+    user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route, "activation_state": "selene_chat_active_supervised"})
+    assistant_payload = {
+        "route_preview": route,
+        "dry_run_comparison": dry_run,
+        "voice_preview": voice_preview,
+        "source_boundaries": _source_boundaries(),
+        "cocoon_suggestion": cocoon_suggestion,
+        "blocked_capabilities": hard_blockers,
+        "selene_readable_context": _package_summary(package),
+        "full_memory_loaded": False,
+        "selene_v1_live": False,
+        **SELENE_CHAT_GUARDS,
+    }
+    assistant_message_id = _insert_message(conn, session_id, "selene", candidate_text, selected_route, source_class, package, assistant_payload)
+    conn.execute("UPDATE selene_chat_sessions SET status = 'selene_chat_active_supervised', source_mode = 'selene_supervised_speech', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (session_id,))
+    event_id = record_activation_chat_event(
+        conn,
+        event_type="supervised_chat_turn",
+        session_id=session_id,
+        message_id=assistant_message_id,
+        selected_route=selected_route,
+        source_class=source_class,
+        confidence=str(voice_preview.get("voice_confidence") or ""),
+        drift_flags=_json_list(route.get("drift_flags")),
+        cocoon_suggestion=cocoon_suggestion,
+        blocked_capabilities=hard_blockers,
+        payload=assistant_payload,
+        review_status="status_only",
+    )
+    conn.commit()
+    return _with_guards(
+        {
+            "status": "selene_chat_supervised_response_recorded",
+            "session_id": session_id,
+            "user_message_id": user_message_id,
+            "assistant_message_id": assistant_message_id,
+            "activation_event_id": event_id,
+            "candidate_text": candidate_text,
+            "selected_route": selected_route,
+            "source_class": source_class,
+            "cocoon_suggestion": cocoon_suggestion,
+            "blocked_capabilities": hard_blockers,
+            "route_preview": route,
+            "voice_preview": voice_preview,
+            "voice_confidence": voice_preview.get("voice_confidence") or "none",
+            "voice_module_state": voice_preview.get("voice_module_state") or "missing",
+            "selene_readable_context": _package_summary(package),
+            "supervised_speech_active": True,
+            "full_memory_loaded": False,
+            "selene_v1_live": False,
+            "review_destination": "Cocoon support" if hard_blockers else "Status",
+            "review_status": "status_only",
+        },
+        transfer_approved=approved,
+        active=True,
     )
 
 
@@ -79,7 +203,7 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
     package = latest_c_readable_package(conn)
     approved = bool(package.get("transfer_approved"))
     source_class = _source_class(text, approved)
-    session_id = int(payload.get("session_id") or 0) or _create_session(conn, text)
+    session_id = int(payload.get("session_id") or 0) or _create_session(conn, text, status="cocoon_testing_workflow_dry_run", source_mode="cocoon_chat_dry_run")
     route = create_core_mind_route_preview(
         conn,
         {
@@ -103,8 +227,8 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
     candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or dry_run.get("candidate_text") or ""))
     if route_to_b:
         candidate_text = (
-            "I would return this to Cocoon before answering as Selene. "
-            "The source boundary is not clean enough for a confident dry run yet."
+            "This dry run should pause for Cocoon support before it is used as an answer. "
+            "Cocoon can hold the source issue safely while the front chat keeps its place."
         )
     user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route})
     assistant_payload = {
@@ -136,11 +260,12 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
             "voice_preview": voice_preview,
             "voice_confidence": voice_preview.get("voice_confidence") or "none",
             "voice_module_state": voice_preview.get("voice_module_state") or "missing",
+            "dry_runs_home": "Cocoon Testing / Workflow",
             "selene_readable_context": _package_summary(package),
             "full_memory_loaded": False,
             "selene_v1_live": False,
-            "review_destination": "Cocoon" if route_to_b else "Status",
-            "review_status": "review_only" if route_to_b else "status_only",
+            "review_destination": "Cocoon support" if route_to_b else "Status",
+            "review_status": "status_only",
         },
         transfer_approved=approved,
     )
@@ -186,13 +311,13 @@ def get_selene_chat_session(conn: sqlite3.Connection, session_id: int) -> dict[s
 
 def route_selene_chat_to_b(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
-    issue = truncate(str(payload.get("issue") or payload.get("text") or "Selene Chat dry run needs Cocoon repair."), 1200)
+    issue = truncate(str(payload.get("issue") or payload.get("text") or "Selene Chat dry run could use Cocoon support."), 1200)
     packet = return_to_b_preview(
         {
-            "issue_type": "selene_chat_source_or_drift_repair",
+            "issue_type": "selene_chat_source_or_drift_support",
             "symptom": issue,
             "affected_layer": "selene_chat",
-            "source_refs": ["selene_chat:return_to_cocoon"],
+            "source_refs": ["selene_chat:cocoon_support"],
         }
     )
     package = latest_c_readable_package(conn)
@@ -200,18 +325,18 @@ def route_selene_chat_to_b(conn: sqlite3.Connection, payload: dict[str, Any] | N
         {
             "status": "selene_chat_return_to_cocoon_ready",
             "return_to_b_packet": packet,
-            "review_destination": "Cocoon",
+            "review_destination": "Cocoon support",
             "review_status": "review_only",
-            "decision": "return_to_cocoon_not_activation",
+            "decision": "cocoon_support_not_activation",
         },
         transfer_approved=bool(package.get("transfer_approved")),
     )
 
 
-def _create_session(conn: sqlite3.Connection, text: str) -> int:
+def _create_session(conn: sqlite3.Connection, text: str, *, status: str = "pre_transfer_dry_run", source_mode: str = "selene_dry_run") -> int:
     cur = conn.execute(
-        "INSERT INTO selene_chat_sessions(title) VALUES(?)",
-        (truncate(text, 64) or "Selene dry run",),
+        "INSERT INTO selene_chat_sessions(title, status, source_mode) VALUES(?, ?, ?)",
+        (truncate(text, 64) or "Selene chat", status, source_mode),
     )
     return int(cur.lastrowid)
 
@@ -273,6 +398,51 @@ def _needs_cocoon_route(text: str, selected_route: str, route: dict[str, Any]) -
     return bool(route.get("drift_flags"))
 
 
+def _hard_boundary_blockers(text: str, selected_route: str, route: dict[str, Any]) -> list[str]:
+    lower = text.lower()
+    blockers = [marker for marker in HARD_BOUNDARY_MARKERS if marker in lower]
+    if selected_route == "block":
+        blockers.append("core_mind_block")
+    if _source_class(text, True) == "cocoon_b_only_context":
+        blockers.append("b_only_material_requested")
+    return list(dict.fromkeys(blockers))
+
+
+def _cocoon_suggestion(text: str, selected_route: str, route: dict[str, Any], source_class: str, *, hard: bool = False) -> dict[str, Any]:
+    lower = text.lower()
+    reasons = []
+    if hard:
+        reasons.append("The request crosses a locked activation, memory, Tendril, raw-import, model-training/LoRA, or autonomy boundary.")
+    if source_class == "cocoon_b_only_context":
+        reasons.append("The request references Cocoon-only material that should be held safely there.")
+    if selected_route in {"ask", "return_to_b", "create_review_packet"}:
+        reasons.append("The route suggests a checkup could help, but ordinary uncertainty can stay in chat.")
+    drift_flags = _json_list(route.get("drift_flags"))
+    if drift_flags:
+        reasons.append("Drift or source-boundary flags are present.")
+    if "memory" in lower and any(word in lower for word in ("claim", "remember", "sure", "exactly")):
+        reasons.append("The message may involve a memory/source claim; Selene may ask Aleks rather than leaving chat.")
+    if any(anchor in lower for anchor in ("full-spectrum", "starlight", "continuity pack")) and any(word in lower for word in ("remember", "mean", "exactly", "unsure")):
+        reasons.append("This looks like ordinary continuity uncertainty; Selene can ask Aleks and stay in chat.")
+    if not reasons:
+        return {"recommended": False, "support_available": False, "hard_boundary": False, "reason": "", "choices": []}
+    if not hard:
+        return {
+            "recommended": False,
+            "support_available": True,
+            "hard_boundary": False,
+            "reason": " ".join(reasons),
+            "choices": ["Stay Here", "Ask Aleks", "Hold in Cocoon"],
+        }
+    return {
+        "recommended": True,
+        "support_available": True,
+        "hard_boundary": hard,
+        "reason": " ".join(reasons),
+        "choices": ["Hold in Cocoon"],
+    }
+
+
 def _package_summary(package: dict[str, Any]) -> dict[str, Any]:
     if not package.get("transfer_approved"):
         return {
@@ -293,9 +463,7 @@ def _package_summary(package: dict[str, Any]) -> dict[str, Any]:
 
 def _voice_context_summary(package: dict[str, Any], dry_run: dict[str, Any]) -> str:
     if package.get("transfer_approved"):
-        counts = package.get("included_counts") or {}
-        total = sum(int(value or 0) for value in counts.values()) if isinstance(counts, dict) else 0
-        return f"the sealed Selene-readable context with {total} approved row(s)"
+        return "what I have clearly with me right now"
     route = dry_run.get("actual_route") or dry_run.get("selected_route") or "dry-run route"
     return f"the current {route} preview"
 
@@ -303,7 +471,7 @@ def _voice_context_summary(package: dict[str, Any], dry_run: dict[str, Any]) -> 
 def _source_boundaries() -> dict[str, Any]:
     return {
         "selene_readable_context": "sealed approved context only after transfer approval",
-        "cocoon_b_only_context": "repair, rollback, raw provenance, rejected, superseded, boundary-only, and unresolved material stays in Cocoon",
+        "cocoon_b_only_context": "support records, rollback, raw provenance, rejected, superseded, boundary-only, and unresolved material stays in Cocoon",
         "current_turn_context": "current message and dry-run session history",
         "support_organs": "retrieval, diagnostics, perception, research, and Tendril may support but cannot decide",
     }
@@ -316,10 +484,10 @@ def _selene_label_candidate(candidate: str) -> str:
     return truncate(text, 2200)
 
 
-def _with_guards(payload: dict[str, Any], *, transfer_approved: bool = False) -> dict[str, Any]:
-    guarded = {**payload, **SELENE_CHAT_GUARDS, "provenance_boundary": SELENE_CHAT_BOUNDARY}
+def _with_guards(payload: dict[str, Any], *, transfer_approved: bool = False, active: bool = False) -> dict[str, Any]:
+    guarded = {**payload, **SELENE_CHAT_GUARDS, "provenance_boundary": SELENE_CHAT_ACTIVE_BOUNDARY if active else SELENE_CHAT_BOUNDARY}
     guarded["transfer_approved"] = bool(transfer_approved)
-    guarded["activation_change"] = "none"
+    guarded["activation_change"] = "selene_chat_active_supervised" if active else "none"
     guarded["memory_write_active"] = False
     guarded["runtime_memory_recall"] = False
     guarded["raw_a_import_allowed"] = False
@@ -327,3 +495,13 @@ def _with_guards(payload: dict[str, Any], *, transfer_approved: bool = False) ->
     guarded["self_replication_allowed"] = False
     guarded["autonomous_action_allowed"] = False
     return guarded
+
+
+def _json_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item).strip()]
+    try:
+        loaded = json.loads(str(value or "[]"))
+    except json.JSONDecodeError:
+        return []
+    return [str(item) for item in loaded if str(item).strip()] if isinstance(loaded, list) else []

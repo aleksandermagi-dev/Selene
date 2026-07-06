@@ -205,6 +205,39 @@ CREATE TABLE IF NOT EXISTS selene_chat_messages (
 
 CREATE INDEX IF NOT EXISTS idx_selene_chat_messages_session ON selene_chat_messages(session_id, id);
 
+CREATE TABLE IF NOT EXISTS selene_activation_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  state TEXT NOT NULL,
+  action TEXT NOT NULL,
+  actor TEXT NOT NULL DEFAULT 'Aleks',
+  exact_phrase_matched INTEGER NOT NULL DEFAULT 0,
+  readiness_json TEXT NOT NULL DEFAULT '{}',
+  audit_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_activation_audit_state ON selene_activation_audit(state, created_at);
+
+CREATE TABLE IF NOT EXISTS selene_activation_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_type TEXT NOT NULL,
+  session_id INTEGER,
+  message_id INTEGER,
+  selected_route TEXT NOT NULL DEFAULT 'status_only',
+  source_class TEXT NOT NULL DEFAULT 'current_turn_context',
+  confidence TEXT NOT NULL DEFAULT '',
+  drift_flags TEXT NOT NULL DEFAULT '[]',
+  cocoon_suggestion_json TEXT NOT NULL DEFAULT '{}',
+  blocked_capabilities TEXT NOT NULL DEFAULT '[]',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_activation_events_type ON selene_activation_events(event_type, review_status, created_at);
+
 CREATE TABLE IF NOT EXISTS voice_corpus_conversations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   source_archive TEXT NOT NULL,

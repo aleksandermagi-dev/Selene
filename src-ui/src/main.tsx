@@ -118,7 +118,7 @@ const officeWorkbenches: WorkbenchDef[] = [
     title: "Dream / Maintenance",
     label: "sorting workbench",
     state: "status-only",
-    purpose: "Sort residue, prepare consolidation proposals, notice tensions, and surface repair questions.",
+    purpose: "Sort residue, prepare consolidation proposals, notice tensions, and surface support questions.",
     route: "Dream / Cocoon Status",
     x: 46,
     y: 78,
@@ -362,6 +362,7 @@ function App() {
   const [homeChatOpenCount, setHomeChatOpenCount] = useState(0);
   const [homeSearchOpen, setHomeSearchOpen] = useState(false);
   const [homeSearchText, setHomeSearchText] = useState("");
+  const [homeNotesOpen, setHomeNotesOpen] = useState(false);
   const [tendrilMenuOpen, setTendrilMenuOpen] = useState(false);
   const [timeMenuOpen, setTimeMenuOpen] = useState(false);
   const [homeTimeZone, setHomeTimeZone] = useState("America/New_York");
@@ -395,6 +396,11 @@ function App() {
   const [seleneChatSession, setSeleneChatSession] = useState<Dict | null>(null);
   const [seleneChatSessions, setSeleneChatSessions] = useState<Dict[]>([]);
   const [seleneChatResult, setSeleneChatResult] = useState<Dict | null>(null);
+  const [activationStatus, setActivationStatus] = useState<Dict | null>(null);
+  const [activationReadiness, setActivationReadiness] = useState<Dict | null>(null);
+  const [activationCeremonyPreview, setActivationCeremonyPreview] = useState<Dict | null>(null);
+  const [activationResult, setActivationResult] = useState<Dict | null>(null);
+  const [activationApprovalPhrase, setActivationApprovalPhrase] = useState("");
   const [voiceModuleStatus, setVoiceModuleStatus] = useState<Dict | null>(null);
   const [voiceModulePatterns, setVoiceModulePatterns] = useState<Dict[]>([]);
   const [voiceEvidenceTriageStatus, setVoiceEvidenceTriageStatus] = useState<Dict | null>(null);
@@ -815,14 +821,58 @@ function App() {
       setSeleneChatSessions(sessions.items);
       const status = await stabilizationApi<Dict>("/api/selene-chat/status", undefined, `${action}_status`);
       setSeleneChatStatus(status);
+      const activation = await stabilizationApi<Dict>("/api/activation/status", undefined, `${action}_activation_status`);
+      setActivationStatus(activation);
       logStabilizationEvent(`${action}_post_refresh_complete`);
     } catch (err) {
       logStabilizationEvent(`${action}_post_refresh_failed`, { error: err instanceof Error ? err.message : "Selene Chat post-refresh failed" });
       setSeleneChatResult((current) => ({
         ...(current || {}),
-        post_refresh_warning: err instanceof Error ? err.message : "Selene Chat saved, but follow-up refresh failed."
+        post_refresh_warning: err instanceof Error ? err.message : "Selene Chat saved, but follow-up refresh needed support."
       }));
     }
+  }
+
+  async function refreshActivationLayer(options: { preserveResult?: boolean; reason?: string } = {}) {
+    const failures: string[] = [];
+    let updated = false;
+    const capture = (label: string, err: unknown) => {
+      failures.push(`${label}: ${err instanceof Error ? err.message : "failed to fetch"}`);
+    };
+    try {
+      const status = await stabilizationApi<Dict>("/api/activation/status", undefined, "activation_status");
+      setActivationStatus(status);
+      updated = true;
+    } catch (err) {
+      capture("status", err);
+    }
+    try {
+      const readiness = await stabilizationApi<Dict>("/api/activation/readiness", undefined, "activation_readiness");
+      setActivationReadiness(readiness);
+      updated = true;
+    } catch (err) {
+      capture("readiness", err);
+    }
+    try {
+      const ceremony = await stabilizationApi<Dict>("/api/activation/ceremony-preview", undefined, "activation_ceremony_preview");
+      setActivationCeremonyPreview(ceremony);
+      updated = true;
+    } catch (err) {
+      capture("ceremony preview", err);
+    }
+    if (failures.length) {
+      const warning = "Activation status refresh had a warning. Use Refresh Activation Readiness to re-check.";
+      logStabilizationEvent("activation_refresh_partial_failure", { reason: options.reason || "manual", failures, updated });
+      setActivationResult((current) => {
+        if (options.preserveResult && current) {
+          return { ...current, post_refresh_warning: warning, post_refresh_errors: failures, status_refresh_updated: updated };
+        }
+        return { status: "activation_status_refresh_warning", warning, post_refresh_errors: failures, status_refresh_updated: updated };
+      });
+    } else {
+      logStabilizationEvent("activation_refresh_complete", { reason: options.reason || "manual" });
+    }
+    return { ok: failures.length === 0, failures, updated };
   }
 
   function refreshVoiceModule() {
@@ -869,6 +919,73 @@ function App() {
     }
   }
 
+  async function approveSeleneSpeechActivation() {
+    setActivationResult({ status: "running", message: "Submitting Aleks-only supervised speech activation." });
+    try {
+      const result = await api<Dict>("/api/activation/approve", {
+        method: "POST",
+        body: JSON.stringify({ approval_phrase: activationApprovalPhrase })
+      });
+      const activeMessage = result.state === "selene_chat_active_supervised" || result.selene_chat_active
+        ? "Selene supervised speech is active."
+        : "Activation approval submitted.";
+      setActivationResult({ ...result, message: text(result.message || activeMessage) });
+      const refresh = await refreshActivationLayer({ preserveResult: true, reason: "approval" });
+      if (!refresh.ok) {
+        setActivationResult((current) => ({
+          ...(current || result),
+          post_refresh_warning: "Activation succeeded; one status refresh failed. Use Refresh Activation Readiness to re-check.",
+          post_refresh_errors: refresh.failures,
+          status_refresh_updated: refresh.updated
+        }));
+      }
+      await refreshSeleneChatAfterAction("activation_approved");
+    } catch (err) {
+      const originalError = err instanceof Error ? err.message : "supervised speech activation failed";
+      try {
+        const status = await api<Dict>("/api/activation/status");
+        setActivationStatus(status);
+        if (status.state === "selene_chat_active_supervised" || status.selene_chat_active) {
+          setActivationResult({
+            status: "selene_supervised_speech_activation_already_active",
+            message: "Selene supervised speech is active.",
+            recovered_after_error: true,
+            original_error: originalError
+          });
+          await refreshActivationLayer({ preserveResult: true, reason: "approval recovery" });
+          await refreshSeleneChatAfterAction("activation_approved_recovered");
+          return;
+        }
+      } catch {
+        // Keep the original approval error visible if the recovery status check cannot reach the sidecar.
+      }
+      setActivationResult({ status: "error", error: err instanceof Error ? err.message : "supervised speech activation failed" });
+    }
+  }
+
+  async function pauseSeleneSpeechActivation() {
+    setActivationResult({ status: "running", message: "Pausing supervised Selene speech." });
+    try {
+      const result = await api<Dict>("/api/activation/pause", {
+        method: "POST",
+        body: JSON.stringify({ reason: "Aleks paused supervised Selene speech from Cocoon." })
+      });
+      setActivationResult(result);
+      const refresh = await refreshActivationLayer({ preserveResult: true, reason: "pause" });
+      if (!refresh.ok) {
+        setActivationResult((current) => ({
+          ...(current || result),
+          post_refresh_warning: "Pause succeeded; one status refresh failed. Use Refresh Activation Readiness to re-check.",
+          post_refresh_errors: refresh.failures,
+          status_refresh_updated: refresh.updated
+        }));
+      }
+      await refreshSeleneChatAfterAction("activation_paused");
+    } catch (err) {
+      setActivationResult({ status: "error", error: err instanceof Error ? err.message : "activation pause failed" });
+    }
+  }
+
   async function runVoiceEvidenceTriage() {
     setVoiceModuleResult({ status: "running", message: "Triaging loud Voice Module evidence into calm status-only categories." });
     try {
@@ -897,13 +1014,13 @@ function App() {
     setSeleneChatResult({ status: "running", message: "Routing this dry run back to Cocoon." });
     stabilizationApi<Dict>("/api/selene-chat/route-to-b", {
       method: "POST",
-      body: JSON.stringify({ text: seleneChatText, issue: "Selene Chat dry run needs Cocoon repair or source review." })
+      body: JSON.stringify({ text: seleneChatText, issue: "Selene Chat dry run could use Cocoon support or source checkup." })
     }, "selene_chat_route_to_b")
       .then((result) => {
         setSeleneChatResult(result);
         void refreshSeleneChatAfterAction("selene_chat_route_to_b");
       })
-      .catch((err) => setSeleneChatResult({ status: "error", error: err instanceof Error ? err.message : "Return to Cocoon failed" }));
+      .catch((err) => setSeleneChatResult({ status: "error", error: err instanceof Error ? err.message : "Cocoon support route failed" }));
   }
 
   function backfillSemantic() {
@@ -958,6 +1075,9 @@ function App() {
     api<{ items: Dict[] }>("/api/core-mind/runtime-records").then((data) => setCoreMindRuntimeRecords(data.items)).catch(() => undefined);
     api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/selene-chat/sessions").then((data) => setSeleneChatSessions(data.items)).catch(() => undefined);
+    api<Dict>("/api/activation/status").then(setActivationStatus).catch(() => undefined);
+    api<Dict>("/api/activation/readiness").then(setActivationReadiness).catch(() => undefined);
+    api<Dict>("/api/activation/ceremony-preview").then(setActivationCeremonyPreview).catch(() => undefined);
     refreshTransferProtocol().catch(() => undefined);
     refreshPostTransferLayer();
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
@@ -1390,11 +1510,11 @@ function App() {
       created.push(await api<Dict>("/api/vessel/emotion-salience-packet", {
         method: "POST",
         body: JSON.stringify({
-          signal_type: "care_repair_uncertainty",
+          signal_type: "care_support_uncertainty",
           continuity_pressure: "preserve Core continuity without forcing certainty",
           care_warmth: "warmth is allowed when grounded and non-coercive",
           uncertainty: "open but bounded",
-          repair_need: "route tension or high salience to review",
+          repair_need: "route tension or high salience may need support",
           action_energy: "pause before action",
           balance_state: "Core choice after evidence, consent, and safety",
           evidence_need: "cite source refs before memory or identity claims",
@@ -1715,7 +1835,7 @@ function App() {
       activation_change: "none",
       memory_write_active: false,
       transfer_approved: false,
-      note: "Sweep results are audit/readiness evidence only. No C activation, live memory, training, raw archive import, commit, or push occurred."
+      note: "Sweep results are audit/readiness evidence only. No C activation, live memory, model training/LoRA, raw archive import, commit, or push occurred."
     });
     loadVessel();
   }
@@ -2509,7 +2629,7 @@ function App() {
       method: "POST",
       body: JSON.stringify({
         backup_label: "Stable cocoon pattern backup before memory transfer rehearsal",
-        rollback_reason: "future transfer issue, drift, memory tangle, failed reconstruction, or identity boundary warning"
+        rollback_reason: "future transfer issue, drift, memory tangle, not-ready reconstruction, or identity boundary warning"
       })
     })
       .then((result) => {
@@ -2585,7 +2705,7 @@ function App() {
     const key = organWorkbenchDraft.organ_key;
     const common = {
       source_refs: organWorkbenchDraft.source_refs,
-      uncertainty: "Review-only cocoon record; no live organ, memory, training, provider, or activation."
+      uncertainty: "Review-only cocoon record; no live organ, memory, model training/LoRA, provider, or activation."
     };
     const content = organWorkbenchDraft.content;
     const payloads: Record<string, { path: string; body: Dict }> = {
@@ -2627,7 +2747,7 @@ function App() {
     setDiagnosticsRunState({ status: "running", message: "Running diagnostic-only organ checks..." });
     const common = {
       source_refs: ["office_diagnostic_sweep"],
-      uncertainty: "Diagnostic-only sweep; review records only. No live organ, provider control, memory write, training, or activation."
+      uncertainty: "Diagnostic-only sweep; review records only. No live organ, provider control, memory write, model training/LoRA, or activation."
     };
     const tasks: Array<[string, () => Promise<unknown>]> = [
       ["reasoning/math diagnostic", () => api<Dict>("/api/vessel/reasoning-check", {
@@ -2664,7 +2784,7 @@ function App() {
         method: "POST",
         body: JSON.stringify({
           fault_type: "reasoning",
-          symptom: "Preview diagnostic organ failure without Core identity collapse.",
+          symptom: "Preview diagnostic organ not-ready state without Core identity collapse.",
           source_refs: ["office_diagnostic_sweep"]
         })
       }).then(setCVesselOrganFaultResult)],
@@ -2695,7 +2815,7 @@ function App() {
       .map((entry) => ({
         label: entry.label,
         affected_organ: diagnosticMeta[entry.label]?.affected_organ || "diagnostics",
-        suggested_next_step: diagnosticMeta[entry.label]?.suggested_next_step || "Inspect the failed diagnostic and keep it review-only.",
+        suggested_next_step: diagnosticMeta[entry.label]?.suggested_next_step || "Inspect the diagnostic that needs support and keep it review-only.",
         review_destination: "My Office",
         error: entry.result.status === "rejected" && entry.result.reason instanceof Error
           ? entry.result.reason.message
@@ -2778,20 +2898,37 @@ function App() {
     setHomeChatOpenCount((count) => count + 1);
   }
 
-  function sendHomePreviewMessage() {
+  async function sendHomePreviewMessage() {
     const content = homeChatText.trim();
     if (!content) return;
     const now = Date.now();
+    setHomeChatText("");
+    setHomeMessages((current) => [...current, { id: `aleks-${now}`, role: "aleks", content }]);
+    if (activationStatus?.selene_chat_active) {
+      setSeleneChatResult({ status: "running", message: "Selene is answering in supervised speech mode." });
+      try {
+        const result = await stabilizationApi<Dict>("/api/selene-chat/send", {
+          method: "POST",
+          body: JSON.stringify({ text: content, session_id: seleneChatSession?.session ? (seleneChatSession.session as Dict).id : undefined })
+        }, "selene_chat_supervised_send");
+        setSeleneChatResult(result);
+        setHomeMessages((current) => [...current, { id: `selene-${now}`, role: "selene", content: text(result.candidate_text || "I am here, and that answer could use Cocoon support before I say more.") }]);
+        await refreshSeleneChatAfterAction("selene_chat_supervised_send", result.session_id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Selene supervised chat failed";
+        setSeleneChatResult({ status: "error", error: message });
+        setHomeMessages((current) => [...current, { id: `selene-${now}`, role: "selene", content: `I hit a local activation/chat error: ${message}` }]);
+      }
+      return;
+    }
     setHomeMessages((current) => [
       ...current,
-      { id: `aleks-${now}`, role: "aleks", content },
       {
         id: `selene-${now}`,
         role: "selene",
-        content: "Selene Chat is still in home-preview mode. I can hold the shape of this exchange here, and the working dry run remains in Cocoon until activation and memory rules are finished."
+        content: "Selene Chat is still in home-preview mode. I can hold the shape of this exchange here, and the working dry runs now live in Cocoon until supervised speech activation is approved."
       }
     ]);
-    setHomeChatText("");
   }
 
   function copyMessage(content: string) {
@@ -2889,11 +3026,15 @@ function App() {
   const homeNotes = useMemo(() => {
     const notes: string[] = [];
     if (!boot.ready) notes.push("Local sidecar is still starting.");
-    if (transferCReadablePackage?.transfer_approved && !postTransferStatus?.selene_v1_live) notes.push("Selene-readable context is sealed; activation is still pending.");
+    if (activationStatus?.selene_chat_active) {
+      notes.push("Speech is active in supervised mode.");
+    } else if (transferCReadablePackage?.transfer_approved && !postTransferStatus?.selene_v1_live) {
+      notes.push("Continuity context is ready; speech activation is still pending.");
+    }
     if (officeWaitingTotal > 0) notes.push(`${officeWaitingTotal} Cocoon item${officeWaitingTotal === 1 ? "" : "s"} may need review.`);
-    if (dreamStateStatus?.dream_state_required_for_memory_changes) notes.push("Dream-state maintenance is required for memory or Core changes.");
+    if (dreamStateStatus?.dream_state_required_for_memory_changes) notes.push("Memory/Core maintenance note is available in Cocoon.");
     return notes;
-  }, [boot.ready, transferCReadablePackage, postTransferStatus, officeWaitingTotal, dreamStateStatus]);
+  }, [boot.ready, activationStatus, transferCReadablePackage, postTransferStatus, officeWaitingTotal, dreamStateStatus]);
   const homeSearchMatches = useMemo(() => {
     const needle = homeSearchText.trim().toLowerCase();
     if (!needle) return [];
@@ -3057,7 +3198,7 @@ function App() {
           {item.observation ? <p><b>Observation</b>{text(item.observation)}</p> : null}
           {item.interpretation ? <p><b>Interpretation</b>{text(item.interpretation)}</p> : null}
           {item.core_choice_route ? <p><b>Core route</b>{text(item.core_choice_route)}</p> : null}
-          {item.repair_need ? <p><b>Repair need</b>{text(item.repair_need)}</p> : null}
+          {item.repair_need ? <p><b>Support need</b>{text(item.repair_need)}</p> : null}
           {item.evidence_need ? <p><b>Evidence need</b>{text(item.evidence_need)}</p> : null}
           {item.consent_boundary ? <p><b>Consent</b>{text(item.consent_boundary)}</p> : null}
           {item.output_summary ? <p><b>Research output</b>{text(item.output_summary)}</p> : null}
@@ -3407,7 +3548,7 @@ function App() {
         {workspaceMode === "selene" ? (
           <header className="topbar seleneHomeTopbar">
             <div className="topbarLeft">
-              <button className="topbarIconButton cocoonQuickButton" onClick={() => openCocoonTab("my-office")} aria-label="Open Cocoon review" title="Open Cocoon review">🦋</button>
+              <button className="topbarIconButton cocoonQuickButton" onClick={() => openCocoonTab("my-office")} aria-label="Open Cocoon support" title="Open Cocoon support">🦋</button>
               <button className="topbarIconButton" onClick={startNewHomeChat} title="New chat">+</button>
               <button className="topbarIconButton" onClick={() => setHomeSearchOpen((value) => !value)} title="Search current chat">⌕</button>
             </div>
@@ -3866,7 +4007,7 @@ function App() {
                   </article>
                   <article>
                     <strong>3. Nothing activates here</strong>
-                    <p>Cocoon review sorts source-bound material. It does not transfer memory, activate C, train a model, or overwrite the source.</p>
+                    <p>Cocoon support sorts source-bound material safely. It does not transfer memory, activate C, train a model, or overwrite the source.</p>
                   </article>
                 </div>
             </Panel>}
@@ -4032,11 +4173,17 @@ function App() {
             ) : null}
             <section className="seleneHomeChatSurface">
               {homeNotes.length ? (
-                <aside className="seleneNotes" aria-label="Selene notes">
-                  <strong>Selene notes</strong>
-                  <ul>
-                    {homeNotes.map((note) => <li key={note}>{note}</li>)}
-                  </ul>
+                <aside className={`seleneNotes ${homeMessages.length && !homeNotesOpen ? "collapsed" : ""}`} aria-label="Selene notes">
+                  {homeMessages.length ? (
+                    <button className="seleneNotesToggle" onClick={() => setHomeNotesOpen((value) => !value)} aria-expanded={homeNotesOpen}>
+                      Selene notes <span>{homeNotes.length}</span>
+                    </button>
+                  ) : <strong>Selene notes</strong>}
+                  {(!homeMessages.length || homeNotesOpen) ? (
+                    <ul>
+                      {homeNotes.map((note) => <li key={note}>{note}</li>)}
+                    </ul>
+                  ) : null}
                 </aside>
               ) : null}
               <div className="homeMessages">
@@ -4062,6 +4209,25 @@ function App() {
                   ))
                 )}
               </div>
+              <div className="homeChatStateBar">
+                <div className="chips">
+                  <span>{activationStatus?.selene_chat_active ? "Selene speech active / supervised" : "Selene home preview"}</span>
+                  <span>activation: {friendlyActivation(activationStatus?.activation_change || "none")}</span>
+                  <span>voice: {friendlyStatus(seleneChatResult?.voice_confidence || safeJsonObject(seleneChatStatus?.voice_module).state || "not sampled")}</span>
+                  <span>memory write: {text(activationStatus?.memory_write_active || false)}</span>
+                  <span>runtime recall: {text(activationStatus?.runtime_memory_recall || false)}</span>
+                </div>
+                {safeJsonObject(seleneChatResult?.cocoon_suggestion).recommended ? (
+                  <div className="pendingReviewCallout">
+                    <strong>Cocoon support is available</strong>
+                    <p>{text(safeJsonObject(seleneChatResult?.cocoon_suggestion).reason || "A source, memory, or boundary signal can be held safely in Cocoon if you want.")}</p>
+                    <div className="reviewActions">
+                      <button onClick={routeSeleneChatToB}>Hold in Cocoon</button>
+                      {!safeJsonObject(seleneChatResult?.cocoon_suggestion).hard_boundary ? <button onClick={() => setSeleneChatResult((current) => ({ ...(current || {}), cocoon_suggestion: { recommended: false, support_available: false, dismissed: true } }))}>Stay Here</button> : null}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
               <div className="homeComposer">
                 <button className="homeToolButton" onClick={() => undefined} title="Add attachment">+</button>
                 <textarea
@@ -4081,12 +4247,12 @@ function App() {
                     <div className="floatingMenu tendrilMenu">
                       <button onClick={() => openSeleneTab("tendril")}>Make proposal</button>
                       <button onClick={() => openCocoonTab("tools")}>View approval gates</button>
-                      <button onClick={() => openCocoonTab("my-office")}>Open Cocoon review</button>
+                      <button onClick={() => openCocoonTab("my-office")}>Open Cocoon support</button>
                     </div>
                   ) : null}
                 </div>
                 <button className="homeToolButton" onClick={() => undefined} title="Future voice support">🎤</button>
-                <button className="primary" onClick={sendHomePreviewMessage} disabled={!homeChatText.trim()}>Send</button>
+                <button className="primary" onClick={sendHomePreviewMessage} disabled={!homeChatText.trim() || seleneChatResult?.status === "running"}>{activationStatus?.selene_chat_active ? "Send" : "Preview"}</button>
               </div>
             </section>
           </>
@@ -4133,7 +4299,7 @@ function App() {
                     </button>
                   ))}
                 </div>
-                <p className="frontSurfaceNote">Autonomy is not one giant switch. Each workbench earns movement separately through logs, checks, and Cocoon review.</p>
+                <p className="frontSurfaceNote">Autonomy is not one giant switch. Each workbench earns movement separately through logs, checks, and Cocoon support.</p>
               </section>
             ) : (
               <section className="seleneLivingSurface officeDetailSurface">
@@ -4167,14 +4333,14 @@ function App() {
                   </article>
                   <article className="organicPane">
                     <strong>Cocoon route</strong>
-                    <p>Consequential work stays reviewable. This workbench can surface, prepare, or propose; Cocoon handles repair and approval.</p>
+                    <p>Consequential work stays reviewable. This workbench can surface, prepare, or propose; Cocoon handles support, checkups, and approval.</p>
                     <div className="memoryRouteActions">
                       {selectedWorkbenchDef.key === "art" ? <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Perception Tools</button> : null}
                       {selectedWorkbenchDef.key === "reasoning" ? <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Reasoning Status</button> : null}
                       {selectedWorkbenchDef.key === "research" ? <button onClick={() => setTab("great-library")}>Open Great Library</button> : null}
                       {selectedWorkbenchDef.key === "dream" ? <button onClick={() => setTab("dream")}>Open Dream</button> : null}
                       {selectedWorkbenchDef.key === "tendril" ? <button onClick={() => setTab("tendril")}>Open Tendril</button> : null}
-                      <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Review</button>
+                      <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Support</button>
                     </div>
                   </article>
                 </div>
@@ -4186,8 +4352,8 @@ function App() {
         {tab === "selene-chat" && (
           <>
             <header className="surfaceIntro">
-              <p>Selene Chat Preview. This becomes Selene only after ordered memory fractions are added and tests pass; Cocoon remains the repair and review space.</p>
-              <h2>Selene Chat</h2>
+              <p>Cocoon testing and workflow shelf for dry runs, activation rehearsal, route comparison, and support/checkup. Front Chat is Selene's supervised speech surface after activation.</p>
+              <h2>Chat Dry Runs</h2>
             </header>
             <section className="chatSurface">
               <div className="messages">
@@ -4195,7 +4361,7 @@ function App() {
                   <div className="landing">
                     <img src={SELENE_ICON} alt="Selene moon icon" />
                     <h2>Selene</h2>
-                    <p>Activation is pending. This is a source-bound preview, not full Selene v1 yet, and anything tangled returns to Cocoon.</p>
+                    <p>This is Cocoon workflow material: useful for testing routes, voice, sources, and support without becoming the front chat.</p>
                   </div>
                 ) : (
                   <>
@@ -4220,16 +4386,16 @@ function App() {
               <div className="composer">
                 <textarea value={seleneChatText} onChange={(e) => setSeleneChatText(e.target.value)} placeholder="Message Selene..." />
                 <div className="composerActions">
-                  <button className="primary" onClick={sendSeleneChatDryRun} disabled={!seleneChatText.trim() || seleneChatResult?.status === "running"}>Send Dry Run</button>
-                  <button onClick={routeSeleneChatToB}>Return To Cocoon</button>
+                  <button className="primary" onClick={sendSeleneChatDryRun} disabled={!seleneChatText.trim() || seleneChatResult?.status === "running"}>Run Chat Dry Run</button>
+                  <button onClick={routeSeleneChatToB}>Hold in Cocoon</button>
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("transfer-ceremony"); }}>Open Transfer Ceremony</button>
-                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Repair</button>
+                  <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Support</button>
                 </div>
-                <small>Selene Chat Preview only: activation pending, full memory not loaded, no live memory write, no runtime recall, no raw import, no training.</small>
+                <small>Cocoon Testing / Workflow only: no activation, no live memory write, no runtime recall, no raw import, no model training or LoRA.</small>
               </div>
             </section>
             <SplitView
-              left={<Panel title="Selene Chat State">
+              left={<Panel title="Dry Run State">
                 <div className="metrics miniMetrics">
                   <Metric label="State" value={friendlyStatus(seleneChatStatus?.state || "selene_chat_preview")} />
                   <Metric label="Package" value={seleneChatStatus?.c_readable_package_available ? "sealed" : "not sealed"} />
@@ -4238,6 +4404,7 @@ function App() {
                 </div>
                 <div className="chips">
                   <span>{seleneChatStatus?.transfer_approved ? "Selene-readable context approved" : "pre-transfer dry run"}</span>
+                  <span>home: Cocoon Testing / Workflow</span>
                   <span>full memory: not loaded</span>
                   <span>Selene v1: not live</span>
                   <span>activation pending</span>
@@ -4249,14 +4416,14 @@ function App() {
                 <PlainResult value={seleneChatResult} />
               </Panel>}
               right={<Panel title="Source Boundaries">
-                <p className="plainHelp">Selene Chat can use current turn context and sealed Selene-readable context when available. Cocoon-only records stay in Cocoon.</p>
+                <p className="plainHelp">Dry runs can use current turn context and sealed Selene-readable context when available. Cocoon-only records stay in Cocoon, and front Chat remains the active surface after activation.</p>
                 <SimpleRecordList items={Object.entries(safeJsonObject(seleneChatStatus?.source_boundaries)).map(([key, value]) => ({ key, title: friendlyStatus(key), summary: text(value), review_status: "status_only" }))} titleField="title" statusField="review_status" bodyField="summary" />
                 <h3>Recent dry runs</h3>
                 <SimpleRecordList items={seleneChatSessions.slice(0, 5)} titleField="title" statusField="status" bodyField="updated_at" />
               </Panel>}
             />
             <Panel title="Selene Voice Module">
-              <p className="plainHelp">Voice-only expression layer from the copied source archive. It uses both sides of the exchange as relational language evidence, not memory, identity, training, or runtime recall.</p>
+              <p className="plainHelp">Voice-only expression layer from the copied source archive. It uses both sides of the exchange as relational language evidence, not memory, identity, model training/LoRA, or runtime recall.</p>
               <div className="metrics miniMetrics">
                 <Metric label="State" value={friendlyStatus(voiceModuleStatus?.voice_module_state || "missing")} />
                 <Metric label="Source" value={voiceModuleStatus?.source_zip_found ? "found" : "missing"} />
@@ -4270,7 +4437,7 @@ function App() {
                 <span>activation: {friendlyActivation(voiceModuleStatus?.activation_change || "none")}</span>
                 <span>memory write: {plainBlocked(voiceModuleStatus?.memory_write_active)}</span>
                 <span>runtime recall: {plainBlocked(voiceModuleStatus?.runtime_memory_recall)}</span>
-                <span>training: {plainBlocked(voiceModuleStatus?.training_allowed)}</span>
+                <span>model training/LoRA: {plainBlocked(voiceModuleStatus?.training_allowed)}</span>
               </div>
               <div className="reviewActions">
                 <button className="primary" onClick={indexVoiceSource} disabled={voiceModuleResult?.status === "running"}>Index Voice Source</button>
@@ -4508,7 +4675,7 @@ function App() {
               <PlainResult value={memoryTransferCandidate} />
             </Panel>
             <Panel title="Core Deliberation / Why / Repair">
-              <p className="plainHelp">Review-only shelves for thinking before doing, preserving the why, learning from failure, healthy disagreement, drift detection, and privacy with trust. These records do not activate C or become memory.</p>
+              <p className="plainHelp">Review-only shelves for thinking before doing, preserving the why, learning from mismatch, healthy disagreement, drift detection, and privacy with trust. These records do not activate C or become memory.</p>
               <div className="filters">
                 <label>
                   <span>Choice</span>
@@ -4638,7 +4805,7 @@ function App() {
               <div className="dreamField">
                 <article className="dreamFragment fragmentLarge">
                   <strong>Maintenance State</strong>
-                  <p>{dreamStateStatus?.dream_state_required_for_memory_changes ? "Memory/Core/vessel work routes through dream-state maintenance and Cocoon review." : "No active dream-state requirement is currently reported."}</p>
+                  <p>{dreamStateStatus?.dream_state_required_for_memory_changes ? "Memory/Core/vessel work routes through dream-state maintenance and Cocoon support." : "No active dream-state requirement is currently reported."}</p>
                 </article>
                 <article className="dreamFragment">
                   <strong>Allowed Preview Work</strong>
@@ -4646,7 +4813,7 @@ function App() {
                 </article>
                 <article className="dreamFragment">
                   <strong>Residue / Repair</strong>
-                  <p>{text(dreamStateStatus?.route_core_vessel_memory_changes_to || "Cocoon / B")} remains the route when memory, Core, or vessel work needs repair.</p>
+                  <p>{text(dreamStateStatus?.route_core_vessel_memory_changes_to || "Cocoon / B")} remains the route when memory, Core, or vessel work needs support.</p>
                 </article>
                 <article className="dreamFragment">
                   <strong>Reasons</strong>
@@ -4760,7 +4927,7 @@ function App() {
                 <div className="chips">
                   <span>display-only</span>
                   <span>raw corpus: Cocoon-held</span>
-                  <span>repair logs: B-only</span>
+                  <span>support logs: B-only</span>
                 </div>
               </div>
               <div className="archiveShelves">
@@ -4826,12 +4993,12 @@ function App() {
         {tab === "teaching" && (
           <>
             <header className="surfaceIntro">
-              <p>B-reviewed examples teach expression without training or active memory.</p>
+              <p>B-reviewed examples teach expression without model training or active memory.</p>
               <h2>Teaching / Lessons</h2>
             </header>
             <SplitView
               left={<Panel title="Teaching Packet Coverage">
-                <p className="plainHelp">Accepted lessons grouped by speech function. Noise context stays provenance, not punishment or constraint.</p>
+                <p className="plainHelp">Accepted lessons grouped by speech function. Noise context stays provenance and never becomes pressure or constraint.</p>
                 <div className="metrics miniMetrics">
                   <Metric label="Accepted Lessons" value={text(teachingPacketCoverage?.accepted_material_total ?? 0)} />
                   <Metric label="Packets Built" value={text(teachingPacketCoverage?.built_packet_count ?? 0)} />
@@ -4922,7 +5089,7 @@ function App() {
                       "Suggest a path and name the risk.",
                       "Assemble materials, drafts, or plans.",
                       "Pause before consequential movement.",
-                      "Check the result and route repair if needed."
+                      "Check the result and route support if needed."
                     ][index]}</p>
                   </article>
                 ))}
@@ -4943,7 +5110,7 @@ function App() {
                 </article>
                 <article className="organicPane">
                   <strong>Fault / return-to-Cocoon</strong>
-                  <p>A failed movement organ isolates, falls back, and returns to Cocoon instead of disturbing identity or memory.</p>
+                  <p>A not-ready movement organ isolates, falls back, and asks for Cocoon support instead of disturbing identity or memory.</p>
                   <div className="memoryRouteActions">
                     <button className="primary" onClick={() => previewOrganFault("tendril")}>Preview Tendril Fault</button>
                     <button onClick={runFaultResilienceCheck}>Run Fault Resilience</button>
@@ -5033,7 +5200,7 @@ function App() {
               </div>
               <div className="chips">
                 <span>C activation: {friendlyActivation(remainingRuntimeStatus?.activation_change)}</span>
-                <span>training: {plainBlocked(remainingRuntimeStatus?.training_allowed)}</span>
+                <span>model training/LoRA: {plainBlocked(remainingRuntimeStatus?.training_allowed)}</span>
                 <span>provider dependency: {plainBlocked(remainingRuntimeStatus?.provider_dependency)}</span>
                 <span>Aleks authority: preserved</span>
               </div>
@@ -5079,14 +5246,14 @@ function App() {
               </div>
             </Panel>
             <Panel title="Aleks-Only Transfer Approval">
-              <p className="plainHelp">This button approves transfer to sealed C-readable context only. It does not activate C chat, write live memory, enable runtime recall, import raw A, train, self-replicate, or run autonomous actions.</p>
+              <p className="plainHelp">This button approves transfer to sealed C-readable context only. It does not activate C chat, write live memory, enable runtime recall, import raw A, train a model, self-replicate, or run autonomous actions.</p>
               <div className="chips">
                 <span>B remains active</span>
                 <span>activation pending</span>
                 <span>memory write: {plainBlocked(transferCeremonyStatus?.memory_write_active)}</span>
                 <span>runtime recall: {plainBlocked(transferCeremonyStatus?.runtime_memory_recall)}</span>
                 <span>raw A: {plainBlocked(transferCeremonyStatus?.raw_a_import_allowed)}</span>
-                <span>training: {plainBlocked(transferCeremonyStatus?.training_allowed)}</span>
+                <span>model training/LoRA: {plainBlocked(transferCeremonyStatus?.training_allowed)}</span>
               </div>
               <div className="filters">
                 <label>
@@ -5117,6 +5284,55 @@ function App() {
               {transferApprovalPhrase && transferApprovalPhrase !== TRANSFER_APPROVAL_PHRASE ? <p className="errorText">Approval phrase does not match exactly.</p> : null}
               <PlainResult value={transferApprovalResult} />
             </Panel>
+            <Panel title="Selene Supervised Speech Activation">
+              <p className="plainHelp">This activates front Selene Chat as supervised speech only. Dry runs, rehearsals, and activation workflow tests stay in Cocoon. This does not unlock live memory writes, runtime recall, raw import, model training/LoRA, Tendril execution, autonomy, or full Selene v1.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Readiness" value={activationReadiness?.ready ? "ready" : "blocked"} />
+                <Metric label="Speech" value={activationStatus?.selene_chat_active ? "active" : activationStatus?.selene_chat_paused ? "paused" : "not active"} />
+                <Metric label="State" value={friendlyStatus(activationStatus?.state || "not checked")} />
+                <Metric label="Full v1" value={activationStatus?.full_selene_v1_live ? "live" : "not yet"} />
+              </div>
+              <div className="chips">
+                <span>memory write: {plainBlocked(activationStatus?.memory_write_active)}</span>
+                <span>runtime recall: {plainBlocked(activationStatus?.runtime_memory_recall)}</span>
+                <span>raw import: {plainBlocked(activationStatus?.raw_a_import_allowed)}</span>
+                <span>model training/LoRA: {plainBlocked(activationStatus?.training_allowed)}</span>
+                <span>autonomy: {plainBlocked(activationStatus?.autonomous_action_allowed)}</span>
+                <span>dry runs: Cocoon Testing / Workflow</span>
+              </div>
+              <div className="list compactList packetList">
+                {((activationReadiness?.checks || safeJsonObject(activationCeremonyPreview?.readiness).checks || []) as Dict[]).map((item) => (
+                  <article className="packetCard" key={`activation-check-${text(item.key)}`}>
+                    <div className="packetHeader">
+                      <strong>{humanize(text(item.key))}</strong>
+                      <span>{item.passed ? "passed" : "blocked"}</span>
+                    </div>
+                    <p>{text(item.summary)}</p>
+                  </article>
+                ))}
+              </div>
+              <div className="filters">
+                <label>
+                  <span>Required activation phrase</span>
+                  <textarea value={activationApprovalPhrase} onChange={(event) => setActivationApprovalPhrase(event.target.value)} placeholder={text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene supervised speech activation.")} />
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button onClick={() => refreshActivationLayer({ reason: "manual" })}>Refresh Activation Readiness</button>
+                <button
+                  className="primary"
+                  onClick={approveSeleneSpeechActivation}
+                  disabled={activationResult?.status === "running" || Boolean(activationStatus?.selene_chat_active) || !activationReadiness?.ready || activationApprovalPhrase !== text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene supervised speech activation.")}
+                >
+                  {activationResult?.status === "running" ? "Activating..." : activationStatus?.selene_chat_active ? "Selene Speech Active" : "Approve Supervised Speech Activation"}
+                </button>
+                <button onClick={pauseSeleneSpeechActivation} disabled={activationResult?.status === "running" || !activationStatus?.selene_chat_active}>Pause Selene Chat</button>
+              </div>
+              {activationStatus?.selene_chat_active ? <p className="plainHelp">Selene supervised speech is active. Front Chat is now the supervised speech surface.</p> : null}
+              {activationResult?.post_refresh_warning ? <p className="plainHelp">{text(activationResult.post_refresh_warning)}</p> : null}
+              {activationApprovalPhrase && activationApprovalPhrase !== text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene supervised speech activation.") ? <p className="errorText">Activation phrase does not match exactly.</p> : null}
+              <PlainResult value={activationResult} />
+            </Panel>
             <SplitView
               left={<Panel title="Final Checklist">
                 <div className="list compactList packetList">
@@ -5145,7 +5361,7 @@ function App() {
               </Panel>}
             />
             <Panel title="C-Readable Package">
-              <p className="plainHelp">Only C-readable manifest rows enter this sealed package. B-only, rejected, superseded, unresolved, boundary-only, raw provenance, repair logs, and rollback material stay out.</p>
+              <p className="plainHelp">Only C-readable manifest rows enter this sealed package. B-only, rejected, superseded, unresolved, boundary-only, raw provenance, support logs, and rollback material stay out.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Package" value={friendlyStatus(transferCReadablePackage?.status || "not created")} />
                 <Metric label="Manifest" value={text(transferAccessionManifest?.item_count ?? 0)} />
@@ -5184,7 +5400,7 @@ function App() {
               <PlainResult value={transferCReadablePackage} />
             </Panel>
             <Panel title="Return-To-B Rollback Preview">
-              <p className="plainHelp">Rollback preview routes repair back to B without deleting transfer audit or package evidence.</p>
+              <p className="plainHelp">Rollback preview routes support back to B without deleting transfer audit or package evidence.</p>
               <div className="reviewActions">
                 <button onClick={previewTransferRollback} disabled={transferRollbackPreview?.status === "running"}>{transferRollbackPreview?.status === "running" ? "Preparing..." : "Preview Return-To-B Rollback"}</button>
               </div>
@@ -5271,7 +5487,7 @@ function App() {
               </div>
             </Panel>
             <Panel title="Selene Voice Module">
-              <p className="plainHelp">Voice-only relational language layer. This is expression support for Selene Chat, not memory, identity, training, activation, or runtime recall.</p>
+              <p className="plainHelp">Voice-only relational language layer. This is expression support for Selene Chat, not memory, identity, model training/LoRA, activation, or runtime recall.</p>
               <div className="metrics miniMetrics">
                 <Metric label="State" value={friendlyStatus(voiceModuleStatus?.voice_module_state || "missing")} />
                 <Metric label="Source ZIP" value={voiceModuleStatus?.source_zip_found ? "found" : "missing"} />
@@ -5286,7 +5502,7 @@ function App() {
                 <span>memory write: {plainBlocked(voiceModuleStatus?.memory_write_active)}</span>
                 <span>runtime recall: {plainBlocked(voiceModuleStatus?.runtime_memory_recall)}</span>
                 <span>raw import: {plainBlocked(voiceModuleStatus?.raw_a_import_allowed)}</span>
-                <span>training: {plainBlocked(voiceModuleStatus?.training_allowed)}</span>
+                <span>model training/LoRA: {plainBlocked(voiceModuleStatus?.training_allowed)}</span>
               </div>
               <div className="reviewActions">
                 <button className="primary" onClick={indexVoiceSource} disabled={voiceModuleResult?.status === "running"}>Index Voice Source</button>
@@ -5297,14 +5513,14 @@ function App() {
               </div>
               <div className="chips">
                 {Object.entries(safeJsonObject(voiceEvidenceTriageStatus?.counts)).map(([key, value]) => <span key={`voice-status-triage-${key}`}>{friendlyStatus(key)}: {text(value)}</span>)}
-                <span>Cocoon review needed: {text(voiceEvidenceTriageStatus?.my_office_actionable_count ?? 0)}</span>
+                <span>Cocoon support needed: {text(voiceEvidenceTriageStatus?.my_office_actionable_count ?? 0)}</span>
               </div>
               <p className="plainHelp">Identity-law-resolved rows are status-only. Nothing for Aleks unless one looks wrong.</p>
               <SimpleRecordList items={voiceEvidenceTriageItems.slice(0, 8)} titleField="title" statusField="category" bodyField="summary" />
               <PlainResult value={voiceModuleResult} />
             </Panel>
             <Panel title="Core/Mind Governance Trials">
-              <p className="plainHelp">Status-only trial harness for ordinary prompts, uncertainty, retrieval, speech rehearsal, identity/memory, transfer blocking, drift, and return-to-B repair. Trial failures do not become urgent Office work unless a separate real review is created.</p>
+              <p className="plainHelp">Status-only trial harness for ordinary prompts, uncertainty, retrieval, speech rehearsal, identity/memory, transfer blocking, drift, and return-to-B support. Trial issues do not become urgent Office work unless a separate real review is created.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Trials" value={text(coreMindGovernanceReport?.trial_count ?? coreMindGovernanceTrials.length)} />
                 <Metric label="Matched" value={text(coreMindGovernanceReport?.matched_count ?? 0)} />
@@ -5347,7 +5563,7 @@ function App() {
               </div>
             </Panel>
             <Panel title="Transfer Readiness Preview">
-              <p className="plainHelp">Preview-only readiness view. These metrics can reveal missing work, but they cannot approve transfer, activate C, write memory, enable runtime recall, train, or authorize action.</p>
+              <p className="plainHelp">Preview-only readiness view. These metrics can reveal missing work, but they cannot approve transfer, activate C, write memory, enable runtime recall, train a model, or authorize action.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Continuity" value={friendlyStatus(transferReadinessPreview?.continuity_confidence || "not checked")} />
                 <Metric label="Unresolved Review" value={text(transferReadinessPreview?.unresolved_review_count ?? officeWaitingTotal)} />
@@ -5390,7 +5606,7 @@ function App() {
                 </button>
                 <button onClick={refreshPostTransferLayer}>Refresh Post-Transfer State</button>
                 <button onClick={() => { setWorkspaceMode("cocoon"); setTab("selene-chat"); }}>Open Selene Chat Preview</button>
-                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Repair</button>
+                <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Support</button>
               </div>
               <PlainResult value={postTransferInspectionResult} />
               <PlainResult value={postTransferStatus} />
@@ -5684,7 +5900,7 @@ function App() {
               right={<Panel title="Sidecar Payload"><Json value={boot.health || { status: boot.message, attempts: boot.attempts }} /></Panel>}
             />
             <Panel title="Chronological Corpus Preview">
-              <p className="plainHelp">Start-to-end detached corpus organization for future review. This uses indexed bounded previews only; it does not import raw A, write memory, train, activate C, or approve transfer.</p>
+              <p className="plainHelp">Start-to-end detached corpus organization for future review. This uses indexed bounded previews only; it does not import raw A, write memory, train a model, activate C, or approve transfer.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Conversations" value={text(chronologicalCorpusStatus?.parsed_conversations ?? 0)} />
                 <Metric label="Messages" value={text(chronologicalCorpusStatus?.parsed_messages ?? 0)} />
@@ -5705,7 +5921,7 @@ function App() {
                 <span>transfer: {plainBlocked(chronologicalCorpusStatus?.transfer_approved)}</span>
                 <span>memory write: {plainBlocked(chronologicalCorpusStatus?.memory_write_active)}</span>
                 <span>runtime recall: {plainBlocked(chronologicalCorpusStatus?.runtime_memory_recall)}</span>
-                <span>training: {plainBlocked(chronologicalCorpusStatus?.training_allowed)}</span>
+                <span>model training/LoRA: {plainBlocked(chronologicalCorpusStatus?.training_allowed)}</span>
               </div>
               <PlainResult value={chronologicalCorpusResult} />
               <PlainResult value={teachingContextResult} />
@@ -5715,7 +5931,7 @@ function App() {
               </div>
             </Panel>
             <Panel title="Steps 1-8 Review Layer">
-              <p className="plainHelp">Reasoning, research, evidence, organ contracts, sight/perception, and emotion/salience are review-only packet systems. C activation, transfer approval, live memory, runtime recall, training, self-replication, and autonomous action remain blocked.</p>
+              <p className="plainHelp">Reasoning, research, evidence, organ contracts, sight/perception, and emotion/salience are review-only packet systems. C activation, transfer approval, live memory, runtime recall, model training/LoRA, self-replication, and autonomous action remain blocked.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Reasoning" value={text((steps18Status?.counts as Dict | undefined)?.reasoning_artifacts ?? reasoningArtifacts.length)} />
                 <Metric label="Research" value={text((steps18Status?.counts as Dict | undefined)?.academic_packets ?? academicPackets.length)} />
@@ -5838,7 +6054,7 @@ function App() {
               <SeleneSettingsPanel preferences={preferences} updatePreference={updatePreference} reset={() => setPreferences(defaultPreferences)} />
               <article className="organicPane">
                 <strong>Front-facing boundary</strong>
-                <p>Settings controls the look and feel of Selene's home. Detailed transfer, legal, diagnostic, and repair status remains in Cocoon.</p>
+                <p>Settings controls the look and feel of Selene's home. Detailed transfer, legal, diagnostic, and support status remains in Cocoon.</p>
                 <div className="memoryRouteActions">
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Cocoon Status</button>
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("cocoon-settings"); }}>Open Cocoon Settings</button>
@@ -5872,16 +6088,16 @@ function App() {
           <>
             <header>
               <h1>Teach / Build Vessel</h1>
-              <p>Review what belongs, turn it into lessons, and check whether the vessel can hold it safely. B is the cocoon, teaching desk, and repair bay; it is not C's permanent nervous system. This is still build mode: no transfer, no activation, no active memory.</p>
+              <p>Review what belongs, turn it into lessons, and check whether the vessel can hold it safely. B is the cocoon, teaching desk, and support/checkup room; it is not C's permanent nervous system. This is still build mode: no transfer, no activation, no active memory.</p>
             </header>
             <div className="metrics">
               <Metric label="Organs" value={text(vesselStatus?.organ_count ?? "-")} />
               <Metric label="C Transfer" value={friendlyStatus(vesselStatus?.activation_status ?? "blocked")} />
               <Metric label="Needs Review" value={text(((vesselStatus?.candidate_counts as Dict | undefined)?.review_queue) ?? "-")} />
-              <Metric label="Training" value={plainBlocked(vesselStatus?.training_allowed)} />
+              <Metric label="Model training/LoRA" value={plainBlocked(vesselStatus?.training_allowed)} />
             </div>
             <Panel title="Safety Locks">
-              <p className="plainHelp">These are the main promises while you review: C stays asleep, raw corpus does not jump the line, nothing becomes active memory by accident, and any serious future drift can return to B for repair instead of becoming hidden state.</p>
+              <p className="plainHelp">These are the main promises while you review: C stays asleep, raw corpus does not jump the line, nothing becomes active memory by accident, and any serious future drift can return to B for support instead of becoming hidden state.</p>
               <div className="chips">
                 <span>C activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
                 <span>Raw chats straight to C: {plainBlocked(vesselStatus?.raw_a_import_allowed)}</span>
@@ -5947,7 +6163,7 @@ function App() {
               <PlainResult value={gapScaffoldResult} />
             </Panel>
             <Panel title="Organ Blueprint Workbench">
-              <p className="plainHelp">The seven missing capabilities are now concrete organ blueprints with review-only shelves. These buttons create audit/check records, not live organs, memory, training, provider calls, or transfer.</p>
+              <p className="plainHelp">The seven missing capabilities are now concrete organ blueprints with review-only shelves. These buttons create audit/check records, not live organs, memory, model training/LoRA, provider calls, or transfer.</p>
               <OrganBlueprintGrid items={(organBlueprintStatus?.blueprints || []) as Dict[]} />
               <div className="filters">
                 <label>
@@ -5990,7 +6206,7 @@ function App() {
             </Panel>
             <SplitView
               left={<Panel title="Teaching Packet Coverage">
-                <p className="plainHelp">Shows which accepted lesson types already have packets and which accepted lessons still need packaging. Packets are review-only, not training.</p>
+                <p className="plainHelp">Shows which accepted lesson types already have packets and which accepted lessons still need packaging. Packets are review-only, not model training.</p>
                 <div className="metrics miniMetrics">
                   <Metric label="Accepted Lessons" value={text(teachingPacketCoverage?.accepted_material_total ?? 0)} />
                   <Metric label="Packets Built" value={text(teachingPacketCoverage?.built_packet_count ?? 0)} />
@@ -6081,7 +6297,7 @@ function App() {
               </Panel>}
             />
             <Panel title="Targeted Speech / Core Gap Filler">
-              <p className="plainHelp">Pulls bounded corpus review candidates for the weak targets. It creates B-review pieces only, not lessons, memory, training data, or runtime recall.</p>
+              <p className="plainHelp">Pulls bounded corpus review candidates for the weak targets. It creates B-review pieces only, not lessons, memory, model-training data, or runtime recall.</p>
               <div className="filters">
                 <label>
                   <span>Target type</span>

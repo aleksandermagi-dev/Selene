@@ -741,6 +741,15 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   padding: 26px;
 }
 
+.homeChatStateBar {
+  background: color-mix(in srgb, var(--front-panel-bg) 82%, transparent);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
 .homeLanding {
   align-content: center;
   display: grid;
@@ -787,8 +796,42 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   z-index: 2;
 }
 
+.seleneNotes.collapsed {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  max-width: max-content;
+  padding: 0;
+}
+
 .seleneNotes strong {
   color: var(--accent-3);
+}
+
+.seleneNotesToggle {
+  align-items: center;
+  background: color-mix(in srgb, var(--front-panel-bg) 92%, transparent);
+  border: 1px solid var(--soft-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  color: var(--accent-3);
+  display: inline-flex;
+  font-weight: 700;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.seleneNotesToggle span {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent-2) 28%, transparent);
+  border-radius: 999px;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 12px;
+  justify-content: center;
+  min-height: 21px;
+  min-width: 21px;
+  padding: 0 6px;
 }
 
 .seleneNotes ul {

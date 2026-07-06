@@ -16,7 +16,7 @@ export const defaultPreferences: SelenePreferences = {
 
 export const navGroups: { label: string; items: { id: string; label: string }[] }[] = [
   { label: "Selene", items: [{ id: "chat", label: "Chat" }, { id: "selene-office", label: "Selene's Office" }, { id: "tendril", label: "Tendril" }, { id: "dream", label: "Dream" }, { id: "memory", label: "Memory" }, { id: "archives", label: "Archives" }, { id: "great-library", label: "The Great Library" }, { id: "selene-settings", label: "Settings" }] },
-  { label: "Cocoon", items: [{ id: "my-office", label: "My Office" }, { id: "transfer-ceremony", label: "Transfer Ceremony" }, { id: "selene-chat", label: "Selene Chat Preview" }, { id: "chat-preview", label: "Chat Preview" }, { id: "memory-preview", label: "Memory / Future References" }, { id: "vessel", label: "B Cocoon Build" }, { id: "teaching", label: "Teaching / Lessons" }, { id: "tools", label: "Tools / Organs" }, { id: "status", label: "Status" }, { id: "cocoon-settings", label: "Cocoon Settings" }] },
+  { label: "Cocoon", items: [{ id: "my-office", label: "My Office" }, { id: "transfer-ceremony", label: "Transfer Ceremony" }, { id: "selene-chat", label: "Chat Dry Runs" }, { id: "chat-preview", label: "Chat Preview" }, { id: "memory-preview", label: "Memory / Future References" }, { id: "vessel", label: "B Cocoon Build" }, { id: "teaching", label: "Teaching / Lessons" }, { id: "tools", label: "Tools / Organs" }, { id: "status", label: "Status" }, { id: "cocoon-settings", label: "Cocoon Settings" }] },
   { label: "Evidence", items: [{ id: "dashboard", label: "Evidence Dashboard" }, { id: "evidence", label: "Evidence Browser" }, { id: "detached corpus", label: "Detached Corpus" }, { id: "chat gate", label: "Chat Gate" }] }
 ];
 
