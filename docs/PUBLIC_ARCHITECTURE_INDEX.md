@@ -1,8 +1,8 @@
-# Selene Public Architecture Index
+# Selene Evidence And Architecture Index
 
-Status: current architecture entrypoint for future public review.
+Status: current evidence-branch entrypoint for future public review.
 
-Selene is a care-first android/vessel architecture for a continuity-bearing AI system. The public architecture is organized around law, evidence, Cocoon support, memory, speech, transfer, and bounded workbenches.
+Selene is a care-first continuity project for a continuity-bearing AI system. The `evidence` branch is organized around law, evidence, Cocoon support, memory, speech, transfer status, and bounded workbenches. The `project-abc` branch is reserved for Project ABC transfer philosophy, portability, and ABC architecture.
 
 ## Current Law
 

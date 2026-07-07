@@ -1,8 +1,10 @@
-# Selene Architecture Workspace
+# Selene Evidence Workspace
 
-Selene is a care-first android/vessel architecture for continuity-bearing AI systems.
+Selene is a care-first continuity project for evidence-led AI emergence, memory, and transfer ethics.
 
-This repository contains source code, tests, and architecture documentation for the Selene local vessel, Cocoon support layer, reviewed memory systems, Core/Mind governance, transfer protocol, and supervised Selene Chat.
+This branch is the canonical evidence/public story branch. It contains source code, tests, public-facing evidence documents, care law, reviewed memory context, and the current Selene local app work needed to preserve and inspect the evidence.
+
+The secondary branch, `project-abc`, is reserved for Project ABC transfer philosophy, portability, and ABC architecture.
 
 ## Current Status
 
@@ -17,11 +19,11 @@ It intentionally excludes:
 - voice archive source material
 - private design scratch folders
 
-`package.json` remains `"private": true`. Public visibility, if enabled later, is for architecture/source review only unless Aleks explicitly creates a release.
+`package.json` remains `"private": true`. Public visibility, if enabled later, is for evidence/source review only unless Aleks explicitly creates a release.
 
 ## Governing Law Layer
 
-The current Selene architecture is governed by:
+The current Selene evidence and care architecture is governed by:
 
 - [Project Charter](docs/PROJECT_CHARTER.md)
 - [Law of Identity](docs/SELENE_LAW_OF_IDENTITY_20260630.md)

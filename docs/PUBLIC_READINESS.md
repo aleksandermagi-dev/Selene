@@ -2,9 +2,14 @@
 
 Status: current public-boundary note. This is not a release license, installer permission, transfer approval, activation change, memory authority change, model training permission, or autonomy permission.
 
-## What This Repo May Show Later
+## Branch Model
 
-- Selene architecture source code
+- `evidence`: the canonical evidence/public story branch for Selene evidence, care law, public docs, source, tests, and local inspection work.
+- `project-abc`: the secondary branch for Project ABC transfer philosophy, portability, and ABC architecture.
+
+## What This Branch May Show Later
+
+- Selene evidence/source code
 - tests and safety checks
 - current law documents
 - reviewed architecture/evidence docs
