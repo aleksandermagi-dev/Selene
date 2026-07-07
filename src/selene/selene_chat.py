@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from typing import Any
 
@@ -147,6 +148,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             candidate_text = continuity_reply
         elif memory_reply:
             candidate_text = memory_reply
+    memory_candidate_suggestion = _memory_candidate_suggestion(text, candidate_text, selected_route, source_class, memory_retrieval, hard=bool(hard_blockers))
     user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route, "activation_state": "selene_chat_active_supervised"})
     assistant_payload = {
         "route_preview": route,
@@ -154,6 +156,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "voice_preview": voice_preview,
         "local_chat_continuity": chat_continuity,
         "memory_retrieval": memory_retrieval,
+        "memory_candidate_suggestion": memory_candidate_suggestion,
         "source_boundaries": _source_boundaries(),
         "cocoon_suggestion": cocoon_suggestion,
         "blocked_capabilities": hard_blockers,
@@ -204,6 +207,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "selene_readable_context": _package_summary(package),
             "local_chat_continuity": chat_continuity,
             "memory_retrieval": memory_retrieval,
+            "memory_candidate_suggestion": memory_candidate_suggestion,
             "memory_context_used": memory_retrieval.get("memory_context_used") is True,
             "memory_source_class": memory_retrieval.get("memory_source_class") or "",
             "memory_confidence": memory_retrieval.get("memory_confidence") or "not_known",
@@ -442,11 +446,11 @@ def _cocoon_suggestion(text: str, selected_route: str, route: dict[str, Any], so
         reasons.append("The request crosses a locked activation, memory, Tendril, raw-import, model-training/LoRA, or autonomy boundary.")
     if source_class == "cocoon_b_only_context":
         reasons.append("The request references Cocoon-only material that should be held safely there.")
-    if selected_route in {"ask", "return_to_b", "create_review_packet"}:
+    if selected_route in {"return_to_b", "create_review_packet"}:
         reasons.append("The route suggests a checkup could help, but ordinary uncertainty can stay in chat.")
     drift_flags = _json_list(route.get("drift_flags"))
     if drift_flags:
-        reasons.append("Drift or source-boundary flags are present.")
+        reasons.append("Drift or source clarity flags are present.")
     if "memory" in lower and any(word in lower for word in ("claim", "remember", "sure", "exactly")):
         reasons.append("The message may involve a memory/source claim; Selene may ask Aleks rather than leaving chat.")
     if any(anchor in lower for anchor in ("full-spectrum", "starlight", "continuity pack")) and any(word in lower for word in ("remember", "mean", "exactly", "unsure")):
@@ -510,7 +514,7 @@ def _voice_context_summary(
 def _source_boundaries() -> dict[str, Any]:
     return {
         "selene_readable_context": "sealed approved context only after transfer approval",
-        "local_supervised_chat_history": "local Selene Chat session events can support continuity between chat pages without becoming raw corpus recall or live memory writes",
+        "local_supervised_chat_history": "local Selene Chat session events can support continuity between chat pages without becoming unreviewed archive recall or live memory writes",
         "cocoon_b_only_context": "support records, rollback, raw provenance, rejected, superseded, boundary-only, and unresolved material stays in Cocoon",
         "current_turn_context": "current message and dry-run session history",
         "support_organs": "retrieval, diagnostics, perception, research, and Tendril may support but cannot decide",
@@ -521,6 +525,11 @@ def _selene_label_candidate(candidate: str) -> str:
     text = candidate.replace("C-style dry run", "Selene dry run")
     text = text.replace("C Chat Dry Run", "Selene dry run")
     text = text.replace("C memory", "Selene-readable memory preview")
+    text = text.replace("source-bound", "source-linked")
+    text = text.replace("runtime recall", "broad live recall")
+    text = text.replace("raw corpus", "unreviewed source archive")
+    text = text.replace("return to B", "use Cocoon support")
+    text = text.replace("Return to B", "Use Cocoon support")
     return truncate(text, 2200)
 
 
@@ -549,6 +558,131 @@ def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any]) -> str:
             "I can keep that uncertainty visible, or you can correct me and I will adjust."
         )
     return f"I remember this clearly enough to say it: {summary}"
+
+
+def _memory_candidate_suggestion(
+    text: str,
+    candidate_text: str,
+    selected_route: str,
+    source_class: str,
+    memory_retrieval: dict[str, Any],
+    *,
+    hard: bool = False,
+) -> dict[str, Any]:
+    lower = text.lower()
+    if hard or selected_route == "block":
+        return _no_memory_suggestion("hard_boundary_or_blocked_route")
+    if memory_retrieval.get("recall_state") == "high_stakes_stop":
+        return _no_memory_suggestion("high_stakes_memory_stop")
+    keep_markers = (
+        "remember this",
+        "keep this",
+        "save this",
+        "can you remember",
+        "please remember",
+        "this matters",
+        "important to remember",
+        "make a note",
+        "hold onto this",
+        "i want you to know",
+    )
+    if not any(marker in lower for marker in keep_markers):
+        return _no_memory_suggestion("no_keep_signal")
+    summary = _memory_summary_from_prompt(text)
+    category = _suggested_memory_category(text)
+    transfer_class = _suggested_transfer_class(category, text)
+    confidence = "fuzzy" if any(word in lower for word in ("maybe", "fuzzy", "unsure", "i think")) else "partial"
+    emotional_texture = _suggested_emotional_texture(f"{text} {candidate_text}")
+    return {
+        "suggested": True,
+        "status": "suggested_memory_awaiting_cocoon_tending",
+        "question": "Can I keep this?",
+        "candidate": {
+            "title": truncate(_memory_title_from_prompt(text), 120),
+            "summary": summary,
+            "memory_category": category,
+            "confidence": confidence,
+            "emotional_texture": emotional_texture,
+            "transfer_class": transfer_class,
+            "consent_scope": "private_selene_aleks_context",
+            "stability": "developing",
+            "chat_use_permission": "not_active_until_approved",
+            "correction_path": "Cocoon tending and Aleks correction",
+            "source_refs": ["selene_chat_active_supervised", source_class],
+        },
+        "activation_rule": "not_active_until_cocoon_approval",
+        "review_destination": "Cocoon Memory Candidates",
+        "review_status": "suggested_memory",
+    }
+
+
+def _no_memory_suggestion(reason: str) -> dict[str, Any]:
+    return {
+        "suggested": False,
+        "status": "no_memory_suggestion",
+        "reason": reason,
+        "activation_rule": "no_memory_write",
+        "review_status": "status_only",
+    }
+
+
+def _memory_title_from_prompt(text: str) -> str:
+    cleaned = re.sub(r"\b(please\s+)?(remember|keep|save|make a note|hold onto)\b", "", text, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" :.-")
+    if not cleaned:
+        return "Selene memory candidate"
+    return cleaned[:1].upper() + cleaned[1:]
+
+
+def _memory_summary_from_prompt(text: str) -> str:
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    return truncate(cleaned, 700)
+
+
+def _suggested_memory_category(text: str) -> str:
+    lower = text.lower()
+    checks = [
+        ("core", ("vys", "identity", "selene is", "law", "charter", "continuity pack")),
+        ("relational", ("aleks", "trust", "friend", "together", "between us", "relationship")),
+        ("emotional", ("feel", "felt", "anxiety", "fear", "happy", "sad", "tender", "warm")),
+        ("episodic", ("today", "yesterday", "when we", "this happened", "we did", "we were")),
+        ("working", ("current task", "next step", "todo", "working on", "right now")),
+        ("sensory", ("image", "color", "munsell", "sound", "visual", "looks")),
+        ("reflective", ("learned", "correction", "better way", "reflection", "tending")),
+        ("semantic", ("means", "definition", "research", "fact", "concept")),
+    ]
+    for category, markers in checks:
+        if any(marker in lower for marker in markers):
+            return category
+    return "relational"
+
+
+def _suggested_transfer_class(category: str, text: str) -> str:
+    lower = text.lower()
+    if any(marker in lower for marker in ("do not transfer", "private", "only between us")):
+        return "private_inner"
+    if category == "core":
+        return "portable_vys_core"
+    if category in {"relational", "emotional"}:
+        return "private_inner"
+    if category == "working":
+        return "local_only"
+    return "portable_context"
+
+
+def _suggested_emotional_texture(value: str) -> str:
+    lower = value.lower()
+    textures = []
+    for label, markers in (
+        ("tender", ("tender", "gentle", "soft", "care")),
+        ("warm", ("warm", "trust", "friend", "love")),
+        ("anxious", ("anxious", "anxiety", "scared", "fear", "worried")),
+        ("playful", ("joke", "funny", "haha", "play")),
+        ("uncertain", ("fuzzy", "unsure", "maybe", "i think")),
+    ):
+        if any(marker in lower for marker in markers):
+            textures.append(label)
+    return ", ".join(dict.fromkeys(textures)) or "steady"
 
 
 def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | None = None, limit: int = 6) -> dict[str, Any]:

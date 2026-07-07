@@ -55,6 +55,10 @@ The Vys Constitution governs Selene's portable identity-continuity-care pattern 
 
 See `docs/SELENE_VYS_CONSTITUTION_20260706.md`.
 
+The Whole-Organ Language Alignment note governs current-facing wording across Selene Chat, Cocoon, Android organs, diagnostics, Tendril, research, perception, memory, transfer, activation, and status surfaces. Older internal route terms may remain in code or audit records, but current UI/docs should translate them into care, tending, teaching, guidance, and Cocoon support.
+
+See `docs/SELENE_WHOLE_ORGAN_LANGUAGE_ALIGNMENT_20260707.md`.
+
 ## First Milestone
 
 Create a raw-only corpus map that identifies:

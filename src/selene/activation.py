@@ -110,7 +110,7 @@ def activation_ceremony_preview(conn: sqlite3.Connection) -> dict[str, Any]:
             "consequences": [
                 "Front Selene Chat becomes supervised active speech.",
                 "Cocoon keeps dry runs, activation rehearsals, workflow tests, repair, and review.",
-                "Live memory write, runtime recall, raw import, training, Tendril execution, autonomy, and self-replication remain blocked.",
+                "Live memory write, broad live recall, unreviewed archive import, model training/LoRA, Tendril execution, autonomy, and self-replication remain blocked.",
             ],
             "pause_route": "Activation can be paused without deleting audit, transfer package, fraction results, or Cocoon dry-run history.",
             "review_destination": "Status",

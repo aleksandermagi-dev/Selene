@@ -65,6 +65,28 @@ export function plainBlocked(value: unknown) {
   return value === true ? "allowed" : "blocked";
 }
 
+export function friendlyCareText(value: unknown) {
+  const raw = text(value);
+  if (!raw) return "";
+  return raw
+    .replace(/\bReturn-to-B\b/g, "Cocoon support")
+    .replace(/\breturn-to-B\b/g, "Cocoon support")
+    .replace(/\breturn to B\b/gi, "use Cocoon support")
+    .replace(/\breturns? to B\b/gi, "uses Cocoon support")
+    .replace(/\breturn_to_b\b/g, "Cocoon support")
+    .replace(/\bC Chat Dry Run\b/g, "Selene rehearsal")
+    .replace(/\bC-style dry run\b/g, "Selene rehearsal")
+    .replace(/\bC-style\b/g, "Selene rehearsal")
+    .replace(/\bVessel C\b/g, "Selene")
+    .replace(/\bC chat\b/gi, "Selene Chat")
+    .replace(/\bfailures?\b/gi, (match) => match[0] === "F" ? "Checks needing support" : "checks needing support")
+    .replace(/\bfailed\b/gi, "needs support")
+    .replace(/\bfailure modes?\b/gi, "support triggers")
+    .replace(/\bsource-bound\b/gi, "source-linked")
+    .replace(/\bruntime recall\b/gi, "broad live recall")
+    .replace(/\braw corpus\b/gi, "unreviewed source archive");
+}
+
 export function friendlyActivation(value: unknown) {
   const raw = text(value || "none");
   if (!raw || raw === "none") return "none";
@@ -114,9 +136,9 @@ export function friendlyStatus(value: unknown) {
     memory_accession_proposal_created: "accession proposal created",
     memory_accession_proposals_review_only: "accession proposals only",
     targeted_speech_memory_extraction_complete: "targeted pull complete",
-    c_chat_route_preview: "C route preview",
+    c_chat_route_preview: "Selene route preview",
     cocooned_not_active: "cocooned, not active",
-    runtime_recall_blocked: "runtime recall blocked",
+    runtime_recall_blocked: "broad live recall blocked",
     route_preview_only: "route preview only",
     short_term_packet_proposal_only: "short-term proposal only",
     future_transfer_review_required: "future transfer review required",
@@ -133,7 +155,7 @@ export function friendlyStatus(value: unknown) {
     fluency_diagnostic_review_only: "fluency diagnostic recorded",
     review_only_organ_blueprints_not_live_organs: "blueprints only, not live organs",
     audit_check_only: "audit check only",
-    source_bound_visual_note_only: "source-bound visual note only",
+    source_bound_visual_note_only: "source-linked visual note only",
     consent_bound_transcript_note_only: "consent-bound transcript note only",
     diagnostic_only_speed_cannot_bypass_gates: "diagnostic only",
     blueprint_built: "blueprint built",

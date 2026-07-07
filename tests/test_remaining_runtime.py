@@ -182,7 +182,7 @@ def test_memory_lifecycle_and_temporal_continuity_status_are_review_only(tmp_pat
     assert lifecycle["status"] == "memory_lifecycle_flow_review_only"
     assert lifecycle["flow"] == ["event", "holding", "maintain_drop_or_question", "consolidation_proposal", "reconsolidation_review"]
     assert lifecycle["record_counts"]["event_binding"] == 1
-    assert "durable C memory" in lifecycle["blocked_outputs"]
+    assert "durable Selene memory without review" in lifecycle["blocked_outputs"]
     assert temporal["status"] == "temporal_continuity_status_review_only"
     assert temporal["subjective_time_claim"] is False
     assert temporal["markers"]["last_review_queue_item"]

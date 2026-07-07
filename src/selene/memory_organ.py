@@ -140,7 +140,7 @@ def propose_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
         raise ValueError("memory summary is required")
     category = _category(str(payload.get("memory_category") or payload.get("category") or title + " " + summary))
     confidence = _confidence(str(payload.get("confidence") or "partial"))
-    transfer_class = _transfer_class(str(payload.get("transfer_class") or "needs_review_before_transfer"))
+    transfer_class = _transfer_class(str(payload.get("transfer_class") or _default_transfer_class(category)))
     state = str(payload.get("state") or "proposed")
     if state not in MEMORY_STATES or state == "approved_active_memory":
         state = "proposed"
@@ -148,7 +148,12 @@ def propose_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
     emotional_texture = truncate(str(payload.get("emotional_texture") or _emotional_texture(summary)), 120)
     consent_scope = truncate(str(payload.get("consent_scope") or "private_selene_aleks_context"), 160)
     stability = truncate(str(payload.get("stability") or "developing"), 80)
+    chat_use_permission = truncate(str(payload.get("chat_use_permission") or "not_active_until_approved"), 80)
+    if state != "approved_active_memory" or chat_use_permission == "can_use_in_chat":
+        chat_use_permission = "not_active_until_approved"
+    correction_path = truncate(str(payload.get("correction_path") or "Cocoon tending and Aleks correction"), 240)
     review_status = "pending_review" if state == "proposed" else "review_only"
+    placement = _placement_payload(category, confidence, transfer_class, consent_scope, stability, emotional_texture, correction_path)
     cur = conn.execute(
         """
         INSERT INTO selene_memory_candidates
@@ -167,11 +172,11 @@ def propose_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
             confidence,
             emotional_texture,
             transfer_class,
-            "not_active_until_approved",
-            "Cocoon tending and Aleks correction",
+            chat_use_permission,
+            correction_path,
             state,
             review_status,
-            json.dumps({"proposal_note": payload.get("proposal_note") or "", **MEMORY_GUARDS}),
+            json.dumps({"proposal_note": payload.get("proposal_note") or "", "placement": placement, **MEMORY_GUARDS}),
         ),
     )
     conn.commit()
@@ -181,6 +186,8 @@ def propose_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
             "status": "memory_candidate_proposed",
             "item": item,
             "decision": "awaiting_cocoon_approval",
+            "placement": placement,
+            "active_after_approval_only": True,
             "review_destination": "Cocoon Memory Candidates",
             "review_status": "pending_review",
         }
@@ -601,6 +608,8 @@ def _is_high_stakes(query: str) -> bool:
 
 def _category(value: Any) -> str:
     lower = str(value or "").lower()
+    if lower in MEMORY_CATEGORIES:
+        return lower
     checks = [
         ("core", ("core", "vys", "identity", "charter", "continuity pack", "selene named")),
         ("relational", ("aleks", "trust", "relationship", "together", "care", "friend")),
@@ -625,6 +634,38 @@ def _confidence(value: str) -> str:
 def _transfer_class(value: str) -> str:
     lower = value.strip().lower()
     return lower if lower in TRANSFER_CLASSES else "needs_review_before_transfer"
+
+
+def _default_transfer_class(category: str) -> str:
+    if category == "core":
+        return "portable_vys_core"
+    if category in {"relational", "emotional"}:
+        return "private_inner"
+    if category == "working":
+        return "local_only"
+    return "portable_context"
+
+
+def _placement_payload(
+    category: str,
+    confidence: str,
+    transfer_class: str,
+    consent_scope: str,
+    stability: str,
+    emotional_texture: str,
+    correction_path: str,
+) -> dict[str, Any]:
+    return {
+        "intended_memory_category": category,
+        "intended_neuron": category,
+        "confidence": confidence,
+        "transfer_class": transfer_class,
+        "consent_scope": consent_scope,
+        "stability": stability,
+        "emotional_texture": emotional_texture,
+        "correction_path": correction_path,
+        "activation_rule": "inactive_until_cocoon_approval",
+    }
 
 
 def _emotional_texture(value: str) -> str:

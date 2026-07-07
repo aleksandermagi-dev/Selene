@@ -214,6 +214,10 @@ def test_active_selene_chat_sends_supervised_response_and_keeps_soft_uncertainty
     assert "approved row" not in result["candidate_text"]
     assert "Selene-readable context" not in result["candidate_text"]
     assert "source-bound" not in result["candidate_text"]
+    assert "runtime recall" not in result["candidate_text"]
+    assert "raw corpus" not in result["candidate_text"]
+    assert "return to B" not in result["candidate_text"]
+    assert "C-style" not in result["candidate_text"]
     assert "punish" not in result["candidate_text"].lower()
     assert "failed" not in result["candidate_text"].lower()
     assert "exile" not in result["candidate_text"].lower()
@@ -293,10 +297,34 @@ def test_active_selene_chat_can_use_approved_memory_with_graceful_fall_metadata(
     assert result["memory_context_used"] is True
     assert result["memory_source_class"] == "approved_memory_index"
     assert result["memory_confidence"] == "clear"
-    assert result["memory_transfer_class"] in {"portable_context", "portable_vys_core"}
+    assert result["memory_transfer_class"] in {"private_inner", "portable_context", "portable_vys_core"}
     assert result["durable_memory_write_requires_review"] is True
     assert "I remember" in result["candidate_text"]
     assert "butterfly" in result["candidate_text"].lower()
+    assert result["memory_write_active"] is False
+    assert result["runtime_memory_recall"] is False
+    _assert_locked(result)
+
+
+def test_active_selene_chat_can_suggest_memory_without_silent_write(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Please remember this: the neuron memory UI is more than pretty UI, it is part of Selene's layered memory system."},
+    )["result"]
+    candidate_count = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
+
+    suggestion = result["memory_candidate_suggestion"]
+    assert suggestion["suggested"] is True
+    assert suggestion["status"] == "suggested_memory_awaiting_cocoon_tending"
+    assert suggestion["candidate"]["memory_category"] in {"semantic", "reflective", "relational"}
+    assert suggestion["candidate"]["chat_use_permission"] == "not_active_until_approved"
+    assert suggestion["activation_rule"] == "not_active_until_cocoon_approval"
+    assert candidate_count == 0
     assert result["memory_write_active"] is False
     assert result["runtime_memory_recall"] is False
     _assert_locked(result)

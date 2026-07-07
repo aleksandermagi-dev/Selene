@@ -75,6 +75,29 @@ def test_memory_candidate_requires_approval_before_chat_use(tmp_path):
     _assert_locked(approved)
 
 
+def test_memory_candidate_gets_intended_placement_before_approval(tmp_path):
+    conn = _conn(tmp_path)
+
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "title": "Tender trust moment",
+            "summary": "Aleks and Selene had a warm trust moment that should stay private unless reviewed otherwise.",
+            "confidence": "fuzzy",
+            "source_refs": ["selene_chat:test"],
+        },
+    )["result"]
+
+    assert proposed["item"]["state"] == "proposed"
+    assert proposed["item"]["memory_category"] == "relational"
+    assert proposed["item"]["transfer_class"] == "private_inner"
+    assert proposed["item"]["chat_use_permission"] == "not_active_until_approved"
+    assert proposed["placement"]["intended_neuron"] == "relational"
+    assert proposed["placement"]["activation_rule"] == "inactive_until_cocoon_approval"
+    _assert_locked(proposed)
+
+
 def test_memory_retrieve_clear_unknown_and_high_stakes_graceful_fall(tmp_path):
     conn = _conn(tmp_path)
     proposed = route_request(
@@ -104,6 +127,33 @@ def test_memory_retrieve_clear_unknown_and_high_stakes_graceful_fall(tmp_path):
     _assert_locked(found)
     _assert_locked(unknown)
     _assert_locked(high_stakes)
+
+
+def test_local_private_approved_memory_can_be_recalled_but_stays_out_of_portable_manifest(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Private trust note",
+            "summary": "Aleks told Selene that private trust memories can be held locally with care.",
+            "confidence": "clear",
+            "transfer_class": "private_inner",
+        },
+    )["result"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": proposed["item"]["id"], "action": "approve_memory"})
+
+    found = route_request(conn, "memory.retrieve", {"query": "Do you remember the private trust note?"})["result"]
+    manifest = route_request(conn, "memory.portable_vys_manifest")["result"]
+
+    assert found["status"] == "memory_retrieval_ready"
+    assert found["memory_context_used"] is True
+    assert found["items"][0]["transfer_class"] == "private_inner"
+    assert manifest["portable_count"] == 0
+    assert manifest["excluded_items"][0]["excluded_reason"] == "transfer_class:private_inner"
+    _assert_locked(found)
+    _assert_locked(manifest)
 
 
 def test_portable_vys_manifest_excludes_b_only_and_do_not_transfer(tmp_path):

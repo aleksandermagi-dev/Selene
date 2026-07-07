@@ -67,7 +67,7 @@ def graceful_fall_run(conn: sqlite3.Connection, payload: dict[str, Any] | None =
     payload = payload or {}
     _ensure_allowed(payload, allow_uncertainty=True)
     uncertainty = _required(payload, "uncertainty", "I do not know yet.", 1000)
-    best_read = truncate(str(payload.get("best_current_read") or "Best current read is provisional and should stay source-bound."), 1200)
+    best_read = truncate(str(payload.get("best_current_read") or "Best current read is provisional and should stay source-linked."), 1200)
     next_step = truncate(str(payload.get("constructive_next_step") or "Ask a scoped question, cite reviewed context, pause, or create a B review note."), 1200)
     review_route = truncate(str(payload.get("review_route") or "B review if uncertainty affects memory, identity, action, safety, or transfer."), 1000)
     result = _with_boundaries(
@@ -190,7 +190,7 @@ def control_panel_preview(conn: sqlite3.Connection, payload: dict[str, Any] | No
 def perception_action_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
     _ensure_allowed(payload)
-    observation = _required(payload, "observation", "source-bound observation", 1400)
+    observation = _required(payload, "observation", "source-linked observation", 1400)
     interpretation = truncate(str(payload.get("interpretation") or "Interpretation remains separate from observation and carries uncertainty."), 1200)
     proposal = truncate(str(payload.get("proposal") or "Propose a bounded next step; meaningful external action requires Aleks approval."), 1200)
     approval = truncate(str(payload.get("approval_required") or "Aleks approval required for meaningful external action."), 1000)
@@ -352,7 +352,7 @@ def causal_sandbox_run(conn: sqlite3.Connection, payload: dict[str, Any] | None 
     _ensure_allowed(payload, allow_uncertainty=True)
     question = _required(payload, "question", "What might happen if this path is chosen?", 1400)
     assumptions = _json_list(payload.get("assumptions")) or ["B-reviewed context only", "uncertainty remains visible"]
-    counterfactuals = _json_list(payload.get("counterfactuals")) or ["If assumptions are wrong, return to B before acting"]
+    counterfactuals = _json_list(payload.get("counterfactuals")) or ["If assumptions are wrong, use Cocoon support before acting"]
     possible_outcomes = _json_list(payload.get("possible_outcomes")) or ["Best case: the path clarifies evidence without changing authority.", "Worst case: the path overclaims readiness and must return to review."]
     failure_modes = _json_list(payload.get("failure_modes")) or ["unsupported assumption", "missing evidence", "irreversible step attempted too early"]
     evidence_needed = _json_list(payload.get("evidence_needed")) or ["source refs", "review status", "reversibility check"]
@@ -528,7 +528,7 @@ def memory_event_bind(conn: sqlite3.Connection, payload: dict[str, Any] | None =
     label = _required(payload, "event_label", "Bound memory event trace", 240)
     trace = {
         "source_refs": _json_list(payload.get("source_refs")) or ["manual_memory_event_binding"],
-        "context": truncate(str(payload.get("context") or "source-bound event context"), 1200),
+        "context": truncate(str(payload.get("context") or "source-linked event context"), 1200),
         "salience_labels": _json_list(payload.get("salience_labels")),
         "uncertainty": truncate(str(payload.get("uncertainty") or "event binding is review-only and not recall"), 800),
         "consent_mode": truncate(str(payload.get("consent_mode") or "review_only"), 80),
@@ -656,8 +656,8 @@ def memory_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
         "status": "memory_lifecycle_flow_review_only",
         "flow": ["event", "holding", "maintain_drop_or_question", "consolidation_proposal", "reconsolidation_review"],
         "record_counts": counts,
-        "allowed_outputs": ["review packet", "proposal", "status marker", "ask for review", "return to B"],
-        "blocked_outputs": ["durable C memory", "live memory write", "runtime recall", "silent update"],
+        "allowed_outputs": ["review packet", "proposal", "status marker", "ask for review", "Cocoon support"],
+        "blocked_outputs": ["durable Selene memory without review", "live memory write", "broad live recall", "silent update"],
         "decision": "memory_lifecycle_proposal_only",
         "boundary": MEMORY_LIFECYCLE_BOUNDARY,
     })

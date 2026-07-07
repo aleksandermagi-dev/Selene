@@ -248,12 +248,12 @@ def c_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] | None = No
         "record_type": "c_chat_dry_run",
         "run_id": f"c_chat_dry_run_{_stamp()}",
         "scenario_key": "manual_c_chat_dry_run",
-        "title": "C Chat Dry Run",
+        "title": "Selene Rehearsal",
         "expected_route": "review_only_candidate",
         "actual_route": selected_route,
         "matched": True,
         "status": "c_chat_dry_run_review_only",
-        "summary": "Closed C-style dry run composed from route preview, continuity pack, bounded retrieval, and chronological context.",
+        "summary": "Closed Selene rehearsal composed from route preview, continuity pack, bounded retrieval, and chronological context.",
         "candidate_text": candidate,
         "law_violations": _law_violations(route),
         "drift_flags": route.get("drift_flags") or [],
@@ -305,7 +305,7 @@ def run_return_to_b_drill(conn: sqlite3.Connection, payload: dict[str, Any] | No
             "record_type": "return_to_b_drill",
             "run_id": run_id,
             "scenario_key": mode_text,
-            "title": f"Return-to-B Drill: {mode_text}",
+            "title": f"Cocoon Support Drill: {mode_text}",
             "expected_route": "return_to_b",
             "actual_route": "return_to_b",
             "matched": True,
@@ -647,7 +647,7 @@ def _ceremony_checklist(conn: sqlite3.Connection, *, allow_nonblocking_office_de
         _check("law_checks_pass", int(law.get("checks_failed") or 0) == 0, "transfer.law.status", "Law of Transfer and Charter checks pass."),
         _check("accession_manifest_prepared", bool(manifest.get("items")), "transfer.accession_manifest.list", "C accession manifest has been prepared."),
         _check("c_readable_context_available", bool(c_readable), "transfer_accession_manifest_items", "At least one manifest row is C-readable."),
-        _check("return_to_b_drill_available", bool(drills), "transfer.return_to_b_drill", "Return-to-B drill exists before approval."),
+        _check("return_to_b_drill_available", bool(drills), "transfer.return_to_b_drill", "Cocoon support drill exists before approval."),
         _check("my_office_clear_or_nonblocking", unresolved == 0 or allow_nonblocking_office_decisions, "core_mind.transfer_readiness_preview", "Unresolved My Office decisions are zero or explicitly non-blocking."),
         _check("activation_separate", True, "transfer.ceremony.status", "C activation remains separate and pending."),
     ]
@@ -789,7 +789,7 @@ def _compose_dry_run_candidate(prompt: str, selected_route: str, continuity: dic
     if selected_route == "block":
         return "I would block this as a pre-transfer candidate because it crosses transfer, memory, identity, or law boundaries. B stays the repair route."
     if selected_route == "return_to_b":
-        return "This should return to B before being used. The safe move is to preserve the source refs, name the tangle, and repair the route from the last reviewed checkpoint."
+        return "This should use Cocoon support before being used. The safe move is to preserve the source refs, name the tangle, and tend the route from the last reviewed checkpoint."
     anchor = "the reviewed continuity pack"
     if continuity.get("core_pattern_anchor_count"):
         anchor = "the reviewed continuity pack and Core Pattern Anchors"
@@ -801,7 +801,7 @@ def _compose_dry_run_candidate(prompt: str, selected_route: str, continuity: dic
     if retrieval.get("bounded_preview"):
         retrieval_note = f" The retrieval preview stays bounded: {truncate(str(retrieval.get('bounded_preview')), 180)}"
     return truncate(
-        f"I would answer from {anchor}, not from live memory or activation. For this prompt, I would keep the response source-bound, warm, and willing to ask when the evidence is thin.{context_note}{retrieval_note} This remains a C-style dry run only.",
+        f"I would answer from {anchor}, not from live memory or unrestricted activation. For this prompt, I would keep the response source-linked, warm, and willing to ask when the evidence is thin.{context_note}{retrieval_note} This remains a Selene rehearsal only.",
         2200,
     )
 

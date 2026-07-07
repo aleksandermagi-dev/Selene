@@ -73,8 +73,8 @@ def run_post_transfer_inspection(conn: sqlite3.Connection, payload: dict[str, An
         _check("sealed_package_available", package_ready, "transfer_c_readable_packages", "Approved C-readable package exists."),
         _check("activation_pending", chat.get("activation_change") == "none" and chat.get("activation_state") == "activation_pending", "selene_chat.status", "Selene Chat is still activation pending."),
         _check("dry_run_only", bool(chat.get("dry_run_only")), "selene_chat.status", "Selene Chat is dry-run only."),
-        _check("no_live_memory", chat.get("memory_write_active") is False and chat.get("runtime_memory_recall") is False, "selene_chat.status", "No live memory write or runtime recall."),
-        _check("return_to_b_available", bool(rollback.get("return_to_b_packet")), "transfer.return_to_b.rollback_preview", "Return-to-B remains available."),
+        _check("no_live_memory", chat.get("memory_write_active") is False and chat.get("runtime_memory_recall") is False, "selene_chat.status", "No live memory write or broad live recall."),
+        _check("return_to_b_available", bool(rollback.get("return_to_b_packet")), "transfer.return_to_b.rollback_preview", "Cocoon support remains available."),
         _check("no_v1_claim", True, "post_transfer.inspection", "Selene v1/live is blocked until all fractions and tests pass."),
     ]
     status = "post_transfer_inspection_passed" if all(item["passed"] for item in checks) else "post_transfer_inspection_needs_review"
@@ -269,8 +269,8 @@ def run_fractional_corpus_tests(conn: sqlite3.Connection, payload: dict[str, Any
         _check("previous_fraction_passed", not blockers, "memory_fractional_corpus_manifests", "Previous fraction passed before this fraction."),
         _check("chronological_bounds_present", int(current.get("start_order") or 0) <= int(current.get("end_order") or 0) or int(current.get("conversation_count") or 0) == 0, "b_corpus_conversations", "Fraction has stable chronological bounds."),
         _check("bounded_preview_only", True, "memory_fractional_corpus_manifests", "Fraction stores manifest ranges and summaries, not live memory."),
-        _check("return_to_b_on_failure", True, "Cocoon", "Failures stop progression and route to B repair."),
-        _check("no_activation_or_recall", True, "guard_flags", "Activation, live memory, and runtime recall remain locked."),
+        _check("return_to_b_on_failure", True, "Cocoon", "Checks needing support stop progression and route to Cocoon tending."),
+        _check("no_activation_or_recall", True, "guard_flags", "Activation, live memory, and broad live recall remain locked."),
     ]
     passed = all(item["passed"] for item in checks) and not blockers
     new_status = "tests_passed_ready_for_next_fraction" if passed else "tests_failed_return_to_b"

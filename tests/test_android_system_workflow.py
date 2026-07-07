@@ -66,6 +66,9 @@ def test_android_workflow_check_is_status_only_and_routes_failures_to_b(tmp_path
     assert result["review_status"] == "status_only"
     assert result["review_destination"] == "Status"
     assert result["failure_route"] == "return_to_b"
+    assert result["cocoon_support_route"] == "Cocoon support / checkup"
     assert all(item["return_to_b_path"] == "Cocoon / B repair route" for item in result["systems"])
+    assert all(item["cocoon_support_path"] == "Cocoon support / checkup" for item in result["systems"])
+    assert all(item["support_trigger"] for item in result["systems"])
     assert all(item["guard_flags_confirmed"] is True for item in result["systems"])
     _assert_workflow_locked(result)

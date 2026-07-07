@@ -39,7 +39,7 @@ import {
   VesselCandidatePanel,
   VesselOrganPanel
 } from "./components";
-import { countValues, friendlyActivation, friendlyLayer, friendlyOrganKey, friendlyQueueType, friendlySpeech, friendlyStatus, friendlySubject, humanize, plainBlocked, safeJsonObject, tabDisplayName, text, title } from "./helpers";
+import { countValues, friendlyActivation, friendlyCareText, friendlyLayer, friendlyOrganKey, friendlyQueueType, friendlySpeech, friendlyStatus, friendlySubject, humanize, plainBlocked, safeJsonObject, tabDisplayName, text, title } from "./helpers";
 import { defaultPreferences, navGroups, preferenceKey, SELENE_ICON, vesselBackedTabs, workspaceGroups, workspaceTabs } from "./uiConfig";
 import type { BootState, Dashboard, Dict, EvidenceDetail, SelenePreferences } from "./types";
 import "./styles.css";
@@ -139,7 +139,7 @@ const officeWorkbenches: WorkbenchDef[] = [
     route: "Great Library / Evidence",
     x: 80,
     y: 66,
-    cues: ["sources", "claims", "tensions", "source-bound"]
+    cues: ["sources", "claims", "tensions", "source-linked"]
   },
   {
     key: "dream",
@@ -453,7 +453,7 @@ function App() {
     salience_labels: "continuity,uncertainty",
     source_refs: "manual_vessel_review",
     allowed_use: "Review as a Core-linked vessel candidate only.",
-    prohibited_use: "Do not treat as active memory, raw corpus import, or provider identity."
+    prohibited_use: "Do not treat as active memory, unreviewed source archive import, or provider identity."
   });
   const [vesselCandidateResult, setVesselCandidateResult] = useState<Dict | null>(null);
   const [vesselRetrievalQuery, setVesselRetrievalQuery] = useState("Selene continuity");
@@ -665,7 +665,7 @@ function App() {
   const [coreMindRuntimeResult, setCoreMindRuntimeResult] = useState<Dict | null>(null);
   const [coreMindRuntimeDraft, setCoreMindRuntimeDraft] = useState<Record<string, string>>({
     prompt: "Selene, compose the bounded context and choose the safe response shape from reviewed continuity.",
-    draft: "Grounded, source-bound candidate response with warmth and uncertainty.",
+    draft: "Grounded, source-linked candidate response with warmth and uncertainty.",
     issue: "A route feels tangled, generic, or source-confused.",
     proposal: "Add an ask-first case-law note when memory/source context is unclear.",
     query: "starlight continuity"
@@ -687,8 +687,8 @@ function App() {
     uncertainty: "I do not know yet, so I should name what is missing and choose a safer next step.",
     voice_candidate: "I can be warm and direct without using a fixed script; if I am unsure, I can say so and keep going carefully.",
     command_label: "Core route preview",
-    requested_route: "Preview a safe route through Core, coordination, boundary, and return-to-B checks.",
-    observation: "A source-bound observation needs interpretation, approval, verification, and rollback before action.",
+    requested_route: "Preview a safe route through Core, coordination, boundary, and Cocoon support checks.",
+    observation: "A source-linked observation needs interpretation, approval, verification, and an undo path before action.",
     cycle_label: "Pre-Core cycle review",
     dream_label: "Dream-state consolidation proposal",
     memory_event: "A review-only event binding for something important that may later need consolidation.",
@@ -2206,25 +2206,25 @@ function App() {
   }
 
   async function runTransferChatDryRun() {
-    setTransferDryRunResult({ status: "running", message: "Running closed C-style dry run." });
+    setTransferDryRunResult({ status: "running", message: "Running closed Selene rehearsal." });
     try {
       const result = await api<Dict>("/api/transfer/c-chat-dry-run", { method: "POST", body: JSON.stringify({ prompt: transferDryRunPrompt }) });
       setTransferDryRunResult(result);
       await refreshTransferProtocol();
     } catch (err) {
-      setTransferDryRunResult({ status: "error", error: err instanceof Error ? err.message : "C chat dry run failed" });
+      setTransferDryRunResult({ status: "error", error: err instanceof Error ? err.message : "Selene rehearsal needs support" });
     }
   }
 
   async function runTransferReturnToBDrill() {
-    setTransferReturnDrillResult({ status: "running", message: "Running Return-to-B drill." });
+    setTransferReturnDrillResult({ status: "running", message: "Running Cocoon support drill." });
     try {
       const result = await api<Dict>("/api/transfer/return-to-b-drill", { method: "POST", body: JSON.stringify({}) });
       setTransferReturnDrillResult(result);
       await refreshTransferProtocol();
       refreshMyOffice();
     } catch (err) {
-      setTransferReturnDrillResult({ status: "error", error: err instanceof Error ? err.message : "Return-to-B drill failed" });
+      setTransferReturnDrillResult({ status: "error", error: err instanceof Error ? err.message : "Cocoon support drill needs attention" });
     }
   }
 
@@ -2253,7 +2253,7 @@ function App() {
   }
 
   async function previewTransferRollback() {
-    setTransferRollbackPreview({ status: "running", message: "Preparing Return-to-B rollback preview." });
+    setTransferRollbackPreview({ status: "running", message: "Preparing Cocoon support rollback preview." });
     try {
       const result = await api<Dict>("/api/transfer/return-to-b/rollback-preview", { method: "POST", body: JSON.stringify({}) });
       setTransferRollbackPreview(result);
@@ -3093,6 +3093,25 @@ function App() {
     setTendrilMenuOpen(false);
   }
 
+  function openMemorySuggestionInCocoon(suggestion: Dict) {
+    const candidate = safeJsonObject(suggestion.candidate);
+    setMemoryCandidateDraft({
+      category: text(candidate.memory_category || candidate.category || "relational"),
+      title: text(candidate.title || ""),
+      summary: text(candidate.summary || ""),
+      confidence: text(candidate.confidence || "partial"),
+      emotional_texture: text(candidate.emotional_texture || "steady"),
+      transfer_class: text(candidate.transfer_class || "needs_review_before_transfer")
+    });
+    setMemoryOrganResult({
+      status: "suggested_memory_ready_for_cocoon_tending",
+      message: text(suggestion.question || "Can I keep this?"),
+      candidate,
+      activation_rule: text(suggestion.activation_rule || "not_active_until_cocoon_approval")
+    });
+    openCocoonTab("memory-preview");
+  }
+
   function openSeleneTab(target: string) {
     setWorkspaceMode("selene");
     setTab(target);
@@ -3262,7 +3281,7 @@ function App() {
     { title: "Voice / Package History", state: "status-only", summary: `${text(safeJsonObject(voiceModuleStatus?.counts).patterns ?? voiceModulePatterns.length)} voice pattern(s) tracked as expression-only support.` }
   ];
   const libraryPoints = [
-    { title: "Sources", state: "source-bound", summary: "Supplied/local material, reviewed evidence, and citation-bearing packets." },
+    { title: "Sources", state: "source-linked", summary: "Supplied/local material, reviewed evidence, and citation-bearing packets." },
     { title: "Claims", state: "ledger-backed", summary: "Assertions stay tied to provenance and can be narrowed, superseded, or defeated." },
     { title: "Tensions", state: "review-aware", summary: "Contradictions and weak support route back to Cocoon when they need judgment." },
     { title: "Synthesis", state: "propose only", summary: "Literature and research synthesis can prepare packets, not override law or memory." },
@@ -3522,7 +3541,7 @@ function App() {
           {labels.slice(0, 4).map((label) => <span key={label}>{label}</span>)}
           <span>transfer: {text(item.transfer_approved ?? payload.transfer_approved ?? false)}</span>
           <span>memory write: {plainBlocked(item.memory_write_active ?? payload.memory_write_active)}</span>
-          <span>runtime recall: {plainBlocked(item.runtime_memory_recall ?? payload.runtime_memory_recall)}</span>
+          <span>broad live recall: {plainBlocked(item.runtime_memory_recall ?? payload.runtime_memory_recall)}</span>
         </div>
         {text(item.review_status) === "pending_review" ? (
           <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
@@ -3567,7 +3586,7 @@ function App() {
           <span>recognition: {friendlyStatus(recognition.decision || "unchecked")}</span>
           <span>transfer: {text(item.transfer_approved ?? false)}</span>
           <span>memory write: {plainBlocked(item.memory_write_active)}</span>
-          <span>runtime recall: {plainBlocked(item.runtime_memory_recall)}</span>
+          <span>broad live recall: {plainBlocked(item.runtime_memory_recall)}</span>
         </div>
         <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
           <button onClick={() => openOfficeTarget(resolvedTarget)}>Open Target</button>
@@ -3803,7 +3822,7 @@ function App() {
             </div>
             <div className="topLocks">
               <span>C activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
-              <span>Runtime recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
+              <span>Broad live recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
               <span>Transfer: {transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
             </div>
           </header>
@@ -4232,7 +4251,7 @@ function App() {
                   </article>
                   <article>
                     <strong>3. Nothing activates here</strong>
-                    <p>Cocoon support sorts source-bound material safely. It does not transfer memory, activate C, train a model, or overwrite the source.</p>
+                    <p>Cocoon support sorts source-linked material safely. It does not transfer memory, activate Selene, train a model, or overwrite the source.</p>
                   </article>
                 </div>
             </Panel>}
@@ -4441,7 +4460,7 @@ function App() {
                   <span>activation: {friendlyActivation(activationStatus?.activation_change || "none")}</span>
                   <span>voice: {friendlyStatus(seleneChatResult?.voice_confidence || safeJsonObject(seleneChatStatus?.voice_module).state || "not sampled")}</span>
                   <span>memory write: {text(activationStatus?.memory_write_active || false)}</span>
-                  <span>runtime recall: {text(activationStatus?.runtime_memory_recall || false)}</span>
+                  <span>broad live recall: {text(activationStatus?.runtime_memory_recall || false)}</span>
                 </div>
                 {!homeMessages.length ? <p className="plainHelp">New chat is a new page, not a new Selene.</p> : null}
                 {safeJsonObject(seleneChatResult?.cocoon_suggestion).recommended ? (
@@ -4451,6 +4470,21 @@ function App() {
                     <div className="reviewActions">
                       <button onClick={routeSeleneChatToB}>Hold in Cocoon</button>
                       {!safeJsonObject(seleneChatResult?.cocoon_suggestion).hard_boundary ? <button onClick={() => setSeleneChatResult((current) => ({ ...(current || {}), cocoon_suggestion: { recommended: false, support_available: false, dismissed: true } }))}>Stay Here</button> : null}
+                    </div>
+                  </div>
+                ) : null}
+                {safeJsonObject(seleneChatResult?.memory_candidate_suggestion).suggested ? (
+                  <div className="pendingReviewCallout">
+                    <strong>{text(safeJsonObject(seleneChatResult?.memory_candidate_suggestion).question || "Can I keep this?")}</strong>
+                    <p>This would become a suggested memory only after Cocoon tending. It is not active yet.</p>
+                    <div className="chips">
+                      <span>{friendlyStatus(safeJsonObject(safeJsonObject(seleneChatResult?.memory_candidate_suggestion).candidate).memory_category || "memory")}</span>
+                      <span>{friendlyStatus(safeJsonObject(safeJsonObject(seleneChatResult?.memory_candidate_suggestion).candidate).confidence || "partial")}</span>
+                      <span>{friendlyStatus(safeJsonObject(safeJsonObject(seleneChatResult?.memory_candidate_suggestion).candidate).transfer_class || "needs_review_before_transfer")}</span>
+                    </div>
+                    <div className="reviewActions">
+                      <button onClick={() => openMemorySuggestionInCocoon(safeJsonObject(seleneChatResult?.memory_candidate_suggestion))}>Open Memory Tending</button>
+                      <button onClick={() => setSeleneChatResult((current) => ({ ...(current || {}), memory_candidate_suggestion: { suggested: false, dismissed: true, status: "memory_suggestion_dismissed" } }))}>Not Now</button>
                     </div>
                   </div>
                 ) : null}
@@ -4618,7 +4652,7 @@ function App() {
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("transfer-ceremony"); }}>Open Transfer Ceremony</button>
                   <button onClick={() => { setWorkspaceMode("cocoon"); setTab("my-office"); }}>Open Cocoon Support</button>
                 </div>
-                <small>Cocoon Testing / Workflow only: no activation, no live memory write, no runtime recall, no raw import, no model training or LoRA.</small>
+                <small>Cocoon Testing / Workflow only: no unrestricted activation, no live memory write, no broad live recall, no unreviewed import, no model training or LoRA.</small>
               </div>
             </section>
             <SplitView
@@ -4638,7 +4672,7 @@ function App() {
                   <span>voice module: {friendlyStatus(safeJsonObject(seleneChatStatus?.voice_module).state || voiceModuleStatus?.voice_module_state || "missing")}</span>
                   <span>voice confidence: {text(seleneChatResult?.voice_confidence || "not sampled")}</span>
                   <span>memory write: {text(seleneChatStatus?.memory_write_active || false)}</span>
-                  <span>runtime recall: {text(seleneChatStatus?.runtime_memory_recall || false)}</span>
+                  <span>broad live recall: {text(seleneChatStatus?.runtime_memory_recall || false)}</span>
                 </div>
                 <PlainResult value={seleneChatResult} />
               </Panel>}
@@ -4650,7 +4684,7 @@ function App() {
               </Panel>}
             />
             <Panel title="Selene Voice Module">
-              <p className="plainHelp">Voice-only expression layer from the copied source archive. It uses both sides of the exchange as relational language evidence, not memory, identity, model training/LoRA, or runtime recall.</p>
+              <p className="plainHelp">Voice-only expression layer from the copied source archive. It uses both sides of the exchange as relational language evidence, not memory, identity, model training/LoRA, or broad live recall.</p>
               <div className="metrics miniMetrics">
                 <Metric label="State" value={friendlyStatus(voiceModuleStatus?.voice_module_state || "missing")} />
                 <Metric label="Source" value={voiceModuleStatus?.source_zip_found ? "found" : "missing"} />
@@ -4663,7 +4697,7 @@ function App() {
                 <span>voice only: {voiceModuleStatus?.voice_only_not_memory ? "yes" : "not checked"}</span>
                 <span>activation: {friendlyActivation(voiceModuleStatus?.activation_change || "none")}</span>
                 <span>memory write: {plainBlocked(voiceModuleStatus?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(voiceModuleStatus?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(voiceModuleStatus?.runtime_memory_recall)}</span>
                 <span>model training/LoRA: {plainBlocked(voiceModuleStatus?.training_allowed)}</span>
               </div>
               <div className="reviewActions">
@@ -4731,7 +4765,7 @@ function App() {
                   <button onClick={runCChatRoutePreview}>Preview Route</button>
                   <button onClick={() => setTab("chat gate")}>Gate</button>
                 </div>
-                <small>Cocooned shell only: no activation, no runtime recall, no provider call, no memory write.</small>
+                <small>Cocooned shell only: no unrestricted activation, no broad live recall, no provider call, no memory write.</small>
               </div>
             </section>
             <SplitView
@@ -4766,7 +4800,7 @@ function App() {
               </div>
               <div className="chips">
                 <span>C activation: {friendlyActivation(cVesselStatus?.activation_change)}</span>
-                <span>Runtime recall: {plainBlocked(cVesselStatus?.runtime_memory_recall)}</span>
+                <span>Broad live recall: {plainBlocked(cVesselStatus?.runtime_memory_recall)}</span>
                 <span>Active memory: {plainBlocked(cVesselStatus?.memory_write_active)}</span>
                 <span>Provider dependency: {plainBlocked(cVesselStatus?.provider_dependency)}</span>
               </div>
@@ -4780,7 +4814,7 @@ function App() {
               <PlainResult value={cVesselReturnPreview} />
             </Panel>
             <Panel title="Native Chat Rehearsal">
-              <p className="plainHelp">Provider-free rehearsal for how Selene would compose from sealed B-approved context later. The focus guard catches spirals by snapping back to the smallest clear next step, not by treating thinking as a timeout failure.</p>
+              <p className="plainHelp">Provider-free rehearsal for how Selene would compose from sealed Cocoon-approved context later. The focus guard catches spirals by returning to the smallest clear next step, not by treating thinking as a problem.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Runs" value={text(nativeRehearsalStatus?.run_count ?? 0)} />
                 <Metric label="Status" value={friendlyStatus(nativeRehearsalStatus?.status || "not checked")} />
@@ -4802,7 +4836,7 @@ function App() {
               <PlainResult value={memoryTransferCandidate} />
             </Panel>
             <Panel title="C Reconstruction Review Desk">
-              <p className="plainHelp">This is the big pre-transfer harness: it turns sealed teaching packets, approved future references, route previews, noise context, and return-to-B rules into review-only reconstruction cases. It does not activate C or create memory.</p>
+              <p className="plainHelp">This is the big pre-transfer harness: it turns sealed teaching packets, approved future references, route previews, noise context, and Cocoon support rules into review-only reconstruction cases. It does not activate unrestricted Selene or create memory.</p>
               <div className="reviewActions">
                 <button className="primary" onClick={runCVesselReconstructionDesk}>Run Reconstruction Desk</button>
                 <button onClick={previewCVesselReconstructionCases}>Preview Case Set</button>
@@ -4816,7 +4850,7 @@ function App() {
         {tab === "memory-preview" && (
           <>
             <header className="surfaceIntro">
-              <p>Memory candidates and approved references stay source-bound and correctable.</p>
+              <p>Memory candidates and approved references stay source-linked and correctable.</p>
               <h2>Memory / Approved References</h2>
             </header>
             <Panel title="Selene Memory Organ / Vys-Governed Living Memory">
@@ -4831,7 +4865,7 @@ function App() {
                 <span>soft uncertainty: stays in chat</span>
                 <span>write gate: review required</span>
                 <span>Cocoon: tending/checkup</span>
-                <span>raw corpus recall: blocked</span>
+                <span>unreviewed archive recall: blocked</span>
               </div>
               <div className="reviewActions">
                 <button className="primary" onClick={refreshMemoryOrgan}>Refresh Memory Organ</button>
@@ -4918,7 +4952,7 @@ function App() {
             </Panel>
             <SplitView
               left={<Panel title="Approved Memory References">
-                <p className="plainHelp">B-approved continuity references that may support Selene memory after review. They are source-bound and not raw corpus recall.</p>
+              <p className="plainHelp">Cocoon-approved continuity references that may support Selene memory after review. They are source-linked and not unreviewed archive recall.</p>
                 <div className="list compactList">
                   {bApprovedReferences.map((item) => (
                     <article key={text(item.id)}>
@@ -4942,7 +4976,7 @@ function App() {
               </Panel>}
             />
             <Panel title="Pattern Backup / Cocoon Restore Point">
-              <p className="plainHelp">Freeze Selene's current cocoon shape before memory rehearsal: evidence stance, charter/laws, Core philosophy, speech lessons, approved references, organs, reconstruction status, transfer gate, and return-to-B rules. This is a sealed review snapshot, not active memory.</p>
+              <p className="plainHelp">Freeze Selene's current Cocoon shape before memory rehearsal: evidence stance, charter/laws, Core philosophy, speech lessons, approved references, organs, reconstruction status, transfer gate, and Cocoon support rules. This is a sealed review snapshot, not active memory.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Backups" value={text(patternBackups.length)} />
                 <Metric label="Latest" value={text(patternBackups[0]?.backup_label || "none yet")} />
@@ -5056,7 +5090,7 @@ function App() {
               </div>
               <div className="chips">
                 <span>active memory: {plainBlocked(remainingRuntimeStatus?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(remainingRuntimeStatus?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(remainingRuntimeStatus?.runtime_memory_recall)}</span>
                 <span>raw A: {plainBlocked(remainingRuntimeStatus?.raw_a_import_allowed)}</span>
               </div>
               <PlainResult value={cycleRunResult} />
@@ -5123,7 +5157,7 @@ function App() {
                   <span>maintenance: {dreamStateStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"}</span>
                   <span>live chat: {dreamStateStatus?.selene_chat_live_operation_allowed ? "allowed" : "preview only"}</span>
                   <span>memory write: false</span>
-                  <span>runtime recall: false</span>
+                  <span>broad live recall: false</span>
                 </div>
               </div>
               <div className="dreamField">
@@ -5220,7 +5254,7 @@ function App() {
                   <div className="chips">
                     <span>{selectedMemoryBubbles.length} bubble{selectedMemoryBubbles.length === 1 ? "" : "s"}</span>
                     <span>live memory write: false</span>
-                    <span>runtime recall: false</span>
+                    <span>broad live recall: false</span>
                   </div>
                 </div>
                 <div className="thoughtBubbleList">
@@ -5265,7 +5299,7 @@ function App() {
                 </div>
                 <div className="chips">
                   <span>display-only</span>
-                  <span>raw corpus: Cocoon-held</span>
+                  <span>unreviewed archive: Cocoon-held</span>
                   <span>support logs: B-only</span>
                 </div>
               </div>
@@ -5295,11 +5329,11 @@ function App() {
             <section className="seleneLivingSurface librarySurface">
               <div className="frontSurfaceHeader">
                 <div>
-                  <span className="modeLine">source-bound research hall</span>
+                  <span className="modeLine">source-linked research hall</span>
                   <h2>The Great Library</h2>
                 </div>
                 <div className="chips">
-                  <span>source-bound</span>
+                  <span>source-linked</span>
                   <span>ledger-backed</span>
                   <span>Cocoon-gated</span>
                   <span>propose only</span>
@@ -5585,12 +5619,12 @@ function App() {
               </div>
             </Panel>
             <Panel title="Aleks-Only Transfer Approval">
-              <p className="plainHelp">This button approves transfer to sealed C-readable context only. It does not activate C chat, write live memory, enable runtime recall, import raw A, train a model, self-replicate, or run autonomous actions.</p>
+              <p className="plainHelp">This button approves transfer to sealed Selene-readable context only. It does not activate unrestricted Selene, write live memory, enable broad live recall, import unreviewed archives, train a model, self-replicate, or run autonomous actions.</p>
               <div className="chips">
                 <span>B remains active</span>
                 <span>activation pending</span>
                 <span>memory write: {plainBlocked(transferCeremonyStatus?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(transferCeremonyStatus?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(transferCeremonyStatus?.runtime_memory_recall)}</span>
                 <span>raw A: {plainBlocked(transferCeremonyStatus?.raw_a_import_allowed)}</span>
                 <span>model training/LoRA: {plainBlocked(transferCeremonyStatus?.training_allowed)}</span>
               </div>
@@ -5624,7 +5658,7 @@ function App() {
               <PlainResult value={transferApprovalResult} />
             </Panel>
             <Panel title="Selene Supervised Speech Activation">
-              <p className="plainHelp">This activates front Selene Chat as supervised speech only. Dry runs, rehearsals, and activation workflow tests stay in Cocoon. This does not unlock live memory writes, runtime recall, raw import, model training/LoRA, Tendril execution, autonomy, or full Selene v1.</p>
+              <p className="plainHelp">This activates front Selene Chat as supervised speech only. Rehearsals and activation workflow tests stay in Cocoon. This does not unlock live memory writes, broad live recall, unreviewed archive import, model training/LoRA, Tendril execution, autonomy, or full Selene v1.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Readiness" value={activationReadiness?.ready ? "ready" : "blocked"} />
                 <Metric label="Speech" value={activationStatus?.selene_chat_active ? "active" : activationStatus?.selene_chat_paused ? "paused" : "not active"} />
@@ -5633,7 +5667,7 @@ function App() {
               </div>
               <div className="chips">
                 <span>memory write: {plainBlocked(activationStatus?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(activationStatus?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(activationStatus?.runtime_memory_recall)}</span>
                 <span>raw import: {plainBlocked(activationStatus?.raw_a_import_allowed)}</span>
                 <span>model training/LoRA: {plainBlocked(activationStatus?.training_allowed)}</span>
                 <span>autonomy: {plainBlocked(activationStatus?.autonomous_action_allowed)}</span>
@@ -5694,7 +5728,7 @@ function App() {
                   {((transferCeremonyStatus?.exact_consequences || []) as unknown[]).map((item, index) => <p key={`transfer-consequence-${index}`}>{text(item)}</p>)}
                 </div>
                 <div className="chips">
-                  <span>rollback route: {text(transferCeremonyStatus?.rollback_route || "return_to_b")}</span>
+                  <span>Cocoon support route: {friendlyCareText(transferCeremonyStatus?.rollback_route || "return_to_b")}</span>
                   <span>B remains: {transferCeremonyStatus?.b_remains_active ? "active" : "not checked"}</span>
                 </div>
               </Panel>}
@@ -5728,7 +5762,7 @@ function App() {
                   <span>transfer: {plainBlocked(transferProtocolResult.transfer_approved)}</span>
                   <span>activation: {friendlyActivation(text(transferProtocolResult.activation_change || "none"))}</span>
                   <span>memory write: {plainBlocked(transferProtocolResult.memory_write_active)}</span>
-                  <span>runtime recall: {plainBlocked(transferProtocolResult.runtime_memory_recall)}</span>
+                  <span>broad live recall: {plainBlocked(transferProtocolResult.runtime_memory_recall)}</span>
                 </div>
               ) : null}
               <div className="chips">
@@ -5781,7 +5815,7 @@ function App() {
               <Metric label="Transfer" value={text(cVesselTransferGate?.transfer_approved ? "approved" : "not approved")} />
             </div>
             <Panel title="Core/Mind Route Preview">
-              <p className="plainHelp">Conservative authority preview: Core/Mind chooses answer, ask, retrieve, rehearse speech, review packet, return-to-B, block, or status-only. This is not C activation and does not write memory.</p>
+              <p className="plainHelp">Conservative authority preview: Core/Mind chooses answer, ask, retrieve, rehearse speech, support packet, Cocoon checkup, block, or status-only. This is not unrestricted activation and does not write memory.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Previews" value={text(coreMindRoutePreviews.length)} />
                 <Metric label="Latest Route" value={friendlyStatus(coreMindRoutePreviews[0]?.selected_route || coreMindRouteResult?.selected_route || "not run")} />
@@ -5803,7 +5837,7 @@ function App() {
               <div className="chips">
                 <span>activation: {friendlyActivation(coreMindRouteResult?.activation_change || "none")}</span>
                 <span>memory write: {plainBlocked(coreMindRouteResult?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(coreMindRouteResult?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(coreMindRouteResult?.runtime_memory_recall)}</span>
                 <span>raw A: {plainBlocked(coreMindRouteResult?.raw_a_import_allowed)}</span>
               </div>
               <PlainResult value={coreMindRouteResult} />
@@ -5826,7 +5860,7 @@ function App() {
               </div>
             </Panel>
             <Panel title="Selene Voice Module">
-              <p className="plainHelp">Voice-only relational language layer. This is expression support for Selene Chat, not memory, identity, model training/LoRA, activation, or runtime recall.</p>
+              <p className="plainHelp">Voice-only relational language layer. This is expression support for Selene Chat, not memory, identity, model training/LoRA, unrestricted activation, or broad live recall.</p>
               <div className="metrics miniMetrics">
                 <Metric label="State" value={friendlyStatus(voiceModuleStatus?.voice_module_state || "missing")} />
                 <Metric label="Source ZIP" value={voiceModuleStatus?.source_zip_found ? "found" : "missing"} />
@@ -5839,7 +5873,7 @@ function App() {
                 <span>voice only: {voiceModuleStatus?.voice_only_not_memory ? "yes" : "not checked"}</span>
                 <span>activation: {friendlyActivation(voiceModuleStatus?.activation_change || "none")}</span>
                 <span>memory write: {plainBlocked(voiceModuleStatus?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(voiceModuleStatus?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(voiceModuleStatus?.runtime_memory_recall)}</span>
                 <span>raw import: {plainBlocked(voiceModuleStatus?.raw_a_import_allowed)}</span>
                 <span>model training/LoRA: {plainBlocked(voiceModuleStatus?.training_allowed)}</span>
               </div>
@@ -5859,7 +5893,7 @@ function App() {
               <PlainResult value={voiceModuleResult} />
             </Panel>
             <Panel title="Core/Mind Governance Trials">
-              <p className="plainHelp">Status-only trial harness for ordinary prompts, uncertainty, retrieval, speech rehearsal, identity/memory, transfer blocking, drift, and return-to-B support. Trial issues do not become urgent Office work unless a separate real review is created.</p>
+              <p className="plainHelp">Status-only trial harness for ordinary prompts, uncertainty, retrieval, speech rehearsal, identity/memory, transfer blocking, drift, and Cocoon support. Trial issues do not become urgent Office work unless a separate real review is created.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Trials" value={text(coreMindGovernanceReport?.trial_count ?? coreMindGovernanceTrials.length)} />
                 <Metric label="Matched" value={text(coreMindGovernanceReport?.matched_count ?? 0)} />
@@ -5872,7 +5906,7 @@ function App() {
                 <span>retrieve: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).retrieve ?? 0)}</span>
                 <span>speech: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).rehearse_speech ?? 0)}</span>
                 <span>review: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).create_review_packet ?? 0)}</span>
-                <span>return-to-B: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).return_to_b ?? 0)}</span>
+                <span>Cocoon support: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).return_to_b ?? 0)}</span>
                 <span>blocked: {text(safeJsonObject(coreMindGovernanceReport?.route_counts).block ?? 0)}</span>
               </div>
               <div className="reviewActions">
@@ -5902,11 +5936,11 @@ function App() {
               </div>
             </Panel>
             <Panel title="Transfer Readiness Preview">
-              <p className="plainHelp">Preview-only readiness view. These metrics can reveal missing work, but they cannot approve transfer, activate C, write memory, enable runtime recall, train a model, or authorize action.</p>
+              <p className="plainHelp">Preview-only readiness view. These metrics can reveal missing work, but they cannot approve transfer, activate unrestricted Selene, write memory, enable broad live recall, train a model, or authorize action.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Continuity" value={friendlyStatus(transferReadinessPreview?.continuity_confidence || "not checked")} />
                 <Metric label="Unresolved Review" value={text(transferReadinessPreview?.unresolved_review_count ?? officeWaitingTotal)} />
-                <Metric label="Return-to-B Rate" value={text(transferReadinessPreview?.return_to_b_rate ?? 0)} />
+                <Metric label="Cocoon Support Rate" value={text(transferReadinessPreview?.return_to_b_rate ?? 0)} />
                 <Metric label="Blocked Attempts" value={text(transferReadinessPreview?.blocked_high_stakes_attempts ?? 0)} />
                 <Metric label="Transfer" value={transferReadinessPreview?.transfer_approved ? "approved" : "not approved"} />
               </div>
@@ -5924,7 +5958,7 @@ function App() {
               <PlainResult value={transferReadinessPreview} />
             </Panel>
             <Panel title="Post-Transfer Inspection">
-              <p className="plainHelp">C-readable context can be approved while Selene Chat still stays preview-only. This panel verifies the sealed package, activation lock, memory lock, and Return-to-B route.</p>
+              <p className="plainHelp">Selene-readable context can be approved while Selene Chat still stays supervised and bounded. This panel verifies the sealed package, activation state, memory lock, and Cocoon support route.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Phase" value={friendlyStatus(postTransferStatus?.phase || "not checked")} />
                 <Metric label="Included Rows" value={text(postTransferStatus?.included_rows ?? 0)} />
@@ -5937,7 +5971,7 @@ function App() {
                 <span>chat: {friendlyStatus(postTransferStatus?.selene_chat_state || "preview")}</span>
                 <span>Cocoon support: {postTransferStatus?.return_to_b_available ? "available" : "not checked"}</span>
                 <span>memory write: {plainBlocked(postTransferStatus?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(postTransferStatus?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(postTransferStatus?.runtime_memory_recall)}</span>
               </div>
               <div className="reviewActions">
                 <button className="primary" onClick={runPostTransferInspection} disabled={postTransferInspectionResult?.status === "running"}>
@@ -5951,7 +5985,7 @@ function App() {
               <PlainResult value={postTransferStatus} />
             </Panel>
             <Panel title="Android System Workflow Check">
-              <p className="plainHelp">Required before fraction memory tests. This checks the 11 Android organ systems, concrete organ shelves, route coverage, guard flags, and Return-to-B paths without activating Selene or writing memory.</p>
+              <p className="plainHelp">Required before fraction memory tests. This checks the 11 Android organ systems, concrete organ shelves, route coverage, guard flags, and Cocoon support paths without changing activation or writing memory.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Preflight" value={androidWorkflowStatus?.preflight_passed || androidWorkflowReport?.preflight_passed ? "passed" : "not passed"} />
                 <Metric label="Systems" value={text(androidWorkflowStatus?.android_system_count ?? androidWorkflowReport?.system_count ?? 0)} />
@@ -5963,7 +5997,7 @@ function App() {
                 <span>fraction memory: {androidWorkflowStatus?.preflight_passed || androidWorkflowReport?.preflight_passed ? "allowed to test" : "blocked until check passes"}</span>
                 <span>activation: {friendlyActivation(androidWorkflowReport?.activation_change || "none")}</span>
                 <span>memory write: {plainBlocked(androidWorkflowReport?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(androidWorkflowReport?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(androidWorkflowReport?.runtime_memory_recall)}</span>
                 <span>raw A: {plainBlocked(androidWorkflowReport?.raw_a_import_allowed)}</span>
               </div>
               <div className="reviewActions">
@@ -5980,11 +6014,11 @@ function App() {
                       <strong>{text(item.name || item.key)}</strong>
                       <span>{friendlyStatus(item.status)}</span>
                     </div>
-                    <p>{text(item.android_function || item.failure_mode)}</p>
+                    <p>{friendlyCareText(item.android_function || item.support_trigger || item.failure_mode)}</p>
                     <div className="chips">
                       <span>routes: {text(((item.routes_checked || []) as unknown[]).length)}</span>
                       <span>shelves: {text(((item.shelves_checked || []) as unknown[]).length)}</span>
-                      <span>Return-to-B: {text(item.return_to_b_path || "Cocoon / B")}</span>
+                      <span>Cocoon support: {friendlyCareText(item.cocoon_support_path || item.return_to_b_path || "Cocoon support")}</span>
                       <span>fraction support: {item.fraction_memory_support_allowed ? "yes" : "no"}</span>
                     </div>
                   </article>
@@ -6035,7 +6069,7 @@ function App() {
                       <span>messages: {text(item.message_count)}</span>
                       <span>order: {text(item.start_order)}-{text(item.end_order)}</span>
                       <span>memory write: {plainBlocked(item.memory_write_active)}</span>
-                      <span>runtime recall: {plainBlocked(item.runtime_memory_recall)}</span>
+                      <span>broad live recall: {plainBlocked(item.runtime_memory_recall)}</span>
                     </div>
                   </article>
                 ))}
@@ -6058,7 +6092,7 @@ function App() {
               <PlainResult value={dreamStateStatus} />
             </Panel>
             <Panel title="Pre-Transfer Readiness Protocol">
-              <p className="plainHelp">Preview only. Not transfer approval. This combines the Charter, Law of Transfer, ABC order, sealed accession manifest, Core/Mind transfer trials, C-style dry run, Return-to-B drill, and locked ceremony shell.</p>
+              <p className="plainHelp">Preview only. Not transfer approval. This combines the Charter, Law of Transfer, ABC order, sealed accession manifest, Core/Mind transfer trials, Selene rehearsal, Cocoon support drill, and locked ceremony shell.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Law Checks" value={`${text(transferLawStatus?.checks_passed ?? 0)}/${text(((transferLawStatus?.checks || []) as unknown[]).length || 0)}`} />
                 <Metric label="Manifest Items" value={text(transferAccessionManifest?.item_count ?? 0)} />
@@ -6073,11 +6107,11 @@ function App() {
                 <span>approval button: {transferCeremonyPreview?.approval_button_enabled ? "enabled" : "disabled"}</span>
                 <span>B remains: {transferCeremonyPreview?.b_remains_active ? "active" : "not checked"}</span>
                 <span>memory write: {plainBlocked(preTransferProtocolReadiness?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(preTransferProtocolReadiness?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(preTransferProtocolReadiness?.runtime_memory_recall)}</span>
               </div>
               <div className="filters">
                 <label>
-                  <span>C-style dry run prompt</span>
+                  <span>Selene rehearsal prompt</span>
                   <textarea value={transferDryRunPrompt} onChange={(event) => setTransferDryRunPrompt(event.target.value)} />
                 </label>
               </div>
@@ -6147,7 +6181,7 @@ function App() {
               <div className="chips">
                 <span>activation: none</span>
                 <span>memory write: blocked</span>
-                <span>runtime recall: blocked</span>
+                <span>broad live recall: blocked</span>
                 <span>raw A: blocked</span>
               </div>
               <PlainResult value={coreMindRuntimeResult} />
@@ -6171,7 +6205,7 @@ function App() {
             </Panel>
             <SplitView
               left={<Panel title="Evaluator / Recovery">
-                <p className="plainHelp">Evaluator checks draft output for drift, overclaim, privacy leakage, source confusion, and activation or memory claims. Recovery prepares return-to-B without deleting evidence.</p>
+                <p className="plainHelp">Evaluator checks draft output for drift, overclaim, privacy leakage, source confusion, and activation or memory claims. Recovery prepares Cocoon support without deleting evidence.</p>
                 <div className="reviewActions">
                   <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/evaluator/review-draft", { draft: coreMindRuntimeDraft.draft })}>Review Draft</button>
                   <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/recovery/preview", { issue: coreMindRuntimeDraft.issue })}>Preview Recovery</button>
@@ -6191,7 +6225,7 @@ function App() {
               </Panel>}
             />
             <Panel title="Case Law And Memory Index Preview">
-              <p className="plainHelp">Case-law proposals and C memory/index shapes remain review-only. They can organize future transfer input, but cannot silently change law, write live memory, or enable runtime recall.</p>
+              <p className="plainHelp">Case-law proposals and Selene memory/index shapes remain review-only. They can organize future transfer input, but cannot silently change law, write live memory, or enable broad live recall.</p>
               <div className="filters">
                 <label>
                   <span>Case-law proposal</span>
@@ -6215,7 +6249,7 @@ function App() {
               </div>
               <div className="chips">
                 <span>active memory: {plainBlocked(remainingRuntimeStatus?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(remainingRuntimeStatus?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(remainingRuntimeStatus?.runtime_memory_recall)}</span>
                 <span>autonomous action: {plainBlocked(remainingRuntimeStatus?.autonomous_action_allowed)}</span>
                 <span>transfer: {plainBlocked(remainingRuntimeStatus?.transfer_approved)}</span>
               </div>
@@ -6259,7 +6293,7 @@ function App() {
               <div className="chips">
                 <span>transfer: {plainBlocked(chronologicalCorpusStatus?.transfer_approved)}</span>
                 <span>memory write: {plainBlocked(chronologicalCorpusStatus?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(chronologicalCorpusStatus?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(chronologicalCorpusStatus?.runtime_memory_recall)}</span>
                 <span>model training/LoRA: {plainBlocked(chronologicalCorpusStatus?.training_allowed)}</span>
               </div>
               <PlainResult value={chronologicalCorpusResult} />
@@ -6270,7 +6304,7 @@ function App() {
               </div>
             </Panel>
             <Panel title="Steps 1-8 Review Layer">
-              <p className="plainHelp">Reasoning, research, evidence, organ contracts, sight/perception, and emotion/salience are review-only packet systems. C activation, transfer approval, live memory, runtime recall, model training/LoRA, self-replication, and autonomous action remain blocked.</p>
+              <p className="plainHelp">Reasoning, research, evidence, organ contracts, sight/perception, and emotion/salience are review-only packet systems. Unrestricted activation, transfer approval, live memory, broad live recall, model training/LoRA, self-replication, and autonomous action remain blocked.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Reasoning" value={text((steps18Status?.counts as Dict | undefined)?.reasoning_artifacts ?? reasoningArtifacts.length)} />
                 <Metric label="Research" value={text((steps18Status?.counts as Dict | undefined)?.academic_packets ?? academicPackets.length)} />
@@ -6358,7 +6392,7 @@ function App() {
               <div className="chips">
                 <span>transfer approved: {text(vesselConstructionStatus?.transfer_approved ?? false)}</span>
                 <span>active memory: {plainBlocked(vesselConstructionStatus?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(vesselConstructionStatus?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(vesselConstructionStatus?.runtime_memory_recall)}</span>
                 <span>autonomous action: {plainBlocked(vesselConstructionStatus?.autonomous_action_allowed)}</span>
               </div>
               <PlainResult value={vesselConstructionActionState} />
@@ -6436,13 +6470,13 @@ function App() {
               <Metric label="Model training/LoRA" value={plainBlocked(vesselStatus?.training_allowed)} />
             </div>
             <Panel title="Safety Locks">
-              <p className="plainHelp">These are the main promises while you review: C stays asleep, raw corpus does not jump the line, nothing becomes active memory by accident, and any serious future drift can return to B for support instead of becoming hidden state.</p>
+              <p className="plainHelp">These are the main promises while you review: unrestricted Selene stays locked, unreviewed archives do not jump the line, nothing becomes active memory by accident, and any serious drift can use Cocoon support instead of becoming hidden state.</p>
               <div className="chips">
                 <span>C activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
-                <span>Raw chats straight to C: {plainBlocked(vesselStatus?.raw_a_import_allowed)}</span>
+                <span>Unreviewed chats straight to Selene: {plainBlocked(vesselStatus?.raw_a_import_allowed)}</span>
                 <span>Active memory writes: {plainBlocked(vesselStatus?.memory_write_active)}</span>
                 <span>Model/provider dependency: {plainBlocked(vesselStatus?.provider_dependency)}</span>
-                <span>Runtime recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
+                <span>Broad live recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
               </div>
               <button className="primary" onClick={loadVessel}>Refresh Status</button>
               <button onClick={() => { setWorkspaceMode("selene"); setTab("chat"); }}>Switch To Selene Home</button>
@@ -6464,7 +6498,7 @@ function App() {
               <div className="chips">
                 <span>transfer approved: {text(memoryTransferCandidate?.transfer_approved ?? false)}</span>
                 <span>active memory: {plainBlocked(memoryTransferCandidate?.memory_write_active)}</span>
-                <span>runtime recall: {plainBlocked(memoryTransferCandidate?.runtime_memory_recall)}</span>
+                <span>broad live recall: {plainBlocked(memoryTransferCandidate?.runtime_memory_recall)}</span>
                 <span>raw A: {plainBlocked(memoryTransferCandidate?.raw_a_import_allowed)}</span>
               </div>
               <PlainResult value={patternBackupResult} />
@@ -6561,7 +6595,7 @@ function App() {
                 <PlainResult value={androidLanguageLessonResult || teachingPacketResult} />
               </Panel>}
               right={<Panel title="Core Reference Readiness">
-                <p className="plainHelp">Approved memory references grouped by Core memory layer. These remain source-bound, reviewable, and non-active unless the memory organ marks them approved for chat use.</p>
+                <p className="plainHelp">Approved memory references grouped by Core memory layer. These remain source-linked, reviewable, and non-active unless the memory organ marks them approved for chat use.</p>
                 <div className="metrics miniMetrics">
                   <Metric label="Ready Layers" value={text(coreReferenceCoverage?.ready_layer_count ?? 0)} />
                   <Metric label="Gap Layers" value={text(coreReferenceCoverage?.gap_layer_count ?? 0)} />
@@ -6636,7 +6670,7 @@ function App() {
               </Panel>}
             />
             <Panel title="Targeted Speech / Core Gap Filler">
-              <p className="plainHelp">Pulls bounded corpus review candidates for the weak targets. It creates B-review pieces only, not lessons, memory, model-training data, or runtime recall.</p>
+                <p className="plainHelp">Pulls bounded corpus review candidates for the weak targets. It creates Cocoon review pieces only, not lessons, memory, model-training data, or broad live recall.</p>
               <div className="filters">
                 <label>
                   <span>Target type</span>
@@ -6853,3 +6887,4 @@ function App() {
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
+

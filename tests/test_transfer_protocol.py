@@ -199,7 +199,7 @@ def test_c_chat_dry_run_uses_reviewed_context_without_activation_claims(tmp_path
     candidate = result["candidate_text"].lower()
 
     assert result["status"] == "c_chat_dry_run_review_only"
-    assert "dry run" in candidate
+    assert "rehearsal" in candidate
     assert "activation" in candidate
     assert "live memory" in candidate
     assert "i am active" not in candidate
