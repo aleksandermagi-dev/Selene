@@ -29,6 +29,9 @@ src-tauri/gen/
 # Raw/private corpus and helper artifacts
 DevelopmentalCorpusArchive_20260526_122541/
 might help/
+New UI/
+UI Update/
+Ref material for codex/
 
 # Large/generated research outputs remain local unless explicitly promoted.
 analysis/*

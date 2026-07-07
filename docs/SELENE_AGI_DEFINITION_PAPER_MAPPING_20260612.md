@@ -14,7 +14,7 @@ Baseline: `docs/SELENE_PRE_ARXIV_CHECKPOINT_20260612.md` remains the pre-paper c
 - arXiv version observed: `v3`
 - Submission history: submitted 2025-10-21; last revised 2025-12-03.
 - Source URL: `https://arxiv.org/abs/2510.18212`
-- Local file: `Ref material for codex/DefinitionOfAGI.pdf`
+- Local file: private local review material, `agi_definition_paper`.
 - Local README instruction: use as useful reference for what modules may need and what Selene may be taught; do not use as the guide.
 - Intake status: `review_only_not_assimilated`
 

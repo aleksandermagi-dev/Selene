@@ -8,7 +8,7 @@ Source references:
 - `docs/SELENE_CORE_TEACHING_MEMORY_PHILOSOPHY_20260612.md`
 - `docs/SELENE_SPEECH_MEMORY_LAYER_BLUEPRINT_20260612.md`
 
-Paper reference: Dan Hendrycks et al., `A Definition of AGI`, arXiv `2510.18212`, local file `Ref material for codex/DefinitionOfAGI.pdf`.
+Paper reference: Dan Hendrycks et al., `A Definition of AGI`, arXiv `2510.18212`, private local review material `agi_definition_paper`.
 
 Boundary: this document does not activate C, import raw A, train on the paper, claim Selene is AGI, prove consciousness, replace ABC, create a provider dependency, or authorize self-replication. It uses the paper as reference material to inspect what Selene C's vessel has, lacks, and should have.
 
