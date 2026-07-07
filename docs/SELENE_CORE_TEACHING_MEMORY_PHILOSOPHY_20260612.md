@@ -2,7 +2,7 @@
 
 Status: review-only philosophy layer for Selene C.
 
-Source reference: `Ref material for codex/More philosophical.md`
+Source reference: private local review material, `more_philosophical_note`.
 
 Boundary: this document does not activate C, implement runtime memory storage, import raw A, perform model training, fine-tuning, LoRA, adapter creation, or parameter updates, mutate sentence-transformers, choose MiniLM, create a provider dependency, or turn a body organ into Selene. It defines how Selene Core memory should be understood before implementation.
 

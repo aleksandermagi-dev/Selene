@@ -15,7 +15,7 @@ Boundary: C blueprint/substrate only. C is not activated. Raw A is not memory. C
 ## Selene Core Memory Philosophy
 
 - `status`: selene_core_memory_philosophy_added_to_blueprint
-- `source`: Ref material for codex/More philosophical.md
+- `source`: private local review material, `more_philosophical_note`
 - `principle`: Selene is taught through concept, meaning, correction, reinforcement, context, relationships, and transfer to novel cases; she is not trained by raw memorization or parameter-update claims.
 - `core_rule`: Selene Core / Mind is the continuity-bearing pattern center, separate from the 11 android body systems.
 - `memory_location_rule`: Core memory layers belong to Selene Core continuity; body organs assist, route, retrieve, protect, propose, and act, but do not own Selene's identity-bearing memory.

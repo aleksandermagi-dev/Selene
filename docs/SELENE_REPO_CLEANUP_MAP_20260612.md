@@ -8,7 +8,7 @@ This map separates source material from rebuildable output so the local workspac
 
 - `src/`, `src-ui/`, `src-tauri/src/`, `tests/`, `scripts/`, `docs/`, `README.md`, `package.json`, `package-lock.json`, `pyproject.toml`, `tsconfig.json`, and `vite.config.ts`.
 - `DevelopmentalCorpusArchive_20260526_122541/`: preserved detached developmental corpus source material.
-- `Ref material for codex/`: paper and reference intake material.
+- Private local reference material: paper and reference intake material used for local review only; excluded from git.
 - `Project ABC/`: project boundary/reference material.
 - `analysis/`: generated review and blueprint artifacts. These are large, but they are provenance-bearing project records unless explicitly regenerated or archived.
 
