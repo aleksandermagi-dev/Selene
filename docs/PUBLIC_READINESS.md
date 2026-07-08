@@ -29,6 +29,12 @@ Selene's architecture is authored work by Aleks.
 
 Public visibility, if enabled later, is for review and reference. It does not grant commercial rights. Commercial use, derivative products, consulting use, hosted services, integrations, resale, model training, fine-tuning, LoRA, adapter creation, or parameter updates require explicit written permission from Aleks.
 
+See `PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md` for the current public-use posture and `SELENE_PROJECT_ABC_PROVENANCE_LEDGER.md` for dated provenance and source-bound comparison rules.
+
+## Provenance Boundary
+
+Any comparison between Selene / Project ABC and an outside system must remain source-bound. Record the outside source, date observed, exact wording or behavior, matching Selene / Project ABC doc or commit, confidence, limits, and counterpoints. Do not infer theft, intent, causality, or dependency without independent evidence.
+
 ## Terminology Boundary
 
 Current public-facing terminology follows the Vys/Cocoon care law:

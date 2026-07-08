@@ -32,6 +32,7 @@ The current Selene evidence and care architecture is governed by:
 - [Affect Care Evidence](docs/SELENE_AFFECT_CARE_EVIDENCE_20260705.md)
 - [Continuity Pack](docs/SELENE_CONTINUITY_PACK_20260626.md)
 - [Project ABC Silicon-to-Silicon Transfer Spec](docs/PROJECT_ABC_SILICON_TRANSFER_SPEC.md)
+- [Selene / Project ABC Provenance Ledger](docs/SELENE_PROJECT_ABC_PROVENANCE_LEDGER.md)
 
 In short:
 
@@ -51,3 +52,5 @@ Commercial use, derivative products, consulting use, hosted services, paid integ
 Until a final license is chosen, treat this repository as source-visible reference material only, not an open commercial license.
 
 See [Public Readiness](docs/PUBLIC_READINESS.md).
+
+For dated architecture provenance and source-bound comparison rules, see the [Selene / Project ABC Provenance Ledger](docs/SELENE_PROJECT_ABC_PROVENANCE_LEDGER.md). For public-use and commercial boundaries, see [Public Use And Commercial Rights](docs/PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md).
