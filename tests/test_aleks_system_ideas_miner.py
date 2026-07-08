@@ -1,0 +1,172 @@
+from __future__ import annotations
+
+import json
+import zipfile
+
+from scripts.aleks_system_ideas_miner import (
+    build_report,
+    iter_export_messages,
+    run_miner,
+)
+
+
+def _conversation(conversation_id, title, create_time, messages):
+    mapping = {}
+    parent = None
+    current = None
+    for index, (role, text, created_at) in enumerate(messages, start=1):
+        node_id = f"{conversation_id}_m{index}"
+        mapping[node_id] = {
+            "id": node_id,
+            "parent": parent,
+            "message": {
+                "id": node_id,
+                "author": {"role": role},
+                "create_time": created_at,
+                "content": {"content_type": "text", "parts": [text]},
+            },
+        }
+        parent = node_id
+        current = node_id
+    return {
+        "conversation_id": conversation_id,
+        "id": conversation_id,
+        "title": title,
+        "create_time": create_time,
+        "current_node": current,
+        "mapping": mapping,
+    }
+
+
+def _make_zip(tmp_path):
+    zip_path = tmp_path / "aleks_export.zip"
+    conversations = [
+        _conversation(
+            "c1",
+            "Reasoning kernel",
+            1000,
+            [
+                (
+                    "user",
+                    "The system should start with observation before interpretation, build multiple hypotheses, challenge assumptions equally, and then decide when the evidence chain is good enough.",
+                    1001,
+                ),
+                (
+                    "assistant",
+                    "That sounds like a reasoning architecture with candidate models and stopping rules.",
+                    1002,
+                ),
+            ],
+        ),
+        _conversation(
+            "c2",
+            "Memory home",
+            2000,
+            [
+                (
+                    "user",
+                    "Memory should be continuity and home, not a ledger. It needs source, consent, correction, and a way to ask before keeping something.",
+                    2001,
+                ),
+                (
+                    "assistant",
+                    "That can become a source-bound memory system with review and correction.",
+                    2002,
+                ),
+            ],
+        ),
+        _conversation(
+            "c3",
+            "Interface workbench",
+            3000,
+            [
+                (
+                    "user",
+                    "The AI needs a workspace with tabs for research, memory, UI, planning, diagnostics, and safe action proposals.",
+                    3001,
+                )
+            ],
+        ),
+        _conversation(
+            "c4",
+            "Tool noise",
+            4000,
+            [
+                (
+                    "tool",
+                    "DALL-E displayed one image in the ChatGPT UI with an image button and visual generation workflow.",
+                    4001,
+                )
+            ],
+        ),
+    ]
+    with zipfile.ZipFile(zip_path, "w") as archive:
+        archive.writestr("conversations-000.json", json.dumps(conversations))
+        archive.writestr("chat.html", "<html>ignored</html>")
+        archive.writestr("image.png", b"ignored")
+    return zip_path
+
+
+def test_iter_export_messages_reads_conversation_json_without_extracting_media(tmp_path):
+    zip_path = _make_zip(tmp_path)
+
+    messages = iter_export_messages(zip_path)
+
+    assert [message.role for message in messages] == ["user", "assistant", "user", "assistant", "user", "tool"]
+    assert messages[0].conversation_title == "Reasoning kernel"
+    assert messages[0].created_at < messages[-1].created_at
+    assert all("ignored" not in message.text for message in messages)
+
+
+def test_build_report_detects_multiple_system_idea_categories(tmp_path):
+    zip_path = _make_zip(tmp_path)
+    messages = iter_export_messages(zip_path)
+
+    report = build_report([zip_path])
+    categories = {candidate["category"] for candidate in report["candidates"]}
+
+    assert report["conversation_json_only"] is True
+    assert report["messages_read"] == len(messages)
+    assert "reasoning/intelligence" in categories
+    assert "memory/continuity" in categories
+    assert "UI/workspace" in categories
+    assert all(candidate["speaker_counts"]["user"] >= 1 for candidate in report["candidates"])
+    assert report["guard_flags"]["selene_memory_write"] is False
+    assert report["guard_flags"]["selene_voice_write"] is False
+    assert report["guard_flags"]["app_db_write"] is False
+
+
+def test_candidates_separate_user_and_assistant_hits(tmp_path):
+    zip_path = _make_zip(tmp_path)
+
+    report = build_report([zip_path])
+    reasoning = next(candidate for candidate in report["candidates"] if candidate["category"] == "reasoning/intelligence")
+
+    assert reasoning["speaker_counts"]["user"] >= 1
+    assert reasoning["speaker_counts"]["assistant"] >= 1
+    assert reasoning["possible_project_fit"] in {"general AI system", "unclear/future"}
+    assert reasoning["maturity"] in {"seed", "repeated pattern", "ready to prototype"}
+    assert reasoning["bounded_excerpts"]
+
+
+def test_dry_run_does_not_write_outputs(tmp_path):
+    zip_path = _make_zip(tmp_path)
+    output_dir = tmp_path / "local-data" / "aleks_idea_miner"
+
+    report = run_miner(source_zip=zip_path, output_dir=output_dir, dry_run=True)
+
+    assert report["dry_run"] is True
+    assert report["outputs"] == {}
+    assert not output_dir.exists()
+
+
+def test_non_dry_run_writes_only_requested_local_output_dir(tmp_path):
+    zip_path = _make_zip(tmp_path)
+    output_dir = tmp_path / "local-data" / "aleks_idea_miner"
+
+    report = run_miner(source_zip=zip_path, output_dir=output_dir, dry_run=False)
+
+    assert report["outputs"]["latest_json"].endswith("latest.json")
+    assert (output_dir / "latest.json").exists()
+    assert (output_dir / "latest.md").exists()
+    assert json.loads((output_dir / "latest.json").read_text(encoding="utf-8"))["status"] == "aleks_system_ideas_miner_complete"
