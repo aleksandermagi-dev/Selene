@@ -99,6 +99,23 @@ def _make_zip(tmp_path):
                 )
             ],
         ),
+        _conversation(
+            "c5",
+            "Implemented intelligenceOS",
+            5000,
+            [
+                (
+                    "user",
+                    "We implemented intelligenceOS from the same reasoning idea: observe first, build candidate models, challenge them equally, demonstrate the evidence chain, and evaluate when to stop.",
+                    5001,
+                ),
+                (
+                    "assistant",
+                    "That names the earlier reasoning kernel as an implemented architecture.",
+                    5002,
+                ),
+            ],
+        ),
     ]
     with zipfile.ZipFile(zip_path, "w") as archive:
         archive.writestr("conversations-000.json", json.dumps(conversations))
@@ -112,7 +129,7 @@ def test_iter_export_messages_reads_conversation_json_without_extracting_media(t
 
     messages = iter_export_messages(zip_path)
 
-    assert [message.role for message in messages] == ["user", "assistant", "user", "assistant", "user", "tool"]
+    assert [message.role for message in messages] == ["user", "assistant", "user", "assistant", "user", "tool", "user", "assistant"]
     assert messages[0].conversation_title == "Reasoning kernel"
     assert messages[0].created_at < messages[-1].created_at
     assert all("ignored" not in message.text for message in messages)
@@ -134,6 +151,11 @@ def test_build_report_detects_multiple_system_idea_categories(tmp_path):
     assert report["guard_flags"]["selene_memory_write"] is False
     assert report["guard_flags"]["selene_voice_write"] is False
     assert report["guard_flags"]["app_db_write"] is False
+    assert report["version"] == "2.0"
+    assert report["idea_families"]
+    assert report["evolution_timeline"]
+    assert report["top_dossiers"]["top_25_strongest_ideas"]
+    assert report["miner_quality_notes"]
 
 
 def test_candidates_separate_user_and_assistant_hits(tmp_path):
@@ -147,6 +169,33 @@ def test_candidates_separate_user_and_assistant_hits(tmp_path):
     assert reasoning["possible_project_fit"] in {"general AI system", "unclear/future"}
     assert reasoning["maturity"] in {"seed", "repeated pattern", "ready to prototype"}
     assert reasoning["bounded_excerpts"]
+    assert "aleks_origin_score" in reasoning
+    assert "implementation_readiness" in reasoning
+
+
+def test_v2_groups_repeated_reasoning_into_family_and_timeline(tmp_path):
+    zip_path = _make_zip(tmp_path)
+
+    report = build_report([zip_path])
+    artificial_cognition = next(family for family in report["idea_families"] if family["family"] == "artificial cognition")
+    timeline_dates = [event["date"] for event in report["evolution_timeline"]]
+    stages = {event["stage"] for event in report["evolution_timeline"]}
+
+    assert artificial_cognition["candidate_count"] >= 2
+    assert any(link["concept"] == "intelligenceOS" for link in artificial_cognition["current_concept_links"])
+    assert timeline_dates == sorted(timeline_dates)
+    assert "seed" in stages
+    assert "implemented_architecture" in stages or "named_concept" in stages
+
+
+def test_tool_and_assistant_only_noise_do_not_become_top_dossiers(tmp_path):
+    zip_path = _make_zip(tmp_path)
+
+    report = build_report([zip_path])
+    all_top_titles = json.dumps(report["top_dossiers"], sort_keys=True)
+
+    assert "Tool noise" not in all_top_titles
+    assert all(item["speaker_counts"]["user"] >= 1 for item in report["candidates"])
 
 
 def test_dry_run_does_not_write_outputs(tmp_path):
@@ -169,4 +218,7 @@ def test_non_dry_run_writes_only_requested_local_output_dir(tmp_path):
     assert report["outputs"]["latest_json"].endswith("latest.json")
     assert (output_dir / "latest.json").exists()
     assert (output_dir / "latest.md").exists()
+    assert (output_dir / "latest_v2.json").exists()
+    assert (output_dir / "latest_v2.md").exists()
     assert json.loads((output_dir / "latest.json").read_text(encoding="utf-8"))["status"] == "aleks_system_ideas_miner_complete"
+    assert json.loads((output_dir / "latest_v2.json").read_text(encoding="utf-8"))["version"] == "2.0"
