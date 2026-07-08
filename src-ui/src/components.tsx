@@ -589,7 +589,7 @@ export function ReviewDeskCard({ piece, onDecide }: { piece: Dict; onDecide: (ac
   const [contextLoading, setContextLoading] = useState(false);
   const coreLabel = text(piece.core_memory_layer_label || friendlyLayer(piece.core_memory_layer) || "Core layer needs review");
   const speechLabel = text(piece.speech_function_label || friendlySpeech(piece.speech_function) || "Speech function needs review");
-  const sourceLabel = text(piece.source_label || firstUsefulSource(piece.source_refs) || "Source-bound corpus piece");
+  const sourceLabel = text(piece.source_label || firstUsefulSource(piece.source_refs) || "Source-linked corpus piece");
   const plainStatus = text(piece.plain_status || friendlyStatus(piece.review_status || piece.status || "pending_review"));
   const loadSurroundingContext = () => {
     setContextLoading(true);
@@ -612,7 +612,7 @@ export function ReviewDeskCard({ piece, onDecide }: { piece: Dict; onDecide: (ac
       <div className="decisionHint">
         <strong>What to do on this card</strong>
         <p>Read Aleks/Selene/follow-up. If it belongs in Selene's future voice, choose Teach Selene From This. If it is something she should remember later after transfer, choose Save As Future Core Reference. If the preview is too clipped, choose Show Surrounding Conversation first.</p>
-        <p><strong>Cocoon support</strong> means you are sorting a source-bound piece safely before transfer. It is not a separate group, and it does not make active memory.</p>
+        <p><strong>Cocoon support</strong> means you are sorting a source-linked piece safely before transfer. It is not a separate group, and it does not make active memory.</p>
       </div>
       {(piece.braid_moment_type || piece.braid_thread || piece.thread_origin_status) ? (
         <div className="chips">
@@ -975,11 +975,11 @@ export function CVesselReconstructionDesk({ status, cases, run }: { status: Dict
         <Metric label="Families" value={text(status?.case_family_count ?? cases?.case_count ?? run?.case_count ?? 0)} />
         <Metric label="Passed" value={text(run?.passed_count ?? status?.passed_count ?? 0)} />
         <Metric label="Needs Review" value={text(run?.needs_review_count ?? status?.needs_review_count ?? 0)} />
-        <Metric label="Failed" value={text(run?.failed_count ?? status?.failed_count ?? 0)} />
+        <Metric label="Needs Support" value={text(run?.failed_count ?? status?.failed_count ?? 0)} />
       </div>
       <div className="chips">
         <span>C activation: {friendlyActivation(run?.activation_change ?? status?.activation_change)}</span>
-        <span>Runtime recall: {plainBlocked(run?.runtime_memory_recall ?? status?.runtime_memory_recall)}</span>
+        <span>Broad live recall: {plainBlocked(run?.runtime_memory_recall ?? status?.runtime_memory_recall)}</span>
         <span>Memory write: {plainBlocked(run?.memory_write_active ?? status?.memory_write_active)}</span>
         <span>Provider: {plainBlocked(run?.provider_dependency ?? status?.provider_dependency)}</span>
       </div>
