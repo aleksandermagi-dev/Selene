@@ -873,6 +873,29 @@ CREATE TABLE IF NOT EXISTS c_core_mind_runtime_shell_records (
 
 CREATE INDEX IF NOT EXISTS idx_c_core_mind_runtime_shell_records_type ON c_core_mind_runtime_shell_records(record_type, review_status);
 
+CREATE TABLE IF NOT EXISTS intelligence_os_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  prompt TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'intelligence_os_reasoning_status_only',
+  selected_next_step TEXT NOT NULL DEFAULT 'answer',
+  confidence TEXT NOT NULL DEFAULT 'provisional',
+  observations_json TEXT NOT NULL DEFAULT '[]',
+  candidate_models_json TEXT NOT NULL DEFAULT '[]',
+  challenge_json TEXT NOT NULL DEFAULT '{}',
+  evidence_chain_json TEXT NOT NULL DEFAULT '[]',
+  evaluation_json TEXT NOT NULL DEFAULT '{}',
+  reasoning_summary TEXT NOT NULL DEFAULT '',
+  cocoon_suggestion_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_intelligence_os_runs_status ON intelligence_os_runs(status, review_status, created_at);
+
 CREATE TABLE IF NOT EXISTS transfer_accession_manifest_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   phase_order INTEGER NOT NULL,

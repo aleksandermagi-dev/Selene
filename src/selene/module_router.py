@@ -127,6 +127,12 @@ from .memory_organ import (
     propose_memory_candidate,
     retrieve_memory,
 )
+from .intelligence_os import (
+    get_intelligence_os_run,
+    intelligence_os_status,
+    list_intelligence_os_runs,
+    run_intelligence_os_reason,
+)
 from .my_office_cleanup import clean_up_my_office_residue
 from .native_generation import compose_native_response
 from .paper_map_reconstruction import run_paper_map_reconstruction
@@ -436,6 +442,15 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": retrieve_memory(conn, payload)}
     if route_key == "memory.portable_vys_manifest":
         return {"route": route_key, "result": portable_vys_manifest(conn)}
+    if route_key == "intelligence_os.status":
+        return {"route": route_key, "result": intelligence_os_status(conn)}
+    if route_key == "intelligence_os.reason":
+        return {"route": route_key, "result": run_intelligence_os_reason(conn, payload)}
+    if route_key == "intelligence_os.runs.list":
+        return {"route": route_key, "result": list_intelligence_os_runs(conn, int(payload.get("limit") or 50))}
+    if route_key == "intelligence_os.run.detail":
+        item = get_intelligence_os_run(conn, int(payload.get("id") or payload.get("run_id") or 0))
+        return {"route": route_key, "result": item or {"error": "not found"}}
     if route_key == "vessel.steps_1_8.status":
         return {"route": route_key, "result": steps_1_8_status(conn)}
     if route_key == "vessel.speech_rehearsal.create":

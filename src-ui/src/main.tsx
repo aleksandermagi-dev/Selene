@@ -66,7 +66,7 @@ type MemoryBubble = {
   transferClass?: string;
   chatUsePermission?: string;
 };
-type WorkbenchKey = "art" | "reasoning" | "research" | "dream" | "tendril";
+type WorkbenchKey = "art" | "intelligence" | "reasoning" | "research" | "dream" | "tendril";
 type WorkbenchDef = {
   key: WorkbenchKey;
   title: string;
@@ -118,6 +118,17 @@ const officeWorkbenches: WorkbenchDef[] = [
     x: 22,
     y: 31,
     cues: ["Munsell", "palette", "visual notes", "no live camera"]
+  },
+  {
+    key: "intelligence",
+    title: "intelligenceOS / Observatory",
+    label: "reasoning organ",
+    state: "preview",
+    purpose: "Use ABCD(E) to observe cleanly, build models, challenge them equally, demonstrate evidence chains, and stop recursion gracefully.",
+    route: "Status / intelligenceOS",
+    x: 68,
+    y: 42,
+    cues: ["Acquire", "Build", "Challenge", "Demonstrate", "Evaluate"]
   },
   {
     key: "reasoning",
@@ -622,6 +633,10 @@ function App() {
   const [coreMindGovernanceTrials, setCoreMindGovernanceTrials] = useState<Dict[]>([]);
   const [coreMindGovernanceReport, setCoreMindGovernanceReport] = useState<Dict | null>(null);
   const [coreMindGovernanceResult, setCoreMindGovernanceResult] = useState<Dict | null>(null);
+  const [intelligenceOsStatus, setIntelligenceOsStatus] = useState<Dict | null>(null);
+  const [intelligenceOsRuns, setIntelligenceOsRuns] = useState<Dict[]>([]);
+  const [intelligenceOsResult, setIntelligenceOsResult] = useState<Dict | null>(null);
+  const [intelligenceOsPrompt, setIntelligenceOsPrompt] = useState("Use ABCD(E) to compare two possible explanations without losing warmth or pretending certainty.");
   const [transferReadinessPreview, setTransferReadinessPreview] = useState<Dict | null>(null);
   const [transferLawStatus, setTransferLawStatus] = useState<Dict | null>(null);
   const [transferAccessionManifest, setTransferAccessionManifest] = useState<Dict | null>(null);
@@ -1204,6 +1219,7 @@ function App() {
     api<Dict>("/api/core-mind/transfer-readiness-preview").then(setTransferReadinessPreview).catch(() => undefined);
     api<Dict>("/api/core-mind/runtime-readiness").then(setCoreMindRuntimeReadiness).catch(() => undefined);
     api<{ items: Dict[] }>("/api/core-mind/runtime-records").then((data) => setCoreMindRuntimeRecords(data.items)).catch(() => undefined);
+    refreshIntelligenceOs().catch(() => undefined);
     api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/selene-chat/sessions").then((data) => setSeleneChatSessions(data.items)).catch(() => undefined);
     api<Dict>("/api/activation/status").then(setActivationStatus).catch(() => undefined);
@@ -2071,6 +2087,32 @@ function App() {
     setCoreMindGovernanceTrials(trials.items);
     setCoreMindGovernanceReport(report);
     setTransferReadinessPreview(readiness);
+  }
+
+  async function refreshIntelligenceOs() {
+    const status = await stabilizationApi<Dict>("/api/intelligence-os/status", undefined, "intelligence_os_status");
+    const runs = await stabilizationApi<{ items: Dict[] }>("/api/intelligence-os/runs", undefined, "intelligence_os_runs");
+    setIntelligenceOsStatus(status);
+    setIntelligenceOsRuns(runs.items || []);
+  }
+
+  async function runIntelligenceOsReason() {
+    const prompt = intelligenceOsPrompt.trim();
+    if (!prompt) {
+      setIntelligenceOsResult({ status: "missing_prompt", message: "Give intelligenceOS a reasoning question first." });
+      return;
+    }
+    setIntelligenceOsResult({ status: "running", message: "Running ABCD(E) reasoning as status-only support." });
+    try {
+      const result = await stabilizationApi<Dict>("/api/intelligence-os/reason", {
+        method: "POST",
+        body: JSON.stringify({ prompt, source_refs: ["manual:intelligence_os_ui"] })
+      }, "intelligence_os_reason");
+      setIntelligenceOsResult(result);
+      await refreshIntelligenceOs();
+    } catch (err) {
+      setIntelligenceOsResult({ status: "error", error: err instanceof Error ? err.message : "intelligenceOS reasoning failed" });
+    }
   }
 
   async function refreshCoreMindRuntimeShell() {
@@ -4597,6 +4639,8 @@ function App() {
                     <p>Consequential work stays reviewable. This workbench can surface, prepare, or propose; Cocoon handles support, checkups, and approval.</p>
                     <div className="memoryRouteActions">
                       {selectedWorkbenchDef.key === "art" ? <button onClick={() => { setWorkspaceMode("cocoon"); setTab("tools"); }}>Open Perception Tools</button> : null}
+                      {selectedWorkbenchDef.key === "intelligence" ? <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open intelligenceOS Status</button> : null}
+                      {selectedWorkbenchDef.key === "intelligence" ? <button onClick={runIntelligenceOsReason}>Run ABCD(E) Preview</button> : null}
                       {selectedWorkbenchDef.key === "reasoning" ? <button onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Reasoning Status</button> : null}
                       {selectedWorkbenchDef.key === "research" ? <button onClick={() => setTab("great-library")}>Open Great Library</button> : null}
                       {selectedWorkbenchDef.key === "dream" ? <button onClick={() => setTab("dream")}>Open Dream</button> : null}
@@ -5857,6 +5901,54 @@ function App() {
                   </article>
                 ))}
                 {!coreMindRoutePreviews.length ? <p className="emptyState">No Core/Mind route previews yet.</p> : null}
+              </div>
+            </Panel>
+            <Panel title="intelligenceOS / Observatory">
+              <p className="plainHelp">Selene-native ABCD(E) reasoning support: observe cleanly, build candidate models, challenge them with equal scrutiny, demonstrate evidence chains, and stop recursion gracefully. This improves reasoning without changing Selene's warmth, voice, memory authority, or autonomy.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="State" value={friendlyStatus(intelligenceOsStatus?.status || "not checked")} />
+                <Metric label="Method" value={text(intelligenceOsStatus?.method || "ABCD(E)")} />
+                <Metric label="Runs" value={text(intelligenceOsStatus?.run_count ?? intelligenceOsRuns.length)} />
+                <Metric label="Latest Step" value={friendlyStatus(safeJsonObject(intelligenceOsStatus?.latest_run).selected_next_step || intelligenceOsResult?.selected_next_step || "not run")} />
+                <Metric label="Confidence" value={friendlyStatus(safeJsonObject(intelligenceOsStatus?.latest_run).confidence || intelligenceOsResult?.confidence || "open")} />
+              </div>
+              <div className="chips">
+                <span>voice owner: {text(intelligenceOsStatus?.voice_style_owner || "Selene Voice Module")}</span>
+                <span>Core/Mind route owner: {text(intelligenceOsStatus?.core_mind_final_route_owner || "Core/Mind")}</span>
+                <span>personality change: {plainBlocked(intelligenceOsStatus?.personality_change)}</span>
+                <span>memory write: {plainBlocked(intelligenceOsStatus?.memory_write_active)}</span>
+                <span>broad live recall: {plainBlocked(intelligenceOsStatus?.runtime_memory_recall)}</span>
+                <span>model training/LoRA: {plainBlocked(intelligenceOsStatus?.training_allowed)}</span>
+              </div>
+              <div className="filters">
+                <label>
+                  <span>ABCD(E) reasoning prompt</span>
+                  <textarea value={intelligenceOsPrompt} onChange={(event) => setIntelligenceOsPrompt(event.target.value)} />
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={runIntelligenceOsReason} disabled={intelligenceOsResult?.status === "running"}>
+                  {intelligenceOsResult?.status === "running" ? "Reasoning..." : "Run intelligenceOS"}
+                </button>
+                <button onClick={() => refreshIntelligenceOs().catch(() => undefined)}>Refresh intelligenceOS</button>
+              </div>
+              <PlainResult value={intelligenceOsResult} />
+              <div className="list compactList packetList">
+                {intelligenceOsRuns.slice(0, 4).map((item) => (
+                  <article className="packetCard" key={`intelligence-os-run-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{friendlyStatus(item.selected_next_step || item.status)}</strong>
+                      <span>{friendlyStatus(item.confidence || item.review_status)}</span>
+                    </div>
+                    <p>{text(item.reasoning_summary || item.prompt)}</p>
+                    <div className="chips">
+                      <span>bias flags: {text(((safeJsonObject(item.challenge).bias_flags || []) as unknown[]).length)}</span>
+                      <span>Cocoon support: {safeJsonObject(item.cocoon_suggestion).recommended ? "suggested" : "not needed"}</span>
+                      <span>{text(item.created_at || "")}</span>
+                    </div>
+                  </article>
+                ))}
+                {!intelligenceOsRuns.length ? <p className="emptyState">No intelligenceOS runs yet.</p> : null}
               </div>
             </Panel>
             <Panel title="Selene Voice Module">

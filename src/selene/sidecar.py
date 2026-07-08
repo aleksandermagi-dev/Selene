@@ -459,6 +459,18 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/core-mind/runtime-records":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "core_mind.runtime_records.list", {"limit": int(qs["limit"]) if qs.get("limit") else 80})["result"]))
+        elif parsed.path == "/api/intelligence-os/status":
+            self._send(*json_bytes(route_request(conn, "intelligence_os.status")["result"]))
+        elif parsed.path == "/api/intelligence-os/runs":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "intelligence_os.runs.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+        elif parsed.path.startswith("/api/intelligence-os/runs/"):
+            try:
+                run_id = int(parsed.path.removeprefix("/api/intelligence-os/runs/"))
+                item = route_request(conn, "intelligence_os.run.detail", {"run_id": run_id})["result"]
+                self._send(*json_bytes(item, 404 if item.get("error") else 200))
+            except ValueError:
+                self._send(*json_bytes({"error": "invalid run id"}, 400))
         elif parsed.path == "/api/android-system/workflow/status":
             self._send(*json_bytes(route_request(conn, "android_system.workflow.status")["result"]))
         elif parsed.path == "/api/android-system/workflow/report":
@@ -936,6 +948,13 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/core-mind/memory-index/preview":
             route_key = "core_mind.memory_index.preview"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/intelligence-os/reason":
+            route_key = "intelligence_os.reason"
             try:
                 write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
