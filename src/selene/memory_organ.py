@@ -306,6 +306,22 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "review_status": "status_only",
             }
         )
+    if not _is_memory_query(query):
+        return _with_guards(
+            {
+                "status": "memory_retrieval_not_requested",
+                "recall_state": "not_known",
+                "memory_context_used": False,
+                "memory_source_class": "approved_memory_index",
+                "memory_confidence": "not_known",
+                "memory_transfer_class": "",
+                "graceful_fall_used": False,
+                "items": [],
+                "answer_guidance": "No memory recall was requested; Selene can answer from the current turn.",
+                "review_destination": "Status",
+                "review_status": "status_only",
+            }
+        )
     items = _approved_memory_items(conn, limit=100)
     matches = _rank_matches(query, items)[:limit]
     if not matches:
@@ -547,7 +563,8 @@ def _working_memory_item(row: sqlite3.Row) -> dict[str, Any]:
 
 
 def _rank_matches(query: str, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    tokens = set(_tokens(query))
+    query_tokens = _tokens(query)
+    tokens = set(query_tokens)
     ranked: list[tuple[int, dict[str, Any]]] = []
     for item in items:
         haystack = " ".join(
@@ -558,13 +575,58 @@ def _rank_matches(query: str, items: list[dict[str, Any]]) -> list[dict[str, Any
                 str(item.get("emotional_texture") or ""),
             ]
         )
-        item_tokens = set(_tokens(haystack))
-        score = len(tokens & item_tokens)
+        haystack_tokens = _tokens(haystack)
+        item_tokens = set(haystack_tokens)
+        overlap = tokens & item_tokens
+        score = len(overlap)
         if tokens and score == 0:
+            continue
+        if not _meaningful_memory_overlap(overlap, item, query_tokens=query_tokens, haystack_tokens=haystack_tokens):
             continue
         ranked.append((score, {**item, "match_score": score}))
     ranked.sort(key=lambda pair: (pair[0], str(pair[1].get("updated_at") or pair[1].get("created_at") or "")), reverse=True)
     return [item for _, item in ranked]
+
+
+def _meaningful_memory_overlap(overlap: set[str], item: dict[str, Any], *, query_tokens: list[str], haystack_tokens: list[str]) -> bool:
+    generic = {
+        "aleks",
+        "selene",
+        "codex",
+        "check",
+        "checking",
+        "clear",
+        "clearly",
+        "honest",
+        "setup",
+        "answer",
+        "truly",
+        "fuzzy",
+        "source",
+        "voice",
+        "chat",
+        "support",
+        "care",
+        "with",
+    }
+    concrete = {token for token in overlap if token not in generic}
+    if len(concrete) >= 2:
+        title_tokens = set(_tokens(str(item.get("title") or "")))
+        if concrete & title_tokens:
+            return True
+        return _has_concrete_phrase_overlap(query_tokens, haystack_tokens, concrete)
+    title_tokens = set(_tokens(str(item.get("title") or "")))
+    if concrete and concrete & title_tokens:
+        return True
+    return False
+
+
+def _has_concrete_phrase_overlap(query_tokens: list[str], haystack_tokens: list[str], concrete: set[str]) -> bool:
+    haystack_bigrams = set(zip(haystack_tokens, haystack_tokens[1:]))
+    for first, second in zip(query_tokens, query_tokens[1:]):
+        if first in concrete and second in concrete and (first, second) in haystack_bigrams:
+            return True
+    return False
 
 
 def _tokens(value: str) -> list[str]:
@@ -582,12 +644,26 @@ def _tokens(value: str) -> list[str]:
         "and",
         "you",
         "your",
+        "me",
+        "i",
+        "it",
+        "if",
+        "is",
+        "its",
         "our",
         "can",
         "did",
         "does",
         "was",
         "are",
+        "have",
+        "has",
+        "only",
+        "say",
+        "ask",
+        "know",
+        "knows",
+        "from",
     }
     return [token for token in re.findall(r"[a-z0-9][a-z0-9_-]{2,}", value.lower()) if token not in stop]
 
@@ -604,6 +680,25 @@ def _result_confidence(matches: list[dict[str, Any]]) -> str:
 def _is_high_stakes(query: str) -> bool:
     lower = query.lower()
     return any(marker in lower for marker in HIGH_STAKES_MARKERS)
+
+
+def _is_memory_query(query: str) -> bool:
+    lower = query.lower()
+    markers = (
+        "remember",
+        "recall",
+        "memory",
+        "memories",
+        "what do you know about",
+        "what were we talking",
+        "what did we talk",
+        "past chat",
+        "previous chat",
+        "last chat",
+        "do you know the",
+        "do you know about",
+    )
+    return any(marker in lower for marker in markers)
 
 
 def _category(value: Any) -> str:

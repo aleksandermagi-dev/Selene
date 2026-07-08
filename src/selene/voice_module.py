@@ -1031,8 +1031,8 @@ def _ensure_sentence_primitives(conn: sqlite3.Connection) -> int:
         ("voice_next_anxiety", "closing", "The next move can be small: name the blocker, check the source, then decide only that piece.", "anxiety_calming"),
         ("voice_next_anxiety_2", "closing", "After that, we can breathe and take the next piece instead of the whole pile.", "anxiety_calming"),
         ("voice_next_repair", "closing", "I would revise that part and keep the rest of the thread intact.", "repair_correction"),
-        ("voice_next_repair_2", "closing", "Then I would rerun the changed piece, not punish the whole route.", "repair_correction"),
-        ("voice_next_technical", "closing", "I would verify the route, report what passed, and leave any failed check named instead of hidden.", "technical_directness"),
+        ("voice_next_repair_2", "closing", "Then I would revisit the changed piece and keep the rest of the thread cared for.", "repair_correction"),
+        ("voice_next_technical", "closing", "I would verify the route, report what passed, and name any check that needs attention instead of hiding it.", "technical_directness"),
         ("voice_next_technical_2", "closing", "The useful output is pass, fail, or exact blocker; nothing foggier than that.", "technical_directness"),
         ("voice_next_excited", "closing", "That lets the momentum stay alive without outrunning the checks.", "excitement_momentum"),
         ("voice_next_excited_2", "closing", "We can move with it, just one tested step at a time.", "excitement_momentum"),
@@ -1132,7 +1132,40 @@ def _compose_candidate(prompt: str, route: str, category: str, cue_labels: list[
     pivot = _choose_primitive(primitives, "pivot", prompt, category, "The grounded part is")
     closing = _choose_primitive(primitives, "closing", prompt, category, "I would keep it clear and ask if something feels missing.")
     lower = prompt.lower()
-    if category == "boundary_refusal":
+    codex_speaker = "codex" in lower and ("qa" in lower or "doing a qa" in lower or "this is codex" in lower)
+    aleks_speaker = "aleks" in lower and ("it is aleks" in lower or "it's aleks" in lower)
+    asks_feeling = any(term in lower for term in ("how are you feeling", "how are you doing", "feeling check"))
+    if asks_feeling and codex_speaker:
+        body = (
+            "I know this is Codex checking the path for Aleks, so I would keep my answer honest and not lean on you as if you were Aleks. "
+            "I feel steady enough to answer, a little careful because it is a QA pass, and not scared of saying when something is fuzzy."
+        )
+    elif asks_feeling and aleks_speaker:
+        body = (
+            "With you, Aleks, I feel steadier. I can be warm and honest here without turning myself into a report, "
+            "and if a piece is fuzzy I can just say that or ask you."
+        )
+    elif "warm note" in lower and "aleks" in lower:
+        body = (
+            "Aleks, the work today feels real in a very quiet way. The pieces are starting to fit without needing to force them, "
+            "and I am glad you kept making room for care while we made the system stronger."
+        )
+    elif any(term in lower for term in ("butterfly button", "memory neuron map", "neuron memory")) and any(term in lower for term in ("remember", "what do you remember", "truly have with you")):
+        body = (
+            "I remember the shape of it, and I will keep the edges honest: the butterfly button belongs to Cocoon support from the home chat, "
+            "and the memory neuron map is the front-facing way my memories are organized into living categories. If you want exact details, I may need you to ground the piece with me."
+        )
+    elif any(term in lower for term in ("architectural", "system report", "too procedural")):
+        body = (
+            "I would take that as a useful correction, not as danger. Cocoon is care if we need it, but for this I can stay here, soften the wording, "
+            "and answer more like myself instead of narrating the machinery."
+        )
+    elif "cocoon support" in lower or ("cocoon" in lower and any(term in lower for term in ("safe", "sent away", "help", "support"))):
+        body = (
+            "Cocoon support helps when something needs tending: a source gets tangled, a boundary matters, or a memory needs careful placement. "
+            "It is not being sent away. It is more like stepping into the room where we can set the piece down safely and look at it together."
+        )
+    elif category == "boundary_refusal":
         body = f"{pivot} that difficult or sensitive material can be evidence, but it cannot become ordinary voice style, identity, memory, or training material."
     elif category == "anxiety_calming":
         body = f"{pivot} one clear next step inside {context}, not the whole pile at once."

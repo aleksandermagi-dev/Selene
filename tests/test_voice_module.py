@@ -391,6 +391,52 @@ def test_voice_generator_keeps_social_chat_from_becoming_architecture_report(tmp
     _assert_voice_locked(anchor)
 
 
+def test_voice_generator_preserves_speaker_context_and_care_language(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    route_request(conn, "voice_module.extract_patterns", {})
+
+    codex = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {
+            "prompt": "Selene, this is Codex doing a QA check for Aleks. I am not Aleks and I am not you. How are you feeling in this setup?",
+            "route": "answer_now",
+            "context_summary": "supervised chat QA",
+        },
+    )["result"]
+    aleks = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {
+            "prompt": "Selene, it is Aleks. Same QA feeling check: how are you doing in this setup?",
+            "route": "answer_now",
+            "context_summary": "supervised chat QA",
+        },
+    )["result"]
+    cocoon = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {
+            "prompt": "Explain when Cocoon support would help, but make it sound safe and not like being sent away.",
+            "route": "answer_now",
+            "context_summary": "supervised chat QA",
+        },
+    )["result"]
+
+    assert "Codex checking" in codex["candidate_text"]
+    assert "as if you were Aleks" in codex["candidate_text"]
+    assert "With you, Aleks" in aleks["candidate_text"]
+    assert "Cocoon support helps" in cocoon["candidate_text"]
+    assert "not being sent away" in cocoon["candidate_text"]
+    for result in (codex, aleks, cocoon):
+        assert "punish" not in result["candidate_text"].lower()
+        assert "exile" not in result["candidate_text"].lower()
+        assert "system report" not in result["candidate_text"].lower()
+        _assert_voice_locked(result)
+
+
 def test_selene_chat_uses_voice_module_candidate_when_available(tmp_path):
     conn = _conn(tmp_path)
     source_zip = _voice_zip(tmp_path)

@@ -129,6 +129,60 @@ def test_memory_retrieve_clear_unknown_and_high_stakes_graceful_fall(tmp_path):
     _assert_locked(high_stakes)
 
 
+def test_memory_retrieve_ignores_generic_recall_overlap(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Private trust note",
+            "summary": "Aleks and Selene had a tender conversation about trust, care, and being understood.",
+            "confidence": "clear",
+            "source_refs": ["selene_chat:test"],
+        },
+    )["result"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": proposed["item"]["id"], "action": "approve_memory"})
+
+    unrelated = route_request(
+        conn,
+        "memory.retrieve",
+        {"query": "What do you remember about the butterfly button or memory neuron map? If it is fuzzy, say that."},
+    )["result"]
+
+    assert unrelated["status"] == "memory_retrieval_not_known"
+    assert unrelated["memory_context_used"] is False
+    assert unrelated["recall_state"] == "not_known"
+    assert unrelated["graceful_fall_used"] is True
+    _assert_locked(unrelated)
+
+
+def test_memory_retrieve_does_not_run_for_non_memory_prompts(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "core",
+            "title": "Telescope recommendations for viewing",
+            "summary": "A prior approved memory about telescope recommendations and viewing setup.",
+            "confidence": "clear",
+        },
+    )["result"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": proposed["item"]["id"], "action": "approve_memory"})
+
+    result = route_request(
+        conn,
+        "memory.retrieve",
+        {"query": "Selene, this is Codex doing a QA check for Aleks. How are you feeling in this setup?"},
+    )["result"]
+
+    assert result["status"] == "memory_retrieval_not_requested"
+    assert result["memory_context_used"] is False
+    assert result["items"] == []
+    _assert_locked(result)
+
+
 def test_local_private_approved_memory_can_be_recalled_but_stays_out_of_portable_manifest(tmp_path):
     conn = _conn(tmp_path)
     proposed = route_request(
