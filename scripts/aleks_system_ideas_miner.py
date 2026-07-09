@@ -14,6 +14,7 @@ from typing import Any
 DEFAULT_SOURCE_DIR = Path("AleksOSminer")
 DEFAULT_OUTPUT_DIR = Path("local-data") / "aleks_idea_miner"
 DEFAULT_BACKLOG_DIR = DEFAULT_OUTPUT_DIR / "backlog"
+DEFAULT_REVIEW_DIR = DEFAULT_OUTPUT_DIR / "review"
 
 GUARD_FLAGS = {
     "selene_memory_write": False,
@@ -359,6 +360,13 @@ BACKLOG_TRACKS = {
         "title": "Future Systems",
         "description": "Useful AI-system ideas that do not clearly belong to Selene, Azari, or Project ABC yet.",
     },
+}
+
+SHORTLIST_FILES = {
+    "selene_shortlist": "latest_selene_shortlist",
+    "azari_later": "latest_azari_later",
+    "project_abc_shortlist": "latest_project_abc_shortlist",
+    "holding_shelf": "latest_holding_shelf",
 }
 
 GENERIC_CHAT_MARKERS = [
@@ -1731,6 +1739,276 @@ def run_backlog_split(
     return split
 
 
+def memory_workbench_for(card: dict[str, Any]) -> str:
+    text = " ".join(
+        [
+            str(card.get("idea_title") or ""),
+            str(card.get("family") or ""),
+            str(card.get("implementation_fit") or ""),
+            str(card.get("why_useful") or ""),
+        ]
+    ).lower()
+    groups = [
+        ("memory", ["memory", "continuity", "archive", "source", "consent"]),
+        ("intelligenceOS", ["reasoning", "intelligence", "candidate", "evidence chain", "logic"]),
+        ("Cocoon/care", ["cocoon", "care", "teaching", "law", "ethics", "support"]),
+        ("UI/workspace", ["ui", "workspace", "interface", "tab", "workbench"]),
+        ("Tendril", ["tendril", "action", "proposal", "planning", "verify"]),
+        ("Great Library", ["research", "library", "source", "synthesis", "study"]),
+        ("diagnostics", ["diagnostic", "maintenance", "stabilization", "root-cause", "check"]),
+        ("voice", ["voice", "language", "speech", "expression", "tone"]),
+        ("android organs", ["android", "organ", "embodiment", "body", "perception", "sensory"]),
+    ]
+    for group, terms in groups:
+        if any(term in text for term in terms):
+            return group
+    return "general Selene architecture"
+
+
+def review_state_for(card: dict[str, Any]) -> str:
+    track = str(card.get("target_track") or "")
+    readiness = str(card.get("readiness") or "")
+    confidence = str(card.get("review_confidence") or "")
+    if track == "selene_intake" and readiness == "use_now":
+        return "selected_for_selene"
+    if track == "azari_future":
+        return "selected_for_azari_later"
+    if track == "project_abc":
+        return "selected_for_project_abc"
+    if readiness == "research_more" or confidence == "weak lead":
+        return "needs_more_reading"
+    return "hold"
+
+
+def adaptation_note_for(card: dict[str, Any], state: str) -> str:
+    track = str(card.get("target_track") or "")
+    if state == "selected_for_selene":
+        return "Adapt only through Selene-native organs/law; do not inherit Azari runtime or identity assumptions."
+    if state == "selected_for_azari_later":
+        return "Preserve for future Azari/Lumen work; do not merge into Selene without explicit re-ownership."
+    if state == "selected_for_project_abc":
+        return "Keep in the portability/transfer lane; do not treat as Selene feature work by default."
+    if track == "future_system":
+        return "Hold until Aleks chooses a project home."
+    return "Hold as local review material until Aleks promotes it."
+
+
+def review_card(card: dict[str, Any]) -> dict[str, Any]:
+    state = review_state_for(card)
+    item = dict(card)
+    item["review_state"] = state
+    item["shared_origin_id"] = card.get("source_curated_card_id")
+    item["project_adaptation_note"] = adaptation_note_for(card, state)
+    if card.get("target_track") == "selene_intake":
+        item["selene_workbench"] = memory_workbench_for(card)
+    return item
+
+
+def synthesis_summary(path: Path | None) -> dict[str, Any] | None:
+    if path is None:
+        return None
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    title = next((line.lstrip("# ").strip() for line in lines if line.startswith("#")), path.name)
+    body_lines = [line for line in lines if not line.startswith("#")]
+    return {
+        "source_path": str(path),
+        "title": title,
+        "size_bytes": path.stat().st_size,
+        "line_count": len(text.splitlines()),
+        "bounded_summary": compact(" ".join(body_lines), 900),
+        "boundary": "local synthesis reference only; not Selene memory, not public docs, not Cocoon queue work",
+    }
+
+
+def read_backlog_track(backlog_dir: Path, track: str) -> list[dict[str, Any]]:
+    path = backlog_dir / f"latest_{track}.json"
+    if not path.exists():
+        return []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return list(payload.get("cards") or [])
+
+
+def build_backlog_review(
+    *,
+    backlog_dir: Path = DEFAULT_BACKLOG_DIR,
+    synthesis_md: Path | None = None,
+) -> dict[str, Any]:
+    cards: list[dict[str, Any]] = []
+    for track in BACKLOG_TRACKS:
+        cards.extend(read_backlog_track(backlog_dir, track))
+    reviewed = [review_card(card) for card in cards]
+
+    selene = [card for card in reviewed if card["review_state"] == "selected_for_selene"]
+    azari = [card for card in reviewed if card["review_state"] == "selected_for_azari_later"]
+    project_abc = [card for card in reviewed if card["review_state"] == "selected_for_project_abc"]
+    holding = [card for card in reviewed if card["review_state"] in {"hold", "needs_more_reading", "reject_for_now"}]
+
+    selene_by_workbench: dict[str, list[dict[str, Any]]] = {}
+    for card in selene:
+        workbench = str(card.get("selene_workbench") or "general Selene architecture")
+        selene_by_workbench.setdefault(workbench, []).append(card)
+
+    return {
+        "status": "aleks_system_ideas_backlog_review_complete",
+        "version": "1.0",
+        "created_at": datetime.now(UTC).isoformat(),
+        "backlog_dir": str(backlog_dir),
+        "cards_read": len(cards),
+        "review_state_counts": {
+            state: sum(1 for card in reviewed if card["review_state"] == state)
+            for state in [
+                "selected_for_selene",
+                "selected_for_azari_later",
+                "selected_for_project_abc",
+                "hold",
+                "needs_more_reading",
+                "reject_for_now",
+            ]
+        },
+        "synthesis": synthesis_summary(synthesis_md),
+        "shortlists": {
+            "selene_shortlist": selene,
+            "azari_later": azari,
+            "project_abc_shortlist": project_abc,
+            "holding_shelf": holding,
+        },
+        "selene_by_workbench": selene_by_workbench,
+        "guard_flags": GUARD_FLAGS,
+    }
+
+
+def report_review_index_markdown(review: dict[str, Any]) -> str:
+    lines = [
+        "# Aleks Ideas Review Index",
+        "",
+        f"Status: `{review['status']}`",
+        "",
+        "Boundary: local planning review only. Not Selene memory, not Selene voice, not Cocoon queue work, not public evidence, and not model training/LoRA.",
+        "",
+        "## Summary",
+        "",
+        f"- cards read: {review['cards_read']}",
+    ]
+    lines.extend(f"- {state}: {count}" for state, count in review["review_state_counts"].items())
+    synthesis = review.get("synthesis")
+    lines.extend(["", "## Aleks Current Synthesis", ""])
+    if synthesis:
+        lines.extend(
+            [
+                f"- title: {synthesis['title']}",
+                f"- source path: `{synthesis['source_path']}`",
+                f"- size bytes: {synthesis['size_bytes']}",
+                f"- line count: {synthesis['line_count']}",
+                "",
+                synthesis["bounded_summary"],
+                "",
+            ]
+        )
+    else:
+        lines.extend(["No synthesis MD attached.", ""])
+    lines.extend(["## Selene Workbench Groups", ""])
+    for workbench, cards in sorted(review["selene_by_workbench"].items()):
+        lines.append(f"- {workbench}: {len(cards)}")
+    lines.extend(["", "## Shortlists", ""])
+    for shortlist, cards in review["shortlists"].items():
+        lines.append(f"- {shortlist}: {len(cards)}")
+    lines.extend(
+        [
+            "",
+            "## Guard Flags",
+            "",
+            "```json",
+            json.dumps(review["guard_flags"], indent=2),
+            "```",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def report_shortlist_markdown(review: dict[str, Any], shortlist: str) -> str:
+    title = SHORTLIST_FILES[shortlist].replace("latest_", "").replace("_", " ").title()
+    cards = review["shortlists"][shortlist]
+    lines = [
+        f"# Aleks Ideas Review - {title}",
+        "",
+        f"Status: `{review['status']}`",
+        "",
+        "Boundary: local shortlist only. Promotion to implementation, Selene memory, Cocoon, public docs, or any app state requires a separate explicit pass.",
+        "",
+        f"- cards: {len(cards)}",
+        "",
+    ]
+    for card in cards:
+        lines.extend(
+            [
+                f"## {card['idea_title']}",
+                "",
+                f"- review state: `{card['review_state']}`",
+                f"- shared origin id: `{card['shared_origin_id']}`",
+                f"- target track: `{card['target_track']}`",
+                f"- family: {card['family']}",
+                f"- readiness: `{card['readiness']}`",
+                f"- review confidence: {card['review_confidence']}",
+                f"- adaptation note: {card['project_adaptation_note']}",
+                f"- suggested next action: {card['suggested_next_action']}",
+            ]
+        )
+        if card.get("selene_workbench"):
+            lines.append(f"- Selene workbench: {card['selene_workbench']}")
+        lines.extend(["", "Aleks/user excerpts:"])
+        for excerpt in card.get("user_excerpts") or []:
+            lines.append(f"- {excerpt['source_ref']}: {excerpt['excerpt']}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def write_review_outputs(review: dict[str, Any], output_dir: Path) -> dict[str, str]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    outputs: dict[str, str] = {}
+    index_json = output_dir / "latest_review_index.json"
+    index_md = output_dir / "latest_review_index.md"
+    index_json.write_text(json.dumps(review, indent=2, ensure_ascii=False), encoding="utf-8")
+    index_md.write_text(report_review_index_markdown(review), encoding="utf-8")
+    outputs["review_index_json"] = str(index_json)
+    outputs["review_index_markdown"] = str(index_md)
+    for shortlist, stem in SHORTLIST_FILES.items():
+        payload = {
+            "status": review["status"],
+            "version": review["version"],
+            "created_at": review["created_at"],
+            "shortlist": shortlist,
+            "cards": review["shortlists"][shortlist],
+            "synthesis": review.get("synthesis"),
+            "guard_flags": review["guard_flags"],
+        }
+        json_path = output_dir / f"{stem}.json"
+        md_path = output_dir / f"{stem}.md"
+        json_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        md_path.write_text(report_shortlist_markdown(review, shortlist), encoding="utf-8")
+        outputs[f"{shortlist}_json"] = str(json_path)
+        outputs[f"{shortlist}_markdown"] = str(md_path)
+    return outputs
+
+
+def run_backlog_review(
+    *,
+    backlog_dir: Path = DEFAULT_BACKLOG_DIR,
+    output_dir: Path = DEFAULT_REVIEW_DIR,
+    synthesis_md: Path | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    review = build_backlog_review(backlog_dir=backlog_dir, synthesis_md=synthesis_md)
+    review["dry_run"] = dry_run
+    review["output_dir"] = str(output_dir)
+    if dry_run:
+        review["outputs"] = {}
+    else:
+        review["outputs"] = write_review_outputs(review, output_dir)
+    return review
+
+
 def write_outputs(report: dict[str, Any], output_dir: Path) -> dict[str, str]:
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -1815,6 +2093,10 @@ def main() -> None:
     parser.add_argument("--split-backlog", action="store_true", help="Split latest curated report into local Selene/Azari/ABC/future backlogs.")
     parser.add_argument("--curated-json", type=Path, default=DEFAULT_OUTPUT_DIR / "latest_curated.json", help="Curated report JSON for --split-backlog.")
     parser.add_argument("--backlog-output-dir", type=Path, default=DEFAULT_BACKLOG_DIR, help="Ignored local backlog output directory.")
+    parser.add_argument("--review-backlog", action="store_true", help="Build local implementation review shortlists from backlog outputs.")
+    parser.add_argument("--backlog-dir", type=Path, default=DEFAULT_BACKLOG_DIR, help="Local backlog directory for --review-backlog.")
+    parser.add_argument("--review-output-dir", type=Path, default=DEFAULT_REVIEW_DIR, help="Ignored local review output directory.")
+    parser.add_argument("--synthesis-md", type=Path, help="Optional Aleks synthesis Markdown to reference in the local review index.")
     args = parser.parse_args()
     if args.split_backlog:
         split = run_backlog_split(
@@ -1831,6 +2113,24 @@ def main() -> None:
             "track_counts": split["track_counts"],
             "outputs": split["outputs"],
             "guard_flags": split["guard_flags"],
+        }
+        print(json.dumps(summary, indent=2))
+        return
+    if args.review_backlog:
+        review = run_backlog_review(
+            backlog_dir=args.backlog_dir,
+            output_dir=args.review_output_dir,
+            synthesis_md=args.synthesis_md,
+            dry_run=args.dry_run,
+        )
+        summary = {
+            "status": review["status"],
+            "dry_run": review["dry_run"],
+            "cards_read": review["cards_read"],
+            "review_state_counts": review["review_state_counts"],
+            "synthesis_attached": review["synthesis"] is not None,
+            "outputs": review["outputs"],
+            "guard_flags": review["guard_flags"],
         }
         print(json.dumps(summary, indent=2))
         return

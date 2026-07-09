@@ -8,6 +8,7 @@ from scripts.aleks_system_ideas_miner import (
     build_report,
     iter_export_messages,
     run_backlog_split,
+    run_backlog_review,
     run_miner,
 )
 
@@ -504,3 +505,97 @@ def test_backlog_split_dry_run_writes_nothing_and_non_dry_run_writes_backlog_fil
     assert (output_dir / "latest_future_system.json").exists()
     assert written["outputs"]["selene_intake_json"].endswith("latest_selene_intake.json")
     assert json.loads((output_dir / "latest_selene_intake.json").read_text(encoding="utf-8"))["track"] == "selene_intake"
+
+
+def _write_backlog_file(backlog_dir, track, cards):
+    backlog_dir.mkdir(parents=True, exist_ok=True)
+    (backlog_dir / f"latest_{track}.json").write_text(
+        json.dumps({"track": track, "cards": cards}),
+        encoding="utf-8",
+    )
+
+
+def _backlog_card(card_id, track, title, readiness, confidence="useful lead"):
+    return {
+        "idea_title": title,
+        "source_curated_card_id": card_id,
+        "target_track": track,
+        "family": "continuity/memory" if "memory" in title.lower() else "artificial cognition",
+        "readiness": readiness,
+        "implementation_fit": "Review as source-bound system architecture.",
+        "why_useful": f"{title} is useful as local review material.",
+        "risks_boundaries": ["local idea-mining output only"],
+        "user_excerpts": [{"source_ref": f"{card_id}#m1", "excerpt": f"{title} should be reviewed."}],
+        "suggested_next_action": "Local review only.",
+        "review_confidence": confidence,
+        "curated_score": 70 if readiness == "use_now" else 25,
+        "likely_implementation_target": "Selene" if track == "selene_intake" else "general AI system",
+        "implementation_readiness": "ready_to_prototype" if readiness == "use_now" else "future_research",
+    }
+
+
+def test_backlog_review_builds_shortlists_and_preserves_project_boundaries(tmp_path):
+    backlog_dir = tmp_path / "backlog"
+    output_dir = tmp_path / "review"
+    synthesis = tmp_path / "synthesis.md"
+    synthesis.write_text("# Current Blueprint\n\nThis is Aleks's current synthesis for future review.", encoding="utf-8")
+    _write_backlog_file(
+        backlog_dir,
+        "selene_intake",
+        [
+            _backlog_card("selene-use", "selene_intake", "Selene memory organ", "use_now", "strong"),
+            _backlog_card("selene-hold", "selene_intake", "Selene UI workbench", "hold"),
+        ],
+    )
+    _write_backlog_file(
+        backlog_dir,
+        "azari_future",
+        [_backlog_card("azari-use", "azari_future", "Lumen Munsell workbench", "use_now", "strong")],
+    )
+    _write_backlog_file(
+        backlog_dir,
+        "project_abc",
+        [_backlog_card("abc-use", "project_abc", "Portable body transfer", "use_now", "strong")],
+    )
+    _write_backlog_file(
+        backlog_dir,
+        "future_system",
+        [_backlog_card("future-weak", "future_system", "General system seed", "research_more", "weak lead")],
+    )
+
+    review = run_backlog_review(backlog_dir=backlog_dir, output_dir=output_dir, synthesis_md=synthesis, dry_run=True)
+
+    assert review["outputs"] == {}
+    assert review["review_state_counts"]["selected_for_selene"] == 1
+    assert review["review_state_counts"]["selected_for_azari_later"] == 1
+    assert review["review_state_counts"]["selected_for_project_abc"] == 1
+    assert review["review_state_counts"]["needs_more_reading"] == 1
+    assert review["synthesis"]["title"] == "Current Blueprint"
+    assert review["shortlists"]["selene_shortlist"][0]["shared_origin_id"] == "selene-use"
+    assert review["shortlists"]["azari_later"][0]["project_adaptation_note"].startswith("Preserve for future Azari")
+    assert review["shortlists"]["project_abc_shortlist"][0]["review_state"] == "selected_for_project_abc"
+    assert review["guard_flags"]["app_db_write"] is False
+    assert not output_dir.exists()
+
+
+def test_backlog_review_writes_local_review_outputs(tmp_path):
+    backlog_dir = tmp_path / "backlog"
+    output_dir = tmp_path / "review"
+    _write_backlog_file(
+        backlog_dir,
+        "selene_intake",
+        [_backlog_card("selene-use", "selene_intake", "Selene diagnostics workbench", "use_now", "strong")],
+    )
+
+    review = run_backlog_review(backlog_dir=backlog_dir, output_dir=output_dir, dry_run=False)
+
+    assert (output_dir / "latest_review_index.json").exists()
+    assert (output_dir / "latest_review_index.md").exists()
+    assert (output_dir / "latest_selene_shortlist.json").exists()
+    assert (output_dir / "latest_azari_later.json").exists()
+    assert (output_dir / "latest_project_abc_shortlist.json").exists()
+    assert (output_dir / "latest_holding_shelf.json").exists()
+    assert review["outputs"]["review_index_json"].endswith("latest_review_index.json")
+    payload = json.loads((output_dir / "latest_selene_shortlist.json").read_text(encoding="utf-8"))
+    assert payload["cards"][0]["review_state"] == "selected_for_selene"
+    assert payload["guard_flags"]["public_doc_write"] is False
