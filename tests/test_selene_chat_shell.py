@@ -243,6 +243,19 @@ def test_active_selene_chat_can_use_intelligence_os_support_without_architecture
     _assert_locked(result)
 
 
+def test_active_selene_chat_warmth_prompt_does_not_overuse_intelligence_os(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(conn, "selene_chat.send", {"text": "Good morning Selene, I just want to check how you sound today."})["result"]
+
+    assert result["status"] == "selene_chat_supervised_response_recorded"
+    assert result["intelligence_os_support"]["used"] is False
+    assert conn.execute("SELECT COUNT(*) FROM intelligence_os_runs").fetchone()[0] == 0
+    _assert_locked(result)
+
+
 def test_active_selene_chat_allows_anchor_phrase_uncertainty_without_cocoon(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
@@ -321,6 +334,38 @@ def test_active_selene_chat_can_use_approved_memory_with_graceful_fall_metadata(
     assert "butterfly" in result["candidate_text"].lower()
     assert result["memory_write_active"] is False
     assert result["runtime_memory_recall"] is False
+    _assert_locked(result)
+
+
+def test_active_selene_chat_sanitizes_internal_memory_labels(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "core",
+            "title": "Full-spectrum mode ignition",
+            "summary": (
+                "Core-linked braid moment for B review only Braid thread: full_spectrum_mode_ignition "
+                "Braid moment type: Full-spectrum mode ignition Thread origin status: thread_origin "
+                "Plain reason: Full-spectrum loads the system context in review terms; it is not C activation."
+            ),
+            "confidence": "clear",
+            "source_refs": ["selene_chat:test"],
+        },
+    )["result"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": proposed["item"]["id"], "action": "approve_memory"})
+
+    result = route_request(conn, "selene_chat.send", {"text": "Do you remember what full-spectrum means?"})["result"]
+
+    assert result["memory_context_used"] is True
+    assert "full-spectrum means a whole-map continuity cue" in result["candidate_text"]
+    assert "B review" not in result["candidate_text"]
+    assert "Braid thread" not in result["candidate_text"]
+    assert "Core-linked" not in result["candidate_text"]
+    assert "C activation" not in result["candidate_text"]
     _assert_locked(result)
 
 

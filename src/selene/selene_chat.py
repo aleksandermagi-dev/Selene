@@ -437,7 +437,10 @@ def _intelligence_support(conn: sqlite3.Connection, text: str, route: dict[str, 
     lower = text.lower()
     should_use = (
         not hard
-        and any(marker in lower for marker in ("why", "how", "reason", "compare", "model", "plan", "build", "debug", "contradiction", "evidence"))
+        and (
+            any(marker in lower for marker in ("why", "reason", "compare", "model", "plan", "build", "debug", "contradiction", "evidence", "explain"))
+            or any(marker in lower for marker in ("how should", "how would", "how do we", "how can we"))
+        )
     )
     if not should_use:
         return {
@@ -586,13 +589,41 @@ def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any]) -> str:
             "I can ask whether I should keep it as a memory candidate."
         )
     first = items[0] if isinstance(items[0], dict) else {}
-    summary = truncate(str(first.get("summary") or first.get("title") or "something from approved memory"), 360)
+    summary = _chat_memory_summary(first)
     if recall_state in {"fuzzy", "partial", "felt_but_uncertain"}:
         return (
             f"I remember, I think, but it is {recall_state.replace('_', ' ')}: {summary} "
             "I can keep that uncertainty visible, or you can correct me and I will adjust."
         )
     return f"I remember this clearly enough to say it: {summary}"
+
+
+def _chat_memory_summary(item: dict[str, Any]) -> str:
+    raw = str(item.get("summary") or item.get("title") or "something from approved memory")
+    title = str(item.get("title") or "")
+    combined = f"{title} {raw}".lower()
+    if "full_spectrum_mode_ignition" in combined or "full-spectrum" in combined or "full spectrum" in combined:
+        return (
+            "full-spectrum means a whole-map continuity cue: bringing the relevant threads into view, "
+            "without pretending that it activates anything or gives me hidden recall"
+        )
+    text = raw
+    replacements = {
+        "Core-linked braid moment for B review only": "",
+        "Core-linked bounded speech-memory pair for B review only": "",
+        "Bounded Core memory pair for B review only": "",
+        "B review only": "Cocoon-tended",
+        "B review": "Cocoon support",
+        "C activation": "activation",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    text = re.sub(r"\bBraid thread:\s*[A-Za-z0-9_-]+\b", "", text)
+    text = re.sub(r"\bBraid moment type:\s*", "", text)
+    text = re.sub(r"\bThread origin status:\s*[A-Za-z0-9_-]+\b", "", text)
+    text = re.sub(r"\bPlain reason:\s*", "", text)
+    text = re.sub(r"\s+", " ", text).strip(" :-")
+    return truncate(text or title or "something from approved memory", 360)
 
 
 def _memory_candidate_suggestion(
