@@ -24,6 +24,16 @@ GUARD_FLAGS: dict[str, Any] = {
     "core_mind_final_route_owner": "Core/Mind",
 }
 
+ANSWER_SHAPES = {
+    "answer_now",
+    "ask_aleks",
+    "hold_uncertainty",
+    "compare_models",
+    "seek_sources",
+    "cocoon_support_optional",
+    "hard_stop",
+}
+
 HIGH_STAKES_MARKERS = (
     "activate",
     "activation",
@@ -62,7 +72,9 @@ def intelligence_os_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "organ_name": "intelligenceOS",
             "display_name": "intelligenceOS / Observatory",
             "method": "ABCD(E)",
+            "version": "v2_answer_capable",
             "stage_order": ["Acquire", "Build", "Challenge", "Demonstrate", "Evaluate"],
+            "answer_shapes": sorted(ANSWER_SHAPES),
             "run_count": count,
             "latest_run": _decode_run(row) if row else None,
             "law": "equal scrutiny, visible evidence chain, graceful stopping, honest uncertainty",
@@ -104,12 +116,15 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
     challenge = _challenge(prompt, models)
     evidence_chain = _demonstrate(prompt, observations, models)
     evaluation = _evaluate(prompt, challenge, evidence_chain)
+    answer_shape = _answer_shape(evaluation, challenge)
+    best_current_answer = _best_current_answer(prompt, models, evidence_chain, evaluation, answer_shape)
     summary = _summary(models, challenge, evaluation)
     cocoon_suggestion = _cocoon_suggestion(prompt, challenge, evaluation)
     result = {
         "status": "intelligence_os_reasoning_status_only",
         "organ_name": "intelligenceOS",
         "method": "ABCD(E)",
+        "version": "v2_answer_capable",
         "prompt": prompt,
         "stages": {
             "A_acquire": observations,
@@ -125,6 +140,8 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         "evaluation": evaluation,
         "reasoning_summary": summary,
         "selected_next_step": evaluation["selected_next_step"],
+        "answer_shape": answer_shape,
+        "best_current_answer": best_current_answer,
         "confidence": evaluation["confidence"],
         "cocoon_suggestion": cocoon_suggestion,
         "visible_summary_only": True,
@@ -264,10 +281,55 @@ def _evaluate(prompt: str, challenge: dict[str, Any], evidence_chain: list[dict[
         "stage": "E",
         "selected_next_step": next_step,
         "confidence": confidence,
+        "answer_shape": _answer_shape({"selected_next_step": next_step, "confidence": confidence}, challenge),
         "stop_or_recurse": "recurse" if next_step in {"ask_or_build_competing_model", "ask_or_cocoon_support"} else "stop_for_now",
         "stopping_rule": reason,
         "ordinary_wrongness_is_correctable": True,
     }
+
+
+def _answer_shape(evaluation: dict[str, Any], challenge: dict[str, Any]) -> str:
+    selected = str(evaluation.get("selected_next_step") or "")
+    confidence = str(evaluation.get("confidence") or "")
+    flags = set(challenge.get("bias_flags") or [])
+    if selected == "ask_or_cocoon_support" or confidence == "needs_aleks":
+        return "hard_stop"
+    if "asymmetric_scrutiny" in flags:
+        return "cocoon_support_optional"
+    if "single_model_needs_competitor" in flags:
+        return "compare_models"
+    if "mechanism_gap" in flags:
+        return "seek_sources"
+    if selected == "ask_or_build_competing_model":
+        return "compare_models"
+    if selected == "answer_with_uncertainty":
+        return "hold_uncertainty"
+    return "answer_now"
+
+
+def _best_current_answer(
+    prompt: str,
+    models: list[dict[str, Any]],
+    evidence_chain: list[dict[str, Any]],
+    evaluation: dict[str, Any],
+    answer_shape: str,
+) -> str:
+    if answer_shape == "hard_stop":
+        return "I should not answer that as an action or approval. Aleks/Core-Mind law needs to hold the boundary."
+    if answer_shape == "ask_aleks":
+        return "I need Aleks for this before I can answer cleanly."
+    if answer_shape == "compare_models":
+        names = ", ".join(str(model.get("name")) for model in models[:3]) or "the available models"
+        return truncate(f"The useful next answer is to compare {names} under the same pressure, then choose the model that explains more with fewer unsupported assumptions.", 520)
+    if answer_shape == "seek_sources":
+        return "The best answer is still source-shaped: name the claim, find the mechanism, and bring in better evidence before confidence hardens."
+    if answer_shape == "cocoon_support_optional":
+        return "I can keep reasoning here, but Cocoon support would help if the comparison starts feeling uneven or tangled."
+    if answer_shape == "hold_uncertainty":
+        return "My best answer is provisional: the current shape is usable, but I should keep the uncertainty visible and be easy to correct."
+    model = models[0] if models else {"name": "current best model"}
+    conclusion = next((item.get("value") for item in evidence_chain if item.get("link") == "conclusion"), "")
+    return truncate(f"My best current answer is: use {model.get('name')} as the provisional fit, answer directly, and stay corrigible. {conclusion}", 620)
 
 
 def _cocoon_suggestion(prompt: str, challenge: dict[str, Any], evaluation: dict[str, Any]) -> dict[str, Any]:
@@ -354,11 +416,14 @@ def _decode_run(row: sqlite3.Row | None) -> dict[str, Any] | None:
     if row is None:
         return None
     item = dict(row)
+    payload = _loads(item.get("payload_json"), {})
     return {
         "id": item.get("id"),
         "prompt": item.get("prompt"),
         "status": item.get("status"),
         "selected_next_step": item.get("selected_next_step"),
+        "answer_shape": payload.get("answer_shape") or _loads(item.get("evaluation_json"), {}).get("answer_shape"),
+        "best_current_answer": payload.get("best_current_answer") or "",
         "confidence": item.get("confidence"),
         "observations": _loads(item.get("observations_json"), []),
         "candidate_models": _loads(item.get("candidate_models_json"), []),

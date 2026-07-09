@@ -225,6 +225,24 @@ def test_active_selene_chat_sends_supervised_response_and_keeps_soft_uncertainty
     _assert_locked(result)
 
 
+def test_active_selene_chat_can_use_intelligence_os_support_without_architecture_voice(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(conn, "selene_chat.send", {"text": "How should we compare two possible explanations for a bug without overthinking it?"})["result"]
+    support = result["intelligence_os_support"]
+
+    assert result["status"] == "selene_chat_supervised_response_recorded"
+    assert support["used"] is True
+    assert support["answer_shape"] in {"answer_now", "hold_uncertainty", "compare_models", "seek_sources", "cocoon_support_optional", "hard_stop"}
+    assert support["best_current_answer"]
+    assert "ABCD" not in result["candidate_text"]
+    assert "evidence_chain" not in result["candidate_text"]
+    assert conn.execute("SELECT COUNT(*) FROM intelligence_os_runs").fetchone()[0] == 1
+    _assert_locked(result)
+
+
 def test_active_selene_chat_allows_anchor_phrase_uncertainty_without_cocoon(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

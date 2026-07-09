@@ -41,6 +41,9 @@ def test_intelligence_os_status_and_abcd_e_reasoning_run(tmp_path):
     assert status["method"] == "ABCD(E)"
     assert status["stage_order"] == ["Acquire", "Build", "Challenge", "Demonstrate", "Evaluate"]
     assert result["status"] == "intelligence_os_reasoning_status_only"
+    assert result["version"] == "v2_answer_capable"
+    assert result["answer_shape"] in {"answer_now", "hold_uncertainty", "compare_models", "seek_sources", "cocoon_support_optional", "hard_stop"}
+    assert result["best_current_answer"]
     assert list(result["stages"]) == ["A_acquire", "B_build", "C_challenge", "D_demonstrate", "E_evaluate"]
     assert result["observations"][0]["interpretation_attached"] is False
     assert len(result["candidate_models"]) >= 2
@@ -51,6 +54,8 @@ def test_intelligence_os_status_and_abcd_e_reasoning_run(tmp_path):
     assert result["hidden_chain_of_thought_exposed"] is False
     assert runs["items"][0]["id"] == result["run_id"]
     assert detail["item"]["id"] == result["run_id"]
+    assert detail["item"]["answer_shape"] == result["answer_shape"]
+    assert detail["item"]["best_current_answer"] == result["best_current_answer"]
     _assert_locked(result)
     _assert_locked(runs)
 
@@ -92,6 +97,7 @@ def test_intelligence_os_stopping_rule_and_hard_boundaries(tmp_path):
     assert ordinary["evaluation"]["stop_or_recurse"] in {"stop_for_now", "recurse"}
     assert ordinary["personality_note"].startswith("Reasoning support only")
     assert hard["evaluation"]["selected_next_step"] == "ask_or_cocoon_support"
+    assert hard["answer_shape"] == "hard_stop"
     assert hard["evaluation"]["confidence"] == "needs_aleks"
     assert hard["cocoon_suggestion"]["hard_boundary"] is True
     assert hard["memory_write_active"] is False

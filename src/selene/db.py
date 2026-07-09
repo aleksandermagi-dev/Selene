@@ -896,6 +896,47 @@ CREATE TABLE IF NOT EXISTS intelligence_os_runs (
 
 CREATE INDEX IF NOT EXISTS idx_intelligence_os_runs_status ON intelligence_os_runs(status, review_status, created_at);
 
+CREATE TABLE IF NOT EXISTS selene_organ_idea_intake (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_card_id TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  workbench TEXT NOT NULL,
+  lane TEXT NOT NULL,
+  intake_status TEXT NOT NULL DEFAULT 'organ_candidate_review_only',
+  readiness TEXT NOT NULL DEFAULT '',
+  review_confidence TEXT NOT NULL DEFAULT '',
+  implementation_fit TEXT NOT NULL DEFAULT '',
+  why_useful TEXT NOT NULL DEFAULT '',
+  adaptation_note TEXT NOT NULL DEFAULT '',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  excerpts_json TEXT NOT NULL DEFAULT '[]',
+  guard_flags_json TEXT NOT NULL DEFAULT '{}',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_organ_idea_intake_workbench ON selene_organ_idea_intake(workbench, intake_status);
+
+CREATE TABLE IF NOT EXISTS cocoon_care_checks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  care_state TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'cocoon_care_status_only',
+  summary TEXT NOT NULL DEFAULT '',
+  signals_json TEXT NOT NULL DEFAULT '[]',
+  support_suggestions_json TEXT NOT NULL DEFAULT '[]',
+  guard_flags_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_cocoon_care_checks_state ON cocoon_care_checks(care_state, review_status, created_at);
+
 CREATE TABLE IF NOT EXISTS transfer_accession_manifest_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   phase_order INTEGER NOT NULL,

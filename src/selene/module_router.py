@@ -45,6 +45,7 @@ from .compressed_structure_braid import (
     run_custom_instruction_braid,
 )
 from .cocoon import cocoon_status
+from .cocoon_care import cocoon_care_status, list_cocoon_care_checks, run_cocoon_care_check
 from .c_vessel import (
     c_vessel_status,
     continuity_package_preview,
@@ -206,6 +207,11 @@ from .selene_chat import (
     send_selene_chat,
     send_selene_chat_dry_run,
 )
+from .selene_organ_ideas import (
+    list_selene_organ_ideas,
+    prepare_selene_organ_ideas,
+    selene_organ_ideas_status,
+)
 from .transfer_protocol import (
     approve_transfer_c_readable_context,
     c_chat_dry_run,
@@ -297,6 +303,12 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": pause_activation(conn, payload)}
     if route_key == "cocoon.status":
         return {"route": route_key, "result": cocoon_status()}
+    if route_key == "cocoon_care.status":
+        return {"route": route_key, "result": cocoon_care_status(conn)}
+    if route_key == "cocoon_care.check":
+        return {"route": route_key, "result": run_cocoon_care_check(conn, payload)}
+    if route_key == "cocoon_care.checks":
+        return {"route": route_key, "result": list_cocoon_care_checks(conn, payload)}
     if route_key == "c_blueprint.status":
         return {"route": route_key, "result": c_blueprint_status()}
     if route_key == "c_vessel.status":
@@ -451,6 +463,12 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
     if route_key == "intelligence_os.run.detail":
         item = get_intelligence_os_run(conn, int(payload.get("id") or payload.get("run_id") or 0))
         return {"route": route_key, "result": item or {"error": "not found"}}
+    if route_key == "selene_organ_ideas.status":
+        return {"route": route_key, "result": selene_organ_ideas_status(conn)}
+    if route_key == "selene_organ_ideas.prepare":
+        return {"route": route_key, "result": prepare_selene_organ_ideas(conn, payload)}
+    if route_key == "selene_organ_ideas.items":
+        return {"route": route_key, "result": list_selene_organ_ideas(conn, payload)}
     if route_key == "vessel.steps_1_8.status":
         return {"route": route_key, "result": steps_1_8_status(conn)}
     if route_key == "vessel.speech_rehearsal.create":

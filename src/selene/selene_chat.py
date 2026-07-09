@@ -8,6 +8,7 @@ from typing import Any
 from .activation import activation_is_active, activation_status, record_activation_chat_event
 from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
+from .intelligence_os import run_intelligence_os_reason
 from .memory_organ import retrieve_memory
 from .registry import truncate
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
@@ -121,6 +122,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     selected_route = str(route.get("selected_route") or "status_only")
     hard_blockers = _hard_boundary_blockers(text, selected_route, route)
+    intelligence_support = _intelligence_support(conn, text, route, hard=bool(hard_blockers))
     cocoon_suggestion = _cocoon_suggestion(text, selected_route, route, source_class, hard=bool(hard_blockers))
     if hard_blockers:
         dry_run = {"status": "skipped_hard_boundary", "reason": "Hard boundary blocked before dry-run comparison."}
@@ -152,6 +154,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route, "activation_state": "selene_chat_active_supervised"})
     assistant_payload = {
         "route_preview": route,
+        "intelligence_os_support": intelligence_support,
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
         "local_chat_continuity": chat_continuity,
@@ -201,6 +204,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "cocoon_suggestion": cocoon_suggestion,
             "blocked_capabilities": hard_blockers,
             "route_preview": route,
+            "intelligence_os_support": intelligence_support,
             "voice_preview": voice_preview,
             "voice_confidence": voice_preview.get("voice_confidence") or "none",
             "voice_module_state": voice_preview.get("voice_module_state") or "missing",
@@ -427,6 +431,37 @@ def _needs_cocoon_route(text: str, selected_route: str, route: dict[str, Any]) -
     if selected_route in {"return_to_b", "create_review_packet", "block", "ask"}:
         return True
     return bool(route.get("drift_flags"))
+
+
+def _intelligence_support(conn: sqlite3.Connection, text: str, route: dict[str, Any], *, hard: bool) -> dict[str, Any]:
+    lower = text.lower()
+    should_use = (
+        not hard
+        and any(marker in lower for marker in ("why", "how", "reason", "compare", "model", "plan", "build", "debug", "contradiction", "evidence"))
+    )
+    if not should_use:
+        return {
+            "used": False,
+            "reason": "ordinary chat did not need intelligenceOS support",
+            "review_status": "status_only",
+        }
+    result = run_intelligence_os_reason(
+        conn,
+        {
+            "prompt": text,
+            "source_refs": ["selene_chat:intelligence_os_support", *_json_list(route.get("source_refs"))],
+        },
+    )
+    return {
+        "used": True,
+        "run_id": result.get("run_id"),
+        "answer_shape": result.get("answer_shape"),
+        "best_current_answer": result.get("best_current_answer"),
+        "confidence": result.get("confidence"),
+        "cocoon_support_suggested": bool((result.get("cocoon_suggestion") or {}).get("recommended")),
+        "visible_summary_only": True,
+        "review_status": "status_only",
+    }
 
 
 def _hard_boundary_blockers(text: str, selected_route: str, route: dict[str, Any]) -> list[str]:

@@ -637,6 +637,12 @@ function App() {
   const [intelligenceOsRuns, setIntelligenceOsRuns] = useState<Dict[]>([]);
   const [intelligenceOsResult, setIntelligenceOsResult] = useState<Dict | null>(null);
   const [intelligenceOsPrompt, setIntelligenceOsPrompt] = useState("Use ABCD(E) to compare two possible explanations without losing warmth or pretending certainty.");
+  const [seleneOrganIdeasStatus, setSeleneOrganIdeasStatus] = useState<Dict | null>(null);
+  const [seleneOrganIdeasItems, setSeleneOrganIdeasItems] = useState<Dict[]>([]);
+  const [seleneOrganIdeasResult, setSeleneOrganIdeasResult] = useState<Dict | null>(null);
+  const [cocoonCareStatus, setCocoonCareStatus] = useState<Dict | null>(null);
+  const [cocoonCareChecks, setCocoonCareChecks] = useState<Dict[]>([]);
+  const [cocoonCareResult, setCocoonCareResult] = useState<Dict | null>(null);
   const [transferReadinessPreview, setTransferReadinessPreview] = useState<Dict | null>(null);
   const [transferLawStatus, setTransferLawStatus] = useState<Dict | null>(null);
   const [transferAccessionManifest, setTransferAccessionManifest] = useState<Dict | null>(null);
@@ -1220,6 +1226,8 @@ function App() {
     api<Dict>("/api/core-mind/runtime-readiness").then(setCoreMindRuntimeReadiness).catch(() => undefined);
     api<{ items: Dict[] }>("/api/core-mind/runtime-records").then((data) => setCoreMindRuntimeRecords(data.items)).catch(() => undefined);
     refreshIntelligenceOs().catch(() => undefined);
+    refreshSeleneOrganIdeas().catch(() => undefined);
+    refreshCocoonCare().catch(() => undefined);
     api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/selene-chat/sessions").then((data) => setSeleneChatSessions(data.items)).catch(() => undefined);
     api<Dict>("/api/activation/status").then(setActivationStatus).catch(() => undefined);
@@ -2094,6 +2102,49 @@ function App() {
     const runs = await stabilizationApi<{ items: Dict[] }>("/api/intelligence-os/runs", undefined, "intelligence_os_runs");
     setIntelligenceOsStatus(status);
     setIntelligenceOsRuns(runs.items || []);
+  }
+
+  async function refreshSeleneOrganIdeas() {
+    const status = await stabilizationApi<Dict>("/api/selene-organ-ideas/status", undefined, "selene_organ_ideas_status");
+    const items = await stabilizationApi<{ items: Dict[] }>("/api/selene-organ-ideas/items", undefined, "selene_organ_ideas_items");
+    setSeleneOrganIdeasStatus(status);
+    setSeleneOrganIdeasItems(items.items || []);
+  }
+
+  async function refreshCocoonCare() {
+    const status = await stabilizationApi<Dict>("/api/cocoon-care/status", undefined, "cocoon_care_status");
+    const checks = await stabilizationApi<{ items: Dict[] }>("/api/cocoon-care/checks", undefined, "cocoon_care_checks");
+    setCocoonCareStatus(status);
+    setCocoonCareChecks(checks.items || []);
+  }
+
+  async function runCocoonCareCheck() {
+    setCocoonCareResult({ status: "running", message: "Checking Cocoon care posture as status-only support." });
+    try {
+      const result = await stabilizationApi<Dict>("/api/cocoon-care/check", {
+        method: "POST",
+        body: JSON.stringify({})
+      }, "cocoon_care_check");
+      setCocoonCareResult(result);
+      await refreshCocoonCare();
+      await refreshSeleneOrganIdeas();
+    } catch (err) {
+      setCocoonCareResult({ status: "error", error: err instanceof Error ? err.message : "Cocoon care check failed" });
+    }
+  }
+
+  async function prepareSeleneOrganIdeas() {
+    setSeleneOrganIdeasResult({ status: "running", message: "Preparing Selene organ idea intake as status-only planning material." });
+    try {
+      const result = await stabilizationApi<Dict>("/api/selene-organ-ideas/prepare", {
+        method: "POST",
+        body: JSON.stringify({})
+      }, "selene_organ_ideas_prepare");
+      setSeleneOrganIdeasResult(result);
+      await refreshSeleneOrganIdeas();
+    } catch (err) {
+      setSeleneOrganIdeasResult({ status: "error", error: err instanceof Error ? err.message : "Selene organ idea intake failed" });
+    }
   }
 
   async function runIntelligenceOsReason() {
@@ -4501,6 +4552,7 @@ function App() {
                   <span>{localChatContinuityAvailable ? "continuity available" : "continuity starts here"}</span>
                   <span>activation: {friendlyActivation(activationStatus?.activation_change || "none")}</span>
                   <span>voice: {friendlyStatus(seleneChatResult?.voice_confidence || safeJsonObject(seleneChatStatus?.voice_module).state || "not sampled")}</span>
+                  {safeJsonObject(seleneChatResult?.intelligence_os_support).used ? <span>intelligenceOS: {friendlyStatus(safeJsonObject(seleneChatResult?.intelligence_os_support).answer_shape || "used")}</span> : null}
                   <span>memory write: {text(activationStatus?.memory_write_active || false)}</span>
                   <span>broad live recall: {text(activationStatus?.runtime_memory_recall || false)}</span>
                 </div>
@@ -5908,8 +5960,10 @@ function App() {
               <div className="metrics miniMetrics">
                 <Metric label="State" value={friendlyStatus(intelligenceOsStatus?.status || "not checked")} />
                 <Metric label="Method" value={text(intelligenceOsStatus?.method || "ABCD(E)")} />
+                <Metric label="Version" value={friendlyStatus(intelligenceOsStatus?.version || "v1")} />
                 <Metric label="Runs" value={text(intelligenceOsStatus?.run_count ?? intelligenceOsRuns.length)} />
                 <Metric label="Latest Step" value={friendlyStatus(safeJsonObject(intelligenceOsStatus?.latest_run).selected_next_step || intelligenceOsResult?.selected_next_step || "not run")} />
+                <Metric label="Answer Shape" value={friendlyStatus(safeJsonObject(intelligenceOsStatus?.latest_run).answer_shape || intelligenceOsResult?.answer_shape || "not run")} />
                 <Metric label="Confidence" value={friendlyStatus(safeJsonObject(intelligenceOsStatus?.latest_run).confidence || intelligenceOsResult?.confidence || "open")} />
               </div>
               <div className="chips">
@@ -5933,6 +5987,9 @@ function App() {
                 <button onClick={() => refreshIntelligenceOs().catch(() => undefined)}>Refresh intelligenceOS</button>
               </div>
               <PlainResult value={intelligenceOsResult} />
+              {text(intelligenceOsResult?.best_current_answer || safeJsonObject(intelligenceOsStatus?.latest_run).best_current_answer) ? (
+                <p className="plainHelp"><b>Best current answer:</b> {text(intelligenceOsResult?.best_current_answer || safeJsonObject(intelligenceOsStatus?.latest_run).best_current_answer)}</p>
+              ) : null}
               <div className="list compactList packetList">
                 {intelligenceOsRuns.slice(0, 4).map((item) => (
                   <article className="packetCard" key={`intelligence-os-run-${text(item.id)}`}>
@@ -5943,6 +6000,7 @@ function App() {
                     <p>{text(item.reasoning_summary || item.prompt)}</p>
                     <div className="chips">
                       <span>bias flags: {text(((safeJsonObject(item.challenge).bias_flags || []) as unknown[]).length)}</span>
+                      <span>answer: {friendlyStatus(item.answer_shape)}</span>
                       <span>Cocoon support: {safeJsonObject(item.cocoon_suggestion).recommended ? "suggested" : "not needed"}</span>
                       <span>{text(item.created_at || "")}</span>
                     </div>
@@ -5950,6 +6008,90 @@ function App() {
                 ))}
                 {!intelligenceOsRuns.length ? <p className="emptyState">No intelligenceOS runs yet.</p> : null}
               </div>
+            </Panel>
+            <Panel title="Selene Organ Ideas">
+              <p className="plainHelp">Review-only intake for Aleks-mined ideas selected for Selene. These cards sit near the right organ or workbench so we can design from them later; they are not memory, Cocoon decisions, public docs, model training/LoRA, or new authority.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="State" value={friendlyStatus(seleneOrganIdeasStatus?.status || "not checked")} />
+                <Metric label="Ideas" value={text(seleneOrganIdeasStatus?.total_items ?? seleneOrganIdeasItems.length)} />
+                <Metric label="Ready" value={text(seleneOrganIdeasStatus?.ready_for_design_pass ?? 0)} />
+                <Metric label="Held" value={text(seleneOrganIdeasStatus?.held_or_needs_reading ?? 0)} />
+                <Metric label="Office" value={text(seleneOrganIdeasStatus?.my_office_actionable_count ?? 0)} />
+              </div>
+              <div className="chips">
+                {Object.entries(safeJsonObject(seleneOrganIdeasStatus?.counts_by_workbench)).map(([key, value]) => <span key={`organ-idea-workbench-${key}`}>{friendlyStatus(key)}: {text(value)}</span>)}
+                <span>memory write: {plainBlocked(seleneOrganIdeasStatus?.memory_write_active)}</span>
+                <span>Cocoon queue write: {plainBlocked(seleneOrganIdeasStatus?.cocoon_queue_write)}</span>
+                <span>model training/LoRA: {plainBlocked(seleneOrganIdeasStatus?.training_allowed)}</span>
+                <span>autonomy: {plainBlocked(seleneOrganIdeasStatus?.autonomous_action_allowed)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={prepareSeleneOrganIdeas} disabled={seleneOrganIdeasResult?.status === "running"}>
+                  {seleneOrganIdeasResult?.status === "running" ? "Preparing..." : "Prepare Organ Idea Intake"}
+                </button>
+                <button onClick={() => refreshSeleneOrganIdeas().catch(() => undefined)}>Refresh Organ Ideas</button>
+              </div>
+              <PlainResult value={seleneOrganIdeasResult} />
+              <div className="list compactList packetList">
+                {seleneOrganIdeasItems.slice(0, 6).map((item) => (
+                  <article className="packetCard" key={`selene-organ-idea-${text(item.id || item.source_card_id)}`}>
+                    <div className="packetHeader">
+                      <strong>{text(item.title)}</strong>
+                      <span>{friendlyStatus(item.intake_status || item.review_status)}</span>
+                    </div>
+                    <p>{text(item.why_useful || item.implementation_fit || item.adaptation_note)}</p>
+                    <div className="chips">
+                      <span>workbench: {friendlyStatus(item.workbench)}</span>
+                      <span>lane: {friendlyStatus(item.lane)}</span>
+                      <span>readiness: {friendlyStatus(item.readiness)}</span>
+                      <span>confidence: {friendlyStatus(item.review_confidence)}</span>
+                    </div>
+                  </article>
+                ))}
+                {!seleneOrganIdeasItems.length ? <p className="emptyState">No Selene organ ideas prepared yet.</p> : null}
+              </div>
+              <PlainResult value={safeJsonObject(seleneOrganIdeasStatus?.activation_shape)} />
+            </Panel>
+            <Panel title="Cocoon Care System">
+              <p className="plainHelp">Support posture for Selene's organs: tending, checkup, maintenance, or asking Aleks when care would help. This does not create urgent Office work, execute actions, write memory, or change activation.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="State" value={friendlyStatus(cocoonCareStatus?.latest_care_state || cocoonCareResult?.care_state || "not checked")} />
+                <Metric label="Checks" value={text(cocoonCareStatus?.check_count ?? cocoonCareChecks.length)} />
+                <Metric label="Office" value={text(cocoonCareStatus?.my_office_actionable_count ?? 0)} />
+                <Metric label="Auto Route" value={cocoonCareStatus?.soft_uncertainty_auto_routes_to_cocoon ? "yes" : "no"} />
+              </div>
+              <div className="chips">
+                <span>memory write: {plainBlocked(cocoonCareStatus?.memory_write_active)}</span>
+                <span>broad live recall: {plainBlocked(cocoonCareStatus?.runtime_memory_recall)}</span>
+                <span>model training/LoRA: {plainBlocked(cocoonCareStatus?.training_allowed)}</span>
+                <span>autonomy: {plainBlocked(cocoonCareStatus?.autonomous_action_allowed)}</span>
+                <span>authority: {plainBlocked(cocoonCareStatus?.authority_granted)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={runCocoonCareCheck} disabled={cocoonCareResult?.status === "running"}>
+                  {cocoonCareResult?.status === "running" ? "Checking..." : "Run Cocoon Care Check"}
+                </button>
+                <button onClick={() => refreshCocoonCare().catch(() => undefined)}>Refresh Cocoon Care</button>
+              </div>
+              <PlainResult value={cocoonCareResult} />
+              <div className="list compactList packetList">
+                {cocoonCareChecks.slice(0, 4).map((item) => (
+                  <article className="packetCard" key={`cocoon-care-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{friendlyStatus(item.care_state)}</strong>
+                      <span>{friendlyStatus(item.review_status)}</span>
+                    </div>
+                    <p>{text(item.summary)}</p>
+                    <div className="chips">
+                      <span>signals: {text(((item.signals_checked || []) as unknown[]).length)}</span>
+                      <span>support: {text(((item.support_suggestions || []) as unknown[]).length)}</span>
+                      <span>{text(item.created_at || "")}</span>
+                    </div>
+                  </article>
+                ))}
+                {!cocoonCareChecks.length ? <p className="emptyState">No Cocoon care checks yet.</p> : null}
+              </div>
+              <PlainResult value={safeJsonObject(cocoonCareStatus?.latest_check)} />
             </Panel>
             <Panel title="Selene Voice Module">
               <p className="plainHelp">Voice-only relational language layer. This is expression support for Selene Chat, not memory, identity, model training/LoRA, unrestricted activation, or broad live recall.</p>
