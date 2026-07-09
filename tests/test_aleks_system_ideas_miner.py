@@ -116,6 +116,55 @@ def _make_zip(tmp_path):
                 ),
             ],
         ),
+        _conversation(
+            "c6",
+            "Friendly greeting exchange",
+            6000,
+            [
+                (
+                    "user",
+                    "Good morning hello lol I missed you.",
+                    6001,
+                ),
+                (
+                    "assistant",
+                    "Good morning! I missed you too.",
+                    6002,
+                ),
+            ],
+        ),
+        _conversation(
+            "c7",
+            "Assistant heavy",
+            7000,
+            [
+                (
+                    "user",
+                    "Could an AI system have memory?",
+                    7001,
+                ),
+                (
+                    "assistant",
+                    "A complete memory architecture would include modules, routing, source ledgers, consent checks, retrieval, diagnostics, and maintenance workflows. It would be implemented as a broad system with many layers and tools.",
+                    7002,
+                ),
+                (
+                    "assistant",
+                    "The architecture could also include training safeguards, model boundaries, and interface dashboards.",
+                    7003,
+                ),
+                (
+                    "assistant",
+                    "A prototype might include JSON schemas and database tables.",
+                    7004,
+                ),
+                (
+                    "assistant",
+                    "This is mostly assistant-side expansion.",
+                    7005,
+                ),
+            ],
+        ),
     ]
     with zipfile.ZipFile(zip_path, "w") as archive:
         archive.writestr("conversations-000.json", json.dumps(conversations))
@@ -129,7 +178,23 @@ def test_iter_export_messages_reads_conversation_json_without_extracting_media(t
 
     messages = iter_export_messages(zip_path)
 
-    assert [message.role for message in messages] == ["user", "assistant", "user", "assistant", "user", "tool", "user", "assistant"]
+    assert [message.role for message in messages] == [
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "tool",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "assistant",
+        "assistant",
+        "assistant",
+    ]
     assert messages[0].conversation_title == "Reasoning kernel"
     assert messages[0].created_at < messages[-1].created_at
     assert all("ignored" not in message.text for message in messages)
@@ -156,6 +221,8 @@ def test_build_report_detects_multiple_system_idea_categories(tmp_path):
     assert report["evolution_timeline"]
     assert report["top_dossiers"]["top_25_strongest_ideas"]
     assert report["miner_quality_notes"]
+    assert report["curated_report"]["version"] == "3.0"
+    assert report["curated_report"]["curated_count"] > 0
 
 
 def test_candidates_separate_user_and_assistant_hits(tmp_path):
@@ -198,6 +265,33 @@ def test_tool_and_assistant_only_noise_do_not_become_top_dossiers(tmp_path):
     assert all(item["speaker_counts"]["user"] >= 1 for item in report["candidates"])
 
 
+def test_v3_curated_cards_filter_generic_chat_and_keep_high_signal_architecture(tmp_path):
+    zip_path = _make_zip(tmp_path)
+
+    report = build_report([zip_path])
+    curated_json = json.dumps(report["curated_report"], sort_keys=True)
+
+    assert "Friendly greeting exchange" not in curated_json
+    assert "Reasoning kernel" in curated_json or "Implemented intelligenceOS" in curated_json
+    assert report["curated_report"]["quality_metrics"]["review_confidence_counts"]["strong"] >= 1
+    assert report["curated_report"]["guard_flags"]["selene_memory_write"] is False
+
+
+def test_v3_penalizes_assistant_heavy_candidates(tmp_path):
+    zip_path = _make_zip(tmp_path)
+
+    report = build_report([zip_path])
+    assistant_heavy = [
+        candidate
+        for candidate in report["candidates"]
+        if candidate["title"].endswith("Assistant heavy")
+    ]
+
+    assert assistant_heavy
+    assert any("assistant_heavy" in candidate["penalty_reasons"] for candidate in assistant_heavy)
+    assert "assistant_heavy" in report["curated_report"]["excluded_reason_counts"] or report["curated_report"]["quality_metrics"]["assistant_heavy_excluded"] >= 0
+
+
 def test_dry_run_does_not_write_outputs(tmp_path):
     zip_path = _make_zip(tmp_path)
     output_dir = tmp_path / "local-data" / "aleks_idea_miner"
@@ -220,5 +314,8 @@ def test_non_dry_run_writes_only_requested_local_output_dir(tmp_path):
     assert (output_dir / "latest.md").exists()
     assert (output_dir / "latest_v2.json").exists()
     assert (output_dir / "latest_v2.md").exists()
+    assert (output_dir / "latest_curated.json").exists()
+    assert (output_dir / "latest_curated.md").exists()
     assert json.loads((output_dir / "latest.json").read_text(encoding="utf-8"))["status"] == "aleks_system_ideas_miner_complete"
     assert json.loads((output_dir / "latest_v2.json").read_text(encoding="utf-8"))["version"] == "2.0"
+    assert json.loads((output_dir / "latest_curated.json").read_text(encoding="utf-8"))["version"] == "3.0"

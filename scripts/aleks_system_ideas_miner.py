@@ -236,6 +236,33 @@ SYSTEM_IDEA_MARKERS = [
     "idea",
 ]
 
+USER_DESIGN_SIGNAL_MARKERS = [
+    "should",
+    "needs",
+    "need to",
+    "has to",
+    "build",
+    "implement",
+    "wire",
+    "route",
+    "create",
+    "design",
+    "prototype",
+    "module",
+    "organ",
+    "layer",
+    "workflow",
+    "architecture",
+    "system",
+    "memory",
+    "reasoning",
+    "continuity",
+    "ask before",
+    "source",
+    "consent",
+    "verify",
+]
+
 MATURITY_KEYWORDS: list[tuple[str, list[str]]] = [
     ("implemented", ["implemented", "built", "shipped", "tested", "committed", "working"]),
     ("ready to prototype", ["prototype", "build this", "implement", "make this", "wire", "route"]),
@@ -313,6 +340,75 @@ READINESS_ORDER = {
     "implemented_or_partly_implemented": 3,
     "future_research": 4,
 }
+
+GENERIC_CHAT_MARKERS = [
+    "good morning",
+    "good night",
+    "hello",
+    "hi ",
+    "missed you",
+    "i love you",
+    "brb",
+    "lol",
+    "lmao",
+    "😂",
+    "🥰",
+    "❤️",
+    "🩵",
+]
+
+IMAGE_ONLY_MARKERS = [
+    "generate image",
+    "make an image",
+    "picture",
+    "wallpaper",
+    "dall-e",
+    "content policy",
+    "upload the image",
+]
+
+POLICY_BOILERPLATE_MARKERS = [
+    "content policy",
+    "i was unable to generate",
+    "i can't assist",
+    "can't help with that",
+    "doesn't comply",
+]
+
+PROJECT_META_CHAT_MARKERS = [
+    "codex said",
+    "support agent",
+    "dev team",
+    "i'm proud",
+    "im proud",
+    "made it",
+    "goes nowhere",
+    "no idea of the previous messages",
+    "free rn",
+]
+
+ARCHITECTURE_STRENGTH_MARKERS = [
+    "architecture",
+    "system",
+    "module",
+    "organ",
+    "workflow",
+    "router",
+    "memory",
+    "reasoning",
+    "intelligence",
+    "transfer",
+    "portability",
+    "cocoon",
+    "tendril",
+    "vys",
+    "law",
+    "diagnostic",
+    "maintenance",
+    "prototype",
+    "implement",
+    "build",
+]
 
 
 @dataclass(frozen=True)
@@ -569,14 +665,28 @@ def annotate_candidate_v2(candidate: dict[str, Any]) -> dict[str, Any]:
     annotated["current_concept_links"] = current_concept_links(candidate)
     annotated["aleks_origin_score"] = aleks_origin_score(candidate)
     annotated["implementation_readiness"] = implementation_readiness(candidate)
+    annotated["architecture_strength"] = architecture_strength(annotated)
+    annotated["curated_score"] = curated_score(annotated)
+    annotated["penalty_reasons"] = candidate_penalty_reasons(annotated)
     return annotated
 
 
 def representative_user_excerpts(candidates: list[dict[str, Any]], limit: int = 5) -> list[dict[str, str]]:
     excerpts: list[dict[str, str]] = []
     seen: set[str] = set()
-    for candidate in sorted(candidates, key=lambda item: (-item.get("aleks_origin_score", 0), item.get("earliest_found") or "")):
-        for excerpt in candidate.get("bounded_excerpts") or []:
+    for candidate in sorted(
+        candidates,
+        key=lambda item: (
+            -curated_score(item),
+            -int(item.get("user_design_signal") or 0),
+            item.get("earliest_found") or "",
+        ),
+    ):
+        ranked_excerpts = sorted(
+            candidate.get("bounded_excerpts") or [],
+            key=lambda excerpt: (-int(excerpt.get("design_score") or 0), excerpt.get("created_at") or ""),
+        )
+        for excerpt in ranked_excerpts:
             if excerpt.get("role") != "user":
                 continue
             source_ref = str(excerpt.get("source_ref") or "")
@@ -740,6 +850,236 @@ def build_miner_quality_notes(candidates: list[dict[str, Any]], messages_read: i
     ]
 
 
+def architecture_strength(candidate: dict[str, Any]) -> int:
+    text = candidate_search_text(candidate)
+    return keyword_score(text, ARCHITECTURE_STRENGTH_MARKERS) + len(candidate.get("ancestry_tags") or []) * 2
+
+
+def candidate_penalty_reasons(candidate: dict[str, Any]) -> list[str]:
+    text = candidate_search_text(candidate)
+    reasons: list[str] = []
+    user_hits = int(candidate.get("speaker_counts", {}).get("user") or 0)
+    assistant_hits = int(candidate.get("speaker_counts", {}).get("assistant") or 0)
+    strength = architecture_strength(candidate)
+    design_signal = int(candidate.get("user_design_signal") or 0)
+    if assistant_hits >= max(2, user_hits * 2):
+        reasons.append("assistant_heavy")
+    if keyword_score(text, GENERIC_CHAT_MARKERS) >= 3 and strength < 4:
+        reasons.append("generic_chat")
+    if keyword_score(text, PROJECT_META_CHAT_MARKERS) >= 2 and design_signal < 4:
+        reasons.append("project_meta_chatter")
+    if keyword_score(text, IMAGE_ONLY_MARKERS) >= 2 and strength < 5:
+        reasons.append("image_only_or_creative_request")
+    if keyword_score(text, POLICY_BOILERPLATE_MARKERS) > 0:
+        reasons.append("policy_or_tool_boilerplate")
+    if strength < 3:
+        reasons.append("weak_architecture_signal")
+    if design_signal < 2:
+        reasons.append("weak_user_design_signal")
+    return reasons
+
+
+def curated_score(candidate: dict[str, Any]) -> int:
+    score = min(int(candidate.get("aleks_origin_score") or 0), 80)
+    score += min(int(candidate.get("score") or 0), 80)
+    score += architecture_strength(candidate) * 2
+    score += min(int(candidate.get("user_design_signal") or 0), 40)
+    score += len({item.get("conversation_id") for item in candidate.get("source_conversations") or []}) * 2
+    score += READINESS_ORDER.get(str(candidate.get("implementation_readiness") or "interesting_seed"), 0) * 3
+    if candidate.get("current_concept_links"):
+        score += 4
+    if candidate.get("confidence") == "high":
+        score += 4
+    elif candidate.get("confidence") == "medium":
+        score += 2
+    penalty = 0
+    for reason in candidate_penalty_reasons(candidate):
+        penalty += {
+            "assistant_heavy": 5,
+            "generic_chat": 8,
+            "project_meta_chatter": 14,
+            "image_only_or_creative_request": 8,
+            "policy_or_tool_boilerplate": 10,
+            "weak_architecture_signal": 7,
+            "weak_user_design_signal": 10,
+        }.get(reason, 4)
+    return score - penalty
+
+
+def review_confidence(candidate: dict[str, Any]) -> str:
+    score = curated_score(candidate)
+    if score >= 36 and architecture_strength(candidate) >= 8 and int(candidate.get("speaker_counts", {}).get("user") or 0) >= 1:
+        return "strong"
+    if score >= 14 and architecture_strength(candidate) >= 3:
+        return "useful lead"
+    return "weak lead"
+
+
+def needs_human_naming(candidate: dict[str, Any]) -> bool:
+    title = str(candidate.get("title") or "").lower()
+    weak_titles = ["casual greeting", "friendly greeting", "morning greetings", "hot take", "mission initiation"]
+    return any(marker in title for marker in weak_titles)
+
+
+def implementation_direction_for(candidate: dict[str, Any]) -> str:
+    family = candidate.get("idea_family")
+    directions = {
+        "autonomous systems": "Review as a bounded observe/propose/prepare/ask/verify workflow before any action authority.",
+        "artificial cognition": "Review as a reasoning or intelligenceOS method candidate with visible summaries and stopping rules.",
+        "continuity/memory": "Review as source-bound continuity or memory architecture; do not treat as active Selene memory.",
+        "AI embodiment": "Review as android-organ or perception/action architecture material.",
+        "civilization-scale systems": "Review as long-horizon system design, habitat, governance, or resilience architecture.",
+        "UI/workspace design": "Review as workspace or interface pattern for future UI/workbench implementation.",
+        "ethics/care/law": "Review as law, care, consent, safety, or support architecture.",
+        "perception/art": "Review as perception, art, Munsell, or visual reasoning module material.",
+        "research/library": "Review as Great Library, source synthesis, or research organ material.",
+        "diagnostics/maintenance": "Review as root-cause, stabilization, diagnostics, or maintenance workflow material.",
+    }
+    return directions.get(str(family), "Review as a general AI-system architecture candidate.")
+
+
+def why_it_matters(candidate: dict[str, Any]) -> str:
+    tags = candidate.get("ancestry_tags") or []
+    links = candidate.get("current_concept_links") or []
+    bits: list[str] = []
+    if tags:
+        bits.append(f"shows ancestry for {', '.join(tags[:3])}")
+    if links:
+        bits.append("connects to " + ", ".join(link["concept"] for link in links[:3]))
+    if candidate.get("implementation_readiness") in {"ready_to_prototype", "implemented_or_partly_implemented"}:
+        bits.append(f"readiness is {candidate['implementation_readiness']}")
+    if not bits:
+        bits.append("contains a reusable AI-system design signal")
+    return "; ".join(bits) + "."
+
+
+def curated_card(candidate: dict[str, Any]) -> dict[str, Any]:
+    user_excerpts = sorted(
+        [excerpt for excerpt in candidate.get("bounded_excerpts") or [] if excerpt.get("role") == "user"],
+        key=lambda excerpt: (-int(excerpt.get("design_score") or 0), excerpt.get("created_at") or ""),
+    )
+    return {
+        "id": candidate["id"],
+        "title": candidate["title"],
+        "needs_human_naming": needs_human_naming(candidate),
+        "idea_family": candidate.get("idea_family"),
+        "earliest_found": candidate.get("earliest_found"),
+        "why_it_matters": why_it_matters(candidate),
+        "aleks_origin_evidence": {
+            "score": candidate.get("aleks_origin_score"),
+            "user_hits": candidate.get("speaker_counts", {}).get("user"),
+            "assistant_hits": candidate.get("speaker_counts", {}).get("assistant"),
+            "user_design_signal": candidate.get("user_design_signal"),
+        },
+        "likely_implementation_target": candidate.get("possible_project_fit"),
+        "implementation_readiness": candidate.get("implementation_readiness"),
+        "review_confidence": review_confidence(candidate),
+        "curated_score": curated_score(candidate),
+        "penalty_reasons": candidate_penalty_reasons(candidate),
+        "risks": candidate.get("risks_boundaries", []),
+        "implementation_direction": implementation_direction_for(candidate),
+        "ancestry_tags": candidate.get("ancestry_tags"),
+        "current_concept_links": candidate.get("current_concept_links"),
+        "user_first_excerpts": user_excerpts[:3],
+    }
+
+
+def is_curated_candidate(candidate: dict[str, Any]) -> bool:
+    reasons = set(candidate_penalty_reasons(candidate))
+    if not any(excerpt.get("role") == "user" for excerpt in candidate.get("bounded_excerpts") or []):
+        return False
+    if "policy_or_tool_boilerplate" in reasons:
+        return False
+    if "weak_architecture_signal" in reasons and not candidate.get("current_concept_links"):
+        return False
+    if "weak_user_design_signal" in reasons and not candidate.get("current_concept_links"):
+        return False
+    if "project_meta_chatter" in reasons and curated_score(candidate) < 28:
+        return False
+    if "generic_chat" in reasons and curated_score(candidate) < 18:
+        return False
+    if "image_only_or_creative_request" in reasons and curated_score(candidate) < 18:
+        return False
+    return curated_score(candidate) >= 12 and int(candidate.get("speaker_counts", {}).get("user") or 0) >= 1
+
+
+def build_curated_report(candidates: list[dict[str, Any]], families: list[dict[str, Any]], messages_read: int) -> dict[str, Any]:
+    included = [candidate for candidate in candidates if is_curated_candidate(candidate)]
+    excluded = [candidate for candidate in candidates if not is_curated_candidate(candidate)]
+    ranked = sorted(included, key=lambda item: (-curated_score(item), item.get("earliest_found") or ""))
+
+    def cards_for(items: list[dict[str, Any]], limit: int = 12) -> list[dict[str, Any]]:
+        return [curated_card(item) for item in items[:limit]]
+
+    earliest = sorted(included, key=lambda item: item.get("earliest_found") or "")
+    buildable = [
+        item
+        for item in ranked
+        if item.get("implementation_readiness") in {"ready_to_prototype", "implemented_or_partly_implemented", "architecture_seed"}
+        and review_confidence(item) != "weak lead"
+        and architecture_strength(item) >= 6
+        and int(item.get("user_design_signal") or 0) >= 6
+        and "project_meta_chatter" not in candidate_penalty_reasons(item)
+    ]
+    selene = [item for item in ranked if item.get("possible_project_fit") == "Selene" or any(link["concept"] == "Selene" for link in item.get("current_concept_links") or [])]
+    azari = [item for item in ranked if item.get("possible_project_fit") == "Azari" or any(link["concept"] == "Azari" for link in item.get("current_concept_links") or [])]
+    project_abc = [item for item in ranked if item.get("possible_project_fit") == "Project ABC" or any(link["concept"] == "Project ABC" for link in item.get("current_concept_links") or [])]
+    future = [item for item in ranked if item.get("possible_project_fit") in {"general AI system", "unclear/future"}]
+
+    excluded_counts: dict[str, int] = {}
+    for candidate in excluded:
+        reasons = candidate_penalty_reasons(candidate) or ["below_curated_threshold"]
+        for reason in reasons:
+            excluded_counts[reason] = excluded_counts.get(reason, 0) + 1
+
+    family_summaries = []
+    for family in families:
+        family_cards = [item for item in ranked if item.get("idea_family") == family["family"]]
+        family_summaries.append(
+            {
+                "family": family["family"],
+                "candidate_count": family["candidate_count"],
+                "curated_count": len(family_cards),
+                "earliest_found": family.get("earliest_found"),
+                "implementation_direction": implementation_direction_for({"idea_family": family["family"]}),
+                "what_to_review_next": f"Review the top {min(5, len(family_cards))} curated card(s) for this family and choose whether any become implementation backlog items.",
+                "representative_aleks_excerpts": representative_user_excerpts(family_cards or [], limit=3),
+            }
+        )
+
+    return {
+        "status": "aleks_system_ideas_curated_complete",
+        "version": "3.0",
+        "created_at": datetime.now(UTC).isoformat(),
+        "messages_read": messages_read,
+        "candidate_count": len(candidates),
+        "curated_count": len(included),
+        "excluded_from_curated_count": len(excluded),
+        "excluded_reason_counts": dict(sorted(excluded_counts.items())),
+        "sections": {
+            "strongest_buildable_ideas": cards_for(buildable, 15),
+            "earliest_roots": cards_for(earliest, 12),
+            "selene_relevant_ideas": cards_for(selene, 12),
+            "azari_relevant_ideas": cards_for(azari, 12),
+            "project_abc_ideas": cards_for(project_abc, 12),
+            "future_systems": cards_for(future, 12),
+        },
+        "family_summaries": family_summaries,
+        "quality_metrics": {
+            "review_confidence_counts": {
+                label: sum(1 for item in included if review_confidence(item) == label)
+                for label in ["strong", "useful lead", "weak lead"]
+            },
+            "needs_human_naming_count": sum(1 for item in included if needs_human_naming(item)),
+            "assistant_heavy_excluded": excluded_counts.get("assistant_heavy", 0),
+            "generic_chat_excluded": excluded_counts.get("generic_chat", 0),
+            "image_only_excluded": excluded_counts.get("image_only_or_creative_request", 0),
+            "weak_architecture_signal_excluded": excluded_counts.get("weak_architecture_signal", 0),
+        },
+        "guard_flags": GUARD_FLAGS,
+    }
+
+
 def mine_idea_candidates(messages: list[Message], *, max_excerpt_chars: int = 320) -> list[dict[str, Any]]:
     grouped: dict[tuple[str, str], dict[str, Any]] = {}
     design_conversations = {
@@ -769,6 +1109,7 @@ def mine_idea_candidates(messages: list[Message], *, max_excerpt_chars: int = 32
                     "source_conversations": {},
                     "bounded_excerpts": [],
                     "speaker_counts": {"user": 0, "assistant": 0, "other": 0},
+                    "user_design_signal": 0,
                     "score": 0,
                     "confidence": "low",
                     "maturity": "seed",
@@ -794,15 +1135,28 @@ def mine_idea_candidates(messages: list[Message], *, max_excerpt_chars: int = 32
             }
             role_bucket = message.role if message.role in ("user", "assistant") else "other"
             item["speaker_counts"][role_bucket] += 1
+            if message.role == "user":
+                item["user_design_signal"] += keyword_score(message.text, USER_DESIGN_SIGNAL_MARKERS)
+            excerpt_record = {
+                "source_ref": source_ref,
+                "role": message.role,
+                "created_at": message.created_at,
+                "excerpt": compact(message.text, max_excerpt_chars),
+                "design_score": keyword_score(message.text, USER_DESIGN_SIGNAL_MARKERS) if message.role == "user" else 0,
+            }
             if len(item["bounded_excerpts"]) < 5:
-                item["bounded_excerpts"].append(
-                    {
-                        "source_ref": source_ref,
-                        "role": message.role,
-                        "created_at": message.created_at,
-                        "excerpt": compact(message.text, max_excerpt_chars),
-                    }
+                item["bounded_excerpts"].append(excerpt_record)
+            elif message.role == "user":
+                lowest_index = min(
+                    range(len(item["bounded_excerpts"])),
+                    key=lambda index: (
+                        1 if item["bounded_excerpts"][index].get("role") == "user" else 0,
+                        int(item["bounded_excerpts"][index].get("design_score") or 0),
+                    ),
                 )
+                current = item["bounded_excerpts"][lowest_index]
+                if current.get("role") != "user" or excerpt_record["design_score"] > int(current.get("design_score") or 0):
+                    item["bounded_excerpts"][lowest_index] = excerpt_record
 
     candidates: list[dict[str, Any]] = []
     for item in grouped.values():
@@ -826,7 +1180,11 @@ def mine_idea_candidates(messages: list[Message], *, max_excerpt_chars: int = 32
         item["source_conversations"] = list(item["source_conversations"].values())
         item["bounded_excerpts"] = sorted(
             item["bounded_excerpts"],
-            key=lambda excerpt: (0 if excerpt["role"] == "user" else 1, excerpt.get("created_at") or ""),
+            key=lambda excerpt: (
+                0 if excerpt["role"] == "user" else 1,
+                -int(excerpt.get("design_score") or 0),
+                excerpt.get("created_at") or "",
+            ),
         )
         item["id"] = f"{slugify(item['category'])}-{short_hash(json.dumps(item['bounded_excerpts'], sort_keys=True))}"
         candidates.append(item)
@@ -854,6 +1212,7 @@ def build_report(zip_paths: list[Path], *, path_only: bool = False, max_candidat
     timeline = build_evolution_timeline(candidates)
     dossiers = build_top_dossiers(candidates, families)
     quality_notes = build_miner_quality_notes(candidates, len(all_messages))
+    curated = build_curated_report(candidates, families, len(all_messages))
     category_counts: dict[str, int] = {}
     project_counts: dict[str, int] = {}
     family_counts: dict[str, int] = {}
@@ -878,6 +1237,7 @@ def build_report(zip_paths: list[Path], *, path_only: bool = False, max_candidat
         "idea_families": families,
         "evolution_timeline": timeline,
         "top_dossiers": dossiers,
+        "curated_report": curated,
         "miner_quality_notes": quality_notes,
         "guard_flags": GUARD_FLAGS,
     }
@@ -1026,6 +1386,92 @@ def report_v2_markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def report_curated_markdown(report: dict[str, Any]) -> str:
+    curated = report["curated_report"]
+    lines = [
+        "# Aleks System Ideas Miner Curated Report",
+        "",
+        f"Status: `{curated['status']}`",
+        "",
+        "Boundary: local curated review only. Not Selene memory, not Selene voice, not Cocoon queue work, not public evidence, and not model training/LoRA.",
+        "",
+        "## Summary",
+        "",
+        f"- messages read: {curated['messages_read']}",
+        f"- raw candidates: {curated['candidate_count']}",
+        f"- curated cards: {curated['curated_count']}",
+        f"- excluded from curated view: {curated['excluded_from_curated_count']}",
+        "",
+        "## Quality Metrics",
+        "",
+    ]
+    for key, value in curated["quality_metrics"].items():
+        if isinstance(value, dict):
+            lines.append(f"- {key}: {', '.join(f'{k}={v}' for k, v in value.items())}")
+        else:
+            lines.append(f"- {key}: {value}")
+    lines.extend(["", "## Excluded Reason Counts", ""])
+    if curated["excluded_reason_counts"]:
+        lines.extend(f"- {key}: {value}" for key, value in curated["excluded_reason_counts"].items())
+    else:
+        lines.append("- none")
+    lines.extend(["", "## Curated Sections", ""])
+    for section, cards in curated["sections"].items():
+        lines.extend([f"### {section.replace('_', ' ').title()}", ""])
+        if not cards:
+            lines.append("- none")
+            lines.append("")
+            continue
+        for card in cards:
+            naming = "needs human naming" if card["needs_human_naming"] else "named from source title"
+            lines.extend(
+                [
+                    f"#### {card['title']}",
+                    "",
+                    f"- id: `{card['id']}`",
+                    f"- family: {card['idea_family']}",
+                    f"- earliest found: {card['earliest_found'] or 'unknown'}",
+                    f"- review confidence: {card['review_confidence']}",
+                    f"- readiness: {card['implementation_readiness']}",
+                    f"- target: {card['likely_implementation_target']}",
+                    f"- curated score: {card['curated_score']}",
+                    f"- naming: {naming}",
+                    f"- why it matters: {card['why_it_matters']}",
+                    f"- implementation direction: {card['implementation_direction']}",
+                    "",
+                    "Aleks/user excerpts:",
+                ]
+            )
+            for excerpt in card["user_first_excerpts"][:3]:
+                lines.append(f"- {excerpt['source_ref']}: {excerpt['excerpt']}")
+            lines.append("")
+    lines.extend(["## Family Summaries", ""])
+    for family in curated["family_summaries"]:
+        lines.extend(
+            [
+                f"### {family['family']}",
+                "",
+                f"- total candidates: {family['candidate_count']}",
+                f"- curated cards: {family['curated_count']}",
+                f"- earliest found: {family.get('earliest_found') or 'unknown'}",
+                f"- implementation direction: {family['implementation_direction']}",
+                f"- next review: {family['what_to_review_next']}",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "## Guard Flags",
+            "",
+            "```json",
+            json.dumps(curated["guard_flags"], indent=2),
+            "```",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def write_outputs(report: dict[str, Any], output_dir: Path) -> dict[str, str]:
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -1033,30 +1479,44 @@ def write_outputs(report: dict[str, Any], output_dir: Path) -> dict[str, str]:
     md_path = output_dir / f"aleks_system_ideas_{timestamp}.md"
     v2_json_path = output_dir / f"aleks_system_ideas_v2_{timestamp}.json"
     v2_md_path = output_dir / f"aleks_system_ideas_v2_{timestamp}.md"
+    curated_json_path = output_dir / f"aleks_system_ideas_curated_{timestamp}.json"
+    curated_md_path = output_dir / f"aleks_system_ideas_curated_{timestamp}.md"
     latest_json = output_dir / "latest.json"
     latest_md = output_dir / "latest.md"
     latest_v2_json = output_dir / "latest_v2.json"
     latest_v2_md = output_dir / "latest_v2.md"
+    latest_curated_json = output_dir / "latest_curated.json"
+    latest_curated_md = output_dir / "latest_curated.md"
     json_text = json.dumps(report, indent=2, ensure_ascii=False)
+    curated_json_text = json.dumps(report["curated_report"], indent=2, ensure_ascii=False)
     md_text = report_markdown(report)
     v2_md_text = report_v2_markdown(report)
+    curated_md_text = report_curated_markdown(report)
     json_path.write_text(json_text, encoding="utf-8")
     md_path.write_text(md_text, encoding="utf-8")
     v2_json_path.write_text(json_text, encoding="utf-8")
     v2_md_path.write_text(v2_md_text, encoding="utf-8")
+    curated_json_path.write_text(curated_json_text, encoding="utf-8")
+    curated_md_path.write_text(curated_md_text, encoding="utf-8")
     latest_json.write_text(json_text, encoding="utf-8")
     latest_md.write_text(md_text, encoding="utf-8")
     latest_v2_json.write_text(json_text, encoding="utf-8")
     latest_v2_md.write_text(v2_md_text, encoding="utf-8")
+    latest_curated_json.write_text(curated_json_text, encoding="utf-8")
+    latest_curated_md.write_text(curated_md_text, encoding="utf-8")
     return {
         "json_path": str(json_path),
         "markdown_path": str(md_path),
         "v2_json_path": str(v2_json_path),
         "v2_markdown_path": str(v2_md_path),
+        "curated_json_path": str(curated_json_path),
+        "curated_markdown_path": str(curated_md_path),
         "latest_json": str(latest_json),
         "latest_markdown": str(latest_md),
         "latest_v2_json": str(latest_v2_json),
         "latest_v2_markdown": str(latest_v2_md),
+        "latest_curated_json": str(latest_curated_json),
+        "latest_curated_markdown": str(latest_curated_md),
     }
 
 
@@ -1113,6 +1573,8 @@ def main() -> None:
         "idea_family_counts": report["idea_family_counts"],
         "idea_family_count": len(report["idea_families"]),
         "timeline_event_count": len(report["evolution_timeline"]),
+        "curated_count": report["curated_report"]["curated_count"],
+        "excluded_from_curated_count": report["curated_report"]["excluded_from_curated_count"],
         "outputs": report["outputs"],
         "guard_flags": report["guard_flags"],
     }
