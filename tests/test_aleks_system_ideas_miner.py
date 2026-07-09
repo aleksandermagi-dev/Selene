@@ -4,8 +4,10 @@ import json
 import zipfile
 
 from scripts.aleks_system_ideas_miner import (
+    build_backlog_split,
     build_report,
     iter_export_messages,
+    run_backlog_split,
     run_miner,
 )
 
@@ -319,3 +321,186 @@ def test_non_dry_run_writes_only_requested_local_output_dir(tmp_path):
     assert json.loads((output_dir / "latest.json").read_text(encoding="utf-8"))["status"] == "aleks_system_ideas_miner_complete"
     assert json.loads((output_dir / "latest_v2.json").read_text(encoding="utf-8"))["version"] == "2.0"
     assert json.loads((output_dir / "latest_curated.json").read_text(encoding="utf-8"))["version"] == "3.0"
+
+
+def test_backlog_split_routes_selene_azari_project_abc_and_future_cards():
+    curated = {
+        "status": "aleks_system_ideas_curated_complete",
+        "curated_count": 4,
+        "sections": {
+            "selene_relevant_ideas": [
+                {
+                    "id": "selene-card",
+                    "title": "Selene memory organ",
+                    "idea_family": "continuity/memory",
+                    "likely_implementation_target": "Selene",
+                    "implementation_direction": "Review as source-bound memory architecture.",
+                    "why_it_matters": "connects to Selene memory organ",
+                    "ancestry_tags": [],
+                    "current_concept_links": [{"concept": "Selene"}],
+                    "implementation_readiness": "ready_to_prototype",
+                    "review_confidence": "strong",
+                    "curated_score": 75,
+                    "risks": ["local idea-mining output only"],
+                    "user_first_excerpts": [{"source_ref": "c1#m1", "excerpt": "Selene needs a memory organ with source and consent."}],
+                }
+            ],
+            "azari_relevant_ideas": [
+                {
+                    "id": "azari-card",
+                    "title": "Lumen Munsell workbench",
+                    "idea_family": "perception/art",
+                    "likely_implementation_target": "Azari",
+                    "implementation_direction": "Review as Munsell or visual reasoning material.",
+                    "why_it_matters": "connects to Azari",
+                    "ancestry_tags": [],
+                    "current_concept_links": [{"concept": "Azari"}],
+                    "implementation_readiness": "implemented_or_partly_implemented",
+                    "review_confidence": "useful lead",
+                    "curated_score": 60,
+                    "risks": ["local idea-mining output only"],
+                    "user_first_excerpts": [{"source_ref": "c2#m1", "excerpt": "Lumen needs Munsell perception later."}],
+                }
+            ],
+            "project_abc_ideas": [
+                {
+                    "id": "abc-card",
+                    "title": "Portable transfer body",
+                    "idea_family": "AI embodiment",
+                    "likely_implementation_target": "Project ABC",
+                    "implementation_direction": "Review as portability architecture.",
+                    "why_it_matters": "connects to Project ABC",
+                    "ancestry_tags": [],
+                    "current_concept_links": [{"concept": "Project ABC"}],
+                    "implementation_readiness": "ready_to_prototype",
+                    "review_confidence": "strong",
+                    "curated_score": 80,
+                    "risks": ["local idea-mining output only"],
+                    "user_first_excerpts": [{"source_ref": "c3#m1", "excerpt": "Project ABC needs portable body transfer rules."}],
+                }
+            ],
+            "future_systems": [
+                {
+                    "id": "future-card",
+                    "title": "General research mesh",
+                    "idea_family": "research/library",
+                    "likely_implementation_target": "general AI system",
+                    "implementation_direction": "Review as general research architecture.",
+                    "why_it_matters": "contains reusable AI-system design signal",
+                    "ancestry_tags": [],
+                    "current_concept_links": [],
+                    "implementation_readiness": "future_research",
+                    "review_confidence": "weak lead",
+                    "curated_score": 12,
+                    "risks": ["local idea-mining output only"],
+                    "user_first_excerpts": [{"source_ref": "c4#m1", "excerpt": "A future system could compare sources."}],
+                }
+            ],
+        },
+    }
+
+    split = build_backlog_split(curated)
+
+    assert [card["source_curated_card_id"] for card in split["tracks"]["selene_intake"]] == ["selene-card"]
+    assert [card["source_curated_card_id"] for card in split["tracks"]["azari_future"]] == ["azari-card"]
+    assert [card["source_curated_card_id"] for card in split["tracks"]["project_abc"]] == ["abc-card"]
+    assert [card["source_curated_card_id"] for card in split["tracks"]["future_system"]] == ["future-card"]
+    assert split["tracks"]["selene_intake"][0]["readiness"] == "use_now"
+    assert split["tracks"]["future_system"][0]["readiness"] != "use_now"
+    assert split["guard_flags"]["selene_memory_write"] is False
+    assert split["guard_flags"]["model_training_or_lora"] is False
+
+
+def test_backlog_split_copies_azari_line_cards_without_mixing_into_selene_by_default():
+    curated = {
+        "status": "aleks_system_ideas_curated_complete",
+        "curated_count": 2,
+        "sections": {
+            "azari_relevant_ideas": [
+                {
+                    "id": "lumen-only",
+                    "title": "Lumen Munsell routing",
+                    "idea_family": "perception/art",
+                    "likely_implementation_target": "Azari",
+                    "implementation_direction": "Review as visual reasoning material.",
+                    "why_it_matters": "connects to Azari",
+                    "ancestry_tags": [],
+                    "current_concept_links": [{"concept": "Azari"}],
+                    "implementation_readiness": "architecture_seed",
+                    "review_confidence": "useful lead",
+                    "curated_score": 45,
+                    "risks": ["local idea-mining output only"],
+                    "user_first_excerpts": [{"source_ref": "c1#m1", "excerpt": "Lumen needs Munsell routing."}],
+                },
+                {
+                    "id": "lumen-selene",
+                    "title": "Lumen to Selene memory organ adaptation",
+                    "idea_family": "continuity/memory",
+                    "likely_implementation_target": "Azari",
+                    "implementation_direction": "Review as memory organ material.",
+                    "why_it_matters": "connects to Azari and Selene",
+                    "ancestry_tags": [],
+                    "current_concept_links": [{"concept": "Azari"}, {"concept": "Selene"}],
+                    "implementation_readiness": "ready_to_prototype",
+                    "review_confidence": "strong",
+                    "curated_score": 70,
+                    "risks": ["local idea-mining output only"],
+                    "user_first_excerpts": [{"source_ref": "c2#m1", "excerpt": "Selene can adapt this memory organ idea later."}],
+                },
+            ]
+        },
+    }
+
+    split = build_backlog_split(curated)
+
+    assert [card["source_curated_card_id"] for card in split["tracks"]["azari_future"]] == ["lumen-selene", "lumen-only"]
+    assert [card["source_curated_card_id"] for card in split["tracks"]["selene_intake"]] == ["lumen-selene"]
+
+
+def test_backlog_split_dry_run_writes_nothing_and_non_dry_run_writes_backlog_files(tmp_path):
+    curated_path = tmp_path / "latest_curated.json"
+    output_dir = tmp_path / "local-data" / "aleks_idea_miner" / "backlog"
+    curated_path.write_text(
+        json.dumps(
+            {
+                "status": "aleks_system_ideas_curated_complete",
+                "curated_count": 1,
+                "sections": {
+                    "selene_relevant_ideas": [
+                        {
+                            "id": "selene-card",
+                            "title": "Selene diagnostics workbench",
+                            "idea_family": "diagnostics/maintenance",
+                            "likely_implementation_target": "Selene",
+                            "implementation_direction": "Review as diagnostics material.",
+                            "why_it_matters": "connects to Selene diagnostics",
+                            "ancestry_tags": [],
+                            "current_concept_links": [{"concept": "Selene"}],
+                            "implementation_readiness": "architecture_seed",
+                            "review_confidence": "useful lead",
+                            "curated_score": 50,
+                            "risks": ["local idea-mining output only"],
+                            "user_first_excerpts": [{"source_ref": "c1#m1", "excerpt": "Selene needs diagnostics."}],
+                        }
+                    ]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    dry = run_backlog_split(curated_json=curated_path, output_dir=output_dir, dry_run=True)
+
+    assert dry["dry_run"] is True
+    assert dry["outputs"] == {}
+    assert not output_dir.exists()
+
+    written = run_backlog_split(curated_json=curated_path, output_dir=output_dir, dry_run=False)
+
+    assert (output_dir / "latest_selene_intake.json").exists()
+    assert (output_dir / "latest_selene_intake.md").exists()
+    assert (output_dir / "latest_azari_future.json").exists()
+    assert (output_dir / "latest_project_abc.json").exists()
+    assert (output_dir / "latest_future_system.json").exists()
+    assert written["outputs"]["selene_intake_json"].endswith("latest_selene_intake.json")
+    assert json.loads((output_dir / "latest_selene_intake.json").read_text(encoding="utf-8"))["track"] == "selene_intake"

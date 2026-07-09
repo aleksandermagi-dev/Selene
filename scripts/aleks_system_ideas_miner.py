@@ -13,6 +13,7 @@ from typing import Any
 
 DEFAULT_SOURCE_DIR = Path("AleksOSminer")
 DEFAULT_OUTPUT_DIR = Path("local-data") / "aleks_idea_miner"
+DEFAULT_BACKLOG_DIR = DEFAULT_OUTPUT_DIR / "backlog"
 
 GUARD_FLAGS = {
     "selene_memory_write": False,
@@ -339,6 +340,25 @@ READINESS_ORDER = {
     "ready_to_prototype": 2,
     "implemented_or_partly_implemented": 3,
     "future_research": 4,
+}
+
+BACKLOG_TRACKS = {
+    "selene_intake": {
+        "title": "Selene Intake",
+        "description": "Ideas that may support Selene organs, UI, memory, intelligenceOS, Cocoon, Great Library, Tendril, voice, diagnostics, or care law after separate review.",
+    },
+    "azari_future": {
+        "title": "Azari Future Copy",
+        "description": "Azari, Lumen, Munsell, and older prototype-line ideas preserved separately for future Azari work.",
+    },
+    "project_abc": {
+        "title": "Project ABC",
+        "description": "Transfer, portability, embodiment, and ABC-line ideas kept separate from Selene implementation unless later reviewed.",
+    },
+    "future_system": {
+        "title": "Future Systems",
+        "description": "Useful AI-system ideas that do not clearly belong to Selene, Azari, or Project ABC yet.",
+    },
 }
 
 GENERIC_CHAT_MARKERS = [
@@ -1472,6 +1492,245 @@ def report_curated_markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _card_text(card: dict[str, Any]) -> str:
+    pieces = [
+        str(card.get("title") or ""),
+        str(card.get("idea_family") or ""),
+        str(card.get("likely_implementation_target") or ""),
+        str(card.get("implementation_direction") or ""),
+        str(card.get("why_it_matters") or ""),
+        " ".join(str(tag) for tag in card.get("ancestry_tags") or []),
+        " ".join(str(link.get("concept") or "") for link in card.get("current_concept_links") or []),
+        " ".join(str(excerpt.get("excerpt") or "") for excerpt in card.get("user_first_excerpts") or []),
+    ]
+    return " ".join(pieces).lower()
+
+
+def backlog_tracks_for(card: dict[str, Any]) -> list[str]:
+    text = _card_text(card)
+    target = str(card.get("likely_implementation_target") or "")
+    concepts = {str(link.get("concept") or "") for link in card.get("current_concept_links") or []}
+
+    explicit_selene_terms = [
+        "selene",
+        "vys",
+        "continuity pack",
+        "memory organ",
+        "selene chat",
+        "voice module",
+        "great library",
+        "intelligenceos",
+    ]
+    selene_support_terms = [
+        "cocoon",
+        "tendril",
+        "care law",
+        "teaching",
+        "diagnostics",
+    ]
+    azari_terms = ["azari", "lumen", "munsell"]
+    project_abc_terms = ["project abc", "abc", "transfer", "portability", "essence transfer", "body", "android", "vessel"]
+
+    has_selene = target == "Selene" or "Selene" in concepts or any(term in text for term in explicit_selene_terms)
+    has_azari = target == "Azari" or "Azari" in concepts or any(term in text for term in azari_terms)
+    has_project_abc = target == "Project ABC" or "Project ABC" in concepts or any(term in text for term in project_abc_terms)
+    if not has_azari and not has_project_abc and any(term in text for term in selene_support_terms):
+        has_selene = True
+
+    tracks: list[str] = []
+    if has_selene:
+        tracks.append("selene_intake")
+    if has_azari:
+        tracks.append("azari_future")
+    if has_project_abc:
+        tracks.append("project_abc")
+    if not tracks:
+        tracks.append("future_system")
+    return tracks
+
+
+def backlog_readiness_for(card: dict[str, Any]) -> str:
+    confidence = str(card.get("review_confidence") or "")
+    implementation_readiness = str(card.get("implementation_readiness") or "")
+    score = int(card.get("curated_score") or 0)
+    if confidence == "strong" and implementation_readiness in {"ready_to_prototype", "implemented_or_partly_implemented"}:
+        return "use_now"
+    if confidence in {"strong", "useful lead"} and implementation_readiness in {"architecture_seed", "ready_to_prototype", "implemented_or_partly_implemented"} and score >= 45:
+        return "near_term"
+    if confidence == "weak lead":
+        return "research_more"
+    return "hold"
+
+
+def backlog_next_action_for(track: str, readiness: str) -> str:
+    if track == "selene_intake":
+        return {
+            "use_now": "Review for a future Selene implementation plan; do not ingest into memory or Cocoon automatically.",
+            "near_term": "Keep in the Selene idea queue and compare against current organ priorities.",
+            "hold": "Preserve as Selene-adjacent context until Aleks selects a direction.",
+            "research_more": "Skim later for ancestry; do not promote without stronger source review.",
+        }[readiness]
+    if track == "azari_future":
+        return "Preserve for the future Azari/Lumen return pass; do not merge into Selene unless separately re-owned."
+    if track == "project_abc":
+        return "Preserve for Project ABC portability or embodiment planning; keep separate from Selene feature work."
+    return "Hold as a general AI-system idea until Aleks chooses a project home."
+
+
+def backlog_card(card: dict[str, Any], track: str) -> dict[str, Any]:
+    readiness = backlog_readiness_for(card)
+    return {
+        "idea_title": card.get("title"),
+        "source_curated_card_id": card.get("id"),
+        "target_track": track,
+        "family": card.get("idea_family"),
+        "readiness": readiness,
+        "implementation_fit": card.get("implementation_direction"),
+        "why_useful": card.get("why_it_matters"),
+        "risks_boundaries": card.get("risks", []),
+        "user_excerpts": (card.get("user_first_excerpts") or [])[:3],
+        "suggested_next_action": backlog_next_action_for(track, readiness),
+        "review_confidence": card.get("review_confidence"),
+        "curated_score": card.get("curated_score"),
+        "likely_implementation_target": card.get("likely_implementation_target"),
+        "implementation_readiness": card.get("implementation_readiness"),
+    }
+
+
+def build_backlog_split(curated: dict[str, Any]) -> dict[str, Any]:
+    by_id: dict[str, dict[str, Any]] = {}
+    for cards in curated.get("sections", {}).values():
+        for card in cards:
+            card_id = str(card.get("id") or "")
+            if not card_id:
+                continue
+            current = by_id.get(card_id)
+            if current is None or int(card.get("curated_score") or 0) > int(current.get("curated_score") or 0):
+                by_id[card_id] = card
+
+    tracks: dict[str, list[dict[str, Any]]] = {track: [] for track in BACKLOG_TRACKS}
+    for card in by_id.values():
+        for track in backlog_tracks_for(card):
+            item = backlog_card(card, track)
+            tracks[track].append(item)
+    for items in tracks.values():
+        items.sort(
+            key=lambda item: (
+                ["use_now", "near_term", "hold", "research_more"].index(item["readiness"]),
+                -int(item.get("curated_score") or 0),
+                str(item.get("idea_title") or ""),
+            )
+        )
+
+    return {
+        "status": "aleks_system_ideas_backlog_split_complete",
+        "version": "1.0",
+        "created_at": datetime.now(UTC).isoformat(),
+        "source_status": curated.get("status"),
+        "source_curated_count": curated.get("curated_count"),
+        "unique_cards_read": len(by_id),
+        "track_counts": {track: len(items) for track, items in tracks.items()},
+        "tracks": tracks,
+        "guard_flags": GUARD_FLAGS,
+    }
+
+
+def report_backlog_markdown(split: dict[str, Any], track: str) -> str:
+    meta = BACKLOG_TRACKS[track]
+    cards = split["tracks"][track]
+    lines = [
+        f"# Aleks Ideas Backlog - {meta['title']}",
+        "",
+        f"Status: `{split['status']}`",
+        "",
+        meta["description"],
+        "",
+        "Boundary: local review backlog only. Not Selene memory, not Selene voice, not Cocoon queue work, not public evidence, and not model training/LoRA.",
+        "",
+        "## Summary",
+        "",
+        f"- source curated cards: {split['source_curated_count']}",
+        f"- unique section cards read: {split['unique_cards_read']}",
+        f"- cards in this track: {len(cards)}",
+        "",
+    ]
+    if not cards:
+        lines.extend(["No cards landed in this track.", ""])
+    for item in cards:
+        lines.extend(
+            [
+                f"## {item['idea_title']}",
+                "",
+                f"- source curated id: `{item['source_curated_card_id']}`",
+                f"- track: `{item['target_track']}`",
+                f"- family: {item['family']}",
+                f"- readiness: `{item['readiness']}`",
+                f"- review confidence: {item['review_confidence']}",
+                f"- curated score: {item['curated_score']}",
+                f"- likely target: {item['likely_implementation_target']}",
+                f"- implementation readiness: {item['implementation_readiness']}",
+                f"- why useful: {item['why_useful']}",
+                f"- implementation fit: {item['implementation_fit']}",
+                f"- suggested next action: {item['suggested_next_action']}",
+                "",
+                "Aleks/user excerpts:",
+            ]
+        )
+        for excerpt in item["user_excerpts"]:
+            lines.append(f"- {excerpt['source_ref']}: {excerpt['excerpt']}")
+        lines.append("")
+    lines.extend(
+        [
+            "## Guard Flags",
+            "",
+            "```json",
+            json.dumps(split["guard_flags"], indent=2),
+            "```",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def write_backlog_split_outputs(split: dict[str, Any], output_dir: Path) -> dict[str, str]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    outputs: dict[str, str] = {}
+    for track in BACKLOG_TRACKS:
+        json_path = output_dir / f"latest_{track}.json"
+        md_path = output_dir / f"latest_{track}.md"
+        payload = {
+            key: value
+            for key, value in split.items()
+            if key not in {"tracks"}
+        }
+        payload["track"] = track
+        payload["track_title"] = BACKLOG_TRACKS[track]["title"]
+        payload["cards"] = split["tracks"][track]
+        json_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        md_path.write_text(report_backlog_markdown(split, track), encoding="utf-8")
+        outputs[f"{track}_json"] = str(json_path)
+        outputs[f"{track}_markdown"] = str(md_path)
+    return outputs
+
+
+def run_backlog_split(
+    *,
+    curated_json: Path = DEFAULT_OUTPUT_DIR / "latest_curated.json",
+    output_dir: Path = DEFAULT_BACKLOG_DIR,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    curated = json.loads(curated_json.read_text(encoding="utf-8"))
+    split = build_backlog_split(curated)
+    split["dry_run"] = dry_run
+    split["source_curated_json"] = str(curated_json)
+    split["output_dir"] = str(output_dir)
+    if dry_run:
+        split["outputs"] = {}
+    else:
+        split["outputs"] = write_backlog_split_outputs(split, output_dir)
+    return split
+
+
 def write_outputs(report: dict[str, Any], output_dir: Path) -> dict[str, str]:
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -1553,7 +1812,28 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Print summary without writing output files.")
     parser.add_argument("--path-only", action="store_true", help="Use only current conversation path messages.")
     parser.add_argument("--max-candidates", type=int, help="Limit candidates in the report.")
+    parser.add_argument("--split-backlog", action="store_true", help="Split latest curated report into local Selene/Azari/ABC/future backlogs.")
+    parser.add_argument("--curated-json", type=Path, default=DEFAULT_OUTPUT_DIR / "latest_curated.json", help="Curated report JSON for --split-backlog.")
+    parser.add_argument("--backlog-output-dir", type=Path, default=DEFAULT_BACKLOG_DIR, help="Ignored local backlog output directory.")
     args = parser.parse_args()
+    if args.split_backlog:
+        split = run_backlog_split(
+            curated_json=args.curated_json,
+            output_dir=args.backlog_output_dir,
+            dry_run=args.dry_run,
+        )
+        summary = {
+            "status": split["status"],
+            "dry_run": split["dry_run"],
+            "source_curated_json": split["source_curated_json"],
+            "source_curated_count": split["source_curated_count"],
+            "unique_cards_read": split["unique_cards_read"],
+            "track_counts": split["track_counts"],
+            "outputs": split["outputs"],
+            "guard_flags": split["guard_flags"],
+        }
+        print(json.dumps(summary, indent=2))
+        return
     report = run_miner(
         source_dir=args.source_dir,
         source_zip=args.source_zip,
