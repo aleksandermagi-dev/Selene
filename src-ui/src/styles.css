@@ -270,9 +270,9 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   background: var(--app-bg);
   color: var(--text-strong);
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
   min-height: 100svh;
-  padding: 14px;
+  padding: 12px;
 }
 
 .mobileHeader {
@@ -334,7 +334,7 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   gap: 10px;
   min-height: 0;
   overflow: auto;
-  padding: 0 0 12px;
+  padding: 0 0 10px;
 }
 
 .mobileLanding {
@@ -347,13 +347,41 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 }
 
 .mobileComposer textarea {
-  min-height: 92px;
+  font-size: 17px;
+  line-height: 1.45;
+  min-height: 118px;
+  resize: vertical;
 }
 
 .mobileActions {
   display: grid;
   gap: 8px;
   grid-template-columns: 1fr 1fr;
+}
+
+.mobileActions button {
+  min-height: 48px;
+}
+
+.mobileSessionScroller {
+  display: grid;
+  gap: 8px;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.mobileSessionScroller button {
+  align-items: start;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  min-height: 48px;
+  text-align: left;
+}
+
+.mobileSessionScroller span {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .mobileShell .message,

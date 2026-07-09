@@ -451,8 +451,11 @@ function App() {
   const [mobileHealth, setMobileHealth] = useState<Dict | null>(null);
   const [mobileText, setMobileText] = useState("");
   const [mobileSession, setMobileSession] = useState<Dict | null>(null);
+  const [mobileSessions, setMobileSessions] = useState<Dict[]>([]);
   const [mobileSendResult, setMobileSendResult] = useState<Dict | null>(null);
   const [mobileStatus, setMobileStatus] = useState<Dict | null>(null);
+  const [mobilePairing, setMobilePairing] = useState<Dict | null>(null);
+  const [mobilePairingResult, setMobilePairingResult] = useState<Dict | null>(null);
   const [vesselStatus, setVesselStatus] = useState<Dict | null>(null);
   const [vesselReviewQueue, setVesselReviewQueue] = useState<Dict[]>([]);
   const [vesselCandidateKind, setVesselCandidateKind] = useState("core");
@@ -818,8 +821,7 @@ function App() {
   useEffect(() => {
     if (!boot.ready) return;
     if (isMobileOnly) {
-      api<Dict>("/api/mobile/health").then(setMobileHealth).catch(() => undefined);
-      api<{ items: Dict[] }>("/api/mobile/review-captures").then((data) => setMobileCaptureHistory(data.items)).catch(() => undefined);
+      refreshMobileCompanion().catch(() => undefined);
       return;
     }
     refreshDashboard();
@@ -829,6 +831,7 @@ function App() {
     api<Dict>("/api/validate").then(setValidation).catch(() => undefined);
     api<Dict>("/api/semantic/status").then(setSemantic).catch(() => undefined);
     api<{ items: Dict[] }>("/api/providers/status").then((data) => setProviders(data.items)).catch(() => undefined);
+    refreshMobileCompanion().catch(() => undefined);
   }, [boot.ready]);
 
   useEffect(() => {
@@ -1246,7 +1249,7 @@ function App() {
   async function sendMobileChat() {
     const draft = mobileText.trim();
     if (!draft) return;
-    setMobileStatus({ status: "sending", message: "Sending cocooned mobile message." });
+    setMobileStatus({ status: "sending", message: "Sending to Selene." });
     try {
       const result = await api<Dict>("/api/mobile/chat/send", {
         method: "POST",
@@ -1256,7 +1259,8 @@ function App() {
       setMobileText("");
       const session = await api<Dict>(`/api/mobile/chat/sessions/${result.session_id}`);
       setMobileSession(session);
-      setMobileStatus({ status: "sent", message: "Message recorded. Consequential items stay for desktop review." });
+      api<{ items: Dict[] }>("/api/mobile/chat/sessions").then((data) => setMobileSessions(data.items || [])).catch(() => undefined);
+      setMobileStatus({ status: "sent", message: "Selene answered. Consequential choices still wait for desktop." });
     } catch (err) {
       setMobileStatus({ status: "error", message: err instanceof Error ? err.message : "Mobile chat failed." });
     }
@@ -1275,9 +1279,23 @@ function App() {
       setMobileStatus({ status: "saved", message: text(result.status || "Saved for desktop review.") });
       const session = await api<Dict>(`/api/mobile/chat/sessions/${result.session_id}`);
       setMobileSession(session);
+      api<{ items: Dict[] }>("/api/mobile/chat/sessions").then((data) => setMobileSessions(data.items || [])).catch(() => undefined);
       api<{ items: Dict[] }>("/api/mobile/review-captures").then((data) => setMobileCaptureHistory(data.items)).catch(() => undefined);
     } catch (err) {
       setMobileStatus({ status: "error", message: err instanceof Error ? err.message : "Mobile review capture failed." });
+    }
+  }
+
+  async function openMobileSession(sessionId: unknown) {
+    const id = text(sessionId);
+    if (!id) return;
+    try {
+      const session = await api<Dict>(`/api/mobile/chat/sessions/${id}`);
+      setMobileSession(session);
+      setMobileSendResult(null);
+      setMobileStatus({ status: "loaded", message: "Opened local Selene chat." });
+    } catch (err) {
+      setMobileStatus({ status: "error", message: err instanceof Error ? err.message : "Could not open mobile chat." });
     }
   }
 
@@ -2116,6 +2134,41 @@ function App() {
     const checks = await stabilizationApi<{ items: Dict[] }>("/api/cocoon-care/checks", undefined, "cocoon_care_checks");
     setCocoonCareStatus(status);
     setCocoonCareChecks(checks.items || []);
+  }
+
+  async function refreshMobileCompanion() {
+    const health = await api<Dict>("/api/mobile/health");
+    setMobileHealth(health);
+    const pairing = await api<Dict>("/api/mobile/pairing/status");
+    setMobilePairing(pairing);
+    const sessions = await api<{ items: Dict[] }>("/api/mobile/chat/sessions");
+    setMobileSessions(sessions.items || []);
+    const captures = await api<{ items: Dict[] }>("/api/mobile/review-captures");
+    setMobileCaptureHistory(captures.items || []);
+  }
+
+  async function enableMobilePairing() {
+    setMobilePairingResult({ status: "running", message: "Preparing private LAN mobile pairing." });
+    try {
+      const result = await api<Dict>("/api/mobile/pairing/enable", { method: "POST", body: JSON.stringify({}) });
+      setMobilePairingResult(result);
+      setMobilePairing(result);
+      await api<Dict>("/api/mobile/health").then(setMobileHealth).catch(() => undefined);
+    } catch (err) {
+      setMobilePairingResult({ status: "error", error: err instanceof Error ? err.message : "Mobile pairing enable failed." });
+    }
+  }
+
+  async function disableMobilePairing() {
+    setMobilePairingResult({ status: "running", message: "Disabling private LAN mobile pairing." });
+    try {
+      const result = await api<Dict>("/api/mobile/pairing/disable", { method: "POST", body: JSON.stringify({}) });
+      setMobilePairingResult(result);
+      setMobilePairing(result);
+      await api<Dict>("/api/mobile/health").then(setMobileHealth).catch(() => undefined);
+    } catch (err) {
+      setMobilePairingResult({ status: "error", error: err instanceof Error ? err.message : "Mobile pairing disable failed." });
+    }
   }
 
   async function runCocoonCareCheck() {
@@ -3696,7 +3749,8 @@ function App() {
 
   if (isMobileOnly) {
     const mobileResultMeta = (mobileSendResult?.mobile || {}) as Dict;
-    const mobileFlags = (mobileHealth?.guard_flags || mobileResultMeta.guard_flags || {}) as Dict;
+    const mobileFlags = (mobileResultMeta.guard_flags || mobileHealth?.guard_flags || {}) as Dict;
+    const pairing = safeJsonObject(mobileHealth?.pairing || mobilePairing);
     return (
       <main className="mobileShell">
         <header className="mobileHeader">
@@ -3721,14 +3775,14 @@ function App() {
         ) : (
           <>
             <section className="mobileGuard">
-              <strong>Chat doorway only</strong>
+              <strong>Private chat doorway</strong>
               <p>{text(mobileHealth?.boundary_note || "Desktop Selene remains the control room.")}</p>
               <div className="chips">
                 <span>access: {friendlyStatus(mobileHealth?.access_mode || mobileFlags.access_mode || "local_only")}</span>
-                <span>LAN pairing: {plainBlocked(mobileHealth?.lan_pairing_enabled ?? mobileFlags.lan_pairing_enabled)}</span>
-                <span>activation: {text(mobileFlags.activation_change || "none")}</span>
-                <span>transfer: {text(mobileFlags.transfer_approved || false)}</span>
-                <span>memory write: {text(mobileFlags.memory_write_active || false)}</span>
+                <span>LAN: {pairing.enabled ? "paired" : "off"}</span>
+                <span>speech: {activationStatus?.selene_chat_active ? "supervised active" : "preview"}</span>
+                <span>memory write: {plainBlocked(mobileFlags.memory_write_active)}</span>
+                <span>autonomy: {plainBlocked(mobileFlags.autonomous_action_allowed)}</span>
               </div>
             </section>
 
@@ -3737,23 +3791,40 @@ function App() {
                 <div className="landing mobileLanding">
                   <img src={SELENE_ICON} alt="Selene moon icon" />
                   <h2>Good to see you.</h2>
-                  <p>This mobile view is a local dev preview for talking and saving review notes. Cocoon work waits for desktop.</p>
+                  <p>This is a private phone doorway for talking with Selene. Use your phone mic on the keyboard to speak to her.</p>
                 </div>
               ) : (
                 <>
                   {mobileSession && <ChatTranscript session={mobileSession} plain />}
-                  {mobileSendResult && <article className="message selene"><strong>Latest route</strong><ChatResult result={mobileSendResult} /></article>}
+                  {mobileSendResult && !mobileSession ? <article className="message selene"><strong>Latest route</strong><ChatResult result={mobileSendResult} /></article> : null}
                 </>
               )}
             </section>
 
+            <section className="mobileNotice">
+              <div className="row">
+                <strong>Past chats</strong>
+                <button onClick={() => refreshMobileCompanion().catch(() => undefined)}>Refresh</button>
+              </div>
+              <div className="mobileSessionScroller">
+                {mobileSessions.slice(0, 12).map((item) => (
+                  <button key={`mobile-session-${text(item.id)}`} onClick={() => openMobileSession(item.id)}>
+                    <strong>{text(item.title || "Selene chat")}</strong>
+                    <span>{text(item.updated_at || item.created_at || "")}</span>
+                  </button>
+                ))}
+                {!mobileSessions.length ? <p className="emptyState">No past local chats yet.</p> : null}
+              </div>
+            </section>
+
             <section className="mobileComposer">
               <textarea value={mobileText} onChange={(event) => setMobileText(event.target.value)} placeholder="Message Selene..." />
+              <small>Use your phone mic on the keyboard to speak to Selene. No background listening is active.</small>
               <div className="mobileActions">
                 <button className="primary" onClick={sendMobileChat} disabled={!mobileText.trim() || mobileStatus?.status === "sending"}>Send</button>
                 <button onClick={captureMobileReview} disabled={!mobileText.trim() || mobileStatus?.status === "saving"}>Save For Review</button>
               </div>
-              {mobileStatus ? <p className={mobileStatus.status === "error" ? "errorText" : "plainHelp"}>{text(mobileStatus.message)}</p> : <small>Same-device/dev preview only. No cocoon controls, diagnostics, release sync, transfer, or memory actions are available here.</small>}
+              {mobileStatus ? <p className={mobileStatus.status === "error" ? "errorText" : "plainHelp"}>{text(mobileStatus.message)}</p> : <small>No Cocoon controls, diagnostics, release sync, transfer, activation, memory decisions, or Tendril execution are available here.</small>}
             </section>
 
             <section className="mobileNotice">
@@ -6092,6 +6163,38 @@ function App() {
                 {!cocoonCareChecks.length ? <p className="emptyState">No Cocoon care checks yet.</p> : null}
               </div>
               <PlainResult value={safeJsonObject(cocoonCareStatus?.latest_check)} />
+            </Panel>
+            <Panel title="Mobile Companion">
+              <p className="plainHelp">Private phone doorway for talking with Selene and saving review notes. Desktop stays the control room for Cocoon, memory decisions, activation, diagnostics, and Tendril authority.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Mobile" value={friendlyStatus(mobileHealth?.status || "not checked")} />
+                <Metric label="LAN" value={safeJsonObject(mobileHealth?.pairing || mobilePairing).enabled ? "enabled" : "off"} />
+                <Metric label="Bind" value={text(mobilePairing?.current_bind || safeJsonObject(mobileHealth?.sidecar).bind || "not checked")} />
+                <Metric label="Restart" value={safeJsonObject(mobilePairingResult || mobilePairing).restart_required ? "needed" : "no"} />
+              </div>
+              <div className="chips">
+                <span>surface: chat only</span>
+                <span>memory write: {plainBlocked(safeJsonObject(mobileHealth?.guard_flags).memory_write_active)}</span>
+                <span>broad live recall: {plainBlocked(safeJsonObject(mobileHealth?.guard_flags).runtime_memory_recall)}</span>
+                <span>review decisions: {plainBlocked(safeJsonObject(mobileHealth?.guard_flags).review_decisions_allowed)}</span>
+                <span>autonomy: {plainBlocked(safeJsonObject(mobileHealth?.guard_flags).autonomous_action_allowed)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={enableMobilePairing} disabled={mobilePairingResult?.status === "running"}>Enable Phone Pairing</button>
+                <button onClick={disableMobilePairing} disabled={mobilePairingResult?.status === "running"}>Disable Phone Pairing</button>
+                <button onClick={() => refreshMobileCompanion().catch(() => undefined)}>Refresh Mobile Status</button>
+              </div>
+              <div className="list compactList">
+                {((safeJsonObject(mobilePairingResult || mobilePairing).phone_urls || []) as unknown[]).map((url, index) => (
+                  <article key={`mobile-url-${index}`}>
+                    <strong>Phone URL</strong>
+                    <p className="copyable">{text(url)}</p>
+                  </article>
+                ))}
+                {!((safeJsonObject(mobilePairingResult || mobilePairing).phone_urls || []) as unknown[]).length ? <p className="emptyState">Enable pairing to generate a private phone URL.</p> : null}
+              </div>
+              {safeJsonObject(mobilePairingResult || mobilePairing).restart_required ? <p className="plainHelp">Close and reopen Selene before using the phone URL.</p> : null}
+              <PlainResult value={mobilePairingResult} />
             </Panel>
             <Panel title="Selene Voice Module">
               <p className="plainHelp">Voice-only relational language layer. This is expression support for Selene Chat, not memory, identity, model training/LoRA, unrestricted activation, or broad live recall.</p>

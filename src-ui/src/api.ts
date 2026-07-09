@@ -17,11 +17,27 @@ const configuredApiBase =
 
 export const API = configuredApiBase.replace(/\/+$/, "");
 
+function mobilePairingHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get("pairing") || params.get("pairing_code") || "";
+    if (fromUrl) {
+      window.localStorage?.setItem("selene_mobile_pairing", fromUrl);
+    }
+    const token = fromUrl || window.localStorage?.getItem("selene_mobile_pairing") || "";
+    return token ? { "X-Selene-Mobile-Pairing": token } : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(path.startsWith("/api/mobile/") ? mobilePairingHeader() : {}),
       ...(init?.headers || {})
     }
   });

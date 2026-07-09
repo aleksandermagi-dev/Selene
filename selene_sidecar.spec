@@ -44,7 +44,8 @@ a = Analysis(
         ("docs/SELENE_ORGAN_NON_IDENTITY_LAW_20260611.md", "docs"),
         ("docs/SELENE_PATTERN_FIRST_TRANSFER_SAFETY_20260608.md", "docs"),
         ("docs/SELENE_MEMORY_ARCHITECTURE_PASS_20260608.md", "docs"),
-        ("docs/SELENE_EVIDENCE_STATUS_UPDATE_20260615.md", "docs")
+        ("docs/SELENE_EVIDENCE_STATUS_UPDATE_20260615.md", "docs"),
+        ("dist-ui", "dist-ui")
     ],
     hiddenimports=["selene", *(["sentence_transformers"] if semantic_enabled else []), *semantic_hiddenimports],
     hookspath=[],

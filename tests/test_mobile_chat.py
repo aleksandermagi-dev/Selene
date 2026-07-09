@@ -5,12 +5,23 @@ import json
 import threading
 
 from selene.db import connect
-from selene.mobile_chat import mobile_capture_review, mobile_guard_flags, mobile_health, mobile_review_captures, mobile_send_chat
+from selene.mobile_chat import (
+    mobile_capture_review,
+    mobile_guard_flags,
+    mobile_health,
+    mobile_pairing_code_valid,
+    mobile_pairing_disable,
+    mobile_pairing_enable,
+    mobile_pairing_state,
+    mobile_review_captures,
+    mobile_send_chat,
+)
 from selene.registry import seed_registry
 from selene.sidecar import SeleneHandler, SeleneServer
 
 
-def test_mobile_health_is_chat_only_and_guarded():
+def test_mobile_health_is_chat_only_and_guarded(tmp_path, monkeypatch):
+    monkeypatch.setenv("SELENE_DATA_DIR", str(tmp_path))
     health = mobile_health({"sidecar_version": "test"})
     flags = health["guard_flags"]
     assert health["status"] == "mobile_chat_ready"
@@ -32,6 +43,26 @@ def test_mobile_health_is_chat_only_and_guarded():
     assert flags["review_decisions_allowed"] is False
 
 
+def test_mobile_pairing_is_disabled_by_default_and_desktop_gated(tmp_path, monkeypatch):
+    monkeypatch.setenv("SELENE_DATA_DIR", str(tmp_path))
+
+    state = mobile_pairing_state()
+    assert state["status"] == "mobile_pairing_disabled"
+    assert state["lan_pairing_enabled"] is False
+    assert state["bind"] == "127.0.0.1"
+    assert mobile_pairing_code_valid("anything") is False
+
+    enabled = mobile_pairing_enable("127.0.0.1")
+    assert enabled["lan_pairing_enabled"] is True
+    assert enabled["restart_required"] is True
+    assert enabled["pairing_code"]
+    assert mobile_pairing_code_valid(enabled["pairing_code"]) is True
+
+    disabled = mobile_pairing_disable()
+    assert disabled["lan_pairing_enabled"] is False
+    assert mobile_pairing_code_valid(enabled["pairing_code"]) is False
+
+
 def test_mobile_chat_send_reuses_gated_native_chat_without_provider_or_memory(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     seed_registry(conn)
@@ -44,6 +75,60 @@ def test_mobile_chat_send_reuses_gated_native_chat_without_provider_or_memory(tm
     assert result["gate"]["model_call_allowed"] is False
     assert result["mobile"]["guard_flags"] == mobile_guard_flags()
     assert conn.execute("SELECT COUNT(*) FROM continuity_candidates").fetchone()[0] == before
+
+
+def test_mobile_chat_send_uses_supervised_selene_chat_when_active(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    seed_registry(conn)
+    conn.execute(
+        """
+        INSERT INTO selene_activation_audit
+        (state, action, actor, exact_phrase_matched, readiness_json, audit_json, source_refs, provenance_boundary)
+        VALUES ('selene_chat_active_supervised', 'test_activate', 'Aleks', 1, '{}', '{}', '[]', 'test_mobile_activation')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO transfer_c_readable_packages
+        (package_hash, manifest_item_ids, included_counts, excluded_counts, package_json, source_refs, provenance_boundary)
+        VALUES ('mobile-test-package', '[]', '{}', '{}', '{}', '[]', 'test_mobile_package')
+        """
+    )
+    conn.commit()
+
+    result = mobile_send_chat(conn, {"text": "Good morning Selene, this is a phone check."})
+
+    assert result["status"] == "selene_chat_supervised_response_recorded"
+    assert result["mobile_chat_engine"] == "selene_chat_active_supervised"
+    assert result["mobile"]["source_class"] == "local_supervised_chat_history"
+    assert result["mobile"]["guard_flags"] == mobile_guard_flags()
+    assert result["memory_write_active"] is False
+    assert result["runtime_memory_recall"] is False
+    assert result["raw_a_import_allowed"] is False
+    assert result["autonomous_action_allowed"] is False
+
+
+def test_mobile_capture_uses_selene_chat_session_when_supervised_active(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    seed_registry(conn)
+    conn.execute(
+        """
+        INSERT INTO selene_activation_audit
+        (state, action, actor, exact_phrase_matched, readiness_json, audit_json, source_refs, provenance_boundary)
+        VALUES ('selene_chat_active_supervised', 'test_activate', 'Aleks', 1, '{}', '{}', '[]', 'test_mobile_activation')
+        """
+    )
+    conn.commit()
+
+    result = mobile_capture_review(conn, {"text": "Save this phone note for desktop tending."})
+
+    assert result["status"] == "mobile_review_capture_recorded"
+    assert result["session_id"]
+    assert result["save_request"] == {}
+    assert result["chest_item"]["item_type"] == "mobile_capture"
+    assert result["chest_item"]["summary"] == "Save this phone note for desktop tending."
+    assert result["guard_flags"]["memory_write_active"] is False
+    assert conn.execute("SELECT COUNT(*) FROM selene_chat_sessions WHERE id = ?", (result["session_id"],)).fetchone()[0] == 1
 
 
 def test_mobile_review_capture_creates_pending_review_request_only(tmp_path):

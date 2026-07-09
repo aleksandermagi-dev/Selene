@@ -20,8 +20,20 @@ from .db import connect, init_db
 from .detached_corpus import detached_corpus_audit, detached_corpus_metadata, detached_corpus_previews
 from .kernel import kernel_state
 from .module_router import chat_gate_preview, route_request
-from .mobile_chat import mobile_blocked_action, mobile_capture_review, mobile_get_session, mobile_health, mobile_list_sessions, mobile_review_captures, mobile_send_chat
-from .paths import default_db_path, export_dir, local_data_dir, local_log_dir
+from .mobile_chat import (
+    mobile_blocked_action,
+    mobile_capture_review,
+    mobile_get_session,
+    mobile_health,
+    mobile_list_sessions,
+    mobile_pairing_code_valid,
+    mobile_pairing_disable,
+    mobile_pairing_enable,
+    mobile_pairing_state,
+    mobile_review_captures,
+    mobile_send_chat,
+)
+from .paths import PROJECT_ROOT, default_db_path, export_dir, local_data_dir, local_log_dir
 from .providers import provider_statuses
 from .registry import audit_rows, dashboard, evidence_detail, search_evidence, seed_registry, update_review_record
 from .semantic import backfill_evidence_embeddings, semantic_status
@@ -38,6 +50,7 @@ ALLOWED_ORIGINS = {
 
 SIDECAR_VERSION = "0.1.1"
 STARTUP_STARTED_AT = time.perf_counter()
+SIDECAR_BIND = "127.0.0.1"
 STARTUP_LOCK = threading.Lock()
 STARTUP_STATE: dict[str, object] = {
     "startup_phase": "module_loaded",
@@ -107,8 +120,8 @@ def startup_snapshot() -> dict[str, object]:
 def health_payload() -> dict[str, object]:
     return {
         "status": "ok",
-        "bind": "127.0.0.1",
-        "tokenless": True,
+        "bind": SIDECAR_BIND,
+        "tokenless": SIDECAR_BIND == "127.0.0.1",
         "sidecar_version": SIDECAR_VERSION,
         "capabilities": SIDECAR_CAPABILITIES,
         "startup": startup_snapshot(),
@@ -326,6 +339,18 @@ def logged_route_error(route_key: str, exc: Exception) -> tuple[int, bytes]:
     return json_bytes({"error": str(exc)}, 400)
 
 
+def mobile_web_root() -> Path:
+    candidates = [
+        PROJECT_ROOT / "dist-ui",
+        Path(__file__).resolve().parents[2] / "dist-ui",
+        Path.cwd() / "dist-ui",
+    ]
+    for candidate in candidates:
+        if (candidate / "index.html").exists():
+            return candidate
+    return candidates[0]
+
+
 def watch_parent_process(parent_pid: int | None) -> None:
     if not parent_pid or os.name != "nt":
         write_ceremony_debug_log("sidecar", "parent_watch_skipped", parent_pid=parent_pid, os_name=os.name)
@@ -365,23 +390,114 @@ class SeleneHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         self._send(204, b"")
 
+    def _is_local_client(self) -> bool:
+        host = self.client_address[0] if self.client_address else ""
+        return host in {"127.0.0.1", "::1", "localhost"}
+
+    def _mobile_pairing_token(self) -> str:
+        parsed = urlparse(self.path)
+        query = parse_qs(parsed.query)
+        return (
+            self.headers.get("X-Selene-Mobile-Pairing")
+            or self.headers.get("X-Selene-Mobile-Code")
+            or (query.get("pairing") or query.get("pairing_code") or [""])[0]
+        )
+
+    def _mobile_allowed(self) -> bool:
+        if self._is_local_client():
+            return True
+        return mobile_pairing_code_valid(self._mobile_pairing_token())
+
+    def _send_mobile_forbidden(self) -> None:
+        self._send(*json_bytes({
+            "error": "mobile pairing code required",
+            "status": "mobile_pairing_required",
+            "guard_flags": mobile_blocked_action("mobile_pairing")["guard_flags"],
+        }, 403))
+
+    def _serve_mobile_asset(self, parsed_path: str) -> bool:
+        if parsed_path not in {"/mobile", "/mobile/"} and not parsed_path.startswith("/assets/"):
+            return False
+        if not self._mobile_allowed():
+            self._send_mobile_forbidden()
+            return True
+        root = mobile_web_root()
+        path = root / "index.html" if parsed_path in {"/mobile", "/mobile/"} else root / parsed_path.lstrip("/")
+        try:
+            resolved = path.resolve()
+            root_resolved = root.resolve()
+            if root_resolved not in resolved.parents and resolved != root_resolved:
+                self._send(*json_bytes({"error": "invalid mobile asset"}, 400))
+                return True
+            body = resolved.read_bytes()
+        except OSError:
+            self._send(*json_bytes({
+                "error": "mobile web UI is not bundled in this sidecar build",
+                "status": "mobile_web_unavailable",
+                "web_root": str(root),
+                "guard_flags": mobile_blocked_action("mobile_web")["guard_flags"],
+            }, 404))
+            return True
+        content_type = "text/html; charset=utf-8"
+        if resolved.suffix == ".js":
+            content_type = "text/javascript; charset=utf-8"
+        elif resolved.suffix == ".css":
+            content_type = "text/css; charset=utf-8"
+        elif resolved.suffix == ".svg":
+            content_type = "image/svg+xml"
+        elif resolved.suffix == ".png":
+            content_type = "image/png"
+        elif resolved.suffix in {".jpg", ".jpeg"}:
+            content_type = "image/jpeg"
+        if resolved.name == "index.html":
+            insert = (
+                "<script>"
+                "window.__SELENE_API_BASE__=window.location.origin;"
+                "try{var p=new URLSearchParams(window.location.search).get('pairing')||'';"
+                "if(p)localStorage.setItem('selene_mobile_pairing',p)}catch(e){}"
+                "</script>"
+            )
+            text_body = body.decode("utf-8").replace("<head>", f"<head>{insert}", 1)
+            body = text_body.encode("utf-8")
+        self._send(200, body, content_type)
+        return True
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         conn = self.server.conn
+        if self._serve_mobile_asset(parsed.path):
+            return
         if parsed.path == "/health":
             if not startup_snapshot().get("first_health_ms"):
                 mark_startup_phase("first_health", first_health_ms=round((time.perf_counter() - STARTUP_STARTED_AT) * 1000, 1))
             self._send(*json_bytes(health_payload()))
         elif parsed.path == "/api/mobile/health":
+            if not self._mobile_allowed():
+                self._send_mobile_forbidden()
+                return
             if not startup_snapshot().get("first_health_ms"):
                 mark_startup_phase("first_health", first_health_ms=round((time.perf_counter() - STARTUP_STARTED_AT) * 1000, 1))
             self._send(*json_bytes(mobile_health(health_payload())))
+        elif parsed.path == "/api/mobile/pairing/status":
+            if not self._mobile_allowed():
+                self._send_mobile_forbidden()
+                return
+            self._send(*json_bytes({**mobile_pairing_state(), "current_bind": SIDECAR_BIND, "guard_flags": mobile_blocked_action("mobile_pairing_status")["guard_flags"]}))
         elif parsed.path == "/api/mobile/chat/sessions":
+            if not self._mobile_allowed():
+                self._send_mobile_forbidden()
+                return
             self._send(*json_bytes(mobile_list_sessions(conn)))
         elif parsed.path == "/api/mobile/review-captures":
+            if not self._mobile_allowed():
+                self._send_mobile_forbidden()
+                return
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(mobile_review_captures(conn, int(qs["limit"]) if qs.get("limit") else 25)))
         elif parsed.path.startswith("/api/mobile/chat/sessions/"):
+            if not self._mobile_allowed():
+                self._send_mobile_forbidden()
+                return
             try:
                 session_id = int(parsed.path.removeprefix("/api/mobile/chat/sessions/"))
                 session = mobile_get_session(conn, session_id)
@@ -714,17 +830,36 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/evaluate":
             text = str(body.get("text", ""))
             self._send(*json_bytes(chat_gate_preview(self.server.conn, text, str(body.get("provider") or "disabled"))))
+        elif request_path == "/api/mobile/pairing/enable":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "mobile pairing can only be enabled from desktop/local Selene"}, 403))
+                return
+            self._send(*json_bytes(mobile_pairing_enable(SIDECAR_BIND)))
+        elif request_path == "/api/mobile/pairing/disable":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "mobile pairing can only be disabled from desktop/local Selene"}, 403))
+                return
+            self._send(*json_bytes(mobile_pairing_disable()))
         elif request_path == "/api/mobile/chat/send":
+            if not self._mobile_allowed():
+                self._send_mobile_forbidden()
+                return
             try:
                 self._send(*json_bytes(mobile_send_chat(self.server.conn, body)))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/mobile/review-capture":
+            if not self._mobile_allowed():
+                self._send_mobile_forbidden()
+                return
             try:
                 self._send(*json_bytes(mobile_capture_review(self.server.conn, body)))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path.startswith("/api/mobile/"):
+            if not self._mobile_allowed():
+                self._send_mobile_forbidden()
+                return
             self._send(*json_bytes(mobile_blocked_action(request_path), 403))
         elif request_path == "/api/route":
             self._send(*json_bytes(route_request(self.server.conn, str(body.get("route_key", "")), body.get("payload") or {})))
@@ -1502,22 +1637,26 @@ def start_seed_thread(db_path: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    global SIDECAR_BIND
     mark_startup_phase("main_start")
     parser = argparse.ArgumentParser(description="Run the Selene local sidecar API.")
     parser.add_argument("--port", type=int, default=int(os.environ.get("SELENE_PORT", "8766")))
+    parser.add_argument("--bind", default=os.environ.get("SELENE_BIND", ""), help="Bind address. Defaults to LAN when mobile pairing is enabled, otherwise localhost.")
     parser.add_argument("--db", type=Path, default=default_db_path())
     parser.add_argument("--seed", action="store_true", help="Seed reviewed registry before serving.")
     parser.add_argument("--parent-pid", type=int, help="Exit when the owning desktop process exits.")
     args = parser.parse_args(argv)
-    mark_startup_phase("args_parsed", seed_requested=bool(args.seed), port=args.port, db_path=str(args.db))
+    pairing = mobile_pairing_state()
+    SIDECAR_BIND = str(args.bind or pairing.get("bind") or "127.0.0.1")
+    mark_startup_phase("args_parsed", seed_requested=bool(args.seed), port=args.port, db_path=str(args.db), bind=SIDECAR_BIND)
     watch_parent_process(args.parent_pid)
-    server = SeleneServer(("127.0.0.1", args.port), SeleneHandler, args.db)
+    server = SeleneServer((SIDECAR_BIND, args.port), SeleneHandler, args.db)
     if args.seed:
         start_seed_thread(args.db)
     else:
         mark_startup_phase("seed_skipped", seed_status="skipped")
-    print(f"Selene sidecar listening on http://127.0.0.1:{args.port}")
-    print("Selene sidecar is tokenless and local-only.")
+    print(f"Selene sidecar listening on http://{SIDECAR_BIND}:{args.port}")
+    print("Selene sidecar is local-only unless mobile LAN pairing is enabled.")
     mark_startup_phase("serve_forever_start", ready=True)
     try:
         server.serve_forever()
