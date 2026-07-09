@@ -897,7 +897,7 @@ export function RoutePreview({ value }: { value: unknown }) {
   return (
     <div className="plainResult">
       <div className="chips">
-        <span>C activation: {friendlyActivation(data.activation_change)}</span>
+        <span>activation: {friendlyActivation(data.activation_change)}</span>
         <span>Runtime recall: {plainBlocked(data.runtime_memory_recall)}</span>
         <span>Provider: {plainBlocked(data.provider_dependency)}</span>
       </div>
@@ -978,7 +978,7 @@ export function CVesselReconstructionDesk({ status, cases, run }: { status: Dict
         <Metric label="Needs Support" value={text(run?.failed_count ?? status?.failed_count ?? 0)} />
       </div>
       <div className="chips">
-        <span>C activation: {friendlyActivation(run?.activation_change ?? status?.activation_change)}</span>
+        <span>activation: {friendlyActivation(run?.activation_change ?? status?.activation_change)}</span>
         <span>Broad live recall: {plainBlocked(run?.runtime_memory_recall ?? status?.runtime_memory_recall)}</span>
         <span>Memory write: {plainBlocked(run?.memory_write_active ?? status?.memory_write_active)}</span>
         <span>Provider: {plainBlocked(run?.provider_dependency ?? status?.provider_dependency)}</span>
@@ -1021,7 +1021,7 @@ export function CVesselSafetyExtensions({ tool, fault, resilience, gate }: { too
         <Metric label="Transfer Gate" value={friendlyStatus(gate?.status || "not checked")} />
       </div>
       <div className="chips">
-        <span>C activation: {friendlyActivation(gate?.activation_change ?? tool?.activation_change)}</span>
+        <span>activation: {friendlyActivation(gate?.activation_change ?? tool?.activation_change)}</span>
         <span>Runtime recall: {plainBlocked(gate?.runtime_memory_recall ?? tool?.runtime_memory_recall)}</span>
         <span>Memory write: {plainBlocked(gate?.memory_write_active ?? tool?.memory_write_active)}</span>
         <span>Provider dependency: {plainBlocked(gate?.provider_dependency ?? tool?.provider_dependency)}</span>
@@ -1282,7 +1282,7 @@ export function PlainResult({ value }: { value: unknown }) {
       {status && <strong>{status}</strong>}
       {data.activation_change !== undefined || data.memory_write_active !== undefined || data.training_allowed !== undefined ? (
         <div className="chips">
-          <span>C activation: {friendlyActivation(data.activation_change)}</span>
+          <span>activation: {friendlyActivation(data.activation_change)}</span>
           <span>Active memory: {plainBlocked(data.memory_write_active)}</span>
           <span>Model training/LoRA: {plainBlocked(data.training_allowed)}</span>
         </div>

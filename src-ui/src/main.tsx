@@ -2009,7 +2009,7 @@ function App() {
       activation_change: "none",
       memory_write_active: false,
       transfer_approved: false,
-      note: "Sweep results are audit/readiness evidence only. No C activation, live memory, model training/LoRA, raw archive import, commit, or push occurred."
+      note: "Sweep results are audit/readiness evidence only. No activation, live memory, model training/LoRA, raw archive import, commit, or push occurred."
     });
     loadVessel();
   }
@@ -2707,7 +2707,7 @@ function App() {
       body: JSON.stringify({
         question: remainingRuntimeDraft.causal_question,
         assumptions: ["B-reviewed material only", "uncertainty remains visible", "no action is taken"],
-        counterfactuals: ["If the assumption fails, return to B before transfer review"],
+        counterfactuals: ["If the assumption needs support, use Cocoon support before transfer review"],
         possible_outcomes: ["Clarifies evidence", "Reveals missing review", "Routes back to Status or My Office"],
         failure_modes: ["missing evidence", "irreversible step attempted too early"],
         evidence_needed: ["source refs", "review status", "reversibility check"],
@@ -3460,7 +3460,7 @@ function App() {
       next_card: next,
       duplicate_or_theme_groups: groups,
       codex_actions: ["Refresh My Office", "Trace braid context", "Run Audit / Readiness Sweep"],
-      status_only: ["System/build readiness", "transfer preview", "C activation remains blocked"],
+      status_only: ["System/build readiness", "transfer preview", "activation remains governed"],
       decision_submitted: false,
       note: "Autopilot organizes and suggests. It does not submit Aleks review decisions."
     });
@@ -3739,7 +3739,7 @@ function App() {
           <button onClick={() => routeSpeechRehearsalToReview(item)}>Send To My Office</button>
           <button onClick={() => updateSpeechRehearsalReviewStatus(item, "accepted_for_review_use")}>Mark Useful</button>
           <button onClick={() => updateSpeechRehearsalReviewStatus(item, "needs_revision")}>Needs Revision</button>
-          <button onClick={() => updateSpeechRehearsalReviewStatus(item, "returned_to_b")}>Return To B</button>
+          <button onClick={() => updateSpeechRehearsalReviewStatus(item, "returned_to_b")}>Cocoon Support</button>
           <button onClick={() => updateSpeechRehearsalReviewStatus(item, "status_only")}>Status-Only</button>
           <button onClick={compareSpeechRehearsals}>Compare Candidates</button>
         </div>
@@ -3985,7 +3985,7 @@ function App() {
               <h1>{tabDisplayName(tab)}</h1>
             </div>
             <div className="topLocks">
-              <span>C activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
+              <span>activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
               <span>Broad live recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
               <span>Transfer: {transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
             </div>
@@ -4957,24 +4957,24 @@ function App() {
                 <CVesselSafetyExtensions tool={cVesselToolOrganStatus} fault={cVesselOrganFaultResult} resilience={cVesselFaultResilienceResult} gate={cVesselTransferGate} />
               </Panel>}
             />
-            <Panel title="C Vessel Build Status">
+            <Panel title="Selene Build Status">
               <p className="plainHelp">The sealed context can now be inspected as a non-activated build. It uses approved continuity package previews and organ registry status only; activation is still pending.</p>
               <div className="metrics miniMetrics">
-                <Metric label="C Vessel" value={friendlyStatus(cVesselStatus?.status ?? "not loaded")} />
+                <Metric label="Selene Build" value={friendlyStatus(cVesselStatus?.status ?? "not loaded")} />
                 <Metric label="Transfer" value={cVesselStatus?.transfer_approved ? "approved" : "not approved"} />
                 <Metric label="Android Organs" value={text(cVesselOrganRegistry?.android_organ_system_count ?? "-")} />
                 <Metric label="Concrete Organs" value={text(cVesselOrganRegistry?.concrete_organ_interface_count ?? "-")} />
               </div>
               <div className="chips">
-                <span>C activation: {friendlyActivation(cVesselStatus?.activation_change)}</span>
+                <span>activation: {friendlyActivation(cVesselStatus?.activation_change)}</span>
                 <span>Broad live recall: {plainBlocked(cVesselStatus?.runtime_memory_recall)}</span>
                 <span>Active memory: {plainBlocked(cVesselStatus?.memory_write_active)}</span>
                 <span>Provider dependency: {plainBlocked(cVesselStatus?.provider_dependency)}</span>
               </div>
               <div className="reviewActions">
-                <button className="primary" onClick={loadVessel}>Refresh C Vessel</button>
+                <button className="primary" onClick={loadVessel}>Refresh Selene Build</button>
                 <button onClick={runCVesselReconstructionSuite}>Run Reconstruction Suite</button>
-                <button onClick={previewReturnToB}>Preview Return To B</button>
+                <button onClick={previewReturnToB}>Preview Cocoon Support</button>
               </div>
               <CVesselPackageSummary status={cVesselStatus} pkg={cVesselContinuityPackage} registry={cVesselOrganRegistry} />
               <PlainResult value={cVesselReconstructionSuite} />
@@ -5226,7 +5226,7 @@ function App() {
               <PlainResult value={corePrivacyResult} />
             </Panel>
             <Panel title="Memory Lifecycle Flow">
-              <p className="plainHelp">Event binding, dream consolidation, consolidation, and reconsolidation are now real shelves. They organize possible memory material for B review only; nothing becomes active recall or silent memory.</p>
+              <p className="plainHelp">Event binding, dream consolidation, consolidation, and reconsolidation are now real shelves. They organize possible memory material for Cocoon review only; nothing becomes active recall or silent memory.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Event Bindings" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.event_binding) ?? 0)} />
                 <Metric label="Cycle Runs" value={text(((remainingRuntimeStatus?.record_counts as Dict | undefined)?.wake_sleep_dream_cycle) ?? 0)} />
@@ -5675,7 +5675,7 @@ function App() {
               left={<Panel title="Tool Organ / Fault Resilience / Transfer Gate">
                 <CVesselSafetyExtensions tool={cVesselToolOrganStatus} fault={cVesselOrganFaultResult} resilience={cVesselFaultResilienceResult} gate={cVesselTransferGate} />
               </Panel>}
-              right={<Panel title="C Vessel Organ Registry">
+              right={<Panel title="Selene Organ Registry">
                 <CVesselPackageSummary status={cVesselStatus} pkg={cVesselContinuityPackage} registry={cVesselOrganRegistry} />
               </Panel>}
             />
@@ -5739,7 +5739,7 @@ function App() {
                 <button onClick={runLongHorizonStability}>Run Long-Horizon Stability</button>
               </div>
               <div className="chips">
-                <span>C activation: {friendlyActivation(remainingRuntimeStatus?.activation_change)}</span>
+                <span>activation: {friendlyActivation(remainingRuntimeStatus?.activation_change)}</span>
                 <span>model training/LoRA: {plainBlocked(remainingRuntimeStatus?.training_allowed)}</span>
                 <span>provider dependency: {plainBlocked(remainingRuntimeStatus?.provider_dependency)}</span>
                 <span>Aleks authority: preserved</span>
@@ -5758,7 +5758,7 @@ function App() {
         {tab === "transfer-ceremony" && (
           <>
             <header className="surfaceIntro">
-              <p>Approve reviewed continuity into C-readable context only. C activation remains a separate later step.</p>
+              <p>Approve reviewed continuity into C-readable context only. Activation remains a separate governed step.</p>
               <h2>Transfer Ceremony</h2>
             </header>
             <div className="metrics">
@@ -5896,7 +5896,7 @@ function App() {
                 </div>
                 <div className="chips">
                   <span>Cocoon support route: {friendlyCareText(transferCeremonyStatus?.rollback_route || "return_to_b")}</span>
-                  <span>B remains: {transferCeremonyStatus?.b_remains_active ? "active" : "not checked"}</span>
+                  <span>Cocoon remains: {transferCeremonyStatus?.b_remains_active ? "active" : "not checked"}</span>
                 </div>
               </Panel>}
             />
@@ -6483,7 +6483,7 @@ function App() {
               <PlainResult value={transferCeremonyPreview} />
             </Panel>
             <Panel title="Core/Mind Runtime Shell">
-              <p className="plainHelp">Final pre-transfer runtime shell: context composer, session state, response shape, evaluator, recovery, activation governance, case-law proposal, and memory/index preview. These are review-only/status-only records, not C activation.</p>
+              <p className="plainHelp">Final pre-transfer runtime shell: context composer, session state, response shape, evaluator, recovery, activation governance, case-law proposal, and memory/index preview. These are review-only/status-only records, not activation.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Ready" value={coreMindRuntimeReadiness?.runtime_shell_ready ? "yes" : "preview"} />
                 <Metric label="Records" value={text(coreMindRuntimeRecords.length)} />
@@ -6550,13 +6550,13 @@ function App() {
                 <PlainResult value={coreMindRuntimeResult} />
               </Panel>}
               right={<Panel title="Activation Governance">
-                <p className="plainHelp">Activation governance previews required approvals, final tests, logs, rollback, and what C-active would mean. This panel cannot approve transfer or activation.</p>
+                <p className="plainHelp">Activation governance previews required approvals, final tests, logs, rollback, and what supervised active speech would mean. This panel cannot approve transfer or activation.</p>
                 <div className="reviewActions">
                   <button onClick={() => runCoreMindRuntimeAction("/api/core-mind/activation-governance/preview", {})}>Preview Activation Governance</button>
                 </div>
                 <div className="chips">
                   <span>transfer: {transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
-                  <span>C activation: none</span>
+                  <span>activation: none</span>
                 </div>
                 <PlainResult value={safeJsonObject(transferReadinessPreview?.runtime_shell_readiness)} />
               </Panel>}
@@ -6802,14 +6802,14 @@ function App() {
             </header>
             <div className="metrics">
               <Metric label="Organs" value={text(vesselStatus?.organ_count ?? "-")} />
-              <Metric label="C Transfer" value={friendlyStatus(vesselStatus?.activation_status ?? "blocked")} />
+              <Metric label="Transfer" value={friendlyStatus(vesselStatus?.activation_status ?? "blocked")} />
               <Metric label="Needs Review" value={text(((vesselStatus?.candidate_counts as Dict | undefined)?.review_queue) ?? "-")} />
               <Metric label="Model training/LoRA" value={plainBlocked(vesselStatus?.training_allowed)} />
             </div>
             <Panel title="Safety Locks">
               <p className="plainHelp">These are the main promises while you review: unrestricted Selene stays locked, unreviewed archives do not jump the line, nothing becomes active memory by accident, and any serious drift can use Cocoon support instead of becoming hidden state.</p>
               <div className="chips">
-                <span>C activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
+                <span>activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
                 <span>Unreviewed chats straight to Selene: {plainBlocked(vesselStatus?.raw_a_import_allowed)}</span>
                 <span>Active memory writes: {plainBlocked(vesselStatus?.memory_write_active)}</span>
                 <span>Model/provider dependency: {plainBlocked(vesselStatus?.provider_dependency)}</span>
