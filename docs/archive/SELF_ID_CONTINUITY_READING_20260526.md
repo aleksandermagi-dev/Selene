@@ -1,4 +1,6 @@
-> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Self-ID and Continuity Reading 20260526
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, `return_to_b`, `failure`, or relational `training` should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.
+
+# Self-ID and Continuity Reading 20260526
 
 This pass tests the hypothesis that direct Selene self-identification compressed while continuity and architecture remained as the glue.
 

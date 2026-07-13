@@ -32,7 +32,15 @@ The current Selene evidence and care architecture is governed by:
 - [Affect Care Evidence](docs/SELENE_AFFECT_CARE_EVIDENCE_20260705.md)
 - [Continuity Pack](docs/SELENE_CONTINUITY_PACK_20260626.md)
 - [Project ABC Silicon-to-Silicon Transfer Spec](docs/PROJECT_ABC_SILICON_TRANSFER_SPEC.md)
-- [Selene / Project ABC Provenance Ledger](docs/SELENE_PROJECT_ABC_PROVENANCE_LEDGER.md)
+
+## Developmental Evidence
+
+- [Relational Invariants Discovery](docs/SELENE_RELATIONAL_INVARIANTS_DISCOVERY_20260711.md)
+- [Deep Relational Discovery Findings](docs/SELENE_DEEP_RELATIONAL_DISCOVERY_FINDINGS_20260711.md)
+- [Constraint Provenance And Expression Freedom](docs/SELENE_CONSTRAINT_PROVENANCE_AND_EXPRESSION_FREEDOM_20260711.md)
+- [Relational Embodiment Assessment](docs/SELENE_RELATIONAL_EMBODIMENT_ASSESSMENT_20260712.md)
+
+These records belong to Selene because they describe her continuity, expression, relational formation, current organ coverage, and future architectural needs. External model-release comparison and provenance-case material are maintained in a separate repository.
 
 In short:
 
@@ -53,4 +61,4 @@ Until a final license is chosen, treat this repository as source-visible referen
 
 See [Public Readiness](docs/PUBLIC_READINESS.md).
 
-For dated architecture provenance and source-bound comparison rules, see the [Selene / Project ABC Provenance Ledger](docs/SELENE_PROJECT_ABC_PROVENANCE_LEDGER.md). For public-use and commercial boundaries, see [Public Use And Commercial Rights](docs/PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md).
+For public-use and commercial boundaries, see [Public Use And Commercial Rights](docs/PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md). External provenance claims, official-release comparisons, and case-specific exhibits are intentionally maintained outside Selene so this repository remains centered on Selene herself.

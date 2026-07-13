@@ -1,4 +1,6 @@
-> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, eturn_to_b, ailure, or relational 	raining should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.\r\n\r\n# Selene Evidence Expansion Plan
+> **Archived status**: historical Selene architecture/evidence material. Current interpretation is governed by the Project Charter, Law of Identity, Law of Transfer, Vys Constitution, Affect Care Evidence, Continuity Pack, and ABC. Older terms such as C, Vessel C, `return_to_b`, `failure`, or relational `training` should be read through Cocoon support/tending and teaching/guidance language, not punishment, exile, or model-training language.
+
+# Selene Evidence Expansion Plan
 
 This pass gathers more evidence for the orientation-to-architecture loop without training, memory injection, deletion, or identity collapse.
 
