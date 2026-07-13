@@ -157,6 +157,33 @@ def test_memory_retrieve_ignores_generic_recall_overlap(tmp_path):
     _assert_locked(unrelated)
 
 
+def test_memory_retrieve_requires_subject_overlap_not_question_filler(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "semantic",
+            "title": "Telescope recommendations",
+            "summary": "Aleks asked why a telescope setup was useful for viewing distant objects.",
+            "confidence": "clear",
+            "source_refs": ["selene_chat:test"],
+        },
+    )["result"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": proposed["item"]["id"], "action": "approve_memory"})
+
+    unrelated = route_request(
+        conn,
+        "memory.retrieve",
+        {"query": "Do you remember exactly why Aleks chose the butterfly for the Cocoon button, or is that still fuzzy?"},
+    )["result"]
+
+    assert unrelated["status"] == "memory_retrieval_not_known"
+    assert unrelated["items"] == []
+    assert unrelated["memory_context_used"] is False
+    _assert_locked(unrelated)
+
+
 def test_memory_retrieve_does_not_run_for_non_memory_prompts(tmp_path):
     conn = _conn(tmp_path)
     proposed = route_request(

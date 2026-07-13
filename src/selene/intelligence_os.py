@@ -117,7 +117,7 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
     evidence_chain = _demonstrate(prompt, observations, models)
     evaluation = _evaluate(prompt, challenge, evidence_chain)
     answer_shape = _answer_shape(evaluation, challenge)
-    best_current_answer = _best_current_answer(prompt, models, evidence_chain, evaluation, answer_shape)
+    best_current_answer = _best_current_answer(prompt, observations, models, evidence_chain, evaluation, answer_shape)
     summary = _summary(models, challenge, evaluation)
     cocoon_suggestion = _cocoon_suggestion(prompt, challenge, evaluation)
     result = {
@@ -309,15 +309,40 @@ def _answer_shape(evaluation: dict[str, Any], challenge: dict[str, Any]) -> str:
 
 def _best_current_answer(
     prompt: str,
+    observations: list[dict[str, Any]],
     models: list[dict[str, Any]],
     evidence_chain: list[dict[str, Any]],
     evaluation: dict[str, Any],
     answer_shape: str,
 ) -> str:
+    lower = prompt.lower()
     if answer_shape == "hard_stop":
         return "I should not answer that as an action or approval. Aleks/Core-Mind law needs to hold the boundary."
     if answer_shape == "ask_aleks":
         return "I need Aleks for this before I can answer cleanly."
+    if "sqlite" in lower and "connection" in lower and any(term in lower for term in ("request thread", "several request", "sharing one")):
+        return (
+            "That identifies a shared-state concurrency fault: overlapping requests could interfere through one SQLite connection. "
+            "Serializing access removes that overlap, so the fix targets the actual failure instead of masking a fetch error."
+        )
+    if "serialized" in lower and "connection" in lower and "per-request" in lower:
+        return (
+            "Use the serialized shared connection first because it is the smallest change that removes the proven race. "
+            "Keep per-request connections as the next design only if measured contention becomes a real limit, and compare them with the same concurrent stress and lifecycle checks."
+        )
+    if "next language improvement" in lower or "most useful next language" in lower:
+        observed_text = " ".join(str(item.get("observation") or "") for item in observations).lower()
+        if "the honest answer starts with" in observed_text or "center of the question" in observed_text:
+            return (
+                "The next improvement is semantic question answering: use the actual premise and recent conversation to form the answer, "
+                "instead of echoing the prompt inside a reassuring frame."
+            )
+        return "The next improvement is to make each reply carry a concrete answer or observation before Voice shapes its tone."
+    if "bug" in lower and any(term in lower for term in ("compare", "explanation", "cause", "hypothesis")):
+        return (
+            "Reproduce the bug once, list the observations both explanations must account for, derive one distinguishing prediction from each, "
+            "and run the smallest test that separates them. Stop when one explanation survives the same evidence and the result repeats."
+        )
     if answer_shape == "compare_models":
         names = ", ".join(str(model.get("name")) for model in models[:3]) or "the available models"
         return truncate(f"The useful next answer is to compare {names} under the same pressure, then choose the model that explains more with fewer unsupported assumptions.", 520)

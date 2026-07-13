@@ -587,6 +587,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(item, 404 if item.get("error") else 200))
             except ValueError:
                 self._send(*json_bytes({"error": "invalid run id"}, 400))
+        elif parsed.path == "/api/native-language/status":
+            self._send(*json_bytes(route_request(conn, "native_language.status")["result"]))
+        elif parsed.path == "/api/native-language/runs":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "native_language.runs.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
         elif parsed.path == "/api/selene-organ-ideas/status":
             self._send(*json_bytes(route_request(conn, "selene_organ_ideas.status")["result"]))
         elif parsed.path == "/api/selene-organ-ideas/items":
@@ -1105,6 +1110,20 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/native-language/realize":
+            route_key = "native_language.realize"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/native-language/initiative-preview":
+            route_key = "native_language.initiative.preview"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/selene-organ-ideas/prepare":
             route_key = "selene_organ_ideas.prepare"
             try:
@@ -1605,12 +1624,30 @@ class SeleneServer(ThreadingHTTPServer):
     def __init__(self, address: tuple[str, int], handler: type[BaseHTTPRequestHandler], db_path: Path):
         mark_startup_phase("db_connect_start", db_path=str(db_path))
         super().__init__(address, handler)
+        # Every handler uses the same SQLite connection. Keep request ownership
+        # serialized so background status reads cannot overlap a chat write.
+        self.request_lock = threading.RLock()
         mark_startup_phase("server_bound", bind=f"{address[0]}:{address[1]}", ready=True)
         self.db_path = db_path
         self.conn = connect(db_path)
         mark_startup_phase("db_connected", db_path=str(db_path))
         init_db(self.conn)
         mark_startup_phase("db_initialized", db_path=str(db_path))
+
+    def process_request_thread(self, request: object, client_address: tuple[str, int]) -> None:
+        with self.request_lock:
+            super().process_request_thread(request, client_address)
+
+    def handle_error(self, request: object, client_address: tuple[str, int]) -> None:
+        error = sys.exc_info()[1]
+        write_stabilization_debug_log(
+            "sidecar",
+            "request_handler_error",
+            client=f"{client_address[0]}:{client_address[1]}",
+            error=repr(error),
+        )
+        if os.environ.get("SELENE_VERBOSE"):
+            super().handle_error(request, client_address)
 
 
 def start_seed_thread(db_path: Path) -> None:

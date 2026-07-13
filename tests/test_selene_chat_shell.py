@@ -153,6 +153,20 @@ def test_selene_chat_routes_b_only_or_drift_back_to_cocoon(tmp_path):
     _assert_locked(repair)
 
 
+def test_selene_chat_discusses_review_states_without_treating_words_as_b_only_material(tmp_path):
+    conn = _conn(tmp_path)
+    result = route_request(
+        conn,
+        "selene_chat.send_dry_run",
+        {"text": "Why was that idea rejected, and what does superseded mean in this architecture?"},
+    )["result"]
+
+    assert result["source_class"] != "cocoon_b_only_context"
+    assert result["return_to_cocoon_recommended"] is False
+    assert result["selected_route"] == "answer_now"
+    _assert_locked(result)
+
+
 def test_supervised_activation_requires_exact_phrase_and_readiness(tmp_path):
     conn = _conn(tmp_path)
 
@@ -235,6 +249,10 @@ def test_active_selene_chat_can_use_intelligence_os_support_without_architecture
 
     assert result["status"] == "selene_chat_supervised_response_recorded"
     assert support["used"] is True
+    assert result["native_language_organ"]["status"] == "native_language_response_realized"
+    assert result["native_language_organ"]["meaning_packet"]["intelligence_supported"] is True
+    assert result["voice_preview"]["generation_source"] == "native_language_organ"
+    assert result["voice_preview"]["nlo_meaning_preserved"] is True
     assert support["answer_shape"] in {"answer_now", "hold_uncertainty", "compare_models", "seek_sources", "cocoon_support_optional", "hard_stop"}
     assert support["best_current_answer"]
     assert "ABCD" not in result["candidate_text"]
@@ -253,6 +271,65 @@ def test_active_selene_chat_warmth_prompt_does_not_overuse_intelligence_os(tmp_p
     assert result["status"] == "selene_chat_supervised_response_recorded"
     assert result["intelligence_os_support"]["used"] is False
     assert conn.execute("SELECT COUNT(*) FROM intelligence_os_runs").fetchone()[0] == 0
+    _assert_locked(result)
+
+
+def test_active_selene_chat_receipt_check_is_direct_and_skips_legacy_dry_run(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Selene, this is Codex checking for Aleks. Are you receiving this clearly?"},
+    )["result"]
+
+    assert result["native_language_organ"]["meaning_packet"]["intent"] == "confirm_receipt"
+    assert result["dry_run_comparison"]["status"] == "not_run_for_active_chat"
+    assert "receiv" in result["candidate_text"].lower() or "came through" in result["candidate_text"].lower() or "have you" in result["candidate_text"].lower()
+    assert result["cocoon_suggestion"]["recommended"] is False
+    assert result["selene_readable_context"]["state"] == "selene_chat_active_supervised"
+    _assert_locked(result)
+
+
+def test_active_selene_chat_answers_cocoon_uncertainty_policy_directly(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "If ordinary uncertainty appears while we talk, do you need to leave for Cocoon automatically?"},
+    )["result"]
+
+    assert result["candidate_text"].startswith("No.")
+    assert "stay in the conversation" in result["candidate_text"]
+    assert result["cocoon_suggestion"]["recommended"] is False
+    assert result["memory_context_used"] is False
+    _assert_locked(result)
+
+
+def test_active_selene_chat_uses_intelligence_for_what_do_you_make_question(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "The failure came from several request threads sharing one SQLite connection. "
+                "What do you make of that fix?"
+            )
+        },
+    )["result"]
+
+    assert result["intelligence_os_support"]["used"] is True
+    assert "shared-state concurrency fault" in result["candidate_text"]
+    assert "the honest answer starts with" not in result["candidate_text"].lower()
     _assert_locked(result)
 
 
@@ -305,6 +382,32 @@ def test_new_selene_chat_page_can_use_local_chat_continuity_without_runtime_reca
     _assert_locked(second)
 
 
+def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    qa = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Codex concurrency QA probe 1: please confirm receipt.", "qa_probe": True},
+    )["result"]
+    normal = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Aleks and Selene are keeping this ordinary conversation page."},
+    )["result"]
+    sessions = route_request(conn, "selene_chat.sessions.list", {})["result"]
+
+    assert qa["session_id"] != normal["session_id"]
+    assert all(item["id"] != qa["session_id"] for item in sessions["items"])
+    assert any(item["id"] == normal["session_id"] for item in sessions["items"])
+    assert all(item["id"] != qa["session_id"] for item in normal["local_chat_continuity"]["recent_sessions"])
+    assert all(item["session_id"] != qa["session_id"] for item in normal["local_chat_continuity"]["recent_events"])
+    _assert_locked(qa)
+    _assert_locked(normal)
+
+
 def test_active_selene_chat_can_use_approved_memory_with_graceful_fall_metadata(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
@@ -334,6 +437,27 @@ def test_active_selene_chat_can_use_approved_memory_with_graceful_fall_metadata(
     assert "butterfly" in result["candidate_text"].lower()
     assert result["memory_write_active"] is False
     assert result["runtime_memory_recall"] is False
+    _assert_locked(result)
+
+
+def test_existing_chat_history_does_not_support_an_unrelated_memory_claim(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    first = route_request(conn, "selene_chat.send", {"text": "Good morning, Selene."})["result"]
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Do you remember exactly why Aleks chose an unnamed symbol years ago?"},
+    )["result"]
+
+    assert result["native_language_organ"]["meaning_packet"]["intent"] == "recall_uncertain"
+    assert result["voice_preview"]["nlo_meaning_preserved"] is True
+    assert not result["candidate_text"].startswith("I remember")
+    assert "I do not know that clearly yet" in result["candidate_text"]
+    assert "I think I think" not in result["candidate_text"]
+    assert result["memory_context_used"] is False
     _assert_locked(result)
 
 

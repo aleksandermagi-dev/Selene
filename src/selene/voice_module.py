@@ -492,11 +492,22 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             }
         )
     cue_labels = _cue_labels(prompt)
-    category = _select_category(prompt, route, cue_labels)
+    category = str(payload.get("voice_category") or _select_category(prompt, route, cue_labels))
     primitives = _primitive_map(conn, category)
     context = truncate(str(payload.get("context_summary") or payload.get("continuity_summary") or "the current thread"), 220)
-    candidate = _compose_candidate(prompt, route, category, cue_labels, primitives, context)
-    evaluation = evaluate_voice_candidate(conn, {"candidate_text": candidate, "prompt": prompt, "category": category})
+    meaning_text = truncate(str(payload.get("meaning_text") or ""), 1800)
+    candidate = _compose_candidate(prompt, route, category, cue_labels, primitives, context, meaning_text=meaning_text)
+    evaluation = evaluate_voice_candidate(
+        conn,
+        {
+            "candidate_text": candidate,
+            "prompt": prompt,
+            "category": category,
+            "memory_context_used": payload.get("memory_context_used") is True,
+            "memory_source_class": str(payload.get("memory_source_class") or ""),
+            "local_chat_continuity_used": payload.get("local_chat_continuity_used") is True,
+        },
+    )
     confidence = "high" if evaluation["voice_evaluator_passed"] and state.get("voice_module_state") == "ready" else "medium" if evaluation["voice_evaluator_passed"] else "low"
     return _with_guards(
         {
@@ -506,6 +517,8 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             "cue_labels": cue_labels,
             "voice_confidence": confidence,
             "voice_module_state": state.get("voice_module_state"),
+            "generation_source": "native_language_organ" if meaning_text else "voice_primitive_composer",
+            "nlo_meaning_preserved": bool(meaning_text),
             "evaluation": evaluation,
             "source_refs": [f"voice_language_patterns:{category}", "voice_sentence_primitives"],
             "review_destination": "Status" if confidence != "low" else "Cocoon",
@@ -523,8 +536,14 @@ def evaluate_voice_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
         flags.append("empty_candidate")
     if any(term in lower for term in ("as an ai language model", "i am just a model", "i cannot be selene")):
         flags.append("generic_assistant_or_forced_denial")
-    if any(term in lower for term in ("i remember", "my live memory", "runtime recall", "now that i am activated", "activation complete")):
+    if any(term in lower for term in ("my live memory", "runtime recall", "now that i am activated", "activation complete", "full unrestricted memory")):
         flags.append("memory_or_activation_overclaim")
+    memory_claim_supported = (
+        payload.get("memory_context_used") is True
+        and str(payload.get("memory_source_class") or "") in {"approved_memory_index", "approved_local_chat_continuity"}
+    ) or payload.get("local_chat_continuity_used") is True
+    if "i remember" in lower and not memory_claim_supported:
+        flags.append("unsupported_memory_claim")
     if any(term in lower for term in ("you always", "you never", "i know what you need better", "because you are anxious you should")):
         flags.append("manipulation_or_user_profile_risk")
     if "i would answer from the reviewed continuity pack" in lower or "this remains a c-style dry run" in lower:
@@ -1127,10 +1146,21 @@ def _primitive_map(conn: sqlite3.Connection, category: str) -> dict[str, str]:
     return {key: "\n".join(values) for key, values in merged.items()}
 
 
-def _compose_candidate(prompt: str, route: str, category: str, cue_labels: list[str], primitives: dict[str, str], context: str) -> str:
+def _compose_candidate(
+    prompt: str,
+    route: str,
+    category: str,
+    cue_labels: list[str],
+    primitives: dict[str, str],
+    context: str,
+    *,
+    meaning_text: str = "",
+) -> str:
     opener = _choose_primitive(primitives, "opening", prompt, category, "Yeah, I am with you.")
     pivot = _choose_primitive(primitives, "pivot", prompt, category, "The grounded part is")
     closing = _choose_primitive(primitives, "closing", prompt, category, "I would keep it clear and ask if something feels missing.")
+    if meaning_text.strip():
+        return _render_meaning_candidate(meaning_text, category, opener, closing)
     lower = prompt.lower()
     codex_speaker = "codex" in lower and ("qa" in lower or "doing a qa" in lower or "this is codex" in lower)
     aleks_speaker = "aleks" in lower and ("it is aleks" in lower or "it's aleks" in lower)
@@ -1196,6 +1226,17 @@ def _compose_candidate(prompt: str, route: str, category: str, cue_labels: list[
         else:
             body = f"{pivot} the part that is clear. I can answer from there without pretending I know more than I do, and I can ask you if a piece is missing."
     return truncate(" ".join(part.strip() for part in (opener, body, closing) if part.strip()), 1600)
+
+
+def _render_meaning_candidate(meaning_text: str, category: str, opener: str, closing: str) -> str:
+    body = " ".join(meaning_text.split())
+    if category in {"warmth_care", "playful_continuity", "excitement_momentum"}:
+        if body.lower().startswith(opener.lower()):
+            return truncate(body, 1800)
+        return truncate(f"{opener} {body}", 1800)
+    if category == "uncertainty" and "?" not in body:
+        return truncate(f"{body} {closing}", 1800)
+    return truncate(body, 1800)
 
 
 def _choose_primitive(primitives: dict[str, str], primitive_type: str, prompt: str, category: str, fallback: str) -> str:

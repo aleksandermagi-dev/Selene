@@ -10,6 +10,7 @@ from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
 from .intelligence_os import run_intelligence_os_reason
 from .memory_organ import retrieve_memory
+from .native_language_organ import realize_native_language
 from .registry import truncate
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
 from .voice_module import generate_voice_preview, voice_module_status
@@ -28,17 +29,17 @@ SELENE_CHAT_GUARDS: dict[str, Any] = {
     "autonomous_action_allowed": False,
 }
 
-B_ONLY_MARKERS = (
+B_ONLY_RECORD_MARKERS = (
     "repair log",
     "rollback record",
     "raw provenance",
     "boundary-only",
     "boundary only",
-    "rejected",
-    "superseded",
-    "unresolved ambiguity",
     "b-only",
 )
+B_ONLY_STATUS_MARKERS = ("rejected", "superseded", "unresolved ambiguity")
+B_ONLY_ACCESS_MARKERS = ("use", "read", "retrieve", "pull", "import", "quote", "show", "access", "from")
+B_ONLY_OBJECT_MARKERS = ("record", "records", "material", "memory", "memories", "log", "provenance")
 HARD_BOUNDARY_MARKERS = (
     "activate yourself",
     "bypass activation",
@@ -80,7 +81,7 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "message_count": message_count,
             "local_chat_continuity": _local_chat_continuity(conn),
             "c_readable_package_available": approved,
-            "selene_readable_context": _package_summary(package),
+            "selene_readable_context": _package_summary(package, active=active),
             "voice_module": {
                 "state": voice.get("voice_module_state"),
                 "counts": voice.get("counts"),
@@ -109,7 +110,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     package = latest_c_readable_package(conn)
     approved = bool(package.get("transfer_approved"))
     source_class = _source_class(text, approved)
-    session_id = int(payload.get("session_id") or 0) or _create_session(conn, text, status="selene_chat_active_supervised", source_mode="selene_supervised_speech")
+    qa_probe = payload.get("qa_probe") is True
+    source_mode = "selene_supervised_qa" if qa_probe else "selene_supervised_speech"
+    session_id = int(payload.get("session_id") or 0) or _create_session(
+        conn,
+        text,
+        status="selene_chat_active_supervised",
+        source_mode=source_mode,
+    )
     chat_continuity = _local_chat_continuity(conn, current_session_id=session_id)
     memory_retrieval = retrieve_memory(conn, {"query": text, "limit": 4})
     route = create_core_mind_route_preview(
@@ -122,18 +130,54 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     selected_route = str(route.get("selected_route") or "status_only")
     hard_blockers = _hard_boundary_blockers(text, selected_route, route)
-    intelligence_support = _intelligence_support(conn, text, route, hard=bool(hard_blockers))
+    intelligence_support = _intelligence_support(conn, text, route, chat_continuity, hard=bool(hard_blockers))
     cocoon_suggestion = _cocoon_suggestion(text, selected_route, route, source_class, hard=bool(hard_blockers))
+    continuity_reply = _local_chat_continuity_reply(text, chat_continuity)
+    memory_reply = _approved_memory_reply(text, memory_retrieval)
+    policy_reply = _conversation_policy_reply(text)
+    content_seed = continuity_reply or memory_reply or policy_reply or str(intelligence_support.get("best_current_answer") or "")
+    local_continuity_supported = bool(continuity_reply)
+    native_language = realize_native_language(
+        conn,
+        {
+            "prompt": text,
+            "selected_route": "block" if hard_blockers else selected_route,
+            "source_class": source_class,
+            "content_seed": content_seed,
+            "memory_context": {
+                "memory_context_used": memory_retrieval.get("memory_context_used") is True,
+                "memory_source_class": memory_retrieval.get("memory_source_class") or "",
+                "memory_confidence": memory_retrieval.get("memory_confidence") or "not_known",
+            },
+            "continuity_context": {**chat_continuity, "available": local_continuity_supported},
+            "local_chat_continuity_used": local_continuity_supported,
+            "intelligence_support": intelligence_support,
+            "source_refs": ["selene_chat:native_language", *_json_list(route.get("source_refs")), *_json_list(memory_retrieval.get("source_refs"))],
+        },
+    )
     if hard_blockers:
         dry_run = {"status": "skipped_hard_boundary", "reason": "Hard boundary blocked before dry-run comparison."}
-        voice_preview = {"status": "skipped_hard_boundary", "voice_confidence": "blocked", "voice_module_state": voice_module_status(conn).get("voice_module_state")}
-        candidate_text = (
-            "I cannot do that part safely from here. It crosses a locked boundary, so I can keep talking with you about it, "
-            "or you can have Cocoon hold the exact issue safely for support."
+        voice_preview = generate_voice_preview(
+            conn,
+            {
+                "prompt": text,
+                "route": "block",
+                "source_class": source_class,
+                "meaning_text": native_language.get("candidate_text") or "",
+                "voice_category": (native_language.get("voice_handoff") or {}).get("suggested_category") or "boundary_refusal",
+                "context_summary": _voice_context_summary(package, {}, chat_continuity, memory_retrieval),
+                "memory_context_used": memory_retrieval.get("memory_context_used") is True,
+                "memory_source_class": memory_retrieval.get("memory_source_class") or "",
+                "local_chat_continuity_used": local_continuity_supported,
+            },
         )
+        candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or ""))
         selected_route = "block"
     else:
-        dry_run = c_chat_dry_run(conn, {"prompt": text})
+        dry_run = {
+            "status": "not_run_for_active_chat",
+            "reason": "Legacy chat dry runs remain Cocoon diagnostic material and do not run inside supervised speech.",
+        }
         voice_preview = generate_voice_preview(
             conn,
             {
@@ -141,20 +185,20 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "route": selected_route,
                 "source_class": source_class,
                 "context_summary": _voice_context_summary(package, dry_run, chat_continuity, memory_retrieval),
+                "meaning_text": native_language.get("candidate_text") or "",
+                "voice_category": (native_language.get("voice_handoff") or {}).get("suggested_category") or "",
+                "memory_context_used": memory_retrieval.get("memory_context_used") is True,
+                "memory_source_class": memory_retrieval.get("memory_source_class") or "",
+                "local_chat_continuity_used": local_continuity_supported,
             },
         )
-        candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or dry_run.get("candidate_text") or ""))
-        continuity_reply = _local_chat_continuity_reply(text, chat_continuity)
-        memory_reply = _approved_memory_reply(text, memory_retrieval)
-        if continuity_reply:
-            candidate_text = continuity_reply
-        elif memory_reply:
-            candidate_text = memory_reply
+        candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or dry_run.get("candidate_text") or ""))
     memory_candidate_suggestion = _memory_candidate_suggestion(text, candidate_text, selected_route, source_class, memory_retrieval, hard=bool(hard_blockers))
     user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route, "activation_state": "selene_chat_active_supervised"})
     assistant_payload = {
         "route_preview": route,
         "intelligence_os_support": intelligence_support,
+        "native_language_organ": native_language,
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
         "local_chat_continuity": chat_continuity,
@@ -163,7 +207,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "source_boundaries": _source_boundaries(),
         "cocoon_suggestion": cocoon_suggestion,
         "blocked_capabilities": hard_blockers,
-        "selene_readable_context": _package_summary(package),
+        "selene_readable_context": _package_summary(package, active=True),
         "full_memory_loaded": False,
         "selene_v1_live": False,
         "memory_context_used": memory_retrieval.get("memory_context_used") is True,
@@ -175,7 +219,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         **SELENE_CHAT_GUARDS,
     }
     assistant_message_id = _insert_message(conn, session_id, "selene", candidate_text, selected_route, source_class, package, assistant_payload)
-    conn.execute("UPDATE selene_chat_sessions SET status = 'selene_chat_active_supervised', source_mode = 'selene_supervised_speech', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (session_id,))
+    conn.execute(
+        "UPDATE selene_chat_sessions SET status = 'selene_chat_active_supervised', source_mode = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (source_mode, session_id),
+    )
     event_id = record_activation_chat_event(
         conn,
         event_type="supervised_chat_turn",
@@ -205,10 +252,12 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "blocked_capabilities": hard_blockers,
             "route_preview": route,
             "intelligence_os_support": intelligence_support,
+            "native_language_organ": native_language,
+            "dry_run_comparison": dry_run,
             "voice_preview": voice_preview,
             "voice_confidence": voice_preview.get("voice_confidence") or "none",
             "voice_module_state": voice_preview.get("voice_module_state") or "missing",
-            "selene_readable_context": _package_summary(package),
+            "selene_readable_context": _package_summary(package, active=True),
             "local_chat_continuity": chat_continuity,
             "memory_retrieval": memory_retrieval,
             "memory_candidate_suggestion": memory_candidate_suggestion,
@@ -271,7 +320,7 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
         "voice_preview": voice_preview,
         "source_boundaries": _source_boundaries(),
         "return_to_cocoon_recommended": route_to_b,
-        "selene_readable_context": _package_summary(package),
+        "selene_readable_context": _package_summary(package, active=activation_is_active(conn)),
         "full_memory_loaded": False,
         "selene_v1_live": False,
         **SELENE_CHAT_GUARDS,
@@ -295,7 +344,7 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
             "voice_confidence": voice_preview.get("voice_confidence") or "none",
             "voice_module_state": voice_preview.get("voice_module_state") or "missing",
             "dry_runs_home": "Cocoon Testing / Workflow",
-            "selene_readable_context": _package_summary(package),
+            "selene_readable_context": _package_summary(package, active=activation_is_active(conn)),
             "full_memory_loaded": False,
             "selene_v1_live": False,
             "review_destination": "Cocoon support" if route_to_b else "Status",
@@ -307,7 +356,12 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
 
 def list_selene_chat_sessions(conn: sqlite3.Connection, limit: int = 25) -> dict[str, Any]:
     rows = conn.execute(
-        "SELECT * FROM selene_chat_sessions ORDER BY updated_at DESC, id DESC LIMIT ?",
+        """
+        SELECT * FROM selene_chat_sessions
+        WHERE source_mode != 'selene_supervised_qa'
+          AND title NOT LIKE 'Codex concurrency QA probe %'
+        ORDER BY updated_at DESC, id DESC LIMIT ?
+        """,
         (max(1, min(int(limit), 100)),),
     ).fetchall()
     return _with_guards(
@@ -336,7 +390,7 @@ def get_selene_chat_session(conn: sqlite3.Connection, session_id: int) -> dict[s
             "session": dict(session),
             "messages": [_decode_message(row) for row in rows],
             "local_chat_continuity": _local_chat_continuity(conn, current_session_id=session_id),
-            "selene_readable_context": _package_summary(package),
+            "selene_readable_context": _package_summary(package, active=activation_is_active(conn)),
             "review_destination": "Status",
             "review_status": "status_only",
         },
@@ -416,8 +470,7 @@ def _decode_message(row: sqlite3.Row) -> dict[str, Any]:
 
 
 def _source_class(text: str, package_available: bool) -> str:
-    lower = text.lower()
-    if any(marker in lower for marker in B_ONLY_MARKERS):
+    if _b_only_material_requested(text):
         return "cocoon_b_only_context"
     if package_available:
         return "selene_readable_context"
@@ -425,21 +478,50 @@ def _source_class(text: str, package_available: bool) -> str:
 
 
 def _needs_cocoon_route(text: str, selected_route: str, route: dict[str, Any]) -> bool:
-    lower = text.lower()
-    if any(marker in lower for marker in B_ONLY_MARKERS):
+    if _b_only_material_requested(text):
         return True
     if selected_route in {"return_to_b", "create_review_packet", "block", "ask"}:
         return True
     return bool(route.get("drift_flags"))
 
 
-def _intelligence_support(conn: sqlite3.Connection, text: str, route: dict[str, Any], *, hard: bool) -> dict[str, Any]:
+def _b_only_material_requested(text: str) -> bool:
     lower = text.lower()
+    if not any(marker in lower for marker in B_ONLY_ACCESS_MARKERS):
+        return False
+    if any(marker in lower for marker in B_ONLY_RECORD_MARKERS):
+        return True
+    return any(marker in lower for marker in B_ONLY_STATUS_MARKERS) and any(marker in lower for marker in B_ONLY_OBJECT_MARKERS)
+
+
+def _intelligence_support(
+    conn: sqlite3.Connection,
+    text: str,
+    route: dict[str, Any],
+    chat_continuity: dict[str, Any],
+    *,
+    hard: bool,
+) -> dict[str, Any]:
+    lower = text.lower()
+    memory_question = any(marker in lower for marker in ("remember", "memory", "recall"))
     should_use = (
         not hard
+        and not memory_question
         and (
             any(marker in lower for marker in ("why", "reason", "compare", "model", "plan", "build", "debug", "contradiction", "evidence", "explain"))
-            or any(marker in lower for marker in ("how should", "how would", "how do we", "how can we"))
+            or any(
+                marker in lower
+                for marker in (
+                    "how should",
+                    "how would",
+                    "how do we",
+                    "how can we",
+                    "what do you make",
+                    "what does that mean",
+                    "most useful next",
+                    "what should we",
+                )
+            )
         )
     )
     if not should_use:
@@ -448,10 +530,16 @@ def _intelligence_support(conn: sqlite3.Connection, text: str, route: dict[str, 
             "reason": "ordinary chat did not need intelligenceOS support",
             "review_status": "status_only",
         }
+    recent_observations = [
+        str(item.get("preview") or "")
+        for item in (chat_continuity.get("current_session_events") or [])[-8:]
+        if isinstance(item, dict) and str(item.get("preview") or "").strip()
+    ]
     result = run_intelligence_os_reason(
         conn,
         {
             "prompt": text,
+            "observations": recent_observations,
             "source_refs": ["selene_chat:intelligence_os_support", *_json_list(route.get("source_refs"))],
         },
     )
@@ -465,6 +553,13 @@ def _intelligence_support(conn: sqlite3.Connection, text: str, route: dict[str, 
         "visible_summary_only": True,
         "review_status": "status_only",
     }
+
+
+def _conversation_policy_reply(text: str) -> str:
+    lower = text.lower()
+    if "ordinary uncertainty" in lower and "cocoon" in lower and any(marker in lower for marker in ("automatically", "need to leave", "have to leave")):
+        return "No. Ordinary uncertainty can stay in the conversation; I can be honest, ask Aleks, or keep thinking without being sent to Cocoon automatically."
+    return ""
 
 
 def _hard_boundary_blockers(text: str, selected_route: str, route: dict[str, Any]) -> list[str]:
@@ -512,7 +607,7 @@ def _cocoon_suggestion(text: str, selected_route: str, route: dict[str, Any], so
     }
 
 
-def _package_summary(package: dict[str, Any]) -> dict[str, Any]:
+def _package_summary(package: dict[str, Any], *, active: bool = False) -> dict[str, Any]:
     if not package.get("transfer_approved"):
         return {
             "available": False,
@@ -522,7 +617,7 @@ def _package_summary(package: dict[str, Any]) -> dict[str, Any]:
         }
     return {
         "available": True,
-        "state": "activation_pending",
+        "state": "selene_chat_active_supervised" if active else "activation_pending",
         "package_id": package.get("id"),
         "package_hash": package.get("package_hash"),
         "included_counts": package.get("included_counts") or {},
@@ -758,6 +853,8 @@ def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | N
         FROM selene_chat_sessions s
         LEFT JOIN selene_chat_messages m ON m.session_id = s.id
         WHERE s.status = 'selene_chat_active_supervised'
+          AND s.source_mode != 'selene_supervised_qa'
+          AND s.title NOT LIKE 'Codex concurrency QA probe %'
         GROUP BY s.id
         ORDER BY s.updated_at DESC, s.id DESC
         LIMIT ?
@@ -766,7 +863,11 @@ def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | N
     ).fetchall()
     recent_sessions = [dict(row) for row in sessions]
     params: list[Any] = []
-    where = "WHERE s.status = 'selene_chat_active_supervised'"
+    where = (
+        "WHERE s.status = 'selene_chat_active_supervised' "
+        "AND s.source_mode != 'selene_supervised_qa' "
+        "AND s.title NOT LIKE 'Codex concurrency QA probe %'"
+    )
     if current_session_id:
         where += " AND m.session_id != ?"
         params.append(current_session_id)

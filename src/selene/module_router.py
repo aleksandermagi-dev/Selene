@@ -136,6 +136,12 @@ from .intelligence_os import (
 )
 from .my_office_cleanup import clean_up_my_office_residue
 from .native_generation import compose_native_response
+from .native_language_organ import (
+    list_native_language_runs,
+    native_language_status,
+    preview_native_language_initiative,
+    realize_native_language,
+)
 from .paper_map_reconstruction import run_paper_map_reconstruction
 from .pre_transfer_runtime import (
     compare_speech_generation_rehearsals,
@@ -463,6 +469,14 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
     if route_key == "intelligence_os.run.detail":
         item = get_intelligence_os_run(conn, int(payload.get("id") or payload.get("run_id") or 0))
         return {"route": route_key, "result": item or {"error": "not found"}}
+    if route_key == "native_language.status":
+        return {"route": route_key, "result": native_language_status(conn)}
+    if route_key == "native_language.realize":
+        return {"route": route_key, "result": realize_native_language(conn, payload)}
+    if route_key == "native_language.initiative.preview":
+        return {"route": route_key, "result": preview_native_language_initiative(conn, payload)}
+    if route_key == "native_language.runs.list":
+        return {"route": route_key, "result": list_native_language_runs(conn, int(payload.get("limit") or 50))}
     if route_key == "selene_organ_ideas.status":
         return {"route": route_key, "result": selene_organ_ideas_status(conn)}
     if route_key == "selene_organ_ideas.prepare":

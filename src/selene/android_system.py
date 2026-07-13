@@ -81,8 +81,8 @@ SYSTEM_WORKFLOW_MAP: dict[str, dict[str, Any]] = {
         "support_trigger": "drift, source confusion, or bypass needs Cocoon support",
     },
     "exchange_system": {
-        "routes": ["selene_chat.status", "vessel.academic_packet.list", "vessel.perception_packet.list"],
-        "shelves": ["selene_chat_messages", "vessel_academic_packets", "vessel_perception_packets"],
+        "routes": ["selene_chat.status", "native_language.status", "vessel.academic_packet.list", "vessel.perception_packet.list"],
+        "shelves": ["selene_chat_messages", "native_language_runs", "vessel_academic_packets", "vessel_perception_packets"],
         "failure_mode": "chat, research, artifact, or source intake boundary unclear",
         "support_trigger": "chat, research, artifact, or source intake boundary needs clarity",
     },

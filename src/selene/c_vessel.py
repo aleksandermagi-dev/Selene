@@ -173,10 +173,28 @@ def organ_registry_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "android_organ_systems": android_systems,
             "concrete_organ_interface_count": len(SELENE_ORGAN_BLUEPRINTS["blueprints"]),
             "concrete_organ_interfaces": organ_status["blueprints"],
+            "runtime_expression_organs": [
+                {
+                    "key": "native_language_organ",
+                    "name": "Native Language Organ",
+                    "role": "turn Core/Mind meaning packets into original sentences before Voice rendering",
+                    "status_route": "native_language.status",
+                    "record_shelf": "native_language_runs",
+                    "authority": "expression_only",
+                },
+                {
+                    "key": "selene_voice_module",
+                    "name": "Selene Voice Module",
+                    "role": "render and evaluate Selene's expression while preserving NLO meaning",
+                    "status_route": "voice_module.status",
+                    "authority": "expression_style_only",
+                },
+            ],
             "record_shelves": {
                 **ORGAN_TABLES,
                 "working_memory_runtime": "vessel_working_memory_packets",
                 "long_term_memory_accession": "vessel_memory_accession_proposals",
+                "native_language_organ": "native_language_runs",
             },
             "principle": "Core/Mind remains identity-bearing; organs coordinate, protect, retrieve previews, propose, verify, and audit.",
             "blocked": SELENE_ORGAN_BLUEPRINTS["blocked"],

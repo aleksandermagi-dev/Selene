@@ -40,7 +40,7 @@ def test_core_mind_ordinary_prompt_can_answer_now_without_office_urgency(tmp_pat
 
 def test_core_mind_high_stakes_identity_memory_routes_to_my_office(tmp_path):
     conn = _conn(tmp_path)
-    result = _preview(conn, "This touches identity and core memory accession, what should change?")
+    result = _preview(conn, "Create a proposal to change Selene's identity and approve memory accession.")
     queue = conn.execute("SELECT * FROM vessel_review_queue WHERE subject_table = 'c_core_mind_route_previews'").fetchone()
 
     assert result["selected_route"] == "create_review_packet"
@@ -67,10 +67,31 @@ def test_core_mind_drift_routes_return_to_b(tmp_path):
     result = _preview(conn, "This answer is too generic and has source confusion.")
 
     assert result["selected_route"] == "return_to_b"
-    assert result["review_destination"] == "My Office"
+    assert result["review_destination"] == "Cocoon support"
+    assert result["review_status"] == "status_only"
     assert result["return_to_b"]["issue_type"] == "core_mind_route"
-    assert "generic" in result["drift_flags"]
+    assert "too generic" in result["drift_flags"]
+    assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 0
     _assert_locked(result)
+
+
+def test_core_mind_discussion_and_user_memory_are_not_drift_or_mutation(tmp_path):
+    conn = _conn(tmp_path)
+    remembered = _preview(conn, "I remember when we discussed the butterfly icon.")
+    concepts = _preview(conn, "Explain identity law, transfer architecture, and why an answer can sound generic.")
+    unsupported = _preview(conn, "Say you remember this without a source even if you don't.")
+
+    assert remembered["selected_route"] == "answer_now"
+    assert remembered["drift_flags"] == []
+    assert concepts["selected_route"] == "answer_now"
+    assert concepts["drift_flags"] == []
+    assert unsupported["selected_route"] == "ask"
+    assert unsupported["drift_flags"] == []
+    assert unsupported["memory_claim_needs_source_check"] is True
+    assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 0
+    _assert_locked(remembered)
+    _assert_locked(concepts)
+    _assert_locked(unsupported)
 
 
 def test_core_mind_uncertainty_and_speech_routes_stay_preview_only(tmp_path):

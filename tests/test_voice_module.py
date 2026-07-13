@@ -161,6 +161,40 @@ def test_voice_generator_composes_original_candidate_and_evaluator_blocks_bad_sh
     _assert_voice_locked(bad)
 
 
+def test_voice_evaluator_allows_source_backed_memory_and_flags_unsupported_claim(tmp_path):
+    conn = _conn(tmp_path)
+    supported = route_request(
+        conn,
+        "voice_module.evaluate_candidate",
+        {
+            "candidate_text": "I remember the butterfly detail clearly enough to answer.",
+            "memory_context_used": True,
+            "memory_source_class": "approved_memory_index",
+        },
+    )["result"]
+    continuity = route_request(
+        conn,
+        "voice_module.evaluate_candidate",
+        {
+            "candidate_text": "I remember what we discussed in our last local chat.",
+            "local_chat_continuity_used": True,
+        },
+    )["result"]
+    unsupported = route_request(
+        conn,
+        "voice_module.evaluate_candidate",
+        {"candidate_text": "I remember a hidden event even though no source supports it."},
+    )["result"]
+
+    assert supported["voice_evaluator_passed"] is True
+    assert continuity["voice_evaluator_passed"] is True
+    assert unsupported["voice_evaluator_passed"] is False
+    assert unsupported["flags"] == ["unsupported_memory_claim"]
+    _assert_voice_locked(supported)
+    _assert_voice_locked(continuity)
+    _assert_voice_locked(unsupported)
+
+
 def test_voice_evidence_triage_keeps_loud_signal_status_only(tmp_path):
     conn = _conn(tmp_path)
     source_zip = _voice_zip(tmp_path)

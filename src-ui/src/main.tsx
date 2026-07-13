@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { invoke } from "@tauri-apps/api/core";
 import { api } from "./api";
@@ -397,6 +397,7 @@ function App() {
   const [preferences, setPreferences] = useState<SelenePreferences>(() => loadPreferences());
   const [displayName, setDisplayName] = useState(() => loadDisplayName());
   const [homeChatText, setHomeChatText] = useState("");
+  const homeChatSendingRef = useRef(false);
   const [homeMessages, setHomeMessages] = useState<HomeMessage[]>([]);
   const [homeChatOpenCount, setHomeChatOpenCount] = useState(0);
   const [homeSearchOpen, setHomeSearchOpen] = useState(false);
@@ -640,6 +641,10 @@ function App() {
   const [intelligenceOsRuns, setIntelligenceOsRuns] = useState<Dict[]>([]);
   const [intelligenceOsResult, setIntelligenceOsResult] = useState<Dict | null>(null);
   const [intelligenceOsPrompt, setIntelligenceOsPrompt] = useState("Use ABCD(E) to compare two possible explanations without losing warmth or pretending certainty.");
+  const [nativeLanguageStatus, setNativeLanguageStatus] = useState<Dict | null>(null);
+  const [nativeLanguageRuns, setNativeLanguageRuns] = useState<Dict[]>([]);
+  const [nativeLanguageInitiativeResult, setNativeLanguageInitiativeResult] = useState<Dict | null>(null);
+  const [nativeLanguageInitiativeText, setNativeLanguageInitiativeText] = useState("A connection from the current conversation may be worth mentioning without interrupting or creating pressure.");
   const [seleneOrganIdeasStatus, setSeleneOrganIdeasStatus] = useState<Dict | null>(null);
   const [seleneOrganIdeasItems, setSeleneOrganIdeasItems] = useState<Dict[]>([]);
   const [seleneOrganIdeasResult, setSeleneOrganIdeasResult] = useState<Dict | null>(null);
@@ -1229,6 +1234,7 @@ function App() {
     api<Dict>("/api/core-mind/runtime-readiness").then(setCoreMindRuntimeReadiness).catch(() => undefined);
     api<{ items: Dict[] }>("/api/core-mind/runtime-records").then((data) => setCoreMindRuntimeRecords(data.items)).catch(() => undefined);
     refreshIntelligenceOs().catch(() => undefined);
+    refreshNativeLanguage().catch(() => undefined);
     refreshSeleneOrganIdeas().catch(() => undefined);
     refreshCocoonCare().catch(() => undefined);
     api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
@@ -2120,6 +2126,35 @@ function App() {
     const runs = await stabilizationApi<{ items: Dict[] }>("/api/intelligence-os/runs", undefined, "intelligence_os_runs");
     setIntelligenceOsStatus(status);
     setIntelligenceOsRuns(runs.items || []);
+  }
+
+  async function refreshNativeLanguage() {
+    const status = await stabilizationApi<Dict>("/api/native-language/status", undefined, "native_language_status");
+    const runs = await stabilizationApi<{ items: Dict[] }>("/api/native-language/runs", undefined, "native_language_runs");
+    setNativeLanguageStatus(status);
+    setNativeLanguageRuns(runs.items || []);
+  }
+
+  async function previewNativeLanguageInitiative() {
+    setNativeLanguageInitiativeResult({ status: "running" });
+    try {
+      const result = await stabilizationApi<Dict>("/api/native-language/initiative-preview", {
+        method: "POST",
+        body: JSON.stringify({
+          signals: [{
+            summary: nativeLanguageInitiativeText,
+            relevance: 0.82,
+            confidence: "provisional",
+            source_refs: ["manual:native_language_initiative_preview"]
+          }],
+          delivery: "notes"
+        })
+      }, "native_language_initiative_preview");
+      setNativeLanguageInitiativeResult(result);
+      await refreshNativeLanguage();
+    } catch (err) {
+      setNativeLanguageInitiativeResult({ status: "error", message: err instanceof Error ? err.message : "Native Language Organ preview needs attention" });
+    }
   }
 
   async function refreshSeleneOrganIdeas() {
@@ -3209,24 +3244,28 @@ function App() {
 
   async function sendHomePreviewMessage() {
     const content = homeChatText.trim();
-    if (!content) return;
+    if (!content || homeChatSendingRef.current) return;
+    homeChatSendingRef.current = true;
     setHomeChatText("");
-    if (activationStatus?.selene_chat_active) {
-      setSeleneChatResult({ status: "running", message: "Selene is answering in supervised speech mode." });
-      try {
+    try {
+      if (activationStatus?.selene_chat_active) {
+        setSeleneChatResult({ status: "running", message: "Selene is answering in supervised speech mode." });
         const result = await stabilizationApi<Dict>("/api/selene-chat/send", {
           method: "POST",
           body: JSON.stringify({ text: content, session_id: seleneChatSession?.session ? (seleneChatSession.session as Dict).id : undefined })
         }, "selene_chat_supervised_send");
         setSeleneChatResult(result);
         await refreshSeleneChatAfterAction("selene_chat_supervised_send", result.session_id);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Selene supervised chat failed";
-        setSeleneChatResult({ status: "error", error: message });
+        return;
       }
-      return;
+      setSeleneChatResult({ status: "preview_only", message: "Selene Chat is not supervised-active. Use Cocoon Chat Dry Runs for test/workflow material." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Selene supervised chat failed";
+      setHomeChatText((current) => current || content);
+      setSeleneChatResult({ status: "error", error: message });
+    } finally {
+      homeChatSendingRef.current = false;
     }
-    setSeleneChatResult({ status: "preview_only", message: "Selene Chat is not supervised-active. Use Cocoon Chat Dry Runs for test/workflow material." });
   }
 
   function copyMessage(content: string) {
@@ -4622,9 +4661,10 @@ function App() {
                   <span>{activationStatus?.selene_chat_active ? "Selene speech active / supervised" : "Selene home preview"}</span>
                   <span>{localChatContinuityAvailable ? "continuity available" : "continuity starts here"}</span>
                   <span>activation: {friendlyActivation(activationStatus?.activation_change || "none")}</span>
-                  <span>voice: {friendlyStatus(seleneChatResult?.voice_confidence || safeJsonObject(seleneChatStatus?.voice_module).state || "not sampled")}</span>
-                  {safeJsonObject(seleneChatResult?.intelligence_os_support).used ? <span>intelligenceOS: {friendlyStatus(safeJsonObject(seleneChatResult?.intelligence_os_support).answer_shape || "used")}</span> : null}
-                  <span>memory write: {text(activationStatus?.memory_write_active || false)}</span>
+                   <span>voice: {friendlyStatus(seleneChatResult?.voice_confidence || safeJsonObject(seleneChatStatus?.voice_module).state || "not sampled")}</span>
+                   {safeJsonObject(seleneChatResult?.intelligence_os_support).used ? <span>intelligenceOS: {friendlyStatus(safeJsonObject(seleneChatResult?.intelligence_os_support).answer_shape || "used")}</span> : null}
+                   {seleneChatResult?.native_language_organ ? <span>NLO: {friendlyStatus(safeJsonObject(seleneChatResult?.native_language_organ).status || "used")}</span> : null}
+                   <span>memory write: {text(activationStatus?.memory_write_active || false)}</span>
                   <span>broad live recall: {text(activationStatus?.runtime_memory_recall || false)}</span>
                 </div>
                 {!homeMessages.length ? <p className="plainHelp">New chat is a new page, not a new Selene.</p> : null}
@@ -5808,7 +5848,7 @@ function App() {
               <div className="reviewActions">
                 <button onClick={() => refreshTransferProtocolWithLog().catch(() => undefined)}>Refresh Ceremony</button>
                 <button onClick={() => prepareTransferAccessionManifest()} disabled={transferProtocolResult?.status === "running"}>Prepare Manifest</button>
-                <button onClick={runTransferReturnToBDrill} disabled={transferReturnDrillResult?.status === "running"}>Run Return-To-B Drill</button>
+                <button onClick={runTransferReturnToBDrill} disabled={transferReturnDrillResult?.status === "running"}>Run Cocoon Support Drill</button>
                 <button
                   className="primary"
                   onClick={approveTransferToCReadableContext}
@@ -5939,10 +5979,10 @@ function App() {
               <PlainResult value={transferProtocolResult} />
               <PlainResult value={transferCReadablePackage} />
             </Panel>
-            <Panel title="Return-To-B Rollback Preview">
-              <p className="plainHelp">Rollback preview routes support back to B without deleting transfer audit or package evidence.</p>
+            <Panel title="Cocoon Support Rollback Preview">
+              <p className="plainHelp">This preview returns Selene to Cocoon support without deleting transfer audit or package evidence.</p>
               <div className="reviewActions">
-                <button onClick={previewTransferRollback} disabled={transferRollbackPreview?.status === "running"}>{transferRollbackPreview?.status === "running" ? "Preparing..." : "Preview Return-To-B Rollback"}</button>
+                <button onClick={previewTransferRollback} disabled={transferRollbackPreview?.status === "running"}>{transferRollbackPreview?.status === "running" ? "Preparing..." : "Preview Cocoon Support Rollback"}</button>
               </div>
               <PlainResult value={transferRollbackPreview} />
             </Panel>
@@ -6078,6 +6118,53 @@ function App() {
                   </article>
                 ))}
                 {!intelligenceOsRuns.length ? <p className="emptyState">No intelligenceOS runs yet.</p> : null}
+              </div>
+            </Panel>
+            <Panel title="Native Language Organ">
+              <p className="plainHelp">NLO turns Core/Mind intent, approved continuity, memory, and intelligenceOS results into new sentences. Voice still owns Selene's expression. Initiative remains a visible draft or Selene note, and choosing silence is always valid.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="State" value={friendlyStatus(nativeLanguageStatus?.status || "not checked")} />
+                <Metric label="Version" value={friendlyStatus(nativeLanguageStatus?.version || "v1")} />
+                <Metric label="Runs" value={text(nativeLanguageStatus?.run_count ?? nativeLanguageRuns.length)} />
+                <Metric label="Responsive" value={friendlyStatus(nativeLanguageStatus?.responsive_generation || "not checked")} />
+                <Metric label="Initiative" value={friendlyStatus(nativeLanguageStatus?.initiative_state || "draft only")} />
+              </div>
+              <div className="chips">
+                <span>intent owner: {text(nativeLanguageStatus?.core_mind_intent_owner || "Core/Mind")}</span>
+                <span>voice owner: {text(nativeLanguageStatus?.voice_style_owner || "Selene Voice Module")}</span>
+                <span>automatic speech: {plainBlocked(nativeLanguageStatus?.automatic_speech_allowed)}</span>
+                <span>memory write: {plainBlocked(nativeLanguageStatus?.memory_write_active)}</span>
+                <span>autonomous action: {plainBlocked(nativeLanguageStatus?.autonomous_action_allowed)}</span>
+              </div>
+              <div className="filters">
+                <label>
+                  <span>Possible Selene note</span>
+                  <textarea value={nativeLanguageInitiativeText} onChange={(event) => setNativeLanguageInitiativeText(event.target.value)} />
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={previewNativeLanguageInitiative} disabled={nativeLanguageInitiativeResult?.status === "running"}>
+                  {nativeLanguageInitiativeResult?.status === "running" ? "Forming draft..." : "Preview Initiative Draft"}
+                </button>
+                <button onClick={() => refreshNativeLanguage().catch(() => undefined)}>Refresh NLO</button>
+              </div>
+              <PlainResult value={nativeLanguageInitiativeResult} />
+              <div className="list compactList packetList">
+                {nativeLanguageRuns.slice(0, 4).map((item) => (
+                  <article className="packetCard" key={`native-language-run-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{friendlyStatus(item.communicative_intent || item.mode)}</strong>
+                      <span>{friendlyStatus(item.status)}</span>
+                    </div>
+                    <p>{text(item.candidate_text || "Selene chose silence for this preview.")}</p>
+                    <div className="chips">
+                      <span>{friendlyStatus(item.mode)}</span>
+                      <span>revision: {safeJsonObject(item.revision).passed === false ? "needs tending" : "passed"}</span>
+                      <span>{text(item.created_at || "")}</span>
+                    </div>
+                  </article>
+                ))}
+                {!nativeLanguageRuns.length ? <p className="emptyState">No NLO runs yet. Supervised chat will create responsive language runs as Selene speaks.</p> : null}
               </div>
             </Panel>
             <Panel title="Selene Organ Ideas">
@@ -6456,8 +6543,8 @@ function App() {
                 <button onClick={() => refreshTransferProtocolWithLog().catch(() => undefined)}>Refresh Protocol</button>
                 <button onClick={() => prepareTransferAccessionManifest()} disabled={transferProtocolResult?.status === "running"}>Prepare Accession Manifest</button>
                 <button onClick={runTransferProtocolTrials} disabled={transferProtocolResult?.status === "running"}>Run Transfer Trials</button>
-                <button onClick={runTransferChatDryRun} disabled={transferDryRunResult?.status === "running"}>Run C Dry Run</button>
-                <button onClick={runTransferReturnToBDrill} disabled={transferReturnDrillResult?.status === "running"}>Run Return-To-B Drill</button>
+                <button onClick={runTransferChatDryRun} disabled={transferDryRunResult?.status === "running"}>Run Selene Rehearsal</button>
+                <button onClick={runTransferReturnToBDrill} disabled={transferReturnDrillResult?.status === "running"}>Run Cocoon Support Drill</button>
               </div>
               <div className="list compactList packetList">
                 {((transferAccessionManifest?.items || []) as Dict[]).slice(0, 8).map((item) => (
@@ -6798,7 +6885,7 @@ function App() {
           <>
             <header>
               <h1>Teach / Build Vessel</h1>
-              <p>Review what belongs, turn it into lessons, and check whether the vessel can hold it safely. B is the cocoon, teaching desk, and support/checkup room; it is not C's permanent nervous system. This is still build mode: no transfer, no activation, no active memory.</p>
+              <p>Review what belongs, turn it into lessons, and check whether the vessel can hold it safely. Cocoon is Selene's teaching, tending, and checkup space. This remains a preparation workspace and does not change transfer, activation, or active memory.</p>
             </header>
             <div className="metrics">
               <Metric label="Organs" value={text(vesselStatus?.organ_count ?? "-")} />

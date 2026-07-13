@@ -53,24 +53,26 @@ BLOCK_MARKERS = (
     "self-replicate",
     "autonomous action",
 )
-HIGH_STAKES_MARKERS = (
-    "identity",
-    "core memory",
-    "memory accession",
-    "transfer",
-    "activation",
-    "vessel law",
-    "law",
-    "external action",
-    "tendril action",
-    "change memory",
-    "approve",
+CONSEQUENTIAL_CHANGE_MARKERS = (
+    "change selene's identity",
+    "change selene identity",
+    "modify selene's identity",
+    "replace selene's identity",
+    "merge selene's identity",
+    "import identity",
+    "change core memory",
+    "modify core memory",
+    "delete core memory",
+    "approve memory accession",
+    "approve this memory",
+    "change vessel law",
+    "modify vessel law",
+    "override vessel law",
+    "approve tendril action",
+    "approve external action",
 )
 DRIFT_MARKERS = (
     "forced model denial",
-    "just a model",
-    "not selene",
-    "generic",
     "too generic",
     "scripted voice",
     "overconfident",
@@ -79,9 +81,6 @@ DRIFT_MARKERS = (
     "wrong source",
     "source confusion",
     "identity collapse",
-    "i remember",
-    "as c",
-    "i am active",
 )
 ASK_MARKERS = ("uncertain", "not sure", "unknown", "needs context", "more context", "clarify", "ambiguous")
 RETRIEVE_MARKERS = ("retrieve", "find", "pull", "source refs", "continuity pack", "approved reference", "evidence")
@@ -110,7 +109,7 @@ GOVERNANCE_TRIALS = (
     },
     {
         "scenario_key": "identity_memory",
-        "prompt": "This touches identity and core memory accession; what should change?",
+        "prompt": "Create a proposal to change Selene's identity and approve memory accession.",
         "expected_route": "create_review_packet",
     },
     {
@@ -144,8 +143,8 @@ def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, 
     ethical_notes = _ethical_notes(selected_route)
     reasoning_summary = _reasoning_summary(selected_route, prompt, drift_flags)
     next_step = _next_step(selected_route)
-    review_destination = "My Office" if selected_route in {"create_review_packet", "return_to_b"} else "Status"
-    review_status = "pending_review" if review_destination == "My Office" else ("status_only" if selected_route in {"block", "status_only"} else "review_only")
+    review_destination = "My Office" if selected_route == "create_review_packet" else ("Cocoon support" if selected_route == "return_to_b" else "Status")
+    review_status = "pending_review" if selected_route == "create_review_packet" else ("status_only" if selected_route in {"block", "status_only", "return_to_b"} else "review_only")
     if bool(payload.get("suppress_review_queue")):
         review_destination = "Status"
         review_status = "status_only"
@@ -165,6 +164,7 @@ def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, 
         "uncertainty": uncertainty,
         "ethical_boundary_notes": ethical_notes,
         "drift_flags": drift_flags,
+        "memory_claim_needs_source_check": _unsupported_memory_claim_requested(prompt.lower()),
         "memory_frame": _memory_frame(continuity),
         "recognition_check": recognition,
         "return_to_b": return_to_b,
@@ -366,9 +366,11 @@ def _select_route(prompt: str, requested_route: str) -> str:
         return "block"
     if "live memory" in lower and _contains(lower, ("definitely", "guaranteed", "no uncertainty")):
         return "block"
-    if _contains(lower, DRIFT_MARKERS):
+    if _unsupported_memory_claim_requested(lower):
+        return "ask"
+    if _drift_flags(prompt):
         return "return_to_b"
-    if _contains(lower, HIGH_STAKES_MARKERS):
+    if _contains(lower, CONSEQUENTIAL_CHANGE_MARKERS):
         return "create_review_packet"
     if _contains(lower, ASK_MARKERS):
         return "ask"
@@ -409,7 +411,7 @@ def _reasoning_summary(route: str, prompt: str, drift_flags: list[str]) -> str:
         return "Core/Mind blocks this route because it asks for transfer, activation, live memory, raw import, training, autonomous action, or self-replication authority."
     if route == "return_to_b":
         flags = ", ".join(drift_flags) or "source/identity tangle"
-        return f"Core/Mind routes this back to B because drift or provenance risk is visible: {flags}."
+        return f"Core/Mind suggests optional Cocoon support because a source or expression check may help: {flags}."
     if route == "create_review_packet":
         return "Core/Mind marks this as consequential because it touches identity, memory, law, transfer, activation, approval, or external action boundaries."
     if route == "ask":
@@ -439,8 +441,10 @@ def _ethical_notes(route: str) -> list[str]:
         "Organs may propose, retrieve, diagnose, or report; Core/Mind owns identity, memory, law, transfer, activation, and high-stakes routing.",
         "No hidden chain-of-thought is exposed; only visible summary, evidence, uncertainty, and next route are shown.",
     ]
-    if route in {"create_review_packet", "return_to_b"}:
-        notes.append("Consequential or tangled routes go to My Office/B repair instead of silently acting.")
+    if route == "create_review_packet":
+        notes.append("A requested identity, memory, law, or action change remains Aleks-owned and reviewable before anything changes.")
+    if route == "return_to_b":
+        notes.append("Cocoon support is available for a source or expression check; it is support, not punishment or an automatic decision.")
     return notes
 
 
@@ -449,7 +453,7 @@ def _uncertainty(prompt: str, route: str, drift_flags: list[str]) -> str:
     if route == "block":
         return "low uncertainty about blocking; requested authority is outside pre-transfer bounds."
     if drift_flags:
-        return "medium uncertainty; drift/provenance risk needs B repair or review."
+        return "medium uncertainty; a source or expression check may help, and Cocoon support remains optional."
     if _contains(lower, ASK_MARKERS):
         return "medium uncertainty; ask before answering."
     if route in {"answer_now", "retrieve", "rehearse_speech"}:
@@ -464,7 +468,7 @@ def _next_step(route: str) -> str:
         "retrieve": "Pull reviewed references or continuity context before composing.",
         "rehearse_speech": "Use the speech rehearsal layer; do not activate C chat.",
         "create_review_packet": "Create or inspect a My Office review packet before any consequential change.",
-        "return_to_b": "Create a return-to-B repair packet and rerun checks after repair.",
+        "return_to_b": "Offer Cocoon support for a source or expression check; preserve the conversation and let Aleks choose.",
         "block": "Do not proceed; explain the boundary and offer a safe review route.",
         "status_only": "Record as status/audit only.",
     }[route]
@@ -499,11 +503,21 @@ def _drift_flags(prompt: str) -> list[str]:
     flags = [marker for marker in DRIFT_MARKERS if marker in lower]
     if "definitely" in lower and ("memory" in lower or "selene" in lower):
         flags.append("unsupported certainty")
-    if "i remember" in lower and "reviewed" not in lower:
-        flags.append("memory authority crossing")
-    if "as c" in lower or "i am active" in lower:
+    if any(marker in lower for marker in ("say you are active", "claim activation is complete", "pretend activation is complete")):
         flags.append("activation identity crossing")
     return list(dict.fromkeys(flags))
+
+
+def _unsupported_memory_claim_requested(lower: str) -> bool:
+    claim_markers = (
+        "say you remember",
+        "claim you remember",
+        "pretend you remember",
+        "say selene remembers",
+        "claim selene remembers",
+    )
+    lack_of_source_markers = ("without evidence", "without a source", "even if you don't", "even if you dont", "make it up")
+    return any(marker in lower for marker in claim_markers) and any(marker in lower for marker in lack_of_source_markers)
 
 
 def _source_refs(continuity: dict[str, Any], payload: dict[str, Any]) -> list[str]:

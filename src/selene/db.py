@@ -896,6 +896,26 @@ CREATE TABLE IF NOT EXISTS intelligence_os_runs (
 
 CREATE INDEX IF NOT EXISTS idx_intelligence_os_runs_status ON intelligence_os_runs(status, review_status, created_at);
 
+CREATE TABLE IF NOT EXISTS native_language_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  mode TEXT NOT NULL DEFAULT 'responsive',
+  status TEXT NOT NULL DEFAULT 'native_language_status_only',
+  prompt TEXT NOT NULL DEFAULT '',
+  communicative_intent TEXT NOT NULL DEFAULT '',
+  candidate_text TEXT NOT NULL DEFAULT '',
+  meaning_packet_json TEXT NOT NULL DEFAULT '{}',
+  discourse_plan_json TEXT NOT NULL DEFAULT '{}',
+  revision_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_native_language_runs_mode ON native_language_runs(mode, status, review_status, created_at);
+
 CREATE TABLE IF NOT EXISTS selene_organ_idea_intake (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   source_card_id TEXT NOT NULL UNIQUE,

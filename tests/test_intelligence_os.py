@@ -104,3 +104,49 @@ def test_intelligence_os_stopping_rule_and_hard_boundaries(tmp_path):
     assert hard["autonomous_action_allowed"] is False
     _assert_locked(ordinary)
     _assert_locked(hard)
+
+
+def test_intelligence_os_bug_comparison_gives_a_practical_answer_not_model_labels(tmp_path):
+    conn = _conn(tmp_path)
+    result = route_request(
+        conn,
+        "intelligence_os.reason",
+        {"prompt": "How should we compare two explanations for a sidecar bug without overthinking it?"},
+    )["result"]
+
+    assert "Reproduce the bug" in result["best_current_answer"]
+    assert "smallest test" in result["best_current_answer"]
+    assert "Model A" not in result["best_current_answer"]
+    _assert_locked(result)
+
+
+def test_intelligence_os_explains_shared_sqlite_fault_and_smallest_fix(tmp_path):
+    conn = _conn(tmp_path)
+    fault = route_request(
+        conn,
+        "intelligence_os.reason",
+        {
+            "prompt": (
+                "The failure came from several request threads sharing one SQLite connection. "
+                "What do you make of that fix?"
+            )
+        },
+    )["result"]
+    comparison = route_request(
+        conn,
+        "intelligence_os.reason",
+        {
+            "prompt": (
+                "How should we compare a serialized shared connection against per-request connections "
+                "without overengineering the local app?"
+            )
+        },
+    )["result"]
+
+    assert "shared-state concurrency fault" in fault["best_current_answer"]
+    assert "overlapping requests" in fault["best_current_answer"]
+    assert "serialized shared connection first" in comparison["best_current_answer"]
+    assert "measured contention" in comparison["best_current_answer"]
+    assert "Model A" not in comparison["best_current_answer"]
+    _assert_locked(fault)
+    _assert_locked(comparison)
