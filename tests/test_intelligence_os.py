@@ -150,3 +150,19 @@ def test_intelligence_os_explains_shared_sqlite_fault_and_smallest_fix(tmp_path)
     assert "Model A" not in comparison["best_current_answer"]
     _assert_locked(fault)
     _assert_locked(comparison)
+
+
+def test_intelligence_os_answers_direct_concept_without_forcing_competing_models(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = route_request(
+        conn,
+        "intelligence_os.reason",
+        {"prompt": "What makes a response feel complete without becoming overworked or turning into a report?"},
+    )["result"]
+
+    assert result["answer_shape"] == "answer_now"
+    assert "single_model_needs_competitor" not in result["challenge"]["bias_flags"]
+    assert "answers the actual ask first" in result["best_current_answer"]
+    assert "structure outgrows substance" in result["best_current_answer"]
+    _assert_locked(result)

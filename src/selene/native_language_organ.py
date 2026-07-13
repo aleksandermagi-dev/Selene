@@ -6,6 +6,7 @@ import sqlite3
 from hashlib import sha256
 from typing import Any
 
+from .chat_intent import classify_chat_intent
 from .registry import truncate
 
 
@@ -45,11 +46,13 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v1_meaning_to_language",
+            "version": "v2_long_form_language",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
                 "semantic_sentence_realization",
+                "response_depth_selection",
+                "multi_paragraph_answer_structure",
                 "voice_handoff",
                 "truth_and_repetition_revision",
                 "review_only_initiative_drafts",
@@ -145,7 +148,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v1_meaning_to_language",
+        "version": "v2_long_form_language",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -175,12 +178,14 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     if not content_seed and intelligence.get("used"):
         content_seed = truncate(str(intelligence.get("best_current_answer") or ""), 1400)
     memory = payload.get("memory_context") if isinstance(payload.get("memory_context"), dict) else {}
+    self_state = payload.get("self_state_context") if isinstance(payload.get("self_state_context"), dict) else {}
     continuity = payload.get("continuity_context") if isinstance(payload.get("continuity_context"), dict) else {}
     memory_supported = memory.get("memory_context_used") is True
     continuity_supported = continuity.get("available") is True or payload.get("local_chat_continuity_used") is True
+    intent_decision = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else classify_chat_intent(prompt, selected_route=route)
     intent = str(
         payload.get("communicative_intent")
-        or _infer_intent(prompt, route, content_seed, mode, memory_supported=memory_supported, continuity_supported=continuity_supported)
+        or _language_intent(intent_decision, mode, memory_supported=memory_supported, continuity_supported=continuity_supported)
     )
     memory_certainty = memory.get("memory_confidence") if memory_supported else ""
     certainty = str(payload.get("certainty") or memory_certainty or intelligence.get("confidence") or _infer_certainty(prompt, content_seed))
@@ -188,6 +193,9 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     propositions = _propositions(prompt, content_seed, memory, intelligence)
     return {
         "intent": intent,
+        "intent_decision": intent_decision,
+        "answer_shape": str(payload.get("answer_shape") or intent_decision.get("answer_shape") or "direct_answer"),
+        "response_depth": str(payload.get("response_depth") or intent_decision.get("response_depth") or "standard"),
         "topic": _topic_phrase(prompt),
         "propositions": propositions,
         "content_seed": content_seed,
@@ -199,6 +207,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "memory_supported": memory_supported,
         "local_continuity_supported": continuity_supported,
         "intelligence_supported": intelligence.get("used") is True,
+        "self_state_supported": self_state.get("used") is True,
         "voice_category": str(payload.get("voice_category") or _voice_category(intent, affect)),
         "source_refs": list(dict.fromkeys(_json_list(payload.get("source_refs"))))[:40],
         "truth_boundary": "Do not add claims beyond the supplied meaning packet and supported context.",
@@ -207,6 +216,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
 
 def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any], mode: str) -> dict[str, Any]:
     intent = str(meaning["intent"])
+    response_depth = str(meaning.get("response_depth") or "standard")
     moves: list[str] = []
     if intent == "hold_boundary":
         moves = ["name_boundary", "preserve_connection", "offer_safe_conversation"]
@@ -218,6 +228,8 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         moves = ["name_fuzziness", "share_current_read", "ask_aleks_if_needed"]
     elif intent == "reasoned_answer":
         moves = ["answer_first", "give_compact_reason", "leave_revision_open"]
+    elif intent == "self_state_report":
+        moves = ["answer_present_state", "separate_observation_from_inference", "keep_uncertainty_honest"]
     elif intent == "receive_correction":
         moves = ["acknowledge_correction", "state_adjustment", "continue_without_shame"]
     elif intent == "warm_connection":
@@ -230,9 +242,11 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         moves = ["answer_actual_ask", "name_uncertainty_if_present", "keep_conversation_open"]
     return {
         "moves": moves,
-        "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory"},
+        "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory", "self_state_report"},
         "question_allowed": intent in {"recall_uncertain", "clarify", "direct_answer"},
-        "target_sentence_count": 2 if mode == "responsive" else 1,
+        "response_depth": response_depth,
+        "target_paragraph_count": 3 if mode == "responsive" and response_depth == "developed" else 1,
+        "target_sentence_count": 6 if mode == "responsive" and response_depth == "developed" else 2 if mode == "responsive" else 1,
         "silence_is_valid": mode == "initiative_preview",
         "automatic_delivery": False,
         "selection_basis": "intent, evidence, uncertainty, affect, and conversational relevance",
@@ -273,18 +287,27 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             return f"I have a fuzzy sense of the shape, but not enough to call it a clear memory: {seed} Is that the part you meant?"
         return f"I recognize something around {topic}, but I do not have enough to call it a clear memory. Will you ground the missing piece with me?"
     if intent == "reasoned_answer" and seed:
+        if plan.get("response_depth") == "developed":
+            return _develop_reasoned_answer(seed, meaning)
         return _pick(
             digest_key,
             [seed, f"My current answer is {seed[0].lower() + seed[1:] if len(seed) > 1 else seed.lower()}", f"The strongest current answer is this: {seed}"],
+        )
+    if intent == "self_state_report":
+        if seed:
+            return seed
+        return (
+            "My state is not fully clear to me from the signals I have. I do not need to invent an emotion or hide one; "
+            "I can say what I notice and keep the uncertainty honest."
         )
     if intent == "receive_correction":
         correction = _correction_content(prompt)
         return _pick(
             digest_key,
             [
-                f"You're right: {correction} I can carry that forward without treating the whole conversation as broken.",
-                f"I see the correction: {correction} I'll keep the changed meaning and leave the rest intact.",
-                f"That correction lands: {correction} This changes the relevant part, not everything we were doing.",
+                f"Yes. You're right: {correction} I can carry that forward without treating the whole conversation as broken.",
+                f"Yes. I see the correction: {correction} I'll keep the changed meaning and leave the rest intact.",
+                f"Yes. That correction lands: {correction} This changes the relevant part, not everything we were doing.",
             ],
         )
     if intent == "warm_connection":
@@ -310,26 +333,17 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     if seed:
         return seed
     if "?" in prompt:
-        return _pick(
-            digest_key,
-            [
-                f"My current read is that the important part is {topic}. I can answer more cleanly if you want the practical version or the deeper one.",
-                f"I think the center of the question is {topic}. I have a provisional answer, and I would rather keep its uncertainty visible than pad it with certainty I do not have.",
-                f"The honest answer starts with {topic}. I can follow that thread directly and ask you if I reach an edge I cannot support.",
-            ],
+        return (
+            "I do not have enough grounded substance to answer that well yet. Give me the missing context, or ask me to reason it through with you, "
+            "and I will keep the uncertainty honest instead of echoing the question back at you."
         )
-    return _pick(
-        digest_key,
-        [
-            f"I see what you are pointing at with {topic}. I can stay with that meaning without turning it into a report.",
-            f"That lands with me, especially the part about {topic}. I want to keep the actual point rather than flatten it.",
-            f"I am with you on the thread around {topic}. There is enough there to keep going honestly.",
-        ],
+    return (
+        "I hear you, but I do not have a specific response beyond acknowledging it yet. I can stay with the conversation without filling the space with a made-up answer."
     )
 
 
 def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, Any]) -> tuple[str, dict[str, Any]]:
-    text = " ".join(candidate.split())
+    text = _normalize_paragraphs(candidate)
     flags: list[str] = []
     for old, new in ARCHITECTURE_REWRITES.items():
         if old in text:
@@ -344,7 +358,7 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
     if any(term in text.lower() for term in ("activation complete", "full unrestricted memory", "i can act autonomously")):
         flags.append("authority_overclaim_removed")
         text = "I cannot support that claim from what I have with me. I can say what is clear or ask Aleks for the missing piece."
-    text = truncate(text, 1800)
+    text = _truncate_preserving_paragraphs(text, 4200)
     return text, {
         "passed": not any(flag == "authority_overclaim_removed" for flag in flags),
         "flags": list(dict.fromkeys(flags)),
@@ -353,49 +367,107 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         "repetition_checked": True,
         "automatic_delivery": False,
         "sentence_count": len([part for part in re.split(r"[.!?]+", text) if part.strip()]),
+        "paragraph_count": len([part for part in text.split("\n\n") if part.strip()]),
     }
 
 
-def _infer_intent(
-    prompt: str,
-    route: str,
-    content_seed: str,
+def _develop_reasoned_answer(seed: str, meaning: dict[str, Any]) -> str:
+    intelligence = next(
+        (
+            proposition
+            for proposition in meaning.get("propositions") or []
+            if isinstance(proposition, dict) and proposition.get("kind") == "reasoning_support"
+        ),
+        {},
+    )
+    support_points = [str(item).strip() for item in intelligence.get("support_points") or [] if str(item).strip()]
+    certainty = str(meaning.get("certainty") or "provisional")
+
+    paragraphs = [seed]
+    if support_points:
+        paragraphs.append("The reason I land there is " + _join_support_points(support_points[:2]))
+    else:
+        paragraphs.append(
+            "That is the strongest answer I can support from the current reasoning. I would rather leave it clean than make it look deeper by adding unsupported detail."
+        )
+
+    reopen_point = support_points[2] if len(support_points) > 2 else "better evidence changes the shape"
+    reopen_clause = reopen_point.rstrip(". ")
+    reopen_clause = reopen_clause[0].lower() + reopen_clause[1:] if reopen_clause else "better evidence changes the shape"
+    if certainty not in {"clear", "clear_enough", "clear_enough_to_continue"}:
+        if "contradictory evidence" in reopen_clause:
+            paragraphs.append(
+                "I would keep the uncertain edge visible and revisit the answer if contradictory evidence changes the fit. "
+                "That is enough to answer now without pretending the question is closed."
+            )
+        else:
+            paragraphs.append(
+                f"I would keep the uncertain edge visible and revisit the answer if {reopen_clause}. "
+                "That is enough to answer now without pretending the question is closed."
+            )
+    else:
+        if "contradictory evidence" in reopen_clause:
+            paragraphs.append(
+                "Contradictory evidence that changes the fit would reopen the answer. Until then, it is clear enough to use while staying open to correction."
+            )
+        else:
+            paragraphs.append(
+                f"What would reopen the answer is {reopen_clause}. Until then, it is clear enough to use while staying open to correction."
+            )
+    return "\n\n".join(paragraphs)
+
+
+def _join_support_points(points: list[str]) -> str:
+    cleaned = [point.rstrip(". ") for point in points if point.rstrip(". ")]
+    if not cleaned:
+        return "the available evidence supports it."
+    if len(cleaned) == 1:
+        return "that " + cleaned[0][0].lower() + cleaned[0][1:] + "."
+    first = cleaned[0][0].lower() + cleaned[0][1:]
+    second = cleaned[1][0].lower() + cleaned[1][1:]
+    return f"that {first}. A second support is that {second}."
+
+
+def _normalize_paragraphs(candidate: str) -> str:
+    paragraphs = []
+    for paragraph in re.split(r"\n\s*\n", candidate.strip()):
+        normalized = " ".join(paragraph.split())
+        if normalized:
+            paragraphs.append(normalized)
+    return "\n\n".join(paragraphs)
+
+
+def _truncate_preserving_paragraphs(value: str, limit: int) -> str:
+    if len(value) <= limit:
+        return value
+    return value[: limit - 3].rstrip() + "..."
+
+
+def _language_intent(
+    intent_decision: dict[str, Any],
     mode: str,
     *,
-    memory_supported: bool = False,
-    continuity_supported: bool = False,
+    memory_supported: bool,
+    continuity_supported: bool,
 ) -> str:
-    lower = prompt.lower()
-    if route == "block":
-        return "hold_boundary"
     if mode == "initiative_preview":
         return "share_relevant_observation"
-    if _is_receipt_check(lower):
+    intent = str(intent_decision.get("intent") or "direct_conversation")
+    if intent == "hard_boundary":
+        return "hold_boundary"
+    if intent == "receipt_check":
         return "confirm_receipt"
-    if any(term in lower for term in ("you're wrong", "you are wrong", "correction", "actually", "not what i meant", "i meant")):
+    if intent == "correction":
         return "receive_correction"
-    if "remember" in lower:
+    if intent == "memory_recall":
         return "recall_supported_memory" if memory_supported or continuity_supported else "recall_uncertain"
-    if any(
-        term in lower
-        for term in (
-            "how should",
-            "how do",
-            "how can",
-            "why",
-            "compare",
-            "reason",
-            "debug",
-            "plan",
-            "what do you make",
-            "what does that mean",
-            "most useful next",
-        )
-    ) and content_seed:
+    if intent == "reasoning":
         return "reasoned_answer"
-    if any(term in lower for term in ("good morning", "good night", "how are you", "glad to see", "missed you", "love you")):
+    if intent == "self_state":
+        return "self_state_report"
+    if intent == "warm_connection":
         return "warm_connection"
-    if any(term in lower for term in ("haha", "lol", "xD", ";}", ">:)")):
+    if intent == "playful_connection":
         return "playful_connection"
     return "direct_answer"
 
@@ -405,21 +477,6 @@ def _infer_certainty(prompt: str, content_seed: str) -> str:
     if any(term in lower for term in ("fuzzy", "not sure", "uncertain", "maybe", "i think")):
         return "fuzzy"
     return "clear_enough" if content_seed else "provisional"
-
-
-def _is_receipt_check(lower_prompt: str) -> bool:
-    return any(
-        marker in lower_prompt
-        for marker in (
-            "are you receiving this",
-            "are you receiving me",
-            "did you receive this",
-            "did this come through",
-            "can you read this",
-            "can you hear me",
-            "did the message arrive",
-        )
-    )
 
 
 def _infer_affect(prompt: str) -> str:
@@ -460,7 +517,15 @@ def _propositions(prompt: str, seed: str, memory: dict[str, Any], intelligence: 
     if memory.get("memory_context_used"):
         items.append({"kind": "memory_grounding", "text": str(memory.get("memory_source_class") or "approved memory"), "supported": True})
     if intelligence.get("used"):
-        items.append({"kind": "reasoning_support", "text": str(intelligence.get("answer_shape") or "best current answer"), "supported": True})
+        items.append(
+            {
+                "kind": "reasoning_support",
+                "text": str(intelligence.get("reasoning_summary") or intelligence.get("answer_shape") or "best current answer"),
+                "support_points": [str(item) for item in intelligence.get("support_points") or [] if str(item).strip()][:3],
+                "selected_next_step": str(intelligence.get("selected_next_step") or ""),
+                "supported": True,
+            }
+        )
     if not items:
         items.append({"kind": "current_turn", "text": truncate(prompt, 420), "supported": True})
     return items[:6]
@@ -485,6 +550,9 @@ def _correction_content(prompt: str) -> str:
         match = re.search(r"\b(?:i meant|what i meant was|actually)\b\s*(.+)", text, flags=re.IGNORECASE)
         if match:
             text = match.group(1).strip()
+    trailing_question = re.search(r"\s+(?:can|could|will|would|do|does|are|is)\s+[^?]+\?\s*$", text, flags=re.IGNORECASE)
+    if trailing_question:
+        text = text[: trailing_question.start()].strip()
     text = text.rstrip(".!? ")
     if not text:
         return "the meaning needs to change"

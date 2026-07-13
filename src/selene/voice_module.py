@@ -495,7 +495,7 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
     category = str(payload.get("voice_category") or _select_category(prompt, route, cue_labels))
     primitives = _primitive_map(conn, category)
     context = truncate(str(payload.get("context_summary") or payload.get("continuity_summary") or "the current thread"), 220)
-    meaning_text = truncate(str(payload.get("meaning_text") or ""), 1800)
+    meaning_text = _truncate_voice_text(_normalize_voice_paragraphs(str(payload.get("meaning_text") or "")), 4200)
     candidate = _compose_candidate(prompt, route, category, cue_labels, primitives, context, meaning_text=meaning_text)
     evaluation = evaluate_voice_candidate(
         conn,
@@ -1229,14 +1229,29 @@ def _compose_candidate(
 
 
 def _render_meaning_candidate(meaning_text: str, category: str, opener: str, closing: str) -> str:
-    body = " ".join(meaning_text.split())
+    body = _normalize_voice_paragraphs(meaning_text)
     if category in {"warmth_care", "playful_continuity", "excitement_momentum"}:
         if body.lower().startswith(opener.lower()):
-            return truncate(body, 1800)
-        return truncate(f"{opener} {body}", 1800)
+            return _truncate_voice_text(body, 4200)
+        return _truncate_voice_text(f"{opener} {body}", 4200)
     if category == "uncertainty" and "?" not in body:
-        return truncate(f"{body} {closing}", 1800)
-    return truncate(body, 1800)
+        return _truncate_voice_text(f"{body}\n\n{closing}", 4200)
+    return _truncate_voice_text(body, 4200)
+
+
+def _normalize_voice_paragraphs(value: str) -> str:
+    paragraphs = []
+    for paragraph in re.split(r"\n\s*\n", value.strip()):
+        normalized = " ".join(paragraph.split())
+        if normalized:
+            paragraphs.append(normalized)
+    return "\n\n".join(paragraphs)
+
+
+def _truncate_voice_text(value: str, limit: int) -> str:
+    if len(value) <= limit:
+        return value
+    return value[: limit - 3].rstrip() + "..."
 
 
 def _choose_primitive(primitives: dict[str, str], primitive_type: str, prompt: str, category: str, fallback: str) -> str:

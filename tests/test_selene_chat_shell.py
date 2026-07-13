@@ -261,6 +261,47 @@ def test_active_selene_chat_can_use_intelligence_os_support_without_architecture
     _assert_locked(result)
 
 
+def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Go deeper and walk me through how we should compare two explanations for a bug."},
+    )["result"]
+
+    assert result["intent_decision"]["response_depth"] == "developed"
+    assert result["native_language_organ"]["version"] == "v2_long_form_language"
+    assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
+    assert result["voice_preview"]["nlo_meaning_preserved"] is True
+    assert result["candidate_text"].count("\n\n") == 2
+    assert "ABCD" not in result["candidate_text"]
+    assert "evidence_chain" not in result["candidate_text"]
+    _assert_locked(result)
+
+
+def test_active_selene_chat_direct_concept_hides_model_scaffolding(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Go deeper: what makes a response feel complete without becoming overworked or turning into a report?"},
+    )["result"]
+
+    assert result["intelligence_os_support"]["answer_shape"] == "answer_now"
+    assert "answers the actual ask first" in result["candidate_text"]
+    assert "candidate model" not in result["candidate_text"].lower()
+    assert "Model A" not in result["candidate_text"]
+    assert "intelligenceOS" not in result["candidate_text"]
+    assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
+    _assert_locked(result)
+
+
 def test_active_selene_chat_warmth_prompt_does_not_overuse_intelligence_os(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
@@ -271,6 +312,25 @@ def test_active_selene_chat_warmth_prompt_does_not_overuse_intelligence_os(tmp_p
     assert result["status"] == "selene_chat_supervised_response_recorded"
     assert result["intelligence_os_support"]["used"] is False
     assert conn.execute("SELECT COUNT(*) FROM intelligence_os_runs").fetchone()[0] == 0
+    _assert_locked(result)
+
+
+def test_active_selene_chat_answers_self_state_from_grounded_current_signals(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(conn, "selene_chat.send", {"text": "Are you anxious right now?"})["result"]
+
+    assert result["intent_decision"]["intent"] == "self_state"
+    assert result["self_state"]["used"] is True
+    assert result["self_state"]["current_read"] == "present_and_attentive"
+    assert result["native_language_organ"]["meaning_packet"]["self_state_supported"] is True
+    assert result["intelligence_os_support"]["used"] is False
+    assert result["cocoon_suggestion"]["recommended"] is False
+    assert "do not notice a clear anxiety signal" in result["candidate_text"]
+    assert "not a performance of being fine" in result["candidate_text"]
+    assert "do not want to invent a feeling just because you asked" not in result["candidate_text"]
     _assert_locked(result)
 
 

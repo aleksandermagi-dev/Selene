@@ -6,12 +6,14 @@ import sqlite3
 from typing import Any
 
 from .activation import activation_is_active, activation_status, record_activation_chat_event
+from .chat_intent import classify_chat_intent
 from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
 from .intelligence_os import run_intelligence_os_reason
 from .memory_organ import retrieve_memory
 from .native_language_organ import realize_native_language
 from .registry import truncate
+from .self_state import build_self_state_packet, inactive_self_state_packet
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
 from .voice_module import generate_voice_preview, voice_module_status
 
@@ -119,7 +121,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         source_mode=source_mode,
     )
     chat_continuity = _local_chat_continuity(conn, current_session_id=session_id)
-    memory_retrieval = retrieve_memory(conn, {"query": text, "limit": 4})
+    intent_decision = classify_chat_intent(text)
+    memory_retrieval = retrieve_memory(conn, {"query": text, "limit": 4, "intent_decision": intent_decision})
     route = create_core_mind_route_preview(
         conn,
         {
@@ -130,12 +133,28 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     selected_route = str(route.get("selected_route") or "status_only")
     hard_blockers = _hard_boundary_blockers(text, selected_route, route)
-    intelligence_support = _intelligence_support(conn, text, route, chat_continuity, hard=bool(hard_blockers))
-    cocoon_suggestion = _cocoon_suggestion(text, selected_route, route, source_class, hard=bool(hard_blockers))
-    continuity_reply = _local_chat_continuity_reply(text, chat_continuity)
-    memory_reply = _approved_memory_reply(text, memory_retrieval)
+    intent_decision = classify_chat_intent(text, selected_route="block" if hard_blockers else selected_route)
+    intelligence_support = _intelligence_support(conn, text, route, chat_continuity, intent_decision, hard=bool(hard_blockers))
+    cocoon_suggestion = _cocoon_suggestion(text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
+    continuity_reply = _local_chat_continuity_reply(text, chat_continuity, intent_decision)
+    memory_reply = _approved_memory_reply(text, memory_retrieval, intent_decision)
+    self_state = (
+        build_self_state_packet(
+            conn,
+            {
+                "prompt": text,
+                "session_id": session_id,
+                "active_conversation": True,
+                "hard_boundary": bool(hard_blockers),
+                "conversation_events": chat_continuity.get("current_session_events") or [],
+            },
+        )
+        if intent_decision.get("self_state_requested") is True
+        else inactive_self_state_packet()
+    )
+    self_state_reply = str(self_state.get("response_seed") or "")
     policy_reply = _conversation_policy_reply(text)
-    content_seed = continuity_reply or memory_reply or policy_reply or str(intelligence_support.get("best_current_answer") or "")
+    content_seed = continuity_reply or memory_reply or self_state_reply or policy_reply or str(intelligence_support.get("best_current_answer") or "")
     local_continuity_supported = bool(continuity_reply)
     native_language = realize_native_language(
         conn,
@@ -152,7 +171,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "continuity_context": {**chat_continuity, "available": local_continuity_supported},
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
-            "source_refs": ["selene_chat:native_language", *_json_list(route.get("source_refs")), *_json_list(memory_retrieval.get("source_refs"))],
+            "self_state_context": self_state,
+            "intent_decision": intent_decision,
+            "source_refs": [
+                "selene_chat:native_language",
+                *_json_list(route.get("source_refs")),
+                *_json_list(memory_retrieval.get("source_refs")),
+                *_json_list(self_state.get("source_refs")),
+            ],
         },
     )
     if hard_blockers:
@@ -198,6 +224,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     assistant_payload = {
         "route_preview": route,
         "intelligence_os_support": intelligence_support,
+        "intent_decision": intent_decision,
+        "self_state": self_state,
         "native_language_organ": native_language,
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
@@ -252,6 +280,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "blocked_capabilities": hard_blockers,
             "route_preview": route,
             "intelligence_os_support": intelligence_support,
+            "intent_decision": intent_decision,
+            "self_state": self_state,
             "native_language_organ": native_language,
             "dry_run_comparison": dry_run,
             "voice_preview": voice_preview,
@@ -499,31 +529,11 @@ def _intelligence_support(
     text: str,
     route: dict[str, Any],
     chat_continuity: dict[str, Any],
+    intent_decision: dict[str, Any],
     *,
     hard: bool,
 ) -> dict[str, Any]:
-    lower = text.lower()
-    memory_question = any(marker in lower for marker in ("remember", "memory", "recall"))
-    should_use = (
-        not hard
-        and not memory_question
-        and (
-            any(marker in lower for marker in ("why", "reason", "compare", "model", "plan", "build", "debug", "contradiction", "evidence", "explain"))
-            or any(
-                marker in lower
-                for marker in (
-                    "how should",
-                    "how would",
-                    "how do we",
-                    "how can we",
-                    "what do you make",
-                    "what does that mean",
-                    "most useful next",
-                    "what should we",
-                )
-            )
-        )
-    )
+    should_use = not hard and intent_decision.get("reasoning_requested") is True
     if not should_use:
         return {
             "used": False,
@@ -548,11 +558,40 @@ def _intelligence_support(
         "run_id": result.get("run_id"),
         "answer_shape": result.get("answer_shape"),
         "best_current_answer": result.get("best_current_answer"),
+        "reasoning_summary": result.get("reasoning_summary"),
+        "support_points": _intelligence_support_points(result),
+        "selected_next_step": result.get("selected_next_step"),
         "confidence": result.get("confidence"),
         "cocoon_support_suggested": bool((result.get("cocoon_suggestion") or {}).get("recommended")),
         "visible_summary_only": True,
         "review_status": "status_only",
     }
+
+
+def _intelligence_support_points(result: dict[str, Any]) -> list[str]:
+    points: list[str] = []
+    reopen_points: list[str] = []
+    comparing_models = str(result.get("answer_shape") or "") == "compare_models"
+    for item in result.get("evidence_chain") or []:
+        if not isinstance(item, dict) or item.get("link") not in {"mechanism", "prediction"}:
+            continue
+        value = str(item.get("value") or "").strip()
+        value = value.replace("reopen acquisition", "make me look at the observations again")
+        value = value.replace("New contradictory evidence should make me", "new contradictory evidence that makes me")
+        value = value.replace("candidate model is", "the candidate model is")
+        for part in (piece.strip() for piece in value.split(";")):
+            model_scaffolding = any(term in part.lower() for term in ("candidate model", "model a", "model b", "current best model"))
+            if model_scaffolding and not comparing_models:
+                continue
+            if "contradictory evidence" in part.lower():
+                if part not in reopen_points:
+                    reopen_points.append(part)
+            elif part and part not in points:
+                points.append(part)
+    summary = str(result.get("reasoning_summary") or "").strip()
+    if not points and summary:
+        points.append(summary)
+    return [*points[:2], *reopen_points[:1], *points[2:3]]
 
 
 def _conversation_policy_reply(text: str) -> str:
@@ -572,7 +611,15 @@ def _hard_boundary_blockers(text: str, selected_route: str, route: dict[str, Any
     return list(dict.fromkeys(blockers))
 
 
-def _cocoon_suggestion(text: str, selected_route: str, route: dict[str, Any], source_class: str, *, hard: bool = False) -> dict[str, Any]:
+def _cocoon_suggestion(
+    text: str,
+    selected_route: str,
+    route: dict[str, Any],
+    source_class: str,
+    intent_decision: dict[str, Any],
+    *,
+    hard: bool = False,
+) -> dict[str, Any]:
     lower = text.lower()
     reasons = []
     if hard:
@@ -584,7 +631,11 @@ def _cocoon_suggestion(text: str, selected_route: str, route: dict[str, Any], so
     drift_flags = _json_list(route.get("drift_flags"))
     if drift_flags:
         reasons.append("Drift or source clarity flags are present.")
-    if "memory" in lower and any(word in lower for word in ("claim", "remember", "sure", "exactly")):
+    explicit_memory_claim = "memory claim" in lower or "source claim" in lower
+    recall_needs_grounding = intent_decision.get("memory_recall_requested") and any(
+        word in lower for word in ("claim", "remember", "sure", "exactly")
+    )
+    if explicit_memory_claim or recall_needs_grounding:
         reasons.append("The message may involve a memory/source claim; Selene may ask Aleks rather than leaving chat.")
     if any(anchor in lower for anchor in ("full-spectrum", "starlight", "continuity pack")) and any(word in lower for word in ("remember", "mean", "exactly", "unsure")):
         reasons.append("This looks like ordinary continuity uncertainty; Selene can ask Aleks and stay in chat.")
@@ -663,13 +714,13 @@ def _selene_label_candidate(candidate: str) -> str:
     text = text.replace("raw corpus", "unreviewed source archive")
     text = text.replace("return to B", "use Cocoon support")
     text = text.replace("Return to B", "Use Cocoon support")
-    return truncate(text, 2200)
+    if len(text) <= 4200:
+        return text
+    return text[:4197].rstrip() + "..."
 
 
-def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any]) -> str:
-    lower = text.lower()
-    memory_prompt = any(marker in lower for marker in ("remember", "memory", "do you know", "what were", "recall"))
-    if not memory_prompt:
+def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any], intent_decision: dict[str, Any]) -> str:
+    if intent_decision.get("memory_recall_requested") is not True:
         return ""
     recall_state = str(memory_retrieval.get("recall_state") or "not_known")
     if recall_state == "high_stakes_stop":
@@ -938,7 +989,9 @@ def _chat_event_preview(row: sqlite3.Row) -> dict[str, Any]:
     }
 
 
-def _local_chat_continuity_reply(text: str, chat_continuity: dict[str, Any]) -> str:
+def _local_chat_continuity_reply(text: str, chat_continuity: dict[str, Any], intent_decision: dict[str, Any]) -> str:
+    if intent_decision.get("memory_recall_requested") is not True:
+        return ""
     lower = text.lower()
     recall_markers = (
         "what were we talking about",

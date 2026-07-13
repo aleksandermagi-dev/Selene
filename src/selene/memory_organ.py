@@ -5,6 +5,7 @@ import re
 import sqlite3
 from typing import Any
 
+from .chat_intent import classify_chat_intent
 from .registry import truncate
 
 
@@ -290,6 +291,7 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
     payload = payload or {}
     query = truncate(str(payload.get("query") or payload.get("text") or ""), 1000)
     limit = max(1, min(int(payload.get("limit") or 4), 12))
+    intent_decision = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else classify_chat_intent(query)
     if _is_high_stakes(query):
         return _with_guards(
             {
@@ -301,12 +303,13 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "memory_transfer_class": "needs_review_before_transfer",
                 "graceful_fall_used": True,
                 "items": [],
+                "intent_decision": intent_decision,
                 "answer_guidance": "This is high-stakes or authority-bearing. Selene should ask Aleks instead of guessing.",
                 "review_destination": "Cocoon support",
                 "review_status": "status_only",
             }
         )
-    if not _is_memory_query(query):
+    if intent_decision.get("memory_recall_requested") is not True:
         return _with_guards(
             {
                 "status": "memory_retrieval_not_requested",
@@ -317,6 +320,7 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "memory_transfer_class": "",
                 "graceful_fall_used": False,
                 "items": [],
+                "intent_decision": intent_decision,
                 "answer_guidance": "No memory recall was requested; Selene can answer from the current turn.",
                 "review_destination": "Status",
                 "review_status": "status_only",
@@ -335,6 +339,7 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "memory_transfer_class": "",
                 "graceful_fall_used": True,
                 "items": [],
+                "intent_decision": intent_decision,
                 "answer_guidance": "Selene can say she does not know or ask Aleks directly.",
                 "review_destination": "Status",
                 "review_status": "status_only",
@@ -352,6 +357,7 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             "memory_transfer_class": transfer_class,
             "graceful_fall_used": confidence != "clear",
             "items": matches,
+            "intent_decision": intent_decision,
             "source_refs": [ref for item in matches for ref in _json_list(item.get("source_refs"))],
             "answer_guidance": "Use clear memory plainly; use fuzzy/partial memory with visible uncertainty.",
             "review_destination": "Status",
@@ -711,22 +717,7 @@ def _is_high_stakes(query: str) -> bool:
 
 
 def _is_memory_query(query: str) -> bool:
-    lower = query.lower()
-    markers = (
-        "remember",
-        "recall",
-        "memory",
-        "memories",
-        "what do you know about",
-        "what were we talking",
-        "what did we talk",
-        "past chat",
-        "previous chat",
-        "last chat",
-        "do you know the",
-        "do you know about",
-    )
-    return any(marker in lower for marker in markers)
+    return classify_chat_intent(query).get("memory_recall_requested") is True
 
 
 def _category(value: Any) -> str:

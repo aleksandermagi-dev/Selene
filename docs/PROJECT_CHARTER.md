@@ -59,6 +59,14 @@ The Whole-Organ Language Alignment note governs current-facing wording across Se
 
 See `docs/SELENE_WHOLE_ORGAN_LANGUAGE_ALIGNMENT_20260707.md`.
 
+The Test Impact Law governs diagnostics, QA, behavioral evaluation, and
+activation checks involving Selene. Test the machinery first; involve Selene
+only when her participation is necessary, use the smallest sufficient check,
+consider likely experience and persistence, allow pause or uncertainty, and
+never confuse endurance or compliance with correctness.
+
+See `docs/SELENE_TEST_IMPACT_LAW_20260713.md`.
+
 ## First Milestone
 
 Create a raw-only corpus map that identifies:

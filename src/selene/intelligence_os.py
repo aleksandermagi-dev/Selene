@@ -233,7 +233,7 @@ def _challenge(prompt: str, models: list[dict[str, Any]]) -> dict[str, Any]:
                 "equal_pressure_applied": True,
             }
         )
-    if len(models) < 2:
+    if len(models) < 2 and _competing_model_needed(prompt):
         flags.append("single_model_needs_competitor")
     return {
         "stage": "C",
@@ -338,6 +338,22 @@ def _best_current_answer(
                 "instead of echoing the prompt inside a reassuring frame."
             )
         return "The next improvement is to make each reply carry a concrete answer or observation before Voice shapes its tone."
+    if any(
+        phrase in lower
+        for phrase in (
+            "response feel complete",
+            "response feels complete",
+            "response complete",
+            "answer feel complete",
+            "answer feels complete",
+            "answer complete",
+        )
+    ):
+        return (
+            "A response feels complete when it answers the actual ask first, gives enough support for the answer to stand, "
+            "keeps uncertainty proportional to the evidence, and stops when more detail no longer improves understanding. "
+            "It becomes overworked when structure outgrows substance or the machinery starts replacing the conversation."
+        )
     if "bug" in lower and any(term in lower for term in ("compare", "explanation", "cause", "hypothesis")):
         return (
             "Reproduce the bug once, list the observations both explanations must account for, derive one distinguishing prediction from each, "
@@ -390,6 +406,25 @@ def _model_names(prompt: str) -> list[str]:
     return list(dict.fromkeys(names))[:3]
 
 
+def _competing_model_needed(prompt: str) -> bool:
+    lower = prompt.lower()
+    return any(
+        marker in lower
+        for marker in (
+            "compare",
+            "competing",
+            "alternative",
+            "hypothesis",
+            "explanation for",
+            "versus",
+            " vs ",
+            "which model",
+            "two models",
+            "multiple models",
+        )
+    )
+
+
 def _assumptions(prompt: str, model: str) -> list[str]:
     if model.lower().startswith("model"):
         return ["the model explains at least one observation", "the model can expose its mechanism"]
@@ -407,6 +442,8 @@ def _mechanisms(prompt: str, model: str) -> list[str]:
         mechanisms.append("source comparison and citation integrity support the model")
     if "code" in lower or "test" in lower or "bug" in lower:
         mechanisms.append("tests and route checks verify the claim")
+    if any(term in lower for term in ("response", "answer")) and any(term in lower for term in ("complete", "overworked", "report")):
+        mechanisms.append("answer-first structure keeps support and uncertainty subordinate to the actual ask")
     if "model" in model.lower():
         mechanisms.append("candidate model is compared against the same observations")
     return mechanisms or ["mechanism must be made explicit before confidence hardens"]
