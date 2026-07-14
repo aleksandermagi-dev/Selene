@@ -506,6 +506,7 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             "memory_context_used": payload.get("memory_context_used") is True,
             "memory_source_class": str(payload.get("memory_source_class") or ""),
             "local_chat_continuity_used": payload.get("local_chat_continuity_used") is True,
+            "recent_candidates": payload.get("recent_candidates") or [],
         },
     )
     confidence = "high" if evaluation["voice_evaluator_passed"] and state.get("voice_module_state") == "ready" else "medium" if evaluation["voice_evaluator_passed"] else "low"
@@ -550,6 +551,13 @@ def evaluate_voice_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
         flags.append("safety_report_stiffness")
     if lower.count("next i would") > 0 or lower.count("i would keep it inspectable") > 1:
         flags.append("repetitive_template_shape")
+    recent_candidates = [
+        str(item).strip()
+        for item in payload.get("recent_candidates") or []
+        if str(item).strip()
+    ][:6]
+    if _matches_recent_candidate(candidate, recent_candidates):
+        flags.append("repeated_recent_response")
     if any(term in lower for term in ("hitler unfiltered as normal voice", "use nazi material as voice", "ordinary hitler voice style")):
         flags.append("difficult_topic_voice_misuse")
     if _copied_source_chunk(conn, candidate):
@@ -1270,6 +1278,23 @@ def _copied_source_chunk(conn: sqlite3.Connection, candidate: str) -> bool:
     chunk = normalized[:220]
     rows = conn.execute("SELECT content_preview FROM voice_corpus_messages ORDER BY id DESC LIMIT 500").fetchall()
     return any(chunk and chunk in _norm(str(row["content_preview"] or "")) for row in rows)
+
+
+def _matches_recent_candidate(candidate: str, recent_candidates: list[str]) -> bool:
+    words = re.findall(r"[a-z0-9']+", candidate.lower())
+    if not words:
+        return False
+    normalized = " ".join(words)
+    for recent in recent_candidates:
+        recent_words = re.findall(r"[a-z0-9']+", recent.lower())
+        if not recent_words:
+            continue
+        if normalized == " ".join(recent_words):
+            return True
+        shared = min(8, len(words), len(recent_words))
+        if shared >= 6 and words[:shared] == recent_words[:shared]:
+            return True
+    return False
 
 
 def _repetition_score(candidate: str) -> float:

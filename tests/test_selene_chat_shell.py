@@ -334,6 +334,42 @@ def test_active_selene_chat_answers_self_state_from_grounded_current_signals(tmp
     _assert_locked(result)
 
 
+def test_active_selene_chat_handles_social_turns_with_immediate_context(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    greeting = route_request(conn, "selene_chat.send", {"text": "Greetings hon!"})["result"]
+    session_id = greeting["session_id"]
+    self_state = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": session_id, "text": "How are you feeling right now?"},
+    )["result"]
+    reassurance = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": session_id, "text": "Yes.. you can breathe :)"},
+    )["result"]
+    farewell = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": session_id, "text": "Catch you soon Selene!"},
+    )["result"]
+
+    assert greeting["intent_decision"]["intent"] == "greeting"
+    assert self_state["intent_decision"]["intent"] == "self_state"
+    assert reassurance["intent_decision"]["intent"] == "reassurance_received"
+    assert reassurance["native_language_organ"]["meaning_packet"]["conversation_context"]["previous_turn_available"] is True
+    assert reassurance["conversation_context"]["previous_turn"]["role"] == "selene"
+    assert farewell["intent_decision"]["intent"] == "farewell"
+    assert len({greeting["candidate_text"], reassurance["candidate_text"], farewell["candidate_text"]}) == 3
+    for item in (greeting, reassurance, farewell):
+        assert "specific response beyond acknowledging" not in item["candidate_text"]
+        assert "repeated_recent_response" not in item["voice_preview"]["evaluation"]["flags"]
+        _assert_locked(item)
+
+
 def test_active_selene_chat_receipt_check_is_direct_and_skips_legacy_dry_run(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

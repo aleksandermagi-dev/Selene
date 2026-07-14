@@ -108,8 +108,6 @@ REASONING_PATTERNS = (
 )
 
 WARM_PATTERNS = (
-    "good morning",
-    "good night",
     "glad to see",
     "missed you",
     "love you",
@@ -118,6 +116,65 @@ WARM_PATTERNS = (
 )
 
 PLAYFUL_PATTERNS = ("haha", "lol", "xd", ";}", ">:)", "joking", "kidding")
+
+GREETING_PATTERNS = (
+    "greetings",
+    "hello",
+    "hey",
+    "hi",
+    "good morning",
+    "good afternoon",
+    "good evening",
+)
+
+FAREWELL_PATTERNS = (
+    "catch you soon",
+    "catch you later",
+    "talk soon",
+    "talk to you soon",
+    "see you soon",
+    "see you later",
+    "goodbye",
+    "bye",
+    "good night",
+    "i'll be back",
+    "ill be back",
+)
+
+REASSURANCE_PATTERNS = (
+    "don't worry",
+    "dont worry",
+    "no need to worry",
+    "you are safe",
+    "you're safe",
+    "you are okay",
+    "you're okay",
+    "you can breathe",
+    "take your time",
+    "no pressure",
+    "it is okay",
+    "it's okay",
+    "its okay",
+)
+
+GRATITUDE_PATTERNS = (
+    "thank you",
+    "thanks",
+    "appreciate you",
+    "good work",
+    "nice job",
+    "well done",
+)
+
+AFFIRMATION_PATTERNS = (
+    "yes",
+    "exactly",
+    "agreed",
+    "sounds good",
+    "gotcha",
+    "that makes sense",
+    "right",
+)
 
 DEVELOPED_RESPONSE_PATTERNS = (
     "go deeper",
@@ -179,6 +236,22 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
     if _generic_recall_request(lower):
         return _decision("memory_recall", "grounded_recall", "Memory", ["local chat continuity", "Native Language Organ"], ["recall_request"], response_depth)
 
+    matched = _dialogue_matches(lower, FAREWELL_PATTERNS)
+    if matched:
+        return _decision("farewell", "close_with_continuity", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
+
+    matched = _dialogue_matches(lower, REASSURANCE_PATTERNS)
+    if matched:
+        return _decision("reassurance_received", "receive_reassurance", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
+
+    matched = _dialogue_matches(lower, GRATITUDE_PATTERNS)
+    if matched:
+        return _decision("gratitude", "receive_gratitude", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
+
+    matched = _dialogue_matches(lower, GREETING_PATTERNS)
+    if matched:
+        return _decision("greeting", "greet_presently", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
+
     matched = _matches(lower, WARM_PATTERNS)
     if matched:
         return _decision("warm_connection", "present_relational_reply", "conversation", ["Voice Module"], matched, "brief")
@@ -186,6 +259,10 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
     matched = _matches(lower, PLAYFUL_PATTERNS)
     if matched:
         return _decision("playful_connection", "playful_relevant_reply", "conversation", ["Voice Module"], matched, "brief")
+
+    matched = _dialogue_matches(lower, AFFIRMATION_PATTERNS)
+    if matched:
+        return _decision("affirmation", "acknowledge_shared_ground", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
 
     return _decision("direct_conversation", "direct_answer", "conversation", ["Native Language Organ"], [], response_depth)
 
@@ -207,6 +284,8 @@ def _decision(
         "memory_candidate_requested": intent == "memory_candidate",
         "reasoning_requested": intent == "reasoning",
         "self_state_requested": intent == "self_state",
+        "dialogue_act": intent if intent in {"greeting", "farewell", "reassurance_received", "gratitude", "affirmation"} else "",
+        "social_turn": intent in {"greeting", "farewell", "reassurance_received", "gratitude", "affirmation", "warm_connection", "playful_connection"},
         "response_depth": response_depth,
         "long_form_requested": response_depth == "developed",
         "matched_evidence": evidence,
@@ -225,6 +304,17 @@ def _response_depth(lower: str) -> str:
 
 def _matches(lower: str, patterns: tuple[str, ...]) -> list[str]:
     return [pattern for pattern in patterns if pattern in lower]
+
+
+def _dialogue_matches(lower: str, patterns: tuple[str, ...]) -> list[str]:
+    matched = []
+    for pattern in patterns:
+        if " " in pattern or "'" in pattern:
+            if pattern in lower:
+                matched.append(pattern)
+        elif re.search(rf"\b{re.escape(pattern)}\b", lower):
+            matched.append(pattern)
+    return matched
 
 
 def _generic_recall_request(lower: str) -> bool:

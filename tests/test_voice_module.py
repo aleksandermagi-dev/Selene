@@ -328,6 +328,24 @@ def test_voice_generator_varies_candidate_shape_and_flags_repetition(tmp_path):
     _assert_voice_locked(repeated)
 
 
+def test_voice_evaluator_flags_recent_response_reuse(tmp_path):
+    conn = _conn(tmp_path)
+    candidate = "Thank you. I can let that land and stay here with you."
+
+    result = route_request(
+        conn,
+        "voice_module.evaluate_candidate",
+        {
+            "candidate_text": candidate,
+            "recent_candidates": [candidate],
+        },
+    )["result"]
+
+    assert "repeated_recent_response" in result["flags"]
+    assert result["voice_evaluator_passed"] is False
+    _assert_voice_locked(result)
+
+
 def test_voice_generator_routes_boundary_and_uncertainty_prompts_to_specific_shapes(tmp_path):
     conn = _conn(tmp_path)
     source_zip = _voice_zip(tmp_path)

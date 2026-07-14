@@ -121,6 +121,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         source_mode=source_mode,
     )
     chat_continuity = _local_chat_continuity(conn, current_session_id=session_id)
+    conversation_context = _active_conversation_context(chat_continuity)
     intent_decision = classify_chat_intent(text)
     memory_retrieval = retrieve_memory(conn, {"query": text, "limit": 4, "intent_decision": intent_decision})
     route = create_core_mind_route_preview(
@@ -169,6 +170,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "memory_confidence": memory_retrieval.get("memory_confidence") or "not_known",
             },
             "continuity_context": {**chat_continuity, "available": local_continuity_supported},
+            "conversation_context": conversation_context,
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
             "self_state_context": self_state,
@@ -195,6 +197,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "memory_context_used": memory_retrieval.get("memory_context_used") is True,
                 "memory_source_class": memory_retrieval.get("memory_source_class") or "",
                 "local_chat_continuity_used": local_continuity_supported,
+                "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or ""))
@@ -216,6 +219,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "memory_context_used": memory_retrieval.get("memory_context_used") is True,
                 "memory_source_class": memory_retrieval.get("memory_source_class") or "",
                 "local_chat_continuity_used": local_continuity_supported,
+                "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or dry_run.get("candidate_text") or ""))
@@ -230,6 +234,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
         "local_chat_continuity": chat_continuity,
+        "conversation_context": conversation_context,
         "memory_retrieval": memory_retrieval,
         "memory_candidate_suggestion": memory_candidate_suggestion,
         "source_boundaries": _source_boundaries(),
@@ -289,6 +294,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "voice_module_state": voice_preview.get("voice_module_state") or "missing",
             "selene_readable_context": _package_summary(package, active=True),
             "local_chat_continuity": chat_continuity,
+            "conversation_context": conversation_context,
             "memory_retrieval": memory_retrieval,
             "memory_candidate_suggestion": memory_candidate_suggestion,
             "memory_context_used": memory_retrieval.get("memory_context_used") is True,
@@ -973,6 +979,26 @@ def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | N
         "not_live_memory_write": True,
         "not_runtime_recall": True,
         "not_raw_corpus": True,
+    }
+
+
+def _active_conversation_context(chat_continuity: dict[str, Any]) -> dict[str, Any]:
+    events = [item for item in chat_continuity.get("current_session_events") or [] if isinstance(item, dict)]
+    previous_turn = events[-1] if events else {}
+    recent_assistant_texts = [
+        str(item.get("preview") or "").strip()
+        for item in events
+        if str(item.get("role") or "") == "selene" and str(item.get("preview") or "").strip()
+    ][-4:]
+    return {
+        "status": "active_conversation_context_ready",
+        "previous_turn": previous_turn,
+        "recent_assistant_texts": recent_assistant_texts,
+        "turn_count": len(events),
+        "source_class": "current_supervised_chat_turns",
+        "use_scope": "dialogue continuity only; not durable memory or broad recall",
+        "memory_write_active": False,
+        "runtime_memory_recall": False,
     }
 
 

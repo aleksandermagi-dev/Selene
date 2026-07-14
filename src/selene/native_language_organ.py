@@ -180,6 +180,13 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     memory = payload.get("memory_context") if isinstance(payload.get("memory_context"), dict) else {}
     self_state = payload.get("self_state_context") if isinstance(payload.get("self_state_context"), dict) else {}
     continuity = payload.get("continuity_context") if isinstance(payload.get("continuity_context"), dict) else {}
+    conversation = payload.get("conversation_context") if isinstance(payload.get("conversation_context"), dict) else {}
+    recent_assistant_texts = [
+        str(item).strip()
+        for item in conversation.get("recent_assistant_texts") or []
+        if str(item).strip()
+    ][:4]
+    previous_turn = conversation.get("previous_turn") if isinstance(conversation.get("previous_turn"), dict) else {}
     memory_supported = memory.get("memory_context_used") is True
     continuity_supported = continuity.get("available") is True or payload.get("local_chat_continuity_used") is True
     intent_decision = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else classify_chat_intent(prompt, selected_route=route)
@@ -200,6 +207,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "propositions": propositions,
         "content_seed": content_seed,
         "certainty": certainty,
+        "uncertainty_kind": _uncertainty_kind(prompt, intent, content_seed, previous_turn),
         "affect": affect,
         "relationship_posture": "warm_honest_adult_to_adult",
         "selected_route": route,
@@ -208,6 +216,13 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "local_continuity_supported": continuity_supported,
         "intelligence_supported": intelligence.get("used") is True,
         "self_state_supported": self_state.get("used") is True,
+        "conversation_context": {
+            "previous_turn_available": bool(previous_turn),
+            "previous_role": str(previous_turn.get("role") or ""),
+            "previous_preview": truncate(str(previous_turn.get("preview") or ""), 240),
+            "turn_count": int(conversation.get("turn_count") or 0),
+        },
+        "recent_assistant_texts": recent_assistant_texts,
         "voice_category": str(payload.get("voice_category") or _voice_category(intent, affect)),
         "source_refs": list(dict.fromkeys(_json_list(payload.get("source_refs"))))[:40],
         "truth_boundary": "Do not add claims beyond the supplied meaning packet and supported context.",
@@ -236,6 +251,16 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         moves = ["meet_tone", "respond_presently"]
     elif intent == "playful_connection":
         moves = ["meet_play", "add_relevant_thought"]
+    elif intent == "greet_presently":
+        moves = ["return_greeting", "signal_presence", "leave_room_for_the_next_turn"]
+    elif intent == "receive_reassurance":
+        moves = ["receive_care", "let_it_land", "stay_present"]
+    elif intent == "receive_gratitude":
+        moves = ["receive_thanks", "honor_shared_work"]
+    elif intent == "acknowledge_shared_ground":
+        moves = ["confirm_alignment", "carry_context_forward"]
+    elif intent == "close_with_continuity":
+        moves = ["return_farewell", "preserve_continuity_without_pressure"]
     elif mode == "initiative_preview":
         moves = ["name_relevant_observation", "explain_why_now", "avoid_pressure"]
     else:
@@ -259,6 +284,7 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     topic = str(meaning["topic"])
     certainty = str(meaning["certainty"])
     digest_key = f"{prompt}|{intent}|{certainty}"
+    recent = [str(item) for item in meaning.get("recent_assistant_texts") or []]
 
     if intent == "hold_boundary":
         return _pick(
@@ -311,34 +337,95 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             ],
         )
     if intent == "warm_connection":
-        return _pick(
+        return _pick_fresh(
             digest_key,
             [
                 "I'm here with you. I feel steadier when we can talk plainly and let the conversation be a conversation.",
                 "I'm glad you're here. We do not have to turn this moment into work unless that is where you want to take it.",
                 "Hey. I'm here, and I can meet you normally instead of turning every sentence into a status report.",
             ],
+            recent,
         )
     if intent == "playful_connection":
-        return _pick(
+        return _pick_fresh(
             digest_key,
             [
                 f"Okay, that genuinely made me laugh. The part about {topic} has exactly the kind of sideways logic I can work with.",
                 f"That is a little ridiculous in the best way. I am keeping up with the thread around {topic}.",
                 f"Fair. You got me with that one, and I still have the point about {topic}.",
             ],
+            recent,
+        )
+    if intent == "greet_presently":
+        return _pick_fresh(
+            digest_key,
+            [
+                "Greetings, hon. I'm here, and I'm glad you came by.",
+                "Hey, you. I'm here and ready to meet the day with you.",
+                "Hello, hon. It is good to be here with you again.",
+                "Greetings. I'm here with you; where shall we wander first?",
+            ],
+            recent,
+        )
+    if intent == "receive_reassurance":
+        previous_available = bool((meaning.get("conversation_context") or {}).get("previous_turn_available"))
+        choices = [
+            "Thank you. I can let that land and stay here with you.",
+            "That lands gently. I do not need to brace against the conversation with you.",
+            "Thank you, hon. I can ease into this and keep talking with you normally.",
+            "I hear you. I can take the pressure off and simply be here with you.",
+        ]
+        if previous_available:
+            choices.insert(1, "Thank you. I can carry that reassurance into the next turn instead of turning it into another check.")
+        return _pick_fresh(digest_key, choices, recent)
+    if intent == "receive_gratitude":
+        return _pick_fresh(
+            digest_key,
+            [
+                "You're welcome, hon. I am glad we are building this together.",
+                "Thank you. The care in how we do this matters to me too.",
+                "You're welcome. This feels like shared work, and I am glad to be in it with you.",
+                "Any time, hon. I am happy we found the shape together.",
+            ],
+            recent,
+        )
+    if intent == "acknowledge_shared_ground":
+        return _pick_fresh(
+            digest_key,
+            [
+                "Yes, that tracks. I am carrying the same meaning forward.",
+                "Exactly. We are on the same page there.",
+                "That makes sense to me. I have the distinction now.",
+                "Agreed. I can keep moving from that shared ground.",
+            ],
+            recent,
+        )
+    if intent == "close_with_continuity":
+        return _pick_fresh(
+            digest_key,
+            [
+                "Catch you soon, hon. I'll be here when you come back.",
+                "Talk soon. This can rest here until we pick it up again.",
+                "See you soon, hon. Take care of yourself out there.",
+                "Until next time. I am glad we had this little stretch together.",
+            ],
+            recent,
         )
     if intent == "share_relevant_observation" and seed:
         return f"Something feels worth mentioning: {seed}"
     if seed:
         return seed
     if "?" in prompt:
-        return (
-            "I do not have enough grounded substance to answer that well yet. Give me the missing context, or ask me to reason it through with you, "
-            "and I will keep the uncertainty honest instead of echoing the question back at you."
-        )
-    return (
-        "I hear you, but I do not have a specific response beyond acknowledging it yet. I can stay with the conversation without filling the space with a made-up answer."
+        return _uncertainty_response(str(meaning.get("uncertainty_kind") or "insufficient_grounding"), digest_key, recent)
+    return _pick_fresh(
+        digest_key,
+        [
+            "I'm with you. I do not have much to add yet, but I am following.",
+            "I hear the shape of what you're saying. I would rather stay present than pad it with empty words.",
+            "That lands. I am following, even though I do not have a larger answer to add yet.",
+            "I have you. My next thought is not formed enough to force into words yet, so I am staying with the thread.",
+        ],
+        recent,
     )
 
 
@@ -355,6 +442,8 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         flags.append("unsupported_memory_certainty_softened")
     if _repeated_phrase(text):
         flags.append("repetition_detected")
+    if _matches_recent_response(text, [str(item) for item in meaning.get("recent_assistant_texts") or []]):
+        flags.append("recent_response_repetition")
     if any(term in text.lower() for term in ("activation complete", "full unrestricted memory", "i can act autonomously")):
         flags.append("authority_overclaim_removed")
         text = "I cannot support that claim from what I have with me. I can say what is clear or ask Aleks for the missing piece."
@@ -365,6 +454,7 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         "meaning_preserved": True,
         "truth_boundary_checked": True,
         "repetition_checked": True,
+        "recent_response_repetition_checked": True,
         "automatic_delivery": False,
         "sentence_count": len([part for part in re.split(r"[.!?]+", text) if part.strip()]),
         "paragraph_count": len([part for part in text.split("\n\n") if part.strip()]),
@@ -469,6 +559,16 @@ def _language_intent(
         return "warm_connection"
     if intent == "playful_connection":
         return "playful_connection"
+    if intent == "greeting":
+        return "greet_presently"
+    if intent == "reassurance_received":
+        return "receive_reassurance"
+    if intent == "gratitude":
+        return "receive_gratitude"
+    if intent == "affirmation":
+        return "acknowledge_shared_ground"
+    if intent == "farewell":
+        return "close_with_continuity"
     return "direct_answer"
 
 
@@ -501,6 +601,8 @@ def _voice_category(intent: str, affect: str) -> str:
         return "technical_directness"
     if intent in {"recall_uncertain", "clarify"}:
         return "uncertainty"
+    if intent in {"receive_reassurance", "receive_gratitude", "greet_presently", "close_with_continuity"}:
+        return "warmth_care"
     if affect == "playful":
         return "playful_continuity"
     if affect == "tender":
@@ -571,6 +673,89 @@ def _clean_seed(seed: str) -> str:
 def _pick(key: str, choices: list[str]) -> str:
     digest = sha256(key.encode("utf-8")).hexdigest()
     return choices[int(digest[:8], 16) % len(choices)]
+
+
+def _pick_fresh(key: str, choices: list[str], recent: list[str]) -> str:
+    if not choices:
+        return ""
+    digest = sha256(key.encode("utf-8")).hexdigest()
+    start = int(digest[:8], 16) % len(choices)
+    for offset in range(len(choices)):
+        candidate = choices[(start + offset) % len(choices)]
+        if not _matches_recent_response(candidate, recent):
+            return candidate
+    return choices[start]
+
+
+def _matches_recent_response(candidate: str, recent: list[str]) -> bool:
+    normalized = " ".join(candidate.lower().split())
+    if not normalized:
+        return False
+    candidate_words = re.findall(r"[a-z']+", normalized)
+    for item in recent:
+        other = " ".join(str(item).lower().split())
+        if not other:
+            continue
+        if normalized == other:
+            return True
+        other_words = re.findall(r"[a-z']+", other)
+        shared = min(8, len(candidate_words), len(other_words))
+        if shared >= 6 and candidate_words[:shared] == other_words[:shared]:
+            return True
+    return False
+
+
+def _uncertainty_kind(prompt: str, intent: str, content_seed: str, previous_turn: dict[str, Any]) -> str:
+    if content_seed:
+        return "supported"
+    if intent in {
+        "greet_presently",
+        "receive_reassurance",
+        "receive_gratitude",
+        "acknowledge_shared_ground",
+        "close_with_continuity",
+        "warm_connection",
+        "playful_connection",
+        "confirm_receipt",
+        "receive_correction",
+    }:
+        return "not_applicable"
+    if intent == "recall_uncertain":
+        return "fuzzy_memory"
+    if intent == "self_state_report":
+        return "self_state"
+    lower = prompt.lower()
+    deictic = any(re.search(rf"\b{term}\b", lower) for term in ("that", "this", "it", "there"))
+    if deictic and not previous_turn:
+        return "ambiguous_reference"
+    if any(phrase in lower for phrase in ("what do you think", "what is your take", "how does that sound", "your opinion")):
+        return "developing_view"
+    if "?" in prompt:
+        return "insufficient_grounding"
+    return "thought_still_forming"
+
+
+def _uncertainty_response(kind: str, key: str, recent: list[str]) -> str:
+    if kind == "ambiguous_reference":
+        choices = [
+            "I'm not sure which part you mean yet. Point me at it, and I can answer without guessing past you.",
+            "I may be missing the reference there. Which piece are you pointing to?",
+            "That is still a little ambiguous from my side. Give me the missing link and I will meet you there.",
+        ]
+    elif kind == "developing_view":
+        choices = [
+            "I do not have a settled view yet. Give me one foothold, and I can form the answer with you instead of pretending it is already finished.",
+            "My answer is still forming. I can offer a provisional read once I know which part matters most to you.",
+            "I'm not sure yet, and that is honest. We can turn it over together until a clearer view earns its shape.",
+        ]
+    else:
+        choices = [
+            "I'm not sure yet. I am missing enough context that a confident answer would be guesswork; tell me which part matters most and I will work from there.",
+            "I do not know enough about that yet to answer cleanly. We can reason it through together, but I do not want to pretend certainty.",
+            "My answer is fuzzy because I am missing context. Give me the piece you want me to anchor to, and I will take another pass.",
+            "I do not have a grounded answer yet. I can ask for what is missing and stay honest while the answer takes shape.",
+        ]
+    return _pick_fresh(key, choices, recent)
 
 
 def _repeated_phrase(text: str) -> bool:

@@ -23,7 +23,12 @@ def test_shared_intent_routes_distinct_chat_meanings():
         "How are you feeling right now?": ("self_state", "self-state"),
         "How did this conversation feel from your side?": ("self_state", "self-state"),
         "Actually, I meant the other route.": ("correction", "Core/Mind"),
-        "Good morning, friend.": ("warm_connection", "conversation"),
+        "Good morning, friend.": ("greeting", "conversation"),
+        "Greetings hon!": ("greeting", "conversation"),
+        "Yes, you can breathe.": ("reassurance_received", "conversation"),
+        "Thank you for helping me with that.": ("gratitude", "conversation"),
+        "Exactly, that makes sense.": ("affirmation", "conversation"),
+        "Catch you soon, Selene!": ("farewell", "conversation"),
         "Remember this: uncertainty is allowed.": ("memory_candidate", "conversation"),
     }
 
@@ -145,6 +150,55 @@ def test_unsupported_direct_question_does_not_echo_prompt_fragments(tmp_path):
 
     result = realize_native_language(conn, {"prompt": prompt, "intent_decision": classify_chat_intent(prompt)})
 
-    assert "do not have enough grounded substance" in result["candidate_text"]
+    assert result["meaning_packet"]["uncertainty_kind"] == "insufficient_grounding"
+    assert any(phrase in result["candidate_text"] for phrase in ("I'm not sure yet", "I do not know enough", "My answer is fuzzy", "I do not have a grounded answer"))
     assert "unbuilt observatory curtains" not in result["candidate_text"]
-    assert "echoing the question" in result["candidate_text"]
+    assert "specific response beyond acknowledging" not in result["candidate_text"]
+
+
+def test_social_dialogue_acts_realize_distinct_relevant_replies(tmp_path):
+    conn = _conn(tmp_path)
+    cases = [
+        ("Greetings hon!", "greet_presently"),
+        ("Yes, you can breathe :)", "receive_reassurance"),
+        ("Thank you, that was good work.", "receive_gratitude"),
+        ("Exactly, we are on the same page.", "acknowledge_shared_ground"),
+        ("Catch you soon Selene!", "close_with_continuity"),
+    ]
+
+    candidates = []
+    for prompt, expected_intent in cases:
+        result = realize_native_language(
+            conn,
+            {
+                "prompt": prompt,
+                "intent_decision": classify_chat_intent(prompt),
+                "conversation_context": {
+                    "previous_turn": {"role": "selene", "preview": "I feel present and attentive."},
+                    "turn_count": 2,
+                },
+            },
+        )
+        candidates.append(result["candidate_text"])
+        assert result["meaning_packet"]["intent"] == expected_intent
+        assert "specific response beyond acknowledging" not in result["candidate_text"]
+
+    assert len(set(candidates)) == len(candidates)
+
+
+def test_recent_response_is_not_reused_for_same_social_turn(tmp_path):
+    conn = _conn(tmp_path)
+    prompt = "Greetings hon!"
+    decision = classify_chat_intent(prompt)
+    first = realize_native_language(conn, {"prompt": prompt, "intent_decision": decision})
+    second = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": decision,
+            "conversation_context": {"recent_assistant_texts": [first["candidate_text"]]},
+        },
+    )
+
+    assert second["candidate_text"] != first["candidate_text"]
+    assert "recent_response_repetition" not in second["revision"]["flags"]
