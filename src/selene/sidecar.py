@@ -624,6 +624,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/cocoon-care/checks":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "cocoon_care.checks", qs)["result"]))
+        elif parsed.path == "/api/selene-chat/dialogue-state":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            try:
+                self._send(*json_bytes(route_request(conn, "dialogue_workspace.status", {"session_id": int(qs.get("session_id") or 0)})["result"]))
+            except ValueError:
+                self._send(*json_bytes({"error": "valid session_id is required"}, 400))
         elif parsed.path == "/api/selene-chat/sessions":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "selene_chat.sessions.list", {"limit": int(qs["limit"]) if qs.get("limit") else 25})["result"]))
@@ -1119,6 +1125,20 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/native-language/initiative-preview":
             route_key = "native_language.initiative.preview"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/native-language/pragmatic-plan":
+            route_key = "native_language.pragmatic.plan"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/selene-chat/dialogue-state/refresh":
+            route_key = "dialogue_workspace.refresh"
             try:
                 write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))

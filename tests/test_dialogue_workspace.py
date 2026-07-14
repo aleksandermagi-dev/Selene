@@ -1,0 +1,144 @@
+from __future__ import annotations
+
+from selene.chat_intent import classify_chat_intent
+from selene.db import connect, init_db
+from selene.dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn, record_dialogue_response
+from selene.module_router import route_request
+from selene.pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
+
+
+def _conn(tmp_path):
+    conn = connect(tmp_path / "selene.sqlite3")
+    init_db(conn)
+    conn.execute(
+        "INSERT INTO selene_chat_sessions(title, status, source_mode) VALUES (?, ?, ?)",
+        ("Dialogue workspace test", "selene_chat_active_supervised", "selene_supervised_speech"),
+    )
+    conn.commit()
+    return conn, int(conn.execute("SELECT id FROM selene_chat_sessions ORDER BY id DESC LIMIT 1").fetchone()[0])
+
+
+def test_dialogue_workspace_tracks_multi_part_questions_and_completion(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "Can you compare memory and voice? What should we build first?"
+    prepared = prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": text, "intent_decision": classify_chat_intent(text)},
+    )
+
+    assert prepared["pragmatics"]["multi_part_prompt"] is True
+    assert len(prepared["pragmatics"]["question_units"]) == 2
+    assert len(prepared["open_loops"]) == 2
+
+    recorded = record_dialogue_response(
+        conn,
+        {
+            "session_id": session_id,
+            "candidate_text": "Memory should be grounded first. Voice can then express what memory supports.",
+            "answered_loop_ids": prepared["new_loop_ids"],
+        },
+    )
+
+    assert recorded["open_loops"] == []
+    assert len(recorded["completed_loops"]) == 2
+    assert recorded["last_selene_preview"].startswith("Memory should")
+
+
+def test_dialogue_workspace_separates_context_sentence_from_following_question(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "Selene, this is Codex checking for Aleks. Are you receiving this clearly?"
+    prepared = prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": text, "intent_decision": classify_chat_intent(text)},
+    )
+
+    assert prepared["pragmatics"]["question_units"] == ["Are you receiving this clearly?"]
+    assert prepared["open_loops"][0]["question"] == "Are you receiving this clearly?"
+
+
+def test_dialogue_workspace_closes_only_questions_covered_by_visible_response(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "Can you compare memory and voice? What should we build first?"
+    prepared = prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": text, "intent_decision": classify_chat_intent(text)},
+    )
+    plan = build_pragmatic_plan({"prompt": text, "dialogue_workspace": prepared})
+    coverage = evaluate_response_coverage(plan, "Memory and voice serve different roles.")
+    recorded = record_dialogue_response(
+        conn,
+        {"session_id": session_id, "candidate_text": "Memory and voice serve different roles.", "coverage_evaluation": coverage},
+    )
+
+    assert len(recorded["completed_loops"]) == 1
+    assert len(recorded["open_loops"]) == 1
+    assert recorded["pragmatics"]["last_response_coverage"]["all_required_addressed"] is False
+
+
+def test_dialogue_workspace_resolves_immediate_reference_and_session_preference(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": "Which language layer comes first?",
+            "intent_decision": classify_chat_intent("Which language layer comes first?"),
+        },
+    )
+    text = "Yes, that one. Keep it short."
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "conversation_events": [
+                {"role": "selene", "preview": "The semantic formation layer should come first."}
+            ],
+        },
+    )
+
+    resolved = result["pragmatics"]["resolved_reference"]
+    assert resolved["token"] == "that one"
+    assert "semantic formation layer" in resolved["resolved_to"]
+    assert result["preferences"]["response_depth"] == "brief"
+    assert result["preferences"]["scope"] == "current_session_only"
+    assert result["durable_preference_write"] is False
+
+
+def test_dialogue_workspace_keeps_corrections_as_refinement_not_memory(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    before = int(conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0])
+    text = "Actually, I meant the semantic layer, not the voice layer."
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "conversation_events": [{"role": "selene", "preview": "The voice layer comes first."}],
+        },
+    )
+    after = int(conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0])
+
+    assert result["last_dialogue_act"] == "correction"
+    assert result["corrections"][0]["status"] == "active_refinement"
+    assert before == after == 0
+    assert result["memory_write_active"] is False
+    assert result["runtime_memory_recall"] is False
+
+
+def test_dialogue_workspace_routes_are_status_only_and_idempotent(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "Could you explain that?"
+    first = route_request(
+        conn,
+        "dialogue_workspace.refresh",
+        {"session_id": session_id, "text": text, "intent_decision": classify_chat_intent(text)},
+    )["result"]
+    second = route_request(conn, "dialogue_workspace.status", {"session_id": session_id})["result"]
+
+    assert first["pragmatics"]["indirect_request"]["detected"] is True
+    assert second["session_id"] == session_id
+    assert conn.execute("SELECT COUNT(*) FROM selene_dialogue_workspaces WHERE session_id = ?", (session_id,)).fetchone()[0] == 1
+    assert dialogue_workspace_status(conn, session_id)["provenance_boundary"].startswith("session_scoped")

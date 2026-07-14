@@ -205,6 +205,29 @@ CREATE TABLE IF NOT EXISTS selene_chat_messages (
 
 CREATE INDEX IF NOT EXISTS idx_selene_chat_messages_session ON selene_chat_messages(session_id, id);
 
+CREATE TABLE IF NOT EXISTS selene_dialogue_workspaces (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id INTEGER NOT NULL UNIQUE,
+  active_topic TEXT NOT NULL DEFAULT '',
+  side_topics_json TEXT NOT NULL DEFAULT '[]',
+  entities_json TEXT NOT NULL DEFAULT '[]',
+  referents_json TEXT NOT NULL DEFAULT '{}',
+  open_loops_json TEXT NOT NULL DEFAULT '[]',
+  completed_loops_json TEXT NOT NULL DEFAULT '[]',
+  corrections_json TEXT NOT NULL DEFAULT '[]',
+  preferences_json TEXT NOT NULL DEFAULT '{}',
+  last_dialogue_act TEXT NOT NULL DEFAULT '',
+  last_user_preview TEXT NOT NULL DEFAULT '',
+  last_selene_preview TEXT NOT NULL DEFAULT '',
+  state_json TEXT NOT NULL DEFAULT '{}',
+  provenance_boundary TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES selene_chat_sessions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_dialogue_workspaces_session ON selene_dialogue_workspaces(session_id, updated_at);
+
 CREATE TABLE IF NOT EXISTS selene_activation_audit (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   state TEXT NOT NULL,

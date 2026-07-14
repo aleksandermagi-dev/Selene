@@ -7,6 +7,8 @@ from hashlib import sha256
 from typing import Any
 
 from .chat_intent import classify_chat_intent
+from .language_formation import build_semantic_frame, realize_semantic_frame
+from .pragmatic_planner import build_pragmatic_plan
 from .registry import truncate
 
 
@@ -46,11 +48,15 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v2_long_form_language",
+            "version": "v4_pragmatic_planning",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
                 "semantic_sentence_realization",
+                "structured_semantic_frames",
+                "grammar_and_morphology_realization",
+                "bounded_pragmatic_planning",
+                "response_obligation_planning",
                 "response_depth_selection",
                 "multi_paragraph_answer_structure",
                 "voice_handoff",
@@ -148,10 +154,13 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v2_long_form_language",
+        "version": "v4_pragmatic_planning",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
+        "semantic_frame": meaning.get("semantic_frame") or {},
+        "formation": meaning.get("formation") or {},
+        "pragmatic_plan": meaning.get("pragmatic_plan") or {},
         "discourse_plan": plan,
         "draft_text": draft,
         "candidate_text": candidate,
@@ -181,6 +190,8 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     self_state = payload.get("self_state_context") if isinstance(payload.get("self_state_context"), dict) else {}
     continuity = payload.get("continuity_context") if isinstance(payload.get("continuity_context"), dict) else {}
     conversation = payload.get("conversation_context") if isinstance(payload.get("conversation_context"), dict) else {}
+    dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
+    pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
     recent_assistant_texts = [
         str(item).strip()
         for item in conversation.get("recent_assistant_texts") or []
@@ -198,14 +209,44 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     certainty = str(payload.get("certainty") or memory_certainty or intelligence.get("confidence") or _infer_certainty(prompt, content_seed))
     affect = str(payload.get("affect") or _infer_affect(prompt))
     propositions = _propositions(prompt, content_seed, memory, intelligence)
+    pragmatic_plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "content_seed": content_seed,
+            "intent_decision": intent_decision,
+            "dialogue_workspace": dialogue,
+        }
+    )
+    semantic_frame = build_semantic_frame(
+        {
+            "semantic_frame": payload.get("semantic_frame") or {},
+            "propositions": payload.get("semantic_propositions") or [],
+            "content_seed": content_seed,
+            "intent_decision": intent_decision,
+            "answer_shape": payload.get("answer_shape") or intent_decision.get("answer_shape"),
+            "response_depth": payload.get("response_depth") or pragmatics.get("response_preference") or intent_decision.get("response_depth"),
+            "certainty": certainty,
+            "affect": affect,
+            "source_refs": payload.get("source_refs") or [],
+        }
+    )
+    formation = realize_semantic_frame(
+        semantic_frame,
+        variation_key=f"{prompt}|{intent}",
+        recent_texts=recent_assistant_texts,
+    )
     return {
         "intent": intent,
         "intent_decision": intent_decision,
         "answer_shape": str(payload.get("answer_shape") or intent_decision.get("answer_shape") or "direct_answer"),
-        "response_depth": str(payload.get("response_depth") or intent_decision.get("response_depth") or "standard"),
+        "response_depth": str(payload.get("response_depth") or pragmatics.get("response_preference") or intent_decision.get("response_depth") or "standard"),
         "topic": _topic_phrase(prompt),
         "propositions": propositions,
         "content_seed": content_seed,
+        "semantic_frame": semantic_frame,
+        "formation": formation,
+        "formation_text": str(formation.get("candidate_text") or ""),
+        "pragmatic_plan": pragmatic_plan,
         "certainty": certainty,
         "uncertainty_kind": _uncertainty_kind(prompt, intent, content_seed, previous_turn),
         "affect": affect,
@@ -221,6 +262,16 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "previous_role": str(previous_turn.get("role") or ""),
             "previous_preview": truncate(str(previous_turn.get("preview") or ""), 240),
             "turn_count": int(conversation.get("turn_count") or 0),
+        },
+        "dialogue_workspace": {
+            "active_topic": str(dialogue.get("active_topic") or ""),
+            "resolved_reference": pragmatics.get("resolved_reference"),
+            "question_units": pragmatics.get("question_units") or [],
+            "multi_part_prompt": pragmatics.get("multi_part_prompt") is True,
+            "indirect_request": pragmatics.get("indirect_request") or {},
+            "quoted_material": pragmatics.get("quoted_material") or [],
+            "response_preference": str(pragmatics.get("response_preference") or ""),
+            "session_scoped_only": True,
         },
         "recent_assistant_texts": recent_assistant_texts,
         "voice_category": str(payload.get("voice_category") or _voice_category(intent, affect)),
@@ -265,6 +316,16 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         moves = ["name_relevant_observation", "explain_why_now", "avoid_pressure"]
     else:
         moves = ["answer_actual_ask", "name_uncertainty_if_present", "keep_conversation_open"]
+    dialogue = meaning.get("dialogue_workspace") if isinstance(meaning.get("dialogue_workspace"), dict) else {}
+    pragmatic_plan = meaning.get("pragmatic_plan") if isinstance(meaning.get("pragmatic_plan"), dict) else {}
+    if dialogue.get("multi_part_prompt") is True:
+        moves.insert(1 if moves else 0, "answer_each_open_question")
+    if dialogue.get("resolved_reference"):
+        moves.insert(0, "carry_resolved_reference")
+    if pragmatic_plan.get("implicit_meaning", {}).get("inferred") is True:
+        moves.insert(0, "acknowledge_bounded_implied_meaning")
+    if pragmatic_plan.get("ellipsis_resolution", {}).get("detected") is True:
+        moves.insert(0, "resolve_session_ellipsis_or_ask")
     return {
         "moves": moves,
         "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory", "self_state_report"},
@@ -275,11 +336,16 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "silence_is_valid": mode == "initiative_preview",
         "automatic_delivery": False,
         "selection_basis": "intent, evidence, uncertainty, affect, and conversational relevance",
+        "response_obligations": pragmatic_plan.get("response_obligations") or [],
+        "answer_strategy": pragmatic_plan.get("answer_strategy") or "answer_directly",
     }
 
 
 def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any]) -> str:
-    seed = _clean_seed(str(meaning.get("content_seed") or ""))
+    formation = meaning.get("formation") if isinstance(meaning.get("formation"), dict) else {}
+    formation_text = str(meaning.get("formation_text") or "")
+    use_formation = formation.get("formation_mode") == "structured"
+    seed = _clean_seed(formation_text if use_formation else str(meaning.get("content_seed") or ""))
     intent = str(meaning["intent"])
     topic = str(meaning["topic"])
     certainty = str(meaning["certainty"])

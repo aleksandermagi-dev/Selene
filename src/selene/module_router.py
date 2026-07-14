@@ -117,6 +117,7 @@ from .core_mind_runtime import (
     session_state_preview,
 )
 from .detached_corpus import detached_corpus_audit
+from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn
 from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
 from .kernel import kernel_state
 from .memory_organ import (
@@ -142,6 +143,7 @@ from .native_language_organ import (
     preview_native_language_initiative,
     realize_native_language,
 )
+from .pragmatic_planner import build_pragmatic_plan
 from .paper_map_reconstruction import run_paper_map_reconstruction
 from .pre_transfer_runtime import (
     compare_speech_generation_rehearsals,
@@ -475,8 +477,14 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": realize_native_language(conn, payload)}
     if route_key == "native_language.initiative.preview":
         return {"route": route_key, "result": preview_native_language_initiative(conn, payload)}
+    if route_key == "native_language.pragmatic.plan":
+        return {"route": route_key, "result": build_pragmatic_plan(payload)}
     if route_key == "native_language.runs.list":
         return {"route": route_key, "result": list_native_language_runs(conn, int(payload.get("limit") or 50))}
+    if route_key == "dialogue_workspace.status":
+        return {"route": route_key, "result": dialogue_workspace_status(conn, int(payload.get("session_id") or 0))}
+    if route_key == "dialogue_workspace.refresh":
+        return {"route": route_key, "result": prepare_dialogue_turn(conn, payload)}
     if route_key == "selene_organ_ideas.status":
         return {"route": route_key, "result": selene_organ_ideas_status(conn)}
     if route_key == "selene_organ_ideas.prepare":

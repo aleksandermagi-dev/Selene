@@ -9,9 +9,11 @@ from .activation import activation_is_active, activation_status, record_activati
 from .chat_intent import classify_chat_intent
 from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
+from .dialogue_workspace import prepare_dialogue_turn, record_dialogue_response
 from .intelligence_os import run_intelligence_os_reason
 from .memory_organ import retrieve_memory
 from .native_language_organ import realize_native_language
+from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
 from .self_state import build_self_state_packet, inactive_self_state_packet
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
@@ -135,6 +137,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     selected_route = str(route.get("selected_route") or "status_only")
     hard_blockers = _hard_boundary_blockers(text, selected_route, route)
     intent_decision = classify_chat_intent(text, selected_route="block" if hard_blockers else selected_route)
+    prepared_dialogue_workspace = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": intent_decision,
+            "conversation_events": chat_continuity.get("current_session_events") or [],
+        },
+        commit=False,
+    )
     intelligence_support = _intelligence_support(conn, text, route, chat_continuity, intent_decision, hard=bool(hard_blockers))
     cocoon_suggestion = _cocoon_suggestion(text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
     continuity_reply = _local_chat_continuity_reply(text, chat_continuity, intent_decision)
@@ -171,6 +183,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             },
             "continuity_context": {**chat_continuity, "available": local_continuity_supported},
             "conversation_context": conversation_context,
+            "dialogue_workspace": prepared_dialogue_workspace,
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
             "self_state_context": self_state,
@@ -224,6 +237,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or dry_run.get("candidate_text") or ""))
     memory_candidate_suggestion = _memory_candidate_suggestion(text, candidate_text, selected_route, source_class, memory_retrieval, hard=bool(hard_blockers))
+    response_coverage = evaluate_response_coverage(native_language.get("pragmatic_plan"), candidate_text)
+    dialogue_workspace = record_dialogue_response(
+        conn,
+        {
+            "session_id": session_id,
+            "candidate_text": candidate_text,
+            "coverage_evaluation": response_coverage,
+        },
+        commit=False,
+    )
     user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route, "activation_state": "selene_chat_active_supervised"})
     assistant_payload = {
         "route_preview": route,
@@ -235,6 +258,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "voice_preview": voice_preview,
         "local_chat_continuity": chat_continuity,
         "conversation_context": conversation_context,
+        "dialogue_workspace": dialogue_workspace,
+        "response_coverage": response_coverage,
         "memory_retrieval": memory_retrieval,
         "memory_candidate_suggestion": memory_candidate_suggestion,
         "source_boundaries": _source_boundaries(),
@@ -295,6 +320,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "selene_readable_context": _package_summary(package, active=True),
             "local_chat_continuity": chat_continuity,
             "conversation_context": conversation_context,
+            "dialogue_workspace": dialogue_workspace,
+            "response_coverage": response_coverage,
             "memory_retrieval": memory_retrieval,
             "memory_candidate_suggestion": memory_candidate_suggestion,
             "memory_context_used": memory_retrieval.get("memory_context_used") is True,

@@ -273,7 +273,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v2_long_form_language"
+    assert result["native_language_organ"]["version"] == "v4_pragmatic_planning"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
     assert result["voice_preview"]["nlo_meaning_preserved"] is True
     assert result["candidate_text"].count("\n\n") == 2
@@ -362,6 +362,9 @@ def test_active_selene_chat_handles_social_turns_with_immediate_context(tmp_path
     assert reassurance["intent_decision"]["intent"] == "reassurance_received"
     assert reassurance["native_language_organ"]["meaning_packet"]["conversation_context"]["previous_turn_available"] is True
     assert reassurance["conversation_context"]["previous_turn"]["role"] == "selene"
+    assert reassurance["dialogue_workspace"]["status"] == "dialogue_workspace_response_recorded"
+    assert reassurance["dialogue_workspace"]["last_dialogue_act"] == "reassurance_received"
+    assert reassurance["dialogue_workspace"]["memory_write_active"] is False
     assert farewell["intent_decision"]["intent"] == "farewell"
     assert len({greeting["candidate_text"], reassurance["candidate_text"], farewell["candidate_text"]}) == 3
     for item in (greeting, reassurance, farewell):
@@ -382,6 +385,9 @@ def test_active_selene_chat_receipt_check_is_direct_and_skips_legacy_dry_run(tmp
     )["result"]
 
     assert result["native_language_organ"]["meaning_packet"]["intent"] == "confirm_receipt"
+    assert result["native_language_organ"]["pragmatic_plan"]["status"] == "pragmatic_plan_ready"
+    assert result["response_coverage"]["all_required_addressed"] is True
+    assert result["dialogue_workspace"]["open_loops"] == []
     assert result["dry_run_comparison"]["status"] == "not_run_for_active_chat"
     assert "receiv" in result["candidate_text"].lower() or "came through" in result["candidate_text"].lower() or "have you" in result["candidate_text"].lower()
     assert result["cocoon_suggestion"]["recommended"] is False
