@@ -596,6 +596,17 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/comprehension/concepts":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "comprehension.concepts.list", qs)["result"]))
+        elif parsed.path == "/api/teaching-lifecycle/status":
+            self._send(*json_bytes(route_request(conn, "teaching.lifecycle.status")["result"]))
+        elif parsed.path == "/api/teaching-lifecycle/items":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "teaching.lifecycle.list", qs)["result"]))
+        elif parsed.path == "/api/teaching-lifecycle/detail":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            try:
+                self._send(*json_bytes(route_request(conn, "teaching.lifecycle.detail", qs)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif parsed.path == "/api/native-language/status":
             self._send(*json_bytes(route_request(conn, "native_language.status")["result"]))
         elif parsed.path == "/api/native-language/runs":
@@ -1197,6 +1208,22 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/comprehension/turn-packet":
             route_key = "comprehension.turn.packet"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path in {
+            "/api/teaching-lifecycle/acquire",
+            "/api/teaching-lifecycle/integrate",
+            "/api/teaching-lifecycle/express",
+            "/api/teaching-lifecycle/approve",
+        }:
+            route_key = {
+                "/api/teaching-lifecycle/acquire": "teaching.lifecycle.acquire",
+                "/api/teaching-lifecycle/integrate": "teaching.lifecycle.integrate",
+                "/api/teaching-lifecycle/express": "teaching.lifecycle.express",
+                "/api/teaching-lifecycle/approve": "teaching.lifecycle.approve",
+            }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:

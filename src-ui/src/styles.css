@@ -833,6 +833,33 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   gap: 8px;
   padding: 12px;
 }
+.teachingLifecycleRail {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.teachingLifecycleRail span {
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+}
+.teachingLifecycleRail span.complete {
+  border-color: color-mix(in srgb, var(--accent-2) 65%, var(--soft-border));
+  color: var(--text-strong);
+}
+.teachingLifecycleRail b { font-size: 12px; text-transform: uppercase; }
+.teachingLifecycleStage {
+  background: color-mix(in srgb, var(--row-bg) 78%, transparent);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
 .comprehensionSourceBox ul { color: var(--text-muted); margin: 0; padding-left: 20px; word-break: break-word; }
 .comprehensionEvidenceGrid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .comprehensionEvidenceGrid textarea { min-height: 105px; }
@@ -1775,6 +1802,7 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 }
 
 @media (max-width: 860px) {
+  .teachingLifecycleRail { grid-template-columns: 1fr; }
   .comprehensionEvidenceGrid { grid-template-columns: 1fr; }
   .comprehensionEvidenceGrid .wideEvidenceField { grid-column: auto; }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }

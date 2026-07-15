@@ -61,6 +61,20 @@ type ComprehensionDraft = {
   counterexample: string;
   correction_response: string;
   source_alignment: boolean;
+  vocabulary: string;
+  acquire_uncertainties: string;
+  near_concept_distinctions: string;
+  scope_of_application: string;
+  contradiction_classification: string;
+  unresolved_questions: string;
+  integration_confidence: string;
+  supporting_concept_ids: string;
+  conflicting_concept_ids: string;
+  related_concept_ids: string;
+  analogies: string;
+  questions: string;
+  comparisons: string;
+  conversational_participation: string;
 };
 type MemoryBubble = {
   id: string;
@@ -512,6 +526,8 @@ function App() {
   const [languageTeachingResult, setLanguageTeachingResult] = useState<Dict | null>(null);
   const [comprehensionStatus, setComprehensionStatus] = useState<Dict | null>(null);
   const [comprehensionConcepts, setComprehensionConcepts] = useState<Dict[]>([]);
+  const [teachingLifecycleStatus, setTeachingLifecycleStatus] = useState<Dict | null>(null);
+  const [teachingLifecycles, setTeachingLifecycles] = useState<Dict[]>([]);
   const [comprehensionPrepareResult, setComprehensionPrepareResult] = useState<Dict | null>(null);
   const [openComprehensionId, setOpenComprehensionId] = useState(0);
   const [comprehensionDrafts, setComprehensionDrafts] = useState<Record<string, ComprehensionDraft>>({});
@@ -1230,6 +1246,8 @@ function App() {
     api<{ items: Dict[] }>("/api/language-teaching/items").then((data) => setLanguageTeachingItems(data.items || [])).catch(() => undefined);
     api<Dict>("/api/comprehension/status").then(setComprehensionStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/comprehension/concepts?limit=20").then((data) => setComprehensionConcepts(data.items || [])).catch(() => undefined);
+    api<Dict>("/api/teaching-lifecycle/status").then(setTeachingLifecycleStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/teaching-lifecycle/items?limit=50").then((data) => setTeachingLifecycles(data.items || [])).catch(() => undefined);
     api<Dict>("/api/b/core-reference/coverage").then(setCoreReferenceCoverage).catch(() => undefined);
     api<Dict>("/api/voice-module/status").then(setVoiceModuleStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/voice-module/patterns").then((data) => setVoiceModulePatterns(data.items || [])).catch(() => undefined);
@@ -1949,13 +1967,36 @@ function App() {
 
   function comprehensionDraft(item: Dict): ComprehensionDraft {
     const key = text(item.id);
+    const lifecycle = teachingLifecycleFor(item);
+    const acquire = safeJsonObject(lifecycle?.acquire);
+    const integrate = safeJsonObject(lifecycle?.integrate);
+    const express = safeJsonObject(lifecycle?.express);
+    const approvedRelationships = safeJsonObject(integrate.relationships_to_approved_knowledge);
+    const relationIds = (kind: string) => Array.isArray(approvedRelationships[kind])
+      ? (approvedRelationships[kind] as Dict[]).map((entry) => text(entry.id)).filter(Boolean).join(", ")
+      : "";
+    const lines = (value: unknown, fallback: unknown[] = []) => Array.isArray(value) ? value.map(text).join("\n") : fallback.map(text).join("\n");
     return comprehensionDrafts[key] || {
-      teach_back: "",
-      application: "",
-      limits: Array.isArray(item.limits) ? item.limits.map(text).join("\n") : "",
-      counterexample: "",
-      correction_response: "",
-      source_alignment: false
+      teach_back: text(express.explanation_in_original_language || ""),
+      application: lines(express.distinct_examples),
+      limits: lines(express.limits, Array.isArray(item.limits) ? item.limits : []),
+      counterexample: lines(express.counterexamples),
+      correction_response: text(express.correction_response || ""),
+      source_alignment: express.source_alignment_confirmed === true,
+      vocabulary: lines(acquire.vocabulary),
+      acquire_uncertainties: lines(acquire.uncertainties, Array.isArray(item.limits) ? item.limits : []),
+      near_concept_distinctions: lines(acquire.near_concept_distinctions, Array.isArray(item.counterexamples) ? item.counterexamples : []),
+      scope_of_application: text(integrate.scope_of_application || ""),
+      contradiction_classification: text(integrate.contradiction_classification || "none_identified"),
+      unresolved_questions: lines(integrate.unresolved_questions),
+      integration_confidence: text(integrate.integration_confidence || "developing"),
+      supporting_concept_ids: relationIds("supporting"),
+      conflicting_concept_ids: relationIds("conflicting"),
+      related_concept_ids: relationIds("related"),
+      analogies: lines(express.analogies),
+      questions: lines(express.questions),
+      comparisons: lines(express.comparisons),
+      conversational_participation: text(express.natural_conversational_participation || "")
     };
   }
 
@@ -1970,27 +2011,63 @@ function App() {
   async function refreshComprehensionOrgan() {
     const refreshes = await Promise.allSettled([
       api<Dict>("/api/comprehension/status"),
-      api<{ items: Dict[] }>("/api/comprehension/concepts?limit=20")
+      api<{ items: Dict[] }>("/api/comprehension/concepts?limit=20"),
+      api<Dict>("/api/teaching-lifecycle/status"),
+      api<{ items: Dict[] }>("/api/teaching-lifecycle/items?limit=50")
     ]);
     if (refreshes[0].status === "fulfilled") setComprehensionStatus(refreshes[0].value);
     if (refreshes[1].status === "fulfilled") setComprehensionConcepts(refreshes[1].value.items || []);
+    if (refreshes[2].status === "fulfilled") setTeachingLifecycleStatus(refreshes[2].value);
+    if (refreshes[3].status === "fulfilled") setTeachingLifecycles(refreshes[3].value.items || []);
   }
 
-  async function evaluateComprehensionCandidate(item: Dict) {
+  function teachingLifecycleFor(item: Dict) {
+    return teachingLifecycles.find((lifecycle) => Number(lifecycle.concept_id) === Number(item.id));
+  }
+
+  async function advanceTeachingLifecycle(item: Dict, stage: "acquire" | "integrate" | "express") {
     const key = text(item.id);
     const draft = comprehensionDraft(item);
-    setComprehensionReviewResults((current) => ({ ...current, [key]: { status: "running", operation: "evaluate" } }));
+    const stagePayload: Record<string, unknown> = stage === "acquire"
+      ? {
+          vocabulary: draft.vocabulary,
+          uncertainties: draft.acquire_uncertainties,
+          near_concept_distinctions: draft.near_concept_distinctions
+        }
+      : stage === "integrate"
+        ? {
+            scope_of_application: draft.scope_of_application,
+            contradiction_classification: draft.contradiction_classification,
+            unresolved_questions: draft.unresolved_questions,
+            integration_confidence: draft.integration_confidence,
+            supporting_concept_ids: draft.supporting_concept_ids.split(/[^0-9]+/).map(Number).filter((value) => value > 0),
+            conflicting_concept_ids: draft.conflicting_concept_ids.split(/[^0-9]+/).map(Number).filter((value) => value > 0),
+            related_concept_ids: draft.related_concept_ids.split(/[^0-9]+/).map(Number).filter((value) => value > 0)
+          }
+        : {
+            explanation: draft.teach_back,
+            distinct_examples: draft.application,
+            analogies: draft.analogies,
+            questions: draft.questions,
+            comparisons: draft.comparisons,
+            conversational_participation: draft.conversational_participation,
+            limits: draft.limits,
+            counterexamples: draft.counterexample,
+            correction_response: draft.correction_response,
+            source_alignment: draft.source_alignment
+          };
+    setComprehensionReviewResults((current) => ({ ...current, [key]: { status: "running", operation: stage } }));
     try {
-      const result = await api<Dict>("/api/comprehension/evaluate", {
+      const result = await api<Dict>(`/api/teaching-lifecycle/${stage}`, {
         method: "POST",
-        body: JSON.stringify({ concept_id: item.id, ...draft })
+        body: JSON.stringify({ concept_id: item.id, ...stagePayload })
       });
       setComprehensionReviewResults((current) => ({ ...current, [key]: result }));
       await refreshComprehensionOrgan();
     } catch (err) {
       setComprehensionReviewResults((current) => ({
         ...current,
-        [key]: { status: "understanding_evaluation_needs_attention", error: err instanceof Error ? err.message : "Understanding evidence could not be evaluated." }
+        [key]: { status: `teaching_${stage}_needs_attention`, error: err instanceof Error ? err.message : `${stage} could not be recorded.` }
       }));
     }
   }
@@ -2000,10 +2077,15 @@ function App() {
     if (action === "approve_knowledge" && !window.confirm("Approve this source-linked understanding as a retained knowledge resource for supervised Chat use? This is Aleks's explicit retention decision.")) return;
     setComprehensionReviewResults((current) => ({ ...current, [key]: { status: "running", operation: action } }));
     try {
-      const result = await api<Dict>("/api/comprehension/concepts/decide", {
-        method: "POST",
-        body: JSON.stringify({ concept_id: item.id, action })
-      });
+      const result = action === "approve_knowledge"
+        ? await api<Dict>("/api/teaching-lifecycle/approve", {
+            method: "POST",
+            body: JSON.stringify({ concept_id: item.id, aleks_approved: true, approval_actor: "Aleks" })
+          })
+        : await api<Dict>("/api/comprehension/concepts/decide", {
+            method: "POST",
+            body: JSON.stringify({ concept_id: item.id, action })
+          });
       setComprehensionReviewResults((current) => ({ ...current, [key]: result }));
       await refreshComprehensionOrgan();
     } catch (err) {
@@ -5713,6 +5795,9 @@ function App() {
                 <Metric label="Reopened" value={text(comprehensionStatus?.reopened_count ?? 0)} />
                 <Metric label="Eligible Teaching Packets" value={text(comprehensionStatus?.eligible_teaching_packet_count ?? 0)} />
                 <Metric label="Prepared Candidates" value={text(comprehensionStatus?.prepared_teaching_packet_count ?? 0)} />
+                <Metric label="Acquired" value={text(teachingLifecycleStatus?.acquired_count ?? 0)} />
+                <Metric label="Integrated" value={text(teachingLifecycleStatus?.integrated_count ?? 0)} />
+                <Metric label="Expressed" value={text(teachingLifecycleStatus?.expressed_count ?? 0)} />
               </div>
               <div className="chips">
                 <span>understanding before fluency: {text(comprehensionStatus?.comprehension_before_fluency ?? true)}</span>
@@ -5737,8 +5822,18 @@ function App() {
                 {comprehensionConcepts.map((item) => {
                   const draft = comprehensionDraft(item);
                   const result = comprehensionReviewResults[text(item.id)];
+                  const lifecycle = teachingLifecycleFor(item);
                   const storedEvidence = safeJsonObject(safeJsonObject(item.payload).understanding_evidence);
-                  const evidenceSufficient = result?.understanding_evidence_sufficient === true || storedEvidence.sufficient === true;
+                  const integrateSnapshot = safeJsonObject(lifecycle?.integrate);
+                  const integrationRelationships = safeJsonObject(integrateSnapshot.relationships_to_approved_knowledge);
+                  const suggestedKnowledge = Array.isArray(integrationRelationships.suggested_for_review_only) ? integrationRelationships.suggested_for_review_only as Dict[] : [];
+                  const expressSnapshot = safeJsonObject(lifecycle?.express);
+                  const lifecycleEvaluation = safeJsonObject(expressSnapshot.understanding_evaluation);
+                  const evidenceSufficient = lifecycleEvaluation.sufficient === true || result?.understanding_evidence_sufficient === true || storedEvidence.sufficient === true;
+                  const acquireComplete = lifecycle?.acquire_status === "complete";
+                  const integrateComplete = lifecycle?.integrate_status === "complete";
+                  const expressComplete = lifecycle?.express_status === "complete";
+                  const allStagesComplete = acquireComplete && integrateComplete && expressComplete;
                   const isOpen = openComprehensionId === Number(item.id);
                   const sourceRefs = Array.isArray(item.source_refs) ? item.source_refs : [];
                   const isRunning = result?.status === "running";
@@ -5749,6 +5844,11 @@ function App() {
                     </div>
                     <p>{text(item.central_claim)}</p>
                     <small>{friendlyStatus(item.domain)} · {friendlyStatus(item.retention_state)} · {sourceRefs.length} source reference(s)</small>
+                    <div className="teachingLifecycleRail" aria-label="Acquire Integrate Express lifecycle">
+                      <span className={acquireComplete ? "complete" : ""}><b>1 · Acquire</b>{friendlyStatus(lifecycle?.acquire_status || "not started")}</span>
+                      <span className={integrateComplete ? "complete" : ""}><b>2 · Integrate</b>{friendlyStatus(lifecycle?.integrate_status || "not started")}</span>
+                      <span className={expressComplete ? "complete" : ""}><b>3 · Express</b>{friendlyStatus(lifecycle?.express_status || "not started")}</span>
+                    </div>
                     <div className="reviewActions">
                       <button onClick={() => setOpenComprehensionId(isOpen ? 0 : Number(item.id))}>{isOpen ? "Close Candidate Review" : "Open Candidate Review"}</button>
                     </div>
@@ -5758,25 +5858,66 @@ function App() {
                         <p>This review is about the accepted teaching material shown above. It does not assess speed, identity, personality, memory, or worth.</p>
                         {sourceRefs.length ? <ul>{sourceRefs.map((source, index) => <li key={`${text(item.id)}-source-${index}`}>{text(source)}</li>)}</ul> : <p>No source references are present; approval remains unavailable.</p>}
                       </div>
+                      <section className="teachingLifecycleStage">
+                        <div className="row"><strong>Acquire</strong><span>{friendlyStatus(lifecycle?.acquire_status || "not started")}</span></div>
+                        <p className="plainHelp">Capture the source-labeled concept, vocabulary, examples, uncertainty, and nearby distinctions. This creates a reviewable learning snapshot, not retained knowledge.</p>
+                        <div className="comprehensionEvidenceGrid">
+                          <label><span>Vocabulary (one per line)</span><textarea value={draft.vocabulary} onChange={(event) => updateComprehensionDraft(item, { vocabulary: event.target.value })} placeholder="term: bounded meaning in this lesson" /></label>
+                          <label><span>Uncertainties (one per line)</span><textarea value={draft.acquire_uncertainties} onChange={(event) => updateComprehensionDraft(item, { acquire_uncertainties: event.target.value })} /></label>
+                          <label className="wideEvidenceField"><span>Near-concept distinctions (one per line)</span><textarea value={draft.near_concept_distinctions} onChange={(event) => updateComprehensionDraft(item, { near_concept_distinctions: event.target.value })} placeholder="How is this different from a nearby concept?" /></label>
+                        </div>
+                        <div className="reviewActions"><button className="primary" onClick={() => advanceTeachingLifecycle(item, "acquire")} disabled={isRunning}>{acquireComplete ? "Revise Acquire Snapshot" : "Complete Acquire"}</button></div>
+                      </section>
+                      <section className="teachingLifecycleStage">
+                        <div className="row"><strong>Integrate</strong><span>{friendlyStatus(lifecycle?.integrate_status || "not started")}</span></div>
+                        <p className="plainHelp">Map where the concept applies, how it fits approved knowledge, what conflicts, and when to reopen it. Integration confidence stays separate from factual and language confidence.</p>
+                        <div className="comprehensionEvidenceGrid">
+                          <label className="wideEvidenceField"><span>Scope of application</span><textarea value={draft.scope_of_application} onChange={(event) => updateComprehensionDraft(item, { scope_of_application: event.target.value })} placeholder="Where does this knowledge apply, and where does it stop?" /></label>
+                          <label><span>Contradiction classification</span><select value={draft.contradiction_classification} onChange={(event) => updateComprehensionDraft(item, { contradiction_classification: event.target.value })}>
+                            <option value="none_identified">None identified</option>
+                            <option value="compatible_scope_difference">Compatible scope difference</option>
+                            <option value="tension_requires_review">Tension requires review</option>
+                            <option value="direct_conflict">Direct conflict</option>
+                            <option value="insufficient_evidence">Insufficient evidence</option>
+                          </select></label>
+                          <label><span>Integration confidence</span><select value={draft.integration_confidence} onChange={(event) => updateComprehensionDraft(item, { integration_confidence: event.target.value })}>
+                            <option value="low">Low</option><option value="developing">Developing</option><option value="bounded">Bounded</option><option value="strong">Strong</option>
+                          </select></label>
+                          <label><span>Supporting approved concept IDs</span><input value={draft.supporting_concept_ids} onChange={(event) => updateComprehensionDraft(item, { supporting_concept_ids: event.target.value })} placeholder="Example: 12, 18" /></label>
+                          <label><span>Conflicting approved concept IDs</span><input value={draft.conflicting_concept_ids} onChange={(event) => updateComprehensionDraft(item, { conflicting_concept_ids: event.target.value })} placeholder="Leave empty when none are identified" /></label>
+                          <label className="wideEvidenceField"><span>Other related approved concept IDs</span><input value={draft.related_concept_ids} onChange={(event) => updateComprehensionDraft(item, { related_concept_ids: event.target.value })} /></label>
+                          <label className="wideEvidenceField"><span>Unresolved questions (one per line)</span><textarea value={draft.unresolved_questions} onChange={(event) => updateComprehensionDraft(item, { unresolved_questions: event.target.value })} /></label>
+                        </div>
+                        {suggestedKnowledge.length ? <div className="comprehensionSourceBox"><strong>Approved knowledge suggestions for review</strong><p>These are lexical suggestions only. Add an ID above only after confirming the relationship.</p><ul>{suggestedKnowledge.map((entry) => <li key={`${text(item.id)}-knowledge-${text(entry.id)}`}>#{text(entry.id)} · {text(entry.title)} — {text(entry.central_claim)}</li>)}</ul></div> : null}
+                        <div className="reviewActions"><button className="primary" onClick={() => advanceTeachingLifecycle(item, "integrate")} disabled={!acquireComplete || isRunning}>{integrateComplete ? "Revise Integration Snapshot" : "Complete Integrate"}</button></div>
+                      </section>
+                      <section className="teachingLifecycleStage">
+                        <div className="row"><strong>Express</strong><span>{friendlyStatus(lifecycle?.express_status || "not started")}</span></div>
+                        <p className="plainHelp">Demonstrate transferable understanding in original language. NLO and Voice may shape approved knowledge later; this stage does not activate it.</p>
                       <div className="comprehensionEvidenceGrid">
                         <label><span>Teach-back in Selene's own reconstruction</span><textarea value={draft.teach_back} onChange={(event) => updateComprehensionDraft(item, { teach_back: event.target.value })} placeholder="Reconstruct the idea without copying the source wording." /></label>
                         <label><span>Apply it to a distinct example</span><textarea value={draft.application} onChange={(event) => updateComprehensionDraft(item, { application: event.target.value })} placeholder="Use the idea in a genuinely different situation." /></label>
                         <label><span>Limits (one per line)</span><textarea value={draft.limits} onChange={(event) => updateComprehensionDraft(item, { limits: event.target.value })} placeholder="Where does this idea stop applying?" /></label>
                         <label><span>Counterexample</span><textarea value={draft.counterexample} onChange={(event) => updateComprehensionDraft(item, { counterexample: event.target.value })} placeholder="A case that challenges an overly broad reading." /></label>
                         <label className="wideEvidenceField"><span>Correction response</span><textarea value={draft.correction_response} onChange={(event) => updateComprehensionDraft(item, { correction_response: event.target.value })} placeholder="How should the understanding change if the source or an example corrects it?" /></label>
+                        <label><span>Analogy (one per line)</span><textarea value={draft.analogies} onChange={(event) => updateComprehensionDraft(item, { analogies: event.target.value })} placeholder="Explain the relationship through a distinct analogy." /></label>
+                        <label><span>Questions it can support (one per line)</span><textarea value={draft.questions} onChange={(event) => updateComprehensionDraft(item, { questions: event.target.value })} /></label>
+                        <label><span>Comparisons (one per line)</span><textarea value={draft.comparisons} onChange={(event) => updateComprehensionDraft(item, { comparisons: event.target.value })} /></label>
+                        <label><span>Natural conversational participation</span><textarea value={draft.conversational_participation} onChange={(event) => updateComprehensionDraft(item, { conversational_participation: event.target.value })} placeholder="A natural reply that uses the concept without parroting its source." /></label>
                       </div>
                       <label className="sourceAlignmentCheck"><input type="checkbox" checked={draft.source_alignment} onChange={(event) => updateComprehensionDraft(item, { source_alignment: event.target.checked })} /><span>I confirm this evidence is aligned with the listed source material for review.</span></label>
                       <div className="reviewActions">
-                        <button className="primary" onClick={() => evaluateComprehensionCandidate(item)} disabled={isRunning}>{isRunning && result?.operation === "evaluate" ? "Evaluating Evidence..." : "Evaluate Understanding"}</button>
+                        <button className="primary" onClick={() => advanceTeachingLifecycle(item, "express")} disabled={!integrateComplete || isRunning}>{isRunning && result?.operation === "express" ? "Checking Expression..." : expressComplete ? "Revise Express Snapshot" : "Complete Express"}</button>
                         <button onClick={() => decideComprehensionCandidate(item, "needs_more_context")} disabled={isRunning}>Needs More Context</button>
                         <button onClick={() => decideComprehensionCandidate(item, "hold_for_tending")} disabled={isRunning}>Hold for Tending</button>
                         <button onClick={() => decideComprehensionCandidate(item, "reopen_for_revision")} disabled={isRunning}>Reopen</button>
                       </div>
+                      </section>
                       <div className="aleksKnowledgeApproval">
                         <strong>Aleks retention decision</strong>
-                        <p>{evidenceSufficient ? "Source-linked understanding evidence is ready for Aleks's review. Approval makes this a retained knowledge resource available to supervised Chat; it does not create personal memory." : "Approval remains unavailable until the evaluation finds sufficient reconstruction, distinct application, limits, and source alignment."}</p>
+                        <p>{allStagesComplete && evidenceSufficient ? "Acquire, Integrate, and Express are complete with source-linked understanding evidence. Approval makes this a retained knowledge resource available to supervised Chat; it does not create personal memory." : "Approval remains unavailable until all three lifecycle stages and the source-linked understanding evaluation are complete."}</p>
                         <div className="reviewActions">
-                          <button className="primary" onClick={() => decideComprehensionCandidate(item, "approve_knowledge")} disabled={!evidenceSufficient || isRunning}>Approve Knowledge</button>
+                          <button className="primary" onClick={() => decideComprehensionCandidate(item, "approve_knowledge")} disabled={!allStagesComplete || !evidenceSufficient || isRunning}>Approve Knowledge</button>
                           <button onClick={() => decideComprehensionCandidate(item, "supersede")} disabled={isRunning}>Supersede</button>
                           <button onClick={() => decideComprehensionCandidate(item, "reject")} disabled={isRunning}>Reject</button>
                         </div>

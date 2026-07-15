@@ -1599,6 +1599,47 @@ CREATE TABLE IF NOT EXISTS selene_comprehension_runs (
 CREATE INDEX IF NOT EXISTS idx_selene_comprehension_runs_operation
 ON selene_comprehension_runs(operation, concept_id, review_status, created_at);
 
+CREATE TABLE IF NOT EXISTS selene_teaching_lifecycles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  lifecycle_key TEXT NOT NULL UNIQUE,
+  concept_id INTEGER NOT NULL UNIQUE,
+  current_stage TEXT NOT NULL DEFAULT 'not_started',
+  acquire_status TEXT NOT NULL DEFAULT 'not_started',
+  acquire_json TEXT NOT NULL DEFAULT '{}',
+  integrate_status TEXT NOT NULL DEFAULT 'not_started',
+  integrate_json TEXT NOT NULL DEFAULT '{}',
+  express_status TEXT NOT NULL DEFAULT 'not_started',
+  express_json TEXT NOT NULL DEFAULT '{}',
+  approval_status TEXT NOT NULL DEFAULT 'awaiting_aleks_review',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_teaching_lifecycles_stage
+ON selene_teaching_lifecycles(current_stage, approval_status, updated_at);
+
+CREATE TABLE IF NOT EXISTS selene_teaching_lifecycle_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  lifecycle_id INTEGER NOT NULL,
+  concept_id INTEGER NOT NULL,
+  stage TEXT NOT NULL,
+  status TEXT NOT NULL,
+  snapshot_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (lifecycle_id) REFERENCES selene_teaching_lifecycles(id),
+  FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_teaching_lifecycle_runs_stage
+ON selene_teaching_lifecycle_runs(lifecycle_id, stage, created_at);
+
 CREATE TABLE IF NOT EXISTS vessel_chronological_corpus_arcs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   arc_key TEXT NOT NULL UNIQUE,

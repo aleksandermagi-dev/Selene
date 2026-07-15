@@ -160,6 +160,15 @@ from .language_teaching_shelf import (
     prepare_language_teaching_shelf,
     select_language_guidance,
 )
+from .teaching_lifecycle import (
+    acquire_teaching_item,
+    approve_teaching_lifecycle,
+    express_teaching_item,
+    get_teaching_lifecycle,
+    integrate_teaching_item,
+    list_teaching_lifecycles,
+    teaching_lifecycle_status,
+)
 from .my_office_cleanup import clean_up_my_office_residue
 from .native_generation import compose_native_response
 from .native_language_organ import (
@@ -529,6 +538,20 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": evaluate_understanding(conn, payload)}
     if route_key == "comprehension.turn.packet":
         return {"route": route_key, "result": build_comprehension_packet(conn, payload)}
+    if route_key == "teaching.lifecycle.status":
+        return {"route": route_key, "result": teaching_lifecycle_status(conn)}
+    if route_key == "teaching.lifecycle.list":
+        return {"route": route_key, "result": list_teaching_lifecycles(conn, payload)}
+    if route_key == "teaching.lifecycle.detail":
+        return {"route": route_key, "result": get_teaching_lifecycle(conn, payload)}
+    if route_key == "teaching.lifecycle.acquire":
+        return {"route": route_key, "result": acquire_teaching_item(conn, payload)}
+    if route_key == "teaching.lifecycle.integrate":
+        return {"route": route_key, "result": integrate_teaching_item(conn, payload)}
+    if route_key == "teaching.lifecycle.express":
+        return {"route": route_key, "result": express_teaching_item(conn, payload)}
+    if route_key == "teaching.lifecycle.approve":
+        return {"route": route_key, "result": approve_teaching_lifecycle(conn, payload)}
     if route_key == "native_language.status":
         return {"route": route_key, "result": native_language_status(conn)}
     if route_key == "native_language.realize":
