@@ -62,8 +62,8 @@ def answer_engine_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "answer_engine_phase_3_verified_math_ready",
-            "version": "v3_verified_math_and_comparison_adapters",
-            "phase": "phase_3_verified_math_bounded_arithmetic",
+            "version": "v3_1_verified_math_stabilized",
+            "phase": "phase_3_verified_math_stabilized",
             "domains": list(DOMAINS),
             "domain_adapter_status": adapter_status,
             "confidence_dimensions": [
@@ -76,6 +76,10 @@ def answer_engine_status() -> dict[str, Any]:
             "completion_retry_available": True,
             "completion_retry_limit": 1,
             "completion_retry_domains": ["comparison_planning"],
+            "domain_routing_mode": "single_primary_domain",
+            "multi_domain_synthesis_available": False,
+            "expression_only_math_available": True,
+            "domain_request_fallback_obligation_available": True,
             "core_mind_route_owner": True,
             "nlo_expression_owner": True,
             "voice_style_owner": True,
@@ -247,7 +251,12 @@ def build_confidence_vector(
 def run_verified_math_answer(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     """Run the deterministic Phase 3 exact-arithmetic adapter."""
     payload = payload or {}
-    request = build_answer_request(payload)
+    request_payload = dict(payload)
+    expression = str(payload.get("expression") or "").strip()
+    if expression and not str(payload.get("prompt") or payload.get("text") or "").strip():
+        request_payload["prompt"] = expression
+        request_payload.setdefault("requested_domain", "verified_math")
+    request = build_answer_request(request_payload)
     route = _select_domain(request)
     if route["selected_domain"] != "verified_math":
         return _with_guards(
@@ -264,6 +273,7 @@ def run_verified_math_answer(payload: dict[str, Any] | None = None) -> dict[str,
             }
         )
 
+    request = _ensure_domain_request_obligation(request, "math_verification")
     verification = verify_bounded_math(
         {
             "expression": payload.get("expression"),
@@ -623,6 +633,26 @@ def _route(
         "blocked_domain": blocked_domain,
         "adapter_status": "not_executed_contract_only" if domain != "unsupported" else "no_adapter_authorized",
         "core_mind_authority_preserved": True,
+        "routing_mode": "single_primary_domain",
+        "multi_domain_synthesis_available": False,
+    }
+
+
+def _ensure_domain_request_obligation(request: dict[str, Any], kind: str) -> dict[str, Any]:
+    if request.get("dialogue_obligations"):
+        return request
+    fallback = {
+        "id": f"{kind}-{request['request_id']}",
+        "kind": kind,
+        "source_text": truncate(str(request.get("prompt") or ""), 600),
+        "required": True,
+        "coverage_terms": [],
+    }
+    return {
+        **request,
+        "dialogue_obligations": [fallback],
+        "obligation_count": 1,
+        "obligation_source": "domain_request_fallback",
     }
 
 

@@ -38,7 +38,7 @@ def test_phase_3_status_connects_math_and_comparison_and_stays_disconnected_from
     result = answer_engine_status()
 
     assert result["status"] == "answer_engine_phase_3_verified_math_ready"
-    assert result["phase"] == "phase_3_verified_math_bounded_arithmetic"
+    assert result["phase"] == "phase_3_verified_math_stabilized"
     assert set(result["confidence_dimensions"]) == {
         "route_confidence",
         "evidence_confidence",
@@ -55,6 +55,9 @@ def test_phase_3_status_connects_math_and_comparison_and_stays_disconnected_from
     )
     assert result["completion_retry_available"] is True
     assert result["completion_retry_limit"] == 1
+    assert result["domain_routing_mode"] == "single_primary_domain"
+    assert result["multi_domain_synthesis_available"] is False
+    assert result["expression_only_math_available"] is True
     _assert_locked(result)
 
 
@@ -387,20 +390,19 @@ def test_verified_math_adapter_returns_exact_answer_without_expression_confidenc
     _assert_locked(result)
 
 
+def test_verified_math_adapter_accepts_an_expression_without_a_duplicate_prompt():
+    result = run_verified_math_answer({"expression": "0.1 + 0.2"})
+
+    assert result["status"] == "answer_engine_verified_math_answer_ready"
+    assert result["request"]["prompt"] == "0.1 + 0.2"
+    assert result["request"]["requested_domain"] == "verified_math"
+    assert result["request"]["obligation_source"] == "domain_request_fallback"
+    assert result["answer_packet"]["direct_answer"] == "0.1 + 0.2 = 0.3."
+    _assert_locked(result)
+
+
 def test_verified_math_adapter_leaves_unsupported_symbolic_problem_open():
-    result = run_verified_math_answer(
-        {
-            "prompt": "Solve for x: x + 2 = 5",
-            "dialogue_obligations": [
-                {
-                    "id": "math-ask",
-                    "kind": "direct_question",
-                    "source_text": "Solve for x.",
-                    "coverage_terms": ["x"],
-                }
-            ],
-        }
-    )
+    result = run_verified_math_answer({"prompt": "Solve for x: x + 2 = 5"})
 
     assert result["status"] == "answer_engine_verified_math_unable_to_answer"
     assert result["answer_generated"] is False
@@ -408,7 +410,19 @@ def test_verified_math_adapter_leaves_unsupported_symbolic_problem_open():
     assert result["answer_packet"]["no_answer_reason"]
     assert result["confidence_vector"]["answer_confidence"] == "unable_to_verify"
     assert result["answer_packet"]["unanswered_obligations"]
+    assert result["answer_packet"]["unanswered_obligations"][0]["kind"] == "math_verification"
     _assert_locked(result)
+
+
+def test_mixed_domain_preview_names_the_single_primary_domain_boundary():
+    result = preview_answer_route(
+        {"prompt": "Inspect this function and calculate whether 18 * 7 is correct."}
+    )
+
+    assert result["domain_route"]["selected_domain"] == "verified_math"
+    assert result["domain_route"]["routing_mode"] == "single_primary_domain"
+    assert result["domain_route"]["multi_domain_synthesis_available"] is False
+    assert result["adapter_executed"] is False
 
 
 def test_math_adapter_does_not_run_for_other_domains_or_authority(monkeypatch):

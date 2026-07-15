@@ -101,6 +101,32 @@ def test_voice_evidence_triage_status_endpoint_is_reachable(tmp_path):
     assert payload["memory_write_active"] is False
 
 
+def test_answer_engine_math_endpoint_accepts_expression_only_request(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    body = json.dumps({"expression": "18 * 7"})
+    conn.request("POST", "/api/answer-engine/math-run", body=body, headers={"Content-Type": "application/json"})
+    response = conn.getresponse()
+    payload = json.loads(response.read().decode("utf-8"))
+    conn.close()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    server.server_close()
+    server.conn.close()
+
+    assert response.status == 200
+    assert payload["status"] == "answer_engine_verified_math_answer_ready"
+    assert payload["answer_packet"]["direct_answer"] == "18 * 7 = 126."
+    assert payload["request"]["obligation_source"] == "domain_request_fallback"
+    assert payload["activation_change"] == "none"
+    assert payload["memory_write_active"] is False
+    assert payload["live_chat_connected"] is False
+
+
 def test_sidecar_serializes_request_ownership_for_shared_sqlite_connection(tmp_path):
     _ConcurrencyProbeHandler.active = 0
     _ConcurrencyProbeHandler.maximum_active = 0
