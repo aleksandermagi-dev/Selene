@@ -8,6 +8,7 @@ from typing import Any
 from .intelligence_os import run_intelligence_os_reason
 from .pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
 from .registry import truncate
+from .verified_math import verify_bounded_math
 
 
 ANSWER_ENGINE_BOUNDARY = (
@@ -56,12 +57,13 @@ AUTHORITY_MARKERS = (
 
 def answer_engine_status() -> dict[str, Any]:
     adapter_status = {domain: "contract_only_not_connected" for domain in DOMAINS}
+    adapter_status["verified_math"] = "exact_arithmetic_adapter_connected_status_only"
     adapter_status["comparison_planning"] = "intelligence_os_adapter_connected_status_only"
     return _with_guards(
         {
-            "status": "answer_engine_phase_2_comparison_ready",
-            "version": "v2_comparison_adapter_and_bounded_completion",
-            "phase": "phase_2_comparison_planning_only",
+            "status": "answer_engine_phase_3_verified_math_ready",
+            "version": "v3_verified_math_and_comparison_adapters",
+            "phase": "phase_3_verified_math_bounded_arithmetic",
             "domains": list(DOMAINS),
             "domain_adapter_status": adapter_status,
             "confidence_dimensions": [
@@ -240,6 +242,91 @@ def build_confidence_vector(
         "voice_confidence_is_answer_correctness": False,
         "answer_fluency_is_evidence_strength": False,
     }
+
+
+def run_verified_math_answer(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Run the deterministic Phase 3 exact-arithmetic adapter."""
+    payload = payload or {}
+    request = build_answer_request(payload)
+    route = _select_domain(request)
+    if route["selected_domain"] != "verified_math":
+        return _with_guards(
+            {
+                "status": "answer_engine_domain_adapter_not_available",
+                "request": request,
+                "domain_route": route,
+                "available_adapter": "verified_math",
+                "adapter_executed": False,
+                "answer_generated": False,
+                "completion_retry": _completion_retry_result(False, 0, [], enabled=False),
+                "review_status": "status_only",
+                "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
+            }
+        )
+
+    verification = verify_bounded_math(
+        {
+            "expression": payload.get("expression"),
+            "prompt": request["prompt"],
+        }
+    )
+    verified = verification.get("verified") is True
+    direct_answer = str(verification.get("result_summary") or "").strip() if verified else ""
+    no_answer_reason = "" if verified else str(verification.get("no_answer_reason") or "").strip()
+    packet = _domain_answer_packet(
+        {
+            "request_id": request["request_id"],
+            "domain": "verified_math",
+            "direct_answer": direct_answer,
+            "no_answer_reason": no_answer_reason,
+            "supporting_claims": verification.get("checked_steps") or [],
+            "source_refs": verification.get("source_refs") or [],
+            "assumptions": verification.get("assumptions") or [],
+            "limitations": verification.get("limitations") or [],
+            "unanswered_obligations": [] if verified else request["dialogue_obligations"],
+            "what_would_change_the_answer": (
+                ["A different arithmetic expression or correction to the supplied values."]
+                if verified
+                else ["An explicit expression inside the documented exact-arithmetic boundary."]
+            ),
+            "evidence_confidence": verification["evidence_confidence"],
+            "answer_confidence": verification["answer_confidence"],
+        },
+        adapter_executed=True,
+        contract_preview=False,
+    )
+    confidence = build_confidence_vector(
+        request,
+        route_confidence=route["route_confidence"],
+        route_basis=route["selection_basis"],
+        evidence_confidence=verification["evidence_confidence"],
+        answer_confidence=verification["answer_confidence"],
+        expression_confidence="not_assessed",
+    )
+    return _with_guards(
+        {
+            "status": (
+                "answer_engine_verified_math_answer_ready"
+                if verified
+                else "answer_engine_verified_math_unable_to_answer"
+            ),
+            "request": request,
+            "domain_route": {
+                **route,
+                "adapter_status": "exact_arithmetic_adapter_executed_status_only",
+            },
+            "answer_packet": packet,
+            "confidence_vector": confidence,
+            "math_verification": verification,
+            "completion_retry": _completion_retry_result(False, 0, [], enabled=False),
+            "adapter_executed": True,
+            "answer_generated": bool(direct_answer),
+            "visible_summary_only": True,
+            "hidden_chain_of_thought_exposed": False,
+            "review_status": "status_only",
+            "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
+        }
+    )
 
 
 def run_comparison_planning_answer(

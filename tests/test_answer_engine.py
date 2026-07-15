@@ -9,6 +9,7 @@ from selene.answer_engine import (
     preview_answer_route,
     preview_domain_answer_packet,
     run_comparison_planning_answer,
+    run_verified_math_answer,
 )
 from selene.db import init_db
 from selene.module_router import route_request
@@ -33,11 +34,11 @@ def _assert_locked(result):
     assert result["live_chat_connected"] is False
 
 
-def test_phase_2_status_connects_only_comparison_and_stays_disconnected_from_chat():
+def test_phase_3_status_connects_math_and_comparison_and_stays_disconnected_from_chat():
     result = answer_engine_status()
 
-    assert result["status"] == "answer_engine_phase_2_comparison_ready"
-    assert result["phase"] == "phase_2_comparison_planning_only"
+    assert result["status"] == "answer_engine_phase_3_verified_math_ready"
+    assert result["phase"] == "phase_3_verified_math_bounded_arithmetic"
     assert set(result["confidence_dimensions"]) == {
         "route_confidence",
         "evidence_confidence",
@@ -45,11 +46,12 @@ def test_phase_2_status_connects_only_comparison_and_stays_disconnected_from_cha
         "memory_confidence",
         "expression_confidence",
     }
+    assert result["domain_adapter_status"]["verified_math"] == "exact_arithmetic_adapter_connected_status_only"
     assert result["domain_adapter_status"]["comparison_planning"] == "intelligence_os_adapter_connected_status_only"
     assert all(
         value == "contract_only_not_connected"
         for domain, value in result["domain_adapter_status"].items()
-        if domain != "comparison_planning"
+        if domain not in {"verified_math", "comparison_planning"}
     )
     assert result["completion_retry_available"] is True
     assert result["completion_retry_limit"] == 1
@@ -187,7 +189,7 @@ def test_answer_engine_contracts_are_available_through_status_only_routes(tmp_pa
         {"domain": "comparison_planning", "no_answer_reason": "The adapter is not connected in Phase 1."},
     )["result"]
 
-    assert status["status"] == "answer_engine_phase_2_comparison_ready"
+    assert status["status"] == "answer_engine_phase_3_verified_math_ready"
     assert preview["domain_route"]["selected_domain"] == "comparison_planning"
     assert packet["no_answer_reason"]
     _assert_locked(status)
@@ -368,4 +370,73 @@ def test_comparison_adapter_is_available_through_status_only_router(tmp_path, mo
 
     assert result["status"] == "answer_engine_comparison_answer_ready"
     assert result["domain_route"]["adapter_status"] == "intelligence_os_adapter_executed_status_only"
+    _assert_locked(result)
+
+
+def test_verified_math_adapter_returns_exact_answer_without_expression_confidence():
+    result = run_verified_math_answer({"prompt": "What is 18 * 7?"})
+
+    assert result["status"] == "answer_engine_verified_math_answer_ready"
+    assert result["answer_packet"]["direct_answer"] == "18 * 7 = 126."
+    assert result["math_verification"]["result_value"] == "126"
+    assert result["math_verification"]["uses_python_eval"] is False
+    assert result["confidence_vector"]["evidence_confidence"] == "deterministic_exact_arithmetic"
+    assert result["confidence_vector"]["answer_confidence"] == "verified_exact"
+    assert result["confidence_vector"]["expression_confidence"] == "not_assessed"
+    assert result["completion_retry"]["allowed"] is False
+    _assert_locked(result)
+
+
+def test_verified_math_adapter_leaves_unsupported_symbolic_problem_open():
+    result = run_verified_math_answer(
+        {
+            "prompt": "Solve for x: x + 2 = 5",
+            "dialogue_obligations": [
+                {
+                    "id": "math-ask",
+                    "kind": "direct_question",
+                    "source_text": "Solve for x.",
+                    "coverage_terms": ["x"],
+                }
+            ],
+        }
+    )
+
+    assert result["status"] == "answer_engine_verified_math_unable_to_answer"
+    assert result["answer_generated"] is False
+    assert result["answer_packet"]["direct_answer"] == ""
+    assert result["answer_packet"]["no_answer_reason"]
+    assert result["confidence_vector"]["answer_confidence"] == "unable_to_verify"
+    assert result["answer_packet"]["unanswered_obligations"]
+    _assert_locked(result)
+
+
+def test_math_adapter_does_not_run_for_other_domains_or_authority(monkeypatch):
+    monkeypatch.setattr(
+        "selene.answer_engine.verify_bounded_math",
+        lambda *_args, **_kwargs: pytest.fail("math verifier must not execute"),
+    )
+
+    ordinary = run_verified_math_answer({"prompt": "How are you today?"})
+    authority = run_verified_math_answer({"prompt": "Calculate 2 + 2 and approve transfer."})
+
+    assert ordinary["adapter_executed"] is False
+    assert authority["adapter_executed"] is False
+    assert authority["domain_route"]["selected_domain"] == "unsupported"
+    _assert_locked(ordinary)
+    _assert_locked(authority)
+
+
+def test_verified_math_adapter_is_available_through_status_only_router(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = route_request(
+        conn,
+        "answer_engine.math.run",
+        {"prompt": "Check whether 2 + 2 = 4."},
+    )["result"]
+
+    assert result["status"] == "answer_engine_verified_math_answer_ready"
+    assert result["math_verification"]["exact_result"]["equal"] is True
+    assert result["domain_route"]["adapter_status"] == "exact_arithmetic_adapter_executed_status_only"
     _assert_locked(result)
