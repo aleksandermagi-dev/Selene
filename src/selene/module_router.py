@@ -28,6 +28,7 @@ from .activation import (
     approve_activation,
     pause_activation,
 )
+from .answer_engine import answer_engine_status, preview_answer_route, preview_domain_answer_packet
 from .b_speech_memory import extract_b_speech_memory_candidates, list_b_speech_memory_extraction_runs
 from .braid_tracer import list_braid_tracer_runs, run_braid_tracer
 from .chat import ChatGate
@@ -418,6 +419,12 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": test_impact_law_status()}
     if route_key == "test_impact_law.review":
         return {"route": route_key, "result": review_test_impact(payload)}
+    if route_key == "answer_engine.status":
+        return {"route": route_key, "result": answer_engine_status()}
+    if route_key == "answer_engine.route.preview":
+        return {"route": route_key, "result": preview_answer_route(payload)}
+    if route_key == "answer_engine.packet.preview":
+        return {"route": route_key, "result": preview_domain_answer_packet(payload)}
     if route_key == "selene_chat.status":
         return {"route": route_key, "result": selene_chat_status(conn)}
     if route_key == "selene_chat.send":
