@@ -1536,6 +1536,69 @@ CREATE TABLE IF NOT EXISTS b_teaching_packets (
 
 CREATE INDEX IF NOT EXISTS idx_b_teaching_packets_function ON b_teaching_packets(speech_function, review_status);
 
+CREATE TABLE IF NOT EXISTS selene_language_teaching_shelf (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  lesson_key TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  category TEXT NOT NULL,
+  purpose TEXT NOT NULL,
+  guidance_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'approved_for_language_guidance',
+  status TEXT NOT NULL DEFAULT 'language_guidance_available',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_language_teaching_shelf_status
+ON selene_language_teaching_shelf(category, review_status, status);
+
+CREATE TABLE IF NOT EXISTS selene_comprehension_concepts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  concept_key TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  domain TEXT NOT NULL DEFAULT 'general',
+  central_claim TEXT NOT NULL,
+  principles_json TEXT NOT NULL DEFAULT '[]',
+  relationships_json TEXT NOT NULL DEFAULT '[]',
+  examples_json TEXT NOT NULL DEFAULT '[]',
+  counterexamples_json TEXT NOT NULL DEFAULT '[]',
+  limits_json TEXT NOT NULL DEFAULT '[]',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  confidence TEXT NOT NULL DEFAULT 'developing',
+  retention_state TEXT NOT NULL DEFAULT 'candidate_not_retained',
+  chat_use_permission TEXT NOT NULL DEFAULT 'not_active_until_approved',
+  correction_path TEXT NOT NULL DEFAULT 'Cocoon teaching review and source-linked revision',
+  state TEXT NOT NULL DEFAULT 'proposed_understanding',
+  review_status TEXT NOT NULL DEFAULT 'pending_cocoon_teaching_review',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_comprehension_concepts_state
+ON selene_comprehension_concepts(state, review_status, domain);
+
+CREATE TABLE IF NOT EXISTS selene_comprehension_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  operation TEXT NOT NULL,
+  concept_id INTEGER,
+  title TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'comprehension_status_only',
+  understanding_state TEXT NOT NULL DEFAULT 'open',
+  result_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_comprehension_runs_operation
+ON selene_comprehension_runs(operation, concept_id, review_status, created_at);
+
 CREATE TABLE IF NOT EXISTS vessel_chronological_corpus_arcs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   arc_key TEXT NOT NULL UNIQUE,

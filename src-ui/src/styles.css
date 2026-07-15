@@ -817,6 +817,31 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .reviewActions { justify-self: stretch; max-width: 100%; min-width: 0; width: 100%; }
 .reviewActions button { flex: 1 1 180px; min-width: min(100%, 180px); }
 
+.comprehensionCandidate { gap: 10px; }
+.comprehensionReview {
+  border-top: 1px solid var(--soft-border);
+  display: grid;
+  gap: 14px;
+  margin-top: 4px;
+  padding-top: 14px;
+}
+.comprehensionSourceBox, .aleksKnowledgeApproval, .comprehensionReviewResult {
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+.comprehensionSourceBox ul { color: var(--text-muted); margin: 0; padding-left: 20px; word-break: break-word; }
+.comprehensionEvidenceGrid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.comprehensionEvidenceGrid textarea { min-height: 105px; }
+.comprehensionEvidenceGrid .wideEvidenceField { grid-column: 1 / -1; }
+.sourceAlignmentCheck { align-items: center; display: flex; gap: 10px; }
+.sourceAlignmentCheck input { flex: 0 0 auto; height: 18px; margin: 0; width: 18px; }
+.sourceAlignmentCheck span { font-size: 14px; }
+.aleksKnowledgeApproval { border-color: color-mix(in srgb, var(--accent-2) 48%, var(--soft-border)); }
+
 .seleneHomeChatSurface {
   display: grid;
   gap: 10px;
@@ -1750,6 +1775,8 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 }
 
 @media (max-width: 860px) {
+  .comprehensionEvidenceGrid { grid-template-columns: 1fr; }
+  .comprehensionEvidenceGrid .wideEvidenceField { grid-column: auto; }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .reviewActions { width: 100%; }
   .homeComposer {

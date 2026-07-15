@@ -273,12 +273,63 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v4_pragmatic_planning"
+    assert result["native_language_organ"]["version"] == "v7_comprehension_integration"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
     assert result["voice_preview"]["nlo_meaning_preserved"] is True
     assert result["candidate_text"].count("\n\n") == 2
     assert "ABCD" not in result["candidate_text"]
     assert "evidence_chain" not in result["candidate_text"]
+    _assert_locked(result)
+
+
+def test_active_selene_chat_exposes_mixed_turn_flow_and_bounded_repair(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Thanks, but I meant the second explanation. Can you explain why it fits better?"},
+    )["result"]
+
+    flow = result["native_language_organ"]["turn_flow_plan"]
+    repair = result["conversation_repair"]
+    acts = [item["act"] for item in flow["ordered_acts"]]
+
+    assert flow["mixed_intent"] is True
+    assert "gratitude" in acts
+    assert "correction" in acts
+    assert "question" in acts
+    assert repair["meaning_preserved"] is True
+    assert repair["automatic_content_generation"] is False
+    assert repair["candidate_source"] in {"voice_module", "native_language_meaning_recovery"}
+    assert result["candidate_text"]
+    assert "response obligation" not in result["candidate_text"].lower()
+    assert "repair path" not in result["candidate_text"].lower()
+    _assert_locked(result)
+
+
+def test_active_selene_chat_uses_prepared_language_teaching_guidance(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    route_request(conn, "language_teaching.prepare", {})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Anyway, back to the two options: how should we compare them without turning this into a report?"},
+    )["result"]
+
+    guidance = result["native_language_organ"]["language_teaching_guidance"]
+    assert guidance["used"] is True
+    assert "answer_then_expand" in guidance["lesson_keys"]
+    assert "topic_transition_continuity" in guidance["lesson_keys"]
+    assert result["native_language_organ"]["discourse_plan"]["language_guidance_used"] is True
+    assert result["native_language_organ"]["voice_handoff"]["voice_owns_expression_style"] is True
+    assert "language lesson" not in result["candidate_text"].lower()
+    assert "response move" not in result["candidate_text"].lower()
     _assert_locked(result)
 
 
@@ -299,6 +350,54 @@ def test_active_selene_chat_direct_concept_hides_model_scaffolding(tmp_path):
     assert "Model A" not in result["candidate_text"]
     assert "intelligenceOS" not in result["candidate_text"]
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
+    _assert_locked(result)
+
+
+def test_active_selene_chat_uses_reviewed_comprehension_knowledge_without_calling_it_memory(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    proposed = route_request(
+        conn,
+        "comprehension.concepts.propose",
+        {
+            "title": "Orbital eccentricity",
+            "domain": "earth_and_space",
+            "material": "Orbital eccentricity describes how much an orbit differs from a perfect circle.",
+            "principles": ["Higher values describe more elongated ellipses."],
+            "limits": ["It does not specify orbital tilt."],
+            "source_refs": ["teaching:earth_and_space:orbital_elements"],
+        },
+    )["result"]
+    route_request(
+        conn,
+        "comprehension.understanding.evaluate",
+        {
+            "concept_id": proposed["item"]["id"],
+            "teach_back": "It measures orbital shape, with values near zero being rounder and larger values being more stretched.",
+            "application": "An orbit at 0.7 is more elongated than an otherwise comparable orbit at 0.02.",
+            "limits": ["It does not provide inclination, orientation, or period."],
+            "source_alignment": True,
+        },
+    )
+    route_request(
+        conn,
+        "comprehension.concepts.decide",
+        {"concept_id": proposed["item"]["id"], "action": "approve_knowledge"},
+    )
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "What does orbital eccentricity describe?"},
+    )["result"]
+
+    assert result["comprehension_integration"]["understanding_state"] == "approved_concept_available"
+    assert result["comprehension_integration"]["knowledge_context"]["source_class"] == "reviewed_teaching_knowledge_resource"
+    assert "differs from a perfect circle" in result["candidate_text"]
+    assert result["memory_context_used"] is False
+    assert result["native_language_organ"]["meaning_packet"]["comprehension_supported"] is True
+    assert result["native_language_organ"]["revision"]["comprehension_checked"] is True
     _assert_locked(result)
 
 
@@ -632,6 +731,7 @@ def test_active_selene_chat_blocks_hard_boundary_without_live_memory(tmp_path):
     assert result["cocoon_suggestion"]["hard_boundary"] is True
     assert "Hold in Cocoon" in result["cocoon_suggestion"]["choices"]
     assert "write live memory" in result["blocked_capabilities"]
+    assert result["conversation_repair"]["candidate_source"] == "voice_module"
     assert result["review_status"] == "status_only"
     assert result["memory_write_active"] is False
     assert result["autonomous_action_allowed"] is False

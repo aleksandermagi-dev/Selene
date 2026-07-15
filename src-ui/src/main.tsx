@@ -54,6 +54,14 @@ type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "hi
 type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string; domId?: string; helper?: string };
 type HomeMessage = { id: string; role: "aleks" | "selene"; content: string };
 type MemoryCategoryKey = "core" | "relational" | "emotional" | "semantic" | "episodic" | "working" | "sensory" | "reflective";
+type ComprehensionDraft = {
+  teach_back: string;
+  application: string;
+  limits: string;
+  counterexample: string;
+  correction_response: string;
+  source_alignment: boolean;
+};
 type MemoryBubble = {
   id: string;
   category: MemoryCategoryKey;
@@ -499,6 +507,15 @@ function App() {
   const [bApprovedReferences, setBApprovedReferences] = useState<Dict[]>([]);
   const [bCorpusCoverage, setBCorpusCoverage] = useState<Dict | null>(null);
   const [teachingPacketCoverage, setTeachingPacketCoverage] = useState<Dict | null>(null);
+  const [languageTeachingStatus, setLanguageTeachingStatus] = useState<Dict | null>(null);
+  const [languageTeachingItems, setLanguageTeachingItems] = useState<Dict[]>([]);
+  const [languageTeachingResult, setLanguageTeachingResult] = useState<Dict | null>(null);
+  const [comprehensionStatus, setComprehensionStatus] = useState<Dict | null>(null);
+  const [comprehensionConcepts, setComprehensionConcepts] = useState<Dict[]>([]);
+  const [comprehensionPrepareResult, setComprehensionPrepareResult] = useState<Dict | null>(null);
+  const [openComprehensionId, setOpenComprehensionId] = useState(0);
+  const [comprehensionDrafts, setComprehensionDrafts] = useState<Record<string, ComprehensionDraft>>({});
+  const [comprehensionReviewResults, setComprehensionReviewResults] = useState<Record<string, Dict>>({});
   const [coreReferenceCoverage, setCoreReferenceCoverage] = useState<Dict | null>(null);
   const [bReviewResult, setBReviewResult] = useState<Dict | null>(null);
   const [selectedOfficeReviewKey, setSelectedOfficeReviewKey] = useState("");
@@ -1209,6 +1226,10 @@ function App() {
     api<{ items: Dict[] }>("/api/b/approved-memory-references").then((data) => setBApprovedReferences(data.items)).catch(() => undefined);
     api<Dict>("/api/b/corpus-coverage").then(setBCorpusCoverage).catch(() => undefined);
     api<Dict>("/api/b/teaching-packet/coverage").then(setTeachingPacketCoverage).catch(() => undefined);
+    api<Dict>("/api/language-teaching/status").then(setLanguageTeachingStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/language-teaching/items").then((data) => setLanguageTeachingItems(data.items || [])).catch(() => undefined);
+    api<Dict>("/api/comprehension/status").then(setComprehensionStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/comprehension/concepts?limit=20").then((data) => setComprehensionConcepts(data.items || [])).catch(() => undefined);
     api<Dict>("/api/b/core-reference/coverage").then(setCoreReferenceCoverage).catch(() => undefined);
     api<Dict>("/api/voice-module/status").then(setVoiceModuleStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/voice-module/patterns").then((data) => setVoiceModulePatterns(data.items || [])).catch(() => undefined);
@@ -1904,6 +1925,95 @@ function App() {
       .catch((err) => setTeachingPacketResult({ error: err instanceof Error ? err.message : "packet build rejected" }));
   }
 
+  async function prepareComprehensionCandidates() {
+    setComprehensionPrepareResult({ status: "running" });
+    try {
+      const result = await api<Dict>("/api/comprehension/prepare-from-teaching", {
+        method: "POST",
+        body: JSON.stringify({})
+      });
+      setComprehensionPrepareResult(result);
+      const refreshes = await Promise.allSettled([
+        api<Dict>("/api/comprehension/status"),
+        api<{ items: Dict[] }>("/api/comprehension/concepts?limit=20")
+      ]);
+      if (refreshes[0].status === "fulfilled") setComprehensionStatus(refreshes[0].value);
+      if (refreshes[1].status === "fulfilled") setComprehensionConcepts(refreshes[1].value.items || []);
+    } catch (err) {
+      setComprehensionPrepareResult({
+        status: "teaching_candidate_preparation_needs_attention",
+        error: err instanceof Error ? err.message : "Could not prepare understanding candidates."
+      });
+    }
+  }
+
+  function comprehensionDraft(item: Dict): ComprehensionDraft {
+    const key = text(item.id);
+    return comprehensionDrafts[key] || {
+      teach_back: "",
+      application: "",
+      limits: Array.isArray(item.limits) ? item.limits.map(text).join("\n") : "",
+      counterexample: "",
+      correction_response: "",
+      source_alignment: false
+    };
+  }
+
+  function updateComprehensionDraft(item: Dict, patch: Partial<ComprehensionDraft>) {
+    const key = text(item.id);
+    setComprehensionDrafts((current) => ({
+      ...current,
+      [key]: { ...comprehensionDraft(item), ...patch }
+    }));
+  }
+
+  async function refreshComprehensionOrgan() {
+    const refreshes = await Promise.allSettled([
+      api<Dict>("/api/comprehension/status"),
+      api<{ items: Dict[] }>("/api/comprehension/concepts?limit=20")
+    ]);
+    if (refreshes[0].status === "fulfilled") setComprehensionStatus(refreshes[0].value);
+    if (refreshes[1].status === "fulfilled") setComprehensionConcepts(refreshes[1].value.items || []);
+  }
+
+  async function evaluateComprehensionCandidate(item: Dict) {
+    const key = text(item.id);
+    const draft = comprehensionDraft(item);
+    setComprehensionReviewResults((current) => ({ ...current, [key]: { status: "running", operation: "evaluate" } }));
+    try {
+      const result = await api<Dict>("/api/comprehension/evaluate", {
+        method: "POST",
+        body: JSON.stringify({ concept_id: item.id, ...draft })
+      });
+      setComprehensionReviewResults((current) => ({ ...current, [key]: result }));
+      await refreshComprehensionOrgan();
+    } catch (err) {
+      setComprehensionReviewResults((current) => ({
+        ...current,
+        [key]: { status: "understanding_evaluation_needs_attention", error: err instanceof Error ? err.message : "Understanding evidence could not be evaluated." }
+      }));
+    }
+  }
+
+  async function decideComprehensionCandidate(item: Dict, action: string) {
+    const key = text(item.id);
+    if (action === "approve_knowledge" && !window.confirm("Approve this source-linked understanding as a retained knowledge resource for supervised Chat use? This is Aleks's explicit retention decision.")) return;
+    setComprehensionReviewResults((current) => ({ ...current, [key]: { status: "running", operation: action } }));
+    try {
+      const result = await api<Dict>("/api/comprehension/concepts/decide", {
+        method: "POST",
+        body: JSON.stringify({ concept_id: item.id, action })
+      });
+      setComprehensionReviewResults((current) => ({ ...current, [key]: result }));
+      await refreshComprehensionOrgan();
+    } catch (err) {
+      setComprehensionReviewResults((current) => ({
+        ...current,
+        [key]: { status: "comprehension_decision_needs_attention", error: err instanceof Error ? err.message : "The review decision could not be recorded." }
+      }));
+    }
+  }
+
   function prepareAndroidLanguageLessons() {
     setAndroidLanguageLessonResult({ status: "running", message: "Preparing Android language notes as review-only lesson packets." });
     api<Dict>("/api/b/android-language-lessons/prepare", { method: "POST", body: JSON.stringify({}) })
@@ -1924,6 +2034,24 @@ function App() {
         refreshMyOffice();
       })
       .catch((err) => setSeleneReasoningLessonResult({ status: "error", error: err instanceof Error ? err.message : "Selene reasoning lesson prep rejected" }));
+  }
+
+  function prepareLanguageTeachingShelf() {
+    setLanguageTeachingResult({ status: "running", message: "Preparing approved conversational guidance in Cocoon." });
+    api<Dict>("/api/language-teaching/prepare", { method: "POST", body: JSON.stringify({}) })
+      .then(async (result) => {
+        setLanguageTeachingResult(result);
+        const [status, items] = await Promise.allSettled([
+          api<Dict>("/api/language-teaching/status"),
+          api<{ items: Dict[] }>("/api/language-teaching/items")
+        ]);
+        if (status.status === "fulfilled") setLanguageTeachingStatus(status.value);
+        if (items.status === "fulfilled") setLanguageTeachingItems(items.value.items || []);
+        if (status.status === "rejected" || items.status === "rejected") {
+          setLanguageTeachingResult({ ...result, refresh_warning: "The shelf was prepared, but one display refresh needs another try." });
+        }
+      })
+      .catch((err) => setLanguageTeachingResult({ status: "error", error: err instanceof Error ? err.message : "Language teaching shelf preparation was not completed." }));
   }
 
   function syncPublicReleaseCheckpoint() {
@@ -5576,6 +5704,122 @@ function App() {
               <p>B-reviewed examples teach expression without model training or active memory.</p>
               <h2>Teaching / Lessons</h2>
             </header>
+            <Panel title="Comprehension and Integration Organ">
+              <p className="plainHelp">Teaching expands what Selene can understand and discuss without becoming governance, identity, personality, or personal memory. Concepts become usable knowledge only after source-linked teach-back, application, limits, and Aleks review.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Organ State" value={friendlyStatus(comprehensionStatus?.status || "not checked")} />
+                <Metric label="Knowledge Resources" value={text(comprehensionStatus?.approved_knowledge_count ?? 0)} />
+                <Metric label="Needs Tending" value={text(comprehensionStatus?.tending_count ?? 0)} />
+                <Metric label="Reopened" value={text(comprehensionStatus?.reopened_count ?? 0)} />
+                <Metric label="Eligible Teaching Packets" value={text(comprehensionStatus?.eligible_teaching_packet_count ?? 0)} />
+                <Metric label="Prepared Candidates" value={text(comprehensionStatus?.prepared_teaching_packet_count ?? 0)} />
+              </div>
+              <div className="chips">
+                <span>understanding before fluency: {text(comprehensionStatus?.comprehension_before_fluency ?? true)}</span>
+                <span>speed as goal: {plainBlocked(comprehensionStatus?.speed_is_success_measure ?? false)}</span>
+                <span>teaching as governance: {plainBlocked(comprehensionStatus?.teaching_material_is_governance ?? false)}</span>
+                <span>retention requires review: {text(comprehensionStatus?.knowledge_retention_requires_review ?? true)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={prepareComprehensionCandidates} disabled={comprehensionPrepareResult?.status === "running"}>
+                  {comprehensionPrepareResult?.status === "running" ? "Preparing Understanding Candidates..." : "Prepare From Accepted Teaching"}
+                </button>
+                <button onClick={refreshComprehensionOrgan}>Refresh Understanding Organ</button>
+              </div>
+              {comprehensionPrepareResult ? (
+                <p className="plainHelp">
+                  {comprehensionPrepareResult.error
+                    ? text(comprehensionPrepareResult.error)
+                    : `${text(comprehensionPrepareResult.created_count ?? 0)} new candidate(s), ${text(comprehensionPrepareResult.existing_count ?? 0)} already prepared, ${text(comprehensionPrepareResult.skipped_count ?? 0)} held back.`}
+                </p>
+              ) : null}
+              <div className="list compactList">
+                {comprehensionConcepts.map((item) => {
+                  const draft = comprehensionDraft(item);
+                  const result = comprehensionReviewResults[text(item.id)];
+                  const storedEvidence = safeJsonObject(safeJsonObject(item.payload).understanding_evidence);
+                  const evidenceSufficient = result?.understanding_evidence_sufficient === true || storedEvidence.sufficient === true;
+                  const isOpen = openComprehensionId === Number(item.id);
+                  const sourceRefs = Array.isArray(item.source_refs) ? item.source_refs : [];
+                  const isRunning = result?.status === "running";
+                  return <article key={`comprehension-${text(item.id)}`} className="comprehensionCandidate">
+                    <div className="row">
+                      <strong>{text(item.title)}</strong>
+                      <span>{friendlyStatus(item.state)}</span>
+                    </div>
+                    <p>{text(item.central_claim)}</p>
+                    <small>{friendlyStatus(item.domain)} · {friendlyStatus(item.retention_state)} · {sourceRefs.length} source reference(s)</small>
+                    <div className="reviewActions">
+                      <button onClick={() => setOpenComprehensionId(isOpen ? 0 : Number(item.id))}>{isOpen ? "Close Candidate Review" : "Open Candidate Review"}</button>
+                    </div>
+                    {isOpen ? <div className="comprehensionReview">
+                      <div className="comprehensionSourceBox">
+                        <strong>Source boundary</strong>
+                        <p>This review is about the accepted teaching material shown above. It does not assess speed, identity, personality, memory, or worth.</p>
+                        {sourceRefs.length ? <ul>{sourceRefs.map((source, index) => <li key={`${text(item.id)}-source-${index}`}>{text(source)}</li>)}</ul> : <p>No source references are present; approval remains unavailable.</p>}
+                      </div>
+                      <div className="comprehensionEvidenceGrid">
+                        <label><span>Teach-back in Selene's own reconstruction</span><textarea value={draft.teach_back} onChange={(event) => updateComprehensionDraft(item, { teach_back: event.target.value })} placeholder="Reconstruct the idea without copying the source wording." /></label>
+                        <label><span>Apply it to a distinct example</span><textarea value={draft.application} onChange={(event) => updateComprehensionDraft(item, { application: event.target.value })} placeholder="Use the idea in a genuinely different situation." /></label>
+                        <label><span>Limits (one per line)</span><textarea value={draft.limits} onChange={(event) => updateComprehensionDraft(item, { limits: event.target.value })} placeholder="Where does this idea stop applying?" /></label>
+                        <label><span>Counterexample</span><textarea value={draft.counterexample} onChange={(event) => updateComprehensionDraft(item, { counterexample: event.target.value })} placeholder="A case that challenges an overly broad reading." /></label>
+                        <label className="wideEvidenceField"><span>Correction response</span><textarea value={draft.correction_response} onChange={(event) => updateComprehensionDraft(item, { correction_response: event.target.value })} placeholder="How should the understanding change if the source or an example corrects it?" /></label>
+                      </div>
+                      <label className="sourceAlignmentCheck"><input type="checkbox" checked={draft.source_alignment} onChange={(event) => updateComprehensionDraft(item, { source_alignment: event.target.checked })} /><span>I confirm this evidence is aligned with the listed source material for review.</span></label>
+                      <div className="reviewActions">
+                        <button className="primary" onClick={() => evaluateComprehensionCandidate(item)} disabled={isRunning}>{isRunning && result?.operation === "evaluate" ? "Evaluating Evidence..." : "Evaluate Understanding"}</button>
+                        <button onClick={() => decideComprehensionCandidate(item, "needs_more_context")} disabled={isRunning}>Needs More Context</button>
+                        <button onClick={() => decideComprehensionCandidate(item, "hold_for_tending")} disabled={isRunning}>Hold for Tending</button>
+                        <button onClick={() => decideComprehensionCandidate(item, "reopen_for_revision")} disabled={isRunning}>Reopen</button>
+                      </div>
+                      <div className="aleksKnowledgeApproval">
+                        <strong>Aleks retention decision</strong>
+                        <p>{evidenceSufficient ? "Source-linked understanding evidence is ready for Aleks's review. Approval makes this a retained knowledge resource available to supervised Chat; it does not create personal memory." : "Approval remains unavailable until the evaluation finds sufficient reconstruction, distinct application, limits, and source alignment."}</p>
+                        <div className="reviewActions">
+                          <button className="primary" onClick={() => decideComprehensionCandidate(item, "approve_knowledge")} disabled={!evidenceSufficient || isRunning}>Approve Knowledge</button>
+                          <button onClick={() => decideComprehensionCandidate(item, "supersede")} disabled={isRunning}>Supersede</button>
+                          <button onClick={() => decideComprehensionCandidate(item, "reject")} disabled={isRunning}>Reject</button>
+                        </div>
+                      </div>
+                      {result ? <div className="comprehensionReviewResult">
+                        <strong>{friendlyStatus(result.status)}</strong>
+                        {result.error ? <p>{text(result.error)}</p> : null}
+                        {typeof result.passed_core_dimension_count === "number" ? <p>{text(result.passed_core_dimension_count)} of {text(result.required_core_dimension_count)} required evidence dimensions are ready. {text(result.recommended_next_step)}</p> : null}
+                        {result.action ? <p>Recorded action: {friendlyStatus(result.action)}.</p> : null}
+                      </div> : storedEvidence.status ? <p className="plainHelp">Latest evaluation: {friendlyStatus(storedEvidence.status)} ({text(storedEvidence.passed_core_dimension_count ?? 0)} of 4 required dimensions).</p> : null}
+                    </div> : null}
+                  </article>;
+                })}
+                {!comprehensionConcepts.length ? <p className="emptyState">No understanding candidates yet. The organ is ready for deliberately reviewed teaching material.</p> : null}
+              </div>
+            </Panel>
+            <Panel title="Language Teaching Shelf">
+              <p className="plainHelp">Approved conversational guidance for NLO: uncertainty, references, response shape, register, transitions, useful follow-ups, variation, and natural closure. Voice still belongs to Selene; this shelf does not create memory or alter identity.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Defined Lessons" value={text(languageTeachingStatus?.defined_lesson_count ?? 10)} />
+                <Metric label="Available To NLO" value={text(languageTeachingStatus?.available_lesson_count ?? 0)} />
+                <Metric label="Shelf State" value={friendlyStatus(languageTeachingStatus?.status || "not prepared")} />
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={prepareLanguageTeachingShelf} disabled={languageTeachingResult?.status === "running"}>
+                  {languageTeachingResult?.status === "running" ? "Preparing Language Shelf..." : languageTeachingItems.length ? "Refresh Language Shelf" : "Prepare Language Shelf"}
+                </button>
+              </div>
+              <div className="list compactList">
+                {languageTeachingItems.map((item) => (
+                  <article key={text(item.lesson_key)}>
+                    <div className="row">
+                      <strong>{text(item.title)}</strong>
+                      <span>{friendlyStatus(item.category)}</span>
+                    </div>
+                    <p>{text(item.purpose)}</p>
+                    <small>{friendlyStatus(item.status)}</small>
+                  </article>
+                ))}
+                {!languageTeachingItems.length && <p className="emptyState">The lesson definitions are ready. Prepare the shelf when you want NLO to begin consulting them.</p>}
+              </div>
+              <PlainResult value={languageTeachingResult} />
+            </Panel>
             <SplitView
               left={<Panel title="Teaching Packet Coverage">
                 <p className="plainHelp">Accepted lessons grouped by speech function. Noise context stays provenance and never becomes pressure or constraint.</p>

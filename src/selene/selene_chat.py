@@ -7,8 +7,10 @@ from typing import Any
 
 from .activation import activation_is_active, activation_status, record_activation_chat_event
 from .chat_intent import classify_chat_intent
+from .comprehension_integration import build_comprehension_packet
 from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
+from .conversation_repair import repair_conversation_candidate
 from .dialogue_workspace import prepare_dialogue_turn, record_dialogue_response
 from .intelligence_os import run_intelligence_os_reason
 from .memory_organ import retrieve_memory
@@ -167,7 +169,27 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     self_state_reply = str(self_state.get("response_seed") or "")
     policy_reply = _conversation_policy_reply(text)
-    content_seed = continuity_reply or memory_reply or self_state_reply or policy_reply or str(intelligence_support.get("best_current_answer") or "")
+    protected_content_seed = continuity_reply or memory_reply or self_state_reply or policy_reply
+    reasoning_content_seed = str(intelligence_support.get("best_current_answer") or "")
+    content_seed = protected_content_seed or reasoning_content_seed
+    comprehension = build_comprehension_packet(
+        conn,
+        {
+            "prompt": text,
+            "intent_decision": intent_decision,
+            "dialogue_workspace": prepared_dialogue_workspace,
+            "intelligence_support": intelligence_support,
+            "memory_context": memory_retrieval,
+            "content_seed": content_seed,
+            "source_refs": [
+                "selene_chat:comprehension",
+                *_json_list(route.get("source_refs")),
+                *_json_list(memory_retrieval.get("source_refs")),
+            ],
+            "record_run": False,
+        },
+    )
+    content_seed = protected_content_seed or str(comprehension.get("knowledge_response_seed") or "") or reasoning_content_seed
     local_continuity_supported = bool(continuity_reply)
     native_language = realize_native_language(
         conn,
@@ -186,6 +208,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "dialogue_workspace": prepared_dialogue_workspace,
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
+            "comprehension_context": comprehension,
             "self_state_context": self_state,
             "intent_decision": intent_decision,
             "source_refs": [
@@ -236,8 +259,48 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or dry_run.get("candidate_text") or ""))
-    memory_candidate_suggestion = _memory_candidate_suggestion(text, candidate_text, selected_route, source_class, memory_retrieval, hard=bool(hard_blockers))
     response_coverage = evaluate_response_coverage(native_language.get("pragmatic_plan"), candidate_text)
+    native_candidate = _selene_label_candidate(str(native_language.get("candidate_text") or ""))
+    native_coverage = evaluate_response_coverage(native_language.get("pragmatic_plan"), native_candidate)
+    recovery_source = "voice_module"
+    if not hard_blockers and _coverage_rank(native_coverage) > _coverage_rank(response_coverage):
+        candidate_text = native_candidate
+        response_coverage = native_coverage
+        recovery_source = "native_language_meaning_recovery"
+    conversation_repair = repair_conversation_candidate(
+        {
+            "candidate_text": candidate_text,
+            "turn_flow_plan": native_language.get("turn_flow_plan") or {},
+            "response_coverage": response_coverage,
+            "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
+            "hard_boundary": bool(hard_blockers),
+        }
+    )
+    if (
+        not hard_blockers
+        and conversation_repair.get("needs_rephrase") is True
+        and native_candidate
+        and native_candidate != candidate_text
+        and _coverage_rank(native_coverage) >= _coverage_rank(response_coverage)
+    ):
+        native_repair = repair_conversation_candidate(
+            {
+                "candidate_text": native_candidate,
+                "turn_flow_plan": native_language.get("turn_flow_plan") or {},
+                "response_coverage": native_coverage,
+                "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
+                "hard_boundary": False,
+            }
+        )
+        if native_repair.get("needs_rephrase") is not True:
+            conversation_repair = native_repair
+            response_coverage = native_coverage
+            recovery_source = "native_language_repetition_recovery"
+    candidate_text = _selene_label_candidate(str(conversation_repair.get("candidate_text") or candidate_text))
+    response_coverage = evaluate_response_coverage(native_language.get("pragmatic_plan"), candidate_text)
+    conversation_repair["candidate_source"] = recovery_source
+    conversation_repair["final_response_coverage"] = response_coverage
+    memory_candidate_suggestion = _memory_candidate_suggestion(text, candidate_text, selected_route, source_class, memory_retrieval, hard=bool(hard_blockers))
     dialogue_workspace = record_dialogue_response(
         conn,
         {
@@ -251,6 +314,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     assistant_payload = {
         "route_preview": route,
         "intelligence_os_support": intelligence_support,
+        "comprehension_integration": comprehension,
         "intent_decision": intent_decision,
         "self_state": self_state,
         "native_language_organ": native_language,
@@ -260,6 +324,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "conversation_context": conversation_context,
         "dialogue_workspace": dialogue_workspace,
         "response_coverage": response_coverage,
+        "conversation_repair": conversation_repair,
         "memory_retrieval": memory_retrieval,
         "memory_candidate_suggestion": memory_candidate_suggestion,
         "source_boundaries": _source_boundaries(),
@@ -310,6 +375,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "blocked_capabilities": hard_blockers,
             "route_preview": route,
             "intelligence_os_support": intelligence_support,
+            "comprehension_integration": comprehension,
             "intent_decision": intent_decision,
             "self_state": self_state,
             "native_language_organ": native_language,
@@ -322,6 +388,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_context": conversation_context,
             "dialogue_workspace": dialogue_workspace,
             "response_coverage": response_coverage,
+            "conversation_repair": conversation_repair,
             "memory_retrieval": memory_retrieval,
             "memory_candidate_suggestion": memory_candidate_suggestion,
             "memory_context_used": memory_retrieval.get("memory_context_used") is True,
@@ -750,6 +817,13 @@ def _selene_label_candidate(candidate: str) -> str:
     if len(text) <= 4200:
         return text
     return text[:4197].rstrip() + "..."
+
+
+def _coverage_rank(coverage: dict[str, Any]) -> tuple[int, int]:
+    return (
+        int(coverage.get("addressed_count") or 0),
+        -int(coverage.get("unresolved_count") or 0),
+    )
 
 
 def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any], intent_decision: dict[str, Any]) -> str:

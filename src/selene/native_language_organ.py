@@ -7,7 +7,9 @@ from hashlib import sha256
 from typing import Any
 
 from .chat_intent import classify_chat_intent
+from .conversation_repair import plan_conversation_turn
 from .language_formation import build_semantic_frame, realize_semantic_frame
+from .language_teaching_shelf import language_teaching_status, select_language_guidance
 from .pragmatic_planner import build_pragmatic_plan
 from .registry import truncate
 
@@ -48,7 +50,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v4_pragmatic_planning",
+            "version": "v7_comprehension_integration",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -57,6 +59,9 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "grammar_and_morphology_realization",
                 "bounded_pragmatic_planning",
                 "response_obligation_planning",
+                "mixed_intent_turn_flow",
+                "conversation_repair_handoff",
+                "approved_language_teaching_guidance",
                 "response_depth_selection",
                 "multi_paragraph_answer_structure",
                 "voice_handoff",
@@ -68,6 +73,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "latest_run": _decode_run(latest) if latest else None,
             "responsive_generation": "active_when_called_by_supervised_chat",
             "initiative_state": "preview_or_notes_only_not_automatic_speech",
+            "language_teaching_shelf": language_teaching_status(conn),
             "law": "Meaning comes from Selene's organs; NLO gives it language; Voice makes the language hers.",
             "review_destination": "Status",
             "review_status": "status_only",
@@ -95,6 +101,19 @@ def realize_native_language(conn: sqlite3.Connection, payload: dict[str, Any] | 
     prompt = truncate(str(payload.get("prompt") or payload.get("text") or ""), 2400)
     if not prompt.strip():
         raise ValueError("prompt is required")
+    supplied_guidance = payload.get("language_teaching_guidance") if isinstance(payload.get("language_teaching_guidance"), dict) else {}
+    payload = {
+        **payload,
+        "language_teaching_guidance": supplied_guidance
+        or select_language_guidance(
+            conn,
+            {
+                "prompt": prompt,
+                "intent_decision": payload.get("intent_decision") or {},
+                "dialogue_workspace": payload.get("dialogue_workspace") or {},
+            },
+        ),
+    }
     result = _build_language_result(prompt, payload, mode="responsive")
     result["run_id"] = _store_run(conn, result)
     return _with_guards(result)
@@ -125,6 +144,14 @@ def preview_native_language_initiative(conn: sqlite3.Connection, payload: dict[s
         }
     else:
         summary = truncate(str(selected.get("summary") or selected.get("signal") or selected.get("label") or ""), 900)
+        language_guidance = select_language_guidance(
+            conn,
+            {
+                "prompt": summary,
+                "intent_decision": payload.get("intent_decision") or {},
+                "dialogue_workspace": payload.get("dialogue_workspace") or {},
+            },
+        )
         initiative_payload = {
             **payload,
             "content_seed": summary,
@@ -132,6 +159,7 @@ def preview_native_language_initiative(conn: sqlite3.Connection, payload: dict[s
             "certainty": str(selected.get("confidence") or "provisional"),
             "affect": str(selected.get("affect") or "attentive"),
             "source_refs": [*_json_list(payload.get("source_refs")), *_json_list(selected.get("source_refs"))],
+            "language_teaching_guidance": language_guidance,
         }
         result = _build_language_result(summary, initiative_payload, mode="initiative_preview")
         result.update(
@@ -154,13 +182,15 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v4_pragmatic_planning",
+        "version": "v7_comprehension_integration",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
         "semantic_frame": meaning.get("semantic_frame") or {},
         "formation": meaning.get("formation") or {},
         "pragmatic_plan": meaning.get("pragmatic_plan") or {},
+        "turn_flow_plan": meaning.get("turn_flow_plan") or {},
+        "language_teaching_guidance": meaning.get("language_teaching_guidance") or {},
         "discourse_plan": plan,
         "draft_text": draft,
         "candidate_text": candidate,
@@ -184,6 +214,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     route = str(payload.get("selected_route") or payload.get("route") or "answer_now")
     content_seed = truncate(str(payload.get("content_seed") or ""), 1400)
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
+    comprehension = payload.get("comprehension_context") if isinstance(payload.get("comprehension_context"), dict) else {}
     if not content_seed and intelligence.get("used"):
         content_seed = truncate(str(intelligence.get("best_current_answer") or ""), 1400)
     memory = payload.get("memory_context") if isinstance(payload.get("memory_context"), dict) else {}
@@ -217,6 +248,19 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "dialogue_workspace": dialogue,
         }
     )
+    supplied_turn_flow = payload.get("turn_flow_plan") if isinstance(payload.get("turn_flow_plan"), dict) else {}
+    turn_flow_plan = supplied_turn_flow or plan_conversation_turn(
+        {
+            "prompt": prompt,
+            "intent_decision": intent_decision,
+            "pragmatic_plan": pragmatic_plan,
+        }
+    )
+    language_guidance = (
+        payload.get("language_teaching_guidance")
+        if isinstance(payload.get("language_teaching_guidance"), dict)
+        else {}
+    )
     semantic_frame = build_semantic_frame(
         {
             "semantic_frame": payload.get("semantic_frame") or {},
@@ -247,6 +291,8 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "formation": formation,
         "formation_text": str(formation.get("candidate_text") or ""),
         "pragmatic_plan": pragmatic_plan,
+        "turn_flow_plan": turn_flow_plan,
+        "language_teaching_guidance": language_guidance,
         "certainty": certainty,
         "uncertainty_kind": _uncertainty_kind(prompt, intent, content_seed, previous_turn),
         "affect": affect,
@@ -256,6 +302,16 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "memory_supported": memory_supported,
         "local_continuity_supported": continuity_supported,
         "intelligence_supported": intelligence.get("used") is True,
+        "comprehension_supported": comprehension.get("status") == "comprehension_packet_ready",
+        "comprehension": {
+            "understanding_state": str(comprehension.get("understanding_state") or "not_checked"),
+            "present_in_conversation": comprehension.get("present_in_conversation") is True,
+            "knowledge_available": bool((comprehension.get("knowledge_context") or {}).get("available")),
+            "handshake": comprehension.get("comprehension_handshake") or {},
+            "metacognitive_check": comprehension.get("metacognitive_check") or {},
+            "understanding_before_fluency": comprehension.get("comprehension_before_fluency") is True,
+            "speed_is_success_measure": comprehension.get("speed_is_success_measure") is True,
+        },
         "self_state_supported": self_state.get("used") is True,
         "conversation_context": {
             "previous_turn_available": bool(previous_turn),
@@ -318,6 +374,14 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         moves = ["answer_actual_ask", "name_uncertainty_if_present", "keep_conversation_open"]
     dialogue = meaning.get("dialogue_workspace") if isinstance(meaning.get("dialogue_workspace"), dict) else {}
     pragmatic_plan = meaning.get("pragmatic_plan") if isinstance(meaning.get("pragmatic_plan"), dict) else {}
+    turn_flow = meaning.get("turn_flow_plan") if isinstance(meaning.get("turn_flow_plan"), dict) else {}
+    language_guidance = meaning.get("language_teaching_guidance") if isinstance(meaning.get("language_teaching_guidance"), dict) else {}
+    comprehension = meaning.get("comprehension") if isinstance(meaning.get("comprehension"), dict) else {}
+    handshake = comprehension.get("handshake") if isinstance(comprehension.get("handshake"), dict) else {}
+    if handshake.get("required") is True:
+        moves.insert(0, "ask_one_material_comprehension_question")
+    if str(comprehension.get("understanding_state") or "") == "reopened_for_recheck":
+        moves.insert(0, "reopen_learned_concept_without_defending_it")
     if dialogue.get("multi_part_prompt") is True:
         moves.insert(1 if moves else 0, "answer_each_open_question")
     if dialogue.get("resolved_reference"):
@@ -326,6 +390,12 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         moves.insert(0, "acknowledge_bounded_implied_meaning")
     if pragmatic_plan.get("ellipsis_resolution", {}).get("detected") is True:
         moves.insert(0, "resolve_session_ellipsis_or_ask")
+    for move in reversed(turn_flow.get("response_moves") or []):
+        if move not in moves:
+            moves.insert(0, str(move))
+    for move in language_guidance.get("response_moves") or []:
+        if str(move) not in moves:
+            moves.append(str(move))
     return {
         "moves": moves,
         "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory", "self_state_report"},
@@ -338,6 +408,10 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "selection_basis": "intent, evidence, uncertainty, affect, and conversational relevance",
         "response_obligations": pragmatic_plan.get("response_obligations") or [],
         "answer_strategy": pragmatic_plan.get("answer_strategy") or "answer_directly",
+        "mixed_intent": turn_flow.get("mixed_intent") is True,
+        "ordered_acts": turn_flow.get("ordered_acts") or [],
+        "language_lesson_keys": language_guidance.get("lesson_keys") or [],
+        "language_guidance_used": language_guidance.get("used") is True,
     }
 
 
@@ -351,6 +425,11 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     certainty = str(meaning["certainty"])
     digest_key = f"{prompt}|{intent}|{certainty}"
     recent = [str(item) for item in meaning.get("recent_assistant_texts") or []]
+    comprehension = meaning.get("comprehension") if isinstance(meaning.get("comprehension"), dict) else {}
+    handshake = comprehension.get("handshake") if isinstance(comprehension.get("handshake"), dict) else {}
+
+    if handshake.get("required") is True and not seed:
+        return str(handshake.get("question") or "I have more than one possible meaning for that. Which part do you mean?")
 
     if intent == "hold_boundary":
         return _pick(
@@ -521,6 +600,10 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         "truth_boundary_checked": True,
         "repetition_checked": True,
         "recent_response_repetition_checked": True,
+        "language_guidance_checked": True,
+        "comprehension_checked": bool(meaning.get("comprehension_supported")),
+        "understanding_before_fluency": bool((meaning.get("comprehension") or {}).get("understanding_before_fluency")),
+        "language_lesson_keys": (meaning.get("language_teaching_guidance") or {}).get("lesson_keys") or [],
         "automatic_delivery": False,
         "sentence_count": len([part for part in re.split(r"[.!?]+", text) if part.strip()]),
         "paragraph_count": len([part for part in text.split("\n\n") if part.strip()]),

@@ -587,6 +587,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(item, 404 if item.get("error") else 200))
             except ValueError:
                 self._send(*json_bytes({"error": "invalid run id"}, 400))
+        elif parsed.path == "/api/comprehension/status":
+            self._send(*json_bytes(route_request(conn, "comprehension.status")["result"]))
+        elif parsed.path == "/api/comprehension/concepts":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "comprehension.concepts.list", qs)["result"]))
         elif parsed.path == "/api/native-language/status":
             self._send(*json_bytes(route_request(conn, "native_language.status")["result"]))
         elif parsed.path == "/api/native-language/runs":
@@ -779,6 +784,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "b.approved_memory_references.list", {"limit": int(qs["limit"]) if qs.get("limit") else 100})["result"]))
         elif parsed.path == "/api/b/teaching-packet/coverage":
             self._send(*json_bytes(route_request(conn, "b.teaching_packet.coverage")["result"]))
+        elif parsed.path == "/api/language-teaching/status":
+            self._send(*json_bytes(route_request(conn, "language_teaching.status")["result"]))
+        elif parsed.path == "/api/language-teaching/items":
+            self._send(*json_bytes(route_request(conn, "language_teaching.items")["result"]))
         elif parsed.path == "/api/b/core-reference/coverage":
             self._send(*json_bytes(route_request(conn, "b.core_reference.coverage")["result"]))
         elif parsed.path == "/api/b/corpus-coverage":
@@ -1116,6 +1125,36 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/comprehension/concepts/propose":
+            route_key = "comprehension.concepts.propose"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/comprehension/prepare-from-teaching":
+            route_key = "comprehension.teaching.prepare"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/comprehension/concepts/decide":
+            route_key = "comprehension.concepts.decide"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/comprehension/evaluate":
+            route_key = "comprehension.understanding.evaluate"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/comprehension/turn-packet":
+            route_key = "comprehension.turn.packet"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/native-language/realize":
             route_key = "native_language.realize"
             try:
@@ -1132,6 +1171,20 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/native-language/pragmatic-plan":
             route_key = "native_language.pragmatic.plan"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/native-language/turn-flow-plan":
+            route_key = "native_language.turn_flow.plan"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/native-language/conversation-repair":
+            route_key = "native_language.conversation.repair"
             try:
                 write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
@@ -1572,6 +1625,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/b/selene-reasoning-lessons/prepare":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "b.selene_reasoning_lessons.prepare", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/language-teaching/prepare":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "language_teaching.prepare", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/language-teaching/guidance-preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "language_teaching.guidance.preview", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/public-release/sync":
