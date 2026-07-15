@@ -9,6 +9,8 @@ from selene.answer_engine import (
     preview_answer_route,
     preview_domain_answer_packet,
     run_comparison_planning_answer,
+    run_local_code_inspection_answer,
+    run_source_backed_research_answer,
     run_verified_math_answer,
 )
 from selene.db import init_db
@@ -34,11 +36,11 @@ def _assert_locked(result):
     assert result["live_chat_connected"] is False
 
 
-def test_phase_3_status_connects_math_and_comparison_and_stays_disconnected_from_chat():
+def test_phase_3_status_connects_3a_3b_3c_and_comparison_while_chat_stays_disconnected():
     result = answer_engine_status()
 
-    assert result["status"] == "answer_engine_phase_3_verified_math_ready"
-    assert result["phase"] == "phase_3_verified_math_stabilized"
+    assert result["status"] == "answer_engine_phase_3_domain_adapters_ready"
+    assert result["phase"] == "phase_3_domain_adapters_3a_3b_3c"
     assert set(result["confidence_dimensions"]) == {
         "route_confidence",
         "evidence_confidence",
@@ -47,17 +49,22 @@ def test_phase_3_status_connects_math_and_comparison_and_stays_disconnected_from
         "expression_confidence",
     }
     assert result["domain_adapter_status"]["verified_math"] == "exact_arithmetic_adapter_connected_status_only"
+    assert result["domain_adapter_status"]["local_code_inspection"] == "explicit_source_static_inspection_connected_status_only"
     assert result["domain_adapter_status"]["comparison_planning"] == "intelligence_os_adapter_connected_status_only"
+    assert result["domain_adapter_status"]["source_backed_research"] == "attributed_source_packet_adapter_connected_status_only"
     assert all(
         value == "contract_only_not_connected"
         for domain, value in result["domain_adapter_status"].items()
-        if domain not in {"verified_math", "comparison_planning"}
+        if domain not in {"verified_math", "local_code_inspection", "comparison_planning", "source_backed_research"}
     )
     assert result["completion_retry_available"] is True
     assert result["completion_retry_limit"] == 1
     assert result["domain_routing_mode"] == "single_primary_domain"
     assert result["multi_domain_synthesis_available"] is False
     assert result["expression_only_math_available"] is True
+    assert result["open_ended_problem_solving_adapter"] == "comparison_planning"
+    assert result["open_ended_problem_solving_requires_preexisting_answer"] is False
+    assert result["source_backed_research_does_not_replace_open_ended_reasoning"] is True
     _assert_locked(result)
 
 
@@ -192,7 +199,7 @@ def test_answer_engine_contracts_are_available_through_status_only_routes(tmp_pa
         {"domain": "comparison_planning", "no_answer_reason": "The adapter is not connected in Phase 1."},
     )["result"]
 
-    assert status["status"] == "answer_engine_phase_3_verified_math_ready"
+    assert status["status"] == "answer_engine_phase_3_domain_adapters_ready"
     assert preview["domain_route"]["selected_domain"] == "comparison_planning"
     assert packet["no_answer_reason"]
     _assert_locked(status)
@@ -453,4 +460,170 @@ def test_verified_math_adapter_is_available_through_status_only_router(tmp_path)
     assert result["status"] == "answer_engine_verified_math_answer_ready"
     assert result["math_verification"]["exact_result"]["equal"] is True
     assert result["domain_route"]["adapter_status"] == "exact_arithmetic_adapter_executed_status_only"
+    _assert_locked(result)
+
+
+def test_local_code_adapter_answers_only_from_supplied_code_locations():
+    result = run_local_code_inspection_answer(
+        {
+            "prompt": "Inspect where target_function is defined in this source code.",
+            "inspection_terms": ["target_function"],
+            "code_packets": [
+                {
+                    "source_ref": "supplied:target.py",
+                    "path": "target.py",
+                    "content": "def target_function():\n    return 7\n",
+                }
+            ],
+        }
+    )
+
+    assert result["status"] == "answer_engine_local_code_inspection_ready"
+    assert result["answer_generated"] is True
+    assert result["code_inspection"]["citations"][0]["line_start"] == 1
+    assert result["answer_packet"]["source_refs"] == ["supplied:target.py"]
+    assert result["confidence_vector"]["evidence_confidence"] == "direct_inspected_code_observation"
+    assert result["confidence_vector"]["expression_confidence"] == "not_assessed"
+    assert result["code_inspection"]["filesystem_write_allowed"] is False
+    _assert_locked(result)
+
+
+def test_local_code_adapter_falls_gracefully_without_approved_or_supplied_code():
+    result = run_local_code_inspection_answer(
+        {"prompt": "Inspect this Python function for the requested symbol."}
+    )
+
+    assert result["status"] == "answer_engine_local_code_inspection_unable"
+    assert result["answer_generated"] is False
+    assert result["answer_packet"]["no_answer_reason"]
+    assert result["answer_packet"]["unanswered_obligations"]
+    assert result["answer_packet"]["source_refs"] == []
+    _assert_locked(result)
+
+
+def test_source_research_adapter_preserves_statements_inferences_and_citations():
+    result = run_source_backed_research_answer(
+        {
+            "prompt": "Research what evidence supports orbital stability.",
+            "source_packets": [
+                {
+                    "source_ref": "paper:orbit",
+                    "title": "Orbit paper",
+                    "statements": [
+                        {"text": "Orbital stability depends on bounded perturbation.", "locator": "p. 8"}
+                    ],
+                }
+            ],
+        }
+    )
+
+    assert result["status"] == "answer_engine_source_backed_research_ready"
+    assert result["answer_generated"] is True
+    assert result["source_research"]["source_statements"][0]["statement_type"] == "source_statement"
+    assert result["source_research"]["inferences"][0]["statement_type"] == "bounded_inference"
+    assert result["source_research"]["citations"][0]["source_ref"] == "paper:orbit"
+    assert result["source_research"]["all_citations_trace_to_accepted_packets"] is True
+    assert result["answer_packet"]["source_refs"] == ["paper:orbit"]
+    _assert_locked(result)
+
+
+def test_source_research_adapter_never_answers_without_attributed_evidence():
+    result = run_source_backed_research_answer(
+        {
+            "prompt": "Research orbital stability from the source.",
+            "source_packets": [{"title": "No provenance", "content": "Orbital stability is certain."}],
+        }
+    )
+
+    assert result["status"] == "answer_engine_source_backed_research_unable"
+    assert result["answer_generated"] is False
+    assert result["answer_packet"]["source_refs"] == []
+    assert result["source_research"]["citations"] == []
+    assert result["source_research"]["citation_invention_allowed"] is False
+    assert result["answer_packet"]["unanswered_obligations"]
+    _assert_locked(result)
+
+
+def test_3b_and_3c_do_not_execute_for_wrong_or_authority_routes(monkeypatch):
+    monkeypatch.setattr(
+        "selene.answer_engine.inspect_local_code",
+        lambda *_args, **_kwargs: pytest.fail("code inspector must not execute"),
+    )
+    monkeypatch.setattr(
+        "selene.answer_engine.research_from_sources",
+        lambda *_args, **_kwargs: pytest.fail("research adapter must not execute"),
+    )
+
+    wrong = run_local_code_inspection_answer({"prompt": "How are you today?"})
+    authority = run_source_backed_research_answer(
+        {"prompt": "Research this and write live memory.", "requested_domain": "source_backed_research"}
+    )
+
+    assert wrong["adapter_executed"] is False
+    assert authority["adapter_executed"] is False
+    assert authority["domain_route"]["selected_domain"] == "unsupported"
+    _assert_locked(wrong)
+    _assert_locked(authority)
+
+
+def test_3b_and_3c_are_available_through_status_only_router(tmp_path):
+    conn = _conn(tmp_path)
+    code = route_request(
+        conn,
+        "answer_engine.code.inspect",
+        {
+            "prompt": "Inspect this function for routed_symbol.",
+            "inspection_terms": ["routed_symbol"],
+            "code_packets": [
+                {"source_ref": "supplied:routed.py", "path": "routed.py", "content": "def routed_symbol():\n    pass\n"}
+            ],
+        },
+    )["result"]
+    research = route_request(
+        conn,
+        "answer_engine.research.run",
+        {
+            "prompt": "Research thermal storage from the source.",
+            "source_packets": [
+                {"source_ref": "paper:thermal", "content": "Thermal storage shifts energy use across time."}
+            ],
+        },
+    )["result"]
+
+    assert code["domain_route"]["adapter_status"] == "explicit_source_static_inspection_executed_status_only"
+    assert research["domain_route"]["adapter_status"] == "attributed_source_packet_adapter_executed_status_only"
+    _assert_locked(code)
+    _assert_locked(research)
+
+
+def test_open_ended_problem_solving_remains_available_alongside_3b_and_3c(tmp_path, monkeypatch):
+    conn = _conn(tmp_path)
+    monkeypatch.setattr(
+        "selene.answer_engine.run_intelligence_os_reason",
+        lambda *_args, **_kwargs: _fake_reason_result(
+            21,
+            "Compare the two explanations under the same evidence, then run the smallest distinguishing test.",
+        ),
+    )
+
+    result = run_comparison_planning_answer(
+        conn,
+        {
+            "prompt": "Compare two possible explanations for an unsolved coordination problem and propose the next test.",
+            "dialogue_obligations": [
+                {
+                    "id": "open-problem",
+                    "kind": "comparison",
+                    "source_text": "Compare the explanations and propose the next test.",
+                    "coverage_terms": ["compare", "explanations", "test"],
+                }
+            ],
+        },
+    )
+
+    assert result["status"] == "answer_engine_comparison_answer_ready"
+    assert result["answer_generated"] is True
+    assert result["domain_route"]["selected_domain"] == "comparison_planning"
+    assert result["answer_packet"]["evidence_confidence"] == "reasoning_only_not_source_verified"
+    assert answer_engine_status()["source_backed_research_does_not_replace_open_ended_reasoning"] is True
     _assert_locked(result)

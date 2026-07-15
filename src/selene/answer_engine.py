@@ -6,8 +6,10 @@ from hashlib import sha256
 from typing import Any
 
 from .intelligence_os import run_intelligence_os_reason
+from .local_code_inspection import inspect_local_code
 from .pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
 from .registry import truncate
+from .source_backed_research import research_from_sources
 from .verified_math import verify_bounded_math
 
 
@@ -58,12 +60,14 @@ AUTHORITY_MARKERS = (
 def answer_engine_status() -> dict[str, Any]:
     adapter_status = {domain: "contract_only_not_connected" for domain in DOMAINS}
     adapter_status["verified_math"] = "exact_arithmetic_adapter_connected_status_only"
+    adapter_status["local_code_inspection"] = "explicit_source_static_inspection_connected_status_only"
     adapter_status["comparison_planning"] = "intelligence_os_adapter_connected_status_only"
+    adapter_status["source_backed_research"] = "attributed_source_packet_adapter_connected_status_only"
     return _with_guards(
         {
-            "status": "answer_engine_phase_3_verified_math_ready",
-            "version": "v3_1_verified_math_stabilized",
-            "phase": "phase_3_verified_math_stabilized",
+            "status": "answer_engine_phase_3_domain_adapters_ready",
+            "version": "v3_3_math_code_research_and_comparison",
+            "phase": "phase_3_domain_adapters_3a_3b_3c",
             "domains": list(DOMAINS),
             "domain_adapter_status": adapter_status,
             "confidence_dimensions": [
@@ -84,6 +88,11 @@ def answer_engine_status() -> dict[str, Any]:
             "nlo_expression_owner": True,
             "voice_style_owner": True,
             "great_library_external": True,
+            "great_library_research_default_enabled": False,
+            "great_library_research_requires_separate_enable": True,
+            "open_ended_problem_solving_adapter": "comparison_planning",
+            "open_ended_problem_solving_requires_preexisting_answer": False,
+            "source_backed_research_does_not_replace_open_ended_reasoning": True,
             "review_status": "status_only",
             "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
         }
@@ -328,6 +337,161 @@ def run_verified_math_answer(payload: dict[str, Any] | None = None) -> dict[str,
             "answer_packet": packet,
             "confidence_vector": confidence,
             "math_verification": verification,
+            "completion_retry": _completion_retry_result(False, 0, [], enabled=False),
+            "adapter_executed": True,
+            "answer_generated": bool(direct_answer),
+            "visible_summary_only": True,
+            "hidden_chain_of_thought_exposed": False,
+            "review_status": "status_only",
+            "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
+        }
+    )
+
+
+def run_local_code_inspection_answer(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Run bounded static inspection over only supplied or approved code sources."""
+    payload = payload or {}
+    request = build_answer_request(payload)
+    route = _select_domain(request)
+    if route["selected_domain"] != "local_code_inspection":
+        return _adapter_not_available(request, route, "local_code_inspection")
+    request = _ensure_domain_request_obligation(request, "local_code_inspection")
+    inspection = inspect_local_code(
+        {
+            "prompt": request["prompt"],
+            "inspection_terms": payload.get("inspection_terms"),
+            "code_packets": payload.get("code_packets") or [],
+            "approved_workspace_files": payload.get("approved_workspace_files") or [],
+        }
+    )
+    inspected = inspection.get("inspected") is True
+    direct_answer = str(inspection.get("result_summary") or "").strip() if inspected else ""
+    no_answer_reason = "" if inspected else str(inspection.get("no_answer_reason") or "").strip()
+    supporting = [
+        str(item.get("observation") or "")
+        for item in inspection.get("observations") or []
+        if item.get("observation")
+    ]
+    supporting.extend(
+        f"Interpretation: {item['interpretation']}"
+        for item in inspection.get("interpretations") or []
+        if item.get("interpretation")
+    )
+    packet = _domain_answer_packet(
+        {
+            "request_id": request["request_id"],
+            "domain": "local_code_inspection",
+            "direct_answer": direct_answer,
+            "no_answer_reason": no_answer_reason,
+            "supporting_claims": supporting,
+            "source_refs": inspection.get("source_refs") or [],
+            "assumptions": inspection.get("assumptions") or [],
+            "limitations": inspection.get("limitations") or [],
+            "unanswered_obligations": [] if inspected else request["dialogue_obligations"],
+            "what_would_change_the_answer": [
+                "Additional explicitly supplied code or exact approved workspace files.",
+                "Runtime evidence when the question concerns behavior not established by static inspection.",
+            ],
+            "evidence_confidence": inspection["evidence_confidence"],
+            "answer_confidence": inspection["answer_confidence"],
+        },
+        adapter_executed=True,
+        contract_preview=False,
+    )
+    confidence = build_confidence_vector(
+        request,
+        route_confidence=route["route_confidence"],
+        route_basis=route["selection_basis"],
+        evidence_confidence=inspection["evidence_confidence"],
+        answer_confidence=inspection["answer_confidence"],
+        expression_confidence="not_assessed",
+    )
+    return _with_guards(
+        {
+            "status": (
+                "answer_engine_local_code_inspection_ready"
+                if inspected
+                else "answer_engine_local_code_inspection_unable"
+            ),
+            "request": request,
+            "domain_route": {**route, "adapter_status": "explicit_source_static_inspection_executed_status_only"},
+            "answer_packet": packet,
+            "confidence_vector": confidence,
+            "code_inspection": inspection,
+            "completion_retry": _completion_retry_result(False, 0, [], enabled=False),
+            "adapter_executed": True,
+            "answer_generated": bool(direct_answer),
+            "visible_summary_only": True,
+            "hidden_chain_of_thought_exposed": False,
+            "review_status": "status_only",
+            "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
+        }
+    )
+
+
+def run_source_backed_research_answer(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Run bounded research over attributed packets and optional external Library observation."""
+    payload = payload or {}
+    request = build_answer_request(payload)
+    route = _select_domain(request)
+    if route["selected_domain"] != "source_backed_research":
+        return _adapter_not_available(request, route, "source_backed_research")
+    request = _ensure_domain_request_obligation(request, "source_backed_research")
+    research = research_from_sources(
+        {
+            "prompt": request["prompt"],
+            "source_packets": request["source_packets"],
+            "consult_great_library": payload.get("consult_great_library") is True,
+        }
+    )
+    answered = research.get("answered") is True
+    direct_answer = str(research.get("result_summary") or "").strip() if answered else ""
+    no_answer_reason = "" if answered else str(research.get("no_answer_reason") or "").strip()
+    supporting = [
+        f"[{item['source_ref']} @ {item['locator']}] {item['text']}"
+        for item in research.get("source_statements") or []
+    ]
+    supporting.extend(str(item.get("text") or "") for item in research.get("inferences") or [] if item.get("text"))
+    packet = _domain_answer_packet(
+        {
+            "request_id": request["request_id"],
+            "domain": "source_backed_research",
+            "direct_answer": direct_answer,
+            "no_answer_reason": no_answer_reason,
+            "supporting_claims": supporting,
+            "source_refs": research.get("source_refs") or [],
+            "assumptions": research.get("assumptions") or [],
+            "limitations": research.get("limitations") or [],
+            "unanswered_obligations": [] if answered else request["dialogue_obligations"],
+            "what_would_change_the_answer": research.get("missing_evidence") or [
+                "Additional attributed source packets relevant to the request."
+            ],
+            "evidence_confidence": research["evidence_confidence"],
+            "answer_confidence": research["answer_confidence"],
+        },
+        adapter_executed=True,
+        contract_preview=False,
+    )
+    confidence = build_confidence_vector(
+        request,
+        route_confidence=route["route_confidence"],
+        route_basis=route["selection_basis"],
+        evidence_confidence=research["evidence_confidence"],
+        answer_confidence=research["answer_confidence"],
+        expression_confidence="not_assessed",
+    )
+    return _with_guards(
+        {
+            "status": (
+                "answer_engine_source_backed_research_ready"
+                if answered
+                else "answer_engine_source_backed_research_unable"
+            ),
+            "request": request,
+            "domain_route": {**route, "adapter_status": "attributed_source_packet_adapter_executed_status_only"},
+            "answer_packet": packet,
+            "confidence_vector": confidence,
+            "source_research": research,
             "completion_retry": _completion_retry_result(False, 0, [], enabled=False),
             "adapter_executed": True,
             "answer_generated": bool(direct_answer),
@@ -654,6 +818,26 @@ def _ensure_domain_request_obligation(request: dict[str, Any], kind: str) -> dic
         "obligation_count": 1,
         "obligation_source": "domain_request_fallback",
     }
+
+
+def _adapter_not_available(
+    request: dict[str, Any],
+    route: dict[str, Any],
+    available_adapter: str,
+) -> dict[str, Any]:
+    return _with_guards(
+        {
+            "status": "answer_engine_domain_adapter_not_available",
+            "request": request,
+            "domain_route": route,
+            "available_adapter": available_adapter,
+            "adapter_executed": False,
+            "answer_generated": False,
+            "completion_retry": _completion_retry_result(False, 0, [], enabled=False),
+            "review_status": "status_only",
+            "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
+        }
+    )
 
 
 def _looks_like_math(value: str) -> bool:

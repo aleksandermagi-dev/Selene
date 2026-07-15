@@ -127,6 +127,54 @@ def test_answer_engine_math_endpoint_accepts_expression_only_request(tmp_path):
     assert payload["live_chat_connected"] is False
 
 
+def test_answer_engine_code_and_research_endpoints_use_only_supplied_sources(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    code_conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    code_body = json.dumps(
+        {
+            "prompt": "Inspect this function for endpoint_symbol.",
+            "inspection_terms": ["endpoint_symbol"],
+            "code_packets": [
+                {"source_ref": "supplied:endpoint.py", "path": "endpoint.py", "content": "def endpoint_symbol():\n    return True\n"}
+            ],
+        }
+    )
+    code_conn.request("POST", "/api/answer-engine/code-inspect", body=code_body, headers={"Content-Type": "application/json"})
+    code_response = code_conn.getresponse()
+    code_payload = json.loads(code_response.read().decode("utf-8"))
+    code_conn.close()
+
+    research_conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    research_body = json.dumps(
+        {
+            "prompt": "Research thermal storage from the source.",
+            "source_packets": [
+                {"source_ref": "paper:endpoint", "content": "Thermal storage shifts energy use across time."}
+            ],
+        }
+    )
+    research_conn.request("POST", "/api/answer-engine/research-run", body=research_body, headers={"Content-Type": "application/json"})
+    research_response = research_conn.getresponse()
+    research_payload = json.loads(research_response.read().decode("utf-8"))
+    research_conn.close()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    server.server_close()
+    server.conn.close()
+
+    assert code_response.status == 200
+    assert code_payload["code_inspection"]["source_refs"] == ["supplied:endpoint.py"]
+    assert code_payload["code_inspection"]["filesystem_write_allowed"] is False
+    assert research_response.status == 200
+    assert research_payload["source_research"]["source_refs"] == ["paper:endpoint"]
+    assert research_payload["source_research"]["citation_invention_allowed"] is False
+    assert research_payload["source_research"]["great_library"]["status"] == "not_requested"
+
+
 def test_sidecar_serializes_request_ownership_for_shared_sqlite_connection(tmp_path):
     _ConcurrencyProbeHandler.active = 0
     _ConcurrencyProbeHandler.maximum_active = 0
