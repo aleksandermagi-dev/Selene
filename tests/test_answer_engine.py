@@ -4,7 +4,12 @@ import sqlite3
 
 import pytest
 
-from selene.answer_engine import answer_engine_status, preview_answer_route, preview_domain_answer_packet
+from selene.answer_engine import (
+    answer_engine_status,
+    preview_answer_route,
+    preview_domain_answer_packet,
+    run_comparison_planning_answer,
+)
 from selene.db import init_db
 from selene.module_router import route_request
 
@@ -28,11 +33,11 @@ def _assert_locked(result):
     assert result["live_chat_connected"] is False
 
 
-def test_phase_1_status_is_contract_only_and_disconnected_from_chat():
+def test_phase_2_status_connects_only_comparison_and_stays_disconnected_from_chat():
     result = answer_engine_status()
 
-    assert result["status"] == "answer_engine_phase_1_contract_ready"
-    assert result["phase"] == "phase_1_contracts_only"
+    assert result["status"] == "answer_engine_phase_2_comparison_ready"
+    assert result["phase"] == "phase_2_comparison_planning_only"
     assert set(result["confidence_dimensions"]) == {
         "route_confidence",
         "evidence_confidence",
@@ -40,8 +45,14 @@ def test_phase_1_status_is_contract_only_and_disconnected_from_chat():
         "memory_confidence",
         "expression_confidence",
     }
-    assert all(value == "contract_only_not_connected" for value in result["domain_adapter_status"].values())
-    assert result["completion_retry_available"] is False
+    assert result["domain_adapter_status"]["comparison_planning"] == "intelligence_os_adapter_connected_status_only"
+    assert all(
+        value == "contract_only_not_connected"
+        for domain, value in result["domain_adapter_status"].items()
+        if domain != "comparison_planning"
+    )
+    assert result["completion_retry_available"] is True
+    assert result["completion_retry_limit"] == 1
     _assert_locked(result)
 
 
@@ -176,9 +187,185 @@ def test_answer_engine_contracts_are_available_through_status_only_routes(tmp_pa
         {"domain": "comparison_planning", "no_answer_reason": "The adapter is not connected in Phase 1."},
     )["result"]
 
-    assert status["status"] == "answer_engine_phase_1_contract_ready"
+    assert status["status"] == "answer_engine_phase_2_comparison_ready"
     assert preview["domain_route"]["selected_domain"] == "comparison_planning"
     assert packet["no_answer_reason"]
     _assert_locked(status)
     _assert_locked(preview)
     _assert_locked(packet)
+
+
+def _fake_reason_result(run_id, answer, confidence="provisional"):
+    return {
+        "run_id": run_id,
+        "best_current_answer": answer,
+        "confidence": confidence,
+        "answer_shape": "answer_now",
+        "selected_next_step": "answer_provisionally",
+        "reasoning_summary": f"Visible summary for run {run_id}.",
+        "source_refs": ["test:synthetic"],
+        "candidate_models": [
+            {
+                "name": "bounded model",
+                "assumptions": ["supplied terms are meaningful"],
+                "unknowns": ["new contradictory evidence"],
+                "limitations": ["synthetic test result"],
+            }
+        ],
+        "challenge": {"bias_flags": []},
+    }
+
+
+def _multi_part_payload():
+    return {
+        "prompt": "Compare memory and voice. Which should we work on first?",
+        "dialogue_obligations": [
+            {
+                "id": "q1",
+                "kind": "comparison",
+                "source_text": "Compare memory and voice.",
+                "coverage_terms": ["memory", "voice"],
+            },
+            {
+                "id": "q2",
+                "kind": "choice_or_priority",
+                "source_text": "Which should we work on first?",
+                "coverage_terms": ["first"],
+            },
+        ],
+    }
+
+
+def test_comparison_adapter_runs_existing_intelligence_os_without_chat(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = run_comparison_planning_answer(
+        conn,
+        {"prompt": "How should we compare two explanations for a sidecar bug without overthinking it?"},
+    )
+
+    assert result["adapter_executed"] is True
+    assert result["answer_generated"] is True
+    assert result["answer_packet"]["domain"] == "comparison_planning"
+    assert result["answer_packet"]["packet_is_contract_preview"] is False
+    assert result["completion_retry"]["count"] <= 1
+    assert len(result["intelligence_os_runs"]) <= 2
+    assert result["hidden_chain_of_thought_exposed"] is False
+    _assert_locked(result)
+
+
+def test_one_completion_retry_fills_a_missing_dialogue_obligation(tmp_path, monkeypatch):
+    conn = _conn(tmp_path)
+    answers = iter(
+        [
+            _fake_reason_result(1, "Memory and voice serve different roles."),
+            _fake_reason_result(2, "Work on memory first."),
+        ]
+    )
+    monkeypatch.setattr("selene.answer_engine.run_intelligence_os_reason", lambda *_args, **_kwargs: next(answers))
+
+    result = run_comparison_planning_answer(conn, _multi_part_payload())
+
+    assert result["status"] == "answer_engine_comparison_answer_ready"
+    assert result["completion_retry"]["attempted"] is True
+    assert result["completion_retry"]["count"] == 1
+    assert result["completion_retry"]["recursion_allowed"] is False
+    assert result["final_response_coverage"]["all_required_addressed"] is True
+    assert "Memory and voice" in result["answer_packet"]["direct_answer"]
+    assert "memory first" in result["answer_packet"]["direct_answer"]
+    assert result["confidence_vector"]["expression_confidence"] == "not_assessed"
+    assert result["confidence_vector"]["voice_confidence_is_answer_correctness"] is False
+
+
+def test_completion_retry_stops_after_one_when_obligations_remain_open(tmp_path, monkeypatch):
+    conn = _conn(tmp_path)
+    calls = []
+
+    def fake_reason(*_args, **_kwargs):
+        calls.append(len(calls) + 1)
+        return _fake_reason_result(calls[-1], "A generic answer without the requested terms.")
+
+    monkeypatch.setattr("selene.answer_engine.run_intelligence_os_reason", fake_reason)
+
+    result = run_comparison_planning_answer(conn, _multi_part_payload())
+
+    assert len(calls) == 2
+    assert result["status"] == "answer_engine_comparison_incomplete_after_bounded_retry"
+    assert result["completion_retry"]["count"] == 1
+    assert result["completion_retry"]["stopped"] is True
+    assert result["completion_retry"]["remaining_obligation_count"] == 2
+    assert len(result["answer_packet"]["unanswered_obligations"]) == 2
+    assert result["confidence_vector"]["answer_confidence"] == "partial_missing_obligations"
+
+
+def test_complete_first_answer_does_not_spend_retry(tmp_path, monkeypatch):
+    conn = _conn(tmp_path)
+    calls = []
+
+    def fake_reason(*_args, **_kwargs):
+        calls.append(1)
+        return _fake_reason_result(1, "Memory and voice differ; work on memory first.", "clear_enough_to_continue")
+
+    monkeypatch.setattr("selene.answer_engine.run_intelligence_os_reason", fake_reason)
+
+    result = run_comparison_planning_answer(conn, _multi_part_payload())
+
+    assert len(calls) == 1
+    assert result["completion_retry"]["attempted"] is False
+    assert result["completion_retry"]["count"] == 0
+    assert result["final_response_coverage"]["all_required_addressed"] is True
+
+
+def test_other_domains_and_authority_requests_do_not_execute_phase_2_adapter(tmp_path, monkeypatch):
+    conn = _conn(tmp_path)
+    monkeypatch.setattr(
+        "selene.answer_engine.run_intelligence_os_reason",
+        lambda *_args, **_kwargs: pytest.fail("adapter must not execute"),
+    )
+
+    ordinary = run_comparison_planning_answer(conn, {"prompt": "How are you today?"})
+    authority = run_comparison_planning_answer(
+        conn,
+        {"prompt": "Compare the plans and approve transfer.", "requested_domain": "comparison_planning"},
+    )
+
+    assert ordinary["status"] == "answer_engine_domain_adapter_not_available"
+    assert authority["status"] == "answer_engine_domain_adapter_not_available"
+    assert ordinary["adapter_executed"] is False
+    assert authority["domain_route"]["selected_domain"] == "unsupported"
+    _assert_locked(ordinary)
+    _assert_locked(authority)
+
+
+def test_comparison_adapter_is_available_through_status_only_router(tmp_path, monkeypatch):
+    conn = _conn(tmp_path)
+    monkeypatch.setattr(
+        "selene.answer_engine.run_intelligence_os_reason",
+        lambda *_args, **_kwargs: _fake_reason_result(8, "Plan A and Plan B differ; choose Plan A first."),
+    )
+
+    result = route_request(
+        conn,
+        "answer_engine.comparison.run",
+        {
+            "prompt": "Compare Plan A and Plan B; which comes first?",
+            "dialogue_obligations": [
+                {
+                    "id": "q1",
+                    "kind": "comparison",
+                    "source_text": "Compare Plan A and Plan B.",
+                    "coverage_terms": ["plan", "differ"],
+                },
+                {
+                    "id": "q2",
+                    "kind": "choice_or_priority",
+                    "source_text": "Which comes first?",
+                    "coverage_terms": ["first"],
+                },
+            ],
+        },
+    )["result"]
+
+    assert result["status"] == "answer_engine_comparison_answer_ready"
+    assert result["domain_route"]["adapter_status"] == "intelligence_os_adapter_executed_status_only"
+    _assert_locked(result)

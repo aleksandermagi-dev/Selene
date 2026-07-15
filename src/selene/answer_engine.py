@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import re
+import sqlite3
 from hashlib import sha256
 from typing import Any
 
-from .pragmatic_planner import build_pragmatic_plan
+from .intelligence_os import run_intelligence_os_reason
+from .pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
 from .registry import truncate
 
 
 ANSWER_ENGINE_BOUNDARY = (
-    "answer_engine_contract_and_domain_routing_preview_only_"
+    "answer_engine_bounded_domain_coordination_status_only_"
     "no_chat_integration_memory_identity_governance_or_authority_change"
 )
 
@@ -53,13 +55,15 @@ AUTHORITY_MARKERS = (
 
 
 def answer_engine_status() -> dict[str, Any]:
+    adapter_status = {domain: "contract_only_not_connected" for domain in DOMAINS}
+    adapter_status["comparison_planning"] = "intelligence_os_adapter_connected_status_only"
     return _with_guards(
         {
-            "status": "answer_engine_phase_1_contract_ready",
-            "version": "v1_contract_and_domain_routing",
-            "phase": "phase_1_contracts_only",
+            "status": "answer_engine_phase_2_comparison_ready",
+            "version": "v2_comparison_adapter_and_bounded_completion",
+            "phase": "phase_2_comparison_planning_only",
             "domains": list(DOMAINS),
-            "domain_adapter_status": {domain: "contract_only_not_connected" for domain in DOMAINS},
+            "domain_adapter_status": adapter_status,
             "confidence_dimensions": [
                 "route_confidence",
                 "evidence_confidence",
@@ -67,7 +71,9 @@ def answer_engine_status() -> dict[str, Any]:
                 "memory_confidence",
                 "expression_confidence",
             ],
-            "completion_retry_available": False,
+            "completion_retry_available": True,
+            "completion_retry_limit": 1,
+            "completion_retry_domains": ["comparison_planning"],
             "core_mind_route_owner": True,
             "nlo_expression_owner": True,
             "voice_style_owner": True,
@@ -94,7 +100,7 @@ def preview_answer_route(payload: dict[str, Any] | None = None) -> dict[str, Any
             "confidence_vector": confidence,
             "adapter_executed": False,
             "answer_generated": False,
-            "next_phase": "connect one bounded domain adapter in Phase 2",
+            "next_phase": "execute only through a connected bounded adapter; other domains remain contract-only",
             "review_status": "status_only",
             "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
         }
@@ -165,7 +171,15 @@ def build_answer_request(payload: dict[str, Any] | None = None) -> dict[str, Any
 
 
 def preview_domain_answer_packet(payload: dict[str, Any] | None = None) -> dict[str, Any]:
-    payload = payload or {}
+    return _domain_answer_packet(payload or {}, adapter_executed=False, contract_preview=True)
+
+
+def _domain_answer_packet(
+    payload: dict[str, Any],
+    *,
+    adapter_executed: bool,
+    contract_preview: bool,
+) -> dict[str, Any]:
     domain = str(payload.get("domain") or "").strip()
     if domain not in DOMAINS:
         raise ValueError(f"unsupported answer domain: {domain}")
@@ -178,7 +192,7 @@ def preview_domain_answer_packet(payload: dict[str, Any] | None = None) -> dict[
     if not source_refs and evidence_confidence in {"high", "clear", "source_verified"}:
         evidence_confidence = "not_established"
     packet = {
-        "status": "domain_answer_packet_preview_ready",
+        "status": "domain_answer_packet_preview_ready" if contract_preview else "domain_answer_packet_ready",
         "request_id": truncate(str(payload.get("request_id") or "unbound_request"), 120),
         "domain": domain,
         "direct_answer": direct_answer,
@@ -191,8 +205,8 @@ def preview_domain_answer_packet(payload: dict[str, Any] | None = None) -> dict[
         "no_answer_reason": no_answer_reason,
         "evidence_confidence": evidence_confidence,
         "answer_confidence": str(payload.get("answer_confidence") or "not_assessed"),
-        "adapter_executed": False,
-        "packet_is_contract_preview": True,
+        "adapter_executed": adapter_executed,
+        "packet_is_contract_preview": contract_preview,
         "review_status": "status_only",
         "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
     }
@@ -204,23 +218,271 @@ def build_confidence_vector(
     *,
     route_confidence: str = "not_assessed",
     route_basis: str = "",
+    evidence_confidence: str = "",
+    answer_confidence: str = "not_assessed",
+    expression_confidence: str = "not_assessed",
 ) -> dict[str, Any]:
     source_count = len(request.get("source_packets") or [])
     knowledge_available = request.get("approved_knowledge_available") is True
-    evidence_confidence = "source_packets_present" if source_count else "reviewed_knowledge_present" if knowledge_available else "not_assessed"
+    resolved_evidence_confidence = evidence_confidence or (
+        "source_packets_present" if source_count else "reviewed_knowledge_present" if knowledge_available else "not_assessed"
+    )
     memory = request.get("memory_context") if isinstance(request.get("memory_context"), dict) else {}
     memory_confidence = str(memory.get("confidence") or "not_used") if memory.get("used") is True else "not_used"
     return {
         "route_confidence": route_confidence,
         "route_confidence_basis": route_basis,
-        "evidence_confidence": evidence_confidence,
-        "answer_confidence": "not_assessed",
+        "evidence_confidence": resolved_evidence_confidence,
+        "answer_confidence": answer_confidence,
         "memory_confidence": memory_confidence,
-        "expression_confidence": "not_assessed",
+        "expression_confidence": expression_confidence,
         "dimensions_are_independent": True,
         "voice_confidence_is_answer_correctness": False,
         "answer_fluency_is_evidence_strength": False,
     }
+
+
+def run_comparison_planning_answer(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run the one Phase 2 domain adapter with at most one completion retry."""
+    payload = payload or {}
+    request = build_answer_request(payload)
+    route = _select_domain(request)
+    if route["selected_domain"] != "comparison_planning":
+        return _with_guards(
+            {
+                "status": "answer_engine_domain_adapter_not_available",
+                "request": request,
+                "domain_route": route,
+                "available_adapter": "comparison_planning",
+                "adapter_executed": False,
+                "answer_generated": False,
+                "completion_retry": _completion_retry_result(False, 0, [], enabled=False),
+                "review_status": "status_only",
+                "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
+            }
+        )
+
+    source_refs = _answer_source_refs(request, payload)
+    initial_run = run_intelligence_os_reason(
+        conn,
+        _intelligence_os_payload(request["prompt"], source_refs, payload),
+    )
+    initial_answer = truncate(str(initial_run.get("best_current_answer") or ""), 5000).strip()
+    coverage_plan = {
+        "response_obligations": [
+            item for item in request["dialogue_obligations"] if item.get("required") is not False
+        ]
+    }
+    initial_coverage = evaluate_response_coverage(coverage_plan, initial_answer)
+    final_answer = initial_answer
+    final_coverage = initial_coverage
+    runs = [initial_run]
+    retry_enabled = payload.get("completion_retry_enabled") is not False
+    retry_attempted = False
+
+    if retry_enabled and not initial_coverage["all_required_addressed"]:
+        retry_attempted = True
+        missing = _unresolved_obligations(request["dialogue_obligations"], initial_coverage)
+        retry_prompt = _completion_retry_prompt(request["prompt"], initial_answer, missing)
+        retry_run = run_intelligence_os_reason(
+            conn,
+            _intelligence_os_payload(retry_prompt, source_refs, payload),
+        )
+        runs.append(retry_run)
+        supplement = truncate(str(retry_run.get("best_current_answer") or ""), 5000).strip()
+        final_answer = _combine_answer_parts(initial_answer, supplement)
+        final_coverage = evaluate_response_coverage(coverage_plan, final_answer)
+
+    unresolved = _unresolved_obligations(request["dialogue_obligations"], final_coverage)
+    evidence_confidence = _comparison_evidence_confidence(request)
+    answer_confidence = str(runs[-1].get("confidence") or "not_assessed")
+    if unresolved:
+        answer_confidence = "partial_missing_obligations"
+    packet_source_refs = list(source_refs)
+    packet_source_refs.extend(
+        f"intelligence_os_run:{run['run_id']}" for run in runs if run.get("run_id") is not None
+    )
+    packet = _domain_answer_packet(
+        {
+            "request_id": request["request_id"],
+            "domain": "comparison_planning",
+            "direct_answer": final_answer,
+            "no_answer_reason": "" if final_answer else "intelligenceOS did not produce a bounded answer",
+            "supporting_claims": [
+                run.get("reasoning_summary") for run in runs if run.get("reasoning_summary")
+            ],
+            "source_refs": packet_source_refs,
+            "assumptions": _run_assumptions(runs),
+            "limitations": _run_limitations(runs),
+            "unanswered_obligations": unresolved,
+            "what_would_change_the_answer": _run_unknowns(runs),
+            "evidence_confidence": evidence_confidence,
+            "answer_confidence": answer_confidence,
+        },
+        adapter_executed=True,
+        contract_preview=False,
+    )
+    executed_route = {
+        **route,
+        "adapter_status": "intelligence_os_adapter_executed_status_only",
+    }
+    confidence = build_confidence_vector(
+        request,
+        route_confidence=route["route_confidence"],
+        route_basis=route["selection_basis"],
+        evidence_confidence=evidence_confidence,
+        answer_confidence=answer_confidence,
+        expression_confidence="not_assessed",
+    )
+    status = (
+        "answer_engine_comparison_answer_ready"
+        if final_coverage["all_required_addressed"]
+        else "answer_engine_comparison_incomplete_after_bounded_retry"
+    )
+    return _with_guards(
+        {
+            "status": status,
+            "request": request,
+            "domain_route": executed_route,
+            "answer_packet": packet,
+            "confidence_vector": confidence,
+            "initial_response_coverage": initial_coverage,
+            "final_response_coverage": final_coverage,
+            "completion_retry": _completion_retry_result(
+                retry_attempted,
+                1 if retry_attempted else 0,
+                unresolved,
+                enabled=retry_enabled,
+            ),
+            "intelligence_os_runs": [_run_summary(run) for run in runs],
+            "adapter_executed": True,
+            "answer_generated": bool(final_answer),
+            "visible_summary_only": True,
+            "hidden_chain_of_thought_exposed": False,
+            "review_status": "status_only",
+            "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
+        }
+    )
+
+
+def _intelligence_os_payload(prompt: str, source_refs: list[str], payload: dict[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {"prompt": prompt, "source_refs": source_refs}
+    for key in ("observations", "candidate_models"):
+        if payload.get(key) is not None:
+            result[key] = payload[key]
+    return result
+
+
+def _answer_source_refs(request: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    refs = _text_list(payload.get("source_refs"))
+    for packet in request.get("source_packets") or []:
+        ref = packet.get("source_ref") or packet.get("ref") or packet.get("id")
+        if ref not in (None, ""):
+            refs.append(str(ref))
+    for item in request.get("approved_knowledge_items") or []:
+        refs.extend(_text_list(item.get("source_refs")))
+    return list(dict.fromkeys(refs))[:30] or ["answer_engine:comparison_planning_request"]
+
+
+def _unresolved_obligations(
+    obligations: list[dict[str, Any]],
+    coverage: dict[str, Any],
+) -> list[dict[str, Any]]:
+    unresolved_ids = {
+        str(item.get("obligation_id") or "")
+        for item in coverage.get("items") or []
+        if item.get("addressed") is not True
+    }
+    return [item for item in obligations if str(item.get("id") or "") in unresolved_ids]
+
+
+def _completion_retry_prompt(
+    original_prompt: str,
+    initial_answer: str,
+    missing: list[dict[str, Any]],
+) -> str:
+    missing_text = "; ".join(
+        str(item.get("source_text") or item.get("id") or "missing part") for item in missing
+    )
+    return truncate(
+        f"{original_prompt}\n\nThe first bounded answer was: {initial_answer}\n\n"
+        f"Complete only these still-open parts: {missing_text}. "
+        "If the available context cannot support one, leave it explicitly open. Do not restart the whole answer.",
+        2400,
+    )
+
+
+def _combine_answer_parts(initial: str, supplement: str) -> str:
+    if not supplement or supplement == initial:
+        return initial
+    if supplement in initial:
+        return initial
+    return truncate(f"{initial}\n\n{supplement}".strip(), 5000)
+
+
+def _completion_retry_result(
+    attempted: bool,
+    count: int,
+    unresolved: list[dict[str, Any]],
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    return {
+        "allowed": enabled,
+        "limit": 1,
+        "attempted": attempted,
+        "count": count,
+        "stopped": True,
+        "remaining_obligation_count": len(unresolved),
+        "recursion_allowed": False,
+    }
+
+
+def _run_summary(run: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "run_id": run.get("run_id"),
+        "confidence": str(run.get("confidence") or "not_assessed"),
+        "answer_shape": str(run.get("answer_shape") or ""),
+        "selected_next_step": str(run.get("selected_next_step") or ""),
+        "visible_summary_only": True,
+        "hidden_chain_of_thought_exposed": False,
+    }
+
+
+def _run_assumptions(runs: list[dict[str, Any]]) -> list[str]:
+    return _unique_nested_text(runs, "candidate_models", "assumptions")
+
+
+def _run_unknowns(runs: list[dict[str, Any]]) -> list[str]:
+    return _unique_nested_text(runs, "candidate_models", "unknowns")
+
+
+def _run_limitations(runs: list[dict[str, Any]]) -> list[str]:
+    result = _unique_nested_text(runs, "candidate_models", "limitations")
+    for run in runs:
+        challenge = run.get("challenge") if isinstance(run.get("challenge"), dict) else {}
+        result.extend(_text_list(challenge.get("bias_flags")))
+    return list(dict.fromkeys(result))[:20]
+
+
+def _unique_nested_text(runs: list[dict[str, Any]], collection: str, key: str) -> list[str]:
+    result: list[str] = []
+    for run in runs:
+        for item in run.get(collection) or []:
+            if isinstance(item, dict):
+                result.extend(_text_list(item.get(key)))
+    return list(dict.fromkeys(result))[:20]
+
+
+def _comparison_evidence_confidence(request: dict[str, Any]) -> str:
+    if request.get("source_packets"):
+        return "source_packets_present_not_independently_verified"
+    if request.get("approved_knowledge_available") is True:
+        return "reviewed_knowledge_present"
+    return "reasoning_only_not_source_verified"
 
 
 def _select_domain(request: dict[str, Any]) -> dict[str, Any]:
