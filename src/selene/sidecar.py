@@ -589,6 +589,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes({"error": "invalid run id"}, 400))
         elif parsed.path == "/api/comprehension/status":
             self._send(*json_bytes(route_request(conn, "comprehension.status")["result"]))
+        elif parsed.path == "/api/test-impact-law/status":
+            self._send(*json_bytes(route_request(conn, "test_impact_law.status")["result"]))
         elif parsed.path == "/api/comprehension/concepts":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "comprehension.concepts.list", qs)["result"]))
@@ -1111,6 +1113,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/test-impact-law/review":
+            route_key = "test_impact_law.review"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/core-mind/memory-index/preview":
             route_key = "core_mind.memory_index.preview"
             try:

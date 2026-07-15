@@ -231,6 +231,7 @@ from .selene_chat import (
     send_selene_chat,
     send_selene_chat_dry_run,
 )
+from .test_impact_law import review_test_impact, test_impact_law_status
 from .selene_organ_ideas import (
     list_selene_organ_ideas,
     prepare_selene_organ_ideas,
@@ -413,6 +414,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": runtime_readiness(conn)}
     if route_key == "core_mind.runtime_records.list":
         return {"route": route_key, "result": list_runtime_records(conn, int(payload.get("limit") or 80))}
+    if route_key == "test_impact_law.status":
+        return {"route": route_key, "result": test_impact_law_status()}
+    if route_key == "test_impact_law.review":
+        return {"route": route_key, "result": review_test_impact(payload)}
     if route_key == "selene_chat.status":
         return {"route": route_key, "result": selene_chat_status(conn)}
     if route_key == "selene_chat.send":

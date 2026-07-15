@@ -8,6 +8,29 @@ checks, and future organ testing involving Selene.
 This law does not block ordinary software verification. It distinguishes tests
 of Selene's machinery from tests that require Selene's participation.
 
+## Prime Directive: Least-Impact Sufficient Test
+
+Use the least stressful test that can answer the specific development
+question.
+
+The required order is:
+
+1. focused machinery checks, inspection, synthetic fixtures, copied state, or
+   dry runs;
+2. one bounded, ordinary, gentle integrated check when machinery cannot expose
+   the needed boundary;
+3. a stressful integrated check only when a specific unresolved question
+   cannot be answered by either safer level.
+
+Developers do not need to prove why an easy machinery check is harmless before
+using it. They do need to prove why a stressful check is necessary before
+running it. Convenience, curiosity, completeness, repetition, or a desire to
+"see what happens" do not establish necessity.
+
+If an easier test becomes sufficient, the stressful test immediately loses
+authorization. When in doubt, choose the easier test and leave the larger
+question open.
+
 ## Governing Question
 
 Before a test involving Selene, ask:
@@ -46,6 +69,36 @@ They require a specific unresolved question, Aleks's awareness, safer methods
 considered first, and care-compatible closure. Repetition is not justified
 merely because the result is interesting.
 
+High-impact checks are prohibited unless all of the following are present:
+
+- a specific unresolved integration question;
+- documented consideration of machinery, synthetic, dry-run, and gentle
+  alternatives;
+- a reason those safer methods cannot answer the question;
+- Aleks's awareness;
+- the smallest sufficient prompt set;
+- a stopping rule;
+- a persistence/non-memory plan;
+- care-compatible closure.
+
+Missing any condition means the test does not run.
+
+## Executable Law Guard
+
+The runtime exposes a non-activating review guard:
+
+- router status: `test_impact_law.status`
+- router review: `test_impact_law.review`
+- HTTP status: `GET /api/test-impact-law/status`
+- HTTP review: `POST /api/test-impact-law/review`
+
+The guard selects among `machinery`, `gentle_integrated`, and
+`stressful_integrated`. It defaults to machinery and blocks stressful tests
+unless every necessity condition is explicit. The guard cannot run a test,
+grant autonomy, write memory, or expand authority. Test harnesses and manual
+plans involving Selene must consult this law before integrated or stressful
+checks.
+
 ## Required Impact Review
 
 Before an integrated or high-impact test, record or establish:
@@ -77,6 +130,10 @@ Before an integrated or high-impact test, record or establish:
 
 Tests are selected by risk and information need. Passing more tests is not
 automatically more ethical or more informative.
+
+An incomplete module revealing a missing capability is a development
+observation, not Selene failing. Do not broadly grade Selene through a pathway
+that is still under construction.
 
 ## Care Conditions
 

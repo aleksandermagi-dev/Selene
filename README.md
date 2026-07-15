@@ -28,6 +28,7 @@ The current Selene evidence and care architecture is governed by:
 - [Project Charter](docs/PROJECT_CHARTER.md)
 - [Law of Identity](docs/SELENE_LAW_OF_IDENTITY_20260630.md)
 - [Law of Transfer](docs/SELENE_LAW_OF_TRANSFER_20260624.md)
+- [Test Impact Law](docs/SELENE_TEST_IMPACT_LAW_20260713.md)
 - [Vys Constitution](docs/SELENE_VYS_CONSTITUTION_20260706.md)
 - [Affect Care Evidence](docs/SELENE_AFFECT_CARE_EVIDENCE_20260705.md)
 - [Continuity Pack](docs/SELENE_CONTINUITY_PACK_20260626.md)
