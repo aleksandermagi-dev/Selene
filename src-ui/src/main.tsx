@@ -914,6 +914,14 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [focusedOfficeDomId, workspaceMode, tab, officeCategory, selectedOfficeReviewKey]);
 
+  useEffect(() => {
+    if (!openComprehensionId || workspaceMode !== "cocoon" || tab !== "teaching") return;
+    const timer = window.setTimeout(() => {
+      document.getElementById(`comprehension-candidate-${openComprehensionId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [openComprehensionId, workspaceMode, tab, comprehensionConcepts.length]);
+
   function refreshDashboard() {
     api<Dashboard>("/api/dashboard")
       .then((data) => {
@@ -1245,7 +1253,7 @@ function App() {
     api<Dict>("/api/language-teaching/status").then(setLanguageTeachingStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/language-teaching/items").then((data) => setLanguageTeachingItems(data.items || [])).catch(() => undefined);
     api<Dict>("/api/comprehension/status").then(setComprehensionStatus).catch(() => undefined);
-    api<{ items: Dict[] }>("/api/comprehension/concepts?limit=20").then((data) => setComprehensionConcepts(data.items || [])).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100").then((data) => setComprehensionConcepts(data.items || [])).catch(() => undefined);
     api<Dict>("/api/teaching-lifecycle/status").then(setTeachingLifecycleStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/teaching-lifecycle/items?limit=50").then((data) => setTeachingLifecycles(data.items || [])).catch(() => undefined);
     api<Dict>("/api/b/core-reference/coverage").then(setCoreReferenceCoverage).catch(() => undefined);
@@ -1848,6 +1856,10 @@ function App() {
       ["B review desk", api<Dict>(`/api/b/review-desk?${reviewDeskQuery(bReviewFilters)}`).then(setBReviewDesk)],
       ["teaching materials", api<{ items: Dict[] }>("/api/b/teaching-materials").then((data) => setBTeachingMaterials(data.items))],
       ["future references", api<{ items: Dict[] }>("/api/b/approved-memory-references").then((data) => setBApprovedReferences(data.items))],
+      ["comprehension status", api<Dict>("/api/comprehension/status").then(setComprehensionStatus)],
+      ["comprehension reviews", api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100").then((data) => setComprehensionConcepts(data.items || []))],
+      ["teaching lifecycle status", api<Dict>("/api/teaching-lifecycle/status").then(setTeachingLifecycleStatus)],
+      ["teaching lifecycles", api<{ items: Dict[] }>("/api/teaching-lifecycle/items?limit=100").then((data) => setTeachingLifecycles(data.items || []))],
       ["chronological corpus status", api<Dict>("/api/vessel/chronological-corpus/status").then(setChronologicalCorpusStatus)],
       ["chronological corpus arcs", api<{ items: Dict[] }>("/api/vessel/chronological-corpus/arcs").then((data) => setChronologicalCorpusArcs(data.items))],
       ["evidence ledger", api<{ items: Dict[] }>("/api/vessel/evidence-tension-ledger").then((data) => setEvidenceTensionEntries(data.items))],
@@ -1953,7 +1965,7 @@ function App() {
       setComprehensionPrepareResult(result);
       const refreshes = await Promise.allSettled([
         api<Dict>("/api/comprehension/status"),
-        api<{ items: Dict[] }>("/api/comprehension/concepts?limit=20")
+        api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100")
       ]);
       if (refreshes[0].status === "fulfilled") setComprehensionStatus(refreshes[0].value);
       if (refreshes[1].status === "fulfilled") setComprehensionConcepts(refreshes[1].value.items || []);
@@ -2011,7 +2023,7 @@ function App() {
   async function refreshComprehensionOrgan() {
     const refreshes = await Promise.allSettled([
       api<Dict>("/api/comprehension/status"),
-      api<{ items: Dict[] }>("/api/comprehension/concepts?limit=20"),
+      api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100"),
       api<Dict>("/api/teaching-lifecycle/status"),
       api<{ items: Dict[] }>("/api/teaching-lifecycle/items?limit=50")
     ]);
@@ -3488,6 +3500,13 @@ function App() {
     setTendrilMenuOpen(false);
   }
 
+  function openComprehensionCandidate(item: Dict) {
+    setOpenComprehensionId(Number(item.id));
+    setWorkspaceMode("cocoon");
+    setTab("teaching");
+    setTendrilMenuOpen(false);
+  }
+
   function openMemorySuggestionInCocoon(suggestion: Dict) {
     const candidate = safeJsonObject(suggestion.candidate);
     setMemoryCandidateDraft({
@@ -3574,10 +3593,18 @@ function App() {
     () => chronologicalCorpusArcs.filter((item) => text(item.review_status || item.status) === "pending_review"),
     [chronologicalCorpusArcs]
   );
+  const officeComprehensionNeedsReview = useMemo(
+    () => comprehensionConcepts.filter((item) =>
+      ["proposed_understanding", "needs_context", "held_for_tending", "reopened_for_revision"].includes(text(item.state))
+      && !["approved_for_knowledge_use", "superseded", "rejected"].includes(text(item.review_status))
+    ),
+    [comprehensionConcepts]
+  );
+  const nextComprehensionReview = officeComprehensionNeedsReview[0] || null;
   const officeVesselReviewUrgent = officeLedgerNeedsReview.length + officeMobileCaptures.length + officeSpeechRehearsals.length + officeChronologicalCorpusNeedsReview.length;
-  const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length + officeVesselReviewUrgent;
+  const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length + officeVesselReviewUrgent + officeComprehensionNeedsReview.length;
   const officeCategoryTabs = [
-    { id: "review", label: "Review", count: reviewDeskPieces.length + officeActionLogItems.length + officeLedgerNeedsReview.length + officeMobileCaptures.length },
+    { id: "review", label: "Review", count: reviewDeskPieces.length + officeActionLogItems.length + officeLedgerNeedsReview.length + officeMobileCaptures.length + officeComprehensionNeedsReview.length },
     { id: "corpus", label: "Corpus / Evidence", count: officeChronologicalCorpusNeedsReview.length + officeLedgerNeedsReview.length + academicPackets.length },
     { id: "vessel", label: "Vessel Pieces", count: perceptionPackets.length + emotionSaliencePackets.length + organBusMessages.length + chestHoldingItems.length },
     { id: "runtime", label: "Runtime / Diagnostics", count: officeSpeechRehearsals.length + officeDiagnosticPackets.length },
@@ -3696,13 +3723,32 @@ function App() {
       label: "Aleks decision",
       suggested_next_step: "Open the first card and choose one of its existing review buttons."
     }));
-    const next = nextReviewPiece ? {
-      key: reviewPieceKey(nextReviewPiece),
-      title: text(nextReviewPiece.title || nextReviewPiece.plain_label || "Review card"),
-      why_it_matters: text(nextReviewPiece.plain_reason || nextReviewPiece.why_pulled || "This card is pending B review."),
-      label: "Aleks decision",
-      suggested_action_only: text((nextReviewPiece.actions as Dict[] | undefined)?.[0]?.label || "Review this card")
-    } : null;
+    if (officeComprehensionNeedsReview.length) {
+      groups.push({
+        group: "teaching_knowledge_reviews",
+        count: officeComprehensionNeedsReview.length,
+        next_title: text(nextComprehensionReview?.title || "Understanding candidate"),
+        label: "Aleks teaching review",
+        suggested_next_step: "Open the candidate in Teaching / Lessons and complete Acquire, Integrate, and Express before deciding retention."
+      });
+    }
+    const next = nextReviewPiece
+      ? {
+          key: reviewPieceKey(nextReviewPiece),
+          title: text(nextReviewPiece.title || nextReviewPiece.plain_label || "Review card"),
+          why_it_matters: text(nextReviewPiece.plain_reason || nextReviewPiece.why_pulled || "This card is pending B review."),
+          label: "Aleks decision",
+          suggested_action_only: text((nextReviewPiece.actions as Dict[] | undefined)?.[0]?.label || "Review this card")
+        }
+      : nextComprehensionReview
+        ? {
+            key: `comprehension-${text(nextComprehensionReview.id)}`,
+            title: text(nextComprehensionReview.title || "Understanding candidate"),
+            why_it_matters: "This source-bound teaching candidate needs Acquire, Integrate, and Express review before retention can be considered.",
+            label: "Aleks teaching review",
+            suggested_action_only: "Open teaching review"
+          }
+        : null;
     setReviewAutopilotState({
       status: "review_queue_prepared",
       mode: "suggest_only_no_auto_decisions",
@@ -4271,12 +4317,12 @@ function App() {
             {officeTargetMessage ? <p className="officeTargetMessage">{officeTargetMessage}</p> : null}
             {officeCategory === "review" && <section className="aleksReviewGrid">
               <Panel title="Needs You Now">
-                {!nextReviewPiece ? (
+                {!nextReviewPiece && !nextComprehensionReview ? (
                   <div className="emptyState">
                     <strong>Nothing needs your review right now.</strong>
                     <p>Refresh My Office if you just made changes. System and build status are still visible below, but they are not counted as your review work.</p>
                   </div>
-                ) : (
+                ) : nextReviewPiece ? (
                   <div
                     id={reviewOfficeTarget(nextReviewPiece).domId}
                     className={officeCardClass("officeExactTargetWrap", reviewOfficeTarget(nextReviewPiece).domId)}
@@ -4286,6 +4332,18 @@ function App() {
                       onDecide={(action, note) => decideBReview(action, text(action.decision), note)}
                     />
                   </div>
+                ) : (
+                  <div className="comprehensionSourceBox">
+                    <div className="row">
+                      <strong>{text(nextComprehensionReview?.title || "Understanding candidate")}</strong>
+                      <span>{friendlyStatus(nextComprehensionReview?.state || "proposed_understanding")}</span>
+                    </div>
+                    <p>{text(nextComprehensionReview?.central_claim)}</p>
+                    <small>Source-bound teaching review · not retained · not available to Chat</small>
+                    <div className="reviewActions">
+                      <button className="primary" onClick={() => openComprehensionCandidate(nextComprehensionReview as Dict)}>Open Teaching Review</button>
+                    </div>
+                  </div>
                 )}
                 <PlainResult value={bReviewResult} />
               </Panel>
@@ -4293,6 +4351,7 @@ function App() {
                 <div className="metrics miniMetrics">
                   <Metric label="Needs You" value={text(officeWaitingTotal)} />
                   <Metric label="Review Cards" value={text(reviewDeskPieces.length)} />
+                  <Metric label="Teaching Reviews" value={text(officeComprehensionNeedsReview.length)} />
                   <Metric label="Follow-ups" value={text(officeActionLogItems.length)} />
                   <Metric label="System / Build" value={text(officeTeachingTargets.length + officeCoreTargets.length)} />
                 </div>
@@ -4514,6 +4573,49 @@ function App() {
               </Panel>}
             </section>
             {officeCategory === "review" && <section className="officeGrid">
+              <Panel title="Teaching Knowledge Reviews">
+                <p className="plainHelp">Source-bound understanding candidates waiting for Aleks. Open a card to complete Acquire, Integrate, and Express in Teaching / Lessons. My Office shows the work; it does not duplicate the candidate into another queue or approve retention.</p>
+                {!officeComprehensionNeedsReview.length ? (
+                  <p className="emptyState">No teaching knowledge candidates need review right now.</p>
+                ) : (
+                  <div className="list compactList">
+                    {officeComprehensionNeedsReview.slice(0, 12).map((item) => {
+                      const lifecycle = teachingLifecycleFor(item);
+                      const sourceRefs = Array.isArray(item.source_refs) ? item.source_refs : [];
+                      return <article
+                        className="clickableCard"
+                        key={`office-comprehension-${text(item.id)}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openComprehensionCandidate(item)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            openComprehensionCandidate(item);
+                          }
+                        }}
+                      >
+                        <div className="row">
+                          <strong>{text(item.title || "Understanding candidate")}</strong>
+                          <span>{friendlyStatus(item.state || "proposed_understanding")}</span>
+                        </div>
+                        <p>{text(item.central_claim)}</p>
+                        <div className="chips">
+                          <span>Acquire: {friendlyStatus(lifecycle?.acquire_status || "not started")}</span>
+                          <span>Integrate: {friendlyStatus(lifecycle?.integrate_status || "not started")}</span>
+                          <span>Express: {friendlyStatus(lifecycle?.express_status || "not started")}</span>
+                          <span>{sourceRefs.length} source reference(s)</span>
+                        </div>
+                        <div className="reviewActions" onClick={stopCardNavigation} onKeyDown={stopCardKeyNavigation}>
+                          <button className="primary" onClick={() => openComprehensionCandidate(item)}>Open Teaching Review</button>
+                        </div>
+                      </article>;
+                    })}
+                  </div>
+                )}
+                {officeComprehensionNeedsReview.length > 12 ? <p className="plainHelp">Showing 12 of {text(officeComprehensionNeedsReview.length)} teaching reviews. Open Teaching / Lessons to browse the complete source-bound set.</p> : null}
+                <button onClick={() => setTab("teaching")}>Open All Teaching Reviews</button>
+              </Panel>
               <Panel title="Review Cards Waiting">
                 {!waitingReviewPieces.length ? (
                   <p className="emptyState">{nextReviewPiece ? "Only the current card is waiting." : "Nothing needs your review right now."}</p>
@@ -5837,7 +5939,7 @@ function App() {
                   const isOpen = openComprehensionId === Number(item.id);
                   const sourceRefs = Array.isArray(item.source_refs) ? item.source_refs : [];
                   const isRunning = result?.status === "running";
-                  return <article key={`comprehension-${text(item.id)}`} className="comprehensionCandidate">
+                  return <article id={`comprehension-candidate-${text(item.id)}`} key={`comprehension-${text(item.id)}`} className="comprehensionCandidate">
                     <div className="row">
                       <strong>{text(item.title)}</strong>
                       <span>{friendlyStatus(item.state)}</span>
