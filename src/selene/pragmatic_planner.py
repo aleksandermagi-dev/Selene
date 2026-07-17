@@ -42,6 +42,11 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
     relevant_loops = [item for item in open_loops if not new_ids or str(item.get("id") or "") in new_ids]
     reference = pragmatics.get("resolved_reference") if isinstance(pragmatics.get("resolved_reference"), dict) else None
     indirect = pragmatics.get("indirect_request") if isinstance(pragmatics.get("indirect_request"), dict) else {}
+    input_interpretation = (
+        pragmatics.get("input_interpretation")
+        if isinstance(pragmatics.get("input_interpretation"), dict)
+        else {}
+    )
     implicit = _implicit_meaning(prompt, previous_available=pragmatics.get("previous_turn_available") is True)
     ellipsis = _ellipsis_resolution(prompt, reference, str(dialogue.get("active_topic") or ""))
     obligations = _question_obligations(questions, relevant_loops)
@@ -71,7 +76,7 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
         }
         for index, sentence in enumerate(_sentences(content_seed)[:8])
     ]
-    ambiguity = _ambiguity_posture(prompt, reference, implicit, ellipsis)
+    ambiguity = _ambiguity_posture(prompt, reference, implicit, ellipsis, input_interpretation)
     return _with_guards(
         {
             "status": "pragmatic_plan_ready",
@@ -257,10 +262,23 @@ def _ambiguity_posture(
     reference: dict[str, Any] | None,
     implicit: dict[str, Any],
     ellipsis: dict[str, Any],
+    input_interpretation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     lower = prompt.lower()
     explicit_uncertainty = any(item in lower for item in ("maybe", "i think", "not sure", "unclear"))
     unresolved_ellipsis = ellipsis.get("detected") is True and not ellipsis.get("resolved_to")
+    input_ambiguities = [
+        item
+        for item in (input_interpretation or {}).get("ambiguities") or []
+        if isinstance(item, dict)
+    ]
+    if input_ambiguities:
+        return {
+            "level": "material_input_ambiguity",
+            "answer_strategy": "answer_from_unambiguous_context_or_ask_briefly_if_word_changes_answer",
+            "reason": "the input detangler found more than one plausible meaning and did not choose one",
+            "input_ambiguities": input_ambiguities,
+        }
     if unresolved_ellipsis:
         return {
             "level": "material",

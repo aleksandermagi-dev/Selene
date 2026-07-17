@@ -6,6 +6,7 @@ import sqlite3
 from hashlib import sha256
 from typing import Any
 
+from .input_detangler import detangle_user_input
 from .registry import truncate
 
 
@@ -69,12 +70,18 @@ def prepare_dialogue_turn(
     text = truncate(str(payload.get("text") or payload.get("prompt") or ""), 2400)
     if not text.strip():
         raise ValueError("dialogue text is required")
+    input_interpretation = (
+        payload.get("input_interpretation")
+        if isinstance(payload.get("input_interpretation"), dict)
+        else detangle_user_input(text)
+    )
+    interpreted_text = truncate(str(input_interpretation.get("interpreted_text") or text), 2400)
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     prior = dialogue_workspace_status(conn, session_id)
     events = _events(conn, session_id, payload.get("conversation_events"))
     previous = events[-1] if events else {}
-    active_topic = _active_topic(text, str(prior.get("active_topic") or ""), str(intent.get("intent") or ""))
-    questions = _question_units(text)
+    active_topic = _active_topic(interpreted_text, str(prior.get("active_topic") or ""), str(intent.get("intent") or ""))
+    questions = _question_units(interpreted_text)
     loops = list(prior.get("open_loops") or [])
     new_loops = [
         {
@@ -88,10 +95,10 @@ def prepare_dialogue_turn(
     existing_ids = {str(item.get("id") or "") for item in loops if isinstance(item, dict)}
     loops.extend(item for item in new_loops if item["id"] not in existing_ids)
     referents = dict(prior.get("referents") or {})
-    reference = _resolve_reference(text, previous, active_topic)
+    reference = _resolve_reference(interpreted_text, previous, active_topic)
     if reference:
         referents[reference["token"]] = reference
-    entities = _merge_entities(prior.get("entities") or [], _extract_entities(text))
+    entities = _merge_entities(prior.get("entities") or [], _extract_entities(interpreted_text))
     corrections = list(prior.get("corrections") or [])
     if str(intent.get("intent") or "") == "correction":
         corrections.append(
@@ -102,7 +109,7 @@ def prepare_dialogue_turn(
             }
         )
     preferences = dict(prior.get("preferences") or {})
-    preferences.update(_session_preferences(text))
+    preferences.update(_session_preferences(interpreted_text))
     side_topics = list(dict.fromkeys([*list(prior.get("side_topics") or []), *[_topic(item) for item in questions[1:] if _topic(item)]]))[-12:]
     pragmatics = {
         "dialogue_act": str(intent.get("dialogue_act") or intent.get("intent") or "direct_conversation"),
@@ -110,8 +117,9 @@ def prepare_dialogue_turn(
         "resolved_reference": reference,
         "question_units": questions,
         "multi_part_prompt": len(questions) > 1,
-        "indirect_request": _indirect_request(text),
-        "quoted_material": _quotes(text),
+        "indirect_request": _indirect_request(interpreted_text),
+        "quoted_material": _quotes(interpreted_text),
+        "input_interpretation": input_interpretation,
         "response_preference": preferences.get("response_depth") or "",
         "previous_turn_available": bool(previous),
         "previous_turn": previous,

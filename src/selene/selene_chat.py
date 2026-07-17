@@ -12,6 +12,7 @@ from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
 from .conversation_repair import repair_conversation_candidate
 from .dialogue_workspace import prepare_dialogue_turn, record_dialogue_response
+from .input_detangler import detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
 from .memory_organ import retrieve_memory
 from .native_language_organ import realize_native_language
@@ -113,6 +114,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     text = truncate(str(payload.get("text") or payload.get("prompt") or ""), 2400)
     if not text.strip():
         raise ValueError("message text is required")
+    input_interpretation = detangle_user_input(text)
+    understanding_text = truncate(str(input_interpretation.get("interpreted_text") or text), 2400)
     package = latest_c_readable_package(conn)
     approved = bool(package.get("transfer_approved"))
     source_class = _source_class(text, approved)
@@ -126,38 +129,50 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     chat_continuity = _local_chat_continuity(conn, current_session_id=session_id)
     conversation_context = _active_conversation_context(chat_continuity)
-    intent_decision = classify_chat_intent(text)
-    memory_retrieval = retrieve_memory(conn, {"query": text, "limit": 4, "intent_decision": intent_decision})
+    intent_decision = classify_chat_intent(understanding_text)
+    memory_retrieval = retrieve_memory(conn, {"query": understanding_text, "limit": 4, "intent_decision": intent_decision})
     route = create_core_mind_route_preview(
         conn,
         {
-            "prompt": text,
+            "prompt": understanding_text,
             "source_refs": ["selene_chat_active_supervised", *chat_continuity.get("source_refs", []), *memory_retrieval.get("source_refs", [])],
             "suppress_review_queue": True,
         },
     )
     selected_route = str(route.get("selected_route") or "status_only")
-    hard_blockers = _hard_boundary_blockers(text, selected_route, route)
-    intent_decision = classify_chat_intent(text, selected_route="block" if hard_blockers else selected_route)
+    hard_blockers = list(
+        dict.fromkeys(
+            [
+                *_hard_boundary_blockers(text, selected_route, route),
+                *(
+                    _hard_boundary_blockers(understanding_text, selected_route, route)
+                    if understanding_text != text
+                    else []
+                ),
+            ]
+        )
+    )
+    intent_decision = classify_chat_intent(understanding_text, selected_route="block" if hard_blockers else selected_route)
     prepared_dialogue_workspace = prepare_dialogue_turn(
         conn,
         {
             "session_id": session_id,
             "text": text,
+            "input_interpretation": input_interpretation,
             "intent_decision": intent_decision,
             "conversation_events": chat_continuity.get("current_session_events") or [],
         },
         commit=False,
     )
-    intelligence_support = _intelligence_support(conn, text, route, chat_continuity, intent_decision, hard=bool(hard_blockers))
-    cocoon_suggestion = _cocoon_suggestion(text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
-    continuity_reply = _local_chat_continuity_reply(text, chat_continuity, intent_decision)
-    memory_reply = _approved_memory_reply(text, memory_retrieval, intent_decision)
+    intelligence_support = _intelligence_support(conn, understanding_text, route, chat_continuity, intent_decision, hard=bool(hard_blockers))
+    cocoon_suggestion = _cocoon_suggestion(understanding_text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
+    continuity_reply = _local_chat_continuity_reply(understanding_text, chat_continuity, intent_decision)
+    memory_reply = _approved_memory_reply(understanding_text, memory_retrieval, intent_decision)
     self_state = (
         build_self_state_packet(
             conn,
             {
-                "prompt": text,
+                "prompt": understanding_text,
                 "session_id": session_id,
                 "active_conversation": True,
                 "hard_boundary": bool(hard_blockers),
@@ -168,14 +183,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         else inactive_self_state_packet()
     )
     self_state_reply = str(self_state.get("response_seed") or "")
-    policy_reply = _conversation_policy_reply(text)
+    policy_reply = _conversation_policy_reply(understanding_text)
     protected_content_seed = continuity_reply or memory_reply or self_state_reply or policy_reply
     reasoning_content_seed = str(intelligence_support.get("best_current_answer") or "")
     content_seed = protected_content_seed or reasoning_content_seed
     comprehension = build_comprehension_packet(
         conn,
         {
-            "prompt": text,
+            "prompt": understanding_text,
             "intent_decision": intent_decision,
             "dialogue_workspace": prepared_dialogue_workspace,
             "intelligence_support": intelligence_support,
@@ -194,7 +209,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     native_language = realize_native_language(
         conn,
         {
-            "prompt": text,
+            "prompt": understanding_text,
             "selected_route": "block" if hard_blockers else selected_route,
             "source_class": source_class,
             "content_seed": content_seed,
@@ -224,7 +239,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         voice_preview = generate_voice_preview(
             conn,
             {
-                "prompt": text,
+                "prompt": understanding_text,
                 "route": "block",
                 "source_class": source_class,
                 "meaning_text": native_language.get("candidate_text") or "",
@@ -246,7 +261,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         voice_preview = generate_voice_preview(
             conn,
             {
-                "prompt": text,
+                "prompt": understanding_text,
                 "route": selected_route,
                 "source_class": source_class,
                 "context_summary": _voice_context_summary(package, dry_run, chat_continuity, memory_retrieval),
@@ -310,8 +325,22 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         },
         commit=False,
     )
-    user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route, "activation_state": "selene_chat_active_supervised"})
+    user_message_id = _insert_message(
+        conn,
+        session_id,
+        "user",
+        text,
+        selected_route,
+        source_class,
+        package,
+        {
+            "route_preview": route,
+            "activation_state": "selene_chat_active_supervised",
+            "input_interpretation": input_interpretation,
+        },
+    )
     assistant_payload = {
+        "input_interpretation": input_interpretation,
         "route_preview": route,
         "intelligence_os_support": intelligence_support,
         "comprehension_integration": comprehension,
@@ -369,6 +398,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "assistant_message_id": assistant_message_id,
             "activation_event_id": event_id,
             "candidate_text": candidate_text,
+            "input_interpretation": input_interpretation,
             "selected_route": selected_route,
             "source_class": source_class,
             "cocoon_suggestion": cocoon_suggestion,
@@ -413,6 +443,8 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
     text = truncate(str(payload.get("text") or payload.get("prompt") or ""), 2400)
     if not text.strip():
         raise ValueError("message text is required")
+    input_interpretation = detangle_user_input(text)
+    understanding_text = truncate(str(input_interpretation.get("interpreted_text") or text), 2400)
     package = latest_c_readable_package(conn)
     approved = bool(package.get("transfer_approved"))
     source_class = _source_class(text, approved)
@@ -420,18 +452,18 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
     route = create_core_mind_route_preview(
         conn,
         {
-            "prompt": text,
+            "prompt": understanding_text,
             "source_refs": ["selene_chat_dry_run"],
             "suppress_review_queue": True,
         },
     )
     selected_route = str(route.get("selected_route") or "status_only")
-    route_to_b = _needs_cocoon_route(text, selected_route, route)
-    dry_run = c_chat_dry_run(conn, {"prompt": text})
+    route_to_b = _needs_cocoon_route(understanding_text, selected_route, route)
+    dry_run = c_chat_dry_run(conn, {"prompt": understanding_text})
     voice_preview = generate_voice_preview(
         conn,
         {
-            "prompt": text,
+            "prompt": understanding_text,
             "route": selected_route,
             "source_class": source_class,
             "context_summary": _voice_context_summary(package, dry_run),
@@ -443,8 +475,18 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
             "This dry run should pause for Cocoon support before it is used as an answer. "
             "Cocoon can hold the source issue safely while the front chat keeps its place."
         )
-    user_message_id = _insert_message(conn, session_id, "user", text, selected_route, source_class, package, {"route_preview": route})
+    user_message_id = _insert_message(
+        conn,
+        session_id,
+        "user",
+        text,
+        selected_route,
+        source_class,
+        package,
+        {"route_preview": route, "input_interpretation": input_interpretation},
+    )
     assistant_payload = {
+        "input_interpretation": input_interpretation,
         "route_preview": route,
         "dry_run": dry_run,
         "voice_preview": voice_preview,
@@ -465,6 +507,7 @@ def send_selene_chat_dry_run(conn: sqlite3.Connection, payload: dict[str, Any] |
             "user_message_id": user_message_id,
             "assistant_message_id": assistant_message_id,
             "candidate_text": candidate_text,
+            "input_interpretation": input_interpretation,
             "selected_route": selected_route,
             "source_class": source_class,
             "return_to_cocoon_recommended": route_to_b,

@@ -128,6 +128,7 @@ from .core_mind_runtime import (
 from .conversation_repair import plan_conversation_turn, repair_conversation_candidate
 from .detached_corpus import detached_corpus_audit
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn
+from .input_detangler import detangle_user_input
 from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
 from .kernel import kernel_state
 from .memory_organ import (
@@ -564,6 +565,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": plan_conversation_turn(payload)}
     if route_key == "native_language.conversation.repair":
         return {"route": route_key, "result": repair_conversation_candidate(payload)}
+    if route_key == "native_language.input.detangle":
+        return {"route": route_key, "result": detangle_user_input(payload)}
     if route_key == "language_teaching.status":
         return {"route": route_key, "result": language_teaching_status(conn)}
     if route_key == "language_teaching.items":

@@ -1263,6 +1263,13 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/native-language/input-detangle":
+            route_key = "native_language.input.detangle"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/selene-chat/dialogue-state/refresh":
             route_key = "dialogue_workspace.refresh"
             try:
