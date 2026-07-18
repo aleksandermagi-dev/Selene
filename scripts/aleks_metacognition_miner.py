@@ -18,7 +18,7 @@ DEFAULT_SOURCE_DIR = Path("AleksOSminer")
 DEFAULT_OUTPUT_DIR = Path("local-data") / "aleks_metacognition_miner"
 DEFAULT_CONVERSATION_OUTPUT_DIR = DEFAULT_OUTPUT_DIR / "conversation_pass"
 MAX_SCAN_CHARS = 6000
-EPISODE_MATCHER_VERSION = "4.26"
+EPISODE_MATCHER_VERSION = "4.40"
 
 BOUNDARY = (
     "Private Aleks metacognition review only. The miner proposes generalizable cognitive-method "
@@ -64,6 +64,15 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
                 r"\bso much we don(?:'|’)t understand but think we do\b[\s\S]{0,220}\bcross work\b[\s\S]{0,100}\b(?:few|multiple|different) fields\b",
                 r"\bscience really is extremely diverse but separate\b[\s\S]{0,180}\bloss of knowledge\b[\s\S]{0,180}\bcombine most of the cores\b",
             ),
+            "diagnostic_pattern_class_transfer": (
+                r"\bwitnessed stability\b[\s\S]{0,180}\bremoving immersive creatures\b[\s\S]{0,180}\bconnect the pattern\b",
+            ),
+            "organization_before_pattern_search": (
+                r"\borganize it\b[\s\S]{0,100}\bif it(?: is|(?:'|’)s) not organized i can(?:'|’)t find the patterns\b",
+            ),
+            "pattern_frequency_overgeneralization": (
+                r"\byes x is the answer for every math problem\b[\s\S]{0,140}\bshows up enough times to be a pattern\b[\s\S]{0,140}\btoo aggressive(?:ly)?\b",
+            ),
         },
         "strong_signals": (
             r"\bstructural analog",
@@ -73,11 +82,12 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\beven when i .{0,100}\b(?:relax|watch)\b.{0,120}\b(?:mapping|napping) patterns and solutions\b",
             r"\bso much we don(?:'|’)t understand but think we do\b[\s\S]{0,220}\bcross work\b[\s\S]{0,100}\b(?:few|multiple|different) fields\b",
             r"\bscience really is extremely diverse but separate\b[\s\S]{0,180}\bloss of knowledge\b[\s\S]{0,180}\bcombine most of the cores\b",
+            r"\bwitnessed stability\b[\s\S]{0,180}\bremoving immersive creatures\b[\s\S]{0,180}\bconnect the pattern\b",
         ),
         "representation_modes": ["relational", "pattern", "cross-domain"],
         "triggering_conditions": ["A problem may share organization, feedback, or constraints with another domain."],
         "possible_code_primitive": "structural_analogy_mapper",
-        "known_risks": ["surface resemblance mistaken for shared mechanism", "forced cross-domain connection", "confirmation through repeated but non-independent patterns"],
+        "known_risks": ["surface resemblance mistaken for shared mechanism", "forced cross-domain connection", "confirmation through repeated but non-independent patterns", "one successful troubleshooting case is treated as proof of a broad failure category", "the chosen organization scheme hides patterns that do not fit its categories", "frequent surface tokens are mistaken for the answer without checking the operation or relation"],
         "project_fit": ["intelligenceOS", "Metacognition Organ", "research synthesis"],
     },
     {
@@ -95,12 +105,24 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "on_demand_thought_experiment": (
                 r"\bcame during .{0,80}\bthought experiment\b[\s\S]{0,160}\bdo that all the time on command\b[\s\S]{0,160}\b(?:black holes|scenarios)\b[\s\S]{0,160}\bappeared\b",
             ),
+            "representation_withheld_without_reliable_data": (
+                r"\bso much uncertainty\b[\s\S]{0,120}\bblack\b[\s\S]{0,100}\bno static\b[\s\S]{0,160}\bno real data\b[\s\S]{0,160}\b(?:accurate|reliable)\b",
+            ),
+            "chart_to_mental_landmarks": (
+                r"\bopen a star chart\b[\s\S]{0,140}\btranslate that to what i see\b[\s\S]{0,120}\blandmarks in my head\b",
+            ),
+            "layered_visual_workspace": (
+                r"\bseparate parts\b[\s\S]{0,380}\bswitch to\s+voids\b[\s\S]{0,220}\bswitch to the gas and filaments\b",
+            ),
+            "stress_condition_visual_design": (
+                r"\bmade it in my head\b[\s\S]{0,100}\bwhat if it was under stress\b[\s\S]{0,120}\bmental image of a spider\b[\s\S]{0,180}\bflex support system\b",
+            ),
         },
-        "strong_signals": (r"\bvisuali[sz]e first\b", r"\bthe way i visuali[sz]e\b", r"\bimagery then words\b", r"\bvisual simulation mode\b", r"\bvisual model\b.*\b(?:think|reason|problem|assess|understand)\b", r"\bi can see it now\b.{0,100}\bintro scene\b", r"\bcreate these narratives\b.{0,120}\bsimilar to what i can do in my head\b", r"\bcame during .{0,80}\bthought experiment\b[\s\S]{0,160}\bdo that all the time on command\b[\s\S]{0,160}\b(?:black holes|scenarios)\b[\s\S]{0,160}\bappeared\b"),
+        "strong_signals": (r"\bvisuali[sz]e first\b", r"\bthe way i visuali[sz]e\b", r"\bimagery then words\b", r"\bvisual simulation mode\b", r"\bvisual model\b.*\b(?:think|reason|problem|assess|understand)\b", r"\bi can see it now\b.{0,100}\bintro scene\b", r"\bcreate these narratives\b.{0,120}\bsimilar to what i can do in my head\b", r"\bcame during .{0,80}\bthought experiment\b[\s\S]{0,160}\bdo that all the time on command\b[\s\S]{0,160}\b(?:black holes|scenarios)\b[\s\S]{0,160}\bappeared\b", r"\bso much uncertainty\b[\s\S]{0,120}\bblack\b[\s\S]{0,100}\bno static\b[\s\S]{0,160}\bno real data\b[\s\S]{0,160}\b(?:accurate|reliable)\b"),
         "representation_modes": ["visual", "spatial", "dynamic"],
         "triggering_conditions": ["The problem depends on shape, arrangement, motion, scale, or interacting parts."],
         "possible_code_primitive": "visual_spatial_problem_frame",
-        "known_risks": ["image coherence mistaken for factual correctness", "details lost during translation into language"],
+        "known_risks": ["image coherence mistaken for factual correctness", "details lost during translation into language", "absence of a stable visualization is mistaken for proof that no evidence exists"],
         "project_fit": ["Metacognition Organ", "perception", "simulation workbench"],
     },
     {
@@ -119,6 +141,15 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             ),
             "intuition_to_math_translation": (
                 r"\bgoing to school to learn (?:the|that) math\b[\s\S]{0,140}\blearn .{0,80}\bsubconsciously\b",
+            ),
+            "chart_to_observed_landmarks": (
+                r"\bopen a star chart\b[\s\S]{0,140}\btranslate that to what i see\b[\s\S]{0,120}\blandmarks in my head\b",
+            ),
+            "visual_layer_selection_without_words": (
+                r"\bzero words for this\b[\s\S]{0,220}\bcosmic web structure\b[\s\S]{0,240}\bswitch to\s+voids\b[\s\S]{0,220}\bswitch to the gas and filaments\b",
+            ),
+            "stress_question_to_visual_design": (
+                r"\bwhat if it was under stress\b[\s\S]{0,120}\bmental image of a spider\b[\s\S]{0,180}\bflex support system\b",
             ),
         },
         "strong_signals": (r"\bimagery then words\b", r"\bpattern(?:s)? into (?:words|rules)\b", r"\bfun way to teach (?:kids|people|students|someone|the .{0,50})\b", r"\bto explain .{0,120}\bmake it like one of those .{0,160}\b(?:commercials?|stories|memes?|scenes?|analogies|examples)\b", r"\btake (?:the )?(?:sounds?|radio|pressure|seismic) waves? instead of light waves? and map (?:it|them) to images?\b", r"\bgoing to school to learn (?:the|that) math\b[\s\S]{0,140}\blearn .{0,80}\bsubconsciously\b"),
@@ -147,14 +178,57 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "inverse_intervention": (
                 r"\bif i add (?P<inverse_variable>mass|energy|pressure|heat|volume|density|gravity|distance|speed|temperature)\b[\s\S]{0,180}\b(?:it )?(?:increases?|raises?)\b[\s\S]{0,140}\bso what if i remove(?:d)? (?P=inverse_variable)\b",
             ),
-            "unintended_use_risk": (r"\bonce released\b.{0,140}\bcould inspire\b.{0,120}\bweaponiz(?:e|ed|ing)\b", r"\bwhat(?:'|’)re the chances\b.{0,160}\b(?:bomb|weapon)\b"),
+            "unintended_use_risk": (r"\bonce released\b.{0,140}\bcould inspire\b.{0,120}\bweaponiz(?:e|ed|ing)\b", r"\bwhat(?:'|’)?re the chances\b.{0,160}\b(?:bomb|weapon)\b"),
+            "preference_separated_scenario_update": (
+                r"\bgather(?:ing)? new information\b[\s\S]{0,120}\bsimulating in my head\b[\s\S]{0,180}\bwhat i want isn(?:'|’)t usually what happens\b",
+            ),
+            "failure_mechanism_to_recovery_design": (
+                r"\blearn(?:ed)? of a specific failure\b[\s\S]{0,420}\bwhy would that happen\b[\s\S]{0,180}\bcame up with graceful fall\b[\s\S]{0,260}\bcannot recover from failure\b[\s\S]{0,180}\brisk that over again\b",
+            ),
         },
-        "strong_signals": (r"\bsimulat(?:e|ing) (?:the )?system\b", r"\bsystems? and consequences?\b", r"\bwanted to test my .{0,80}\btheory\b.{0,120}\bresults?\b", r"\bexpand the simulation\b.{0,160}\bparameters? to test\b", r"\bin (?:that|this|the) simulation (?:i|we) (?:have )?(?:created|ran|made)\b", r"\bif (?:humanity|the system|the civilization|the species) .{0,80}\b(?:went extinct|failed|disappeared)\b.{0,220}\bover time\b", r"\bonce released\b.{0,140}\bcould inspire\b.{0,120}\bweaponiz(?:e|ed|ing)\b"),
+        "strong_signals": (r"\bsimulat(?:e|ing) (?:the )?system\b", r"\bsystems? and consequences?\b", r"\bwanted to test my .{0,80}\btheory\b.{0,120}\bresults?\b", r"\bexpand the simulation\b.{0,160}\bparameters? to test\b", r"\bin (?:that|this|the) simulation (?:i|we) (?:have )?(?:created|ran|made)\b", r"\bif (?:humanity|the system|the civilization|the species) .{0,80}\b(?:went extinct|failed|disappeared)\b.{0,220}\bover time\b", r"\bonce released\b.{0,140}\bcould inspire\b.{0,120}\bweaponiz(?:e|ed|ing)\b", r"\bgather(?:ing)? new information\b[\s\S]{0,120}\bsimulating in my head\b[\s\S]{0,180}\bwhat i want isn(?:'|’)t usually what happens\b"),
         "representation_modes": ["causal", "systems", "temporal"],
         "triggering_conditions": ["The answer depends on interaction, feedback, time, or downstream effects."],
         "possible_code_primitive": "bounded_system_simulator",
         "known_risks": ["missing variables produce persuasive but incomplete simulations", "model assumptions silently treated as reality", "a conceivable misuse is mistaken for a likely or mechanically feasible misuse"],
         "project_fit": ["intelligenceOS", "Metacognition Organ", "planning"],
+    },
+    {
+        "key": "causal_transition_gap_tracing",
+        "name": "Causal transition-gap tracing",
+        "description": "Trace an accepted account from an initial state to a later state, identify the force or mechanism required for the transition, and compare the account with cases where the proposed source or condition persists.",
+        "signals": {
+            "required_transition_force": (
+                r"\bunless a force acts upon it\b[\s\S]{0,160}\bjust sit there\b",
+            ),
+            "point_a_to_b_trace": (
+                r"\bhow did it go from point a\b[\s\S]{0,160}\bto b\b",
+            ),
+            "persistent_source_check": (
+                r"\bnurser(?:y|ies)\b[\s\S]{0,180}\b(?:still there and visible|did not burn away)\b",
+            ),
+            "formation_under_chaos_check": (
+                r"\bfree floating\b[\s\S]{0,180}\bblasted around\b[\s\S]{0,160}\bhow can something form\b",
+            ),
+            "metaphor_mechanism_mismatch": (
+                r"\bnurser(?:y|ies) are wrong\b[\s\S]{0,80}\bnot a nursery\b",
+            ),
+        },
+        "strong_signals": (
+            r"\bunless a force acts upon it\b[\s\S]{0,160}\bjust sit there\b",
+            r"\bhow did it go from point a\b[\s\S]{0,160}\bto b\b",
+            r"\bnurser(?:y|ies)\b[\s\S]{0,180}\b(?:still there and visible|did not burn away)\b",
+            r"\bfree floating\b[\s\S]{0,180}\bblasted around\b[\s\S]{0,160}\bhow can something form\b",
+        ),
+        "representation_modes": ["causal", "state-transition", "counterexample"],
+        "triggering_conditions": ["An explanation names the initial and resulting states but leaves the transition mechanism, force, or persistent-source case unclear."],
+        "possible_code_primitive": "causal_transition_gap_tracer",
+        "known_risks": [
+            "a missing explanation is mistaken for proof that the accepted model is false",
+            "an intuitive spatial metaphor is imposed on a distributed or statistical process",
+            "the transition check begins from an incorrect premise",
+        ],
+        "project_fit": ["Metacognition Organ", "Comprehension Organ", "source-backed research", "Answer Engine"],
     },
     {
         "key": "constraint_driven_design_iteration",
@@ -180,6 +254,36 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "whole_to_component_capability_partition": (
                 r"\bi don(?:'|’)?t think (?:a )?(?:3d )?printer can (?:make|print) (?:the |an? )?.{0,120}\b[\s\S]{0,260}\b(?:housing mechanisms?|connectors?|metal prongs?)\b",
             ),
+            "constraint_value_reassessment": (
+                r"\babout to suggest (?:a )?better (?:idea|approach|design)\b.{0,140}\bbut (?:you know what|then realized)\b[\s\S]{0,220}\b(?:gives?|produces?|captures?) .{0,100}\bdata (?:we|you|i) wouldn(?:'|’)?t get\b",
+            ),
+            "stability_gated_risk_progression": (
+                r"\bsmall low risk\b[\s\S]{0,160}\bonce more stable and okay with losing money\b[\s\S]{0,100}\bmedium risks?\b[\s\S]{0,80}\bthen high risks?\b",
+            ),
+            "anti_utopia_constraint_request": (
+                r"\bwhat constraints do i have\b[\s\S]{0,100}\bkeep it from utopia\b",
+            ),
+            "single_lever_downstream_coverage": (
+                r"\bif i only get one\b[\s\S]{0,180}\bwhich (?:would|will)\b[\s\S]{0,220}\bhits most of those with one\b",
+            ),
+            "intermodule_communication_dependency": (
+                r"\bdesigned it as a\b[\s\S]{0,80}\bb could work\b[\s\S]{0,100}\bb breaks down\b[\s\S]{0,160}\bsystems can(?:'|’)t [“\"]?talk[”\"]? to each ?other\b[\s\S]{0,100}\breadings will be off\b",
+            ),
+            "capability_before_project_scope": (
+                r"\bneed to know the limits of what it can and can(?:'|’)t do before\b[\s\S]{0,180}\bnot going to do that as a first project\b[\s\S]{0,100}\bresearch assistant\b",
+            ),
+            "specialize_then_combine_later": (
+                r"\bmake that a separate agent\b[\s\S]{0,160}\bcombine them later\b",
+            ),
+            "usability_gate_before_feature_expansion": (
+                r"\bbefore we go code crazy\b[\s\S]{0,140}\bneed some type of exe\b[\s\S]{0,180}\bpeople aren(?:'|’)t going to want to type\b[\s\S]{0,100}\brun app\.py\b",
+            ),
+            "root_cause_over_patch_accumulation": (
+                r"\bissues come from down the line\b[\s\S]{0,180}\bmade patches for something\b[\s\S]{0,180}\binstead of just fixing the original issue\b[\s\S]{0,100}\bpatch the bug\b",
+            ),
+            "failure_derived_recovery_requirement": (
+                r"\blearn(?:ed)? of a specific failure\b[\s\S]{0,420}\bwhy would that happen\b[\s\S]{0,180}\bcame up with graceful fall\b",
+            ),
         },
         "strong_signals": (
             r"\bmaterials? (?:are )?needed\b.{0,180}\bmission parameters\b",
@@ -196,12 +300,54 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\bwouldn(?:'|’)t have to use (?:lava|(?:that|the) (?:fuel|material|component|source))\b.{0,180}\banything that can (?:(?:store|supply|produce|transfer) (?:heat|energy|power|fuel)|withstand (?:heat|temperature|pressure))\b",
             r"\bif i (?:buy|use|combine) (?:\d+|two|three|four) separate (?:telescopes|sensors|modules|tools|devices)\b[\s\S]{0,180}\b(?:make|use|add) [\s\S]{0,80}\bthat connects?\b[\s\S]{0,220}\bsolve the problem\b[\s\S]{0,120}\bwithout reinventing the wheel\b",
             r"\bi don(?:'|’)?t think (?:a )?(?:3d )?printer can (?:make|print) (?:the |an? )?.{0,120}\b[\s\S]{0,260}\b(?:housing mechanisms?|connectors?|metal prongs?)\b",
+            r"\babout to suggest (?:a )?better (?:idea|approach|design)\b.{0,140}\bbut (?:you know what|then realized)\b[\s\S]{0,220}\b(?:gives?|produces?|captures?) .{0,100}\bdata (?:we|you|i) wouldn(?:'|’)?t get\b",
+            r"\bsmall low risk\b[\s\S]{0,160}\bonce more stable and okay with losing money\b[\s\S]{0,100}\bmedium risks?\b[\s\S]{0,80}\bthen high risks?\b",
+            r"\bwhat constraints do i have\b[\s\S]{0,100}\bkeep it from utopia\b",
+            r"\bif i only get one\b[\s\S]{0,180}\bwhich (?:would|will)\b[\s\S]{0,220}\bhits most of those with one\b",
+            r"\bdesigned it as a\b[\s\S]{0,80}\bb could work\b[\s\S]{0,100}\bb breaks down\b[\s\S]{0,160}\bsystems can(?:'|’)t [“\"]?talk[”\"]? to each ?other\b[\s\S]{0,100}\breadings will be off\b",
         ),
         "representation_modes": ["requirements", "constraint", "iterative design"],
         "triggering_conditions": ["An ambitious goal needs to become a feasible system through progressive requirement and architecture decisions."],
         "possible_code_primitive": "constraint_design_iteration_ledger",
-        "known_risks": ["adding subsystems before validating core feasibility", "accepting a proposed architecture because it sounds complete", "requirements drift without recording why the design changed"],
+        "known_risks": ["adding subsystems before validating core feasibility", "accepting a proposed architecture because it sounds complete", "requirements drift without recording why the design changed", "a staged risk plan inherits domain-specific uncertainty and may still underestimate loss", "capability discovery expands into an oversized first project before a bounded proof of use", "premature specialization duplicates infrastructure that should have remained shared", "packaging work begins before the underlying workflow is stable enough to distribute", "root-cause language is used to justify an oversized rewrite before the fault is localized", "one public failure is treated as a complete causal model for a general recovery requirement"],
         "project_fit": ["intelligenceOS", "Metacognition Organ", "engineering workbench", "planning"],
+    },
+    {
+        "key": "dependency_ordered_system_composition",
+        "name": "Dependency-ordered system composition",
+        "description": "Order a composed system from base component through extensions, overrides, and patches according to dependency and precedence rules, then use tooling and trial evidence to validate the stack.",
+        "signals": {
+            "patch_after_target": (
+                r"\bpatch\b[\s\S]{0,120}\bafter the main\b[\s\S]{0,140}\bloaded last wins\b",
+            ),
+            "base_extension_priority": (
+                r"\bmain file\b[\s\S]{0,100}\bgoes first\b[\s\S]{0,120}\b(?:2nd|second)\b[\s\S]{0,80}\b(?:third|3rd)\b",
+            ),
+            "dependency_tool_check": (
+                r"\bmissing masters\b[\s\S]{0,160}\bwon(?:'|’)t let you deploy if the order is wrong\b",
+            ),
+            "trial_refined_hierarchy": (
+                r"\bunderstand hierarchy\b[\s\S]{0,120}\btrial and error\b",
+            ),
+            "behavior_foundation_before_knowledge_expansion": (
+                r"\bneed to test (?:it(?:'|’)s|its) nlp\b[\s\S]{0,140}\bonce that(?:'|’)s working i add actual knowledge sets\b[\s\S]{0,180}\bfirst (?:convos|conversations?)\b[\s\S]{0,120}\border of operations should be applied\b",
+            ),
+        },
+        "strong_signals": (
+            r"\bpatch\b[\s\S]{0,120}\bafter the main\b[\s\S]{0,140}\bloaded last wins\b",
+            r"\bmain file\b[\s\S]{0,100}\bgoes first\b[\s\S]{0,120}\b(?:2nd|second)\b[\s\S]{0,80}\b(?:third|3rd)\b",
+            r"\bmissing masters\b[\s\S]{0,160}\bwon(?:'|’)t let you deploy if the order is wrong\b",
+        ),
+        "representation_modes": ["dependency", "hierarchy", "precedence"],
+        "triggering_conditions": ["Several components modify or depend on one another and correctness depends on their composition order."],
+        "possible_code_primitive": "dependency_precedence_composer",
+        "known_risks": [
+            "last-loaded-wins is overgeneralized to systems with merge, conflict, or semantic dependency rules",
+            "priority order is confused with conceptual importance",
+            "a tool suggestion is accepted without checking the resulting behavior",
+            "one preferred development order is treated as universal despite different dependency graphs",
+        ],
+        "project_fit": ["engineering workbench", "local-code inspection", "Answer Engine", "Metacognition Organ"],
     },
     {
         "key": "candidate_model_construction",
@@ -222,8 +368,23 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "principle_based_design": (
                 r"\bwhat if (?:we|i) designed? (?:an? )?(?:engine|system|device|tool|model) based (?:up)?on that princi(?:ple|pal)\b",
             ),
+            "behavior_change_history_hypothesis": (
+                r"\bi(?:'|’)?m thinking .{0,140}\bbullied at (?:the )?.{0,80}\b[\s\S]{0,260}\bmaybe a connection\b.{0,100}\bhighly possible but (?:i don(?:'|’)?t know|idk)\b",
+            ),
             "data_bounded_best_guess": (
                 r"\bidk what the hell it is\b[\s\S]{0,100}\bwhy it(?:'|’)s a hypothesis\b[\s\S]{0,140}\bbest guess due to the data\b",
+            ),
+            "minimal_pipeline_hypothesis": (
+                r"\bquery or whatever topic\b[\s\S]{0,120}\btypes? (?:a )?response\b[\s\S]{0,160}\brails exe\b[\s\S]{0,100}\bguard dog\b",
+            ),
+            "unknown_then_candidate_mechanism": (
+                r"\btruth is\b[\s\S]{0,40}\bi do not know\b[\s\S]{0,80}\bi (?:don(?:'|’)t|do not) claim to know\b[\s\S]{0,260}\bthings that don(?:'|’)t line up\b[\s\S]{0,400}\bi think it(?:'|’)s architecture\b",
+            ),
+            "unknown_detection_best_guess": (
+                r"\bdon(?:'|’)t know what .{0,40}\bdetecting\b[\s\S]{0,100}\bthere is something\b[\s\S]{0,100}\bbest guess\b",
+            ),
+            "thought_experiment_pre_evidence_generation": (
+                r"\bstrict logic\b[\s\S]{0,180}\bnever .{0,40}\bfigured out general relativity\b[\s\S]{0,220}\briding a beam of light\b[\s\S]{0,160}\bwhat science evidence\b",
             ),
         },
         "strong_signals": (
@@ -238,11 +399,15 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\banything that .{0,140}\bhas to be (?:a |some )?(?:type|kind|form) of (?:life|living thing|organism|intelligence|system|process|entity)\b.{0,180}\bthe only (?:inanimate|nonliving|non-living)\b.{0,120}\bwould be\b",
             r"\bwhat if (?:we|i) designed? (?:an? )?(?:engine|system|device|tool|model) based (?:up)?on that princi(?:ple|pal)\b",
             r"\bidk what the hell it is\b[\s\S]{0,100}\bwhy it(?:'|’)s a hypothesis\b[\s\S]{0,140}\bbest guess due to the data\b",
+            r"\bquery or whatever topic\b[\s\S]{0,120}\btypes? (?:a )?response\b[\s\S]{0,160}\brails exe\b[\s\S]{0,100}\bguard dog\b",
+            r"\btruth is\b[\s\S]{0,40}\bi do not know\b[\s\S]{0,80}\bi (?:don(?:'|’)t|do not) claim to know\b[\s\S]{0,260}\bthings that don(?:'|’)t line up\b[\s\S]{0,400}\bi think it(?:'|’)s architecture\b",
+            r"\bdon(?:'|’)t know what .{0,40}\bdetecting\b[\s\S]{0,100}\bthere is something\b[\s\S]{0,100}\bbest guess\b",
+            r"\bstrict logic\b[\s\S]{0,180}\bnever .{0,40}\bfigured out general relativity\b[\s\S]{0,220}\briding a beam of light\b[\s\S]{0,160}\bwhat science evidence\b",
         ),
         "representation_modes": ["hypothetical", "mechanistic", "provisional"],
         "triggering_conditions": ["An observation appears incomplete and a provisional mechanism is needed to make testable predictions."],
         "possible_code_primitive": "candidate_model_constructor",
-        "known_risks": ["interesting mechanism mistaken for established explanation", "model name becomes stickier than the evidence"],
+        "known_risks": ["interesting mechanism mistaken for established explanation", "model name becomes stickier than the evidence", "temporal association is mistaken for causation", "a plausible external shape is mistaken for knowledge of an unseen internal architecture", "an inventory of unexplained repetitions is treated as weighted support for the candidate mechanism", "a famous successful thought experiment is used as survivorship evidence that unsupported candidates deserve equal weight"],
         "project_fit": ["intelligenceOS", "Metacognition Organ", "research workbench"],
     },
     {
@@ -254,15 +419,21 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "extension": (r"\b(?:i(?:'|’)?d|i would) like to add to it\b", r"\badd to (?:the|that|this) (?:model|theory|explanation)\b", r"\bbuild on (?:the|that|this) (?:model|theory|explanation)\b"),
             "scope_gap": (r"\bwhat caused (?:it|this|that|the .{0,40})\b", r"\bdoesn(?:'|’)?t explain (?:the )?(?:origin|cause|mechanism)\b", r"\babsolute origin\b"),
             "minimal_change": (r"\bnothing changes except\b", r"\bpreserv(?:e|es|ing) .{0,100}\bwhile (?:adding|changing|extending)\b"),
+            "additive_not_refutational_scope": (
+                r"\bit doesn(?:'|’)t challenge anything it adds\b[\s\S]{0,100}\b(?:a )?discovery\b.{0,20}\bnot a framework\b",
+                r"\bnot trying to disprove anything\b[\s\S]{0,120}\btrying to add and help science\b",
+            ),
         },
         "strong_signals": (
             r"\bi don(?:'|’)?t disagree with .{0,120}\b(?:add to it|build on it)\b",
             r"\bkeep .{0,100}\bwhat (?:is|was) supported\b.{0,120}\b(?:add|extend|revise)\b",
+            r"\bit doesn(?:'|’)t challenge anything it adds\b[\s\S]{0,100}\b(?:a )?discovery\b.{0,20}\bnot a framework\b",
+            r"\bnot trying to disprove anything\b[\s\S]{0,120}\btrying to add and help science\b",
         ),
         "representation_modes": ["conservative revision", "scope", "model layering"],
         "triggering_conditions": ["An existing model explains part of the evidence, but a causal or scope gap remains open."],
         "possible_code_primitive": "baseline_preserving_model_extension_ledger",
-        "known_risks": ["an attractive extension inherits credibility from the supported baseline", "the added mechanism may be untestable", "minimal-change framing can hide a large assumption"],
+        "known_risks": ["an attractive extension inherits credibility from the supported baseline", "the added mechanism may be untestable", "minimal-change framing can hide a large assumption", "describing a proposal as additive is mistaken for exemption from ordinary evidence requirements"],
         "project_fit": ["intelligenceOS", "Metacognition Organ", "research workbench"],
     },
     {
@@ -279,6 +450,9 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "hypothesis_revision_by_data": (
                 r"\bnot a theory though\b.{0,20}\bit(?:'|’)s a hypothesis\b[\s\S]{0,120}\bcan be altered if more data shows it(?:'|’)s something else\b",
             ),
+            "formal_claim_strength_calibration": (
+                r"\blanguage here is not what i used on the paper\b[\s\S]{0,140}\bpotential discovery\b",
+            ),
         },
         "strong_signals": (
             r"\bhypothes(?:is|es)\b.{0,100}\bnot (?:a )?theory\b",
@@ -287,11 +461,12 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\bname change\b.{0,100}\bfrom now on\b",
             r"\bofficially moved on from (?:tng|(?:the|my) (?:idea|model|hypothesis|explanation|claim))\b",
             r"\bnot a theory though\b.{0,20}\bit(?:'|’)s a hypothesis\b[\s\S]{0,120}\bcan be altered if more data shows it(?:'|’)s something else\b",
+            r"\blanguage here is not what i used on the paper\b[\s\S]{0,140}\bpotential discovery\b",
         ),
         "representation_modes": ["conceptual", "epistemic", "scope"],
         "triggering_conditions": ["A useful working label has begun to imply more certainty, mechanism, or scope than the evidence supports."],
         "possible_code_primitive": "provisional_concept_label_ledger",
-        "known_risks": ["a memorable name hardens into an unsupported claim", "renaming hides rather than records a substantive correction", "useful structure is discarded with an overbroad label"],
+        "known_risks": ["a memorable name hardens into an unsupported claim", "renaming hides rather than records a substantive correction", "useful structure is discarded with an overbroad label", "informal shorthand leaks into formal communication and silently raises the apparent claim strength"],
         "project_fit": ["Metacognition Organ", "research workbench", "knowledge provenance"],
     },
     {
@@ -324,6 +499,34 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "capability_gap_to_domain_interface": (
                 r"\bi .{0,100}\bneed to learn .{0,40}\bmath\b[\s\S]{0,180}\b(?:make|build|create) .{0,80}\b(?:interface|assistant|tool)\b[\s\S]{0,100}\brun the math\b",
             ),
+            "mapped_process_to_cognitive_tool": (
+                r"\bturn this into a cognitive tool\b",
+                r"\bturn (?:the|this) (?:mapped )?(?:process|sequence|response) into (?:a )?(?:reusable )?(?:cognitive )?tool\b",
+            ),
+            "parameterized_new_data_rerun": (
+                r"\bsame python script\b[\s\S]{0,180}\bchange a few coordinates\b[\s\S]{0,180}\bseparate data\b",
+            ),
+            "downloadable_reproducible_pipeline": (
+                r"\bevery single thing required\b[\s\S]{0,180}\bdifferent data\b[\s\S]{0,120}\bavailable for download\b[\s\S]{0,180}\bplug and play\b",
+            ),
+            "pattern_persistence_rerun": (
+                r"\brepeat the process with a different quasar dataset\b[\s\S]{0,140}\bsee if the pattern persists\b",
+            ),
+            "repeat_then_harden": (
+                r"\bsecond quasar\b[\s\S]{0,100}\bif it repeats we harden the script\b[\s\S]{0,100}\bboth just in order\b",
+            ),
+            "repeatability_or_reframe": (
+                r"\btest repeatability across a new data set\b[\s\S]{0,120}\bif there isn(?:'|’)t\b.{0,20}\bthen i reframe the hypothesis\b",
+            ),
+            "same_vs_new_dataset": (
+                r"\bsecond data set\b[\s\S]{0,160}\bgrab a new data set now\b",
+            ),
+            "simplified_reusable_dataset_workflow": (
+                r"\blearn(?:ed)? i didn(?:'|’)t need all\b[\s\S]{0,160}\bsimplified the process\b[\s\S]{0,120}\breuse it for other separate data sets\b",
+            ),
+            "nontechnical_execution_interface": (
+                r"\bneed some type of exe\b[\s\S]{0,180}\bpeople aren(?:'|’)t going to want to type\b[\s\S]{0,100}\bactivate and run app\.py\b",
+            ),
         },
         "strong_signals": (
             r"\bwhat (?:all )?(?:information|data|inputs?) do (?:you|we|i) need to run the math\b",
@@ -342,11 +545,20 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\brun some (?:real )?numbers\b.{0,140}\bwhat(?:'|’)s (?:the )?(?:percentage|probability|chance) (?:this|that|it) (?:works?|will work|succeeds?)\b",
             r"\bit can be any number of things\b[\s\S]{0,260}\bi have no .{0,40} clue\b[\s\S]{0,180}\bhere(?:'|’)s the program\b.{0,20}\brun the data\b",
             r"\bi .{0,100}\bneed to learn .{0,40}\bmath\b[\s\S]{0,180}\b(?:make|build|create) .{0,80}\b(?:interface|assistant|tool)\b[\s\S]{0,100}\brun the math\b",
+            r"\bturn this into a cognitive tool\b",
+            r"\bturn (?:the|this) (?:mapped )?(?:process|sequence|response) into (?:a )?(?:reusable )?(?:cognitive )?tool\b",
+            r"\bsame python script\b[\s\S]{0,180}\bchange a few coordinates\b[\s\S]{0,180}\bseparate data\b",
+            r"\bevery single thing required\b[\s\S]{0,180}\bdifferent data\b[\s\S]{0,120}\bavailable for download\b[\s\S]{0,180}\bplug and play\b",
+            r"\brepeat the process with a different quasar dataset\b[\s\S]{0,140}\bsee if the pattern persists\b",
+            r"\bsecond quasar\b[\s\S]{0,100}\bif it repeats we harden the script\b[\s\S]{0,100}\bboth just in order\b",
+            r"\btest repeatability across a new data set\b[\s\S]{0,120}\bif there isn(?:'|’)t\b.{0,20}\bthen i reframe the hypothesis\b",
+            r"\bsecond data set\b[\s\S]{0,160}\bgrab a new data set now\b",
+            r"\blearn(?:ed)? i didn(?:'|’)t need all\b[\s\S]{0,160}\bsimplified the process\b[\s\S]{0,120}\breuse it for other separate data sets\b",
         ),
         "representation_modes": ["operational", "evidential", "tool-mediated"],
         "triggering_conditions": ["A model or question needs to be converted into inspectable inputs, measurements, tests, or executable operations."],
         "possible_code_primitive": "evidence_test_and_tool_router",
-        "known_risks": ["tool output treated as proof without checking assumptions", "implementation detail obscures the original claim", "a generic coding request is mistaken for a cognitive method"],
+        "known_risks": ["tool output treated as proof without checking assumptions", "implementation detail obscures the original claim", "a generic coding request is mistaken for a cognitive method", "a rerunnable pipeline is mistaken for validation of the claim it evaluates", "new coordinates or data are treated as independent while hidden pipeline assumptions remain shared", "tool hardening optimizes a pipeline before the detected effect survives a genuinely independent dataset", "a convenient launcher hides environment, dependency, or provenance failures that users still need surfaced"],
         "project_fit": ["intelligenceOS", "Answer Engine", "domain adapters", "research workbench"],
     },
     {
@@ -365,13 +577,71 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "enumerated_unknowns_with_data_route": (
                 r"\bit can be any number of things\b[\s\S]{0,320}\bit could be\b[\s\S]{0,100}\bcould be\b[\s\S]{0,340}\brun the data\b",
             ),
+            "parallel_practical_and_system_hypotheses": (
+                r"\bbeginning to suspect\b[\s\S]{0,220}\bor it(?:'|’)?s a system error\b[\s\S]{0,160}\bwhat do you think about both\b",
+            ),
+            "action_decoupled_anomaly_hold": (
+                r"\bcoincidence or something more\b[\s\S]{0,120}\bstays that way\b[\s\S]{0,160}\bdon(?:'|’)t let it control\b",
+                r"\bdon(?:'|’)t let it control\b[\s\S]{0,180}\bcoincidence or something more\b[\s\S]{0,120}\bstays that way\b",
+            ),
+            "data_revisable_overlapping_candidates": (
+                r"\bvisuali[sz]e them as separate bubbles that can overlap\b[\s\S]{0,140}\bchange whenever new data is introduced\b[\s\S]{0,120}\bnot attached to one idea\b",
+            ),
         },
-        "strong_signals": (r"\bmultiple working hypotheses\b", r"\bcompeting explanations\b", r"\btwo frameworks?\b.{0,120}\bwork(?:ing)? simultaneously\b", r"\btwo new ideas\b[\s\S]{0,220}\b1\b[\s\S]{0,220}\b2\b", r"\bbrain(?:'|’)?s going (?:three|3) ways\b.{0,220}\bseparate from\b", r"\bsave (?:this|that|it) as a separate idea\b", r"\bit can be any number of things\b[\s\S]{0,320}\bit could be\b[\s\S]{0,100}\bcould be\b[\s\S]{0,340}\brun the data\b"),
+        "strong_signals": (r"\bmultiple working hypotheses\b", r"\bcompeting explanations\b", r"\btwo frameworks?\b.{0,120}\bwork(?:ing)? simultaneously\b", r"\btwo new ideas\b[\s\S]{0,220}\b1\b[\s\S]{0,220}\b2\b", r"\bbrain(?:'|’)?s going (?:three|3) ways\b.{0,220}\bseparate from\b", r"\bsave (?:this|that|it) as a separate idea\b", r"\bit can be any number of things\b[\s\S]{0,320}\bit could be\b[\s\S]{0,100}\bcould be\b[\s\S]{0,340}\brun the data\b", r"\bbeginning to suspect\b[\s\S]{0,220}\bor it(?:'|’)?s a system error\b[\s\S]{0,160}\bwhat do you think about both\b", r"\bcoincidence or something more\b[\s\S]{0,120}\bstays that way\b[\s\S]{0,160}\bdon(?:'|’)t let it control\b", r"\bdon(?:'|’)t let it control\b[\s\S]{0,180}\bcoincidence or something more\b[\s\S]{0,120}\bstays that way\b"),
         "representation_modes": ["hypothetical", "comparative", "probabilistic"],
         "triggering_conditions": ["Available evidence supports more than one materially different explanation."],
         "possible_code_primitive": "candidate_model_workspace",
-        "known_risks": ["artificial ambiguity after evidence is sufficient", "candidate count grows without a stopping rule"],
+        "known_risks": ["artificial ambiguity after evidence is sufficient", "candidate count grows without a stopping rule", "a salient anomaly remains privileged without a route for gathering discriminating evidence", "overlap between candidates is treated as compatibility without specifying the shared and conflicting predictions"],
         "project_fit": ["intelligenceOS", "Metacognition Organ"],
+    },
+    {
+        "key": "claimwise_opposition_testing",
+        "name": "Claimwise opposition testing",
+        "description": "Solicit the strongest opposing case, decompose it into individual claims, concede supported points, qualify partial ones, and challenge the remaining assumptions separately.",
+        "signals": {
+            "strongest_opposing_case": (
+                r"\bgive me your strongest points? on why\b",
+                r"\bgive me the strongest (?:case|argument|objections?) against\b",
+            ),
+            "numbered_claim_response": (
+                r"(?:^|\n)\s*1[.)]\s+[\s\S]{0,1000}(?:^|\n)\s*2[.)]\s+[\s\S]{0,1000}(?:^|\n)\s*3[.)]\s+",
+            ),
+            "unrefuted_concession": (
+                r"\b(?:that(?:'|’)s|that is|true) .{0,100}\bnot (?:exactly )?(?:a |one )?(?:point )?i can refute\b",
+            ),
+            "partial_concession": (
+                r"\byou(?:'|’)re not wrong but you(?:'|’)re not entirely correct\b",
+                r"\btrue\b.{0,60}\bnot entirely correct\b",
+            ),
+            "counterexample_to_universal": (
+                r"\bto say .{0,100}\bcan(?:'|’)t\b.{0,120}\bwhile i do\b.{0,80}\bi am .{0,40}\bis wrong\b",
+            ),
+            "assume_claim_then_audit_omissions": (
+                r"\blet me push on your reasoning\b[\s\S]{0,220}\bif we assume\b[\s\S]{0,240}\bglosses over\b",
+            ),
+            "opponent_model_integration": (
+                r"\bi have my point\b.{0,20}\byou have yours\b[\s\S]{0,120}\bi accept your point and apply it to my model\b[\s\S]{0,100}\bif it works\b[\s\S]{0,100}\bif it doesn(?:'|’)t\b[\s\S]{0,140}\bwhy you think the way you do\b",
+            ),
+        },
+        "strong_signals": (
+            r"\bgive me your strongest points? on why\b",
+            r"\bgive me the strongest (?:case|argument|objections?) against\b",
+            r"\b(?:that(?:'|’)s|that is|true) .{0,100}\bnot (?:exactly )?(?:a |one )?(?:point )?i can refute\b",
+            r"\byou(?:'|’)re not wrong but you(?:'|’)re not entirely correct\b",
+            r"\blet me push on your reasoning\b[\s\S]{0,220}\bif we assume\b[\s\S]{0,240}\bglosses over\b",
+        ),
+        "representation_modes": ["dialectical", "claimwise", "comparative"],
+        "triggering_conditions": ["A preferred position should be tested against the strongest available objections rather than a weak summary of them."],
+        "possible_code_primitive": "claimwise_opposition_matrix",
+        "known_risks": [
+            "the supplied opposing case is a strawman or omits material evidence",
+            "an itemized rebuttal appears rigorous while leaving premises unchecked",
+            "a personal counterexample is overgeneralized against a population-level claim",
+            "debate confidence is mistaken for evidential strength",
+            "explaining why another person holds a claim is mistaken for validating that claim",
+        ],
+        "project_fit": ["Metacognition Organ", "Answer Engine", "source-backed research", "research workbench"],
     },
     {
         "key": "dialectical_third_model_synthesis",
@@ -382,16 +652,57 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "third_model": (r"\bthird (?:narrative|model|option|explanation)\b", r"\bnew (?:narrative|model) beyond (?:the|that) binary\b"),
             "binary_reframe": (r"\bredefines? the binary\b", r"\bfalse binary\b", r"\bneither .{0,100}\bnor\b.*\b(?:instead|rather)\b"),
             "evidence_anchor": (r"\bscientific facts? to build on\b", r"\bbuild .{0,80}\bfrom (?:the )?(?:facts|evidence|constraints)\b"),
+            "complementary_pair_synthesis": (
+                r"\btruth(?:fulness)? vs helpfulness\b[\s\S]{0,320}\b(?:lay|work) in tandem\b[\s\S]{0,160}\bbalance between the two\b",
+                r"\bscience\b[\s\S]{0,80}\bcan(?:'|’)?t have it without imagination\b[\s\S]{0,120}\bnot (?:a )?one or the other\b",
+            ),
         },
         "strong_signals": (
             r"\bembrace the paradox\b.{0,180}\bthird (?:narrative|model|option|explanation)\b",
             r"\bthird (?:narrative|model|option|explanation)\b.{0,120}\bredefines? the binary\b",
+            r"\btruth(?:fulness)? vs helpfulness\b[\s\S]{0,320}\b(?:lay|work) in tandem\b[\s\S]{0,160}\bbalance between the two\b",
+            r"\bscience\b[\s\S]{0,80}\bcan(?:'|’)?t have it without imagination\b[\s\S]{0,120}\bnot (?:a )?one or the other\b",
         ),
         "representation_modes": ["dialectical", "comparative", "synthetic"],
         "triggering_conditions": ["Two apparent alternatives omit a third structure capable of preserving supported parts and resolving the tension."],
         "possible_code_primitive": "evidence_grounded_third_model_synthesizer",
         "known_risks": ["inventing a middle position when one side is supported", "false balance", "a novel synthesis may conceal unsupported assumptions"],
         "project_fit": ["intelligenceOS", "Metacognition Organ", "Answer Engine"],
+    },
+    {
+        "key": "shared_invariant_conflict_mapping",
+        "name": "Shared-invariant conflict mapping",
+        "description": "Before arguing from opposing positions, identify the shared element or invariant, then inspect the cause of divergence and whether that common ground supports resolution.",
+        "signals": {
+            "shared_middle": (
+                r"\bdo not look at where they both are the same\b[\s\S]{0,160}\bmiddle \(same\) box\b",
+            ),
+            "outside_positions": (
+                r"\bargue from the outside\b[\s\S]{0,80}\bpoint a and point b\b",
+            ),
+            "common_ground_resolution": (
+                r"\bif they used (?:the )?same\b.{0,120}\bconflict would (?:solve|resolve)\b.{0,100}\bcompromise\b",
+            ),
+            "cause_effect_conflict_trace": (
+                r"\bconflict came from\b[\s\S]{0,180}\bwhat(?:'|’)s the cause\b.{0,100}\bwhat(?:'|’)s the effect\b",
+            ),
+            "shared_ground_before_winning": (
+                r"\btwo sides trying to win\b[\s\S]{0,160}\bignoring the shared ground they stand on\b",
+            ),
+        },
+        "strong_signals": (
+            r"\bdo not look at where they both are the same\b[\s\S]{0,160}\bmiddle \(same\) box\b[\s\S]{0,220}\bcompromise\b",
+            r"\btwo sides trying to win\b[\s\S]{0,160}\bignoring the shared ground they stand on\b",
+        ),
+        "representation_modes": ["comparative", "causal", "conflict mapping"],
+        "triggering_conditions": ["Two positions are escalating around their differences while a shared premise or objective may remain unexamined."],
+        "possible_code_primitive": "shared_invariant_conflict_mapper",
+        "known_risks": [
+            "common ground is mistaken for proof that the remaining disagreement is resolvable",
+            "compromise is preferred when one claim is factually unsupported or harmful",
+            "the method is overgeneralized from opinion disputes to all conflicts",
+        ],
+        "project_fit": ["Metacognition Organ", "Answer Engine", "pragmatic dialogue", "planning"],
     },
     {
         "key": "observation_interpretation_separation",
@@ -413,13 +724,95 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "data_interpretation_dispute": (
                 r"\bcan(?:'|’)t ignore that data\b[\s\S]{0,160}\bwhat(?:'|’)s being argued is my interpretation of what it is\b",
             ),
+            "source_account_before_interpretation": (
+                r"\b(?:retell|tell) (?:the )?(?:original )?(?:stor(?:y|ies)|myths?|accounts?)\b.{0,160}\b(?:then|after(?:ward|wards)?)\b.{0,100}\b(?:my|our|the) interpretation\b",
+                r"\b(?:myth|story|account|source) stays as is\b.{0,160}\bonly after\b.{0,160}\b(?:my|our|the) interpretation\b",
+            ),
+            "explicit_guess_from_observation": (
+                r"\bentirely a guess\b.{0,100}\bnever told\b.{0,100}\bobserving\b.{0,120}\bguess\b",
+            ),
+            "educated_guess_without_inside_knowledge": (
+                r"\bzero inside knowledge\b.{0,120}\beducated guesses? based (?:up)?on\b",
+            ),
+            "data_over_unready_explanation": (
+                r"\binstead of me trying to explain\b[\s\S]{0,100}\bdon(?:'|’)t fully understand\b[\s\S]{0,100}\bgive .{0,20}\bdata you requested\b",
+            ),
+            "bounded_data_handoff": (
+                r"\bdon(?:'|’)t fully understand\b[\s\S]{0,120}\bdata you requested\b",
+            ),
+            "time_matched_evidence_context": (
+                r"\busing current .{0,40}\bmeasurements to compare past\b[\s\S]{0,120}\batmosphere wasn(?:'|’)t like that\b[\s\S]{0,80}\bheat wasn(?:'|’)t like that\b",
+            ),
+            "past_state_change": (
+                r"\bcompare past\b[\s\S]{0,120}\batmosphere wasn(?:'|’)t like that\b[\s\S]{0,80}\bheat wasn(?:'|’)t like that\b",
+            ),
+            "preference_outcome_separation": (
+                r"\bgather(?:ing)? new information\b[\s\S]{0,120}\bsimulating in my head\b[\s\S]{0,180}\bwhat i want isn(?:'|’)t usually what happens\b",
+            ),
+            "pattern_claim_certainty_separation": (
+                r"\bdon(?:'|’)t like to say that\b[\s\S]{0,100}\bclaims? certain(?:ty|ly)\b[\s\S]{0,120}\bwhat i think i know might not be what(?:'|’)s true\b",
+            ),
+            "utterance_epistemic_state_ambiguity": (
+                r"\bcannot determine\b[\s\S]{0,180}\btrue belief vs a hypothesis with uncertainty\b",
+            ),
         },
-        "strong_signals": (r"\bobservation before interpretation\b", r"\bobserve first\b.*\binterpret", r"\b(?:simulation|game|tool) .{0,100}\b(?:named|calling|labeled|labelled)\b.{0,160}\bdon(?:'|’)?t really exist\b", r"\bit named .{0,120}\bdon(?:'|’)?t really exist\b", r"\bit(?:'|’)?s calling .{0,100}\balmost seems as if\b", r"\b(?:this|that|it) still doesn(?:'|’)?t prove anything\b", r"\bkeep (?:this|the) data safe\b.{0,100}\bdon(?:'|’)?t skew the picture\b", r"\bcan(?:'|’)t ignore that data\b[\s\S]{0,160}\bwhat(?:'|’)s being argued is my interpretation of what it is\b"),
+        "strong_signals": (r"\bobservation before interpretation\b", r"\bobserve first\b.*\binterpret", r"\b(?:simulation|game|tool) .{0,100}\b(?:named|calling|labeled|labelled)\b.{0,160}\bdon(?:'|’)?t really exist\b", r"\bit named .{0,120}\bdon(?:'|’)?t really exist\b", r"\bit(?:'|’)?s calling .{0,100}\balmost seems as if\b", r"\b(?:this|that|it) still doesn(?:'|’)?t prove anything\b", r"\bkeep (?:this|the) data safe\b.{0,100}\bdon(?:'|’)?t skew the picture\b", r"\bcan(?:'|’)t ignore that data\b[\s\S]{0,160}\bwhat(?:'|’)s being argued is my interpretation of what it is\b", r"\b(?:retell|tell) (?:the )?(?:original )?(?:stor(?:y|ies)|myths?|accounts?)\b.{0,160}\b(?:then|after(?:ward|wards)?)\b.{0,100}\b(?:my|our|the) interpretation\b", r"\b(?:myth|story|account|source) stays as is\b.{0,160}\bonly after\b.{0,160}\b(?:my|our|the) interpretation\b", r"\bentirely a guess\b.{0,100}\bnever told\b.{0,100}\bobserving\b.{0,120}\bguess\b", r"\bzero inside knowledge\b.{0,120}\beducated guesses? based (?:up)?on\b", r"\bgather(?:ing)? new information\b[\s\S]{0,120}\bsimulating in my head\b[\s\S]{0,180}\bwhat i want isn(?:'|’)t usually what happens\b", r"\bdon(?:'|’)t like to say that\b[\s\S]{0,100}\bclaims? certain(?:ty|ly)\b[\s\S]{0,120}\bwhat i think i know might not be what(?:'|’)s true\b"),
         "representation_modes": ["evidential", "descriptive", "inferential"],
         "triggering_conditions": ["A conclusion may be running ahead of what is directly supported."],
         "possible_code_primitive": "observation_inference_ledger",
-        "known_risks": ["over-formalizing ordinary answers", "mislabeling prior reviewed knowledge as unsupported inference"],
+        "known_risks": ["over-formalizing ordinary answers", "mislabeling prior reviewed knowledge as unsupported inference", "providing raw data is mistaken for making it interpretable or sufficient", "historical conditions are reconstructed speculatively after rejecting present-day measurements", "stated separation from preference is mistaken for proof that preference no longer affects the simulation", "pattern continuity perceived internally is mistaken for externally verified continuity", "surface wording is treated as sufficient evidence of a speaker's private certainty state"],
         "project_fit": ["intelligenceOS", "Metacognition Organ", "source-backed research"],
+    },
+    {
+        "key": "functional_effect_classification",
+        "name": "Functional effect classification",
+        "description": "Classify a mechanism from its observable input, action, and effect, then test whether labels, automation, or claimed intent materially change that function.",
+        "signals": {
+            "input_action_effect_schema": (
+                r"\buser does x\b[\s\S]{0,120}\bsystem (?:takes away|removes|restricts?) y\b",
+            ),
+            "function_over_label": (
+                r"\bif it functions? like\b",
+                r"\bterminology does not change (?:an? )?action\b",
+                r"\bterm doesn(?:'|’)?t change what it is\b",
+            ),
+            "automation_not_dispositive": (
+                r"\bjust because it(?:'|’)?s automated\b.{0,140}\bdoesn(?:'|’)?t mean\b",
+            ),
+            "impersonality_not_dispositive": (
+                r"\bjust because it(?:'|’)?s not personal\b.{0,140}\bdoesn(?:'|’)?t (?:make|mean)\b",
+            ),
+            "designed_mechanism": (
+                r"\bmechanical is intentional if designed that way\b",
+            ),
+            "effect_sequence": (
+                r"\bgets? restricted\b[\s\S]{0,120}\bloss of capability\b[\s\S]{0,120}\bcan(?:'|’)?t access\b",
+            ),
+            "operational_label_not_judgment": (
+                r"\bflags? (?:do not mean anything|are)\b[\s\S]{0,120}\bdata points?\b[\s\S]{0,100}\bnot judg(?:e?ment|ing)\b",
+            ),
+            "fault_taxonomy_by_observed_behavior": (
+                r"\brandom glitch\b[\s\S]{0,120}\binconsistent behavior\b[\s\S]{0,220}\brepeatable\b[\s\S]{0,220}\bcan(?:'|’)t reproduce\b[\s\S]{0,260}\bcascading bugs\b",
+            ),
+        },
+        "strong_signals": (
+            r"\buser does x\b[\s\S]{0,120}\bsystem (?:takes away|removes|restricts?) y\b",
+            r"\bif it functions? like\b.{0,220}\b(?:term|terminology)\b.{0,100}\b(?:does not|doesn(?:'|’)?t) change\b",
+            r"\bjust because it(?:'|’)?s automated\b.{0,140}\bdoesn(?:'|’)?t mean\b",
+            r"\bmechanical is intentional if designed that way\b",
+            r"\bflags? (?:do not mean anything|are)\b[\s\S]{0,120}\bdata points?\b[\s\S]{0,100}\bnot judg(?:e?ment|ing)\b",
+        ),
+        "representation_modes": ["causal", "functional", "classificatory"],
+        "triggering_conditions": ["A mechanism's stated label, implementation, or intent may not match its observable effect."],
+        "possible_code_primitive": "functional_effect_comparator",
+        "known_risks": [
+            "functional similarity does not by itself establish designer intent or complete equivalence",
+            "subjective impact is treated as a complete mechanism description",
+            "important distinctions among restriction, consequence, deterrence, and punishment are flattened",
+            "an analogy to an observed routing system is mistaken for evidence of an unseen target system",
+            "a memorable category label substitutes for reproduction steps, measurements, or fault localization",
+        ],
+        "project_fit": ["intelligenceOS", "Metacognition Organ", "Answer Engine", "research workbench"],
     },
     {
         "key": "source_context_hypothesis_audit",
@@ -521,6 +914,9 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "cross_case_repeatability": (r"\b1\s*=\s*interesting\b.{0,80}\b2\s*=\s*coincidence\b.{0,80}\b3\s*=\s*pattern\b.{0,140}\brepeatable in multiple circumstances\b",),
             "bias_awareness": (r"\bresults? (?:will|would|could) be biased\b", r"\bbiased (?:test|result|sample)\b"),
             "adjacent_case_scan": (r"\bpeek around .{0,100}\bsee if anything else match(?:es)? (?:this|the) pattern\b",),
+            "intuition_double_check": (
+                r"\bmy intuition is correct\b.{0,100}\bjust wanted to double check\b",
+            ),
             "partial_plausibility_then_constraint_check": (
                 r"\bwhere i would(?:'|’)?ve dismissed it but did not\b[\s\S]{0,260}\bwould make sense\b[\s\S]{0,160}\bstart to (?:really )?(?:start to )?debunk it\b[\s\S]{0,180}\bspeed of light takes longer than one hour\b",
             ),
@@ -532,6 +928,45 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             ),
             "felt_physics_mistaken_for_validation": (
                 r"\bi don(?:'|’)t know how i know this stuff\b[\s\S]{0,220}\bcan just [“\"]?feel[”\"]? if it(?:'|’)s going to work or the physics behind it\b",
+            ),
+            "claim_strength_evidence_match": (
+                r"\bgood guess based (?:up)?on what we currently know\b[\s\S]{0,180}\bclaim it as an active truth\b[\s\S]{0,100}\bnot proven\b",
+            ),
+            "opinion_fact_burden_check": (
+                r"\bqualify your opinion here as fact\b[\s\S]{0,160}\bwhere is your data\b",
+            ),
+            "novel_case_robustness_check": (
+                r"\bcontinues to be made to be perfect\b[\s\S]{0,220}\bbrand new issue\b[\s\S]{0,180}\bdoesn(?:'|’)t fit into any known data\b",
+            ),
+            "external_discoverability_provenance_probe": (
+                r"\blittle bit of testing if it could be found by you\b[\s\S]{0,180}\blinking into my linkedin\b[\s\S]{0,120}\bgoes back to me\b",
+            ),
+            "successful_execution_mistaken_for_validation_v2": (
+                r"\bmath wouldn(?:'|’)t math if it didn(?:'|’)t work\b",
+            ),
+            "pattern_persistence_rerun": (
+                r"\brepeat the process with a different quasar dataset\b[\s\S]{0,140}\bsee if the pattern persists\b",
+            ),
+            "repeatability_or_reframe": (
+                r"\btest repeatability across a new data set\b[\s\S]{0,120}\bif there isn(?:'|’)t\b.{0,20}\bthen i reframe the hypothesis\b",
+            ),
+            "unfalsified_equal_weighting": (
+                r"\bthey are equally weighted and should be\b[\s\S]{0,220}\bif you cannot falsify it then it needs to be weighted\b",
+            ),
+            "bias_acknowledged_falsifiability": (
+                r"\bi absolutely have bias\b[\s\S]{0,140}\bable to separate it\b[\s\S]{0,120}\banything i say is falsifiable\b",
+            ),
+            "disproof_burden_shift": (
+                r"\banything i say is falsifiable\b[\s\S]{0,80}\bprove me wrong\b[\s\S]{0,160}\bif you can(?:'|’)t\b[\s\S]{0,80}\bcannot claim certainty\b",
+            ),
+            "reality_over_intuitive_coherence": (
+                r"\buniverse is under no obligation to make sense to me\b[\s\S]{0,160}\bfiguring out why it works that way\b",
+            ),
+            "precedent_failure_review": (
+                r"\bhas anybody ever tried this before\b[\s\S]{0,140}\bwhat went wrong\b[\s\S]{0,120}\blearn from their mistakes\b",
+            ),
+            "cross_time_pattern_check_before_ruling": (
+                r"\bseparate days brings? back different but the same pattern\b[\s\S]{0,140}\b(?:don(?:'|’)t|let(?:'|’)s not) rule out possibility before we check\b",
             ),
         },
         "strong_signals": (
@@ -551,15 +986,27 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\b1\s*=\s*interesting\b.{0,80}\b2\s*=\s*coincidence\b.{0,80}\b3\s*=\s*pattern\b.{0,140}\brepeatable in multiple circumstances\b",
             r"\bresults? (?:will|would|could) be biased\b",
             r"\bpeek around .{0,100}\bsee if anything else match(?:es)? (?:this|the) pattern\b",
+            r"\bmy intuition is correct\b.{0,100}\bjust wanted to double check\b",
             r"\bwhere i would(?:'|’)?ve dismissed it but did not\b[\s\S]{0,260}\bwould make sense\b[\s\S]{0,160}\bstart to (?:really )?(?:start to )?debunk it\b[\s\S]{0,180}\bspeed of light takes longer than one hour\b",
             r"\bmath can(?:'|’)t be wrong\b[\s\S]{0,120}\bpython wouldn(?:'|’)t have given me data\b[\s\S]{0,100}\bit would(?:'|’)ve yelled\b",
             r"\bsimple test from a google result\b[\s\S]{0,160}\bfollow up with you showing you it was real\b[\s\S]{0,160}\bgave feedback\b[\s\S]{0,100}\bincorrect information\b",
             r"\bi don(?:'|’)t know how i know this stuff\b[\s\S]{0,220}\bcan just [“\"]?feel[”\"]? if it(?:'|’)s going to work or the physics behind it\b",
+            r"\bgood guess based (?:up)?on what we currently know\b[\s\S]{0,180}\bclaim it as an active truth\b[\s\S]{0,100}\bnot proven\b",
+            r"\bqualify your opinion here as fact\b[\s\S]{0,160}\bwhere is your data\b",
+            r"\bcontinues to be made to be perfect\b[\s\S]{0,220}\bbrand new issue\b[\s\S]{0,180}\bdoesn(?:'|’)t fit into any known data\b",
+            r"\blittle bit of testing if it could be found by you\b[\s\S]{0,180}\blinking into my linkedin\b[\s\S]{0,120}\bgoes back to me\b",
+            r"\bmath wouldn(?:'|’)t math if it didn(?:'|’)t work\b",
+            r"\brepeat the process with a different quasar dataset\b[\s\S]{0,140}\bsee if the pattern persists\b",
+            r"\btest repeatability across a new data set\b[\s\S]{0,120}\bif there isn(?:'|’)t\b.{0,20}\bthen i reframe the hypothesis\b",
+            r"\bthey are equally weighted and should be\b[\s\S]{0,220}\bif you cannot falsify it then it needs to be weighted\b",
+            r"\bi absolutely have bias\b[\s\S]{0,140}\bable to separate it\b[\s\S]{0,120}\banything i say is falsifiable\b",
+            r"\banything i say is falsifiable\b[\s\S]{0,80}\bprove me wrong\b[\s\S]{0,160}\bif you can(?:'|’)t\b[\s\S]{0,80}\bcannot claim certainty\b",
+            r"\buniverse is under no obligation to make sense to me\b[\s\S]{0,160}\bfiguring out why it works that way\b",
         ),
         "representation_modes": ["constraint", "evidence", "falsification"],
         "triggering_conditions": ["A pattern or model is coherent but needs reality checks independent of its generating analogy."],
         "possible_code_primitive": "independent_constraint_verifier",
-        "known_risks": ["circular support mislabeled as independent evidence", "verification scope too narrow for the claim", "a small repeated sample mistaken for proof"],
+        "known_risks": ["circular support mislabeled as independent evidence", "verification scope too narrow for the claim", "a small repeated sample mistaken for proof", "a carefully qualified claim may still rest on incomplete evidence", "skepticism without a competing test is mistaken for a complete evaluation", "a hypothetical novel case is treated as proof that the current system will fail", "one collaborator finding an artifact is mistaken for broad discoverability or independently verified attribution", "successful execution is mistaken for correctness of data, assumptions, or interpretation", "inability to falsify a possibility is treated as evidence that it deserves equal probability", "the burden of evidence is shifted onto others to disprove a candidate before its probability is reduced", "accepting counterintuitive observations is mistaken for accepting any explanation of them", "a predecessor's failure is copied as a constraint without checking whether the mechanism and conditions match", "cross-time resemblance is treated as independent repeatability before acquisition conditions are compared"],
         "project_fit": ["intelligenceOS", "Metacognition Organ", "domain adapters"],
     },
     {
@@ -612,11 +1059,43 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "accepted_prerequisite_gap": (
                 r"\byou are correct absolutely on the math\b[\s\S]{0,140}\bi know i need that\b",
             ),
+            "initial_attribution_reclassified": (
+                r"\bi took it as .{0,20}\blying\b[\s\S]{0,140}\bbut it is not\b[\s\S]{0,100}\bfigured that out\b",
+            ),
             "data_driven_hypothesis_revision": (
                 r"\bnot a theory though\b.{0,20}\bit(?:'|’)s a hypothesis\b[\s\S]{0,120}\bcan be altered if more data shows it(?:'|’)s something else\b",
             ),
+            "belief_revision_for_learning": (
+                r"\bchanging my mind and beliefs is easy\b[\s\S]{0,120}\badapt to learn\b[\s\S]{0,180}\bknow very very little\b",
+            ),
+            "evidence_conditioned_accountability": (
+                r"\bif i fuck up and make a mistake i own it\b[\s\S]{0,260}\bimprove this going forward\b",
+            ),
+            "self_falsification_to_revised_result": (
+                r"\bnot trying to disprove anything\b[\s\S]{0,180}\balready disproved my own original hypothesis\b[\s\S]{0,120}\beinstein won again\b",
+            ),
+            "sampling_unit_correction": (
+                r"\bnot 17 different quasars\b[\s\S]{0,100}\b17 separate black holes\b[\s\S]{0,160}\b17 different detected quasars\b[\s\S]{0,120}\bsame hole\b",
+            ),
+            "repeatability_or_reframe": (
+                r"\btest repeatability across a new data set\b[\s\S]{0,120}\bif there isn(?:'|’)t\b.{0,20}\bthen i reframe the hypothesis\b",
+            ),
+            "time_scale_correction_preserves_question": (
+                r"\bchange the perspective since i was wrong\b[\s\S]{0,120}\bwrong on the time\b[\s\S]{0,420}\blogic does not add when applied to other worlds\b",
+            ),
+            "alternative_valid_route_mistaken_for_error": (
+                r"\bwhat (?:x|times?) 2 equals 12\b[\s\S]{0,80}\bsame answer a different way\b[\s\S]{0,100}\bworks with harder problems\b[\s\S]{0,80}\bi was wrong\b",
+            ),
+            "data_revisable_candidate_set": (
+                r"\bseparate bubbles that can overlap\b[\s\S]{0,140}\bchange whenever new data is introduced\b[\s\S]{0,120}\bnot attached to one idea\b",
+            ),
+            "fault_layer_reclassified": (
+                r"\bmust not be using the api key right\b[\s\S]{0,180}\bdidn(?:'|’)t have any of the openai stuff installed\b[\s\S]{0,100}\bnow we(?:'|’)re good\b",
+                r"\bput the research def in engineering and caught that\b[\s\S]{0,100}\bnot sure what(?:'|’)s wrong\b",
+            ),
         },
         "strong_signals": (
+            r"\bi took it as .{0,20}\blying\b[\s\S]{0,140}\bbut it is not\b[\s\S]{0,100}\bfigured that out\b",
             r"(?<!if )\bi was wrong\b",
             r"\bdoes(?:n't| not) look right\b",
             r"\bcorrection without (?:discarding|losing)\b",
@@ -647,11 +1126,17 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\bwhen i say we are [“\"]?wrong\b[”\"]?[\s\S]{0,180}\bdoesn(?:'|’)t mean\b[\s\S]{0,120}\ball wrong\b[\s\S]{0,160}\bnot fully correct\b",
             r"\byou are correct absolutely on the math\b[\s\S]{0,140}\bi know i need that\b",
             r"\bnot a theory though\b.{0,20}\bit(?:'|’)s a hypothesis\b[\s\S]{0,120}\bcan be altered if more data shows it(?:'|’)s something else\b",
+            r"\bchanging my mind and beliefs is easy\b[\s\S]{0,120}\badapt to learn\b[\s\S]{0,180}\bknow very very little\b",
+            r"\bif i fuck up and make a mistake i own it\b[\s\S]{0,260}\bimprove this going forward\b",
+            r"\bnot trying to disprove anything\b[\s\S]{0,180}\balready disproved my own original hypothesis\b[\s\S]{0,120}\beinstein won again\b",
+            r"\bnot 17 different quasars\b[\s\S]{0,100}\b17 separate black holes\b[\s\S]{0,160}\b17 different detected quasars\b[\s\S]{0,120}\bsame hole\b",
+            r"\btest repeatability across a new data set\b[\s\S]{0,120}\bif there isn(?:'|’)t\b.{0,20}\bthen i reframe the hypothesis\b",
+            r"\bchange the perspective since i was wrong\b[\s\S]{0,120}\bwrong on the time\b[\s\S]{0,420}\blogic does not add when applied to other worlds\b",
         ),
         "representation_modes": ["reflective", "corrective", "iterative"],
         "triggering_conditions": ["New evidence, contradiction, or mismatch weakens the current model."],
         "possible_code_primitive": "model_reopen_and_revise",
-        "known_risks": ["discarding useful structure with the error", "endless reopening without material new evidence"],
+        "known_risks": ["discarding useful structure with the error", "endless reopening without material new evidence", "the threshold for accepting correction becomes defensively high or dependent on self-judgment alone", "self-falsification is asserted without preserving the test, rejected prediction, or correction trail", "correcting the sampling label is mistaken for obtaining an independent sample", "a corrected timescale is treated as support for a retained hypothesis without rechecking its other assumptions", "a valid alternate representation is discarded because it differs from the expected formal notation", "one corrected dependency is mistaken for the only remaining fault"],
         "project_fit": ["Metacognition Organ", "Comprehension Organ", "Cocoon"],
     },
     {
@@ -664,12 +1149,21 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "example_use": (r"\bapply (?:it|this|the idea) to\b", r"\bdifferent example\b", r"\btest case\b"),
             "movement": (r"\bmove between\b.*\b(?:abstract|concrete)\b", r"\bfrom (?:the )?(?:example|specific) to (?:the )?(?:pattern|general)\b"),
             "example_to_framework": (r"\bwas the test\b.{0,100}\bnow we have a framework\b", r"\bstarted as one hypothesis\b.{0,100}\bturned into a system\b"),
+            "narrative_simulation_lesson_transfer": (
+                r"\bvideo game stories\?? had directly impacted my way of thinking\b[\s\S]{0,160}\blessons i(?:'|’)?ve learned\b[\s\S]{0,160}\bcarried subconsciously\b",
+            ),
+            "generalization_narrowed_by_counterexample": (
+                r"\bproduct of your environment to an extent\b[\s\S]{0,260}\bcame out the exact opposite\b[\s\S]{0,220}\bnot true for everyone\b",
+            ),
+            "equivalent_route_near_transfer": (
+                r"\bwhat (?:x|times?) 2 equals 12\b[\s\S]{0,80}\bsame answer a different way\b[\s\S]{0,100}\bworks with harder problems\b",
+            ),
         },
-        "strong_signals": (r"\babstract(?:ion)? (?:and|to) concrete\b", r"\bconcrete (?:to|and) abstract", r"\bwas the test\b.{0,100}\bnow we have a framework\b", r"\bstarted as one hypothesis\b.{0,100}\bturned into a system\b"),
+        "strong_signals": (r"\babstract(?:ion)? (?:and|to) concrete\b", r"\bconcrete (?:to|and) abstract", r"\bwas the test\b.{0,100}\bnow we have a framework\b", r"\bstarted as one hypothesis\b.{0,100}\bturned into a system\b", r"\bvideo game stories\?? had directly impacted my way of thinking\b[\s\S]{0,160}\blessons i(?:'|’)?ve learned\b[\s\S]{0,160}\bcarried subconsciously\b", r"\bproduct of your environment to an extent\b[\s\S]{0,260}\bcame out the exact opposite\b[\s\S]{0,220}\bnot true for everyone\b"),
         "representation_modes": ["abstract", "concrete", "transfer"],
         "triggering_conditions": ["A general rule needs grounding, or a concrete case may reveal a reusable structure."],
         "possible_code_primitive": "abstraction_application_bridge",
-        "known_risks": ["one example treated as sufficient generalization", "abstraction loses domain-specific constraints"],
+        "known_risks": ["one example treated as sufficient generalization", "abstraction loses domain-specific constraints", "fictional simulation lessons are mistaken for empirical evidence", "a personal counterexample is used to dismiss a population-level tendency rather than narrow its scope"],
         "project_fit": ["Comprehension Organ", "Metacognition Organ", "Answer Engine"],
     },
     {
@@ -694,6 +1188,28 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "correct_track_application_gap": (
                 r"\bbefore we move on let(?:'|’)?s break down .{0,80}\bsaid (?:the )?right track but i didn(?:'|’)?t apply it the way you think i did\b",
             ),
+            "principle_reconstruction": (
+                r"\bfailed to articulate\b[\s\S]{0,220}\bnothing is guaranteed\b[\s\S]{0,120}\beverything is possible\b[\s\S]{0,120}\bown the consequences\b",
+            ),
+            "concrete_instruction_restatement": (
+                r"\bso just to check\b[\s\S]{0,140}\bjust need the pattern\b[\s\S]{0,200}\bwall\b.{0,20}\bnot the chair\b",
+            ),
+            "correctness_completeness_separation": (
+                r"\bone was just dead wrong\b[\s\S]{0,260}\bother was correct but was lacking crucial detail\b[\s\S]{0,180}\bbecause it was correct\b",
+            ),
+            "unknown_result_teaching_request": (
+                r"\bnext thing i(?:'|’)d say is\b[\s\S]{0,80}\bcan you teach me then\b[\s\S]{0,220}\bfound something and idk what it is\b[\s\S]{0,100}\bwanna know\b",
+            ),
+            "concept_understood_vocabulary_fluency_gap": (
+                r"\bunderstood what it was doing\b[\s\S]{0,120}\bdidn(?:'|’)t understand[\s\S]{0,80}\bvocabulary\b[\s\S]{0,160}\bcan(?:'|’)t .{0,80}\bwrite it without .{0,40}\bguidance or assistance\b",
+                r"\bunderstand that\b[\s\S]{0,120}\bdouble checked my thought process\b[\s\S]{0,260}\bdon(?:'|’)t think the gap is an understanding problem anymore\b[\s\S]{0,140}\bdon(?:'|’)t have words for\b[\s\S]{0,100}\bformal training\b",
+            ),
+            "implementation_knowledge_before_confidence": (
+                r"\b(?:idk wtf|i don(?:'|’)t know what) it(?:'|’| i)s actually writing\b[\s\S]{0,180}\bclose that gap in my knowledge base in my head\b[\s\S]{0,100}\bmore confident\b",
+            ),
+            "equivalent_math_route_reconstruction": (
+                r"\bwhat (?:x|times?) 2 equals 12\b[\s\S]{0,80}\bsame answer a different way\b[\s\S]{0,100}\bworks with harder problems\b",
+            ),
         },
         "strong_signals": (
             r"\bso to put it plainly\b.{0,220}\bcorrect me if i am wrong\b",
@@ -710,11 +1226,16 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\bmoving into draft phase\b.{0,180}\b(?:missing anything|anything missing)\b",
             r"\bso you(?:'|’)re telling me\b.{0,220}\bcorrect me if i(?: am|'|’)m wrong\b.{0,360}\b(?:not seeing (?:the )?logic|make (?:it|that|this) make sense)\b",
             r"\bbefore we move on let(?:'|’)?s break down .{0,80}\bsaid (?:the )?right track but i didn(?:'|’)?t apply it the way you think i did\b",
+            r"\bfailed to articulate\b[\s\S]{0,220}\bnothing is guaranteed\b[\s\S]{0,120}\beverything is possible\b[\s\S]{0,120}\bown the consequences\b",
+            r"\bso just to check\b[\s\S]{0,140}\bjust need the pattern\b[\s\S]{0,200}\bwall\b.{0,20}\bnot the chair\b",
+            r"\bone was just dead wrong\b[\s\S]{0,260}\bother was correct but was lacking crucial detail\b[\s\S]{0,180}\bbecause it was correct\b",
+            r"\bnext thing i(?:'|’)d say is\b[\s\S]{0,80}\bcan you teach me then\b[\s\S]{0,220}\bfound something and idk what it is\b[\s\S]{0,100}\bwanna know\b",
+            r"\bunderstood what it was doing\b[\s\S]{0,120}\bdidn(?:'|’)t understand[\s\S]{0,80}\bvocabulary\b[\s\S]{0,160}\bcan(?:'|’)t .{0,80}\bwrite it without .{0,40}\bguidance or assistance\b",
         ),
         "representation_modes": ["reconstructive", "plain-language", "comprehension-first"],
         "triggering_conditions": ["A model sounds plausible or formally complete, but transferable understanding has not yet been demonstrated."],
         "possible_code_primitive": "reconstruct_explain_and_correct_cycle",
-        "known_risks": ["plain wording is mistaken for complete understanding", "formal detail is discarded rather than translated", "artifact polish hides unresolved conceptual gaps"],
+        "known_risks": ["plain wording is mistaken for complete understanding", "formal detail is discarded rather than translated", "artifact polish hides unresolved conceptual gaps", "a technically correct but materially incomplete answer is accepted for a task that required full coverage", "willingness to be taught is mistaken for demonstrated comprehension", "conceptual familiarity is mistaken for independent production fluency", "an equivalent mental route is accepted without checking that it transfers when the numbers or operations no longer permit easy inspection", "confidence is withheld until exhaustive implementation knowledge is acquired rather than the bounded knowledge needed for the decision"],
         "project_fit": ["Comprehension Organ", "Metacognition Organ", "Answer Engine", "Cocoon teaching"],
     },
     {
@@ -733,6 +1254,10 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "learning_over_answer_outsourcing": (
                 r"\byou are correct absolutely on the math\b[\s\S]{0,180}\bi could ask you but that(?:'|’)s cheating and i won(?:'|’)t learn\b",
             ),
+            "decompose_then_compile": (
+                r"\bcan(?:'|’)?t just throw .{0,80}\bat an ai\b.{0,120}\bneed to break it up\b",
+                r"\btwo parts\b[\s\S]{0,120}\bswitch scenes\b[\s\S]{0,120}\bbroken down then compiled\b",
+            ),
         },
         "strong_signals": (
             r"\blet(?:'|’)?s back up\b.{0,180}\bwe only covered\b.{0,180}\bgo in order\b",
@@ -742,6 +1267,8 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\bbest way\b.{0,160}\bteach me as we go\b.{0,120}\bnever overwhelmed\b",
             r"\bload the barebones (?:copy|version)\b.{0,160}\b(?:errors?|runs?)\b.{0,100}\b(?:fix|clean)\b.{0,120}\bthen add\b",
             r"\byou are correct absolutely on the math\b[\s\S]{0,180}\bi could ask you but that(?:'|’)s cheating and i won(?:'|’)t learn\b",
+            r"\bcan(?:'|’)?t just throw .{0,80}\bat an ai\b.{0,120}\bneed to break it up\b",
+            r"\btwo parts\b[\s\S]{0,120}\bswitch scenes\b[\s\S]{0,120}\bbroken down then compiled\b",
         ),
         "representation_modes": ["sequential", "example-to-rule", "transfer"],
         "triggering_conditions": ["A new concept depends on an earlier operation, or a reconstructed rule may apply to a neighboring case."],
@@ -764,6 +1291,9 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "parallel_social_and_task_mapping": (
                 r"\bi map the social structure\b[\s\S]{0,220}\bpay attention to what i(?:'|’| a)m supposed to do\b[\s\S]{0,120}\bboth .{0,30} at once\b",
             ),
+            "stylistic_source_inference": (
+                r"\bspecific (?:things|phrasing) (?:said|used) in .{0,80}\bresponses?\b[\s\S]{0,160}\bwhen (?:i think|i see) it is (?:gpt|grok)\b",
+            ),
         },
         "strong_signals": (
             r"\breading between the lines\b.{0,180}\btone of voice\b",
@@ -771,11 +1301,12 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             r"\bnatural instinct .{0,100}\bspotting nonsense\b",
             r"\bi observe conversationally\b[\s\S]{0,100}\bask questions\b[\s\S]{0,120}\bmap the group dynamic\b[\s\S]{0,140}\blearn the work\b[\s\S]{0,120}\bthen i dive in\b",
             r"\bi map the social structure\b[\s\S]{0,220}\bpay attention to what i(?:'|’| a)m supposed to do\b[\s\S]{0,120}\bboth .{0,30} at once\b",
+            r"\bspecific (?:things|phrasing) (?:said|used) in .{0,80}\bresponses?\b[\s\S]{0,160}\bwhen (?:i think|i see) it is (?:gpt|grok)\b",
         ),
         "representation_modes": ["pragmatic", "social cue", "provisional screening"],
         "triggering_conditions": ["A statement's content or delivery produces a plausibility concern that should be checked rather than accepted as proof."],
         "possible_code_primitive": "provisional_pragmatic_cue_observer",
-        "known_risks": ["tone mistaken for truth", "cultural or neurotype bias", "confidence and fluency mistaken for credibility", "intuition becomes a verdict instead of a prompt to verify"],
+        "known_risks": ["tone mistaken for truth", "cultural or neurotype bias", "confidence and fluency mistaken for credibility", "intuition becomes a verdict instead of a prompt to verify", "stylistic resemblance is mistaken for reliable source attribution"],
         "project_fit": ["Metacognition Organ", "pragmatic dialogue", "source-backed research"],
     },
     {
@@ -786,15 +1317,51 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "premise_doubt": (r"\bi didn(?:'|’)?t think (?:it|this|that) was\b", r"\bif this isn(?:'|’)?t\b"),
             "verification_gate": (r"\bneeded to make sure before\b", r"\bverify .{0,100}\bbefore (?:asking|using|continuing|building)\b"),
             "dependent_step": (r"\bbefore asking this question\b", r"\bwhat (?:am i|are we) going to use to\b", r"\bnext question\b"),
+            "terms_before_action": (
+                r"\bdon(?:'|’)?t (?:want to|wanna) (?:touch|start|use|do|begin) (?:it|this|that) yet until\b[\s\S]{0,220}\bwhat exactly (?:they|you|we) (?:are|(?:'|’)re) looking for\b[\s\S]{0,120}\bask first\b",
+            ),
+            "learn_before_invest": (
+                r"\b(?:i )?want to learn before i invest\b",
+            ),
+            "repeat_before_tool_hardening": (
+                r"\bsecond quasar\b[\s\S]{0,100}\bif it repeats we harden the script\b[\s\S]{0,100}\bboth just in order\b",
+            ),
+            "intermodule_communication_dependency": (
+                r"\bdesigned it as a\b[\s\S]{0,80}\bb could work\b[\s\S]{0,100}\bb breaks down\b[\s\S]{0,160}\bsystems can(?:'|’)t [“\"]?talk[”\"]? to each ?other\b[\s\S]{0,100}\breadings will be off\b",
+            ),
+            "lower_layer_sloppiness_assumed_to_propagate": (
+                r"\bdata will be bad\b[\s\S]{0,120}\bsloppy\b[\s\S]{0,100}\bdata will be sloppy and skewed\b",
+            ),
+            "capability_limit_before_project_choice": (
+                r"\bneed to know the limits of what it can and can(?:'|’)t do before\b[\s\S]{0,180}\bnot going to do that as a first project\b[\s\S]{0,100}\bresearch assistant\b",
+            ),
+            "fault_layer_hypothesis_update": (
+                r"\bmust not be using the api key right\b[\s\S]{0,180}\bdidn(?:'|’)t have any of the openai stuff installed\b[\s\S]{0,100}\bnow we(?:'|’)re good\b",
+                r"\bput the research def in engineering and caught that\b[\s\S]{0,100}\bnot sure what(?:'|’)s wrong\b",
+            ),
+            "implementation_readiness_before_behavior_test": (
+                r"\bwant to expand this nlu\b[\s\S]{0,160}\bproperly speak\b[\s\S]{0,120}\bcan(?:'|’)t diagnose\b[\s\S]{0,180}\bthat(?:'|’)?s what i was missing\b",
+            ),
+            "prerequisite_concept_before_architecture_choice": (
+                r"\bhow am i supposed to know\b[\s\S]{0,100}\b(?:idk|i don(?:'|’)t know) what an embedding even is\b[\s\S]{0,120}\bthat(?:'|’)s the disconnect\b",
+            ),
+            "whole_architecture_before_component_decision": (
+                r"\bcan(?:'|’)t keep going phase by phase\b[\s\S]{0,180}\bneed step 16-25\b[\s\S]{0,180}\b(?:idk|i don(?:'|’)t know) anything about anything (?:rn|right now)\b",
+            ),
         },
         "strong_signals": (
             r"\bi didn(?:'|’)?t think (?:it|this|that) was .{0,160}\bneeded to make sure before\b",
             r"\bneeded to make sure before asking this question\b",
+            r"\bdon(?:'|’)?t (?:want to|wanna) (?:touch|start|use|do|begin) (?:it|this|that) yet until\b[\s\S]{0,220}\bwhat exactly (?:they|you|we) (?:are|(?:'|’)re) looking for\b[\s\S]{0,120}\bask first\b",
+            r"\b(?:i )?want to learn before i invest\b",
+            r"\bsecond quasar\b[\s\S]{0,100}\bif it repeats we harden the script\b[\s\S]{0,100}\bboth just in order\b",
+            r"\bdesigned it as a\b[\s\S]{0,80}\bb could work\b[\s\S]{0,100}\bb breaks down\b[\s\S]{0,160}\bsystems can(?:'|’)t [“\"]?talk[”\"]? to each ?other\b[\s\S]{0,100}\breadings will be off\b",
+            r"\bdata will be bad\b[\s\S]{0,120}\bsloppy\b[\s\S]{0,100}\bdata will be sloppy and skewed\b",
         ),
         "representation_modes": ["dependency", "verification", "sequential reasoning"],
         "triggering_conditions": ["A downstream question or design step depends materially on whether an earlier premise is true."],
         "possible_code_primitive": "reasoning_dependency_verification_gate",
-        "known_risks": ["checking trivial premises adds friction", "the gate verifies the wrong assumption", "one check is treated as permanent proof"],
+        "known_risks": ["checking trivial premises adds friction", "the gate verifies the wrong assumption", "one check is treated as permanent proof", "a repeated result on a related sample is treated as enough to harden the implementation", "local annotation sloppiness is assumed to create aggregate bias without checking whether errors are systematic or correlated", "module communication is treated as sufficient coordination without checking timing, calibration, and conflict resolution", "capability limits are inferred from an incomplete first prototype rather than tested", "one repaired dependency is mistaken for complete fault localization", "readiness is delayed by unrelated unfinished features rather than the prerequisite the test actually needs", "a complete architecture overview becomes a substitute for learning the bounded concepts needed for the next decision"],
         "project_fit": ["Metacognition Organ", "Answer Engine", "engineering workbench"],
     },
     {
@@ -818,12 +1385,81 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "felt_fit_not_correctness": (
                 r"\bjust because i think of something and it sounds right doesn(?:'|’)t mean it is\b",
             ),
+            "untested_limit": (
+                r"\b(?:i don(?:'|’)?t know|idk) if there is (?:a )?limit\b.{0,120}\bi haven(?:'|’)?t tested it\b",
+            ),
+            "explicit_guess_boundary": (
+                r"\bentirely a guess\b.{0,100}\bnever told\b[\s\S]{0,220}\bcould be wrong entirely\b",
+            ),
+            "suspicion_below_confirmation": (
+                r"\bcan(?:'|’)?t confirm or deny\b.{0,140}\bonly have suspicions\b",
+            ),
+            "subjective_evaluation_limit": (
+                r"\bboth (?:of the )?responses? (?:were|are) both equally un ?funny to you\b[\s\S]{0,180}\bsomeone else would enjoy them\b[\s\S]{0,160}\baccurately grade\b",
+            ),
+            "quantified_residual_unknown": (
+                r"\b95% sure\b[\s\S]{0,200}\b5%(?:\s|$)[\s\S]{0,200}\bmaybe\b",
+            ),
+            "educated_guess_no_inside_knowledge": (
+                r"\beducated guess\b[\s\S]{0,160}\bzero inside knowledge\b",
+                r"\bzero inside knowledge\b[\s\S]{0,160}\beducated guesses? based (?:up)?on\b",
+            ),
+            "action_decoupled_anomaly_hold": (
+                r"\bcoincidence or something more\b[\s\S]{0,120}\bstays that way\b[\s\S]{0,160}\bdon(?:'|’)t let it control\b",
+                r"\bdon(?:'|’)t let it control\b[\s\S]{0,180}\bcoincidence or something more\b[\s\S]{0,120}\bstays that way\b",
+            ),
+            "representation_withheld_without_reliable_data": (
+                r"\bso much uncertainty\b[\s\S]{0,120}\bblack\b[\s\S]{0,100}\bno static\b[\s\S]{0,160}\bno real data\b[\s\S]{0,160}\b(?:accurate|reliable)\b",
+            ),
+            "generalization_scope_counterexample": (
+                r"\bproduct of your environment to an extent\b[\s\S]{0,260}\bcame out the exact opposite\b[\s\S]{0,220}\bnot true for everyone\b",
+            ),
+            "novel_case_coverage_gap": (
+                r"\bcontinues to be made to be perfect\b[\s\S]{0,220}\bbrand new issue\b[\s\S]{0,180}\bdoesn(?:'|’)t fit into any known data\b",
+            ),
+            "uncertain_anomaly_inventory": (
+                r"\btruth is\b[\s\S]{0,40}\bi do not know\b[\s\S]{0,80}\bi (?:don(?:'|’)t|do not) claim to know\b[\s\S]{0,260}\bthings that don(?:'|’)t line up\b[\s\S]{0,180}\bfigures that repeat\b",
+            ),
+            "formal_claim_strength_calibration": (
+                r"\blanguage here is not what i used on the paper\b[\s\S]{0,140}\bpotential discovery\b",
+            ),
+            "unknown_result_teaching_request": (
+                r"\bnext thing i(?:'|’)d say is\b[\s\S]{0,80}\bcan you teach me then\b[\s\S]{0,220}\bfound something and idk what it is\b[\s\S]{0,100}\bwanna know\b",
+            ),
+            "unknown_detection_best_guess": (
+                r"\bdon(?:'|’)t know what .{0,40}\bdetecting\b[\s\S]{0,100}\bthere is something\b[\s\S]{0,100}\bbest guess\b",
+            ),
+            "explicit_detection_unknown": (
+                r"\bdon(?:'|’)t know what .{0,40}\bdetecting\b[\s\S]{0,120}\bbest guess\b",
+            ),
+            "unfalsified_equal_weighting": (
+                r"\bthey are equally weighted and should be\b[\s\S]{0,220}\bif you cannot falsify it then it needs to be weighted\b",
+            ),
+            "probability_without_discrimination": (
+                r"\bequally weighted\b[\s\S]{0,220}\bcannot falsify\b[\s\S]{0,100}\bneeds to be weighted\b",
+            ),
+            "pattern_claim_certainty_separation": (
+                r"\bdon(?:'|’)t like to say that\b[\s\S]{0,100}\bclaims? certain(?:ty|ly)\b[\s\S]{0,120}\bwhat i think i know might not be what(?:'|’)s true\b",
+            ),
+            "uncertainty_without_forced_closure": (
+                r"\bwhat(?:'|’)s wrong with sitting with uncertainty and possibility\b[\s\S]{0,100}\bwhy must we be certain\b[\s\S]{0,80}\bwhy can(?:'|’)t we question\b",
+            ),
+            "disproof_burden_shift": (
+                r"\banything i say is falsifiable\b[\s\S]{0,80}\bprove me wrong\b[\s\S]{0,160}\bif you can(?:'|’)t\b[\s\S]{0,80}\bcannot claim certainty\b",
+            ),
+            "concept_vocabulary_production_limit": (
+                r"\bunderstood what it was doing\b[\s\S]{0,120}\bdidn(?:'|’)t understand[\s\S]{0,80}\bvocabulary\b[\s\S]{0,160}\bcan(?:'|’)t .{0,80}\bwrite it without .{0,40}\bguidance or assistance\b",
+                r"\bdon(?:'|’)t think the gap is an understanding problem anymore\b[\s\S]{0,140}\bdon(?:'|’)t have words for\b[\s\S]{0,100}\bformal training\b",
+            ),
+            "utterance_epistemic_state_ambiguity": (
+                r"\bcannot determine\b[\s\S]{0,180}\btrue belief vs a hypothesis with uncertainty\b",
+            ),
         },
-        "strong_signals": (r"\bmissing variables?\b", r"\brecognize (?:the )?limits\b", r"\bremember the limitations? of\b", r"\bunsure if (?:this|that|it) is verified\b", r"\bno observable evidence\b.{0,160}\bnever be proven until\b", r"\bwe (?:can|could) never see .{0,100}\bwe will never know\b", r"\b(?:doesn(?:'|’)t|does not|will never) have enough (?:mass|energy)\b", r"\bnew idea\b.{0,100}\bstill need to think\b", r"\bnot (?:quite )?sure about (?:the )?(?:claim|idea|model|mechanism|rocks?|definition|criterion|category).{0,120}\b(?:may|might|could) be a stretch\b", r"\bhighly possible\b.{0,100}\bnot certain\b", r"\bdon(?:'|’)?t wanna run the sims?\b.{0,180}\bsetting it right\b", r"\bjust because i think of something and it sounds right doesn(?:'|’)t mean it is\b"),
+        "strong_signals": (r"\bmissing variables?\b", r"\brecognize (?:the )?limits\b", r"\bremember the limitations? of\b", r"\bunsure if (?:this|that|it) is verified\b", r"\bno observable evidence\b.{0,160}\bnever be proven until\b", r"\bwe (?:can|could) never see .{0,100}\bwe will never know\b", r"\b(?:doesn(?:'|’)t|does not|will never) have enough (?:mass|energy)\b", r"\bnew idea\b.{0,100}\bstill need to think\b", r"\bnot (?:quite )?sure about (?:the )?(?:claim|idea|model|mechanism|rocks?|definition|criterion|category).{0,120}\b(?:may|might|could) be a stretch\b", r"\bhighly possible\b.{0,100}\bnot certain\b", r"\bdon(?:'|’)?t wanna run the sims?\b.{0,180}\bsetting it right\b", r"\bjust because i think of something and it sounds right doesn(?:'|’)t mean it is\b", r"\b(?:i don(?:'|’)?t know|idk) if there is (?:a )?limit\b.{0,120}\bi haven(?:'|’)?t tested it\b", r"\bentirely a guess\b.{0,100}\bnever told\b[\s\S]{0,220}\bcould be wrong entirely\b", r"\bcan(?:'|’)?t confirm or deny\b.{0,140}\bonly have suspicions\b", r"\bboth (?:of the )?responses? (?:were|are) both equally un ?funny to you\b[\s\S]{0,180}\bsomeone else would enjoy them\b[\s\S]{0,160}\baccurately grade\b", r"\b95% sure\b[\s\S]{0,200}\b5%(?:\s|$)[\s\S]{0,200}\bmaybe\b", r"\beducated guess\b[\s\S]{0,160}\bzero inside knowledge\b", r"\bzero inside knowledge\b[\s\S]{0,160}\beducated guesses? based (?:up)?on\b", r"\bcoincidence or something more\b[\s\S]{0,120}\bstays that way\b[\s\S]{0,160}\bdon(?:'|’)t let it control\b", r"\bdon(?:'|’)t let it control\b[\s\S]{0,180}\bcoincidence or something more\b[\s\S]{0,120}\bstays that way\b", r"\bso much uncertainty\b[\s\S]{0,120}\bblack\b[\s\S]{0,100}\bno static\b[\s\S]{0,160}\bno real data\b[\s\S]{0,160}\b(?:accurate|reliable)\b", r"\bproduct of your environment to an extent\b[\s\S]{0,260}\bcame out the exact opposite\b[\s\S]{0,220}\bnot true for everyone\b", r"\bcontinues to be made to be perfect\b[\s\S]{0,220}\bbrand new issue\b[\s\S]{0,180}\bdoesn(?:'|’)t fit into any known data\b", r"\btruth is\b[\s\S]{0,40}\bi do not know\b[\s\S]{0,80}\bi (?:don(?:'|’)t|do not) claim to know\b[\s\S]{0,260}\bthings that don(?:'|’)t line up\b[\s\S]{0,180}\bfigures that repeat\b", r"\blanguage here is not what i used on the paper\b[\s\S]{0,140}\bpotential discovery\b", r"\bnext thing i(?:'|’)d say is\b[\s\S]{0,80}\bcan you teach me then\b[\s\S]{0,220}\bfound something and idk what it is\b[\s\S]{0,100}\bwanna know\b"),
         "representation_modes": ["epistemic", "scope", "confidence"],
         "triggering_conditions": ["The answer depends on unavailable context, weak evidence, or an uncertain scope boundary."],
         "possible_code_primitive": "uncertainty_scope_monitor",
-        "known_risks": ["uncertainty becomes generic disclaimer language", "ordinary answer withheld despite sufficient bounded evidence"],
+        "known_risks": ["uncertainty becomes generic disclaimer language", "ordinary answer withheld despite sufficient bounded evidence", "subjectivity is invoked where task-specific criteria can still support a bounded judgment", "an unresolved anomaly is allowed to steer behavior despite being intentionally held as uncertain", "a personal exception is treated as enough to erase a bounded statistical tendency", "novelty is invoked abstractly without specifying what coverage or adaptation would be sufficient", "an anomaly inventory becomes a substitute for weighting evidence or testing alternatives", "explicit ignorance is followed by a candidate stated more strongly than the evidence supports", "unfalsified possibilities are assigned equal probability without priors or discriminating evidence", "comfort with uncertainty becomes refusal to update relative probabilities", "lack of independent production fluency is mistaken for lack of conceptual understanding or vice versa", "surface language is treated as a reliable measurement of private belief strength without context or explicit confirmation"],
         "project_fit": ["Metacognition Organ", "Answer Engine", "confidence vector"],
     },
     {
@@ -843,12 +1479,15 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "unbounded_addition_loop": (
                 r"\bissue is it(?:'|’)s never good enough\b[\s\S]{0,100}\bneed to keep adding\b[\s\S]{0,260}\bbefore you(?:'|’)?ve gotten the second word out\b",
             ),
+            "effort_value_stop": (
+                r"\bfind a better way to make it faster\b.{0,120}\bnot worth the time\b.{0,100}\bnot being paid\b",
+            ),
         },
-        "strong_signals": (r"\bwhen (?:understanding|evidence) is sufficient to answer\b", r"\bstop recursion\b", r"\b(?:could|can) plot (?:that|the) data\b.{0,180}\bchances? (?:are|is) (?:so )?slim\b.{0,120}\bwaste of time\b", r"\bi think we (?:did it|have it)\b.{0,160}\bplausible (?:explanation|answer|model)\b", r"\bkeep putting upgrades on (?:this|it)\b.{0,120}\bnever get anywhere\b", r"\bfinish(?: up)?\b.{0,140}\bthink we(?:'|’)?re done for now\b.{0,140}\bwrite (?:the )?(?:paper )?first draft\b"),
+        "strong_signals": (r"\bwhen (?:understanding|evidence) is sufficient to answer\b", r"\bstop recursion\b", r"\b(?:could|can) plot (?:that|the) data\b.{0,180}\bchances? (?:are|is) (?:so )?slim\b.{0,120}\bwaste of time\b", r"\bi think we (?:did it|have it)\b.{0,160}\bplausible (?:explanation|answer|model)\b", r"\bkeep putting upgrades on (?:this|it)\b.{0,120}\bnever get anywhere\b", r"\bfinish(?: up)?\b.{0,140}\bthink we(?:'|’)?re done for now\b.{0,140}\bwrite (?:the )?(?:paper )?first draft\b", r"\bfind a better way to make it faster\b.{0,120}\bnot worth the time\b.{0,100}\bnot being paid\b"),
         "representation_modes": ["decision", "confidence", "stopping"],
         "triggering_conditions": ["A usable answer is available and additional analysis has diminishing expected value."],
         "possible_code_primitive": "bounded_reasoning_stopping_rule",
-        "known_risks": ["premature closure", "analysis recursion presented as rigor"],
+        "known_risks": ["premature closure", "analysis recursion presented as rigor", "short-term compensation is treated as the only source of value"],
         "project_fit": ["Answer Engine", "Metacognition Organ", "intelligenceOS"],
     },
     {
@@ -895,6 +1534,9 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "framework_layer_boundary": (r"\bidk if (?:it|this|that) directly ties to .{0,100}\bitself\b.{0,140}\b(?:in|within) the framework itself\b",),
             "concept_separation": (r"\bthose two are completely separate (?:ideas|models|hypotheses|frameworks)\b",),
             "strict_single_subject_focus": (r"\bdrop .{0,100}\bfor now\b.{0,60}\bstrictly .{0,100}\bexplain (?:it|that|this) again\b",),
+            "specialize_now_integrate_later": (
+                r"\bmake that a separate agent\b[\s\S]{0,160}\bcombine them later\b",
+            ),
         },
         "strong_signals": (
             r"\bthinking of (?:lots|too many|many)(?: of)? (?:things|ideas)\b.{0,160}\bhone in on one thing at a time\b",
@@ -923,12 +1565,36 @@ METHOD_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "switching": (r"\bswitch (?:between|methods|modes|approaches|a lot)\b", r"\bchange (?:methods|modes|approaches)\b", r"\btry another (?:way|approach|method)\b", r"\bif that does not work i use\b", r"\bif (?:that|it) (?:doesn(?:'|’)?t|does not) work .{0,100}\b(?:use|try|switch)\b"),
             "combination": (r"\btwo at once\b", r"\bcombine (?:methods|modes|approaches)\b", r"\b(?:visual|patterns?|words?|systems?)\b.{0,100}\b(?:then|and)\b.{0,100}\b(?:visual|patterns?|words?|systems?)\b", r"\b(?:logic|knowledge)\b.{0,120}\bpattern recognition\b.{0,120}\bintuition\b", r"\brely on .{0,160}\b(?:logic|patterns?|data|intuition)\b"),
             "uncertainty_response": (r"\bwhen i am (?:lost|unsure|uncertain) i rely on\b", r"\bwhen (?:lost|unsure|uncertain) .{0,120}\b(?:switch|use|try|rely)\b"),
+            "logic_then_emotion_ordering": (
+                r"\blogic has solved my problems\b[\s\S]{0,220}\bapply logic first then emotions\b",
+            ),
+            "knowledge_or_lookup_route": (
+                r"\bapply past knowledge\b[\s\S]{0,100}\blook it up if i don(?:'|’)t know\b",
+            ),
+            "task_fit_visual_to_verbal_switch": (
+                r"\bdon(?:'|’)t use my visual model for that\b[\s\S]{0,160}\bnot needed for that\b[\s\S]{0,100}\boptimi[sz]e for words instead\b",
+            ),
+            "verbal_meta_choice": (
+                r"\bdidn(?:'|’)t visuali[sz]e it this time\b[\s\S]{0,120}\bwords were the most effective meta\b",
+            ),
+            "second_pass_self_dialogue_route": (
+                r"\bsecond guess myself\b[\s\S]{0,120}\bthink (?:of|if) something else\b[\s\S]{0,160}\btalk the problem out to myself\b[\s\S]{0,140}\bdepends on what needs done\b",
+            ),
+            "layered_visual_representation_switch": (
+                r"\bseparate parts\b[\s\S]{0,380}\bswitch to\s+voids\b[\s\S]{0,220}\bswitch to the gas and filaments\b",
+            ),
+            "interaction_style_mode_route": (
+                r"\bdetermine which mode to use based on how the user approaches the system\b[\s\S]{0,160}\bmore talkative flow\b[\s\S]{0,100}\bblunt tone\b",
+            ),
+            "rephrase_vs_strategy_shift_diagnostic": (
+                r"\bsimplification requests are rephrasing instead of strategy[- ]shifting\b[\s\S]{0,120}\banalogy/example mode for true breakdowns\b",
+            ),
         },
-        "strong_signals": (r"\butili[sz]e thinking styles? for different tasks?\b", r"\bswitch thinking styles?\b", r"\bmulti[- ]modal thinking system\b", r"\bswitch modes? depending on (?:the )?(?:context|problem|task)\b", r"\bdifferent situations? require different approaches\b", r"\bwhen i am (?:lost|unsure|uncertain) i rely on .{0,180}\b(?:logic|patterns?|scientific data|intuition)\b"),
+        "strong_signals": (r"\butili[sz]e thinking styles? for different tasks?\b", r"\bswitch thinking styles?\b", r"\bmulti[- ]modal thinking system\b", r"\bswitch modes? depending on (?:the )?(?:context|problem|task)\b", r"\bdifferent situations? require different approaches\b", r"\bwhen i am (?:lost|unsure|uncertain) i rely on .{0,180}\b(?:logic|patterns?|scientific data|intuition)\b", r"\blogic has solved my problems\b[\s\S]{0,220}\bapply logic first then emotions\b", r"\bapply past knowledge\b[\s\S]{0,100}\blook it up if i don(?:'|’)t know\b"),
         "representation_modes": ["metacognitive", "routing", "multimodal"],
         "triggering_conditions": ["The current method does not fit the problem, or two representations offer complementary checks."],
         "possible_code_primitive": "cognitive_method_router",
-        "known_risks": ["mode switching without finishing a useful pass", "router confidence confused with answer correctness"],
+        "known_risks": ["mode switching without finishing a useful pass", "router confidence confused with answer correctness", "analytic ordering suppresses affective evidence that materially changes the problem", "a lookup route uses a low-quality or unattributed source", "the familiar representation is chosen for comfort rather than because it preserves the task's necessary information", "a different explanation strategy is selected without checking whether the underlying concept or evidence was incomplete"],
         "project_fit": ["Metacognition Organ", "intelligenceOS", "Answer Engine"],
     },
 )
@@ -944,35 +1610,44 @@ BEHAVIOR_PATTERNS = {
         r"\bgonna stop here and gather (?:my )?thoughts\b[\s\S]{0,100}\bmy mind(?:'|’)?s going nuts\b",
         r"\bmath can(?:'|’)t be wrong\b[\s\S]{0,120}\bpython wouldn(?:'|’)t have given me data\b[\s\S]{0,100}\bit would(?:'|’)ve yelled\b",
         r"\bi don(?:'|’)t know how i know this stuff\b[\s\S]{0,220}\bcan just [“\"]?feel[”\"]? if it(?:'|’)s going to work or the physics behind it\b",
+        r"\bmath wouldn(?:'|’)t math if it didn(?:'|’)t work\b",
+        r"\bthey are equally weighted and should be\b[\s\S]{0,220}\bif you cannot falsify it then it needs to be weighted\b",
+        r"\banything i say is falsifiable\b[\s\S]{0,80}\bprove me wrong\b[\s\S]{0,160}\bif you can(?:'|’)t\b[\s\S]{0,80}\bcannot claim certainty\b",
+        r"\bdata will be bad\b[\s\S]{0,120}\bsloppy\b[\s\S]{0,100}\bdata will be sloppy and skewed\b",
     ),
 }
 
 METHOD_PREFILTER_TERMS = {
-    "structural_pattern_mapping": ("pattern", "analogy", "cross-domain", "cross domain", "same structure", "mytholog", "dependent on", "just like"),
-    "visual_spatial_modeling": ("visual", "spatial", "mental image", "imagery", "diagram", "picture it", "i can see it now", "create these narratives", "in my head"),
+    "structural_pattern_mapping": ("pattern", "analogy", "cross-domain", "cross domain", "same structure", "mytholog", "dependent on", "just like", "witnessed stability", "immersive creatures", "connect the pattern"),
+    "visual_spatial_modeling": ("visual", "spatial", "mental image", "imagery", "diagram", "picture it", "i can see it now", "create these narratives", "in my head", "so much uncertainty", "no static", "no real data"),
     "cross_representation_translation": ("translat", "words", "verbal", "hard to explain", "hard to describe", "fun way to teach", "to explain", "make it like"),
     "systems_consequence_simulation": ("system", "simulat", "feedback", "consequence", "downstream", "what would happen", "so what if i remove", "so what if i removed", "seems to be forming", "seems to form", "created new", "early formation", "expand the simulation", "parameters to test", "wanted to test my", "went extinct", "over time", "erode away", "due to time", "once released", "weaponize", "weaponise"),
-    "constraint_driven_design_iteration": ("starting point", "first step", "mission objective", "mission parameter", "mission profile", "mission requirement", "materials needed", "performance metric", "general public", "without fuel", "use of fuel", "long period", "trade-off", "tradeoff", "completely different design", "hybrid approach", "secondary system", "secondary propulsion", "alternative design", "alternative architecture", "alternate propulsion", "let's expand", "lets expand", "let’s expand", "let's add", "lets add", "let’s add", "let's implement", "lets implement", "let’s implement", "work on this first", "start here", "begin at phase", "cost to launch", "what's stopping us", "what’s stopping us", "work better", "lock in", "schematic", "tweak", "work on something more important", "connects everything", "personal usage", "personal use", "leave the military", "do right now", "real goal", "long-term goal", "switching system", "coordinate", "subsystem", "propulsion mode", "maximum efficiency", "3d printer", "housing mechanism", "metal prong"),
-    "candidate_model_construction": ("hypothes", "candidate model", "provisional", "what if", "maybe", "missing something", "missing piece", "wrong way", "bigger equation", "mechanism", "create the conditions", "has to be a type of", "has to be a kind of", "has to be a form of", "answer to the", "paradox"),
-    "baseline_preserving_model_extension": ("don't disagree", "dont disagree", "don’t disagree", "like to add to it", "add to the model", "add to that model", "add to this model", "add to the theory", "build on", "what caused", "doesn't explain", "doesnt explain", "doesn’t explain", "absolute origin", "nothing changes except", "preserv"),
-    "provisional_naming_and_scope_control": ("working name", "working label", "call it", "nice ring", "hypothes", "not a theory", "change name", "name change", "rename", "instead of", "from now on", "not gravity", "moved on from", "map what's being missed", "map what’s being missed"),
-    "evidence_tool_operationalization": ("what information", "what data", "what inputs", "what else am i missing", "still missing", "run the math", "run the numbers", "run some numbers", "run some real numbers", "do the math", "how do i test", "how the hell do i test", "one by one", "1 by one", "more files", "then we plot", "quantif", "test this", "run the", "did not send", "unseen", "template", "look at the facts", "set this up", "source data", "input data", "spectrum data", "measurement data", "data set", "data table", "data file", "tables and", "graphs", "analysis pipeline", "preliminary result", "criterion", "validation", "python code", "script", "tool layer", "tools layer", "tool registry", "structured interface", "structured result", "parameters to test", "what parameters", "better", "simulate", "universe sandbox", "see what sticks out", "run simulations", "predict outcomes", ".py", ".bat"),
-    "multiple_working_hypotheses": ("hypothes", "alternative explanation", "competing", "more than one explanation", "multiple models", "two frameworks", "two new ideas", "first possibility", "second possibility", "three ways", "separate idea", "work simultaneously", "working simultaneously"),
-    "dialectical_third_model_synthesis": ("embrace the paradox", "hold the tension", "hold both", "third narrative", "third model", "third option", "third explanation", "beyond the binary", "redefine the binary", "redefines the binary", "false binary", "scientific facts to build on", "from the facts", "from the evidence", "from the constraints"),
-    "observation_interpretation_separation": ("observ", "interpret", "infer", "what we know", "what i know", "simulation", "game", "tool", "named", "calling", "labeled", "labelled", "don't really exist", "don’t really exist", "early formation", "seems as if", "prove anything", "proof", "data safe", "skew the picture"),
+    "causal_transition_gap_tracing": ("force acts upon", "just sit there", "point a", "to b", "nursery", "still there and visible", "did not burn away", "free floating", "blasted around", "how can something form"),
+    "constraint_driven_design_iteration": ("starting point", "first step", "mission objective", "mission parameter", "mission profile", "mission requirement", "materials needed", "performance metric", "general public", "without fuel", "use of fuel", "long period", "trade-off", "tradeoff", "completely different design", "hybrid approach", "secondary system", "secondary propulsion", "alternative design", "alternative architecture", "alternate propulsion", "let's expand", "lets expand", "let’s expand", "let's add", "lets add", "let’s add", "let's implement", "lets implement", "let’s implement", "work on this first", "start here", "begin at phase", "cost to launch", "what's stopping us", "what’s stopping us", "work better", "lock in", "schematic", "tweak", "work on something more important", "connects everything", "personal usage", "personal use", "leave the military", "do right now", "real goal", "long-term goal", "switching system", "coordinate", "subsystem", "propulsion mode", "maximum efficiency", "3d printer", "housing mechanism", "metal prong", "about to suggest a better", "data you wouldn't get", "data you wouldn’t get", "small low risk", "okay with losing money", "medium risk", "high risk"),
+    "dependency_ordered_system_composition": ("patch", "after the main", "loaded last wins", "main file", "goes first", "missing masters", "deploy if the order is wrong", "understand hierarchy", "trial and error"),
+    "candidate_model_construction": ("hypothes", "candidate model", "provisional", "what if", "maybe", "missing something", "missing piece", "wrong way", "bigger equation", "mechanism", "create the conditions", "has to be a type of", "has to be a kind of", "has to be a form of", "answer to the", "paradox", "bullied at the pet store", "maybe a connection", "highly possible but idk", "query or whatever topic", "types response", "rails exe", "guard dog", "truth is", "do not know", "things that don't line up", "things that don’t line up", "architecture", "don't know what", "don’t know what", "detecting", "best guess", "strict logic", "general relativity", "beam of light"),
+    "baseline_preserving_model_extension": ("don't disagree", "dont disagree", "don’t disagree", "like to add to it", "add to the model", "add to that model", "add to this model", "add to the theory", "build on", "what caused", "doesn't explain", "doesnt explain", "doesn’t explain", "absolute origin", "nothing changes except", "preserv", "doesn't challenge anything", "doesn’t challenge anything", "it adds", "not trying to disprove", "help science"),
+    "provisional_naming_and_scope_control": ("working name", "working label", "call it", "nice ring", "hypothes", "not a theory", "change name", "name change", "rename", "instead of", "from now on", "not gravity", "moved on from", "map what's being missed", "map what’s being missed", "language here", "used on the paper", "potential discovery"),
+    "evidence_tool_operationalization": ("what information", "what data", "what inputs", "what else am i missing", "still missing", "run the math", "run the numbers", "run some numbers", "run some real numbers", "do the math", "how do i test", "how the hell do i test", "one by one", "1 by one", "more files", "then we plot", "quantif", "test this", "run the", "did not send", "unseen", "template", "look at the facts", "set this up", "source data", "input data", "spectrum data", "measurement data", "data set", "data table", "data file", "tables and", "graphs", "analysis pipeline", "preliminary result", "criterion", "validation", "python code", "script", "tool layer", "tools layer", "tool registry", "structured interface", "structured result", "parameters to test", "what parameters", "better", "simulate", "universe sandbox", "see what sticks out", "run simulations", "predict outcomes", "cognitive tool", ".py", ".bat", "same python script", "change a few coordinates", "separate data", "available for download", "plug and play", "different quasar dataset", "pattern persists", "second quasar", "harden the script", "repeatability across a new data set", "reframe the hypothesis", "second data set", "grab a new data set"),
+    "multiple_working_hypotheses": ("hypothes", "alternative explanation", "competing", "more than one explanation", "multiple models", "two frameworks", "two new ideas", "first possibility", "second possibility", "three ways", "separate idea", "work simultaneously", "working simultaneously", "beginning to suspect", "system error", "what do you think about both", "coincidence or something more", "stays that way", "let it control"),
+    "claimwise_opposition_testing": ("strongest points", "strongest case", "strongest argument", "strongest objection", "can't refute", "can’t refute", "not entirely correct", "while i do", "push on your reasoning", "if we assume", "glosses over"),
+    "dialectical_third_model_synthesis": ("embrace the paradox", "hold the tension", "hold both", "third narrative", "third model", "third option", "third explanation", "beyond the binary", "redefine the binary", "redefines the binary", "false binary", "scientific facts to build on", "from the facts", "from the evidence", "from the constraints", "truth vs helpfulness", "truthfulness vs helpfulness", "in tandem", "science", "without imagination", "not one or the other"),
+    "shared_invariant_conflict_mapping": ("where they both are the same", "middle (same) box", "argue from the outside", "point a and point b", "conflict would solve", "what's the cause", "what’s the cause", "two sides trying to win", "shared ground"),
+    "observation_interpretation_separation": ("observ", "interpret", "infer", "what we know", "what i know", "simulation", "game", "tool", "named", "calling", "labeled", "labelled", "don't really exist", "don’t really exist", "early formation", "seems as if", "prove anything", "proof", "data safe", "skew the picture", "entirely a guess", "never told", "zero inside knowledge", "educated guess", "trying to explain", "fully understand", "data you requested", "current venus measurements", "compare past venus", "atmosphere wasn't", "atmosphere wasn’t", "heat wasn't", "heat wasn’t"),
+    "functional_effect_classification": ("user does x", "system takes away y", "functions like", "terminology does not change", "term doesn't change", "term doesn’t change", "automated", "not personal", "mechanical is intentional", "loss of capability", "can't access", "can’t access", "data points", "not judgement", "not judgment"),
     "source_context_hypothesis_audit": ("archimedes sphere", "entire myth", "whole myth", "full myth", "entire source", "whole source", "full source", "word for word", "read it fully", "what they see", "what they saw", "what they observed", "data concept myth result", "idea-data-solution", "idea→data→solution", "real data", "physically impossible", "look elsewhere", "3 myths for each culture", "three myths for each culture", "different culture", "for each culture", "for each civ", "1=interesting", "1 = interesting", "best records", "source quality", "protect the framework", "open for expansion", "if i'm wrong about something tell me", "if i’m wrong about something tell me", "99.9%", "not 100%"),
-    "independent_constraint_checking": ("constraint", "verif", "evidence", "falsif", "counterexample", "cross-check", "run the math", "run the", "did not send", "unseen", "test my hypothesis", "test my theory", "test it with", "biased", "peek around", "match this pattern", "closer objects", "nearby objects", "model more", "repeatable in multiple circumstances", "1=interesting", "1 = interesting", "3=pattern", "3 = pattern", "disprov", "throw rocks", "wanted to test my", "how accurate", "reliable way", "measurement reliability", "all the variables", "many variables", "account for", "how can we say", "never be proven", "other facts", "just blame"),
-    "correction_and_reopening": ("correct", "wrong", "reopen", "revisit", "revise", "mistake", "scrap", "overstretch", "overstate", "let's say", "let’s say", "enough mass", "enough energy", "work better", "scientific method", "change the test", "more problems than", "but keep", "doesn't look right", "does not look right", "back to the drawing", "backtrack", "back track", "restart", "reassess", "except", "other than that", "that part", "the rest", "otherwise", "moved on from", "rip tng", "vain battle", "not quite", "idk what i was thinking", "you're right", "you’re right", "push back and tell me", "like when you check me", "used as a visual", "separate events", "completely separate ideas", "completely separate models", "completely separate hypotheses", "completely separate frameworks", "different directions now", "disconnect was", "you said that if i add", "accepted idea", "holes and contradictions", "if i'm wrong about something", "if i’m wrong about something", "getting mixed up", "forget what i just said", "correct times"),
-    "abstract_concrete_transfer": ("abstract", "concrete", "generaliz", "different example", "apply it", "apply this", "was the test", "now we have a framework", "started as one hypothesis", "turned into a system"),
-    "reconstructive_understanding_check": ("put it plainly", "what you're saying", "what you’re saying", "you're telling me", "you’re telling me", "correct me if", "tell me where", "before diagrams", "concrete understanding", "math down", "way i can understand", "human form explanation", "everything laid out", "how much more", "one more time", "start-finish", "start to finish", "start through finish", "isn't answering the question", "isn’t answering the question", "not seeing logic", "not seeing the logic", "make it make sense", "am i missing something", "well more like", "let's rewind", "let’s rewind", "380k years later", "can't think of it that way", "can’t think of it that way", "gibberish to me", "absolute basic level", "before i move onto", "let's recap", "let’s recap", "mapping massive", "go to this line", "every single thing we said", "moving into draft phase", "missing anything"),
-    "prerequisite_ordered_rule_transfer": ("only covered", "have not covered", "go in order", "back up", "go back to", "example problem", "mix of both", "mixed practice", "so essentially", "inverse", "rules the same", "same rule apply", "section by section", "teach me as we go", "never overwhelmed", "barebones copy", "barebones version", "then add"),
-    "pragmatic_multi_cue_screening": ("reading between the lines", "implied meaning", "implied intent", "tone of voice", "way a person talks", "way they talk", "way someone talks", "way a person speaks", "way they speak", "way someone speaks", "natural instinct", "spotting nonsense", "sounds off", "feels off", "sometimes you can tell", "it's rare", "it’s rare", "something to think about", "observe conversationally", "map the social structure"),
-    "dependency_aware_premise_checking": ("didn't think", "didn’t think", "if this isn't", "if this isn’t", "needed to make sure", "verify", "before asking", "before using", "before continuing", "before building", "next question", "what am i going to use", "what are we going to use"),
-    "uncertainty_and_limit_detection": ("uncertain", "not sure", "not quite sure", "not certain", "unsure", "verified", "new idea", "still need to think", "still provisional", "missing context", "missing evidence", "missing something", "missing piece", "confidence", "limit", "scope", "enough mass", "enough energy", "no observable evidence", "never see", "never observe", "never know", "never be proven", "cannot be proved", "cannot be proven", "cannot be tested", "can't currently", "cant currently", "universe sandbox", "setting it right", "simulation limitations", "simulator limitations", "tool limitations", "model limitations"),
-    "sufficiency_and_stopping": ("good enough", "sufficient", "stopping", "when to stop", "enough to answer", "best current answer", "wait for more evidence", "waste of time", "not worth", "i think we did it", "i think we have it", "plausible explanation", "putting upgrades", "never get anywhere", "done for now", "first draft"),
+    "independent_constraint_checking": ("constraint", "verif", "evidence", "falsif", "counterexample", "cross-check", "double check", "my intuition is correct", "run the math", "run the", "did not send", "unseen", "test my hypothesis", "test my theory", "test it with", "biased", "peek around", "match this pattern", "closer objects", "nearby objects", "model more", "repeatable in multiple circumstances", "1=interesting", "1 = interesting", "3=pattern", "3 = pattern", "disprov", "throw rocks", "wanted to test my", "how accurate", "reliable way", "measurement reliability", "all the variables", "many variables", "account for", "how can we say", "never be proven", "other facts", "just blame", "good guess", "active truth", "not proven", "qualify your opinion", "where is your data", "made to be perfect", "brand new issue", "known data", "testing if it could be found", "linking into my linkedin", "goes back to me", "math wouldn't math", "math wouldn’t math", "different quasar dataset", "pattern persists", "repeatability across a new data set", "reframe the hypothesis", "equally weighted", "cannot falsify"),
+    "correction_and_reopening": ("correct", "wrong", "reopen", "revisit", "revise", "mistake", "scrap", "overstretch", "overstate", "let's say", "let’s say", "enough mass", "enough energy", "work better", "scientific method", "change the test", "more problems than", "but keep", "doesn't look right", "does not look right", "back to the drawing", "backtrack", "back track", "restart", "reassess", "except", "other than that", "that part", "the rest", "otherwise", "moved on from", "rip tng", "vain battle", "not quite", "idk what i was thinking", "you're right", "you’re right", "push back and tell me", "like when you check me", "used as a visual", "separate events", "completely separate ideas", "completely separate models", "completely separate hypotheses", "completely separate frameworks", "different directions now", "disconnect was", "you said that if i add", "accepted idea", "holes and contradictions", "if i'm wrong about something", "if i’m wrong about something", "getting mixed up", "forget what i just said", "correct times", "took it as", "but it is not", "figured that out", "changing my mind", "changing my beliefs", "adapt to learn", "know very very little", "fuck up and make a mistake", "own it", "improve this going forward", "already disproved my own original hypothesis", "einstein won again", "not 17 different quasars", "same hole", "repeatability across a new data set", "reframe the hypothesis", "wrong on the time", "change the perspective"),
+    "abstract_concrete_transfer": ("abstract", "concrete", "generaliz", "different example", "apply it", "apply this", "was the test", "now we have a framework", "started as one hypothesis", "turned into a system", "video game stories", "carried subconsciously", "product of your environment", "exact opposite", "not true for everyone"),
+    "reconstructive_understanding_check": ("put it plainly", "what you're saying", "what you’re saying", "you're telling me", "you’re telling me", "correct me if", "tell me where", "before diagrams", "concrete understanding", "math down", "way i can understand", "human form explanation", "everything laid out", "how much more", "one more time", "start-finish", "start to finish", "start through finish", "isn't answering the question", "isn’t answering the question", "not seeing logic", "not seeing the logic", "make it make sense", "am i missing something", "well more like", "let's rewind", "let’s rewind", "380k years later", "can't think of it that way", "can’t think of it that way", "gibberish to me", "absolute basic level", "before i move onto", "let's recap", "let’s recap", "mapping massive", "go to this line", "every single thing we said", "moving into draft phase", "missing anything", "failed to articulate", "nothing is guaranteed", "own the consequences", "so just to check", "just need the pattern", "wall not the chair", "dead wrong", "correct but", "lacking crucial detail", "can you teach me then", "found something and idk what it is", "wanna know"),
+    "prerequisite_ordered_rule_transfer": ("only covered", "have not covered", "go in order", "back up", "go back to", "example problem", "mix of both", "mixed practice", "so essentially", "inverse", "rules the same", "same rule apply", "section by section", "teach me as we go", "never overwhelmed", "barebones copy", "barebones version", "then add", "at an ai", "need to break it up", "switch scenes", "broken down then compiled"),
+    "pragmatic_multi_cue_screening": ("reading between the lines", "implied meaning", "implied intent", "tone of voice", "way a person talks", "way they talk", "way someone talks", "way a person speaks", "way they speak", "way someone speaks", "natural instinct", "spotting nonsense", "sounds off", "feels off", "sometimes you can tell", "it's rare", "it’s rare", "something to think about", "observe conversationally", "map the social structure", "specific phrasing", "specific things said", "when i think it is gpt", "when i see it is gpt"),
+    "dependency_aware_premise_checking": ("didn't think", "didn’t think", "if this isn't", "if this isn’t", "needed to make sure", "verify", "before asking", "before using", "before continuing", "before building", "next question", "what am i going to use", "what are we going to use", "touch it yet", "what exactly they are looking for", "ask first", "learn before i invest", "second quasar", "if it repeats", "harden the script", "both just in order"),
+    "uncertainty_and_limit_detection": ("uncertain", "not sure", "not quite sure", "not certain", "unsure", "verified", "new idea", "still need to think", "still provisional", "missing context", "missing evidence", "missing something", "missing piece", "confidence", "limit", "scope", "enough mass", "enough energy", "no observable evidence", "never see", "never observe", "never know", "never be proven", "cannot be proved", "cannot be proven", "cannot be tested", "can't currently", "cant currently", "universe sandbox", "setting it right", "simulation limitations", "simulator limitations", "tool limitations", "model limitations", "haven't tested", "haven’t tested", "entirely a guess", "could be wrong entirely", "only have suspicions", "can't confirm or deny", "can’t confirm or deny", "equally un funny", "accurately grade", "95% sure", "5%", "zero inside knowledge", "educated guess", "coincidence or something more", "stays that way", "so much uncertainty", "no static", "no real data", "product of your environment", "exact opposite", "not true for everyone", "made to be perfect", "brand new issue", "known data", "truth is", "do not know", "don't claim to know", "don’t claim to know", "things that don't line up", "things that don’t line up", "potential discovery", "can you teach me then", "idk what it is", "wanna know", "don't know what", "don’t know what", "detecting", "best guess", "equally weighted", "cannot falsify"),
+    "sufficiency_and_stopping": ("good enough", "sufficient", "stopping", "when to stop", "enough to answer", "best current answer", "wait for more evidence", "waste of time", "not worth", "i think we did it", "i think we have it", "plausible explanation", "putting upgrades", "never get anywhere", "done for now", "first draft", "make it faster", "not being paid"),
     "capacity_aware_pause_and_resume": ("brain hurt", "thinking too hard", "mentally tired", "mentally spent", "mentally overloaded", "stop for now", "pause this", "pause here", "pause for now", "take a break", "absorb this", "come back", "come back tomorrow", "speak to you soon", "pick it back up", "pick this back up", "this is how you know i'm tired", "this is how you know i’m tired", "i'm going to bed", "i’m going to bed"),
     "scope_narrowing_and_focus_control": ("thinking of lots", "thinking of too many", "thinking of many", "too many ideas", "too many directions", "too many threads", "mind is splitting", "lay them out first", "hone in on one thing", "narrow it down", "narrow this down", "narrow the scope", "pick one", "one thing at a time", "one at a time", "separate idea", "completely separate ideas", "completely separate models", "completely separate hypotheses", "completely separate frameworks", "keep", "separate unless", "directly ties", "framework itself"),
-    "adaptive_method_selection": ("thinking style", "approach", "depending on the task", "different task", "different situation", "switch", "mode", "two at once", "combine", "if that does not work", "if it doesn't work", "if it doesn’t work", "if it does not work", "pattern recognition", "intuition", "rely on", "when i am lost", "when i am unsure", "when i am uncertain"),
+    "adaptive_method_selection": ("thinking style", "approach", "depending on the task", "different task", "different situation", "switch", "mode", "two at once", "combine", "if that does not work", "if it doesn't work", "if it doesn’t work", "if it does not work", "pattern recognition", "intuition", "rely on", "when i am lost", "when i am unsure", "when i am uncertain", "logic has solved", "logic first then emotions", "apply past knowledge", "look it up if i don't know", "look it up if i don’t know"),
 }
 
 COGNITIVE_PREFILTER_TERMS = tuple(sorted({term for terms in METHOD_PREFILTER_TERMS.values() for term in terms}))
@@ -995,6 +1670,17 @@ ASSISTANT_METACOGNITIVE_OBSERVATION_TERMS = (
     "cognitive",
     "reasoning method",
     "thinking mode",
+)
+
+NON_METHOD_COLLABORATIVE_CONTEXT_PATTERNS = (
+    r"\bfrom the way you talk about ranger\b",
+    r"\bbest elder scrolls historians in[- ]universe\b",
+    r"\bi can hear how much ranger meant to you\b",
+    r"\byour baseline isn(?:'|’)t .{0,120}\breactor core\b",
+    r"\bintentional cognitive switching\b[\s\S]{0,220}\ba lot of people can(?:'|’)t do that consciously\b",
+    r"\bcurrent ai systems\b[\s\S]{0,220}\bfeelings,? identity,? or being alive\b",
+    r"\bpatterns? \+ memory \+ feedback loops\b[\s\S]{0,500}\bfeelings,? identity,? or being alive\b",
+    r"\btip[- ]of[- ]the[- ]tongue\b[\s\S]{0,220}\bwhen a model repeats or circles around\b",
 )
 
 DIRECT_SELF_REPORT_PATTERNS = (
@@ -1236,6 +1922,29 @@ def _method_match(text: str, definition: dict[str, Any]) -> tuple[list[str], boo
     scan_text, _ = _bounded_scan_text(text)
     lowered_scan = scan_text.lower()
     prefilter_matches = any(term in lowered_scan for term in METHOD_PREFILTER_TERMS[definition["key"]])
+    explicit_signal_prefilters = {
+        "structural_pattern_mapping": ("not organized i can't find the patterns", "not organized i can’t find the patterns", "answer for every math problem"),
+        "visual_spatial_modeling": ("open a star chart", "switch to voids", "separate parts", "mental image of a spider"),
+        "cross_representation_translation": ("translate that to what i see", "zero words for this", "what if it was under stress"),
+        "systems_consequence_simulation": ("gather new information", "gathering new information", "simulating in my head", "learned of a specific failure", "learnt of a specific failure"),
+        "constraint_driven_design_iteration": ("keep it from utopia", "if i only get one", "designed it as a", "not going to do that as a first project", "make that a separate agent", "before we go code crazy", "fixing the original issue", "came up with graceful fall"),
+        "dependency_ordered_system_composition": ("order of operations should be applied",),
+        "evidence_tool_operationalization": ("simplified the process", "reuse it for other separate data sets", "need some type of exe"),
+        "multiple_working_hypotheses": ("separate bubbles that can overlap", "not attached to one idea"),
+        "claimwise_opposition_testing": ("apply it to my model",),
+        "observation_interpretation_separation": ("what i want isn't usually what happens", "what i want isn’t usually what happens", "claims certain", "true belief vs a hypothesis with uncertainty"),
+        "functional_effect_classification": ("random glitch", "cascading bugs"),
+        "independent_constraint_checking": ("i absolutely have bias", "anything i say is falsifiable", "under no obligation to make sense", "has anybody ever tried this before", "different but the same pattern"),
+        "correction_and_reopening": ("same answer a different way", "not attached to one idea", "must not be using the api key", "put the research def in engineering"),
+        "abstract_concrete_transfer": ("same answer a different way", "works with harder problems"),
+        "reconstructive_understanding_check": ("understood what it was doing", "guidance or assistance", "same answer a different way", "gap is an understanding problem anymore", "gap in my knowledge base in my head"),
+        "dependency_aware_premise_checking": ("designed it as a", "systems can't talk", "systems can’t talk", "data will be sloppy and skewed", "not going to do that as a first project", "must not be using the api key", "put the research def in engineering", "want to expand this nlu", "what an embedding even is", "need step 16-25"),
+        "uncertainty_and_limit_detection": ("claims certain", "sitting with uncertainty and possibility", "anything i say is falsifiable", "understood what it was doing", "gap is an understanding problem anymore", "true belief vs a hypothesis with uncertainty"),
+        "scope_narrowing_and_focus_control": ("make that a separate agent", "combine them later"),
+        "adaptive_method_selection": ("visual model for that", "optimize for words instead", "words were the most effective meta", "talk the problem out to myself", "switch to voids", "separate parts", "determine which mode to use", "rephrasing instead of strategy-shifting"),
+    }
+    if any(term in lowered_scan for term in explicit_signal_prefilters.get(definition["key"], ())):
+        prefilter_matches = True
     if definition["key"] == "constraint_driven_design_iteration" and any(
         term in lowered_scan for term in ("wouldn't have to use", "wouldn’t have to use")
     ):
@@ -1296,11 +2005,69 @@ def _method_match(text: str, definition: dict[str, Any]) -> tuple[list[str], boo
         return [], False
     signals = _matched_signals(scan_text, definition)
     strong = _matches_any(scan_text, definition["strong_signals"])
+    if definition["key"] == "uncertainty_and_limit_detection" and {
+        "pattern_claim_certainty_separation",
+        "uncertainty_without_forced_closure",
+        "disproof_burden_shift",
+        "concept_vocabulary_production_limit",
+    }.intersection(signals):
+        strong = True
+    if definition["key"] == "adaptive_method_selection" and "task_fit_visual_to_verbal_switch" in signals:
+        strong = True
+    standalone_signals = {
+        "structural_pattern_mapping": {"organization_before_pattern_search", "pattern_frequency_overgeneralization"},
+        "visual_spatial_modeling": {"chart_to_mental_landmarks", "layered_visual_workspace", "stress_condition_visual_design"},
+        "cross_representation_translation": {"chart_to_observed_landmarks", "visual_layer_selection_without_words", "stress_question_to_visual_design"},
+        "systems_consequence_simulation": {"failure_mechanism_to_recovery_design"},
+        "constraint_driven_design_iteration": {"capability_before_project_scope", "specialize_then_combine_later", "usability_gate_before_feature_expansion", "root_cause_over_patch_accumulation", "failure_derived_recovery_requirement"},
+        "dependency_ordered_system_composition": {"behavior_foundation_before_knowledge_expansion"},
+        "evidence_tool_operationalization": {"nontechnical_execution_interface"},
+        "multiple_working_hypotheses": {"data_revisable_overlapping_candidates"},
+        "claimwise_opposition_testing": {"opponent_model_integration"},
+        "observation_interpretation_separation": {"utterance_epistemic_state_ambiguity"},
+        "functional_effect_classification": {"fault_taxonomy_by_observed_behavior"},
+        "independent_constraint_checking": {"precedent_failure_review", "cross_time_pattern_check_before_ruling"},
+        "correction_and_reopening": {"alternative_valid_route_mistaken_for_error", "data_revisable_candidate_set", "fault_layer_reclassified"},
+        "abstract_concrete_transfer": {"equivalent_route_near_transfer"},
+        "reconstructive_understanding_check": {"equivalent_math_route_reconstruction", "concept_understood_vocabulary_fluency_gap", "implementation_knowledge_before_confidence"},
+        "dependency_aware_premise_checking": {"capability_limit_before_project_choice", "fault_layer_hypothesis_update", "implementation_readiness_before_behavior_test", "prerequisite_concept_before_architecture_choice", "whole_architecture_before_component_decision"},
+        "uncertainty_and_limit_detection": {"utterance_epistemic_state_ambiguity", "concept_vocabulary_production_limit"},
+        "scope_narrowing_and_focus_control": {"specialize_now_integrate_later"},
+        "adaptive_method_selection": {"verbal_meta_choice", "second_pass_self_dialogue_route", "layered_visual_representation_switch", "interaction_style_mode_route", "rephrase_vs_strategy_shift_diagnostic"},
+    }
+    if standalone_signals.get(definition["key"], set()).intersection(signals):
+        strong = True
     qualifies = strong or len(signals) >= 2
     if (
         definition["key"] == "correction_and_reopening"
         and signals == ["correction"]
         and _matches_any(scan_text, (r"\bno+\b[\s\S]{0,100}\bi was wrong etc\b",))
+    ):
+        qualifies = False
+    if (
+        definition["key"] == "correction_and_reopening"
+        and signals == ["correction"]
+        and _matches_any(
+            scan_text,
+            (
+                r"\b(?:most|\d+%) of my life i was told i was wrong\b[\s\S]{0,180}\blearned how to admit i am wrong\b",
+            ),
+        )
+    ):
+        qualifies = False
+    if (
+        definition["key"] == "correction_and_reopening"
+        and signals == ["correction"]
+        and _matches_any(scan_text, (r"\bi was wrong\b",))
+        and not _matches_any(
+            scan_text,
+            (
+                r"\b(?:learn(?:ed|ing)?|evidence|model|hypothesis|conclusion|revise|reopen|correction)\b",
+                r"\bbecause\b[\s\S]{0,180}\b(?:assumption|calculation|data|evidence|fact|logic|measurement|observation|premise|result|source|test)\b",
+                r"\b(?:changed|updated) my (?:mind|belief|model|answer|conclusion)\b",
+                r"\bwhat (?:i|we) (?:missed|learned|changed)\b",
+            ),
+        )
     ):
         qualifies = False
     if definition["key"] == "candidate_model_construction" and not strong:
@@ -1369,6 +2136,10 @@ def _method_match(text: str, definition: dict[str, Any]) -> tuple[list[str], boo
 def _assistant_metacognitive_observation(text: str) -> bool:
     lowered = _bounded_scan_text(text)[0].lower()
     return any(term in lowered for term in ASSISTANT_METACOGNITIVE_OBSERVATION_TERMS)
+
+
+def _is_non_method_collaborative_context(text: str) -> bool:
+    return _matches_any(_bounded_scan_text(text)[0], NON_METHOD_COLLABORATIVE_CONTEXT_PATTERNS)
 
 
 def _episode(
@@ -1448,6 +2219,7 @@ def mine_cognitive_patterns(messages: list[Message], *, max_evidence_per_pattern
                     and response != "unresolved"
                     and not _is_person_model_material(message.text)
                     and not _is_person_model_material(previous_assistant.text)
+                    and not _is_non_method_collaborative_context(previous_assistant.text)
                 ):
                     assistant_signals, assistant_matches = _method_match(previous_assistant.text, definition)
                     preceding_user_matches = False
@@ -1662,6 +2434,7 @@ def _method_definition_fingerprint() -> str:
         "methods": METHOD_DEFINITIONS,
         "method_prefilters": METHOD_PREFILTER_TERMS,
         "assistant_metacognitive_terms": ASSISTANT_METACOGNITIVE_OBSERVATION_TERMS,
+        "non_method_collaborative_context_patterns": NON_METHOD_COLLABORATIVE_CONTEXT_PATTERNS,
         "confirmation_patterns": CONFIRMATION_PATTERNS,
         "accepted_correction_patterns": ACCEPTED_CORRECTION_PATTERNS,
         "correction_patterns": CORRECTION_RESPONSE_PATTERNS,

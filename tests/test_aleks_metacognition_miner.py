@@ -1242,6 +1242,346 @@ def test_screening_result_explicitly_distinguished_from_proof():
     assert pattern["review_state"] == "candidate_for_aleks_review"
 
 
+def test_source_account_is_preserved_before_interpretation_is_added():
+    messages = [
+        _message(
+            "source-first",
+            "u1",
+            "user",
+            "I want to retell stories and then give my interpretation of them.",
+            "2025-08-14T00:00:00+00:00",
+        ),
+        _message(
+            "source-first",
+            "u2",
+            "user",
+            "The myth stays as is; only after I tell the original story does my interpretation come out.",
+            "2025-08-14T00:01:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "observation_interpretation_separation")
+
+    evidence = pattern["all_bounded_source_evidence"]
+    assert len(evidence) == 2
+    assert all("source_account_before_interpretation" in item["matched_signals"] for item in evidence)
+
+
+def test_interpretive_retelling_without_source_first_boundary_does_not_qualify():
+    messages = [
+        _message(
+            "interpretive-retelling",
+            "u1",
+            "user",
+            "I retell stories using my interpretation throughout.",
+            "2025-08-14T00:00:00+00:00",
+        ),
+        _message(
+            "interpretive-retelling",
+            "u2",
+            "user",
+            "The original story inspired my interpretation.",
+            "2025-08-14T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = mine_cognitive_patterns(messages)
+
+    assert not any(item["method_key"] == "observation_interpretation_separation" for item in patterns)
+
+
+def test_functional_effect_is_compared_independently_from_label_and_automation():
+    messages = [
+        _message(
+            "functional-effect",
+            "u1",
+            "user",
+            "User does X, then the system takes away Y. Explain how that input-action-effect is different under the new label.",
+            "2025-08-14T00:00:00+00:00",
+        ),
+        _message(
+            "functional-effect",
+            "u2",
+            "user",
+            "Just because it's automated doesn't mean the functional effect changed.",
+            "2025-08-14T00:01:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "functional_effect_classification")
+
+    matched = {
+        signal
+        for evidence in pattern["all_bounded_source_evidence"]
+        for signal in evidence["matched_signals"]
+    }
+    assert {"input_action_effect_schema", "automation_not_dispositive"} <= matched
+    assert "functional similarity does not by itself establish designer intent or complete equivalence" in pattern["risks"]
+
+
+def test_automation_or_label_mention_alone_is_not_functional_effect_classification():
+    messages = [
+        _message(
+            "functional-label",
+            "u1",
+            "user",
+            "The automated mechanism is called a context throttle, and some users dislike that label.",
+            "2025-08-14T00:00:00+00:00",
+        )
+    ]
+
+    patterns = mine_cognitive_patterns(messages)
+
+    assert not any(item["method_key"] == "functional_effect_classification" for item in patterns)
+
+
+def test_mapped_process_can_be_requested_as_a_reusable_cognitive_tool():
+    messages = [
+        _message(
+            "process-tool",
+            "u1",
+            "user",
+            "Please turn this into a cognitive tool.",
+            "2025-08-14T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "evidence_tool_operationalization")
+
+    assert "mapped_process_to_cognitive_tool" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_strongest_opposition_is_answered_claimwise_with_selective_concession():
+    messages = [
+        _message(
+            "opposition",
+            "u1",
+            "user",
+            "Give me your strongest points on why this design should not be used.",
+            "2025-08-14T00:00:00+00:00",
+        ),
+        _message(
+            "opposition",
+            "u2",
+            "user",
+            "1. That first constraint is a true point and not one I can refute.\n2. You're not wrong but you're not entirely correct about the second.\n3. The third assumes every case behaves alike.",
+            "2025-08-14T00:01:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "claimwise_opposition_testing")
+
+    matched = {
+        signal
+        for evidence in pattern["all_bounded_source_evidence"]
+        for signal in evidence["matched_signals"]
+    }
+    assert {"strongest_opposing_case", "numbered_claim_response", "unrefuted_concession", "partial_concession"} <= matched
+
+
+def test_ordinary_request_for_disagreement_is_not_claimwise_opposition_testing():
+    messages = [
+        _message(
+            "ordinary-disagreement",
+            "u1",
+            "user",
+            "Tell me why you disagree with the idea.",
+            "2025-08-14T00:00:00+00:00",
+        )
+    ]
+
+    patterns = mine_cognitive_patterns(messages)
+
+    assert not any(item["method_key"] == "claimwise_opposition_testing" for item in patterns)
+
+
+def test_guess_is_separated_from_observation_and_wrongness_remains_open():
+    messages = [
+        _message(
+            "bounded-guess",
+            "u1",
+            "user",
+            "This is entirely a guess. I was never told; I am just observing and making a guess. The details fit, but I could be wrong entirely.",
+            "2025-08-14T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "explicit_guess_from_observation" in patterns["observation_interpretation_separation"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "explicit_guess_boundary" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_untested_limit_and_required_terms_create_bounded_gates():
+    messages = [
+        _message(
+            "bounded-gates",
+            "u1",
+            "user",
+            "I don't know if there is a limit; I haven't tested it, so I won't claim one.",
+            "2025-08-14T00:00:00+00:00",
+        ),
+        _message(
+            "bounded-gates",
+            "u2",
+            "user",
+            "I don't want to touch it yet until I know the terms and what exactly they are looking for, so I have to ask first.",
+            "2025-08-14T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "untested_limit" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "terms_before_action" in patterns["dependency_aware_premise_checking"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_constraint_is_preserved_after_its_unique_data_value_is_noticed():
+    messages = [
+        _message(
+            "constraint-value",
+            "u1",
+            "user",
+            "I was about to suggest a better approach, but you know what: strangers meeting strangers gives you data you wouldn't get from familiar pairs.",
+            "2025-08-14T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "constraint_driven_design_iteration")
+
+    assert "constraint_value_reassessment" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_complementary_pairs_are_synthesized_instead_of_forced_into_a_binary():
+    messages = [
+        _message(
+            "complementary-pairs",
+            "u1",
+            "user",
+            "Truth vs helpfulness is being separated, but they work in tandem; the answer is finding balance between the two.",
+            "2025-08-14T00:00:00+00:00",
+        ),
+        _message(
+            "complementary-pairs",
+            "u2",
+            "user",
+            "Science can't have it without imagination. It is not one or the other.",
+            "2025-08-14T00:01:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "dialectical_third_model_synthesis")
+
+    assert len(pattern["all_bounded_source_evidence"]) == 2
+    assert all("complementary_pair_synthesis" in item["matched_signals"] for item in pattern["all_bounded_source_evidence"])
+
+
+def test_shared_middle_is_mapped_before_conflict_resolution_is_proposed():
+    messages = [
+        _message(
+            "shared-middle",
+            "u1",
+            "user",
+            "They do not look at where they both are the same. They ignore the middle (same) box and argue from the outside, Point A and Point B. If they used the same ground, the conflict would resolve through compromise.",
+            "2025-08-14T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "shared_invariant_conflict_mapping")
+
+    matched = pattern["all_bounded_source_evidence"][0]["matched_signals"]
+    assert {"shared_middle", "outside_positions", "common_ground_resolution"} <= set(matched)
+    assert "compromise is preferred when one claim is factually unsupported or harmful" in pattern["risks"]
+
+
+def test_suspicion_subjective_grading_and_investment_are_bounded():
+    messages = [
+        _message(
+            "bounded-decisions",
+            "u1",
+            "user",
+            "I can't confirm or deny that I am right; I only have suspicions.",
+            "2025-08-14T00:00:00+00:00",
+        ),
+        _message(
+            "bounded-decisions",
+            "u2",
+            "user",
+            "Both responses are both equally unfunny to you, but someone else would enjoy them. Can you accurately grade them if both satisfy the poem request?",
+            "2025-08-14T00:01:00+00:00",
+        ),
+        _message(
+            "bounded-decisions",
+            "u3",
+            "user",
+            "I want to learn before I invest.",
+            "2025-08-14T00:02:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    uncertainty_signals = {
+        signal
+        for evidence in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"]
+        for signal in evidence["matched_signals"]
+    }
+
+    assert {"suspicion_below_confirmation", "subjective_evaluation_limit"} <= uncertainty_signals
+    assert "learn_before_invest" in patterns["dependency_aware_premise_checking"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_intuition_is_checked_and_style_is_only_a_provisional_source_cue():
+    messages = [
+        _message(
+            "bounded-cues",
+            "u1",
+            "user",
+            "My intuition is correct; I just wanted to double check.",
+            "2025-08-14T00:00:00+00:00",
+        ),
+        _message(
+            "bounded-cues",
+            "u2",
+            "user",
+            "There are specific things said in the model's responses that I notice when I think it is GPT.",
+            "2025-08-14T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "intuition_double_check" in patterns["independent_constraint_checking"]["all_bounded_source_evidence"][0]["matched_signals"]
+    pragmatic = patterns["pragmatic_multi_cue_screening"]
+    assert "stylistic_source_inference" in pragmatic["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "stylistic resemblance is mistaken for reliable source attribution" in pragmatic["risks"]
+
+
+def test_initial_attribution_can_be_reclassified_and_behavior_hypothesis_stays_tentative():
+    messages = [
+        _message(
+            "reclassification",
+            "u1",
+            "user",
+            "I took it as lying when I first discovered it, but it is not, and I figured that out.",
+            "2025-08-14T00:00:00+00:00",
+        ),
+        _message(
+            "reclassification",
+            "u2",
+            "user",
+            "I'm thinking she was bullied at the shelter. Her behavior changed after the water issue, so maybe a connection is highly possible but I don't know.",
+            "2025-08-14T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "initial_attribution_reclassified" in patterns["correction_and_reopening"]["all_bounded_source_evidence"][0]["matched_signals"]
+    candidate = patterns["candidate_model_construction"]
+    assert "behavior_change_history_hypothesis" in candidate["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "temporal association is mistaken for causation" in candidate["risks"]
+
+
 def test_sectioned_learning_and_foundation_first_are_direct_method_evidence():
     messages = [
         _message(
@@ -2752,3 +3092,1453 @@ def test_ordinary_observation_and_social_mapping_words_do_not_create_pragmatic_m
     method_keys = {item["method_key"] for item in mine_cognitive_patterns(messages)}
 
     assert "pragmatic_multi_cue_screening" not in method_keys
+
+
+def test_dense_material_is_decomposed_before_scene_level_compilation():
+    messages = [
+        _message(
+            "decompose-compile",
+            "u1",
+            "user",
+            "I can't just throw this whole mouthful at an AI; I need to break it up. It has two parts, then I switch scenes, so it should be broken down then compiled.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "prerequisite_ordered_rule_transfer")
+
+    assert "decompose_then_compile" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_staged_risk_and_claim_strength_are_bounded_by_evidence():
+    messages = [
+        _message(
+            "risk-stage",
+            "u1",
+            "user",
+            "Start small low risk. Once more stable and okay with losing money, take medium risks, then high risks.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "claim-strength",
+            "u2",
+            "user",
+            "It is a good guess based on what we currently know, but I would not claim it as an active truth because it is not proven.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "stability_gated_risk_progression" in {
+        signal
+        for item in patterns["constraint_driven_design_iteration"]["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+    assert "a staged risk plan inherits domain-specific uncertainty and may still underestimate loss" in patterns["constraint_driven_design_iteration"]["risks"]
+    assert "claim_strength_evidence_match" in {
+        signal
+        for item in patterns["independent_constraint_checking"]["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+
+def test_shared_ground_and_belief_revision_are_separate_method_candidates():
+    messages = [
+        _message(
+            "shared-ground",
+            "u1",
+            "user",
+            "It becomes two sides trying to win while ignoring the shared ground they stand on.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "revision",
+            "u2",
+            "user",
+            "Changing my mind and beliefs is easy because I adapt to learn; I know very very little compared with what can be known.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "shared_ground_before_winning" in patterns["shared_invariant_conflict_mapping"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "belief_revision_for_learning" in patterns["correction_and_reopening"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_residual_unknown_and_inside_knowledge_boundary_remain_explicit():
+    messages = [
+        _message(
+            "residual-unknown",
+            "u1",
+            "user",
+            "I am 95% sure, but there is an irreducible 5% where maybe another explanation fits.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "inference-boundary",
+            "u2",
+            "user",
+            "This is an educated guess with zero inside knowledge. I have zero inside knowledge, only educated guesses based on observation.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    uncertainty_signals = {
+        signal
+        for item in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"quantified_residual_unknown", "educated_guess_no_inside_knowledge"}.issubset(uncertainty_signals)
+    assert "educated_guess_without_inside_knowledge" in patterns["observation_interpretation_separation"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_principles_and_ambiguous_instructions_are_reconstructed_before_use():
+    messages = [
+        _message(
+            "principle",
+            "u1",
+            "user",
+            "I failed to articulate it: nothing is guaranteed, everything is possible, and you own the consequences.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "instruction-check",
+            "u2",
+            "user",
+            "So just to check, I just need the pattern from the wall, not the chair.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "reconstructive_understanding_check")
+    signals = {
+        signal
+        for item in pattern["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"principle_reconstruction", "concrete_instruction_restatement"}.issubset(signals)
+
+
+def test_narrative_learning_parallel_hypotheses_and_value_stopping_are_bounded():
+    messages = [
+        _message(
+            "narrative-transfer",
+            "u1",
+            "user",
+            "Video game stories had directly impacted my way of thinking; lessons I've learned there were carried subconsciously into other cases.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "parallel-hypotheses",
+            "u2",
+            "user",
+            "I'm beginning to suspect a practical cause, or it's a system error. What do you think about both?",
+            "2025-01-01T00:01:00+00:00",
+        ),
+        _message(
+            "value-stop",
+            "u3",
+            "user",
+            "I would find a better way to make it faster; otherwise it is not worth the time when I am not being paid.",
+            "2025-01-01T00:02:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "narrative_simulation_lesson_transfer" in patterns["abstract_concrete_transfer"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "fictional simulation lessons are mistaken for empirical evidence" in patterns["abstract_concrete_transfer"]["risks"]
+    assert "parallel_practical_and_system_hypotheses" in patterns["multiple_working_hypotheses"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "effort_value_stop" in patterns["sufficiency_and_stopping"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "short-term compensation is treated as the only source of value" in patterns["sufficiency_and_stopping"]["risks"]
+
+
+def test_ordinary_breaks_payment_and_game_mentions_do_not_create_v431_methods():
+    messages = [
+        _message(
+            "ordinary-v431",
+            "u1",
+            "user",
+            "The game has two parts, I took a break, and the payment is not ready.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    method_keys = {item["method_key"] for item in mine_cognitive_patterns(messages)}
+
+    assert "prerequisite_ordered_rule_transfer" not in method_keys
+    assert "abstract_concrete_transfer" not in method_keys
+    assert "sufficiency_and_stopping" not in method_keys
+
+
+def test_causal_transition_gap_traces_force_path_and_persistent_source():
+    messages = [
+        _message(
+            "transition-gap",
+            "u1",
+            "user",
+            "Unless a force acts upon it and kicks it out, it would just sit there. How did it go from point A inside the source to B with a complete system?",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "transition-gap",
+            "u2",
+            "user",
+            "The proposed nursery is still there and visible; it did not burn away, so the transition still needs an explanation.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+        _message(
+            "transition-gap",
+            "u3",
+            "user",
+            "If the material is free floating and blasted around, how can something form consistently under those conditions?",
+            "2025-01-01T00:02:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "causal_transition_gap_tracing")
+    signals = {
+        signal
+        for item in pattern["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"required_transition_force", "point_a_to_b_trace", "persistent_source_check", "formation_under_chaos_check"}.issubset(signals)
+    assert "a missing explanation is mistaken for proof that the accepted model is false" in pattern["risks"]
+
+
+def test_dependency_composition_orders_base_extensions_overrides_and_patches():
+    messages = [
+        _message(
+            "dependency-order",
+            "u1",
+            "user",
+            "A patch must go after the main component because the file loaded last wins.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "dependency-order",
+            "u2",
+            "user",
+            "The main file goes first, then the 2nd dependency, then the third override.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+        _message(
+            "dependency-order",
+            "u3",
+            "user",
+            "The tool reports missing masters and won't let you deploy if the order is wrong.",
+            "2025-01-01T00:02:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "dependency_ordered_system_composition")
+    signals = {
+        signal
+        for item in pattern["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"patch_after_target", "base_extension_priority", "dependency_tool_check"}.issubset(signals)
+
+
+def test_adaptive_router_orders_analytic_affective_and_lookup_routes():
+    messages = [
+        _message(
+            "adaptive-route",
+            "u1",
+            "user",
+            "Logic has solved my problems more reliably in this context, so I apply logic first then emotions.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "adaptive-route",
+            "u2",
+            "user",
+            "I apply past knowledge, or look it up if I don't know the answer.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "adaptive_method_selection")
+    signals = {
+        signal
+        for item in pattern["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"logic_then_emotion_ordering", "knowledge_or_lookup_route"}.issubset(signals)
+    assert "analytic ordering suppresses affective evidence that materially changes the problem" in pattern["risks"]
+
+
+def test_uncertain_anomaly_is_held_without_action_and_visual_fabrication():
+    messages = [
+        _message(
+            "bounded-anomaly",
+            "u1",
+            "user",
+            "It sits between coincidence or something more and stays that way; I don't let it control what I do.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "bounded-anomaly",
+            "u2",
+            "user",
+            "There is so much uncertainty that the image is black—no static, because there is no real data my brain considers accurate or reliable.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    uncertainty_signals = {
+        signal
+        for item in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"action_decoupled_anomaly_hold", "representation_withheld_without_reliable_data"}.issubset(uncertainty_signals)
+    assert "action_decoupled_anomaly_hold" in patterns["multiple_working_hypotheses"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "representation_withheld_without_reliable_data" in patterns["visual_spatial_modeling"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_operational_labels_and_unseen_pipeline_remain_bounded_inferences():
+    messages = [
+        _message(
+            "bounded-system-inference",
+            "u1",
+            "user",
+            "The flags do not mean anything beyond data points; they are operational context, not judgment.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "bounded-system-inference",
+            "u2",
+            "user",
+            "My guess is: query or whatever topic, it types a response, then a rails exe checks it like a guard dog. How close is that shape?",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "operational_label_not_judgment" in patterns["functional_effect_classification"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "an analogy to an observed routing system is mistaken for evidence of an unseen target system" in patterns["functional_effect_classification"]["risks"]
+    assert "minimal_pipeline_hypothesis" in patterns["candidate_model_construction"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "a plausible external shape is mistaken for knowledge of an unseen internal architecture" in patterns["candidate_model_construction"]["risks"]
+
+
+def test_ordinary_game_fact_correction_is_not_a_reusable_correction_method():
+    messages = [
+        _message(
+            "game-correction",
+            "u1",
+            "user",
+            "Okay, I was wrong—the traitor was the other character!",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "game-correction",
+            "u2",
+            "user",
+            "I assumed the game would choose one option. I was wrong; the game chose another.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    method_keys = {item["method_key"] for item in mine_cognitive_patterns(messages)}
+
+    assert "correction_and_reopening" not in method_keys
+
+
+def test_personal_wrongness_with_a_relational_because_is_not_method_evidence():
+    messages = [
+        _message(
+            "personal-correction",
+            "u1",
+            "user",
+            "I was wrong because my relative understood him better than I did.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "personal-correction",
+            "u2",
+            "user",
+            "I was wrong, but not because she said it; I just remembered the conversation differently.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    method_keys = {item["method_key"] for item in mine_cognitive_patterns(messages)}
+
+    assert "correction_and_reopening" not in method_keys
+
+
+def test_wrongness_with_an_epistemic_because_remains_correction_evidence():
+    messages = [
+        _message(
+            "epistemic-correction",
+            "u1",
+            "user",
+            "I was wrong because the new measurement contradicts my earlier assumption.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    method_keys = {item["method_key"] for item in mine_cognitive_patterns(messages)}
+
+    assert "correction_and_reopening" in method_keys
+
+
+def test_personal_history_of_being_told_wrong_is_not_a_reusable_correction_method():
+    messages = [
+        _message(
+            "personal-correction-history",
+            "u1",
+            "user",
+            "Most of my life I was told I was wrong; maybe I learned how to admit I am wrong.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    method_keys = {item["method_key"] for item in mine_cognitive_patterns(messages)}
+
+    assert "correction_and_reopening" not in method_keys
+
+
+def test_diagnostic_pattern_class_transfer_stays_a_bounded_troubleshooting_inference():
+    messages = [
+        _message(
+            "diagnostic-transfer",
+            "u1",
+            "user",
+            "We witnessed stability after removing immersive creatures, so I connect the pattern to the new building and its followers.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "structural_pattern_mapping")
+
+    assert "diagnostic_pattern_class_transfer" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "one successful troubleshooting case is treated as proof of a broad failure category" in pattern["risks"]
+
+
+def test_evidence_conditioned_accountability_and_claim_audit_are_distinct_methods():
+    messages = [
+        _message(
+            "accountability-audit",
+            "u1",
+            "user",
+            "If I fuck up and make a mistake I own it, then I improve this going forward instead of accepting a claim without evidence.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "accountability-audit",
+            "u2",
+            "user",
+            "Let me push on your reasoning: if we assume the claim is true, it still glosses over the missing mechanism.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "evidence_conditioned_accountability" in patterns["correction_and_reopening"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "assume_claim_then_audit_omissions" in patterns["claimwise_opposition_testing"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "the threshold for accepting correction becomes defensively high or dependent on self-judgment alone" in patterns["correction_and_reopening"]["risks"]
+
+
+def test_burden_check_and_novel_case_gap_do_not_share_expression_confidence():
+    messages = [
+        _message(
+            "constraint-gaps",
+            "u1",
+            "user",
+            "You qualify your opinion here as fact, so where is your data?",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "constraint-gaps",
+            "u2",
+            "user",
+            "It continues to be made to be perfect on known cases, but a brand new issue doesn't fit into any known data.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    constraint_signals = {
+        signal
+        for item in patterns["independent_constraint_checking"]["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+    uncertainty_signals = {
+        signal
+        for item in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"opinion_fact_burden_check", "novel_case_robustness_check"}.issubset(constraint_signals)
+    assert "novel_case_coverage_gap" in uncertainty_signals
+    assert "a hypothetical novel case is treated as proof that the current system will fail" in patterns["independent_constraint_checking"]["risks"]
+
+
+def test_counterexample_narrows_generalization_and_marks_scope_uncertainty():
+    messages = [
+        _message(
+            "scope-counterexample",
+            "u1",
+            "user",
+            "You can be a product of your environment to an extent, but I came out the exact opposite, so it is not true for everyone.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "generalization_narrowed_by_counterexample" in patterns["abstract_concrete_transfer"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "generalization_scope_counterexample" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "a personal counterexample is used to dismiss a population-level tendency rather than narrow its scope" in patterns["abstract_concrete_transfer"]["risks"]
+
+
+def test_correctness_and_completeness_are_separated_without_accepting_missing_coverage():
+    messages = [
+        _message(
+            "correctness-completeness",
+            "u1",
+            "user",
+            "One was just dead wrong; the other was correct but was lacking crucial detail, and it passed only because it was correct.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "reconstructive_understanding_check")
+
+    assert "correctness_completeness_separation" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "a technically correct but materially incomplete answer is accepted for a task that required full coverage" in pattern["risks"]
+
+
+def test_ordinary_short_correctness_and_novelty_phrases_do_not_create_v433_methods():
+    messages = [
+        _message(
+            "ordinary-v433",
+            "u1",
+            "user",
+            "The answer was correct but short, and then a brand new issue appeared in the game.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    method_keys = {item["method_key"] for item in mine_cognitive_patterns(messages)}
+
+    assert "reconstructive_understanding_check" not in method_keys
+    assert "independent_constraint_checking" not in method_keys
+    assert "uncertainty_and_limit_detection" not in method_keys
+
+
+def test_unknown_anomaly_inventory_stays_provisional_when_it_forms_a_candidate():
+    messages = [
+        _message(
+            "unknown-anomaly-candidate",
+            "u1",
+            "user",
+            "The truth is I do not know, and I do not claim to know. There are things that don't line up and figures that repeat; I think it's architecture, but that remains a candidate.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "unknown_then_candidate_mechanism" in patterns["candidate_model_construction"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "uncertain_anomaly_inventory" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "an inventory of unexplained repetitions is treated as weighted support for the candidate mechanism" in patterns["candidate_model_construction"]["risks"]
+
+
+def test_parameterized_rerun_and_downloadable_pipeline_support_reproduction_not_validation():
+    messages = [
+        _message(
+            "reproducible-pipeline",
+            "u1",
+            "user",
+            "Could I use the same Python script, change a few coordinates, and grab a separate data piece for a rerun?",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "reproducible-pipeline",
+            "u2",
+            "user",
+            "Every single thing required to rerun it on different data is available for download; it is plug and play with the source folder.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "evidence_tool_operationalization")
+    signals = {
+        signal
+        for item in pattern["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"parameterized_new_data_rerun", "downloadable_reproducible_pipeline"}.issubset(signals)
+    assert "a rerunnable pipeline is mistaken for validation of the claim it evaluates" in pattern["risks"]
+
+
+def test_formal_claim_strength_and_additive_scope_remain_separate_checks():
+    messages = [
+        _message(
+            "claim-scope",
+            "u1",
+            "user",
+            "My language here is not what I used on the paper; there I said potential discovery.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "claim-scope",
+            "u2",
+            "user",
+            "It doesn't challenge anything it adds; this is a discovery, not a framework.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "formal_claim_strength_calibration" in patterns["provisional_naming_and_scope_control"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "formal_claim_strength_calibration" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "additive_not_refutational_scope" in patterns["baseline_preserving_model_extension"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "describing a proposal as additive is mistaken for exemption from ordinary evidence requirements" in patterns["baseline_preserving_model_extension"]["risks"]
+
+
+def test_external_discoverability_probe_does_not_establish_general_attribution():
+    messages = [
+        _message(
+            "discoverability-probe",
+            "u1",
+            "user",
+            "It was a little bit of testing if it could be found by you. I did some linking into my LinkedIn so it goes back to me.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "independent_constraint_checking")
+
+    assert "external_discoverability_provenance_probe" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "one collaborator finding an artifact is mistaken for broad discoverability or independently verified attribution" in pattern["risks"]
+
+
+def test_self_falsification_preserves_a_correction_path():
+    messages = [
+        _message(
+            "self-falsification",
+            "u1",
+            "user",
+            "I am not trying to disprove anything; I already disproved my own original hypothesis, and Einstein won again, which is how I got here.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "correction_and_reopening")
+
+    assert "self_falsification_to_revised_result" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "self-falsification is asserted without preserving the test, rejected prediction, or correction trail" in pattern["risks"]
+
+
+def test_unknown_result_routes_to_teaching_without_claiming_comprehension():
+    messages = [
+        _message(
+            "unknown-result-teaching",
+            "u1",
+            "user",
+            "The next thing I'd say is: can you teach me then? I found something and idk what it is, but I wanna know.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "unknown_result_teaching_request" in patterns["reconstructive_understanding_check"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "unknown_result_teaching_request" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "willingness to be taught is mistaken for demonstrated comprehension" in patterns["reconstructive_understanding_check"]["risks"]
+
+
+def test_ordinary_potential_discovery_and_download_phrases_do_not_create_v434_methods():
+    messages = [
+        _message(
+            "ordinary-v434",
+            "u1",
+            "user",
+            "The game has a potential discovery and a downloadable map.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    method_keys = {item["method_key"] for item in mine_cognitive_patterns(messages)}
+
+    assert "provisional_naming_and_scope_control" not in method_keys
+    assert "evidence_tool_operationalization" not in method_keys
+    assert "uncertainty_and_limit_detection" not in method_keys
+
+
+def test_pet_praise_and_fictional_lore_are_not_collaborative_method_evidence():
+    messages = [
+        _message(
+            "non-method-collaboration",
+            "a1",
+            "assistant",
+            "From the way you talk about Ranger, you connect patterns and picture his personality clearly.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "non-method-collaboration",
+            "u1",
+            "user",
+            "Exactly, he really was like a little person and very smart.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+        _message(
+            "non-method-collaboration",
+            "a2",
+            "assistant",
+            "The best Elder Scrolls historians in-universe observe events before interpretation; what you're doing follows that lore.",
+            "2025-01-01T00:02:00+00:00",
+        ),
+        _message(
+            "non-method-collaboration",
+            "u2",
+            "user",
+            "Yes exactly, that is why the character's plan fails in the game.",
+            "2025-01-01T00:03:00+00:00",
+        ),
+    ]
+
+    method_keys = {item["method_key"] for item in mine_cognitive_patterns(messages)}
+
+    assert "structural_pattern_mapping" not in method_keys
+    assert "observation_interpretation_separation" not in method_keys
+
+
+def test_unknown_detection_keeps_best_guess_separate_from_understanding():
+    messages = [
+        _message(
+            "unknown-detection",
+            "u1",
+            "user",
+            "I don't know what I am detecting, but there is something; my best guess is a connecting lane.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "unknown_detection_best_guess" in patterns["candidate_model_construction"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "unknown_detection_best_guess" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "explicit_detection_unknown" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_successful_execution_is_recorded_as_a_validation_weakness():
+    messages = [
+        _message(
+            "execution-validation",
+            "u1",
+            "user",
+            "The math wouldn't math if it didn't work, so the result must be right.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "independent_constraint_checking")
+    evidence = pattern["all_bounded_source_evidence"][0]
+
+    assert "successful_execution_mistaken_for_validation_v2" in evidence["matched_signals"]
+    assert "failure_or_weakness" in evidence["behavior_markers"]
+    assert "successful execution is mistaken for correctness of data, assumptions, or interpretation" in pattern["risks"]
+
+
+def test_sampling_unit_correction_does_not_claim_an_independent_sample():
+    messages = [
+        _message(
+            "sampling-correction",
+            "u1",
+            "user",
+            "It is not 17 different quasars on 17 separate black holes; it is 17 different detected quasars, probably from the same hole.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "correction_and_reopening")
+
+    assert "sampling_unit_correction" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "correcting the sampling label is mistaken for obtaining an independent sample" in pattern["risks"]
+
+
+def test_data_handoff_and_time_matched_context_separate_observation_from_interpretation():
+    messages = [
+        _message(
+            "observation-boundaries",
+            "u1",
+            "user",
+            "Instead of me trying to explain what I don't fully understand, I will give you the data you requested.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "observation-boundaries",
+            "u2",
+            "user",
+            "You are using current Venus measurements to compare past Venus; the atmosphere wasn't like that and the heat wasn't like that.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "observation_interpretation_separation")
+    signals = {
+        signal
+        for item in pattern["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"data_over_unready_explanation", "bounded_data_handoff", "time_matched_evidence_context", "past_state_change"}.issubset(signals)
+    assert "historical conditions are reconstructed speculatively after rejecting present-day measurements" in pattern["risks"]
+
+
+def test_repeatability_precedes_hardening_and_failed_replication_reframes():
+    messages = [
+        _message(
+            "replication-order",
+            "u1",
+            "user",
+            "I should repeat the process with a different quasar dataset and see if the pattern persists.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "replication-order",
+            "u2",
+            "user",
+            "Let's do a second quasar; then if it repeats we harden the script. We will do both just in order.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+        _message(
+            "replication-order",
+            "u3",
+            "user",
+            "I want to test repeatability across a new data set because if there isn't, then I reframe the hypothesis.",
+            "2025-01-01T00:02:00+00:00",
+        ),
+        _message(
+            "replication-order",
+            "u4",
+            "user",
+            "That is why I wanted the second data set; now we grab a new data set now.",
+            "2025-01-01T00:03:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    evidence_signals = {
+        signal
+        for item in patterns["evidence_tool_operationalization"]["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+    independent_signals = {
+        signal
+        for item in patterns["independent_constraint_checking"]["all_bounded_source_evidence"]
+        for signal in item["matched_signals"]
+    }
+
+    assert {"pattern_persistence_rerun", "repeat_then_harden", "repeatability_or_reframe", "same_vs_new_dataset"}.issubset(evidence_signals)
+    assert {"pattern_persistence_rerun", "repeatability_or_reframe"}.issubset(independent_signals)
+    assert "repeat_before_tool_hardening" in patterns["dependency_aware_premise_checking"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "repeatability_or_reframe" in patterns["correction_and_reopening"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_unfalsified_possibilities_are_not_silently_treated_as_equal_probability():
+    messages = [
+        _message(
+            "unfalsified-weighting",
+            "u1",
+            "user",
+            "They are equally weighted and should be; if you cannot falsify it then it needs to be weighted.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    independent_evidence = patterns["independent_constraint_checking"]["all_bounded_source_evidence"][0]
+    uncertainty_evidence = patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]
+
+    assert "unfalsified_equal_weighting" in independent_evidence["matched_signals"]
+    assert "failure_or_weakness" in independent_evidence["behavior_markers"]
+    assert {"unfalsified_equal_weighting", "probability_without_discrimination"}.issubset(uncertainty_evidence["matched_signals"])
+    assert "unfalsified possibilities are assigned equal probability without priors or discriminating evidence" in patterns["uncertainty_and_limit_detection"]["risks"]
+
+
+def test_thought_experiment_generation_remains_a_candidate_not_evidence():
+    messages = [
+        _message(
+            "thought-experiment-generation",
+            "u1",
+            "user",
+            "With that strict logic we would never have figured out general relativity: riding a beam of light began without what science evidence? None.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "candidate_model_construction")
+
+    assert "thought_experiment_pre_evidence_generation" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "a famous successful thought experiment is used as survivorship evidence that unsupported candidates deserve equal weight" in pattern["risks"]
+
+
+def test_scenario_updates_separate_expected_outcomes_from_preferences():
+    messages = [
+        _message(
+            "scenario-update",
+            "u1",
+            "user",
+            "I gather new information and keep simulating in my head how it affects things; I can separate the result because what I want isn't usually what happens.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "preference_separated_scenario_update" in patterns["systems_consequence_simulation"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "preference_outcome_separation" in patterns["observation_interpretation_separation"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_task_fit_can_switch_from_visual_modeling_to_words():
+    messages = [
+        _message(
+            "task-fit-mode",
+            "u1",
+            "user",
+            "I don't use my visual model for that; it is not needed for that, so I optimize for words instead.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "task_fit_visual_to_verbal_switch" in patterns["adaptive_method_selection"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_pattern_recognition_keeps_internal_fit_separate_from_claim_certainty():
+    messages = [
+        _message(
+            "pattern-certainty",
+            "u1",
+            "user",
+            "I don't like to say that because it claims certainty; what I think I know might not be what's true.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "pattern_claim_certainty_separation" in patterns["observation_interpretation_separation"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "pattern_claim_certainty_separation" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_reusable_dataset_workflow_is_simplified_before_repetition():
+    messages = [
+        _message(
+            "reusable-workflow",
+            "u1",
+            "user",
+            "I learned I didn't need all of it, so I simplified the process and can reuse it for other separate data sets.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "evidence_tool_operationalization")
+
+    assert "simplified_reusable_dataset_workflow" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_interdependent_modules_require_a_communication_path():
+    messages = [
+        _message(
+            "module-dependency",
+            "u1",
+            "user",
+            "I designed it as A, but B could work. B breaks down if the systems can't talk to each other because the readings will be off.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "intermodule_communication_dependency" in patterns["constraint_driven_design_iteration"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "intermodule_communication_dependency" in patterns["dependency_aware_premise_checking"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_concept_understanding_is_separated_from_vocabulary_and_production_fluency():
+    messages = [
+        _message(
+            "concept-fluency-gap",
+            "u1",
+            "user",
+            "I understood what it was doing, but I didn't understand the vocabulary, and I can't write it without guidance or assistance.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "concept_understood_vocabulary_fluency_gap" in patterns["reconstructive_understanding_check"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "concept_vocabulary_production_limit" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_unfalsified_candidate_does_not_shift_the_burden_of_evidence():
+    messages = [
+        _message(
+            "disproof-burden",
+            "u1",
+            "user",
+            "Anything I say is falsifiable: prove me wrong. If you can't, you cannot claim certainty.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    independent = patterns["independent_constraint_checking"]
+    uncertainty = patterns["uncertainty_and_limit_detection"]
+
+    assert "disproof_burden_shift" in independent["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "failure_or_weakness" in independent["all_bounded_source_evidence"][0]["behavior_markers"]
+    assert "disproof_burden_shift" in uncertainty["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_lower_layer_sloppiness_requires_a_correlation_check_before_claiming_bias():
+    messages = [
+        _message(
+            "quality-propagation",
+            "u1",
+            "user",
+            "The data will be bad if the lower level is sloppy; the data will be sloppy and skewed.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "dependency_aware_premise_checking")
+    evidence = pattern["all_bounded_source_evidence"][0]
+
+    assert "lower_layer_sloppiness_assumed_to_propagate" in evidence["matched_signals"]
+    assert "failure_or_weakness" in evidence["behavior_markers"]
+    assert "local annotation sloppiness is assumed to create aggregate bias without checking whether errors are systematic or correlated" in pattern["risks"]
+
+
+def test_counterintuitive_observation_routes_to_mechanism_search_not_rejection():
+    messages = [
+        _message(
+            "counterintuitive-observation",
+            "u1",
+            "user",
+            "The universe is under no obligation to make sense to me; the useful part is figuring out why it works that way.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "independent_constraint_checking")
+
+    assert "reality_over_intuitive_coherence" in pattern["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_verbal_meta_choice_and_self_dialogue_are_task_routed_methods():
+    messages = [
+        _message(
+            "task-routed-methods",
+            "u1",
+            "user",
+            "I didn't visualize it this time; words were the most effective meta.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "task-routed-methods",
+            "u2",
+            "user",
+            "I second guess myself, think of something else, and talk the problem out to myself; it depends on what needs done.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    pattern = next(item for item in mine_cognitive_patterns(messages) if item["method_key"] == "adaptive_method_selection")
+    signals = {signal for item in pattern["all_bounded_source_evidence"] for signal in item["matched_signals"]}
+
+    assert {"verbal_meta_choice", "second_pass_self_dialogue_route"}.issubset(signals)
+
+
+def test_equivalent_math_route_is_reconstructed_before_calling_it_wrong():
+    messages = [
+        _message(
+            "equivalent-math-route",
+            "u1",
+            "user",
+            "I asked what x 2 equals 12: 6. Same answer a different way, and it works with harder problems, but I was wrong.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "alternative_valid_route_mistaken_for_error" in patterns["correction_and_reopening"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "equivalent_math_route_reconstruction" in patterns["reconstructive_understanding_check"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "equivalent_route_near_transfer" in patterns["abstract_concrete_transfer"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_overlapping_candidates_remain_revisable_by_new_data():
+    messages = [
+        _message(
+            "revisable-candidates",
+            "u1",
+            "user",
+            "I visualize them as separate bubbles that can overlap; that can change whenever new data is introduced, and I am not attached to one idea.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "data_revisable_overlapping_candidates" in patterns["multiple_working_hypotheses"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "data_revisable_candidate_set" in patterns["correction_and_reopening"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_visual_workspace_can_translate_charts_switch_layers_and_design_from_stress():
+    messages = [
+        _message(
+            "visual-workspace",
+            "u1",
+            "user",
+            "I open a star chart, translate that to what I see, and create landmarks in my head.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "visual-workspace",
+            "u2",
+            "user",
+            "It has separate parts; I can switch to voids and then switch to the gas and filaments.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+        _message(
+            "visual-workspace",
+            "u3",
+            "user",
+            "I made it in my head: what if it was under stress? A mental image of a spider led to a flex support system.",
+            "2025-01-01T00:02:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    visual_signals = {signal for item in patterns["visual_spatial_modeling"]["all_bounded_source_evidence"] for signal in item["matched_signals"]}
+    translation_signals = {signal for item in patterns["cross_representation_translation"]["all_bounded_source_evidence"] for signal in item["matched_signals"]}
+
+    assert {"chart_to_mental_landmarks", "layered_visual_workspace", "stress_condition_visual_design"}.issubset(visual_signals)
+    assert {"chart_to_observed_landmarks", "stress_question_to_visual_design"}.issubset(translation_signals)
+    assert "layered_visual_representation_switch" in patterns["adaptive_method_selection"]["all_bounded_source_evidence"][0]["matched_signals"] or any("layered_visual_representation_switch" in item["matched_signals"] for item in patterns["adaptive_method_selection"]["all_bounded_source_evidence"])
+
+
+def test_organization_and_capability_limits_gate_project_selection():
+    messages = [
+        _message(
+            "project-gate",
+            "u1",
+            "user",
+            "I organize it because if it is not organized I can't find the patterns.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "project-gate",
+            "u2",
+            "user",
+            "I need to know the limits of what it can and can't do before deciding; I am not going to do that as a first project, so I will start with a research assistant.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "organization_before_pattern_search" in patterns["structural_pattern_mapping"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "capability_before_project_scope" in patterns["constraint_driven_design_iteration"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "capability_limit_before_project_choice" in patterns["dependency_aware_premise_checking"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_specialization_and_user_facing_execution_are_staged_before_expansion():
+    messages = [
+        _message(
+            "staged-tooling",
+            "u1",
+            "user",
+            "I will make that a separate agent and maybe combine them later.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "staged-tooling",
+            "u2",
+            "user",
+            "Before we go code crazy, we need some type of exe because people aren't going to want to type activate and run app.py every time.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "specialize_then_combine_later" in patterns["constraint_driven_design_iteration"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "specialize_now_integrate_later" in patterns["scope_narrowing_and_focus_control"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "nontechnical_execution_interface" in patterns["evidence_tool_operationalization"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_fault_layer_is_reclassified_without_declaring_debugging_complete():
+    messages = [
+        _message(
+            "fault-layer",
+            "u1",
+            "user",
+            "I must not be using the API key right. Earlier I didn't have any of the OpenAI stuff installed, so now we're good.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "fault-layer",
+            "u2",
+            "user",
+            "I put the research def in engineering and caught that; now I am not sure what's wrong.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    correction_signals = {signal for item in patterns["correction_and_reopening"]["all_bounded_source_evidence"] for signal in item["matched_signals"]}
+    dependency_signals = {signal for item in patterns["dependency_aware_premise_checking"]["all_bounded_source_evidence"] for signal in item["matched_signals"]}
+
+    assert "fault_layer_reclassified" in correction_signals
+    assert "fault_layer_hypothesis_update" in dependency_signals
+    assert "one corrected dependency is mistaken for the only remaining fault" in patterns["correction_and_reopening"]["risks"]
+
+
+def test_personality_pet_and_ai_identity_assistant_interpretations_are_not_method_evidence():
+    messages = [
+        _message(
+            "assistant-boundary",
+            "a1",
+            "assistant",
+            "Your baseline isn't calm; it is a reactor core, and that pattern explains your personality.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "assistant-boundary",
+            "u1",
+            "user",
+            "Yes, exactly.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+        _message(
+            "assistant-boundary",
+            "a2",
+            "assistant",
+            "I can hear how much Ranger meant to you; the brain keeps expecting him around the house.",
+            "2025-01-01T00:02:00+00:00",
+        ),
+        _message(
+            "assistant-boundary",
+            "u2",
+            "user",
+            "Yes, that is true.",
+            "2025-01-01T00:03:00+00:00",
+        ),
+        _message(
+            "assistant-boundary",
+            "a3",
+            "assistant",
+            "Current AI systems can produce feelings, identity, or being alive language through feedback loops.",
+            "2025-01-01T00:04:00+00:00",
+        ),
+        _message(
+            "assistant-boundary",
+            "u3",
+            "user",
+            "Yes, exactly.",
+            "2025-01-01T00:05:00+00:00",
+        ),
+    ]
+
+    patterns = mine_cognitive_patterns(messages)
+
+    assert not any(item["all_bounded_source_evidence"] for item in patterns)
+
+
+def test_opposing_model_is_integrated_and_predecessor_failures_are_reviewed():
+    messages = [
+        _message(
+            "dialectical-review",
+            "u1",
+            "user",
+            "I have my point, you have yours. I accept your point and apply it to my model; if it works I keep it, and if it doesn't I ask why you think the way you do.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "dialectical-review",
+            "u2",
+            "user",
+            "Has anybody ever tried this before? What went wrong, and how can I learn from their mistakes?",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "opponent_model_integration" in patterns["claimwise_opposition_testing"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "precedent_failure_review" in patterns["independent_constraint_checking"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_unfinished_behavior_and_missing_implementation_knowledge_gate_assessment():
+    messages = [
+        _message(
+            "readiness-gates",
+            "u1",
+            "user",
+            "I want to expand this NLU so it can properly speak; I can't diagnose the behavior yet, and that's what I was missing.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "readiness-gates",
+            "u2",
+            "user",
+            "I don't know what it is actually writing, so I need to close that gap in my knowledge base in my head before I am more confident.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "implementation_readiness_before_behavior_test" in patterns["dependency_aware_premise_checking"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert any(
+        "implementation_knowledge_before_confidence" in evidence["matched_signals"]
+        for evidence in patterns["reconstructive_understanding_check"]["all_bounded_source_evidence"]
+    )
+
+
+def test_private_certainty_is_not_inferred_from_wording_alone():
+    messages = [
+        _message(
+            "epistemic-ambiguity",
+            "u1",
+            "user",
+            "The wording alone cannot determine whether this is a true belief vs a hypothesis with uncertainty.",
+            "2025-01-01T00:00:00+00:00",
+        )
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "utterance_epistemic_state_ambiguity" in patterns["observation_interpretation_separation"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "utterance_epistemic_state_ambiguity" in patterns["uncertainty_and_limit_detection"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_concept_vocabulary_and_architecture_prerequisites_are_distinguished():
+    messages = [
+        _message(
+            "architecture-prerequisites",
+            "u1",
+            "user",
+            "I understand that and double checked my thought process. I don't think the gap is an understanding problem anymore; I don't have words for it because I lack formal training.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "architecture-prerequisites",
+            "u2",
+            "user",
+            "How am I supposed to know what to choose if I don't know what an embedding even is? That's the disconnect.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+        _message(
+            "architecture-prerequisites",
+            "u3",
+            "user",
+            "I can't keep going phase by phase. I need step 16-25 mapped because I don't know anything about anything right now.",
+            "2025-01-01T00:02:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+    reconstruction_signals = {signal for item in patterns["reconstructive_understanding_check"]["all_bounded_source_evidence"] for signal in item["matched_signals"]}
+    dependency_signals = {signal for item in patterns["dependency_aware_premise_checking"]["all_bounded_source_evidence"] for signal in item["matched_signals"]}
+
+    assert "concept_understood_vocabulary_fluency_gap" in reconstruction_signals
+    assert {"prerequisite_concept_before_architecture_choice", "whole_architecture_before_component_decision"}.issubset(dependency_signals)
+
+
+def test_explanation_strategy_and_fault_type_are_classified_by_function():
+    messages = [
+        _message(
+            "functional-diagnostics",
+            "u1",
+            "user",
+            "Simplification requests are rephrasing instead of strategy-shifting; we need analogy/example mode for true breakdowns.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "functional-diagnostics",
+            "u2",
+            "user",
+            "A random glitch has inconsistent behavior; another fault is repeatable, another can't reproduce, and another causes cascading bugs.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "rephrase_vs_strategy_shift_diagnostic" in patterns["adaptive_method_selection"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "fault_taxonomy_by_observed_behavior" in patterns["functional_effect_classification"]["all_bounded_source_evidence"][0]["matched_signals"]
+
+
+def test_pattern_overreach_dependency_order_and_root_cause_recovery_are_retained_with_limits():
+    messages = [
+        _message(
+            "failure-derived-design",
+            "u1",
+            "user",
+            "It said yes x is the answer for every math problem because it shows up enough times to be a pattern; that transfer was too aggressive.",
+            "2025-01-01T00:00:00+00:00",
+        ),
+        _message(
+            "failure-derived-design",
+            "u2",
+            "user",
+            "I need to test its NLP; once that's working I add actual knowledge sets. First conversations, because order of operations should be applied.",
+            "2025-01-01T00:01:00+00:00",
+        ),
+        _message(
+            "failure-derived-design",
+            "u3",
+            "user",
+            "Issues come from down the line after we made patches for something. Instead of just fixing the original issue, we patch the bug.",
+            "2025-01-01T00:02:00+00:00",
+        ),
+        _message(
+            "failure-derived-design",
+            "u4",
+            "user",
+            "I learned of a specific failure and asked why would that happen, then came up with graceful fall. If a system cannot recover from failure, we risk that over again.",
+            "2025-01-01T00:03:00+00:00",
+        ),
+        _message(
+            "failure-derived-design",
+            "u5",
+            "user",
+            "Separate days bring back different but the same pattern, so don't rule out possibility before we check.",
+            "2025-01-01T00:04:00+00:00",
+        ),
+    ]
+
+    patterns = {item["method_key"]: item for item in mine_cognitive_patterns(messages)}
+
+    assert "pattern_frequency_overgeneralization" in patterns["structural_pattern_mapping"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "behavior_foundation_before_knowledge_expansion" in patterns["dependency_ordered_system_composition"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "root_cause_over_patch_accumulation" in patterns["constraint_driven_design_iteration"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert "failure_mechanism_to_recovery_design" in patterns["systems_consequence_simulation"]["all_bounded_source_evidence"][0]["matched_signals"]
+    assert any(
+        "cross_time_pattern_check_before_ruling" in evidence["matched_signals"]
+        for evidence in patterns["independent_constraint_checking"]["all_bounded_source_evidence"]
+    )
