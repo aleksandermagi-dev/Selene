@@ -128,6 +128,72 @@ def test_dialogue_workspace_keeps_corrections_as_refinement_not_memory(tmp_path)
     assert result["runtime_memory_recall"] is False
 
 
+def test_dialogue_workspace_resolves_ordered_options_from_the_previous_turn(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "Explain the second one."
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "conversation_events": [{"role": "selene", "preview": "The options are memory and voice."}],
+        },
+    )
+
+    resolved = result["pragmatics"]["resolved_reference"]
+    assert resolved["resolved_to"] == "voice"
+    assert resolved["resolution_status"] == "resolved"
+    assert resolved["candidates"] == ["memory", "voice"]
+
+
+def test_dialogue_workspace_marks_materially_ambiguous_other_option_instead_of_guessing(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "Explain the other one."
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "conversation_events": [{"role": "selene", "preview": "The options are memory and voice."}],
+        },
+    )
+
+    resolved = result["pragmatics"]["resolved_reference"]
+    assert resolved["resolved_to"] == ""
+    assert resolved["resolution_status"] == "materially_ambiguous"
+    assert resolved["ask_if_materially_ambiguous"] is True
+
+
+def test_dialogue_workspace_extracts_structured_correction_and_direct_requests(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    correction_text = "Actually, I meant the semantic layer, not the voice layer."
+    corrected = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": correction_text,
+            "intent_decision": classify_chat_intent(correction_text),
+            "conversation_events": [{"role": "selene", "preview": "The voice layer comes first."}],
+        },
+    )
+    request_text = "Compare memory and voice. Explain which comes first."
+    requested = prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": request_text, "intent_decision": classify_chat_intent(request_text)},
+    )
+
+    correction = corrected["pragmatics"]["correction_refinement"]
+    assert correction["corrected_meaning"] == "the semantic layer"
+    assert correction["replaced_meaning"] == "the voice layer"
+    assert correction["durable_memory_write"] is False
+    assert [unit["kind"] for unit in requested["pragmatics"]["utterance_units"]] == [
+        "direct_request",
+        "direct_request",
+    ]
+
+
 def test_dialogue_workspace_routes_are_status_only_and_idempotent(tmp_path):
     conn, session_id = _conn(tmp_path)
     text = "Could you explain that?"

@@ -36,7 +36,7 @@ it exists.
 | --- | --- | --- |
 | Supervised text conversation | Connected | Selene can hold local conversations through coordinated organs when supervised Chat is explicitly active |
 | Immediate conversational continuity | Connected | She can use recent local chat context and callbacks without silently turning them into permanent memory |
-| Language formation and Voice | Connected | She can construct and shape bounded replies with context-keyed expression profiles and recent-response avoidance |
+| Language formation and Voice | Connected | She can construct and shape bounded replies with compositional dialogue obligations, grammar features, context-keyed expression profiles, and recent-response avoidance |
 | Open-ended conceptual reasoning | Connected | intelligenceOS can compare models and give a best-current answer without needing a predetermined solution |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
 | Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 28 F1 foundations are currently retained |
@@ -45,9 +45,9 @@ it exists.
 | Local-code inspection | Available separately | She can inspect explicitly supplied or approved files without scanning, executing, or writing |
 | Source-backed research | Connected when packets are supplied | She can answer from attributed packets in supervised Chat and show citations, disagreement, or missing evidence |
 | Ethical test review | Available | The project can choose the least-impact sufficient test before interacting with Selene |
-| Language lesson shelf | Partly available | NLO can consult prepared guidance, but the full lesson review/approval design needs correction |
+| Language lesson shelf | Review-gated and connected | Ten provider-free lessons travel through visible comprehension review; NLO can consult only explicitly approved lessons |
 | Affect shaping of language | Partial | Current-state and salience signals exist, but they do not yet shape language consistently |
-| Long-form discourse | Partial | Developed replies exist, but mature thesis and paragraph control do not |
+| Long-form discourse | Improved partial | Developed replies now have grounded thesis, development, limit, and closure plans; broad narrative and mature rhetorical control remain unfinished |
 | Vision and hearing | Packet intake only | The system can hold supplied observations but cannot yet see or hear |
 | External action | Preview only | Tendril can plan and request approval but cannot execute actions |
 | Metacognition Organ | Not installed | The private miner is complete, but no mined cognitive mechanism is connected to Selene |
@@ -65,6 +65,12 @@ With supervised Chat explicitly enabled, Selene can currently:
   permanent memory;
 - answer multi-part messages and check whether her reply covered the requested
   parts;
+- preserve ordered requests even when ordinary instructions do not end in a
+  question mark;
+- resolve first/second/former/latter references from bounded prior-turn options,
+  and ask rather than guess when a reference is materially ambiguous;
+- carry a correction as a current-session meaning refinement without treating
+  it as personal memory;
 - use approved personal memory with clear, fuzzy, partial, or unknown recall;
 - say she does not know, ask Aleks, or keep uncertainty visible;
 - propose a memory candidate when Aleks asks her to remember something, while
@@ -136,7 +142,8 @@ Current limits:
 - it does not silently make durable memories;
 - its provider-free generation remains bounded and has less breadth than a
   mature learned language model, although expression profiles, turn context,
-  recent-response avoidance, and broader answer frames now reduce repetition;
+  compositional turn obligations, recent-response avoidance, and broader
+  grammar and answer frames now reduce repetition;
 - routing now shares an inspectable structured meaning packet, but its bounded
   sentence and lexical features are not complete semantic understanding;
 - verified math and attributed research are ordinary supervised Chat answers,
@@ -193,9 +200,14 @@ The dialogue workspace is short-term conversational working context.
 It can:
 
 - track the current topic;
-- retain immediate references and callbacks;
-- identify multi-part questions and response obligations;
-- keep corrections and response preferences visible;
+- retain immediate references and callbacks, including bounded ordered-option
+  references such as first, second, former, and latter;
+- identify multi-part questions and ordinary direct requests without requiring
+  a question mark;
+- keep structured corrections, response preferences, and candidate referents
+  visible;
+- mark a materially ambiguous reference for clarification instead of choosing
+  silently;
 - use current-session events when interpreting the next turn;
 - expire with the session instead of becoming personal memory.
 
@@ -207,8 +219,9 @@ The Pragmatic Planner represents what the reply needs to accomplish.
 
 It can:
 
-- separate multiple requested parts;
+- separate and order multiple requested parts;
 - interpret bounded immediate ellipsis and implication;
+- distinguish correction updates from the content request they modify;
 - distinguish a direct answer from a clarification or social turn;
 - create visible response obligations;
 - evaluate whether the produced reply addressed those obligations.
@@ -222,10 +235,14 @@ The language-formation layer can represent:
 
 - propositions;
 - tense and time orientation;
+- simple, progressive, perfect, and perfect-progressive aspect;
+- active and passive voice;
+- declarative, interrogative, and imperative mood;
 - certainty and modality;
 - positive or negative polarity;
-- conditions, causes, contrasts, and supporting reasons;
-- relationships between clauses;
+- subject and object modifiers plus bounded adverbs;
+- conditions, causes, contrasts, examples, qualifiers, and supporting reasons;
+- per-clause relationships and connective realization;
 - a planned response depth.
 
 This gives NLO structured meaning to express. It is not a complete grammar or
@@ -248,6 +265,14 @@ It can:
 - produce brief, standard, and more developed replies;
 - choose direct, explanation, comparison, procedure, reflection, synthesis,
   or social expression profiles;
+- carry structured utterance units, ordered response obligations, bounded
+  references, and correction scope through the supervised Chat handoff;
+- realize bounded grammatical differences in tense, aspect, voice, mood,
+  modality, polarity, and clause relation without a provider;
+- bind supported answer content to visible response obligations before wording
+  it, while leaving unsupported obligations marked as gaps;
+- preserve an inspectable thesis, development section, limit or reopening point,
+  and supported closure across developed replies;
 - vary answer frames and long-form transitions from turn context while avoiding
   recent openings, without randomizing the supported meaning;
 - remove architecture-heavy wording before a reply reaches the front of Chat;
@@ -257,8 +282,9 @@ It can:
 Current limits:
 
 - linguistic breadth and variation are still bounded;
-- long-form thesis control, paragraph planning, reference tracking, and endings
-  are not yet mature;
+- long-form planning is now grounded and inspectable, but mature narrative
+  structure, rhetorical emphasis, reference tracking across many paragraphs,
+  and varied endings are not yet complete;
 - its initiative route never sends anything automatically;
 - it cannot turn fluent wording into evidence that an answer is correct;
 - it depends on other organs to supply truthful content.
@@ -512,7 +538,7 @@ Editing an earlier stage invalidates later stage snapshots so stale evidence
 does not remain current. Completing all three stages still does not retain the
 knowledge. Aleks must explicitly approve it.
 
-### Language Teaching Shelf — Available but Incomplete as a Review System
+### Language Teaching Shelf — Review-Gated Provider-Free Foundations
 
 The current shelf contains bounded guidance for:
 
@@ -527,12 +553,17 @@ The current shelf contains bounded guidance for:
 - lexical variation;
 - natural closure.
 
-NLO can consult prepared shelf items. However, these items are currently
-predefined guidance rows rather than a complete candidate -> review -> Aleks
-approval teaching lifecycle. The pretyped instruction-like material Aleks
-noticed is therefore a real implementation/design gap. Phase 5 should separate
-lesson content, safety boundaries, review notes, and approval rather than
-treating all of them as one guidance field.
+Preparing the shelf creates ten source-linked comprehension candidates. Lesson
+meaning and practice evidence are stored separately from safety boundaries, so
+guard text does not appear as though it were the lesson's uncertainty content.
+Each candidate uses the existing visible Acquire -> Integrate -> Express
+workflow and requires explicit Aleks approval before NLO can consult it.
+
+Preparation alone activates no guidance. A prepared, held, incomplete,
+reopened, superseded, or rejected lesson remains unavailable to NLO. The
+current ten lessons are provider-free structural foundations rather than stock
+reply scripts; further speech teaching groups are still needed for mature
+pragmatics, discourse, affect expression, and compositional breadth.
 
 ## Memory and Continuity Organs
 
@@ -932,7 +963,7 @@ Selene's strongest implemented areas are:
 | Gap | What completing it would change |
 | --- | --- |
 | Local-code -> Chat decision | Decide later whether explicitly supplied code inspection should join Chat; it is intentionally deferred now |
-| Review-gated Phase 5 lessons | Language teaching would be clearly separated into lesson content, boundaries, review, and approval |
+| Provider-free speech teaching groups | The first ten lessons now have review gates; further groups must expand pragmatics, discourse, affect expression, grammar, vocabulary, and compositional breadth |
 | Affect Expression Bridge | Current salience could shape pacing, warmth, humor, reassurance, restraint, and directness more naturally |
 | Expanded pragmatic dialogue | Better mixed-intent handling, pronouns, implication, interruptions, corrections, and rapid topic changes |
 | Long-form discourse planning | Better theses, paragraph structure, examples, transitions, callbacks, summaries, and conclusions |
@@ -963,6 +994,22 @@ Answer Engine bridge, and contextual expression breadth work:
   quoted instruction;
 - local-code inspection remained outside Chat by deliberate scope;
 - no live conversational stress probe was used.
+
+In the July 19 working tree after the review-gated language shelf, NLO v9
+compositional dialogue work, and the NLO v10 grounded-discourse layer:
+
+- 140 focused language, dialogue, discourse, Voice, Answer Engine, and supervised-Chat
+  tests passed;
+- ordered non-question requests, bounded option references, session-only
+  correction refinements, and expanded grammar passed synthetic checks;
+- developed replies gained inspectable thesis, obligation binding, paragraph,
+  limitation, reopening, and closure plans without authorizing content
+  invention;
+- the production UI build passed;
+- the existing Vite bundle-size warning remained at about 588 kB;
+- open-ended intelligenceOS answers remained available;
+- no live conversation probe, provider call, activation change, retention
+  change, model training, or autonomy expansion was used.
 
 The test count demonstrates broad machinery coverage. It does not mean every
 future organ is complete or that every conversational context has been graded.

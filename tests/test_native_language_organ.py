@@ -57,6 +57,56 @@ def test_nlo_builds_meaning_discourse_and_original_sentence_run(tmp_path):
     _assert_locked(runs)
 
 
+def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
+    conn = _conn(tmp_path)
+    result = route_request(
+        conn,
+        "native_language.realize",
+        {
+            "prompt": "Go deeper and explain why memory should come before voice, and what would change that answer.",
+            "selected_route": "answer_now",
+            "content_seed": "Memory should be grounded before Voice expresses continuity.",
+            "intelligence_support": {
+                "used": True,
+                "confidence": "clear_enough_to_continue",
+                "support_points": [
+                    "Expression needs something supported to express.",
+                    "Voice should not invent continuity that memory cannot support.",
+                ],
+            },
+            "answer_engine_support": {
+                "used": True,
+                "selected_domain": "comparison_planning",
+                "answer_packet": {
+                    "supporting_claims": ["Memory and Voice have separate responsibilities."],
+                    "limitations": ["The ordering is architectural rather than a judgment of importance."],
+                    "what_would_change_the_answer": [
+                        "A design that preserves continuity without grounded memory."
+                    ],
+                    "unanswered_obligations": [],
+                },
+                "confidence_vector": {"answer_confidence": "clear_enough_to_continue"},
+            },
+        },
+    )["result"]
+
+    discourse = result["discourse_plan"]["supported_discourse"]
+
+    assert result["version"] == "v10_obligation_aware_discourse"
+    assert discourse["status"] == "supported_discourse_plan_ready"
+    assert discourse["thesis_unit_id"]
+    assert [item["role"] for item in discourse["paragraph_plan"]] == [
+        "answer",
+        "development",
+        "limit_and_closure",
+    ]
+    assert discourse["closure_plan"]["mode"] == "what_would_change"
+    assert result["revision"]["paragraph_count"] == 3
+    assert "preserves continuity without grounded memory" in result["candidate_text"]
+    assert result["discourse_plan"]["content_generation_for_gaps_allowed"] is False
+    _assert_locked(result)
+
+
 def test_nlo_memory_language_tracks_support_and_graceful_uncertainty(tmp_path):
     conn = _conn(tmp_path)
 

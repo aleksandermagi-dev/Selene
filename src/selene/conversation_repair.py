@@ -39,18 +39,21 @@ def plan_conversation_turn(payload: dict[str, Any] | None = None) -> dict[str, A
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     pragmatic = payload.get("pragmatic_plan") if isinstance(payload.get("pragmatic_plan"), dict) else {}
     primary = str(intent.get("intent") or "direct_conversation")
-    acts = _ordered_acts(prompt, primary)
+    acts = _ordered_acts(prompt, primary, pragmatic)
     moves = _response_moves(acts, pragmatic)
     acknowledgement = _acknowledgement_kind(acts)
     return _with_guards(
         {
             "status": "conversation_turn_flow_ready",
-            "version": "v1_mixed_intent_turn_flow",
+            "version": "v2_structured_mixed_intent_turn_flow",
             "primary_intent": primary,
             "ordered_acts": acts,
             "secondary_intents": [item["act"] for item in acts if item["act"] != primary],
             "mixed_intent": len({item["act"] for item in acts}) > 1,
             "response_moves": moves,
+            "obligation_sequence": [str(item.get("id") or "") for item in pragmatic.get("response_obligations") or [] if isinstance(item, dict)],
+            "correction_refinement": pragmatic.get("correction_refinement") or {},
+            "resolved_reference": pragmatic.get("resolved_reference"),
             "acknowledgement_kind": acknowledgement,
             "must_answer_visible_question": any(item["act"] in {"question", "reasoning_request", "direct_request"} for item in acts),
             "must_preserve_correction": any(item["act"] == "correction" for item in acts),
@@ -135,9 +138,25 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
     )
 
 
-def _ordered_acts(prompt: str, primary: str) -> list[dict[str, Any]]:
+def _ordered_acts(prompt: str, primary: str, pragmatic: dict[str, Any]) -> list[dict[str, Any]]:
     lower = prompt.lower().replace("’", "'")
     found: list[tuple[int, str, str]] = []
+    structured_kind_map = {
+        "question": "question",
+        "correction": "correction",
+        "direct_request": "direct_request",
+        "indirect_request": "direct_request",
+        "session_preference": "session_preference",
+    }
+    for unit in pragmatic.get("utterance_units") or []:
+        if not isinstance(unit, dict):
+            continue
+        kind = structured_kind_map.get(str(unit.get("kind") or ""))
+        if kind:
+            found.append((int(unit.get("position") or 0), kind, f"utterance:{unit.get('id') or kind}"))
+    correction = pragmatic.get("correction_refinement") if isinstance(pragmatic.get("correction_refinement"), dict) else {}
+    if correction.get("detected") is True:
+        found.append((0, "correction", "structured_correction"))
     cue_groups = (
         ("gratitude", ("thank you", "thanks", "appreciate")),
         ("correction", ("actually", "i meant", "not what i meant", "wait,")),
@@ -161,7 +180,14 @@ def _ordered_acts(prompt: str, primary: str) -> list[dict[str, Any]]:
     for position, act, cue in sorted(found, key=lambda item: (item[0], item[1])):
         if act in seen:
             continue
-        ordered.append({"act": act, "cue": cue, "position": max(0, position), "source": "current_turn"})
+        ordered.append(
+            {
+                "act": act,
+                "cue": cue,
+                "position": max(0, position),
+                "source": "structured_pragmatic_unit" if cue.startswith(("utterance:", "structured_")) else "current_turn_cue",
+            }
+        )
         seen.add(act)
     return ordered
 

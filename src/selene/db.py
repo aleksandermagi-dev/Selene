@@ -1543,12 +1543,17 @@ CREATE TABLE IF NOT EXISTS selene_language_teaching_shelf (
   category TEXT NOT NULL,
   purpose TEXT NOT NULL,
   guidance_json TEXT NOT NULL DEFAULT '{}',
+  lesson_content_json TEXT NOT NULL DEFAULT '{}',
+  boundary_json TEXT NOT NULL DEFAULT '{}',
+  comprehension_concept_id INTEGER,
+  lifecycle_version TEXT NOT NULL DEFAULT '',
   source_refs TEXT NOT NULL DEFAULT '[]',
   provenance_boundary TEXT NOT NULL,
-  review_status TEXT NOT NULL DEFAULT 'approved_for_language_guidance',
-  status TEXT NOT NULL DEFAULT 'language_guidance_available',
+  review_status TEXT NOT NULL DEFAULT 'pending_comprehension_review',
+  status TEXT NOT NULL DEFAULT 'language_lesson_candidate',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (comprehension_concept_id) REFERENCES selene_comprehension_concepts(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_selene_language_teaching_shelf_status
@@ -1982,6 +1987,12 @@ REQUIRED_COLUMNS = {
         "approval_mode": "TEXT NOT NULL DEFAULT 'awaiting_decision'",
         "authorization_id": "INTEGER",
         "authorization_snapshot_json": "TEXT NOT NULL DEFAULT '{}'",
+    },
+    "selene_language_teaching_shelf": {
+        "lesson_content_json": "TEXT NOT NULL DEFAULT '{}'",
+        "boundary_json": "TEXT NOT NULL DEFAULT '{}'",
+        "comprehension_concept_id": "INTEGER",
+        "lifecycle_version": "TEXT NOT NULL DEFAULT ''",
     },
 }
 

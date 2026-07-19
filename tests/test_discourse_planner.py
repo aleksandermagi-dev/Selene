@@ -1,0 +1,109 @@
+from __future__ import annotations
+
+from selene.discourse_planner import build_supported_discourse_plan
+
+
+def test_discourse_plan_binds_only_supported_content_to_ordered_obligations():
+    result = build_supported_discourse_plan(
+        {
+            "content_seed": (
+                "Memory should be grounded before voice expresses it. "
+                "Voice then gives that supported continuity a conversational form."
+            ),
+            "support_points": ["Ground memory first because expression should not invent continuity."],
+            "examples": ["For example, a fluent sentence cannot supply a missing event."],
+            "response_depth": "developed",
+            "expression_profile": "comparison",
+            "response_obligations": [
+                {
+                    "id": "compare",
+                    "kind": "comparison",
+                    "source_text": "Compare memory and voice.",
+                    "coverage_terms": ["memory", "voice"],
+                    "required": True,
+                },
+                {
+                    "id": "priority",
+                    "kind": "choice_or_priority",
+                    "source_text": "Which comes first?",
+                    "coverage_terms": ["comes", "first"],
+                    "required": True,
+                },
+            ],
+            "answer_support": {
+                "limitations": ["This ordering does not make Voice less important."],
+                "what_would_change_the_answer": ["A design that can preserve continuity without grounded memory."],
+            },
+        }
+    )
+
+    assert result["all_obligations_grounded"] is True
+    assert [item["obligation_id"] for item in result["obligation_bindings"]] == ["compare", "priority"]
+    assert [item["role"] for item in result["paragraph_plan"]] == [
+        "answer",
+        "development",
+        "limit_and_closure",
+    ]
+    assert result["closure_plan"]["mode"] == "what_would_change"
+    assert any(item["role"] == "example" for item in result["content_units"])
+    assert result["content_generation_allowed"] is False
+    assert result["memory_write_active"] is False
+    assert result["hidden_chain_of_thought_exposed"] is False
+
+
+def test_discourse_plan_leaves_an_unsupported_obligation_visible_without_filler():
+    result = build_supported_discourse_plan(
+        {
+            "content_seed": "Memory preserves reviewed continuity.",
+            "response_obligations": [
+                {
+                    "id": "answer",
+                    "kind": "direct_request",
+                    "source_text": "Explain memory.",
+                    "coverage_terms": ["memory"],
+                    "required": True,
+                },
+                {
+                    "id": "analogy",
+                    "kind": "direct_request",
+                    "source_text": "Give an analogy.",
+                    "coverage_terms": ["give", "analogy"],
+                    "required": True,
+                },
+            ],
+        }
+    )
+
+    assert result["uncovered_obligation_ids"] == ["analogy"]
+    assert result["all_obligations_grounded"] is False
+    assert [item["text"] for item in result["content_units"]] == ["Memory preserves reviewed continuity."]
+    assert result["unsupported_gaps_must_remain_visible"] is True
+    assert result["content_generation_allowed"] is False
+
+
+def test_discourse_plan_keeps_correction_content_session_scoped():
+    result = build_supported_discourse_plan(
+        {
+            "content_seed": "Memory and voice have different roles.",
+            "response_obligations": [
+                {
+                    "id": "correction",
+                    "kind": "correction_update",
+                    "source_text": "I meant memory, not voice.",
+                    "coverage_terms": ["memory"],
+                    "required": True,
+                }
+            ],
+            "correction_refinement": {
+                "detected": True,
+                "corrected_meaning": "memory",
+                "replaced_meaning": "voice",
+            },
+        }
+    )
+
+    correction = next(item for item in result["content_units"] if item["role"] == "correction")
+    assert correction["text"] == "memory rather than voice"
+    assert correction["source"] == "current_session_correction"
+    assert result["obligation_bindings"][0]["grounded"] is True
+    assert result["runtime_memory_recall"] is False

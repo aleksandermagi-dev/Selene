@@ -143,3 +143,63 @@ def test_pragmatic_plan_route_is_status_only(tmp_path):
     assert result["status"] == "pragmatic_plan_ready"
     assert result["activation_change"] == "none"
     assert result["autonomous_action_allowed"] is False
+
+
+def test_pragmatic_plan_orders_multiple_direct_requests_without_question_marks():
+    prompt = "Compare memory and voice. Explain which comes first."
+    plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": {
+                "active_topic": "memory voice",
+                "pragmatics": {
+                    "utterance_units": [
+                        {"id": "utterance_1", "text": "Compare memory and voice.", "kind": "direct_request", "position": 0},
+                        {"id": "utterance_2", "text": "Explain which comes first.", "kind": "direct_request", "position": 1},
+                    ],
+                    "previous_turn_available": False,
+                },
+            },
+        }
+    )
+
+    assert [item["kind"] for item in plan["response_obligations"]] == ["comparison", "reason"]
+    assert plan["obligation_sequence"] == [item["id"] for item in plan["response_obligations"]]
+    assert all(item["inference_level"] == "literal_request" for item in plan["response_obligations"])
+
+
+def test_pragmatic_plan_keeps_correction_scope_separate_from_content_obligations():
+    prompt = "Actually, I meant the semantic layer, not the voice layer. Explain why it comes first."
+    correction = {
+        "detected": True,
+        "corrected_meaning": "the semantic layer",
+        "replaced_meaning": "the voice layer",
+        "scope": "current_session_refinement_only",
+        "durable_memory_write": False,
+    }
+    plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": {
+                "active_topic": "semantic layer",
+                "pragmatics": {
+                    "utterance_units": [
+                        {"id": "utterance_1", "text": "Actually, I meant the semantic layer, not the voice layer.", "kind": "correction", "position": 0},
+                        {"id": "utterance_2", "text": "Explain why it comes first.", "kind": "direct_request", "position": 1},
+                    ],
+                    "correction_refinement": correction,
+                    "response_preference": "brief",
+                    "previous_turn_available": True,
+                },
+            },
+        }
+    )
+
+    assert [item["kind"] for item in plan["response_obligations"]] == ["correction_update", "reason"]
+    assert plan["response_constraints"][0] == {
+        "kind": "response_depth",
+        "value": "brief",
+        "scope": "current_session_only",
+    }
+    assert plan["response_constraints"][1]["kind"] == "correction_scope"
+    assert plan["memory_write_active"] is False

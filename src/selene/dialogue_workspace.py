@@ -95,19 +95,19 @@ def prepare_dialogue_turn(
     existing_ids = {str(item.get("id") or "") for item in loops if isinstance(item, dict)}
     loops.extend(item for item in new_loops if item["id"] not in existing_ids)
     referents = dict(prior.get("referents") or {})
-    reference = _resolve_reference(interpreted_text, previous, active_topic)
+    reference = _resolve_reference(
+        interpreted_text,
+        previous,
+        active_topic,
+        prior_referents=referents,
+    )
     if reference:
         referents[reference["token"]] = reference
     entities = _merge_entities(prior.get("entities") or [], _extract_entities(interpreted_text))
     corrections = list(prior.get("corrections") or [])
-    if str(intent.get("intent") or "") == "correction":
-        corrections.append(
-            {
-                "summary": truncate(text, 360),
-                "replaces": truncate(str(previous.get("preview") or ""), 240),
-                "status": "active_refinement",
-            }
-        )
+    correction = _correction_refinement(interpreted_text, previous)
+    if str(intent.get("intent") or "") == "correction" or correction.get("detected") is True:
+        corrections.append({**correction, "status": "active_refinement"})
     preferences = dict(prior.get("preferences") or {})
     preferences.update(_session_preferences(interpreted_text))
     side_topics = list(dict.fromkeys([*list(prior.get("side_topics") or []), *[_topic(item) for item in questions[1:] if _topic(item)]]))[-12:]
@@ -115,6 +115,9 @@ def prepare_dialogue_turn(
         "dialogue_act": str(intent.get("dialogue_act") or intent.get("intent") or "direct_conversation"),
         "active_topic": active_topic,
         "resolved_reference": reference,
+        "reference_candidates": (reference or {}).get("candidates") or [],
+        "correction_refinement": correction,
+        "utterance_units": _utterance_units(interpreted_text),
         "question_units": questions,
         "multi_part_prompt": len(questions) > 1,
         "indirect_request": _indirect_request(interpreted_text),
@@ -291,17 +294,137 @@ def _question_units(text: str) -> list[str]:
     return [item if item.endswith("?") else item + "?" for item in units[:8]]
 
 
-def _resolve_reference(text: str, previous: dict[str, Any], active_topic: str) -> dict[str, Any] | None:
+def _resolve_reference(
+    text: str,
+    previous: dict[str, Any],
+    active_topic: str,
+    *,
+    prior_referents: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
     lower = text.lower()
-    token = next((item for item in ("that one", "the other one", "that", "this", "it", "there") if re.search(rf"\b{re.escape(item)}\b", lower)), "")
+    tokens = (
+        "the first one", "the second one", "the third one", "the other one",
+        "first one", "second one", "third one", "that one", "this one",
+        "the former", "the latter", "former", "latter", "that", "this", "it", "there",
+    )
+    token = next((item for item in tokens if re.search(rf"\b{re.escape(item)}\b", lower)), "")
     if not token or not previous:
         return None
+    previous_preview = truncate(str(previous.get("preview") or ""), 480)
+    candidates = _reference_candidates(previous_preview, active_topic)
+    selected = _select_reference_candidate(token, candidates, prior_referents or {})
+    if selected:
+        status = "resolved"
+        confidence = "bounded"
+        resolved_to = selected
+    elif token in {"the other one", "that one", "this one"} and len(candidates) > 1:
+        status = "materially_ambiguous"
+        confidence = "unresolved"
+        resolved_to = ""
+    else:
+        status = "resolved_to_previous_turn"
+        confidence = "bounded"
+        resolved_to = previous_preview or active_topic
     return {
         "token": token,
-        "resolved_to": truncate(str(previous.get("preview") or active_topic), 240),
+        "resolved_to": truncate(resolved_to, 240),
         "source": "immediately_preceding_turn",
-        "confidence": "bounded",
+        "confidence": confidence,
+        "resolution_status": status,
+        "candidates": candidates,
+        "ask_if_materially_ambiguous": status == "materially_ambiguous",
     }
+
+
+def _reference_candidates(previous_preview: str, active_topic: str) -> list[str]:
+    text = " ".join(previous_preview.split())
+    candidates: list[str] = []
+    numbered = re.findall(r"(?:^|[;.]\s*|\b)(?:option|route|plan|lesson)?\s*(?:one|two|three|1|2|3)\s*[:.)-]\s*([^;.!?]+)", text, flags=re.IGNORECASE)
+    candidates.extend(item.strip(" ,") for item in numbered if item.strip(" ,"))
+    if len(candidates) < 2:
+        pair = re.search(
+            r"\b(?:between|compare|options? (?:are|include)|either)\s+(.{2,90}?)\s+(?:and|or|versus|vs\.?)\s+(.{2,90}?)(?:[.!?]|$)",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if pair:
+            candidates.extend([pair.group(1).strip(" ,"), pair.group(2).strip(" ,")])
+    if not candidates and text:
+        candidates.append(text)
+    elif not candidates and active_topic:
+        candidates.append(active_topic)
+    return list(dict.fromkeys(truncate(item, 160) for item in candidates if item))[:6]
+
+
+def _select_reference_candidate(token: str, candidates: list[str], prior_referents: dict[str, Any]) -> str:
+    index_map = {
+        "the first one": 0, "first one": 0, "the former": 0, "former": 0,
+        "the second one": 1, "second one": 1, "the latter": 1, "latter": 1,
+        "the third one": 2, "third one": 2,
+    }
+    if token in index_map and len(candidates) > index_map[token]:
+        return candidates[index_map[token]]
+    if token == "the other one" and len(candidates) == 2:
+        recent_resolutions = [
+            str(item.get("resolved_to") or "")
+            for item in prior_referents.values()
+            if isinstance(item, dict) and str(item.get("resolved_to") or "")
+        ]
+        if recent_resolutions:
+            return next((item for item in candidates if item not in recent_resolutions[-2:]), "")
+    if token in {"that one", "this one"} and len(candidates) == 1:
+        return candidates[0]
+    return ""
+
+
+def _correction_refinement(text: str, previous: dict[str, Any]) -> dict[str, Any]:
+    normalized = " ".join(text.split())
+    patterns = (
+        r"\b(?:i meant|what i meant was)\s+(.+?)\s*,?\s+not\s+(.+?)(?:[.!?]|$)",
+        r"\bnot\s+(.+?)\s*[,;]\s*(?:i meant\s+)?(.+?)(?:[.!?]|$)",
+    )
+    corrected = ""
+    replaced = ""
+    first = re.search(patterns[0], normalized, flags=re.IGNORECASE)
+    if first:
+        corrected, replaced = first.group(1), first.group(2)
+    else:
+        second = re.search(patterns[1], normalized, flags=re.IGNORECASE)
+        if second:
+            replaced, corrected = second.group(1), second.group(2)
+    detected = bool(corrected or re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", normalized, flags=re.IGNORECASE))
+    return {
+        "detected": detected,
+        "summary": truncate(normalized, 360) if detected else "",
+        "corrected_meaning": truncate(corrected.strip(" ,"), 240),
+        "replaced_meaning": truncate(replaced.strip(" ,"), 240),
+        "replaces_turn": truncate(str(previous.get("preview") or ""), 240) if detected else "",
+        "scope": "current_session_refinement_only",
+        "durable_memory_write": False,
+    }
+
+
+def _utterance_units(text: str) -> list[dict[str, Any]]:
+    units: list[dict[str, Any]] = []
+    for index, raw in enumerate(re.split(r"(?<=[.!?])\s+|\n+", text.strip())):
+        value = raw.strip()
+        if not value:
+            continue
+        lower = value.lower()
+        if value.endswith("?"):
+            kind = "question"
+        elif re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", lower):
+            kind = "correction"
+        elif re.match(r"^(?:please\s+)?(?:compare|explain|show|tell|help|give|list|summarize|check|walk)\b", lower):
+            kind = "direct_request"
+        elif re.search(r"\b(?:could you|would you|can you|i need you to|let's|lets)\b", lower):
+            kind = "indirect_request"
+        elif re.search(r"\b(?:i prefer|keep it|make it|be brief|go deeper)\b", lower):
+            kind = "session_preference"
+        else:
+            kind = "statement"
+        units.append({"id": f"utterance_{index + 1}", "text": truncate(value, 480), "kind": kind, "position": index})
+    return units[:12]
 
 
 def _extract_entities(text: str) -> list[dict[str, str]]:

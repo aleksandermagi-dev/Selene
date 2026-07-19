@@ -47,9 +47,12 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
         if isinstance(pragmatics.get("input_interpretation"), dict)
         else {}
     )
+    utterance_units = [item for item in pragmatics.get("utterance_units") or [] if isinstance(item, dict)] or _utterance_units(prompt)
+    correction = pragmatics.get("correction_refinement") if isinstance(pragmatics.get("correction_refinement"), dict) else {}
     implicit = _implicit_meaning(prompt, previous_available=pragmatics.get("previous_turn_available") is True)
     ellipsis = _ellipsis_resolution(prompt, reference, str(dialogue.get("active_topic") or ""))
     obligations = _question_obligations(questions, relevant_loops)
+    obligations.extend(_unit_obligations(utterance_units, obligations, correction, str(dialogue.get("active_topic") or "")))
     if not obligations and (indirect.get("detected") is True or implicit.get("inferred") is True):
         inferred_goal = str(implicit.get("goal") or "respond_to_request")
         obligations.append(
@@ -80,14 +83,17 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
     return _with_guards(
         {
             "status": "pragmatic_plan_ready",
-            "version": "v1_bounded_pragmatic_planning",
+            "version": "v2_compositional_dialogue_obligations",
             "literal_utterance": prompt,
             "dialogue_act": str(intent.get("dialogue_act") or intent.get("intent") or "direct_conversation"),
             "inferred_goal": str(implicit.get("goal") or intent.get("answer_shape") or "respond_directly"),
             "implicit_meaning": implicit,
             "ellipsis_resolution": ellipsis,
             "resolved_reference": reference,
+            "utterance_units": utterance_units,
+            "correction_refinement": correction,
             "response_obligations": obligations,
+            "obligation_sequence": [str(item.get("id") or "") for item in obligations],
             "response_units": response_units,
             "answer_strategy": ambiguity["answer_strategy"],
             "ambiguity": ambiguity,
@@ -96,7 +102,9 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
                 "treat implied meaning as bounded inference, not fact",
                 "preserve supplied content and uncertainty",
                 "leave unsupported questions visibly open",
+                "carry explicit corrections into the relevant obligation only",
             ],
+            "response_constraints": _response_constraints(pragmatics, correction),
             "session_scoped_only": True,
             "visible_summary_only": True,
             "hidden_chain_of_thought_exposed": False,
@@ -183,6 +191,86 @@ def _question_obligations(questions: list[str], loops: list[dict[str, Any]]) -> 
             }
         )
     return obligations
+
+
+def _unit_obligations(
+    units: list[dict[str, Any]],
+    existing: list[dict[str, Any]],
+    correction: dict[str, Any],
+    active_topic: str,
+) -> list[dict[str, Any]]:
+    existing_sources = {" ".join(str(item.get("source_text") or "").lower().split()) for item in existing}
+    obligations: list[dict[str, Any]] = []
+    for index, unit in enumerate(units):
+        text = truncate(str(unit.get("text") or ""), 480).strip()
+        kind = str(unit.get("kind") or "statement")
+        if not text or " ".join(text.lower().split()) in existing_sources:
+            continue
+        if kind in {"direct_request", "indirect_request"}:
+            obligation_kind = _request_kind(text)
+            obligations.append(
+                {
+                    "id": _obligation_id(text, len(existing) + index),
+                    "loop_id": "",
+                    "kind": obligation_kind,
+                    "dialogue_act": kind,
+                    "source_text": text,
+                    "topic": active_topic,
+                    "coverage_terms": _content_terms(text),
+                    "required": True,
+                    "priority": "content",
+                    "inference_level": "literal_request",
+                    "goal": "perform_requested_language_act",
+                }
+            )
+        elif kind == "correction":
+            corrected = str(correction.get("corrected_meaning") or "")
+            obligations.append(
+                {
+                    "id": _obligation_id(text, len(existing) + index),
+                    "loop_id": "",
+                    "kind": "correction_update",
+                    "dialogue_act": "correction",
+                    "source_text": text,
+                    "topic": active_topic,
+                    "coverage_terms": _content_terms(corrected or text),
+                    "required": True,
+                    "priority": "meaning_update",
+                    "inference_level": "literal_correction",
+                    "goal": "acknowledge_and_apply_corrected_meaning",
+                }
+            )
+    return obligations
+
+
+def _request_kind(text: str) -> str:
+    lower = text.lower()
+    if any(token in lower for token in ("compare", "difference", "versus", " vs ")):
+        return "comparison"
+    if any(token in lower for token in ("explain", "why", "reason")):
+        return "reason"
+    if any(token in lower for token in ("steps", "walk me through", "show me how", "how to")):
+        return "method"
+    if any(token in lower for token in ("choose", "recommend", "priority", "first")):
+        return "choice_or_priority"
+    return "direct_request"
+
+
+def _response_constraints(pragmatics: dict[str, Any], correction: dict[str, Any]) -> list[dict[str, Any]]:
+    constraints: list[dict[str, Any]] = []
+    preference = str(pragmatics.get("response_preference") or "")
+    if preference:
+        constraints.append({"kind": "response_depth", "value": preference, "scope": "current_session_only"})
+    if correction.get("detected") is True:
+        constraints.append(
+            {
+                "kind": "correction_scope",
+                "corrected_meaning": str(correction.get("corrected_meaning") or ""),
+                "replaced_meaning": str(correction.get("replaced_meaning") or ""),
+                "scope": "current_session_refinement_only",
+            }
+        )
+    return constraints
 
 
 def _question_kind(question: str) -> str:
@@ -308,6 +396,8 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
         "choice_or_priority": ("first", "start", "priority", "choose", "should"),
         "yes_or_no": ("yes", "no", "can", "cannot", "is", "isn't", "are", "aren't"),
         "implied_request": ("can", "let's", "we can", "start", "help"),
+        "direct_request": ("here", "first", "start", "use", "the answer", "result"),
+        "correction_update": ("right", "correction", "meant", "changed", "instead", "second", "first"),
     }
     return 0.5 if any(token in candidate for token in signals.get(kind, ())) else 0.0
 
@@ -319,6 +409,24 @@ def _content_terms(value: str) -> list[str]:
 
 def _sentences(value: str) -> list[str]:
     return [item.strip() for item in re.split(r"(?<=[.!?])\s+|\n+", value.strip()) if item.strip()]
+
+
+def _utterance_units(value: str) -> list[dict[str, Any]]:
+    units: list[dict[str, Any]] = []
+    for index, text in enumerate(_sentences(value)):
+        lower = text.lower()
+        if text.endswith("?"):
+            kind = "question"
+        elif re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", lower):
+            kind = "correction"
+        elif re.match(r"^(?:please\s+)?(?:compare|explain|show|tell|help|give|list|summarize|check|walk)\b", lower):
+            kind = "direct_request"
+        elif re.search(r"\b(?:could you|would you|can you|i need you to|let's|lets)\b", lower):
+            kind = "indirect_request"
+        else:
+            kind = "statement"
+        units.append({"id": f"utterance_{index + 1}", "text": truncate(text, 480), "kind": kind, "position": index})
+    return units[:12]
 
 
 def _obligation_id(value: str, index: int) -> str:

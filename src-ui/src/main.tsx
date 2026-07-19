@@ -1990,32 +1990,37 @@ function App() {
     const acquire = safeJsonObject(lifecycle?.acquire);
     const integrate = safeJsonObject(lifecycle?.integrate);
     const express = safeJsonObject(lifecycle?.express);
+    const sourceMetadata = safeJsonObject(safeJsonObject(item.payload).source_metadata);
+    const lessonBlueprint = safeJsonObject(sourceMetadata.language_lesson_blueprint);
+    const blueprintAcquire = safeJsonObject(lessonBlueprint.acquire);
+    const blueprintIntegrate = safeJsonObject(lessonBlueprint.integrate);
+    const blueprintExpress = safeJsonObject(lessonBlueprint.express);
     const approvedRelationships = safeJsonObject(integrate.relationships_to_approved_knowledge);
     const relationIds = (kind: string) => Array.isArray(approvedRelationships[kind])
       ? (approvedRelationships[kind] as Dict[]).map((entry) => text(entry.id)).filter(Boolean).join(", ")
       : "";
     const lines = (value: unknown, fallback: unknown[] = []) => Array.isArray(value) ? value.map(text).join("\n") : fallback.map(text).join("\n");
     return comprehensionDrafts[key] || {
-      teach_back: text(express.explanation_in_original_language || ""),
-      application: lines(express.distinct_examples),
-      limits: lines(express.limits, Array.isArray(item.limits) ? item.limits : []),
-      counterexample: lines(express.counterexamples),
-      correction_response: text(express.correction_response || ""),
+      teach_back: text(express.explanation_in_original_language || blueprintExpress.teach_back || ""),
+      application: lines(express.distinct_examples, Array.isArray(blueprintExpress.application) ? blueprintExpress.application : []),
+      limits: lines(express.limits, Array.isArray(blueprintExpress.limits) ? blueprintExpress.limits : Array.isArray(item.limits) ? item.limits : []),
+      counterexample: lines(express.counterexamples, Array.isArray(blueprintExpress.counterexamples) ? blueprintExpress.counterexamples : []),
+      correction_response: text(express.correction_response || blueprintExpress.correction_response || ""),
       source_alignment: express.source_alignment_confirmed === true,
-      vocabulary: lines(acquire.vocabulary),
-      acquire_uncertainties: lines(acquire.uncertainties, Array.isArray(item.limits) ? item.limits : []),
-      near_concept_distinctions: lines(acquire.near_concept_distinctions, Array.isArray(item.counterexamples) ? item.counterexamples : []),
-      scope_of_application: text(integrate.scope_of_application || ""),
-      contradiction_classification: text(integrate.contradiction_classification || "none_identified"),
-      unresolved_questions: lines(integrate.unresolved_questions),
-      integration_confidence: text(integrate.integration_confidence || "developing"),
+      vocabulary: lines(acquire.vocabulary, Array.isArray(blueprintAcquire.vocabulary) ? blueprintAcquire.vocabulary : []),
+      acquire_uncertainties: lines(acquire.uncertainties, Array.isArray(blueprintAcquire.uncertainties) ? blueprintAcquire.uncertainties : Array.isArray(item.limits) ? item.limits : []),
+      near_concept_distinctions: lines(acquire.near_concept_distinctions, Array.isArray(blueprintAcquire.near_concept_distinctions) ? blueprintAcquire.near_concept_distinctions : Array.isArray(item.counterexamples) ? item.counterexamples : []),
+      scope_of_application: text(integrate.scope_of_application || blueprintIntegrate.scope_of_application || ""),
+      contradiction_classification: text(integrate.contradiction_classification || blueprintIntegrate.contradiction_classification || "none_identified"),
+      unresolved_questions: lines(integrate.unresolved_questions, Array.isArray(blueprintIntegrate.unresolved_questions) ? blueprintIntegrate.unresolved_questions : []),
+      integration_confidence: text(integrate.integration_confidence || blueprintIntegrate.integration_confidence || "developing"),
       supporting_concept_ids: relationIds("supporting"),
       conflicting_concept_ids: relationIds("conflicting"),
       related_concept_ids: relationIds("related"),
-      analogies: lines(express.analogies),
-      questions: lines(express.questions),
-      comparisons: lines(express.comparisons),
-      conversational_participation: text(express.natural_conversational_participation || "")
+      analogies: lines(express.analogies, Array.isArray(blueprintExpress.analogies) ? blueprintExpress.analogies : []),
+      questions: lines(express.questions, Array.isArray(blueprintExpress.questions) ? blueprintExpress.questions : []),
+      comparisons: lines(express.comparisons, Array.isArray(blueprintExpress.comparisons) ? blueprintExpress.comparisons : []),
+      conversational_participation: text(express.natural_conversational_participation || blueprintExpress.conversational_participation || "")
     };
   }
 
@@ -2214,7 +2219,7 @@ function App() {
   }
 
   function prepareLanguageTeachingShelf() {
-    setLanguageTeachingResult({ status: "running", message: "Preparing approved conversational guidance in Cocoon." });
+    setLanguageTeachingResult({ status: "running", message: "Preparing provider-free language lesson candidates in Cocoon." });
     api<Dict>("/api/language-teaching/prepare", { method: "POST", body: JSON.stringify({}) })
       .then(async (result) => {
         setLanguageTeachingResult(result);
@@ -2224,6 +2229,7 @@ function App() {
         ]);
         if (status.status === "fulfilled") setLanguageTeachingStatus(status.value);
         if (items.status === "fulfilled") setLanguageTeachingItems(items.value.items || []);
+        await refreshComprehensionOrgan();
         if (status.status === "rejected" || items.status === "rejected") {
           setLanguageTeachingResult({ ...result, refresh_warning: "The shelf was prepared, but one display refresh needs another try." });
         }
@@ -6182,9 +6188,10 @@ function App() {
               </div>
             </Panel>
             <Panel title="Language Teaching Shelf">
-              <p className="plainHelp">Approved conversational guidance for NLO: uncertainty, references, response shape, register, transitions, useful follow-ups, variation, and natural closure. Voice still belongs to Selene; this shelf does not create memory or alter identity.</p>
+              <p className="plainHelp">Provider-free conversational lessons for NLO. Lesson meaning and practice evidence are shown separately from safety boundaries. Preparing creates review candidates only; NLO receives a lesson after Acquire, Integrate, Express, and Aleks approval. Voice still belongs to Selene.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Defined Lessons" value={text(languageTeachingStatus?.defined_lesson_count ?? 10)} />
+                <Metric label="Awaiting Review" value={text(languageTeachingStatus?.candidate_lesson_count ?? 0)} />
                 <Metric label="Available To NLO" value={text(languageTeachingStatus?.available_lesson_count ?? 0)} />
                 <Metric label="Shelf State" value={friendlyStatus(languageTeachingStatus?.status || "not prepared")} />
               </div>
@@ -6198,13 +6205,30 @@ function App() {
                   <article key={text(item.lesson_key)}>
                     <div className="row">
                       <strong>{text(item.title)}</strong>
-                      <span>{friendlyStatus(item.category)}</span>
+                      <span>{friendlyStatus(item.effective_status || item.status)}</span>
                     </div>
                     <p>{text(item.purpose)}</p>
-                    <small>{friendlyStatus(item.status)}</small>
+                    <small>{friendlyStatus(item.category)} · {item.available_to_nlo ? "available to NLO" : "not available until reviewed"}</small>
+                    <div className="comprehensionSourceBox">
+                      <strong>Lesson content</strong>
+                      <p>{text(safeJsonObject(item.lesson_content).concept || item.purpose)}</p>
+                      {Array.isArray(safeJsonObject(item.lesson_content).examples) && (safeJsonObject(item.lesson_content).examples as unknown[]).length ? <p className="plainHelp">Example: {text((safeJsonObject(item.lesson_content).examples as unknown[])[0])}</p> : null}
+                    </div>
+                    <div className="comprehensionSourceBox">
+                      <strong>Safety boundaries</strong>
+                      <p className="plainHelp">{Array.isArray(safeJsonObject(item.boundaries).constraints) ? (safeJsonObject(item.boundaries).constraints as unknown[]).map(text).join(" ") : "Meaning, personality, memory, authority, and Voice remain unchanged."}</p>
+                    </div>
+                    <div className="teachingLifecycleRail" aria-label="Language lesson review lifecycle">
+                      <span className={safeJsonObject(item.lifecycle).acquire_status === "complete" ? "complete" : ""}><b>1 · Acquire</b>{friendlyStatus(safeJsonObject(item.lifecycle).acquire_status || "not started")}</span>
+                      <span className={safeJsonObject(item.lifecycle).integrate_status === "complete" ? "complete" : ""}><b>2 · Integrate</b>{friendlyStatus(safeJsonObject(item.lifecycle).integrate_status || "not started")}</span>
+                      <span className={safeJsonObject(item.lifecycle).express_status === "complete" ? "complete" : ""}><b>3 · Express</b>{friendlyStatus(safeJsonObject(item.lifecycle).express_status || "not started")}</span>
+                    </div>
+                    <div className="reviewActions">
+                      <button onClick={() => setOpenComprehensionId(Number(item.comprehension_concept_id || 0))} disabled={!Number(item.comprehension_concept_id || 0)}>Open Lesson Review</button>
+                    </div>
                   </article>
                 ))}
-                {!languageTeachingItems.length && <p className="emptyState">The lesson definitions are ready. Prepare the shelf when you want NLO to begin consulting them.</p>}
+                {!languageTeachingItems.length && <p className="emptyState">The lesson definitions are ready. Prepare them when you want Cocoon to create source-linked review candidates; preparation alone does not make them available to NLO.</p>}
               </div>
               <PlainResult value={languageTeachingResult} />
             </Panel>

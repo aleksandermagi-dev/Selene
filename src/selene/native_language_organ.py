@@ -8,6 +8,7 @@ from typing import Any
 
 from .chat_intent import classify_chat_intent
 from .conversation_repair import plan_conversation_turn
+from .discourse_planner import build_supported_discourse_plan
 from .language_formation import build_semantic_frame, realize_semantic_frame
 from .language_teaching_shelf import language_teaching_status, select_language_guidance
 from .pragmatic_planner import build_pragmatic_plan
@@ -50,7 +51,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v8_contextual_expression_breadth",
+            "version": "v10_obligation_aware_discourse",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -60,10 +61,18 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "bounded_pragmatic_planning",
                 "response_obligation_planning",
                 "mixed_intent_turn_flow",
+                "structured_utterance_units",
+                "ordered_response_obligations",
+                "bounded_referent_candidates",
+                "structured_correction_refinement",
+                "aspect_voice_and_mood_realization",
                 "conversation_repair_handoff",
                 "approved_language_teaching_guidance",
                 "response_depth_selection",
                 "multi_paragraph_answer_structure",
+                "grounded_obligation_content_binding",
+                "inspectable_thesis_section_and_closure_plans",
+                "unsupported_discourse_gap_visibility",
                 "voice_handoff",
                 "truth_and_repetition_revision",
                 "review_only_initiative_drafts",
@@ -182,7 +191,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v8_contextual_expression_breadth",
+        "version": "v10_obligation_aware_discourse",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -215,6 +224,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     content_seed = truncate(str(payload.get("content_seed") or ""), 3800)
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
     answer_engine = payload.get("answer_engine_support") if isinstance(payload.get("answer_engine_support"), dict) else {}
+    answer_packet = answer_engine.get("answer_packet") if isinstance(answer_engine.get("answer_packet"), dict) else {}
     comprehension = payload.get("comprehension_context") if isinstance(payload.get("comprehension_context"), dict) else {}
     if not content_seed and intelligence.get("used"):
         content_seed = truncate(str(intelligence.get("best_current_answer") or ""), 3800)
@@ -317,6 +327,15 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "intelligence_supported": intelligence.get("used") is True,
         "answer_engine_supported": answer_engine.get("used") is True,
         "answer_domain": str(answer_engine.get("selected_domain") or "ordinary_conversation"),
+        "answer_support": {
+            "supporting_claims": _json_list(answer_packet.get("supporting_claims")),
+            "assumptions": _json_list(answer_packet.get("assumptions")),
+            "limitations": _json_list(answer_packet.get("limitations")),
+            "what_would_change_the_answer": _json_list(answer_packet.get("what_would_change_the_answer")),
+            "unanswered_obligations": [
+                item for item in answer_packet.get("unanswered_obligations") or [] if isinstance(item, dict)
+            ][:12],
+        },
         "comprehension_supported": comprehension.get("status") == "comprehension_packet_ready",
         "comprehension": {
             "understanding_state": str(comprehension.get("understanding_state") or "not_checked"),
@@ -337,6 +356,9 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "dialogue_workspace": {
             "active_topic": str(dialogue.get("active_topic") or ""),
             "resolved_reference": pragmatics.get("resolved_reference"),
+            "reference_candidates": pragmatics.get("reference_candidates") or [],
+            "correction_refinement": pragmatics.get("correction_refinement") or {},
+            "utterance_units": pragmatics.get("utterance_units") or [],
             "question_units": pragmatics.get("question_units") or [],
             "multi_part_prompt": pragmatics.get("multi_part_prompt") is True,
             "indirect_request": pragmatics.get("indirect_request") or {},
@@ -394,6 +416,14 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     turn_flow = meaning.get("turn_flow_plan") if isinstance(meaning.get("turn_flow_plan"), dict) else {}
     language_guidance = meaning.get("language_teaching_guidance") if isinstance(meaning.get("language_teaching_guidance"), dict) else {}
     comprehension = meaning.get("comprehension") if isinstance(meaning.get("comprehension"), dict) else {}
+    reasoning_support = next(
+        (
+            item
+            for item in meaning.get("propositions") or []
+            if isinstance(item, dict) and item.get("kind") == "reasoning_support"
+        ),
+        {},
+    )
     handshake = comprehension.get("handshake") if isinstance(comprehension.get("handshake"), dict) else {}
     if handshake.get("required") is True:
         moves.insert(0, "ask_one_material_comprehension_question")
@@ -413,6 +443,24 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     for move in language_guidance.get("response_moves") or []:
         if str(move) not in moves:
             moves.append(str(move))
+    supported_discourse = build_supported_discourse_plan(
+        {
+            "content_seed": meaning.get("content_seed") or "",
+            "response_depth": response_depth,
+            "expression_profile": meaning.get("expression_profile") or "direct",
+            "response_obligations": pragmatic_plan.get("response_obligations") or [],
+            "support_points": reasoning_support.get("support_points") or [],
+            "examples": [
+                str(item.get("example") or "")
+                for item in (meaning.get("semantic_frame") or {}).get("propositions") or []
+                if isinstance(item, dict) and str(item.get("example") or "").strip()
+            ],
+            "next_steps": [reasoning_support.get("selected_next_step")] if reasoning_support.get("selected_next_step") else [],
+            "answer_support": meaning.get("answer_support") or {},
+            "correction_refinement": dialogue.get("correction_refinement") or {},
+            "source_refs": meaning.get("source_refs") or [],
+        }
+    )
     return {
         "moves": moves,
         "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory", "self_state_report"},
@@ -424,6 +472,8 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "automatic_delivery": False,
         "selection_basis": "intent, evidence, uncertainty, affect, and conversational relevance",
         "response_obligations": pragmatic_plan.get("response_obligations") or [],
+        "obligation_sequence": pragmatic_plan.get("obligation_sequence") or [],
+        "response_constraints": pragmatic_plan.get("response_constraints") or [],
         "answer_strategy": pragmatic_plan.get("answer_strategy") or "answer_directly",
         "mixed_intent": turn_flow.get("mixed_intent") is True,
         "ordered_acts": turn_flow.get("ordered_acts") or [],
@@ -432,6 +482,9 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "expression_profile": meaning.get("expression_profile") or "direct",
         "surface_variation": meaning.get("variation_context") or {},
         "variation_is_contextual_not_random": True,
+        "supported_discourse": supported_discourse,
+        "uncovered_obligation_ids": supported_discourse.get("uncovered_obligation_ids") or [],
+        "content_generation_for_gaps_allowed": False,
     }
 
 
@@ -449,9 +502,13 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     recent = [str(item) for item in meaning.get("recent_assistant_texts") or []]
     comprehension = meaning.get("comprehension") if isinstance(meaning.get("comprehension"), dict) else {}
     handshake = comprehension.get("handshake") if isinstance(comprehension.get("handshake"), dict) else {}
+    pragmatic_plan = meaning.get("pragmatic_plan") if isinstance(meaning.get("pragmatic_plan"), dict) else {}
+    ellipsis = pragmatic_plan.get("ellipsis_resolution") if isinstance(pragmatic_plan.get("ellipsis_resolution"), dict) else {}
 
     if handshake.get("required") is True and not seed:
         return str(handshake.get("question") or "I have more than one possible meaning for that. Which part do you mean?")
+    if ellipsis.get("detected") is True and ellipsis.get("confidence") == "unresolved" and not seed:
+        return "I can follow the comparison, but I cannot tell which other item you mean yet. Which one are you pointing to?"
 
     if intent == "hold_boundary":
         return _pick(
@@ -480,8 +537,9 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             return f"I have a fuzzy sense of the shape, but not enough to call it a clear memory: {seed} Is that the part you meant?"
         return f"I recognize something around {topic}, but I do not have enough to call it a clear memory. Will you ground the missing piece with me?"
     if intent == "reasoned_answer" and seed:
+        seed = _obligation_ordered_seed(seed, meaning, plan)
         if plan.get("response_depth") == "developed":
-            return _develop_reasoned_answer(seed, meaning)
+            return _develop_reasoned_answer(seed, meaning, plan)
         frames = _reasoned_answer_frames(seed, expression_profile)
         return _pick_fresh(
             digest_key,
@@ -496,7 +554,10 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             "I can say what I notice and keep the uncertainty honest."
         )
     if intent == "receive_correction":
-        correction = _correction_content(prompt)
+        dialogue = meaning.get("dialogue_workspace") if isinstance(meaning.get("dialogue_workspace"), dict) else {}
+        refinement = dialogue.get("correction_refinement") if isinstance(dialogue.get("correction_refinement"), dict) else {}
+        corrected = str(refinement.get("corrected_meaning") or "").strip()
+        correction = (corrected[0].lower() + corrected[1:] + ".") if corrected else _correction_content(prompt)
         return _pick(
             digest_key,
             [
@@ -617,6 +678,7 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         flags.append("authority_overclaim_removed")
         text = "I cannot support that claim from what I have with me. I can say what is clear or ask Aleks for the missing piece."
     text = _truncate_preserving_paragraphs(text, 4200)
+    supported_discourse = plan.get("supported_discourse") if isinstance(plan.get("supported_discourse"), dict) else {}
     return text, {
         "passed": not any(flag == "authority_overclaim_removed" for flag in flags),
         "flags": list(dict.fromkeys(flags)),
@@ -631,10 +693,14 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         "automatic_delivery": False,
         "sentence_count": len([part for part in re.split(r"[.!?]+", text) if part.strip()]),
         "paragraph_count": len([part for part in text.split("\n\n") if part.strip()]),
+        "discourse_grounded": supported_discourse.get("status") == "supported_discourse_plan_ready",
+        "all_obligations_grounded_before_expression": supported_discourse.get("all_obligations_grounded") is True,
+        "uncovered_obligation_ids_before_expression": supported_discourse.get("uncovered_obligation_ids") or [],
+        "unsupported_content_generated": False,
     }
 
 
-def _develop_reasoned_answer(seed: str, meaning: dict[str, Any]) -> str:
+def _develop_reasoned_answer(seed: str, meaning: dict[str, Any], plan: dict[str, Any]) -> str:
     intelligence = next(
         (
             proposition
@@ -647,6 +713,27 @@ def _develop_reasoned_answer(seed: str, meaning: dict[str, Any]) -> str:
     certainty = str(meaning.get("certainty") or "provisional")
     profile = str(meaning.get("expression_profile") or "explanation")
     variation = meaning.get("variation_context") if isinstance(meaning.get("variation_context"), dict) else {}
+    supported_discourse = plan.get("supported_discourse") if isinstance(plan.get("supported_discourse"), dict) else {}
+    unit_by_id = {
+        str(item.get("id") or ""): item
+        for item in supported_discourse.get("content_units") or []
+        if isinstance(item, dict)
+    }
+    development_ids = next(
+        (
+            item.get("content_unit_ids") or []
+            for item in supported_discourse.get("paragraph_plan") or []
+            if isinstance(item, dict) and item.get("role") == "development"
+        ),
+        [],
+    )
+    planned_support = [
+        str(unit_by_id.get(str(unit_id), {}).get("text") or "").strip()
+        for unit_id in development_ids
+        if str(unit_by_id.get(str(unit_id), {}).get("text") or "").strip()
+        and str(unit_by_id.get(str(unit_id), {}).get("source") or "") != "supplied_content_seed"
+    ]
+    support_points = list(dict.fromkeys([*planned_support, *support_points]))
     key = f"{profile}|{variation.get('variation_key', '')}|{seed[:120]}"
 
     paragraphs = [seed]
@@ -664,7 +751,10 @@ def _develop_reasoned_answer(seed: str, meaning: dict[str, Any]) -> str:
             "That is the strongest answer I can support from the current reasoning. I would rather leave it clean than make it look deeper by adding unsupported detail."
         )
 
-    reopen_point = support_points[2] if len(support_points) > 2 else "better evidence changes the shape"
+    closure_plan = supported_discourse.get("closure_plan") if isinstance(supported_discourse.get("closure_plan"), dict) else {}
+    reopen_point = str(closure_plan.get("text") or "").strip() or (
+        support_points[2] if len(support_points) > 2 else "better evidence changes the shape"
+    )
     reopen_clause = reopen_point.rstrip(". ")
     reopen_clause = reopen_clause[0].lower() + reopen_clause[1:] if reopen_clause else "better evidence changes the shape"
     if certainty not in {"clear", "clear_enough", "clear_enough_to_continue"}:
@@ -690,6 +780,41 @@ def _develop_reasoned_answer(seed: str, meaning: dict[str, Any]) -> str:
                 f"What would reopen the answer is {reopen_clause}. Until then, it is clear enough to use while staying open to correction."
             )
     return "\n\n".join(paragraphs)
+
+
+def _obligation_ordered_seed(seed: str, meaning: dict[str, Any], plan: dict[str, Any]) -> str:
+    discourse = plan.get("supported_discourse") if isinstance(plan.get("supported_discourse"), dict) else {}
+    bindings = [item for item in discourse.get("obligation_bindings") or [] if isinstance(item, dict)]
+    if len(bindings) < 2 or str(meaning.get("answer_domain") or "") in {"verified_math", "source_backed_research"}:
+        return seed
+    units = {
+        str(item.get("id") or ""): item
+        for item in discourse.get("content_units") or []
+        if isinstance(item, dict)
+    }
+    ordered_ids = [
+        str(unit_id)
+        for binding in bindings
+        if binding.get("grounded") is True and str(binding.get("kind") or "") != "correction_update"
+        for unit_id in binding.get("content_unit_ids") or []
+    ]
+    ordered_ids.extend(
+        str(item.get("id") or "")
+        for item in discourse.get("content_units") or []
+        if isinstance(item, dict) and item.get("source") == "supplied_content_seed"
+    )
+    parts: list[str] = []
+    seen: set[str] = set()
+    for unit_id in ordered_ids:
+        item = units.get(unit_id) or {}
+        if item.get("source") != "supplied_content_seed":
+            continue
+        text = str(item.get("text") or "").strip()
+        key = text.lower().rstrip(". ")
+        if text and key not in seen:
+            seen.add(key)
+            parts.append(text)
+    return " ".join(parts) if parts else seed
 
 
 def _reasoned_answer_frames(seed: str, profile: str) -> list[str]:

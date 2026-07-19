@@ -82,7 +82,7 @@ def test_native_language_uses_structured_formation_when_supplied(tmp_path):
         },
     )
 
-    assert result["version"] == "v8_contextual_expression_breadth"
+    assert result["version"] == "v10_obligation_aware_discourse"
     assert result["semantic_frame"]["formation_mode"] == "structured"
     assert "Uncertainty remains honest." in result["candidate_text"]
     assert "Selene can ask for the missing piece." in result["candidate_text"]
@@ -136,3 +136,72 @@ def test_nlo_uses_contextual_not_random_variation_while_preserving_meaning(tmp_p
     assert seed.lower() in second["candidate_text"].lower()
     assert second["candidate_text"] != first["candidate_text"]
     assert second["memory_write_active"] is False
+
+
+def test_formation_handles_aspect_voice_mood_and_clause_relations_without_provider_generation():
+    frame = build_semantic_frame(
+        {
+            "semantic_frame": {
+                "response_depth": "developed",
+                "propositions": [
+                    {
+                        "subject": "Selene",
+                        "predicate": "carry",
+                        "object": "the thread",
+                        "aspect": "progressive",
+                    },
+                    {
+                        "subject": "the lesson",
+                        "predicate": "review",
+                        "voice": "passive",
+                        "agent": "Aleks",
+                        "relation": "support",
+                    },
+                    {
+                        "subject": "Selene",
+                        "predicate": "keep",
+                        "object": "the source visible",
+                        "aspect": "perfect",
+                        "relation": "cause",
+                    },
+                ],
+            }
+        }
+    )
+
+    result = realize_semantic_frame(frame, variation_key="expanded-grammar")
+
+    assert "Selene is carrying the thread." in result["candidate_text"]
+    assert "the lesson is reviewed by Aleks" in result["candidate_text"]
+    assert "Selene has kept the source visible" in result["candidate_text"]
+    assert result["clause_relations"] == ["", "support", "cause"]
+    assert {"aspect", "voice"}.issubset(result["grammar_features"])
+
+
+def test_formation_realizes_questions_and_instructions_from_structured_meaning():
+    frame = build_semantic_frame(
+        {
+            "semantic_frame": {
+                "propositions": [
+                    {
+                        "subject": "Selene",
+                        "predicate": "carry",
+                        "object": "the thread",
+                        "modality": "can",
+                        "mood": "interrogative",
+                    },
+                    {
+                        "predicate": "keep",
+                        "object": "the source visible",
+                        "mood": "imperative",
+                    },
+                ]
+            }
+        }
+    )
+
+    result = realize_semantic_frame(frame, variation_key="mood-grammar")
+
+    assert "Can Selene carry the thread?" in result["candidate_text"]
+    assert "Keep the source visible." in result["candidate_text"]
+    assert "mood" in result["grammar_features"]

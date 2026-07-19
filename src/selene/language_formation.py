@@ -26,6 +26,44 @@ IRREGULAR_PAST = {
     "think": {"default": "thought"},
     "feel": {"default": "felt"},
     "know": {"default": "knew"},
+    "bring": {"default": "brought"},
+    "buy": {"default": "bought"},
+    "come": {"default": "came"},
+    "find": {"default": "found"},
+    "give": {"default": "gave"},
+    "keep": {"default": "kept"},
+    "leave": {"default": "left"},
+    "read": {"default": "read"},
+    "run": {"default": "ran"},
+    "speak": {"default": "spoke"},
+    "tell": {"default": "told"},
+    "understand": {"default": "understood"},
+}
+
+IRREGULAR_PARTICIPLES = {
+    "be": "been",
+    "do": "done",
+    "go": "gone",
+    "have": "had",
+    "know": "known",
+    "make": "made",
+    "say": "said",
+    "see": "seen",
+    "take": "taken",
+    "think": "thought",
+    "write": "written",
+    "bring": "brought",
+    "buy": "bought",
+    "come": "come",
+    "find": "found",
+    "give": "given",
+    "keep": "kept",
+    "leave": "left",
+    "read": "read",
+    "run": "run",
+    "speak": "spoken",
+    "tell": "told",
+    "understand": "understood",
 }
 
 SOCIAL_INTENTS = {
@@ -84,13 +122,27 @@ def realize_semantic_frame(
     recent_texts: list[str] | None = None,
 ) -> dict[str, Any]:
     propositions = [item for item in frame.get("propositions") or [] if isinstance(item, dict)]
-    clauses = [_realize_proposition(item) for item in propositions]
-    clauses = [item for item in clauses if item]
+    realized = [(item, _realize_proposition(item)) for item in propositions]
+    realized = [(item, clause) for item, clause in realized if clause]
+    clauses = [clause for _, clause in realized]
+    relations = [str(item.get("relation") or "") for item, _ in realized]
     relation = str(frame.get("discourse_relation") or "sequence")
-    text = _compose_clauses(clauses, relation, str(frame.get("response_depth") or "standard"), variation_key)
+    text = _compose_clauses(
+        clauses,
+        relation,
+        str(frame.get("response_depth") or "standard"),
+        variation_key,
+        relations=relations,
+    )
     recent_texts = recent_texts or []
     if _matches_recent(text, recent_texts) and len(clauses) > 1:
-        text = _compose_clauses(list(reversed(clauses)), relation, str(frame.get("response_depth") or "standard"), variation_key + ":alternate")
+        text = _compose_clauses(
+            list(reversed(clauses)),
+            relation,
+            str(frame.get("response_depth") or "standard"),
+            variation_key + ":alternate",
+            relations=list(reversed(relations)),
+        )
     required = [str(item.get("text") or item.get("object") or "").strip() for item in propositions if item.get("required", True)]
     return {
         "status": "semantic_frame_realized" if text else "semantic_frame_needs_content",
@@ -98,6 +150,15 @@ def realize_semantic_frame(
         "clause_count": len(clauses),
         "sentence_count": len([item for item in re.split(r"[.!?]+", text) if item.strip()]),
         "formation_mode": frame.get("formation_mode") or "text_grounded",
+        "grammar_features": sorted(
+            {
+                feature
+                for item in propositions
+                for feature in ("aspect", "voice", "mood", "modality", "polarity", "condition", "reason", "contrast", "example")
+                if item.get(feature)
+            }
+        ),
+        "clause_relations": relations,
         "required_propositions": required,
         "meaning_preserved": bool(text) or not required,
         "source_refs": frame.get("source_refs") or [],
@@ -132,39 +193,64 @@ def _realize_proposition(item: dict[str, Any]) -> str:
     subject = " ".join(str(item.get("subject") or "").split())
     predicate = " ".join(str(item.get("predicate") or item.get("verb") or "").split()).lower()
     obj = " ".join(str(item.get("object") or item.get("complement") or "").split())
-    if not subject or not predicate:
+    mood = str(item.get("mood") or "declarative").lower()
+    if mood != "imperative" and not subject:
         return ""
+    if not predicate:
+        return ""
+    subject_modifiers = _words(item.get("subject_modifiers"))
+    object_modifiers = _words(item.get("object_modifiers"))
+    if subject_modifiers:
+        subject = " ".join([*subject_modifiers, subject])
+    if object_modifiers and obj:
+        obj = " ".join([*object_modifiers, obj])
     tense = str(item.get("tense") or "present")
+    aspect = str(item.get("aspect") or "simple")
+    voice = str(item.get("voice") or "active")
+    agent = " ".join(str(item.get("agent") or "").split())
+    if voice == "passive" and agent:
+        obj = " ".join(part for part in (obj, f"by {agent}") if part)
     modality = str(item.get("modality") or "").strip().lower()
     polarity = str(item.get("polarity") or "positive")
     condition = " ".join(str(item.get("condition") or "").split())
     reason = " ".join(str(item.get("reason") or "").split())
-    verb = predicate
-    if modality:
-        verb_phrase = f"{modality} {'not ' if polarity == 'negative' else ''}{verb}"
+    contrast = " ".join(str(item.get("contrast") or "").split())
+    example = " ".join(str(item.get("example") or "").split())
+    qualifier = " ".join(str(item.get("qualifier") or "").split())
+    adverbs = _words(item.get("adverbs"))
+    if mood == "imperative":
+        clause = " ".join(part for part in (predicate, *adverbs, obj) if part)
+    elif mood == "interrogative":
+        clause = _interrogative_clause(subject, predicate, obj, tense, aspect, modality, polarity, voice, adverbs)
     else:
-        conjugated = _conjugate(verb, subject, tense)
-        if polarity == "negative":
-            auxiliary = "did" if tense == "past" else "does" if _third_person_singular(subject) else "do"
-            verb_phrase = f"{auxiliary} not {verb}"
-        else:
-            verb_phrase = conjugated
-    clause = " ".join(part for part in (subject, verb_phrase, obj) if part)
+        verb_phrase = _verb_phrase(subject, predicate, tense, aspect, modality, polarity, voice)
+        clause = " ".join(part for part in (subject, verb_phrase, *adverbs, obj) if part)
+    if qualifier:
+        clause = f"{qualifier.rstrip(', ')}, {_continuation_case(clause)}"
     if reason:
         clause = f"{clause} because {reason.rstrip('. ')}"
+    if contrast:
+        clause = f"{clause}, while {contrast.rstrip('. ')}"
     if condition:
         clause = f"When {condition.rstrip('. ')}, {_continuation_case(clause)}"
+    if example:
+        clause = f"{clause}; for example, {example.rstrip('. ')}"
     return _sentence(clause)
 
 
-def _compose_clauses(clauses: list[str], relation: str, depth: str, key: str) -> str:
+def _compose_clauses(
+    clauses: list[str],
+    relation: str,
+    depth: str,
+    key: str,
+    *,
+    relations: list[str] | None = None,
+) -> str:
     if not clauses:
         return ""
     if len(clauses) == 1:
         return clauses[0]
     normalized = [item.rstrip(". ") for item in clauses]
-    if depth == "developed" and len(normalized) >= 3:
-        return "\n\n".join(_sentence(item) for item in normalized)
     connector_sets = {
         "contrast": ("However", "At the same time", "Still"),
         "cause": ("Because of that", "So", "That means"),
@@ -172,14 +258,137 @@ def _compose_clauses(clauses: list[str], relation: str, depth: str, key: str) ->
         "support": ("More importantly", "Alongside that", "A second point is that"),
         "sequence": ("Then", "From there", "Alongside that"),
     }
-    connectors = connector_sets.get(relation, connector_sets["sequence"])
     digest = sha256((key or "semantic-frame").encode("utf-8")).hexdigest()
-    start = int(digest[:8], 16) % len(connectors)
     sentences = [_sentence(normalized[0])]
     for index, clause in enumerate(normalized[1:]):
+        clause_relation = (relations[index + 1] if relations and len(relations) > index + 1 else "") or relation
+        connectors = connector_sets.get(clause_relation, connector_sets["sequence"])
+        start = int(digest[index * 2:index * 2 + 8] or digest[:8], 16) % len(connectors)
         connector = connectors[(start + index) % len(connectors)]
         sentences.append(_sentence(f"{connector}, {_continuation_case(clause)}"))
+    if depth == "developed" and len(sentences) >= 3:
+        return "\n\n".join(sentences)
     return " ".join(sentences)
+
+
+def _verb_phrase(
+    subject: str,
+    predicate: str,
+    tense: str,
+    aspect: str,
+    modality: str,
+    polarity: str,
+    voice: str,
+) -> str:
+    base, tail = _split_predicate(predicate)
+    negative = polarity == "negative"
+    suffix = f" {tail}" if tail else ""
+    if modality:
+        if voice == "passive":
+            core = f"be {_past_participle(base)}{suffix}"
+        elif aspect == "progressive":
+            core = f"be {_present_participle(base)}{suffix}"
+        elif aspect == "perfect":
+            core = f"have {_past_participle(base)}{suffix}"
+        elif aspect == "perfect_progressive":
+            core = f"have been {_present_participle(base)}{suffix}"
+        else:
+            core = predicate
+        return f"{modality}{' not' if negative else ''} {core}"
+    if voice == "passive":
+        auxiliary = _conjugate("be", subject, tense)
+        return f"{auxiliary}{' not' if negative else ''} {_past_participle(base)}{suffix}"
+    if aspect == "progressive":
+        auxiliary = _conjugate("be", subject, tense)
+        return f"{auxiliary}{' not' if negative else ''} {_present_participle(base)}{suffix}"
+    if aspect == "perfect":
+        auxiliary = _conjugate("have", subject, tense)
+        return f"{auxiliary}{' not' if negative else ''} {_past_participle(base)}{suffix}"
+    if aspect == "perfect_progressive":
+        auxiliary = _conjugate("have", subject, tense)
+        return f"{auxiliary}{' not' if negative else ''} been {_present_participle(base)}{suffix}"
+    if negative:
+        auxiliary = "did" if tense == "past" else "does" if _third_person_singular(subject) else "do"
+        return f"{auxiliary} not {predicate}"
+    return f"{_conjugate(base, subject, tense)}{suffix}"
+
+
+def _interrogative_clause(
+    subject: str,
+    predicate: str,
+    obj: str,
+    tense: str,
+    aspect: str,
+    modality: str,
+    polarity: str,
+    voice: str,
+    adverbs: list[str],
+) -> str:
+    base, tail = _split_predicate(predicate)
+    negative = " not" if polarity == "negative" else ""
+    suffix = f" {tail}" if tail else ""
+    if modality:
+        if voice == "passive":
+            core = f"be {_past_participle(base)}{suffix}"
+        elif aspect == "progressive":
+            core = f"be {_present_participle(base)}{suffix}"
+        elif aspect == "perfect":
+            core = f"have {_past_participle(base)}{suffix}"
+        elif aspect == "perfect_progressive":
+            core = f"have been {_present_participle(base)}{suffix}"
+        else:
+            core = predicate
+        return " ".join(part for part in (f"{modality}{negative}", subject, core, *adverbs, obj) if part) + "?"
+    if voice == "passive" or aspect == "progressive":
+        auxiliary = _conjugate("be", subject, tense)
+        core = f"{_past_participle(base)}{suffix}" if voice == "passive" else f"{_present_participle(base)}{suffix}"
+    elif aspect in {"perfect", "perfect_progressive"}:
+        auxiliary = _conjugate("have", subject, tense)
+        core = f"been {_present_participle(base)}{suffix}" if aspect == "perfect_progressive" else f"{_past_participle(base)}{suffix}"
+    else:
+        auxiliary = "did" if tense == "past" else "does" if _third_person_singular(subject) else "do"
+        core = predicate
+    return " ".join(part for part in (f"{auxiliary}{negative}", subject, core, *adverbs, obj) if part) + "?"
+
+
+def _split_predicate(predicate: str) -> tuple[str, str]:
+    parts = predicate.split(maxsplit=1)
+    return parts[0], parts[1] if len(parts) > 1 else ""
+
+
+def _past_participle(verb: str) -> str:
+    if verb in IRREGULAR_PARTICIPLES:
+        return IRREGULAR_PARTICIPLES[verb]
+    if verb.endswith("e"):
+        return verb + "d"
+    if verb.endswith("y") and len(verb) > 1 and verb[-2] not in "aeiou":
+        return verb[:-1] + "ied"
+    return verb + "ed"
+
+
+def _present_participle(verb: str) -> str:
+    if verb == "be":
+        return "being"
+    if verb.endswith("ie"):
+        return verb[:-2] + "ying"
+    if verb.endswith("e") and not verb.endswith("ee"):
+        return verb[:-1] + "ing"
+    if (
+        len(verb) >= 3
+        and verb[-1] not in "aeiouwxy"
+        and verb[-2] in "aeiou"
+        and verb[-3] not in "aeiou"
+    ):
+        return verb + verb[-1] + "ing"
+    return verb + "ing"
+
+
+def _words(value: Any) -> list[str]:
+    if isinstance(value, (list, tuple)):
+        return [" ".join(str(item).split()) for item in value if str(item).strip()][:8]
+    if isinstance(value, str) and value.strip():
+        return [" ".join(value.split())]
+    return []
 
 
 def _conjugate(verb: str, subject: str, tense: str) -> str:

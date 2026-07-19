@@ -128,3 +128,28 @@ def test_conversation_repair_routes_are_status_only(tmp_path):
     assert repaired["runtime_memory_recall"] is False
     assert repaired["training_allowed"] is False
     assert repaired["autonomous_action_allowed"] is False
+
+
+def test_turn_flow_uses_structured_units_to_preserve_request_order_and_correction():
+    prompt = "Actually, I meant memory. Compare it with voice."
+    pragmatic = {
+        "utterance_units": [
+            {"id": "utterance_1", "text": "Actually, I meant memory.", "kind": "correction", "position": 0},
+            {"id": "utterance_2", "text": "Compare it with voice.", "kind": "direct_request", "position": 1},
+        ],
+        "correction_refinement": {"detected": True, "corrected_meaning": "memory"},
+        "response_obligations": [{"id": "correction"}, {"id": "comparison"}],
+    }
+    result = plan_conversation_turn(
+        {
+            "prompt": prompt,
+            "intent_decision": {"intent": "reasoned_answer"},
+            "pragmatic_plan": pragmatic,
+        }
+    )
+
+    acts = [item["act"] for item in result["ordered_acts"]]
+    assert acts.index("correction") < acts.index("direct_request")
+    assert result["obligation_sequence"] == ["correction", "comparison"]
+    assert result["correction_refinement"]["corrected_meaning"] == "memory"
+    assert result["must_preserve_correction"] is True

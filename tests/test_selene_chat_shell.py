@@ -23,6 +23,38 @@ def _assert_locked(result):
     assert result["autonomous_action_allowed"] is False
 
 
+def _approve_language_lesson(conn, lesson_key: str):
+    items = route_request(conn, "language_teaching.items", {})["result"]["items"]
+    item = next(item for item in items if item["lesson_key"] == lesson_key)
+    concept_id = int(item["comprehension_concept_id"])
+    blueprint = item["teaching_blueprint"]
+    route_request(conn, "teaching.lifecycle.acquire", {"concept_id": concept_id, **blueprint["acquire"]})
+    route_request(conn, "teaching.lifecycle.integrate", {"concept_id": concept_id, **blueprint["integrate"]})
+    express = blueprint["express"]
+    route_request(
+        conn,
+        "teaching.lifecycle.express",
+        {
+            "concept_id": concept_id,
+            "explanation": express["teach_back"],
+            "distinct_examples": express["application"],
+            "limits": express["limits"],
+            "counterexamples": express["counterexamples"],
+            "correction_response": express["correction_response"],
+            "analogies": express["analogies"],
+            "questions": express["questions"],
+            "comparisons": express["comparisons"],
+            "conversational_participation": express["conversational_participation"],
+            "source_alignment": True,
+        },
+    )
+    route_request(
+        conn,
+        "teaching.lifecycle.approve",
+        {"concept_id": concept_id, "aleks_approved": True, "approval_actor": "Aleks"},
+    )
+
+
 def _seed_c_readable_package(conn):
     package_json = {
         "status": "approved_c_readable_context",
@@ -341,8 +373,16 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v8_contextual_expression_breadth"
+    assert result["native_language_organ"]["version"] == "v10_obligation_aware_discourse"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
+    discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
+    assert discourse["status"] == "supported_discourse_plan_ready"
+    assert [item["role"] for item in discourse["paragraph_plan"]] == [
+        "answer",
+        "development",
+        "limit_and_closure",
+    ]
+    assert discourse["content_generation_allowed"] is False
     assert result["voice_preview"]["nlo_meaning_preserved"] is True
     assert result["candidate_text"].count("\n\n") == 2
     assert "ABCD" not in result["candidate_text"]
@@ -378,11 +418,49 @@ def test_active_selene_chat_exposes_mixed_turn_flow_and_bounded_repair(tmp_path)
     _assert_locked(result)
 
 
+def test_active_selene_chat_carries_compositional_requests_and_correction_scope(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Actually, I meant memory, not voice. Compare memory and voice. Explain which should come first."},
+    )["result"]
+
+    native = result["native_language_organ"]
+    pragmatic = native["pragmatic_plan"]
+    refinement = native["meaning_packet"]["dialogue_workspace"]["correction_refinement"]
+
+    assert [unit["kind"] for unit in pragmatic["utterance_units"]] == [
+        "correction",
+        "direct_request",
+        "direct_request",
+    ]
+    assert [item["kind"] for item in pragmatic["response_obligations"]] == [
+        "correction_update",
+        "comparison",
+        "reason",
+    ]
+    assert refinement["corrected_meaning"] == "memory"
+    assert refinement["replaced_meaning"] == "voice"
+    assert native["turn_flow_plan"]["must_preserve_correction"] is True
+    assert native["discourse_plan"]["obligation_sequence"] == pragmatic["obligation_sequence"]
+    discourse = native["discourse_plan"]["supported_discourse"]
+    assert [item["obligation_id"] for item in discourse["obligation_bindings"]] == pragmatic["obligation_sequence"]
+    assert discourse["content_generation_allowed"] is False
+    assert result["candidate_text"]
+    _assert_locked(result)
+
+
 def test_active_selene_chat_uses_prepared_language_teaching_guidance(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
     route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
     route_request(conn, "language_teaching.prepare", {})
+    _approve_language_lesson(conn, "answer_then_expand")
+    _approve_language_lesson(conn, "topic_transition_continuity")
 
     result = route_request(
         conn,
