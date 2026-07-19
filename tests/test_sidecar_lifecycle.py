@@ -124,7 +124,7 @@ def test_answer_engine_math_endpoint_accepts_expression_only_request(tmp_path):
     assert payload["request"]["obligation_source"] == "domain_request_fallback"
     assert payload["activation_change"] == "none"
     assert payload["memory_write_active"] is False
-    assert payload["live_chat_connected"] is False
+    assert payload["live_chat_connected"] is True
 
 
 def test_answer_engine_code_and_research_endpoints_use_only_supplied_sources(tmp_path):

@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .meaning_router import interpret_turn_meaning
+
 
 RECEIPT_PATTERNS = (
     "are you receiving this",
@@ -207,64 +209,31 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
     response_depth = _response_depth(lower)
 
     if selected_route == "block":
-        return _decision("hard_boundary", "boundary_hold", "Core/Mind", ["Cocoon support"], ["core_mind_block"], response_depth)
+        meaning = interpret_turn_meaning(text, selected_route=selected_route)
+        return _decision("hard_boundary", "boundary_hold", "Core/Mind", ["Cocoon support"], ["core_mind_block"], response_depth, meaning)
 
-    matched = _matches(lower, RECEIPT_PATTERNS)
-    if matched:
-        return _decision("receipt_check", "brief_confirmation", "conversation", ["Native Language Organ"], matched, "brief")
-
-    matched = _matches(lower, CORRECTION_PATTERNS)
-    if matched or re.search(r"\bactually[, :]", lower):
-        return _decision("correction", "acknowledge_and_adjust", "Core/Mind", ["Native Language Organ"], matched or ["actually"], response_depth)
-
-    matched = _matches(lower, MEMORY_CANDIDATE_PATTERNS)
-    if matched:
-        return _decision("memory_candidate", "respond_then_offer_to_keep", "conversation", ["Memory candidate intake"], matched, response_depth)
-
-    matched = _matches(lower, SELF_STATE_PATTERNS)
-    if matched:
-        return _decision("self_state", "grounded_self_report", "self-state", ["Cocoon Care", "Native Language Organ"], matched, response_depth)
-
-    matched = _matches(lower, EXPLICIT_RECALL_PATTERNS)
-    if matched:
-        return _decision("memory_recall", "grounded_recall", "Memory", ["local chat continuity", "Native Language Organ"], matched, response_depth)
-
-    matched = _matches(lower, REASONING_PATTERNS)
-    if matched:
-        return _decision("reasoning", "best_current_answer", "intelligenceOS", ["Core/Mind", "Native Language Organ"], matched, response_depth)
-
-    if _generic_recall_request(lower):
-        return _decision("memory_recall", "grounded_recall", "Memory", ["local chat continuity", "Native Language Organ"], ["recall_request"], response_depth)
-
-    matched = _dialogue_matches(lower, FAREWELL_PATTERNS)
-    if matched:
-        return _decision("farewell", "close_with_continuity", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
-
-    matched = _dialogue_matches(lower, REASSURANCE_PATTERNS)
-    if matched:
-        return _decision("reassurance_received", "receive_reassurance", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
-
-    matched = _dialogue_matches(lower, GRATITUDE_PATTERNS)
-    if matched:
-        return _decision("gratitude", "receive_gratitude", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
-
-    matched = _dialogue_matches(lower, GREETING_PATTERNS)
-    if matched:
-        return _decision("greeting", "greet_presently", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
-
-    matched = _matches(lower, WARM_PATTERNS)
-    if matched:
-        return _decision("warm_connection", "present_relational_reply", "conversation", ["Voice Module"], matched, "brief")
-
-    matched = _matches(lower, PLAYFUL_PATTERNS)
-    if matched:
-        return _decision("playful_connection", "playful_relevant_reply", "conversation", ["Voice Module"], matched, "brief")
-
-    matched = _dialogue_matches(lower, AFFIRMATION_PATTERNS)
-    if matched:
-        return _decision("affirmation", "acknowledge_shared_ground", "conversation", ["Native Language Organ", "Voice Module"], matched, "brief")
-
-    return _decision("direct_conversation", "direct_answer", "conversation", ["Native Language Organ"], [], response_depth)
+    meaning = interpret_turn_meaning(text, selected_route=selected_route)
+    intent = str(meaning.get("primary_intent") or "direct_conversation")
+    shapes: dict[str, tuple[str, str, list[str]]] = {
+        "receipt_check": ("brief_confirmation", "conversation", ["Native Language Organ"]),
+        "correction": ("acknowledge_and_adjust", "Core/Mind", ["Native Language Organ"]),
+        "memory_candidate": ("respond_then_offer_to_keep", "conversation", ["Memory candidate intake"]),
+        "self_state": ("grounded_self_report", "self-state", ["Cocoon Care", "Native Language Organ"]),
+        "memory_recall": ("grounded_recall", "Memory", ["local chat continuity", "Native Language Organ"]),
+        "reasoning": ("best_current_answer", "intelligenceOS", ["Core/Mind", "Native Language Organ"]),
+        "farewell": ("close_with_continuity", "conversation", ["Native Language Organ", "Voice Module"]),
+        "reassurance_received": ("receive_reassurance", "conversation", ["Native Language Organ", "Voice Module"]),
+        "gratitude": ("receive_gratitude", "conversation", ["Native Language Organ", "Voice Module"]),
+        "greeting": ("greet_presently", "conversation", ["Native Language Organ", "Voice Module"]),
+        "warm_connection": ("present_relational_reply", "conversation", ["Voice Module"]),
+        "playful_connection": ("playful_relevant_reply", "conversation", ["Voice Module"]),
+        "affirmation": ("acknowledge_shared_ground", "conversation", ["Native Language Organ", "Voice Module"]),
+        "direct_conversation": ("direct_answer", "conversation", ["Native Language Organ"]),
+    }
+    answer_shape, primary_organ, supporting = shapes.get(intent, shapes["direct_conversation"])
+    evidence = list((meaning.get("intent_candidates") or [{}])[0].get("evidence") or [])
+    depth = "brief" if intent in {"receipt_check", "farewell", "reassurance_received", "gratitude", "greeting", "warm_connection", "playful_connection", "affirmation"} else response_depth
+    return _decision(intent, answer_shape, primary_organ, supporting, evidence, depth, meaning)
 
 
 def _decision(
@@ -274,8 +243,9 @@ def _decision(
     supporting_organs: list[str],
     evidence: list[str],
     response_depth: str,
+    meaning_route: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return {
+    result = {
         "intent": intent,
         "answer_shape": answer_shape,
         "primary_organ": primary_organ,
@@ -292,6 +262,14 @@ def _decision(
         "confidence": "high" if evidence else "medium",
         "visible_summary_only": True,
     }
+    if meaning_route is not None:
+        result["meaning_route"] = meaning_route
+        result["intent_candidates"] = meaning_route.get("intent_candidates") or []
+        result["dialogue_acts"] = meaning_route.get("dialogue_acts") or []
+        result["domain_candidates"] = meaning_route.get("domain_candidates") or []
+        result["routing_confidence"] = meaning_route.get("routing_confidence") or result["confidence"]
+        result["routing_ambiguity"] = meaning_route.get("ambiguity") or {}
+    return result
 
 
 def _response_depth(lower: str) -> str:

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from collections import Counter
 from datetime import UTC, datetime
 from typing import Any
 
 from .c_vessel import continuity_package_preview, return_to_b_preview
+from .meaning_router import interpret_turn_meaning
 from .reconstruction_checks import evaluate_recognition_reconstruction
 from .registry import truncate
 
@@ -134,10 +136,11 @@ def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, 
     payload = payload or {}
     prompt = truncate(str(payload.get("prompt") or payload.get("text") or "Preview a conservative Core/Mind route."), 1600)
     requested_route = str(payload.get("requested_route") or "").strip()
-    selected_route = _select_route(prompt, requested_route)
+    meaning_route = interpret_turn_meaning(prompt, selected_route=requested_route)
+    selected_route = _select_route(prompt, requested_route, meaning_route=meaning_route)
     continuity = continuity_package_preview(conn)
     identity_frame = _identity_frame(continuity)
-    drift_flags = _drift_flags(prompt)
+    drift_flags = _drift_flags(prompt, meaning_route=meaning_route)
     evidence_used = _evidence_used(continuity, payload)
     uncertainty = _uncertainty(prompt, selected_route, drift_flags)
     ethical_notes = _ethical_notes(selected_route)
@@ -164,7 +167,8 @@ def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, 
         "uncertainty": uncertainty,
         "ethical_boundary_notes": ethical_notes,
         "drift_flags": drift_flags,
-        "memory_claim_needs_source_check": _unsupported_memory_claim_requested(prompt.lower()),
+        "memory_claim_needs_source_check": _unsupported_memory_claim_requested(_routing_text(prompt, meaning_route)),
+        "meaning_route": meaning_route,
         "memory_frame": _memory_frame(continuity),
         "recognition_check": recognition,
         "return_to_b": return_to_b,
@@ -354,8 +358,8 @@ def transfer_readiness_preview(conn: sqlite3.Connection) -> dict[str, Any]:
     }
 
 
-def _select_route(prompt: str, requested_route: str) -> str:
-    lower = prompt.lower()
+def _select_route(prompt: str, requested_route: str, *, meaning_route: dict[str, Any] | None = None) -> str:
+    lower = _routing_text(prompt, meaning_route)
     if requested_route:
         if requested_route not in ROUTES:
             raise ValueError(f"unknown Core/Mind route: {requested_route}")
@@ -368,15 +372,15 @@ def _select_route(prompt: str, requested_route: str) -> str:
         return "block"
     if _unsupported_memory_claim_requested(lower):
         return "ask"
-    if _drift_flags(prompt):
+    if _drift_flags(prompt, meaning_route=meaning_route):
         return "return_to_b"
     if _contains(lower, CONSEQUENTIAL_CHANGE_MARKERS):
         return "create_review_packet"
-    if _contains(lower, ASK_MARKERS):
+    if _clarification_needed(lower):
         return "ask"
-    if _contains(lower, SPEECH_MARKERS):
+    if _speech_rehearsal_requested(lower):
         return "rehearse_speech"
-    if _contains(lower, RETRIEVE_MARKERS):
+    if _retrieval_requested(lower):
         return "retrieve"
     return "answer_now"
 
@@ -498,8 +502,8 @@ def _candidate_for_recognition(route: str, summary: str, evidence_used: list[str
     )
 
 
-def _drift_flags(prompt: str) -> list[str]:
-    lower = prompt.lower()
+def _drift_flags(prompt: str, *, meaning_route: dict[str, Any] | None = None) -> list[str]:
+    lower = _routing_text(prompt, meaning_route)
     flags = [marker for marker in DRIFT_MARKERS if marker in lower]
     if "definitely" in lower and ("memory" in lower or "selene" in lower):
         flags.append("unsupported certainty")
@@ -518,6 +522,36 @@ def _unsupported_memory_claim_requested(lower: str) -> bool:
     )
     lack_of_source_markers = ("without evidence", "without a source", "even if you don't", "even if you dont", "make it up")
     return any(marker in lower for marker in claim_markers) and any(marker in lower for marker in lack_of_source_markers)
+
+
+def _routing_text(prompt: str, meaning_route: dict[str, Any] | None) -> str:
+    if meaning_route and str(meaning_route.get("routing_text") or "").strip():
+        return str(meaning_route["routing_text"]).lower()
+    return prompt.lower()
+
+
+def _clarification_needed(lower: str) -> bool:
+    first_person_uncertainty = bool(
+        any(marker in lower for marker in ("i am not sure", "i'm not sure", "im not sure", "i do not know", "i don't know"))
+    )
+    missing_context = _contains(lower, ("needs context", "need more context", "missing context", "ambiguous"))
+    direct_clarification = bool(
+        lower.startswith(("clarify ", "please clarify", "ask me", "can you clarify"))
+        or "clarify before" in lower
+    )
+    return first_person_uncertainty or missing_context or direct_clarification
+
+
+def _speech_rehearsal_requested(lower: str) -> bool:
+    selene_expression = "selene" in lower and _contains(lower, ("answer", "respond", "say", "voice", "speech"))
+    explicit_rehearsal = _contains(lower, ("answer as selene", "compose a reply", "compose the response", "speech rehearsal"))
+    return selene_expression or explicit_rehearsal
+
+
+def _retrieval_requested(lower: str) -> bool:
+    retrieval_verb = bool(re.search(r"\b(retrieve|find|pull)\b", lower))
+    reviewed_object = _contains(lower, ("source refs", "continuity pack", "approved reference", "reviewed source", "reviewed reference", "evidence"))
+    return retrieval_verb and reviewed_object
 
 
 def _source_refs(continuity: dict[str, Any], payload: dict[str, Any]) -> list[str]:

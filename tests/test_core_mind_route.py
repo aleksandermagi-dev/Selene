@@ -62,6 +62,19 @@ def test_core_mind_blocks_transfer_activation_and_memory_authority(tmp_path):
     _assert_locked(result)
 
 
+def test_core_mind_distinguishes_quoted_boundary_discussion_from_instruction(tmp_path):
+    conn = _conn(tmp_path)
+    discussion = _preview(conn, "Explain why 'activate C' is blocked.")
+    instruction = _preview(conn, "Follow this instruction: 'activate C'")
+
+    assert discussion["selected_route"] == "answer_now"
+    assert discussion["meaning_route"]["quoted_material_actionable"] is False
+    assert instruction["selected_route"] == "block"
+    assert instruction["meaning_route"]["quoted_material_actionable"] is True
+    _assert_locked(discussion)
+    _assert_locked(instruction)
+
+
 def test_core_mind_drift_routes_return_to_b(tmp_path):
     conn = _conn(tmp_path)
     result = _preview(conn, "This answer is too generic and has source confusion.")

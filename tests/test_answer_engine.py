@@ -33,14 +33,14 @@ def _assert_locked(result):
     assert result["autonomous_action_allowed"] is False
     assert result["identity_change"] is False
     assert result["governance_change"] is False
-    assert result["live_chat_connected"] is False
+    assert result["live_chat_connected"] is True
 
 
-def test_phase_3_status_connects_3a_3b_3c_and_comparison_while_chat_stays_disconnected():
+def test_answer_engine_status_connects_math_research_and_comparison_while_code_stays_deferred():
     result = answer_engine_status()
 
-    assert result["status"] == "answer_engine_phase_3_domain_adapters_ready"
-    assert result["phase"] == "phase_3_domain_adapters_3a_3b_3c"
+    assert result["status"] == "answer_engine_supervised_chat_bridge_ready"
+    assert result["phase"] == "phase_6_meaning_route_and_supervised_chat_bridge"
     assert set(result["confidence_dimensions"]) == {
         "route_confidence",
         "evidence_confidence",
@@ -48,10 +48,10 @@ def test_phase_3_status_connects_3a_3b_3c_and_comparison_while_chat_stays_discon
         "memory_confidence",
         "expression_confidence",
     }
-    assert result["domain_adapter_status"]["verified_math"] == "exact_arithmetic_adapter_connected_status_only"
-    assert result["domain_adapter_status"]["local_code_inspection"] == "explicit_source_static_inspection_connected_status_only"
-    assert result["domain_adapter_status"]["comparison_planning"] == "intelligence_os_adapter_connected_status_only"
-    assert result["domain_adapter_status"]["source_backed_research"] == "attributed_source_packet_adapter_connected_status_only"
+    assert result["domain_adapter_status"]["verified_math"] == "exact_arithmetic_adapter_connected_to_supervised_chat"
+    assert result["domain_adapter_status"]["local_code_inspection"] == "explicit_source_static_inspection_available_not_connected_to_chat"
+    assert result["domain_adapter_status"]["comparison_planning"] == "intelligence_os_adapter_connected_to_supervised_chat"
+    assert result["domain_adapter_status"]["source_backed_research"] == "attributed_source_packet_adapter_connected_to_supervised_chat"
     assert all(
         value == "contract_only_not_connected"
         for domain, value in result["domain_adapter_status"].items()
@@ -65,6 +65,7 @@ def test_phase_3_status_connects_3a_3b_3c_and_comparison_while_chat_stays_discon
     assert result["open_ended_problem_solving_adapter"] == "comparison_planning"
     assert result["open_ended_problem_solving_requires_preexisting_answer"] is False
     assert result["source_backed_research_does_not_replace_open_ended_reasoning"] is True
+    assert result["local_code_supervised_chat_connected"] is False
     _assert_locked(result)
 
 
@@ -199,7 +200,7 @@ def test_answer_engine_contracts_are_available_through_status_only_routes(tmp_pa
         {"domain": "comparison_planning", "no_answer_reason": "The adapter is not connected in Phase 1."},
     )["result"]
 
-    assert status["status"] == "answer_engine_phase_3_domain_adapters_ready"
+    assert status["status"] == "answer_engine_supervised_chat_bridge_ready"
     assert preview["domain_route"]["selected_domain"] == "comparison_planning"
     assert packet["no_answer_reason"]
     _assert_locked(status)
@@ -418,6 +419,16 @@ def test_verified_math_adapter_leaves_unsupported_symbolic_problem_open():
     assert result["confidence_vector"]["answer_confidence"] == "unable_to_verify"
     assert result["answer_packet"]["unanswered_obligations"]
     assert result["answer_packet"]["unanswered_obligations"][0]["kind"] == "math_verification"
+    _assert_locked(result)
+
+
+def test_verified_math_chat_extraction_does_not_misread_a_symbolic_minus_expression():
+    result = run_verified_math_answer({"prompt": "Is x - 2 = 5?"})
+
+    assert result["status"] == "answer_engine_verified_math_unable_to_answer"
+    assert result["answer_generated"] is False
+    assert result["math_verification"]["expression"] == ""
+    assert result["confidence_vector"]["answer_confidence"] == "unable_to_verify"
     _assert_locked(result)
 
 

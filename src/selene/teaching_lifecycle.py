@@ -11,6 +11,7 @@ from .comprehension_integration import (
     evaluate_understanding,
     retrieve_approved_knowledge,
 )
+from .education_expression_law import review_education_expression
 from .intelligence_os import run_intelligence_os_reason
 from .registry import truncate
 
@@ -33,7 +34,7 @@ GUARDS: dict[str, Any] = {
     "self_replication_allowed": False,
     "teaching_material_is_governance": False,
     "knowledge_retention_requires_review": True,
-    "knowledge_retention_requires_aleks_approval": True,
+    "knowledge_retention_requires_aleks_approval": "bounded_curriculum_authorization_or_item_exception",
     "source_parroting_allowed": False,
 }
 
@@ -55,7 +56,7 @@ def teaching_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
                SUM(CASE WHEN acquire_status = 'complete' THEN 1 ELSE 0 END) AS acquired,
                SUM(CASE WHEN integrate_status = 'complete' THEN 1 ELSE 0 END) AS integrated,
                SUM(CASE WHEN express_status = 'complete' THEN 1 ELSE 0 END) AS expressed,
-               SUM(CASE WHEN approval_status = 'approved_by_aleks' THEN 1 ELSE 0 END) AS approved
+               SUM(CASE WHEN approval_status IN ('approved_by_aleks', 'approved_under_curriculum_authorization') THEN 1 ELSE 0 END) AS approved
         FROM selene_teaching_lifecycles
         """
     ).fetchone()
@@ -73,7 +74,10 @@ def teaching_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 {"stage": "integrate", "owner": "intelligenceOS + Comprehension", "retains_knowledge": False},
                 {"stage": "express", "owner": "NLO + Voice", "retains_knowledge": False},
             ],
-            "approval_rule": "Only an explicit Aleks approval after all three complete stages may retain the knowledge resource.",
+            "approval_rule": "Retention requires either an explicit Aleks item decision or an active bounded curriculum authorization recorded by Aleks; exceptions always return to Cocoon.",
+            "education_expression_personality_law_active": True,
+            "education_may_expand_capability_and_contextual_expression": True,
+            "education_may_change_personality": False,
             "review_destination": "Cocoon Teaching / Lessons",
             "review_status": "status_only",
             "provenance_boundary": TEACHING_LIFECYCLE_BOUNDARY,
@@ -166,6 +170,12 @@ def acquire_teaching_item(
         )
         if not values
     ]
+    law_review = _education_expression_review(
+        payload,
+        [*concepts, *vocabulary, *relationships, *examples, *uncertainties, *distinctions],
+    )
+    if law_review["permitted"] is not True:
+        missing.append("education_expression_personality_law")
     snapshot = {
         "stage": "acquire",
         "status": "complete" if not missing else "needs_review",
@@ -178,6 +188,7 @@ def acquire_teaching_item(
         "uncertainties": uncertainties[:30],
         "source_provenance": source_refs[:100],
         "near_concept_distinctions": distinctions[:30],
+        "education_expression_personality_law": law_review,
         "missing_fields": missing,
         "knowledge_retained": False,
         "review_status": "stage_snapshot_reviewable",
@@ -190,7 +201,8 @@ def acquire_teaching_item(
         SET current_stage = ?, acquire_status = ?, acquire_json = ?,
             integrate_status = 'not_started', integrate_json = '{}',
             express_status = 'not_started', express_json = '{}',
-            approval_status = 'awaiting_aleks_review', updated_at = CURRENT_TIMESTAMP
+            approval_status = 'awaiting_aleks_review', approval_mode = 'awaiting_decision',
+            authorization_id = NULL, authorization_snapshot_json = '{}', updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
         (
@@ -239,6 +251,13 @@ def integrate_teaching_item(
     if contradiction_class == "direct_conflict" and not conflicting and not unresolved:
         missing.append("conflict_evidence_or_unresolved_question")
 
+    law_review = _education_expression_review(
+        payload,
+        [scope, *unresolved, correction_path, reopening_path],
+    )
+    if law_review["permitted"] is not True:
+        missing.append("education_expression_personality_law")
+
     suggestions = retrieve_approved_knowledge(
         conn,
         f"{concept['title']} {concept['central_claim']}",
@@ -283,6 +302,7 @@ def integrate_teaching_item(
         "reopening_path": reopening_path,
         "integration_confidence": confidence,
         "confidence_boundary": "Integration confidence describes fit of this reviewed map, not factual certainty or sentence fluency.",
+        "education_expression_personality_law": law_review,
         "intelligence_os_support": {
             "run_id": reasoning.get("run_id"),
             "status": reasoning.get("status"),
@@ -301,7 +321,8 @@ def integrate_teaching_item(
         UPDATE selene_teaching_lifecycles
         SET current_stage = ?, integrate_status = ?, integrate_json = ?,
             express_status = 'not_started', express_json = '{}',
-            approval_status = 'awaiting_aleks_review', updated_at = CURRENT_TIMESTAMP
+            approval_status = 'awaiting_aleks_review', approval_mode = 'awaiting_decision',
+            authorization_id = NULL, authorization_snapshot_json = '{}', updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
         (
@@ -380,6 +401,22 @@ def express_teaching_item(
     )
     if evaluation.get("understanding_evidence_sufficient") is not True:
         missing.append("comprehension_evidence")
+    law_review = _education_expression_review(
+        payload,
+        [
+            explanation,
+            *distinct_examples,
+            *analogies,
+            *questions,
+            *comparisons,
+            participation,
+            *limits,
+            *counterexamples,
+            correction_response,
+        ],
+    )
+    if law_review["permitted"] is not True:
+        missing.append("education_expression_personality_law")
     missing = list(dict.fromkeys(missing))
     snapshot = {
         "stage": "express",
@@ -407,6 +444,7 @@ def express_teaching_item(
             "passed_core_dimension_count": evaluation.get("passed_core_dimension_count"),
             "required_core_dimension_count": evaluation.get("required_core_dimension_count"),
         },
+        "education_expression_personality_law": law_review,
         "missing_fields": missing,
         "knowledge_retained": False,
         "expression_handoff": {
@@ -421,7 +459,8 @@ def express_teaching_item(
         """
         UPDATE selene_teaching_lifecycles
         SET current_stage = ?, express_status = ?, express_json = ?,
-            approval_status = 'awaiting_aleks_review', updated_at = CURRENT_TIMESTAMP
+            approval_status = 'awaiting_aleks_review', approval_mode = 'awaiting_decision',
+            authorization_id = NULL, authorization_snapshot_json = '{}', updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
         (
@@ -450,6 +489,10 @@ def approve_teaching_lifecycle(
     if any(lifecycle[f"{stage}_status"] != "complete" for stage in ("acquire", "integrate", "express")):
         raise ValueError("retention requires complete Acquire, Integrate, and Express stages")
 
+    law_review = _review_stored_lifecycle_expression(lifecycle)
+    if law_review["permitted"] is not True:
+        raise ValueError("retention requires education-expression-personality law compliance")
+
     decision = decide_comprehension_concept(
         conn,
         {"concept_id": int(lifecycle["concept_id"]), "action": "approve_knowledge"},
@@ -466,6 +509,8 @@ def approve_teaching_lifecycle(
         "memory_created": False,
         "identity_changed": False,
         "governance_changed": False,
+        "personality_changed": False,
+        "education_expression_personality_law": law_review,
         "review_status": "aleks_retention_decision",
         "provenance_boundary": TEACHING_LIFECYCLE_BOUNDARY,
     }
@@ -473,6 +518,8 @@ def approve_teaching_lifecycle(
         """
         UPDATE selene_teaching_lifecycles
         SET current_stage = 'approved_knowledge_resource', approval_status = 'approved_by_aleks',
+            approval_mode = 'item_exception_approval', authorization_id = NULL,
+            authorization_snapshot_json = '{}',
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
@@ -481,6 +528,85 @@ def approve_teaching_lifecycle(
     conn.commit()
     concept = decision.get("item") or {}
     run_id = _store_run(conn, lifecycle["id"], int(lifecycle["concept_id"]), "approval", snapshot, _json_list(concept.get("source_refs")))
+    result = _stage_result(conn, lifecycle["id"], "approval", snapshot, run_id)
+    result["decision"] = decision
+    return result
+
+
+def approve_teaching_lifecycle_under_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any],
+    authorization_decision: dict[str, Any],
+) -> dict[str, Any]:
+    """Retain a completed lifecycle covered by a previously recorded Aleks authorization.
+
+    This is deliberately not exposed as a router action.  The curriculum
+    authorization module must first perform the scope and exception checks.
+    """
+    _reject_authority_change(payload)
+    lifecycle = _lifecycle_for_payload(conn, payload)
+    if not lifecycle:
+        raise ValueError("teaching lifecycle not found")
+    if any(lifecycle[f"{stage}_status"] != "complete" for stage in ("acquire", "integrate", "express")):
+        raise ValueError("retention requires complete Acquire, Integrate, and Express stages")
+    authorization_id = int(authorization_decision.get("authorization_id") or 0)
+    if authorization_decision.get("decision") != "covered_by_active_authorization" or authorization_id <= 0:
+        raise ValueError("curriculum authorization did not cover this teaching lifecycle")
+    authorization = conn.execute(
+        "SELECT * FROM selene_curriculum_authorizations WHERE id = ? AND status = 'active'",
+        (authorization_id,),
+    ).fetchone()
+    if not authorization or authorization["authorized_by"] != "Aleks":
+        raise ValueError("an active Aleks curriculum authorization is required")
+
+    law_review = _review_stored_lifecycle_expression(lifecycle)
+    if law_review["permitted"] is not True:
+        raise ValueError("retention requires education-expression-personality law compliance")
+    decision = decide_comprehension_concept(
+        conn,
+        {"concept_id": int(lifecycle["concept_id"]), "action": "approve_knowledge"},
+    )
+    snapshot = {
+        "stage": "approval",
+        "status": "approved_under_curriculum_authorization",
+        "concept_id": int(lifecycle["concept_id"]),
+        "approval_actor": "Aleks",
+        "explicit_item_approval": False,
+        "authorization_id": authorization_id,
+        "authorization_key": authorization["authorization_key"],
+        "authorization_decision": authorization_decision,
+        "knowledge_resource_active": decision.get("knowledge_resource_active") is True,
+        "retention_state": (decision.get("item") or {}).get("retention_state"),
+        "chat_use_permission": (decision.get("item") or {}).get("chat_use_permission"),
+        "memory_created": False,
+        "identity_changed": False,
+        "governance_changed": False,
+        "personality_changed": False,
+        "education_expression_personality_law": law_review,
+        "review_status": "bounded_curriculum_authorization_retention",
+        "provenance_boundary": TEACHING_LIFECYCLE_BOUNDARY,
+    }
+    conn.execute(
+        """
+        UPDATE selene_teaching_lifecycles
+        SET current_stage = 'approved_knowledge_resource',
+            approval_status = 'approved_under_curriculum_authorization',
+            approval_mode = 'curriculum_authorization', authorization_id = ?,
+            authorization_snapshot_json = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (authorization_id, json.dumps(authorization_decision, sort_keys=True), lifecycle["id"]),
+    )
+    conn.commit()
+    concept = decision.get("item") or {}
+    run_id = _store_run(
+        conn,
+        lifecycle["id"],
+        int(lifecycle["concept_id"]),
+        "approval",
+        snapshot,
+        _json_list(concept.get("source_refs")),
+    )
     result = _stage_result(conn, lifecycle["id"], "approval", snapshot, run_id)
     result["decision"] = decision
     return result
@@ -497,7 +623,7 @@ def _stage_result(
         {
             "status": f"teaching_{stage}_{snapshot['status']}",
             "stage": stage,
-            "stage_complete": snapshot["status"] in {"complete", "approved_by_aleks"},
+            "stage_complete": snapshot["status"] in {"complete", "approved_by_aleks", "approved_under_curriculum_authorization"},
             "snapshot": snapshot,
             "item": _lifecycle_row(conn, lifecycle_id),
             "run_id": run_id,
@@ -659,13 +785,17 @@ def _decode_lifecycle(row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
     for stage in ("acquire", "integrate", "express"):
         item[stage] = _loads(item.pop(f"{stage}_json", "{}"), {})
     item["source_refs"] = _loads(item.get("source_refs"), [])
+    item["authorization_snapshot"] = _loads(item.pop("authorization_snapshot_json", "{}"), {})
     item["stages"] = [
         {"stage": stage, "status": item[f"{stage}_status"], "snapshot": item[stage]}
         for stage in ("acquire", "integrate", "express")
     ]
     item["retention_gate"] = {
-        "aleks_approval_required": True,
+        "aleks_authority_required": True,
+        "accepted_authority_modes": ["bounded_curriculum_authorization", "item_exception_approval"],
         "approval_status": item["approval_status"],
+        "approval_mode": item.get("approval_mode", "awaiting_decision"),
+        "authorization_id": item.get("authorization_id"),
         "all_stages_complete": all(item[f"{stage}_status"] == "complete" for stage in ("acquire", "integrate", "express")),
         "chat_use_permission": item.get("chat_use_permission", "not_active_until_approved"),
     }
@@ -758,6 +888,51 @@ def _reject_authority_change(payload: dict[str, Any]) -> None:
     )
     if any(payload.get(key) not in (None, False, "", "none") for key in protected):
         raise ValueError("teaching lifecycle cannot change identity, governance, memory, activation, or authority")
+
+
+def _education_expression_review(payload: dict[str, Any], teaching_texts: list[str]) -> dict[str, Any]:
+    return review_education_expression(
+        {
+            "teaching_texts": [item for item in teaching_texts if item],
+            "declared_effects": payload.get("declared_effects") or payload.get("educational_effects"),
+            "register_guidance": payload.get("register_guidance"),
+            "task_bound_register": payload.get("task_bound_register") is True,
+            "personality_prescription": payload.get("personality_prescription") is True,
+            "compulsory_affect": payload.get("compulsory_affect") is True,
+            "fixed_generic_phrase_requirement": payload.get("fixed_generic_phrase_requirement") is True,
+            "voice_bypass_requested": payload.get("voice_bypass_requested") is True,
+            "identity_change_requested": payload.get("identity_change_requested") is True,
+            "governance_change_requested": payload.get("governance_change_requested") is True,
+        }
+    )
+
+
+def _review_stored_lifecycle_expression(lifecycle: dict[str, Any]) -> dict[str, Any]:
+    acquire = lifecycle.get("acquire") if isinstance(lifecycle.get("acquire"), dict) else {}
+    integrate = lifecycle.get("integrate") if isinstance(lifecycle.get("integrate"), dict) else {}
+    express = lifecycle.get("express") if isinstance(lifecycle.get("express"), dict) else {}
+    texts = [
+        *_text_list(acquire.get("concepts")),
+        *_text_list(acquire.get("vocabulary")),
+        *_text_list(acquire.get("relationships")),
+        *_text_list(acquire.get("examples")),
+        *_text_list(acquire.get("uncertainties")),
+        *_text_list(acquire.get("near_concept_distinctions")),
+        str(integrate.get("scope_of_application") or ""),
+        *_text_list(integrate.get("unresolved_questions")),
+        str(integrate.get("correction_path") or ""),
+        str(integrate.get("reopening_path") or ""),
+        str(express.get("explanation_in_original_language") or ""),
+        *_text_list(express.get("distinct_examples")),
+        *_text_list(express.get("analogies")),
+        *_text_list(express.get("questions")),
+        *_text_list(express.get("comparisons")),
+        str(express.get("natural_conversational_participation") or ""),
+        *_text_list(express.get("limits")),
+        *_text_list(express.get("counterexamples")),
+        str(express.get("correction_response") or ""),
+    ]
+    return review_education_expression({"teaching_texts": texts})
 
 
 def _with_guards(result: dict[str, Any]) -> dict[str, Any]:

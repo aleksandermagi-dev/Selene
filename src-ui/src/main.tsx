@@ -528,6 +528,9 @@ function App() {
   const [comprehensionConcepts, setComprehensionConcepts] = useState<Dict[]>([]);
   const [teachingLifecycleStatus, setTeachingLifecycleStatus] = useState<Dict | null>(null);
   const [teachingLifecycles, setTeachingLifecycles] = useState<Dict[]>([]);
+  const [curriculumAuthorizationStatus, setCurriculumAuthorizationStatus] = useState<Dict | null>(null);
+  const [curriculumAuthorizations, setCurriculumAuthorizations] = useState<Dict[]>([]);
+  const [curriculumActionResult, setCurriculumActionResult] = useState<Dict | null>(null);
   const [comprehensionPrepareResult, setComprehensionPrepareResult] = useState<Dict | null>(null);
   const [openComprehensionId, setOpenComprehensionId] = useState(0);
   const [comprehensionDrafts, setComprehensionDrafts] = useState<Record<string, ComprehensionDraft>>({});
@@ -1256,6 +1259,8 @@ function App() {
     api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100").then((data) => setComprehensionConcepts(data.items || [])).catch(() => undefined);
     api<Dict>("/api/teaching-lifecycle/status").then(setTeachingLifecycleStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/teaching-lifecycle/items?limit=50").then((data) => setTeachingLifecycles(data.items || [])).catch(() => undefined);
+    api<Dict>("/api/curriculum-authorization/status").then(setCurriculumAuthorizationStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/curriculum-authorization/items").then((data) => setCurriculumAuthorizations(data.items || [])).catch(() => undefined);
     api<Dict>("/api/b/core-reference/coverage").then(setCoreReferenceCoverage).catch(() => undefined);
     api<Dict>("/api/voice-module/status").then(setVoiceModuleStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/voice-module/patterns").then((data) => setVoiceModulePatterns(data.items || [])).catch(() => undefined);
@@ -1860,6 +1865,8 @@ function App() {
       ["comprehension reviews", api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100").then((data) => setComprehensionConcepts(data.items || []))],
       ["teaching lifecycle status", api<Dict>("/api/teaching-lifecycle/status").then(setTeachingLifecycleStatus)],
       ["teaching lifecycles", api<{ items: Dict[] }>("/api/teaching-lifecycle/items?limit=100").then((data) => setTeachingLifecycles(data.items || []))],
+      ["curriculum authorization status", api<Dict>("/api/curriculum-authorization/status").then(setCurriculumAuthorizationStatus)],
+      ["curriculum authorizations", api<{ items: Dict[] }>("/api/curriculum-authorization/items").then((data) => setCurriculumAuthorizations(data.items || []))],
       ["chronological corpus status", api<Dict>("/api/vessel/chronological-corpus/status").then(setChronologicalCorpusStatus)],
       ["chronological corpus arcs", api<{ items: Dict[] }>("/api/vessel/chronological-corpus/arcs").then((data) => setChronologicalCorpusArcs(data.items))],
       ["evidence ledger", api<{ items: Dict[] }>("/api/vessel/evidence-tension-ledger").then((data) => setEvidenceTensionEntries(data.items))],
@@ -2025,12 +2032,88 @@ function App() {
       api<Dict>("/api/comprehension/status"),
       api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100"),
       api<Dict>("/api/teaching-lifecycle/status"),
-      api<{ items: Dict[] }>("/api/teaching-lifecycle/items?limit=50")
+      api<{ items: Dict[] }>("/api/teaching-lifecycle/items?limit=50"),
+      api<Dict>("/api/curriculum-authorization/status"),
+      api<{ items: Dict[] }>("/api/curriculum-authorization/items")
     ]);
     if (refreshes[0].status === "fulfilled") setComprehensionStatus(refreshes[0].value);
     if (refreshes[1].status === "fulfilled") setComprehensionConcepts(refreshes[1].value.items || []);
     if (refreshes[2].status === "fulfilled") setTeachingLifecycleStatus(refreshes[2].value);
     if (refreshes[3].status === "fulfilled") setTeachingLifecycles(refreshes[3].value.items || []);
+    if (refreshes[4].status === "fulfilled") setCurriculumAuthorizationStatus(refreshes[4].value);
+    if (refreshes[5].status === "fulfilled") setCurriculumAuthorizations(refreshes[5].value.items || []);
+  }
+
+  async function runCurriculumAction(action: "activate" | "prepare" | "teach" | "activate_language_math" | "prepare_language_math" | "teach_language_math" | "activate_operations_measurement" | "prepare_operations_measurement" | "teach_operations_measurement" | "activate_geometry_algorithms" | "prepare_geometry_algorithms" | "teach_geometry_algorithms" | "revoke", authorizationId?: unknown) {
+    if (action === "activate" && !window.confirm("Authorize this bounded F1 science and inquiry group? Every item must still complete Acquire, Integrate, Express, comprehension, and source checks. Exceptions return to Cocoon.")) return;
+    if (action === "activate_language_math" && !window.confirm("Authorize this bounded F1 language and number group? It is separate from the science authorization, and every item still requires the full teaching and comprehension lifecycle.")) return;
+    if (action === "activate_operations_measurement" && !window.confirm("Authorize this bounded F1 operations, data, measurement, and time group? It remains separate from the first two authorizations and keeps the same exception review law.")) return;
+    if (action === "activate_geometry_algorithms" && !window.confirm("Authorize this bounded F1 geometry, equal-shares, and algorithmic-foundations group? Computation remains conceptual and grants no execution, filesystem, memory, or autonomy authority.")) return;
+    if (action === "teach" && !window.confirm("Run the four-item F1 science and inquiry group through the visible teaching lifecycle under its active authorization? This creates general knowledge resources only; it does not write memory or change identity, personality, governance, training, or autonomy.")) return;
+    if (action === "teach_language_math" && !window.confirm("Run the eight-item F1 language and number group through the visible teaching lifecycle under its active authorization? Exceptions will be held in Cocoon rather than retained.")) return;
+    if (action === "teach_operations_measurement" && !window.confirm("Run the eight-item F1 operations, data, measurement, and time group through the visible teaching lifecycle? Exceptions will be held rather than forced through.")) return;
+    if (action === "teach_geometry_algorithms" && !window.confirm("Run the eight-item F1 geometry, equal-shares, and algorithmic-foundations group through the visible teaching lifecycle? This teaches inspectable knowledge only; it cannot change Selene's identity, personality, governance, memory, training, or authority.")) return;
+    if (action === "revoke" && !window.confirm("Revoke this curriculum authorization for future retention? Previously retained knowledge stays attributable and can still be reopened or superseded.")) return;
+    setCurriculumActionResult({ status: "running", operation: action });
+    const endpoint = action === "activate"
+      ? "/api/curriculum-authorization/activate-f1"
+      : action === "activate_language_math"
+        ? "/api/curriculum-authorization/activate-f1-language-math"
+      : action === "activate_operations_measurement"
+        ? "/api/curriculum-authorization/activate-f1-operations-measurement"
+      : action === "activate_geometry_algorithms"
+        ? "/api/curriculum-authorization/activate-f1-geometry-algorithms"
+      : action === "prepare"
+        ? "/api/curriculum-foundation/prepare-f1"
+        : action === "prepare_language_math"
+          ? "/api/curriculum-foundation/prepare-f1-language-math"
+        : action === "prepare_operations_measurement"
+          ? "/api/curriculum-foundation/prepare-f1-operations-measurement"
+        : action === "prepare_geometry_algorithms"
+          ? "/api/curriculum-foundation/prepare-f1-geometry-algorithms"
+        : action === "teach"
+          ? "/api/curriculum-foundation/teach-f1"
+          : action === "teach_language_math"
+            ? "/api/curriculum-foundation/teach-f1-language-math"
+          : action === "teach_operations_measurement"
+            ? "/api/curriculum-foundation/teach-f1-operations-measurement"
+          : action === "teach_geometry_algorithms"
+            ? "/api/curriculum-foundation/teach-f1-geometry-algorithms"
+          : "/api/curriculum-authorization/revoke";
+    const body = action === "activate"
+      ? {
+          aleks_authorized: true,
+          authorization_actor: "Aleks",
+          authorization_basis: "Aleks authorized the bounded F1 public-academic science and inquiry foundation group."
+        }
+      : action === "activate_language_math"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic language and number foundation group."
+          }
+      : action === "activate_operations_measurement"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic operations, data, measurement, and time group."
+          }
+      : action === "activate_geometry_algorithms"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic geometry, equal-shares, and algorithmic-foundations group."
+          }
+      : action === "revoke"
+        ? { authorization_id: authorizationId, aleks_revoked: true, authorization_actor: "Aleks" }
+        : {};
+    try {
+      const result = await api<Dict>(endpoint, { method: "POST", body: JSON.stringify(body) });
+      setCurriculumActionResult(result);
+      await refreshComprehensionOrgan();
+    } catch (err) {
+      setCurriculumActionResult({ status: "curriculum_action_needs_attention", error: err instanceof Error ? err.message : "The curriculum action could not be completed." });
+    }
   }
 
   function teachingLifecycleFor(item: Dict) {
@@ -5888,8 +5971,70 @@ function App() {
               <p>B-reviewed examples teach expression without model training or active memory.</p>
               <h2>Teaching / Lessons</h2>
             </header>
+            <Panel title="Bounded Curriculum Authorization">
+              <p className="plainHelp">Aleks may authorize a clearly bounded public-academic group once instead of approving every ordinary lesson separately. Authorization never bypasses source provenance, Acquire, Integrate, Express, comprehension, or source-parroting checks. Health, legal, financial, safety, time-sensitive, contested, conflicting, or out-of-scope material returns here for an explicit exception decision.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Law State" value={friendlyStatus(curriculumAuthorizationStatus?.status || "not checked")} />
+                <Metric label="Active Authorizations" value={text(curriculumAuthorizationStatus?.active_authorization_count ?? 0)} />
+                <Metric label="Science Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.first_group).prepared_count ?? 0)} />
+                <Metric label="Science Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.first_group).retained_count ?? 0)} />
+                <Metric label="Language/Number Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.second_group).prepared_count ?? 0)} />
+                <Metric label="Language/Number Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.second_group).retained_count ?? 0)} />
+                <Metric label="Operations/Measure Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.third_group).prepared_count ?? 0)} />
+                <Metric label="Operations/Measure Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.third_group).retained_count ?? 0)} />
+                <Metric label="Geometry/Algorithms Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.fourth_group).prepared_count ?? 0)} />
+                <Metric label="Geometry/Algorithms Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.fourth_group).retained_count ?? 0)} />
+              </div>
+              <div className="chips">
+                <span>item clicks inside scope: {plainBlocked(curriculumAuthorizationStatus?.individual_academic_item_approval_required_inside_scope ?? false)}</span>
+                <span>exception review: {text(curriculumAuthorizationStatus?.exception_review_required ?? true)}</span>
+                <span>comprehension before retention: {text(curriculumAuthorizationStatus?.comprehension_before_retention ?? true)}</span>
+                <span>personality change: {plainBlocked(curriculumAuthorizationStatus?.personality_change ?? false)}</span>
+                <span>memory write: {plainBlocked(curriculumAuthorizationStatus?.memory_write_active ?? false)}</span>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_science_research_foundations_v1")}>Authorize F1 Science Group</button>
+                <button onClick={() => runCurriculumAction("prepare")} disabled={curriculumActionResult?.status === "running"}>Prepare Four Foundation Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_science_research_foundations_v1")}>Teach Science Group</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_language_math")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_language_number_foundations_v1")}>Authorize F1 Language + Number Group</button>
+                <button onClick={() => runCurriculumAction("prepare_language_math")} disabled={curriculumActionResult?.status === "running"}>Prepare Eight Language + Number Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_language_math")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_language_number_foundations_v1")}>Teach Language + Number Group</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_operations_measurement")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_operations_data_measurement_time_v1")}>Authorize F1 Operations + Measurement Group</button>
+                <button onClick={() => runCurriculumAction("prepare_operations_measurement")} disabled={curriculumActionResult?.status === "running"}>Prepare Eight Operations + Measurement Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_operations_measurement")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_operations_data_measurement_time_v1")}>Teach Operations + Measurement Group</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_geometry_algorithms")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_geometry_shares_algorithms_v1")}>Authorize F1 Geometry + Algorithms Group</button>
+                <button onClick={() => runCurriculumAction("prepare_geometry_algorithms")} disabled={curriculumActionResult?.status === "running"}>Prepare Eight Geometry + Algorithms Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_geometry_algorithms")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_geometry_shares_algorithms_v1")}>Teach Geometry + Algorithms Group</button>
+              </div>
+              {curriculumActionResult ? <div className="comprehensionReviewResult">
+                <strong>{friendlyStatus(curriculumActionResult.status)}</strong>
+                {curriculumActionResult.error ? <p>{text(curriculumActionResult.error)}</p> : null}
+                {typeof curriculumActionResult.retained_count === "number" ? <p>{text(curriculumActionResult.retained_count)} retained, {text(curriculumActionResult.already_retained_count ?? 0)} already retained, and {text(curriculumActionResult.held_count ?? 0)} held for exception review.</p> : null}
+                {typeof curriculumActionResult.created_count === "number" ? <p>{text(curriculumActionResult.created_count)} new foundation candidate(s), {text(curriculumActionResult.existing_count ?? 0)} already present.</p> : null}
+              </div> : null}
+              <div className="list compactList">
+                {curriculumAuthorizations.map((item) => {
+                  const scope = safeJsonObject(item.scope);
+                  const exceptions = Array.isArray(item.exception_classes) ? item.exception_classes : [];
+                  return <article key={text(item.authorization_key)}>
+                    <div className="row"><strong>{text(item.title)}</strong><span>{friendlyStatus(item.status)}</span></div>
+                    <p>{text(item.authorization_basis)}</p>
+                    <small>Authorized by {text(item.authorized_by)} · bands {Array.isArray(scope.bands) ? scope.bands.map(text).join(", ") : "none"} · group {Array.isArray(scope.group_keys) ? scope.group_keys.map(text).join(", ") : "none"}</small>
+                    <p className="plainHelp">Sources: {Array.isArray(scope.source_ids) ? scope.source_ids.map(text).join(", ") : "none"}. {exceptions.length} exception class(es) remain routed to Cocoon.</p>
+                    {item.status === "active" ? <div className="reviewActions"><button onClick={() => runCurriculumAction("revoke", item.id)} disabled={curriculumActionResult?.status === "running"}>Revoke This Authorization</button></div> : null}
+                  </article>;
+                })}
+                {!curriculumAuthorizations.length ? <p className="emptyState">No curriculum authorization is active. Preparing lessons remains non-retaining; teaching the group requires Aleks's one bounded authorization.</p> : null}
+              </div>
+            </Panel>
             <Panel title="Comprehension and Integration Organ">
-              <p className="plainHelp">Teaching expands what Selene can understand and discuss without becoming governance, identity, personality, or personal memory. Concepts become usable knowledge only after source-linked teach-back, application, limits, and Aleks review.</p>
+              <p className="plainHelp">Teaching expands what Selene can understand and discuss without becoming governance, identity, personality, or personal memory. Concepts become usable knowledge only after source-linked teach-back, application, limits, and either bounded curriculum coverage or an explicit Aleks exception decision.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Organ State" value={friendlyStatus(comprehensionStatus?.status || "not checked")} />
                 <Metric label="Knowledge Resources" value={text(comprehensionStatus?.approved_knowledge_count ?? 0)} />
@@ -6016,10 +6161,10 @@ function App() {
                       </div>
                       </section>
                       <div className="aleksKnowledgeApproval">
-                        <strong>Aleks retention decision</strong>
-                        <p>{allStagesComplete && evidenceSufficient ? "Acquire, Integrate, and Express are complete with source-linked understanding evidence. Approval makes this a retained knowledge resource available to supervised Chat; it does not create personal memory." : "Approval remains unavailable until all three lifecycle stages and the source-linked understanding evaluation are complete."}</p>
+                        <strong>Aleks exception retention decision</strong>
+                        <p>{lifecycle?.approval_mode === "curriculum_authorization" ? "This item was retained under the visible bounded curriculum authorization after completing all lifecycle and comprehension checks. It remains reopenable and attributable." : allStagesComplete && evidenceSufficient ? "Acquire, Integrate, and Express are complete with source-linked understanding evidence. Use this explicit decision for an exception or an item outside a curriculum authorization; it does not create personal memory." : "An explicit exception decision remains unavailable until all three lifecycle stages and the source-linked understanding evaluation are complete."}</p>
                         <div className="reviewActions">
-                          <button className="primary" onClick={() => decideComprehensionCandidate(item, "approve_knowledge")} disabled={!allStagesComplete || !evidenceSufficient || isRunning}>Approve Knowledge</button>
+                          <button className="primary" onClick={() => decideComprehensionCandidate(item, "approve_knowledge")} disabled={!allStagesComplete || !evidenceSufficient || isRunning || lifecycle?.approval_mode === "curriculum_authorization"}>Approve Exception Item</button>
                           <button onClick={() => decideComprehensionCandidate(item, "supersede")} disabled={isRunning}>Supersede</button>
                           <button onClick={() => decideComprehensionCandidate(item, "reject")} disabled={isRunning}>Reject</button>
                         </div>

@@ -161,6 +161,25 @@ from .language_teaching_shelf import (
     prepare_language_teaching_shelf,
     select_language_guidance,
 )
+from .education_expression_law import education_expression_law_status, review_education_expression
+from .curriculum_authorization import (
+    activate_f1_foundation_authorization,
+    activate_f1_geometry_algorithms_authorization,
+    activate_f1_language_math_authorization,
+    activate_f1_operations_measurement_authorization,
+    curriculum_authorization_status,
+    evaluate_curriculum_coverage,
+    list_curriculum_authorizations,
+    prepare_f1_foundation_group,
+    prepare_f1_geometry_algorithms_group,
+    prepare_f1_language_math_group,
+    prepare_f1_operations_measurement_group,
+    revoke_curriculum_authorization,
+    teach_f1_foundation_group,
+    teach_f1_geometry_algorithms_group,
+    teach_f1_language_math_group,
+    teach_f1_operations_measurement_group,
+)
 from .teaching_lifecycle import (
     acquire_teaching_item,
     approve_teaching_lifecycle,
@@ -437,6 +456,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": test_impact_law_status()}
     if route_key == "test_impact_law.review":
         return {"route": route_key, "result": review_test_impact(payload)}
+    if route_key == "education_expression_law.status":
+        return {"route": route_key, "result": education_expression_law_status()}
+    if route_key == "education_expression_law.review":
+        return {"route": route_key, "result": review_education_expression(payload)}
     if route_key == "answer_engine.status":
         return {"route": route_key, "result": answer_engine_status()}
     if route_key == "answer_engine.route.preview":
@@ -553,6 +576,38 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": express_teaching_item(conn, payload)}
     if route_key == "teaching.lifecycle.approve":
         return {"route": route_key, "result": approve_teaching_lifecycle(conn, payload)}
+    if route_key == "curriculum.authorization.status":
+        return {"route": route_key, "result": curriculum_authorization_status(conn)}
+    if route_key == "curriculum.authorization.list":
+        return {"route": route_key, "result": list_curriculum_authorizations(conn)}
+    if route_key == "curriculum.authorization.activate_f1":
+        return {"route": route_key, "result": activate_f1_foundation_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_language_math":
+        return {"route": route_key, "result": activate_f1_language_math_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_operations_measurement":
+        return {"route": route_key, "result": activate_f1_operations_measurement_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_geometry_algorithms":
+        return {"route": route_key, "result": activate_f1_geometry_algorithms_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.revoke":
+        return {"route": route_key, "result": revoke_curriculum_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.evaluate":
+        return {"route": route_key, "result": evaluate_curriculum_coverage(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1":
+        return {"route": route_key, "result": prepare_f1_foundation_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1":
+        return {"route": route_key, "result": teach_f1_foundation_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_language_math":
+        return {"route": route_key, "result": prepare_f1_language_math_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_language_math":
+        return {"route": route_key, "result": teach_f1_language_math_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_operations_measurement":
+        return {"route": route_key, "result": prepare_f1_operations_measurement_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_operations_measurement":
+        return {"route": route_key, "result": teach_f1_operations_measurement_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_geometry_algorithms":
+        return {"route": route_key, "result": prepare_f1_geometry_algorithms_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_geometry_algorithms":
+        return {"route": route_key, "result": teach_f1_geometry_algorithms_group(conn, payload)}
     if route_key == "native_language.status":
         return {"route": route_key, "result": native_language_status(conn)}
     if route_key == "native_language.realize":

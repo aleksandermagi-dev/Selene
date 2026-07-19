@@ -1640,6 +1640,44 @@ CREATE TABLE IF NOT EXISTS selene_teaching_lifecycle_runs (
 CREATE INDEX IF NOT EXISTS idx_selene_teaching_lifecycle_runs_stage
 ON selene_teaching_lifecycle_runs(lifecycle_id, stage, created_at);
 
+CREATE TABLE IF NOT EXISTS selene_curriculum_authorizations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  authorization_key TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  authorized_by TEXT NOT NULL,
+  authorization_basis TEXT NOT NULL,
+  scope_json TEXT NOT NULL DEFAULT '{}',
+  exception_classes_json TEXT NOT NULL DEFAULT '[]',
+  law_version TEXT NOT NULL,
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'authorization_record',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  revoked_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_curriculum_authorizations_status
+ON selene_curriculum_authorizations(status, updated_at);
+
+CREATE TABLE IF NOT EXISTS selene_curriculum_authorization_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  authorization_id INTEGER,
+  lifecycle_id INTEGER,
+  concept_id INTEGER,
+  action TEXT NOT NULL,
+  decision_json TEXT NOT NULL DEFAULT '{}',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'authorization_audit_event',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (authorization_id) REFERENCES selene_curriculum_authorizations(id),
+  FOREIGN KEY (lifecycle_id) REFERENCES selene_teaching_lifecycles(id),
+  FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_curriculum_authorization_events_subject
+ON selene_curriculum_authorization_events(authorization_id, lifecycle_id, concept_id, created_at);
+
 CREATE TABLE IF NOT EXISTS vessel_chronological_corpus_arcs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   arc_key TEXT NOT NULL UNIQUE,
@@ -1939,6 +1977,11 @@ REQUIRED_COLUMNS = {
     },
     "b_teaching_packets": {
         "noise_context_json": "TEXT NOT NULL DEFAULT '{}'",
+    },
+    "selene_teaching_lifecycles": {
+        "approval_mode": "TEXT NOT NULL DEFAULT 'awaiting_decision'",
+        "authorization_id": "INTEGER",
+        "authorization_snapshot_json": "TEXT NOT NULL DEFAULT '{}'",
     },
 }
 

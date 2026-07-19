@@ -126,6 +126,7 @@ def test_acquire_is_source_bound_visible_and_non_retaining(tmp_path):
     assert result["snapshot"]["concepts"][0] == concept["central_claim"]
     assert result["snapshot"]["vocabulary"]
     assert result["snapshot"]["source_provenance"] == concept["source_refs"]
+    assert result["snapshot"]["education_expression_personality_law"]["permitted"] is True
     assert result["item"]["retention_state"] == "candidate_not_retained"
     assert result["item"]["chat_use_permission"] == "not_active_until_approved"
     assert detail["item"]["acquire_status"] == "complete"
@@ -154,6 +155,7 @@ def test_integrate_requires_acquire_and_only_links_approved_knowledge(tmp_path):
     assert "not factual certainty" in result["snapshot"]["confidence_boundary"]
     assert result["snapshot"]["intelligence_os_support"]["run_id"] > 0
     assert result["snapshot"]["intelligence_os_support"]["visible_summary_only"] is True
+    assert result["snapshot"]["education_expression_personality_law"]["permitted"] is True
     assert result["item"]["retention_state"] == "candidate_not_retained"
     _assert_locked(result)
 
@@ -198,6 +200,7 @@ def test_full_lifecycle_requires_explicit_aleks_approval_before_retention(tmp_pa
 
     assert expressed["stage_complete"] is True
     assert expressed["snapshot"]["understanding_evaluation"]["sufficient"] is True
+    assert expressed["snapshot"]["education_expression_personality_law"]["permitted"] is True
     assert expressed["item"]["retention_state"] == "candidate_not_retained"
     assert expressed["item"]["retention_gate"]["all_stages_complete"] is True
 
@@ -220,7 +223,33 @@ def test_full_lifecycle_requires_explicit_aleks_approval_before_retention(tmp_pa
     assert approved["item"]["retention_state"] == "retained_reviewed_knowledge"
     assert approved["item"]["chat_use_permission"] == "available_as_knowledge_resource"
     assert approved["snapshot"]["memory_created"] is False
+    assert approved["snapshot"]["personality_changed"] is False
+    assert approved["snapshot"]["education_expression_personality_law"]["permitted"] is True
     _assert_locked(approved)
+
+
+def test_personality_prescription_is_held_before_expression_or_retention(tmp_path):
+    conn = _conn(tmp_path)
+    concept = _propose(conn)
+
+    held = route_request(
+        conn,
+        "teaching.lifecycle.acquire",
+        {
+            "concept_id": concept["id"],
+            "vocabulary": ["eccentricity: a dimensionless measure of orbital shape"],
+            "uncertainties": ["The shape measure does not identify every orbital property."],
+            "near_concept_distinctions": ["Inclination measures tilt; eccentricity measures shape."],
+            "personality_prescription": True,
+        },
+    )["result"]
+
+    assert held["stage_complete"] is False
+    assert "education_expression_personality_law" in held["snapshot"]["missing_fields"]
+    assert held["snapshot"]["education_expression_personality_law"]["permitted"] is False
+    assert held["item"]["retention_state"] == "candidate_not_retained"
+    assert held["item"]["chat_use_permission"] == "not_active_until_approved"
+    _assert_locked(held)
 
 
 def test_revising_an_earlier_stage_invalidates_later_snapshots(tmp_path):

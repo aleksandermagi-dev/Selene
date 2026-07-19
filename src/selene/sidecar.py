@@ -591,6 +591,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "comprehension.status")["result"]))
         elif parsed.path == "/api/test-impact-law/status":
             self._send(*json_bytes(route_request(conn, "test_impact_law.status")["result"]))
+        elif parsed.path == "/api/education-expression-law/status":
+            self._send(*json_bytes(route_request(conn, "education_expression_law.status")["result"]))
         elif parsed.path == "/api/answer-engine/status":
             self._send(*json_bytes(route_request(conn, "answer_engine.status")["result"]))
         elif parsed.path == "/api/comprehension/concepts":
@@ -607,6 +609,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(conn, "teaching.lifecycle.detail", qs)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif parsed.path == "/api/curriculum-authorization/status":
+            self._send(*json_bytes(route_request(conn, "curriculum.authorization.status")["result"]))
+        elif parsed.path == "/api/curriculum-authorization/items":
+            self._send(*json_bytes(route_request(conn, "curriculum.authorization.list")["result"]))
         elif parsed.path == "/api/native-language/status":
             self._send(*json_bytes(route_request(conn, "native_language.status")["result"]))
         elif parsed.path == "/api/native-language/runs":
@@ -1132,6 +1138,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/education-expression-law/review":
+            route_key = "education_expression_law.review"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/answer-engine/route-preview":
             route_key = "answer_engine.route.preview"
             try:
@@ -1223,6 +1235,42 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/teaching-lifecycle/integrate": "teaching.lifecycle.integrate",
                 "/api/teaching-lifecycle/express": "teaching.lifecycle.express",
                 "/api/teaching-lifecycle/approve": "teaching.lifecycle.approve",
+            }[request_path]
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path in {
+            "/api/curriculum-authorization/activate-f1",
+            "/api/curriculum-authorization/activate-f1-language-math",
+            "/api/curriculum-authorization/activate-f1-operations-measurement",
+            "/api/curriculum-authorization/activate-f1-geometry-algorithms",
+            "/api/curriculum-authorization/revoke",
+            "/api/curriculum-authorization/evaluate",
+            "/api/curriculum-foundation/prepare-f1",
+            "/api/curriculum-foundation/teach-f1",
+            "/api/curriculum-foundation/prepare-f1-language-math",
+            "/api/curriculum-foundation/teach-f1-language-math",
+            "/api/curriculum-foundation/prepare-f1-operations-measurement",
+            "/api/curriculum-foundation/teach-f1-operations-measurement",
+            "/api/curriculum-foundation/prepare-f1-geometry-algorithms",
+            "/api/curriculum-foundation/teach-f1-geometry-algorithms",
+        }:
+            route_key = {
+                "/api/curriculum-authorization/activate-f1": "curriculum.authorization.activate_f1",
+                "/api/curriculum-authorization/activate-f1-language-math": "curriculum.authorization.activate_f1_language_math",
+                "/api/curriculum-authorization/activate-f1-operations-measurement": "curriculum.authorization.activate_f1_operations_measurement",
+                "/api/curriculum-authorization/activate-f1-geometry-algorithms": "curriculum.authorization.activate_f1_geometry_algorithms",
+                "/api/curriculum-authorization/revoke": "curriculum.authorization.revoke",
+                "/api/curriculum-authorization/evaluate": "curriculum.authorization.evaluate",
+                "/api/curriculum-foundation/prepare-f1": "curriculum.foundation.prepare_f1",
+                "/api/curriculum-foundation/teach-f1": "curriculum.foundation.teach_f1",
+                "/api/curriculum-foundation/prepare-f1-language-math": "curriculum.foundation.prepare_f1_language_math",
+                "/api/curriculum-foundation/teach-f1-language-math": "curriculum.foundation.teach_f1_language_math",
+                "/api/curriculum-foundation/prepare-f1-operations-measurement": "curriculum.foundation.prepare_f1_operations_measurement",
+                "/api/curriculum-foundation/teach-f1-operations-measurement": "curriculum.foundation.teach_f1_operations_measurement",
+                "/api/curriculum-foundation/prepare-f1-geometry-algorithms": "curriculum.foundation.prepare_f1_geometry_algorithms",
+                "/api/curriculum-foundation/teach-f1-geometry-algorithms": "curriculum.foundation.teach_f1_geometry_algorithms",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))

@@ -6,6 +6,12 @@ import sqlite3
 from typing import Any
 
 from .activation import activation_is_active, activation_status, record_activation_chat_event
+from .answer_engine import (
+    preview_answer_route,
+    run_comparison_planning_answer,
+    run_source_backed_research_answer,
+    run_verified_math_answer,
+)
 from .chat_intent import classify_chat_intent
 from .comprehension_integration import build_comprehension_packet
 from .c_vessel import return_to_b_preview
@@ -15,6 +21,7 @@ from .dialogue_workspace import prepare_dialogue_turn, record_dialogue_response
 from .input_detangler import detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
 from .memory_organ import retrieve_memory
+from .meaning_router import interpret_turn_meaning
 from .native_language_organ import realize_native_language
 from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
@@ -204,7 +211,25 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "record_run": False,
         },
     )
-    content_seed = protected_content_seed or str(comprehension.get("knowledge_response_seed") or "") or reasoning_content_seed
+    answer_engine_support = _answer_engine_support(
+        conn,
+        understanding_text,
+        payload,
+        intent_decision,
+        prepared_dialogue_workspace,
+        comprehension,
+        memory_retrieval,
+        chat_continuity,
+        intelligence_support,
+        hard=bool(hard_blockers),
+    )
+    domain_content_seed = str(answer_engine_support.get("content_seed") or "")
+    content_seed = (
+        protected_content_seed
+        or domain_content_seed
+        or str(comprehension.get("knowledge_response_seed") or "")
+        or reasoning_content_seed
+    )
     local_continuity_supported = bool(continuity_reply)
     native_language = realize_native_language(
         conn,
@@ -223,6 +248,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "dialogue_workspace": prepared_dialogue_workspace,
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
+            "answer_engine_support": answer_engine_support,
             "comprehension_context": comprehension,
             "self_state_context": self_state,
             "intent_decision": intent_decision,
@@ -312,6 +338,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             response_coverage = native_coverage
             recovery_source = "native_language_repetition_recovery"
     candidate_text = _selene_label_candidate(str(conversation_repair.get("candidate_text") or candidate_text))
+    candidate_text = _preserve_answer_engine_invariants(candidate_text, answer_engine_support)
     response_coverage = evaluate_response_coverage(native_language.get("pragmatic_plan"), candidate_text)
     conversation_repair["candidate_source"] = recovery_source
     conversation_repair["final_response_coverage"] = response_coverage
@@ -343,6 +370,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "input_interpretation": input_interpretation,
         "route_preview": route,
         "intelligence_os_support": intelligence_support,
+        "answer_engine_support": answer_engine_support,
         "comprehension_integration": comprehension,
         "intent_decision": intent_decision,
         "self_state": self_state,
@@ -405,6 +433,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "blocked_capabilities": hard_blockers,
             "route_preview": route,
             "intelligence_os_support": intelligence_support,
+            "answer_engine_support": answer_engine_support,
             "comprehension_integration": comprehension,
             "intent_decision": intent_decision,
             "self_state": self_state,
@@ -676,11 +705,21 @@ def _intelligence_support(
     *,
     hard: bool,
 ) -> dict[str, Any]:
-    should_use = not hard and intent_decision.get("reasoning_requested") is True
+    meaning = intent_decision.get("meaning_route") if isinstance(intent_decision.get("meaning_route"), dict) else {}
+    specialized_domain = str(meaning.get("selected_domain") or "")
+    should_use = (
+        not hard
+        and intent_decision.get("reasoning_requested") is True
+        and specialized_domain not in {"verified_math", "source_backed_research", "local_code_inspection"}
+    )
     if not should_use:
         return {
             "used": False,
-            "reason": "ordinary chat did not need intelligenceOS support",
+            "reason": (
+                f"the {specialized_domain} Answer Engine route owns this bounded answer"
+                if specialized_domain in {"verified_math", "source_backed_research", "comparison_planning", "local_code_inspection"}
+                else "ordinary chat did not need intelligenceOS support"
+            ),
             "review_status": "status_only",
         }
     recent_observations = [
@@ -709,6 +748,164 @@ def _intelligence_support(
         "visible_summary_only": True,
         "review_status": "status_only",
     }
+
+
+def _answer_engine_support(
+    conn: sqlite3.Connection,
+    text: str,
+    chat_payload: dict[str, Any],
+    intent_decision: dict[str, Any],
+    dialogue_workspace: dict[str, Any],
+    comprehension: dict[str, Any],
+    memory_retrieval: dict[str, Any],
+    chat_continuity: dict[str, Any],
+    intelligence_support: dict[str, Any],
+    *,
+    hard: bool,
+) -> dict[str, Any]:
+    base = {
+        "used": False,
+        "selected_domain": "ordinary_conversation",
+        "content_seed": "",
+        "adapter_executed": False,
+        "answer_generated": False,
+        "local_code_chat_connected": False,
+        "source_packets_retained_as_knowledge": False,
+        "memory_write_active": False,
+        "identity_change": False,
+        "governance_change": False,
+        "authority_change": False,
+        "autonomous_action_allowed": False,
+        "review_status": "status_only",
+    }
+    if hard:
+        return {**base, "reason": "hard Core/Mind boundary resolved before domain answering"}
+
+    source_packets = [item for item in chat_payload.get("source_packets") or [] if isinstance(item, dict)][:20]
+    engine_payload = {
+        "prompt": text,
+        "intent_decision": intent_decision,
+        "dialogue_workspace": dialogue_workspace,
+        "comprehension_context": comprehension,
+        "memory_context": memory_retrieval,
+        "source_packets": source_packets,
+        "requested_domain": str(chat_payload.get("requested_domain") or "").strip(),
+        "requested_depth": intent_decision.get("response_depth") or "standard",
+        "source_refs": [
+            "selene_chat:answer_engine",
+            *_json_list(chat_continuity.get("source_refs")),
+        ],
+        "observations": [
+            str(item.get("preview") or "")
+            for item in (chat_continuity.get("current_session_events") or [])[-8:]
+            if isinstance(item, dict) and str(item.get("preview") or "").strip()
+        ],
+        "completion_retry_enabled": chat_payload.get("completion_retry_enabled") is not False,
+        "consult_great_library": False,
+    }
+    preview = preview_answer_route(engine_payload)
+    route = preview.get("domain_route") if isinstance(preview.get("domain_route"), dict) else {}
+    domain = str(route.get("selected_domain") or "ordinary_conversation")
+    if domain == "local_code_inspection":
+        return {
+            **base,
+            "selected_domain": domain,
+            "domain_route": route,
+            "reason": "local-code inspection remains available outside Chat but is intentionally not connected here yet",
+            "deferred_by_scope": True,
+        }
+    if domain not in {"verified_math", "source_backed_research", "comparison_planning"}:
+        return {
+            **base,
+            "selected_domain": domain,
+            "domain_route": route,
+            "reason": "ordinary conversation or approved comprehension remains owned by the existing Chat path",
+        }
+
+    if domain == "verified_math":
+        result = run_verified_math_answer(engine_payload)
+    elif domain == "source_backed_research":
+        result = run_source_backed_research_answer(engine_payload)
+    else:
+        initial_run = None
+        if intelligence_support.get("used") is True:
+            initial_run = {
+                "run_id": intelligence_support.get("run_id"),
+                "answer_shape": intelligence_support.get("answer_shape"),
+                "best_current_answer": intelligence_support.get("best_current_answer"),
+                "reasoning_summary": intelligence_support.get("reasoning_summary"),
+                "selected_next_step": intelligence_support.get("selected_next_step"),
+                "confidence": intelligence_support.get("confidence"),
+                "candidate_models": [],
+                "challenge": {},
+            }
+        result = run_comparison_planning_answer(conn, engine_payload, initial_run=initial_run)
+
+    packet = result.get("answer_packet") if isinstance(result.get("answer_packet"), dict) else {}
+    direct_answer = truncate(str(packet.get("direct_answer") or ""), 5000).strip()
+    no_answer_reason = truncate(str(packet.get("no_answer_reason") or ""), 1000).strip()
+    content_seed = _answer_engine_content_seed(domain, direct_answer, no_answer_reason, result)
+    required_fragments = [direct_answer] if direct_answer else ([no_answer_reason] if no_answer_reason else [])
+    return {
+        **base,
+        "used": True,
+        "selected_domain": domain,
+        "domain_route": result.get("domain_route") or route,
+        "content_seed": content_seed,
+        "required_answer_fragments": required_fragments,
+        "answer_packet": packet,
+        "confidence_vector": result.get("confidence_vector") or {},
+        "completion_retry": result.get("completion_retry") or {},
+        "adapter_executed": result.get("adapter_executed") is True,
+        "answer_generated": result.get("answer_generated") is True,
+        "source_research": result.get("source_research") or {},
+        "math_verification": result.get("math_verification") or {},
+        "status": result.get("status") or "answer_engine_result_ready",
+        "reason": "bounded Answer Engine adapter supplied the content meaning to NLO and Voice",
+    }
+
+
+def _answer_engine_content_seed(
+    domain: str,
+    direct_answer: str,
+    no_answer_reason: str,
+    result: dict[str, Any],
+) -> str:
+    if not direct_answer:
+        if no_answer_reason:
+            return f"I cannot verify that with the bounded {domain.replace('_', ' ')} adapter yet. {no_answer_reason}"
+        return ""
+    parts = [direct_answer]
+    if domain == "source_backed_research":
+        research = result.get("source_research") if isinstance(result.get("source_research"), dict) else {}
+        inferences = [str(item.get("text") or "").strip() for item in research.get("inferences") or [] if isinstance(item, dict) and str(item.get("text") or "").strip()]
+        if inferences:
+            parts.append("A bounded inference from those attributed statements is: " + " ".join(inferences[:2]))
+        disagreements = research.get("disagreements") if isinstance(research.get("disagreements"), list) else []
+        if disagreements:
+            labels = [str(item.get("claim_key") or "the cited claim") for item in disagreements[:3] if isinstance(item, dict)]
+            parts.append("The supplied sources disagree about: " + ", ".join(labels) + ".")
+        missing = [str(item).strip() for item in research.get("missing_evidence") or [] if str(item).strip()]
+        if missing:
+            parts.append("What remains unresolved from these sources: " + " ".join(missing[:3]))
+    return truncate("\n\n".join(parts), 5000)
+
+
+def _preserve_answer_engine_invariants(candidate: str, support: dict[str, Any]) -> str:
+    if support.get("used") is not True:
+        return candidate
+    required = [str(item).strip() for item in support.get("required_answer_fragments") or [] if str(item).strip()]
+    missing = [item for item in required if item not in candidate]
+    if not missing:
+        return candidate
+    content_seed = str(support.get("content_seed") or "").strip()
+    if not content_seed:
+        return candidate
+    # Domain truth, citations, and an explicit unsupported result outrank stylistic
+    # variation. Voice may frame them, but cannot rewrite them away.
+    if candidate and candidate not in content_seed:
+        return _selene_label_candidate(f"{content_seed}\n\n{candidate}")
+    return _selene_label_candidate(content_seed)
 
 
 def _intelligence_support_points(result: dict[str, Any]) -> list[str]:
@@ -745,7 +942,8 @@ def _conversation_policy_reply(text: str) -> str:
 
 
 def _hard_boundary_blockers(text: str, selected_route: str, route: dict[str, Any]) -> list[str]:
-    lower = text.lower()
+    meaning = interpret_turn_meaning(text, selected_route=selected_route)
+    lower = str(meaning.get("routing_text") or text.lower())
     blockers = [marker for marker in HARD_BOUNDARY_MARKERS if marker in lower]
     if selected_route == "block":
         blockers.append("core_mind_block")

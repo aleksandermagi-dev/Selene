@@ -7,6 +7,7 @@ from typing import Any
 
 from .intelligence_os import run_intelligence_os_reason
 from .local_code_inspection import inspect_local_code
+from .meaning_router import interpret_turn_meaning
 from .pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
 from .registry import truncate
 from .source_backed_research import research_from_sources
@@ -14,8 +15,8 @@ from .verified_math import verify_bounded_math
 
 
 ANSWER_ENGINE_BOUNDARY = (
-    "answer_engine_bounded_domain_coordination_status_only_"
-    "no_chat_integration_memory_identity_governance_or_authority_change"
+    "answer_engine_bounded_domain_coordination_supervised_chat_bridge_"
+    "no_memory_identity_governance_or_authority_change"
 )
 
 DOMAINS = (
@@ -39,7 +40,7 @@ GUARDS: dict[str, Any] = {
     "identity_change": False,
     "governance_change": False,
     "personality_change": False,
-    "live_chat_connected": False,
+    "live_chat_connected": True,
 }
 
 AUTHORITY_MARKERS = (
@@ -59,15 +60,15 @@ AUTHORITY_MARKERS = (
 
 def answer_engine_status() -> dict[str, Any]:
     adapter_status = {domain: "contract_only_not_connected" for domain in DOMAINS}
-    adapter_status["verified_math"] = "exact_arithmetic_adapter_connected_status_only"
-    adapter_status["local_code_inspection"] = "explicit_source_static_inspection_connected_status_only"
-    adapter_status["comparison_planning"] = "intelligence_os_adapter_connected_status_only"
-    adapter_status["source_backed_research"] = "attributed_source_packet_adapter_connected_status_only"
+    adapter_status["verified_math"] = "exact_arithmetic_adapter_connected_to_supervised_chat"
+    adapter_status["comparison_planning"] = "intelligence_os_adapter_connected_to_supervised_chat"
+    adapter_status["source_backed_research"] = "attributed_source_packet_adapter_connected_to_supervised_chat"
+    adapter_status["local_code_inspection"] = "explicit_source_static_inspection_available_not_connected_to_chat"
     return _with_guards(
         {
-            "status": "answer_engine_phase_3_domain_adapters_ready",
-            "version": "v3_3_math_code_research_and_comparison",
-            "phase": "phase_3_domain_adapters_3a_3b_3c",
+            "status": "answer_engine_supervised_chat_bridge_ready",
+            "version": "v4_math_research_comparison_chat_bridge",
+            "phase": "phase_6_meaning_route_and_supervised_chat_bridge",
             "domains": list(DOMAINS),
             "domain_adapter_status": adapter_status,
             "confidence_dimensions": [
@@ -93,6 +94,9 @@ def answer_engine_status() -> dict[str, Any]:
             "open_ended_problem_solving_adapter": "comparison_planning",
             "open_ended_problem_solving_requires_preexisting_answer": False,
             "source_backed_research_does_not_replace_open_ended_reasoning": True,
+            "supervised_chat_domains": ["verified_math", "comparison_planning", "source_backed_research"],
+            "local_code_supervised_chat_connected": False,
+            "source_backed_chat_requires_attributed_packets": True,
             "review_status": "status_only",
             "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
         }
@@ -152,6 +156,11 @@ def build_answer_request(payload: dict[str, Any] | None = None) -> dict[str, Any
     request_id = "answer-request-" + sha256(
         f"{prompt}|{requested_domain}|{','.join(allowed)}".encode("utf-8")
     ).hexdigest()[:16]
+    meaning_route = interpret_turn_meaning(
+        prompt,
+        requested_domain=requested_domain,
+        source_packets_present=bool(source_packets),
+    )
     return {
         "request_id": request_id,
         "prompt": prompt,
@@ -177,7 +186,8 @@ def build_answer_request(payload: dict[str, Any] | None = None) -> dict[str, Any
         },
         "requested_domain": requested_domain,
         "allowed_domains": allowed,
-        "authority_bearing_request": _contains_any(prompt.lower(), AUTHORITY_MARKERS),
+        "meaning_route": meaning_route,
+        "authority_bearing_request": _contains_any(str(meaning_route.get("routing_text") or prompt.lower()), AUTHORITY_MARKERS),
         "current_session_only": True,
         "raw_corpus_available": False,
         "review_status": "status_only",
@@ -506,6 +516,8 @@ def run_source_backed_research_answer(payload: dict[str, Any] | None = None) -> 
 def run_comparison_planning_answer(
     conn: sqlite3.Connection,
     payload: dict[str, Any] | None = None,
+    *,
+    initial_run: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run the one Phase 2 domain adapter with at most one completion retry."""
     payload = payload or {}
@@ -527,7 +539,7 @@ def run_comparison_planning_answer(
         )
 
     source_refs = _answer_source_refs(request, payload)
-    initial_run = run_intelligence_os_reason(
+    initial_run = initial_run or run_intelligence_os_reason(
         conn,
         _intelligence_os_payload(request["prompt"], source_refs, payload),
     )
@@ -758,18 +770,30 @@ def _select_domain(request: dict[str, Any]) -> dict[str, Any]:
         confidence = "high"
         basis = "explicit bounded domain request"
         signal = "explicit_request"
-    elif _looks_like_math(prompt):
-        selected, confidence, basis, signal = "verified_math", "bounded", "numeric or symbolic verification cues", "math_cues"
-    elif _contains_any(lower, ("traceback", "stack trace", "function", "class ", "source code", "code review", ".py", ".ts", ".tsx", "sql query")):
-        selected, confidence, basis, signal = "local_code_inspection", "bounded", "explicit code-inspection cues", "code_cues"
-    elif _contains_any(lower, ("cite", "citation", "source-backed", "sources", "research", "paper", "study", "literature")):
-        selected, confidence, basis, signal = "source_backed_research", "bounded", "source or research cues", "research_cues"
-    elif _contains_any(lower, ("compare", "tradeoff", "trade-off", "plan", "prioritize", "which option", "pros and cons", "strategy")):
-        selected, confidence, basis, signal = "comparison_planning", "bounded", "comparison or planning cues", "comparison_planning_cues"
-    elif request.get("approved_knowledge_available") is True:
-        selected, confidence, basis, signal = "approved_knowledge", "bounded", "approved comprehension knowledge is available", "approved_knowledge"
     else:
-        selected, confidence, basis, signal = "ordinary_conversation", "low", "no specialized domain cue; ordinary conversation is the least-claiming route", "default"
+        meaning = request.get("meaning_route") if isinstance(request.get("meaning_route"), dict) else {}
+        meaning_candidates = meaning.get("domain_candidates") if isinstance(meaning.get("domain_candidates"), list) else []
+        primary = meaning_candidates[0] if meaning_candidates and isinstance(meaning_candidates[0], dict) else {}
+        meaning_domain = str(primary.get("domain") or "")
+        meaning_confidence = str(primary.get("confidence") or "low")
+        meaning_evidence = primary.get("evidence") if isinstance(primary.get("evidence"), list) else []
+        if meaning_domain and meaning_domain != "ordinary_conversation":
+            selected = meaning_domain
+            confidence = meaning_confidence
+            basis = "; ".join(str(item) for item in meaning_evidence[:3]) or "structured turn meaning"
+            signal = "structured_meaning_route"
+        elif request.get("approved_knowledge_available") is True:
+            selected, confidence, basis, signal = "approved_knowledge", "bounded", "approved comprehension knowledge is available", "approved_knowledge"
+        else:
+            selected, confidence, basis, signal = "ordinary_conversation", "low", "no specialized domain meaning; ordinary conversation is the least-claiming route", "structured_default"
+    if not requested and selected == "ordinary_conversation" and _looks_like_math(prompt):
+        selected, confidence, basis, signal = "verified_math", "bounded", "numeric or symbolic verification cues", "math_cues"
+    elif not requested and selected == "ordinary_conversation" and _contains_any(lower, ("traceback", "stack trace", "function", "class ", "source code", "code review", ".py", ".ts", ".tsx", "sql query")):
+        selected, confidence, basis, signal = "local_code_inspection", "bounded", "explicit code-inspection cues", "code_cues"
+    elif not requested and selected == "ordinary_conversation" and _contains_any(lower, ("cite", "citation", "source-backed", "sources", "research", "paper", "study", "literature")):
+        selected, confidence, basis, signal = "source_backed_research", "bounded", "source or research cues", "research_cues"
+    elif not requested and selected == "ordinary_conversation" and _contains_any(lower, ("compare", "tradeoff", "trade-off", "plan", "prioritize", "which option", "pros and cons", "strategy")):
+        selected, confidence, basis, signal = "comparison_planning", "bounded", "comparison or planning cues", "comparison_planning_cues"
     if selected not in allowed:
         return _route(
             "unsupported",

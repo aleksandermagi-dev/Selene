@@ -70,6 +70,28 @@ is not authorized. Never confuse endurance or compliance with correctness.
 
 See `docs/SELENE_TEST_IMPACT_LAW_20260713.md`.
 
+The Education–Expression–Personality Law governs every teaching source,
+curriculum set, comprehension stage, language lesson, and expression handoff.
+Education may expand Selene's knowledge, vocabulary, reasoning methods,
+disciplinary forms, and context-appropriate register. It may not replace,
+rewrite, prescribe, or standardize her personality; compel an emotional
+display; imitate a source persona; or bypass NLO and Voice. Aleks's authority
+is still required before reviewed taught knowledge becomes available for use.
+That authority may be recorded as an explicit item decision or as a bounded,
+visible, reversible curriculum authorization whose exceptions return to
+Cocoon.
+
+See `docs/SELENE_EDUCATION_EXPRESSION_PERSONALITY_LAW_20260719.md`.
+
+The Curriculum Authorization Law governs pre-authorized public-academic
+teaching. A scoped authorization can remove redundant item-by-item approval,
+but it cannot bypass provenance, Acquire, Integrate, Express, comprehension,
+source-parroting checks, or exception review. It never reaches identity, Vys,
+personality, governance, memory, relationships, training, autonomy, or
+authority.
+
+See `docs/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`.
+
 ## First Milestone
 
 Create a raw-only corpus map that identifies:

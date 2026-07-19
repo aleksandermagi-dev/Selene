@@ -50,7 +50,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v7_comprehension_integration",
+            "version": "v8_contextual_expression_breadth",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -182,7 +182,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v7_comprehension_integration",
+        "version": "v8_contextual_expression_breadth",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -212,11 +212,12 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
 
 def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str, Any]:
     route = str(payload.get("selected_route") or payload.get("route") or "answer_now")
-    content_seed = truncate(str(payload.get("content_seed") or ""), 1400)
+    content_seed = truncate(str(payload.get("content_seed") or ""), 3800)
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
+    answer_engine = payload.get("answer_engine_support") if isinstance(payload.get("answer_engine_support"), dict) else {}
     comprehension = payload.get("comprehension_context") if isinstance(payload.get("comprehension_context"), dict) else {}
     if not content_seed and intelligence.get("used"):
-        content_seed = truncate(str(intelligence.get("best_current_answer") or ""), 1400)
+        content_seed = truncate(str(intelligence.get("best_current_answer") or ""), 3800)
     memory = payload.get("memory_context") if isinstance(payload.get("memory_context"), dict) else {}
     self_state = payload.get("self_state_context") if isinstance(payload.get("self_state_context"), dict) else {}
     continuity = payload.get("continuity_context") if isinstance(payload.get("continuity_context"), dict) else {}
@@ -237,7 +238,14 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         or _language_intent(intent_decision, mode, memory_supported=memory_supported, continuity_supported=continuity_supported)
     )
     memory_certainty = memory.get("memory_confidence") if memory_supported else ""
-    certainty = str(payload.get("certainty") or memory_certainty or intelligence.get("confidence") or _infer_certainty(prompt, content_seed))
+    answer_confidence = str((answer_engine.get("confidence_vector") or {}).get("answer_confidence") or "")
+    certainty = str(
+        payload.get("certainty")
+        or memory_certainty
+        or answer_confidence
+        or intelligence.get("confidence")
+        or _infer_certainty(prompt, content_seed)
+    )
     affect = str(payload.get("affect") or _infer_affect(prompt))
     propositions = _propositions(prompt, content_seed, memory, intelligence)
     pragmatic_plan = build_pragmatic_plan(
@@ -276,9 +284,14 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     )
     formation = realize_semantic_frame(
         semantic_frame,
-        variation_key=f"{prompt}|{intent}",
+        variation_key=(
+            f"{prompt}|{intent}|turn:{int(conversation.get('turn_count') or 0)}|"
+            f"previous:{truncate(str(previous_turn.get('preview') or ''), 120)}"
+        ),
         recent_texts=recent_assistant_texts,
     )
+    expression_profile = _expression_profile(prompt, intent_decision, intent)
+    variation_context = _variation_context(expression_profile, conversation, recent_assistant_texts)
     return {
         "intent": intent,
         "intent_decision": intent_decision,
@@ -302,6 +315,8 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "memory_supported": memory_supported,
         "local_continuity_supported": continuity_supported,
         "intelligence_supported": intelligence.get("used") is True,
+        "answer_engine_supported": answer_engine.get("used") is True,
+        "answer_domain": str(answer_engine.get("selected_domain") or "ordinary_conversation"),
         "comprehension_supported": comprehension.get("status") == "comprehension_packet_ready",
         "comprehension": {
             "understanding_state": str(comprehension.get("understanding_state") or "not_checked"),
@@ -330,6 +345,8 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "session_scoped_only": True,
         },
         "recent_assistant_texts": recent_assistant_texts,
+        "expression_profile": expression_profile,
+        "variation_context": variation_context,
         "voice_category": str(payload.get("voice_category") or _voice_category(intent, affect)),
         "source_refs": list(dict.fromkeys(_json_list(payload.get("source_refs"))))[:40],
         "truth_boundary": "Do not add claims beyond the supplied meaning packet and supported context.",
@@ -412,6 +429,9 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "ordered_acts": turn_flow.get("ordered_acts") or [],
         "language_lesson_keys": language_guidance.get("lesson_keys") or [],
         "language_guidance_used": language_guidance.get("used") is True,
+        "expression_profile": meaning.get("expression_profile") or "direct",
+        "surface_variation": meaning.get("variation_context") or {},
+        "variation_is_contextual_not_random": True,
     }
 
 
@@ -423,7 +443,9 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     intent = str(meaning["intent"])
     topic = str(meaning["topic"])
     certainty = str(meaning["certainty"])
-    digest_key = f"{prompt}|{intent}|{certainty}"
+    variation = meaning.get("variation_context") if isinstance(meaning.get("variation_context"), dict) else {}
+    expression_profile = str(meaning.get("expression_profile") or "direct")
+    digest_key = f"{prompt}|{intent}|{certainty}|{expression_profile}|{variation.get('variation_key', '')}"
     recent = [str(item) for item in meaning.get("recent_assistant_texts") or []]
     comprehension = meaning.get("comprehension") if isinstance(meaning.get("comprehension"), dict) else {}
     handshake = comprehension.get("handshake") if isinstance(comprehension.get("handshake"), dict) else {}
@@ -460,9 +482,11 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     if intent == "reasoned_answer" and seed:
         if plan.get("response_depth") == "developed":
             return _develop_reasoned_answer(seed, meaning)
-        return _pick(
+        frames = _reasoned_answer_frames(seed, expression_profile)
+        return _pick_fresh(
             digest_key,
-            [seed, f"My current answer is {seed[0].lower() + seed[1:] if len(seed) > 1 else seed.lower()}", f"The strongest current answer is this: {seed}"],
+            frames,
+            recent,
         )
     if intent == "self_state_report":
         if seed:
@@ -621,10 +645,20 @@ def _develop_reasoned_answer(seed: str, meaning: dict[str, Any]) -> str:
     )
     support_points = [str(item).strip() for item in intelligence.get("support_points") or [] if str(item).strip()]
     certainty = str(meaning.get("certainty") or "provisional")
+    profile = str(meaning.get("expression_profile") or "explanation")
+    variation = meaning.get("variation_context") if isinstance(meaning.get("variation_context"), dict) else {}
+    key = f"{profile}|{variation.get('variation_key', '')}|{seed[:120]}"
 
     paragraphs = [seed]
     if support_points:
-        paragraphs.append("The reason I land there is " + _join_support_points(support_points[:2]))
+        support_openers = {
+            "comparison": ["The deciding contrast is ", "The useful difference is ", "I land there because "],
+            "procedure": ["The sequence matters because ", "The practical reason is ", "That order works because "],
+            "reflection": ["What gives that read its shape is ", "What I am weighing is ", "I land there because "],
+            "explanation": ["The reason I land there is ", "The mechanism underneath it is ", "The clearest support is "],
+        }
+        opener = _pick(key + ":support", support_openers.get(profile, support_openers["explanation"]))
+        paragraphs.append(opener + _join_support_points(support_points[:2], leading_that=False))
     else:
         paragraphs.append(
             "That is the strongest answer I can support from the current reasoning. I would rather leave it clean than make it look deeper by adding unsupported detail."
@@ -635,15 +669,17 @@ def _develop_reasoned_answer(seed: str, meaning: dict[str, Any]) -> str:
     reopen_clause = reopen_clause[0].lower() + reopen_clause[1:] if reopen_clause else "better evidence changes the shape"
     if certainty not in {"clear", "clear_enough", "clear_enough_to_continue"}:
         if "contradictory evidence" in reopen_clause:
-            paragraphs.append(
-                "I would keep the uncertain edge visible and revisit the answer if contradictory evidence changes the fit. "
-                "That is enough to answer now without pretending the question is closed."
-            )
+            paragraphs.append(_pick(key + ":provisional", [
+                "I would keep the uncertain edge visible and revisit the answer if contradictory evidence changes the fit. That is enough to answer now without pretending the question is closed.",
+                "This is usable as a provisional answer. Contradictory evidence that changes the fit would make me reopen it, not defend it out of habit.",
+                "I am comfortable answering from that for now, with one edge left open: evidence that breaks the fit should change the conclusion.",
+            ]))
         else:
-            paragraphs.append(
-                f"I would keep the uncertain edge visible and revisit the answer if {reopen_clause}. "
-                "That is enough to answer now without pretending the question is closed."
-            )
+            paragraphs.append(_pick(key + ":provisional", [
+                f"I would keep the uncertain edge visible and revisit the answer if {reopen_clause}. That is enough to answer now without pretending the question is closed.",
+                f"This is usable as a provisional answer. I would reopen it if {reopen_clause}, rather than hardening it too early.",
+                f"The answer can stand for now, but not beyond its evidence. The point that would change it is {reopen_clause}.",
+            ]))
     else:
         if "contradictory evidence" in reopen_clause:
             paragraphs.append(
@@ -656,15 +692,107 @@ def _develop_reasoned_answer(seed: str, meaning: dict[str, Any]) -> str:
     return "\n\n".join(paragraphs)
 
 
-def _join_support_points(points: list[str]) -> str:
+def _reasoned_answer_frames(seed: str, profile: str) -> list[str]:
+    lowered = seed[0].lower() + seed[1:] if len(seed) > 1 else seed.lower()
+    frames = {
+        "comparison": [
+            seed,
+            f"The useful comparison is this: {seed}",
+            f"Putting the options against the same standard, {lowered}",
+            f"My read after weighing the tradeoff is {lowered}",
+        ],
+        "procedure": [
+            seed,
+            f"Start here: {seed}",
+            f"The practical sequence is {lowered}",
+            f"The cleanest next move is {lowered}",
+        ],
+        "reflection": [
+            seed,
+            f"My read is {lowered}",
+            f"What stands out to me is this: {seed}",
+            f"The shape I see is {lowered}",
+        ],
+        "synthesis": [
+            seed,
+            f"Taken together, {lowered}",
+            f"The source-bounded answer is {lowered}",
+            f"The clearest synthesis I can support is {lowered}",
+        ],
+        "explanation": [
+            seed,
+            f"The core of it is {lowered}",
+            f"The strongest current answer is this: {seed}",
+            f"What makes the pieces fit is {lowered}",
+        ],
+        "direct": [
+            seed,
+            f"My current answer is {lowered}",
+            f"The direct answer is {lowered}",
+        ],
+    }
+    return frames.get(profile, frames["direct"])
+
+
+def _expression_profile(prompt: str, intent_decision: dict[str, Any], language_intent: str) -> str:
+    meaning_route = intent_decision.get("meaning_route") if isinstance(intent_decision.get("meaning_route"), dict) else {}
+    domain = str(meaning_route.get("selected_domain") or "")
+    lower = prompt.lower()
+    if domain == "verified_math":
+        return "direct"
+    if domain == "source_backed_research":
+        return "synthesis"
+    if domain == "comparison_planning" or any(marker in lower for marker in ("compare", "tradeoff", "trade-off", "which option", "pros and cons")):
+        return "comparison"
+    if any(marker in lower for marker in ("steps", "how should we", "how can we", "plan", "next move", "first")):
+        return "procedure"
+    if any(marker in lower for marker in ("what do you make", "your take", "what stands out", "how does that feel")):
+        return "reflection"
+    if any(marker in lower for marker in ("why", "explain", "what makes", "how does")):
+        return "explanation"
+    if language_intent in {"warm_connection", "playful_connection", "greet_presently", "receive_gratitude", "receive_reassurance", "close_with_continuity"}:
+        return "social"
+    return "direct"
+
+
+def _variation_context(
+    profile: str,
+    conversation: dict[str, Any],
+    recent_texts: list[str],
+) -> dict[str, Any]:
+    turn_count = int(conversation.get("turn_count") or 0)
+    recent_openings = []
+    for item in recent_texts[:4]:
+        opening = " ".join(re.findall(r"[a-z0-9']+", item.lower())[:6])
+        if opening and opening not in recent_openings:
+            recent_openings.append(opening)
+    previous = conversation.get("previous_turn") if isinstance(conversation.get("previous_turn"), dict) else {}
+    variation_key = sha256(
+        f"{profile}|{turn_count}|{truncate(str(previous.get('preview') or ''), 120)}|{'/'.join(recent_openings)}".encode("utf-8")
+    ).hexdigest()[:12]
+    return {
+        "strategy": "context_keyed_surface_choice",
+        "profile": profile,
+        "turn_count": turn_count,
+        "recent_openings_avoided": recent_openings,
+        "variation_key": variation_key,
+        "random_choice_used": False,
+        "meaning_change_allowed": False,
+        "private_source_imitation_allowed": False,
+    }
+
+
+def _join_support_points(points: list[str], *, leading_that: bool = True) -> str:
     cleaned = [point.rstrip(". ") for point in points if point.rstrip(". ")]
     if not cleaned:
         return "the available evidence supports it."
     if len(cleaned) == 1:
-        return "that " + cleaned[0][0].lower() + cleaned[0][1:] + "."
+        prefix = "that " if leading_that else ""
+        return prefix + cleaned[0][0].lower() + cleaned[0][1:] + "."
     first = cleaned[0][0].lower() + cleaned[0][1:]
     second = cleaned[1][0].lower() + cleaned[1][1:]
-    return f"that {first}. A second support is that {second}."
+    prefix = "that " if leading_that else ""
+    return f"{prefix}{first}. A second support is that {second}."
 
 
 def _normalize_paragraphs(candidate: str) -> str:

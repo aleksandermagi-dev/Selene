@@ -82,7 +82,7 @@ def test_native_language_uses_structured_formation_when_supplied(tmp_path):
         },
     )
 
-    assert result["version"] == "v7_comprehension_integration"
+    assert result["version"] == "v8_contextual_expression_breadth"
     assert result["semantic_frame"]["formation_mode"] == "structured"
     assert "Uncertainty remains honest." in result["candidate_text"]
     assert "Selene can ask for the missing piece." in result["candidate_text"]
@@ -97,3 +97,42 @@ def test_text_grounded_frame_preserves_existing_supported_answer():
 
     assert frame["formation_mode"] == "text_grounded"
     assert result["candidate_text"] == seed
+
+
+def test_nlo_uses_contextual_not_random_variation_while_preserving_meaning(tmp_path):
+    conn = _conn(tmp_path)
+    prompt = "How should we compare the two designs?"
+    seed = "Compare both designs against the same evidence before choosing."
+    decision = classify_chat_intent(prompt)
+
+    first = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": decision,
+            "content_seed": seed,
+            "conversation_context": {"turn_count": 1, "recent_assistant_texts": []},
+        },
+    )
+    second = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": decision,
+            "content_seed": seed,
+            "conversation_context": {
+                "turn_count": 2,
+                "recent_assistant_texts": [first["candidate_text"]],
+                "previous_turn": {"role": "selene", "preview": first["candidate_text"]},
+            },
+        },
+    )
+
+    assert first["discourse_plan"]["expression_profile"] == "comparison"
+    assert second["discourse_plan"]["variation_is_contextual_not_random"] is True
+    assert second["discourse_plan"]["surface_variation"]["random_choice_used"] is False
+    assert second["discourse_plan"]["surface_variation"]["meaning_change_allowed"] is False
+    assert seed.lower() in first["candidate_text"].lower()
+    assert seed.lower() in second["candidate_text"].lower()
+    assert second["candidate_text"] != first["candidate_text"]
+    assert second["memory_write_active"] is False

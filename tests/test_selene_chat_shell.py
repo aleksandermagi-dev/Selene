@@ -249,6 +249,8 @@ def test_active_selene_chat_can_use_intelligence_os_support_without_architecture
 
     assert result["status"] == "selene_chat_supervised_response_recorded"
     assert support["used"] is True
+    assert result["answer_engine_support"]["used"] is True
+    assert result["answer_engine_support"]["selected_domain"] == "comparison_planning"
     assert result["native_language_organ"]["status"] == "native_language_response_realized"
     assert result["native_language_organ"]["meaning_packet"]["intelligence_supported"] is True
     assert result["voice_preview"]["generation_source"] == "native_language_organ"
@@ -258,6 +260,72 @@ def test_active_selene_chat_can_use_intelligence_os_support_without_architecture
     assert "ABCD" not in result["candidate_text"]
     assert "evidence_chain" not in result["candidate_text"]
     assert conn.execute("SELECT COUNT(*) FROM intelligence_os_runs").fetchone()[0] == 1
+    _assert_locked(result)
+
+
+def test_active_selene_chat_answers_bounded_math_with_exact_result_and_separate_confidence(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(conn, "selene_chat.send", {"text": "Could you calculate 18 * 7 for me?"})["result"]
+    support = result["answer_engine_support"]
+
+    assert support["used"] is True
+    assert support["selected_domain"] == "verified_math"
+    assert support["answer_packet"]["direct_answer"] == "18 * 7 = 126."
+    assert "18 * 7 = 126." in result["candidate_text"]
+    assert support["confidence_vector"]["answer_confidence"] == "verified_exact"
+    assert support["confidence_vector"]["expression_confidence"] == "not_assessed"
+    assert support["memory_write_active"] is False
+    _assert_locked(result)
+
+
+def test_active_selene_chat_uses_only_supplied_attributed_research_packets(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "What do these sources say supports orbital stability?",
+            "source_packets": [
+                {
+                    "source_ref": "paper:orbit",
+                    "title": "Orbit paper",
+                    "statements": [
+                        {"text": "Orbital stability depends on bounded perturbation.", "locator": "p. 8"}
+                    ],
+                }
+            ],
+        },
+    )["result"]
+    support = result["answer_engine_support"]
+
+    assert support["used"] is True
+    assert support["selected_domain"] == "source_backed_research"
+    assert support["answer_packet"]["source_refs"] == ["paper:orbit"]
+    assert "[paper:orbit @ p. 8]" in result["candidate_text"]
+    assert support["source_research"]["citation_invention_allowed"] is False
+    assert support["source_packets_retained_as_knowledge"] is False
+    assert support["memory_write_active"] is False
+    _assert_locked(result)
+
+
+def test_active_selene_chat_keeps_local_code_adapter_outside_chat(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(conn, "selene_chat.send", {"text": "Inspect this source code for the failing function."})["result"]
+    support = result["answer_engine_support"]
+
+    assert support["used"] is False
+    assert support["selected_domain"] == "local_code_inspection"
+    assert support["deferred_by_scope"] is True
+    assert support["local_code_chat_connected"] is False
     _assert_locked(result)
 
 
@@ -273,7 +341,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v7_comprehension_integration"
+    assert result["native_language_organ"]["version"] == "v8_contextual_expression_breadth"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
     assert result["voice_preview"]["nlo_meaning_preserved"] is True
     assert result["candidate_text"].count("\n\n") == 2

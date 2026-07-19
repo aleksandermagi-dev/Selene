@@ -254,6 +254,21 @@ def _extract_expression(prompt: str) -> str:
     )
     if re.fullmatch(r"[0-9.()+\-*/%^=×÷−\s]+", stripped):
         return stripped.strip()
+    # Ordinary conversation may wrap an otherwise explicit expression in a
+    # polite request. Extract only a contiguous numeric expression and never
+    # reinterpret symbolic algebra as arithmetic.
+    if re.search(r"\bsolve\s+for\b", prompt, flags=re.IGNORECASE):
+        return ""
+    if re.search(r"[A-Za-z]\s*[+\-*/^=×÷]|[+\-*/^=×÷]\s*[A-Za-z]", prompt):
+        return ""
+    spans = [item.strip() for item in re.findall(r"[0-9.()+\-*/%^=×÷−\s]{3,}", prompt)]
+    candidates = [
+        item
+        for item in spans
+        if re.search(r"\d", item) and re.search(r"[+\-*/%^=×÷−]", item)
+    ]
+    if candidates:
+        return max(candidates, key=len)
     return ""
 
 
