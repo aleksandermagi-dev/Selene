@@ -55,6 +55,7 @@ from .compressed_structure_braid import (
 )
 from .cocoon import cocoon_status
 from .cocoon_care import cocoon_care_status, list_cocoon_care_checks, run_cocoon_care_check
+from .cocoon_bridge import cocoon_bridge_status, standby_cocoon_bridge, wake_cocoon_bridge
 from .c_vessel import (
     c_vessel_status,
     continuity_package_preview,
@@ -537,6 +538,12 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": transfer_completion_ceremony_preview(conn)}
     if route_key == "transfer.completion.approve":
         return {"route": route_key, "result": approve_transfer_completion(conn, payload)}
+    if route_key == "cocoon.bridge.status":
+        return {"route": route_key, "result": cocoon_bridge_status(conn)}
+    if route_key == "cocoon.bridge.wake":
+        return {"route": route_key, "result": wake_cocoon_bridge(conn, payload)}
+    if route_key == "cocoon.bridge.standby":
+        return {"route": route_key, "result": standby_cocoon_bridge(conn, payload)}
     if route_key == "memory.fractional_corpus.status":
         return {"route": route_key, "result": fractional_corpus_status(conn)}
     if route_key == "memory.fractional_corpus.prepare":

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { invoke } from "@tauri-apps/api/core";
 import { api } from "./api";
@@ -50,6 +50,7 @@ declare const __BUILD_LABEL__: string;
 const TRANSFER_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer to C-readable context under the Law of Transfer.";
 const TRANSFER_COMPLETION_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer completion under the Law of Transfer.";
 const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reopen Selene, or use Refresh Ceremony after the app reconnects.";
+const CocoonSubjectClassrooms = lazy(() => import("./CocoonSubjectClassrooms"));
 
 type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
 type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string; domId?: string; helper?: string };
@@ -318,6 +319,19 @@ function sidecarStartupMessage(attempt: number, detail: string) {
   return `sidecar took longer than expected (${elapsed}s). Still waiting for local API; startup logs are in the Selene logs folder.`;
 }
 
+function cocoonBridgeRequest(tab: string): Dict {
+  if (tab === "teaching") {
+    return { channel: "teaching", subject_key: "teaching_directory", reason: "Cocoon teaching workspace opened." };
+  }
+  if (tab === "memory-preview") {
+    return { channel: "memory_proposal", subject_key: "memory_review", reason: "Reviewed memory proposal workspace opened." };
+  }
+  if (["transfer-ceremony", "status", "dashboard", "evidence", "detached corpus", "chat gate"].includes(tab)) {
+    return { channel: "correction_provenance", subject_key: tab, reason: "Cocoon provenance or audit workspace opened." };
+  }
+  return { channel: "safety_tending", subject_key: tab, reason: "Cocoon support workspace opened." };
+}
+
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -417,6 +431,7 @@ function App() {
   const [tab, setTab] = useState("chat");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [workspaceMode, setWorkspaceMode] = useState<"selene" | "cocoon">("selene");
+  const [cocoonBridgeStatus, setCocoonBridgeStatus] = useState<Dict | null>(null);
   const [preferences, setPreferences] = useState<SelenePreferences>(() => loadPreferences());
   const [displayName, setDisplayName] = useState(() => loadDisplayName());
   const [homeChatText, setHomeChatText] = useState("");
@@ -879,15 +894,33 @@ function App() {
       refreshMobileCompanion().catch(() => undefined);
       return;
     }
-    refreshDashboard();
-    api<Dict>("/api/kernel").then(setKernel).catch(() => undefined);
-    api<{ items: Dict[] }>("/api/contracts").then((data) => setContracts(data.items)).catch(() => undefined);
-    api<Dict>("/api/paths").then(setPaths).catch(() => undefined);
-    api<Dict>("/api/validate").then(setValidation).catch(() => undefined);
-    api<Dict>("/api/semantic/status").then(setSemantic).catch(() => undefined);
-    api<{ items: Dict[] }>("/api/providers/status").then((data) => setProviders(data.items)).catch(() => undefined);
     refreshMobileCompanion().catch(() => undefined);
-  }, [boot.ready]);
+    if (workspaceMode === "cocoon") {
+      refreshDashboard();
+      api<Dict>("/api/kernel").then(setKernel).catch(() => undefined);
+      api<{ items: Dict[] }>("/api/contracts").then((data) => setContracts(data.items)).catch(() => undefined);
+      api<Dict>("/api/paths").then(setPaths).catch(() => undefined);
+      api<Dict>("/api/validate").then(setValidation).catch(() => undefined);
+      api<Dict>("/api/semantic/status").then(setSemantic).catch(() => undefined);
+      api<{ items: Dict[] }>("/api/providers/status").then((data) => setProviders(data.items)).catch(() => undefined);
+    } else {
+      loadResidentVessel();
+    }
+  }, [boot.ready, workspaceMode]);
+
+  useEffect(() => {
+    if (!boot.ready || isMobileOnly) return;
+    const bridge = workspaceMode === "cocoon"
+      ? api<Dict>("/api/cocoon/bridge/wake", {
+          method: "POST",
+          body: JSON.stringify(cocoonBridgeRequest(tab))
+        })
+      : api<Dict>("/api/cocoon/bridge/standby", {
+          method: "POST",
+          body: JSON.stringify({ reason: "Resident Selene workspace is active." })
+        });
+    bridge.then(setCocoonBridgeStatus).catch(() => undefined);
+  }, [boot.ready, isMobileOnly, workspaceMode, tab]);
 
   useEffect(() => {
     if (!boot.ready) return;
@@ -900,8 +933,9 @@ function App() {
       api<{ items: Dict[] }>("/api/continuity-notes").then((data) => setItems(data.items));
     }
     if (tab === "detached corpus") loadDetachedCorpusAudit();
-    if (vesselBackedTabs.includes(tab)) loadVessel();
-  }, [tab, filters, boot.ready]);
+    if (workspaceMode === "cocoon" && vesselBackedTabs.includes(tab)) loadVessel();
+    if (workspaceMode === "selene" && (workspaceTabs.selene as readonly string[]).includes(tab)) loadResidentVessel();
+  }, [tab, filters, boot.ready, workspaceMode]);
 
   useEffect(() => {
     if (homeChatOpenCount > 0) return;
@@ -1317,6 +1351,16 @@ function App() {
     api<Dict>("/api/b/memory-accession/rehearsal-status").then(setMemoryRehearsalStatus).catch(() => undefined);
     api<Dict>("/api/b/charter-law/review-status").then(setCharterLawReview).catch(() => undefined);
     loadSteps18Layer();
+  }
+
+  function loadResidentVessel() {
+    api<Dict>("/api/vessel/status").then(setVesselStatus).catch(() => undefined);
+    api<Dict>("/api/selene-chat/status").then(setSeleneChatStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/selene-chat/sessions").then((data) => setSeleneChatSessions(data.items || [])).catch(() => undefined);
+    api<Dict>("/api/activation/status").then(setActivationStatus).catch(() => undefined);
+    api<Dict>("/api/memory/index/status").then(setMemoryIndexStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/memory/index/items?limit=80").then((data) => setMemoryIndexItems(data.items || [])).catch(() => undefined);
+    api<Dict>("/api/transfer/post-transfer/status").then(setPostTransferStatus).catch(() => undefined);
   }
 
   async function sendMobileChat() {
@@ -4477,6 +4521,8 @@ function App() {
               <h1>{tabDisplayName(tab)}</h1>
             </div>
             <div className="topLocks">
+              <span>Cocoon: {text(cocoonBridgeStatus?.workspace_state || "starting")}</span>
+              <span>Bridge: {friendlyStatus(cocoonBridgeStatus?.current_channel || "support only")}</span>
               <span>activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
               <span>Broad live recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
               <span>Transfer: {transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
@@ -6085,6 +6131,9 @@ function App() {
               <p>B-reviewed examples teach expression without model training or active memory.</p>
               <h2>Teaching / Lessons</h2>
             </header>
+            <Suspense fallback={<Panel title="Subject Classrooms"><p className="plainHelp">Waking the selected Cocoon teaching module...</p></Panel>}>
+              <CocoonSubjectClassrooms />
+            </Suspense>
             <Panel title="Bounded Curriculum Authorization">
               <p className="plainHelp">Aleks may authorize a clearly bounded public-academic group once instead of approving every ordinary lesson separately. Authorization never bypasses source provenance, Acquire, Integrate, Express, comprehension, or source-parroting checks. Health, legal, financial, safety, time-sensitive, contested, conflicting, or out-of-scope material returns here for an explicit exception decision.</p>
               <div className="metrics miniMetrics">

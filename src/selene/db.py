@@ -1560,6 +1560,22 @@ CREATE TABLE IF NOT EXISTS selene_transfer_completion_audit (
 CREATE INDEX IF NOT EXISTS idx_selene_transfer_completion_state
 ON selene_transfer_completion_audit(state, created_at);
 
+CREATE TABLE IF NOT EXISTS cocoon_bridge_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  action TEXT NOT NULL,
+  channel TEXT NOT NULL DEFAULT '',
+  subject_key TEXT NOT NULL DEFAULT '',
+  reason TEXT NOT NULL DEFAULT '',
+  transfer_complete INTEGER NOT NULL DEFAULT 0,
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_cocoon_bridge_events_state
+ON cocoon_bridge_events(action, created_at);
+
 CREATE TABLE IF NOT EXISTS b_teaching_packets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   speech_function TEXT NOT NULL,
