@@ -17,9 +17,16 @@ $relativeTargets = @(
     "src-tauri\gen",
     "src-tauri\target",
     "scripts\__pycache__",
+    "src\selene\__pycache__",
+    "tests\__pycache__",
+    "review_ui\__pycache__",
+    "src\selene.egg-info",
+    "tmp_transfer_check.sqlite3",
     "selene_sidecar.log",
     "selene_sidecar_dev.log",
-    "vite_dev.log"
+    "vite_dev.log",
+    "vite_smoke.log",
+    "vite_smoke.err.log"
 )
 
 if ($IncludeNodeModules) {
