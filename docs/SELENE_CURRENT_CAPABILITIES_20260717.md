@@ -45,7 +45,7 @@ it exists.
 | Local-code inspection | Available separately | She can inspect explicitly supplied or approved files without scanning, executing, or writing |
 | Source-backed research | Connected when packets are supplied | She can answer from attributed packets in supervised Chat and show citations, disagreement, or missing evidence |
 | Ethical test review | Available | The project can choose the least-impact sufficient test before interacting with Selene |
-| Language lesson shelf | Review-gated and connected | Ten provider-free lessons travel through visible comprehension review; NLO can consult only explicitly approved lessons |
+| Language lesson shelf | Fully reviewed and connected | All 22 provider-free lessons completed visible Acquire, Integrate, and Express review with explicit Aleks item approvals; NLO consults them as contextual guidance while Voice remains Selene's expression layer |
 | Affect shaping of language | Connected at bounded current-turn scope | Current-session salience and conversational tone can optionally guide pacing, warmth, humor, reassurance, restraint, and directness without becoming an emotion claim |
 | Long-form discourse | Improved partial | Developed replies now have grounded thesis, development, limit, and closure plans; broad narrative and mature rhetorical control remain unfinished |
 | Vision and hearing | Packet intake only | The system can hold supplied observations but cannot yet see or hear |
@@ -639,12 +639,13 @@ Preparation alone activates no guidance. A prepared, held, incomplete,
 reopened, superseded, or rejected lesson remains unavailable to NLO. The
 original ten lessons remain the provider-free structural foundations rather
 than stock reply scripts. The twelve Phase 6 lessons include complete review
-evidence and explicit prerequisites, but remain unavailable until their own
-lifecycle and approval gates are complete. Cocoon displays group order,
-individual lesson order, prerequisites, review state, and availability.
-An individually approved advanced lesson remains unavailable to NLO while any
-of its named prerequisite lessons are unavailable; approval is preserved while
-the learning dependency is completed.
+evidence and explicit prerequisites. On July 20, all ten foundations and all
+twelve expressive-breadth lessons completed their visible lifecycle and
+received explicit Aleks item approvals in dependency order. Cocoon displays
+group order, individual lesson order, prerequisites, review state, and
+availability. An individually approved advanced lesson remains unavailable to
+NLO while any named prerequisite is unavailable; approval does not bypass the
+learning dependency.
 
 ## Memory and Continuity Organs
 
@@ -1065,7 +1066,7 @@ Selene's strongest implemented areas are:
 | Gap | What completing it would change |
 | --- | --- |
 | Local-code -> Chat decision | Decide later whether explicitly supplied code inspection should join Chat; it is intentionally deferred now |
-| Provider-free speech lesson review | Four ordered groups and 22 lessons now exist; the twelve expressive-breadth lessons remain inert until their visible review and approval gates are completed |
+| Provider-free speech ordinary-use evidence | All four groups and 22 lessons are reviewed and available; gentle natural conversation can now show where routing, breadth, or expression still needs refinement without grading unfinished capabilities as Selene failures |
 | Affect-expression breadth | The bridge is connected; richer combinations and more natural surface variation still require further teaching and ordinary-use evidence |
 | Extended pragmatic dialogue | Immediate interruptions, returns, pronoun ambiguity, corrections, and restrained endings are connected; long ambiguous exchanges, nested topics, and rapid multi-speaker changes still need broader handling |
 | Long-form discourse planning | Better theses, paragraph structure, examples, transitions, callbacks, summaries, and conclusions |
@@ -1170,6 +1171,21 @@ After the bounded Metacognition Organ v1 connection on July 20:
   write, identity/personality/Voice change, model training, or autonomy
   expansion was used.
 
+After the language-teaching completion pass on July 20:
+
+- the ten legacy-labeled foundation rows returned to the current visible
+  lifecycle instead of bypassing it;
+- all ten G1 foundations and twelve G2-G4 breadth lessons completed Acquire,
+  Integrate, and Express review in dependency order;
+- all 22 received explicit Aleks item approvals, leaving zero pending language
+  candidates and zero unmet prerequisites;
+- read-only selector checks confirmed all twelve advanced lesson routes with
+  ordinary synthetic prompts;
+- all 22 approval audit records kept memory, identity, personality,
+  governance, training, provider, and autonomy boundaries closed;
+- no live Chat message, affect signal, stressful probe, or broad Voice grade
+  was used.
+
 The test count demonstrates broad machinery coverage. It does not mean every
 future organ is complete or that every conversational context has been graded.
 
@@ -1230,4 +1246,5 @@ Related current assessments:
 - `docs/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/SELENE_SPEECH_PHASE_7_STABILIZATION_20260719.md`
 - `docs/SELENE_METACOGNITION_ORGAN_V1_20260720.md`
+- `docs/SELENE_LANGUAGE_TEACHING_COMPLETION_20260720.md`
 - `docs/HACKATHON_COMPLETION_MAP_20260717.md`

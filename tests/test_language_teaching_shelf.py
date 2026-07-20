@@ -292,6 +292,31 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         assert item["available_to_nlo"] is False
 
 
+def test_all_four_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
+    conn = _conn(tmp_path)
+    prepare_language_teaching_shelf(conn)
+    memory_before = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
+
+    for lesson in LANGUAGE_QOL_LESSONS:
+        result = _complete_and_approve(conn, str(lesson["key"]))
+        assert result["stage_complete"] is True
+        assert result["snapshot"]["approval_actor"] == "Aleks"
+        assert result["snapshot"]["memory_created"] is False
+        assert result["snapshot"]["identity_changed"] is False
+        assert result["snapshot"]["personality_changed"] is False
+
+    status = language_teaching_status(conn)
+    items = list_language_teaching_items(conn)["items"]
+
+    assert status["available_lesson_count"] == 22
+    assert status["candidate_lesson_count"] == 0
+    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4]
+    assert all(item["own_review_complete"] is True for item in items)
+    assert all(item["prerequisites_complete"] is True for item in items)
+    assert all(item["unmet_prerequisites"] == [] for item in items)
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == memory_before
+
+
 def test_new_lesson_reaches_guidance_only_after_full_review_and_aleks_approval(tmp_path):
     conn = _conn(tmp_path)
     prepare_language_teaching_shelf(conn)
