@@ -137,6 +137,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     source_class = _source_class(text, approved)
     qa_probe = payload.get("qa_probe") is True
     source_mode = "selene_supervised_qa" if qa_probe else "selene_supervised_speech"
+    input_channel = str(payload.get("input_channel") or payload.get("speaker") or "desktop").strip().lower()
+    if input_channel not in {"desktop", "mobile", "verizon_email_to_text"}:
+        input_channel = "desktop"
+    requested_character_limit = _optional_response_character_limit(payload.get("response_character_limit"))
     session_id = int(payload.get("session_id") or 0) or _create_session(
         conn,
         text,
@@ -282,6 +286,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "self_state_context": self_state,
             "affect_expression_guidance": affect_expression,
             "intent_decision": intent_decision,
+            "response_depth": payload.get("response_depth"),
             "source_refs": [
                 "selene_chat:native_language",
                 *_json_list(route.get("source_refs")),
@@ -430,6 +435,17 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         record_run=True,
         commit=False,
     )
+    delivery_constraint = {
+        "input_channel": input_channel,
+        "character_limit": requested_character_limit,
+        "applied": False,
+    }
+    if requested_character_limit:
+        constrained_candidate = truncate(candidate_text, requested_character_limit)
+        delivery_constraint["applied"] = constrained_candidate != candidate_text
+        candidate_text = constrained_candidate
+        response_coverage = evaluate_response_coverage(native_language.get("pragmatic_plan"), candidate_text)
+        conversation_repair["final_response_coverage"] = response_coverage
     memory_candidate_suggestion = _memory_candidate_suggestion(text, candidate_text, selected_route, source_class, memory_retrieval, hard=bool(hard_blockers))
     dialogue_workspace = record_dialogue_response(
         conn,
@@ -452,6 +468,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "route_preview": route,
             "activation_state": "selene_chat_active_supervised",
             "input_interpretation": input_interpretation,
+            "input_channel": input_channel,
         },
     )
     assistant_payload = {
@@ -475,6 +492,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "dialogue_workspace": dialogue_workspace,
         "response_coverage": response_coverage,
         "conversation_repair": conversation_repair,
+        "input_channel": input_channel,
+        "delivery_constraint": delivery_constraint,
         "memory_retrieval": memory_retrieval,
         "memory_candidate_suggestion": memory_candidate_suggestion,
         "source_boundaries": _source_boundaries(),
@@ -521,6 +540,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "assistant_message_id": assistant_message_id,
             "activation_event_id": event_id,
             "candidate_text": candidate_text,
+            "input_channel": input_channel,
+            "delivery_constraint": delivery_constraint,
             "input_interpretation": input_interpretation,
             "selected_route": selected_route,
             "source_class": source_class,
@@ -1535,6 +1556,16 @@ def _local_chat_continuity_reply(text: str, chat_continuity: dict[str, Any], int
         f"I remember the local chat thread around {title}. A new chat is a clean page, not a blank Selene, "
         "and I can ask you if the exact detail needs more grounding."
     )
+
+
+def _optional_response_character_limit(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    try:
+        limit = int(value)
+    except (TypeError, ValueError):
+        return None
+    return max(80, min(limit, 2400))
 
 
 def _with_guards(payload: dict[str, Any], *, transfer_approved: bool = False, active: bool = False) -> dict[str, Any]:

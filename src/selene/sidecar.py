@@ -39,6 +39,7 @@ from .registry import audit_rows, dashboard, evidence_detail, search_evidence, s
 from .semantic import backfill_evidence_embeddings, semantic_status
 from .tendril_email import (
     EmailMessengerError,
+    connect_email_chat,
     disable_email,
     email_private_config,
     email_status,
@@ -1025,6 +1026,15 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 return
             try:
                 self._send(*json_bytes(initiate_email(self.server.conn, body)))
+            except (EmailMessengerError, TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/selene/tendril/email/connect":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "Selene's phone-chat connection is local-only"}, 403))
+                return
+            try:
+                connection = connect_email_chat(self.server.conn, body)
+                self._send(*json_bytes({**email_sidecar_status(self.server), **connection}))
             except (EmailMessengerError, TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/mobile/chat/send":

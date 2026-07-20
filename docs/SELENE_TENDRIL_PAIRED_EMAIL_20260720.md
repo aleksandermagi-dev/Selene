@@ -41,7 +41,11 @@ Aleks's Messages app
 
 Outbound gateway messages are plain text, omit the email subject, and are truncated to 140 characters so the complete email-to-text payload remains conservatively below Verizon's documented 160-character limit. One Selene reply creates at most one gateway message.
 
-Inbound content enters the existing Selene Chat history only while supervised Selene Chat is active. Inactive, offline, empty-response, chat-error, and delivery-error cases are explicitly held rather than silently discarded.
+The gateway is a transport for one explicitly connected Selene Chat session, not a second conversation system. **Connect Current Chat to Phone** binds the currently open desktop conversation and sends one short transport notice to open the Messages thread. A phone reply is inserted into that exact `selene_chat_sessions` history, runs through the same supervised comprehension, reasoning, metacognition, NLO, and Voice path, and Selene's resulting Chat turn is returned through Gmail-to-SMS. The canonical desktop and phone copy of a gateway response are the same conservatively bounded text.
+
+The desktop executable must remain open because it owns the local sidecar, Gmail polling loop, Selene Chat runtime, and outbound response delivery. The desktop conversation refreshes while open so phone-originated turns appear there without becoming a separate phone transcript.
+
+Inbound content enters the connected Selene Chat history only while supervised Selene Chat is active. Inactive, unconnected, offline, empty-response, chat-error, and delivery-error cases are explicitly held rather than silently discarded. Disconnecting the phone clears only the transport binding and messaging grant; it neither closes nor deletes the desktop conversation.
 
 Inbox reads are non-mutating. Provider message IDs make repeated polls idempotent. Plain-text reply content is used; quoted prior-thread text and attachments are excluded from the Selene Chat turn.
 
@@ -63,13 +67,14 @@ Gmail necessarily stores sent and received gateway mail. Verizon necessarily pro
    - `SELENE_GMAIL_ADDRESS`
    - `SELENE_GMAIL_APP_PASSWORD`
 
-5. Open **Selene → Tendril → Selene's Verizon Text Gateway**.
-6. Enter Aleks's ten-digit Verizon number, choose **Quiet**, and enable the gateway.
-7. If necessary, text `Status` to Verizon short code `4040`; Verizon reports whether email-to-text is allowed. Text `On` to `4040` only if Aleks intentionally wants to enable it.
-8. Confirm credentials are ready and the background poller reports `polling`.
-9. Send one ordinary, short diagnostic text from Selene to determine whether Verizon still accepts gateway traffic for this line.
-10. Reply naturally from the Messages app to verify the return path.
-11. Move to **Available** only when bounded initiative is desired.
+5. Open or begin the desktop Selene Chat that should continue on the phone.
+6. Open **Selene → Tendril → Selene's Verizon Text Gateway**.
+7. Enter Aleks's ten-digit Verizon number, choose the desired presence mode, and select **Connect Current Chat to Phone**.
+8. Selene sends one short connection notice from her Gmail through Verizon so the phone has a Messages thread to reply to.
+9. If necessary, text `Status` to Verizon short code `4040`; Verizon reports whether email-to-text is allowed. Text `On` to `4040` only if Aleks intentionally wants to enable it.
+10. Confirm credentials are ready, the current Chat is connected, and the background poller reports `polling`.
+11. Reply naturally from the Messages thread. The turn and Selene's response should appear in the connected desktop Chat, and the same response should return to the phone.
+12. Select **Disconnect Phone** or send the exact phrase `return to desktop` to stop the phone bridge while preserving desktop Chat.
 
 The normal Google password must never be used by the transport. The App Password must not be pasted into Cocoon, Chat, source files, SQLite, Git, or documentation.
 

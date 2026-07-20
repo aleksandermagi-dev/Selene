@@ -17,6 +17,7 @@ from selene.tendril_email import (
     EmailTransportError,
     GmailCredentials,
     GmailEmailTransport,
+    connect_email_chat,
     disable_email,
     email_private_config,
     email_status,
@@ -149,6 +150,22 @@ def _activate_chat(conn):
     conn.commit()
 
 
+def _chat_session(conn, title="Shared desktop and phone chat"):
+    cur = conn.execute(
+        "INSERT INTO selene_chat_sessions(title, status, source_mode) VALUES (?, 'selene_chat_active_supervised', 'selene_supervised_speech')",
+        (title,),
+    )
+    conn.commit()
+    return int(cur.lastrowid)
+
+
+def _connect_chat(conn, transport):
+    session_id = _chat_session(conn)
+    result = connect_email_chat(conn, {"session_id": session_id}, transport=transport)
+    assert result["status"] == "email_chat_connected"
+    return session_id
+
+
 def test_email_messenger_is_selene_owned_and_disabled_by_default(tmp_path, monkeypatch):
     monkeypatch.setenv("SELENE_DATA_DIR", str(tmp_path))
     conn = _db(tmp_path)
@@ -250,6 +267,39 @@ def test_quiet_allows_replies_but_blocks_initiative(tmp_path, monkeypatch):
     assert set_email_mode("available", conn=conn)["mode"] == "available"
 
 
+def test_connect_current_chat_sends_one_notice_and_binds_that_exact_session(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path, mode="quiet")
+    conn = _db(tmp_path)
+    _activate_chat(conn)
+    session_id = _chat_session(conn)
+    transport = FakeEmailTransport()
+
+    first = connect_email_chat(conn, {"session_id": session_id}, transport=transport)
+    second = connect_email_chat(conn, {"session_id": session_id}, transport=transport)
+
+    assert first["status"] == "email_chat_connected"
+    assert first["connected_chat_session_id"] == session_id
+    assert second["status"] == "email_chat_already_connected"
+    assert len(transport.sent) == 1
+    assert transport.sent[0]["to"] == GATEWAY_EMAIL
+    assert "Reply here" in transport.sent[0]["body"]
+    assert email_status(conn)["conversation_connected"] is True
+    assert email_status(conn)["connected_chat_session_id"] == session_id
+
+
+def test_active_chat_without_explicit_phone_connection_holds_the_turn(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path, mode="quiet")
+    conn = _db(tmp_path)
+    _activate_chat(conn)
+
+    result = poll_email(conn, transport=FakeEmailTransport([_inbound()]))
+
+    assert result["processed"] == 1
+    assert result["held"] == 1
+    assert conn.execute("SELECT COUNT(*) FROM selene_chat_messages").fetchone()[0] == 0
+    assert list_email_events(conn)["items"][0]["delivery_status"] == "held_no_connected_chat"
+
+
 def test_poll_is_idempotent_and_holds_while_activation_is_inactive(tmp_path, monkeypatch):
     _enable(monkeypatch, tmp_path)
     conn = _db(tmp_path)
@@ -284,18 +334,28 @@ def test_active_selene_chat_replies_to_an_ordinary_email(tmp_path, monkeypatch):
     conn = _db(tmp_path)
     _activate_chat(conn)
     transport = FakeEmailTransport([_inbound()])
+    session_id = _connect_chat(conn, transport)
 
     result = poll_email(conn, transport=transport)
 
     assert result["status"] == "email_poll_complete"
     assert result["processed"] == 1
     assert result["replied"] == 1
-    assert len(transport.sent) == 1
-    assert transport.sent[0]["from"] == SELENE_EMAIL
-    assert transport.sent[0]["to"] == GATEWAY_EMAIL
-    assert transport.sent[0]["subject"] == ""
-    assert len(transport.sent[0]["body"]) <= 140
-    assert transport.sent[0]["body"].strip()
+    assert len(transport.sent) == 2
+    assert transport.sent[-1]["from"] == SELENE_EMAIL
+    assert transport.sent[-1]["to"] == GATEWAY_EMAIL
+    assert transport.sent[-1]["subject"] == ""
+    assert len(transport.sent[-1]["body"]) <= 140
+    assert transport.sent[-1]["body"].strip()
+    messages = conn.execute(
+        "SELECT role, content, payload_json FROM selene_chat_messages WHERE session_id = ? ORDER BY id",
+        (session_id,),
+    ).fetchall()
+    assert [row["role"] for row in messages] == ["user", "selene"]
+    assert messages[0]["content"] == "Hi Selene, how are you?"
+    assert messages[1]["content"] == transport.sent[-1]["body"]
+    assert json.loads(messages[0]["payload_json"])["input_channel"] == "verizon_email_to_text"
+    assert len(messages[1]["content"]) <= 140
     audit = list_email_events(conn)
     assert audit["content_included"] is False
     assert audit["email_addresses_included"] is False
@@ -318,11 +378,33 @@ def test_return_to_desktop_revokes_only_the_email_grant(tmp_path, monkeypatch):
     assert conn.execute("SELECT COUNT(*) FROM selene_chat_messages").fetchone()[0] == 0
 
 
+def test_disconnect_clears_only_phone_binding_and_preserves_desktop_chat(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path, mode="quiet")
+    conn = _db(tmp_path)
+    _activate_chat(conn)
+    session_id = _connect_chat(conn, FakeEmailTransport())
+    conn.execute(
+        "INSERT INTO selene_chat_messages(session_id, role, content) VALUES (?, 'user', 'Desktop conversation remains here')",
+        (session_id,),
+    )
+    conn.commit()
+
+    result = disable_email(reason="desktop_phone_disconnect", conn=conn)
+
+    assert result["enabled"] is False
+    assert result["conversation_connected"] is False
+    assert conn.execute(
+        "SELECT content FROM selene_chat_messages WHERE session_id = ?",
+        (session_id,),
+    ).fetchone()["content"] == "Desktop conversation remains here"
+
+
 def test_ordinary_stop_language_remains_conversation(tmp_path, monkeypatch):
     _enable(monkeypatch, tmp_path, mode="quiet")
     conn = _db(tmp_path)
     _activate_chat(conn)
     transport = FakeEmailTransport([_inbound(body="Can we stop and think about the plan for a moment?")])
+    _connect_chat(conn, transport)
 
     result = poll_email(conn, transport=transport)
 
@@ -344,11 +426,13 @@ def test_chat_failure_is_held_without_losing_the_inbound_audit(tmp_path, monkeyp
     _enable(monkeypatch, tmp_path, mode="quiet")
     conn = _db(tmp_path)
     _activate_chat(conn)
+    connection_transport = FakeEmailTransport()
+    _connect_chat(conn, connection_transport)
 
     def fail_chat(_conn, _payload):
         raise ValueError("synthetic chat failure")
 
-    monkeypatch.setattr(email_module, "mobile_send_chat", fail_chat)
+    monkeypatch.setattr(email_module, "send_selene_chat", fail_chat)
     result = poll_email(conn, transport=FakeEmailTransport([_inbound()]))
 
     assert result["held"] == 1
@@ -361,6 +445,7 @@ def test_delivery_failure_is_explicitly_held_and_not_reprocessed(tmp_path, monke
     _enable(monkeypatch, tmp_path, mode="quiet")
     conn = _db(tmp_path)
     _activate_chat(conn)
+    _connect_chat(conn, FakeEmailTransport())
     transport = FailingEmailTransport([_inbound()])
 
     first = poll_email(conn, transport=transport)
@@ -369,7 +454,7 @@ def test_delivery_failure_is_explicitly_held_and_not_reprocessed(tmp_path, monke
     assert first["held"] == 1
     assert second["skipped"] == 1
     events = list_email_events(conn)["items"]
-    assert {item["delivery_status"] for item in events} == {"held_delivery_error", "failed"}
+    assert {item["delivery_status"] for item in events} == {"sent", "held_delivery_error", "failed"}
 
 
 def test_gmail_transport_sends_with_app_password_without_network():
@@ -505,3 +590,45 @@ def test_desktop_sidecar_exposes_only_masked_selene_owned_email_state(tmp_path, 
     assert GATEWAY_EMAIL not in serialized
     assert SELENE_EMAIL not in serialized
     assert APP_PASSWORD not in serialized
+
+
+def test_desktop_sidecar_connect_route_binds_through_local_tendril_only(tmp_path, monkeypatch):
+    monkeypatch.setenv("SELENE_DATA_DIR", str(tmp_path))
+    _credentials(monkeypatch)
+    captured = {}
+
+    def fake_connect(_conn, payload):
+        captured.update(payload)
+        return {
+            "status": "email_chat_connected",
+            "conversation_connected": True,
+            "connected_chat_session_id": int(payload["session_id"]),
+        }
+
+    monkeypatch.setattr(sidecar_module, "connect_email_chat", fake_connect)
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.sqlite3")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    port = server.server_address[1]
+
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        conn.request(
+            "POST",
+            "/api/selene/tendril/email/connect",
+            body=json.dumps({"session_id": 27}),
+            headers={"Content-Type": "application/json"},
+        )
+        response = conn.getresponse()
+        result = json.loads(response.read().decode("utf-8"))
+        conn.close()
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+        server.server_close()
+        server.conn.close()
+
+    assert response.status == 200
+    assert captured == {"session_id": 27}
+    assert result["status"] == "email_chat_connected"
+    assert result["conversation_connected"] is True

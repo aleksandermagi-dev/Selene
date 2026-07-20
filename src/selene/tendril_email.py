@@ -18,9 +18,9 @@ from email.utils import make_msgid, parseaddr, parsedate_to_datetime
 from typing import Any, Callable, Protocol
 
 from .activation import activation_is_active
-from .mobile_chat import mobile_send_chat
 from .paths import local_data_dir
 from .registry import truncate
+from .selene_chat import send_selene_chat
 
 
 EMAIL_CONFIG_FILE = "selene_tendril_email.json"
@@ -28,7 +28,7 @@ EMAIL_PROVIDER = "gmail_smtp_imap"
 EMAIL_CONTACT_ID = "aleks_primary"
 VERIZON_SMS_DOMAIN = "vtext.com"
 EMAIL_MODES = {"available", "quiet", "offline"}
-EMAIL_PURPOSES = {"reply", "initiative"}
+EMAIL_PURPOSES = {"reply", "initiative", "connection"}
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 US_PHONE_PATTERN = re.compile(r"^\d{10}$")
 DEFAULT_MAX_UNACKNOWLEDGED = 3
@@ -37,6 +37,7 @@ MAX_GATEWAY_BODY_CHARS = 140
 MAX_INBOUND_BODY_CHARS = 1000
 MAX_SUBJECT_CHARS = 120
 RETURN_TO_DESKTOP_PHRASE = "return to desktop"
+PHONE_CONNECTION_MESSAGE = "Phone connection ready. Reply here to continue this Selene Chat."
 
 
 class EmailMessengerError(RuntimeError):
@@ -209,6 +210,12 @@ def email_status(conn: sqlite3.Connection | None = None) -> dict[str, Any]:
         ).fetchone()
         if row:
             state = dict(row)
+    connected_session_id = _optional_int(state.get("chat_session_id"))
+    conversation_connected = bool(
+        conn is not None
+        and connected_session_id
+        and _chat_session_exists(conn, connected_session_id)
+    )
     return {
         "status": "email_ready" if _is_ready(config, credentials) else "email_setup_required",
         "tool": "tendril_verizon_email_to_text_messenger",
@@ -239,6 +246,8 @@ def email_status(conn: sqlite3.Connection | None = None) -> dict[str, Any]:
         "last_outbound_at": state.get("last_outbound_at") or "",
         "last_poll_at": state.get("last_poll_at") or "",
         "last_poll_status": state.get("last_poll_status") or "not_run",
+        "conversation_connected": conversation_connected,
+        "connected_chat_session_id": connected_session_id if conversation_connected else None,
         "conversation_exit_phrase": RETURN_TO_DESKTOP_PHRASE,
         "boundaries": _email_boundaries(config),
     }
@@ -263,6 +272,7 @@ def enable_email(payload: dict[str, Any] | None = None, *, conn: sqlite3.Connect
     _write_config(config)
     if conn is not None:
         _reset_delivery_window(conn)
+        _clear_email_session(conn)
     return {
         **email_status(conn),
         "status": "email_delegated_authority_enabled",
@@ -280,6 +290,8 @@ def disable_email(*, reason: str = "selene_runtime_revocation", conn: sqlite3.Co
         "initiative_allowed": False,
     })
     _write_config(config)
+    if conn is not None:
+        _clear_email_session(conn)
     return {
         **email_status(conn),
         "status": "email_delegated_authority_revoked",
@@ -333,10 +345,10 @@ def send_email(
     config = email_private_config()
     text = truncate(str(payload.get("text") or ""), MAX_GATEWAY_BODY_CHARS)
     if not text.strip():
-        raise ValueError("Email text is required")
+        raise ValueError("Gateway message text is required")
     purpose = str(payload.get("purpose") or "initiative").strip().lower()
     if purpose not in EMAIL_PURPOSES:
-        raise ValueError("Email purpose must be reply or initiative")
+        raise ValueError("Gateway purpose must be connection, reply, or initiative")
     _assert_send_authority(conn, config, purpose)
     if purpose == "initiative" and not str(payload.get("reason") or "").strip():
         raise ValueError("A bounded Tendril reason is required for initiative")
@@ -399,6 +411,42 @@ def initiate_email(
     transport: EmailTransport | None = None,
 ) -> dict[str, Any]:
     return send_email(conn, {**payload, "purpose": "initiative"}, transport=transport)
+
+
+def connect_email_chat(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any],
+    *,
+    transport: EmailTransport | None = None,
+) -> dict[str, Any]:
+    if not activation_is_active(conn):
+        raise EmailAuthorityError("Selene Chat must be active before it can be connected to the phone")
+    session_id = _optional_int(payload.get("session_id"))
+    if not session_id or not _chat_session_exists(conn, session_id):
+        raise ValueError("An existing Selene Chat session is required")
+    if _email_session_id(conn) == session_id:
+        return {
+            **email_status(conn),
+            "status": "email_chat_already_connected",
+            "message": "This Selene Chat is already connected to the phone transport.",
+        }
+    result = send_email(
+        conn,
+        {
+            "text": PHONE_CONNECTION_MESSAGE,
+            "purpose": "connection",
+            "chat_session_id": session_id,
+        },
+        transport=transport,
+    )
+    _set_email_session(conn, session_id)
+    return {
+        **result,
+        "status": "email_chat_connected",
+        "conversation_connected": True,
+        "connected_chat_session_id": session_id,
+        "message": "The current Selene Chat is connected to the phone transport.",
+    }
 
 
 def poll_email(
@@ -465,8 +513,21 @@ def poll_email(
             held += 1
             continue
         session_id = _email_session_id(conn)
+        if not session_id or not _chat_session_exists(conn, session_id):
+            _set_event_status(conn, inbound_event_id, "held_no_connected_chat")
+            held += 1
+            continue
         try:
-            chat_result = mobile_send_chat(conn, {"text": text, "session_id": session_id})
+            chat_result = send_selene_chat(
+                conn,
+                {
+                    "text": text,
+                    "session_id": session_id,
+                    "input_channel": "verizon_email_to_text",
+                    "response_depth": "short",
+                    "response_character_limit": MAX_GATEWAY_BODY_CHARS,
+                },
+            )
         except Exception as exc:  # Isolate a chat-path failure from the inbox poller.
             _set_event_status(conn, inbound_event_id, "held_chat_error", error_code=type(exc).__name__)
             held += 1
@@ -695,6 +756,35 @@ def _email_session_id(conn: sqlite3.Connection) -> int | None:
         (EMAIL_CONTACT_ID,),
     ).fetchone()
     return _optional_int(row["chat_session_id"] if row else None)
+
+
+def _set_email_session(conn: sqlite3.Connection, session_id: int) -> None:
+    conn.execute(
+        """
+        INSERT INTO email_messaging_state(contact_id, chat_session_id, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(contact_id) DO UPDATE SET
+          chat_session_id = excluded.chat_session_id,
+          updated_at = CURRENT_TIMESTAMP
+        """,
+        (EMAIL_CONTACT_ID, session_id),
+    )
+    conn.commit()
+
+
+def _clear_email_session(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "UPDATE email_messaging_state SET chat_session_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE contact_id = ?",
+        (EMAIL_CONTACT_ID,),
+    )
+    conn.commit()
+
+
+def _chat_session_exists(conn: sqlite3.Connection, session_id: int) -> bool:
+    return conn.execute(
+        "SELECT 1 FROM selene_chat_sessions WHERE id = ?",
+        (session_id,),
+    ).fetchone() is not None
 
 
 def _unacknowledged_count(conn: sqlite3.Connection) -> int:

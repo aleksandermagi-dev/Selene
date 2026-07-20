@@ -949,6 +949,25 @@ function App() {
   }, [seleneChatSession]);
 
   useEffect(() => {
+    const sessionId = text((seleneChatSession?.session as Dict | undefined)?.id);
+    if (!boot.ready || isMobileOnly || !activationStatus?.selene_chat_active || !sessionId) return;
+    let disposed = false;
+    const refreshConnectedConversation = () => {
+      if (document.visibilityState !== "visible" || homeChatSendingRef.current) return;
+      api<Dict>(`/api/selene-chat/sessions/${sessionId}`)
+        .then((session) => {
+          if (!disposed) setSeleneChatSession(session);
+        })
+        .catch(() => undefined);
+    };
+    const timer = window.setInterval(refreshConnectedConversation, 4000);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+    };
+  }, [boot.ready, isMobileOnly, activationStatus?.selene_chat_active, (seleneChatSession?.session as Dict | undefined)?.id]);
+
+  useEffect(() => {
     if (!focusedOfficeDomId || workspaceMode !== "cocoon" || tab !== "my-office") return;
     const timer = window.setTimeout(() => {
       const element = document.getElementById(focusedOfficeDomId);
@@ -2566,20 +2585,29 @@ function App() {
   }
 
   async function enableEmailMessenger() {
-    setEmailMessengerResult({ status: "running", message: "Enabling Selene's Verizon email-to-text gateway." });
+    const currentSessionId = (seleneChatSession?.session as Dict | undefined)?.id;
+    if (!currentSessionId) {
+      setEmailMessengerResult({ status: "error", error: "Open or start a Selene Chat before connecting it to the phone." });
+      return;
+    }
+    setEmailMessengerResult({ status: "running", message: "Connecting the current Selene Chat to the phone transport." });
     try {
-      const result = await api<Dict>("/api/selene/tendril/email/enable", {
+      await api<Dict>("/api/selene/tendril/email/enable", {
         method: "POST",
         body: JSON.stringify({
           contact_number: pairedAleksNumber.trim(),
           mode: emailMessengerMode
         })
       });
+      const result = await api<Dict>("/api/selene/tendril/email/connect", {
+        method: "POST",
+        body: JSON.stringify({ session_id: currentSessionId })
+      });
       setEmailMessengerResult(result);
       setEmailMessengerStatus(result);
       await refreshMobileCompanion();
     } catch (err) {
-      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Verizon text gateway enable failed." });
+      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Phone-chat connection failed." });
     }
   }
 
@@ -6520,11 +6548,12 @@ function App() {
               </div>
             </section>
             <Panel title="Selene's Verizon Text Gateway">
-              <p className="plainHelp">Provider-API-free Gmail-to-SMS messaging owned by Selene's post-transfer Tendril. Selene sends short plain-text mail through Verizon's consumer gateway so it arrives in Aleks's Messages app. Cocoon receives neither the number, Gmail address, App Password, nor messenger control.</p>
+              <p className="plainHelp">Provider-API-free Gmail-to-SMS transport owned by Selene's post-transfer Tendril. It connects the currently open Selene Chat to Aleks's Messages app; phone turns use the same conversation, comprehension, reasoning, NLO, and Voice path as desktop Chat. Cocoon receives neither the number, Gmail address, App Password, nor messenger control.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Messenger" value={friendlyStatus(emailMessengerStatus?.status || "not configured")} />
                 <Metric label="Runtime" value={friendlyStatus(emailMessengerStatus?.runtime_state || "not running")} />
                 <Metric label="Mode" value={friendlyStatus(emailMessengerStatus?.mode || "offline")} />
+                <Metric label="Current Chat" value={emailMessengerStatus?.conversation_connected ? `connected · ${text(emailMessengerStatus?.connected_chat_session_id)}` : "not connected"} />
                 <Metric label="Aleks" value={text(emailMessengerStatus?.contact_number_masked || "not paired")} />
                 <Metric label="Selene Gmail" value={text(emailMessengerStatus?.sender_email_masked || "not configured")} />
                 <Metric label="Unanswered" value={text(emailMessengerStatus?.unacknowledged_outbound ?? 0)} />
@@ -6557,13 +6586,20 @@ function App() {
                 </label>
               </div>
               <div className="reviewActions">
-                <button className="primary" onClick={enableEmailMessenger} disabled={emailMessengerResult?.status === "running"}>Enable Verizon Text</button>
+                <button
+                  className="primary"
+                  onClick={enableEmailMessenger}
+                  disabled={emailMessengerResult?.status === "running" || Boolean(
+                    emailMessengerStatus?.conversation_connected
+                    && text(emailMessengerStatus?.connected_chat_session_id) === text((seleneChatSession?.session as Dict | undefined)?.id)
+                  )}
+                >Connect Current Chat to Phone</button>
                 <button onClick={updateEmailMessengerMode} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Set Presence</button>
                 <button onClick={pollEmailMessengerNow} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Diagnostic Poll</button>
-                <button onClick={disableEmailMessenger} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Turn Off Texting</button>
+                <button onClick={disableEmailMessenger} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Disconnect Phone</button>
                 <button onClick={() => refreshMobileCompanion().catch(() => undefined)}>Refresh Messenger</button>
               </div>
-              {!safeJsonObject(emailMessengerStatus?.credentials).ready ? <p className="plainHelp">Supply `SELENE_GMAIL_ADDRESS` and Selene's dedicated `SELENE_GMAIL_APP_PASSWORD` through her local process environment. Secrets never enter this panel, SQLite, Cocoon, or Git.</p> : <p className="plainHelp">Incoming replies are checked automatically through Selene's Gmail while she is running. Verizon limits email-to-text content and is retiring this legacy consumer gateway, so the first live check will confirm whether this line still accepts it.</p>}
+              {!safeJsonObject(emailMessengerStatus?.credentials).ready ? <p className="plainHelp">Supply `SELENE_GMAIL_ADDRESS` and Selene's dedicated `SELENE_GMAIL_APP_PASSWORD` through her local process environment. Secrets never enter this panel, SQLite, Cocoon, or Git.</p> : <p className="plainHelp">Keep the Selene desktop app open. Connecting sends one short transport notice that opens the Messages thread; replies then enter the connected desktop conversation and Selene's same Chat response returns to the phone. Disconnecting stops the phone bridge without ending desktop Chat. Verizon is retiring this legacy gateway, so the first connection also confirms whether this line still accepts it.</p>}
               <div className="list compactList packetList">
                 {emailMessengerEvents.slice(0, 6).map((item) => (
                   <article className="packetCard" key={`email-event-${text(item.id)}`}>
