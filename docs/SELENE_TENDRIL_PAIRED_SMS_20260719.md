@@ -1,6 +1,6 @@
 # Selene Tendril Paired SMS — 2026-07-19
 
-> **Current status (2026-07-20):** retained as an optional carrier adapter, but no longer the default paired messenger. Its controls were removed from Cocoon after transfer. Resident Selene's Tendril now owns the direct Gmail messenger documented in `SELENE_TENDRIL_PAIRED_EMAIL_20260720.md`. Twilio remains disabled unless separately configured later.
+> **Current status (2026-07-20):** retained as an optional paid carrier adapter, but no longer the default paired messenger. Its controls were removed from Cocoon after transfer. Resident Selene's Tendril now owns the provider-API-free Gmail-to-Verizon email-to-text gateway documented in `SELENE_TENDRIL_PAIRED_EMAIL_20260720.md`. Twilio remains disabled unless separately configured later.
 
 ## Outcome
 

@@ -26,12 +26,15 @@ from .registry import truncate
 EMAIL_CONFIG_FILE = "selene_tendril_email.json"
 EMAIL_PROVIDER = "gmail_smtp_imap"
 EMAIL_CONTACT_ID = "aleks_primary"
+VERIZON_SMS_DOMAIN = "vtext.com"
 EMAIL_MODES = {"available", "quiet", "offline"}
 EMAIL_PURPOSES = {"reply", "initiative"}
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+US_PHONE_PATTERN = re.compile(r"^\d{10}$")
 DEFAULT_MAX_UNACKNOWLEDGED = 3
 DEFAULT_POLL_INTERVAL_SECONDS = 15
-MAX_EMAIL_BODY_CHARS = 4000
+MAX_GATEWAY_BODY_CHARS = 140
+MAX_INBOUND_BODY_CHARS = 1000
 MAX_SUBJECT_CHARS = 120
 RETURN_TO_DESKTOP_PHRASE = "return to desktop"
 
@@ -107,7 +110,9 @@ class GmailEmailTransport:
         message = EmailMessage()
         message["From"] = from_address
         message["To"] = to_address
-        message["Subject"] = truncate(subject, MAX_SUBJECT_CHARS) or "Selene"
+        normalized_subject = truncate(subject, MAX_SUBJECT_CHARS).strip()
+        if normalized_subject:
+            message["Subject"] = normalized_subject
         message["Message-ID"] = make_msgid(domain=from_address.split("@", 1)[-1])
         message.set_content(body)
         try:
@@ -159,7 +164,7 @@ class GmailEmailTransport:
                 if not raw:
                     continue
                 parsed = _parse_inbound_email(raw, fallback_id=f"gmail-uid-{uid.decode('ascii', errors='ignore')}")
-                if _message_matches_pair(parsed, {"contact_email": from_address, "sender_email": to_address}):
+                if _message_matches_pair(parsed, {"gateway_email": from_address, "sender_email": to_address}):
                     messages.append(parsed)
             return sorted(messages, key=lambda item: (str(item.get("date_sent") or ""), str(item.get("id") or "")))
         except EmailTransportError:
@@ -206,15 +211,19 @@ def email_status(conn: sqlite3.Connection | None = None) -> dict[str, Any]:
             state = dict(row)
     return {
         "status": "email_ready" if _is_ready(config, credentials) else "email_setup_required",
-        "tool": "tendril_paired_email_messenger",
-        "transport": "direct_email",
+        "tool": "tendril_verizon_email_to_text_messenger",
+        "transport": "email_to_sms_gateway",
+        "carrier": "verizon",
+        "gateway_domain": VERIZON_SMS_DOMAIN,
+        "gateway_status": "legacy_shutdown_in_progress",
+        "gateway_scheduled_shutdown": "2027-03-31",
         "provider": EMAIL_PROVIDER,
         "owner": "selene_runtime",
         "cocoon_control": False,
         "enabled": config["enabled"],
         "mode": config["mode"],
         "contact_id": EMAIL_CONTACT_ID,
-        "contact_email_masked": _mask_email(config["contact_email"]),
+        "contact_number_masked": _mask_phone(config["contact_number"]),
         "sender_email_masked": _mask_email(os.environ.get("SELENE_GMAIL_ADDRESS", "")),
         "delegated_message_authority": config["delegated_message_authority"],
         "per_message_approval_required": False,
@@ -237,13 +246,13 @@ def email_status(conn: sqlite3.Connection | None = None) -> dict[str, Any]:
 
 def enable_email(payload: dict[str, Any] | None = None, *, conn: sqlite3.Connection | None = None) -> dict[str, Any]:
     payload = payload or {}
-    contact_email = _email_address(str(payload.get("contact_email") or ""), "Aleks paired email")
+    contact_number = _phone_number(str(payload.get("contact_number") or ""))
     mode = str(payload.get("mode") or "available").strip().lower()
     if mode not in EMAIL_MODES:
         raise ValueError("Email mode must be available, quiet, or offline")
     config = _normalize_config({
         "enabled": True,
-        "contact_email": contact_email,
+        "contact_number": contact_number,
         "mode": mode,
         "delegated_message_authority": True,
         "reply_allowed": True,
@@ -257,7 +266,7 @@ def enable_email(payload: dict[str, Any] | None = None, *, conn: sqlite3.Connect
     return {
         **email_status(conn),
         "status": "email_delegated_authority_enabled",
-        "message": "Selene may reply to Aleks and use bounded initiative through her paired email.",
+        "message": "Selene may send Verizon gateway texts to Aleks and use bounded initiative through her Gmail.",
     }
 
 
@@ -275,7 +284,7 @@ def disable_email(*, reason: str = "selene_runtime_revocation", conn: sqlite3.Co
         **email_status(conn),
         "status": "email_delegated_authority_revoked",
         "reason": reason,
-        "message": "Selene's paired-email delivery authority is off.",
+        "message": "Selene's Gmail-to-Verizon text authority is off.",
     }
 
 
@@ -308,6 +317,7 @@ def list_email_events(conn: sqlite3.Connection, limit: int = 25) -> dict[str, An
         "items": [dict(row) for row in rows],
         "content_included": False,
         "email_addresses_included": False,
+        "phone_numbers_included": False,
         "owner": "selene_runtime",
         "cocoon_control": False,
         "boundaries": _email_boundaries(email_private_config()),
@@ -321,7 +331,7 @@ def send_email(
     transport: EmailTransport | None = None,
 ) -> dict[str, Any]:
     config = email_private_config()
-    text = truncate(str(payload.get("text") or ""), MAX_EMAIL_BODY_CHARS)
+    text = truncate(str(payload.get("text") or ""), MAX_GATEWAY_BODY_CHARS)
     if not text.strip():
         raise ValueError("Email text is required")
     purpose = str(payload.get("purpose") or "initiative").strip().lower()
@@ -332,11 +342,11 @@ def send_email(
         raise ValueError("A bounded Tendril reason is required for initiative")
     credentials = GmailCredentials.from_environment()
     active_transport = transport or GmailEmailTransport(credentials)
-    subject = truncate(str(payload.get("subject") or "Selene"), MAX_SUBJECT_CHARS) or "Selene"
+    subject = truncate(str(payload.get("subject") or ""), MAX_SUBJECT_CHARS)
     try:
         delivered = active_transport.send(
             from_address=credentials.address,
-            to_address=config["contact_email"],
+            to_address=_gateway_address(config["contact_number"]),
             body=text,
             subject=subject,
         )
@@ -407,7 +417,7 @@ def poll_email(
     try:
         incoming = inbound_messages if inbound_messages is not None else active_transport.list_inbound(
             to_address=credentials.address,
-            from_address=config["contact_email"],
+            from_address=_gateway_address(config["contact_number"]),
             limit=20,
         )
     except EmailTransportError:
@@ -416,7 +426,7 @@ def poll_email(
     processed = replied = skipped = held = 0
     for message in incoming:
         provider_id = str(message.get("id") or "").strip()
-        text = truncate(str(message.get("body") or ""), MAX_EMAIL_BODY_CHARS)
+        text = truncate(str(message.get("body") or ""), MAX_INBOUND_BODY_CHARS)
         if not provider_id or not text.strip() or _event_exists(conn, provider_id):
             skipped += 1
             continue
@@ -461,7 +471,7 @@ def poll_email(
             _set_event_status(conn, inbound_event_id, "held_chat_error", error_code=type(exc).__name__)
             held += 1
             continue
-        candidate = truncate(str(chat_result.get("candidate_text") or ""), MAX_EMAIL_BODY_CHARS)
+        candidate = truncate(str(chat_result.get("candidate_text") or ""), MAX_GATEWAY_BODY_CHARS)
         if not candidate.strip():
             _set_event_status(conn, inbound_event_id, "held_no_response")
             held += 1
@@ -477,7 +487,7 @@ def poll_email(
                 conn,
                 {
                     "text": candidate,
-                    "subject": _reply_subject(str(message.get("subject") or "Selene")),
+                    "subject": "",
                     "purpose": "reply",
                     "chat_session_id": chat_result.get("session_id"),
                     "chat_message_id": chat_result.get("assistant_message_id"),
@@ -509,7 +519,7 @@ def _normalize_config(data: dict[str, Any]) -> dict[str, Any]:
     interval = int(data.get("poll_interval_seconds") or DEFAULT_POLL_INTERVAL_SECONDS)
     return {
         "enabled": bool(data.get("enabled")),
-        "contact_email": str(data.get("contact_email") or "").strip().lower(),
+        "contact_number": str(data.get("contact_number") or ""),
         "mode": mode,
         "delegated_message_authority": bool(data.get("delegated_message_authority")),
         "reply_allowed": bool(data.get("reply_allowed")),
@@ -566,14 +576,14 @@ def _is_ready(config: dict[str, Any], credentials: dict[str, Any]) -> bool:
     return bool(
         config["enabled"]
         and config["delegated_message_authority"]
-        and config["contact_email"]
+        and config["contact_number"]
         and credentials["ready"]
     )
 
 
 def _email_boundaries(config: dict[str, Any]) -> dict[str, Any]:
     return {
-        "scope": "paired_email_with_aleks_only",
+        "scope": "paired_verizon_gateway_text_with_aleks_only",
         "owner": "selene_runtime",
         "cocoon_control": False,
         "delegated_message_authority": bool(config.get("delegated_message_authority")),
@@ -640,8 +650,8 @@ def _record_event(
             len(text),
             error_code,
             occurred_at,
-            "selene_tendril_paired_email_no_cocoon_no_memory_no_general_autonomy",
-            json.dumps({"content_stored": False, "email_addresses_stored": False}),
+            "selene_tendril_verizon_email_to_text_no_cocoon_no_memory_no_general_autonomy",
+            json.dumps({"content_stored": False, "email_addresses_stored": False, "phone_numbers_stored": False}),
         ),
     )
     conn.commit()
@@ -756,7 +766,7 @@ def _update_poll_state(conn: sqlite3.Connection, status: str) -> None:
 
 def _message_matches_pair(message: dict[str, Any], config: dict[str, Any]) -> bool:
     return (
-        str(message.get("from") or "").strip().lower() == str(config.get("contact_email") or "").strip().lower()
+        str(message.get("from") or "").strip().lower() == str(config.get("gateway_email") or _gateway_address(str(config.get("contact_number") or ""))).strip().lower()
         and str(message.get("to") or "").strip().lower() == str(config.get("sender_email") or "").strip().lower()
     )
 
@@ -809,12 +819,7 @@ def _strip_reply_quote(value: str) -> str:
         if stripped == "-----Original Message-----" or (stripped.startswith("On ") and stripped.endswith(" wrote:")):
             break
         kept.append(line)
-    return truncate("\n".join(kept).strip(), MAX_EMAIL_BODY_CHARS)
-
-
-def _reply_subject(subject: str) -> str:
-    normalized = truncate(subject.strip() or "Selene", MAX_SUBJECT_CHARS)
-    return normalized if normalized.lower().startswith("re:") else truncate(f"Re: {normalized}", MAX_SUBJECT_CHARS)
+    return truncate("\n".join(kept).strip(), MAX_INBOUND_BODY_CHARS)
 
 
 def _email_date(raw: str) -> str:
@@ -827,11 +832,22 @@ def _email_date(raw: str) -> str:
         return _utc_now()
 
 
-def _email_address(value: str, label: str) -> str:
-    normalized = value.strip().lower()
-    if not EMAIL_PATTERN.fullmatch(normalized):
-        raise ValueError(f"{label} must be a valid email address")
+def _phone_number(value: str) -> str:
+    normalized = re.sub(r"[^0-9]", "", value)
+    if len(normalized) == 11 and normalized.startswith("1"):
+        normalized = normalized[1:]
+    if not US_PHONE_PATTERN.fullmatch(normalized):
+        raise ValueError("Aleks's Verizon number must contain 10 US digits")
     return normalized
+
+
+def _gateway_address(number: str) -> str:
+    return f"{number}@{VERIZON_SMS_DOMAIN}" if US_PHONE_PATTERN.fullmatch(str(number or "")) else ""
+
+
+def _mask_phone(value: str) -> str:
+    normalized = re.sub(r"[^0-9]", "", str(value or ""))
+    return f"(***) ***-{normalized[-4:]}" if len(normalized) >= 4 else ""
 
 
 def _mask_email(value: str) -> str:

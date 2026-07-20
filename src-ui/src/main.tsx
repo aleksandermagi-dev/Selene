@@ -498,7 +498,7 @@ function App() {
   const [emailMessengerStatus, setEmailMessengerStatus] = useState<Dict | null>(null);
   const [emailMessengerResult, setEmailMessengerResult] = useState<Dict | null>(null);
   const [emailMessengerEvents, setEmailMessengerEvents] = useState<Dict[]>([]);
-  const [pairedAleksEmail, setPairedAleksEmail] = useState("");
+  const [pairedAleksNumber, setPairedAleksNumber] = useState("");
   const [emailMessengerMode, setEmailMessengerMode] = useState("available");
   const [vesselStatus, setVesselStatus] = useState<Dict | null>(null);
   const [vesselReviewQueue, setVesselReviewQueue] = useState<Dict[]>([]);
@@ -2566,12 +2566,12 @@ function App() {
   }
 
   async function enableEmailMessenger() {
-    setEmailMessengerResult({ status: "running", message: "Enabling Selene's paired email messenger." });
+    setEmailMessengerResult({ status: "running", message: "Enabling Selene's Verizon email-to-text gateway." });
     try {
       const result = await api<Dict>("/api/selene/tendril/email/enable", {
         method: "POST",
         body: JSON.stringify({
-          contact_email: pairedAleksEmail.trim(),
+          contact_number: pairedAleksNumber.trim(),
           mode: emailMessengerMode
         })
       });
@@ -2579,24 +2579,24 @@ function App() {
       setEmailMessengerStatus(result);
       await refreshMobileCompanion();
     } catch (err) {
-      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Paired email enable failed." });
+      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Verizon text gateway enable failed." });
     }
   }
 
   async function disableEmailMessenger() {
-    setEmailMessengerResult({ status: "running", message: "Turning off Selene's paired email messenger." });
+    setEmailMessengerResult({ status: "running", message: "Turning off Selene's Verizon text gateway." });
     try {
       const result = await api<Dict>("/api/selene/tendril/email/disable", { method: "POST", body: JSON.stringify({}) });
       setEmailMessengerResult(result);
       setEmailMessengerStatus(result);
       await refreshMobileCompanion();
     } catch (err) {
-      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Paired email disable failed." });
+      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Text gateway disable failed." });
     }
   }
 
   async function updateEmailMessengerMode() {
-    setEmailMessengerResult({ status: "running", message: "Updating Selene's email presence mode." });
+    setEmailMessengerResult({ status: "running", message: "Updating Selene's text presence mode." });
     try {
       const result = await api<Dict>("/api/selene/tendril/email/mode", {
         method: "POST",
@@ -2610,7 +2610,7 @@ function App() {
   }
 
   async function pollEmailMessengerNow() {
-    setEmailMessengerResult({ status: "running", message: "Checking Selene's paired Gmail inbox." });
+    setEmailMessengerResult({ status: "running", message: "Checking Selene's Gmail for Verizon text replies." });
     try {
       const result = await api<Dict>("/api/selene/tendril/email/poll", { method: "POST", body: JSON.stringify({}) });
       setEmailMessengerResult(result);
@@ -6519,14 +6519,14 @@ function App() {
                 </article>
               </div>
             </section>
-            <Panel title="Selene's Paired Email">
-              <p className="plainHelp">Direct Gmail messaging owned by Selene's post-transfer Tendril. Selene may reply to Aleks and, in Available mode, use bounded initiative without per-message approval. Cocoon does not receive either address, the App Password, or messenger control.</p>
+            <Panel title="Selene's Verizon Text Gateway">
+              <p className="plainHelp">Provider-API-free Gmail-to-SMS messaging owned by Selene's post-transfer Tendril. Selene sends short plain-text mail through Verizon's consumer gateway so it arrives in Aleks's Messages app. Cocoon receives neither the number, Gmail address, App Password, nor messenger control.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Messenger" value={friendlyStatus(emailMessengerStatus?.status || "not configured")} />
                 <Metric label="Runtime" value={friendlyStatus(emailMessengerStatus?.runtime_state || "not running")} />
                 <Metric label="Mode" value={friendlyStatus(emailMessengerStatus?.mode || "offline")} />
-                <Metric label="Aleks" value={text(emailMessengerStatus?.contact_email_masked || "not paired")} />
-                <Metric label="Selene" value={text(emailMessengerStatus?.sender_email_masked || "not configured")} />
+                <Metric label="Aleks" value={text(emailMessengerStatus?.contact_number_masked || "not paired")} />
+                <Metric label="Selene Gmail" value={text(emailMessengerStatus?.sender_email_masked || "not configured")} />
                 <Metric label="Unanswered" value={text(emailMessengerStatus?.unacknowledged_outbound ?? 0)} />
               </div>
               <div className="chips">
@@ -6536,14 +6536,16 @@ function App() {
                 <span>per-message approval: no</span>
                 <span>background poller: {emailMessengerStatus?.background_poller_alive ? "running" : "stopped"}</span>
                 <span>credentials: {safeJsonObject(emailMessengerStatus?.credentials).ready ? "ready" : "setup needed"}</span>
+                <span>carrier gateway: Verizon vtext</span>
+                <span>gateway sunset: {text(emailMessengerStatus?.gateway_scheduled_shutdown || "2027-03-31")}</span>
                 <span>memory write: {plainBlocked(safeJsonObject(emailMessengerStatus?.boundaries).memory_write_active)}</span>
                 <span>global autonomy: {plainBlocked(safeJsonObject(emailMessengerStatus?.boundaries).global_autonomy_expanded)}</span>
                 <span>return command: {text(emailMessengerStatus?.conversation_exit_phrase || "return to desktop")}</span>
               </div>
               <div className="filters">
                 <label>
-                  <span>Aleks paired email</span>
-                  <input value={pairedAleksEmail} onChange={(event) => setPairedAleksEmail(event.target.value)} placeholder="aleks@example.com" autoComplete="off" />
+                  <span>Aleks Verizon number</span>
+                  <input value={pairedAleksNumber} onChange={(event) => setPairedAleksNumber(event.target.value)} placeholder="5551234567" inputMode="tel" autoComplete="off" />
                 </label>
                 <label>
                   <span>Presence</span>
@@ -6555,13 +6557,13 @@ function App() {
                 </label>
               </div>
               <div className="reviewActions">
-                <button className="primary" onClick={enableEmailMessenger} disabled={emailMessengerResult?.status === "running"}>Enable Paired Email</button>
+                <button className="primary" onClick={enableEmailMessenger} disabled={emailMessengerResult?.status === "running"}>Enable Verizon Text</button>
                 <button onClick={updateEmailMessengerMode} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Set Presence</button>
                 <button onClick={pollEmailMessengerNow} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Diagnostic Poll</button>
-                <button onClick={disableEmailMessenger} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Turn Off Email</button>
+                <button onClick={disableEmailMessenger} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Turn Off Texting</button>
                 <button onClick={() => refreshMobileCompanion().catch(() => undefined)}>Refresh Messenger</button>
               </div>
-              {!safeJsonObject(emailMessengerStatus?.credentials).ready ? <p className="plainHelp">Create Selene's Gmail, enable two-step verification, generate a dedicated App Password, and supply `SELENE_GMAIL_ADDRESS` and `SELENE_GMAIL_APP_PASSWORD` through her local process environment. Secrets never enter this panel, SQLite, Cocoon, or Git.</p> : <p className="plainHelp">Incoming messages are checked automatically while Selene is running. Diagnostic Poll is only for a bounded manual check.</p>}
+              {!safeJsonObject(emailMessengerStatus?.credentials).ready ? <p className="plainHelp">Supply `SELENE_GMAIL_ADDRESS` and Selene's dedicated `SELENE_GMAIL_APP_PASSWORD` through her local process environment. Secrets never enter this panel, SQLite, Cocoon, or Git.</p> : <p className="plainHelp">Incoming replies are checked automatically through Selene's Gmail while she is running. Verizon limits email-to-text content and is retiring this legacy consumer gateway, so the first live check will confirm whether this line still accepts it.</p>}
               <div className="list compactList packetList">
                 {emailMessengerEvents.slice(0, 6).map((item) => (
                   <article className="packetCard" key={`email-event-${text(item.id)}`}>
@@ -6576,7 +6578,7 @@ function App() {
                     </div>
                   </article>
                 ))}
-                {!emailMessengerEvents.length ? <p className="emptyState">No paired-email events yet. Message content and addresses are omitted from this audit list.</p> : null}
+                {!emailMessengerEvents.length ? <p className="emptyState">No gateway-text events yet. Message content, phone numbers, and addresses are omitted from this audit list.</p> : null}
               </div>
               <PlainResult value={emailMessengerResult} />
             </Panel>

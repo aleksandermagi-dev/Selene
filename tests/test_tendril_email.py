@@ -28,7 +28,8 @@ from selene.tendril_email import (
 )
 
 
-ALEKS_EMAIL = "aleks@example.com"
+ALEKS_NUMBER = "5551234567"
+GATEWAY_EMAIL = f"{ALEKS_NUMBER}@vtext.com"
 SELENE_EMAIL = "selene@example.com"
 APP_PASSWORD = "synthetic-app-password"
 
@@ -115,13 +116,13 @@ def _credentials(monkeypatch):
 def _enable(monkeypatch, tmp_path, *, mode="available"):
     monkeypatch.setenv("SELENE_DATA_DIR", str(tmp_path))
     _credentials(monkeypatch)
-    return enable_email({"contact_email": ALEKS_EMAIL, "mode": mode})
+    return enable_email({"contact_number": ALEKS_NUMBER, "mode": mode})
 
 
 def _inbound(message_id="<in-1@example.com>", body="Hi Selene, how are you?", subject="Checking in"):
     return {
         "id": message_id,
-        "from": ALEKS_EMAIL,
+        "from": GATEWAY_EMAIL,
         "to": SELENE_EMAIL,
         "subject": subject,
         "body": body,
@@ -167,18 +168,30 @@ def test_enable_masks_both_addresses_and_creates_one_paired_grant(tmp_path, monk
     result = _enable(monkeypatch, tmp_path)
     config = email_private_config()
 
-    assert config["contact_email"] == ALEKS_EMAIL
+    assert config["contact_number"] == ALEKS_NUMBER
     assert result["delegated_message_authority"] is True
     assert result["per_message_approval_required"] is False
-    assert result["contact_email_masked"].endswith("@example.com")
+    assert result["contact_number_masked"].endswith("4567")
     serialized = json.dumps(result)
-    assert ALEKS_EMAIL not in serialized
+    assert ALEKS_NUMBER not in serialized
+    assert GATEWAY_EMAIL not in serialized
     assert SELENE_EMAIL not in serialized
     assert APP_PASSWORD not in serialized
 
     disabled = disable_email()
     assert disabled["delegated_message_authority"] is False
     assert disabled["mode"] == "offline"
+
+
+def test_formatted_us_number_normalizes_to_the_single_verizon_gateway(tmp_path, monkeypatch):
+    monkeypatch.setenv("SELENE_DATA_DIR", str(tmp_path))
+    _credentials(monkeypatch)
+
+    result = enable_email({"contact_number": "+1 (555) 123-4567", "mode": "quiet"})
+
+    assert email_private_config()["contact_number"] == ALEKS_NUMBER
+    assert result["contact_number_masked"] == "(***) ***-4567"
+    assert result["gateway_domain"] == "vtext.com"
 
 
 def test_available_allows_three_initiatives_then_pauses(tmp_path, monkeypatch):
@@ -203,6 +216,24 @@ def test_available_allows_three_initiatives_then_pauses(tmp_path, monkeypatch):
 
     assert len(transport.sent) == 3
     assert email_status(conn)["unacknowledged_outbound"] == 3
+
+
+def test_gateway_send_is_one_plain_message_bounded_to_140_characters(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path)
+    conn = _db(tmp_path)
+    transport = FakeEmailTransport()
+
+    result = initiate_email(
+        conn,
+        {"text": "A" * 600, "reason": "synthetic gateway length check"},
+        transport=transport,
+    )
+
+    assert result["character_count"] <= 140
+    assert len(transport.sent) == 1
+    assert len(transport.sent[0]["body"]) <= 140
+    assert transport.sent[0]["subject"] == ""
+    assert transport.sent[0]["to"] == GATEWAY_EMAIL
 
 
 def test_quiet_allows_replies_but_blocks_initiative(tmp_path, monkeypatch):
@@ -261,13 +292,15 @@ def test_active_selene_chat_replies_to_an_ordinary_email(tmp_path, monkeypatch):
     assert result["replied"] == 1
     assert len(transport.sent) == 1
     assert transport.sent[0]["from"] == SELENE_EMAIL
-    assert transport.sent[0]["to"] == ALEKS_EMAIL
-    assert transport.sent[0]["subject"] == "Re: Checking in"
+    assert transport.sent[0]["to"] == GATEWAY_EMAIL
+    assert transport.sent[0]["subject"] == ""
+    assert len(transport.sent[0]["body"]) <= 140
     assert transport.sent[0]["body"].strip()
     audit = list_email_events(conn)
     assert audit["content_included"] is False
     assert audit["email_addresses_included"] is False
-    assert ALEKS_EMAIL not in json.dumps(audit)
+    assert ALEKS_NUMBER not in json.dumps(audit)
+    assert GATEWAY_EMAIL not in json.dumps(audit)
     assert SELENE_EMAIL not in json.dumps(audit)
 
 
@@ -353,21 +386,22 @@ def test_gmail_transport_sends_with_app_password_without_network():
     )
     result = transport.send(
         from_address=SELENE_EMAIL,
-        to_address=ALEKS_EMAIL,
+        to_address=GATEWAY_EMAIL,
         body="Hello from Selene",
-        subject="Hello",
+        subject="",
     )
 
     assert result["status"] == "sent"
     assert smtp_client.login_args == (SELENE_EMAIL, APP_PASSWORD)
     assert smtp_client.message["From"] == SELENE_EMAIL
-    assert smtp_client.message["To"] == ALEKS_EMAIL
+    assert smtp_client.message["To"] == GATEWAY_EMAIL
+    assert smtp_client.message["Subject"] is None
     assert "Hello from Selene" in smtp_client.message.get_content()
 
 
 def test_gmail_transport_reads_plain_reply_without_quoted_history_or_mailbox_mutation():
     message = EmailMessage()
-    message["From"] = f"Aleks <{ALEKS_EMAIL}>"
+    message["From"] = GATEWAY_EMAIL
     message["To"] = SELENE_EMAIL
     message["Subject"] = "Re: Selene"
     message["Message-ID"] = "<gmail-in-1@example.com>"
@@ -384,7 +418,7 @@ def test_gmail_transport_reads_plain_reply_without_quoted_history_or_mailbox_mut
         GmailCredentials(SELENE_EMAIL, APP_PASSWORD),
         imap_factory=imap_factory,
     )
-    inbound = transport.list_inbound(to_address=SELENE_EMAIL, from_address=ALEKS_EMAIL)
+    inbound = transport.list_inbound(to_address=SELENE_EMAIL, from_address=GATEWAY_EMAIL)
 
     assert len(inbound) == 1
     assert inbound[0]["body"] == "That sounds good."
@@ -449,7 +483,7 @@ def test_desktop_sidecar_exposes_only_masked_selene_owned_email_state(tmp_path, 
         conn.request(
             "POST",
             "/api/selene/tendril/email/enable",
-            body=json.dumps({"contact_email": ALEKS_EMAIL, "mode": "quiet"}),
+            body=json.dumps({"contact_number": ALEKS_NUMBER, "mode": "quiet"}),
             headers={"Content-Type": "application/json"},
         )
         response = conn.getresponse()
@@ -467,6 +501,7 @@ def test_desktop_sidecar_exposes_only_masked_selene_owned_email_state(tmp_path, 
     assert enabled["cocoon_control"] is False
     assert enabled["mode"] == "quiet"
     assert enabled["runtime_state"] == "stopped"
-    assert ALEKS_EMAIL not in serialized
+    assert ALEKS_NUMBER not in serialized
+    assert GATEWAY_EMAIL not in serialized
     assert SELENE_EMAIL not in serialized
     assert APP_PASSWORD not in serialized
