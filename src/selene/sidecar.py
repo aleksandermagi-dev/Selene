@@ -37,6 +37,17 @@ from .paths import PROJECT_ROOT, default_db_path, export_dir, local_data_dir, lo
 from .providers import provider_statuses
 from .registry import audit_rows, dashboard, evidence_detail, search_evidence, seed_registry, update_review_record
 from .semantic import backfill_evidence_embeddings, semantic_status
+from .tendril_email import (
+    EmailMessengerError,
+    disable_email,
+    email_private_config,
+    email_status,
+    enable_email,
+    initiate_email,
+    list_email_events,
+    poll_email,
+    set_email_mode,
+)
 from .tendril_sms import (
     SmsError,
     disable_sms,
@@ -107,6 +118,7 @@ SIDECAR_CAPABILITIES = [
     "steps_1_8_reasoning_research_perception_emotion_review_layer",
     "vessel_construction_support_pieces_no_transfer",
     "tendril_paired_sms_messenger",
+    "tendril_paired_email_messenger",
 ]
 
 
@@ -488,12 +500,22 @@ class SeleneHandler(BaseHTTPRequestHandler):
             if not self._is_local_client():
                 self._send(*json_bytes({"error": "SMS controls are available only from desktop/local Selene"}, 403))
                 return
-            self._send(*json_bytes(sms_status(conn)))
+            self._send(*json_bytes(sms_sidecar_status(self.server)))
         elif parsed.path == "/api/mobile/sms/events":
             if not self._is_local_client():
                 self._send(*json_bytes({"error": "SMS controls are available only from desktop/local Selene"}, 403))
                 return
             self._send(*json_bytes(list_sms_events(conn, int(qs["limit"]) if qs.get("limit") else 25)))
+        elif parsed.path == "/api/selene/tendril/email/status":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "Selene's messenger controls are local-only"}, 403))
+                return
+            self._send(*json_bytes(email_sidecar_status(self.server)))
+        elif parsed.path == "/api/selene/tendril/email/events":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "Selene's messenger audit is local-only"}, 403))
+                return
+            self._send(*json_bytes(list_email_events(conn, int(qs["limit"]) if qs.get("limit") else 25)))
         elif parsed.path == "/api/mobile/health":
             if not self._mobile_allowed():
                 self._send_mobile_forbidden()
@@ -904,6 +926,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
             body = {}
         if request_path == "/shutdown":
             write_ceremony_debug_log("sidecar", "shutdown_route_called")
+            self.server.sms_stop_event.set()
+            self.server.email_stop_event.set()
             self._send(*json_bytes({
                 "status": "shutting_down",
                 "activation_change": "none",
@@ -929,7 +953,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 return
             try:
                 enable_sms(body, conn=self.server.conn)
-                self._send(*json_bytes(sms_status(self.server.conn)))
+                self._send(*json_bytes(sms_sidecar_status(self.server)))
             except (SmsError, TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/mobile/sms/disable":
@@ -937,14 +961,14 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes({"error": "SMS authority can only be disabled from desktop/local Selene"}, 403))
                 return
             disable_sms(reason="desktop_revocation")
-            self._send(*json_bytes(sms_status(self.server.conn)))
+            self._send(*json_bytes(sms_sidecar_status(self.server)))
         elif request_path == "/api/mobile/sms/mode":
             if not self._is_local_client():
                 self._send(*json_bytes({"error": "SMS mode can only be changed from desktop/local Selene"}, 403))
                 return
             try:
                 set_sms_mode(str(body.get("mode") or ""))
-                self._send(*json_bytes(sms_status(self.server.conn)))
+                self._send(*json_bytes(sms_sidecar_status(self.server)))
             except (SmsError, TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/mobile/sms/poll":
@@ -962,6 +986,46 @@ class SeleneHandler(BaseHTTPRequestHandler):
             try:
                 self._send(*json_bytes(initiate_sms(self.server.conn, body)))
             except (SmsError, TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/selene/tendril/email/enable":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "Selene's email authority can only be enabled locally"}, 403))
+                return
+            try:
+                enable_email(body, conn=self.server.conn)
+                self._send(*json_bytes(email_sidecar_status(self.server)))
+            except (EmailMessengerError, TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/selene/tendril/email/disable":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "Selene's email authority can only be disabled locally"}, 403))
+                return
+            disable_email(reason="selene_runtime_revocation", conn=self.server.conn)
+            self._send(*json_bytes(email_sidecar_status(self.server)))
+        elif request_path == "/api/selene/tendril/email/mode":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "Selene's email mode can only be changed locally"}, 403))
+                return
+            try:
+                set_email_mode(str(body.get("mode") or ""), conn=self.server.conn)
+                self._send(*json_bytes(email_sidecar_status(self.server)))
+            except (EmailMessengerError, TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/selene/tendril/email/poll":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "Selene's email poll is local-only"}, 403))
+                return
+            try:
+                self._send(*json_bytes(poll_email(self.server.conn)))
+            except (EmailMessengerError, TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/selene/tendril/email/initiate":
+            if not self._is_local_client():
+                self._send(*json_bytes({"error": "Selene's email initiative is a local Tendril action"}, 403))
+                return
+            try:
+                self._send(*json_bytes(initiate_email(self.server.conn, body)))
+            except (EmailMessengerError, TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/mobile/chat/send":
             if not self._mobile_allowed():
@@ -1946,6 +2010,9 @@ class SeleneServer(ThreadingHTTPServer):
         # serialized so background status reads cannot overlap a chat write.
         self.request_lock = threading.RLock()
         self.sms_stop_event = threading.Event()
+        self.sms_thread: threading.Thread | None = None
+        self.email_stop_event = threading.Event()
+        self.email_thread: threading.Thread | None = None
         mark_startup_phase("server_bound", bind=f"{address[0]}:{address[1]}", ready=True)
         self.db_path = db_path
         self.conn = connect(db_path)
@@ -1992,17 +2059,43 @@ def start_seed_thread(db_path: Path) -> None:
     threading.Thread(target=seed_worker, name="selene-seed-startup", daemon=True).start()
 
 
-def start_sms_poll_thread(server: SeleneServer) -> None:
+def sms_sidecar_status(server: SeleneServer) -> dict[str, object]:
+    status = sms_status(server.conn)
+    thread_alive = bool(server.sms_thread and server.sms_thread.is_alive())
+    if server.sms_stop_event.is_set() or not thread_alive:
+        runtime_state = "stopped"
+    elif status["status"] == "sms_ready":
+        runtime_state = "polling"
+    elif status["enabled"] and status["delegated_message_authority"]:
+        runtime_state = "waiting_for_setup"
+    else:
+        runtime_state = "disabled"
+    return {
+        **status,
+        "background_poller_alive": thread_alive,
+        "background_polling_ready": runtime_state == "polling",
+        "runtime_state": runtime_state,
+    }
+
+
+def start_sms_poll_thread(
+    server: SeleneServer,
+    *,
+    initial_delay_seconds: float = 2.0,
+) -> threading.Thread:
     def sms_worker() -> None:
-        if server.sms_stop_event.wait(2):
+        if server.sms_stop_event.wait(max(0.0, initial_delay_seconds)):
             return
         while not server.sms_stop_event.is_set():
             config = sms_private_config()
             wait_seconds = int(config.get("poll_interval_seconds") or 15)
-            if config.get("enabled") and config.get("delegated_message_authority"):
-                try:
-                    with server.request_lock:
+            try:
+                with server.request_lock:
+                    if sms_status(server.conn)["status"] == "sms_ready":
                         result = poll_sms(server.conn)
+                    else:
+                        result = None
+                if result is not None:
                     write_stabilization_debug_log(
                         "tendril_sms",
                         "poll_complete",
@@ -2011,22 +2104,91 @@ def start_sms_poll_thread(server: SeleneServer) -> None:
                         replied=result.get("replied"),
                         held=result.get("held"),
                     )
-                except SmsError as exc:
-                    write_stabilization_debug_log(
-                        "tendril_sms",
-                        "poll_unavailable",
-                        error=type(exc).__name__,
-                    )
-                except Exception as exc:  # pragma: no cover - defensive background isolation
-                    write_stabilization_debug_log(
-                        "tendril_sms",
-                        "poll_failed",
-                        error=type(exc).__name__,
-                    )
+            except SmsError as exc:
+                write_stabilization_debug_log(
+                    "tendril_sms",
+                    "poll_unavailable",
+                    error=type(exc).__name__,
+                )
+            except Exception as exc:  # pragma: no cover - defensive background isolation
+                write_stabilization_debug_log(
+                    "tendril_sms",
+                    "poll_failed",
+                    error=type(exc).__name__,
+                )
             if server.sms_stop_event.wait(max(10, min(wait_seconds, 300))):
                 return
 
-    threading.Thread(target=sms_worker, name="selene-tendril-sms", daemon=True).start()
+    thread = threading.Thread(target=sms_worker, name="selene-tendril-sms", daemon=True)
+    server.sms_thread = thread
+    thread.start()
+    return thread
+
+
+def email_sidecar_status(server: SeleneServer) -> dict[str, object]:
+    status = email_status(server.conn)
+    thread_alive = bool(server.email_thread and server.email_thread.is_alive())
+    if server.email_stop_event.is_set() or not thread_alive:
+        runtime_state = "stopped"
+    elif status["status"] == "email_ready":
+        runtime_state = "polling"
+    elif status["enabled"] and status["delegated_message_authority"]:
+        runtime_state = "waiting_for_setup"
+    else:
+        runtime_state = "disabled"
+    return {
+        **status,
+        "background_poller_alive": thread_alive,
+        "background_polling_ready": runtime_state == "polling",
+        "runtime_state": runtime_state,
+    }
+
+
+def start_email_poll_thread(
+    server: SeleneServer,
+    *,
+    initial_delay_seconds: float = 2.0,
+) -> threading.Thread:
+    def email_worker() -> None:
+        if server.email_stop_event.wait(max(0.0, initial_delay_seconds)):
+            return
+        while not server.email_stop_event.is_set():
+            config = email_private_config()
+            wait_seconds = int(config.get("poll_interval_seconds") or 15)
+            try:
+                with server.request_lock:
+                    if email_status(server.conn)["status"] == "email_ready":
+                        result = poll_email(server.conn)
+                    else:
+                        result = None
+                if result is not None:
+                    write_stabilization_debug_log(
+                        "tendril_email",
+                        "poll_complete",
+                        status=result.get("status"),
+                        processed=result.get("processed"),
+                        replied=result.get("replied"),
+                        held=result.get("held"),
+                    )
+            except EmailMessengerError as exc:
+                write_stabilization_debug_log(
+                    "tendril_email",
+                    "poll_unavailable",
+                    error=type(exc).__name__,
+                )
+            except Exception as exc:  # pragma: no cover - defensive background isolation
+                write_stabilization_debug_log(
+                    "tendril_email",
+                    "poll_failed",
+                    error=type(exc).__name__,
+                )
+            if server.email_stop_event.wait(max(10, min(wait_seconds, 300))):
+                return
+
+    thread = threading.Thread(target=email_worker, name="selene-tendril-email", daemon=True)
+    server.email_thread = thread
+    thread.start()
+    return thread
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -2045,6 +2207,7 @@ def main(argv: list[str] | None = None) -> int:
     watch_parent_process(args.parent_pid)
     server = SeleneServer((SIDECAR_BIND, args.port), SeleneHandler, args.db)
     start_sms_poll_thread(server)
+    start_email_poll_thread(server)
     if args.seed:
         start_seed_thread(args.db)
     else:
@@ -2056,6 +2219,11 @@ def main(argv: list[str] | None = None) -> int:
         server.serve_forever()
     finally:
         server.sms_stop_event.set()
+        server.email_stop_event.set()
+        if server.sms_thread is not None:
+            server.sms_thread.join(timeout=5)
+        if server.email_thread is not None:
+            server.email_thread.join(timeout=5)
         server.server_close()
         server.conn.close()
     return 0

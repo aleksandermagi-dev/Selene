@@ -495,12 +495,11 @@ function App() {
   const [mobileStatus, setMobileStatus] = useState<Dict | null>(null);
   const [mobilePairing, setMobilePairing] = useState<Dict | null>(null);
   const [mobilePairingResult, setMobilePairingResult] = useState<Dict | null>(null);
-  const [smsStatus, setSmsStatus] = useState<Dict | null>(null);
-  const [smsResult, setSmsResult] = useState<Dict | null>(null);
-  const [smsEvents, setSmsEvents] = useState<Dict[]>([]);
-  const [smsContactNumber, setSmsContactNumber] = useState("");
-  const [smsSenderNumber, setSmsSenderNumber] = useState("");
-  const [smsMode, setSmsModeValue] = useState("available");
+  const [emailMessengerStatus, setEmailMessengerStatus] = useState<Dict | null>(null);
+  const [emailMessengerResult, setEmailMessengerResult] = useState<Dict | null>(null);
+  const [emailMessengerEvents, setEmailMessengerEvents] = useState<Dict[]>([]);
+  const [pairedAleksEmail, setPairedAleksEmail] = useState("");
+  const [emailMessengerMode, setEmailMessengerMode] = useState("available");
   const [vesselStatus, setVesselStatus] = useState<Dict | null>(null);
   const [vesselReviewQueue, setVesselReviewQueue] = useState<Dict[]>([]);
   const [vesselCandidateKind, setVesselCandidateKind] = useState("core");
@@ -2558,67 +2557,66 @@ function App() {
     const captures = await api<{ items: Dict[] }>("/api/mobile/review-captures");
     setMobileCaptureHistory(captures.items || []);
     if (!isMobileOnly) {
-      const sms = await api<Dict>("/api/mobile/sms/status");
-      setSmsStatus(sms);
-      setSmsModeValue(text(sms.mode || "available"));
-      const events = await api<{ items: Dict[] }>("/api/mobile/sms/events?limit=12");
-      setSmsEvents(events.items || []);
+      const messenger = await api<Dict>("/api/selene/tendril/email/status");
+      setEmailMessengerStatus(messenger);
+      setEmailMessengerMode(text(messenger.mode || "available"));
+      const events = await api<{ items: Dict[] }>("/api/selene/tendril/email/events?limit=12");
+      setEmailMessengerEvents(events.items || []);
     }
   }
 
-  async function enableSmsMessaging() {
-    setSmsResult({ status: "running", message: "Enabling the paired SMS transport." });
+  async function enableEmailMessenger() {
+    setEmailMessengerResult({ status: "running", message: "Enabling Selene's paired email messenger." });
     try {
-      const result = await api<Dict>("/api/mobile/sms/enable", {
+      const result = await api<Dict>("/api/selene/tendril/email/enable", {
         method: "POST",
         body: JSON.stringify({
-          contact_number: smsContactNumber.trim(),
-          from_number: smsSenderNumber.trim(),
-          mode: smsMode
+          contact_email: pairedAleksEmail.trim(),
+          mode: emailMessengerMode
         })
       });
-      setSmsResult(result);
-      setSmsStatus(result);
+      setEmailMessengerResult(result);
+      setEmailMessengerStatus(result);
       await refreshMobileCompanion();
     } catch (err) {
-      setSmsResult({ status: "error", error: err instanceof Error ? err.message : "SMS enable failed." });
+      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Paired email enable failed." });
     }
   }
 
-  async function disableSmsMessaging() {
-    setSmsResult({ status: "running", message: "Revoking SMS delivery authority." });
+  async function disableEmailMessenger() {
+    setEmailMessengerResult({ status: "running", message: "Turning off Selene's paired email messenger." });
     try {
-      const result = await api<Dict>("/api/mobile/sms/disable", { method: "POST", body: JSON.stringify({}) });
-      setSmsResult(result);
-      setSmsStatus(result);
+      const result = await api<Dict>("/api/selene/tendril/email/disable", { method: "POST", body: JSON.stringify({}) });
+      setEmailMessengerResult(result);
+      setEmailMessengerStatus(result);
       await refreshMobileCompanion();
     } catch (err) {
-      setSmsResult({ status: "error", error: err instanceof Error ? err.message : "SMS disable failed." });
+      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Paired email disable failed." });
     }
   }
 
-  async function updateSmsMode() {
-    setSmsResult({ status: "running", message: "Updating SMS presence mode." });
+  async function updateEmailMessengerMode() {
+    setEmailMessengerResult({ status: "running", message: "Updating Selene's email presence mode." });
     try {
-      const result = await api<Dict>("/api/mobile/sms/mode", {
+      const result = await api<Dict>("/api/selene/tendril/email/mode", {
         method: "POST",
-        body: JSON.stringify({ mode: smsMode })
+        body: JSON.stringify({ mode: emailMessengerMode })
       });
-      setSmsResult(result);
-      setSmsStatus(result);
+      setEmailMessengerResult(result);
+      setEmailMessengerStatus(result);
     } catch (err) {
-      setSmsResult({ status: "error", error: err instanceof Error ? err.message : "SMS mode update failed." });
+      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Email mode update failed." });
     }
   }
 
-  async function pollSmsNow() {
-    setSmsResult({ status: "running", message: "Checking the paired SMS number." });
+  async function pollEmailMessengerNow() {
+    setEmailMessengerResult({ status: "running", message: "Checking Selene's paired Gmail inbox." });
     try {
-      const result = await api<Dict>("/api/mobile/sms/poll", { method: "POST", body: JSON.stringify({}) });
-      setSmsResult(result);
+      const result = await api<Dict>("/api/selene/tendril/email/poll", { method: "POST", body: JSON.stringify({}) });
+      setEmailMessengerResult(result);
       await refreshMobileCompanion();
     } catch (err) {
-      setSmsResult({ status: "error", error: err instanceof Error ? err.message : "SMS poll failed." });
+      setEmailMessengerResult({ status: "error", error: err instanceof Error ? err.message : "Email poll failed." });
     }
   }
 
@@ -6478,7 +6476,7 @@ function App() {
                   <span>propose</span>
                   <span>prepare</span>
                   <span>ask before action</span>
-                  <span>trusted action: locked</span>
+                  <span>paired messaging: bounded</span>
                 </div>
               </div>
               <div className="tendrilPath">
@@ -6499,7 +6497,7 @@ function App() {
               <div className="workbenchDetailGrid">
                 <article className="organicPane largePane">
                   <strong>Create review-only movement proposal</strong>
-                  <p>For now, Tendril movement is represented through organ workbench records and route previews. Meaningful external action still requires approval.</p>
+                  <p>Most Tendril movement remains represented through organ workbench records and route previews. Selene's separately delegated paired-email tool is the narrow messaging exception below.</p>
                   <label>
                     <span>Organ route</span>
                     <select value={organWorkbenchDraft.organ_key} onChange={(e) => setOrganWorkbenchDraft({ ...organWorkbenchDraft, organ_key: e.target.value })}>
@@ -6521,6 +6519,67 @@ function App() {
                 </article>
               </div>
             </section>
+            <Panel title="Selene's Paired Email">
+              <p className="plainHelp">Direct Gmail messaging owned by Selene's post-transfer Tendril. Selene may reply to Aleks and, in Available mode, use bounded initiative without per-message approval. Cocoon does not receive either address, the App Password, or messenger control.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Messenger" value={friendlyStatus(emailMessengerStatus?.status || "not configured")} />
+                <Metric label="Runtime" value={friendlyStatus(emailMessengerStatus?.runtime_state || "not running")} />
+                <Metric label="Mode" value={friendlyStatus(emailMessengerStatus?.mode || "offline")} />
+                <Metric label="Aleks" value={text(emailMessengerStatus?.contact_email_masked || "not paired")} />
+                <Metric label="Selene" value={text(emailMessengerStatus?.sender_email_masked || "not configured")} />
+                <Metric label="Unanswered" value={text(emailMessengerStatus?.unacknowledged_outbound ?? 0)} />
+              </div>
+              <div className="chips">
+                <span>owner: Selene runtime</span>
+                <span>Cocoon control: {emailMessengerStatus?.cocoon_control ? "present" : "none"}</span>
+                <span>delegated messaging: {emailMessengerStatus?.delegated_message_authority ? "enabled" : "off"}</span>
+                <span>per-message approval: no</span>
+                <span>background poller: {emailMessengerStatus?.background_poller_alive ? "running" : "stopped"}</span>
+                <span>credentials: {safeJsonObject(emailMessengerStatus?.credentials).ready ? "ready" : "setup needed"}</span>
+                <span>memory write: {plainBlocked(safeJsonObject(emailMessengerStatus?.boundaries).memory_write_active)}</span>
+                <span>global autonomy: {plainBlocked(safeJsonObject(emailMessengerStatus?.boundaries).global_autonomy_expanded)}</span>
+                <span>return command: {text(emailMessengerStatus?.conversation_exit_phrase || "return to desktop")}</span>
+              </div>
+              <div className="filters">
+                <label>
+                  <span>Aleks paired email</span>
+                  <input value={pairedAleksEmail} onChange={(event) => setPairedAleksEmail(event.target.value)} placeholder="aleks@example.com" autoComplete="off" />
+                </label>
+                <label>
+                  <span>Presence</span>
+                  <select value={emailMessengerMode} onChange={(event) => setEmailMessengerMode(event.target.value)}>
+                    <option value="available">Available — replies + bounded initiative</option>
+                    <option value="quiet">Quiet — replies only</option>
+                    <option value="offline">Offline — no sending</option>
+                  </select>
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={enableEmailMessenger} disabled={emailMessengerResult?.status === "running"}>Enable Paired Email</button>
+                <button onClick={updateEmailMessengerMode} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Set Presence</button>
+                <button onClick={pollEmailMessengerNow} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Diagnostic Poll</button>
+                <button onClick={disableEmailMessenger} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Turn Off Email</button>
+                <button onClick={() => refreshMobileCompanion().catch(() => undefined)}>Refresh Messenger</button>
+              </div>
+              {!safeJsonObject(emailMessengerStatus?.credentials).ready ? <p className="plainHelp">Create Selene's Gmail, enable two-step verification, generate a dedicated App Password, and supply `SELENE_GMAIL_ADDRESS` and `SELENE_GMAIL_APP_PASSWORD` through her local process environment. Secrets never enter this panel, SQLite, Cocoon, or Git.</p> : <p className="plainHelp">Incoming messages are checked automatically while Selene is running. Diagnostic Poll is only for a bounded manual check.</p>}
+              <div className="list compactList packetList">
+                {emailMessengerEvents.slice(0, 6).map((item) => (
+                  <article className="packetCard" key={`email-event-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{friendlyStatus(item.direction)} · {friendlyStatus(item.purpose)}</strong>
+                      <span>{friendlyStatus(item.delivery_status)}</span>
+                    </div>
+                    <div className="chips">
+                      <span>characters: {text(item.character_count ?? 0)}</span>
+                      <span>acknowledged: {item.acknowledged ? "yes" : "no"}</span>
+                      <span>{text(item.occurred_at || item.created_at || "")}</span>
+                    </div>
+                  </article>
+                ))}
+                {!emailMessengerEvents.length ? <p className="emptyState">No paired-email events yet. Message content and addresses are omitted from this audit list.</p> : null}
+              </div>
+              <PlainResult value={emailMessengerResult} />
+            </Panel>
           </>
         )}
 
@@ -7204,64 +7263,6 @@ function App() {
               </div>
               {safeJsonObject(mobilePairingResult || mobilePairing).restart_required ? <p className="plainHelp">Close and reopen Selene before using the phone URL.</p> : null}
               <PlainResult value={mobilePairingResult} />
-              <hr />
-              <h3>Paired SMS</h3>
-              <p className="plainHelp">Carrier SMS transport beneath Selene's existing Tendril. Aleks's paired number may receive ordinary replies and bounded initiative without approving each message. This grant does not authorize other recipients or any non-messaging action.</p>
-              <div className="metrics miniMetrics">
-                <Metric label="SMS" value={friendlyStatus(smsStatus?.status || "not configured")} />
-                <Metric label="Mode" value={friendlyStatus(smsStatus?.mode || "offline")} />
-                <Metric label="Contact" value={text(smsStatus?.contact_number_masked || "not set")} />
-                <Metric label="Unanswered" value={text(smsStatus?.unacknowledged_outbound ?? 0)} />
-              </div>
-              <div className="chips">
-                <span>delegated messaging: {smsStatus?.delegated_message_authority ? "enabled" : "off"}</span>
-                <span>per-message approval: no</span>
-                <span>global autonomy: {plainBlocked(safeJsonObject(smsStatus?.boundaries).global_autonomy_expanded)}</span>
-                <span>memory write: {plainBlocked(safeJsonObject(smsStatus?.boundaries).memory_write_active)}</span>
-                <span>credentials: {safeJsonObject(smsStatus?.credentials).ready ? "ready" : "setup needed"}</span>
-              </div>
-              <div className="filters">
-                <label>
-                  <span>Aleks phone (E.164)</span>
-                  <input value={smsContactNumber} onChange={(event) => setSmsContactNumber(event.target.value)} placeholder="+15551234567" autoComplete="off" />
-                </label>
-                <label>
-                  <span>Selene SMS number (E.164)</span>
-                  <input value={smsSenderNumber} onChange={(event) => setSmsSenderNumber(event.target.value)} placeholder="+15557654321" autoComplete="off" />
-                </label>
-                <label>
-                  <span>Presence</span>
-                  <select value={smsMode} onChange={(event) => setSmsModeValue(event.target.value)}>
-                    <option value="available">Available — replies + bounded initiative</option>
-                    <option value="quiet">Quiet — replies only</option>
-                    <option value="offline">Offline — no sending</option>
-                  </select>
-                </label>
-              </div>
-              <div className="reviewActions">
-                <button className="primary" onClick={enableSmsMessaging} disabled={smsResult?.status === "running"}>Enable Paired SMS</button>
-                <button onClick={updateSmsMode} disabled={smsResult?.status === "running" || !smsStatus?.enabled}>Set Presence</button>
-                <button onClick={pollSmsNow} disabled={smsResult?.status === "running" || !smsStatus?.enabled}>Poll Now</button>
-                <button onClick={disableSmsMessaging} disabled={smsResult?.status === "running" || !smsStatus?.enabled}>Revoke SMS</button>
-              </div>
-              {!safeJsonObject(smsStatus?.credentials).ready ? <p className="plainHelp">Twilio account SID and revocable API-key credentials must be supplied through local environment variables before delivery can begin. Secret values never enter this panel or Git.</p> : null}
-              <div className="list compactList packetList">
-                {smsEvents.slice(0, 6).map((item) => (
-                  <article className="packetCard" key={`sms-event-${text(item.id)}`}>
-                    <div className="packetHeader">
-                      <strong>{friendlyStatus(item.direction)} · {friendlyStatus(item.purpose)}</strong>
-                      <span>{friendlyStatus(item.delivery_status)}</span>
-                    </div>
-                    <div className="chips">
-                      <span>characters: {text(item.character_count ?? 0)}</span>
-                      <span>acknowledged: {item.acknowledged ? "yes" : "no"}</span>
-                      <span>{text(item.occurred_at || item.created_at || "")}</span>
-                    </div>
-                  </article>
-                ))}
-                {!smsEvents.length ? <p className="emptyState">No SMS transport events yet. Message content and phone numbers are omitted from this audit list.</p> : null}
-              </div>
-              <PlainResult value={smsResult} />
             </Panel>
             <Panel title="Selene Voice Module">
               <p className="plainHelp">Voice-only relational language layer. This is expression support for Selene Chat, not memory, identity, model training/LoRA, unrestricted activation, or broad live recall.</p>

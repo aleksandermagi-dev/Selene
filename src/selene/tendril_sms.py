@@ -6,6 +6,7 @@ import json
 import os
 import re
 import sqlite3
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -29,7 +30,7 @@ E164_PATTERN = re.compile(r"^\+[1-9]\d{7,14}$")
 DEFAULT_MAX_UNACKNOWLEDGED = 3
 DEFAULT_POLL_INTERVAL_SECONDS = 15
 MAX_SMS_BODY_CHARS = 1200
-STOP_KEYWORDS = {"stop", "stopall", "unsubscribe", "cancel", "end", "quit"}
+RETURN_TO_DESKTOP_PHRASE = "return to desktop"
 
 
 class SmsError(RuntimeError):
@@ -196,6 +197,7 @@ def sms_status(conn: sqlite3.Connection | None = None) -> dict[str, Any]:
         "last_outbound_at": state.get("last_outbound_at") or "",
         "last_poll_at": state.get("last_poll_at") or "",
         "last_poll_status": state.get("last_poll_status") or "not_run",
+        "conversation_exit_phrase": RETURN_TO_DESKTOP_PHRASE,
         "boundaries": _sms_boundaries(config),
     }
 
@@ -411,11 +413,12 @@ def poll_sms(
             occurred_at=str(message.get("date_sent") or _utc_now()),
         )
         processed += 1
-        if text.strip().lower() in STOP_KEYWORDS:
-            disable_sms(reason="sms_stop_received")
-            _update_poll_state(conn, "authority_revoked_by_stop")
+        if text.strip().casefold() == RETURN_TO_DESKTOP_PHRASE:
+            disable_sms(reason="sms_return_to_desktop_received")
+            _set_event_status(conn, inbound_event_id, "return_to_desktop_received")
+            _update_poll_state(conn, "authority_revoked_by_return_to_desktop")
             return {
-                "status": "sms_poll_stop_received",
+                "status": "sms_poll_return_to_desktop_received",
                 "processed": processed,
                 "replied": replied,
                 "skipped": skipped,
@@ -424,6 +427,7 @@ def poll_sms(
                 "delegated_message_authority": False,
             }
         if config["mode"] == "offline" or not config["reply_allowed"]:
+            _set_event_status(conn, inbound_event_id, "held_offline")
             held += 1
             continue
         if not activation_is_active(conn):
@@ -431,7 +435,12 @@ def poll_sms(
             held += 1
             continue
         session_id = _sms_session_id(conn)
-        chat_result = mobile_send_chat(conn, {"text": text, "session_id": session_id})
+        try:
+            chat_result = mobile_send_chat(conn, {"text": text, "session_id": session_id})
+        except Exception as exc:  # Keep a chat-path failure from stranding the inbound event.
+            _set_event_status(conn, inbound_event_id, "held_chat_error", error_code=type(exc).__name__)
+            held += 1
+            continue
         candidate = truncate(str(chat_result.get("candidate_text") or ""), MAX_SMS_BODY_CHARS)
         if not candidate.strip():
             _set_event_status(conn, inbound_event_id, "held_no_response")
@@ -443,16 +452,21 @@ def poll_sms(
             _optional_int(chat_result.get("session_id")),
             _optional_int(chat_result.get("user_message_id")),
         )
-        send_sms(
-            conn,
-            {
-                "text": candidate,
-                "purpose": "reply",
-                "chat_session_id": chat_result.get("session_id"),
-                "chat_message_id": chat_result.get("assistant_message_id"),
-            },
-            transport=active_transport,
-        )
+        try:
+            send_sms(
+                conn,
+                {
+                    "text": candidate,
+                    "purpose": "reply",
+                    "chat_session_id": chat_result.get("session_id"),
+                    "chat_message_id": chat_result.get("assistant_message_id"),
+                },
+                transport=active_transport,
+            )
+        except (SmsError, TypeError, ValueError) as exc:
+            _set_event_status(conn, inbound_event_id, "held_delivery_error", error_code=type(exc).__name__)
+            held += 1
+            continue
         replied += 1
     _update_poll_state(conn, "complete")
     return {
@@ -490,7 +504,25 @@ def _normalize_config(data: dict[str, Any]) -> dict[str, Any]:
 def _write_config(config: dict[str, Any]) -> None:
     path = sms_config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(_normalize_config(config), indent=2), encoding="utf-8")
+    serialized = json.dumps(_normalize_config(config), indent=2)
+    temporary_path: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as temporary:
+            temporary.write(serialized)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+            temporary_path = temporary.name
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path and os.path.exists(temporary_path):
+            os.unlink(temporary_path)
 
 
 def _credential_state() -> dict[str, Any]:
@@ -530,6 +562,7 @@ def _sms_boundaries(config: dict[str, Any]) -> dict[str, Any]:
         "review_decisions_allowed": False,
         "file_access_allowed": False,
         "provider_training_allowed": False,
+        "conversation_exit_phrase": RETURN_TO_DESKTOP_PHRASE,
     }
 
 
@@ -620,8 +653,17 @@ def _link_inbound_event(conn: sqlite3.Connection, event_id: int, session_id: int
     conn.commit()
 
 
-def _set_event_status(conn: sqlite3.Connection, event_id: int, status: str) -> None:
-    conn.execute("UPDATE sms_messaging_events SET delivery_status = ? WHERE id = ?", (status, event_id))
+def _set_event_status(
+    conn: sqlite3.Connection,
+    event_id: int,
+    status: str,
+    *,
+    error_code: str = "",
+) -> None:
+    conn.execute(
+        "UPDATE sms_messaging_events SET delivery_status = ?, error_code = ? WHERE id = ?",
+        (status, error_code, event_id),
+    )
     conn.commit()
 
 

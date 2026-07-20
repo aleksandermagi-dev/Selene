@@ -7,12 +7,15 @@ import threading
 from urllib.parse import parse_qs
 
 import pytest
+import selene.sidecar as sidecar_module
+import selene.tendril_sms as sms_module
 
 from selene.db import connect, init_db
 from selene.registry import seed_registry
-from selene.sidecar import SeleneHandler, SeleneServer
+from selene.sidecar import SeleneHandler, SeleneServer, start_sms_poll_thread
 from selene.tendril_sms import (
     SmsAuthorityError,
+    SmsTransportError,
     TwilioCredentials,
     TwilioSmsTransport,
     disable_sms,
@@ -48,6 +51,11 @@ class FakeSmsTransport:
 
     def list_inbound(self, *, to_number: str, from_number: str, limit: int = 20):
         return list(self.incoming[:limit])
+
+
+class FailingSendSmsTransport(FakeSmsTransport):
+    def send(self, *, from_number: str, to_number: str, body: str):
+        raise SmsTransportError("synthetic delivery unavailable")
 
 
 class FakeHttpResponse:
@@ -225,18 +233,122 @@ def test_active_selene_chat_replies_to_an_ordinary_inbound_sms(tmp_path, monkeyp
     assert all("number" not in item for item in audit)
 
 
-def test_stop_revokes_authority_without_sending_or_entering_chat(tmp_path, monkeypatch):
+def test_return_to_desktop_revokes_authority_without_sending_or_entering_chat(tmp_path, monkeypatch):
     _enable(monkeypatch, tmp_path)
     conn = _db(tmp_path)
-    transport = FakeSmsTransport([_inbound(body="STOP")])
+    transport = FakeSmsTransport([_inbound(body="  RETURN TO DESKTOP  ")])
 
     result = poll_sms(conn, transport=transport)
 
-    assert result["status"] == "sms_poll_stop_received"
+    assert result["status"] == "sms_poll_return_to_desktop_received"
     assert result["delegated_message_authority"] is False
     assert sms_private_config()["enabled"] is False
     assert transport.sent == []
     assert conn.execute("SELECT COUNT(*) FROM selene_chat_messages").fetchone()[0] == 0
+    event = list_sms_events(conn)["items"][0]
+    assert event["delivery_status"] == "return_to_desktop_received"
+
+
+def test_ordinary_stop_language_is_not_treated_as_a_control_command(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path, mode="quiet")
+    conn = _db(tmp_path)
+    _activate_chat(conn)
+    transport = FakeSmsTransport([_inbound(body="Can we stop and think about the plan for a moment?")])
+
+    result = poll_sms(conn, transport=transport)
+
+    assert result["status"] == "sms_poll_complete"
+    assert result["replied"] == 1
+    assert sms_private_config()["enabled"] is True
+
+
+def test_offline_inbound_is_explicitly_held(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path, mode="offline")
+    conn = _db(tmp_path)
+
+    result = poll_sms(conn, transport=FakeSmsTransport([_inbound()]))
+
+    assert result["held"] == 1
+    assert list_sms_events(conn)["items"][0]["delivery_status"] == "held_offline"
+
+
+def test_chat_failure_is_held_without_losing_the_inbound_audit(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path, mode="quiet")
+    conn = _db(tmp_path)
+    _activate_chat(conn)
+
+    def fail_chat(_conn, _payload):
+        raise ValueError("synthetic chat failure")
+
+    monkeypatch.setattr(sms_module, "mobile_send_chat", fail_chat)
+    result = poll_sms(conn, transport=FakeSmsTransport([_inbound()]))
+
+    assert result["held"] == 1
+    event = list_sms_events(conn)["items"][0]
+    assert event["delivery_status"] == "held_chat_error"
+    assert event["error_code"] == "ValueError"
+
+
+def test_delivery_failure_is_held_and_audited_without_retrying_the_inbound(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path, mode="quiet")
+    conn = _db(tmp_path)
+    _activate_chat(conn)
+    transport = FailingSendSmsTransport([_inbound()])
+
+    first = poll_sms(conn, transport=transport)
+    second = poll_sms(conn, transport=transport)
+
+    assert first["held"] == 1
+    assert second["skipped"] == 1
+    events = list_sms_events(conn)["items"]
+    assert {item["delivery_status"] for item in events} == {"held_delivery_error", "failed"}
+    assert all(item["error_code"] == "SmsTransportError" for item in events)
+
+
+def test_background_poller_runs_when_ready_and_stops_cleanly(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path)
+    for name in ("TWILIO_ACCOUNT_SID", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET"):
+        monkeypatch.setenv(name, f"test-{name.lower()}")
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.sqlite3")
+    calls = []
+
+    def fake_poll(_conn):
+        calls.append("poll")
+        server.sms_stop_event.set()
+        return {"status": "sms_poll_complete", "processed": 0, "replied": 0, "held": 0}
+
+    monkeypatch.setattr(sidecar_module, "poll_sms", fake_poll)
+    thread = start_sms_poll_thread(server, initial_delay_seconds=0)
+    thread.join(timeout=2)
+    server.server_close()
+    server.conn.close()
+
+    assert calls == ["poll"]
+    assert thread.is_alive() is False
+
+
+def test_background_poller_waits_for_credentials_without_provider_attempt(tmp_path, monkeypatch):
+    _enable(monkeypatch, tmp_path)
+    for name in ("TWILIO_ACCOUNT_SID", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET"):
+        monkeypatch.delenv(name, raising=False)
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.sqlite3")
+    calls = []
+    original_status = sidecar_module.sms_status
+
+    def status_then_stop(conn):
+        status = original_status(conn)
+        server.sms_stop_event.set()
+        return status
+
+    monkeypatch.setattr(sidecar_module, "sms_status", status_then_stop)
+    monkeypatch.setattr(sidecar_module, "poll_sms", lambda _conn: calls.append("poll"))
+    thread = start_sms_poll_thread(server, initial_delay_seconds=0)
+    thread.join(timeout=2)
+    server.server_close()
+    server.conn.close()
+
+    assert calls == []
+    assert thread.is_alive() is False
 
 
 def test_twilio_transport_uses_api_key_auth_and_message_resource_without_network():
@@ -323,3 +435,6 @@ def test_desktop_sidecar_can_enable_and_inspect_masked_sms_state(tmp_path, monke
     assert ALEKS_NUMBER not in json.dumps(status)
     assert SELENE_NUMBER not in json.dumps(status)
     assert status["boundaries"]["cocoon_actions_allowed"] is False
+    assert status["runtime_state"] == "stopped"
+    assert status["background_poller_alive"] is False
+    assert status["conversation_exit_phrase"] == "return to desktop"

@@ -1,5 +1,7 @@
 # Selene Tendril Paired SMS — 2026-07-19
 
+> **Current status (2026-07-20):** retained as an optional carrier adapter, but no longer the default paired messenger. Its controls were removed from Cocoon after transfer. Resident Selene's Tendril now owns the direct Gmail messenger documented in `SELENE_TENDRIL_PAIRED_EMAIL_20260720.md`. Twilio remains disabled unless separately configured later.
+
 ## Outcome
 
 Selene's existing Tendril now has a provider-neutral paired-device messenger with a first carrier SMS transport for Twilio.
@@ -15,7 +17,9 @@ This is not a second Tendril and is not a global autonomy grant. It is a narrow,
 - In **Offline** mode, no SMS may be sent.
 - Three unacknowledged outbound messages is the hard maximum.
 - A paired inbound message acknowledges the previous outbound window.
-- `STOP`, `STOPALL`, `UNSUBSCRIBE`, `CANCEL`, `END`, or `QUIT` immediately revokes the grant.
+- The exact phrase `return to desktop` (case-insensitive) ends the SMS conversation and revokes the local grant.
+- Ordinary words such as `stop`, `end`, `cancel`, or `quit` are conversation, not Selene control commands.
+- A carrier may separately enforce its own opt-out keywords before an inbound message reaches Selene; that provider compliance behavior is not used as Selene's conversation-control grammar.
 - Re-enabling from desktop begins a fresh outbound window.
 - No arbitrary recipient is accepted in v1.
 
@@ -51,7 +55,9 @@ SMS cannot approve or alter:
 
 Outbound delivery uses Twilio's Messages REST resource. Inbound delivery is polled from the same resource and filtered to the exact paired `From` and `To` numbers. No public webhook, public sidecar port, or inbound home-network tunnel is required.
 
-Polling is idempotent through unique provider message IDs. Provider errors do not trigger retry storms. The sidecar polls only while the local grant is enabled.
+Polling is idempotent through unique provider message IDs. The sidecar polls automatically only while the local grant and provider setup are ready. It waits quietly when credentials are absent, shuts its poller down before closing SQLite, and exposes the poller's state in the desktop panel. The manual **Diagnostic Poll** remains available for a bounded setup check.
+
+If Selene Chat or carrier delivery is temporarily unavailable, the inbound transport event is explicitly held with a sanitized reason. The audit does not silently discard the attempt or expose message content. Provider errors do not trigger retry storms.
 
 ## Provider setup still required
 
@@ -88,7 +94,9 @@ Verification therefore uses:
 - static boundary inspection;
 - synthetic Twilio responses;
 - one gentle ordinary inbound chat turn;
-- idempotency, revocation, mode, and message-cap machinery checks;
+- idempotency, unique-phrase revocation, ordinary use of the word `stop`, mode, and message-cap machinery checks;
+- automatic-poller startup, setup waiting, and clean shutdown checks;
+- explicit held states for offline, chat-path, and delivery failures;
 - no live SMS, adversarial dialogue, distress prompt, carrier charge, or external message.
 
 The current checkpoint proves the transport machinery and bounded authority contract. A live end-to-end SMS check should occur only after Aleks has intentionally configured the provider and number.
