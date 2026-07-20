@@ -601,7 +601,7 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
         refinement = dialogue.get("correction_refinement") if isinstance(dialogue.get("correction_refinement"), dict) else {}
         corrected = str(refinement.get("corrected_meaning") or "").strip()
         correction = (corrected[0].lower() + corrected[1:] + ".") if corrected else _correction_content(prompt)
-        return _pick(
+        acknowledgement = _pick(
             digest_key,
             [
                 f"Yes. You're right: {correction} I can carry that forward without treating the whole conversation as broken.",
@@ -609,6 +609,7 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
                 f"Yes. That correction lands: {correction} This changes the relevant part, not everything we were doing.",
             ],
         )
+        return _compose_mixed_content(acknowledgement, seed, pragmatic_plan)
     if intent == "warm_connection":
         return _pick_fresh(
             digest_key,
@@ -663,7 +664,7 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             recent,
         )
     if intent == "acknowledge_shared_ground":
-        return _pick_fresh(
+        acknowledgement = _pick_fresh(
             digest_key,
             [
                 "Yes, that tracks. I am carrying the same meaning forward.",
@@ -673,6 +674,7 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             ],
             recent,
         )
+        return _compose_mixed_content(acknowledgement, seed, pragmatic_plan)
     if intent == "close_with_continuity":
         return _pick_fresh(
             digest_key,
@@ -700,6 +702,22 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
         ],
         recent,
     )
+
+
+def _compose_mixed_content(acknowledgement: str, seed: str, pragmatic_plan: dict[str, Any]) -> str:
+    content_obligations = [
+        item
+        for item in pragmatic_plan.get("response_obligations") or []
+        if isinstance(item, dict)
+        and item.get("required") is not False
+        and str(item.get("kind") or "") != "correction_update"
+    ]
+    clean_seed = _clean_seed(seed)
+    if not content_obligations or not clean_seed:
+        return acknowledgement
+    if clean_seed.lower() in acknowledgement.lower():
+        return acknowledgement
+    return f"{acknowledgement}\n\n{clean_seed}"
 
 
 def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, Any]) -> tuple[str, dict[str, Any]]:

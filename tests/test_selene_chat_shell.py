@@ -6,6 +6,7 @@ from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.activation import ACTIVATION_APPROVAL_PHRASE
 from selene.core_mind_runtime import RUNTIME_TYPES
+from selene.selene_chat import _bounded_metacognitive_completion
 
 
 def _conn(tmp_path):
@@ -587,6 +588,71 @@ def test_active_selene_chat_uses_prepared_language_teaching_guidance(tmp_path):
     assert "language lesson" not in result["candidate_text"].lower()
     assert "response move" not in result["candidate_text"].lower()
     _assert_locked(result)
+
+
+def test_active_chat_answers_about_reviewed_language_capability_without_parroting_a_lesson(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    route_request(conn, "language_teaching.prepare", {})
+    _approve_language_lesson(conn, "answer_then_expand")
+    _approve_language_lesson(conn, "mixed_intent_balance")
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "The conversation lessons are through review. What changed in how you can handle a back-and-forth?"},
+    )["result"]
+    corrected = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": first["session_id"],
+            "text": "Ah, I meant the conversation lessons, not sequence words. What changed in back-and-forth now?",
+        },
+    )["result"]
+
+    assert first["language_capability_answer"]["used"] is True
+    assert first["comprehension_integration"]["knowledge_response_seed"] == ""
+    assert "what changed is" in first["candidate_text"].lower()
+    assert first["response_coverage"]["all_required_addressed"] is True
+    assert corrected["intent_decision"]["mixed_intent"] is True
+    assert corrected["intent_decision"]["reasoning_requested"] is True
+    assert "\n\nWhat changed is" in corrected["candidate_text"]
+    assert "Sequence words organize" not in corrected["candidate_text"]
+    assert corrected["response_coverage"]["all_required_addressed"] is True
+    assert corrected["metacognition"]["recommended_action"] == "answer_now"
+    _assert_locked(first)
+    _assert_locked(corrected)
+
+
+def test_metacognitive_completion_is_grounded_single_pass_and_boundary_safe():
+    coverage = {"unresolved_count": 1, "addressed_count": 0}
+    repaired = _bounded_metacognitive_completion(
+        "Yes, I see the correction.",
+        "The grounded answer covers the missing conversation obligation.",
+        coverage,
+        requested=True,
+        hard_boundary=False,
+    )
+    blocked = _bounded_metacognitive_completion(
+        "Boundary response.",
+        "Content that must not be appended.",
+        coverage,
+        requested=True,
+        hard_boundary=True,
+    )
+
+    assert repaired["attempted"] is True
+    assert repaired["count"] == 1
+    assert repaired["maximum_count"] == 1
+    assert repaired["recursion_allowed"] is False
+    assert repaired["content_generation_allowed"] is False
+    assert "grounded answer" in repaired["candidate_text"]
+    assert blocked["attempted"] is False
+    assert blocked["status"] == "bounded_completion_blocked_by_core_mind"
+    _assert_locked(repaired)
+    _assert_locked(blocked)
 
 
 def test_active_selene_chat_holds_approved_advanced_guidance_until_prerequisites_are_available(tmp_path):

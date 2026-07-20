@@ -54,7 +54,11 @@ def interpret_turn_meaning(
         re.match(r"^(who|what|when|where|why|how|which|can|could|would|should|do|does|did|is|are|was|were|will)\b", routing_text)
     )
     explicit_request = bool(
-        re.match(r"^(please\s+)?(explain|compare|calculate|solve|check|find|show|tell|give|help|plan|review|summarize|describe)\b", routing_text)
+        re.search(
+            r"(?:^|[.!?]\s+)(?:please\s+)?"
+            r"(?:answer|explain|compare|calculate|solve|check|find|show|tell|give|help|plan|review|summarize|describe)\b",
+            routing_text,
+        )
     )
 
     dialogue_acts = _dialogue_acts(routing_text, tokens, question, explicit_request)
@@ -318,7 +322,10 @@ def _is_receipt_check(value: str, question: bool) -> bool:
 def _social_match(value: str, kind: str) -> bool:
     patterns = {
         "greeting": ("greetings", "hello", "hey", "hi", "good morning", "good afternoon", "good evening"),
-        "farewell": ("catch you", "talk soon", "see you", "goodbye", "bye", "good night", "i'll be back", "ill be back"),
+        "farewell": (
+            "catch you", "talk soon", "see you", "goodbye", "bye", "good night", "i'll be back", "ill be back",
+            "pause here", "pause for now", "stop here", "leave it here", "pick this up later",
+        ),
         "reassurance": ("don't worry", "dont worry", "you are safe", "you're safe", "you can breathe", "take your time", "no pressure", "it's okay", "its okay"),
         "gratitude": ("thank you", "thanks", "appreciate you", "good work", "nice job", "well done"),
         "affirmation": ("exactly", "agreed", "sounds good", "gotcha", "that makes sense"),

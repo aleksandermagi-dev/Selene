@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from selene.chat_intent import classify_chat_intent
 from selene.db import connect, init_db
 from selene.module_router import route_request
+from selene.native_language_organ import realize_native_language
 
 
 def _conn(tmp_path):
@@ -191,6 +193,26 @@ def test_nlo_receives_correction_without_topic_scramble_or_duplicate_acknowledge
     assert "preserve your meaning" in result["candidate_text"]
     assert "small correction meant" not in result["candidate_text"].lower()
     assert result["candidate_text"].lower().count("correction") <= 1
+    _assert_locked(result)
+
+
+def test_nlo_composes_acknowledgement_with_grounded_mixed_turn_content(tmp_path):
+    conn = _conn(tmp_path)
+    prompt = "Right. Please answer the missed part: what changed in ordinary conversation?"
+    decision = classify_chat_intent(prompt)
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": decision,
+            "content_seed": "The reviewed lessons now help me carry corrections into the answer and cover multiple required parts.",
+        },
+    )
+
+    assert result["meaning_packet"]["intent"] == "acknowledge_shared_ground"
+    assert "\n\n" in result["candidate_text"]
+    assert "carry corrections into the answer" in result["candidate_text"]
+    assert "multiple required parts" in result["candidate_text"]
     _assert_locked(result)
 
 

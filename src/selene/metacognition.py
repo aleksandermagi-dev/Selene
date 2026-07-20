@@ -58,7 +58,9 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "Answer Control and Graceful Fall",
             ],
             "max_reopen_cycles_without_new_material": MAX_REOPEN_CYCLES,
-            "chat_connection": "observes_final_supervised_candidate_without_rewriting_it",
+            "chat_connection": "advises_before_finalization_and_records_the_final_supervised_candidate",
+            "may_request_single_grounded_completion": True,
+            "direct_answer_rewrite_authority": False,
             "nlo_influence_active": False,
             "voice_influence_active": False,
             "private_miner_evidence_connected": False,
@@ -247,6 +249,8 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         "automatic_knowledge_rewrite": False,
         "retained_knowledge_change_requires_existing_comprehension_review_path": True,
     }
+    completion_repair = _dict(payload.get("completion_repair"))
+    completion_applied = completion_repair.get("accepted") is True
     result = {
         "status": "metacognition_advisory_ready",
         "organ_name": "Metacognition Organ",
@@ -268,7 +272,11 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         "source_refs": source_refs,
         "attributed_evidence_refs": evidence_source_refs,
         "answer_rewritten": False,
-        "recommendation_applied_automatically": False,
+        "bounded_completion_requested": completion_repair.get("requested_by_metacognition") is True,
+        "bounded_completion_applied": completion_applied,
+        "bounded_completion_count": int(completion_repair.get("count") or 0),
+        "direct_answer_rewrite_authority": False,
+        "recommendation_applied_automatically": completion_applied,
         "visible_summary_only": True,
         "review_destination": "Status",
         "review_status": "status_only",

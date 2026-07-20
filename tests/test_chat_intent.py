@@ -37,6 +37,31 @@ def test_shared_intent_routes_distinct_chat_meanings():
         assert (decision["intent"], decision["primary_organ"]) == expected
 
 
+def test_social_or_corrective_opening_does_not_hide_a_content_request():
+    correction = classify_chat_intent(
+        "Ah, I meant the conversation lessons, not sequence words. What changed in back-and-forth now?"
+    )
+    affirmation = classify_chat_intent(
+        "Right. Please answer the part that got missed: what can you handle differently now?"
+    )
+
+    assert correction["intent"] == "correction"
+    assert affirmation["intent"] == "affirmation"
+    for decision in (correction, affirmation):
+        assert decision["mixed_intent"] is True
+        assert decision["content_response_requested"] is True
+        assert decision["reasoning_requested"] is True
+        assert decision["secondary_intent"] == "reasoning"
+        assert decision["answer_shape"] == "acknowledge_then_answer"
+
+
+def test_ordinary_pause_language_is_a_conversation_close():
+    decision = classify_chat_intent("That's okay; let's pause here for now.")
+
+    assert decision["intent"] == "farewell"
+    assert decision["answer_shape"] == "close_with_continuity"
+
+
 def test_general_knowledge_question_does_not_retrieve_personal_memory(tmp_path):
     conn = _conn(tmp_path)
 

@@ -21,6 +21,7 @@ from .conversation_repair import repair_conversation_candidate
 from .dialogue_workspace import prepare_dialogue_turn, record_dialogue_response
 from .input_detangler import detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
+from .language_teaching_shelf import build_language_capability_answer
 from .memory_organ import retrieve_memory
 from .meaning_router import interpret_turn_meaning
 from .metacognition import inspect_metacognition
@@ -173,6 +174,13 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         },
         commit=False,
     )
+    language_capability = build_language_capability_answer(
+        conn,
+        {
+            "prompt": understanding_text,
+            "active_topic": prepared_dialogue_workspace.get("active_topic") or "",
+        },
+    )
     intelligence_support = _intelligence_support(conn, understanding_text, route, chat_continuity, intent_decision, hard=bool(hard_blockers))
     cocoon_suggestion = _cocoon_suggestion(understanding_text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
     continuity_reply = _local_chat_continuity_reply(understanding_text, chat_continuity, intent_decision)
@@ -206,7 +214,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     policy_reply = _conversation_policy_reply(understanding_text)
     protected_content_seed = continuity_reply or memory_reply or self_state_reply or policy_reply
     reasoning_content_seed = str(intelligence_support.get("best_current_answer") or "")
-    content_seed = protected_content_seed or reasoning_content_seed
+    language_content_seed = str(language_capability.get("content_seed") or "")
+    content_seed = protected_content_seed or language_content_seed or reasoning_content_seed
     comprehension = build_comprehension_packet(
         conn,
         {
@@ -241,6 +250,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         protected_content_seed
         or domain_content_seed
         or str(comprehension.get("knowledge_response_seed") or "")
+        or language_content_seed
         or reasoning_content_seed
     )
     local_continuity_supported = bool(continuity_reply)
@@ -359,24 +369,57 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     response_coverage = evaluate_response_coverage(native_language.get("pragmatic_plan"), candidate_text)
     conversation_repair["candidate_source"] = recovery_source
     conversation_repair["final_response_coverage"] = response_coverage
+    metacognition_payload = {
+        "prompt": understanding_text,
+        "candidate_text": candidate_text,
+        "core_mind_route": route,
+        "hard_boundary": bool(hard_blockers),
+        "blocked_capabilities": hard_blockers,
+        "comprehension_context": comprehension,
+        "intelligence_os_support": intelligence_support,
+        "answer_engine_support": answer_engine_support,
+        "response_coverage": response_coverage,
+        "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
+        "source_refs": [
+            "selene_chat:metacognition_observer",
+            *_json_list(route.get("source_refs")),
+            *_json_list(comprehension.get("source_refs")),
+        ],
+    }
+    preliminary_metacognition = inspect_metacognition(
+        conn,
+        metacognition_payload,
+        record_run=False,
+        commit=False,
+    )
+    completion_repair = _bounded_metacognitive_completion(
+        candidate_text,
+        content_seed,
+        response_coverage,
+        requested=preliminary_metacognition.get("recommended_action") == "complete_missing_obligation",
+        hard_boundary=bool(hard_blockers),
+    )
+    if completion_repair.get("attempted") is True:
+        proposed_candidate = _selene_label_candidate(str(completion_repair.get("candidate_text") or candidate_text))
+        proposed_candidate = _preserve_answer_engine_invariants(proposed_candidate, answer_engine_support)
+        proposed_coverage = evaluate_response_coverage(native_language.get("pragmatic_plan"), proposed_candidate)
+        completion_repair["resulting_coverage"] = proposed_coverage
+        if _coverage_rank(proposed_coverage) > _coverage_rank(response_coverage):
+            candidate_text = proposed_candidate
+            response_coverage = proposed_coverage
+            completion_repair["accepted"] = True
+            conversation_repair["candidate_source"] = "metacognition_bounded_completion"
+            conversation_repair["final_response_coverage"] = response_coverage
+        else:
+            completion_repair["accepted"] = False
+            completion_repair["status"] = "bounded_completion_did_not_improve_coverage"
     metacognition = inspect_metacognition(
         conn,
         {
-            "prompt": understanding_text,
+            **metacognition_payload,
             "candidate_text": candidate_text,
-            "core_mind_route": route,
-            "hard_boundary": bool(hard_blockers),
-            "blocked_capabilities": hard_blockers,
-            "comprehension_context": comprehension,
-            "intelligence_os_support": intelligence_support,
-            "answer_engine_support": answer_engine_support,
             "response_coverage": response_coverage,
-            "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
-            "source_refs": [
-                "selene_chat:metacognition_observer",
-                *_json_list(route.get("source_refs")),
-                *_json_list(comprehension.get("source_refs")),
-            ],
+            "completion_repair": completion_repair,
         },
         record_run=True,
         commit=False,
@@ -411,7 +454,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "intelligence_os_support": intelligence_support,
         "answer_engine_support": answer_engine_support,
         "comprehension_integration": comprehension,
+        "language_capability_answer": language_capability,
         "metacognition": metacognition,
+        "metacognitive_completion_repair": completion_repair,
         "intent_decision": intent_decision,
         "self_state": self_state,
         "affect_expression": affect_expression,
@@ -477,7 +522,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intelligence_os_support": intelligence_support,
             "answer_engine_support": answer_engine_support,
             "comprehension_integration": comprehension,
+            "language_capability_answer": language_capability,
             "metacognition": metacognition,
+            "metacognitive_completion_repair": completion_repair,
             "intent_decision": intent_decision,
             "self_state": self_state,
             "affect_expression": affect_expression,
@@ -1110,6 +1157,48 @@ def _coverage_rank(coverage: dict[str, Any]) -> tuple[int, int]:
         int(coverage.get("addressed_count") or 0),
         -int(coverage.get("unresolved_count") or 0),
     )
+
+
+def _bounded_metacognitive_completion(
+    candidate: str,
+    content_seed: str,
+    coverage: dict[str, Any],
+    *,
+    requested: bool,
+    hard_boundary: bool,
+) -> dict[str, Any]:
+    base = {
+        "status": "bounded_completion_not_needed",
+        "requested_by_metacognition": requested,
+        "attempted": False,
+        "accepted": False,
+        "count": 0,
+        "maximum_count": 1,
+        "recursion_allowed": False,
+        "content_generation_allowed": False,
+        "hard_boundary_respected": True,
+        "candidate_text": candidate,
+        "unresolved_before": int(coverage.get("unresolved_count") or 0),
+        **SELENE_CHAT_GUARDS,
+    }
+    if hard_boundary:
+        return {**base, "status": "bounded_completion_blocked_by_core_mind"}
+    if not requested:
+        return base
+    seed = truncate(str(content_seed or "").strip(), 3000)
+    if not seed:
+        return {**base, "status": "bounded_completion_has_no_grounded_content"}
+    if seed.lower() in candidate.lower():
+        return {**base, "status": "grounded_content_already_present"}
+    joined = f"{candidate.rstrip()}\n\n{seed}" if candidate.strip() else seed
+    return {
+        **base,
+        "status": "bounded_completion_attempted",
+        "attempted": True,
+        "count": 1,
+        "candidate_text": joined,
+        "source": "existing_grounded_content_seed_only",
+    }
 
 
 def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any], intent_decision: dict[str, Any]) -> str:

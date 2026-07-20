@@ -131,10 +131,15 @@ def evaluate_response_coverage(
         lexical_score = len(overlap) / len(expected) if expected else 0.0
         kind = str(obligation.get("kind") or "direct_question")
         signal_score = _answer_signal_score(kind, candidate_lower)
-        score = max(lexical_score, signal_score if expected else 0.0)
-        if expected and signal_score > 0:
-            score = min(1.0, lexical_score + signal_score)
-        addressed = bool(candidate.strip()) and score >= 0.5
+        minimum_term_matches = 2 if len(expected) >= 6 else 1
+        semantic_match = len(overlap) >= minimum_term_matches
+        signal_can_stand_alone = kind in {"correction_update", "yes_or_no"}
+        score = lexical_score
+        if semantic_match and signal_score > 0:
+            score = min(1.0, lexical_score + 0.25)
+        elif signal_can_stand_alone:
+            score = max(score, signal_score)
+        addressed = bool(candidate.strip()) and (semantic_match or signal_can_stand_alone and signal_score > 0)
         loop_id = str(obligation.get("loop_id") or "")
         if addressed and loop_id:
             answered_loop_ids.append(loop_id)
@@ -147,6 +152,8 @@ def evaluate_response_coverage(
                 "coverage_score": round(score, 3),
                 "matched_terms": overlap,
                 "required_terms": sorted(expected),
+                "minimum_term_matches": minimum_term_matches,
+                "semantic_alignment_required": not signal_can_stand_alone,
                 "status": "addressed" if addressed else "still_open",
             }
         )
@@ -162,7 +169,7 @@ def evaluate_response_coverage(
             "unresolved_count": len(required) - addressed_count,
             "answered_loop_ids": answered_loop_ids,
             "items": items,
-            "method": "conservative_visible_text_coverage_not_semantic_certainty",
+            "method": "conservative_visible_text_alignment_not_semantic_certainty",
             "visible_summary_only": True,
             "hidden_chain_of_thought_exposed": False,
             "provenance_boundary": PRAGMATIC_BOUNDARY,
@@ -206,8 +213,8 @@ def _unit_obligations(
         kind = str(unit.get("kind") or "statement")
         if not text or " ".join(text.lower().split()) in existing_sources:
             continue
-        if kind in {"direct_request", "indirect_request"}:
-            obligation_kind = _request_kind(text)
+        if kind in {"question", "direct_request", "indirect_request"}:
+            obligation_kind = _question_kind(text) if kind == "question" else _request_kind(text)
             obligations.append(
                 {
                     "id": _obligation_id(text, len(existing) + index),
@@ -219,8 +226,8 @@ def _unit_obligations(
                     "coverage_terms": _content_terms(text),
                     "required": True,
                     "priority": "content",
-                    "inference_level": "literal_request",
-                    "goal": "perform_requested_language_act",
+                    "inference_level": "literal" if kind == "question" else "literal_request",
+                    "goal": "answer_question" if kind == "question" else "perform_requested_language_act",
                 }
             )
         elif kind == "correction":

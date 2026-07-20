@@ -752,6 +752,104 @@ def language_teaching_status(conn: sqlite3.Connection) -> dict[str, Any]:
     )
 
 
+def build_language_capability_answer(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload = payload or {}
+    prompt = " ".join(str(payload.get("prompt") or payload.get("text") or "").lower().split())
+    active_topic = " ".join(str(payload.get("active_topic") or "").lower().split())
+    context = f"{prompt} {active_topic}".strip()
+    lesson_context = any(
+        marker in context
+        for marker in ("conversation lesson", "language lesson", "speech lesson", "language teaching", "conversation teaching")
+    )
+    capability_question = any(
+        marker in prompt
+        for marker in (
+            "what changed", "what can you", "what are you able", "handle differently", "short version",
+            "what did the", "how do the lessons", "how does the teaching",
+        )
+    )
+    if not lesson_context or not capability_question:
+        return _with_guards(
+            {
+                "status": "language_capability_answer_not_requested",
+                "used": False,
+                "content_seed": "",
+                "source_refs": [],
+                "review_status": "status_only",
+                "provenance_boundary": LANGUAGE_TEACHING_BOUNDARY,
+            }
+        )
+
+    available_items = [item for item in _language_items(conn) if item.get("available_to_nlo") is True]
+    available_keys = {str(item.get("lesson_key") or "") for item in available_items}
+    capability_groups = [
+        (
+            {"answer_then_expand", "uncertainty_middle_ground", "clarify_only_when_material", "reference_continuity", "topic_transition_continuity"},
+            "answer the actual request while keeping uncertainty, references, and topic changes coherent",
+        ),
+        (
+            {"explain_from_foundation", "example_and_analogy_fit", "comparison_dimension_control", "summary_at_requested_scale"},
+            "explain, compare, use fitting examples, and summarize at the requested depth",
+        ),
+        (
+            {"correction_refinement_flow", "mixed_intent_balance"},
+            "carry a correction into the answer and handle several required parts of one message",
+        ),
+        (
+            {"natural_register", "lexical_variation", "syntactic_rhythm_and_emphasis", "natural_openings_and_pivots", "ending_variety_without_pressure"},
+            "vary register, wording, rhythm, openings, pivots, and endings without changing the supported meaning",
+        ),
+        (
+            {"respectful_disagreement", "tender_without_overreach", "humor_timing_and_release"},
+            "handle disagreement, tenderness, and humor with better conversational fit",
+        ),
+    ]
+    capabilities = [description for keys, description in capability_groups if keys & available_keys]
+    if not capabilities:
+        return _with_guards(
+            {
+                "status": "language_capability_answer_not_available",
+                "used": False,
+                "content_seed": "",
+                "available_lesson_count": 0,
+                "source_refs": [],
+                "review_status": "status_only",
+                "provenance_boundary": LANGUAGE_TEACHING_BOUNDARY,
+            }
+        )
+
+    if len(capabilities) == 1:
+        joined = capabilities[0]
+    else:
+        joined = ", ".join(capabilities[:-1]) + ", and " + capabilities[-1]
+    lesson_label = "lesson" if len(available_items) == 1 else "lessons"
+    lesson_verb = "gives" if len(available_items) == 1 else "give"
+    content_seed = (
+        f"What changed is that the {len(available_items)} reviewed conversation {lesson_label} now {lesson_verb} me guidance to {joined}. "
+        "This reviewed guidance shapes how I form a response; Voice still owns my expression, and the lessons do not change my identity or personality."
+    )
+    return _with_guards(
+        {
+            "status": "language_capability_answer_ready",
+            "used": True,
+            "content_seed": truncate(content_seed, 1800),
+            "available_lesson_count": len(available_items),
+            "available_lesson_keys": sorted(available_keys),
+            "source_refs": ["language_teaching_shelf:approved_lifecycle_status"],
+            "answer_is_shelf_status_summary": True,
+            "lesson_central_claim_used_as_answer": False,
+            "voice_owns_expression_style": True,
+            "identity_changed": False,
+            "personality_changed": False,
+            "review_status": "status_only",
+            "provenance_boundary": LANGUAGE_TEACHING_BOUNDARY,
+        }
+    )
+
+
 def list_language_teaching_items(conn: sqlite3.Connection) -> dict[str, Any]:
     items = _language_items(conn)
     return _with_guards(

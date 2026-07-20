@@ -6,6 +6,7 @@ from selene.chat_intent import classify_chat_intent
 from selene.db import connect, init_db
 from selene.language_teaching_shelf import (
     LANGUAGE_QOL_LESSONS,
+    build_language_capability_answer,
     language_teaching_status,
     list_language_teaching_items,
     prepare_language_teaching_shelf,
@@ -98,6 +99,37 @@ def test_uncertainty_guidance_uses_middle_ground_without_cocoon_pressure(tmp_pat
     assert all("cocoon" not in move.lower() for move in result["response_moves"])
     assert result["automatic_content_generation"] is False
     assert result["runtime_memory_recall"] is False
+
+
+def test_language_lessons_are_guidance_not_answer_bearing_knowledge(tmp_path):
+    conn = _conn(tmp_path)
+    prepare_language_teaching_shelf(conn)
+    _complete_and_approve(conn, "answer_then_expand")
+
+    packet = route_request(
+        conn,
+        "comprehension.turn.packet",
+        {
+            "prompt": "What changed in the conversation lessons?",
+            "intent_decision": {
+                "intent": "reasoning",
+                "reasoning_requested": True,
+                "dialogue_acts": ["question"],
+            },
+        },
+    )["result"]
+    capability = build_language_capability_answer(
+        conn,
+        {"prompt": "What changed in the conversation lessons?"},
+    )
+
+    assert packet["knowledge_response_seed"] == ""
+    assert packet["knowledge_context"]["answer_eligible"] is False
+    assert all(not item["concept_key"].startswith("language_lesson:") for item in packet["knowledge_context"]["items"])
+    assert capability["used"] is True
+    assert capability["lesson_central_claim_used_as_answer"] is False
+    assert "What changed is" in capability["content_seed"]
+    assert capability["identity_changed"] is False
 
 
 def test_unavailable_or_held_lessons_are_not_selected(tmp_path):

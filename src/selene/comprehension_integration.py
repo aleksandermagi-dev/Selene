@@ -496,7 +496,19 @@ def build_comprehension_packet(
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
     content_seed = truncate(str(payload.get("content_seed") or ""), 1800).strip()
-    knowledge = retrieve_approved_knowledge(conn, prompt, limit=int(payload.get("knowledge_limit") or 3))
+    knowledge = retrieve_approved_knowledge(
+        conn,
+        prompt,
+        limit=int(payload.get("knowledge_limit") or 3),
+        include_language_guidance=False,
+    )
+    answer_eligible_items = _answer_eligible_knowledge_items(prompt, intent, knowledge.get("items") or [])
+    knowledge["answer_eligible_items"] = answer_eligible_items
+    knowledge["answer_eligible"] = bool(answer_eligible_items)
+    knowledge["answer_use_rule"] = (
+        "Only strongly relevant, approved knowledge resources may seed an answer; "
+        "language lessons remain NLO guidance and never become answer content."
+    )
     ambiguity = pragmatics.get("ambiguity") if isinstance(pragmatics.get("ambiguity"), dict) else {}
     resolved_reference = pragmatics.get("resolved_reference") if isinstance(pragmatics.get("resolved_reference"), dict) else {}
     contradiction_markers = _matched_markers(
@@ -506,12 +518,12 @@ def build_comprehension_packet(
     challenge = intelligence.get("challenge") if isinstance(intelligence.get("challenge"), dict) else {}
     challenge_flags = _text_list(challenge.get("flags") or challenge.get("issues"))
     material_ambiguity = str(ambiguity.get("level") or "") == "material"
-    supported = bool(content_seed or knowledge["items"])
+    supported = bool(content_seed or answer_eligible_items)
     if contradiction_markers or challenge_flags:
         understanding_state = "reopened_for_recheck"
     elif material_ambiguity and not supported:
         understanding_state = "needs_shared_model_check"
-    elif knowledge["items"]:
+    elif answer_eligible_items:
         understanding_state = "approved_concept_available"
     elif content_seed:
         understanding_state = "current_context_supported"
@@ -552,7 +564,7 @@ def build_comprehension_packet(
             "resolved_reference": resolved_reference or None,
             "response_obligations": response_obligations,
             "knowledge_context": knowledge,
-            "knowledge_response_seed": str((knowledge.get("items") or [{}])[0].get("central_claim") or "") if knowledge.get("items") else "",
+            "knowledge_response_seed": str((answer_eligible_items or [{}])[0].get("central_claim") or "") if answer_eligible_items else "",
             "comprehension_handshake": handshake,
             "metacognitive_check": {
                 "reopen_suggested": bool(contradiction_markers or challenge_flags),
@@ -590,7 +602,13 @@ def build_comprehension_packet(
     return result
 
 
-def retrieve_approved_knowledge(conn: sqlite3.Connection, query: str, *, limit: int = 3) -> dict[str, Any]:
+def retrieve_approved_knowledge(
+    conn: sqlite3.Connection,
+    query: str,
+    *,
+    limit: int = 3,
+    include_language_guidance: bool = True,
+) -> dict[str, Any]:
     query_terms = set(_terms(query))
     rows = conn.execute(
         """
@@ -604,6 +622,9 @@ def retrieve_approved_knowledge(conn: sqlite3.Connection, query: str, *, limit: 
     ranked: list[tuple[int, int, dict[str, Any]]] = []
     for row in rows:
         item = _decode_concept(row)
+        guidance_only = _is_language_guidance_concept(item)
+        if guidance_only and not include_language_guidance:
+            continue
         haystack = " ".join(
             [
                 item["title"],
@@ -615,6 +636,8 @@ def retrieve_approved_knowledge(conn: sqlite3.Connection, query: str, *, limit: 
         )
         overlap = query_terms & set(_terms(haystack))
         if overlap:
+            item["matched_terms"] = sorted(overlap)
+            item["guidance_only"] = guidance_only
             ranked.append((len(overlap), int(item["id"]), item))
     items = [item for _, _, item in sorted(ranked, key=lambda value: (-value[0], -value[1]))[: max(1, min(limit, 10))]]
     return {
@@ -631,6 +654,8 @@ def retrieve_approved_knowledge(conn: sqlite3.Connection, query: str, *, limit: 
                 "limits": item["limits"][:6],
                 "confidence": item["confidence"],
                 "source_refs": item["source_refs"],
+                "matched_terms": item.get("matched_terms") or [],
+                "guidance_only": item.get("guidance_only") is True,
             }
             for item in items
         ],
@@ -639,6 +664,43 @@ def retrieve_approved_knowledge(conn: sqlite3.Connection, query: str, *, limit: 
         "governance_source": False,
         "identity_source": False,
     }
+
+
+def _answer_eligible_knowledge_items(
+    prompt: str,
+    intent: dict[str, Any],
+    items: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    dialogue_acts = {str(item) for item in intent.get("dialogue_acts") or []}
+    answer_requested = bool(
+        str(intent.get("intent") or "") == "reasoning"
+        or intent.get("reasoning_requested") is True
+        or dialogue_acts.intersection({"question", "request"})
+    )
+    if not answer_requested:
+        return []
+    query_terms = set(_terms(prompt))
+    generic = {
+        "answer", "changed", "conversation", "different", "handle", "language", "lesson", "lessons",
+        "material", "ordinary", "review", "reviewed", "short", "thing", "things", "version",
+    }
+    eligible: list[dict[str, Any]] = []
+    for item in items:
+        if item.get("guidance_only") is True or _is_language_guidance_concept(item):
+            continue
+        overlap = set(item.get("matched_terms") or []) & query_terms
+        distinctive_overlap = {term for term in overlap if term not in generic}
+        if not distinctive_overlap:
+            continue
+        eligible.append(item)
+    return eligible
+
+
+def _is_language_guidance_concept(item: dict[str, Any]) -> bool:
+    return (
+        str(item.get("domain") or "") == "language_and_conversation"
+        or str(item.get("concept_key") or "").startswith("language_lesson:")
+    )
 
 
 def _store_run(

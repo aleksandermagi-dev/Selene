@@ -131,6 +131,21 @@ def test_response_coverage_keeps_unanswered_questions_open():
     assert generic["answered_loop_ids"] == []
 
 
+def test_response_coverage_rejects_answer_shaped_but_unrelated_content():
+    question = "What changed in how the reviewed conversation lessons help you handle a back-and-forth?"
+    plan = build_pragmatic_plan({"prompt": question, "dialogue_workspace": _dialogue([question])})
+
+    unrelated = evaluate_response_coverage(
+        plan,
+        "Sequence words organize events or steps in time, while reconstruction retells their order.",
+    )
+
+    assert unrelated["addressed_count"] == 0
+    assert unrelated["unresolved_count"] == 1
+    assert unrelated["all_required_addressed"] is False
+    assert unrelated["items"][0]["semantic_alignment_required"] is True
+
+
 def test_pragmatic_plan_route_is_status_only(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)

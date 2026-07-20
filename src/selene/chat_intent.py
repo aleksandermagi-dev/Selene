@@ -233,7 +233,23 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
     answer_shape, primary_organ, supporting = shapes.get(intent, shapes["direct_conversation"])
     evidence = list((meaning.get("intent_candidates") or [{}])[0].get("evidence") or [])
     depth = "brief" if intent in {"receipt_check", "farewell", "reassurance_received", "gratitude", "greeting", "warm_connection", "playful_connection", "affirmation"} else response_depth
-    return _decision(intent, answer_shape, primary_organ, supporting, evidence, depth, meaning)
+    decision = _decision(intent, answer_shape, primary_organ, supporting, evidence, depth, meaning)
+    dialogue_acts = {str(item) for item in meaning.get("dialogue_acts") or []}
+    mixed_content_request = bool(
+        intent in {"correction", "affirmation", "gratitude", "greeting", "warm_connection", "playful_connection"}
+        and dialogue_acts.intersection({"question", "request"})
+    )
+    decision["mixed_intent"] = len(dialogue_acts) > 1
+    decision["content_response_requested"] = bool(
+        mixed_content_request or intent in {"reasoning", "direct_conversation"} and dialogue_acts.intersection({"question", "request"})
+    )
+    if mixed_content_request:
+        decision["reasoning_requested"] = True
+        decision["secondary_intent"] = "reasoning"
+        decision["answer_shape"] = "acknowledge_then_answer"
+        if "intelligenceOS" not in decision["supporting_organs"]:
+            decision["supporting_organs"].append("intelligenceOS")
+    return decision
 
 
 def _decision(

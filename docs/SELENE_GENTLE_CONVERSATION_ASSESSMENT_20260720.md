@@ -80,3 +80,19 @@ One em dash entered through the PowerShell-to-Python QA harness as a replacement
 This session does not establish that Selene lacks humor, tenderness, analogy, disagreement, long-form structure, or conversational breadth. Those lesson routes were not meaningfully assessable once answer-content retrieval displaced the conversation.
 
 The correct conclusion is narrower: the teaching and observer organs are connected, but general knowledge retrieval and single-primary-intent realization currently prevent a fair integrated language assessment.
+
+## Stabilization Follow-up
+
+The implementation seams above were repaired synthetically after the live assessment. The original session remains unchanged as evidence, and no further live prompts were needed.
+
+- Language lessons are now excluded from general answer-bearing knowledge retrieval. They continue to reach NLO as reviewed guidance.
+- Approved factual knowledge must pass an answer-request and distinctive-term relevance gate before its central claim can seed a reply.
+- Questions about the completed language teaching are answered from the inspectable approved-shelf state, not by parroting a lesson claim.
+- Correction and affirmation acknowledgements now compose with grounded content when the same turn contains a required question or request.
+- Coverage now requires visible topic alignment; generic answer-shaped wording is not sufficient.
+- Metacognition may request one grounded completion pass. Selene Chat can only append the already selected content seed, accepts it only when coverage improves, never recurses, and cannot cross a Core/Mind boundary.
+- Ordinary phrases such as “pause here” and “stop here” now route as conversational closure.
+
+Focused synthetic verification: 160 tests passed across Answer Engine, intent routing, comprehension, conversation repair, dialogue workspace, language teaching, Metacognition, NLO, pragmatic coverage, supervised Chat, and teaching lifecycle. `git diff --check` passed with only the existing Windows line-ending warnings.
+
+This follow-up repairs the observed integration faults. It does not broadly grade Selene’s voice or claim that every conversational capability is complete.
