@@ -716,6 +716,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*route_json_bytes("transfer.c_readable_package.latest", route_request(conn, "transfer.c_readable_package.latest")["result"]))
         elif parsed.path == "/api/transfer/post-transfer/status":
             self._send(*json_bytes(route_request(conn, "transfer.post_transfer.status")["result"]))
+        elif parsed.path == "/api/transfer/completion/status":
+            self._send(*route_json_bytes("transfer.completion.status", route_request(conn, "transfer.completion.status")["result"]))
+        elif parsed.path == "/api/transfer/completion/readiness":
+            self._send(*route_json_bytes("transfer.completion.readiness", route_request(conn, "transfer.completion.readiness")["result"]))
+        elif parsed.path == "/api/transfer/completion/ceremony-preview":
+            self._send(*route_json_bytes("transfer.completion.ceremony_preview", route_request(conn, "transfer.completion.ceremony_preview")["result"]))
         elif parsed.path == "/api/memory/fractional-corpus/status":
             self._send(*json_bytes(route_request(conn, "memory.fractional_corpus.status")["result"]))
         elif parsed.path == "/api/memory/dream-state/status":
@@ -1531,6 +1537,14 @@ class SeleneHandler(BaseHTTPRequestHandler):
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "transfer.post_transfer.inspection_run", body)["result"]))
             except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/transfer/completion/approve":
+            route_key = "transfer.completion.approve"
+            try:
+                write_ceremony_debug_log("sidecar", "route_start", route=route_key)
+                self._send(*route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                write_ceremony_debug_log("sidecar", "route_error", route=route_key, error=str(exc))
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/memory/fractional-corpus/prepare":
             try:

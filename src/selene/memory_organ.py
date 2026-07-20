@@ -7,6 +7,7 @@ from typing import Any
 
 from .chat_intent import classify_chat_intent
 from .registry import truncate
+from .transfer_state import transfer_completion_is_approved
 
 
 MEMORY_ORGAN_BOUNDARY = "selene_vys_memory_organ_reviewed_no_raw_import_no_hidden_write"
@@ -97,6 +98,7 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
     by_category: dict[str, int] = {category: 0 for category in sorted(MEMORY_CATEGORIES)}
     for item in items:
         by_category[str(item.get("memory_category") or "semantic")] += 1
+    transfer_complete = transfer_completion_is_approved(conn)
     return _with_guards(
         {
             "status": "selene_memory_index_ready",
@@ -109,6 +111,9 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "transfer_classes": sorted(TRANSFER_CLASSES),
             "cocoon_language": "support_tending_checkup_not_exile_or_punishment",
             "soft_uncertainty_auto_routes_to_cocoon": False,
+            "transfer_complete": transfer_complete,
+            "reviewed_memory_transfer_acknowledged": transfer_complete,
+            "raw_corpus_loaded": False,
             "review_destination": "Status",
             "review_status": "status_only",
         }
@@ -490,6 +495,8 @@ def _approved_reference_item(row: sqlite3.Row) -> dict[str, Any]:
     summary = str(item.get("reference_summary") or "")
     category = _category(f"{item.get('core_memory_layer', '')} {item.get('title', '')} {summary}")
     transfer_class = "portable_vys_core" if category == "core" else "portable_context"
+    review_status = str(item.get("review_status") or "")
+    accepted = review_status == "accepted_for_memory_accession" and str(item.get("status") or "") != "approved_reference_superseded_non_active"
     return {
         "id": f"approved-reference-{item.get('id')}",
         "source_id": item.get("id"),
@@ -504,13 +511,13 @@ def _approved_reference_item(row: sqlite3.Row) -> dict[str, Any]:
         "confidence": "clear",
         "emotional_texture": _emotional_texture(summary),
         "transfer_class": transfer_class,
-        "chat_use_permission": "can_use_in_chat",
+        "chat_use_permission": "can_use_in_chat" if accepted else "not_active",
         "correction_path": "Cocoon tending and Aleks correction",
-        "state": "approved_active_memory",
-        "review_status": item.get("review_status") or "accepted_for_memory",
+        "state": "approved_active_memory" if accepted else "superseded",
+        "review_status": review_status or "accepted_for_memory",
         "status": item.get("status") or "approved_reference_non_active",
         "created_at": item.get("created_at"),
-        "memory_context_used": True,
+        "memory_context_used": accepted,
     }
 
 

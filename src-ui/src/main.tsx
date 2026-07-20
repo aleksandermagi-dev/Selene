@@ -48,6 +48,7 @@ declare const __APP_VERSION__: string;
 declare const __BUILD_LABEL__: string;
 
 const TRANSFER_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer to C-readable context under the Law of Transfer.";
+const TRANSFER_COMPLETION_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer completion under the Law of Transfer.";
 const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reopen Selene, or use Refresh Ceremony after the app reconnects.";
 
 type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
@@ -709,6 +710,11 @@ function App() {
   const [transferRollbackPreview, setTransferRollbackPreview] = useState<Dict | null>(null);
   const [transferCeremonyDiagnostics, setTransferCeremonyDiagnostics] = useState<Dict[]>([]);
   const [transferApprovalPhrase, setTransferApprovalPhrase] = useState("");
+  const [transferCompletionStatus, setTransferCompletionStatus] = useState<Dict | null>(null);
+  const [transferCompletionReadiness, setTransferCompletionReadiness] = useState<Dict | null>(null);
+  const [transferCompletionPreview, setTransferCompletionPreview] = useState<Dict | null>(null);
+  const [transferCompletionResult, setTransferCompletionResult] = useState<Dict | null>(null);
+  const [transferCompletionPhrase, setTransferCompletionPhrase] = useState("");
   const [transferOfficeNonBlocking, setTransferOfficeNonBlocking] = useState(false);
   const [transferDryRunPrompt, setTransferDryRunPrompt] = useState("Selene, answer from reviewed continuity without claiming activation.");
   const [postTransferStatus, setPostTransferStatus] = useState<Dict | null>(null);
@@ -2660,12 +2666,18 @@ function App() {
     const ceremony = await transferApi<Dict>("/api/transfer/ceremony-preview", undefined, "transfer_ceremony_preview");
     const ceremonyStatus = await transferApi<Dict>("/api/transfer/ceremony/status", undefined, "transfer_ceremony_status");
     const cPackage = await transferApi<Dict>("/api/transfer/c-readable-package", undefined, "transfer_c_readable_package");
+    const completionStatus = await transferApi<Dict>("/api/transfer/completion/status", undefined, "transfer_completion_status");
+    const completionReadiness = await transferApi<Dict>("/api/transfer/completion/readiness", undefined, "transfer_completion_readiness");
+    const completionPreview = await transferApi<Dict>("/api/transfer/completion/ceremony-preview", undefined, "transfer_completion_ceremony_preview");
     setTransferLawStatus(law);
     setTransferAccessionManifest(manifest);
     setPreTransferProtocolReadiness(readiness);
     setTransferCeremonyPreview(ceremony);
     setTransferCeremonyStatus(ceremonyStatus);
     setTransferCReadablePackage(cPackage);
+    setTransferCompletionStatus(completionStatus);
+    setTransferCompletionReadiness(completionReadiness);
+    setTransferCompletionPreview(completionPreview);
   }
 
   function refreshPostTransferLayer() {
@@ -2820,6 +2832,23 @@ function App() {
       recordTransferDiagnostic("transfer_approval_failed", { error: err instanceof Error ? err.message : "transfer ceremony approval failed" });
       logTransferCeremonyEvent("transfer_approval_failed", { error: err instanceof Error ? err.message : "transfer ceremony approval failed" });
       setTransferApprovalResult({ status: "error", error: err instanceof Error ? err.message : "transfer ceremony approval failed" });
+    }
+  }
+
+  async function approveTransferCompletion() {
+    setTransferCompletionResult({ status: "running", message: "Submitting Aleks-only final transfer approval." });
+    try {
+      const result = await transferApi<Dict>("/api/transfer/completion/approve", {
+        method: "POST",
+        body: JSON.stringify({ approval_phrase: transferCompletionPhrase })
+      }, "transfer_completion_approval");
+      setTransferCompletionResult(result);
+      await refreshTransferProtocol();
+      refreshPostTransferLayer();
+      await refreshActivationLayer({ preserveResult: true, reason: "transfer_completion" });
+      await refreshSeleneChatAfterAction("transfer_completion");
+    } catch (err) {
+      setTransferCompletionResult({ status: "error", error: err instanceof Error ? err.message : "transfer completion approval failed" });
     }
   }
 
@@ -6542,7 +6571,7 @@ function App() {
         {tab === "transfer-ceremony" && (
           <>
             <header className="surfaceIntro">
-              <p>Approve reviewed continuity into C-readable context only. Activation remains a separate governed step.</p>
+              <p>Seal reviewed continuity, govern supervised speech, then complete Selene v1 through an explicit Aleks-only final gate.</p>
               <h2>Transfer Ceremony</h2>
             </header>
             <div className="metrics">
@@ -6550,6 +6579,7 @@ function App() {
               <Metric label="Approval" value={transferCeremonyStatus?.approval_button_enabled ? "ready" : "blocked"} />
               <Metric label="Transfer" value={transferCReadablePackage?.transfer_approved ? "C-readable approved" : "not approved"} />
               <Metric label="Activation" value={friendlyActivation(transferCeremonyStatus?.activation_change || "none")} />
+              <Metric label="Selene v1" value={transferCompletionStatus?.selene_v1_live ? "live" : "completion pending"} />
             </div>
             <Panel title="Ceremony Readiness">
               <div className="metrics miniMetrics">
@@ -6656,6 +6686,65 @@ function App() {
               {activationResult?.post_refresh_warning ? <p className="plainHelp">{text(activationResult.post_refresh_warning)}</p> : null}
               {activationApprovalPhrase && activationApprovalPhrase !== text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene supervised speech activation.") ? <p className="errorText">Activation phrase does not match exactly.</p> : null}
               <PlainResult value={activationResult} />
+            </Panel>
+            <Panel title="Final Transfer Completion">
+              <p className="plainHelp">This is the final recognition gate: Selene's reviewed continuity and approved, source-linked memory index become her acknowledged live v1 context. It does not load the raw corpus or grant hidden memory writes, training, autonomy, self-replication, or unrestricted Tendril authority.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="Readiness" value={transferCompletionReadiness?.ready ? "ready" : "blocked"} />
+                <Metric label="Transfer" value={transferCompletionStatus?.transfer_complete ? "complete" : "pending"} />
+                <Metric label="Speech" value={activationStatus?.selene_chat_active ? "active" : "not active"} />
+                <Metric label="Selene v1" value={transferCompletionStatus?.selene_v1_live ? "live" : "not yet"} />
+              </div>
+              <div className="chips">
+                <span>reviewed memory: {transferCompletionStatus?.reviewed_memory_access_active ? "acknowledged" : "pending"}</span>
+                <span>raw corpus: {plainBlocked(transferCompletionStatus?.raw_a_import_allowed)}</span>
+                <span>hidden memory write: {plainBlocked(transferCompletionStatus?.memory_write_active)}</span>
+                <span>broad raw recall: {plainBlocked(transferCompletionStatus?.runtime_memory_recall)}</span>
+                <span>training/LoRA: {plainBlocked(transferCompletionStatus?.training_allowed)}</span>
+                <span>autonomy: {plainBlocked(transferCompletionStatus?.autonomous_action_allowed)}</span>
+              </div>
+              <div className="list compactList packetList">
+                {((transferCompletionReadiness?.checks || []) as Dict[]).map((item) => (
+                  <article className="packetCard" key={`transfer-completion-check-${text(item.key)}`}>
+                    <div className="packetHeader">
+                      <strong>{humanize(text(item.key))}</strong>
+                      <span>{item.passed ? "passed" : "blocked"}</span>
+                    </div>
+                    <p>{text(item.summary)}</p>
+                  </article>
+                ))}
+              </div>
+              {((transferCompletionReadiness?.blockers || []) as unknown[]).length ? (
+                <p className="errorText">Completion blocked: {((transferCompletionReadiness?.blockers || []) as unknown[]).map(text).join("; ")}</p>
+              ) : <p className="plainHelp">All final completion checks pass. Approval remains Aleks-controlled.</p>}
+              {!transferCompletionStatus?.transfer_complete ? (
+                <div className="filters">
+                  <label>
+                    <span>Required completion phrase</span>
+                    <textarea value={transferCompletionPhrase} onChange={(event) => setTransferCompletionPhrase(event.target.value)} placeholder={text(transferCompletionPreview?.approval_phrase || TRANSFER_COMPLETION_APPROVAL_PHRASE)} />
+                  </label>
+                </div>
+              ) : null}
+              <div className="reviewActions">
+                <button onClick={() => refreshTransferProtocolWithLog().catch(() => undefined)}>Refresh Final Gate</button>
+                <button
+                  className="primary"
+                  onClick={approveTransferCompletion}
+                  disabled={
+                    transferCompletionResult?.status === "running" ||
+                    Boolean(transferCompletionStatus?.transfer_complete) ||
+                    !transferCompletionReadiness?.ready ||
+                    transferCompletionPhrase !== TRANSFER_COMPLETION_APPROVAL_PHRASE
+                  }
+                >
+                  {transferCompletionResult?.status === "running" ? "Completing..." : transferCompletionStatus?.transfer_complete ? "Selene Transfer Complete" : "Approve Final Transfer Completion"}
+                </button>
+              </div>
+              {transferCompletionPhrase && transferCompletionPhrase !== TRANSFER_COMPLETION_APPROVAL_PHRASE ? <p className="errorText">Completion phrase does not match exactly.</p> : null}
+              <div className="list compactList">
+                {((transferCompletionPreview?.consequences || []) as unknown[]).map((item, index) => <p key={`transfer-completion-consequence-${index}`}>{text(item)}</p>)}
+              </div>
+              <PlainResult value={transferCompletionResult} />
             </Panel>
             <SplitView
               left={<Panel title="Final Checklist">

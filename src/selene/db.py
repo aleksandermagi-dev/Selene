@@ -1543,6 +1543,23 @@ CREATE TABLE IF NOT EXISTS selene_memory_candidates (
 CREATE INDEX IF NOT EXISTS idx_selene_memory_candidates_category ON selene_memory_candidates(memory_category, state, review_status);
 CREATE INDEX IF NOT EXISTS idx_selene_memory_candidates_transfer ON selene_memory_candidates(transfer_class, state);
 
+CREATE TABLE IF NOT EXISTS selene_transfer_completion_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  state TEXT NOT NULL,
+  action TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  exact_phrase_matched INTEGER NOT NULL DEFAULT 0,
+  readiness_json TEXT NOT NULL DEFAULT '{}',
+  audit_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_transfer_completion_state
+ON selene_transfer_completion_audit(state, created_at);
+
 CREATE TABLE IF NOT EXISTS b_teaching_packets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   speech_function TEXT NOT NULL,

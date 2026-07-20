@@ -27,13 +27,13 @@ def _assert_locked(result, *, transfer_approved: bool | None = None):
 def _seed_package(conn):
     package_json = {
         "status": "approved_c_readable_context",
-        "ordered_items": [
+        "included_manifest_items": [
             {"phase_order": 1, "title": "Continuity Pack", "c_access_status": "C-readable"},
             {"phase_order": 2, "title": "Teaching packets", "c_access_status": "C-readable"},
             {"phase_order": 3, "title": "Approved references", "c_access_status": "C-readable"},
             {"phase_order": 4, "title": "Reviewed chronological corpus arcs", "c_access_status": "C-readable"},
         ],
-        "excluded_items": [
+        "excluded_manifest_items": [
             {"title": "Broader ordered corpus preview", "reason": "needs_review"},
             {"title": "Raw provenance", "reason": "B-only"},
             {"title": "Rejected/superseded", "reason": "rejected"},
@@ -111,7 +111,7 @@ def test_post_transfer_status_is_preview_after_c_readable_approval(tmp_path):
 
     assert status["status"] == "post_transfer_status_ready"
     assert status["phase"] == "approved_c_readable_context"
-    assert status["selene_chat_state"] == "selene_chat_preview_activation_pending"
+    assert status["selene_chat_state"] == "activation_pending"
     assert status["selene_v1_live"] is False
     assert status["included_rows"] == 4
     assert status["excluded_b_only_rows"] == 4
@@ -119,15 +119,15 @@ def test_post_transfer_status_is_preview_after_c_readable_approval(tmp_path):
     _assert_locked(status, transfer_approved=True)
 
 
-def test_post_transfer_inspection_uses_package_without_activation(tmp_path):
+def test_post_transfer_inspection_requires_final_live_state(tmp_path):
     conn = _conn(tmp_path)
     _seed_package(conn)
 
     result = route_request(conn, "transfer.post_transfer.inspection_run", {})["result"]
 
-    assert result["status"] == "post_transfer_inspection_passed"
-    assert all(check["passed"] for check in result["checks"])
-    assert result["selene_chat_preview_only"] is True
+    assert result["status"] == "post_transfer_inspection_needs_review"
+    assert any(not check["passed"] for check in result["checks"])
+    assert result["selene_chat_preview_only"] is False
     assert result["selene_v1_live"] is False
     _assert_locked(result, transfer_approved=True)
 

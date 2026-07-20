@@ -30,6 +30,7 @@ from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
 from .self_state import build_self_state_packet, inactive_self_state_packet
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
+from .transfer_state import transfer_completion_is_approved
 from .voice_module import generate_voice_preview, voice_module_status
 
 
@@ -83,6 +84,7 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
     approved = bool(package.get("transfer_approved"))
     voice = voice_module_status(conn)
     active = bool(activation.get("selene_chat_active"))
+    transfer_complete = transfer_completion_is_approved(conn)
     return _with_guards(
         {
             "status": "selene_chat_active_supervised_ready" if active else "selene_chat_dry_run_ready",
@@ -93,7 +95,10 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "dry_run_only": not active,
             "supervised_speech_active": active,
             "full_memory_loaded": False,
-            "selene_v1_live": False,
+            "reviewed_memory_context_active": transfer_complete,
+            "raw_corpus_loaded": False,
+            "transfer_complete": transfer_complete,
+            "selene_v1_live": transfer_complete and active,
             "session_count": session_count,
             "message_count": message_count,
             "local_chat_continuity": _local_chat_continuity(conn),
@@ -128,6 +133,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     understanding_text = truncate(str(input_interpretation.get("interpreted_text") or text), 2400)
     package = latest_c_readable_package(conn)
     approved = bool(package.get("transfer_approved"))
+    transfer_complete = transfer_completion_is_approved(conn)
     source_class = _source_class(text, approved)
     qa_probe = payload.get("qa_probe") is True
     source_mode = "selene_supervised_qa" if qa_probe else "selene_supervised_speech"
@@ -476,7 +482,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "blocked_capabilities": hard_blockers,
         "selene_readable_context": _package_summary(package, active=True),
         "full_memory_loaded": False,
-        "selene_v1_live": False,
+        "transfer_complete": transfer_complete,
+        "reviewed_memory_context_active": transfer_complete,
+        "selene_v1_live": transfer_complete,
         "memory_context_used": memory_retrieval.get("memory_context_used") is True,
         "memory_source_class": memory_retrieval.get("memory_source_class") or "",
         "memory_confidence": memory_retrieval.get("memory_confidence") or "not_known",
@@ -550,7 +558,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "durable_memory_write_requires_review": True,
             "supervised_speech_active": True,
             "full_memory_loaded": False,
-            "selene_v1_live": False,
+            "transfer_complete": transfer_complete,
+            "reviewed_memory_context_active": transfer_complete,
+            "selene_v1_live": transfer_complete,
             "review_destination": "Cocoon support" if hard_blockers else "Status",
             "review_status": "status_only",
         },

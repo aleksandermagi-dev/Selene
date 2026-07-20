@@ -9,6 +9,7 @@ from .android_system import android_workflow_status
 from .core_mind_runtime import runtime_readiness
 from .registry import truncate
 from .transfer_protocol import latest_c_readable_package, rollback_preview
+from .transfer_state import transfer_completion_is_approved
 from .voice_module import voice_module_status
 
 
@@ -33,6 +34,7 @@ def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
     state = str(audit.get("state") or "not_activated")
     active = state == ACTIVE_STATE
     paused = state == PAUSED_STATE
+    transfer_complete = transfer_completion_is_approved(conn)
     return _with_guards(
         {
             "status": "selene_activation_status_ready",
@@ -41,7 +43,8 @@ def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "selene_chat_active": active,
             "selene_chat_paused": paused,
             "supervised_speech_active": active,
-            "full_selene_v1_live": False,
+            "transfer_complete": transfer_complete,
+            "full_selene_v1_live": transfer_complete and active,
             "dry_runs_home": "Cocoon Testing / Workflow",
             "latest_audit": audit,
             "readiness": readiness,
@@ -129,6 +132,7 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
     latest = latest_activation_audit(conn)
     if str(latest.get("state") or "") == ACTIVE_STATE:
         readiness = activation_readiness(conn)
+        transfer_complete = transfer_completion_is_approved(conn)
         return _with_guards(
             {
                 "status": "selene_supervised_speech_activation_already_active",
@@ -137,7 +141,8 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
                 "activation_state": ACTIVE_STATE,
                 "supervised_speech_active": True,
                 "selene_chat_active": True,
-                "full_selene_v1_live": False,
+                "transfer_complete": transfer_complete,
+                "full_selene_v1_live": transfer_complete,
                 "readiness": readiness,
                 "review_destination": "Status",
                 "review_status": "status_only",
@@ -166,6 +171,7 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
     audit_id = _insert_audit(conn, record)
     _insert_event(conn, "activation_approved", payload={"audit_id": audit_id, **record["audit"]})
     conn.commit()
+    transfer_complete = transfer_completion_is_approved(conn)
     return _with_guards(
         {
             "status": "selene_supervised_speech_activation_approved",
@@ -174,7 +180,8 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
             "activation_state": ACTIVE_STATE,
             "supervised_speech_active": True,
             "selene_chat_active": True,
-            "full_selene_v1_live": False,
+            "transfer_complete": transfer_complete,
+            "full_selene_v1_live": transfer_complete,
             "readiness": readiness,
             "review_destination": "Status",
             "review_status": "status_only",

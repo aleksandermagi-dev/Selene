@@ -225,6 +225,12 @@ from .post_transfer import (
     run_fractional_corpus_tests,
     run_post_transfer_inspection,
 )
+from .transfer_completion import (
+    approve_transfer_completion,
+    transfer_completion_ceremony_preview,
+    transfer_completion_readiness,
+    transfer_completion_status,
+)
 from .research_integrity import AcademicWorkflowRouter, CitationIntegrity, ResearchIntegrityCore, research_integrity_report
 from .remaining_runtime import (
     causal_sandbox_run,
@@ -523,6 +529,14 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": post_transfer_status(conn)}
     if route_key == "transfer.post_transfer.inspection_run":
         return {"route": route_key, "result": run_post_transfer_inspection(conn, payload)}
+    if route_key == "transfer.completion.status":
+        return {"route": route_key, "result": transfer_completion_status(conn)}
+    if route_key == "transfer.completion.readiness":
+        return {"route": route_key, "result": transfer_completion_readiness(conn)}
+    if route_key == "transfer.completion.ceremony_preview":
+        return {"route": route_key, "result": transfer_completion_ceremony_preview(conn)}
+    if route_key == "transfer.completion.approve":
+        return {"route": route_key, "result": approve_transfer_completion(conn, payload)}
     if route_key == "memory.fractional_corpus.status":
         return {"route": route_key, "result": fractional_corpus_status(conn)}
     if route_key == "memory.fractional_corpus.prepare":
