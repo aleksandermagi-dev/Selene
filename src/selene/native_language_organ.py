@@ -12,6 +12,7 @@ from .discourse_planner import build_supported_discourse_plan
 from .language_formation import build_semantic_frame, realize_semantic_frame
 from .language_teaching_shelf import language_teaching_status, select_language_guidance
 from .pragmatic_planner import build_pragmatic_plan
+from .pragmatic_continuity import build_pragmatic_continuity_plan
 from .registry import truncate
 
 
@@ -51,7 +52,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v10_obligation_aware_discourse",
+            "version": "v12_pragmatic_continuity",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -73,6 +74,10 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "grounded_obligation_content_binding",
                 "inspectable_thesis_section_and_closure_plans",
                 "unsupported_discourse_gap_visibility",
+                "optional_affect_expression_guidance",
+                "pacing_warmth_humor_reassurance_restraint_and_directness_handoff",
+                "session_topic_returns_interruptions_and_natural_stopping",
+                "bounded_pronoun_ambiguity_and_follow_up_restraint",
                 "voice_handoff",
                 "truth_and_repetition_revision",
                 "review_only_initiative_drafts",
@@ -191,7 +196,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v10_obligation_aware_discourse",
+        "version": "v12_pragmatic_continuity",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -209,6 +214,8 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "voice_owns_expression_style": True,
             "meaning_must_be_preserved": True,
             "suggested_category": meaning["voice_category"],
+            "expression_guidance": meaning.get("affect_expression_guidance") or {},
+            "ending_decision": (plan.get("pragmatic_continuity") or {}).get("ending_decision") or {},
         },
         "source_refs": meaning["source_refs"],
         "review_destination": "Status",
@@ -230,6 +237,11 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         content_seed = truncate(str(intelligence.get("best_current_answer") or ""), 3800)
     memory = payload.get("memory_context") if isinstance(payload.get("memory_context"), dict) else {}
     self_state = payload.get("self_state_context") if isinstance(payload.get("self_state_context"), dict) else {}
+    affect_expression = (
+        payload.get("affect_expression_guidance")
+        if isinstance(payload.get("affect_expression_guidance"), dict)
+        else {}
+    )
     continuity = payload.get("continuity_context") if isinstance(payload.get("continuity_context"), dict) else {}
     conversation = payload.get("conversation_context") if isinstance(payload.get("conversation_context"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
@@ -256,7 +268,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         or intelligence.get("confidence")
         or _infer_certainty(prompt, content_seed)
     )
-    affect = str(payload.get("affect") or _infer_affect(prompt))
+    affect = str(payload.get("affect") or affect_expression.get("expression_posture") or _infer_affect(prompt))
     propositions = _propositions(prompt, content_seed, memory, intelligence)
     pragmatic_plan = build_pragmatic_plan(
         {
@@ -319,6 +331,8 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "certainty": certainty,
         "uncertainty_kind": _uncertainty_kind(prompt, intent, content_seed, previous_turn),
         "affect": affect,
+        "affect_expression_guidance": affect_expression,
+        "affect_expression_is_emotion_claim": False,
         "relationship_posture": "warm_honest_adult_to_adult",
         "selected_route": route,
         "source_class": str(payload.get("source_class") or "current_conversation"),
@@ -364,12 +378,17 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "indirect_request": pragmatics.get("indirect_request") or {},
             "quoted_material": pragmatics.get("quoted_material") or [],
             "response_preference": str(pragmatics.get("response_preference") or ""),
+            "side_topics": dialogue.get("side_topics") or [],
+            "entities": dialogue.get("entities") or [],
+            "corrections": dialogue.get("corrections") or [],
+            "preferences": dialogue.get("preferences") or {},
+            "open_loops": dialogue.get("open_loops") or [],
             "session_scoped_only": True,
         },
         "recent_assistant_texts": recent_assistant_texts,
         "expression_profile": expression_profile,
         "variation_context": variation_context,
-        "voice_category": str(payload.get("voice_category") or _voice_category(intent, affect)),
+        "voice_category": str(payload.get("voice_category") or _voice_category(intent, affect, affect_expression)),
         "source_refs": list(dict.fromkeys(_json_list(payload.get("source_refs"))))[:40],
         "truth_boundary": "Do not add claims beyond the supplied meaning packet and supported context.",
     }
@@ -461,10 +480,30 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "source_refs": meaning.get("source_refs") or [],
         }
     )
+    pragmatic_continuity = build_pragmatic_continuity_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": dialogue,
+            "pragmatic_plan": {
+                **pragmatic_plan,
+                "uncovered_obligation_ids": supported_discourse.get("uncovered_obligation_ids") or [],
+            },
+            "intent_decision": meaning.get("intent_decision") or {},
+            "comprehension": comprehension,
+        }
+    )
+    transition_kind = str((pragmatic_continuity.get("topic_transition") or {}).get("kind") or "")
+    if transition_kind == "explicit_return":
+        moves.insert(0, "resume_named_session_topic")
+    elif transition_kind == "interruption":
+        moves.insert(0, "pause_and_listen_without_closing_prior_topic")
+    ending_mode = str((pragmatic_continuity.get("ending_decision") or {}).get("mode") or "")
+    if ending_mode in {"answer_and_stop_when_complete", "natural_close", "leave_room_without_pressuring"}:
+        moves.append("end_without_habitual_follow_up")
     return {
         "moves": moves,
         "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory", "self_state_report"},
-        "question_allowed": intent in {"recall_uncertain", "clarify", "direct_answer"},
+        "question_allowed": bool((pragmatic_continuity.get("ending_decision") or {}).get("question_allowed")),
         "response_depth": response_depth,
         "target_paragraph_count": 3 if mode == "responsive" and response_depth == "developed" else 1,
         "target_sentence_count": 6 if mode == "responsive" and response_depth == "developed" else 2 if mode == "responsive" else 1,
@@ -482,9 +521,13 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "expression_profile": meaning.get("expression_profile") or "direct",
         "surface_variation": meaning.get("variation_context") or {},
         "variation_is_contextual_not_random": True,
+        "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+        "affect_guidance_changes_meaning": False,
         "supported_discourse": supported_discourse,
         "uncovered_obligation_ids": supported_discourse.get("uncovered_obligation_ids") or [],
         "content_generation_for_gaps_allowed": False,
+        "pragmatic_continuity": pragmatic_continuity,
+        "follow_up_question_by_default": False,
     }
 
 
@@ -994,15 +1037,29 @@ def _infer_affect(prompt: str) -> str:
     return "attentive"
 
 
-def _voice_category(intent: str, affect: str) -> str:
+def _voice_category(intent: str, affect: str, guidance: dict[str, Any] | None = None) -> str:
+    guidance = guidance if isinstance(guidance, dict) else {}
     if intent == "hold_boundary":
         return "boundary_refusal"
     if intent == "receive_correction":
         return "repair_correction"
-    if intent == "reasoned_answer":
-        return "technical_directness"
     if intent in {"recall_uncertain", "clarify"}:
         return "uncertainty"
+    recommended = str(guidance.get("recommended_voice_category") or "")
+    if recommended in {
+        "warmth_care",
+        "repair_correction",
+        "playful_continuity",
+        "uncertainty",
+        "technical_directness",
+        "boundary_refusal",
+        "anxiety_calming",
+        "excitement_momentum",
+        "conversational_looseness",
+    }:
+        return recommended
+    if intent == "reasoned_answer":
+        return "technical_directness"
     if intent in {"receive_reassurance", "receive_gratitude", "greet_presently", "close_with_continuity"}:
         return "warmth_care"
     if affect == "playful":

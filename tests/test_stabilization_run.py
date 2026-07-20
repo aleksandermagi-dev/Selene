@@ -44,6 +44,25 @@ def test_sidecar_api_surfaces_treat_get_and_post_same_path_as_distinct(tmp_path)
     assert duplicate_report(surfaces) == {"POST /api/example/preview": 2}
 
 
+def test_sidecar_api_surfaces_include_grouped_post_routes(tmp_path):
+    sidecar = tmp_path / "sidecar.py"
+    sidecar.write_text(
+        '''
+        if request_path in {
+            "/api/teaching-lifecycle/acquire",
+            "/api/teaching-lifecycle/approve",
+        }:
+            pass
+        ''',
+        encoding="utf-8",
+    )
+
+    assert extract_sidecar_api_surfaces(sidecar) == [
+        "POST /api/teaching-lifecycle/acquire",
+        "POST /api/teaching-lifecycle/approve",
+    ]
+
+
 def test_stabilization_run_writes_report_without_command_checks(tmp_path):
     db_path = tmp_path / "selene.sqlite3"
     conn = connect(db_path)

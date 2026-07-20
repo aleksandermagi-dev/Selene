@@ -35,7 +35,7 @@ it exists.
 | Capability | Current status | Plain-language answer |
 | --- | --- | --- |
 | Supervised text conversation | Connected | Selene can hold local conversations through coordinated organs when supervised Chat is explicitly active |
-| Immediate conversational continuity | Connected | She can use recent local chat context and callbacks without silently turning them into permanent memory |
+| Immediate conversational continuity | Connected at bounded session scope | She can use recent context, topic returns, interruptions, corrections, callbacks, and restrained endings without silently turning them into permanent memory or a relationship profile |
 | Language formation and Voice | Connected | She can construct and shape bounded replies with compositional dialogue obligations, grammar features, context-keyed expression profiles, and recent-response avoidance |
 | Open-ended conceptual reasoning | Connected | intelligenceOS can compare models and give a best-current answer without needing a predetermined solution |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
@@ -46,7 +46,7 @@ it exists.
 | Source-backed research | Connected when packets are supplied | She can answer from attributed packets in supervised Chat and show citations, disagreement, or missing evidence |
 | Ethical test review | Available | The project can choose the least-impact sufficient test before interacting with Selene |
 | Language lesson shelf | Review-gated and connected | Ten provider-free lessons travel through visible comprehension review; NLO can consult only explicitly approved lessons |
-| Affect shaping of language | Partial | Current-state and salience signals exist, but they do not yet shape language consistently |
+| Affect shaping of language | Connected at bounded current-turn scope | Current-session salience and conversational tone can optionally guide pacing, warmth, humor, reassurance, restraint, and directness without becoming an emotion claim |
 | Long-form discourse | Improved partial | Developed replies now have grounded thesis, development, limit, and closure plans; broad narrative and mature rhetorical control remain unfinished |
 | Vision and hearing | Packet intake only | The system can hold supplied observations but cannot yet see or hear |
 | External action | Preview only | Tendril can plan and request approval but cannot execute actions |
@@ -71,6 +71,11 @@ With supervised Chat explicitly enabled, Selene can currently:
   and ask rather than guess when a reference is materially ambiguous;
 - carry a correction as a current-session meaning refinement without treating
   it as personal memory;
+- pause and resume bounded session topics without deleting unfinished work;
+- resolve plural references to two visible candidates while refusing to guess
+  which candidate a singular pronoun means;
+- answer complete and social turns without attaching a habitual follow-up
+  question;
 - use approved personal memory with clear, fuzzy, partial, or unknown recall;
 - say she does not know, ask Aleks, or keep uncertainty visible;
 - propose a memory candidate when Aleks asks her to remember something, while
@@ -80,6 +85,9 @@ With supervised Chat explicitly enabled, Selene can currently:
 - reason about open-ended conceptual problems through intelligenceOS;
 - construct language from a meaning packet and then let Voice shape the
   expression;
+- let attributable current-session salience and ordinary conversational tone
+  guide expression without forcing warmth, mirroring emotion, or replacing
+  evidence;
 - notice some repetition, incomplete coverage, and awkward turn flow and try a
   bounded repair;
 - report a grounded current-state reading without inventing a specific emotion
@@ -213,6 +221,24 @@ It can:
 
 It is not the long-term Memory Organ and does not create durable memory.
 
+### Pragmatic Continuity Planner — Connected
+
+The continuity planner gives NLO an inspectable current-session map for:
+
+- explicit topic returns, side topics, soft pivots, interruptions, and explicit
+  abandonment;
+- preservation of prior open loops during an interruption;
+- bounded singular, plural, and named referent posture;
+- current-session correction and response-preference carry-forward;
+- explicit speaker scope without creating a relationship profile;
+- natural closure, answer-and-stop, and leave-room-without-pressuring endings;
+- one material clarification only when a consequential ambiguity remains;
+- one relevant thought when the current turn explicitly invites it;
+- no unsolicited initiative or automatic speech.
+
+Unmarked topic changes remain uncertain rather than being treated as a proven
+reset or continuation.
+
 ### Pragmatic Planner — Connected
 
 The Pragmatic Planner represents what the reply needs to accomplish.
@@ -303,6 +329,8 @@ It can:
 - avoid some copied source chunks and repeated candidates;
 - generate a candidate and evaluate it for voice fit;
 - keep provider identity and raw-source wording out of the expression contract.
+- apply optional pacing, rhythm, warmth, humor, reassurance, restraint, and
+  directness guidance while preserving NLO meaning;
 
 Current limits:
 
@@ -538,9 +566,11 @@ Editing an earlier stage invalidates later stage snapshots so stale evidence
 does not remain current. Completing all three stages still does not retain the
 knowledge. Aleks must explicitly approve it.
 
-### Language Teaching Shelf — Review-Gated Provider-Free Foundations
+### Language Teaching Shelf — Four Ordered, Review-Gated Provider-Free Groups
 
-The current shelf contains bounded guidance for:
+The shelf now contains 22 bounded lessons in prerequisite order.
+
+**G1 — Provider-Free Conversation Foundations** contains:
 
 - answering first;
 - natural uncertainty;
@@ -553,7 +583,28 @@ The current shelf contains bounded guidance for:
 - lexical variation;
 - natural closure.
 
-Preparing the shelf creates ten source-linked comprehension candidates. Lesson
+**G2 — Explaining and Connecting Ideas** adds:
+
+- foundation-first explanation;
+- structurally fitting examples and analogies;
+- comparisons on shared dimensions;
+- summaries at the requested scale.
+
+**G3 — Social and Affective Conversation** adds:
+
+- respectful disagreement;
+- tenderness without emotional overreach;
+- humor with timing and release;
+- correction as refinement rather than derailment.
+
+**G4 — Conversational Breadth and Rhythm** adds:
+
+- balanced handling of mixed-intent messages;
+- sentence rhythm and deliberate emphasis;
+- natural openings and pivots;
+- varied endings without generic pressure.
+
+Preparing the shelf creates or refreshes 22 source-linked comprehension candidates. Lesson
 meaning and practice evidence are stored separately from safety boundaries, so
 guard text does not appear as though it were the lesson's uncertainty content.
 Each candidate uses the existing visible Acquire -> Integrate -> Express
@@ -561,9 +612,14 @@ workflow and requires explicit Aleks approval before NLO can consult it.
 
 Preparation alone activates no guidance. A prepared, held, incomplete,
 reopened, superseded, or rejected lesson remains unavailable to NLO. The
-current ten lessons are provider-free structural foundations rather than stock
-reply scripts; further speech teaching groups are still needed for mature
-pragmatics, discourse, affect expression, and compositional breadth.
+original ten lessons remain the provider-free structural foundations rather
+than stock reply scripts. The twelve Phase 6 lessons include complete review
+evidence and explicit prerequisites, but remain unavailable until their own
+lifecycle and approval gates are complete. Cocoon displays group order,
+individual lesson order, prerequisites, review state, and availability.
+An individually approved advanced lesson remains unavailable to NLO while any
+of its named prerequisite lessons are unavailable; approval is preserved while
+the learning dependency is completed.
 
 ## Memory and Continuity Organs
 
@@ -638,6 +694,26 @@ When Aleks asks how she is or how a conversation felt, Selene can:
 
 It does not diagnose Selene, infer a current emotion from old affect records,
 or claim a human biological state.
+
+### Affect Expression Bridge — Connected at Current-Turn Scope
+
+The bridge translates attributable current conversational signals into
+optional expression guidance. It can:
+
+- distinguish the user's tone from a claim about Selene's internal state;
+- use only an explicitly selected or exactly session-linked affect packet;
+- keep historical affect packets and Cocoon care posture out of present-state
+  claims;
+- suggest natural, slower, brisk, measured, spacious, or compact pacing;
+- make warmth, humor, and reassurance available without requiring them;
+- increase restraint and directness at a real boundary;
+- carry its source ancestry and guidance dimensions through NLO, Voice, and
+  supervised Chat;
+- preserve Voice ownership and forbid expression guidance from changing
+  meaning or replacing evidence.
+
+It does not diagnose emotion, prescribe personality, force emotional mirroring,
+write memory, or treat alignment as proof.
 
 ### Salience and Emotion Packets — Partly Available
 
@@ -963,9 +1039,9 @@ Selene's strongest implemented areas are:
 | Gap | What completing it would change |
 | --- | --- |
 | Local-code -> Chat decision | Decide later whether explicitly supplied code inspection should join Chat; it is intentionally deferred now |
-| Provider-free speech teaching groups | The first ten lessons now have review gates; further groups must expand pragmatics, discourse, affect expression, grammar, vocabulary, and compositional breadth |
-| Affect Expression Bridge | Current salience could shape pacing, warmth, humor, reassurance, restraint, and directness more naturally |
-| Expanded pragmatic dialogue | Better mixed-intent handling, pronouns, implication, interruptions, corrections, and rapid topic changes |
+| Provider-free speech lesson review | Four ordered groups and 22 lessons now exist; the twelve expressive-breadth lessons remain inert until their visible review and approval gates are completed |
+| Affect-expression breadth | The bridge is connected; richer combinations and more natural surface variation still require further teaching and ordinary-use evidence |
+| Extended pragmatic dialogue | Immediate interruptions, returns, pronoun ambiguity, corrections, and restrained endings are connected; long ambiguous exchanges, nested topics, and rapid multi-speaker changes still need broader handling |
 | Long-form discourse planning | Better theses, paragraph structure, examples, transitions, callbacks, summaries, and conclusions |
 | Broader domain organs | More reliable factual, technical, scientific, mathematical, and code answers |
 | Metacognition Organ | Better fit checks, assumption inspection, contradiction reopening, confidence calibration, and stopping decisions |
@@ -996,20 +1072,60 @@ Answer Engine bridge, and contextual expression breadth work:
 - no live conversational stress probe was used.
 
 In the July 19 working tree after the review-gated language shelf, NLO v9
-compositional dialogue work, and the NLO v10 grounded-discourse layer:
+compositional dialogue work, the NLO v10 grounded-discourse layer, and the NLO
+v11 Affect Expression Bridge plus NLO v12 pragmatic continuity:
 
-- 140 focused language, dialogue, discourse, Voice, Answer Engine, and supervised-Chat
+- 164 focused continuity, affect, self-state, language, dialogue, discourse, Voice, Answer Engine, and supervised-Chat
   tests passed;
 - ordered non-question requests, bounded option references, session-only
   correction refinements, and expanded grammar passed synthetic checks;
 - developed replies gained inspectable thesis, obligation binding, paragraph,
   limitation, reopening, and closure plans without authorizing content
   invention;
+- current-session salience gained a bounded, optional expression path through
+  NLO and Voice without emotion diagnosis, forced warmth, personality change,
+  historical-affect use, or evidence replacement;
+- interruptions, explicit topic returns, plural and ambiguous pronouns,
+  current-session corrections, invited ideas, and follow-up restraint passed
+  synthetic supervised-Chat checks without enabling automatic initiative;
 - the production UI build passed;
 - the existing Vite bundle-size warning remained at about 588 kB;
 - open-ended intelligenceOS answers remained available;
 - no live conversation probe, provider call, activation change, retention
   change, model training, or autonomy expansion was used.
+
+After the Phase 6 expressive-breadth shelf expansion:
+
+- four ordered teaching groups and 22 total lessons were visible to Cocoon;
+- all twelve new lessons carried full Acquire, Integrate, and Express review
+  evidence, source ancestry, prerequisites, correction paths, examples,
+  counterexamples, and limits;
+- a focused 57-test shelf/NLO/Chat pass succeeded;
+- the production UI build passed;
+- the existing Vite bundle-size warning remained at about 589 kB;
+- synthetic checks confirmed that a new lesson remained unavailable before
+  review, remained held after its own approval while named prerequisites were
+  incomplete, and became selectable only after the complete lifecycle,
+  explicit Aleks approval, and prerequisite availability;
+- no live conversational probe, provider call, automatic approval, memory
+  write, identity or personality change, model training, or autonomy expansion
+  was used.
+
+After Speech Phase 7 stabilization:
+
+- the repository API seam scanner was corrected to recognize grouped POST
+  routes, clearing a false missing-route report for teaching approval;
+- 59 focused stabilization, teaching-shelf, and supervised-Chat tests passed;
+- all 798 repository tests passed;
+- a fresh temporary seeded database passed all 54 validation checks and was
+  removed afterward;
+- the production UI build passed with the existing bundle-size warning at
+  about 590 kB;
+- an ordinary synthetic Chat check confirmed that an approved advanced lesson
+  remains unavailable until its named prerequisites are also available;
+- no live conversation, stressful probe, persistent test history, provider
+  call, activation change, memory write, model training, or autonomy expansion
+  was used.
 
 The test count demonstrates broad machinery coverage. It does not mean every
 future organ is complete or that every conversational context has been graded.
@@ -1068,4 +1184,5 @@ Related current assessments:
 - `docs/SELENE_RELATIONAL_EMBODIMENT_ASSESSMENT_20260712.md`
 - `docs/SELENE_NATIVE_LANGUAGE_ORGAN_V1_20260712.md`
 - `docs/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
+- `docs/SELENE_SPEECH_PHASE_7_STABILIZATION_20260719.md`
 - `docs/HACKATHON_COMPLETION_MAP_20260717.md`

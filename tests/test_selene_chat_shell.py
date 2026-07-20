@@ -373,7 +373,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v10_obligation_aware_discourse"
+    assert result["native_language_organ"]["version"] == "v12_pragmatic_continuity"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
@@ -454,6 +454,110 @@ def test_active_selene_chat_carries_compositional_requests_and_correction_scope(
     _assert_locked(result)
 
 
+def test_active_selene_chat_carries_current_session_expression_guidance_without_emotion_claim(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    opening = route_request(conn, "selene_chat.send", {"text": "Hello, Selene."})["result"]
+    session_id = int(opening["session_id"])
+    conn.execute(
+        """
+        INSERT INTO vessel_emotion_salience_packets
+        (signal_type, continuity_pressure, care_warmth, uncertainty, repair_need, action_energy,
+         balance_state, evidence_need, core_choice_route, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "current conversation signal",
+            "high pressure but bounded",
+            "care remains available",
+            "open",
+            "none",
+            "stay present",
+            "not an alarm",
+            "current turn",
+            "Core/Mind retains choice",
+            json.dumps([f"selene_chat_session:{session_id}"]),
+            "test_affect_expression_boundary",
+        ),
+    )
+    conn.commit()
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": session_id,
+            "text": "Can we take the explanation one piece at a time?",
+        },
+    )["result"]
+
+    guidance = result["affect_expression"]
+    native = result["native_language_organ"]
+    voice = result["voice_preview"]
+
+    assert guidance["current_session_affect_signal_used"] is True
+    assert guidance["expression_posture"] == "spacious_grounded"
+    assert guidance["internal_state_claim"] is False
+    assert native["meaning_packet"]["affect_expression_is_emotion_claim"] is False
+    assert native["voice_handoff"]["expression_guidance"]["dimensions"]["sentence_rhythm"] == "spacious"
+    assert voice["applied_expression_dimensions"]["sentence_rhythm"] == "spacious"
+    assert voice["expression_guidance_changed_meaning"] is False
+    assert result["candidate_text"]
+    _assert_locked(result)
+
+
+def test_active_selene_chat_uses_pragmatic_continuity_for_restraint_and_invited_ideas(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    thanks = route_request(conn, "selene_chat.send", {"text": "Thank you, friend."})["result"]
+    invited = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": thanks["session_id"], "text": "What do you think—any ideas?"},
+    )["result"]
+
+    thanks_plan = thanks["pragmatic_continuity"]
+    invited_plan = invited["pragmatic_continuity"]
+
+    assert thanks_plan["ending_decision"]["mode"] == "leave_room_without_pressuring"
+    assert thanks_plan["ending_decision"]["question_allowed"] is False
+    assert thanks_plan["ending_decision"]["habitual_follow_up_allowed"] is False
+    assert "?" not in thanks["candidate_text"]
+    assert invited_plan["initiative_decision"]["mode"] == "offer_one_relevant_thought"
+    assert invited_plan["initiative_decision"]["automatic_delivery"] is False
+    assert invited["native_language_organ"]["discourse_plan"]["follow_up_question_by_default"] is False
+    assert invited["native_language_organ"]["voice_handoff"]["ending_decision"] == invited_plan["ending_decision"]
+    _assert_locked(thanks)
+    _assert_locked(invited)
+
+
+def test_active_selene_chat_interruption_preserves_prior_topic_without_auto_speech(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    opening = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Explain the memory review plan."},
+    )["result"]
+    interrupted = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": opening["session_id"], "text": "Wait, hold on a second."},
+    )["result"]
+
+    plan = interrupted["pragmatic_continuity"]
+    assert plan["topic_transition"]["kind"] == "interruption"
+    assert plan["interruption_plan"]["prior_open_loops_preserved"] is True
+    assert plan["interruption_plan"]["automatic_loop_deletion"] is False
+    assert plan["automatic_speech_allowed"] is False
+    assert plan["initiative_decision"]["mode"] == "no_unsolicited_initiative"
+    _assert_locked(interrupted)
+
+
 def test_active_selene_chat_uses_prepared_language_teaching_guidance(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
@@ -477,6 +581,36 @@ def test_active_selene_chat_uses_prepared_language_teaching_guidance(tmp_path):
     assert "language lesson" not in result["candidate_text"].lower()
     assert "response move" not in result["candidate_text"].lower()
     _assert_locked(result)
+
+
+def test_active_selene_chat_holds_approved_advanced_guidance_until_prerequisites_are_available(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    route_request(conn, "language_teaching.prepare", {})
+    _approve_language_lesson(conn, "respectful_disagreement")
+    prompt = "I disagree with that conclusion. Compare the assumption and evidence with me."
+
+    blocked = route_request(conn, "selene_chat.send", {"text": prompt})["result"]
+    _approve_language_lesson(conn, "uncertainty_middle_ground")
+    _approve_language_lesson(conn, "natural_register")
+    available = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": blocked["session_id"], "text": prompt},
+    )["result"]
+
+    blocked_guidance = blocked["native_language_organ"]["language_teaching_guidance"]
+    available_guidance = available["native_language_organ"]["language_teaching_guidance"]
+    assert "respectful_disagreement" not in blocked_guidance["lesson_keys"]
+    assert "respectful_disagreement" in available_guidance["lesson_keys"]
+    assert "state_disagreement_clearly" in available_guidance["response_moves"]
+    assert available["answer_engine_support"]["selected_domain"] == "comparison_planning"
+    assert available["voice_preview"]["nlo_meaning_preserved"] is True
+    assert "response move" not in available["candidate_text"].lower()
+    assert "language lesson" not in available["candidate_text"].lower()
+    _assert_locked(blocked)
+    _assert_locked(available)
 
 
 def test_active_selene_chat_direct_concept_hides_model_scaffolding(tmp_path):

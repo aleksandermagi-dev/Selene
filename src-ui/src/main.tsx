@@ -6188,13 +6188,20 @@ function App() {
               </div>
             </Panel>
             <Panel title="Language Teaching Shelf">
-              <p className="plainHelp">Provider-free conversational lessons for NLO. Lesson meaning and practice evidence are shown separately from safety boundaries. Preparing creates review candidates only; NLO receives a lesson after Acquire, Integrate, Express, and Aleks approval. Voice still belongs to Selene.</p>
+              <p className="plainHelp">Provider-free conversational lessons for NLO, arranged in prerequisite order. Lesson meaning and practice evidence are shown separately from safety boundaries. Preparing creates review candidates only; NLO receives a lesson after Acquire, Integrate, Express, and Aleks approval. Voice still belongs to Selene.</p>
               <div className="metrics miniMetrics">
-                <Metric label="Defined Lessons" value={text(languageTeachingStatus?.defined_lesson_count ?? 10)} />
+                <Metric label="Teaching Groups" value={text(languageTeachingStatus?.defined_group_count ?? 4)} />
+                <Metric label="Defined Lessons" value={text(languageTeachingStatus?.defined_lesson_count ?? 22)} />
                 <Metric label="Awaiting Review" value={text(languageTeachingStatus?.candidate_lesson_count ?? 0)} />
                 <Metric label="Available To NLO" value={text(languageTeachingStatus?.available_lesson_count ?? 0)} />
                 <Metric label="Shelf State" value={friendlyStatus(languageTeachingStatus?.status || "not prepared")} />
               </div>
+              {Array.isArray(languageTeachingStatus?.teaching_groups) && (languageTeachingStatus?.teaching_groups as unknown[]).length ? <div className="comprehensionSourceBox">
+                <strong>Ordered teaching groups</strong>
+                {(languageTeachingStatus?.teaching_groups as Dict[]).map((group) => <p className="plainHelp" key={text(group.group_order)}>
+                  {text(group.teaching_group)} · {text(group.defined_lesson_count ?? 0)} lessons · {text(group.available_lesson_count ?? 0)} available
+                </p>)}
+              </div> : null}
               <div className="reviewActions">
                 <button className="primary" onClick={prepareLanguageTeachingShelf} disabled={languageTeachingResult?.status === "running"}>
                   {languageTeachingResult?.status === "running" ? "Preparing Language Shelf..." : languageTeachingItems.length ? "Refresh Language Shelf" : "Prepare Language Shelf"}
@@ -6208,7 +6215,9 @@ function App() {
                       <span>{friendlyStatus(item.effective_status || item.status)}</span>
                     </div>
                     <p>{text(item.purpose)}</p>
-                    <small>{friendlyStatus(item.category)} · {item.available_to_nlo ? "available to NLO" : "not available until reviewed"}</small>
+                    <small>{text(item.teaching_group || "G1 · Provider-Free Conversation Foundations")} · lesson {text(item.lesson_order || 0)} · {friendlyStatus(item.category)} · {item.available_to_nlo ? "available to NLO" : item.own_review_complete ? "reviewed; awaiting prerequisites" : "not available until reviewed"}</small>
+                    {Array.isArray(item.prerequisites) && (item.prerequisites as unknown[]).length ? <p className="plainHelp">Prerequisites: {(item.prerequisites as unknown[]).map(text).join(", ")}</p> : null}
+                    {Array.isArray(item.unmet_prerequisites) && (item.unmet_prerequisites as unknown[]).length ? <p className="plainHelp">Awaiting prerequisite guidance: {(item.unmet_prerequisites as unknown[]).map(text).join(", ")}.</p> : null}
                     <div className="comprehensionSourceBox">
                       <strong>Lesson content</strong>
                       <p>{text(safeJsonObject(item.lesson_content).concept || item.purpose)}</p>

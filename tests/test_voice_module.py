@@ -489,6 +489,42 @@ def test_voice_generator_preserves_speaker_context_and_care_language(tmp_path):
         _assert_voice_locked(result)
 
 
+def test_voice_applies_optional_expression_pacing_without_replacing_nlo_meaning(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    route_request(conn, "voice_module.extract_patterns", {})
+    meaning = "We can take the first piece now. The second piece can wait until the shape is clearer."
+
+    result = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {
+            "prompt": "I am nervous, can we go slowly?",
+            "route": "answer_now",
+            "meaning_text": meaning,
+            "voice_category": "warmth_care",
+            "expression_guidance": {
+                "expression_posture": "gentle_present",
+                "dimensions": {
+                    "sentence_rhythm": "spacious",
+                    "restraint": "bounded",
+                    "warmth": "available_not_forced",
+                },
+                "meaning_may_not_change": True,
+            },
+        },
+    )["result"]
+
+    assert "We can take the first piece now." in result["candidate_text"]
+    assert "The second piece can wait" in result["candidate_text"]
+    assert "\n\n" in result["candidate_text"]
+    assert result["nlo_meaning_preserved"] is True
+    assert result["expression_guidance_changed_meaning"] is False
+    assert result["applied_expression_dimensions"]["sentence_rhythm"] == "spacious"
+    _assert_voice_locked(result)
+
+
 def test_selene_chat_uses_voice_module_candidate_when_available(tmp_path):
     conn = _conn(tmp_path)
     source_zip = _voice_zip(tmp_path)

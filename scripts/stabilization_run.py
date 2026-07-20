@@ -567,6 +567,9 @@ def extract_sidecar_api_surfaces(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8", errors="ignore")
     get_paths = re.findall(r'parsed\.path == "([^"]+)"', text)
     post_paths = re.findall(r'request_path == "([^"]+)"', text)
+    grouped_post_blocks = re.findall(r"request_path\s+in\s+\{(.*?)\}", text, flags=re.DOTALL)
+    for block in grouped_post_blocks:
+        post_paths.extend(re.findall(r'"(/api/[^"]+)"', block))
     return [f"GET {item}" for item in get_paths] + [f"POST {item}" for item in post_paths]
 
 

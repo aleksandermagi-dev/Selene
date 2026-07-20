@@ -166,6 +166,36 @@ def test_dialogue_workspace_marks_materially_ambiguous_other_option_instead_of_g
     assert resolved["ask_if_materially_ambiguous"] is True
 
 
+def test_dialogue_workspace_resolves_plural_option_reference_but_holds_singular_ambiguity(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    previous = [{"role": "selene", "preview": "The options are memory and voice."}]
+    plural_text = "How do they differ?"
+    plural = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": plural_text,
+            "intent_decision": classify_chat_intent(plural_text),
+            "conversation_events": previous,
+        },
+    )
+    singular_text = "How does it differ?"
+    singular = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": singular_text,
+            "intent_decision": classify_chat_intent(singular_text),
+            "conversation_events": previous,
+        },
+    )
+
+    assert plural["pragmatics"]["resolved_reference"]["resolved_to"] == "memory and voice"
+    assert plural["pragmatics"]["resolved_reference"]["resolution_status"] == "resolved"
+    assert singular["pragmatics"]["resolved_reference"]["resolved_to"] == ""
+    assert singular["pragmatics"]["resolved_reference"]["resolution_status"] == "materially_ambiguous"
+
+
 def test_dialogue_workspace_extracts_structured_correction_and_direct_requests(tmp_path):
     conn, session_id = _conn(tmp_path)
     correction_text = "Actually, I meant the semantic layer, not the voice layer."

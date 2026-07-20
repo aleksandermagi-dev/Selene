@@ -92,7 +92,7 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
 
     discourse = result["discourse_plan"]["supported_discourse"]
 
-    assert result["version"] == "v10_obligation_aware_discourse"
+    assert result["version"] == "v12_pragmatic_continuity"
     assert discourse["status"] == "supported_discourse_plan_ready"
     assert discourse["thesis_unit_id"]
     assert [item["role"] for item in discourse["paragraph_plan"]] == [
@@ -104,6 +104,41 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
     assert result["revision"]["paragraph_count"] == 3
     assert "preserves continuity without grounded memory" in result["candidate_text"]
     assert result["discourse_plan"]["content_generation_for_gaps_allowed"] is False
+    _assert_locked(result)
+
+
+def test_nlo_uses_expression_guidance_as_optional_voice_handoff_not_emotion_claim(tmp_path):
+    conn = _conn(tmp_path)
+    result = route_request(
+        conn,
+        "native_language.realize",
+        {
+            "prompt": "Can we explain this gently and clearly?",
+            "content_seed": "We can begin with the supported part and leave the uncertain edge open.",
+            "affect_expression_guidance": {
+                "status": "affect_expression_guidance_ready",
+                "expression_posture": "gentle_present",
+                "recommended_voice_category": "warmth_care",
+                "dimensions": {
+                    "pacing": "slower",
+                    "sentence_rhythm": "spacious",
+                    "warmth": "available_not_forced",
+                    "humor": "context_only",
+                    "restraint": "bounded",
+                    "directness": "gentle_clear",
+                },
+                "meaning_may_not_change": True,
+                "internal_state_claim": False,
+            },
+        },
+    )["result"]
+
+    assert result["meaning_packet"]["affect_expression_is_emotion_claim"] is False
+    assert result["meaning_packet"]["affect_expression_guidance"]["expression_posture"] == "gentle_present"
+    assert result["voice_handoff"]["suggested_category"] == "warmth_care"
+    assert result["voice_handoff"]["expression_guidance"]["meaning_may_not_change"] is True
+    assert result["discourse_plan"]["affect_guidance_changes_meaning"] is False
+    assert "supported part" in result["candidate_text"]
     _assert_locked(result)
 
 

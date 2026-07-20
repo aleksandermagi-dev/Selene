@@ -138,7 +138,7 @@ def test_nlo_consults_prepared_shelf_without_changing_voice_or_identity(tmp_path
     )
 
     guidance = result["language_teaching_guidance"]
-    assert result["version"] == "v10_obligation_aware_discourse"
+    assert result["version"] == "v12_pragmatic_continuity"
     assert guidance["used"] is True
     assert "answer_then_expand" in guidance["lesson_keys"]
     assert "list_or_prose_fit" in guidance["lesson_keys"]
@@ -243,3 +243,86 @@ def test_language_shelf_rejects_authority_expansion_payload(tmp_path):
         prepare_language_teaching_shelf(conn, {"request": "activate runtime recall"})
 
     assert list_language_teaching_items(conn)["items"] == []
+
+
+def test_language_shelf_exposes_ordered_review_groups_and_prerequisites(tmp_path):
+    conn = _conn(tmp_path)
+    prepare_language_teaching_shelf(conn)
+
+    status = language_teaching_status(conn)
+    items = list_language_teaching_items(conn)["items"]
+    groups = status["teaching_groups"]
+
+    assert status["defined_lesson_count"] == 22
+    assert status["defined_group_count"] == 4
+    assert [group["group_order"] for group in groups] == [1, 2, 3, 4]
+    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4]
+    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0]
+    assert [(item["group_order"], item["lesson_order"]) for item in items] == sorted(
+        (item["group_order"], item["lesson_order"]) for item in items
+    )
+
+    explanation = next(item for item in items if item["lesson_key"] == "explain_from_foundation")
+    assert explanation["teaching_group"] == "G2 · Explaining and Connecting Ideas"
+    assert explanation["prerequisites"] == ["answer_then_expand", "natural_register"]
+    assert explanation["source_refs"][0] == "speech_phase_6:reviewed_expressive_breadth"
+    assert explanation["available_to_nlo"] is False
+
+
+def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
+    conn = _conn(tmp_path)
+    prepare_language_teaching_shelf(conn)
+
+    phase_six_items = [
+        item for item in list_language_teaching_items(conn)["items"] if item["group_order"] > 1
+    ]
+
+    assert len(phase_six_items) == 12
+    for item in phase_six_items:
+        blueprint = item["teaching_blueprint"]
+        assert blueprint["acquire"]["vocabulary"]
+        assert blueprint["acquire"]["near_concept_distinctions"]
+        assert blueprint["integrate"]["scope_of_application"]
+        assert blueprint["express"]["teach_back"]
+        assert blueprint["express"]["application"]
+        assert blueprint["express"]["limits"]
+        assert blueprint["express"]["counterexamples"]
+        assert blueprint["express"]["correction_response"]
+        assert blueprint["express"]["source_alignment"] is False
+        assert item["available_to_nlo"] is False
+
+
+def test_new_lesson_reaches_guidance_only_after_full_review_and_aleks_approval(tmp_path):
+    conn = _conn(tmp_path)
+    prepare_language_teaching_shelf(conn)
+    prompt = "I disagree with that conclusion. Can we compare the assumption and evidence?"
+
+    before = select_language_guidance(
+        conn,
+        {"prompt": prompt, "intent_decision": {"intent": "reasoned_answer"}},
+    )
+    _complete_and_approve(conn, "respectful_disagreement")
+    blocked = next(
+        item for item in list_language_teaching_items(conn)["items"] if item["lesson_key"] == "respectful_disagreement"
+    )
+    blocked_guidance = select_language_guidance(
+        conn,
+        {"prompt": prompt, "intent_decision": {"intent": "reasoned_answer"}},
+    )
+    _complete_and_approve(conn, "uncertainty_middle_ground")
+    _complete_and_approve(conn, "natural_register")
+    after = select_language_guidance(
+        conn,
+        {"prompt": prompt, "intent_decision": {"intent": "reasoned_answer"}},
+    )
+
+    assert "respectful_disagreement" not in before["lesson_keys"]
+    assert blocked["own_review_complete"] is True
+    assert blocked["available_to_nlo"] is False
+    assert blocked["unmet_prerequisites"] == ["uncertainty_middle_ground", "natural_register"]
+    assert "respectful_disagreement" not in blocked_guidance["lesson_keys"]
+    assert "respectful_disagreement" in after["lesson_keys"]
+    assert "state_disagreement_clearly" in after["response_moves"]
+    assert language_teaching_status(conn)["available_lesson_count"] == 3
+    assert after["memory_write_active"] is False
+    assert after["training_allowed"] is False

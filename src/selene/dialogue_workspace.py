@@ -306,6 +306,7 @@ def _resolve_reference(
         "the first one", "the second one", "the third one", "the other one",
         "first one", "second one", "third one", "that one", "this one",
         "the former", "the latter", "former", "latter", "that", "this", "it", "there",
+        "they", "them", "those", "he", "she",
     )
     token = next((item for item in tokens if re.search(rf"\b{re.escape(item)}\b", lower)), "")
     if not token or not previous:
@@ -317,7 +318,7 @@ def _resolve_reference(
         status = "resolved"
         confidence = "bounded"
         resolved_to = selected
-    elif token in {"the other one", "that one", "this one"} and len(candidates) > 1:
+    elif token in {"the other one", "that one", "this one", "that", "this", "it", "there", "he", "she"} and len(candidates) > 1:
         status = "materially_ambiguous"
         confidence = "unresolved"
         resolved_to = ""
@@ -374,6 +375,10 @@ def _select_reference_candidate(token: str, candidates: list[str], prior_referen
             return next((item for item in candidates if item not in recent_resolutions[-2:]), "")
     if token in {"that one", "this one"} and len(candidates) == 1:
         return candidates[0]
+    if token in {"that", "this", "it", "there", "he", "she"} and len(candidates) == 1:
+        return candidates[0]
+    if token in {"they", "them", "those"} and len(candidates) == 2:
+        return " and ".join(candidates)
     return ""
 
 

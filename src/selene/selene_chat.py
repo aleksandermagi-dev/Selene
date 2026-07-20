@@ -12,6 +12,7 @@ from .answer_engine import (
     run_source_backed_research_answer,
     run_verified_math_answer,
 )
+from .affect_expression import build_affect_expression_guidance
 from .chat_intent import classify_chat_intent
 from .comprehension_integration import build_comprehension_packet
 from .c_vessel import return_to_b_preview
@@ -189,6 +190,17 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         if intent_decision.get("self_state_requested") is True
         else inactive_self_state_packet()
     )
+    affect_expression = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": understanding_text,
+            "session_id": session_id,
+            "affect_signal_id": payload.get("affect_signal_id"),
+            "intent_decision": intent_decision,
+            "dialogue_workspace": prepared_dialogue_workspace,
+            "hard_boundary": bool(hard_blockers),
+        },
+    )
     self_state_reply = str(self_state.get("response_seed") or "")
     policy_reply = _conversation_policy_reply(understanding_text)
     protected_content_seed = continuity_reply or memory_reply or self_state_reply or policy_reply
@@ -251,6 +263,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "answer_engine_support": answer_engine_support,
             "comprehension_context": comprehension,
             "self_state_context": self_state,
+            "affect_expression_guidance": affect_expression,
             "intent_decision": intent_decision,
             "source_refs": [
                 "selene_chat:native_language",
@@ -260,6 +273,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             ],
         },
     )
+    pragmatic_continuity = (native_language.get("discourse_plan") or {}).get("pragmatic_continuity") or {}
     if hard_blockers:
         dry_run = {"status": "skipped_hard_boundary", "reason": "Hard boundary blocked before dry-run comparison."}
         voice_preview = generate_voice_preview(
@@ -275,6 +289,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "memory_source_class": memory_retrieval.get("memory_source_class") or "",
                 "local_chat_continuity_used": local_continuity_supported,
                 "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
+                "expression_guidance": affect_expression,
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or ""))
@@ -297,6 +312,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "memory_source_class": memory_retrieval.get("memory_source_class") or "",
                 "local_chat_continuity_used": local_continuity_supported,
                 "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
+                "expression_guidance": affect_expression,
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or dry_run.get("candidate_text") or ""))
@@ -374,6 +390,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "comprehension_integration": comprehension,
         "intent_decision": intent_decision,
         "self_state": self_state,
+        "affect_expression": affect_expression,
+        "pragmatic_continuity": pragmatic_continuity,
         "native_language_organ": native_language,
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
@@ -437,6 +455,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "comprehension_integration": comprehension,
             "intent_decision": intent_decision,
             "self_state": self_state,
+            "affect_expression": affect_expression,
+            "pragmatic_continuity": pragmatic_continuity,
             "native_language_organ": native_language,
             "dry_run_comparison": dry_run,
             "voice_preview": voice_preview,

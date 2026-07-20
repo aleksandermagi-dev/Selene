@@ -492,11 +492,25 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             }
         )
     cue_labels = _cue_labels(prompt)
-    category = str(payload.get("voice_category") or _select_category(prompt, route, cue_labels))
+    expression_guidance = payload.get("expression_guidance") if isinstance(payload.get("expression_guidance"), dict) else {}
+    category = str(
+        payload.get("voice_category")
+        or expression_guidance.get("recommended_voice_category")
+        or _select_category(prompt, route, cue_labels)
+    )
     primitives = _primitive_map(conn, category)
     context = truncate(str(payload.get("context_summary") or payload.get("continuity_summary") or "the current thread"), 220)
     meaning_text = _truncate_voice_text(_normalize_voice_paragraphs(str(payload.get("meaning_text") or "")), 4200)
-    candidate = _compose_candidate(prompt, route, category, cue_labels, primitives, context, meaning_text=meaning_text)
+    candidate = _compose_candidate(
+        prompt,
+        route,
+        category,
+        cue_labels,
+        primitives,
+        context,
+        meaning_text=meaning_text,
+        expression_guidance=expression_guidance,
+    )
     evaluation = evaluate_voice_candidate(
         conn,
         {
@@ -520,6 +534,9 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             "voice_module_state": state.get("voice_module_state"),
             "generation_source": "native_language_organ" if meaning_text else "voice_primitive_composer",
             "nlo_meaning_preserved": bool(meaning_text),
+            "expression_guidance": expression_guidance,
+            "applied_expression_dimensions": expression_guidance.get("dimensions") or {},
+            "expression_guidance_changed_meaning": False,
             "evaluation": evaluation,
             "source_refs": [f"voice_language_patterns:{category}", "voice_sentence_primitives"],
             "review_destination": "Status" if confidence != "low" else "Cocoon",
@@ -1163,12 +1180,19 @@ def _compose_candidate(
     context: str,
     *,
     meaning_text: str = "",
+    expression_guidance: dict[str, Any] | None = None,
 ) -> str:
     opener = _choose_primitive(primitives, "opening", prompt, category, "Yeah, I am with you.")
     pivot = _choose_primitive(primitives, "pivot", prompt, category, "The grounded part is")
     closing = _choose_primitive(primitives, "closing", prompt, category, "I would keep it clear and ask if something feels missing.")
     if meaning_text.strip():
-        return _render_meaning_candidate(meaning_text, category, opener, closing)
+        return _render_meaning_candidate(
+            meaning_text,
+            category,
+            opener,
+            closing,
+            expression_guidance=expression_guidance,
+        )
     lower = prompt.lower()
     codex_speaker = "codex" in lower and ("qa" in lower or "doing a qa" in lower or "this is codex" in lower)
     aleks_speaker = "aleks" in lower and ("it is aleks" in lower or "it's aleks" in lower)
@@ -1236,8 +1260,20 @@ def _compose_candidate(
     return truncate(" ".join(part.strip() for part in (opener, body, closing) if part.strip()), 1600)
 
 
-def _render_meaning_candidate(meaning_text: str, category: str, opener: str, closing: str) -> str:
+def _render_meaning_candidate(
+    meaning_text: str,
+    category: str,
+    opener: str,
+    closing: str,
+    *,
+    expression_guidance: dict[str, Any] | None = None,
+) -> str:
     body = _normalize_voice_paragraphs(meaning_text)
+    guidance = expression_guidance if isinstance(expression_guidance, dict) else {}
+    dimensions = guidance.get("dimensions") if isinstance(guidance.get("dimensions"), dict) else {}
+    body = _apply_expression_pacing(body, str(dimensions.get("sentence_rhythm") or "natural"))
+    if str(dimensions.get("restraint") or "") == "high":
+        return _truncate_voice_text(body, 4200)
     if category in {"warmth_care", "playful_continuity", "excitement_momentum"}:
         if body.lower().startswith(opener.lower()):
             return _truncate_voice_text(body, 4200)
@@ -1245,6 +1281,15 @@ def _render_meaning_candidate(meaning_text: str, category: str, opener: str, clo
     if category == "uncertainty" and "?" not in body:
         return _truncate_voice_text(f"{body}\n\n{closing}", 4200)
     return _truncate_voice_text(body, 4200)
+
+
+def _apply_expression_pacing(body: str, rhythm: str) -> str:
+    if rhythm != "spacious" or "\n\n" in body:
+        return body
+    sentences = [item.strip() for item in re.split(r"(?<=[.!?])\s+", body) if item.strip()]
+    if len(sentences) < 2:
+        return body
+    return f"{sentences[0]}\n\n{' '.join(sentences[1:])}"
 
 
 def _normalize_voice_paragraphs(value: str) -> str:
