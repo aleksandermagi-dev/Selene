@@ -479,6 +479,12 @@ function App() {
   const [mobileStatus, setMobileStatus] = useState<Dict | null>(null);
   const [mobilePairing, setMobilePairing] = useState<Dict | null>(null);
   const [mobilePairingResult, setMobilePairingResult] = useState<Dict | null>(null);
+  const [smsStatus, setSmsStatus] = useState<Dict | null>(null);
+  const [smsResult, setSmsResult] = useState<Dict | null>(null);
+  const [smsEvents, setSmsEvents] = useState<Dict[]>([]);
+  const [smsContactNumber, setSmsContactNumber] = useState("");
+  const [smsSenderNumber, setSmsSenderNumber] = useState("");
+  const [smsMode, setSmsModeValue] = useState("available");
   const [vesselStatus, setVesselStatus] = useState<Dict | null>(null);
   const [vesselReviewQueue, setVesselReviewQueue] = useState<Dict[]>([]);
   const [vesselCandidateKind, setVesselCandidateKind] = useState("core");
@@ -2491,6 +2497,69 @@ function App() {
     setMobileSessions(sessions.items || []);
     const captures = await api<{ items: Dict[] }>("/api/mobile/review-captures");
     setMobileCaptureHistory(captures.items || []);
+    if (!isMobileOnly) {
+      const sms = await api<Dict>("/api/mobile/sms/status");
+      setSmsStatus(sms);
+      setSmsModeValue(text(sms.mode || "available"));
+      const events = await api<{ items: Dict[] }>("/api/mobile/sms/events?limit=12");
+      setSmsEvents(events.items || []);
+    }
+  }
+
+  async function enableSmsMessaging() {
+    setSmsResult({ status: "running", message: "Enabling the paired SMS transport." });
+    try {
+      const result = await api<Dict>("/api/mobile/sms/enable", {
+        method: "POST",
+        body: JSON.stringify({
+          contact_number: smsContactNumber.trim(),
+          from_number: smsSenderNumber.trim(),
+          mode: smsMode
+        })
+      });
+      setSmsResult(result);
+      setSmsStatus(result);
+      await refreshMobileCompanion();
+    } catch (err) {
+      setSmsResult({ status: "error", error: err instanceof Error ? err.message : "SMS enable failed." });
+    }
+  }
+
+  async function disableSmsMessaging() {
+    setSmsResult({ status: "running", message: "Revoking SMS delivery authority." });
+    try {
+      const result = await api<Dict>("/api/mobile/sms/disable", { method: "POST", body: JSON.stringify({}) });
+      setSmsResult(result);
+      setSmsStatus(result);
+      await refreshMobileCompanion();
+    } catch (err) {
+      setSmsResult({ status: "error", error: err instanceof Error ? err.message : "SMS disable failed." });
+    }
+  }
+
+  async function updateSmsMode() {
+    setSmsResult({ status: "running", message: "Updating SMS presence mode." });
+    try {
+      const result = await api<Dict>("/api/mobile/sms/mode", {
+        method: "POST",
+        body: JSON.stringify({ mode: smsMode })
+      });
+      setSmsResult(result);
+      setSmsStatus(result);
+    } catch (err) {
+      setSmsResult({ status: "error", error: err instanceof Error ? err.message : "SMS mode update failed." });
+    }
+  }
+
+  async function pollSmsNow() {
+    setSmsResult({ status: "running", message: "Checking the paired SMS number." });
+    try {
+      const result = await api<Dict>("/api/mobile/sms/poll", { method: "POST", body: JSON.stringify({}) });
+      setSmsResult(result);
+      await refreshMobileCompanion();
+    } catch (err) {
+      setSmsResult({ status: "error", error: err instanceof Error ? err.message : "SMS poll failed." });
+    }
   }
 
   async function enableMobilePairing() {
@@ -6947,6 +7016,64 @@ function App() {
               </div>
               {safeJsonObject(mobilePairingResult || mobilePairing).restart_required ? <p className="plainHelp">Close and reopen Selene before using the phone URL.</p> : null}
               <PlainResult value={mobilePairingResult} />
+              <hr />
+              <h3>Paired SMS</h3>
+              <p className="plainHelp">Carrier SMS transport beneath Selene's existing Tendril. Aleks's paired number may receive ordinary replies and bounded initiative without approving each message. This grant does not authorize other recipients or any non-messaging action.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="SMS" value={friendlyStatus(smsStatus?.status || "not configured")} />
+                <Metric label="Mode" value={friendlyStatus(smsStatus?.mode || "offline")} />
+                <Metric label="Contact" value={text(smsStatus?.contact_number_masked || "not set")} />
+                <Metric label="Unanswered" value={text(smsStatus?.unacknowledged_outbound ?? 0)} />
+              </div>
+              <div className="chips">
+                <span>delegated messaging: {smsStatus?.delegated_message_authority ? "enabled" : "off"}</span>
+                <span>per-message approval: no</span>
+                <span>global autonomy: {plainBlocked(safeJsonObject(smsStatus?.boundaries).global_autonomy_expanded)}</span>
+                <span>memory write: {plainBlocked(safeJsonObject(smsStatus?.boundaries).memory_write_active)}</span>
+                <span>credentials: {safeJsonObject(smsStatus?.credentials).ready ? "ready" : "setup needed"}</span>
+              </div>
+              <div className="filters">
+                <label>
+                  <span>Aleks phone (E.164)</span>
+                  <input value={smsContactNumber} onChange={(event) => setSmsContactNumber(event.target.value)} placeholder="+15551234567" autoComplete="off" />
+                </label>
+                <label>
+                  <span>Selene SMS number (E.164)</span>
+                  <input value={smsSenderNumber} onChange={(event) => setSmsSenderNumber(event.target.value)} placeholder="+15557654321" autoComplete="off" />
+                </label>
+                <label>
+                  <span>Presence</span>
+                  <select value={smsMode} onChange={(event) => setSmsModeValue(event.target.value)}>
+                    <option value="available">Available — replies + bounded initiative</option>
+                    <option value="quiet">Quiet — replies only</option>
+                    <option value="offline">Offline — no sending</option>
+                  </select>
+                </label>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={enableSmsMessaging} disabled={smsResult?.status === "running"}>Enable Paired SMS</button>
+                <button onClick={updateSmsMode} disabled={smsResult?.status === "running" || !smsStatus?.enabled}>Set Presence</button>
+                <button onClick={pollSmsNow} disabled={smsResult?.status === "running" || !smsStatus?.enabled}>Poll Now</button>
+                <button onClick={disableSmsMessaging} disabled={smsResult?.status === "running" || !smsStatus?.enabled}>Revoke SMS</button>
+              </div>
+              {!safeJsonObject(smsStatus?.credentials).ready ? <p className="plainHelp">Twilio account SID and revocable API-key credentials must be supplied through local environment variables before delivery can begin. Secret values never enter this panel or Git.</p> : null}
+              <div className="list compactList packetList">
+                {smsEvents.slice(0, 6).map((item) => (
+                  <article className="packetCard" key={`sms-event-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{friendlyStatus(item.direction)} · {friendlyStatus(item.purpose)}</strong>
+                      <span>{friendlyStatus(item.delivery_status)}</span>
+                    </div>
+                    <div className="chips">
+                      <span>characters: {text(item.character_count ?? 0)}</span>
+                      <span>acknowledged: {item.acknowledged ? "yes" : "no"}</span>
+                      <span>{text(item.occurred_at || item.created_at || "")}</span>
+                    </div>
+                  </article>
+                ))}
+                {!smsEvents.length ? <p className="emptyState">No SMS transport events yet. Message content and phone numbers are omitted from this audit list.</p> : null}
+              </div>
+              <PlainResult value={smsResult} />
             </Panel>
             <Panel title="Selene Voice Module">
               <p className="plainHelp">Voice-only relational language layer. This is expression support for Selene Chat, not memory, identity, model training/LoRA, unrestricted activation, or broad live recall.</p>

@@ -1955,6 +1955,40 @@ CREATE TABLE IF NOT EXISTS vessel_tendril_plan_previews (
 );
 
 CREATE INDEX IF NOT EXISTS idx_vessel_tendril_plan_previews_status ON vessel_tendril_plan_previews(status, review_status);
+
+CREATE TABLE IF NOT EXISTS sms_messaging_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider TEXT NOT NULL,
+  provider_message_id TEXT UNIQUE,
+  direction TEXT NOT NULL,
+  contact_id TEXT NOT NULL,
+  purpose TEXT NOT NULL,
+  delivery_status TEXT NOT NULL,
+  chat_session_id INTEGER,
+  chat_message_id INTEGER,
+  body_sha256 TEXT NOT NULL,
+  character_count INTEGER NOT NULL DEFAULT 0,
+  acknowledged INTEGER NOT NULL DEFAULT 0,
+  error_code TEXT NOT NULL DEFAULT '',
+  occurred_at TEXT NOT NULL,
+  provenance_boundary TEXT NOT NULL,
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_sms_messaging_events_contact ON sms_messaging_events(contact_id, direction, created_at);
+CREATE INDEX IF NOT EXISTS idx_sms_messaging_events_ack ON sms_messaging_events(contact_id, acknowledged, direction);
+
+CREATE TABLE IF NOT EXISTS sms_messaging_state (
+  contact_id TEXT PRIMARY KEY,
+  chat_session_id INTEGER,
+  unacknowledged_outbound INTEGER NOT NULL DEFAULT 0,
+  last_inbound_at TEXT NOT NULL DEFAULT '',
+  last_outbound_at TEXT NOT NULL DEFAULT '',
+  last_poll_at TEXT NOT NULL DEFAULT '',
+  last_poll_status TEXT NOT NULL DEFAULT 'not_run',
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 REQUIRED_COLUMNS = {
