@@ -683,6 +683,8 @@ function App() {
   const [intelligenceOsRuns, setIntelligenceOsRuns] = useState<Dict[]>([]);
   const [intelligenceOsResult, setIntelligenceOsResult] = useState<Dict | null>(null);
   const [intelligenceOsPrompt, setIntelligenceOsPrompt] = useState("Use ABCD(E) to compare two possible explanations without losing warmth or pretending certainty.");
+  const [metacognitionStatus, setMetacognitionStatus] = useState<Dict | null>(null);
+  const [metacognitionRuns, setMetacognitionRuns] = useState<Dict[]>([]);
   const [nativeLanguageStatus, setNativeLanguageStatus] = useState<Dict | null>(null);
   const [nativeLanguageRuns, setNativeLanguageRuns] = useState<Dict[]>([]);
   const [nativeLanguageInitiativeResult, setNativeLanguageInitiativeResult] = useState<Dict | null>(null);
@@ -1292,6 +1294,7 @@ function App() {
     api<Dict>("/api/core-mind/runtime-readiness").then(setCoreMindRuntimeReadiness).catch(() => undefined);
     api<{ items: Dict[] }>("/api/core-mind/runtime-records").then((data) => setCoreMindRuntimeRecords(data.items)).catch(() => undefined);
     refreshIntelligenceOs().catch(() => undefined);
+    refreshMetacognition().catch(() => undefined);
     refreshNativeLanguage().catch(() => undefined);
     refreshSeleneOrganIdeas().catch(() => undefined);
     refreshCocoonCare().catch(() => undefined);
@@ -2443,6 +2446,13 @@ function App() {
     const runs = await stabilizationApi<{ items: Dict[] }>("/api/intelligence-os/runs", undefined, "intelligence_os_runs");
     setIntelligenceOsStatus(status);
     setIntelligenceOsRuns(runs.items || []);
+  }
+
+  async function refreshMetacognition() {
+    const status = await stabilizationApi<Dict>("/api/metacognition/status", undefined, "metacognition_status");
+    const runs = await stabilizationApi<{ items: Dict[] }>("/api/metacognition/runs", undefined, "metacognition_runs");
+    setMetacognitionStatus(status);
+    setMetacognitionRuns(runs.items || []);
   }
 
   async function refreshNativeLanguage() {
@@ -6852,6 +6862,46 @@ function App() {
                   </article>
                 ))}
                 {!intelligenceOsRuns.length ? <p className="emptyState">No intelligenceOS runs yet.</p> : null}
+              </div>
+            </Panel>
+            <Panel title="Metacognition Organ">
+              <p className="plainHelp">Bounded observer for answer fit, evidence sufficiency, correction, reopening, and stopping. It currently inspects completed supervised replies without rewriting them or taking authority from Core/Mind, Comprehension, NLO, or Voice.</p>
+              <div className="metrics miniMetrics">
+                <Metric label="State" value={friendlyStatus(metacognitionStatus?.status || "not checked")} />
+                <Metric label="Mode" value={friendlyStatus(metacognitionStatus?.mode || "observer only")} />
+                <Metric label="Runs" value={text(metacognitionStatus?.run_count ?? metacognitionRuns.length)} />
+                <Metric label="Latest Fit" value={friendlyStatus(safeJsonObject(metacognitionStatus?.latest_run).fit_state || "not run")} />
+                <Metric label="Latest Advice" value={friendlyStatus(safeJsonObject(metacognitionStatus?.latest_run).recommended_action || "not run")} />
+                <Metric label="Reopen Limit" value={text(metacognitionStatus?.max_reopen_cycles_without_new_material ?? 1)} />
+              </div>
+              <div className="chips">
+                <span>reply rewriting: {plainBlocked(safeJsonObject(metacognitionStatus?.latest_run).answer_rewritten)}</span>
+                <span>NLO influence: {plainBlocked(metacognitionStatus?.nlo_influence_active)}</span>
+                <span>Voice influence: {plainBlocked(metacognitionStatus?.voice_influence_active)}</span>
+                <span>automatic Cocoon route: {plainBlocked(metacognitionStatus?.automatic_cocoon_routing)}</span>
+                <span>private miner evidence: {plainBlocked(metacognitionStatus?.private_miner_evidence_connected)}</span>
+                <span>memory write: {plainBlocked(metacognitionStatus?.memory_write_active)}</span>
+              </div>
+              <div className="reviewActions">
+                <button onClick={() => refreshMetacognition().catch(() => undefined)}>Refresh Metacognition</button>
+              </div>
+              <div className="list compactList packetList">
+                {metacognitionRuns.slice(0, 6).map((item) => (
+                  <article className="packetCard" key={`metacognition-run-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{friendlyStatus(item.recommended_action || item.status)}</strong>
+                      <span>{friendlyStatus(item.fit_state || item.review_status)}</span>
+                    </div>
+                    <p>{text(item.prompt_preview || "Bounded turn inspection")}</p>
+                    <div className="chips">
+                      <span>sufficiency: {friendlyStatus(item.sufficiency_state)}</span>
+                      <span>reopen: {safeJsonObject(item.reopening).recommended ? "recommended" : "no"}</span>
+                      <span>stop: {safeJsonObject(item.stopping).stop_now ? "yes" : "bounded continuation"}</span>
+                      <span>{text(item.created_at || "")}</span>
+                    </div>
+                  </article>
+                ))}
+                {!metacognitionRuns.length ? <p className="emptyState">No metacognitive turn inspections yet. Synthetic inspection remains available through the bounded API.</p> : null}
               </div>
             </Panel>
             <Panel title="Native Language Organ">

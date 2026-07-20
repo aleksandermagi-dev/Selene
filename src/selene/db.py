@@ -919,6 +919,29 @@ CREATE TABLE IF NOT EXISTS intelligence_os_runs (
 
 CREATE INDEX IF NOT EXISTS idx_intelligence_os_runs_status ON intelligence_os_runs(status, review_status, created_at);
 
+CREATE TABLE IF NOT EXISTS metacognition_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  prompt_preview TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'metacognition_advisory_ready',
+  fit_state TEXT NOT NULL DEFAULT 'not_assessed',
+  recommended_action TEXT NOT NULL DEFAULT 'observe_only',
+  sufficiency_state TEXT NOT NULL DEFAULT 'not_assessed',
+  confidence_json TEXT NOT NULL DEFAULT '{}',
+  familiarity_json TEXT NOT NULL DEFAULT '{}',
+  observations_json TEXT NOT NULL DEFAULT '[]',
+  reopening_json TEXT NOT NULL DEFAULT '{}',
+  stopping_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_destination TEXT NOT NULL DEFAULT 'Status',
+  review_status TEXT NOT NULL DEFAULT 'status_only',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_metacognition_runs_state
+ON metacognition_runs(fit_state, recommended_action, review_status, created_at);
+
 CREATE TABLE IF NOT EXISTS native_language_runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   mode TEXT NOT NULL DEFAULT 'responsive',

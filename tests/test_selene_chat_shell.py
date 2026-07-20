@@ -252,6 +252,11 @@ def test_active_selene_chat_sends_supervised_response_and_keeps_soft_uncertainty
     assert result["status"] == "selene_chat_supervised_response_recorded"
     assert result["activation_change"] == "selene_chat_active_supervised"
     assert result["supervised_speech_active"] is True
+    assert result["metacognition"]["mode"] == "advisory_observer_only"
+    assert result["metacognition"]["answer_rewritten"] is False
+    assert result["metacognition"]["recommendation_applied_automatically"] is False
+    assert result["metacognition"]["core_mind_authority_retained"] is True
+    assert result["metacognition"]["automatic_cocoon_routing"] is False
     assert result["cocoon_suggestion"]["recommended"] is False
     assert result["cocoon_suggestion"]["support_available"] is True
     assert result["cocoon_suggestion"]["hard_boundary"] is False
@@ -268,6 +273,7 @@ def test_active_selene_chat_sends_supervised_response_and_keeps_soft_uncertainty
     assert "failed" not in result["candidate_text"].lower()
     assert "exile" not in result["candidate_text"].lower()
     assert len(session["messages"]) == 2
+    assert conn.execute("SELECT COUNT(*) FROM metacognition_runs").fetchone()[0] == 1
     _assert_locked(result)
 
 

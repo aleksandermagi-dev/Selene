@@ -58,6 +58,43 @@ def test_sidecar_shutdown_endpoint_stops_server(tmp_path):
     assert not thread.is_alive()
 
 
+def test_metacognition_status_and_inspection_endpoints_are_reachable(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    get_conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    get_conn.request("GET", "/api/metacognition/status")
+    get_response = get_conn.getresponse()
+    status_payload = json.loads(get_response.read().decode("utf-8"))
+    get_conn.close()
+
+    post_conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    body = json.dumps(
+        {
+            "prompt": "Is this bounded answer complete?",
+            "candidate_text": "Yes, for the current ordinary question.",
+            "response_coverage": {"addressed_count": 1, "unresolved_count": 0},
+        }
+    )
+    post_conn.request("POST", "/api/metacognition/inspect", body=body, headers={"Content-Type": "application/json"})
+    post_response = post_conn.getresponse()
+    inspect_payload = json.loads(post_response.read().decode("utf-8"))
+    post_conn.close()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    server.server_close()
+    server.conn.close()
+
+    assert get_response.status == 200
+    assert status_payload["status"] == "metacognition_observer_ready"
+    assert post_response.status == 200
+    assert inspect_payload["status"] == "metacognition_advisory_ready"
+    assert inspect_payload["answer_rewritten"] is False
+    assert inspect_payload["automatic_cocoon_routing"] is False
+
+
 def test_voice_patterns_endpoint_parses_optional_query_params(tmp_path):
     server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
     thread = threading.Thread(target=server.serve_forever, daemon=True)

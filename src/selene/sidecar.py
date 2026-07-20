@@ -609,6 +609,18 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(item, 404 if item.get("error") else 200))
             except ValueError:
                 self._send(*json_bytes({"error": "invalid run id"}, 400))
+        elif parsed.path == "/api/metacognition/status":
+            self._send(*json_bytes(route_request(conn, "metacognition.status")["result"]))
+        elif parsed.path == "/api/metacognition/runs":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "metacognition.runs.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
+        elif parsed.path.startswith("/api/metacognition/runs/"):
+            try:
+                run_id = int(parsed.path.removeprefix("/api/metacognition/runs/"))
+                item = route_request(conn, "metacognition.run.detail", {"run_id": run_id})["result"]
+                self._send(*json_bytes(item, 404 if item.get("error") else 200))
+            except ValueError:
+                self._send(*json_bytes({"error": "invalid run id"}, 400))
         elif parsed.path == "/api/comprehension/status":
             self._send(*json_bytes(route_request(conn, "comprehension.status")["result"]))
         elif parsed.path == "/api/test-impact-law/status":
@@ -1251,6 +1263,13 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/intelligence-os/reason":
             route_key = "intelligence_os.reason"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/metacognition/inspect":
+            route_key = "metacognition.inspect"
             try:
                 write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))

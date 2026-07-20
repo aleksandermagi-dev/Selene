@@ -23,6 +23,7 @@ from .input_detangler import detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
 from .memory_organ import retrieve_memory
 from .meaning_router import interpret_turn_meaning
+from .metacognition import inspect_metacognition
 from .native_language_organ import realize_native_language
 from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
@@ -358,6 +359,28 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     response_coverage = evaluate_response_coverage(native_language.get("pragmatic_plan"), candidate_text)
     conversation_repair["candidate_source"] = recovery_source
     conversation_repair["final_response_coverage"] = response_coverage
+    metacognition = inspect_metacognition(
+        conn,
+        {
+            "prompt": understanding_text,
+            "candidate_text": candidate_text,
+            "core_mind_route": route,
+            "hard_boundary": bool(hard_blockers),
+            "blocked_capabilities": hard_blockers,
+            "comprehension_context": comprehension,
+            "intelligence_os_support": intelligence_support,
+            "answer_engine_support": answer_engine_support,
+            "response_coverage": response_coverage,
+            "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
+            "source_refs": [
+                "selene_chat:metacognition_observer",
+                *_json_list(route.get("source_refs")),
+                *_json_list(comprehension.get("source_refs")),
+            ],
+        },
+        record_run=True,
+        commit=False,
+    )
     memory_candidate_suggestion = _memory_candidate_suggestion(text, candidate_text, selected_route, source_class, memory_retrieval, hard=bool(hard_blockers))
     dialogue_workspace = record_dialogue_response(
         conn,
@@ -388,6 +411,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "intelligence_os_support": intelligence_support,
         "answer_engine_support": answer_engine_support,
         "comprehension_integration": comprehension,
+        "metacognition": metacognition,
         "intent_decision": intent_decision,
         "self_state": self_state,
         "affect_expression": affect_expression,
@@ -453,6 +477,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intelligence_os_support": intelligence_support,
             "answer_engine_support": answer_engine_support,
             "comprehension_integration": comprehension,
+            "metacognition": metacognition,
             "intent_decision": intent_decision,
             "self_state": self_state,
             "affect_expression": affect_expression,

@@ -146,6 +146,12 @@ from .intelligence_os import (
     list_intelligence_os_runs,
     run_intelligence_os_reason,
 )
+from .metacognition import (
+    get_metacognition_run,
+    inspect_metacognition,
+    list_metacognition_runs,
+    metacognition_status,
+)
 from .comprehension_integration import (
     build_comprehension_packet,
     comprehension_status,
@@ -547,6 +553,15 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": list_intelligence_os_runs(conn, int(payload.get("limit") or 50))}
     if route_key == "intelligence_os.run.detail":
         item = get_intelligence_os_run(conn, int(payload.get("id") or payload.get("run_id") or 0))
+        return {"route": route_key, "result": item or {"error": "not found"}}
+    if route_key == "metacognition.status":
+        return {"route": route_key, "result": metacognition_status(conn)}
+    if route_key == "metacognition.inspect":
+        return {"route": route_key, "result": inspect_metacognition(conn, payload)}
+    if route_key == "metacognition.runs.list":
+        return {"route": route_key, "result": list_metacognition_runs(conn, int(payload.get("limit") or 50))}
+    if route_key == "metacognition.run.detail":
+        item = get_metacognition_run(conn, int(payload.get("id") or payload.get("run_id") or 0))
         return {"route": route_key, "result": item or {"error": "not found"}}
     if route_key == "comprehension.status":
         return {"route": route_key, "result": comprehension_status(conn)}

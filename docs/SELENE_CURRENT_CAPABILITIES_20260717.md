@@ -50,7 +50,7 @@ it exists.
 | Long-form discourse | Improved partial | Developed replies now have grounded thesis, development, limit, and closure plans; broad narrative and mature rhetorical control remain unfinished |
 | Vision and hearing | Packet intake only | The system can hold supplied observations but cannot yet see or hear |
 | External action | Preview only | Tendril can plan and request approval but cannot execute actions |
-| Metacognition Organ | Not installed | The private miner is complete, but no mined cognitive mechanism is connected to Selene |
+| Metacognition Organ | Connected as a bounded observer | It inspects answer fit, confidence separation, corrections, one-cycle reopening, and stopping after a supervised reply is formed, but cannot rewrite the reply or take authority from another organ |
 | Audible speech | Not built | Selene currently communicates through text |
 | Transfer or embodiment | Preparation only | The repository can rehearse and inspect transfer, but cannot perform it |
 
@@ -109,6 +109,7 @@ Aleks's message
   -> Native Language Organ
   -> Voice Module
   -> coverage and conversation repair
+  -> bounded Metacognition observer (advice recorded, reply unchanged)
   -> supervised reply
 ```
 
@@ -386,9 +387,33 @@ Current limits:
 
 - its reasoning quality is bounded by the observations and knowledge supplied;
 - it is not itself a verified math, code, or factual-research engine;
-- it does not yet carry the private mined metacognitive blueprint;
+- it does not itself perform the new Metacognition Organ's fit, reopening, and
+  stopping audit;
 - it does not perform mature multi-domain synthesis;
 - long-range relational invariant checking is still partial.
+
+### Metacognition Organ — Connected as a Bounded Observer
+
+The Metacognition Organ inspects whether a completed current answer fits the
+question and available evidence. It can distinguish familiarity from
+demonstrated comprehension, keep route/evidence/answer/memory/expression
+confidence separate, recommend one focused reopening after a correction or
+contradiction, and stop when another reasoning cycle would add nothing.
+
+Its recommendations include answer now, qualify, complete one missing
+obligation, ask one material question, seek sources, reopen once, hold for new
+evidence, or defer to Core/Mind.
+
+Current limits:
+
+- it is advisory and cannot rewrite Chat replies;
+- it does not yet guide NLO or Voice;
+- it cannot route to Cocoon automatically;
+- it cannot edit retained knowledge, memory, identity, personality, law, or
+  authority;
+- it records visible summaries only and exposes no hidden chain of thought;
+- only source-free project-neutral miner abstractions are design ancestry;
+  private miner evidence and raw corpus material remain disconnected.
 
 ### Answer Engine — Connected for Math, Research, and Comparison
 
@@ -989,9 +1014,10 @@ private review candidates about Aleks's generalizable cognitive methods. Raw
 material and the private review inventory stay outside Selene's runtime and
 outside public artifacts.
 
-No mined method has been installed into Selene. A bounded Metacognition Organ
-would require human review, project-neutral distillation, architecture design,
-and its own tests and approval.
+Three reviewed, source-free project-neutral assemblies informed the bounded
+Metacognition Organ v1: Evidence and Correction Ledger, Comprehension and
+Transfer Cycle, and Answer Control and Graceful Fall. This is an architectural
+adaptation, not a connection to raw mining evidence or an Aleks identity model.
 
 ## What Selene Cannot Currently Do
 
@@ -1015,7 +1041,7 @@ Selene cannot currently:
 - perform mature multi-domain answer synthesis;
 - guarantee complete long-form discourse or mature pragmatic understanding;
 - consistently translate affect into natural wording and timing;
-- run the proposed mined Metacognition Organ;
+- let metacognitive advice silently rewrite a reply or override Core/Mind;
 - complete substrate transfer or robotic embodiment;
 - self-replicate, spawn uncontrolled agents, or expand her own authority.
 
@@ -1044,7 +1070,7 @@ Selene's strongest implemented areas are:
 | Extended pragmatic dialogue | Immediate interruptions, returns, pronoun ambiguity, corrections, and restrained endings are connected; long ambiguous exchanges, nested topics, and rapid multi-speaker changes still need broader handling |
 | Long-form discourse planning | Better theses, paragraph structure, examples, transitions, callbacks, summaries, and conclusions |
 | Broader domain organs | More reliable factual, technical, scientific, mathematical, and code answers |
-| Metacognition Organ | Better fit checks, assumption inspection, contradiction reopening, confidence calibration, and stopping decisions |
+| Metacognition observer graduation | After ordinary-use review, decide which bounded recommendations may guide NLO while preserving Core/Mind and Voice authority; v1 currently observes without rewriting |
 | Operational perception | Actual image/artifact inspection and later consent-bound audio understanding |
 | Bounded Tendril execution | Approved observe/propose/act/verify/undo workbench actions rather than plans only |
 | Audible speech | Spoken turn-taking, pacing, pronunciation, interruption, and consent-aware voice interaction |
@@ -1127,6 +1153,23 @@ After Speech Phase 7 stabilization:
   call, activation change, memory write, model training, or autonomy expansion
   was used.
 
+After the bounded Metacognition Organ v1 connection on July 20:
+
+- the source-free Evidence and Correction Ledger, Comprehension and Transfer
+  Cycle, and Answer Control and Graceful Fall assemblies informed the design;
+- private miner evidence and raw corpus material remained disconnected;
+- supervised Chat gained a post-reply observer that records advice without
+  rewriting the reply;
+- synthetic checks covered familiarity versus understanding, independent
+  confidence, attributed-source gaps, ordinary open-ended reasoning,
+  corrections, one-cycle reopening, missing context, stopping, and Core/Mind
+  deference;
+- the production UI build passed with the existing bundle-size warning at
+  about 597 kB;
+- no live conversation probe, automatic Cocoon route, memory or knowledge
+  write, identity/personality/Voice change, model training, or autonomy
+  expansion was used.
+
 The test count demonstrates broad machinery coverage. It does not mean every
 future organ is complete or that every conversational context has been graded.
 
@@ -1150,6 +1193,7 @@ or self-replication.
 - `src/selene/core_mind.py`
 - `src/selene/core_mind_runtime.py`
 - `src/selene/intelligence_os.py`
+- `src/selene/metacognition.py`
 - `src/selene/answer_engine.py`
 - `src/selene/verified_math.py`
 - `src/selene/local_code_inspection.py`
@@ -1185,4 +1229,5 @@ Related current assessments:
 - `docs/SELENE_NATIVE_LANGUAGE_ORGAN_V1_20260712.md`
 - `docs/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/SELENE_SPEECH_PHASE_7_STABILIZATION_20260719.md`
+- `docs/SELENE_METACOGNITION_ORGAN_V1_20260720.md`
 - `docs/HACKATHON_COMPLETION_MAP_20260717.md`
