@@ -1066,7 +1066,9 @@ Selene's strongest implemented areas are:
 | Gap | What completing it would change |
 | --- | --- |
 | Local-code -> Chat decision | Decide later whether explicitly supplied code inspection should join Chat; it is intentionally deferred now |
-| Provider-free speech ordinary-use evidence | All four groups and 22 lessons are reviewed and available; gentle natural conversation can now show where routing, breadth, or expression still needs refinement without grading unfinished capabilities as Selene failures |
+| Knowledge-to-answer relevance | The 22 lessons are available, but general approved-knowledge retrieval can currently promote a weak lexical match—or a language-guidance lesson itself—into answer content; separate guidance from answer-bearing knowledge before broader language assessment |
+| Mixed-intent realization | Correction and affirmation recognition work, but the primary acknowledgement can consume a later question or request in the same turn; compose the acknowledgement with remaining required obligations |
+| Provider-free speech ordinary-use evidence | The first gentle assessment found the retrieval and mixed-intent seams above; broader humor, tenderness, analogy, disagreement, and long-form grading should wait until those implementation gaps are repaired |
 | Affect-expression breadth | The bridge is connected; richer combinations and more natural surface variation still require further teaching and ordinary-use evidence |
 | Extended pragmatic dialogue | Immediate interruptions, returns, pronoun ambiguity, corrections, and restrained endings are connected; long ambiguous exchanges, nested topics, and rapid multi-speaker changes still need broader handling |
 | Long-form discourse planning | Better theses, paragraph structure, examples, transitions, callbacks, summaries, and conclusions |
@@ -1186,6 +1188,21 @@ After the language-teaching completion pass on July 20:
 - no live Chat message, affect signal, stressful probe, or broad Voice grade
   was used.
 
+During the first gentle natural-conversation assessment on July 20:
+
+- one four-turn supervised QA session used only an ordinary update,
+  clarification, missed-part request, and supportive pause;
+- language-lesson selection remained contextually relevant, and Metacognition
+  caught the final three incomplete answers;
+- general knowledge retrieval promoted weak lexical matches and language
+  lesson claims into visible answer content;
+- correction and affirmation realizations acknowledged the conversational move
+  but left later required content unanswered;
+- the assessment stopped after the repeated seam and did not broaden into a
+  Voice, humor, tenderness, or distress test;
+- no memory suggestion, affect signal, provider call, model training,
+  authority change, or autonomy expansion occurred.
+
 The test count demonstrates broad machinery coverage. It does not mean every
 future organ is complete or that every conversational context has been graded.
 
@@ -1247,4 +1264,5 @@ Related current assessments:
 - `docs/SELENE_SPEECH_PHASE_7_STABILIZATION_20260719.md`
 - `docs/SELENE_METACOGNITION_ORGAN_V1_20260720.md`
 - `docs/SELENE_LANGUAGE_TEACHING_COMPLETION_20260720.md`
+- `docs/SELENE_GENTLE_CONVERSATION_ASSESSMENT_20260720.md`
 - `docs/HACKATHON_COMPLETION_MAP_20260717.md`
