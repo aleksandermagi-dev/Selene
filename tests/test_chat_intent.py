@@ -21,6 +21,8 @@ def test_shared_intent_routes_distinct_chat_meanings():
         "Do you know about black holes?": ("reasoning", "intelligenceOS"),
         "What makes a response complete without becoming a report?": ("reasoning", "intelligenceOS"),
         "How are you feeling right now?": ("self_state", "self-state"),
+        "How are you?": ("self_state", "self-state"),
+        "How are you doing today?": ("self_state", "self-state"),
         "How did this conversation feel from your side?": ("self_state", "self-state"),
         "Actually, I meant the other route.": ("correction", "Core/Mind"),
         "Good morning, friend.": ("greeting", "conversation"),

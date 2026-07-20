@@ -368,9 +368,10 @@ def _best_current_answer(
         return "I can keep reasoning here, but Cocoon support would help if the comparison starts feeling uneven or tangled."
     if answer_shape == "hold_uncertainty":
         return "My best answer is provisional: the current shape is usable, but I should keep the uncertainty visible and be easy to correct."
-    model = models[0] if models else {"name": "current best model"}
-    conclusion = next((item.get("value") for item in evidence_chain if item.get("link") == "conclusion"), "")
-    return truncate(f"My best current answer is: use {model.get('name')} as the provisional fit, answer directly, and stay corrigible. {conclusion}", 620)
+    return (
+        "I do not have enough grounded detail to answer that usefully yet. I can still reason with you, "
+        "but I need the subject or observations that the answer should fit."
+    )
 
 
 def _cocoon_suggestion(prompt: str, challenge: dict[str, Any], evaluation: dict[str, Any]) -> dict[str, Any]:

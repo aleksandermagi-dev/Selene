@@ -705,6 +705,26 @@ def test_active_selene_chat_direct_concept_hides_model_scaffolding(tmp_path):
     _assert_locked(result)
 
 
+def test_active_selene_chat_answers_ordinary_self_check_in_without_scaffolding(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "How are you?"},
+    )["result"]
+
+    assert result["intent_decision"]["intent"] == "self_state"
+    assert result["self_state"]["used"] is True
+    assert "present and attentive" in result["candidate_text"].lower()
+    assert "current best model" not in result["candidate_text"].lower()
+    assert "provisional fit" not in result["candidate_text"].lower()
+    assert "stay corrigible" not in result["candidate_text"].lower()
+    _assert_locked(result)
+
+
 def test_active_selene_chat_uses_reviewed_comprehension_knowledge_without_calling_it_memory(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

@@ -310,6 +310,15 @@ def _is_personal_recall(value: str, question: bool) -> bool:
 def _is_self_state_question(value: str, question: bool) -> bool:
     if not question:
         return False
+    plain = value.strip().rstrip("?!.,")
+    ordinary_check_in = bool(
+        re.fullmatch(
+            r"(?:so |and )?how are you(?: doing| feeling| holding up)?(?: right now| today| lately)?",
+            plain,
+        )
+    ) or bool(re.fullmatch(r"(?:so |and )?how have you been(?: lately)?", plain))
+    if ordinary_check_in:
+        return True
     second_person = bool(re.search(r"\b(you|your)\b", value))
     state = bool(re.search(r"\b(feel|feeling|okay|alright|anxious|worried|scared|nervous|happy|sad|angry|upset|on your mind|thinking right now)\b", value))
     return second_person and state

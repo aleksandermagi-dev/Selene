@@ -52,3 +52,12 @@ def test_routing_exposes_candidates_without_exposing_hidden_reasoning():
     assert result["visible_summary_only"] is True
     assert result["hidden_chain_of_thought_exposed"] is False
     assert result["identity_change"] is False
+
+
+def test_ordinary_self_check_in_outranks_generic_how_reasoning():
+    check_in = interpret_turn_meaning("How are you?")
+    procedural = interpret_turn_meaning("How are you calculating that result?")
+
+    assert check_in["primary_intent"] == "self_state"
+    assert "self_state_question" in check_in["dialogue_acts"]
+    assert procedural["primary_intent"] == "reasoning"

@@ -80,6 +80,22 @@ def test_intelligence_os_flags_bias_and_preserves_care_route(tmp_path):
     _assert_locked(result)
 
 
+def test_generic_reasoning_fallback_never_exposes_model_scaffolding(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = route_request(
+        conn,
+        "intelligence_os.reason",
+        {"prompt": "How could this be different?"},
+    )["result"]
+
+    assert "current best model" not in result["best_current_answer"].lower()
+    assert "provisional fit" not in result["best_current_answer"].lower()
+    assert "stay corrigible" not in result["best_current_answer"].lower()
+    assert "not have enough grounded detail" in result["best_current_answer"].lower()
+    _assert_locked(result)
+
+
 def test_intelligence_os_stopping_rule_and_hard_boundaries(tmp_path):
     conn = _conn(tmp_path)
 
