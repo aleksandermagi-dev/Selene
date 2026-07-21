@@ -27,6 +27,11 @@
     "active": true,
     "targets": ["nsis"],
     "resources": ["../dist-sidecar/selene-sidecar"],
-    "externalBin": []
+    "externalBin": [],
+    "windows": {
+      "nsis": {
+        "installerHooks": "./windows/hooks.nsh"
+      }
+    }
   }
 }

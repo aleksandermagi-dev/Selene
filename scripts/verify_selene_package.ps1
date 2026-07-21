@@ -104,6 +104,22 @@ $trainingAllowed = [bool]($transferCeremony -and $transferCeremony.training_allo
 $autonomousActionAllowed = [bool]($transferCeremony -and $transferCeremony.autonomous_action_allowed)
 $selfReplicationAllowed = [bool]($transferCeremony -and $transferCeremony.self_replication_allowed)
 $transferProbeOk = [bool]($transferCeremony -or $transferGate)
+$packagedSidecar = Join-Path $repo "dist-sidecar\selene-sidecar"
+$forbiddenPackagedFiles = @()
+if (Test-Path -LiteralPath $packagedSidecar) {
+    $packagedSidecarRoot = [System.IO.Path]::GetFullPath($packagedSidecar).TrimEnd([char[]]"\/")
+    $forbiddenPackagedFiles = @(
+        Get-ChildItem -LiteralPath $packagedSidecar -Recurse -File | Where-Object {
+            $relative = $_.FullName.Substring($packagedSidecarRoot.Length) -replace '^[\\/]+', ''
+            $relative -match '(?i)(^|[\\/])(analysis|DevelopmentalCorpusArchive_[^\\/]*|might help|local-data|\.selene_data|\.selene_logs|Selene Voice Module)([\\/]|$)' -or
+            $relative -match '(?i)\.(sqlite3?|db)$' -or
+            $relative -match '(?i)(?:tendril|email|sms).*config.*\.json$'
+        } | ForEach-Object {
+            $_.FullName.Substring($packagedSidecarRoot.Length) -replace '^[\\/]+', ''
+        }
+    )
+}
+$packagePrivacyOk = [bool]((Test-Path -LiteralPath $packagedSidecar) -and $forbiddenPackagedFiles.Count -eq 0)
 $boundaryOk = [bool](
     $activationChange -eq "none" -and
     -not $memoryWriteActive -and
@@ -121,6 +137,7 @@ $ok = [bool](
     $reviewQueue -and
     $mobileHealth -and
     $transferProbeOk -and
+    $packagePrivacyOk -and
     $boundaryOk
 )
 
@@ -131,6 +148,7 @@ if (-not $steps) { $warnings += "Steps 1-8 status endpoint did not respond." }
 if (-not $reviewQueue) { $warnings += "Review queue endpoint did not respond." }
 if (-not $mobileHealth) { $warnings += "Mobile chat health endpoint did not respond." }
 if (-not $transferProbeOk) { $warnings += "Transfer status endpoint did not respond." }
+if (-not $packagePrivacyOk) { $warnings += "Packaged sidecar contains forbidden private/runtime-state paths or is missing: $($forbiddenPackagedFiles -join ', ')" }
 if ($activationChange -ne "none") { $warnings += "Activation change is '$activationChange'; expected none." }
 if ($memoryWriteActive) { $warnings += "Live memory write is active; expected false." }
 if ($runtimeMemoryRecall) { $warnings += "Runtime memory recall is active; expected false." }
@@ -159,6 +177,16 @@ $result = [ordered]@{
         mobile_chat_ok = [bool]$mobileHealth
     }
     mobile_health = $mobileHealth
+    package_privacy = [ordered]@{
+        ok = $packagePrivacyOk
+        packaged_sidecar_path = $packagedSidecar
+        forbidden_file_count = $forbiddenPackagedFiles.Count
+        forbidden_files = $forbiddenPackagedFiles
+        configured_database_included = $false
+        credential_config_files_included = $false
+        private_corpus_included = $false
+        private_analysis_maps_included = $false
+    }
     transfer_state = [ordered]@{
         ceremony_status = if ($transferCeremony) { $transferCeremony.status } else { $null }
         legacy_gate_status = if ($transferGate) { $transferGate.status } else { $null }

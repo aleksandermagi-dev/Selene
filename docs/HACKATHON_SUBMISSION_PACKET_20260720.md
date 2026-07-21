@@ -2,8 +2,9 @@
 
 Date prepared: July 21, 2026
 
-Status: working draft for Aleks review; no repository publication, judge sharing,
-video upload, packaging, or external submission has been performed
+Status: working draft for Aleks review; final local packaging, verification, and
+reinstall are complete; no repository publication, judge sharing, video upload,
+or external submission has been performed
 
 ## Submission Identity
 
@@ -160,9 +161,10 @@ npm run build
 
 Current proportional verification on July 21:
 
-- 59 focused showcase, Test Impact Law, Answer Engine, comprehension, and
-  teaching-lifecycle tests passed
-- the complete repository machinery regression passed: 998 tests
+- the two public-safe showcase tests passed against disposable state
+- 205 focused conversation-routing, Conversation Spine, response-coverage,
+  comprehension, NLO, Voice, and repair tests passed
+- the complete repository regression passed: 1,014 tests
 - one gentle synthetic long conversation returned to the correct earlier
   recommendation after four ordinary intervening turns without using durable
   memory or importing the side topic
@@ -171,10 +173,11 @@ Current proportional verification on July 21:
 - production chunks remained split: main application 415.84 kB and React
   runtime 193.81 kB; the former single-bundle warning did not return
 - the Windows release EXE and NSIS installer rebuilt successfully, and the
-  package health verifier passed; it launched and closed the previously
-  installed app for health verification but did not reinstall the new build
-- no reinstall, live conversation probe, stressful test, or real database
-  mutation was performed
+  package health verifier passed
+- the live database was snapshotted before the verified installer was applied;
+  the new build was reinstalled successfully and returned healthy/ready
+- no post-reinstall live Q&A, stressful test, teaching approval, memory
+  mutation, or authority change was performed
 
 ## Demo Script — Target 2:35
 

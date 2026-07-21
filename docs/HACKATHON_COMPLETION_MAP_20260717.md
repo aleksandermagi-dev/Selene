@@ -22,7 +22,7 @@ submission.
 - Branch inspected: `evidence`
 - Pre-event baseline recorded by the project: `c8f0795`
 - Event-window work begins at: `63557c6`
-- Latest committed foundation before the conversation-maturity pass: `c05fe24`
+- Latest verified conversation repair checkpoint: `eaaa5fd`
 - The branch is ahead of `origin/evidence`.
 - The conversation-maturity pass was verified across the complete repository
   before its final checkpoint.
@@ -39,7 +39,7 @@ The critical path is now:
 1. ~~expose a concise, judge-readable demonstration of implemented behavior~~;
 2. ~~prepare one synthetic or otherwise public-safe teaching fixture~~;
 3. ~~document setup, event-window authorship, boundaries, and judge access~~;
-4. run proportional final verification against the exact frozen demo path;
+4. ~~run proportional final verification against the exact frozen demo path~~;
 5. choose judge access, record the video, capture the required Codex evidence,
    and submit.
 
@@ -242,7 +242,7 @@ Add concise sections covering:
 - focused tests and frontend build commands;
 - privacy, data, licensing, and non-release boundaries.
 
-#### 6. Run Proportional Final Verification
+#### 6. Run Proportional Final Verification — Complete
 
 Verification should follow the Test Impact Law:
 
@@ -256,6 +256,20 @@ Verification should follow the Test Impact Law:
 
 No adversarial conversation battery or broad grading of Selene's unfinished
 voice is required.
+
+Final July 21 evidence:
+
+- two deterministic public-safe showcase tests passed;
+- the showcase command completed against disposable state with every locked
+  guard preserved;
+- 205 focused conversation and expression tests passed;
+- the complete repository suite passed: 1,014 tests;
+- the frontend production build passed with split 415.84 kB application and
+  193.81 kB React chunks and no former single-bundle warning;
+- the Windows package verifier passed;
+- Aleks authorized the final local package action, the configured database was
+  snapshotted, and the verified build was reinstalled successfully;
+- installed startup returned healthy/ready without a post-reinstall live Q&A.
 
 #### 7. Record and Submit
 

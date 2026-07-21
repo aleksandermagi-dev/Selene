@@ -1240,14 +1240,15 @@ After the Conversation Maturity Pass on July 21:
 - one gentle synthetic long conversation returned to the correct garden
   recommendation after four ordinary intervening turns without durable memory
   or side-topic leakage;
-- all 998 repository tests passed in 275.10 seconds;
+- all 1,014 repository tests passed in 326.94 seconds;
 - the production frontend remained split at 415.84 kB for the main application
   and 193.81 kB for React, with no single-bundle size warning;
-- the Windows release EXE and NSIS installer rebuilt and package health
-  verification passed without reinstalling the new build;
-- no live conversation probe, stressful test, provider call, hidden retention,
-  identity/personality/governance change, model training, or autonomy expansion
-  was used.
+- the Windows release EXE and NSIS installer rebuilt, package health verification
+  passed, the configured database was snapshotted, and the new build was
+  reinstalled with healthy/ready startup;
+- no post-reinstall live conversation probe, stressful test, provider call,
+  hidden retention, identity/personality/governance change, model training, or
+  autonomy expansion was used.
 
 ## Governing Boundary
 

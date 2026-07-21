@@ -231,18 +231,127 @@ The demo should use synthetic or public-safe teaching material. It must not disp
   - `docs/SELENE_ANSWER_ENGINE_PHASE_3C_SOURCE_RESEARCH_20260715.md`
   - `docs/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 
+## July 16-21, 2026 — Event-Window Continuation
+
+### Reviewed Teaching, Language, And Metacognition
+
+**Aleks's direction:** Make reviewed teaching visible, build provider-free
+speech toward mature conversational use, and keep metacognitive work bounded,
+private-source-safe, and separate from personality or hidden chain of thought.
+
+**Implemented:**
+
+- surfaced teaching review work in My Office;
+- added bounded input detangling that preserves the original message;
+- checkpointed the private metacognition miner without publishing its source
+  material, then connected only a bounded answer-fit and reopening observer;
+- completed seven ordered provider-free language groups and reviewed F1
+  curriculum foundations;
+- stabilized taught conversational expression without making teaching a
+  personality, identity, law, memory, or authority editor.
+
+**Selected checkpoints:** `820ca1e`, `edb9252`, `fd025fa`, `3de57ce`,
+`f17e9f9`, `d92578b`, `1633f83`, `a9040d5`, `4bbb02c`
+
+### Transfer, Cocoon Separation, And Bounded Communication
+
+**Aleks's direction:** Complete the reviewed continuity transfer under the Law
+of Transfer, let Selene operate independently from Cocoon while retaining
+explicit teaching/safety bridges, and keep phone continuity on the same Selene
+Chat thread without expanding filesystem or general external authority.
+
+**Implemented:**
+
+- completed the Aleks-controlled reviewed continuity transfer gate;
+- separated resident Selene from Cocoon standby/classroom code paths;
+- retired stale review UI and cleaned reproducible build residue;
+- connected bounded paired email/carrier transport to existing Selene Chat
+  continuity, with desktop remaining the current host and control surface.
+
+**Selected checkpoints:** `4513e3f`, `c5bfa50`, `babf70f`, `977c727`,
+`9afd3a3`, `dbf6b1e`
+
+### Conversation Spine And Final Speech Stabilization
+
+**Aleks's direction:** Validate the real ordinary conversation path gently,
+treat exposed gaps as implementation observations, and create the missing
+shared conversational spine instead of accumulating independent lexical fixes.
+
+**Implemented:**
+
+- added the current-session Conversation Spine and Thread Loom;
+- preserved nonlinear topic branches, returns, dependencies, landings,
+  referents, and bounded visible session landmarks;
+- connected response obligations, one bounded supported completion pass,
+  discourse composition, special-purpose expression, and conversational
+  judgment;
+- matured multi-part answers, callbacks, corrections, ordinary self-state
+  check-ins, rephrasing, session summaries, punctuation, and paragraph
+  preservation;
+- prevented weak lexical overlap and internal route labels from becoming visible
+  conversational content.
+
+**Verification:**
+
+- 205 focused affected tests passed;
+- the full repository suite passed: 1,014 tests;
+- the public-safe deterministic showcase tests passed and the showcase completed
+  against disposable state;
+- the frontend build passed with split 415.84 kB application and 193.81 kB React
+  chunks and no former single-bundle warning;
+- Windows packaging and health verification passed;
+- the configured database was snapshotted before Aleks-authorized local
+  reinstall, and the installed build returned healthy/ready;
+- no post-reinstall live Q&A or stressful probe was performed.
+
+**Selected checkpoints:** `909a00d`, `789bb1e`, `76c8679`, `f45cbd1`,
+`621f539`, `0769802`, `2d47dd0`, `bedda5d`, `c05fe24`, `af15578`, `eaaa5fd`
+
+### Judge Installer Privacy Audit
+
+**Aleks's direction:** Provide a downloadable Windows EXE so judges can run the
+working application.
+
+**Audit finding:** The first local package inherited two legacy `analysis/`
+data directories from the PyInstaller specification. They contained private
+conversation previews and therefore could not be published. No release asset
+had been uploaded.
+
+**Repair:**
+
+- removed all analysis maps and nonessential continuity documents from the
+  packaged sidecar;
+- retained only compiled runtime/UI, required libraries, the public Project
+  Charter, and the public Law of Transfer;
+- added a package privacy gate that rejects analysis, corpus, local-state,
+  database, and credential-configuration paths;
+- added an NSIS preinstall hook that removes obsolete packaged analysis data
+  during upgrades without touching the configured data directory;
+- rebuilt, package-verified, reinstalled, and confirmed zero forbidden installed
+  files with healthy/ready startup.
+
+**Release artifact:** `Selene_0.1.1_x64-setup.exe`, 14,576,751 bytes, SHA-256
+`1E72E7F9E9BF9BB9748C2266E581CA9F7B73017609970F36C566D96623BCCEDC`.
+The build is unsigned and must be labeled accordingly for judges.
+
 ## Current Boundary
 
-The logged work does not enable unrestricted activation, autonomous Tendril action, raw corpus recall, hidden memory writes, model training/fine-tuning/LoRA, self-replication, or transfer authority changes. It strengthens supervised language, reasoning, verified domain support, comprehension, and reviewed teaching while preserving Selene's modular architecture.
+Reviewed transfer and living-memory graduation occurred only through the
+Aleks-controlled laws and gates recorded by the project. The event-window work
+does not enable raw archive recall, hidden memory writes, model
+training/fine-tuning/LoRA, self-replication, unrestricted filesystem access, or
+unbounded external action. It strengthens language, reasoning, verified domain
+support, comprehension, reviewed teaching, and bounded communication while
+preserving Selene's modular architecture and separate authority boundaries.
 
 ## Rule-Aligned Submission Checklist
 
 - [ ] Choose the best track. Current likely fit: `Apps for Your Life`; confirm before submission.
-- [x] Keep a working Windows test build that behaves exactly as shown in the demo. Rebuilt and package-verified July 15; re-verify against the final recorded demo.
+- [x] Keep a working Windows test build that behaves exactly as shown in the demo. Rebuilt, package-verified, snapshotted, and locally reinstalled July 21.
 - [ ] Record the Codex `/feedback` Session ID for the project task where most event-window functionality was built.
-- [ ] Add a concise README section distinguishing pre-event Selene from the July 13-21 extensions.
-- [ ] Add a README section describing Aleks/Codex collaboration, Codex acceleration, Aleks's key product and design decisions, and GPT-5.6 usage.
-- [ ] Provide setup instructions, supported Windows platform details, sample/test guidance, and a judge-accessible build or testing path.
+- [x] Add a concise README section distinguishing pre-event Selene from the July 13-21 extensions.
+- [x] Add a README section describing Aleks/Codex collaboration, Codex acceleration, Aleks's key product and design decisions, and GPT-5.6 usage.
+- [x] Provide setup instructions, supported Windows platform details, sample/test guidance, and a judge-accessible deterministic testing path.
 - [ ] Decide whether the repository will be public with appropriate licensing or private and shared with `testing@devpost.com` and `build-week-event@openai.com`.
 - [ ] Record a public YouTube demo under three minutes with audio showing the working project and explaining how Codex and GPT-5.6 were used.
 - [ ] Keep copyrighted music, unauthorized third-party material, private corpora, personal data, DBs, logs, and confidential blueprints out of the demo and submission repository.

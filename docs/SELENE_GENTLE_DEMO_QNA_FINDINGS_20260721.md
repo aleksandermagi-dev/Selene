@@ -2,8 +2,8 @@
 
 Date: July 21, 2026
 
-Status: Conversation Spine implemented; bounded eight-turn live Q&A and
-stabilization verification complete
+Status: Conversation Spine implemented; bounded ordinary Q&A findings repaired;
+final stabilization, packaging, and local reinstall complete
 
 ## Purpose
 
@@ -200,11 +200,51 @@ grade of Selene's unfinished voice or an adversarial capability battery.
 
 ### Current stabilization verification
 
-- full repository suite: 951 passed
+- full repository suite: 1,014 passed
+- focused affected machinery: 205 passed
+- public-safe deterministic showcase tests: 2 passed
 - frontend production build: passed
-- main application chunk: 413.82 kB
+- main application chunk: 415.84 kB
 - React runtime chunk: 193.81 kB
-- no package, reinstall, push, memory mutation, or authority change was performed
+- former single-bundle Vite warning: absent
+- Windows package verification: passed
+- configured database: snapshotted before reinstall
+- verified installer: applied successfully; installed startup healthy/ready
+- no post-reinstall live Q&A, push, teaching approval, memory mutation, or
+  authority change was performed
+
+## Later Ordinary-Language Repair Pass
+
+A later bounded ordinary check exposed four related implementation observations:
+
+1. `What's up?` was not consistently recognized as a self-state check-in.
+2. A bare `What?` could produce another uncertainty scaffold instead of a
+   contextual rephrase.
+3. Natural correction language such as `When I say X, I mean Y` could be
+   mistaken for a new reasoning request, allowing unrelated knowledge or an
+   internal answer-shape label into visible speech.
+4. A two-part check-in plus current-session summary could treat the requested
+   response format as a third question and retrieve unrelated academic content.
+
+The repair pass now:
+
+- recognizes colloquial and embedded self-state check-ins;
+- treats bare confusion cues as bounded rephrase requests;
+- distinguishes a correction confirmation from a substantive follow-up;
+- carries natural quoted corrections into the Dialogue Workspace;
+- separates response-format directives from content obligations;
+- preserves deliberate paragraph boundaries through visible-speech selection,
+  NLO, Voice, and repair;
+- summarizes only bounded visible current-session conversation for this shape;
+- prevents weak connective terms from selecting unrelated approved knowledge;
+- blocks internal route labels from visible speech; and
+- keeps response coverage signal-based for self-state and session-summary work.
+
+The exact repaired sequence passes synthetic end-to-end Chat tests with both
+requested parts covered, no unrelated knowledge seed, no internal scaffold, and
+all memory/training/autonomy guards unchanged. At Aleks's request, stabilization
+stopped at non-interactive verification and reinstall rather than repeating a
+final live Q&A.
 
 ## Earlier Verification
 

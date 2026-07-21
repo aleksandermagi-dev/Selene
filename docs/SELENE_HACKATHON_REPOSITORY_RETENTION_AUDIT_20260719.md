@@ -226,6 +226,15 @@ tab-level components and lazy-load major areas such as Corpus, Evidence,
 Vessel, Teaching, and diagnostics. That should be a separate behavior-
 preserving frontend checkpoint with focused navigation and build checks.
 
+## Post-Audit Status Update — July 21, 2026
+
+The warning analyzed above was resolved through frontend modularization rather
+than deletion of source, tests, or historical evidence. The final verified
+production build contains a 415.84 kB main application chunk and a 193.81 kB
+React runtime chunk; the former approximately 586 kB single-bundle warning did
+not return. This confirms the audit's recommendation that repository deletion
+was not the proportional solution.
+
 ## Recommended Hackathon Order
 
 1. Checkpoint the current dirty implementation intentionally without including

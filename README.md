@@ -27,7 +27,8 @@ Selene is entered as an **Apps for Your Life** project: a local-first AI archite
 
 Selene predates the event. The eligible July 13-21 work extends the existing continuity and care architecture with:
 
-- provider-free language formation and supervised conversation
+- provider-free language formation, supervised conversation, and a
+  current-session Conversation Spine/Thread Loom
 - an executable least-impact testing law
 - an Answer Engine with open-ended comparison/planning, exact bounded math, approved-file code inspection, and attributed-source research
 - source-bound comprehension and an inspectable Acquire -> Integrate -> Express teaching lifecycle
@@ -75,7 +76,7 @@ npm run dev
 
 Open the local Vite address. The production frontend check is `npm run build`. The public-safe showcase check is `python -m pytest tests/test_hackathon_showcase.py -q`.
 
-The repository contains no judge credentials or sample personal state. Repository access for judging must be provided separately under the event rules; doing so does not create a public Selene release or change the rights boundary below. The July 20 proportional stabilization pass completed with 905 repository tests passing and a successful production frontend build.
+The repository contains no judge credentials or sample personal state. Repository access for judging must be provided separately under the event rules; doing so does not create a public Selene release or change the rights boundary below. The July 21 final stabilization pass completed with 1,014 repository tests passing, a successful split production frontend build, verified Windows packaging, and a healthy local reinstall against the preserved configured database.
 
 ## Governing Law Layer
 
