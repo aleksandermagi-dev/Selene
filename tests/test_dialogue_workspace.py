@@ -317,3 +317,32 @@ def test_dialogue_workspace_routes_are_status_only_and_idempotent(tmp_path):
     assert second["session_id"] == session_id
     assert conn.execute("SELECT COUNT(*) FROM selene_dialogue_workspaces WHERE session_id = ?", (session_id,)).fetchone()[0] == 1
     assert dialogue_workspace_status(conn, session_id)["provenance_boundary"].startswith("session_scoped")
+
+
+def test_dialogue_workspace_persists_a_session_only_thread_braid_across_turns(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    first_text = "Plan the garden layout."
+    first = prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": first_text, "intent_decision": classify_chat_intent(first_text)},
+    )
+    second_text = "Separately, work out the water schedule."
+    second = prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": second_text, "intent_decision": classify_chat_intent(second_text)},
+    )
+    third_text = "Back to the garden layout: using that, revise bed placement."
+    third = prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": third_text, "intent_decision": classify_chat_intent(third_text)},
+    )
+
+    first_braid = first["pragmatics"]["thread_braid"]
+    second_braid = second["pragmatics"]["thread_braid"]
+    third_braid = third["pragmatics"]["thread_braid"]
+    assert second_braid["turn_traversal"][0]["action"] == "branch"
+    assert third_braid["turn_traversal"][0]["action"] == "revise_with_dependency"
+    assert third_braid["turn_traversal"][0]["thread_id"] == first_braid["active_thread_id"]
+    assert third_braid["turn_traversal"][0]["dependency_thread_id"] == second_braid["active_thread_id"]
+    assert dialogue_workspace_status(conn, session_id)["pragmatics"]["thread_braid"]["session_scoped_only"] is True
+    assert third["memory_write_active"] is False

@@ -57,6 +57,40 @@ def test_conversation_spine_collects_one_shared_grounding_packet():
     assert spine["authority_change"] is False
 
 
+def test_conversation_spine_exposes_the_dialogue_workspaces_shared_thread_braid():
+    prompt = "Plan the garden. Then move to irrigation. Back to the garden: use that to revise it."
+    dialogue = _dialogue(prompt, topic="garden")
+    braid = {
+        "status": "conversation_thread_braid_ready",
+        "braided": True,
+        "active_thread_id": "garden",
+        "turn_traversal": [
+            {"index": 1, "thread_id": "garden", "action": "start"},
+            {"index": 2, "thread_id": "water", "action": "branch"},
+            {
+                "index": 3,
+                "thread_id": "garden",
+                "action": "revise_with_dependency",
+                "dependency_thread_id": "water",
+            },
+        ],
+    }
+    dialogue["pragmatics"]["thread_braid"] = braid
+    spine = build_conversation_spine(
+        {
+            "session_id": 15,
+            "prompt": prompt,
+            "intent_decision": classify_chat_intent(prompt),
+            "dialogue_workspace": dialogue,
+        }
+    )
+
+    assert spine["version"] == "v2_braided_turn_grounding"
+    assert spine["thread_braid"] == braid
+    assert spine["thread_traversal"] == braid["turn_traversal"]
+    assert spine["session_scoped_only"] is True
+
+
 def test_conversation_spine_carries_the_previous_recommendation_into_a_callback():
     prompt = "Why do you prefer the two-zone trial first, and what would make you change it?"
     contextual = {

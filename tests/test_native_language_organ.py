@@ -4,6 +4,7 @@ from selene.chat_intent import classify_chat_intent
 from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.native_language_organ import _reasoned_answer_frames, realize_native_language
+from selene.conversation_thread_loom import build_thread_braid
 
 
 def _conn(tmp_path):
@@ -104,7 +105,7 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
 
     discourse = result["discourse_plan"]["supported_discourse"]
 
-    assert result["version"] == "v18_compositional_special_expression"
+    assert result["version"] == "v19_braided_discourse_expression"
     assert discourse["status"] == "supported_discourse_plan_ready"
     assert discourse["thesis_unit_id"]
     assert [item["role"] for item in discourse["paragraph_plan"]] == [
@@ -175,6 +176,51 @@ def test_nlo_uses_expression_guidance_as_optional_voice_handoff_not_emotion_clai
     assert result["voice_handoff"]["expression_guidance"]["meaning_may_not_change"] is True
     assert result["discourse_plan"]["affect_guidance_changes_meaning"] is False
     assert "supported part" in result["candidate_text"]
+    _assert_locked(result)
+
+
+def test_nlo_uses_the_shared_thread_braid_for_discourse_moves(tmp_path):
+    conn = _conn(tmp_path)
+    prompt = (
+        "Explain the garden layout. Then move to the water schedule. "
+        "Back to the garden layout: using that, revise bed placement."
+    )
+    braid = build_thread_braid({"session_id": 14, "prompt": prompt})
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "selected_route": "answer_now",
+            "content_seed": (
+                "Place the beds along the sunny edge. Check the water schedule next. "
+                "Then revise the bed spacing so the schedule can serve each row."
+            ),
+            "intent_decision": classify_chat_intent(prompt),
+            "dialogue_workspace": {
+                "active_topic": "garden layout",
+                "pragmatics": {
+                    "utterance_units": [
+                        {"id": "one", "text": "Explain the garden layout.", "kind": "direct_request"},
+                        {"id": "two", "text": "Then move to the water schedule.", "kind": "direct_request"},
+                        {
+                            "id": "three",
+                            "text": "Back to the garden layout: using that, revise bed placement.",
+                            "kind": "direct_request",
+                        },
+                    ],
+                    "thread_braid": braid,
+                },
+            },
+        },
+    )
+
+    assert result["meaning_packet"]["dialogue_workspace"]["thread_braid"] == braid
+    assert result["discourse_plan"]["thread_braid"] == braid
+    assert result["discourse_plan"]["braided_discourse_used"] is True
+    assert "preserve_prior_thread_while_addressing_branch" in result["discourse_plan"]["moves"]
+    assert "resume_prior_thread_with_dependency_update" in result["discourse_plan"]["moves"]
+    assert result["discourse_plan"]["supported_discourse"]["thread_traversal"] == braid["turn_traversal"]
+    assert "water schedule" in result["candidate_text"]
     _assert_locked(result)
 
 

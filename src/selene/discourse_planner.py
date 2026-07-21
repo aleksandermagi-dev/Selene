@@ -37,6 +37,7 @@ def build_supported_discourse_plan(payload: dict[str, Any] | None = None) -> dic
     obligations = [item for item in payload.get("response_obligations") or [] if isinstance(item, dict)][:12]
     correction = payload.get("correction_refinement") if isinstance(payload.get("correction_refinement"), dict) else {}
     answer_support = payload.get("answer_support") if isinstance(payload.get("answer_support"), dict) else {}
+    thread_braid = payload.get("thread_braid") if isinstance(payload.get("thread_braid"), dict) else {}
     units = _content_units(
         seed,
         payload.get("support_points"),
@@ -62,6 +63,9 @@ def build_supported_discourse_plan(payload: dict[str, Any] | None = None) -> dic
             "thesis_unit_id": next((item["id"] for item in units if item["role"] == "thesis"), ""),
             "content_units": units,
             "obligation_bindings": bindings,
+            "thread_braid": thread_braid,
+            "thread_traversal": thread_braid.get("turn_traversal") or [],
+            "thread_obligation_bindings": _thread_obligation_bindings(bindings, obligations),
             "uncovered_obligation_ids": uncovered,
             "all_obligations_grounded": not uncovered,
             "paragraph_plan": paragraphs,
@@ -163,9 +167,36 @@ def _bind_obligations(obligations: list[dict[str, Any]], units: list[dict[str, A
                 "grounded": grounded,
                 "coverage_state": "covered_by_supported_content" if grounded else "supported_content_gap",
                 "binding_confidence": "bounded_lexical" if grounded else "unresolved",
+                "thread_id": str(obligation.get("thread_id") or ""),
+                "thread_action": str(obligation.get("thread_action") or ""),
+                "thread_traversal_index": int(obligation.get("thread_traversal_index") or 0),
+                "dependency_thread_id": str(obligation.get("dependency_thread_id") or ""),
             }
         )
     return bindings
+
+
+def _thread_obligation_bindings(
+    bindings: list[dict[str, Any]],
+    obligations: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    obligation_by_id = {str(item.get("id") or ""): item for item in obligations}
+    return [
+        {
+            "thread_id": str(item.get("thread_id") or ""),
+            "thread_action": str(item.get("thread_action") or ""),
+            "thread_traversal_index": int(item.get("thread_traversal_index") or 0),
+            "dependency_thread_id": str(item.get("dependency_thread_id") or ""),
+            "obligation_id": str(item.get("obligation_id") or ""),
+            "content_unit_ids": item.get("content_unit_ids") or [],
+            "grounded": item.get("grounded") is True,
+            "source_text": str(
+                obligation_by_id.get(str(item.get("obligation_id") or ""), {}).get("source_text") or ""
+            ),
+        }
+        for item in bindings
+        if str(item.get("thread_id") or "")
+    ]
 
 
 def _role_bonus(kind: str, role: str, text: str) -> float:

@@ -7,6 +7,7 @@ from hashlib import sha256
 from typing import Any
 
 from .input_detangler import detangle_user_input
+from .conversation_thread_loom import build_thread_braid
 from .registry import truncate
 
 
@@ -121,14 +122,41 @@ def prepare_dialogue_turn(
         corrections.append({**correction, "status": "active_refinement"})
     preferences = dict(prior.get("preferences") or {})
     preferences.update(_session_preferences(interpreted_text))
-    side_topics = list(dict.fromkeys([*list(prior.get("side_topics") or []), *[_topic(item) for item in questions[1:] if _topic(item)]]))[-12:]
+    utterance_units = _utterance_units(interpreted_text)
+    prior_pragmatics = prior.get("pragmatics") if isinstance(prior.get("pragmatics"), dict) else {}
+    thread_braid = build_thread_braid(
+        {
+            "session_id": session_id,
+            "prompt": interpreted_text,
+            "utterance_units": utterance_units,
+            "prior_braid": prior_pragmatics.get("thread_braid") or {},
+            "active_topic": active_topic,
+            "thread_hints": payload.get("thread_hints") or [],
+        }
+    )
+    braided_side_topics = [
+        str(item.get("topic") or "")
+        for item in thread_braid.get("threads") or []
+        if isinstance(item, dict)
+        and str(item.get("id") or "") != str(thread_braid.get("active_thread_id") or "")
+        and str(item.get("topic") or "")
+    ]
+    side_topics = list(
+        dict.fromkeys(
+            [
+                *list(prior.get("side_topics") or []),
+                *[_topic(item) for item in questions[1:] if _topic(item)],
+                *braided_side_topics,
+            ]
+        )
+    )[-12:]
     pragmatics = {
         "dialogue_act": str(intent.get("dialogue_act") or intent.get("intent") or "direct_conversation"),
         "active_topic": active_topic,
         "resolved_reference": reference,
         "reference_candidates": (reference or {}).get("candidates") or [],
         "correction_refinement": correction,
-        "utterance_units": _utterance_units(interpreted_text),
+        "utterance_units": utterance_units,
         "question_units": questions,
         "multi_part_prompt": len(questions) > 1,
         "indirect_request": _indirect_request(interpreted_text),
@@ -138,6 +166,7 @@ def prepare_dialogue_turn(
         "previous_turn_available": bool(previous),
         "previous_turn": previous,
         "contextual_follow_up": contextual_follow_up,
+        "thread_braid": thread_braid,
     }
     state = {
         "status": "dialogue_workspace_turn_prepared",

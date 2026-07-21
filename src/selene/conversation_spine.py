@@ -52,7 +52,7 @@ def conversation_spine_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "conversation_spine_ready",
-            "version": "v1_shared_turn_grounding",
+            "version": "v2_braided_turn_grounding",
             "organ_name": "Conversation Spine",
             "scope": "current_chat_session_only",
             "carries": [
@@ -61,6 +61,7 @@ def conversation_spine_status() -> dict[str, Any]:
                 "bounded referents",
                 "previous visible answer claims and recommendations",
                 "open response obligations",
+                "session topic branches returns dependencies and landings",
                 "compatible visible source classes",
                 "separate route evidence answer memory and expression confidence",
             ],
@@ -110,6 +111,7 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         }
     )
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    thread_braid = pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {}
     previous = _previous_answer(contextual, pragmatics, payload.get("conversation_events"))
     resolved_reference = (
         pragmatic_plan.get("resolved_reference")
@@ -161,7 +163,7 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
     return _with_guards(
         {
             "status": "conversation_spine_ready",
-            "version": "v1_shared_turn_grounding",
+            "version": "v2_braided_turn_grounding",
             "organ_name": "Conversation Spine",
             "session_id": session_id,
             "turn_id": turn_id,
@@ -176,6 +178,10 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "topic_anchors": topic_anchors,
             "distinctive_terms": distinctive_terms,
             "side_topics": _text_list(dialogue.get("side_topics"), limit=12),
+            "thread_braid": thread_braid,
+            "thread_traversal": [
+                item for item in thread_braid.get("turn_traversal") or [] if isinstance(item, dict)
+            ][:20],
             "entities": [item for item in dialogue.get("entities") or [] if isinstance(item, dict)][:20],
             "referents": {
                 "resolved_current": resolved_reference or None,
@@ -421,6 +427,10 @@ def _normalize_obligation(item: dict[str, Any]) -> dict[str, Any]:
         "required": item.get("required") is not False,
         "goal": str(item.get("goal") or "answer_request"),
         "inference_level": str(item.get("inference_level") or "literal"),
+        "thread_id": str(item.get("thread_id") or ""),
+        "thread_action": str(item.get("thread_action") or ""),
+        "thread_traversal_index": int(item.get("thread_traversal_index") or 0),
+        "dependency_thread_id": str(item.get("dependency_thread_id") or ""),
     }
 
 

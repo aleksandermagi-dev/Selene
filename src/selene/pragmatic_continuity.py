@@ -30,7 +30,12 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
     pragmatic = payload.get("pragmatic_plan") if isinstance(payload.get("pragmatic_plan"), dict) else {}
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     comprehension = payload.get("comprehension") if isinstance(payload.get("comprehension"), dict) else {}
-    transition = _topic_transition(prompt, dialogue)
+    thread_braid = (
+        pragmatic.get("thread_braid")
+        if isinstance(pragmatic.get("thread_braid"), dict)
+        else (dialogue.get("thread_braid") if isinstance(dialogue.get("thread_braid"), dict) else {})
+    )
+    transition = _topic_transition(prompt, dialogue, thread_braid)
     referent = _referent_posture(prompt, dialogue, pragmatic)
     interruption = _interruption_plan(prompt, transition, dialogue)
     ending = _ending_decision(prompt, intent, pragmatic, comprehension, referent)
@@ -52,6 +57,9 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
             for item in dialogue.get("open_loops") or []
             if isinstance(item, dict) and str(item.get("id") or "")
         ],
+        "thread_braid": thread_braid,
+        "active_thread_id": str(thread_braid.get("active_thread_id") or ""),
+        "unresolved_thread_returns": thread_braid.get("unresolved_returns") or [],
         "session_scoped_only": True,
         "durable_relationship_inference": False,
         "unmarked_topic_change_is_certain": False,
@@ -62,10 +70,26 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
     }
 
 
-def _topic_transition(prompt: str, dialogue: dict[str, Any]) -> dict[str, Any]:
+def _topic_transition(
+    prompt: str,
+    dialogue: dict[str, Any],
+    thread_braid: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     lower = " ".join(prompt.lower().split())
     active = str(dialogue.get("active_topic") or "")
     side_topics = [str(item) for item in dialogue.get("side_topics") or [] if str(item).strip()]
+    braid = thread_braid if isinstance(thread_braid, dict) else {}
+    traversal = [item for item in braid.get("turn_traversal") or [] if isinstance(item, dict)]
+    if braid.get("braided") is True and len(traversal) > 1:
+        return {
+            "kind": "braided_sequence",
+            "from_topic": active,
+            "to_topic": str(braid.get("active_thread_id") or ""),
+            "resume_target": "",
+            "preserve_prior_topic": True,
+            "confidence": "explicit_or_bounded_visible_cues",
+            "thread_actions": [str(item.get("action") or "") for item in traversal],
+        }
     return_match = re.search(r"\b(?:back|return|going back) to\s+(.+?)(?:[,.!?]|$)", lower)
     if return_match:
         target = truncate(return_match.group(1).strip(" ,"), 240)

@@ -43,6 +43,31 @@ def test_interruption_pauses_without_deleting_prior_open_work():
     assert result["automatic_speech_allowed"] is False
 
 
+def test_braided_turn_reports_the_whole_sequence_instead_of_only_its_return_marker():
+    braid = {
+        "braided": True,
+        "active_thread_id": "z",
+        "turn_traversal": [
+            {"thread_id": "x", "action": "start"},
+            {"thread_id": "y", "action": "branch"},
+            {"thread_id": "x", "action": "revise_with_dependency"},
+            {"thread_id": "z", "action": "land"},
+        ],
+    }
+    result = build_pragmatic_continuity_plan(
+        {
+            "prompt": "Start with X. Move to Y. Back to X using Y. Finish with Z.",
+            "dialogue_workspace": {"active_topic": "x", "thread_braid": braid},
+            "pragmatic_plan": {"thread_braid": braid},
+        }
+    )
+
+    transition = result["topic_transition"]
+    assert transition["kind"] == "braided_sequence"
+    assert transition["thread_actions"] == ["start", "branch", "revise_with_dependency", "land"]
+    assert result["active_thread_id"] == "z"
+
+
 def test_plural_pronoun_can_use_two_candidates_but_singular_pronoun_cannot_guess_between_them():
     dialogue = {"reference_candidates": ["memory", "voice"]}
     plural = build_pragmatic_continuity_plan(

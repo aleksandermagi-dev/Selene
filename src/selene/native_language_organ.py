@@ -65,7 +65,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v18_compositional_special_expression",
+            "version": "v19_braided_discourse_expression",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -95,6 +95,8 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "optional_affect_expression_guidance",
                 "pacing_warmth_humor_reassurance_restraint_and_directness_handoff",
                 "session_topic_returns_interruptions_and_natural_stopping",
+                "single_message_and_multi_turn_thread_braiding",
+                "dependency_aware_topic_resumption",
                 "bounded_pronoun_ambiguity_and_follow_up_restraint",
                 "voice_handoff",
                 "truth_and_repetition_revision",
@@ -214,7 +216,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v18_compositional_special_expression",
+        "version": "v19_braided_discourse_expression",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -430,6 +432,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "corrections": dialogue.get("corrections") or [],
             "preferences": dialogue.get("preferences") or {},
             "open_loops": dialogue.get("open_loops") or [],
+            "thread_braid": pragmatics.get("thread_braid") or {},
             "session_scoped_only": True,
         },
         "recent_assistant_texts": recent_assistant_texts,
@@ -525,6 +528,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "answer_support": meaning.get("answer_support") or {},
             "correction_refinement": dialogue.get("correction_refinement") or {},
             "source_refs": meaning.get("source_refs") or [],
+            "thread_braid": pragmatic_plan.get("thread_braid") or dialogue.get("thread_braid") or {},
         }
     )
     pragmatic_continuity = build_pragmatic_continuity_plan(
@@ -544,6 +548,20 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         moves.insert(0, "resume_named_session_topic")
     elif transition_kind == "interruption":
         moves.insert(0, "pause_and_listen_without_closing_prior_topic")
+    thread_braid = pragmatic_plan.get("thread_braid") if isinstance(pragmatic_plan.get("thread_braid"), dict) else {}
+    braid_actions = [
+        str(item.get("action") or "")
+        for item in thread_braid.get("turn_traversal") or []
+        if isinstance(item, dict)
+    ]
+    if "branch" in braid_actions:
+        moves.append("preserve_prior_thread_while_addressing_branch")
+    if "revise_with_dependency" in braid_actions:
+        moves.append("resume_prior_thread_with_dependency_update")
+    elif "continue" in braid_actions and any(action == "resume" for action in braid_actions):
+        moves.append("resume_prior_thread_without_restarting_it")
+    if "land" in braid_actions:
+        moves.append("land_on_final_named_thread")
     ending_mode = str((pragmatic_continuity.get("ending_decision") or {}).get("mode") or "")
     if ending_mode in {"answer_and_stop_when_complete", "natural_close", "leave_room_without_pressuring"}:
         moves.append("end_without_habitual_follow_up")
@@ -613,6 +631,9 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "uncovered_obligation_ids": supported_discourse.get("uncovered_obligation_ids") or [],
         "content_generation_for_gaps_allowed": False,
         "pragmatic_continuity": pragmatic_continuity,
+        "thread_braid": thread_braid,
+        "thread_traversal": thread_braid.get("turn_traversal") or [],
+        "braided_discourse_used": thread_braid.get("braided") is True,
         "follow_up_question_by_default": False,
         "social_act_plan": social_act_plan,
         "content_light_plan": content_light_plan,

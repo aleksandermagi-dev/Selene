@@ -119,3 +119,56 @@ def test_discourse_plan_keeps_correction_content_session_scoped():
     assert correction["source"] == "current_session_correction"
     assert result["obligation_bindings"][0]["grounded"] is True
     assert result["runtime_memory_recall"] is False
+
+
+def test_discourse_plan_preserves_thread_traversal_and_dependency_bindings():
+    braid = {
+        "braided": True,
+        "turn_traversal": [
+            {"index": 1, "thread_id": "x", "action": "start"},
+            {"index": 2, "thread_id": "y", "action": "branch"},
+            {"index": 3, "thread_id": "x", "action": "revise_with_dependency", "dependency_thread_id": "y"},
+        ],
+    }
+    result = build_supported_discourse_plan(
+        {
+            "content_seed": "Place the beds first. Check the water schedule. Revise bed spacing from that schedule.",
+            "response_obligations": [
+                {
+                    "id": "x-start",
+                    "source_text": "Place the beds.",
+                    "coverage_terms": ["place", "beds"],
+                    "thread_id": "x",
+                    "thread_action": "start",
+                    "thread_traversal_index": 1,
+                },
+                {
+                    "id": "y",
+                    "source_text": "Check the water schedule.",
+                    "coverage_terms": ["water", "schedule"],
+                    "thread_id": "y",
+                    "thread_action": "branch",
+                    "thread_traversal_index": 2,
+                },
+                {
+                    "id": "x-return",
+                    "source_text": "Revise bed spacing.",
+                    "coverage_terms": ["revise", "spacing"],
+                    "thread_id": "x",
+                    "thread_action": "revise_with_dependency",
+                    "thread_traversal_index": 3,
+                    "dependency_thread_id": "y",
+                },
+            ],
+            "thread_braid": braid,
+        }
+    )
+
+    assert result["thread_traversal"] == braid["turn_traversal"]
+    assert [item["thread_action"] for item in result["thread_obligation_bindings"]] == [
+        "start",
+        "branch",
+        "revise_with_dependency",
+    ]
+    assert result["thread_obligation_bindings"][-1]["dependency_thread_id"] == "y"
+    assert result["content_generation_allowed"] is False

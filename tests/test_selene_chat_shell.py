@@ -392,7 +392,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v18_compositional_special_expression"
+    assert result["native_language_organ"]["version"] == "v19_braided_discourse_expression"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
@@ -1627,7 +1627,7 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
     assert len({result["candidate_text"] for result in results}) == len(results)
     for result in results:
         assert result["candidate_text"]
-        assert result["native_language_organ"]["version"] == "v18_compositional_special_expression"
+        assert result["native_language_organ"]["version"] == "v19_braided_discourse_expression"
         assert result["voice_preview"]["nlo_meaning_preserved"] is True
         assert "current best model" not in result["candidate_text"].lower()
         assert "response obligation" not in result["candidate_text"].lower()

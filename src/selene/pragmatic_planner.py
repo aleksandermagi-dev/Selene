@@ -86,6 +86,14 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
         # Once the turn spine exists, downstream organs share its obligation
         # identities instead of reconstructing a slightly different list.
         obligations = [dict(item) for item in spine_obligations]
+    thread_braid = (
+        conversation_spine.get("thread_braid")
+        if isinstance(conversation_spine.get("thread_braid"), dict)
+        else pragmatics.get("thread_braid")
+        if isinstance(pragmatics.get("thread_braid"), dict)
+        else {}
+    )
+    obligations = _bind_obligations_to_threads(obligations, thread_braid)
     content_seed = truncate(str(payload.get("content_seed") or ""), 1800)
     response_units = [
         {
@@ -118,6 +126,8 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
             "correction_refinement": correction,
             "response_obligations": obligations,
             "obligation_sequence": [str(item.get("id") or "") for item in obligations],
+            "thread_braid": thread_braid,
+            "thread_traversal": thread_braid.get("turn_traversal") or [],
             "response_units": response_units,
             "answer_strategy": ambiguity["answer_strategy"],
             "ambiguity": ambiguity,
@@ -127,6 +137,7 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
                 "preserve supplied content and uncertainty",
                 "leave unsupported questions visibly open",
                 "carry explicit corrections into the relevant obligation only",
+                "preserve visible topic branches, returns, dependencies, and landings",
             ],
             "response_constraints": _response_constraints(pragmatics, correction),
             "session_scoped_only": True,
@@ -363,6 +374,48 @@ def _request_kind(text: str) -> str:
     if any(token in lower for token in ("choose", "recommend", "priority", "first")):
         return "choice_or_priority"
     return "direct_request"
+
+
+def _bind_obligations_to_threads(
+    obligations: list[dict[str, Any]],
+    thread_braid: dict[str, Any],
+) -> list[dict[str, Any]]:
+    traversal = [item for item in thread_braid.get("turn_traversal") or [] if isinstance(item, dict)]
+    if not obligations or not traversal:
+        return obligations
+    bound: list[tuple[int, int, dict[str, Any]]] = []
+    for original_index, obligation in enumerate(obligations):
+        terms = set(
+            _content_terms(
+                " ".join(
+                    [
+                        str(obligation.get("source_text") or ""),
+                        str(obligation.get("topic") or ""),
+                    ]
+                ),
+                limit=40,
+            )
+        )
+        scored: list[tuple[int, int, dict[str, Any]]] = []
+        for visit_index, visit in enumerate(traversal):
+            overlap = terms & set(_content_terms(str(visit.get("text") or ""), limit=40))
+            if overlap:
+                scored.append((len(overlap), -visit_index, visit))
+        if scored:
+            scored.sort(reverse=True, key=lambda item: (item[0], item[1]))
+            visit = scored[0][2]
+            enriched = {
+                **obligation,
+                "thread_id": str(visit.get("thread_id") or ""),
+                "thread_action": str(visit.get("action") or "continue"),
+                "thread_traversal_index": int(visit.get("index") or original_index + 1),
+                "dependency_thread_id": str(visit.get("dependency_thread_id") or ""),
+            }
+            bound.append((int(visit.get("index") or original_index + 1), original_index, enriched))
+        else:
+            bound.append((len(traversal) + original_index + 1, original_index, dict(obligation)))
+    bound.sort(key=lambda item: (item[0], item[1]))
+    return [item[2] for item in bound]
 
 
 def _response_constraints(pragmatics: dict[str, Any], correction: dict[str, Any]) -> list[dict[str, Any]]:
