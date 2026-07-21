@@ -138,7 +138,7 @@ def test_nlo_routes_social_intent_through_compositional_act_realization(tmp_path
 
     social_plan = result["discourse_plan"]["social_act_plan"]
     social_realization = result["discourse_plan"]["social_act_realization"]
-    assert result["version"] == "v19_braided_discourse_expression"
+    assert result["version"] == "v20_conversation_maturity_composition"
     assert social_plan["intent"] == "greet_presently"
     assert social_realization["status"] == "social_act_realized"
     assert social_realization["whole_response_template_selected"] is False

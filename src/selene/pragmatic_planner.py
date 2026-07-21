@@ -182,6 +182,7 @@ def evaluate_response_coverage(
             "analogy",
             "constraint_preservation",
             "limitation",
+            "reason",
             "requested_output",
             "requested_section",
         }

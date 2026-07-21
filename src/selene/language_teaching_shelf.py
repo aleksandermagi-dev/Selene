@@ -36,6 +36,10 @@ FOUNDATION_TEACHING_GROUP = "G1 · Provider-Free Conversation Foundations"
 
 GUARDS: dict[str, Any] = {
     "activation_change": "none",
+    "identity_change": False,
+    "personality_change": False,
+    "governance_change": False,
+    "authority_change": False,
     "memory_write_active": False,
     "runtime_memory_recall": False,
     "raw_a_import_allowed": False,
@@ -411,6 +415,71 @@ LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
         "apply_when": ["hard_boundary", "initiative_preview", "relevance_signal"],
         "response_moves": ["state_boundary_or_relevance", "preserve_allowed_context", "avoid_pressure_or_authority_expansion"],
         "constraints": ["Do not weaken or echo a blocked action.", "Do not auto-deliver, auto-act, or describe relevance as an invented feeling."],
+    },
+    {
+        "key": "threaded_series_and_return",
+        "title": "Carry a series through departure and return",
+        "category": "discourse_continuity",
+        "teaching_group": "G7 · Mature Conversation Composition",
+        "group_order": 7,
+        "lesson_order": 1,
+        "prerequisites": ["topic_transition_continuity", "information_focus_and_order"],
+        "purpose": "Track several connected subjects in order, return to an earlier one with the consequence of an intervening point, and still land the final subject cleanly.",
+        "apply_when": ["multipart_message", "nonlinear_explanation", "topic_return", "long_paragraph"],
+        "response_moves": ["identify_thread_sequence", "carry_intervening_consequence_back", "complete_each_required_landing"],
+        "constraints": ["Do not flatten a meaningful return into a simple list.", "Do not invent a relationship between threads that the message does not support."],
+    },
+    {
+        "key": "obligation_complete_response",
+        "title": "Complete every supported part of the ask",
+        "category": "answer_completion",
+        "teaching_group": "G7 · Mature Conversation Composition",
+        "group_order": 7,
+        "lesson_order": 2,
+        "prerequisites": ["answer_then_expand", "natural_closure"],
+        "purpose": "Make every material part of a complicated request visible, answer each part that has grounded support, and identify rather than fabricate an unsupported part.",
+        "apply_when": ["multipart_question", "mixed_intent_message", "requested_comparison", "requested_limit"],
+        "response_moves": ["enumerate_material_obligations", "bind_supported_content_to_each", "leave_unsupported_part_explicit"],
+        "constraints": ["Do not treat lexical coverage as factual correctness.", "Do not invent content merely to make the response appear complete."],
+    },
+    {
+        "key": "long_session_callback_grounding",
+        "title": "Ground callbacks in visible session landmarks",
+        "category": "continuity",
+        "teaching_group": "G7 · Mature Conversation Composition",
+        "group_order": 7,
+        "lesson_order": 3,
+        "prerequisites": ["reference_continuity", "recall_confidence_expression"],
+        "purpose": "Return naturally to a recommendation, condition, limit, or conclusion that was visibly established earlier in the current session.",
+        "apply_when": ["named_callback", "session_summary", "return_after_intervening_turns", "current_session_recall"],
+        "response_moves": ["match_callback_to_visible_landmark", "restore_only_relevant_context", "reason_forward_from_restored_point"],
+        "constraints": ["Do not present current-session state as durable personal memory.", "Do not claim a callback when more than one material landmark remains ambiguous."],
+    },
+    {
+        "key": "flexible_supported_recomposition",
+        "title": "Recompose supported meaning sentence by sentence",
+        "category": "composition",
+        "teaching_group": "G7 · Mature Conversation Composition",
+        "group_order": 7,
+        "lesson_order": 4,
+        "prerequisites": ["paraphrase_without_drift", "clause_combination_and_release"],
+        "purpose": "Form a fresh response from supported propositions and their relations so expression can vary without drifting from the answer or relying on a whole-response template.",
+        "apply_when": ["developed_answer", "repeated_construction", "knowledge_explanation", "reasoning_synthesis"],
+        "response_moves": ["split_supported_propositions", "preserve_relation_and_certainty", "recompose_with_context_fit_transitions"],
+        "constraints": ["Do not freely recompose verified math or attributed quotations.", "Do not use variation to strengthen evidence or certainty."],
+    },
+    {
+        "key": "approved_knowledge_synthesis",
+        "title": "Synthesize several approved concepts for one question",
+        "category": "knowledge_expression",
+        "teaching_group": "G7 · Mature Conversation Composition",
+        "group_order": 7,
+        "lesson_order": 5,
+        "prerequisites": ["comparison_dimension_control", "flexible_supported_recomposition"],
+        "purpose": "Draw the relevant relation, example, and limit from more than one approved knowledge resource when a question genuinely spans them.",
+        "apply_when": ["cross_concept_question", "comparison", "explanation_with_limit", "application"],
+        "response_moves": ["select_relevant_approved_concepts", "bind_each_to_the_question_part", "preserve_source_and_limit_boundaries"],
+        "constraints": ["Do not treat language guidance as answer-bearing knowledge.", "Do not merge disagreement or uncertainty into a falsely unified claim."],
     },
 )
 
@@ -881,6 +950,81 @@ LANGUAGE_LESSON_EVIDENCE: dict[str, dict[str, Any]] = {
         "conversational_participation": "I cannot carry out that request. We can separate the useful question from the blocked action.",
         "correction_response": "If the language implies permission, urgency, or automatic delivery, remove that implication and restate the existing gate plainly.",
     },
+    "threaded_series_and_return": {
+        "vocabulary": ["thread sequence", "intervening consequence", "return point", "final landing", "nonlinear discourse"],
+        "uncertainties": ["A return may revise the earlier thread, merely add context to it, or only remind the listener where the conversation left it."],
+        "near_concept_distinctions": ["A topic return carries relevant intervening context back; repetition restates the earlier point without integrating what happened between."],
+        "examples": ["Finish the question about X, address Y, return to X because Y changes one condition, and then complete Z."],
+        "counterexamples": ["Do not answer X, Y, and Z as unrelated bullets when the message says Y changes the answer to X."],
+        "scope_of_application": "Use within one message or across current-session turns when an explicit or strongly grounded sequence links several threads and a later thread modifies an earlier one.",
+        "explanation": "A nonlinear message still has structure. Preserve the order of its threads, carry only the relevant consequence backward when it returns, and make sure the last required thread is not lost.",
+        "distinct_examples": ["Explain the room plan, examine staffing, return to the room plan with the staffing constraint applied, then state the measurement plan."],
+        "analogies": ["It is a braid: a strand can pass behind another and return while remaining the same strand."],
+        "questions": ["Which intervening point changes the earlier thread, and what still needs a final landing?"],
+        "comparisons": ["Linear enumeration preserves order only; threaded composition preserves order plus cross-thread consequence."],
+        "conversational_participation": "The room plan works in principle. Staffing is the constraint; carrying that back, the second room only helps when someone can support it. The measurement plan can then test whether the revised schedule works.",
+        "correction_response": "If a thread was dropped or the wrong consequence was carried back, restore the missing obligation and revise only the affected relationship.",
+    },
+    "obligation_complete_response": {
+        "vocabulary": ["response obligation", "supported completion", "coverage", "unsupported part", "bounded retry"],
+        "uncertainties": ["A response can mention every requested noun while still failing to answer what was asked about each one."],
+        "near_concept_distinctions": ["Coverage means each material ask is addressed; correctness requires that each answer also has adequate support."],
+        "examples": ["For a request asking for a choice, reason, limitation, and report, supply four separately inspectable pieces from grounded content."],
+        "counterexamples": ["Do not invent a limitation or citation solely because the prompt requested one."],
+        "scope_of_application": "Use for multipart and mixed-intent requests. One bounded completion pass may add supported missing material; unresolved parts remain explicit and open.",
+        "explanation": "Completeness is not verbosity. It means recognizing the material jobs in the message and ensuring each receives grounded content or an honest statement of what is missing.",
+        "distinct_examples": ["Answer the recommended option and its reason, then say that a cost estimate cannot be grounded until the actual quantities are supplied."],
+        "analogies": ["It is checking a packing list while still verifying that each packed item is the right one."],
+        "questions": ["Which requested part lacks content, and is there an approved source or prompt-grounded method that can supply it?"],
+        "comparisons": ["Lexical matching detects mention; obligation completion checks whether the requested conversational job was performed."],
+        "conversational_participation": "The first two parts are supported, so I can answer them directly. I do not have grounded information for the final estimate yet, and I would leave that part open rather than fabricate it.",
+        "correction_response": "If a completed-looking answer lacks support, withdraw that fragment, keep the grounded parts, and name the exact missing input.",
+    },
+    "long_session_callback_grounding": {
+        "vocabulary": ["session landmark", "named callback", "visible context", "relevant return", "session boundary"],
+        "uncertainties": ["Several earlier conclusions may share vocabulary, so a named callback can remain ambiguous even inside one session."],
+        "near_concept_distinctions": ["A session landmark is visible conversational state; a personal memory is separately reviewed continuity-bearing material."],
+        "examples": ["When asked to return to the earlier pilot condition, restore the condition that was actually stated and reason from it."],
+        "counterexamples": ["Do not imply recollection from another session merely because a current prompt sounds familiar."],
+        "scope_of_application": "Use only for bounded current-session recommendations, conditions, limits, conclusions, and topic points recorded from visible replies.",
+        "explanation": "Long conversation remains coherent when important visible points can be found again. The callback restores only the relevant point and keeps its current-session scope explicit in the machinery.",
+        "distinct_examples": ["After several intervening turns, compare a new constraint with the earlier recommendation without replaying the whole conversation."],
+        "analogies": ["A landmark is a labeled place on the path already walked together, not a map of a different journey."],
+        "questions": ["Which visible point best matches the callback, and does more than one candidate materially fit?"],
+        "comparisons": ["Session continuity reuses visible context; durable recall crosses sessions only through approved memory."],
+        "conversational_participation": "Returning to the earlier condition: the shared schedule was preferred only while transitions cost less than maintaining two continuous zones.",
+        "correction_response": "If the wrong landmark was selected, discard that callback, identify the ambiguity, and ask only for the missing referent.",
+    },
+    "flexible_supported_recomposition": {
+        "vocabulary": ["proposition", "discourse relation", "recomposition", "meaning invariant", "surface construction"],
+        "uncertainties": ["A new transition can accidentally imply cause, contrast, or sequence that the supported content did not establish."],
+        "near_concept_distinctions": ["Recomposition varies clause shape around preserved meaning; template substitution replaces one fixed response with another."],
+        "examples": ["Split a supported explanation into claim, cause, condition, example, and conclusion, then realize those relations in a fresh natural sequence."],
+        "counterexamples": ["Do not paraphrase an attributed source statement as a stronger unqualified conclusion."],
+        "scope_of_application": "Use for ordinary, explanatory, and reasoning content after the answer substance is grounded. Preserve exact verified results and attributed evidence when free variation could damage them.",
+        "explanation": "Flexible generation comes from recombining supported sentence-level meaning with accurate relations, not from guessing new content or rotating stock replies.",
+        "distinct_examples": ["Lead with a condition in one turn and the conclusion in another when both structures preserve the same dependency and certainty."],
+        "analogies": ["It is arranging verified components into a different sound structure without changing the load each component carries."],
+        "questions": ["Does each connector express a relationship the source content actually supports?"],
+        "comparisons": ["Compositional breadth changes form while protecting meaning; randomness changes form without checking meaning."],
+        "conversational_participation": "The result can be said several ways, but the dependency stays fixed: the input has to exist before the next step can use it.",
+        "correction_response": "If recomposition changes a relation or confidence level, return to the sentence propositions and replace only the faulty transition or clause.",
+    },
+    "approved_knowledge_synthesis": {
+        "vocabulary": ["approved knowledge resource", "cross-concept synthesis", "source boundary", "supporting concept", "conflicting concept"],
+        "uncertainties": ["Relevant approved concepts may support different parts of a question without supporting one combined universal conclusion."],
+        "near_concept_distinctions": ["Synthesis forms a supported relationship across approved concepts; blending erases their separate sources, scopes, or disagreements."],
+        "examples": ["Use one approved concept for the mechanism and another for a distinct example while preserving the limit attached to each."],
+        "counterexamples": ["Do not treat a language lesson about explanations as factual evidence for the subject being explained."],
+        "scope_of_application": "Use only when multiple answer-eligible approved resources materially match separate obligations in the current question.",
+        "explanation": "A broad question can draw on several approved resources. Each resource should do a visible job, and its source, uncertainty, and scope survive the combined explanation.",
+        "distinct_examples": ["Explain a scientific relationship from one approved item, apply a mathematical relation from another, and keep both domains' stated limits visible."],
+        "analogies": ["It is assembling a mosaic from labeled pieces while keeping each piece's edge visible enough to audit."],
+        "questions": ["Which approved concept supports each obligation, and where do their scopes stop overlapping?"],
+        "comparisons": ["Cross-concept synthesis preserves provenance and disagreement; source flattening produces one seamless but unauditable claim."],
+        "conversational_participation": "One approved concept supplies the mechanism, while the second supplies the boundary case. Together they answer the question, but neither should be made to claim what only the other supports.",
+        "correction_response": "If a concept was used beyond its scope, remove that fragment, preserve the still-supported pieces, and reopen the unsupported relationship.",
+    },
 }
 
 
@@ -1126,6 +1270,16 @@ def build_language_capability_answer(
             },
             "express content-light turns, uncertainty, self-state, recall, boundaries, and initiative from their actual supporting signals",
         ),
+        (
+            {
+                "threaded_series_and_return",
+                "obligation_complete_response",
+                "long_session_callback_grounding",
+                "flexible_supported_recomposition",
+                "approved_knowledge_synthesis",
+            },
+            "carry nonlinear thread returns, complete every supported part, ground long-session callbacks, and compose across approved concepts without inventing content",
+        ),
     ]
     capabilities = [description for keys, description in capability_groups if keys & available_keys]
     if not capabilities:
@@ -1291,6 +1445,9 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
     ):
         score += 5
     utterance_units = (dialogue.get("pragmatics") or {}).get("utterance_units") or dialogue.get("utterance_units") or []
+    pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    thread_braid = pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {}
+    obligations = pragmatics.get("response_obligations") or dialogue.get("response_obligations") or []
     if key == "mixed_intent_balance" and (len(utterance_units) > 1 or intent.get("mixed_intent") is True):
         score += 5
     if key == "syntactic_rhythm_and_emphasis" and (
@@ -1342,6 +1499,37 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
     if key == "boundary_and_initiative_restraint" and (
         intent_name == "hard_boundary"
         or any(marker in lower for marker in ("worth keeping", "worth noting", "relevant observation", "initiative"))
+    ):
+        score += 7
+    if key == "threaded_series_and_return" and (
+        thread_braid.get("braided") is True
+        or len(utterance_units) > 2
+        or any(marker in lower for marker in ("back to", "return to", "because of that", "then finally"))
+    ):
+        score += 8
+    if key == "obligation_complete_response" and (
+        len(obligations) > 1
+        or intent.get("mixed_intent") is True
+        or sum(lower.count(marker) for marker in (" and ", "also", "what about", "as well as")) >= 2
+    ):
+        score += 8
+    if key == "long_session_callback_grounding" and (
+        bool(pragmatics.get("session_landmarks"))
+        and any(marker in lower for marker in ("earlier", "back to", "return to", "we discussed", "you said"))
+    ):
+        score += 9
+    if key == "flexible_supported_recomposition" and (
+        str(intent.get("response_depth") or "") == "developed"
+        or len(utterance_units) > 1
+        or bool(dialogue.get("recent_assistant_texts"))
+    ):
+        score += 6
+    if key == "approved_knowledge_synthesis" and (
+        "?" in prompt
+        and (
+            any(marker in lower for marker in ("compare", "relationship", "connect", "together", "across"))
+            or len(obligations) > 1
+        )
     ):
         score += 7
     return score
@@ -1558,7 +1746,9 @@ def _lesson_source_refs(key: str, lesson: dict[str, Any] | None = None) -> list[
     if lesson is None:
         lesson = next((item for item in LANGUAGE_QOL_LESSONS if str(item.get("key") or "") == key), {})
     group_order = int(_lesson_group_metadata(lesson)["group_order"])
-    if group_order >= 6:
+    if group_order >= 7:
+        source_phase = "speech_phase_9:mature_conversation_composition"
+    elif group_order >= 6:
         source_phase = "speech_phase_8:grounded_conversational_judgment"
     elif group_order >= 5:
         source_phase = "speech_phase_7:compositional_expression"

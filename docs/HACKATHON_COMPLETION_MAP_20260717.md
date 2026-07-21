@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This map reconciles the repository as it exists on July 17, 2026 with the two
+This map reconciles the repository as verified on July 21, 2026 with the two
 paused roadmaps:
 
 1. the language, Answer Engine, domain-adapter, and teaching-lifecycle plan;
@@ -22,10 +22,10 @@ submission.
 - Branch inspected: `evidence`
 - Pre-event baseline recorded by the project: `c8f0795`
 - Event-window work begins at: `63557c6`
-- Current committed checkpoint: `27decfb`
+- Latest committed foundation before the conversation-maturity pass: `c05fe24`
 - The branch is ahead of `origin/evidence`.
-- Existing related language, curriculum, showcase, test, and documentation work
-  remains uncommitted and must be preserved.
+- The conversation-maturity pass was verified across the complete repository
+  before its final checkpoint.
 - `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` remains the chronological evidence log;
   this file does not replace or silently modify it.
 
@@ -56,7 +56,10 @@ completion gate.
 - dialogue fluency improvements
 - structured semantic formation
 - session-scoped dialogue workspace
-- multi-part response obligations and response-coverage checks
+- multi-part response obligations, conservative response-coverage checks, and
+  one supported non-recursive completion pass
+- current-session Conversation Spine landmarks plus Thread Loom branches,
+  returns, dependencies, and final landings
 - bounded implication, ellipsis, correction, and immediate reference handling
 - bounded input detangling that preserves the raw message and does not guess
   ambiguous repairs
@@ -76,7 +79,8 @@ Cocoon demonstration panel.
 
 - route, evidence, answer, memory, and expression confidence remain separate
 - answer-first obligations and graceful stopping are represented
-- one bounded completion retry exists for comparison/planning
+- one bounded completion retry can complete missing obligations from approved
+  knowledge or prompt-grounded method across ordinary answer routes
 - open-ended comparison and planning can reason toward a best-current answer
   without requiring a known answer in advance
 - exact arithmetic has checked results and an unsupported-operation path
@@ -117,10 +121,12 @@ The bounded lesson-shelf machinery exists for uncertainty, answering first,
 clarification, references, register, transitions, follow-up restraint,
 variation, and natural closure.
 
-Status: **provider-free speech teaching is complete at the current bounded text
-foundation, and five reviewed F1 curriculum groups containing 36 foundations
-are retained**. Broader schooling remains ordered follow-on work, not a
-hackathon blocker.
+Status: **provider-free speech teaching now contains seven ordered groups and
+36 language capabilities, and five reviewed F1 curriculum groups containing 36
+academic foundations are retained**. G7 covers nonlinear series and returns,
+supported multipart completion, visible long-session callbacks, flexible
+recomposition, and synthesis across approved concepts. Broader schooling
+remains ordered follow-on work, not a hackathon blocker.
 
 ### Private Metacognition Work
 
@@ -149,9 +155,9 @@ review inventory remain outside the public demo.
 | Acquire -> Integrate -> Express | Complete and visible in Cocoon | Include in demo |
 | Phase 5 language lessons | Current provider-free text foundation taught; broader curriculum remains | Mention, do not broaden before submission |
 | Affect Expression Bridge | Bounded affect-to-language guidance connected | Demonstrate only through ordinary use if useful |
-| Expanded pragmatic dialogue | Bounded immediate dialogue and repair connected | Foundation, not a separate stress test |
+| Expanded pragmatic dialogue | Bounded current-session dialogue, Thread Loom, visible landmarks, and repair connected | Demonstrate gently if useful; no stress test |
 | Long-form discourse planner | Grounded bounded discourse planning connected | Mention honestly; do not claim mature-model breadth |
-| Multi-domain Answer Engine synthesis | Not complete | Defer |
+| Cross-concept approved-knowledge synthesis | Connected at bounded per-obligation scope | Mention honestly; broad domain synthesis remains deferred |
 | Ordinary Chat execution of Answer Engine adapters | Math, research, and comparison connected; code inspection deliberately excluded | Demonstrate math or planning briefly |
 | Private Metacognition Miner | Current pass complete | Keep private; do not demo source material |
 | Metacognitive blueprint review | Private inventory ready for human review | Post-hackathon review |
@@ -280,10 +286,10 @@ submission work.
 
 - broad Phase 5 language curriculum
 - broader affect-to-language range beyond the bounded bridge
-- mature-model breadth for mixed intent, pronouns, interruptions, and rapid
-  topic handling beyond the current bounded dialogue support
+- mature-model breadth for highly ambiguous multi-speaker exchanges and
+  unbounded context beyond the current session
 - mature-model breadth for long-form thesis and discourse planning
-- multi-domain Answer Engine synthesis
+- broad multi-domain synthesis beyond approved per-obligation concept use
 - symbolic or advanced mathematics
 - ordinary Chat access to local-code inspection or autonomous filesystem access
 - metacognitive capability beyond the bounded observer

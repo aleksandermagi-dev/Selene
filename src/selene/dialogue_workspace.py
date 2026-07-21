@@ -50,6 +50,7 @@ def dialogue_workspace_status(conn: sqlite3.Connection, session_id: int) -> dict
                 "completed_loops": [],
                 "corrections": [],
                 "preferences": {},
+                "session_landmarks": [],
                 "review_destination": "Status",
                 "review_status": "status_only",
                 "provenance_boundary": DIALOGUE_BOUNDARY,
@@ -167,6 +168,9 @@ def prepare_dialogue_turn(
         "previous_turn": previous,
         "contextual_follow_up": contextual_follow_up,
         "thread_braid": thread_braid,
+        "session_landmarks": [
+            item for item in prior_pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
+        ][-24:],
     }
     state = {
         "status": "dialogue_workspace_turn_prepared",
@@ -216,6 +220,17 @@ def record_dialogue_response(
             completed.append({**item, "status": "answered_in_current_turn"})
         else:
             open_loops.append(item)
+    pragmatics = state.get("pragmatics") if isinstance(state.get("pragmatics"), dict) else {}
+    prior_landmarks = [
+        item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
+    ]
+    new_landmarks = _response_landmarks(
+        candidate,
+        active_topic=str(state.get("active_topic") or ""),
+        thread_braid=pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {},
+        coverage=coverage,
+    )
+    session_landmarks = _merge_landmarks(prior_landmarks, new_landmarks)
     updated = {
         **state,
         "status": "dialogue_workspace_response_recorded",
@@ -223,9 +238,11 @@ def record_dialogue_response(
         "completed_loops": completed[-30:],
         "last_selene_preview": truncate(candidate, 360),
         "pragmatics": {
-            **(state.get("pragmatics") if isinstance(state.get("pragmatics"), dict) else {}),
+            **pragmatics,
             "last_response_coverage": coverage,
+            "session_landmarks": session_landmarks,
         },
+        "session_landmarks": session_landmarks,
         "review_destination": "Status",
         "review_status": "status_only",
         "provenance_boundary": DIALOGUE_BOUNDARY,
@@ -281,6 +298,7 @@ def _upsert(conn: sqlite3.Connection, state: dict[str, Any]) -> None:
 
 def _decode(row: sqlite3.Row) -> dict[str, Any]:
     item = dict(row)
+    pragmatics = _loads(item.get("state_json"), {})
     return _with_guards(
         {
             "status": "dialogue_workspace_ready",
@@ -297,7 +315,10 @@ def _decode(row: sqlite3.Row) -> dict[str, Any]:
             "last_dialogue_act": item.get("last_dialogue_act"),
             "last_user_preview": item.get("last_user_preview"),
             "last_selene_preview": item.get("last_selene_preview"),
-            "pragmatics": _loads(item.get("state_json"), {}),
+            "pragmatics": pragmatics,
+            "session_landmarks": [
+                value for value in pragmatics.get("session_landmarks") or [] if isinstance(value, dict)
+            ][-24:],
             "created_at": item.get("created_at"),
             "updated_at": item.get("updated_at"),
             "review_destination": "Status",
@@ -528,6 +549,62 @@ def _indirect_request(text: str) -> dict[str, Any]:
 
 def _quotes(text: str) -> list[str]:
     return [truncate(item.strip(), 240) for item in re.findall(r'["“](.*?)["”]', text) if item.strip()][:8]
+
+
+def _response_landmarks(
+    candidate: str,
+    *,
+    active_topic: str,
+    thread_braid: dict[str, Any],
+    coverage: dict[str, Any],
+) -> list[dict[str, Any]]:
+    if not candidate.strip():
+        return []
+    active_thread = str(thread_braid.get("active_thread_id") or "")
+    sentences = [
+        truncate(item.strip(), 480)
+        for item in re.split(r"(?<=[.!?])\s+|\n+", candidate)
+        if item.strip()
+    ]
+    landmarks: list[dict[str, Any]] = []
+    for index, sentence in enumerate(sentences[:10]):
+        lower = sentence.lower()
+        kind = (
+            "condition"
+            if re.search(r"\b(?:if|unless|when|would change|reopen)\b", lower)
+            else "recommendation"
+            if re.search(r"\b(?:recommend|should|start with|first|next step|prefer|choose|use)\b", lower)
+            else "limit"
+            if re.search(r"\b(?:limit|cannot|can't|does not|doesn't|however|but)\b", lower)
+            else "conclusion"
+        )
+        digest = sha256(f"{active_thread}|{sentence.lower()}".encode("utf-8")).hexdigest()[:12]
+        landmarks.append(
+            {
+                "id": f"session_landmark_{digest}",
+                "kind": kind,
+                "summary": sentence,
+                "topic": truncate(active_topic, 240),
+                "thread_id": active_thread,
+                "response_position": index,
+                "coverage_complete_at_recording": coverage.get("all_required_addressed") is True,
+                "source": "visible_selene_response",
+                "scope": "current_session_only",
+            }
+        )
+    return landmarks
+
+
+def _merge_landmarks(existing: list[dict[str, Any]], new: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in [*existing, *new]:
+        key = str(item.get("id") or "") or " ".join(str(item.get("summary") or "").lower().split())
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        merged.append(item)
+    return merged[-24:]
 
 
 def _loop_id(session_id: int, question: str, index: int) -> str:

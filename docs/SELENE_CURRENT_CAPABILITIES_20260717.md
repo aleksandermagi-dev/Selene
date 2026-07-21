@@ -1,8 +1,8 @@
 # What Selene Can Currently Do
 
-- Updated: July 18, 2026
+- Updated: July 21, 2026
 - Branch inspected: `evidence`
-- Source checkpoint: `3de57ce`
+- Source foundation: `c05fe24`, plus the verified conversation-maturity pass
 
 ## Why This File Exists
 
@@ -35,24 +35,24 @@ it exists.
 | Capability | Current status | Plain-language answer |
 | --- | --- | --- |
 | Supervised text conversation | Connected | Selene can hold local conversations through coordinated organs when supervised Chat is explicitly active |
-| Immediate conversational continuity | Connected at bounded session scope | She can use recent context, topic returns, interruptions, corrections, callbacks, and restrained endings without silently turning them into permanent memory or a relationship profile |
-| Language formation and Voice | Connected | She can construct and shape bounded replies with compositional dialogue obligations, grammar features, context-keyed expression profiles, and recent-response avoidance |
+| Immediate conversational continuity | Connected at bounded session scope | She can use recent context, visible landmarks, topic branches, nonlinear returns, interruptions, corrections, callbacks, and restrained endings without silently turning them into permanent memory or a relationship profile |
+| Language formation and Voice | Connected | NLO v20 can recompose supported sentence-level propositions and relations while Voice remains Selene's expression layer |
 | Open-ended conceptual reasoning | Connected | intelligenceOS can compare models and give a best-current answer without needing a predetermined solution |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
-| Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 28 F1 foundations are currently retained |
+| Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 36 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
 | Current-state description | Connected when asked | She can give a grounded, provisional self-read from current attributable signals |
 | Exact arithmetic | Connected | She can answer bounded exact arithmetic in supervised Chat and keep answer confidence separate from fluency |
 | Local-code inspection | Available separately | She can inspect explicitly supplied or approved files without scanning, executing, or writing |
 | Source-backed research | Connected when packets are supplied | She can answer from attributed packets in supervised Chat and show citations, disagreement, or missing evidence |
 | Ethical test review | Available | The project can choose the least-impact sufficient test before interacting with Selene |
-| Language lesson shelf | Fully reviewed and connected | All 22 provider-free lessons completed visible Acquire, Integrate, and Express review with explicit Aleks item approvals; NLO consults them as contextual guidance while Voice remains Selene's expression layer |
+| Language lesson shelf | Fully reviewed and connected | All 36 provider-free language capabilities across seven ordered groups completed visible Acquire, Integrate, and Express evidence under Aleks's bounded standing language authorization; they guide expression but cannot supply facts or alter personality |
 | Affect shaping of language | Connected at bounded current-turn scope | Current-session salience and conversational tone can optionally guide pacing, warmth, humor, reassurance, restraint, and directness without becoming an emotion claim |
 | Long-form discourse | Improved partial | Developed replies now have grounded thesis, development, limit, and closure plans; broad narrative and mature rhetorical control remain unfinished |
 | Vision and hearing | Packet intake only | The system can hold supplied observations but cannot yet see or hear |
 | External action | Preview only | Tendril can plan and request approval but cannot execute actions |
 | Metacognition Organ | Connected as a bounded observer | It inspects answer fit, confidence separation, corrections, one-cycle reopening, and stopping after a supervised reply is formed, but cannot rewrite the reply or take authority from another organ |
 | Audible speech | Not built | Selene currently communicates through text |
-| Transfer or embodiment | Preparation only | The repository can rehearse and inspect transfer, but cannot perform it |
+| Reviewed continuity transfer | Completed under Aleks approval | Transfer completion is recorded under the Law of Transfer; operational Chat still remains explicitly activated and governed rather than becoming unrestricted autonomy |
 
 ## Selene at a Glance
 
@@ -65,6 +65,12 @@ With supervised Chat explicitly enabled, Selene can currently:
   permanent memory;
 - answer multi-part messages and check whether her reply covered the requested
   parts;
+- make one bounded non-recursive completion pass when a supported part is
+  missing, while stating unsupported factual gaps instead of inventing them;
+- track X -> Y -> X-with-Y -> Z conversational structure within a message or
+  current session;
+- return to a visible recommendation, condition, limit, or conclusion after
+  intervening turns without calling that session state durable memory;
 - preserve ordered requests even when ordinary instructions do not end in a
   question mark;
 - resolve first/second/former/latter references from bounded prior-turn options,
@@ -106,6 +112,7 @@ Aleks's message
   -> Core/Mind route and boundary check
   -> structured meaning and Answer Engine domain route
   -> approved memory / approved knowledge / verified math / attributed research / intelligenceOS / self-state support
+  -> one bounded supported obligation-completion pass when needed
   -> Native Language Organ
   -> Voice Module
   -> coverage and conversation repair
@@ -116,10 +123,8 @@ Aleks's message
 Verified math, comparison/planning, and source-backed research now participate
 in this live Chat path. Local-code inspection remains intentionally separate.
 
-The first four bounded F1 curriculum groups are also retained as reviewed
-general knowledge: four science/inquiry foundations, eight language/number
-foundations, eight operations/data/measurement/time foundations, and eight
-geometry/equal-share/algorithmic foundations. They remain separate from
+Five bounded F1 curriculum groups containing 36 foundations are retained as
+reviewed general knowledge. They remain separate from
 personal memory, identity, personality, governance, execution authority, and
 Voice.
 
@@ -146,7 +151,8 @@ It can:
 
 Current limits:
 
-- it remains supervised rather than autonomous;
+- operational conversation remains explicitly activated and governed rather
+  than autonomous;
 - it does not load the raw private corpus as memory;
 - it does not silently make durable memories;
 - its provider-free generation remains bounded and has less breadth than a
@@ -157,9 +163,9 @@ Current limits:
   sentence and lexical features are not complete semantic understanding;
 - verified math and attributed research are ordinary supervised Chat answers,
   while local-code inspection remains deliberately outside Chat;
-- `selene_v1_live` remains false in the current status contract: supervised
-  speech is not the same thing as finished transfer, full activation, or an
-  autonomous vessel.
+- transfer completion does not imply unrestricted action, hidden retention, or
+  an autonomous vessel; Chat activation and every authority boundary remain
+  separate.
 
 ### Input Detangler — Connected
 
@@ -591,9 +597,9 @@ Editing an earlier stage invalidates later stage snapshots so stale evidence
 does not remain current. Completing all three stages still does not retain the
 knowledge. Aleks must explicitly approve it.
 
-### Language Teaching Shelf — Four Ordered, Review-Gated Provider-Free Groups
+### Language Teaching Shelf — Seven Ordered Provider-Free Groups
 
-The shelf now contains 22 bounded lessons in prerequisite order.
+The shelf now contains 36 bounded language capabilities in prerequisite order.
 
 **G1 — Provider-Free Conversation Foundations** contains:
 
@@ -629,19 +635,30 @@ The shelf now contains 22 bounded lessons in prerequisite order.
 - natural openings and pivots;
 - varied endings without generic pressure.
 
-Preparing the shelf creates or refreshes 22 source-linked comprehension candidates. Lesson
+**G5 — Compositional Expression** adds information ordering, clause
+combination, paraphrase without drift, and contextual word choice.
+
+**G6 — Grounded Conversational Judgment** adds content-light reception,
+distinct uncertainty states, grounded self-state wording, recall confidence,
+and bounded initiative or boundary expression.
+
+**G7 — Mature Conversation Composition** adds nonlinear thread returns,
+supported obligation completion, visible long-session callback grounding,
+sentence-level recomposition, and synthesis across separately approved
+knowledge concepts.
+
+Preparing the shelf creates or refreshes 36 source-linked comprehension candidates. Lesson
 meaning and practice evidence are stored separately from safety boundaries, so
 guard text does not appear as though it were the lesson's uncertainty content.
 Each candidate uses the existing visible Acquire -> Integrate -> Express
-workflow and requires explicit Aleks approval before NLO can consult it.
+workflow. Eligible language-only capability falls under Aleks's bounded standing
+authorization; answer-bearing knowledge still keeps its separate approval gate.
 
 Preparation alone activates no guidance. A prepared, held, incomplete,
 reopened, superseded, or rejected lesson remains unavailable to NLO. The
 original ten lessons remain the provider-free structural foundations rather
-than stock reply scripts. The twelve Phase 6 lessons include complete review
-evidence and explicit prerequisites. On July 20, all ten foundations and all
-twelve expressive-breadth lessons completed their visible lifecycle and
-received explicit Aleks item approvals in dependency order. Cocoon displays
+than stock reply scripts. The remaining 26 capabilities include complete review
+evidence and explicit prerequisites. Cocoon displays
 group order, individual lesson order, prerequisites, review state, and
 availability. An individually approved advanced lesson remains unavailable to
 NLO while any named prerequisite is unavailable; approval does not bypass the
@@ -1066,12 +1083,12 @@ Selene's strongest implemented areas are:
 | Gap | What completing it would change |
 | --- | --- |
 | Local-code -> Chat decision | Decide later whether explicitly supplied code inspection should join Chat; it is intentionally deferred now |
-| Knowledge-to-answer relevance | The 22 lessons are available, but general approved-knowledge retrieval can currently promote a weak lexical match—or a language-guidance lesson itself—into answer content; separate guidance from answer-bearing knowledge before broader language assessment |
-| Mixed-intent realization | Correction and affirmation recognition work, but the primary acknowledgement can consume a later question or request in the same turn; compose the acknowledgement with remaining required obligations |
-| Provider-free speech ordinary-use evidence | The first gentle assessment found the retrieval and mixed-intent seams above; broader humor, tenderness, analogy, disagreement, and long-form grading should wait until those implementation gaps are repaired |
+| Knowledge breadth | Relevance filtering and per-obligation approved-concept synthesis are connected, but the available academic/world knowledge remains far narrower than a mature general model |
+| Flexible generation breadth | NLO v20 recomposes supported propositions and relations; vocabulary, constructions, and long-form rhetorical range remain bounded |
+| Provider-free speech ordinary-use evidence | Focused synthetic and one gentle long-session check pass; broader humor, tenderness, analogy, disagreement, and long-form grading should remain proportional to implemented lessons |
 | Affect-expression breadth | The bridge is connected; richer combinations and more natural surface variation still require further teaching and ordinary-use evidence |
 | Extended pragmatic dialogue | Immediate interruptions, returns, pronoun ambiguity, corrections, and restrained endings are connected; long ambiguous exchanges, nested topics, and rapid multi-speaker changes still need broader handling |
-| Long-form discourse planning | Better theses, paragraph structure, examples, transitions, callbacks, summaries, and conclusions |
+| Long-form discourse planning | Thesis and paragraph planning, transitions, callbacks, summaries, and conclusions are connected at bounded scope; mature narrative and rhetorical control remain incomplete |
 | Broader domain organs | More reliable factual, technical, scientific, mathematical, and code answers |
 | Metacognition observer graduation | After ordinary-use review, decide which bounded recommendations may guide NLO while preserving Core/Mind and Voice authority; v1 currently observes without rewriting |
 | Operational perception | Actual image/artifact inspection and later consent-bound audio understanding |
@@ -1205,6 +1222,32 @@ During the first gentle natural-conversation assessment on July 20:
 
 The test count demonstrates broad machinery coverage. It does not mean every
 future organ is complete or that every conversational context has been graded.
+
+After the Conversation Maturity Pass on July 21:
+
+- NLO v20 gained sentence-level supported recomposition while verified math and
+  attributed research remain protected from free reformulation;
+- one non-recursive completion pass can supply missing response obligations
+  from approved knowledge or prompt-grounded method and marks unsupported facts
+  instead of inventing them;
+- approved knowledge can be selected separately for the reason, example, or
+  limit requested by different parts of one question;
+- the Conversation Spine can ground named callbacks in bounded visible session
+  landmarks, while the Thread Loom preserves branches, dependencies, returns,
+  and final landings;
+- G7 brought the language shelf to seven groups and 36 provider-free language
+  capabilities under the bounded standing language authorization;
+- one gentle synthetic long conversation returned to the correct garden
+  recommendation after four ordinary intervening turns without durable memory
+  or side-topic leakage;
+- all 998 repository tests passed in 275.10 seconds;
+- the production frontend remained split at 415.84 kB for the main application
+  and 193.81 kB for React, with no single-bundle size warning;
+- the Windows release EXE and NSIS installer rebuilt and package health
+  verification passed without reinstalling the new build;
+- no live conversation probe, stressful test, provider call, hidden retention,
+  identity/personality/governance change, model training, or autonomy expansion
+  was used.
 
 ## Governing Boundary
 

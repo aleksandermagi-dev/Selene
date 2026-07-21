@@ -261,11 +261,14 @@ def _compose_clauses(
         return clauses[0]
     normalized = [item.rstrip(". ") for item in clauses]
     connector_sets = {
-        "contrast": ("However", "At the same time", "Still"),
-        "cause": ("Because of that", "So", "That means"),
-        "condition": ("From there", "In that case", "With that in place"),
-        "support": ("More importantly", "Alongside that", "A second point is that"),
-        "sequence": ("Then", "From there", "Alongside that"),
+        "contrast": ("However", "At the same time", "Still", "By contrast", "The difference is that"),
+        "cause": ("Because of that", "So", "That means", "For that reason", "The mechanism is that"),
+        "condition": ("From there", "In that case", "With that in place", "Under that condition", "If that changes"),
+        "support": ("More importantly", "Alongside that", "A second point is that", "Supporting that", "Another useful piece is that"),
+        "example": ("For example", "In a different case", "One concrete example is this"),
+        "return": ("Returning to the earlier point", "That changes the earlier point", "Back on that thread"),
+        "conclusion": ("Taken together", "The practical landing is this", "Overall"),
+        "sequence": ("Then", "From there", "Alongside that", "Next", "After that"),
     }
     digest = sha256((key or "semantic-frame").encode("utf-8")).hexdigest()
     sentences = [_sentence(normalized[0])]
@@ -274,10 +277,24 @@ def _compose_clauses(
         connectors = connector_sets.get(clause_relation, connector_sets["sequence"])
         start = int(digest[index * 2:index * 2 + 8] or digest[:8], 16) % len(connectors)
         connector = connectors[(start + index) % len(connectors)]
-        sentences.append(_sentence(f"{connector}, {_continuation_case(clause)}"))
+        if _starts_with_transition(clause):
+            sentences.append(_sentence(clause))
+        else:
+            sentences.append(_sentence(f"{connector}, {_continuation_case(clause)}"))
     if depth == "developed" and len(sentences) >= 3:
         return "\n\n".join(sentences)
     return " ".join(sentences)
+
+
+def _starts_with_transition(value: str) -> bool:
+    return bool(
+        re.match(
+            r"^(?:however|but|still|by contrast|because|so|therefore|if|when|unless|for example|for instance|"
+            r"back to|returning to|finally|overall|taken together|also|another|more importantly|alongside|then|next)\b",
+            value.strip(),
+            flags=re.IGNORECASE,
+        )
+    )
 
 
 def _verb_phrase(

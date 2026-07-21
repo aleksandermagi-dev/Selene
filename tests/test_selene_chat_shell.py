@@ -392,7 +392,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v19_braided_discourse_expression"
+    assert result["native_language_organ"]["version"] == "v20_conversation_maturity_composition"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
@@ -1627,7 +1627,61 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
     assert len({result["candidate_text"] for result in results}) == len(results)
     for result in results:
         assert result["candidate_text"]
-        assert result["native_language_organ"]["version"] == "v19_braided_discourse_expression"
+        assert result["native_language_organ"]["version"] == "v20_conversation_maturity_composition"
+
+
+def test_gentle_long_session_returns_to_a_visible_recommendation_after_intervening_topics(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "A community garden has limited water, but it wants to support both vegetables and pollinators. "
+                "Compare two approaches and recommend one small pilot to try first."
+            )
+        },
+    )["result"]
+    session_id = first["session_id"]
+    intervening_prompts = [
+        "That makes sense.",
+        "Separate question: how should we keep a short observation note?",
+        "Keep the note brief and practical.",
+        "Thanks, that gives the side question a clean shape.",
+    ]
+    intervening = []
+    for prompt in intervening_prompts:
+        intervening.append(
+            route_request(
+                conn,
+                "selene_chat.send",
+                {"session_id": session_id, "text": prompt},
+            )["result"]
+        )
+    callback = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": session_id,
+            "text": "Back to what you said about the reversible two-zone trial: what did you recommend?",
+        },
+    )["result"]
+
+    assert "reversible two-zone trial" in first["candidate_text"].lower()
+    assert len(first["dialogue_workspace"]["session_landmarks"]) >= 1
+    assert callback["contextual_follow_up"]["kind"] == "named_callback"
+    assert callback["conversation_spine"]["relevant_session_landmarks"]
+    assert "reversible two-zone trial" in callback["candidate_text"].lower()
+    assert "short observation note" not in callback["candidate_text"].lower()
+    assert callback["conversation_spine"]["session_scoped_only"] is True
+    assert callback["memory_write_active"] is False
+    assert callback["runtime_memory_recall"] is False
+    for result in [first, *intervening, callback]:
+        _assert_locked(result)
         assert result["voice_preview"]["nlo_meaning_preserved"] is True
         assert "current best model" not in result["candidate_text"].lower()
         assert "response obligation" not in result["candidate_text"].lower()

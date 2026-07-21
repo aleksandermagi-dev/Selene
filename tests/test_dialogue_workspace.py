@@ -346,3 +346,30 @@ def test_dialogue_workspace_persists_a_session_only_thread_braid_across_turns(tm
     assert third_braid["turn_traversal"][0]["dependency_thread_id"] == second_braid["active_thread_id"]
     assert dialogue_workspace_status(conn, session_id)["pragmatics"]["thread_braid"]["session_scoped_only"] is True
     assert third["memory_write_active"] is False
+
+
+def test_dialogue_workspace_keeps_bounded_visible_response_landmarks_in_session_only(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    prompt = "Which garden pilot should we run first?"
+    prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": prompt, "intent_decision": classify_chat_intent(prompt)},
+    )
+    recorded = record_dialogue_response(
+        conn,
+        {
+            "session_id": session_id,
+            "candidate_text": (
+                "I recommend the reversible garden pilot first. "
+                "If water use rises beyond the limit, I would reopen that recommendation."
+            ),
+            "coverage_evaluation": {"all_required_addressed": True, "answered_loop_ids": []},
+        },
+    )
+    restored = dialogue_workspace_status(conn, session_id)
+
+    assert [item["kind"] for item in recorded["session_landmarks"]] == ["recommendation", "condition"]
+    assert restored["session_landmarks"] == recorded["session_landmarks"]
+    assert all(item["scope"] == "current_session_only" for item in restored["session_landmarks"])
+    assert restored["memory_write_active"] is False
+    assert restored["runtime_memory_recall"] is False

@@ -65,7 +65,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v19_braided_discourse_expression",
+            "version": "v20_conversation_maturity_composition",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -97,6 +97,8 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "session_topic_returns_interruptions_and_natural_stopping",
                 "single_message_and_multi_turn_thread_braiding",
                 "dependency_aware_topic_resumption",
+                "multi_obligation_supported_completion_handoff",
+                "sentence_level_supported_recomposition",
                 "bounded_pronoun_ambiguity_and_follow_up_restraint",
                 "voice_handoff",
                 "truth_and_repetition_revision",
@@ -216,7 +218,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v19_braided_discourse_expression",
+        "version": "v20_conversation_maturity_composition",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -269,6 +271,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     )
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
     answer_engine = payload.get("answer_engine_support") if isinstance(payload.get("answer_engine_support"), dict) else {}
+    answer_completion = payload.get("answer_completion") if isinstance(payload.get("answer_completion"), dict) else {}
     answer_packet = answer_engine.get("answer_packet") if isinstance(answer_engine.get("answer_packet"), dict) else {}
     comprehension = payload.get("comprehension_context") if isinstance(payload.get("comprehension_context"), dict) else {}
     if not content_seed and intelligence.get("used"):
@@ -335,7 +338,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     semantic_frame = build_semantic_frame(
         {
             "semantic_frame": payload.get("semantic_frame") or {},
-            "propositions": payload.get("semantic_propositions") or [],
+            "propositions": payload.get("semantic_propositions") or propositions,
             "content_seed": content_seed,
             "intent_decision": intent_decision,
             "answer_shape": payload.get("answer_shape") or intent_decision.get("answer_shape"),
@@ -399,6 +402,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
                 item for item in answer_packet.get("unanswered_obligations") or [] if isinstance(item, dict)
             ][:12],
         },
+        "answer_completion": answer_completion,
         "comprehension_supported": comprehension.get("status") == "comprehension_packet_ready",
         "comprehension": {
             "understanding_state": str(comprehension.get("understanding_state") or "not_checked"),
@@ -661,6 +665,14 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
         if isinstance(meaning.get("language_realization_policy"), dict)
         else {}
     )
+    if (
+        formation_text
+        and int(formation.get("clause_count") or 0) > 1
+        and str(meaning.get("answer_domain") or "") not in {"verified_math", "source_backed_research"}
+        and (language_policy.get("compositional_surface") is True or language_policy.get("clause_composition") is True)
+    ):
+        use_formation = True
+        seed = _clean_seed(formation_text)
     ellipsis = pragmatic_plan.get("ellipsis_resolution") if isinstance(pragmatic_plan.get("ellipsis_resolution"), dict) else {}
 
     if handshake.get("required") is True and not seed:
@@ -1032,6 +1044,8 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
             "vary_surface_realization",
             "choose_equivalent_clause_shape",
             "rebuild_from_supported_propositions",
+            "split_supported_propositions",
+            "recompose_with_context_fit_transitions",
             "avoid_repeated_function_words",
         },
     )
@@ -1042,6 +1056,7 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
             "join_tightly_related_clauses",
             "split_at_meaning_boundary",
             "vary_sentence_length_by_function",
+            "preserve_relation_and_certainty",
         },
     )
     avoid_stock_preface = enable("avoid_stock_preface", {"avoid_stock_preface", "enter_actual_move"})
@@ -1298,7 +1313,19 @@ def _voice_category(intent: str, affect: str, guidance: dict[str, Any] | None = 
 def _propositions(prompt: str, seed: str, memory: dict[str, Any], intelligence: dict[str, Any]) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     if seed:
-        items.append({"kind": "content", "text": seed, "supported": True})
+        for index, sentence in enumerate(
+            item.strip()
+            for item in re.split(r"(?<=[.!?])\s+|\n+", seed)
+            if item.strip()
+        ):
+            items.append(
+                {
+                    "kind": "content",
+                    "text": sentence,
+                    "relation": "sequence" if index == 0 else _sentence_relation(sentence),
+                    "supported": True,
+                }
+            )
     if memory.get("memory_context_used"):
         items.append({"kind": "memory_grounding", "text": str(memory.get("memory_source_class") or "approved memory"), "supported": True})
     if intelligence.get("used"):
@@ -1313,7 +1340,26 @@ def _propositions(prompt: str, seed: str, memory: dict[str, Any], intelligence: 
         )
     if not items:
         items.append({"kind": "current_turn", "text": truncate(prompt, 420), "supported": True})
-    return items[:6]
+    return items[:12]
+
+
+def _sentence_relation(sentence: str) -> str:
+    lower = sentence.lower().strip()
+    if re.match(r"^(?:however|but|by contrast|on the other hand|still)\b", lower):
+        return "contrast"
+    if re.match(r"^(?:because|so|therefore|that means|as a result)\b", lower) or " because " in lower:
+        return "cause"
+    if re.match(r"^(?:if|when|unless|in that case)\b", lower):
+        return "condition"
+    if re.match(r"^(?:for example|for instance|as an example)\b", lower):
+        return "example"
+    if re.match(r"^(?:back to|returning to|that changes)\b", lower):
+        return "return"
+    if re.match(r"^(?:finally|overall|taken together|in short)\b", lower):
+        return "conclusion"
+    if re.match(r"^(?:also|another|more importantly|alongside)\b", lower):
+        return "support"
+    return "sequence"
 
 
 def _topic_phrase(prompt: str) -> str:

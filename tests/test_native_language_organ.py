@@ -105,7 +105,7 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
 
     discourse = result["discourse_plan"]["supported_discourse"]
 
-    assert result["version"] == "v19_braided_discourse_expression"
+    assert result["version"] == "v20_conversation_maturity_composition"
     assert discourse["status"] == "supported_discourse_plan_ready"
     assert discourse["thesis_unit_id"]
     assert [item["role"] for item in discourse["paragraph_plan"]] == [
@@ -141,6 +141,50 @@ def test_nlo_does_not_pad_a_developed_answer_without_distinct_supported_material
     assert result["revision"]["paragraph_count"] == 1
     assert "strongest answer I can support" not in result["candidate_text"]
     assert "What would reopen the answer" not in result["candidate_text"]
+    _assert_locked(result)
+
+
+def test_nlo_recomposes_supported_sentence_relations_under_approved_language_guidance(tmp_path):
+    conn = _conn(tmp_path)
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": "Explain the pilot, its condition, and the conclusion.",
+            "content_seed": (
+                "Use the smaller reversible pilot first. "
+                "The pilot creates evidence before a larger commitment. "
+                "If the comparison conditions change, reopen the result. "
+                "Taken together, the pilot is useful but provisional."
+            ),
+            "semantic_propositions": [
+                {"text": "Use the smaller reversible pilot first.", "relation": "sequence"},
+                {"text": "The pilot creates evidence before a larger commitment.", "relation": "cause"},
+                {"text": "If the comparison conditions change, reopen the result.", "relation": "condition"},
+                {"text": "Taken together, the pilot is useful but provisional.", "relation": "conclusion"},
+            ],
+            "language_teaching_guidance": {
+                "used": True,
+                "lesson_keys": ["flexible_supported_recomposition"],
+                "response_moves": [
+                    "split_supported_propositions",
+                    "preserve_relation_and_certainty",
+                    "recompose_with_context_fit_transitions",
+                ],
+            },
+        },
+    )
+
+    policy = result["meaning_packet"]["language_realization_policy"]
+    assert policy["compositional_surface"] is True
+    assert policy["clause_composition"] is True
+    assert result["formation"]["clause_relations"] == ["sequence", "cause", "condition", "conclusion"]
+    assert result["formation"]["clause_count"] == 4
+    assert "pilot creates evidence" in result["candidate_text"]
+    assert "comparison conditions change" in result["candidate_text"]
+    assert "pilot is useful but provisional" in result["candidate_text"]
+    assert result["formation"]["meaning_preserved"] is True
+    assert policy["content_generation_allowed"] is False
+    assert policy["personality_change_allowed"] is False
     _assert_locked(result)
 
 

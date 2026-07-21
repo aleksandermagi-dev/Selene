@@ -29,6 +29,9 @@ def inspect_contextual_follow_up(
         if str(previous.get("role") or "") == "selene"
         else recent_assistant[-1] if recent_assistant else ""
     )
+    session_landmarks = [
+        item for item in context.get("session_landmarks") or [] if isinstance(item, dict)
+    ][-24:]
 
     kind = "none"
     marker = ""
@@ -44,6 +47,11 @@ def inspect_contextual_follow_up(
         kind, marker = "constraint_refinement", "explicit_session_refinement"
     elif re.match(r"^(?:please\s+)?(?:summarize|sum up|recap)\b", normalized):
         kind, marker = "session_summary_request", "summarize_active_session"
+    elif re.search(
+        r"\b(?:earlier when|back to what|return to what|the point about|what you said about|we discussed)\b",
+        normalized,
+    ):
+        kind, marker = "named_callback", "named_visible_session_point"
     elif "analogy" in normalized and re.search(r"\b(?:explain|describe|rephrase|put)\b", normalized):
         kind, marker = "analogy_transfer_request", "analogy_of_active_session"
     elif re.search(
@@ -68,7 +76,7 @@ def inspect_contextual_follow_up(
     elif any(item in lower for item in ("separate question", "different question", "new question", "separate topic", "different topic", "on another topic")):
         kind, marker = "topic_shift", "explicit_topic_shift"
 
-    previous_available = bool(previous_assistant_preview)
+    previous_available = bool(previous_assistant_preview or session_landmarks)
     contextual = kind != "none" and (previous_available or kind == "topic_shift")
     return {
         "status": "contextual_follow_up_detected" if contextual else "contextual_follow_up_not_detected",
@@ -78,12 +86,15 @@ def inspect_contextual_follow_up(
         "previous_turn_available": previous_available,
         "previous_assistant_preview": truncate(previous_assistant_preview, 360),
         "recent_assistant_texts": [truncate(item, 360) for item in recent_assistant[-4:]],
+        "session_landmarks": session_landmarks,
+        "matched_session_landmarks": _matching_landmarks(prompt, session_landmarks),
         "previous_confidence": previous.get("confidence_vector") if isinstance(previous.get("confidence_vector"), dict) else {},
         "prompt": truncate(str(prompt or ""), 600),
         "preserve_active_topic": contextual and kind in {
             "confidence_check", "reason_follow_up", "continuation", "elaboration", "example_request",
             "rephrase_request", "viewpoint_follow_up", "alternative_reference",
             "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request",
+            "named_callback",
         },
         "session_scoped_only": True,
         "memory_write_active": False,
@@ -118,7 +129,7 @@ def apply_contextual_intent(
                 "confidence": "high",
             }
         )
-    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request"}:
+    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback"}:
         result.update(
             {
                 "intent": "reasoning",
@@ -136,7 +147,12 @@ def apply_contextual_intent(
     return result
 
 
-def contextual_response_seed(contextual_follow_up: dict[str, Any] | None) -> str:
+def contextual_response_seed(
+    contextual_follow_up: dict[str, Any] | None,
+    *,
+    dialogue_workspace: dict[str, Any] | None = None,
+    conversation_spine: dict[str, Any] | None = None,
+) -> str:
     contextual = contextual_follow_up if isinstance(contextual_follow_up, dict) else {}
     if contextual.get("detected") is not True:
         return ""
@@ -149,6 +165,20 @@ def contextual_response_seed(contextual_follow_up: dict[str, Any] | None) -> str
     )
     prompt = str(contextual.get("prompt") or "").lower()
     confidence = contextual.get("previous_confidence") if isinstance(contextual.get("previous_confidence"), dict) else {}
+    dialogue = dialogue_workspace if isinstance(dialogue_workspace, dict) else {}
+    pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    landmarks = [
+        item
+        for item in [
+            *list(contextual.get("session_landmarks") or []),
+            *list(pragmatics.get("session_landmarks") or []),
+            *list((conversation_spine or {}).get("session_landmarks") or []),
+        ]
+        if isinstance(item, dict)
+    ][-24:]
+    matched_landmarks = [
+        item for item in contextual.get("matched_session_landmarks") or [] if isinstance(item, dict)
+    ] or _matching_landmarks(str(contextual.get("prompt") or ""), landmarks)
 
     if kind == "confidence_check":
         answer_confidence = str(
@@ -166,6 +196,14 @@ def contextual_response_seed(contextual_follow_up: dict[str, Any] | None) -> str
             )
         return "I am reasonably confident, but not absolute; I would change the answer if stronger evidence no longer fit it."
 
+    if kind == "named_callback" and matched_landmarks:
+        callback_prompt = str(contextual.get("prompt") or "").lower()
+        if re.search(r"\b(?:what did|what was|remind me|which point)\b", callback_prompt):
+            return " ".join(str(item.get("summary") or "") for item in matched_landmarks[:3])
+        # A why/how callback needs fresh reasoning over the grounded landmark;
+        # the Conversation Spine supplies it instead of this layer inventing it.
+        return ""
+
     session_material = f"{recent} {previous}".lower()
     if (
         kind == "session_summary_request"
@@ -178,6 +216,9 @@ def contextual_response_seed(contextual_follow_up: dict[str, Any] | None) -> str
             "Pilot: Run one short block, front-load the volunteer-heavy activity, then track attendance, wait time, participant feedback, and staffing strain.\n\n"
             "Change condition: Move toward parallel zones if transitions create more delay or disruption than the flexibility is worth, or if steady demand supports both offerings continuously."
         )
+
+    if kind == "session_summary_request" and landmarks:
+        return _landmark_summary(landmarks)
 
     if (
         kind == "analogy_transfer_request"
@@ -298,4 +339,58 @@ def contextual_response_seed(contextual_follow_up: dict[str, Any] | None) -> str
             return (
                 "I think the dependency rule is the stronger part because it gives a real constraint. Reversibility is the fallback when the system itself does not force an order."
             )
+    if kind == "rephrase_request" and previous:
+        return _bounded_rephrase(previous)
     return ""
+
+
+def _matching_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    stop = {
+        "about", "back", "earlier", "from", "point", "return", "said", "that", "the", "this", "what", "when", "with", "you",
+    }
+    query = {
+        word
+        for word in re.findall(r"[a-z][a-z0-9_-]{2,}", str(prompt).lower())
+        if word not in stop
+    }
+    ranked: list[tuple[int, int, dict[str, Any]]] = []
+    for index, item in enumerate(landmarks):
+        words = set(
+            re.findall(
+                r"[a-z][a-z0-9_-]{2,}",
+                f"{item.get('topic') or ''} {item.get('summary') or ''}".lower(),
+            )
+        )
+        overlap = query & words
+        if overlap:
+            ranked.append((len(overlap), index, item))
+    ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
+    return [item for _, _, item in ranked[:6]]
+
+
+def _landmark_summary(landmarks: list[dict[str, Any]]) -> str:
+    selected: list[dict[str, Any]] = []
+    for preferred in ("recommendation", "condition", "limit", "conclusion"):
+        candidate = next(
+            (item for item in reversed(landmarks) if item.get("kind") == preferred and item not in selected),
+            None,
+        )
+        if candidate:
+            selected.append(candidate)
+    if not selected:
+        selected = list(reversed(landmarks[-3:]))
+    selected.sort(key=lambda item: landmarks.index(item))
+    return " ".join(str(item.get("summary") or "") for item in selected[:4] if str(item.get("summary") or ""))
+
+
+def _bounded_rephrase(previous: str) -> str:
+    text = " ".join(previous.split())
+    rewrites = (
+        (r"^My current answer is this:\s*", ""),
+        (r"^The direct answer is this:\s*", ""),
+        (r"^The core of it is\s+", ""),
+        (r"^In plain terms,\s*", ""),
+    )
+    for pattern, replacement in rewrites:
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    return truncate(text, 900)

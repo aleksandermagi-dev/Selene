@@ -40,7 +40,7 @@ def test_structured_meaning_frame_realizes_original_grammatical_clauses():
 
     assert frame["formation_mode"] == "structured"
     assert "Selene can carry the current thread." in result["candidate_text"]
-    assert "when the source is unclear, she asks Aleks." in result["candidate_text"]
+    assert "When the source is unclear, she asks Aleks." in result["candidate_text"]
     assert result["meaning_preserved"] is True
     assert result["hidden_chain_of_thought_exposed"] is False
 
@@ -82,7 +82,7 @@ def test_native_language_uses_structured_formation_when_supplied(tmp_path):
         },
     )
 
-    assert result["version"] == "v19_braided_discourse_expression"
+    assert result["version"] == "v20_conversation_maturity_composition"
     assert result["semantic_frame"]["formation_mode"] == "structured"
     assert "Uncertainty remains honest." in result["candidate_text"]
     assert "Selene can ask for the missing piece." in result["candidate_text"]

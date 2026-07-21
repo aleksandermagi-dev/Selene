@@ -91,6 +91,41 @@ def test_conversation_spine_exposes_the_dialogue_workspaces_shared_thread_braid(
     assert spine["session_scoped_only"] is True
 
 
+def test_conversation_spine_grounds_a_named_return_in_relevant_visible_landmarks():
+    prompt = "Back to the earlier garden pilot: why was it reversible?"
+    dialogue = _dialogue(prompt, topic="garden pilot")
+    dialogue["pragmatics"]["session_landmarks"] = [
+        {
+            "kind": "recommendation",
+            "topic": "garden pilot",
+            "summary": "I recommend the reversible garden pilot first.",
+            "scope": "current_session_only",
+        },
+        {
+            "kind": "conclusion",
+            "topic": "unrelated curtains",
+            "summary": "The curtain choice remains open.",
+            "scope": "current_session_only",
+        },
+    ]
+    contextual = {"detected": True, "kind": "named_callback", "preserve_active_topic": True}
+    spine = build_conversation_spine(
+        {
+            "session_id": 19,
+            "prompt": prompt,
+            "intent_decision": {**classify_chat_intent(prompt), "intent": "reasoning", "reasoning_requested": True},
+            "dialogue_workspace": dialogue,
+            "contextual_follow_up": contextual,
+        }
+    )
+
+    assert [item["topic"] for item in spine["relevant_session_landmarks"]] == ["garden pilot"]
+    assert "reversible garden pilot" in spine["grounded_prompt"]
+    assert "curtain choice" not in spine["grounded_prompt"]
+    assert spine["session_scoped_only"] is True
+    assert spine["memory_write_active"] is False
+
+
 def test_conversation_spine_carries_the_previous_recommendation_into_a_callback():
     prompt = "Why do you prefer the two-zone trial first, and what would make you change it?"
     contextual = {

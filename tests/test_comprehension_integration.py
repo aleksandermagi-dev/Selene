@@ -384,3 +384,97 @@ def test_contradiction_reopens_metacognition_without_silently_mutating_knowledge
     assert stored["state"] == "approved_knowledge_resource"
     assert packet["retention"]["knowledge_write_active"] is False
     _assert_locked(packet)
+
+
+def test_approved_knowledge_can_support_separate_parts_from_separate_concepts(tmp_path):
+    conn = _conn(tmp_path)
+    concepts = [
+        {
+            "title": "Garden water cycle",
+            "domain": "earth_science",
+            "material": "A garden water cycle moves water through soil, roots, plants, and air.",
+            "principles": ["Evaporation and transpiration return garden water to the air."],
+            "examples": ["Water can enter soil, move through a plant, and leave through its leaves."],
+            "counterexamples": ["A sealed container does not model the full outdoor garden cycle."],
+            "limits": ["The cycle description alone does not specify the rate of water movement."],
+            "relationships": ["Plant transpiration connects living systems to the water cycle."],
+            "source_refs": ["teaching:earth_science:garden-water-cycle"],
+            "teach_back": "Water does not stay in one garden location: it moves through ground and plants before some of it returns to the air.",
+        },
+        {
+            "title": "Soil water absorption",
+            "domain": "earth_science",
+            "material": "Soil absorption depends on pore space, composition, and existing saturation.",
+            "principles": ["Less saturated soil can accept water until its available pore space fills."],
+            "examples": ["A dry porous soil can initially absorb rainfall faster than saturated soil."],
+            "counterexamples": ["Already saturated soil cannot keep absorbing water at the same rate."],
+            "limits": ["Absorption capacity varies with soil composition and compaction."],
+            "relationships": ["Saturation limits how much additional garden water can enter the soil."],
+            "source_refs": ["teaching:earth_science:soil-absorption"],
+            "teach_back": "Soil has a changing capacity for incoming water because its structure and how full it already is both affect absorption.",
+        },
+    ]
+    approved_ids = []
+    for concept in concepts:
+        proposed = route_request(conn, "comprehension.concepts.propose", concept)["result"]
+        concept_id = proposed["item"]["id"]
+        route_request(
+            conn,
+            "comprehension.understanding.evaluate",
+            {
+                "concept_id": concept_id,
+                    "teach_back": concept["teach_back"],
+                "application": concept["examples"][0],
+                "limits": concept["limits"],
+                "counterexample": concept["counterexamples"][0],
+                "correction_response": "I would revise the relationship while preserving the supported parts.",
+                "source_alignment": True,
+            },
+        )
+        route_request(
+            conn,
+            "comprehension.concepts.decide",
+            {"concept_id": concept_id, "action": "approve_knowledge"},
+        )
+        approved_ids.append(concept_id)
+
+    prompt = "Why does garden water return to the air, and what limitation does saturated soil place on absorption?"
+    obligations = [
+        {
+            "id": "water-reason",
+            "kind": "reason",
+            "source_text": "Why does garden water return to the air?",
+            "required": True,
+        },
+        {
+            "id": "soil-limit",
+            "kind": "limitation",
+            "source_text": "What limitation does saturated soil place on absorption?",
+            "required": True,
+        },
+    ]
+    packet = route_request(
+        conn,
+        "comprehension.turn.packet",
+        {
+            "prompt": prompt,
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True, "dialogue_acts": ["question"]},
+            "dialogue_workspace": {
+                "active_topic": "garden water and soil absorption",
+                "pragmatics": {"ambiguity": {"level": "low"}, "response_obligations": obligations},
+            },
+            "knowledge_limit": 3,
+        },
+    )["result"]
+
+    basis = packet["knowledge_response_basis"]
+    assert basis["answer_kind"] == "multi_obligation_knowledge_synthesis"
+    assert basis["concept_ids"] == approved_ids
+    assert [item["obligation_id"] for item in basis["obligation_support"]] == ["water-reason", "soil-limit"]
+    assert "Evaporation and transpiration" in packet["knowledge_response_seed"]
+    assert "saturated soil cannot keep absorbing" in packet["knowledge_response_seed"]
+    assert set(basis["source_refs"]) == {
+        "teaching:earth_science:garden-water-cycle",
+        "teaching:earth_science:soil-absorption",
+    }
+    _assert_locked(packet)

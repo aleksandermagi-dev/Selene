@@ -1,6 +1,6 @@
 # Selene — OpenAI Build Week 2026 Submission Packet
 
-Date prepared: July 20, 2026
+Date prepared: July 21, 2026
 
 Status: working draft for Aleks review; no repository publication, judge sharing,
 video upload, packaging, or external submission has been performed
@@ -63,6 +63,10 @@ first event-window commit.
 - native provider-free language formation and supervised Selene Chat
 - semantic formation, dialogue workspace, pragmatic routing, response coverage,
   discourse planning, input detangling, and visible speech stabilization
+- a Conversation Spine and Thread Loom that preserve current-session topic
+  branches, nonlinear returns, dependencies, landings, and visible landmarks
+- one non-recursive supported completion pass for missing parts of complicated
+  questions, with unsupported parts stated rather than invented
 - the executable Test Impact Law
 - Answer Engine routing and separate confidence dimensions
 - open-ended comparison/planning with one bounded completeness retry
@@ -74,7 +78,8 @@ first event-window commit.
 - education/expression law: learning can affect contextual expression but cannot
   rewrite personality
 - bounded metacognitive observation without hidden chain-of-thought exposure
-- provider-free language lesson groups and five reviewed F1 curriculum groups
+- seven provider-free language lesson groups, including mature conversation
+  composition, and five reviewed F1 curriculum groups
 - Cocoon classroom modularization and resident/Cocoon standby separation
 - reviewed continuity transfer gates and paired local phone/email continuity
 - public-safe deterministic showcase and submission documentation
@@ -153,16 +158,22 @@ python -m pytest tests/test_hackathon_showcase.py -q
 npm run build
 ```
 
-Current proportional verification on July 20:
+Current proportional verification on July 21:
 
 - 59 focused showcase, Test Impact Law, Answer Engine, comprehension, and
   teaching-lifecycle tests passed
-- the complete repository machinery regression passed: 905 tests
+- the complete repository machinery regression passed: 998 tests
+- one gentle synthetic long conversation returned to the correct earlier
+  recommendation after four ordinary intervening turns without using durable
+  memory or importing the side topic
 - the deterministic showcase command completed against disposable state
 - `npm run build` passed
-- production chunks remained split: main application 413.82 kB and React
+- production chunks remained split: main application 415.84 kB and React
   runtime 193.81 kB; the former single-bundle warning did not return
-- no package, installer, reinstall, live conversation probe, or real database
+- the Windows release EXE and NSIS installer rebuilt successfully, and the
+  package health verifier passed; it launched and closed the previously
+  installed app for health verification but did not reinstall the new build
+- no reinstall, live conversation probe, stressful test, or real database
   mutation was performed
 
 ## Demo Script — Target 2:35
@@ -196,6 +207,10 @@ Then point to exact math and the confidence vector:
 - answer confidence: verified exact
 - expression confidence: not assessed
 - voice confidence is answer correctness: false
+
+If time permits, show one multi-part ordinary Chat turn and point out that each
+requested part is carried as a visible obligation. The bounded completion pass
+runs at most once and cannot invent a missing fact.
 
 ### 1:15-1:45 — Source-backed research
 
@@ -254,6 +269,8 @@ stress test during recording.
 
 - text conversation is substantially stronger but not equivalent in breadth to
   a mature hosted language model
+- current-session callbacks and nonlinear thread returns are bounded visible
+  dialogue state, not a claim of unlimited context or durable personal memory
 - bounded arithmetic is not a general symbolic mathematics system
 - local-code inspection is not connected to ordinary Chat and has no autonomous
   filesystem authority

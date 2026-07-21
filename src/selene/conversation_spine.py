@@ -60,6 +60,7 @@ def conversation_spine_status() -> dict[str, Any]:
                 "active topic and distinctive anchors",
                 "bounded referents",
                 "previous visible answer claims and recommendations",
+                "bounded visible session landmarks",
                 "open response obligations",
                 "session topic branches returns dependencies and landings",
                 "compatible visible source classes",
@@ -113,6 +114,10 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
     thread_braid = pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {}
     previous = _previous_answer(contextual, pragmatics, payload.get("conversation_events"))
+    session_landmarks = [
+        item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
+    ][-24:]
+    relevant_landmarks = _relevant_landmarks(interpreted, session_landmarks)
     resolved_reference = (
         pragmatic_plan.get("resolved_reference")
         if isinstance(pragmatic_plan.get("resolved_reference"), dict)
@@ -156,6 +161,15 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             f"{interpreted} Immediate prior answer: {previous['preview']}",
             3200,
         )
+    if relevant_landmarks and (
+        contextual.get("detected") is True
+        or any(item in interpreted.lower() for item in ("earlier", "back to", "return to", "we discussed", "you said"))
+    ):
+        landmark_text = " ".join(str(item.get("summary") or "") for item in relevant_landmarks[:4])
+        grounded_prompt = truncate(
+            f"{grounded_prompt} Relevant visible points from this session: {landmark_text}",
+            3600,
+        )
     turn_id = "conversation-turn-" + sha256(
         f"{session_id}|{interpreted}|{previous['preview']}".encode("utf-8")
     ).hexdigest()[:16]
@@ -189,6 +203,8 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
                 "status": referent_status,
             },
             "previous_answer": previous,
+            "session_landmarks": session_landmarks,
+            "relevant_session_landmarks": relevant_landmarks,
             "open_obligations": obligations,
             "obligation_sequence": [str(item.get("id") or "") for item in obligations],
             "pragmatic_plan": pragmatic_plan,
@@ -368,6 +384,24 @@ def _previous_answer(contextual: dict[str, Any], pragmatics: dict[str, Any], sup
         "recommendations": recommendations,
         "source": "immediate_session_turn" if preview else "none",
     }
+
+
+def _relevant_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    query = set(_distinctive_terms(prompt))
+    ranked: list[tuple[int, int, dict[str, Any]]] = []
+    for index, item in enumerate(landmarks):
+        text = " ".join(
+            [
+                str(item.get("topic") or ""),
+                str(item.get("summary") or ""),
+            ]
+        )
+        overlap = query & set(_distinctive_terms(text))
+        score = len(overlap)
+        if score or not query:
+            ranked.append((score, index, item))
+    ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
+    return [item for _, _, item in ranked[:6]]
 
 
 def _intent_class(intent: dict[str, Any], contextual: dict[str, Any]) -> str:

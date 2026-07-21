@@ -198,7 +198,7 @@ def test_nlo_consults_prepared_shelf_without_changing_voice_or_identity(tmp_path
     )
 
     guidance = result["language_teaching_guidance"]
-    assert result["version"] == "v19_braided_discourse_expression"
+    assert result["version"] == "v20_conversation_maturity_composition"
     assert guidance["used"] is True
     assert "answer_then_expand" in guidance["lesson_keys"]
     assert "list_or_prose_fit" in guidance["lesson_keys"]
@@ -372,11 +372,11 @@ def test_language_shelf_exposes_ordered_review_groups_and_prerequisites(tmp_path
     items = list_language_teaching_items(conn)["items"]
     groups = status["teaching_groups"]
 
-    assert status["defined_lesson_count"] == 31
-    assert status["defined_group_count"] == 6
-    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5, 6]
-    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4, 5]
-    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0, 0]
+    assert status["defined_lesson_count"] == 36
+    assert status["defined_group_count"] == 7
+    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5, 6, 7]
+    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4, 5, 5]
+    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0, 0, 0]
     assert [(item["group_order"], item["lesson_order"]) for item in items] == sorted(
         (item["group_order"], item["lesson_order"]) for item in items
     )
@@ -399,6 +399,12 @@ def test_language_shelf_exposes_ordered_review_groups_and_prerequisites(tmp_path
     assert judgment["source_refs"][0] == "speech_phase_8:grounded_conversational_judgment"
     assert judgment["available_to_nlo"] is False
 
+    maturity = next(item for item in items if item["lesson_key"] == "obligation_complete_response")
+    assert maturity["teaching_group"] == "G7 · Mature Conversation Composition"
+    assert maturity["prerequisites"] == ["answer_then_expand", "natural_closure"]
+    assert maturity["source_refs"][0] == "speech_phase_9:mature_conversation_composition"
+    assert maturity["available_to_nlo"] is False
+
 
 def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
     conn = _conn(tmp_path)
@@ -408,7 +414,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         item for item in list_language_teaching_items(conn)["items"] if item["group_order"] > 1
     ]
 
-    assert len(expressive_items) == 21
+    assert len(expressive_items) == 26
     for item in expressive_items:
         blueprint = item["teaching_blueprint"]
         assert blueprint["acquire"]["vocabulary"]
@@ -423,7 +429,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         assert item["available_to_nlo"] is False
 
 
-def test_all_six_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
+def test_all_seven_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
     conn = _conn(tmp_path)
     _prepare_review_only(conn)
     memory_before = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
@@ -439,9 +445,9 @@ def test_all_six_groups_can_complete_in_order_without_bypassing_prerequisites_or
     status = language_teaching_status(conn)
     items = list_language_teaching_items(conn)["items"]
 
-    assert status["available_lesson_count"] == 31
+    assert status["available_lesson_count"] == 36
     assert status["candidate_lesson_count"] == 0
-    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4, 5]
+    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4, 5, 5]
     assert all(item["own_review_complete"] is True for item in items)
     assert all(item["prerequisites_complete"] is True for item in items)
     assert all(item["unmet_prerequisites"] == [] for item in items)
@@ -469,6 +475,43 @@ def test_grounded_judgment_group_graduates_under_standing_language_authorization
     assert "recall_confidence_expression" in recall["lesson_keys"]
     assert self_state["memory_write_active"] is False
     assert recall["training_allowed"] is False
+
+
+def test_mature_composition_group_graduates_and_is_selected_only_as_language_guidance(tmp_path):
+    conn = _conn(tmp_path)
+    prepared = prepare_language_teaching_shelf(conn)
+    prompt = (
+        "Compare the two garden pilots and explain why one comes first, then return to the earlier water limit "
+        "and tell me what would change the recommendation."
+    )
+    guidance = select_language_guidance(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": {"intent": "reasoned_answer", "response_depth": "developed", "mixed_intent": True},
+            "dialogue_workspace": {
+                "pragmatics": {
+                    "utterance_units": [{"kind": "direct_request"}, {"kind": "direct_request"}, {"kind": "direct_request"}],
+                    "response_obligations": [{"id": "one"}, {"id": "two"}, {"id": "three"}],
+                    "session_landmarks": [{"summary": "The water limit remains material."}],
+                    "thread_braid": {"braided": True},
+                }
+            },
+        },
+    )
+    items = list_language_teaching_items(conn)["items"]
+    mature = [item for item in items if item["group_order"] == 7]
+
+    assert prepared["graduated_count"] == 36
+    assert len(mature) == 5
+    assert all(item["available_to_nlo"] is True for item in mature)
+    assert "long_session_callback_grounding" in guidance["lesson_keys"]
+    assert "threaded_series_and_return" in guidance["lesson_keys"]
+    assert guidance["automatic_content_generation"] is False
+    assert guidance["memory_write_active"] is False
+    assert guidance["identity_change"] is False
+    assert guidance["personality_change"] is False
+    assert guidance["training_allowed"] is False
 
 
 def test_new_lesson_reaches_guidance_only_after_full_review_and_aleks_approval(tmp_path):

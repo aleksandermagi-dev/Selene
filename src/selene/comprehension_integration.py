@@ -557,8 +557,14 @@ def build_comprehension_packet(
         "trusts_speaker_intelligence": True,
         "does_not_interrogate_every_turn": True,
     }
-    response_obligations = pragmatics.get("response_obligations") or []
-    knowledge_response = _knowledge_response_seed(prompt, answer_eligible_items)
+    response_obligations = [
+        item for item in conversation_spine.get("open_obligations") or [] if isinstance(item, dict)
+    ] or [item for item in pragmatics.get("response_obligations") or [] if isinstance(item, dict)]
+    knowledge_response = _knowledge_response_seed(
+        prompt,
+        answer_eligible_items,
+        response_obligations=response_obligations,
+    )
     result = _with_guards(
         {
             "status": "comprehension_packet_ready",
@@ -664,6 +670,8 @@ def retrieve_approved_knowledge(
                 "central_claim": item["central_claim"],
                 "principles": item["principles"][:6],
                 "relationships": item["relationships"][:6],
+                "examples": item["examples"][:6],
+                "counterexamples": item["counterexamples"][:6],
                 "limits": item["limits"][:6],
                 "confidence": item["confidence"],
                 "source_refs": item["source_refs"],
@@ -739,7 +747,12 @@ def _answer_eligible_knowledge_items(
     return eligible
 
 
-def _knowledge_response_seed(prompt: str, items: list[dict[str, Any]]) -> dict[str, Any]:
+def _knowledge_response_seed(
+    prompt: str,
+    items: list[dict[str, Any]],
+    *,
+    response_obligations: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     if not items:
         return {
             "content_seed": "",
@@ -747,6 +760,40 @@ def _knowledge_response_seed(prompt: str, items: list[dict[str, Any]]) -> dict[s
             "why_relationship_included": False,
             "limit_included": False,
         }
+    obligations = [item for item in response_obligations or [] if isinstance(item, dict)]
+    if obligations:
+        fragments: list[str] = []
+        support: list[dict[str, Any]] = []
+        for obligation in obligations[:12]:
+            selected = _best_knowledge_item_for_text(str(obligation.get("source_text") or prompt), items)
+            if not selected:
+                continue
+            fragment, field = _knowledge_fragment_for_obligation(obligation, selected)
+            if not fragment:
+                continue
+            key = fragment.lower().rstrip(". ")
+            if fragment and key not in {value.lower().rstrip(". ") for value in fragments}:
+                fragments.append(fragment)
+            support.append(
+                {
+                    "obligation_id": str(obligation.get("id") or ""),
+                    "kind": str(obligation.get("kind") or "direct_question"),
+                    "concept_id": selected.get("id") or selected.get("concept_id"),
+                    "concept_key": selected.get("concept_key"),
+                    "support_field": field,
+                    "source_refs": _text_list(selected.get("source_refs"))[:20],
+                }
+            )
+        if fragments:
+            return {
+                "content_seed": truncate(" ".join(fragments), 3000),
+                "answer_kind": "multi_obligation_knowledge_synthesis" if len(support) > 1 else "obligation_bound_knowledge",
+                "why_relationship_included": any(item.get("support_field") in {"principle", "relationship"} for item in support),
+                "limit_included": any(item.get("support_field") in {"limit", "counterexample"} for item in support),
+                "obligation_support": support,
+                "concept_ids": list(dict.fromkeys(item.get("concept_id") for item in support if item.get("concept_id"))),
+                "source_refs": list(dict.fromkeys(ref for item in support for ref in item.get("source_refs") or []))[:30],
+            }
     item = items[0]
     central = truncate(str(item.get("central_claim") or "").strip(), 1400)
     lower = prompt.lower()
@@ -777,6 +824,48 @@ def _knowledge_response_seed(prompt: str, items: list[dict[str, Any]]) -> dict[s
         "concept_id": item.get("id") or item.get("concept_id"),
         "source_refs": _text_list(item.get("source_refs"))[:20],
     }
+
+
+def _best_knowledge_item_for_text(text: str, items: list[dict[str, Any]]) -> dict[str, Any] | None:
+    terms = set(_terms(text))
+    ranked: list[tuple[int, int, dict[str, Any]]] = []
+    for index, item in enumerate(items):
+        haystack = " ".join(
+            [
+                str(item.get("title") or ""),
+                str(item.get("central_claim") or ""),
+                *[str(value) for value in item.get("principles") or []],
+                *[str(value) for value in item.get("relationships") or []],
+                *[str(value) for value in item.get("examples") or []],
+                *[str(value) for value in item.get("counterexamples") or []],
+                *[str(value) for value in item.get("limits") or []],
+            ]
+        )
+        score = len(terms & set(_terms(haystack)))
+        if score:
+            ranked.append((score, -index, item))
+    ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
+    return ranked[0][2] if ranked else None
+
+
+def _knowledge_fragment_for_obligation(
+    obligation: dict[str, Any],
+    item: dict[str, Any],
+) -> tuple[str, str]:
+    kind = str(obligation.get("kind") or "direct_question")
+    source = str(obligation.get("source_text") or "").lower()
+    if kind == "analogy" or "analogy" in source or "example" in source:
+        values = item.get("examples") or []
+        return (truncate(str(values[0]), 800), "example") if values else ("", "unsupported")
+    if kind == "limitation" or any(marker in source for marker in ("limit", "exception", "not apply", "counterexample")):
+        values = item.get("counterexamples") or item.get("limits") or []
+        field = "counterexample" if item.get("counterexamples") else "limit"
+        return (truncate(str(values[0]), 800), field) if values else ("", "unsupported")
+    if kind == "reason" or any(marker in source for marker in ("why", "reason", "mechanism", "cause")):
+        values = [*list(item.get("principles") or []), *list(item.get("relationships") or [])]
+        return (truncate(str(values[0]), 800), "principle") if values else ("", "unsupported")
+    central = truncate(str(item.get("central_claim") or ""), 1200)
+    return central, "central_claim"
 
 
 def _is_language_guidance_concept(item: dict[str, Any]) -> bool:
