@@ -8,7 +8,8 @@ The secondary branch, `project-abc`, is reserved for Project ABC transfer philos
 
 ## Current Status
 
-This repo is **not an installable public Selene release**.
+This repo is **not an unrestricted public Selene release**. A bounded,
+evaluation-only Windows judge build is available for OpenAI Build Week review.
 
 It intentionally excludes:
 
@@ -19,7 +20,9 @@ It intentionally excludes:
 - voice archive source material
 - private design scratch folders
 
-`package.json` remains `"private": true`. Public visibility, if enabled later, is for evidence/source review only unless Aleks explicitly creates a release.
+`package.json` remains `"private": true`. Public source visibility and the
+evaluation installer do not grant commercial use, redistribution, model
+training, or permission to reproduce Selene.
 
 ## OpenAI Build Week 2026
 
@@ -59,6 +62,22 @@ The output demonstrates:
 - an unapproved candidate remaining unavailable to Chat
 - false identity, personality, governance, memory, training, LoRA, autonomy, and self-replication mutation guards
 
+### Downloadable Windows judge build
+
+The bounded Windows 10/11 x64 evaluation installer is available from the
+[Selene Hackathon Judge Build v0.1.1 release](https://github.com/aleksandermagi-dev/Selene/releases/tag/hackathon-judge-v0.1.1).
+
+Direct installer:
+[Selene_0.1.1_x64-setup.exe](https://github.com/aleksandermagi-dev/Selene/releases/download/hackathon-judge-v0.1.1/Selene_0.1.1_x64-setup.exe)
+
+SHA-256:
+`1E72E7F9E9BF9BB9748C2266E581CA9F7B73017609970F36C566D96623BCCEDC`
+
+The hackathon build is unsigned, so Windows SmartScreen may display `Unknown
+publisher`. Verify the checksum before choosing `More info` and `Run anyway`.
+The installer contains no configured database, private corpus, personal memory,
+analysis maps, local logs, phone/email configuration, or credential files.
+
 ### Development launch
 
 Prerequisites are Python 3.11+, Node.js/npm, and a supported Windows environment. After the Python setup above:
@@ -76,7 +95,11 @@ npm run dev
 
 Open the local Vite address. The production frontend check is `npm run build`. The public-safe showcase check is `python -m pytest tests/test_hackathon_showcase.py -q`.
 
-The repository contains no judge credentials or sample personal state. Repository access for judging must be provided separately under the event rules; doing so does not create a public Selene release or change the rights boundary below. The July 21 final stabilization pass completed with 1,014 repository tests passing, a successful split production frontend build, verified Windows packaging, and a healthy local reinstall against the preserved configured database.
+The repository contains no judge credentials or sample personal state. The July
+21 final stabilization pass completed with 1,014 repository tests passing, a
+successful split production frontend build, verified privacy-safe Windows
+packaging, a healthy local reinstall against the preserved configured database,
+and a downloadable evaluation prerelease for judges.
 
 ## Governing Law Layer
 

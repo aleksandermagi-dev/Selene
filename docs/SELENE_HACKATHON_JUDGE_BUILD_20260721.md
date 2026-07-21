@@ -6,6 +6,12 @@ Platform: Windows 10/11 x64
 
 Download asset: `Selene_0.1.1_x64-setup.exe`
 
+Release page:
+`https://github.com/aleksandermagi-dev/Selene/releases/tag/hackathon-judge-v0.1.1`
+
+Direct download:
+`https://github.com/aleksandermagi-dev/Selene/releases/download/hackathon-judge-v0.1.1/Selene_0.1.1_x64-setup.exe`
+
 SHA-256:
 
 ```text

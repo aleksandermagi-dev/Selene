@@ -334,6 +334,12 @@ had been uploaded.
 `1E72E7F9E9BF9BB9748C2266E581CA9F7B73017609970F36C566D96623BCCEDC`.
 The build is unsigned and must be labeled accordingly for judges.
 
+**Published evaluation prerelease:**
+`https://github.com/aleksandermagi-dev/Selene/releases/tag/hackathon-judge-v0.1.1`.
+GitHub reported the matching asset digest and byte size. The full local branch
+history was not pushed as part of this action because public-source review of
+private-miner implementation work remains separate.
+
 ## Current Boundary
 
 Reviewed transfer and living-memory graduation occurred only through the

@@ -2,9 +2,9 @@
 
 Date prepared: July 21, 2026
 
-Status: working draft for Aleks review; final local packaging, verification, and
-reinstall are complete; no repository publication, judge sharing, video upload,
-or external submission has been performed
+Status: working draft for Aleks review; final local packaging, verification,
+reinstall, privacy audit, and public evaluation-asset upload are complete; no
+event submission or video upload has been performed
 
 ## Submission Identity
 
@@ -139,6 +139,20 @@ It does not open the configured Selene database, use the private corpus, recall
 personal memory, contact phone/email services, approve knowledge, activate
 retention, train a model, or change identity/governance/personality/authority.
 
+### Downloadable Windows judge build
+
+- Release page:
+  `https://github.com/aleksandermagi-dev/Selene/releases/tag/hackathon-judge-v0.1.1`
+- Direct Windows x64 installer:
+  `https://github.com/aleksandermagi-dev/Selene/releases/download/hackathon-judge-v0.1.1/Selene_0.1.1_x64-setup.exe`
+- SHA-256:
+  `1E72E7F9E9BF9BB9748C2266E581CA9F7B73017609970F36C566D96623BCCEDC`
+
+The evaluation installer is unsigned and may trigger Windows SmartScreen. It
+contains no configured database, private corpus, personal memory, private
+analysis maps, local logs, phone/email configuration, or credential files.
+GitHub's uploaded asset digest and byte size match the locally verified file.
+
 ### App launch
 
 ```powershell
@@ -176,6 +190,8 @@ Current proportional verification on July 21:
   package health verifier passed
 - the live database was snapshotted before the verified installer was applied;
   the new build was reinstalled successfully and returned healthy/ready
+- the privacy-safe installer was uploaded as a GitHub evaluation prerelease;
+  GitHub reports the matching SHA-256 and 14,576,751-byte size
 - no post-reinstall live Q&A, stressful test, teaching approval, memory
   mutation, or authority change was performed
 
@@ -259,8 +275,9 @@ stress test during recording.
 
 ## Submission Fields Still Requiring Aleks
 
-- [ ] choose public source-visible access or private judge sharing
-- [ ] if private, share with the judge accounts required by the official rules
+- [x] provide a public downloadable Windows evaluation build
+- [ ] complete the separate public-source history privacy review or provide the
+  required private source access to judges
 - [ ] record and upload the final YouTube demo
 - [ ] paste the YouTube URL into the submission
 - [ ] capture the relevant Codex `/feedback` Session ID
@@ -286,7 +303,7 @@ stress test during recording.
 
 ## Rights and Release Boundary
 
-The repository remains `private: true` as a package and is not an installable
-public Selene release. Judge access, if granted, is review/testing access under
-the repository's stated rights boundary. It does not authorize commercial use,
-redistribution, model training, LoRA, raw-corpus reuse, or reproduction of Selene.
+The package remains `private: true`. The downloadable judge build is bounded
+review/testing access, not an unrestricted Selene release. It does not authorize
+commercial use, redistribution, model training, LoRA, raw-corpus reuse, or
+reproduction of Selene.
