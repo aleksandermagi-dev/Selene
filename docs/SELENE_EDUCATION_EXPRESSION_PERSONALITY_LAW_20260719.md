@@ -2,6 +2,8 @@
 
 Date: 2026-07-19
 
+Language-capability standing authorization recorded: 2026-07-21
+
 Status: governing law for teaching material, curriculum sources, comprehension
 review, language guidance, disciplinary conventions, and expression handoff.
 
@@ -81,8 +83,9 @@ intelligenceOS connects and applies knowledge.
 NLO structures supported language.
 Voice expresses it as Selene.
 Core/Mind retains identity and governance authority.
-Aleks retains teaching authority through an item decision or a bounded
-curriculum authorization.
+Aleks retains teaching authority through an item decision, a bounded
+curriculum authorization, or the bounded language-capability standing
+authorization below.
 ```
 
 No source owns Selene's expression. Voice does not alter facts to sound more
@@ -132,13 +135,45 @@ this law.
   context.
 - **Express** checks that original language and natural participation do not
   become persona imitation or compulsory style.
-- **Approval** confirms that all retained material passed the boundary and is
-  covered by either an explicit Aleks item decision or an active bounded
-  curriculum authorization recorded by Aleks. Exceptions always return to
-  Cocoon.
+- **Authorization** confirms that all retained material passed the applicable
+  boundary. Answer-bearing knowledge remains covered by an explicit Aleks item
+  decision or an active bounded curriculum authorization. Eligible
+  guidance-only language capability may use the standing authorization below.
+  Exceptions always return to Cocoon.
 
 Material that crosses the boundary is held for review. It is not activated as
 knowledge, language guidance, memory, personality, or governance.
+
+## Standing Language-Capability Authorization
+
+Aleks authorizes bounded language-capability expansion without item-by-item
+approval. This follows from the prime law: Selene remains Selene, while a
+larger grammar, vocabulary, clause range, discourse range, conversational
+range, and meaning-preserving paraphrase range give her more ways to express
+her own supported thoughts.
+
+The standing authorization applies only when all of the following are true:
+
+- the lesson is project-authored, provider-free, source-labeled language
+  guidance;
+- it is guidance-only and cannot become answer-bearing subject knowledge;
+- Acquire, Integrate, and Express evidence is complete;
+- the material preserves supported meaning and uncertainty;
+- Voice remains Selene's expression owner;
+- the lesson does not prescribe personality, identity, affect, permanent
+  register, stock phrasing, memory, governance, authority, or autonomy;
+- the lesson does not imitate Aleks, a source author, or a provider persona;
+- provenance and correction paths remain visible.
+
+This is an authorization for capability range, not a declaration that every
+text labeled “language” is safe. Missing provenance, answer-bearing knowledge,
+meaning invention, source imitation, compulsory affect, personality
+prescription, or any authority-bearing effect removes the item from the
+standing authorization and returns it to Cocoon review.
+
+The authorization is inspectable and auditable. It creates no personal memory,
+training data, model update, identity change, governance change, or autonomy
+expansion.
 
 ## Executable Guard
 
@@ -165,6 +200,9 @@ training state, autonomy, or authority.
 - The Teaching Lifecycle governs Acquire, Integrate, Express, and approval.
 - The Curriculum Authorization Law removes redundant item-by-item decisions
   only inside a visible bounded public-academic envelope.
+- The standing language-capability authorization removes redundant item review
+  only for guidance that expands expressive range without changing meaning or
+  the individual speaking.
 - The Comprehension and Integration Organ requires understanding before
   retention.
 - The Test Impact Law requires least-impact sufficient verification.

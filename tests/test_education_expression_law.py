@@ -52,8 +52,12 @@ def test_law_allows_knowledge_and_task_bound_expression_without_personality_muta
     assert status["status"] == "education_expression_personality_law_active"
     assert status["task_bound_register_allowed"] is True
     assert status["permanent_persona_from_teaching_allowed"] is False
+    assert status["language_capability_item_approval_required"] is False
+    assert status["language_capability_standing_authorization_active"] is True
+    assert "answer_bearing_subject_knowledge" in status["standing_authorization_excludes"]
     assert review["permitted"] is True
     assert review["education_may_inform_expression"] is True
+    assert review["eligible_language_range_may_graduate_without_item_review"] is True
     assert review["personality_is_teaching_output"] is False
     _assert_locked(status)
     _assert_locked(review)

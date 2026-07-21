@@ -52,7 +52,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v13_conversation_spine",
+            "version": "v14_reviewed_compositional_expression",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -69,6 +69,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "aspect_voice_and_mood_realization",
                 "conversation_repair_handoff",
                 "approved_language_teaching_guidance",
+                "approved_language_guided_realization",
                 "response_depth_selection",
                 "multi_paragraph_answer_structure",
                 "grounded_obligation_content_binding",
@@ -196,7 +197,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v13_conversation_spine",
+        "version": "v14_reviewed_compositional_expression",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -303,6 +304,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         if isinstance(payload.get("language_teaching_guidance"), dict)
         else {}
     )
+    language_realization_policy = _language_realization_policy(language_guidance)
     semantic_frame = build_semantic_frame(
         {
             "semantic_frame": payload.get("semantic_frame") or {},
@@ -314,6 +316,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "certainty": certainty,
             "affect": affect,
             "source_refs": payload.get("source_refs") or [],
+            "expression_directives": language_realization_policy,
         }
     )
     formation = realize_semantic_frame(
@@ -346,6 +349,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "pragmatic_plan": pragmatic_plan,
         "turn_flow_plan": turn_flow_plan,
         "language_teaching_guidance": language_guidance,
+        "language_realization_policy": language_realization_policy,
         "certainty": certainty,
         "uncertainty_kind": _uncertainty_kind(prompt, intent, content_seed, previous_turn),
         "affect": affect,
@@ -540,6 +544,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "ordered_acts": turn_flow.get("ordered_acts") or [],
         "language_lesson_keys": language_guidance.get("lesson_keys") or [],
         "language_guidance_used": language_guidance.get("used") is True,
+        "language_realization_policy": meaning.get("language_realization_policy") or {},
         "expression_profile": meaning.get("expression_profile") or "direct",
         "surface_variation": meaning.get("variation_context") or {},
         "variation_is_contextual_not_random": True,
@@ -568,6 +573,11 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     comprehension = meaning.get("comprehension") if isinstance(meaning.get("comprehension"), dict) else {}
     handshake = comprehension.get("handshake") if isinstance(comprehension.get("handshake"), dict) else {}
     pragmatic_plan = meaning.get("pragmatic_plan") if isinstance(meaning.get("pragmatic_plan"), dict) else {}
+    language_policy = (
+        meaning.get("language_realization_policy")
+        if isinstance(meaning.get("language_realization_policy"), dict)
+        else {}
+    )
     ellipsis = pragmatic_plan.get("ellipsis_resolution") if isinstance(pragmatic_plan.get("ellipsis_resolution"), dict) else {}
 
     if handshake.get("required") is True and not seed:
@@ -608,7 +618,12 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
         seed = _obligation_ordered_seed(seed, meaning, plan)
         if plan.get("response_depth") == "developed":
             return _develop_reasoned_answer(seed, meaning, plan)
-        frames = _reasoned_answer_frames(seed, expression_profile)
+        frames = _reasoned_answer_frames(
+            seed,
+            expression_profile,
+            language_policy=language_policy,
+            variation_key=digest_key,
+        )
         return _pick_fresh(
             digest_key,
             frames,
@@ -765,6 +780,11 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         text = "I cannot support that claim from what I have with me. I can say what is clear or ask Aleks for the missing piece."
     text = _truncate_preserving_paragraphs(text, 4200)
     supported_discourse = plan.get("supported_discourse") if isinstance(plan.get("supported_discourse"), dict) else {}
+    language_policy = (
+        meaning.get("language_realization_policy")
+        if isinstance(meaning.get("language_realization_policy"), dict)
+        else {}
+    )
     return text, {
         "passed": not any(flag == "authority_overclaim_removed" for flag in flags),
         "flags": list(dict.fromkeys(flags)),
@@ -773,6 +793,9 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         "repetition_checked": True,
         "recent_response_repetition_checked": True,
         "language_guidance_checked": True,
+        "approved_language_realization_applied": language_policy.get("used") is True,
+        "language_realization_features": language_policy.get("features") or [],
+        "language_realization_meaning_change_allowed": False,
         "comprehension_checked": bool(meaning.get("comprehension_supported")),
         "understanding_before_fluency": bool((meaning.get("comprehension") or {}).get("understanding_before_fluency")),
         "language_lesson_keys": (meaning.get("language_teaching_guidance") or {}).get("lesson_keys") or [],
@@ -799,6 +822,11 @@ def _develop_reasoned_answer(seed: str, meaning: dict[str, Any], plan: dict[str,
     certainty = str(meaning.get("certainty") or "provisional")
     profile = str(meaning.get("expression_profile") or "explanation")
     variation = meaning.get("variation_context") if isinstance(meaning.get("variation_context"), dict) else {}
+    language_policy = (
+        meaning.get("language_realization_policy")
+        if isinstance(meaning.get("language_realization_policy"), dict)
+        else {}
+    )
     supported_discourse = plan.get("supported_discourse") if isinstance(plan.get("supported_discourse"), dict) else {}
     unit_by_id = {
         str(item.get("id") or ""): item
@@ -830,7 +858,10 @@ def _develop_reasoned_answer(seed: str, meaning: dict[str, Any], plan: dict[str,
             "reflection": ["What gives that read its shape is ", "What I am weighing is ", "I land there because "],
             "explanation": ["The reason I land there is ", "The mechanism underneath it is ", "The clearest support is "],
         }
-        opener = _pick(key + ":support", support_openers.get(profile, support_openers["explanation"]))
+        opener_choices = support_openers.get(profile, support_openers["explanation"])
+        if language_policy.get("clause_composition") is True:
+            opener_choices = _composed_support_openers(profile, key)
+        opener = _pick(key + ":support", opener_choices)
         paragraphs.append(opener + _join_support_points(support_points[:2], leading_that=False))
 
     closure_plan = supported_discourse.get("closure_plan") if isinstance(supported_discourse.get("closure_plan"), dict) else {}
@@ -906,8 +937,17 @@ def _obligation_ordered_seed(seed: str, meaning: dict[str, Any], plan: dict[str,
     return " ".join(parts) if parts else seed
 
 
-def _reasoned_answer_frames(seed: str, profile: str) -> list[str]:
+def _reasoned_answer_frames(
+    seed: str,
+    profile: str,
+    *,
+    language_policy: dict[str, Any] | None = None,
+    variation_key: str = "",
+) -> list[str]:
     lowered = seed if re.match(r"^I(?:\b|['’])", seed) else seed[0].lower() + seed[1:] if len(seed) > 1 else seed.lower()
+    policy = language_policy or {}
+    if policy.get("compositional_surface") is True:
+        return _composed_reasoned_frames(seed, lowered, profile, variation_key, policy)
     frames = {
         "comparison": [
             seed,
@@ -946,6 +986,119 @@ def _reasoned_answer_frames(seed: str, profile: str) -> list[str]:
         ],
     }
     return frames.get(profile, frames["direct"])
+
+
+def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
+    used = guidance.get("used") is True
+    lesson_keys = [str(item) for item in guidance.get("lesson_keys") or [] if str(item)] if used else []
+    moves = {str(item) for item in guidance.get("response_moves") or [] if str(item)} if used else set()
+    features: list[str] = []
+
+    def enable(name: str, markers: set[str]) -> bool:
+        active = bool(moves.intersection(markers))
+        if active:
+            features.append(name)
+        return active
+
+    answer_first = enable("answer_first", {"answer_actual_ask", "focus_actual_answer"})
+    compositional_surface = enable(
+        "compositional_surface",
+        {
+            "vary_surface_realization",
+            "choose_equivalent_clause_shape",
+            "rebuild_from_supported_propositions",
+            "avoid_repeated_function_words",
+        },
+    )
+    clause_composition = enable(
+        "clause_composition",
+        {
+            "vary_clause_structure",
+            "join_tightly_related_clauses",
+            "split_at_meaning_boundary",
+            "vary_sentence_length_by_function",
+        },
+    )
+    avoid_stock_preface = enable("avoid_stock_preface", {"avoid_stock_preface", "enter_actual_move"})
+    information_focus = enable(
+        "information_focus",
+        {"place_shared_context_before_new_detail", "keep_required_qualifiers_with_claim", "focus_actual_answer"},
+    )
+    contextual_word_choice = enable(
+        "contextual_word_choice",
+        {"choose_context_fit_vocabulary", "preserve_register_and_precision", "match_register_without_mimicry"},
+    )
+    meaning_drift_check = enable(
+        "meaning_drift_check",
+        {"preserve_supported_meaning", "verify_no_meaning_drift", "keep_required_qualifiers_with_claim"},
+    )
+    return {
+        "status": "approved_language_realization_ready" if features else "no_operational_language_guidance",
+        "used": bool(features),
+        "approved_lesson_keys": lesson_keys,
+        "approved_response_moves": sorted(moves),
+        "features": features,
+        "answer_first": answer_first,
+        "compositional_surface": compositional_surface,
+        "clause_composition": clause_composition,
+        "avoid_stock_preface": avoid_stock_preface,
+        "information_focus": information_focus,
+        "contextual_word_choice": contextual_word_choice,
+        "meaning_drift_check": meaning_drift_check,
+        "meaning_change_allowed": False,
+        "content_generation_allowed": False,
+        "personality_change_allowed": False,
+        "selection_basis": "approved lesson response moves only" if used else "no approved language lesson selected",
+    }
+
+
+def _composed_reasoned_frames(
+    seed: str,
+    lowered: str,
+    profile: str,
+    key: str,
+    policy: dict[str, Any],
+) -> list[str]:
+    introductions = {
+        "comparison": ["Against the same criteria", "On the deciding difference", "For this comparison"],
+        "procedure": ["For the sequence itself", "In practical order", "At the first useful step"],
+        "reflection": ["On reflection", "From the shape of it", "What stands out here is that"],
+        "synthesis": ["Taken together", "Across the supported pieces", "As a single answer"],
+        "explanation": ["At the center of it", "In plain terms", "For this question"],
+        "direct": ["In short", "On the main point", "For this question"],
+    }
+    choices = introductions.get(profile, introductions["direct"])
+    digest = sha256((key or f"{profile}|{seed[:120]}").encode("utf-8")).hexdigest()
+    start = int(digest[:8], 16) % len(choices)
+    ordered = [choices[(start + index) % len(choices)] for index in range(len(choices))]
+    frames = [seed]
+    for introduction in ordered:
+        if introduction.endswith("that"):
+            frames.append(f"{introduction} {lowered}")
+        else:
+            frames.append(f"{introduction}, {lowered}")
+    if policy.get("avoid_stock_preface") is True:
+        # Direct entry remains first and the alternatives orient only when the
+        # profile gives the wording real conversational work.
+        frames = [seed, *[item for item in frames[1:] if not item.startswith(("For this question", "As a single answer"))]]
+    return list(dict.fromkeys(frames))
+
+
+def _composed_support_openers(profile: str, key: str) -> list[str]:
+    parts = {
+        "comparison": (["deciding", "useful", "important"], ["contrast", "difference", "tradeoff"]),
+        "procedure": (["practical", "structural", "important"], ["reason for that order", "sequence constraint", "dependency"]),
+        "reflection": (["clearest", "strongest", "most relevant"], ["signal in that read", "consideration", "piece of the pattern"]),
+        "explanation": (["clearest", "underlying", "important"], ["support", "mechanism", "reason"]),
+    }
+    modifiers, nouns = parts.get(profile, parts["explanation"])
+    digest = sha256((key + ":support-composition").encode("utf-8")).hexdigest()
+    start = int(digest[:8], 16)
+    choices = [
+        f"The {modifiers[(start + index) % len(modifiers)]} {nouns[(start // 3 + index) % len(nouns)]} is that "
+        for index in range(max(len(modifiers), len(nouns)))
+    ]
+    return list(dict.fromkeys(choices))
 
 
 def _expression_profile(prompt: str, intent_decision: dict[str, Any], language_intent: str) -> str:

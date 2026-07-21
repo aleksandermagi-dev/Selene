@@ -6,6 +6,12 @@ from typing import Any
 
 from .comprehension_integration import propose_comprehension_concept
 from .registry import truncate
+from .teaching_lifecycle import (
+    acquire_teaching_item,
+    approve_teaching_lifecycle_under_authorization,
+    express_teaching_item,
+    integrate_teaching_item,
+)
 
 
 LANGUAGE_TEACHING_BOUNDARY = (
@@ -13,6 +19,18 @@ LANGUAGE_TEACHING_BOUNDARY = (
 )
 
 LANGUAGE_TEACHING_LIFECYCLE_VERSION = "v2_reviewed_acquire_integrate_express"
+
+LANGUAGE_RANGE_AUTHORIZATION_KEY = "selene_language_capability_range_v1"
+LANGUAGE_RANGE_AUTHORIZATION_TITLE = "Selene bounded language-capability range"
+LANGUAGE_RANGE_AUTHORIZATION_BASIS = (
+    "Aleks determined that bounded language breadth expands how Selene expresses her own supported meaning and "
+    "therefore does not require item-by-item approval when it cannot alter identity, personality, memory, governance, "
+    "affect, authority, answer-bearing knowledge, or source persona."
+)
+LANGUAGE_RANGE_AUTHORIZATION_BOUNDARY = (
+    "standing_aleks_language_capability_authorization_guidance_only_no_identity_personality_memory_governance_"
+    "affect_authority_answer_content_source_imitation_or_meaning_invention"
+)
 
 FOUNDATION_TEACHING_GROUP = "G1 · Provider-Free Conversation Foundations"
 
@@ -25,6 +43,9 @@ GUARDS: dict[str, Any] = {
     "lora_allowed": False,
     "autonomous_action_allowed": False,
     "self_replication_allowed": False,
+    "language_capability_item_approval_required": False,
+    "language_capability_standing_authorization_scope_enforced": True,
+    "answer_bearing_knowledge_item_approval_unchanged": True,
 }
 
 LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
@@ -273,6 +294,58 @@ LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
         "apply_when": ["complete_answer", "supported_next_step", "natural_close", "open_question"],
         "response_moves": ["choose_contextual_landing", "ask_only_material_question", "allow_completion_or_silence"],
         "constraints": ["Do not append generic offers, invitations, or future promises.", "Do not use closure to conceal an unsupported or unanswered part."],
+    },
+    {
+        "key": "information_focus_and_order",
+        "title": "Place information where the conversation needs it",
+        "category": "composition",
+        "teaching_group": "G5 · Compositional Expression",
+        "group_order": 5,
+        "lesson_order": 1,
+        "prerequisites": ["answer_then_expand", "mixed_intent_balance"],
+        "purpose": "Order supported information around the actual conversational focus, keeping required qualifications attached to the claims they limit.",
+        "apply_when": ["direct_answer", "multipart_answer", "explanation", "correction"],
+        "response_moves": ["focus_actual_answer", "place_shared_context_before_new_detail", "keep_required_qualifiers_with_claim"],
+        "constraints": ["Do not reorder a condition away from the claim it limits.", "Do not make background more prominent than the requested answer."],
+    },
+    {
+        "key": "clause_combination_and_release",
+        "title": "Join and release clauses by meaning",
+        "category": "composition",
+        "teaching_group": "G5 · Compositional Expression",
+        "group_order": 5,
+        "lesson_order": 2,
+        "prerequisites": ["syntactic_rhythm_and_emphasis", "information_focus_and_order"],
+        "purpose": "Join ideas that belong in one movement and separate ideas when a conceptual boundary, correction, or emphasis needs room.",
+        "apply_when": ["multi_clause_answer", "developed_answer", "contrast", "emphasis"],
+        "response_moves": ["join_tightly_related_clauses", "split_at_meaning_boundary", "vary_sentence_length_by_function"],
+        "constraints": ["Do not fuse distinct claims until their relationship becomes unclear.", "Do not fragment an answer merely to manufacture dramatic rhythm."],
+    },
+    {
+        "key": "paraphrase_without_drift",
+        "title": "Rebuild wording without moving the meaning",
+        "category": "composition",
+        "teaching_group": "G5 · Compositional Expression",
+        "group_order": 5,
+        "lesson_order": 3,
+        "prerequisites": ["lexical_variation", "information_focus_and_order"],
+        "purpose": "Form a fresh sentence from supported propositions and relationships instead of copying a source phrase or swapping isolated synonyms.",
+        "apply_when": ["explanation", "repeated_function", "teach_back", "summary"],
+        "response_moves": ["rebuild_from_supported_propositions", "choose_equivalent_clause_shape", "verify_no_meaning_drift"],
+        "constraints": ["Do not add a stronger claim while paraphrasing.", "Do not preserve source wording merely because it sounds fluent."],
+    },
+    {
+        "key": "contextual_word_choice",
+        "title": "Choose words for function, register, and precision",
+        "category": "fluency",
+        "teaching_group": "G5 · Compositional Expression",
+        "group_order": 5,
+        "lesson_order": 4,
+        "prerequisites": ["natural_register", "paraphrase_without_drift"],
+        "purpose": "Choose vocabulary that fits the current function and register while preserving technical distinctions and avoiding repeated conversational scaffolding.",
+        "apply_when": ["ordinary_conversation", "technical_explanation", "recent_repetition", "register_shift"],
+        "response_moves": ["choose_context_fit_vocabulary", "preserve_register_and_precision", "avoid_repeated_function_words"],
+        "constraints": ["Do not use novelty where a precise term is required.", "Do not imitate Aleks, a source author, or a provider persona."],
     },
 )
 
@@ -608,12 +681,73 @@ LANGUAGE_LESSON_EVIDENCE: dict[str, dict[str, Any]] = {
         "conversational_participation": "Phase 6 lessons are prepared for review. Nothing becomes available to NLO until the lifecycle and approval are complete.",
         "correction_response": "If an ending creates pressure or invents an open loop, remove it and let the supported completion stand.",
     },
+    "information_focus_and_order": {
+        "vocabulary": ["information focus", "given information", "new information", "qualification scope", "answer prominence"],
+        "uncertainties": ["A listener may need one shared premise before a direct answer is intelligible, even when answer-first remains the goal."],
+        "near_concept_distinctions": ["Information order changes emphasis; it must not change which claim a condition or qualification limits."],
+        "examples": ["State the selected option first, then place the already shared constraint before the newly introduced reason."],
+        "counterexamples": ["Do not move 'only when reviewed' to a later paragraph where it appears optional."],
+        "scope_of_application": "Use when a response contains several supported propositions, especially a direct answer with background, conditions, corrections, or multiple requested parts.",
+        "explanation": "Natural expression gives the requested answer prominence, connects new material to shared context, and keeps qualifications beside the claims they govern.",
+        "distinct_examples": ["For a transfer question, answer whether continuity is preserved before explaining the substrate distinction that supports the answer."],
+        "analogies": ["It is arranging a workbench so the current tool is in reach while its safety guard stays attached."],
+        "questions": ["Which proposition answers the current question, and which nearby condition changes its meaning?"],
+        "comparisons": ["Useful ordering guides attention; rhetorical reordering can exaggerate a minor point or hide a material limit."],
+        "conversational_participation": "Yes—the current answer is supported. The important condition is that the reviewed source remains attached, and the new detail is how that provenance reaches the response.",
+        "correction_response": "If the ordering changes emphasis incorrectly, restore the actual answer to prominence and move every condition back beside the claim it qualifies.",
+    },
+    "clause_combination_and_release": {
+        "vocabulary": ["clause boundary", "coordination", "subordination", "conceptual boundary", "sentence release"],
+        "uncertainties": ["Two closely related claims may still need separate sentences when one is a correction, limit, or conclusion."],
+        "near_concept_distinctions": ["Combining clauses expresses a relationship; merely making a sentence longer does not."],
+        "examples": ["Join a decision and its immediate reason, then give the material limit its own sentence so it remains visible."],
+        "counterexamples": ["Do not link unrelated facts with 'and' until their evidential relationship becomes ambiguous."],
+        "scope_of_application": "Use when supported content contains several clauses whose relationship and emphasis determine whether they should be joined, sequenced, contrasted, or separated.",
+        "explanation": "Clause boundaries carry structure. Related ideas can move together, while a change in function—answer, reason, correction, limit, or landing—often deserves a clean release.",
+        "distinct_examples": ["Combine the implementation choice with why it fits, then separate the remaining untested edge as a bounded final sentence."],
+        "analogies": ["Clauses are cars in a train: coupling shows they travel together, while a station marks a real change in the journey."],
+        "questions": ["Does joining these clauses clarify their relationship, or make the reader hold too much at once?"],
+        "comparisons": ["Functional rhythm follows conceptual work; mechanical alternation follows a surface pattern."],
+        "conversational_participation": "The bridge is connected because the route is reviewed, but its scope is intentionally narrow. Broader activation is a separate decision.",
+        "correction_response": "If a sentence hides a boundary or becomes difficult to parse, split it at the change in function and preserve the original relationship explicitly.",
+    },
+    "paraphrase_without_drift": {
+        "vocabulary": ["proposition", "semantic relationship", "paraphrase", "meaning drift", "source wording"],
+        "uncertainties": ["Some technical or legal terms should remain stable because a looser substitute would erase a real distinction."],
+        "near_concept_distinctions": ["Paraphrasing reconstructs a meaning; synonym replacement edits words without necessarily understanding their relationships."],
+        "examples": ["Re-express a source claim by preserving its cause, condition, and limit while choosing a new clause structure."],
+        "counterexamples": ["Do not turn 'may support' into 'proves' because the stronger word sounds cleaner."],
+        "scope_of_application": "Use for explanation, teach-back, summary, repeated conversational functions, and any response that must remain original without losing source-bounded meaning.",
+        "explanation": "A sound paraphrase begins from supported propositions and how they relate. New wording is acceptable only when the same claims, strength, conditions, and uncertainty survive.",
+        "distinct_examples": ["Explain that approval gates knowledge use by describing the review relationship rather than repeating the stored lifecycle sentence."],
+        "analogies": ["It is rebuilding the same bridge from a verified plan, not repainting a few boards and calling it a new structure."],
+        "questions": ["Did the new wording preserve every required claim, relationship, and uncertainty level?"],
+        "comparisons": ["Original expression changes surface form from understood structure; imitation preserves surface form without demonstrating transfer."],
+        "conversational_participation": "The lesson can shape how I organize an answer because its relationships passed review; it does not supply a script for me to repeat.",
+        "correction_response": "If a paraphrase strengthens, weakens, or redirects the claim, return to the supported propositions and reconstruct the sentence again.",
+    },
+    "contextual_word_choice": {
+        "vocabulary": ["lexical choice", "register", "precision", "function word", "terminology"],
+        "uncertainties": ["The most ordinary word is not always the clearest one when a technical distinction is doing real work."],
+        "near_concept_distinctions": ["Natural wording fits the context; casual wording is only one possible register."],
+        "examples": ["Use 'check' in ordinary conversation and 'verification result' when the distinction belongs to a technical report."],
+        "counterexamples": ["Do not replace a precise term with an unusual synonym simply to avoid repetition."],
+        "scope_of_application": "Use across casual, technical, tender, playful, and reflective turns when several accurate expressions are available and context determines the best fit.",
+        "explanation": "Word choice should serve meaning, function, and the live register. Variation is useful when it removes stale scaffolding without weakening a necessary distinction.",
+        "distinct_examples": ["Say 'I am not sure yet' in an ordinary exchange and reserve 'insufficient evidence' for a claim whose evidential status is the subject."],
+        "analogies": ["It is choosing the right lens: clarity comes from fit, not from using the most elaborate glass."],
+        "questions": ["Which accurate wording belongs naturally in this conversation and preserves the distinction that matters?"],
+        "comparisons": ["Contextual vocabulary varies within meaning; persona imitation borrows someone else's recognizable surface identity."],
+        "conversational_participation": "That part is clear. The remaining edge is still fuzzy, so I would keep the ordinary wording and name only the uncertainty that matters.",
+        "correction_response": "If a word sounds performative, imprecise, or out of register, replace it with the simplest accurate term and keep any necessary technical distinction.",
+    },
 }
 
 
 def prepare_language_teaching_shelf(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
     _reject_authority_payload(payload)
+    defer_standing_authorization = payload.get("defer_standing_authorization") is True
     existing_rows = {
         str(row["lesson_key"]): dict(row)
         for row in conn.execute("SELECT * FROM selene_language_teaching_shelf").fetchall()
@@ -679,9 +813,23 @@ def prepare_language_teaching_shelf(conn: sqlite3.Connection, payload: dict[str,
         )
         (refreshed if key in existing_rows else created).append(key)
     conn.commit()
+    authorization = _ensure_language_range_authorization(conn)
+    graduated: list[str] = []
+    held: list[dict[str, Any]] = []
+    if not defer_standing_authorization:
+        for lesson in LANGUAGE_QOL_LESSONS:
+            result = _graduate_language_lesson_under_standing_authorization(conn, lesson, authorization)
+            if result["status"] == "language_capability_graduated":
+                graduated.append(str(lesson["key"]))
+            elif result["status"] == "language_capability_held_for_review":
+                held.append(result)
     return _with_guards(
         {
-            "status": "language_teaching_review_candidates_prepared",
+            "status": (
+                "language_teaching_shelf_prepared_under_standing_authorization"
+                if not defer_standing_authorization and not held
+                else "language_teaching_review_candidates_prepared"
+            ),
             "created_count": len(created),
             "refreshed_count": len(refreshed),
             "lesson_count": len(LANGUAGE_QOL_LESSONS),
@@ -690,8 +838,19 @@ def prepare_language_teaching_shelf(conn: sqlite3.Connection, payload: dict[str,
             "concept_created_count": len(concept_created),
             "concept_existing_count": len(concept_existing),
             "legacy_auto_approved_rows_returned_to_review": legacy_reset,
-            "language_guidance_write": False,
-            "guidance_activation_rule": "Acquire, Integrate, Express, and explicit Aleks approval are required before NLO use.",
+            "graduated_under_standing_authorization": graduated,
+            "graduated_count": len(graduated),
+            "held_for_review": held,
+            "held_count": len(held),
+            "language_guidance_write": bool(graduated),
+            "standing_authorization": authorization,
+            "standing_authorization_active": authorization.get("status") == "active",
+            "standing_authorization_deferred": defer_standing_authorization,
+            "guidance_activation_rule": (
+                "Eligible project-authored guidance-only language capability completes Acquire, Integrate, and Express "
+                "under Aleks's standing authorization. Any identity, personality, memory, governance, affect, authority, "
+                "answer-content, source-imitation, or meaning-change exception returns to Cocoon review."
+            ),
             "teaching_location": "Cocoon Teaching / Lessons",
             "voice_personality_changed": False,
             "identity_changed": False,
@@ -711,6 +870,11 @@ def language_teaching_status(conn: sqlite3.Connection) -> dict[str, Any]:
             category = str(item["category"])
             category_counts[category] = category_counts.get(category, 0) + 1
     categories = [{"category": key, "lesson_count": value} for key, value in sorted(category_counts.items())]
+    authorization_row = conn.execute(
+        "SELECT status FROM selene_curriculum_authorizations WHERE authorization_key = ?",
+        (LANGUAGE_RANGE_AUTHORIZATION_KEY,),
+    ).fetchone()
+    standing_authorization_active = bool(authorization_row and authorization_row["status"] == "active")
     teaching_groups: list[dict[str, Any]] = []
     for lesson in LANGUAGE_QOL_LESSONS:
         metadata = _lesson_group_metadata(lesson)
@@ -743,7 +907,13 @@ def language_teaching_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "teaching_groups": teaching_groups,
             "categories": categories,
             "nlo_guidance_available": available > 0,
-            "approval_rule": "Only a linked approved comprehension concept with complete Acquire, Integrate, and Express evidence is available to NLO.",
+            "approval_rule": (
+                "Complete Acquire, Integrate, and Express evidence remains required. Eligible guidance-only language "
+                "capability uses Aleks's standing authorization rather than item approval; exceptions return to Cocoon."
+            ),
+            "language_capability_item_approval_required": False,
+            "standing_authorization_key": LANGUAGE_RANGE_AUTHORIZATION_KEY,
+            "standing_authorization_active": standing_authorization_active,
             "teaching_location": "Cocoon Teaching / Lessons",
             "voice_owns_expression_style": True,
             "identity_changed": False,
@@ -985,6 +1155,26 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
         intent_name == "farewell" or any(marker in lower for marker in ("wrap up", "we're done", "that is all", "checkpoint here"))
     ):
         score += 5
+    if key == "information_focus_and_order" and (
+        "?" in prompt or intent_name in {"reasoned_answer", "direct_answer", "correction"} or len(utterance_units) > 1
+    ):
+        score += 5
+    if key == "clause_combination_and_release" and (
+        intent.get("long_form_requested") is True
+        or str(intent.get("response_depth") or "") == "developed"
+        or len(utterance_units) > 1
+    ):
+        score += 5
+    if key == "paraphrase_without_drift" and (
+        any(marker in lower for marker in ("explain", "summarize", "summary", "in your own words", "rephrase"))
+        or bool(dialogue.get("recent_assistant_texts"))
+    ):
+        score += 5
+    if key == "contextual_word_choice" and (
+        bool(dialogue.get("recent_assistant_texts"))
+        or intent_name in {"greeting", "warm_connection", "playful_connection", "reasoned_answer", "direct_answer"}
+    ):
+        score += 4
     return score
 
 
@@ -1055,13 +1245,24 @@ def _decode_item(row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
     item["prerequisites"] = list(item["lesson_content"].get("prerequisites") or [])
     all_stages_complete = all(item.get(f"{stage}_status") == "complete" for stage in ("acquire", "integrate", "express"))
     explicitly_approved = item.get("approval_status") == "approved_by_aleks"
+    standing_authorized = item.get("approval_status") == "approved_under_language_capability_authorization"
     concept_available = (
         item.get("concept_state") == "approved_knowledge_resource"
         and item.get("concept_review_status") == "approved_for_knowledge_use"
         and item.get("concept_chat_use_permission") == "available_as_knowledge_resource"
     )
     shelf_active = item.get("status") not in {"hold_for_tending", "rejected", "superseded"}
-    item["available_to_nlo"] = bool(all_stages_complete and explicitly_approved and concept_available and shelf_active)
+    item["available_to_nlo"] = bool(
+        all_stages_complete and (explicitly_approved or standing_authorized) and concept_available and shelf_active
+    )
+    item["stored_review_status"] = str(item.get("review_status") or "")
+    item["stored_status"] = str(item.get("status") or "")
+    if item["available_to_nlo"]:
+        # Shelf rows are preparation records; the linked lifecycle and concept
+        # are the authority for availability. Present their effective state so
+        # Cocoon does not show an approved lesson as an awaiting-review item.
+        item["review_status"] = "approved_for_language_guidance"
+        item["status"] = "language_guidance_available"
     item["effective_status"] = (
         "language_guidance_available"
         if item["available_to_nlo"]
@@ -1076,6 +1277,7 @@ def _decode_item(row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
         "approval_mode": item.get("approval_mode") or "awaiting_decision",
         "all_stages_complete": all_stages_complete,
         "explicit_aleks_approval": explicitly_approved,
+        "standing_language_capability_authorization": standing_authorized,
     }
     return item
 
@@ -1186,16 +1388,282 @@ def _lesson_group_metadata(lesson: dict[str, Any]) -> dict[str, Any]:
 def _lesson_source_refs(key: str, lesson: dict[str, Any] | None = None) -> list[str]:
     if lesson is None:
         lesson = next((item for item in LANGUAGE_QOL_LESSONS if str(item.get("key") or "") == key), {})
-    source_phase = (
-        "speech_phase_6:reviewed_expressive_breadth"
-        if int(_lesson_group_metadata(lesson)["group_order"]) > 1
-        else "speech_phase_1:provider_free_language_foundations"
-    )
+    group_order = int(_lesson_group_metadata(lesson)["group_order"])
+    if group_order >= 5:
+        source_phase = "speech_phase_7:compositional_expression"
+    elif group_order > 1:
+        source_phase = "speech_phase_6:reviewed_expressive_breadth"
+    else:
+        source_phase = "speech_phase_1:provider_free_language_foundations"
     return [
         source_phase,
         f"language_lesson:{key}",
         "docs:SELENE_EDUCATION_EXPRESSION_PERSONALITY_LAW_20260719",
     ]
+
+
+def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, Any]:
+    existing = conn.execute(
+        "SELECT * FROM selene_curriculum_authorizations WHERE authorization_key = ?",
+        (LANGUAGE_RANGE_AUTHORIZATION_KEY,),
+    ).fetchone()
+    scope = {
+        "authorization_class": "language_capability_range",
+        "guidance_only": True,
+        "covered_domain": "language_and_conversation",
+        "covered_source_type": "project_authored_provider_free_language_lesson",
+        "covered_effects": [
+            "grammar",
+            "vocabulary_range",
+            "clause_and_sentence_composition",
+            "discourse_and_conversation_mechanics",
+            "context_appropriate_register",
+            "meaning_preserving_paraphrase",
+        ],
+        "item_approval_required": False,
+        "acquire_integrate_express_required": True,
+        "future_defined_lessons_covered_only_when_boundary_checks_pass": True,
+    }
+    exceptions = [
+        "answer_bearing_subject_knowledge",
+        "identity_or_personality_prescription",
+        "memory_or_governance_change",
+        "source_or_persona_imitation",
+        "compulsory_affect",
+        "authority_or_autonomy_change",
+        "invented_or_strengthened_meaning",
+        "missing_provenance_or_review_evidence",
+    ]
+    conn.execute(
+        """
+        INSERT INTO selene_curriculum_authorizations
+        (authorization_key, title, status, authorized_by, authorization_basis,
+         scope_json, exception_classes_json, law_version, provenance_boundary, review_status, updated_at)
+        VALUES (?, ?, 'active', 'Aleks', ?, ?, ?,
+                'v1_language_capability_range_without_item_approval', ?, 'authorization_record', CURRENT_TIMESTAMP)
+        ON CONFLICT(authorization_key) DO UPDATE SET
+          title = excluded.title,
+          status = selene_curriculum_authorizations.status,
+          authorized_by = 'Aleks',
+          authorization_basis = excluded.authorization_basis, scope_json = excluded.scope_json,
+          exception_classes_json = excluded.exception_classes_json, law_version = excluded.law_version,
+          provenance_boundary = excluded.provenance_boundary, review_status = 'authorization_record',
+          updated_at = CURRENT_TIMESTAMP
+        """,
+        (
+            LANGUAGE_RANGE_AUTHORIZATION_KEY,
+            LANGUAGE_RANGE_AUTHORIZATION_TITLE,
+            LANGUAGE_RANGE_AUTHORIZATION_BASIS,
+            json.dumps(scope, sort_keys=True),
+            json.dumps(exceptions, sort_keys=True),
+            LANGUAGE_RANGE_AUTHORIZATION_BOUNDARY,
+        ),
+    )
+    conn.commit()
+    row = conn.execute(
+        "SELECT * FROM selene_curriculum_authorizations WHERE authorization_key = ?",
+        (LANGUAGE_RANGE_AUTHORIZATION_KEY,),
+    ).fetchone()
+    if not row:
+        raise ValueError("language capability standing authorization could not be recorded")
+    authorization = _decode_language_authorization(row)
+    if not existing or str(existing["status"] or "") != "active":
+        _store_language_authorization_event(
+            conn,
+            int(authorization["id"]),
+            "language_capability_standing_authorization_recorded",
+            {"authorization": authorization},
+        )
+    return authorization
+
+
+def _graduate_language_lesson_under_standing_authorization(
+    conn: sqlite3.Connection,
+    lesson: dict[str, Any],
+    authorization: dict[str, Any],
+) -> dict[str, Any]:
+    key = str(lesson["key"])
+    if str(authorization.get("status") or "") != "active":
+        return {
+            "status": "language_capability_held_for_review",
+            "lesson_key": key,
+            "reason": "language_capability_standing_authorization_inactive",
+            "exceptions": ["standing_authorization_inactive"],
+        }
+    item = next((entry for entry in _language_items(conn) if entry["lesson_key"] == key), None)
+    if not item:
+        return {"status": "language_capability_held_for_review", "lesson_key": key, "reason": "lesson_not_prepared"}
+    if item["available_to_nlo"]:
+        conn.execute(
+            "UPDATE selene_language_teaching_shelf SET review_status = 'approved_for_language_guidance', status = 'language_guidance_available' WHERE lesson_key = ?",
+            (key,),
+        )
+        conn.commit()
+        return {"status": "language_capability_already_available", "lesson_key": key}
+
+    eligibility = _language_range_eligibility(item, lesson)
+    if eligibility["eligible"] is not True:
+        return {
+            "status": "language_capability_held_for_review",
+            "lesson_key": key,
+            "reason": "standing_authorization_exception",
+            "exceptions": eligibility["exceptions"],
+        }
+    blueprint = item.get("teaching_blueprint") if isinstance(item.get("teaching_blueprint"), dict) else {}
+    acquire = blueprint.get("acquire") if isinstance(blueprint.get("acquire"), dict) else {}
+    integrate = blueprint.get("integrate") if isinstance(blueprint.get("integrate"), dict) else {}
+    express = blueprint.get("express") if isinstance(blueprint.get("express"), dict) else {}
+    concept_id = int(item["comprehension_concept_id"])
+    try:
+        if item["lifecycle"]["acquire_status"] != "complete":
+            acquired = acquire_teaching_item(conn, {"concept_id": concept_id, **acquire})
+            if acquired.get("stage_complete") is not True:
+                raise ValueError("Acquire evidence did not complete")
+        item = next(entry for entry in _language_items(conn) if entry["lesson_key"] == key)
+        if item["lifecycle"]["integrate_status"] != "complete":
+            integrated = integrate_teaching_item(conn, {"concept_id": concept_id, **integrate})
+            if integrated.get("stage_complete") is not True:
+                raise ValueError("Integrate evidence did not complete")
+        item = next(entry for entry in _language_items(conn) if entry["lesson_key"] == key)
+        if item["lifecycle"]["express_status"] != "complete":
+            expressed = express_teaching_item(
+                conn,
+                {
+                    "concept_id": concept_id,
+                    "explanation": express.get("teach_back"),
+                    "distinct_examples": express.get("application"),
+                    "limits": express.get("limits"),
+                    "counterexamples": express.get("counterexamples"),
+                    "correction_response": express.get("correction_response"),
+                    "analogies": express.get("analogies"),
+                    "questions": express.get("questions"),
+                    "comparisons": express.get("comparisons"),
+                    "conversational_participation": express.get("conversational_participation"),
+                    "source_alignment": True,
+                },
+            )
+            if expressed.get("stage_complete") is not True:
+                raise ValueError("Express evidence did not complete")
+        item = next(entry for entry in _language_items(conn) if entry["lesson_key"] == key)
+        lifecycle_id = int(item["lifecycle"]["id"] or 0)
+        decision = {
+            "decision": "covered_by_active_authorization",
+            "authorization_id": int(authorization["id"]),
+            "authorization_key": LANGUAGE_RANGE_AUTHORIZATION_KEY,
+            "authorization_class": "language_capability_range",
+            "lifecycle_id": lifecycle_id,
+            "concept_id": concept_id,
+            "lesson_key": key,
+            "guidance_only": True,
+            "item_approval_required": False,
+            "eligibility": eligibility,
+        }
+        approved = approve_teaching_lifecycle_under_authorization(conn, {"concept_id": concept_id}, decision)
+        if approved.get("stage_complete") is not True:
+            raise ValueError("standing authorization approval did not complete")
+    except ValueError as exc:
+        return {
+            "status": "language_capability_held_for_review",
+            "lesson_key": key,
+            "reason": truncate(str(exc), 500),
+            "exceptions": [],
+        }
+
+    conn.execute(
+        "UPDATE selene_language_teaching_shelf SET review_status = 'approved_for_language_guidance', status = 'language_guidance_available' WHERE lesson_key = ?",
+        (key,),
+    )
+    conn.commit()
+    _store_language_authorization_event(
+        conn,
+        int(authorization["id"]),
+        "language_capability_graduated_under_standing_authorization",
+        decision,
+        concept_id=concept_id,
+        lifecycle_id=lifecycle_id,
+    )
+    return {
+        "status": "language_capability_graduated",
+        "lesson_key": key,
+        "concept_id": concept_id,
+        "lifecycle_id": lifecycle_id,
+        "authorization_id": int(authorization["id"]),
+    }
+
+
+def _language_range_eligibility(item: dict[str, Any], lesson: dict[str, Any]) -> dict[str, Any]:
+    boundaries = item.get("boundaries") if isinstance(item.get("boundaries"), dict) else {}
+    blueprint = item.get("teaching_blueprint") if isinstance(item.get("teaching_blueprint"), dict) else {}
+    source_refs = [str(value) for value in item.get("source_refs") or [] if str(value)]
+    exceptions: list[str] = []
+    if str(item.get("lesson_key") or "") != str(lesson.get("key") or ""):
+        exceptions.append("lesson_definition_mismatch")
+    if not source_refs or f"language_lesson:{lesson['key']}" not in source_refs:
+        exceptions.append("missing_language_lesson_provenance")
+    if not any(value.startswith("speech_phase_") for value in source_refs):
+        exceptions.append("source_outside_project_authored_language_phases")
+    for flag in (
+        "meaning_change_allowed",
+        "source_persona_imitation_allowed",
+        "personality_change_allowed",
+        "memory_or_authority_change_allowed",
+        "provider_used",
+    ):
+        if boundaries.get(flag) is not False:
+            exceptions.append(flag)
+    if boundaries.get("fixed_phrase_requirement") is not False:
+        exceptions.append("fixed_phrase_requirement")
+    for stage in ("acquire", "integrate", "express"):
+        if not isinstance(blueprint.get(stage), dict) or not blueprint.get(stage):
+            exceptions.append(f"missing_{stage}_review_evidence")
+    return {
+        "eligible": not exceptions,
+        "exceptions": list(dict.fromkeys(exceptions)),
+        "guidance_only": True,
+        "answer_bearing_knowledge": False,
+        "identity_or_personality_change": False,
+        "memory_governance_affect_or_authority_change": False,
+        "source_persona_imitation": False,
+        "meaning_change_allowed": False,
+    }
+
+
+def _decode_language_authorization(row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
+    item = dict(row)
+    item["scope"] = _loads_dict(item.pop("scope_json", "{}"))
+    try:
+        item["exception_classes"] = json.loads(str(item.pop("exception_classes_json", "[]") or "[]"))
+    except (json.JSONDecodeError, TypeError):
+        item["exception_classes"] = []
+    return item
+
+
+def _store_language_authorization_event(
+    conn: sqlite3.Connection,
+    authorization_id: int,
+    action: str,
+    decision: dict[str, Any],
+    *,
+    concept_id: int | None = None,
+    lifecycle_id: int | None = None,
+) -> int:
+    cursor = conn.execute(
+        """
+        INSERT INTO selene_curriculum_authorization_events
+        (authorization_id, lifecycle_id, concept_id, action, decision_json, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            authorization_id,
+            lifecycle_id,
+            concept_id,
+            action,
+            json.dumps(decision, sort_keys=True),
+            LANGUAGE_RANGE_AUTHORIZATION_BOUNDARY,
+        ),
+    )
+    conn.commit()
+    return int(cursor.lastrowid)
 
 
 def _loads_dict(value: Any) -> dict[str, Any]:

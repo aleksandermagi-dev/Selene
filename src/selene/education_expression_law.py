@@ -6,8 +6,9 @@ from typing import Any
 from .registry import truncate
 
 
-LAW_VERSION = "v1_capability_and_expression_without_personality_mutation"
+LAW_VERSION = "v2_language_range_without_item_approval_or_personality_mutation"
 LAW_SOURCE = "docs/SELENE_EDUCATION_EXPRESSION_PERSONALITY_LAW_20260719.md"
+LANGUAGE_RANGE_AUTHORIZATION_SOURCE = "Aleks standing language-capability decision recorded 2026-07-21"
 
 ALLOWED_EFFECTS = {
     "subject_knowledge",
@@ -65,6 +66,25 @@ def education_expression_law_status() -> dict[str, Any]:
             "voice_remains_expression_owner": True,
             "nlo_remains_language_structure_owner": True,
             "core_mind_remains_identity_and_governance_owner": True,
+            "language_capability_item_approval_required": False,
+            "language_capability_standing_authorization_active": True,
+            "language_capability_standing_authorization_source": LANGUAGE_RANGE_AUTHORIZATION_SOURCE,
+            "standing_authorization_scope": [
+                "grammar",
+                "vocabulary_range",
+                "clause_and_sentence_composition",
+                "discourse_and_conversation_mechanics",
+                "context_appropriate_register",
+                "meaning_preserving_paraphrase",
+            ],
+            "standing_authorization_excludes": [
+                "answer_bearing_subject_knowledge",
+                "identity_or_personality_prescription",
+                "memory_or_governance",
+                "source_or_persona_imitation",
+                "compulsory_affect",
+                "invented_or_strengthened_meaning",
+            ],
             "review_status": "status_only",
         }
     )
@@ -120,6 +140,8 @@ def review_education_expression(payload: dict[str, Any] | None = None) -> dict[s
             "education_may_inform_expression": True,
             "education_may_require_task_specific_form": True,
             "expression_range_may_expand": True,
+            "eligible_language_range_may_graduate_without_item_review": True,
+            "language_range_standing_authorization_source": LANGUAGE_RANGE_AUTHORIZATION_SOURCE,
             "personality_is_teaching_output": False,
             "voice_remains_expression_owner": True,
             "nlo_may_structure_supported_meaning": True,

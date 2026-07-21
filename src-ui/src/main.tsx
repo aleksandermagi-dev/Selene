@@ -2383,7 +2383,7 @@ function App() {
   }
 
   function prepareLanguageTeachingShelf() {
-    setLanguageTeachingResult({ status: "running", message: "Preparing provider-free language lesson candidates in Cocoon." });
+    setLanguageTeachingResult({ status: "running", message: "Preparing bounded provider-free language capability in Cocoon." });
     api<Dict>("/api/language-teaching/prepare", { method: "POST", body: JSON.stringify({}) })
       .then(async (result) => {
         setLanguageTeachingResult(result);
@@ -6479,10 +6479,10 @@ function App() {
               </div>
             </Panel>
             <Panel title="Language Teaching Shelf">
-              <p className="plainHelp">Provider-free conversational lessons for NLO, arranged in prerequisite order. Lesson meaning and practice evidence are shown separately from safety boundaries. Preparing creates review candidates only; NLO receives a lesson after Acquire, Integrate, Express, and Aleks approval. Voice still belongs to Selene.</p>
+              <p className="plainHelp">Provider-free conversational capability for NLO, arranged in prerequisite order. Eligible guidance-only lessons complete Acquire, Integrate, and Express under Aleks&apos;s standing language-range authorization without item-by-item approval. Anything that could prescribe personality, identity, affect, memory, governance, authority, source imitation, answer content, or changed meaning returns to Cocoon review. Voice still belongs to Selene.</p>
               <div className="metrics miniMetrics">
-                <Metric label="Teaching Groups" value={text(languageTeachingStatus?.defined_group_count ?? 4)} />
-                <Metric label="Defined Lessons" value={text(languageTeachingStatus?.defined_lesson_count ?? 22)} />
+                <Metric label="Teaching Groups" value={text(languageTeachingStatus?.defined_group_count ?? 5)} />
+                <Metric label="Defined Lessons" value={text(languageTeachingStatus?.defined_lesson_count ?? 26)} />
                 <Metric label="Awaiting Review" value={text(languageTeachingStatus?.candidate_lesson_count ?? 0)} />
                 <Metric label="Available To NLO" value={text(languageTeachingStatus?.available_lesson_count ?? 0)} />
                 <Metric label="Shelf State" value={friendlyStatus(languageTeachingStatus?.status || "not prepared")} />
@@ -6506,7 +6506,7 @@ function App() {
                       <span>{friendlyStatus(item.effective_status || item.status)}</span>
                     </div>
                     <p>{text(item.purpose)}</p>
-                    <small>{text(item.teaching_group || "G1 · Provider-Free Conversation Foundations")} · lesson {text(item.lesson_order || 0)} · {friendlyStatus(item.category)} · {item.available_to_nlo ? "available to NLO" : item.own_review_complete ? "reviewed; awaiting prerequisites" : "not available until reviewed"}</small>
+                    <small>{text(item.teaching_group || "G1 · Provider-Free Conversation Foundations")} · lesson {text(item.lesson_order || 0)} · {friendlyStatus(item.category)} · {item.available_to_nlo ? "available to NLO under the bounded language-range law" : item.own_review_complete ? "integrated; awaiting prerequisites" : "held for Cocoon review"}</small>
                     {Array.isArray(item.prerequisites) && (item.prerequisites as unknown[]).length ? <p className="plainHelp">Prerequisites: {(item.prerequisites as unknown[]).map(text).join(", ")}</p> : null}
                     {Array.isArray(item.unmet_prerequisites) && (item.unmet_prerequisites as unknown[]).length ? <p className="plainHelp">Awaiting prerequisite guidance: {(item.unmet_prerequisites as unknown[]).map(text).join(", ")}.</p> : null}
                     <div className="comprehensionSourceBox">
@@ -6524,11 +6524,11 @@ function App() {
                       <span className={safeJsonObject(item.lifecycle).express_status === "complete" ? "complete" : ""}><b>3 · Express</b>{friendlyStatus(safeJsonObject(item.lifecycle).express_status || "not started")}</span>
                     </div>
                     <div className="reviewActions">
-                      <button onClick={() => setOpenComprehensionId(Number(item.comprehension_concept_id || 0))} disabled={!Number(item.comprehension_concept_id || 0)}>Open Lesson Review</button>
+                      <button onClick={() => setOpenComprehensionId(Number(item.comprehension_concept_id || 0))} disabled={!Number(item.comprehension_concept_id || 0)}>Inspect Lesson</button>
                     </div>
                   </article>
                 ))}
-                {!languageTeachingItems.length && <p className="emptyState">The lesson definitions are ready. Prepare them when you want Cocoon to create source-linked review candidates; preparation alone does not make them available to NLO.</p>}
+                {!languageTeachingItems.length && <p className="emptyState">The language-capability definitions are ready. Prepare them to record their source-linked lifecycle and apply the bounded standing authorization where eligible.</p>}
               </div>
               <PlainResult value={languageTeachingResult} />
             </Panel>

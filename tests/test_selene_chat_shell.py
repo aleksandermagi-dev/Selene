@@ -392,7 +392,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v13_conversation_spine"
+    assert result["native_language_organ"]["version"] == "v14_reviewed_compositional_expression"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
@@ -577,7 +577,7 @@ def test_active_selene_chat_uses_prepared_language_teaching_guidance(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
     route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
-    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "language_teaching.prepare", {"defer_standing_authorization": True})
     _approve_language_lesson(conn, "answer_then_expand")
     _approve_language_lesson(conn, "topic_transition_continuity")
 
@@ -602,7 +602,7 @@ def test_active_chat_answers_about_reviewed_language_capability_without_parrotin
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
     route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
-    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "language_teaching.prepare", {"defer_standing_authorization": True})
     _approve_language_lesson(conn, "answer_then_expand")
     _approve_language_lesson(conn, "mixed_intent_balance")
 
@@ -667,7 +667,7 @@ def test_active_selene_chat_holds_approved_advanced_guidance_until_prerequisites
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
     route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
-    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "language_teaching.prepare", {"defer_standing_authorization": True})
     _approve_language_lesson(conn, "respectful_disagreement")
     prompt = "I disagree with that conclusion. Compare the assumption and evidence with me."
 

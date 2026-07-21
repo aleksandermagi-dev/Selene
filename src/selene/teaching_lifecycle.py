@@ -34,7 +34,9 @@ GUARDS: dict[str, Any] = {
     "self_replication_allowed": False,
     "teaching_material_is_governance": False,
     "knowledge_retention_requires_review": True,
-    "knowledge_retention_requires_aleks_approval": "bounded_curriculum_authorization_or_item_exception",
+    "knowledge_retention_requires_aleks_approval": (
+        "bounded_curriculum_authorization_language_capability_standing_authorization_or_item_exception"
+    ),
     "source_parroting_allowed": False,
 }
 
@@ -56,7 +58,11 @@ def teaching_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
                SUM(CASE WHEN acquire_status = 'complete' THEN 1 ELSE 0 END) AS acquired,
                SUM(CASE WHEN integrate_status = 'complete' THEN 1 ELSE 0 END) AS integrated,
                SUM(CASE WHEN express_status = 'complete' THEN 1 ELSE 0 END) AS expressed,
-               SUM(CASE WHEN approval_status IN ('approved_by_aleks', 'approved_under_curriculum_authorization') THEN 1 ELSE 0 END) AS approved
+               SUM(CASE WHEN approval_status IN (
+                   'approved_by_aleks',
+                   'approved_under_curriculum_authorization',
+                   'approved_under_language_capability_authorization'
+               ) THEN 1 ELSE 0 END) AS approved
         FROM selene_teaching_lifecycles
         """
     ).fetchone()
@@ -74,7 +80,11 @@ def teaching_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 {"stage": "integrate", "owner": "intelligenceOS + Comprehension", "retains_knowledge": False},
                 {"stage": "express", "owner": "NLO + Voice", "retains_knowledge": False},
             ],
-            "approval_rule": "Retention requires either an explicit Aleks item decision or an active bounded curriculum authorization recorded by Aleks; exceptions always return to Cocoon.",
+            "approval_rule": (
+                "Answer-bearing knowledge requires an explicit Aleks item decision or bounded curriculum authorization. "
+                "Project-authored guidance-only language capability may use Aleks's standing language-range authorization; "
+                "personality, identity, memory, governance, imitation, affect prescription, or invented meaning remain exceptions."
+            ),
             "education_expression_personality_law_active": True,
             "education_may_expand_capability_and_contextual_expression": True,
             "education_may_change_personality": False,
@@ -540,8 +550,10 @@ def approve_teaching_lifecycle_under_authorization(
 ) -> dict[str, Any]:
     """Retain a completed lifecycle covered by a previously recorded Aleks authorization.
 
-    This is deliberately not exposed as a router action.  The curriculum
-    authorization module must first perform the scope and exception checks.
+    This is deliberately not exposed as a router action. The bounded
+    authorization owner must first perform its scope and exception checks;
+    this function independently verifies the authorization class against the
+    concept before retention.
     """
     _reject_authority_change(payload)
     lifecycle = _lifecycle_for_payload(conn, payload)
@@ -551,24 +563,57 @@ def approve_teaching_lifecycle_under_authorization(
         raise ValueError("retention requires complete Acquire, Integrate, and Express stages")
     authorization_id = int(authorization_decision.get("authorization_id") or 0)
     if authorization_decision.get("decision") != "covered_by_active_authorization" or authorization_id <= 0:
-        raise ValueError("curriculum authorization did not cover this teaching lifecycle")
+        raise ValueError("recorded authorization did not cover this teaching lifecycle")
     authorization = conn.execute(
         "SELECT * FROM selene_curriculum_authorizations WHERE id = ? AND status = 'active'",
         (authorization_id,),
     ).fetchone()
     if not authorization or authorization["authorized_by"] != "Aleks":
-        raise ValueError("an active Aleks curriculum authorization is required")
+        raise ValueError("an active recorded Aleks authorization is required")
 
     law_review = _review_stored_lifecycle_expression(lifecycle)
     if law_review["permitted"] is not True:
         raise ValueError("retention requires education-expression-personality law compliance")
+    try:
+        authorization_scope = json.loads(str(authorization["scope_json"] or "{}"))
+    except (json.JSONDecodeError, TypeError):
+        authorization_scope = {}
+    language_capability_authorization = (
+        isinstance(authorization_scope, dict)
+        and authorization_scope.get("authorization_class") == "language_capability_range"
+    )
+    concept = _concept_row(conn, int(lifecycle["concept_id"]))
+    if language_capability_authorization:
+        try:
+            concept_payload = json.loads(str(concept.get("payload_json") or "{}"))
+        except (json.JSONDecodeError, TypeError):
+            concept_payload = {}
+        if (
+            concept.get("domain") != "language_and_conversation"
+            or not str(concept.get("concept_key") or "").startswith("language_lesson:")
+            or concept_payload.get("teaching_source_type") != "project_authored_provider_free_language_lesson"
+            or authorization_decision.get("guidance_only") is not True
+            or ((authorization_decision.get("eligibility") or {}).get("eligible") is not True)
+        ):
+            raise ValueError("language capability authorization cannot retain answer-bearing or out-of-scope material")
     decision = decide_comprehension_concept(
         conn,
         {"concept_id": int(lifecycle["concept_id"]), "action": "approve_knowledge"},
     )
+    approval_status = (
+        "approved_under_language_capability_authorization"
+        if language_capability_authorization
+        else "approved_under_curriculum_authorization"
+    )
+    approval_mode = "language_capability_authorization" if language_capability_authorization else "curriculum_authorization"
+    review_status = (
+        "bounded_language_capability_authorization_retention"
+        if language_capability_authorization
+        else "bounded_curriculum_authorization_retention"
+    )
     snapshot = {
         "stage": "approval",
-        "status": "approved_under_curriculum_authorization",
+        "status": approval_status,
         "concept_id": int(lifecycle["concept_id"]),
         "approval_actor": "Aleks",
         "explicit_item_approval": False,
@@ -583,19 +628,25 @@ def approve_teaching_lifecycle_under_authorization(
         "governance_changed": False,
         "personality_changed": False,
         "education_expression_personality_law": law_review,
-        "review_status": "bounded_curriculum_authorization_retention",
+        "review_status": review_status,
         "provenance_boundary": TEACHING_LIFECYCLE_BOUNDARY,
     }
     conn.execute(
         """
         UPDATE selene_teaching_lifecycles
         SET current_stage = 'approved_knowledge_resource',
-            approval_status = 'approved_under_curriculum_authorization',
-            approval_mode = 'curriculum_authorization', authorization_id = ?,
+            approval_status = ?,
+            approval_mode = ?, authorization_id = ?,
             authorization_snapshot_json = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
-        (authorization_id, json.dumps(authorization_decision, sort_keys=True), lifecycle["id"]),
+        (
+            approval_status,
+            approval_mode,
+            authorization_id,
+            json.dumps(authorization_decision, sort_keys=True),
+            lifecycle["id"],
+        ),
     )
     conn.commit()
     concept = decision.get("item") or {}
@@ -623,7 +674,12 @@ def _stage_result(
         {
             "status": f"teaching_{stage}_{snapshot['status']}",
             "stage": stage,
-            "stage_complete": snapshot["status"] in {"complete", "approved_by_aleks", "approved_under_curriculum_authorization"},
+            "stage_complete": snapshot["status"] in {
+                "complete",
+                "approved_by_aleks",
+                "approved_under_curriculum_authorization",
+                "approved_under_language_capability_authorization",
+            },
             "snapshot": snapshot,
             "item": _lifecycle_row(conn, lifecycle_id),
             "run_id": run_id,

@@ -86,6 +86,13 @@ def build_semantic_frame(payload: dict[str, Any] | None = None) -> dict[str, Any
     intent = str(supplied.get("communicative_goal") or intent_decision.get("intent") or payload.get("intent") or "direct_conversation")
     certainty = str(supplied.get("certainty") or payload.get("certainty") or "provisional")
     source_refs = _string_list(supplied.get("source_refs") or payload.get("source_refs"))
+    expression_directives = (
+        supplied.get("expression_directives")
+        if isinstance(supplied.get("expression_directives"), dict)
+        else payload.get("expression_directives")
+        if isinstance(payload.get("expression_directives"), dict)
+        else {}
+    )
     entities = _entities(supplied.get("entities"), propositions)
     frame = {
         "status": "semantic_frame_ready",
@@ -107,6 +114,7 @@ def build_semantic_frame(payload: dict[str, Any] | None = None) -> dict[str, Any
             "do not add unsupported facts",
             "keep uncertainty proportional",
         ],
+        "expression_directives": expression_directives,
         "formation_mode": "structured" if any(_is_structured(item) for item in propositions) else "text_grounded",
         "visible_summary_only": True,
         "hidden_chain_of_thought_exposed": False,
@@ -162,6 +170,7 @@ def realize_semantic_frame(
         "required_propositions": required,
         "meaning_preserved": bool(text) or not required,
         "source_refs": frame.get("source_refs") or [],
+        "expression_directives": frame.get("expression_directives") or {},
         "visible_summary_only": True,
         "hidden_chain_of_thought_exposed": False,
         "provenance_boundary": FORMATION_BOUNDARY,
