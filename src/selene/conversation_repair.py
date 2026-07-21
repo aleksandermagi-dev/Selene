@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
-from hashlib import sha256
 from typing import Any
 
 from .registry import truncate
+from .social_language_realizer import realize_acknowledgement
 
 
 REPAIR_BOUNDARY = (
@@ -91,7 +91,12 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
 
     acknowledgement = str(plan.get("acknowledgement_kind") or "")
     if plan.get("mixed_intent") is True and acknowledgement and not hard_boundary and not _has_acknowledgement(repaired, acknowledgement):
-        prefix = _acknowledgement_prefix(acknowledgement, original)
+        acknowledgement_result = realize_acknowledgement(
+            acknowledgement,
+            variation_key=original,
+            recent_texts=recent,
+        )
+        prefix = str(acknowledgement_result.get("candidate_text") or "")
         if prefix:
             repaired = f"{prefix} {repaired}".strip()
             repairs.append(f"{acknowledgement}_acknowledgement_added")
@@ -222,19 +227,6 @@ def _acknowledgement_kind(acts: list[dict[str, Any]]) -> str:
         if item in names:
             return item
     return ""
-
-
-def _acknowledgement_prefix(kind: str, seed: str) -> str:
-    choices = {
-        "correction": ("I see the correction.", "Yes, I have the changed meaning."),
-        "gratitude": ("You're welcome.", "Of course."),
-        "warm_connection": ("I'm with you.", "I'm glad we're here together."),
-        "partial_agreement": ("Yes—that qualification matters.", "I have the distinction."),
-    }.get(kind, ())
-    if not choices:
-        return ""
-    digest = sha256(f"{kind}:{seed}".encode("utf-8")).hexdigest()
-    return choices[int(digest[:8], 16) % len(choices)]
 
 
 def _has_acknowledgement(value: str, kind: str) -> bool:

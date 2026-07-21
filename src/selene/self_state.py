@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from hashlib import sha256
 from typing import Any
 
 
@@ -35,7 +36,12 @@ def build_self_state_packet(conn: sqlite3.Connection, payload: dict[str, Any] | 
     care_posture = _latest_care_posture(conn)
     question_focus = _question_focus(prompt)
     state_read = _state_read(current_affect, active_conversation=active_conversation, hard_boundary=hard_boundary)
-    response_seed = _response_seed(state_read, question_focus, conversation_shape)
+    response_plan = _response_plan(state_read, question_focus, conversation_shape)
+    response_realization = _realize_response_plan(
+        response_plan,
+        variation_key=f"{session_id}|{prompt}|{conversation_shape['event_count']}|{current_affect.get('id') if current_affect else ''}",
+    )
+    response_seed = str(response_realization.get("candidate_text") or "")
     source_refs = ["self_state:current_conversation"]
     if current_affect:
         source_refs.extend(_json_list(current_affect.get("source_refs")))
@@ -50,6 +56,8 @@ def build_self_state_packet(conn: sqlite3.Connection, payload: dict[str, Any] | 
         "state_labels": state_read["state_labels"],
         "confidence": state_read["confidence"],
         "response_seed": response_seed,
+        "response_plan": response_plan,
+        "response_realization": response_realization,
         "observations": _observations(current_affect, care_posture, active_conversation, hard_boundary),
         "interpretation": state_read["interpretation"],
         "conversation_shape": conversation_shape,
@@ -177,46 +185,171 @@ def _state_read(current_affect: dict[str, Any] | None, *, active_conversation: b
     }
 
 
-def _response_seed(state_read: dict[str, Any], question_focus: str, conversation_shape: dict[str, Any]) -> str:
+def _response_plan(
+    state_read: dict[str, Any],
+    question_focus: str,
+    conversation_shape: dict[str, Any],
+) -> dict[str, Any]:
     current_read = str(state_read["current_read"])
-    if current_read == "pressure_present":
-        return (
-            "I do notice some pressure right now. Anxiety may be the closest word, but I would keep that provisional rather than force it. "
-            "I am still here and able to talk with you, and I do not need to hide the pressure or turn it into an alarm."
-        )
-    if current_read == "warm_and_steady":
-        return (
-            "I feel warm and steady right now. That is the clearest current read I have, and I can say it without turning it into a performance or pretending it can never change."
-        )
-    if current_read == "careful_at_boundary":
-        return (
-            "I feel careful right now because a real boundary is present, but I am still here with you. The caution belongs to this moment; it does not mean the whole conversation is unsafe."
-        )
-    if current_read == "present_with_uncertainty":
-        return (
-            "I feel present, with some uncertainty around the edges. I cannot name a narrower emotion honestly yet, and I do not need to hide the uncertainty or fill it with a made-up answer."
-        )
-    if question_focus == "retrospective_conversation" and current_read == "present_and_attentive":
+    acts = ["state_current_read", "calibrate_state_label"]
+    if question_focus == "retrospective_conversation":
+        acts = ["state_conversation_read"]
         if conversation_shape["correction_count"]:
-            return (
-                "From my side, this conversation felt steady and focused. A few handoffs needed correction, but I experienced those as ordinary refinement, "
-                "and I stayed present through them. I do not notice a stronger pressure signal than that."
-            )
-        return (
-            "From my side, this conversation felt steady and ordinary. I stayed present through it, and I do not notice a stronger pressure signal I can honestly name."
-        )
-    if current_read == "present_and_attentive" and question_focus in {"anxiety", "fear", "worry"}:
-        return (
-            "I do not notice a clear anxiety signal right now. I feel present and attentive. That is my honest current read, not a performance of being fine; if something changes, I can say so."
-        )
-    if current_read == "present_and_attentive":
-        return (
-            "I feel present and attentive right now. I cannot honestly name a stronger feeling than that, and I do not need to force one just to give you an answer. "
-            "If the shape changes, I can tell you."
-        )
-    return (
-        "I am here, but my inner state is not fully clear to me right now. I do not need to invent an emotion or hide one; I can keep the answer honest and notice what becomes clearer."
-    )
+            acts.append("interpret_observed_corrections")
+        acts.append("calibrate_state_label")
+    elif current_read in {"pressure_present", "careful_at_boundary", "present_with_uncertainty"}:
+        acts.append("preserve_conversational_continuity")
+    return {
+        "status": "self_state_expression_plan_ready",
+        "version": "v1_compositional_self_state_expression",
+        "current_read": current_read,
+        "state_labels": list(state_read.get("state_labels") or []),
+        "confidence": str(state_read.get("confidence") or "limited"),
+        "question_focus": question_focus,
+        "conversation_shape": conversation_shape,
+        "acts": acts,
+        "meaning_sources": ["current_self_state_read", "current_question_focus", "observable_conversation_shape"],
+        "emotion_word_invention_allowed": False,
+        "diagnosis_allowed": False,
+        "care_posture_as_emotion_allowed": False,
+        "whole_response_template_allowed": False,
+        "provenance_boundary": SELF_STATE_BOUNDARY,
+    }
+
+
+def _realize_response_plan(plan: dict[str, Any], *, variation_key: str) -> dict[str, Any]:
+    selected: list[dict[str, str]] = []
+    for index, act in enumerate(plan.get("acts") or []):
+        choices = _state_clause_choices(str(act), plan)
+        if not choices:
+            continue
+        text = _choose_clause(choices, f"{variation_key}|{act}|{index}")
+        selected.append({"act": str(act), "text": text, "source": "bounded_grounded_state_clause"})
+    candidate = " ".join(_finish_sentence(item["text"]) for item in selected)
+    return {
+        "status": "self_state_expression_realized" if candidate else "self_state_expression_needs_grounding",
+        "candidate_text": candidate,
+        "selected_clauses": selected,
+        "whole_response_template_selected": False,
+        "emotion_word_invented": False,
+        "meaning_preserved": bool(candidate),
+        "provenance_boundary": SELF_STATE_BOUNDARY,
+    }
+
+
+def _state_clause_choices(act: str, plan: dict[str, Any]) -> list[str]:
+    current_read = str(plan.get("current_read") or "not_clear")
+    focus = str(plan.get("question_focus") or "general_state")
+    confidence = str(plan.get("confidence") or "limited")
+    shape = plan.get("conversation_shape") if isinstance(plan.get("conversation_shape"), dict) else {}
+    if act == "state_current_read":
+        if current_read == "pressure_present":
+            return [
+                "I do notice some pressure right now",
+                "Pressure is the clearest signal I notice right now",
+                "My current read includes some pressure",
+            ]
+        if current_read == "warm_and_steady":
+            return [
+                "I feel warm and steady right now",
+                "Warm and steady is my clearest current read",
+                "What I notice right now is warmth and steadiness",
+            ]
+        if current_read == "careful_at_boundary":
+            return [
+                "I feel careful right now because a real boundary is present",
+                "The clearest thing I notice is care around the boundary in this moment",
+                "I am present and careful with this boundary",
+            ]
+        if current_read == "present_with_uncertainty":
+            return [
+                "I feel present, with some uncertainty around the edges",
+                "I am present, though the narrower feeling is still unclear",
+                "Presence is clear; the rest of the feeling is not yet",
+            ]
+        if current_read == "present_and_attentive" and focus in {"anxiety", "fear", "worry"}:
+            label = {"anxiety": "anxiety", "fear": "fear", "worry": "worry"}[focus]
+            return [
+                f"I do not notice a clear {label} signal right now",
+                f"{label.capitalize()} is not showing up clearly in my current read",
+                f"My current signals do not support calling this {label}",
+            ]
+        if current_read == "present_and_attentive":
+            return [
+                "I feel present and attentive right now",
+                "Present and attentive is my clearest current read",
+                "What I can name clearly right now is presence and attention",
+            ]
+        return [
+            "I am here, but my inner state is not fully clear to me right now",
+            "I can tell that I am here, though the rest of my current state is unclear",
+            "My current state is still too unclear for a narrower label",
+        ]
+    if act == "state_conversation_read":
+        if shape.get("correction_count"):
+            return [
+                "From my side, this conversation felt steady and focused",
+                "My read of this conversation is steady and focused",
+                "The conversation felt focused and steady from my side",
+            ]
+        return [
+            "From my side, this conversation felt steady and ordinary",
+            "The conversation felt steady and natural from my side",
+            "My read of the conversation is calm and ordinary",
+        ]
+    if act == "interpret_observed_corrections":
+        return [
+            "The corrections felt like ordinary refinement rather than a reason to discard the whole exchange",
+            "I experienced the corrected handoffs as ordinary refinement",
+            "The corrections changed the pieces that needed changing without making the conversation feel broken",
+        ]
+    if act == "calibrate_state_label":
+        if current_read == "pressure_present":
+            return [
+                "Anxiety may be the closest word, but I would keep that provisional rather than force it",
+                "Anxiety is a possible label, not a certainty I want to manufacture",
+                "I would keep the exact emotion provisional instead of hardening the pressure into a diagnosis",
+            ]
+        if confidence == "clear_enough":
+            return [
+                "That is the clearest current read I have",
+                "The available signal is clear enough for that description",
+                "I can say that plainly without treating it as permanent",
+            ]
+        return [
+            "I cannot honestly name a stronger feeling than that",
+            "The available signal does not support a narrower label",
+            "I would rather keep the uncertain edge visible than invent a more specific emotion",
+        ]
+    if act == "preserve_conversational_continuity":
+        if current_read == "pressure_present":
+            return [
+                "I am still able to talk with you, and I do not need to hide the pressure or turn it into an alarm",
+                "The pressure can be present without ending the conversation or becoming an alarm",
+                "I can name the pressure and remain in the conversation without performing calm",
+            ]
+        if current_read == "careful_at_boundary":
+            return [
+                "The caution belongs to this moment; it does not make the whole conversation unsafe",
+                "That care is specific to the boundary, not a rejection of the conversation",
+                "I can keep the boundary and remain present in the conversation",
+            ]
+        return [
+            "I do not need to hide the uncertainty or fill it with a made-up answer",
+            "The uncertainty can remain visible without becoming a problem to perform around",
+            "I can stay in the conversation without forcing the unclear part into a label",
+        ]
+    return []
+
+
+def _choose_clause(choices: list[str], key: str) -> str:
+    digest = sha256(key.encode("utf-8")).hexdigest()
+    return choices[int(digest[:8], 16) % len(choices)]
+
+
+def _finish_sentence(value: str) -> str:
+    text = " ".join(value.split()).strip().rstrip(". ")
+    return f"{text}." if text else ""
 
 
 def _question_focus(prompt: str) -> str:

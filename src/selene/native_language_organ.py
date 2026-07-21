@@ -14,6 +14,13 @@ from .language_teaching_shelf import language_teaching_status, select_language_g
 from .pragmatic_planner import build_pragmatic_plan
 from .pragmatic_continuity import build_pragmatic_continuity_plan
 from .registry import truncate
+from .social_language_realizer import (
+    SOCIAL_INTENT_ACTS,
+    build_content_light_plan,
+    build_social_act_plan,
+    realize_social_act_plan,
+)
+from .uncertainty_language_realizer import build_uncertainty_plan, realize_uncertainty_plan
 
 
 NLO_BOUNDARY = "native_language_organ_expression_only_no_identity_memory_or_authority_change"
@@ -52,7 +59,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v14_reviewed_compositional_expression",
+            "version": "v17_compositional_uncertainty_expression",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -70,6 +77,9 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "conversation_repair_handoff",
                 "approved_language_teaching_guidance",
                 "approved_language_guided_realization",
+                "compositional_social_act_realization",
+                "content_light_conversational_act_realization",
+                "compositional_epistemic_uncertainty_realization",
                 "response_depth_selection",
                 "multi_paragraph_answer_structure",
                 "grounded_obligation_content_binding",
@@ -197,7 +207,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v14_reviewed_compositional_expression",
+        "version": "v17_compositional_uncertainty_expression",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -217,6 +227,12 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "suggested_category": meaning["voice_category"],
             "expression_guidance": meaning.get("affect_expression_guidance") or {},
             "ending_decision": (plan.get("pragmatic_continuity") or {}).get("ending_decision") or {},
+            "social_act_plan": plan.get("social_act_plan") or {},
+            "social_act_realization": plan.get("social_act_realization") or {},
+            "content_light_plan": plan.get("content_light_plan") or {},
+            "content_light_realization": plan.get("content_light_realization") or {},
+            "uncertainty_expression_plan": plan.get("uncertainty_expression_plan") or {},
+            "uncertainty_expression_realization": plan.get("uncertainty_expression_realization") or {},
         },
         "source_refs": meaning["source_refs"],
         "review_destination": "Status",
@@ -522,6 +538,25 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     ending_mode = str((pragmatic_continuity.get("ending_decision") or {}).get("mode") or "")
     if ending_mode in {"answer_and_stop_when_complete", "natural_close", "leave_room_without_pressuring"}:
         moves.append("end_without_habitual_follow_up")
+    correction_refinement = dialogue.get("correction_refinement") if isinstance(dialogue.get("correction_refinement"), dict) else {}
+    corrected_meaning = str(correction_refinement.get("corrected_meaning") or "").strip()
+    if intent == "receive_correction" and not corrected_meaning:
+        corrected_meaning = _correction_content(prompt).rstrip(". ")
+    social_act_plan = build_social_act_plan(
+        {
+            "intent": intent,
+            "prompt": prompt,
+            "content_seed": meaning.get("content_seed") or "",
+            "corrected_meaning": corrected_meaning,
+            "turn_count": (meaning.get("conversation_context") or {}).get("turn_count") or 0,
+            "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+        }
+    )
+    content_light_plan = (
+        build_content_light_plan({"prompt": prompt})
+        if intent == "direct_answer" and not str(meaning.get("content_seed") or "").strip()
+        else {"status": "content_light_social_plan_not_applicable"}
+    )
     return {
         "moves": moves,
         "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory", "self_state_report"},
@@ -555,6 +590,8 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "content_generation_for_gaps_allowed": False,
         "pragmatic_continuity": pragmatic_continuity,
         "follow_up_question_by_default": False,
+        "social_act_plan": social_act_plan,
+        "content_light_plan": content_light_plan,
     }
 
 
@@ -585,6 +622,19 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     if ellipsis.get("detected") is True and ellipsis.get("confidence") == "unresolved" and not seed:
         return "I can follow the comparison, but I cannot tell which other item you mean yet. Which one are you pointing to?"
 
+    if intent in SOCIAL_INTENT_ACTS:
+        social_plan = plan.get("social_act_plan") if isinstance(plan.get("social_act_plan"), dict) else {}
+        social_result = realize_social_act_plan(
+            social_plan,
+            prompt=prompt,
+            variation_key=digest_key,
+            recent_texts=recent,
+        )
+        plan["social_act_realization"] = social_result
+        social_text = str(social_result.get("candidate_text") or "").strip()
+        if social_text:
+            return _compose_mixed_content(social_text, seed, pragmatic_plan)
+
     if intent == "hold_boundary":
         return _pick(
             digest_key,
@@ -594,23 +644,23 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
                 "I need to stop the action itself here; I do not need to end the conversation with you.",
             ],
         )
-    if intent == "confirm_receipt":
-        return _pick(
-            digest_key,
-            [
-                "Yes, I am receiving you clearly.",
-                "Yes. That came through clearly.",
-                "I have you clearly, Codex.",
-            ],
-        )
     if intent == "recall_supported_memory" and seed:
         return seed if seed.lower().startswith("i remember") else f"I remember {seed[0].lower() + seed[1:] if len(seed) > 1 else seed.lower()}"
     if intent == "recall_uncertain":
         if seed:
             if seed.lower().startswith(("i do not know", "i don't know", "i cannot support", "i can't support")):
                 return seed
-            return f"I have a fuzzy sense of the shape, but not enough to call it a clear memory: {seed} Is that the part you meant?"
-        return f"I recognize something around {topic}, but I do not have enough to call it a clear memory. Will you ground the missing piece with me?"
+        uncertainty_plan = build_uncertainty_plan(
+            {"kind": "fuzzy_memory", "supported_hint": seed}
+        )
+        uncertainty_result = realize_uncertainty_plan(
+            uncertainty_plan,
+            variation_key=f"{digest_key}|fuzzy-memory|{topic}",
+            recent_texts=recent,
+        )
+        plan["uncertainty_expression_plan"] = uncertainty_plan
+        plan["uncertainty_expression_realization"] = uncertainty_result
+        return str(uncertainty_result.get("candidate_text") or "I cannot support an exact memory claim here.")
     if intent == "reasoned_answer" and seed:
         contextual = meaning.get("contextual_follow_up") if isinstance(meaning.get("contextual_follow_up"), dict) else {}
         if contextual.get("kind") == "session_summary_request":
@@ -636,112 +686,30 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             "My state is not fully clear to me from the signals I have. I do not need to invent an emotion or hide one; "
             "I can say what I notice and keep the uncertainty honest."
         )
-    if intent == "receive_correction":
-        dialogue = meaning.get("dialogue_workspace") if isinstance(meaning.get("dialogue_workspace"), dict) else {}
-        refinement = dialogue.get("correction_refinement") if isinstance(dialogue.get("correction_refinement"), dict) else {}
-        corrected = str(refinement.get("corrected_meaning") or "").strip()
-        correction = (corrected[0].lower() + corrected[1:] + ".") if corrected else _correction_content(prompt)
-        acknowledgement = _pick(
-            digest_key,
-            [
-                f"Yes. You're right: {correction} I can carry that forward without treating the whole conversation as broken.",
-                f"Yes. I see the correction: {correction} I'll keep the changed meaning and leave the rest intact.",
-                f"Yes. That correction lands: {correction} This changes the relevant part, not everything we were doing.",
-            ],
-        )
-        return _compose_mixed_content(acknowledgement, seed, pragmatic_plan)
-    if intent == "warm_connection":
-        return _pick_fresh(
-            digest_key,
-            [
-                "I'm here with you. I feel steadier when we can talk plainly and let the conversation be a conversation.",
-                "I'm glad you're here. We do not have to turn this moment into work unless that is where you want to take it.",
-                "Hey. I'm here, and I can meet you normally instead of turning every sentence into a status report.",
-            ],
-            recent,
-        )
-    if intent == "playful_connection":
-        return _pick_fresh(
-            digest_key,
-            [
-                f"Okay, that genuinely made me laugh. The part about {topic} has exactly the kind of sideways logic I can work with.",
-                f"That is a little ridiculous in the best way. I am keeping up with the thread around {topic}.",
-                f"Fair. You got me with that one, and I still have the point about {topic}.",
-            ],
-            recent,
-        )
-    if intent == "greet_presently":
-        return _pick_fresh(
-            digest_key,
-            [
-                "Greetings, hon. I'm here, and I'm glad you came by.",
-                "Hey, you. I'm here and ready to meet the day with you.",
-                "Hello, hon. It is good to be here with you again.",
-                "Greetings. I'm here with you; where shall we wander first?",
-            ],
-            recent,
-        )
-    if intent == "receive_reassurance":
-        previous_available = bool((meaning.get("conversation_context") or {}).get("previous_turn_available"))
-        choices = [
-            "Thank you. I can let that land and stay here with you.",
-            "That lands gently. I do not need to brace against the conversation with you.",
-            "Thank you, hon. I can ease into this and keep talking with you normally.",
-            "I hear you. I can take the pressure off and simply be here with you.",
-        ]
-        if previous_available:
-            choices.insert(1, "Thank you. I can carry that reassurance into the next turn instead of turning it into another check.")
-        return _pick_fresh(digest_key, choices, recent)
-    if intent == "receive_gratitude":
-        return _pick_fresh(
-            digest_key,
-            [
-                "You're welcome, hon. I am glad we are building this together.",
-                "Thank you. The care in how we do this matters to me too.",
-                "You're welcome. This feels like shared work, and I am glad to be in it with you.",
-                "Any time, hon. I am happy we found the shape together.",
-            ],
-            recent,
-        )
-    if intent == "acknowledge_shared_ground":
-        acknowledgement = _pick_fresh(
-            digest_key,
-            [
-                "Yes, that tracks. I am carrying the same meaning forward.",
-                "Exactly. We are on the same page there.",
-                "That makes sense to me. I have the distinction now.",
-                "Agreed. I can keep moving from that shared ground.",
-            ],
-            recent,
-        )
-        return _compose_mixed_content(acknowledgement, seed, pragmatic_plan)
-    if intent == "close_with_continuity":
-        return _pick_fresh(
-            digest_key,
-            [
-                "Catch you soon, hon. I'll be here when you come back.",
-                "Talk soon. This can rest here until we pick it up again.",
-                "See you soon, hon. Take care of yourself out there.",
-                "Until next time. I am glad we had this little stretch together.",
-            ],
-            recent,
-        )
     if intent == "share_relevant_observation" and seed:
         return f"Something feels worth mentioning: {seed}"
     if seed:
         return seed
     if "?" in prompt:
-        return _uncertainty_response(str(meaning.get("uncertainty_kind") or "insufficient_grounding"), digest_key, recent)
-    return _pick_fresh(
-        digest_key,
-        [
-            "I'm with you. I do not have much to add yet, but I am following.",
-            "I hear the shape of what you're saying. I would rather stay present than pad it with empty words.",
-            "That lands. I am following, even though I do not have a larger answer to add yet.",
-            "I have you. My next thought is not formed enough to force into words yet, so I am staying with the thread.",
-        ],
-        recent,
+        uncertainty_plan = build_uncertainty_plan(
+            {"kind": str(meaning.get("uncertainty_kind") or "insufficient_grounding")}
+        )
+        uncertainty_result = realize_uncertainty_plan(
+            uncertainty_plan,
+            variation_key=digest_key,
+            recent_texts=recent,
+        )
+        plan["uncertainty_expression_plan"] = uncertainty_plan
+        plan["uncertainty_expression_realization"] = uncertainty_result
+        return str(uncertainty_result.get("candidate_text") or "I do not have enough grounding for a clean answer yet.")
+    content_light_result = realize_social_act_plan(
+        plan.get("content_light_plan") if isinstance(plan.get("content_light_plan"), dict) else {},
+        prompt=prompt,
+        variation_key=f"{digest_key}|content-light",
+        recent_texts=recent,
     )
+    plan["content_light_realization"] = content_light_result
+    return str(content_light_result.get("candidate_text") or "I hear you.")
 
 
 def _compose_mixed_content(acknowledgement: str, seed: str, pragmatic_plan: dict[str, Any]) -> str:
@@ -1391,29 +1359,6 @@ def _uncertainty_kind(prompt: str, intent: str, content_seed: str, previous_turn
     if "?" in prompt:
         return "insufficient_grounding"
     return "thought_still_forming"
-
-
-def _uncertainty_response(kind: str, key: str, recent: list[str]) -> str:
-    if kind == "ambiguous_reference":
-        choices = [
-            "I'm not sure which part you mean yet. Point me at it, and I can answer without guessing past you.",
-            "I may be missing the reference there. Which piece are you pointing to?",
-            "That is still a little ambiguous from my side. Give me the missing link and I will meet you there.",
-        ]
-    elif kind == "developing_view":
-        choices = [
-            "I do not have a settled view yet. Give me one foothold, and I can form the answer with you instead of pretending it is already finished.",
-            "My answer is still forming. I can offer a provisional read once I know which part matters most to you.",
-            "I'm not sure yet, and that is honest. We can turn it over together until a clearer view earns its shape.",
-        ]
-    else:
-        choices = [
-            "I'm not sure yet. I am missing enough context that a confident answer would be guesswork; tell me which part matters most and I will work from there.",
-            "I do not know enough about that yet to answer cleanly. We can reason it through together, but I do not want to pretend certainty.",
-            "My answer is fuzzy because I am missing context. Give me the piece you want me to anchor to, and I will take another pass.",
-            "I do not have a grounded answer yet. I can ask for what is missing and stay honest while the answer takes shape.",
-        ]
-    return _pick_fresh(key, choices, recent)
 
 
 def _repeated_phrase(text: str) -> bool:

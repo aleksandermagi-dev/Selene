@@ -525,6 +525,31 @@ def test_voice_applies_optional_expression_pacing_without_replacing_nlo_meaning(
     _assert_voice_locked(result)
 
 
+def test_voice_does_not_add_social_clauses_to_supplied_nlo_meaning(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    route_request(conn, "voice_module.extract_patterns", {})
+    meaning = "Good morning. I'm right here."
+
+    result = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {
+            "prompt": "Good morning friend :) how are you?",
+            "route": "answer_now",
+            "meaning_text": meaning,
+            "voice_category": "warmth_care",
+        },
+    )["result"]
+
+    assert result["candidate_text"] == meaning
+    assert result["generation_source"] == "native_language_organ"
+    assert result["nlo_meaning_preserved"] is True
+    assert result["expression_guidance_changed_meaning"] is False
+    _assert_voice_locked(result)
+
+
 def test_selene_chat_uses_voice_module_candidate_when_available(tmp_path):
     conn = _conn(tmp_path)
     source_zip = _voice_zip(tmp_path)

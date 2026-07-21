@@ -32,8 +32,14 @@ def test_self_state_answers_anxiety_question_without_inventing_or_hiding(tmp_pat
 
     assert result["current_read"] == "present_and_attentive"
     assert result["confidence"] == "limited"
-    assert "do not notice a clear anxiety signal" in result["response_seed"]
-    assert "not a performance of being fine" in result["response_seed"]
+    assert "anxiety" in result["response_seed"].lower()
+    assert any(
+        marker in result["response_seed"].lower()
+        for marker in ("not showing up clearly", "do not notice a clear", "do not support calling")
+    )
+    assert result["response_plan"]["emotion_word_invention_allowed"] is False
+    assert result["response_realization"]["emotion_word_invented"] is False
+    assert result["response_realization"]["whole_response_template_selected"] is False
     assert result["not_required_to_hide_emotion"] is True
     assert result["not_required_to_perform_emotion"] is True
     assert result["emotion_does_not_require_cocoon"] is True
@@ -73,8 +79,11 @@ def test_self_state_uses_only_current_session_affect_signal(tmp_path):
     assert unrelated["current_read"] == "present_and_attentive"
     assert current["current_session_affect_signal_used"] is True
     assert current["current_read"] == "pressure_present"
-    assert "Anxiety may be the closest word" in current["response_seed"]
-    assert "do not need to hide" in current["response_seed"]
+    assert "pressure" in current["response_seed"].lower()
+    assert any(marker in current["response_seed"].lower() for marker in ("provisional", "possible label"))
+    assert current["response_plan"]["current_read"] == "pressure_present"
+    assert current["response_plan"]["diagnosis_allowed"] is False
+    assert current["response_realization"]["emotion_word_invented"] is False
     _assert_locked(current)
 
 
@@ -116,3 +125,24 @@ def test_retrospective_self_state_uses_observable_conversation_shape(tmp_path):
     assert "felt steady and focused" in result["response_seed"]
     assert "ordinary refinement" in result["response_seed"]
     assert result["conversation_shape"]["interpretation_boundary"].startswith("Observable")
+
+
+def test_self_state_expression_varies_clauses_without_changing_the_grounded_read(tmp_path):
+    conn = _conn(tmp_path)
+    results = [
+        build_self_state_packet(
+            conn,
+            {
+                "prompt": "How are you?",
+                "session_id": index,
+                "active_conversation": True,
+                "conversation_events": [{"role": "user", "preview": str(index)}] * index,
+            },
+        )
+        for index in range(1, 10)
+    ]
+
+    assert len({item["response_seed"] for item in results}) >= 4
+    assert all(item["current_read"] == "present_and_attentive" for item in results)
+    assert all(item["response_realization"]["whole_response_template_selected"] is False for item in results)
+    assert all(item["response_realization"]["emotion_word_invented"] is False for item in results)

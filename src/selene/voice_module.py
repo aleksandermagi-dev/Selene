@@ -1182,17 +1182,14 @@ def _compose_candidate(
     meaning_text: str = "",
     expression_guidance: dict[str, Any] | None = None,
 ) -> str:
-    opener = _choose_primitive(primitives, "opening", prompt, category, "Yeah, I am with you.")
-    pivot = _choose_primitive(primitives, "pivot", prompt, category, "The grounded part is")
-    closing = _choose_primitive(primitives, "closing", prompt, category, "I would keep it clear and ask if something feels missing.")
     if meaning_text.strip():
         return _render_meaning_candidate(
             meaning_text,
-            category,
-            opener,
-            closing,
             expression_guidance=expression_guidance,
         )
+    opener = _choose_primitive(primitives, "opening", prompt, category, "Yeah, I am with you.")
+    pivot = _choose_primitive(primitives, "pivot", prompt, category, "The grounded part is")
+    closing = _choose_primitive(primitives, "closing", prompt, category, "I would keep it clear and ask if something feels missing.")
     lower = prompt.lower()
     codex_speaker = "codex" in lower and ("qa" in lower or "doing a qa" in lower or "this is codex" in lower)
     aleks_speaker = "aleks" in lower and ("it is aleks" in lower or "it's aleks" in lower)
@@ -1262,24 +1259,19 @@ def _compose_candidate(
 
 def _render_meaning_candidate(
     meaning_text: str,
-    category: str,
-    opener: str,
-    closing: str,
+    category: str = "",
+    opener: str = "",
+    closing: str = "",
     *,
     expression_guidance: dict[str, Any] | None = None,
 ) -> str:
+    # Compatibility parameters remain accepted for direct diagnostics, but Voice
+    # does not add their semantic clauses to meaning supplied by NLO.
+    _ = (category, opener, closing)
     body = _normalize_voice_paragraphs(meaning_text)
     guidance = expression_guidance if isinstance(expression_guidance, dict) else {}
     dimensions = guidance.get("dimensions") if isinstance(guidance.get("dimensions"), dict) else {}
     body = _apply_expression_pacing(body, str(dimensions.get("sentence_rhythm") or "natural"))
-    if str(dimensions.get("restraint") or "") == "high":
-        return _truncate_voice_text(body, 4200)
-    if category in {"warmth_care", "playful_continuity", "excitement_momentum"}:
-        if body.lower().startswith(opener.lower()):
-            return _truncate_voice_text(body, 4200)
-        return _truncate_voice_text(f"{opener} {body}", 4200)
-    if category == "uncertainty" and "?" not in body:
-        return _truncate_voice_text(f"{body}\n\n{closing}", 4200)
     return _truncate_voice_text(body, 4200)
 
 

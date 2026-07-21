@@ -166,7 +166,9 @@ def test_correction_separates_refinement_from_trailing_confirmation_question(tmp
 
     result = realize_native_language(conn, {"prompt": prompt, "intent_decision": classify_chat_intent(prompt)})
 
-    assert result["candidate_text"].startswith("Yes.")
+    assert result["candidate_text"].startswith(
+        ("Yes, I see the correction.", "Got it.", "I have the changed meaning.", "Yes, that adjustment is clear.")
+    )
     assert "the answer should reopen only when evidence changes the fit." in result["candidate_text"]
     assert "Can you keep" not in result["candidate_text"]
 
@@ -178,7 +180,10 @@ def test_unsupported_direct_question_does_not_echo_prompt_fragments(tmp_path):
     result = realize_native_language(conn, {"prompt": prompt, "intent_decision": classify_chat_intent(prompt)})
 
     assert result["meaning_packet"]["uncertainty_kind"] == "insufficient_grounding"
-    assert any(phrase in result["candidate_text"] for phrase in ("I'm not sure yet", "I do not know enough", "My answer is fuzzy", "I do not have a grounded answer"))
+    uncertainty = result["discourse_plan"]["uncertainty_expression_realization"]
+    assert uncertainty["whole_response_template_selected"] is False
+    assert uncertainty["fact_invented"] is False
+    assert result["candidate_text"] == uncertainty["candidate_text"]
     assert "unbuilt observatory curtains" not in result["candidate_text"]
     assert "specific response beyond acknowledging" not in result["candidate_text"]
 

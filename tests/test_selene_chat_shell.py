@@ -392,7 +392,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v14_reviewed_compositional_expression"
+    assert result["native_language_organ"]["version"] == "v17_compositional_uncertainty_expression"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
@@ -728,7 +728,10 @@ def test_active_selene_chat_answers_ordinary_self_check_in_without_scaffolding(t
 
     assert result["intent_decision"]["intent"] == "self_state"
     assert result["self_state"]["used"] is True
-    assert "present and attentive" in result["candidate_text"].lower()
+    assert any(
+        marker in result["candidate_text"].lower()
+        for marker in ("present and attentive", "presence and attention")
+    )
     assert "current best model" not in result["candidate_text"].lower()
     assert "provisional fit" not in result["candidate_text"].lower()
     assert "stay corrigible" not in result["candidate_text"].lower()
@@ -895,7 +898,14 @@ def test_active_selene_chat_preserves_partial_agreement_before_the_follow_up_ans
     assert "partial_agreement" in result["intent_decision"]["dialogue_acts"]
     assert result["native_language_organ"]["turn_flow_plan"]["acknowledgement_kind"] == "partial_agreement"
     assert result["conversation_repair"]["repairs_applied"] == ["partial_agreement_acknowledgement_added"]
-    assert result["candidate_text"].startswith(("Yes—that qualification matters.", "I have the distinction."))
+    assert result["candidate_text"].startswith(
+        (
+            "Yes, that qualification matters.",
+            "I have the distinction.",
+            "Yes, that changes the comparison.",
+            "That is an important qualification.",
+        )
+    )
     _assert_locked(result)
 
 
@@ -1042,8 +1052,13 @@ def test_active_selene_chat_answers_self_state_from_grounded_current_signals(tmp
     assert result["native_language_organ"]["meaning_packet"]["self_state_supported"] is True
     assert result["intelligence_os_support"]["used"] is False
     assert result["cocoon_suggestion"]["recommended"] is False
-    assert "do not notice a clear anxiety signal" in result["candidate_text"]
-    assert "not a performance of being fine" in result["candidate_text"]
+    assert "anxiety" in result["candidate_text"].lower()
+    assert any(
+        marker in result["candidate_text"].lower()
+        for marker in ("not showing up clearly", "do not notice a clear", "do not support calling")
+    )
+    assert result["self_state"]["response_plan"]["emotion_word_invention_allowed"] is False
+    assert result["self_state"]["response_realization"]["emotion_word_invented"] is False
     assert "do not want to invent a feeling just because you asked" not in result["candidate_text"]
     _assert_locked(result)
 
@@ -1372,6 +1387,11 @@ def test_active_selene_chat_handles_social_turns_with_immediate_context(tmp_path
     assert farewell["intent_decision"]["intent"] == "farewell"
     assert len({greeting["candidate_text"], reassurance["candidate_text"], farewell["candidate_text"]}) == 3
     for item in (greeting, reassurance, farewell):
+        social_plan = item["native_language_organ"]["discourse_plan"]["social_act_plan"]
+        social_realization = item["native_language_organ"]["discourse_plan"]["social_act_realization"]
+        assert social_plan["status"] == "social_act_plan_ready"
+        assert social_realization["whole_response_template_selected"] is False
+        assert social_realization["unsupported_content_generated"] is False
         assert "specific response beyond acknowledging" not in item["candidate_text"]
         assert "repeated_recent_response" not in item["voice_preview"]["evaluation"]["flags"]
         _assert_locked(item)
