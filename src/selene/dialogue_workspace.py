@@ -118,7 +118,11 @@ def prepare_dialogue_turn(
         referents[reference["token"]] = reference
     entities = _merge_entities(prior.get("entities") or [], _extract_entities(interpreted_text))
     corrections = list(prior.get("corrections") or [])
-    correction = _correction_refinement(interpreted_text, previous)
+    correction = _correction_refinement(
+        interpreted_text,
+        previous,
+        contextual_follow_up=contextual_follow_up,
+    )
     if str(intent.get("intent") or "") == "correction" or correction.get("detected") is True:
         corrections.append({**correction, "status": "active_refinement"})
     preferences = dict(prior.get("preferences") or {})
@@ -353,7 +357,7 @@ def _topic(text: str) -> str:
 
 
 def _question_units(text: str) -> list[str]:
-    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    sentences = re.split(r"(?<=[.!?])[\"”']?\s+", text.strip())
     units = [item.strip(" ,.;") for item in sentences if item.endswith("?") and item.strip(" ,.;?")]
     return [item if item.endswith("?") else item + "?" for item in units[:8]]
 
@@ -455,7 +459,12 @@ def _select_reference_candidate(token: str, candidates: list[str], prior_referen
     return ""
 
 
-def _correction_refinement(text: str, previous: dict[str, Any]) -> dict[str, Any]:
+def _correction_refinement(
+    text: str,
+    previous: dict[str, Any],
+    *,
+    contextual_follow_up: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     normalized = " ".join(text.split())
     if any(
         marker in normalized.lower()
@@ -476,13 +485,26 @@ def _correction_refinement(text: str, previous: dict[str, Any]) -> dict[str, Any
     )
     corrected = ""
     replaced = ""
+    quoted_definition = re.search(
+        r"\bwhen i say\s+[\"“](.+?)[\"”]\s*,?\s*i mean\s+[\"“](.+?)[\"”]",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if quoted_definition:
+        replaced = quoted_definition.group(1).strip(" ,.!?")
+        corrected = quoted_definition.group(2).strip(" ,.!?")
     first = re.search(patterns[0], normalized, flags=re.IGNORECASE)
-    if first:
+    if first and not corrected:
         corrected, replaced = first.group(1), first.group(2)
     else:
         second = re.search(patterns[1], normalized, flags=re.IGNORECASE)
         if second:
             replaced, corrected = second.group(1), second.group(2)
+    contextual_kind = str((contextual_follow_up or {}).get("kind") or "")
+    if not corrected and contextual_kind == "meaning_correction":
+        definition = re.fullmatch(r"(.{1,100}?)\s+means\s+(.{1,240}?)[.!?]?", normalized, flags=re.IGNORECASE)
+        if definition:
+            replaced, corrected = definition.group(1), definition.group(2)
     detected = bool(corrected or re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", normalized, flags=re.IGNORECASE))
     return {
         "detected": detected,
@@ -497,14 +519,16 @@ def _correction_refinement(text: str, previous: dict[str, Any]) -> dict[str, Any
 
 def _utterance_units(text: str) -> list[dict[str, Any]]:
     units: list[dict[str, Any]] = []
-    for index, raw in enumerate(re.split(r"(?<=[.!?])\s+|\n+", text.strip())):
+    for index, raw in enumerate(re.split(r"(?<=[.!?])[\"”']?\s+|\n+", text.strip())):
         value = raw.strip()
         if not value:
             continue
         lower = value.lower()
         if value.endswith("?"):
             kind = "question"
-        elif re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", lower):
+        elif re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", lower) or (
+            "when i say" in lower and "i mean" in lower
+        ):
             kind = "correction"
         elif re.match(r"^(?:please\s+)?(?:compare|explain|show|tell|help|give|list|summarize|check|walk)\b", lower):
             kind = "direct_request"

@@ -936,8 +936,8 @@ def _concept_key(domain: str, title: str) -> str:
 def _terms(value: str) -> list[str]:
     stop = {
         "about", "after", "again", "also", "and", "are", "because", "before", "being", "can", "could",
-        "does", "for", "from", "have", "how", "into", "its", "just", "more", "not", "that", "the", "their",
-        "them", "then", "there", "this", "what", "when", "where", "which", "with", "would", "you", "your",
+        "been", "does", "doing", "for", "from", "has", "have", "how", "into", "its", "just", "mean", "means", "more", "not", "part", "parts", "short", "that", "the", "their",
+        "them", "then", "there", "this", "too", "two", "what", "whats", "when", "where", "which", "with", "would", "you", "your",
     }
     return list(
         dict.fromkeys(

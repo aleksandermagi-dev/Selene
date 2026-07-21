@@ -45,7 +45,11 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
-    questions = [truncate(str(item), 480) for item in pragmatics.get("question_units") or [] if str(item).strip()]
+    questions = [
+        truncate(str(item), 480)
+        for item in pragmatics.get("question_units") or []
+        if str(item).strip() and not _is_response_format_directive(str(item))
+    ]
     open_loops = [item for item in dialogue.get("open_loops") or [] if isinstance(item, dict)]
     new_ids = {str(item) for item in dialogue.get("new_loop_ids") or [] if str(item)}
     relevant_loops = [item for item in open_loops if not new_ids or str(item.get("id") or "") in new_ids]
@@ -58,10 +62,34 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
     )
     utterance_units = [item for item in pragmatics.get("utterance_units") or [] if isinstance(item, dict)] or _utterance_units(prompt)
     correction = pragmatics.get("correction_refinement") if isinstance(pragmatics.get("correction_refinement"), dict) else {}
+    contextual = pragmatics.get("contextual_follow_up") if isinstance(pragmatics.get("contextual_follow_up"), dict) else {}
     implicit = _implicit_meaning(prompt, previous_available=pragmatics.get("previous_turn_available") is True)
     ellipsis = _ellipsis_resolution(prompt, reference, str(dialogue.get("active_topic") or ""))
     obligations = _question_obligations(questions, relevant_loops)
     obligations.extend(_unit_obligations(utterance_units, obligations, correction, str(dialogue.get("active_topic") or "")))
+    if intent.get("self_state_requested") is True or str(intent.get("intent") or "") == "self_state":
+        specialized: list[dict[str, Any]] = []
+        for item in obligations:
+            source_text = str(item.get("source_text") or "")
+            if _contains_self_state_check_in(source_text):
+                specialized.append({**item, "kind": "self_state_check_in", "coverage_terms": [], "goal": "answer_present_state"})
+            elif _contains_session_summary_request(source_text):
+                specialized.append({**item, "kind": "session_summary", "coverage_terms": [], "goal": "summarize_current_session"})
+            elif len(obligations) == 1 and str(item.get("kind") or "") == "direct_question":
+                specialized.append({**item, "kind": "self_state_check_in", "coverage_terms": [], "goal": "answer_present_state"})
+            else:
+                specialized.append(item)
+        obligations = specialized
+    elif str(contextual.get("kind") or "") == "rephrase_request":
+        obligations = [
+            {
+                **item,
+                "kind": "rephrase_request" if str(item.get("kind") or "") == "direct_question" else item.get("kind"),
+                "coverage_terms": [] if str(item.get("kind") or "") == "direct_question" else item.get("coverage_terms") or [],
+                "goal": "rephrase_previous_answer" if str(item.get("kind") or "") == "direct_question" else item.get("goal"),
+            }
+            for item in obligations
+        ]
     if not obligations and (indirect.get("detected") is True or implicit.get("inferred") is True):
         inferred_goal = str(implicit.get("goal") or "respond_to_request")
         obligations.append(
@@ -175,7 +203,9 @@ def evaluate_response_coverage(
         topic_overlap = sorted(topic_terms & candidate_terms)
         distinctive_alignment = not distinctive_expected or bool(distinctive_overlap or topic_overlap)
         semantic_match = len(overlap) >= minimum_term_matches and distinctive_alignment
-        signal_can_stand_alone = kind in {"correction_update", "yes_or_no"} or (
+        signal_can_stand_alone = kind in {
+            "correction_update", "yes_or_no", "self_state_check_in", "rephrase_request", "session_summary",
+        } or (
             kind == "reason" and not expected
         )
         signal_required = kind in {
@@ -266,6 +296,8 @@ def _question_obligations(questions: list[str], loops: list[dict[str, Any]]) -> 
         if loop is not None:
             unused.remove(loop)
         for part in _compound_question_parts(question):
+            if _is_response_format_directive(part):
+                continue
             obligations.append(
                 {
                     "id": _obligation_id(part, len(obligations)),
@@ -305,6 +337,8 @@ def _unit_obligations(
         text = truncate(str(unit.get("text") or ""), 480).strip()
         kind = str(unit.get("kind") or "statement")
         if not text or " ".join(text.lower().split()) in existing_sources:
+            continue
+        if _is_response_format_directive(text):
             continue
         if (
             kind == "indirect_request"
@@ -438,6 +472,10 @@ def _response_constraints(pragmatics: dict[str, Any], correction: dict[str, Any]
 
 def _question_kind(question: str) -> str:
     lower = question.lower().strip()
+    if _contains_self_state_check_in(lower):
+        return "self_state_check_in"
+    if _contains_session_summary_request(lower):
+        return "session_summary"
     if any(token in lower for token in ("compare", "difference", "versus", " vs ")):
         return "comparison"
     if lower.startswith("why") or " why " in lower:
@@ -453,6 +491,38 @@ def _question_kind(question: str) -> str:
     if re.match(r"^(is|are|do|does|did|can|could|would|will|should|have|has)\b", lower):
         return "yes_or_no"
     return "direct_question"
+
+
+def _is_response_format_directive(value: str) -> bool:
+    text = " ".join(value.lower().strip(" .,:;!?").split())
+    return bool(
+        re.fullmatch(
+            r"(?:in )?(?:one|two|three|four|five|\d+) (?:short |brief )?"
+            r"(?:parts|points|sentences|paragraphs|steps)",
+            text,
+        )
+    )
+
+
+def _contains_self_state_check_in(value: str) -> bool:
+    return bool(
+        re.search(
+            r"\bhow are you(?: doing| feeling| holding up)?\b|\bwhat(?:'s|s| is) up(?: with you)?\b",
+            value,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
+def _contains_session_summary_request(value: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:what (?:has|have) (?:this|our) (?:conversation|chat) been about|"
+            r"what have we been (?:talking|speaking) about)\b",
+            value,
+            flags=re.IGNORECASE,
+        )
+    )
 
 
 def _compound_question_parts(question: str) -> list[str]:
@@ -599,6 +669,9 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
         "implied_request": ("can", "let's", "we can", "start", "help"),
         "direct_request": ("here", "first", "start", "use", "the answer", "result"),
         "correction_update": ("right", "correction", "meant", "changed", "instead", "second", "first"),
+        "self_state_check_in": ("i ", "i'm", "my ", "present", "current", "attentive", "here"),
+        "rephrase_request": ("put simply", "in plain terms", "said that awkwardly", "what i mean"),
+        "session_summary": ("this conversation has been about", "we have been", "we've been"),
     }
     return 0.5 if any(token in candidate for token in signals.get(kind, ())) else 0.0
 

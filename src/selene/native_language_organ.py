@@ -258,7 +258,10 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
 
 def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str, Any]:
     route = str(payload.get("selected_route") or payload.get("route") or "answer_now")
-    content_seed = truncate(str(payload.get("content_seed") or ""), 3800)
+    content_seed = _truncate_preserving_paragraphs(
+        _normalize_paragraphs(str(payload.get("content_seed") or "")),
+        3800,
+    )
     visible_speech_seed = (
         payload.get("visible_speech_seed")
         if isinstance(payload.get("visible_speech_seed"), dict)
@@ -275,7 +278,10 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     answer_packet = answer_engine.get("answer_packet") if isinstance(answer_engine.get("answer_packet"), dict) else {}
     comprehension = payload.get("comprehension_context") if isinstance(payload.get("comprehension_context"), dict) else {}
     if not content_seed and intelligence.get("used"):
-        content_seed = truncate(str(intelligence.get("best_current_answer") or ""), 3800)
+        content_seed = _truncate_preserving_paragraphs(
+            _normalize_paragraphs(str(intelligence.get("best_current_answer") or "")),
+            3800,
+        )
     memory = payload.get("memory_context") if isinstance(payload.get("memory_context"), dict) else {}
     self_state = payload.get("self_state_context") if isinstance(payload.get("self_state_context"), dict) else {}
     affect_expression = (
@@ -674,6 +680,13 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
         use_formation = True
         seed = _clean_seed(formation_text)
     ellipsis = pragmatic_plan.get("ellipsis_resolution") if isinstance(pragmatic_plan.get("ellipsis_resolution"), dict) else {}
+    contextual = meaning.get("contextual_follow_up") if isinstance(meaning.get("contextual_follow_up"), dict) else {}
+
+    if (
+        str(meaning.get("answer_shape") or "") == "self_state_then_session_summary"
+        and contextual.get("kind") == "session_summary_request"
+    ):
+        return _clean_seed(str(meaning.get("content_seed") or ""))
 
     if handshake.get("required") is True and not seed:
         return str(handshake.get("question") or "I have more than one possible meaning for that. Which part do you mean?")
@@ -725,8 +738,7 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
         plan["uncertainty_expression_realization"] = uncertainty_result
         return str(uncertainty_result.get("candidate_text") or "I cannot support an exact memory claim here.")
     if intent == "reasoned_answer" and seed:
-        contextual = meaning.get("contextual_follow_up") if isinstance(meaning.get("contextual_follow_up"), dict) else {}
-        if contextual.get("kind") == "session_summary_request":
+        if contextual.get("kind") in {"session_summary_request", "rephrase_request"}:
             return seed
         seed = _obligation_ordered_seed(seed, meaning, plan)
         if plan.get("response_depth") == "developed":
@@ -1329,15 +1341,20 @@ def _propositions(prompt: str, seed: str, memory: dict[str, Any], intelligence: 
     if memory.get("memory_context_used"):
         items.append({"kind": "memory_grounding", "text": str(memory.get("memory_source_class") or "approved memory"), "supported": True})
     if intelligence.get("used"):
-        items.append(
-            {
-                "kind": "reasoning_support",
-                "text": str(intelligence.get("reasoning_summary") or intelligence.get("answer_shape") or "best current answer"),
-                "support_points": [str(item) for item in intelligence.get("support_points") or [] if str(item).strip()][:3],
-                "selected_next_step": str(intelligence.get("selected_next_step") or ""),
-                "supported": True,
-            }
-        )
+        reasoning_summary = str(intelligence.get("reasoning_summary") or "").strip()
+        support_points = [str(item) for item in intelligence.get("support_points") or [] if str(item).strip()][:3]
+        selected_next_step = str(intelligence.get("selected_next_step") or "").strip()
+        if reasoning_summary or support_points or selected_next_step:
+            items.append(
+                {
+                    "kind": "reasoning_support",
+                    "text": reasoning_summary,
+                    "support_points": support_points,
+                    "selected_next_step": selected_next_step,
+                    "required": bool(reasoning_summary),
+                    "supported": True,
+                }
+            )
     if not items:
         items.append({"kind": "current_turn", "text": truncate(prompt, 420), "supported": True})
     return items[:12]

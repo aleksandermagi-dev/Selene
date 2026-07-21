@@ -156,7 +156,14 @@ def _sentence(value: str, *, question: bool) -> str:
     text = " ".join(value.split()).strip().rstrip(".?! ")
     if not text:
         return ""
-    return f"{text}{'?' if question else '.'}"
+    interrogative = bool(
+        re.match(
+            r"^(?:who|what|when|where|why|how|which|can|could|would|should|do|does|did|is|are|was|were|will)\b",
+            text,
+            flags=re.IGNORECASE,
+        )
+    )
+    return f"{text}{'?' if question and interrogative else '.'}"
 
 
 def _normalized(value: str) -> str:

@@ -30,6 +30,10 @@ ARCHITECTURE_LEAKS = (
     "response obligation",
     "repair path",
     "evidence chain",
+    "answer_now",
+    "return_to_b",
+    "create_review_packet",
+    "rehearse_speech",
 )
 
 
@@ -251,7 +255,7 @@ def _normalize(value: str) -> str:
         text = " ".join(paragraph.split())
         if text:
             paragraphs.append(text)
-    return "\n\n".join(paragraphs)
+    return re.sub(r"([.!?])\s+([\"'])", r"\1\2", "\n\n".join(paragraphs))
 
 
 def _bounded_surface(value: str, limit: int) -> str:
@@ -273,7 +277,8 @@ def _dedupe_adjacent_sentences(value: str) -> str:
             kept.append(sentence)
             prior = normalized
         paragraphs.append(" ".join(kept))
-    return "\n\n".join(item for item in paragraphs if item)
+    text = "\n\n".join(item for item in paragraphs if item)
+    return re.sub(r"([.!?])\s+([\"'])", r"\1\2", text)
 
 
 def _finish_punctuation(value: str) -> str:

@@ -30,6 +30,16 @@ def test_detangler_preserves_raw_input_and_repairs_only_reviewed_patterns():
     assert result["automatic_lexicon_learning"] is False
 
 
+def test_detangler_repairs_observed_unambiguous_doubled_pronoun_phrase():
+    raw = "whats on you your mind?"
+    result = detangle_user_input(raw)
+
+    assert result["raw_text"] == raw
+    assert result["interpreted_text"] == "whats on your mind?"
+    assert result["repair_count"] == 1
+    assert classify_chat_intent(result["interpreted_text"])["intent"] == "self_state"
+
+
 def test_detangler_leaves_material_ambiguity_unresolved():
     raw = "only run streswing tests when necessary"
     result = detangle_user_input(raw)

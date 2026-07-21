@@ -37,6 +37,22 @@ def test_seed_selection_rejects_internal_source_classes_and_scaffolding():
     assert [item["accepted"] for item in result["inspected_candidates"]] == [False, False, True]
 
 
+def test_visible_speech_selection_preserves_deliberate_paragraphs():
+    result = select_visible_speech_seed(
+        "Answer in two parts.",
+        [
+            {
+                "source_id": "two_part_answer",
+                "source_class": "conversation",
+                "text": "First, the first answer.\n\nSecond, the second answer.",
+            }
+        ],
+    )
+
+    assert result["release_allowed"] is True
+    assert result["content_seed"] == "First, the first answer.\n\nSecond, the second answer."
+
+
 def test_final_release_holds_serialized_metadata_and_generic_reasoning_scaffold():
     metadata = inspect_visible_speech(
         "review_status: status_only; selected_route: answer_now",
@@ -51,6 +67,16 @@ def test_final_release_holds_serialized_metadata_and_generic_reasoning_scaffold(
     assert "internal_metadata_visible" in metadata["issues"]
     assert scaffold["release_allowed"] is False
     assert "internal_reasoning_scaffold_visible" in scaffold["issues"]
+
+
+def test_final_release_holds_bare_internal_route_values():
+    result = inspect_visible_speech(
+        "Alongside that, Answer_now.",
+        prompt="What did you mean?",
+    )
+
+    assert result["release_allowed"] is False
+    assert "internal_metadata_visible" in result["issues"]
 
 
 def test_explicit_architecture_discussion_can_use_natural_architecture_language():

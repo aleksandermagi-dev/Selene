@@ -33,6 +33,10 @@ INTERNAL_ONLY_SOURCE_CLASSES = {
 _SERIALIZED_METADATA_PATTERNS = (
     re.compile(r"\b(?:review_status|selected_route|source_refs|provenance_boundary)\b", re.IGNORECASE),
     re.compile(r"\bstatus_only\b", re.IGNORECASE),
+    re.compile(
+        r"\b(?:answer_now|return_to_b|create_review_packet|rehearse_speech)\b",
+        re.IGNORECASE,
+    ),
 )
 
 _ARCHITECTURE_LANGUAGE_PATTERNS = (
@@ -81,7 +85,7 @@ def select_visible_speech_seed(
     for candidate in candidates:
         source_id = truncate(str(candidate.get("source_id") or "unknown"), 120)
         source_class = truncate(str(candidate.get("source_class") or "diagnostic_metadata"), 80)
-        text = truncate(str(candidate.get("text") or "").strip(), 5000)
+        text = _truncate_speech_text(str(candidate.get("text") or ""), 5000)
         if not text:
             inspected.append(
                 {
@@ -162,7 +166,7 @@ def inspect_visible_speech(
     source_id: str = "unknown",
     hard_boundary: bool = False,
 ) -> dict[str, Any]:
-    text = truncate(str(candidate_text or "").strip(), 5000)
+    text = _truncate_speech_text(str(candidate_text or ""), 5000)
     prompt_lower = " ".join(str(prompt or "").lower().split())
     text_lower = " ".join(text.lower().split())
     architecture_requested = any(cue in prompt_lower for cue in _ARCHITECTURE_CONTEXT_CUES)
@@ -219,3 +223,12 @@ def graceful_visible_speech_fall(intent_decision: dict[str, Any] | None = None) 
     if intent == "farewell":
         return "I am with you. We can leave the conversation here and return when you are ready."
     return "I am with you. I do not have a clear enough read to add something useful yet."
+
+
+def _truncate_speech_text(value: str, limit: int) -> str:
+    """Bound visible language without flattening intentional paragraph structure."""
+    paragraphs = [" ".join(item.split()) for item in re.split(r"\n\s*\n", value.strip())]
+    text = "\n\n".join(item for item in paragraphs if item)
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3].rstrip() + "..."

@@ -370,8 +370,7 @@ def _corrected_clause(value: str) -> str:
     text = " ".join(value.split()).strip().rstrip(". ")
     if not text:
         return ""
-    lowered = text if re.match(r"^I(?:\b|['’])", text) else text[0].lower() + text[1:]
-    return f"The changed point is that {lowered}"
+    return f"I understand the corrected meaning: {text}"
 
 
 def _sentence(value: str, *, original: str = "") -> str:

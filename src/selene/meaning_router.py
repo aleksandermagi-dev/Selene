@@ -133,7 +133,10 @@ def _dialogue_acts(routing_text: str, tokens: set[str], question: bool, explicit
         acts.append("topic_shift")
     if re.match(r"^(?:okay|yes|right|agreed|i agree)\b.{0,20}\bbut\b", routing_text):
         acts.append("partial_agreement")
-    if _has_any(routing_text, ("correction", "i meant", "rather than", "not what i meant")) or (
+    if _has_any(routing_text, ("correction", "i meant", "rather than", "not what i meant")) or re.search(
+        r"\bwhen i say\s+quoted material\s*,?\s*i mean\s+quoted material\b",
+        routing_text,
+    ) or (
         "actually" in routing_text and not topic_shift
     ):
         acts.append("correction")
@@ -329,6 +332,10 @@ def _is_personal_recall(value: str, question: bool) -> bool:
             "what were we discussing",
             "what did we talk",
             "what did we discuss",
+            "what has this conversation been about",
+            "what has our conversation been about",
+            "what has this chat been about",
+            "what have we been talking about",
             "previous chat",
             "past chat",
             "last chat",
@@ -355,7 +362,17 @@ def _is_self_state_question(value: str, question: bool) -> bool:
             plain,
         )
     ) or bool(re.fullmatch(r"(?:so |and )?how have you been(?: lately)?", plain))
-    if ordinary_check_in:
+    embedded_check_in = bool(
+        re.search(
+            r"(?:^|[,;.!?]\s*|\band\s+)how are you(?: doing| feeling| holding up)?"
+            r"(?: right now| today| lately)?(?=\s*(?:,?\s+and\b|[;.!?]|$))",
+            plain,
+        )
+    )
+    colloquial_check_in = bool(
+        re.fullmatch(r"(?:so |and )?what(?:'s| is|s) up(?: with you)?", plain)
+    )
+    if ordinary_check_in or embedded_check_in or colloquial_check_in:
         return True
     if re.search(r"\b(?:are you )?(?:okay|alright) with\b", value):
         return False

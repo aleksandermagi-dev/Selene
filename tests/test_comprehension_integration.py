@@ -322,6 +322,38 @@ def test_self_state_question_does_not_turn_overlapping_approved_knowledge_into_a
     _assert_locked(packet)
 
 
+def test_connective_words_do_not_retrieve_unrelated_approved_knowledge(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = _propose(conn)
+    _evaluate(conn, proposed["item"]["id"])
+    route_request(
+        conn,
+        "comprehension.concepts.decide",
+        {"concept_id": proposed["item"]["id"], "action": "approve_knowledge"},
+    )
+
+    packet = route_request(
+        conn,
+        "comprehension.turn.packet",
+        {
+            "prompt": "whats up means how are you",
+            "intent_decision": {
+                "intent": "correction",
+                "reasoning_requested": False,
+                "dialogue_acts": ["correction"],
+            },
+            "dialogue_workspace": {
+                "active_topic": "ordinary check-in",
+                "pragmatics": {"ambiguity": {"level": "low"}},
+            },
+        },
+    )["result"]
+
+    assert packet["knowledge_context"]["available"] is False
+    assert packet["knowledge_response_seed"] == ""
+    _assert_locked(packet)
+
+
 def test_comprehension_handshake_asks_only_for_material_unresolved_meaning(tmp_path):
     conn = _conn(tmp_path)
 

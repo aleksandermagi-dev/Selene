@@ -307,12 +307,19 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         dialogue_workspace=prepared_dialogue_workspace,
         conversation_spine=conversation_spine,
     )
+    mixed_conversation_reply = _mixed_conversation_reply(
+        intent_decision,
+        contextual_follow_up,
+        self_state_reply=self_state_reply,
+        contextual_reply=contextual_reply,
+    )
     policy_reply = _conversation_policy_reply(understanding_text)
     reasoning_content_seed = str(intelligence_support.get("best_current_answer") or "")
     language_content_seed = str(language_capability.get("content_seed") or "")
     initial_visible_speech_seed = select_visible_speech_seed(
         understanding_text,
         _visible_speech_seed_candidates(
+            mixed_conversation_reply=mixed_conversation_reply,
             memory_action_reply=memory_action_reply,
             continuity_reply=continuity_reply,
             memory_reply=memory_reply,
@@ -361,6 +368,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     visible_speech_seed = select_visible_speech_seed(
         understanding_text,
         _visible_speech_seed_candidates(
+            mixed_conversation_reply=mixed_conversation_reply,
             memory_action_reply=memory_action_reply,
             continuity_reply=continuity_reply,
             memory_reply=memory_reply,
@@ -1063,6 +1071,7 @@ def _source_class(text: str, package_available: bool) -> str:
 
 def _visible_speech_seed_candidates(
     *,
+    mixed_conversation_reply: str = "",
     memory_action_reply: str = "",
     continuity_reply: str = "",
     memory_reply: str = "",
@@ -1077,6 +1086,7 @@ def _visible_speech_seed_candidates(
     hard_boundary: bool = False,
 ) -> list[dict[str, str]]:
     candidates = [
+        {"source_id": "mixed_conversation_answer", "source_class": "conversation", "text": mixed_conversation_reply},
         {"source_id": "conversational_memory_action", "source_class": "conversation", "text": memory_action_reply},
         {"source_id": "local_chat_continuity", "source_class": "conversation", "text": continuity_reply},
         {"source_id": "reviewed_memory", "source_class": "memory_reconstruction", "text": memory_reply},
@@ -1099,6 +1109,26 @@ def _visible_speech_seed_candidates(
             },
         )
     return candidates
+
+
+def _mixed_conversation_reply(
+    intent_decision: dict[str, Any],
+    contextual_follow_up: dict[str, Any],
+    *,
+    self_state_reply: str,
+    contextual_reply: str,
+) -> str:
+    if (
+        intent_decision.get("self_state_requested") is not True
+        or str(contextual_follow_up.get("kind") or "") != "session_summary_request"
+        or not self_state_reply.strip()
+        or not contextual_reply.strip()
+    ):
+        return ""
+    contextual = contextual_reply.strip()
+    if contextual and contextual[0].isupper():
+        contextual = contextual[0].lower() + contextual[1:]
+    return f"First, {self_state_reply.strip()}\n\nSecond, {contextual}"
 
 
 def _needs_cocoon_route(text: str, selected_route: str, route: dict[str, Any]) -> bool:
@@ -2266,12 +2296,18 @@ def _active_conversation_context(
         for item in events
         if str(item.get("role") or "") == "selene" and str(item.get("preview") or "").strip()
     ][-4:]
+    recent_user_texts = [
+        str(item.get("preview") or "").strip()
+        for item in events
+        if str(item.get("role") or "") == "user" and str(item.get("preview") or "").strip()
+    ][-8:]
     dialogue = dialogue_workspace if isinstance(dialogue_workspace, dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
     return {
         "status": "active_conversation_context_ready",
         "previous_turn": previous_turn,
         "recent_assistant_texts": recent_assistant_texts,
+        "recent_user_texts": recent_user_texts,
         "turn_count": len(events),
         "session_landmarks": [
             item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)

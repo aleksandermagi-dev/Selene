@@ -49,6 +49,53 @@ def test_short_words_without_a_previous_turn_do_not_invent_context():
     assert result["kind"] == "none"
 
 
+def test_bare_confusion_requests_a_bounded_rephrase_of_the_previous_reply():
+    previous = "I do not have enough grounding for a clean answer yet."
+    follow_up = inspect_contextual_follow_up("what?", _context(previous))
+    decision = apply_contextual_intent(classify_chat_intent("what?"), follow_up)
+    response = contextual_response_seed(follow_up)
+
+    assert follow_up["kind"] == "rephrase_request"
+    assert follow_up["preserve_active_topic"] is True
+    assert decision["answer_shape"] == "continue_previous_answer"
+    assert response.startswith("I may have said that awkwardly. Put simply:")
+
+
+def test_phrase_meaning_after_a_misunderstanding_is_a_session_correction():
+    previous = "I'm not sure yet because I am missing relevant context."
+    follow_up = inspect_contextual_follow_up(
+        "whats up means how are you",
+        _context(previous),
+    )
+    decision = apply_contextual_intent(classify_chat_intent("whats up means how are you"), follow_up)
+
+    assert follow_up["kind"] == "meaning_correction"
+    assert follow_up["preserve_active_topic"] is True
+    assert decision["intent"] == "correction"
+    assert decision["reasoning_requested"] is False
+
+
+def test_mixed_self_state_and_session_summary_preserves_both_requests():
+    context = _context("What I can name clearly is presence and attention.")
+    context["recent_user_texts"] = [
+        "Hey Selene!",
+        "What's up?",
+        'When I say "what\'s up," I mean "how are you."',
+    ]
+    prompt = "In two short parts, how are you doing, and what has this conversation been about?"
+    follow_up = inspect_contextual_follow_up(prompt, context)
+    decision = apply_contextual_intent(classify_chat_intent(prompt), follow_up)
+    response = contextual_response_seed(follow_up)
+
+    assert follow_up["kind"] == "session_summary_request"
+    assert decision["intent"] == "self_state"
+    assert decision["self_state_requested"] is True
+    assert decision["answer_shape"] == "self_state_then_session_summary"
+    assert "greeting each other" in response
+    assert "checking in" in response
+    assert "was meant as" in response
+
+
 def test_confidence_follow_up_uses_answer_confidence_not_expression_confidence():
     weak = inspect_contextual_follow_up(
         "Are you sure?",

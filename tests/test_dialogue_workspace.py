@@ -303,6 +303,54 @@ def test_dialogue_workspace_extracts_structured_correction_and_direct_requests(t
     ]
 
 
+def test_dialogue_workspace_extracts_phrase_meaning_correction_without_memory_write(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "whats up means how are you"
+    contextual = {
+        "detected": True,
+        "kind": "meaning_correction",
+        "preserve_active_topic": True,
+    }
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": {"intent": "correction", "dialogue_act": "correction"},
+            "contextual_follow_up": contextual,
+            "conversation_events": [
+                {"role": "selene", "preview": "I'm not sure because I am missing context."}
+            ],
+        },
+    )
+
+    correction = result["pragmatics"]["correction_refinement"]
+    assert correction["detected"] is True
+    assert correction["replaced_meaning"] == "whats up"
+    assert correction["corrected_meaning"] == "how are you"
+    assert correction["durable_memory_write"] is False
+
+
+def test_dialogue_workspace_splits_quoted_correction_from_confirmation_question(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = 'When I say "what\'s up," I mean "how are you." Does that distinction make sense?'
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "conversation_events": [{"role": "selene", "preview": "I am present and attentive."}],
+        },
+    )
+
+    correction = result["pragmatics"]["correction_refinement"]
+    assert correction["replaced_meaning"] == "what's up"
+    assert correction["corrected_meaning"] == "how are you"
+    assert result["pragmatics"]["question_units"] == ["Does that distinction make sense?"]
+    assert [item["kind"] for item in result["pragmatics"]["utterance_units"]] == ["correction", "question"]
+
+
 def test_dialogue_workspace_routes_are_status_only_and_idempotent(tmp_path):
     conn, session_id = _conn(tmp_path)
     text = "Could you explain that?"

@@ -29,7 +29,7 @@ def test_uncertainty_kinds_remain_semantically_distinct_and_bounded():
         assert result["whole_response_template_selected"] is False
         assert result["fact_invented"] is False
         assert result["memory_certainty_invented"] is False
-        assert result["candidate_text"].endswith("?")
+        assert result["candidate_text"].endswith((".", "?"))
 
 
 def test_uncertainty_realization_varies_clauses_and_avoids_recent_wording():
@@ -49,6 +49,17 @@ def test_uncertainty_realization_varies_clauses_and_avoids_recent_wording():
     assert {item["text"] for item in first["selected_clauses"]}.isdisjoint(
         {item["text"] for item in next_result["selected_clauses"]}
     )
+
+
+def test_declarative_context_requests_do_not_receive_question_marks():
+    plan = build_uncertainty_plan({"kind": "insufficient_grounding"})
+    results = [
+        realize_uncertainty_plan(plan, variation_key=f"punctuation-{index}")
+        for index in range(80)
+    ]
+
+    assert any("I can take another pass once the missing piece is clear." in item["candidate_text"] for item in results)
+    assert all("missing piece is clear?" not in item["candidate_text"] for item in results)
 
 
 def test_fuzzy_memory_preserves_supplied_hint_without_upgrading_certainty():

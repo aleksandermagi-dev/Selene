@@ -70,6 +70,31 @@ def test_nlo_builds_meaning_discourse_and_original_sentence_run(tmp_path):
     _assert_locked(runs)
 
 
+def test_nlo_never_realizes_answer_shape_as_visible_reasoning_content(tmp_path):
+    conn = _conn(tmp_path)
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": "whats up means how are you",
+            "content_seed": "I understand the correction.",
+            "intent_decision": {"intent": "correction", "answer_shape": "acknowledge_and_adjust"},
+            "intelligence_support": {
+                "used": True,
+                "answer_shape": "answer_now",
+                "reasoning_summary": "",
+                "support_points": [],
+            },
+        },
+    )
+
+    assert "answer_now" not in result["candidate_text"].lower()
+    assert "answer_now" not in result["formation"]["candidate_text"].lower()
+    assert all(
+        str(item.get("text") or "").lower() != "answer_now"
+        for item in result["semantic_frame"]["propositions"]
+    )
+
+
 def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
     conn = _conn(tmp_path)
     result = route_request(

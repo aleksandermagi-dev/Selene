@@ -43,6 +43,7 @@ REVIEWED_TOKEN_REPAIRS = {
 REVIEWED_PHRASE_REPAIRS = {
     "th e": "the",
     "th ecorpus": "the corpus",
+    "on you your mind": "on your mind",
 }
 
 # A material ambiguity is surfaced, never silently selected from these options.

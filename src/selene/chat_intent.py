@@ -237,9 +237,11 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
     depth = "brief" if intent in {"receipt_check", "farewell", "reassurance_received", "gratitude", "greeting", "warm_connection", "playful_connection", "affirmation"} else response_depth
     decision = _decision(intent, answer_shape, primary_organ, supporting, evidence, depth, meaning)
     dialogue_acts = {str(item) for item in meaning.get("dialogue_acts") or []}
+    correction_confirmation_only = intent == "correction" and _is_correction_confirmation_only(lower)
     mixed_content_request = bool(
         intent in {"correction", "affirmation", "gratitude", "greeting", "warm_connection", "playful_connection"}
         and dialogue_acts.intersection({"question", "request"})
+        and not correction_confirmation_only
     )
     decision["mixed_intent"] = len(dialogue_acts) > 1
     decision["content_response_requested"] = bool(
@@ -252,6 +254,17 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
         if "intelligenceOS" not in decision["supporting_organs"]:
             decision["supporting_organs"].append("intelligenceOS")
     return decision
+
+
+def _is_correction_confirmation_only(text: str) -> bool:
+    """Distinguish a correction check-in from a second substantive request."""
+    confirmation_patterns = (
+        r"\bdoes (?:that|this) (?:distinction|correction|meaning|adjustment) make sense\??$",
+        r"\bis (?:that|this) clear\??$",
+        r"\bdid (?:that|this) come through\??$",
+        r"\bdo you (?:understand|follow)(?: what i mean)?\??$",
+    )
+    return any(re.search(pattern, text) for pattern in confirmation_patterns)
 
 
 def _decision(
@@ -283,6 +296,9 @@ def _decision(
     if meaning_route is not None:
         result["meaning_route"] = meaning_route
         result["intent_candidates"] = meaning_route.get("intent_candidates") or []
+        dialogue_acts = {str(item) for item in meaning_route.get("dialogue_acts") or []}
+        result["self_state_requested"] = result["self_state_requested"] or "self_state_question" in dialogue_acts
+        result["memory_recall_requested"] = result["memory_recall_requested"] or "memory_recall" in dialogue_acts
         result["dialogue_acts"] = meaning_route.get("dialogue_acts") or []
         result["domain_candidates"] = meaning_route.get("domain_candidates") or []
         result["routing_confidence"] = meaning_route.get("routing_confidence") or result["confidence"]

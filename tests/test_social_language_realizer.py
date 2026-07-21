@@ -90,6 +90,7 @@ def test_correction_realization_preserves_supplied_changed_meaning_and_valid_con
         "preserve_valid_context",
     ]
     assert "semantic layer should come first" in result["candidate_text"]
+    assert "changed point is that" not in result["candidate_text"].lower()
     assert any(item["source"] == "supplied_corrected_meaning" for item in result["selected_realizations"])
     assert result["meaning_preserved"] is True
 

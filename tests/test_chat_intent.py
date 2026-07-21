@@ -58,6 +58,18 @@ def test_social_or_corrective_opening_does_not_hide_a_content_request():
         assert decision["answer_shape"] == "acknowledge_then_answer"
 
 
+def test_correction_confirmation_is_not_invented_as_a_second_content_request():
+    decision = classify_chat_intent(
+        'When I say "what\'s up," I mean "how are you." Does that distinction make sense?'
+    )
+
+    assert decision["intent"] == "correction"
+    assert decision["mixed_intent"] is True
+    assert decision["content_response_requested"] is False
+    assert decision["reasoning_requested"] is False
+    assert decision["answer_shape"] == "acknowledge_and_adjust"
+
+
 def test_ordinary_pause_language_is_a_conversation_close():
     decision = classify_chat_intent("That's okay; let's pause here for now.")
 

@@ -63,6 +63,38 @@ def test_ordinary_self_check_in_outranks_generic_how_reasoning():
     assert procedural["primary_intent"] == "reasoning"
 
 
+def test_colloquial_and_embedded_check_ins_route_to_self_state():
+    prompts = (
+        "whats up?",
+        "What's up?",
+        "I'm glad I did too, how are you?",
+    )
+
+    for prompt in prompts:
+        result = interpret_turn_meaning(prompt)
+        assert result["primary_intent"] == "self_state"
+        assert "self_state_question" in result["dialogue_acts"]
+
+    procedural = interpret_turn_meaning("How are you calculating that result?")
+    assert procedural["primary_intent"] == "reasoning"
+
+
+def test_natural_quoted_correction_and_mixed_check_in_summary_keep_distinct_acts():
+    correction = interpret_turn_meaning(
+        'When I say "what\'s up," I mean "how are you." Does that distinction make sense?'
+    )
+    mixed = classify_chat_intent(
+        "In two short parts, how are you doing, and what has this conversation been about?"
+    )
+
+    assert correction["primary_intent"] == "correction"
+    assert correction["dialogue_acts"] == ["correction", "question"]
+    assert mixed["intent"] == "self_state"
+    assert mixed["self_state_requested"] is True
+    assert mixed["memory_recall_requested"] is True
+    assert mixed["mixed_intent"] is True
+
+
 def test_greeting_and_demo_context_do_not_displace_an_explicit_self_state_question():
     result = interpret_turn_meaning(
         "Good morning, Selene. Aleks and I are preparing a short demo today, "

@@ -147,6 +147,94 @@ def _seed_transfer_complete(conn):
     conn.commit()
 
 
+def test_repaired_ordinary_check_in_confusion_and_phrase_correction_flow(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    opening = route_request(conn, "selene_chat.send", {"text": "hey selene!"})["result"]
+    session_id = opening["session_id"]
+    check_in = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": session_id, "text": "whats up?"},
+    )["result"]
+    confused = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": session_id, "text": "what?"},
+    )["result"]
+    corrected = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": session_id, "text": "whats up means how are you"},
+    )["result"]
+    typoed = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": session_id, "text": "whats on you your mind?"},
+    )["result"]
+
+    assert check_in["intent_decision"]["intent"] == "self_state"
+    assert check_in["self_state"]["used"] is True
+    assert check_in["response_coverage"]["unresolved_count"] == 0
+    assert confused["contextual_follow_up"]["kind"] == "rephrase_request"
+    assert confused["response_coverage"]["unresolved_count"] == 0
+    assert not confused["candidate_text"].startswith("My current answer is this:")
+    assert corrected["intent_decision"]["intent"] == "correction"
+    refinement = corrected["dialogue_workspace"]["pragmatics"]["correction_refinement"]
+    assert refinement["replaced_meaning"] == "whats up"
+    assert refinement["corrected_meaning"] == "how are you"
+    assert "changed point is that" not in corrected["candidate_text"].lower()
+    assert corrected["comprehension_integration"]["knowledge_response_seed"] == ""
+    assert typoed["input_interpretation"]["interpreted_text"] == "whats on your mind?"
+    assert typoed["intent_decision"]["intent"] == "self_state"
+    for result in (check_in, confused, corrected, typoed):
+        assert "answer_now" not in result["candidate_text"].lower()
+        assert "interpreting a graph" not in result["candidate_text"].lower()
+        assert result["memory_write_active"] is False
+
+
+def test_natural_correction_and_mixed_check_in_summary_stay_conversational(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    opening = route_request(conn, "selene_chat.send", {"text": "Hey Selene!"})["result"]
+    session_id = opening["session_id"]
+    route_request(conn, "selene_chat.send", {"session_id": session_id, "text": "What's up?"})
+    correction = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": session_id,
+            "text": 'When I say "what\'s up," I mean "how are you." Does that distinction make sense?',
+        },
+    )["result"]
+    mixed = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": session_id,
+            "text": "In two short parts, how are you doing, and what has this conversation been about?",
+        },
+    )["result"]
+    assert correction["intent_decision"]["intent"] == "correction"
+    assert correction["dialogue_workspace"]["pragmatics"]["correction_refinement"]["corrected_meaning"] == "how are you"
+    assert "grounded factual answer" not in correction["candidate_text"].lower()
+    assert mixed["intent_decision"]["intent"] == "self_state"
+    assert mixed["contextual_follow_up"]["kind"] == "session_summary_request"
+    assert mixed["visible_speech_seed"]["selected_source_id"] == "mixed_conversation_answer"
+    assert mixed["candidate_text"].startswith("First,")
+    assert "\n\nSecond," in mixed["candidate_text"]
+    assert "checking in" in mixed["candidate_text"]
+    assert "equation" not in mixed["candidate_text"].lower()
+    assert "fraction" not in mixed["candidate_text"].lower()
+    assert mixed["comprehension_integration"]["knowledge_response_seed"] == ""
+    assert mixed["response_coverage"]["unresolved_count"] == 0
+    assert mixed["memory_write_active"] is False
+
+
 def test_selene_chat_status_is_dry_run_before_activation(tmp_path):
     conn = _conn(tmp_path)
 

@@ -24,6 +24,11 @@ def inspect_contextual_follow_up(
         for item in context.get("recent_assistant_texts") or []
         if str(item).strip()
     ]
+    recent_user = [
+        str(item).strip()
+        for item in context.get("recent_user_texts") or []
+        if str(item).strip()
+    ]
     previous_assistant_preview = (
         str(previous.get("preview") or "").strip()
         if str(previous.get("role") or "") == "selene"
@@ -48,6 +53,12 @@ def inspect_contextual_follow_up(
     elif re.match(r"^(?:please\s+)?(?:summarize|sum up|recap)\b", normalized):
         kind, marker = "session_summary_request", "summarize_active_session"
     elif re.search(
+        r"\b(?:what (?:has|have) (?:this|our) (?:conversation|chat) been about|"
+        r"what have we been (?:talking|speaking) about)\b",
+        normalized,
+    ):
+        kind, marker = "session_summary_request", "summarize_active_session"
+    elif re.search(
         r"\b(?:earlier when|back to what|return to what|the point about|what you said about|we discussed)\b",
         normalized,
     ):
@@ -67,10 +78,26 @@ def inspect_contextual_follow_up(
         kind, marker = "elaboration", normalized
     elif normalized in {"can you give me an example", "could you give me an example", "give me an example", "example"}:
         kind, marker = "example_request", normalized
-    elif normalized in {"can you explain that another way", "could you explain that another way", "say that another way", "put that more simply"}:
+    elif normalized in {
+        "what", "huh", "what do you mean", "what did you mean",
+        "can you explain that another way", "could you explain that another way",
+        "say that another way", "put that more simply",
+    }:
         kind, marker = "rephrase_request", normalized
     elif normalized in {"what do you think", "what are your thoughts", "your thoughts"}:
         kind, marker = "viewpoint_follow_up", normalized
+    elif (
+        previous_assistant_preview
+        and re.fullmatch(r".{1,100}?\s+means\s+.{1,240}", normalized)
+        and any(
+            cue in previous_assistant_preview.lower()
+            for cue in (
+                "not sure", "missing", "not enough grounding", "not enough context",
+                "what information", "which part", "what do you mean", "said that awkwardly",
+            )
+        )
+    ):
+        kind, marker = "meaning_correction", "phrase_meaning_after_misunderstanding"
     elif any(item in lower for item in ("the other one", "and the other one", "what about that one", "how about that one")):
         kind, marker = "alternative_reference", "other_or_that_one"
     elif any(item in lower for item in ("separate question", "different question", "new question", "separate topic", "different topic", "on another topic")):
@@ -86,6 +113,7 @@ def inspect_contextual_follow_up(
         "previous_turn_available": previous_available,
         "previous_assistant_preview": truncate(previous_assistant_preview, 360),
         "recent_assistant_texts": [truncate(item, 360) for item in recent_assistant[-4:]],
+        "recent_user_texts": [truncate(item, 360) for item in recent_user[-8:]],
         "session_landmarks": session_landmarks,
         "matched_session_landmarks": _matching_landmarks(prompt, session_landmarks),
         "previous_confidence": previous.get("confidence_vector") if isinstance(previous.get("confidence_vector"), dict) else {},
@@ -94,7 +122,7 @@ def inspect_contextual_follow_up(
             "confidence_check", "reason_follow_up", "continuation", "elaboration", "example_request",
             "rephrase_request", "viewpoint_follow_up", "alternative_reference",
             "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request",
-            "named_callback",
+            "named_callback", "meaning_correction",
         },
         "session_scoped_only": True,
         "memory_write_active": False,
@@ -126,6 +154,36 @@ def apply_contextual_intent(
                 "memory_recall_requested": False,
                 "content_response_requested": True,
                 "social_turn": False,
+                "confidence": "high",
+            }
+        )
+    elif kind == "meaning_correction":
+        result.update(
+            {
+                "intent": "correction",
+                "answer_shape": "acknowledge_and_adjust",
+                "primary_organ": "Core/Mind",
+                "supporting_organs": ["Native Language Organ"],
+                "reasoning_requested": False,
+                "self_state_requested": False,
+                "memory_recall_requested": False,
+                "content_response_requested": False,
+                "social_turn": False,
+                "confidence": "high",
+            }
+        )
+    elif kind == "session_summary_request" and result.get("self_state_requested") is True:
+        result.update(
+            {
+                "intent": "self_state",
+                "answer_shape": "self_state_then_session_summary",
+                "primary_organ": "self-state",
+                "supporting_organs": ["Conversation Spine", "Native Language Organ"],
+                "reasoning_requested": False,
+                "memory_recall_requested": False,
+                "content_response_requested": True,
+                "social_turn": False,
+                "mixed_intent": True,
                 "confidence": "high",
             }
         )
@@ -163,6 +221,11 @@ def contextual_response_seed(
         for item in contextual.get("recent_assistant_texts") or []
         if str(item).strip()
     )
+    recent_user = [
+        str(item).strip()
+        for item in contextual.get("recent_user_texts") or []
+        if str(item).strip()
+    ]
     prompt = str(contextual.get("prompt") or "").lower()
     confidence = contextual.get("previous_confidence") if isinstance(contextual.get("previous_confidence"), dict) else {}
     dialogue = dialogue_workspace if isinstance(dialogue_workspace, dict) else {}
@@ -217,8 +280,12 @@ def contextual_response_seed(
             "Change condition: Move toward parallel zones if transitions create more delay or disruption than the flexibility is worth, or if steady demand supports both offerings continuously."
         )
 
-    if kind == "session_summary_request" and landmarks:
-        return _landmark_summary(landmarks)
+    if kind == "session_summary_request":
+        social_summary = _bounded_social_session_summary(recent_user)
+        if social_summary:
+            return social_summary
+        if landmarks:
+            return _landmark_summary(landmarks)
 
     if (
         kind == "analogy_transfer_request"
@@ -340,7 +407,7 @@ def contextual_response_seed(
                 "I think the dependency rule is the stronger part because it gives a real constraint. Reversibility is the fallback when the system itself does not force an order."
             )
     if kind == "rephrase_request" and previous:
-        return _bounded_rephrase(previous)
+        return f"I may have said that awkwardly. Put simply: {_bounded_rephrase(previous)}"
     return ""
 
 
@@ -394,3 +461,24 @@ def _bounded_rephrase(previous: str) -> str:
     for pattern, replacement in rewrites:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
     return truncate(text, 900)
+
+
+def _bounded_social_session_summary(recent_user_texts: list[str]) -> str:
+    normalized = " ".join(" ".join(item.lower().replace("’", "'").split()) for item in recent_user_texts)
+    greeted = bool(re.search(r"\b(?:hey|hello|hi|greetings|good morning|good afternoon|good evening)\b", normalized))
+    checked_in = bool(re.search(r"\bwhat(?:'s|s| is) up\b|\bhow are you\b", normalized))
+    clarified = bool(re.search(r"\bwhen i say\b.*\bi mean\b|\bwhat(?:'s|s| is) up\s+means\s+how are you\b", normalized))
+    parts: list[str] = []
+    if greeted:
+        parts.append("greeting each other")
+    if checked_in:
+        parts.append("checking in")
+    if clarified:
+        parts.append("clarifying that \"what's up\" was meant as \"how are you\"")
+    if not parts:
+        return ""
+    if len(parts) == 1:
+        joined = parts[0]
+    else:
+        joined = ", ".join(parts[:-1]) + f", and {parts[-1]}"
+    return f"This conversation has been about {joined}."
