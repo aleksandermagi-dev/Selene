@@ -133,15 +133,19 @@ def build_answer_request(payload: dict[str, Any] | None = None) -> dict[str, Any
         raise ValueError("answer request prompt is required")
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
+    conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
     supplied_obligations = payload.get("dialogue_obligations")
     if isinstance(supplied_obligations, list):
         obligations = _normalize_obligations(supplied_obligations)
+    elif isinstance(conversation_spine.get("open_obligations"), list):
+        obligations = _normalize_obligations(conversation_spine.get("open_obligations") or [])
     else:
         pragmatic = build_pragmatic_plan(
             {
                 "prompt": prompt,
                 "intent_decision": intent,
                 "dialogue_workspace": dialogue,
+                "conversation_spine": conversation_spine,
                 "content_seed": "",
             }
         )
@@ -161,6 +165,10 @@ def build_answer_request(payload: dict[str, Any] | None = None) -> dict[str, Any
         requested_domain=requested_domain,
         source_packets_present=bool(source_packets),
     )
+    knowledge_context = comprehension.get("knowledge_context") if isinstance(comprehension.get("knowledge_context"), dict) else {}
+    eligible_knowledge = knowledge_context.get("answer_eligible_items")
+    if not isinstance(eligible_knowledge, list):
+        eligible_knowledge = knowledge_context.get("items") if knowledge_context.get("available") is True else []
     return {
         "request_id": request_id,
         "prompt": prompt,
@@ -169,14 +177,14 @@ def build_answer_request(payload: dict[str, Any] | None = None) -> dict[str, Any
         "requested_depth": str(payload.get("requested_depth") or intent.get("response_depth") or "standard"),
         "dialogue_obligations": obligations,
         "obligation_count": len(obligations),
-        "approved_knowledge_available": bool((comprehension.get("knowledge_context") or {}).get("available")),
+        "approved_knowledge_available": bool(eligible_knowledge),
         "approved_knowledge_items": [
             {
                 "concept_id": item.get("concept_id") or item.get("id"),
                 "title": truncate(str(item.get("title") or ""), 240),
                 "source_refs": _text_list(item.get("source_refs")),
             }
-            for item in (comprehension.get("knowledge_context") or {}).get("items") or []
+            for item in eligible_knowledge
             if isinstance(item, dict)
         ][:10],
         "source_packets": source_packets,
@@ -187,6 +195,14 @@ def build_answer_request(payload: dict[str, Any] | None = None) -> dict[str, Any
         "requested_domain": requested_domain,
         "allowed_domains": allowed,
         "meaning_route": meaning_route,
+        "conversation_spine": {
+            "turn_id": str(conversation_spine.get("turn_id") or ""),
+            "intent_class": str(conversation_spine.get("intent_class") or ""),
+            "active_topic": str(conversation_spine.get("active_topic") or ""),
+            "distinctive_terms": _text_list(conversation_spine.get("distinctive_terms"))[:40],
+            "source_compatibility": conversation_spine.get("source_compatibility") or {},
+        },
+        "conversation_spine_used": bool(conversation_spine),
         "authority_bearing_request": _contains_any(str(meaning_route.get("routing_text") or prompt.lower()), AUTHORITY_MARKERS),
         "current_session_only": True,
         "raw_corpus_available": False,
@@ -549,7 +565,12 @@ def run_comparison_planning_answer(
             item for item in request["dialogue_obligations"] if item.get("required") is not False
         ]
     }
-    initial_coverage = evaluate_response_coverage(coverage_plan, initial_answer)
+    conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
+    initial_coverage = evaluate_response_coverage(
+        coverage_plan,
+        initial_answer,
+        conversation_spine=conversation_spine,
+    )
     final_answer = initial_answer
     final_coverage = initial_coverage
     runs = [initial_run]
@@ -567,7 +588,11 @@ def run_comparison_planning_answer(
         runs.append(retry_run)
         supplement = truncate(str(retry_run.get("best_current_answer") or ""), 5000).strip()
         final_answer = _combine_answer_parts(initial_answer, supplement)
-        final_coverage = evaluate_response_coverage(coverage_plan, final_answer)
+        final_coverage = evaluate_response_coverage(
+            coverage_plan,
+            final_answer,
+            conversation_spine=conversation_spine,
+        )
 
     unresolved = _unresolved_obligations(request["dialogue_obligations"], final_coverage)
     evidence_confidence = _comparison_evidence_confidence(request)
@@ -866,7 +891,9 @@ def _adapter_not_available(
 
 def _looks_like_math(value: str) -> bool:
     lower = value.lower()
-    if _contains_any(lower, ("calculate", "arithmetic", "equation", "solve for", "percentage", "square root", "multiply", "divide")):
+    if _contains_any(lower, ("calculate", "arithmetic", "equation", "solve for", "percentage", "square root")):
+        return True
+    if _contains_any(lower, ("multiply", "divide")) and re.search(r"\d", value):
         return True
     return bool(re.search(r"\b\d+(?:\.\d+)?\s*(?:\+|-|\*|/|=|%|\^|×|÷)\s*\d", value))
 

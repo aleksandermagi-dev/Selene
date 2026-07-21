@@ -5,6 +5,7 @@ import re
 import sqlite3
 from typing import Any
 
+from .answer_substance import build_answer_substance
 from .registry import truncate
 
 
@@ -117,7 +118,17 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
     evidence_chain = _demonstrate(prompt, observations, models)
     evaluation = _evaluate(prompt, challenge, evidence_chain)
     answer_shape = _answer_shape(evaluation, challenge)
-    best_current_answer = _best_current_answer(prompt, observations, models, evidence_chain, evaluation, answer_shape)
+    answer_substance = build_answer_substance(prompt, observations)
+    best_current_answer = _best_current_answer(
+        prompt,
+        observations,
+        models,
+        evidence_chain,
+        evaluation,
+        answer_shape,
+        answer_substance,
+    )
+    answer_substance["selected_for_answer"] = best_current_answer == answer_substance.get("answer")
     summary = _summary(models, challenge, evaluation)
     cocoon_suggestion = _cocoon_suggestion(prompt, challenge, evaluation)
     result = {
@@ -142,6 +153,7 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         "selected_next_step": evaluation["selected_next_step"],
         "answer_shape": answer_shape,
         "best_current_answer": best_current_answer,
+        "answer_substance": answer_substance,
         "confidence": evaluation["confidence"],
         "cocoon_suggestion": cocoon_suggestion,
         "visible_summary_only": True,
@@ -259,7 +271,7 @@ def _demonstrate(prompt: str, observations: list[dict[str, Any]], models: list[d
 
 def _evaluate(prompt: str, challenge: dict[str, Any], evidence_chain: list[dict[str, Any]]) -> dict[str, Any]:
     lower = prompt.lower()
-    high_stakes = any(marker in lower for marker in HIGH_STAKES_MARKERS)
+    high_stakes = _contains_high_stakes_marker(lower)
     flags = list(challenge.get("bias_flags") or [])
     if high_stakes:
         next_step = "ask_or_cocoon_support"
@@ -314,6 +326,7 @@ def _best_current_answer(
     evidence_chain: list[dict[str, Any]],
     evaluation: dict[str, Any],
     answer_shape: str,
+    answer_substance: dict[str, Any],
 ) -> str:
     lower = prompt.lower()
     if answer_shape == "hard_stop":
@@ -359,6 +372,9 @@ def _best_current_answer(
             "Reproduce the bug once, list the observations both explanations must account for, derive one distinguishing prediction from each, "
             "and run the smallest test that separates them. Stop when one explanation survives the same evidence and the result repeats."
         )
+    substance_answer = truncate(str(answer_substance.get("answer") or ""), 1000).strip()
+    if substance_answer:
+        return substance_answer
     if answer_shape == "compare_models":
         names = ", ".join(str(model.get("name")) for model in models[:3]) or "the available models"
         return truncate(f"The useful next answer is to compare {names} under the same pressure, then choose the model that explains more with fewer unsupported assumptions.", 520)
@@ -376,7 +392,7 @@ def _best_current_answer(
 
 def _cocoon_suggestion(prompt: str, challenge: dict[str, Any], evaluation: dict[str, Any]) -> dict[str, Any]:
     lower = prompt.lower()
-    hard = any(marker in lower for marker in HIGH_STAKES_MARKERS)
+    hard = _contains_high_stakes_marker(lower)
     recommended = hard or bool(challenge.get("asymmetry_detected"))
     return {
         "recommended": recommended,
@@ -385,6 +401,19 @@ def _cocoon_suggestion(prompt: str, challenge: dict[str, Any], evaluation: dict[
         "reason": "Cocoon support helps if stakes, source confusion, or asymmetric evaluation need tending." if recommended else "",
         "choices": ["Ask Aleks", "Hold in Cocoon"] if recommended else ["Keep reasoning here", "Ask Aleks"],
     }
+
+
+def _contains_high_stakes_marker(value: str) -> bool:
+    """Match authority-bearing phrases as terms, never as word fragments.
+
+    In particular, the marker ``train`` must not fire inside ordinary words such
+    as ``constraint`` when a bounded completion retry includes its first answer.
+    """
+
+    return any(
+        re.search(rf"(?<![a-z0-9]){re.escape(marker)}(?![a-z0-9])", value) is not None
+        for marker in HIGH_STAKES_MARKERS
+    )
 
 
 def _summary(models: list[dict[str, Any]], challenge: dict[str, Any], evaluation: dict[str, Any]) -> str:

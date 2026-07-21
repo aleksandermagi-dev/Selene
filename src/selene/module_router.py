@@ -53,6 +53,7 @@ from .compressed_structure_braid import (
     custom_instruction_braid_status,
     run_custom_instruction_braid,
 )
+from .conversation_spine import conversation_spine_status
 from .cocoon import cocoon_status
 from .cocoon_care import cocoon_care_status, list_cocoon_care_checks, run_cocoon_care_check
 from .cocoon_bridge import cocoon_bridge_status, standby_cocoon_bridge, wake_cocoon_bridge
@@ -170,6 +171,7 @@ from .language_teaching_shelf import (
 )
 from .education_expression_law import education_expression_law_status, review_education_expression
 from .curriculum_authorization import (
+    activate_f1_equal_groups_data_money_authorization,
     activate_f1_foundation_authorization,
     activate_f1_geometry_algorithms_authorization,
     activate_f1_language_math_authorization,
@@ -178,11 +180,13 @@ from .curriculum_authorization import (
     evaluate_curriculum_coverage,
     list_curriculum_authorizations,
     prepare_f1_foundation_group,
+    prepare_f1_equal_groups_data_money_group,
     prepare_f1_geometry_algorithms_group,
     prepare_f1_language_math_group,
     prepare_f1_operations_measurement_group,
     revoke_curriculum_authorization,
     teach_f1_foundation_group,
+    teach_f1_equal_groups_data_money_group,
     teach_f1_geometry_algorithms_group,
     teach_f1_language_math_group,
     teach_f1_operations_measurement_group,
@@ -624,6 +628,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": activate_f1_operations_measurement_authorization(conn, payload)}
     if route_key == "curriculum.authorization.activate_f1_geometry_algorithms":
         return {"route": route_key, "result": activate_f1_geometry_algorithms_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_equal_groups_data_money":
+        return {"route": route_key, "result": activate_f1_equal_groups_data_money_authorization(conn, payload)}
     if route_key == "curriculum.authorization.revoke":
         return {"route": route_key, "result": revoke_curriculum_authorization(conn, payload)}
     if route_key == "curriculum.authorization.evaluate":
@@ -644,6 +650,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": prepare_f1_geometry_algorithms_group(conn, payload)}
     if route_key == "curriculum.foundation.teach_f1_geometry_algorithms":
         return {"route": route_key, "result": teach_f1_geometry_algorithms_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_equal_groups_data_money":
+        return {"route": route_key, "result": prepare_f1_equal_groups_data_money_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_equal_groups_data_money":
+        return {"route": route_key, "result": teach_f1_equal_groups_data_money_group(conn, payload)}
     if route_key == "native_language.status":
         return {"route": route_key, "result": native_language_status(conn)}
     if route_key == "native_language.realize":
@@ -670,6 +680,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": list_native_language_runs(conn, int(payload.get("limit") or 50))}
     if route_key == "dialogue_workspace.status":
         return {"route": route_key, "result": dialogue_workspace_status(conn, int(payload.get("session_id") or 0))}
+    if route_key == "conversation_spine.status":
+        return {"route": route_key, "result": conversation_spine_status()}
     if route_key == "dialogue_workspace.refresh":
         return {"route": route_key, "result": prepare_dialogue_turn(conn, payload)}
     if route_key == "selene_organ_ideas.status":

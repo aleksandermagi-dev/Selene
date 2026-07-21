@@ -61,3 +61,58 @@ def test_ordinary_self_check_in_outranks_generic_how_reasoning():
     assert check_in["primary_intent"] == "self_state"
     assert "self_state_question" in check_in["dialogue_acts"]
     assert procedural["primary_intent"] == "reasoning"
+
+
+def test_greeting_and_demo_context_do_not_displace_an_explicit_self_state_question():
+    result = interpret_turn_meaning(
+        "Good morning, Selene. Aleks and I are preparing a short demo today, "
+        "and we wanted to have a real conversation with you first. "
+        "How are you feeling about talking with us for a few minutes?"
+    )
+
+    assert result["primary_intent"] == "self_state"
+    assert "self_state_question" in result["dialogue_acts"]
+    assert "greeting" in result["dialogue_acts"]
+
+
+def test_ordinary_speech_and_technical_lookalikes_route_by_meaning():
+    contrast_pairs = (
+        ("How are you?", "self_state", "How are you calculating that result?", "reasoning"),
+        ("Can you remember where we left off?", "memory_recall", "How should memory handle fuzzy recall?", "reasoning"),
+        ("Let's stop here for today.", "farewell", "How do I stop the local service without losing state?", "reasoning"),
+        ("I feel like this is working.", "direct_conversation", "How does affect expression work?", "reasoning"),
+        ("Are you okay?", "self_state", "Are you okay with using SQLite for this?", "direct_conversation"),
+        ("Do you remember what I said yesterday?", "memory_recall", "Do you remember how binary search works?", "reasoning"),
+        ("That's enough for now.", "farewell", "Should the service pause before writing?", "reasoning"),
+        ("Remember this: close file handles after use.", "memory_candidate", "Remember to close the file handle.", "direct_conversation"),
+    )
+
+    for ordinary, ordinary_intent, technical, technical_intent in contrast_pairs:
+        assert interpret_turn_meaning(ordinary)["primary_intent"] == ordinary_intent
+        assert interpret_turn_meaning(technical)["primary_intent"] == technical_intent
+
+
+def test_partial_agreement_preserves_the_qualification_as_a_secondary_dialogue_act():
+    result = interpret_turn_meaning("Okay, but what changes if voice comes first?")
+
+    assert result["primary_intent"] == "reasoning"
+    assert "partial_agreement" in result["dialogue_acts"]
+    assert "question" in result["dialogue_acts"]
+
+
+def test_definition_question_reaches_knowledge_reasoning_without_consuming_personal_questions():
+    definition = interpret_turn_meaning("What is photosynthesis?")
+    personal = interpret_turn_meaning("What is your current state?")
+
+    assert definition["primary_intent"] == "reasoning"
+    assert personal["primary_intent"] != "reasoning"
+
+
+def test_ordinary_resource_division_is_not_mistaken_for_arithmetic():
+    ordinary = interpret_turn_meaning(
+        "How should a garden divide limited water between vegetables and pollinators?"
+    )
+    arithmetic = interpret_turn_meaning("Divide 18 by 3.")
+
+    assert ordinary["selected_domain"] == "ordinary_conversation"
+    assert arithmetic["selected_domain"] == "verified_math"

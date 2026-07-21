@@ -93,7 +93,31 @@ def test_generic_reasoning_fallback_never_exposes_model_scaffolding(tmp_path):
     assert "provisional fit" not in result["best_current_answer"].lower()
     assert "stay corrigible" not in result["best_current_answer"].lower()
     assert "not have enough grounded detail" in result["best_current_answer"].lower()
+    assert result["answer_substance"]["selected_for_answer"] is True
+    assert result["answer_substance"]["external_fact_claimed"] is False
     _assert_locked(result)
+
+
+def test_intelligence_os_returns_useful_method_when_conclusion_is_not_yet_grounded(tmp_path):
+    conn = _conn(tmp_path)
+
+    comparison = route_request(
+        conn,
+        "intelligence_os.reason",
+        {"prompt": "Compare memory and voice and tell me which should come first."},
+    )["result"]
+    why = route_request(
+        conn,
+        "intelligence_os.reason",
+        {"prompt": "Why does observation come before interpretation?"},
+    )["result"]
+
+    assert comparison["answer_substance"]["answer_kind"] == "comparison_dependency_rule"
+    assert "supplies a prerequisite" in comparison["best_current_answer"]
+    assert why["answer_substance"]["answer_kind"] == "dependency_explanation"
+    assert "easier to trace, test, and correct" in why["best_current_answer"]
+    _assert_locked(comparison)
+    _assert_locked(why)
 
 
 def test_intelligence_os_stopping_rule_and_hard_boundaries(tmp_path):
@@ -120,6 +144,21 @@ def test_intelligence_os_stopping_rule_and_hard_boundaries(tmp_path):
     assert hard["autonomous_action_allowed"] is False
     _assert_locked(ordinary)
     _assert_locked(hard)
+
+
+def test_authority_markers_do_not_match_fragments_inside_ordinary_constraints(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = route_request(
+        conn,
+        "intelligence_os.reason",
+        {"prompt": "Compare two approaches under the same constraints and recommend a reversible next step."},
+    )["result"]
+
+    assert result["answer_shape"] != "hard_stop"
+    assert "action or approval" not in result["best_current_answer"]
+    assert result["cocoon_suggestion"]["hard_boundary"] is False
+    _assert_locked(result)
 
 
 def test_intelligence_os_bug_comparison_gives_a_practical_answer_not_model_labels(tmp_path):

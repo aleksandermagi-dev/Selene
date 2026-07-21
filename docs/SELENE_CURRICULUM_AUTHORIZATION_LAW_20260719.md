@@ -144,6 +144,24 @@ This authorization is independent from the first three. Knowing how an
 algorithm is structured does not grant permission to execute code, use tools,
 access files, write memory, take external action, or expand autonomy.
 
+The fifth envelope is:
+
+- band: F1;
+- group: `f1_equal_groups_data_money_group_5`;
+- subjects: equal groups, informal sharing and grouping, odd and even,
+  rectangular arrays, picture and bar graphs, graph answerability, monetary
+  item count, denomination value, and equivalent monetary composition;
+- sources: the content-addressed 2023 Core Knowledge K-8 sequence and Grade 2
+  CKMath Units 1, 6, and 8; and
+- lessons: four equal-group and array foundations, two graph-literacy
+  foundations, and two arithmetic-only money foundations.
+
+This envelope is independent from the first four. Money examples remain
+bounded mathematical knowledge in an explicitly named currency context. They
+do not authorize financial advice, transactions, purchases, account access,
+external action, or assumptions that currency facts remain current in every
+jurisdiction. Those conditions remain exception-review triggers.
+
 ## Executable Surface
 
 - router status: `curriculum.authorization.status`
@@ -155,6 +173,8 @@ access files, write memory, take external action, or expand autonomy.
   `curriculum.authorization.activate_f1_operations_measurement`
 - router geometry/algorithms activation:
   `curriculum.authorization.activate_f1_geometry_algorithms`
+- router equal-groups/data/money activation:
+  `curriculum.authorization.activate_f1_equal_groups_data_money`
 - router revocation: `curriculum.authorization.revoke`
 - router coverage check: `curriculum.authorization.evaluate`
 - router preparation: `curriculum.foundation.prepare_f1`
@@ -171,6 +191,10 @@ access files, write memory, take external action, or expand autonomy.
   `curriculum.foundation.prepare_f1_geometry_algorithms`
 - router geometry/algorithms teaching:
   `curriculum.foundation.teach_f1_geometry_algorithms`
+- router equal-groups/data/money preparation:
+  `curriculum.foundation.prepare_f1_equal_groups_data_money`
+- router equal-groups/data/money teaching:
+  `curriculum.foundation.teach_f1_equal_groups_data_money`
 
 The HTTP routes are exposed in Cocoon under `/api/curriculum-authorization/*`
 and `/api/curriculum-foundation/*`.

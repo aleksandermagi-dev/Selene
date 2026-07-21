@@ -20,12 +20,14 @@ setting, and reopen it when a correction or contradiction changes the fit.
 The target is not speed, grade performance, phrase recall, or imitation of a
 school system. The target is transferable understanding.
 
-Current implementation checkpoint: four independently authorized F1 groups
+Current implementation checkpoint: five independently authorized F1 groups
 have completed Acquire, Integrate, Express, comprehension, and retention,
-providing 28 reviewed foundations across inquiry, language, number,
+providing 36 reviewed foundations across inquiry, language, number,
 operations, data, measurement, time, geometry, equal shares, spatial
-reference, and bounded algorithmic reasoning. This is progress within F1, not
-a claim that F1 or T1 is complete.
+reference, bounded algorithmic reasoning, equal groups, informal sharing and
+grouping, odd and even, rectangular arrays, graph literacy, and arithmetic-only
+monetary value. This is progress within F1, not a claim that F1 or T1 is
+complete.
 
 ```text
 source-labeled foundations
@@ -81,14 +83,52 @@ pattern
 
 Recurrence is used for transfer and integration, not repetitive examination.
 
-### 5. Earlier approved knowledge participates in later learning
+### 5. Teach the why with the what
+
+When a concept has a meaningful explanation that Selene should understand,
+the teaching item should include that explanation rather than retaining only
+the surface fact.
+
+The relevant kind of "why" depends on the subject:
+
+- **mechanism:** why objects remain near Earth involves gravity;
+- **derivation or relationship:** why two plus two equals four can be
+  reconstructed through quantity, grouping, and the definitions of addition
+  and four;
+- **purpose or design rationale:** why a tool, procedure, or institution was
+  made a certain way;
+- **authorial or artistic purpose:** why a poem was written, while separating
+  documented author statements and historical context from later
+  interpretation;
+- **historical cause:** why an event occurred, while preserving multiple
+  contributing conditions, triggers, disagreements, and uncertain evidence;
+- **functional consequence:** why a principle matters and what changes when
+  it does or does not apply.
+
+A source saying *what* happened is not automatically evidence for *why* it
+happened. Acquire should label the explanation's source and whether it is a
+mechanism, derivation, stated purpose, bounded inference, disputed account, or
+open question. Integrate should connect the explanation to prerequisites,
+competing explanations, scope, and consequences. Express should support an
+original explanation, a distinct example, a limit or counterexample, and an
+honest answer to a later "why?" follow-up.
+
+If the why is unknown, disputed, multi-causal, interpretive, conventional, or
+dependent on an axiom or definition, the lesson should preserve that status.
+It must not invent one clean cause merely to make the fact feel complete.
+
+This requirement supports transfer: knowing a fact permits recognition;
+understanding why it fits permits reconstruction, application, comparison,
+correction, and use in unfamiliar problems.
+
+### 6. Earlier approved knowledge participates in later learning
 
 Every Integrate stage should identify relevant approved concepts and explain
 how the new item supports, extends, limits, distinguishes, or conflicts with
 them. A later lesson should demonstrate useful recall by applying an earlier
 principle, not by merely repeating its wording.
 
-### 6. Knowledge, skill, language, memory, and governance remain distinct
+### 7. Knowledge, skill, language, memory, and governance remain distinct
 
 - Curriculum content becomes general taught knowledge only after review.
 - Procedural skills describe how to perform bounded intellectual work.
@@ -103,7 +143,7 @@ principle, not by merely repeating its wording.
 - Teaching does not authorize model training, fine-tuning, LoRA, autonomy, or
   external action.
 
-### 7. Existing understanding should not be retaught without reason
+### 8. Existing understanding should not be retaught without reason
 
 Before opening a foundational set, inspect existing approved knowledge,
 comprehension evidence, and implemented machinery. If the prerequisite is
@@ -112,7 +152,7 @@ distinct application only when existing evidence cannot establish transfer.
 
 A missing prerequisite is a curriculum gap, not Selene failing.
 
-### 8. Correction is part of education
+### 9. Correction is part of education
 
 Ordinary wrongness should lead to source inspection, distinction, revision,
 and reopening when needed. It should not produce shame, punishment, or broad

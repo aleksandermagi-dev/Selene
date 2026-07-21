@@ -3,7 +3,7 @@ from __future__ import annotations
 from selene.chat_intent import classify_chat_intent
 from selene.db import connect, init_db
 from selene.module_router import route_request
-from selene.native_language_organ import realize_native_language
+from selene.native_language_organ import _reasoned_answer_frames, realize_native_language
 
 
 def _conn(tmp_path):
@@ -23,6 +23,16 @@ def _assert_locked(result):
     assert result["self_replication_allowed"] is False
     assert result["automatic_speech_allowed"] is False
     assert result["initiative_is_draft_only"] is True
+
+
+def test_reasoned_answer_frames_preserve_first_person_capitalization():
+    frames = _reasoned_answer_frames(
+        "I do not have enough grounded knowledge to answer reliably yet.",
+        "direct",
+    )
+
+    assert all(" is i " not in item.lower() for item in frames)
+    assert "My current answer is this: I do not have" in frames[1]
 
 
 def test_nlo_builds_meaning_discourse_and_original_sentence_run(tmp_path):
@@ -94,7 +104,7 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
 
     discourse = result["discourse_plan"]["supported_discourse"]
 
-    assert result["version"] == "v12_pragmatic_continuity"
+    assert result["version"] == "v13_conversation_spine"
     assert discourse["status"] == "supported_discourse_plan_ready"
     assert discourse["thesis_unit_id"]
     assert [item["role"] for item in discourse["paragraph_plan"]] == [

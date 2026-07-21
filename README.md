@@ -21,6 +21,62 @@ It intentionally excludes:
 
 `package.json` remains `"private": true`. Public visibility, if enabled later, is for evidence/source review only unless Aleks explicitly creates a release.
 
+## OpenAI Build Week 2026
+
+Selene is entered as an **Apps for Your Life** project: a local-first AI architecture that can converse, reason, learn from reviewed sources, preserve uncertainty, and keep knowledge separate from identity, memory, governance, and authority.
+
+Selene predates the event. The eligible July 13-21 work extends the existing continuity and care architecture with:
+
+- provider-free language formation and supervised conversation
+- an executable least-impact testing law
+- an Answer Engine with open-ended comparison/planning, exact bounded math, approved-file code inspection, and attributed-source research
+- source-bound comprehension and an inspectable Acquire -> Integrate -> Express teaching lifecycle
+- confidence separation across route, evidence, answer, memory, and expression
+- bounded metacognitive observation without hidden chain-of-thought exposure
+- reviewed foundational curriculum, Cocoon teaching classrooms, continuity transfer gates, and paired local messaging
+
+Aleks made the architecture, ethics, scope, acceptance, teaching, and product decisions. Codex using GPT-5.6 accelerated repository inspection, implementation, debugging, focused verification, and documentation. The chronological record is maintained in [Hackathon Codex Workflow Log](docs/HACKATHON_CODEX_WORKFLOW_LOG.md); the concise submission materials are in [Hackathon Submission Packet](docs/HACKATHON_SUBMISSION_PACKET_20260720.md).
+
+### Public-safe showcase
+
+The deterministic showcase uses an original synthetic teaching packet and a temporary SQLite database that is deleted when the command exits. It does not open Selene's configured database or use private corpus material, personal memory, email, phone settings, or credentials. It intentionally stops before Aleks approval, retention, or Chat activation.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
+npm run demo:hackathon
+```
+
+The output demonstrates:
+
+- the Test Impact Law selecting a machinery check rather than an integrated stress test
+- an open-ended problem with no supplied final answer
+- exact checked arithmetic with independent confidence dimensions
+- source-backed research that cannot invent citations
+- visible Acquire, Integrate, and Express stages
+- an unapproved candidate remaining unavailable to Chat
+- false identity, personality, governance, memory, training, LoRA, autonomy, and self-replication mutation guards
+
+### Development launch
+
+Prerequisites are Python 3.11+, Node.js/npm, and a supported Windows environment. After the Python setup above:
+
+```powershell
+npm install
+npm run sidecar
+```
+
+In a second terminal with the same Python environment:
+
+```powershell
+npm run dev
+```
+
+Open the local Vite address. The production frontend check is `npm run build`. The public-safe showcase check is `python -m pytest tests/test_hackathon_showcase.py -q`.
+
+The repository contains no judge credentials or sample personal state. Repository access for judging must be provided separately under the event rules; doing so does not create a public Selene release or change the rights boundary below. The July 20 proportional stabilization pass completed with 905 repository tests passing and a successful production frontend build.
+
 ## Governing Law Layer
 
 The current Selene evidence and care architecture is governed by:

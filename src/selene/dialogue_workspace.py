@@ -77,10 +77,20 @@ def prepare_dialogue_turn(
     )
     interpreted_text = truncate(str(input_interpretation.get("interpreted_text") or text), 2400)
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
+    contextual_follow_up = (
+        payload.get("contextual_follow_up")
+        if isinstance(payload.get("contextual_follow_up"), dict)
+        else {}
+    )
     prior = dialogue_workspace_status(conn, session_id)
     events = _events(conn, session_id, payload.get("conversation_events"))
     previous = events[-1] if events else {}
-    active_topic = _active_topic(interpreted_text, str(prior.get("active_topic") or ""), str(intent.get("intent") or ""))
+    active_topic = _active_topic(
+        interpreted_text,
+        str(prior.get("active_topic") or ""),
+        str(intent.get("intent") or ""),
+        preserve_prior=contextual_follow_up.get("preserve_active_topic") is True,
+    )
     questions = _question_units(interpreted_text)
     loops = list(prior.get("open_loops") or [])
     new_loops = [
@@ -100,6 +110,7 @@ def prepare_dialogue_turn(
         previous,
         active_topic,
         prior_referents=referents,
+        recent_events=events,
     )
     if reference:
         referents[reference["token"]] = reference
@@ -126,6 +137,7 @@ def prepare_dialogue_turn(
         "response_preference": preferences.get("response_depth") or "",
         "previous_turn_available": bool(previous),
         "previous_turn": previous,
+        "contextual_follow_up": contextual_follow_up,
     }
     state = {
         "status": "dialogue_workspace_turn_prepared",
@@ -276,7 +288,9 @@ def _events(conn: sqlite3.Connection, session_id: int, supplied: Any) -> list[di
     return [dict(row) for row in reversed(rows)]
 
 
-def _active_topic(text: str, prior: str, intent: str) -> str:
+def _active_topic(text: str, prior: str, intent: str, *, preserve_prior: bool = False) -> str:
+    if preserve_prior and prior:
+        return prior
     if intent in {"greeting", "farewell", "gratitude", "affirmation", "reassurance_received", "warm_connection"}:
         return prior
     return _topic(text) or prior
@@ -300,6 +314,7 @@ def _resolve_reference(
     active_topic: str,
     *,
     prior_referents: dict[str, Any] | None = None,
+    recent_events: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any] | None:
     lower = text.lower()
     tokens = (
@@ -312,7 +327,15 @@ def _resolve_reference(
     if not token or not previous:
         return None
     previous_preview = truncate(str(previous.get("preview") or ""), 480)
-    candidates = _reference_candidates(previous_preview, active_topic)
+    candidates: list[str] = []
+    for event in reversed(recent_events or []):
+        event_preview = truncate(str(event.get("preview") or ""), 480)
+        event_candidates = _reference_candidates(event_preview, "")
+        if len(event_candidates) >= 2:
+            candidates = event_candidates
+            break
+    if not candidates:
+        candidates = _reference_candidates(previous_preview, active_topic)
     selected = _select_reference_candidate(token, candidates, prior_referents or {})
     if selected:
         status = "resolved"
@@ -384,6 +407,19 @@ def _select_reference_candidate(token: str, candidates: list[str], prior_referen
 
 def _correction_refinement(text: str, previous: dict[str, Any]) -> dict[str, Any]:
     normalized = " ".join(text.split())
+    if any(
+        marker in normalized.lower()
+        for marker in ("separate question", "different question", "new question", "separate topic", "different topic", "on another topic")
+    ):
+        return {
+            "detected": False,
+            "summary": "",
+            "corrected_meaning": "",
+            "replaced_meaning": "",
+            "replaces_turn": "",
+            "scope": "current_session_refinement_only",
+            "durable_memory_write": False,
+        }
     patterns = (
         r"\b(?:i meant|what i meant was)\s+(.+?)\s*,?\s+not\s+(.+?)(?:[.!?]|$)",
         r"\bnot\s+(.+?)\s*[,;]\s*(?:i meant\s+)?(.+?)(?:[.!?]|$)",

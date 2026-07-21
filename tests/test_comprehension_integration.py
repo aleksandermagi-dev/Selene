@@ -260,6 +260,68 @@ def test_guided_understanding_can_be_reviewed_and_retained_as_knowledge(tmp_path
     _assert_locked(packet)
 
 
+def test_approved_knowledge_why_question_includes_an_explanatory_principle(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = _propose(conn)
+    _evaluate(conn, proposed["item"]["id"])
+    route_request(
+        conn,
+        "comprehension.concepts.decide",
+        {"concept_id": proposed["item"]["id"], "action": "approve_knowledge"},
+    )
+
+    packet = route_request(
+        conn,
+        "comprehension.turn.packet",
+        {
+            "prompt": "Why does orbital eccentricity help distinguish rounder and more elongated orbits?",
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True, "dialogue_acts": ["question"]},
+            "dialogue_workspace": {"active_topic": "orbital eccentricity", "pragmatics": {"ambiguity": {"level": "low"}}},
+        },
+    )["result"]
+
+    assert packet["knowledge_response_basis"]["answer_kind"] == "why_supported"
+    assert packet["knowledge_response_basis"]["why_relationship_included"] is True
+    assert "differs from a perfect circle" in packet["knowledge_response_seed"]
+    assert "value near zero is close to circular" in packet["knowledge_response_seed"]
+    _assert_locked(packet)
+
+
+def test_self_state_question_does_not_turn_overlapping_approved_knowledge_into_answer_content(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = _propose(conn)
+    _evaluate(conn, proposed["item"]["id"])
+    route_request(
+        conn,
+        "comprehension.concepts.decide",
+        {"concept_id": proposed["item"]["id"], "action": "approve_knowledge"},
+    )
+
+    packet = route_request(
+        conn,
+        "comprehension.turn.packet",
+        {
+            "prompt": "How are you feeling about talking through orbital eccentricity with us?",
+            "intent_decision": {
+                "intent": "self_state",
+                "self_state_requested": True,
+                "reasoning_requested": False,
+                "dialogue_acts": ["self_state_question", "question"],
+            },
+            "dialogue_workspace": {
+                "active_topic": "ordinary check-in",
+                "pragmatics": {"ambiguity": {"level": "low"}},
+            },
+        },
+    )["result"]
+
+    assert packet["knowledge_context"]["available"] is True
+    assert packet["knowledge_context"]["answer_eligible"] is False
+    assert packet["knowledge_response_seed"] == ""
+    assert packet["understanding_state"] == "not_yet_grounded"
+    _assert_locked(packet)
+
+
 def test_comprehension_handshake_asks_only_for_material_unresolved_meaning(tmp_path):
     conn = _conn(tmp_path)
 

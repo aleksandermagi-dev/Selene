@@ -125,7 +125,17 @@ def _quote_is_actionable(outside: str) -> bool:
 
 def _dialogue_acts(routing_text: str, tokens: set[str], question: bool, explicit_request: bool) -> list[str]:
     acts: list[str] = []
-    if _has_any(routing_text, ("actually", "correction", "i meant", "rather than", "not what i meant")):
+    topic_shift = _has_any(
+        routing_text,
+        ("separate question", "different question", "new question", "separate topic", "different topic", "on another topic"),
+    )
+    if topic_shift:
+        acts.append("topic_shift")
+    if re.match(r"^(?:okay|yes|right|agreed|i agree)\b.{0,20}\bbut\b", routing_text):
+        acts.append("partial_agreement")
+    if _has_any(routing_text, ("correction", "i meant", "rather than", "not what i meant")) or (
+        "actually" in routing_text and not topic_shift
+    ):
         acts.append("correction")
     if _is_memory_candidate(routing_text):
         acts.append("memory_candidate")
@@ -192,15 +202,34 @@ def _intent_candidates(
     reasoning_terms = {
         "why", "how", "explain", "compare", "solve", "calculate", "plan",
         "reason", "evidence", "contradiction", "tradeoff", "tradeoffs",
-        "design", "build", "debug", "meaning", "cause", "causes",
+        "design", "build", "debug", "meaning", "cause", "causes", "should",
     }
+    self_state_turn = "self_state_question" in dialogue_acts
     reasoning_hits = sorted(tokens.intersection(reasoning_terms))
+    if self_state_turn:
+        # "How are you feeling?" asks for Selene's present state. The generic
+        # interrogative "how" must not turn that ordinary check-in into a
+        # reasoning task. Explicit substantive cues can remain secondary.
+        reasoning_hits = [item for item in reasoning_hits if item != "how"]
     if reasoning_hits:
         add("reasoning", 55 + min(20, len(reasoning_hits) * 5), "reasoning_structure:" + ",".join(reasoning_hits[:5]))
-    if question and tokens.intersection({"why", "how", "which"}):
+    if question and not self_state_turn and tokens.intersection({"why", "how", "which"}):
         add("reasoning", 18, "open_question_shape")
     if _has_any(routing_text, ("what do you make of", "what makes", "what does that mean", "do you know about", "what do you know about")):
         add("reasoning", 70, "explanation_or_knowledge_request")
+    if _has_any(routing_text, ("what do you think", "what is your view", "what's your view")):
+        add("reasoning", 70, "viewpoint_reasoning_request")
+    factual_question = bool(
+        re.match(
+            r"^(?:what (?:is|are|was|were|does)|who (?:is|are|was|were)|when (?:is|did|was|were)|where (?:is|did|was|were))\b",
+            routing_text,
+        )
+    )
+    personal_second_person = bool(re.match(r"^(?:what is your|who are you|what are you)\b", routing_text))
+    if question and factual_question and not personal_second_person:
+        add("reasoning", 68, "factual_or_definitional_question")
+    if question and _has_any(routing_text, ("what changes", "what happens", "what would change", "what comes next")):
+        add("reasoning", 72, "consequence_or_continuation_question")
     if (
         "reasoning" in scores
         and "memory_recall" not in dialogue_acts
@@ -267,13 +296,17 @@ def _domain_candidates(
 
 
 def _looks_like_math(raw: str, routing_text: str) -> bool:
-    if _has_any(routing_text, ("calculate", "arithmetic", "equation", "solve for", "square root", "multiply", "divide")):
+    if _has_any(routing_text, ("calculate", "arithmetic", "equation", "solve for", "square root")):
+        return True
+    if _has_any(routing_text, ("multiply", "divide")) and re.search(r"\d", raw):
         return True
     return bool(re.search(r"\b\d+(?:\.\d+)?\s*(?:\+|-|\*|/|=|%|\^|×|÷)\s*\d", raw))
 
 
 def _is_memory_candidate(value: str) -> bool:
     if _has_any(value, ("where we", "when we", "what we", "our last", "our previous", "our past")):
+        return False
+    if re.match(r"^(?:please\s+)?remember\s+to\b", value):
         return False
     retention_request = bool(
         re.search(r"^(please\s+)?(remember|save|keep|hold)|\b(can|could|would) you (save|keep|hold)", value)
@@ -302,7 +335,10 @@ def _is_personal_recall(value: str, question: bool) -> bool:
     )
     if conversation_reference:
         return True
-    past_anchor = _has_any(value, ("when we", "where we", "what we", "our last", "our previous", "our past", "i told you", "you told me", "before", "earlier"))
+    past_anchor = _has_any(value, ("when we", "where we", "what we", "our last", "our previous", "our past", "i told you", "you told me", "i said", "you said", "last time", "yesterday", "before", "earlier"))
+    general_how_question = bool(re.match(r"^(?:do you remember|can you recall)\s+how\b", value))
+    if general_how_question and not past_anchor:
+        return False
     recall_verb = bool(re.search(r"\b(remember|recall|memory of|memories of)\b", value))
     return recall_verb and (past_anchor or value.startswith(("do you remember", "what do you remember", "can you recall", "please recall")))
 
@@ -319,6 +355,8 @@ def _is_self_state_question(value: str, question: bool) -> bool:
     ) or bool(re.fullmatch(r"(?:so |and )?how have you been(?: lately)?", plain))
     if ordinary_check_in:
         return True
+    if re.search(r"\b(?:are you )?(?:okay|alright) with\b", value):
+        return False
     second_person = bool(re.search(r"\b(you|your)\b", value))
     state = bool(re.search(r"\b(feel|feeling|okay|alright|anxious|worried|scared|nervous|happy|sad|angry|upset|on your mind|thinking right now)\b", value))
     return second_person and state
@@ -334,6 +372,7 @@ def _social_match(value: str, kind: str) -> bool:
         "farewell": (
             "catch you", "talk soon", "see you", "goodbye", "bye", "good night", "i'll be back", "ill be back",
             "pause here", "pause for now", "stop here", "leave it here", "pick this up later",
+            "enough for now", "enough for today", "done for now", "done for today",
         ),
         "reassurance": ("don't worry", "dont worry", "you are safe", "you're safe", "you can breathe", "take your time", "no pressure", "it's okay", "its okay"),
         "gratitude": ("thank you", "thanks", "appreciate you", "good work", "nice job", "well done"),

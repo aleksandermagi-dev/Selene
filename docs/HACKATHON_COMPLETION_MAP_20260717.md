@@ -22,9 +22,10 @@ submission.
 - Branch inspected: `evidence`
 - Pre-event baseline recorded by the project: `c8f0795`
 - Event-window work begins at: `63557c6`
-- Current inspected checkpoint: `fd025fa`
+- Current committed checkpoint: `27decfb`
 - The branch is ahead of `origin/evidence`.
-- Existing local miner work remains uncommitted and must be preserved.
+- Existing related language, curriculum, showcase, test, and documentation work
+  remains uncommitted and must be preserved.
 - `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` remains the chronological evidence log;
   this file does not replace or silently modify it.
 
@@ -35,14 +36,15 @@ Finishing does **not** require completing every Selene roadmap item.
 
 The critical path is now:
 
-1. expose a concise, judge-readable demonstration of implemented behavior;
-2. prepare one synthetic or otherwise public-safe teaching fixture;
-3. document setup, event-window authorship, boundaries, and judge access;
-4. run proportional final verification against the exact demo path;
-5. record the video, capture the required Codex evidence, and submit.
+1. ~~expose a concise, judge-readable demonstration of implemented behavior~~;
+2. ~~prepare one synthetic or otherwise public-safe teaching fixture~~;
+3. ~~document setup, event-window authorship, boundaries, and judge access~~;
+4. run proportional final verification against the exact frozen demo path;
+5. choose judge access, record the video, capture the required Codex evidence,
+   and submit.
 
-New organs, broad language expansion, audible speech, and runtime
-metacognition are outside the hackathon completion gate.
+New broad capability expansion and audible speech are outside the hackathon
+completion gate.
 
 ## What Is Implemented
 
@@ -85,9 +87,12 @@ Cocoon demonstration panel.
 - the Great Library remains an optional external resource rather than an
   internal authority
 
-These adapters are implemented through status and direct API routes. They are
-not yet connected as ordinary Selene Chat/NLO/Voice execution, do not perform
-multi-domain synthesis, and do not have a dedicated frontend workbench.
+Verified math, source-backed research, and open-ended comparison/planning are
+connected to supervised Selene Chat and pass through NLO/Voice without allowing
+expression fluency to become correctness. Local-code inspection intentionally
+remains limited to explicitly supplied or approved inputs and is not available
+as autonomous Chat filesystem access. The adapters still do not perform broad
+multi-domain synthesis and do not have a dedicated frontend workbench.
 
 ### Comprehension and Teaching
 
@@ -112,8 +117,10 @@ The bounded lesson-shelf machinery exists for uncertainty, answering first,
 clarification, references, register, transitions, follow-up restraint,
 variation, and natural closure.
 
-Status: **infrastructure ready; human lesson review and teaching data are not
-finished**. This is Phase 5 follow-on work, not a hackathon blocker.
+Status: **provider-free speech teaching is complete at the current bounded text
+foundation, and five reviewed F1 curriculum groups containing 36 foundations
+are retained**. Broader schooling remains ordered follow-on work, not a
+hackathon blocker.
 
 ### Private Metacognition Work
 
@@ -121,9 +128,11 @@ The private miner completed its current corpus pass and produced a separate
 private review inventory. Its source material and findings are not part of the
 public demo.
 
-Status: **mining checkpoint complete; runtime organ intentionally not built or
-connected**. Human review and project-neutral distillation must occur before
-any Selene-facing implementation is considered.
+Status: **mining checkpoint complete; a bounded runtime metacognitive observer
+is connected**. It monitors answer fit, confidence, contradictions, and reopening
+signals without exposing hidden chain of thought, rewriting personality, or
+automatically routing Selene into Cocoon. The private mining sources and private
+review inventory remain outside the public demo.
 
 ## Two-Roadmap Reconciliation
 
@@ -138,15 +147,15 @@ any Selene-facing implementation is considered.
 | Local-code inspection | Complete at approved-input scope | Optional alternate demo example |
 | Source-backed research | Complete at attributed-packet scope | Optional alternate demo example |
 | Acquire -> Integrate -> Express | Complete and visible in Cocoon | Include in demo |
-| Phase 5 language lessons | Machinery ready; review/data incomplete | Defer or approve one tiny lesson only if time remains |
-| Affect Expression Bridge | Partial surrounding infrastructure only | Defer |
-| Expanded pragmatic dialogue | Not complete | Defer |
-| Long-form discourse planner | Not complete | Defer |
+| Phase 5 language lessons | Current provider-free text foundation taught; broader curriculum remains | Mention, do not broaden before submission |
+| Affect Expression Bridge | Bounded affect-to-language guidance connected | Demonstrate only through ordinary use if useful |
+| Expanded pragmatic dialogue | Bounded immediate dialogue and repair connected | Foundation, not a separate stress test |
+| Long-form discourse planner | Grounded bounded discourse planning connected | Mention honestly; do not claim mature-model breadth |
 | Multi-domain Answer Engine synthesis | Not complete | Defer |
-| Ordinary Chat execution of Answer Engine adapters | Not complete | Defer; describe honestly |
+| Ordinary Chat execution of Answer Engine adapters | Math, research, and comparison connected; code inspection deliberately excluded | Demonstrate math or planning briefly |
 | Private Metacognition Miner | Current pass complete | Keep private; do not demo source material |
 | Metacognitive blueprint review | Private inventory ready for human review | Post-hackathon review |
-| Runtime Metacognition Organ | Not built | Defer |
+| Runtime Metacognition Organ | Bounded observer connected | Mention boundary; do not expose private miner material |
 | Audible speech | Not started as a connected capability | Defer |
 
 ## Remaining Hackathon Work
@@ -169,7 +178,7 @@ Use one short public-safe story:
 Do not broaden the demo into a general voice assessment or provoke Selene to
 test distress-shaped behavior.
 
-#### 2. Add a Public-Safe Demo Fixture
+#### 2. Public-Safe Demo Fixture — Complete
 
 Create one deterministic fixture or preparation command that supplies:
 
@@ -180,24 +189,21 @@ Create one deterministic fixture or preparation command that supplies:
 - one uncertainty or stated limit;
 - enough material to demonstrate all three lifecycle stages.
 
-The fixture must use a disposable or copied state and must not depend on the
-private corpus, Aleks's local database, existing personal reviews, or mined
-material. It must not auto-approve or activate knowledge.
+`npm run demo:hackathon` now runs the original synthetic thermal-storage packet
+through a temporary SQLite database. It does not depend on the private corpus,
+Aleks's configured database, personal reviews, or mined material, and it stops
+before approval, retention, or Chat activation.
 
 #### 3. Make Backend Features Judge-Readable
 
-The teaching lifecycle is already visible in Cocoon. The Test Impact Law and
-Answer Engine adapters are currently direct backend routes rather than a
-dedicated frontend workbench.
+The teaching lifecycle is visible in Cocoon. The Test Impact Law and Answer
+Engine results are exposed through a checked, documented command with fixed
+public-safe inputs rather than a new frontend workbench.
 
-Choose the smallest stable presentation:
-
-- preferred: a bounded Cocoon demo panel that calls only the existing routes;
-- acceptable fallback: a checked, documented local API walkthrough with fixed
-  public-safe request packets.
-
-Do not connect the adapters to ordinary Chat solely for demo polish. That would
-be a larger architectural change than the submission requires.
+The selected presentation is the stable fallback originally allowed by this
+map: a deterministic command plus the existing Cocoon teaching surface. The
+adapters' supervised Chat connections were implemented as product capability,
+not added solely as demo polish.
 
 #### 4. Establish Judge Access
 
@@ -215,7 +221,7 @@ authorization.
 
 ### P0 — Required Before Submission
 
-#### 5. Finish the README Submission Layer
+#### 5. README Submission Layer — Complete, Pending Final Counts/URLs
 
 Add concise sections covering:
 
@@ -273,18 +279,19 @@ submission work.
 ## Explicitly Deferred Beyond the Hackathon
 
 - broad Phase 5 language curriculum
-- full affect-to-language expression bridge
-- robust mixed-intent, pronoun, interruption, and rapid-topic handling
-- long-form thesis and discourse planning
+- broader affect-to-language range beyond the bounded bridge
+- mature-model breadth for mixed intent, pronouns, interruptions, and rapid
+  topic handling beyond the current bounded dialogue support
+- mature-model breadth for long-form thesis and discourse planning
 - multi-domain Answer Engine synthesis
 - symbolic or advanced mathematics
-- direct Answer Engine execution through ordinary Selene Chat
-- runtime Metacognition Organ
+- ordinary Chat access to local-code inspection or autonomous filesystem access
+- metacognitive capability beyond the bounded observer
 - audible speech and turn-taking contracts
 - practical workbench/autonomy graduation
 - Great Library Vault work
 - confidential Android architecture publication
-- transfer or embodiment milestones
+- further transfer or embodiment milestones
 
 These are not hackathon defects. They are later architectural phases with their
 own review and safety gates.
@@ -338,4 +345,4 @@ Selene is hackathon-ready when all of the following are true:
 
 Nothing in this completion gate authorizes hidden retention, raw corpus recall,
 identity or law mutation, model training, autonomy expansion, packaging, public
-release, or runtime metacognition.
+release, or expansion beyond bounded metacognitive observation.

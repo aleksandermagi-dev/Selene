@@ -140,6 +140,10 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
 
 def _ordered_acts(prompt: str, primary: str, pragmatic: dict[str, Any]) -> list[dict[str, Any]]:
     lower = prompt.lower().replace("’", "'")
+    topic_shift = any(
+        marker in lower
+        for marker in ("separate question", "different question", "new question", "separate topic", "different topic", "on another topic")
+    )
     found: list[tuple[int, str, str]] = []
     structured_kind_map = {
         "question": "question",
@@ -159,8 +163,9 @@ def _ordered_acts(prompt: str, primary: str, pragmatic: dict[str, Any]) -> list[
         found.append((0, "correction", "structured_correction"))
     cue_groups = (
         ("gratitude", ("thank you", "thanks", "appreciate")),
-        ("correction", ("actually", "i meant", "not what i meant", "wait,")),
+        ("correction", (("i meant", "not what i meant", "wait,") if topic_shift else ("actually", "i meant", "not what i meant", "wait,"))),
         ("uncertainty", ("not sure", "unsure", "maybe", "i think", "fuzzy")),
+        ("partial_agreement", ("okay, but", "okay but", "yes, but", "yes but", "right, but", "right but", "i agree, but", "i agree but")),
         ("warm_connection", ("glad you're", "glad you are", "missed you", "love you", "friend")),
         ("playful_connection", ("haha", "lol", "xd", ";}", ">:)")),
         ("reasoning_request", ("why", "how should", "how can", "compare", "explain", "what do you think")),
@@ -199,6 +204,8 @@ def _response_moves(acts: list[dict[str, Any]], pragmatic: dict[str, Any]) -> li
         moves.append("acknowledge_changed_meaning")
     if any(item in names for item in ("gratitude", "warm_connection", "playful_connection")):
         moves.append("meet_relational_tone_briefly")
+    if "partial_agreement" in names:
+        moves.append("preserve_agreement_and_answer_qualification")
     if any(item in names for item in ("question", "reasoning_request", "direct_request")):
         moves.append("answer_actual_ask")
     if "uncertainty" in names:
@@ -211,7 +218,7 @@ def _response_moves(acts: list[dict[str, Any]], pragmatic: dict[str, Any]) -> li
 
 def _acknowledgement_kind(acts: list[dict[str, Any]]) -> str:
     names = [str(item.get("act") or "") for item in acts]
-    for item in ("correction", "gratitude", "warm_connection"):
+    for item in ("correction", "partial_agreement", "gratitude", "warm_connection"):
         if item in names:
             return item
     return ""
@@ -222,6 +229,7 @@ def _acknowledgement_prefix(kind: str, seed: str) -> str:
         "correction": ("I see the correction.", "Yes, I have the changed meaning."),
         "gratitude": ("You're welcome.", "Of course."),
         "warm_connection": ("I'm with you.", "I'm glad we're here together."),
+        "partial_agreement": ("Yes—that qualification matters.", "I have the distinction."),
     }.get(kind, ())
     if not choices:
         return ""
@@ -235,6 +243,7 @@ def _has_acknowledgement(value: str, kind: str) -> bool:
         "correction": ("correction", "you're right", "you are right", "i see", "i have the changed", "got it"),
         "gratitude": ("you're welcome", "you are welcome", "of course", "glad", "thank you"),
         "warm_connection": ("i'm with you", "i am with you", "glad", "here with you"),
+        "partial_agreement": ("qualification matters", "i have the distinction", "yes—but", "yes, but"),
     }.get(kind, ())
     return any(marker in lower for marker in markers)
 

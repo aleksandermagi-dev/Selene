@@ -713,6 +713,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(conn, "dialogue_workspace.status", {"session_id": int(qs.get("session_id") or 0)})["result"]))
             except ValueError:
                 self._send(*json_bytes({"error": "valid session_id is required"}, 400))
+        elif parsed.path == "/api/selene-chat/conversation-spine/status":
+            self._send(*json_bytes(route_request(conn, "conversation_spine.status")["result"]))
         elif parsed.path == "/api/selene-chat/sessions":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "selene_chat.sessions.list", {"limit": int(qs["limit"]) if qs.get("limit") else 25})["result"]))
@@ -1418,12 +1420,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/curriculum-foundation/teach-f1-operations-measurement",
             "/api/curriculum-foundation/prepare-f1-geometry-algorithms",
             "/api/curriculum-foundation/teach-f1-geometry-algorithms",
+            "/api/curriculum-authorization/activate-f1-equal-groups-data-money",
+            "/api/curriculum-foundation/prepare-f1-equal-groups-data-money",
+            "/api/curriculum-foundation/teach-f1-equal-groups-data-money",
         }:
             route_key = {
                 "/api/curriculum-authorization/activate-f1": "curriculum.authorization.activate_f1",
                 "/api/curriculum-authorization/activate-f1-language-math": "curriculum.authorization.activate_f1_language_math",
                 "/api/curriculum-authorization/activate-f1-operations-measurement": "curriculum.authorization.activate_f1_operations_measurement",
                 "/api/curriculum-authorization/activate-f1-geometry-algorithms": "curriculum.authorization.activate_f1_geometry_algorithms",
+                "/api/curriculum-authorization/activate-f1-equal-groups-data-money": "curriculum.authorization.activate_f1_equal_groups_data_money",
                 "/api/curriculum-authorization/revoke": "curriculum.authorization.revoke",
                 "/api/curriculum-authorization/evaluate": "curriculum.authorization.evaluate",
                 "/api/curriculum-foundation/prepare-f1": "curriculum.foundation.prepare_f1",
@@ -1434,6 +1440,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/curriculum-foundation/teach-f1-operations-measurement": "curriculum.foundation.teach_f1_operations_measurement",
                 "/api/curriculum-foundation/prepare-f1-geometry-algorithms": "curriculum.foundation.prepare_f1_geometry_algorithms",
                 "/api/curriculum-foundation/teach-f1-geometry-algorithms": "curriculum.foundation.teach_f1_geometry_algorithms",
+                "/api/curriculum-foundation/prepare-f1-equal-groups-data-money": "curriculum.foundation.prepare_f1_equal_groups_data_money",
+                "/api/curriculum-foundation/teach-f1-equal-groups-data-money": "curriculum.foundation.teach_f1_equal_groups_data_money",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))

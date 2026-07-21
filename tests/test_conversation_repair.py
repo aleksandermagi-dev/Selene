@@ -53,6 +53,27 @@ def test_candidate_repair_acknowledges_correction_without_replacing_answer():
     assert result["automatic_content_generation"] is False
 
 
+def test_candidate_repair_preserves_partial_agreement_before_answering_qualification():
+    plan = plan_conversation_turn(
+        {
+            "prompt": "Okay, but what changes if voice comes first?",
+            "intent_decision": {"intent": "reasoning"},
+        }
+    )
+    result = repair_conversation_candidate(
+        {
+            "candidate_text": "Voice would shape expression before the knowledge boundary was settled.",
+            "turn_flow_plan": plan,
+            "response_coverage": {"unresolved_count": 0},
+        }
+    )
+
+    assert plan["acknowledgement_kind"] == "partial_agreement"
+    assert "preserve_agreement_and_answer_qualification" in plan["response_moves"]
+    assert result["repairs_applied"] == ["partial_agreement_acknowledgement_added"]
+    assert result["candidate_text"].endswith("settled.")
+
+
 def test_candidate_repair_removes_adjacent_duplicate_and_flags_recent_repetition():
     result = repair_conversation_candidate(
         {

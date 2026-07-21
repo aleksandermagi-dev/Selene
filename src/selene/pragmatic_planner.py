@@ -29,10 +29,19 @@ CONTENT_STOP_WORDS = {
     "would", "you", "your", "selene",
 }
 
+GENERIC_ALIGNMENT_TERMS = {
+    "answer", "change", "first", "make", "next", "question", "reason", "result", "step",
+}
+
 
 def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
     prompt = truncate(str(payload.get("prompt") or payload.get("text") or ""), 2400)
+    conversation_spine = (
+        payload.get("conversation_spine")
+        if isinstance(payload.get("conversation_spine"), dict)
+        else {}
+    )
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
@@ -68,6 +77,15 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
                 "goal": inferred_goal,
             }
         )
+    spine_obligations = [
+        item
+        for item in conversation_spine.get("open_obligations") or []
+        if isinstance(item, dict)
+    ]
+    if spine_obligations:
+        # Once the turn spine exists, downstream organs share its obligation
+        # identities instead of reconstructing a slightly different list.
+        obligations = [dict(item) for item in spine_obligations]
     content_seed = truncate(str(payload.get("content_seed") or ""), 1800)
     response_units = [
         {
@@ -83,7 +101,13 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
     return _with_guards(
         {
             "status": "pragmatic_plan_ready",
-            "version": "v2_compositional_dialogue_obligations",
+            "version": (
+                "v3_conversation_spine_grounded_obligations"
+                if conversation_spine
+                else "v2_compositional_dialogue_obligations"
+            ),
+            "conversation_spine_turn_id": str(conversation_spine.get("turn_id") or ""),
+            "conversation_spine_used": bool(conversation_spine),
             "literal_utterance": prompt,
             "dialogue_act": str(intent.get("dialogue_act") or intent.get("intent") or "direct_conversation"),
             "inferred_goal": str(implicit.get("goal") or intent.get("answer_shape") or "respond_directly"),
@@ -116,6 +140,8 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
 def evaluate_response_coverage(
     plan: dict[str, Any] | None,
     candidate_text: str,
+    *,
+    conversation_spine: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     plan = plan if isinstance(plan, dict) else {}
     candidate = truncate(str(candidate_text or ""), 3000)
@@ -132,7 +158,12 @@ def evaluate_response_coverage(
         kind = str(obligation.get("kind") or "direct_question")
         signal_score = _answer_signal_score(kind, candidate_lower)
         minimum_term_matches = 2 if len(expected) >= 6 else 1
-        semantic_match = len(overlap) >= minimum_term_matches
+        distinctive_expected = expected - GENERIC_ALIGNMENT_TERMS
+        distinctive_overlap = sorted(distinctive_expected & candidate_terms)
+        topic_terms = set(_content_terms(str(obligation.get("topic") or ""))) - GENERIC_ALIGNMENT_TERMS
+        topic_overlap = sorted(topic_terms & candidate_terms)
+        distinctive_alignment = not distinctive_expected or bool(distinctive_overlap or topic_overlap)
+        semantic_match = len(overlap) >= minimum_term_matches and distinctive_alignment
         signal_can_stand_alone = kind in {"correction_update", "yes_or_no"}
         score = lexical_score
         if semantic_match and signal_score > 0:
@@ -151,25 +182,50 @@ def evaluate_response_coverage(
                 "addressed": addressed,
                 "coverage_score": round(score, 3),
                 "matched_terms": overlap,
+                "matched_distinctive_terms": distinctive_overlap,
+                "matched_topic_terms": topic_overlap,
                 "required_terms": sorted(expected),
                 "minimum_term_matches": minimum_term_matches,
                 "semantic_alignment_required": not signal_can_stand_alone,
+                "distinctive_alignment_required": bool(distinctive_expected),
                 "status": "addressed" if addressed else "still_open",
             }
         )
     required = [item for item in items if item.get("status")]
     addressed_count = sum(1 for item in required if item["addressed"])
+    obligation_coverage_complete = addressed_count == len(required)
+    if conversation_spine:
+        # Imported at evaluation time to keep the spine free to construct its
+        # initial pragmatic plan without a module-import cycle.
+        from .conversation_spine import spine_response_alignment
+
+        spine_alignment = spine_response_alignment(conversation_spine, candidate)
+    else:
+        spine_alignment = {
+            "status": "conversation_spine_not_supplied",
+            "aligned": True,
+            "required": False,
+            "matched_terms": [],
+            "distinctive_terms": [],
+        }
+    grounding_unresolved = int(spine_alignment.get("required") is True and spine_alignment.get("aligned") is not True)
     return _with_guards(
         {
             "status": "response_coverage_checked",
             "candidate_present": bool(candidate.strip()),
             "obligation_count": len(required),
             "addressed_count": addressed_count,
-            "all_required_addressed": addressed_count == len(required),
-            "unresolved_count": len(required) - addressed_count,
+            "all_required_addressed": obligation_coverage_complete and grounding_unresolved == 0,
+            "unresolved_count": len(required) - addressed_count + grounding_unresolved,
             "answered_loop_ids": answered_loop_ids,
             "items": items,
-            "method": "conservative_visible_text_alignment_not_semantic_certainty",
+            "conversation_spine_alignment": spine_alignment,
+            "conversation_spine_used": bool(conversation_spine),
+            "method": (
+                "conservative_visible_obligation_and_spine_alignment_not_semantic_certainty"
+                if conversation_spine
+                else "conservative_visible_text_alignment_not_semantic_certainty"
+            ),
             "visible_summary_only": True,
             "hidden_chain_of_thought_exposed": False,
             "provenance_boundary": PRAGMATIC_BOUNDARY,

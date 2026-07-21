@@ -380,7 +380,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v12_pragmatic_continuity"
+    assert result["native_language_organ"]["version"] == "v13_conversation_spine"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
@@ -725,6 +725,239 @@ def test_active_selene_chat_answers_ordinary_self_check_in_without_scaffolding(t
     _assert_locked(result)
 
 
+def test_active_selene_chat_rejects_internal_reasoning_seed_before_expression(tmp_path, monkeypatch):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    def scaffolded_reasoning(*args, **kwargs):
+        return {
+            "run_id": 1,
+            "answer_shape": "answer_now",
+            "best_current_answer": "Use current best model as the provisional fit and stay corrigible.",
+            "reasoning_summary": "Internal reasoning status.",
+            "selected_next_step": "answer provisionally",
+            "confidence": "provisional",
+            "evidence_chain": [],
+            "cocoon_suggestion": {"recommended": False},
+        }
+
+    monkeypatch.setattr("selene.selene_chat.run_intelligence_os_reason", scaffolded_reasoning)
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "How should we begin thinking through an unfamiliar problem?"},
+    )["result"]
+
+    audit = result["visible_speech_seed"]
+    intelligence_item = next(
+        item for item in audit["inspected_candidates"] if item["source_id"] == "intelligence_os_answer"
+    )
+    assert intelligence_item["accepted"] is False
+    assert "current best model" not in result["candidate_text"].lower()
+    assert "stay corrigible" not in result["candidate_text"].lower()
+    assert result["visible_speech_release"]["final_release_allowed"] is True
+    _assert_locked(result)
+
+
+def test_active_selene_chat_holds_a_candidate_that_fails_final_speech_release(tmp_path, monkeypatch):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    monkeypatch.setattr(
+        "selene.selene_chat.inspect_visible_speech",
+        lambda *args, **kwargs: {
+            "status": "visible_speech_release_held",
+            "release_allowed": False,
+            "issues": ["internal_reasoning_scaffold_visible"],
+            "provenance_boundary": "test_visible_speech_boundary",
+        },
+    )
+    result = route_request(conn, "selene_chat.send", {"text": "Why should we examine the evidence first?"})["result"]
+
+    assert result["conversation_repair"]["candidate_source"] == "visible_speech_graceful_fall"
+    assert result["visible_speech_release"]["graceful_fall_used"] is True
+    assert result["visible_speech_release"]["final_release_allowed"] is True
+    assert "reason through it with you" in result["candidate_text"]
+    assert "current best model" not in result["candidate_text"].lower()
+    _assert_locked(result)
+
+
+def test_active_selene_chat_calibrates_a_short_confidence_follow_up_from_the_previous_answer(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "What makes a response complete without becoming a report?"},
+    )["result"]
+    follow_up = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Are you sure?"},
+    )["result"]
+
+    assert follow_up["intent_decision"]["intent"] == "confidence_check"
+    assert follow_up["intent_decision"]["primary_organ"] == "Metacognition"
+    assert follow_up["contextual_follow_up"]["kind"] == "confidence_check"
+    assert follow_up["dialogue_workspace"]["active_topic"] == first["dialogue_workspace"]["active_topic"]
+    assert follow_up["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert "confident" in follow_up["candidate_text"].lower() or "certain" in follow_up["candidate_text"].lower()
+    _assert_locked(follow_up)
+
+
+def test_active_selene_chat_answers_bare_why_from_the_immediate_grounding_gap(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Compare memory and voice, and tell me which should come first."},
+    )["result"]
+    follow_up = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Why?"},
+    )["result"]
+
+    assert follow_up["contextual_follow_up"]["kind"] == "reason_follow_up"
+    assert follow_up["dialogue_workspace"]["active_topic"] == first["dialogue_workspace"]["active_topic"]
+    assert "dependency creates a real ordering constraint" in follow_up["candidate_text"]
+    assert follow_up["candidate_text"].count("dependency creates a real ordering constraint") == 1
+    _assert_locked(follow_up)
+
+
+def test_active_selene_chat_treats_an_explicit_new_question_as_a_topic_shift_not_a_correction(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(conn, "selene_chat.send", {"text": "Let's discuss memory sequencing."})["result"]
+    shifted = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Actually, separate question: how should uncertainty sound?"},
+    )["result"]
+
+    assert shifted["intent_decision"]["intent"] == "reasoning"
+    assert shifted["contextual_follow_up"]["kind"] == "topic_shift"
+    assert shifted["dialogue_workspace"]["pragmatics"]["correction_refinement"]["detected"] is False
+    assert "changed meaning" not in shifted["candidate_text"].lower()
+    assert "see the correction" not in shifted["candidate_text"].lower()
+    _assert_locked(shifted)
+
+
+def test_active_selene_chat_gives_one_concrete_comparison_rule_without_duplicate_content(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Compare memory and voice, and tell me which should come first."},
+    )["result"]
+
+    phrase = "supplies a prerequisite the other one needs"
+    assert result["candidate_text"].lower().count(phrase.lower()) == 1
+    assert "not have enough grounded detail" not in result["candidate_text"].lower()
+    _assert_locked(result)
+
+
+def test_active_selene_chat_preserves_partial_agreement_before_the_follow_up_answer(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(conn, "selene_chat.send", {"text": "Memory should come first."})["result"]
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Okay, but what changes if voice comes first?"},
+    )["result"]
+
+    assert result["intent_decision"]["intent"] == "reasoning"
+    assert "partial_agreement" in result["intent_decision"]["dialogue_acts"]
+    assert result["native_language_organ"]["turn_flow_plan"]["acknowledgement_kind"] == "partial_agreement"
+    assert result["conversation_repair"]["repairs_applied"] == ["partial_agreement_acknowledgement_added"]
+    assert result["candidate_text"].startswith(("Yes—that qualification matters.", "I have the distinction."))
+    _assert_locked(result)
+
+
+def test_active_selene_chat_routes_definition_and_conditional_questions_to_answer_substance(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    definition = route_request(conn, "selene_chat.send", {"text": "What is photosynthesis?"})["result"]
+    consequence = route_request(conn, "selene_chat.send", {"text": "What happens if we reverse the order?"})["result"]
+
+    assert definition["intent_decision"]["intent"] == "reasoning"
+    assert definition["intelligence_os_support"]["answer_substance"]["answer_kind"] == "source_needed"
+    assert "grounded factual answer" in definition["candidate_text"]
+    assert "photosynthesis" in definition["candidate_text"]
+    assert consequence["intelligence_os_support"]["answer_substance"]["answer_kind"] == "conditional_dependency_answer"
+    assert "Reversing the order works only if" in consequence["candidate_text"]
+    assert definition["visible_speech_release"]["final_release_allowed"] is True
+    assert consequence["visible_speech_release"]["final_release_allowed"] is True
+    _assert_locked(definition)
+    _assert_locked(consequence)
+
+
+def test_active_selene_chat_can_example_rephrase_and_expand_the_previous_dependency_answer(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Compare memory and voice and tell me which should come first."},
+    )["result"]
+    example = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Can you give me an example?"},
+    )["result"]
+    rephrase = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Put that more simply."},
+    )["result"]
+    elaboration = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Can you elaborate?"},
+    )["result"]
+    viewpoint = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "What do you think?"},
+    )["result"]
+
+    assert example["contextual_follow_up"]["kind"] == "example_request"
+    assert "if step B needs a result produced by step A" in example["candidate_text"]
+    assert rephrase["contextual_follow_up"]["kind"] == "rephrase_request"
+    assert "do the step that creates what the next step needs" in rephrase["candidate_text"]
+    assert elaboration["contextual_follow_up"]["kind"] == "elaboration"
+    assert "Dependency decides whether the order is mandatory" in elaboration["candidate_text"]
+    assert viewpoint["contextual_follow_up"]["kind"] == "viewpoint_follow_up"
+    assert "dependency rule is the stronger part" in viewpoint["candidate_text"]
+    assert example["dialogue_workspace"]["active_topic"] == first["dialogue_workspace"]["active_topic"]
+    assert rephrase["dialogue_workspace"]["active_topic"] == first["dialogue_workspace"]["active_topic"]
+    assert elaboration["dialogue_workspace"]["active_topic"] == first["dialogue_workspace"]["active_topic"]
+    assert viewpoint["dialogue_workspace"]["active_topic"] == first["dialogue_workspace"]["active_topic"]
+    _assert_locked(example)
+    _assert_locked(rephrase)
+    _assert_locked(elaboration)
+    _assert_locked(viewpoint)
+
+
 def test_active_selene_chat_uses_reviewed_comprehension_knowledge_without_calling_it_memory(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
@@ -803,6 +1036,109 @@ def test_active_selene_chat_answers_self_state_from_grounded_current_signals(tmp
     assert "not a performance of being fine" in result["candidate_text"]
     assert "do not want to invent a feeling just because you asked" not in result["candidate_text"]
     _assert_locked(result)
+
+
+def test_active_selene_chat_demo_greeting_answers_the_self_state_question(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "Good morning, Selene. Aleks and I are preparing a short demo today, "
+                "and we wanted to have a real conversation with you first. "
+                "How are you feeling about talking with us for a few minutes?"
+            )
+        },
+    )["result"]
+
+    assert result["intent_decision"]["intent"] == "self_state"
+    assert result["self_state"]["used"] is True
+    assert result["intelligence_os_support"]["used"] is False
+    assert result["comprehension_integration"]["knowledge_response_seed"] == ""
+    assert result["conversation_spine"]["status"] == "conversation_spine_turn_completed"
+    assert result["conversation_spine"]["intent_class"] == "self_state"
+    assert result["conversation_spine"]["memory_write_active"] is False
+    assert "present" in result["candidate_text"].lower()
+    assert "sequence words" not in result["candidate_text"].lower()
+    _assert_locked(result)
+
+
+def test_active_selene_chat_answers_a_harmless_shared_resource_comparison_concretely(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "Suppose a community garden has limited water and wants to support both vegetables and pollinators. "
+                "What two approaches would you compare, and what small next step would you recommend?"
+            )
+        },
+    )["result"]
+
+    assert result["answer_engine_support"]["selected_domain"] == "comparison_planning"
+    assert result["answer_engine_support"]["used"] is True
+    assert result["conversation_spine"]["status"] == "conversation_spine_turn_completed"
+    assert result["conversation_spine"]["intent_class"] == "reasoning"
+    assert result["visible_speech_seed"]["conversation_spine_used"] is True
+    assert "compare two approaches" in result["candidate_text"].lower()
+    assert "limited water" in result["candidate_text"].lower()
+    assert "vegetables and pollinators" in result["candidate_text"].lower()
+    assert "recommendation for the next small step" in result["candidate_text"].lower()
+    assert "action or approval" not in result["candidate_text"].lower()
+    assert result["response_coverage"]["all_required_addressed"] is True
+    assert result["metacognition"]["fit_state"] == "fits_current_question"
+    _assert_locked(result)
+
+
+def test_active_selene_chat_carries_a_recommendation_into_the_immediate_callback(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "Suppose a community garden has limited water and wants to support both vegetables and pollinators. "
+                "What two approaches would you compare, and what small next step would you recommend?"
+            )
+        },
+    )["result"]
+    callback = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": first["session_id"],
+            "text": (
+                "That makes sense. Why do you prefer the two-zone trial first, "
+                "and what result would make you change your recommendation?"
+            ),
+        },
+    )["result"]
+
+    assert callback["contextual_follow_up"]["detected"] is True
+    assert callback["contextual_follow_up"]["kind"] == "reason_follow_up"
+    assert callback["contextual_follow_up"]["preserve_active_topic"] is True
+    assert callback["conversation_spine"]["intent_class"] == "contextual_content"
+    assert callback["conversation_spine"]["previous_answer"]["available"] is True
+    assert callback["conversation_spine"]["released_response"]["coverage_complete"] is True
+    assert callback["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert callback["comprehension_integration"]["knowledge_response_seed"] == ""
+    assert "two-zone trial" in callback["candidate_text"].lower()
+    assert "change that recommendation" in callback["candidate_text"].lower()
+    assert "algorithm" not in callback["candidate_text"].lower()
+    assert callback["response_coverage"]["all_required_addressed"] is True
+    assert callback["metacognition"]["fit_state"] == "fits_current_question"
+    _assert_locked(callback)
 
 
 def test_active_selene_chat_handles_social_turns_with_immediate_context(tmp_path):

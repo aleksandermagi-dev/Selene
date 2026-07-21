@@ -14,10 +14,10 @@ The first curriculum source shelf is present locally under:
 
 The shelf contains:
 
-- 36 cataloged source candidates;
-- 25 locally mirrored, revision- or checksum-pinned sources;
-- 115 verified files;
-- approximately 1.31 GB of source artifacts;
+- 39 cataloged source candidates;
+- 28 locally mirrored, revision- or checksum-pinned sources;
+- 118 verified files;
+- approximately 1.33 GB of source artifacts;
 - coverage candidates for all 23 source-family keys in the foundational
   curriculum map;
 - 11 authoritative catalogs held for later artifact-level selection; and
@@ -115,6 +115,9 @@ be reproduced and verified without committing source corpora.
 | CKMath Grade 1 Unit 4 | Artifact SHA-256 | Tens and ones, place value, number representation, and two-digit comparison pilot | Comparison symbols follow conceptual quantity comparison |
 | CKMath Grade 1 Unit 1 | Artifact SHA-256 | Addition, subtraction, categorical data, tally, and representation pilot | Procedural fluency does not replace conceptual operation relationships |
 | CKMath Grade 1 Unit 6 | Artifact SHA-256 | Length attributes, comparison, unit iteration, and measurement communication pilot | Measurements require named units and aligned endpoints |
+| CKMath Grade 2 Unit 1 | Artifact SHA-256 | Picture graphs, bar graphs, categorical counts, comparison, and answerability | A graph represents supplied data; it does not establish cause or collection quality |
+| CKMath Grade 2 Unit 6 | Artifact SHA-256 | Coin value, equivalent monetary composition, and addition/subtraction in a U.S.-currency context | Arithmetic knowledge only; currency details are jurisdiction- and time-specific, and this is not financial advice |
+| CKMath Grade 2 Unit 8 | Artifact SHA-256 | Equal groups, informal sharing, odd/even, pairs, arrays, rows, columns, and repeated addition | Conceptual foundation only; it does not establish full multiplication or division fluency |
 | CKSci Grade 1 Science for Everyone | Artifact SHA-256 | Observation, questions, measurement, prediction, data, models, and design pilot | Review third-party images, links, and optional digital engagements |
 | CKHG Grade 1 Lessons in Civics | Artifact SHA-256 | Community, rules, laws, fairness, citizenship, and historical examples | U.S. jurisdiction must remain explicit; add plural perspectives |
 | CKLA Grade 1 The Human Body | Artifact SHA-256 | Body systems, care, germs, disease, vaccines, and health vocabulary pilot | Older health material requires current-source verification; never medical advice |
@@ -148,14 +151,14 @@ This is seed availability, not sufficiency.
 | --- | --- |
 | ELA-1 through ELA-3 | Core Knowledge sequence and Grade 1 language pilot; multi-turn, EXAMS, Topical-Chat, and research-handbook structure |
 | CONV-1 and CONV-2 | OASST1, Everyday Conversations, Multi-Turn-Instruct, Topical-Chat, and bounded underwriting dialogue |
-| MATH-1 through MATH-3 | K-8 sequence, Grade 1 math pilot, GSM8K, EXAMS, Open Logic, and checked-computation lessons |
+| MATH-1 through MATH-3 | K-8 sequence, Grade 1 and bounded Grade 2 math units, GSM8K, EXAMS, Open Logic, and checked-computation lessons |
 | SCI-0 through SCI-3 | K-8 sequence, Grade 1 science-method pilot, human-body pilot, research handbook, and EXAMS inventory |
 | HIST-1, HIST-2, and CIV-1 | K-8 sequence, Grade 1 civics pilot, Met metadata, and EXAMS inventory |
 | TECH-1 and ENG-1 | Carpentries shell, Git, and Python lessons plus the Grade 1 science/design pilot |
 | RES-1 and LOGIC-1 | Open Science Handbook, Carpentries, Topical-Chat grounding, Open Logic, GSM8K, and EXAMS |
 | ART-1 and CULT-1 | Open Music Theory, Met Open Access, multilingual conversation/assessment, and the K-8 sequence |
 | HEALTH-1 | Grade 1 human-body pilot with explicit current-verification requirement |
-| LIFE-1 | Bounded institutional-dialogue material; broader CFPB life/finance artifacts remain to be selected |
+| LIFE-1 | Bounded institutional-dialogue material and arithmetic-only U.S.-currency examples; broader CFPB life/finance artifacts remain to be selected |
 
 ## What Is Ready Now
 
@@ -192,8 +195,8 @@ than by indiscriminate corpus ingestion.
 
 The acquisition utility completed with:
 
-- 24 mirrored sources;
-- 114 checked files;
+- 28 mirrored sources;
+- 118 checked files;
 - zero provider acquisition failures;
 - zero missing files; and
 - zero SHA-256 mismatches.

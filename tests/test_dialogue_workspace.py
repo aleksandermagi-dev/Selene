@@ -166,6 +166,85 @@ def test_dialogue_workspace_marks_materially_ambiguous_other_option_instead_of_g
     assert resolved["ask_if_materially_ambiguous"] is True
 
 
+def test_dialogue_workspace_finds_option_referents_before_a_generic_acknowledgement(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "What about the other one?"
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "contextual_follow_up": {"detected": True, "kind": "alternative_reference", "preserve_active_topic": True},
+            "conversation_events": [
+                {"role": "user", "preview": "The two options are memory and voice."},
+                {"role": "selene", "preview": "I have both options."},
+            ],
+        },
+    )
+
+    resolved = result["pragmatics"]["resolved_reference"]
+    assert resolved["candidates"] == ["memory", "voice"]
+    assert resolved["resolution_status"] == "materially_ambiguous"
+    assert resolved["resolved_to"] == ""
+
+
+def test_contextual_follow_up_preserves_the_active_topic(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": "Compare memory and voice.",
+            "intent_decision": classify_chat_intent("Compare memory and voice."),
+        },
+    )
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": "Why?",
+            "intent_decision": classify_chat_intent("Why?"),
+            "contextual_follow_up": {"detected": True, "kind": "reason_follow_up", "preserve_active_topic": True},
+            "conversation_events": [{"role": "selene", "preview": "Memory should come first."}],
+        },
+    )
+
+    assert result["active_topic"] == "compare memory voice"
+    assert result["pragmatics"]["contextual_follow_up"]["kind"] == "reason_follow_up"
+
+
+def test_response_coverage_rejects_an_unrelated_answer_with_only_generic_overlap():
+    plan = build_pragmatic_plan(
+        {
+            "prompt": "Why do you prefer the two-zone trial first, and what result would make you change your recommendation?",
+            "intent_decision": {"intent": "reasoning"},
+            "dialogue_workspace": {
+                "active_topic": "community garden limited water vegetables pollinators",
+                "pragmatics": {
+                    "question_units": [
+                        "Why do you prefer the two-zone trial first, and what result would make you change your recommendation?"
+                    ]
+                },
+            },
+        }
+    )
+
+    unrelated = evaluate_response_coverage(
+        plan,
+        "An algorithm can change its result when a required instruction is omitted.",
+    )
+    relevant = evaluate_response_coverage(
+        plan,
+        "I prefer the two-zone trial because it is reversible; I would change the recommendation if the alternative helped both goals more.",
+    )
+
+    assert unrelated["all_required_addressed"] is False
+    assert unrelated["items"][0]["matched_distinctive_terms"] == []
+    assert relevant["all_required_addressed"] is True
+    assert "trial" in relevant["items"][0]["matched_distinctive_terms"]
+
+
 def test_dialogue_workspace_resolves_plural_option_reference_but_holds_singular_ambiguity(tmp_path):
     conn, session_id = _conn(tmp_path)
     previous = [{"role": "selene", "preview": "The options are memory and voice."}]

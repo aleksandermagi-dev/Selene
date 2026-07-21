@@ -52,7 +52,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v12_pragmatic_continuity",
+            "version": "v13_conversation_spine",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -196,7 +196,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v12_pragmatic_continuity",
+        "version": "v13_conversation_spine",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -229,6 +229,16 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
 def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str, Any]:
     route = str(payload.get("selected_route") or payload.get("route") or "answer_now")
     content_seed = truncate(str(payload.get("content_seed") or ""), 3800)
+    visible_speech_seed = (
+        payload.get("visible_speech_seed")
+        if isinstance(payload.get("visible_speech_seed"), dict)
+        else {}
+    )
+    contextual_follow_up = (
+        payload.get("contextual_follow_up")
+        if isinstance(payload.get("contextual_follow_up"), dict)
+        else {}
+    )
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
     answer_engine = payload.get("answer_engine_support") if isinstance(payload.get("answer_engine_support"), dict) else {}
     answer_packet = answer_engine.get("answer_packet") if isinstance(answer_engine.get("answer_packet"), dict) else {}
@@ -244,6 +254,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     )
     continuity = payload.get("continuity_context") if isinstance(payload.get("continuity_context"), dict) else {}
     conversation = payload.get("conversation_context") if isinstance(payload.get("conversation_context"), dict) else {}
+    conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
     recent_assistant_texts = [
@@ -276,6 +287,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "content_seed": content_seed,
             "intent_decision": intent_decision,
             "dialogue_workspace": dialogue,
+            "conversation_spine": conversation_spine,
         }
     )
     supplied_turn_flow = payload.get("turn_flow_plan") if isinstance(payload.get("turn_flow_plan"), dict) else {}
@@ -322,6 +334,12 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "topic": _topic_phrase(prompt),
         "propositions": propositions,
         "content_seed": content_seed,
+        "content_source_id": str(visible_speech_seed.get("selected_source_id") or "unspecified"),
+        "content_source_class": str(visible_speech_seed.get("selected_source_class") or "conversation"),
+        "content_source_release_allowed": visible_speech_seed.get("release_allowed") is True,
+        "contextual_follow_up": contextual_follow_up,
+        "conversation_spine": conversation_spine,
+        "conversation_spine_used": bool(conversation_spine),
         "semantic_frame": semantic_frame,
         "formation": formation,
         "formation_text": str(formation.get("candidate_text") or ""),
@@ -879,7 +897,7 @@ def _obligation_ordered_seed(seed: str, meaning: dict[str, Any], plan: dict[str,
 
 
 def _reasoned_answer_frames(seed: str, profile: str) -> list[str]:
-    lowered = seed[0].lower() + seed[1:] if len(seed) > 1 else seed.lower()
+    lowered = seed if re.match(r"^I(?:\b|['’])", seed) else seed[0].lower() + seed[1:] if len(seed) > 1 else seed.lower()
     frames = {
         "comparison": [
             seed,
@@ -913,8 +931,8 @@ def _reasoned_answer_frames(seed: str, profile: str) -> list[str]:
         ],
         "direct": [
             seed,
-            f"My current answer is {lowered}",
-            f"The direct answer is {lowered}",
+            f"My current answer is this: {seed}",
+            f"The direct answer is this: {seed}",
         ],
     }
     return frames.get(profile, frames["direct"])

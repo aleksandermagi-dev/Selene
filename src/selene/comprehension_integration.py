@@ -7,6 +7,7 @@ from difflib import SequenceMatcher
 from hashlib import sha256
 from typing import Any
 
+from .conversation_spine import evaluate_candidate_compatibility
 from .registry import truncate
 
 
@@ -492,6 +493,7 @@ def build_comprehension_packet(
     if not prompt:
         raise ValueError("prompt is required")
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
+    conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
@@ -502,9 +504,15 @@ def build_comprehension_packet(
         limit=int(payload.get("knowledge_limit") or 3),
         include_language_guidance=False,
     )
-    answer_eligible_items = _answer_eligible_knowledge_items(prompt, intent, knowledge.get("items") or [])
+    answer_eligible_items = _answer_eligible_knowledge_items(
+        prompt,
+        intent,
+        knowledge.get("items") or [],
+        conversation_spine=conversation_spine,
+    )
     knowledge["answer_eligible_items"] = answer_eligible_items
     knowledge["answer_eligible"] = bool(answer_eligible_items)
+    knowledge["conversation_spine_candidate_gate_applied"] = bool(conversation_spine)
     knowledge["answer_use_rule"] = (
         "Only strongly relevant, approved knowledge resources may seed an answer; "
         "language lessons remain NLO guidance and never become answer content."
@@ -550,6 +558,7 @@ def build_comprehension_packet(
         "does_not_interrogate_every_turn": True,
     }
     response_obligations = pragmatics.get("response_obligations") or []
+    knowledge_response = _knowledge_response_seed(prompt, answer_eligible_items)
     result = _with_guards(
         {
             "status": "comprehension_packet_ready",
@@ -563,8 +572,11 @@ def build_comprehension_packet(
             "active_topic": str(dialogue.get("active_topic") or ""),
             "resolved_reference": resolved_reference or None,
             "response_obligations": response_obligations,
+            "conversation_spine_turn_id": str(conversation_spine.get("turn_id") or ""),
+            "conversation_spine_used": bool(conversation_spine),
             "knowledge_context": knowledge,
-            "knowledge_response_seed": str((answer_eligible_items or [{}])[0].get("central_claim") or "") if answer_eligible_items else "",
+            "knowledge_response_seed": knowledge_response["content_seed"],
+            "knowledge_response_basis": knowledge_response,
             "comprehension_handshake": handshake,
             "metacognitive_check": {
                 "reopen_suggested": bool(contradiction_markers or challenge_flags),
@@ -651,6 +663,7 @@ def retrieve_approved_knowledge(
                 "domain": item["domain"],
                 "central_claim": item["central_claim"],
                 "principles": item["principles"][:6],
+                "relationships": item["relationships"][:6],
                 "limits": item["limits"][:6],
                 "confidence": item["confidence"],
                 "source_refs": item["source_refs"],
@@ -670,12 +683,19 @@ def _answer_eligible_knowledge_items(
     prompt: str,
     intent: dict[str, Any],
     items: list[dict[str, Any]],
+    *,
+    conversation_spine: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
+    contextual = intent.get("contextual_follow_up") if isinstance(intent.get("contextual_follow_up"), dict) else {}
     dialogue_acts = {str(item) for item in intent.get("dialogue_acts") or []}
+    intent_name = str(intent.get("intent") or "")
     answer_requested = bool(
-        str(intent.get("intent") or "") == "reasoning"
+        intent_name == "reasoning"
         or intent.get("reasoning_requested") is True
-        or dialogue_acts.intersection({"question", "request"})
+        or (
+            intent_name in {"direct_conversation", "direct_answer", ""}
+            and dialogue_acts.intersection({"question", "request"})
+        )
     )
     if not answer_requested:
         return []
@@ -686,6 +706,29 @@ def _answer_eligible_knowledge_items(
     }
     eligible: list[dict[str, Any]] = []
     for item in items:
+        item_text = " ".join(
+            [
+                str(item.get("title") or ""),
+                str(item.get("central_claim") or ""),
+                *[str(value) for value in item.get("principles") or []],
+                *[str(value) for value in item.get("relationships") or []],
+            ]
+        )
+        compatibility = evaluate_candidate_compatibility(
+            conversation_spine,
+            {
+                "source_id": "approved_comprehension",
+                "source_class": "approved_knowledge",
+                "text": item_text,
+            },
+        )
+        item["conversation_spine_compatibility"] = compatibility
+        if compatibility.get("compatible") is not True:
+            continue
+        if contextual.get("detected") is True:
+            # The spine keeps an immediate callback grounded in the answer it
+            # refers to even if an approved lesson shares a few words.
+            continue
         if item.get("guidance_only") is True or _is_language_guidance_concept(item):
             continue
         overlap = set(item.get("matched_terms") or []) & query_terms
@@ -694,6 +737,46 @@ def _answer_eligible_knowledge_items(
             continue
         eligible.append(item)
     return eligible
+
+
+def _knowledge_response_seed(prompt: str, items: list[dict[str, Any]]) -> dict[str, Any]:
+    if not items:
+        return {
+            "content_seed": "",
+            "answer_kind": "none",
+            "why_relationship_included": False,
+            "limit_included": False,
+        }
+    item = items[0]
+    central = truncate(str(item.get("central_claim") or "").strip(), 1400)
+    lower = prompt.lower()
+    asks_why = bool(re.search(r"\bwhy\b|\breason\b|\bcause\b|\bmechanism\b", lower))
+    asks_limit = bool(re.search(r"\bwhen\b|\blimit\b|\bexception\b|\bnot apply\b|\bfail\b", lower))
+    explanatory = [
+        truncate(str(value).strip(), 700)
+        for value in [*list(item.get("principles") or []), *list(item.get("relationships") or [])]
+        if str(value).strip() and str(value).strip().lower() not in central.lower()
+    ]
+    limits = [
+        truncate(str(value).strip(), 700)
+        for value in item.get("limits") or []
+        if str(value).strip() and str(value).strip().lower() not in central.lower()
+    ]
+    parts = [central] if central else []
+    why_included = asks_why and bool(explanatory)
+    limit_included = asks_limit and bool(limits)
+    if why_included:
+        parts.append(explanatory[0])
+    if limit_included:
+        parts.append(limits[0])
+    return {
+        "content_seed": truncate(" ".join(parts), 1800),
+        "answer_kind": "why_supported" if why_included else "limit_supported" if limit_included else "central_claim",
+        "why_relationship_included": why_included,
+        "limit_included": limit_included,
+        "concept_id": item.get("id") or item.get("concept_id"),
+        "source_refs": _text_list(item.get("source_refs"))[:20],
+    }
 
 
 def _is_language_guidance_concept(item: dict[str, Any]) -> bool:

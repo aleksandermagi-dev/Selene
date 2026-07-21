@@ -17,6 +17,12 @@ from .curriculum_f1_group4 import (
     LESSONS as F1_GROUP4_LESSONS,
     SCOPE as F1_GROUP4_SCOPE,
 )
+from .curriculum_f1_group5 import (
+    AUTHORIZATION_KEY as F1_GROUP5_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP5_KEY,
+    LESSONS as F1_GROUP5_LESSONS,
+    SCOPE as F1_GROUP5_SCOPE,
+)
 from .teaching_lifecycle import (
     acquire_teaching_item,
     approve_teaching_lifecycle_under_authorization,
@@ -563,6 +569,13 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
         "F1 geometry, equal shares, and algorithms — group 4",
         F1_GROUP4_SCOPE["source_ids"],
     )
+    fifth_group = _group_progress(
+        conn,
+        F1_GROUP5_LESSONS,
+        F1_GROUP5_KEY,
+        "F1 equal groups, data interpretation, and money — group 5",
+        F1_GROUP5_SCOPE["source_ids"],
+    )
     return _with_guards(
         {
             "status": "curriculum_authorization_ready",
@@ -575,7 +588,8 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "second_group": second_group,
             "third_group": third_group,
             "fourth_group": fourth_group,
-            "groups": [first_group, second_group, third_group, fourth_group],
+            "fifth_group": fifth_group,
+            "groups": [first_group, second_group, third_group, fourth_group, fifth_group],
             "exception_classes": list(EXCEPTION_CLASSES),
             "review_destination": "Cocoon Teaching / Lessons",
             "provenance_boundary": PROVENANCE_BOUNDARY,
@@ -644,6 +658,19 @@ def activate_f1_geometry_algorithms_authorization(
         authorization_key=F1_GROUP4_AUTHORIZATION_KEY,
         title="F1 geometry, equal shares, and algorithms — group 4",
         scope=F1_GROUP4_SCOPE,
+    )
+
+
+def activate_f1_equal_groups_data_money_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP5_AUTHORIZATION_KEY,
+        title="F1 equal groups, data interpretation, and money — group 5",
+        scope=F1_GROUP5_SCOPE,
     )
 
 
@@ -927,6 +954,31 @@ def teach_f1_geometry_algorithms_group(
         lessons=F1_GROUP4_LESSONS,
         group_key=F1_GROUP4_KEY,
         authorization_key=F1_GROUP4_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_equal_groups_data_money_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP5_LESSONS,
+        group_key=F1_GROUP5_KEY,
+    )
+
+
+def teach_f1_equal_groups_data_money_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP5_LESSONS,
+        group_key=F1_GROUP5_KEY,
+        authorization_key=F1_GROUP5_AUTHORIZATION_KEY,
     )
 
 
