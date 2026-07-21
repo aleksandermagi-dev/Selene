@@ -20,6 +20,12 @@ from .social_language_realizer import (
     build_social_act_plan,
     realize_social_act_plan,
 )
+from .special_expression_realizer import (
+    build_boundary_expression_plan,
+    build_initiative_expression_plan,
+    build_memory_expression_plan,
+    realize_special_expression_plan,
+)
 from .uncertainty_language_realizer import build_uncertainty_plan, realize_uncertainty_plan
 
 
@@ -59,7 +65,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v17_compositional_uncertainty_expression",
+            "version": "v18_compositional_special_expression",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -80,6 +86,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "compositional_social_act_realization",
                 "content_light_conversational_act_realization",
                 "compositional_epistemic_uncertainty_realization",
+                "compositional_boundary_memory_and_initiative_realization",
                 "response_depth_selection",
                 "multi_paragraph_answer_structure",
                 "grounded_obligation_content_binding",
@@ -207,7 +214,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v17_compositional_uncertainty_expression",
+        "version": "v18_compositional_special_expression",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -233,6 +240,8 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "content_light_realization": plan.get("content_light_realization") or {},
             "uncertainty_expression_plan": plan.get("uncertainty_expression_plan") or {},
             "uncertainty_expression_realization": plan.get("uncertainty_expression_realization") or {},
+            "special_expression_plan": plan.get("special_expression_plan") or {},
+            "special_expression_realization": plan.get("special_expression_realization") or {},
         },
         "source_refs": meaning["source_refs"],
         "review_destination": "Status",
@@ -557,6 +566,21 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         if intent == "direct_answer" and not str(meaning.get("content_seed") or "").strip()
         else {"status": "content_light_social_plan_not_applicable"}
     )
+    if intent == "hold_boundary":
+        special_expression_plan = build_boundary_expression_plan()
+    elif intent == "recall_supported_memory":
+        special_expression_plan = build_memory_expression_plan(
+            supported_text=str(meaning.get("content_seed") or ""),
+            confidence=str(meaning.get("certainty") or "partial"),
+            source_class=str(meaning.get("content_source_class") or "approved_memory_index"),
+        )
+    elif intent == "share_relevant_observation":
+        special_expression_plan = build_initiative_expression_plan(
+            supported_summary=str(meaning.get("content_seed") or ""),
+            certainty=str(meaning.get("certainty") or "provisional"),
+        )
+    else:
+        special_expression_plan = {"status": "special_expression_plan_not_applicable"}
     return {
         "moves": moves,
         "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory", "self_state_report"},
@@ -592,6 +616,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "follow_up_question_by_default": False,
         "social_act_plan": social_act_plan,
         "content_light_plan": content_light_plan,
+        "special_expression_plan": special_expression_plan,
     }
 
 
@@ -636,16 +661,21 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             return _compose_mixed_content(social_text, seed, pragmatic_plan)
 
     if intent == "hold_boundary":
-        return _pick(
-            digest_key,
-            [
-                "I cannot do that part, but I can stay with you and work through what is safe to examine.",
-                "That crosses a boundary I need to keep. We can still talk about the idea or prepare a safe proposal together.",
-                "I need to stop the action itself here; I do not need to end the conversation with you.",
-            ],
+        special_result = realize_special_expression_plan(
+            plan.get("special_expression_plan") if isinstance(plan.get("special_expression_plan"), dict) else {},
+            variation_key=digest_key,
+            recent_texts=recent,
         )
+        plan["special_expression_realization"] = special_result
+        return str(special_result.get("candidate_text") or "I cannot carry out that request.")
     if intent == "recall_supported_memory" and seed:
-        return seed if seed.lower().startswith("i remember") else f"I remember {seed[0].lower() + seed[1:] if len(seed) > 1 else seed.lower()}"
+        special_result = realize_special_expression_plan(
+            plan.get("special_expression_plan") if isinstance(plan.get("special_expression_plan"), dict) else {},
+            variation_key=digest_key,
+            recent_texts=recent,
+        )
+        plan["special_expression_realization"] = special_result
+        return str(special_result.get("candidate_text") or seed)
     if intent == "recall_uncertain":
         if seed:
             if seed.lower().startswith(("i do not know", "i don't know", "i cannot support", "i can't support")):
@@ -687,7 +717,13 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             "I can say what I notice and keep the uncertainty honest."
         )
     if intent == "share_relevant_observation" and seed:
-        return f"Something feels worth mentioning: {seed}"
+        special_result = realize_special_expression_plan(
+            plan.get("special_expression_plan") if isinstance(plan.get("special_expression_plan"), dict) else {},
+            variation_key=digest_key,
+            recent_texts=recent,
+        )
+        plan["special_expression_realization"] = special_result
+        return str(special_result.get("candidate_text") or seed)
     if seed:
         return seed
     if "?" in prompt:

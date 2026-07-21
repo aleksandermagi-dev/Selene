@@ -392,7 +392,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v17_compositional_uncertainty_expression"
+    assert result["native_language_organ"]["version"] == "v18_compositional_special_expression"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
@@ -1559,7 +1559,8 @@ def test_active_selene_chat_can_use_approved_memory_with_graceful_fall_metadata(
     assert result["memory_confidence"] == "clear"
     assert result["memory_transfer_class"] in {"private_inner", "portable_context", "portable_vys_core"}
     assert result["durable_memory_write_requires_review"] is True
-    assert "I remember" in result["candidate_text"]
+    assert result["native_language_organ"]["discourse_plan"]["special_expression_plan"]["kind"] == "supported_memory"
+    assert result["native_language_organ"]["discourse_plan"]["special_expression_realization"]["memory_certainty_upgraded"] is False
     assert "butterfly" in result["candidate_text"].lower()
     assert result["memory_write_active"] is False
     assert result["runtime_memory_recall"] is False

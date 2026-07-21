@@ -198,7 +198,7 @@ def test_nlo_consults_prepared_shelf_without_changing_voice_or_identity(tmp_path
     )
 
     guidance = result["language_teaching_guidance"]
-    assert result["version"] == "v17_compositional_uncertainty_expression"
+    assert result["version"] == "v18_compositional_special_expression"
     assert guidance["used"] is True
     assert "answer_then_expand" in guidance["lesson_keys"]
     assert "list_or_prose_fit" in guidance["lesson_keys"]

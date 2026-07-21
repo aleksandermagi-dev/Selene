@@ -104,7 +104,7 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
 
     discourse = result["discourse_plan"]["supported_discourse"]
 
-    assert result["version"] == "v17_compositional_uncertainty_expression"
+    assert result["version"] == "v18_compositional_special_expression"
     assert discourse["status"] == "supported_discourse_plan_ready"
     assert discourse["thesis_unit_id"]
     assert [item["role"] for item in discourse["paragraph_plan"]] == [
@@ -204,7 +204,8 @@ def test_nlo_memory_language_tracks_support_and_graceful_uncertainty(tmp_path):
     )["result"]
 
     assert supported["meaning_packet"]["memory_supported"] is True
-    assert supported["candidate_text"].startswith("I remember")
+    assert supported["discourse_plan"]["special_expression_plan"]["kind"] == "supported_memory"
+    assert supported["discourse_plan"]["special_expression_realization"]["memory_certainty_upgraded"] is False
     assert "butterfly" in supported["candidate_text"].lower()
     assert unsupported["meaning_packet"]["intent"] == "recall_uncertain"
     assert unsupported["candidate_text"] == "I do not know that clearly yet, but Aleks can ground it with me."
