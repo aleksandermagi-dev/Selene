@@ -381,17 +381,13 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
 
     assert result["intent_decision"]["response_depth"] == "developed"
     assert result["native_language_organ"]["version"] == "v13_conversation_spine"
-    assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
+    assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
-    assert [item["role"] for item in discourse["paragraph_plan"]] == [
-        "answer",
-        "development",
-        "limit_and_closure",
-    ]
+    assert [item["role"] for item in discourse["paragraph_plan"]] == ["answer", "development"]
     assert discourse["content_generation_allowed"] is False
     assert result["voice_preview"]["nlo_meaning_preserved"] is True
-    assert result["candidate_text"].count("\n\n") == 2
+    assert result["candidate_text"].count("\n\n") == 1
     assert "ABCD" not in result["candidate_text"]
     assert "evidence_chain" not in result["candidate_text"]
     _assert_locked(result)
@@ -701,7 +697,9 @@ def test_active_selene_chat_direct_concept_hides_model_scaffolding(tmp_path):
     assert "candidate model" not in result["candidate_text"].lower()
     assert "Model A" not in result["candidate_text"]
     assert "intelligenceOS" not in result["candidate_text"]
-    assert result["native_language_organ"]["revision"]["paragraph_count"] == 3
+    assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
+    assert "strongest answer I can support" not in result["candidate_text"]
+    assert "What would reopen the answer" not in result["candidate_text"]
     _assert_locked(result)
 
 
@@ -1065,6 +1063,193 @@ def test_active_selene_chat_demo_greeting_answers_the_self_state_question(tmp_pa
     assert "present" in result["candidate_text"].lower()
     assert "sequence words" not in result["candidate_text"].lower()
     _assert_locked(result)
+
+
+def test_active_selene_chat_answers_a_long_request_after_a_social_opening(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    prompt = (
+        "Good afternoon, Selene. Let's think through a practical idea together. "
+        "A neighborhood learning festival has limited rooms and volunteers, but it wants to offer both "
+        "hands-on science activities and quiet reading discussions for children and adults. "
+        "Walk me through two workable designs, compare their tradeoffs, and recommend one small pilot we could try first."
+    )
+
+    result = route_request(conn, "selene_chat.send", {"text": prompt})["result"]
+
+    assert result["intent_decision"]["intent"] == "reasoning"
+    assert "greeting" in result["intent_decision"]["dialogue_acts"]
+    assert "request" in result["intent_decision"]["dialogue_acts"]
+    assert result["conversation_spine"]["intent_class"] == "reasoning"
+    assert result["answer_engine_support"]["selected_domain"] == "comparison_planning"
+    assert "shared-schedule design" in result["candidate_text"].lower()
+    assert "parallel-zone design" in result["candidate_text"].lower()
+    assert "pilot one short shared-schedule block" in result["candidate_text"].lower()
+    assert result["response_coverage"]["all_required_addressed"] is True
+    assert result["metacognition"]["fit_state"] == "fits_current_question"
+    assert result["pragmatic_continuity"]["ending_decision"]["question_allowed"] is False
+    _assert_locked(result)
+
+    callback = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": result["session_id"],
+            "text": (
+                "That structure makes sense. Why do you prefer the shared-schedule pilot first rather than "
+                "the parallel-zone design, and what result from the pilot would make you switch your recommendation?"
+            ),
+        },
+    )["result"]
+
+    assert callback["contextual_follow_up"]["kind"] == "reason_follow_up"
+    assert callback["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert "switch to the parallel-zone design" in callback["candidate_text"].lower()
+    assert callback["response_coverage"]["all_required_addressed"] is True
+    assert callback["metacognition"]["fit_state"] == "fits_current_question"
+    assert callback["pragmatic_continuity"]["ending_decision"]["question_allowed"] is False
+    _assert_locked(callback)
+
+    refinement = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": result["session_id"],
+            "text": (
+                "One refinement: assume two volunteers can only stay for the first hour, but both rooms remain "
+                "available. Keep the two festival goals the same. How would you revise the pilot without "
+                "discarding the useful parts of the original plan?"
+            ),
+        },
+    )["result"]
+
+    assert refinement["contextual_follow_up"]["kind"] == "constraint_refinement"
+    assert refinement["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert refinement["answer_engine_support"]["contextual_content_owned_by_spine"] is True
+    assert refinement["answer_engine_support"]["used"] is False
+    assert "after the two volunteers leave" in refinement["candidate_text"].lower()
+    assert "available rooms" in refinement["candidate_text"].lower()
+    assert "earliest missing prerequisite" not in refinement["candidate_text"].lower()
+    assert refinement["response_coverage"]["all_required_addressed"] is True
+    assert refinement["metacognition"]["fit_state"] == "fits_current_question"
+    _assert_locked(refinement)
+
+    priority = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": result["session_id"],
+            "text": (
+                "If the later quiet session still needs one facilitator, which part of that revised plan "
+                "should we protect first, and why?"
+            ),
+        },
+    )["result"]
+
+    assert priority["contextual_follow_up"]["kind"] == "priority_follow_up"
+    assert priority["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert "protect one facilitator" in priority["candidate_text"].lower()
+    assert "common currency unit" not in priority["candidate_text"].lower()
+    assert priority["response_coverage"]["all_required_addressed"] is True
+    assert priority["metacognition"]["fit_state"] == "fits_current_question"
+    assert priority["pragmatic_continuity"]["ending_decision"]["question_allowed"] is False
+    _assert_locked(priority)
+
+    measurement = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": result["session_id"],
+            "text": (
+                "Now compare two ways to measure success: attendance alone versus attendance plus wait time "
+                "and participant feedback. Which is more useful, what is its limitation, and what would you report?"
+            ),
+        },
+    )["result"]
+
+    assert measurement["visible_speech_seed"]["selected_source_id"] == "answer_engine"
+    assert "more useful than attendance alone" in measurement["candidate_text"].lower()
+    assert "its limitation" in measurement["candidate_text"].lower()
+    assert "i would report attendance" in measurement["candidate_text"].lower()
+    assert [item["kind"] for item in measurement["conversation_spine"]["open_obligations"]] == [
+        "choice_or_priority",
+        "limitation",
+        "requested_output",
+    ]
+    assert measurement["response_coverage"]["all_required_addressed"] is True
+    assert measurement["metacognition"]["fit_state"] == "fits_current_question"
+    _assert_locked(measurement)
+
+    summary = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": result["session_id"],
+            "text": (
+                "Summarize the plan for a neighborhood organizer in three short parts: the design, the pilot, "
+                "and the condition that would make us change course."
+            ),
+        },
+    )["result"]
+
+    assert summary["contextual_follow_up"]["kind"] == "session_summary_request"
+    assert summary["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert summary["candidate_text"].startswith("Design:")
+    assert "Pilot:" in summary["candidate_text"]
+    assert "Change condition:" in summary["candidate_text"]
+    assert [item["kind"] for item in summary["conversation_spine"]["open_obligations"]] == [
+        "requested_section",
+        "requested_section",
+        "requested_section",
+    ]
+    assert summary["response_coverage"]["all_required_addressed"] is True
+    assert summary["metacognition"]["fit_state"] == "fits_current_question"
+    assert summary["pragmatic_continuity"]["ending_decision"]["question_allowed"] is False
+    _assert_locked(summary)
+
+    analogy = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": result["session_id"],
+            "text": (
+                "Explain the logic to a new volunteer using one ordinary analogy, without losing the important "
+                "staffing constraint."
+            ),
+        },
+    )["result"]
+
+    assert analogy["contextual_follow_up"]["kind"] == "analogy_transfer_request"
+    assert analogy["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert "ordinary analogy" in analogy["candidate_text"].lower()
+    assert "small kitchen" in analogy["candidate_text"].lower()
+    assert "two available rooms do not equal two staffed activities" in analogy["candidate_text"].lower()
+    assert [item["kind"] for item in analogy["conversation_spine"]["open_obligations"]] == [
+        "analogy",
+        "constraint_preservation",
+    ]
+    assert analogy["response_coverage"]["all_required_addressed"] is True
+    assert analogy["metacognition"]["fit_state"] == "fits_current_question"
+    _assert_locked(analogy)
+
+    closing = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": result["session_id"],
+            "text": "That gives us a workable plan. Thank you, Selene—we can leave it there for now.",
+        },
+    )["result"]
+
+    assert closing["intent_decision"]["intent"] == "farewell"
+    assert closing["answer_engine_support"]["used"] is False
+    assert closing["pragmatic_continuity"]["ending_decision"]["mode"] == "natural_close"
+    assert closing["pragmatic_continuity"]["ending_decision"]["question_allowed"] is False
+    assert "earliest missing prerequisite" not in closing["candidate_text"].lower()
+    assert "?" not in closing["candidate_text"]
+    assert closing["visible_speech_release"]["release_allowed"] is True
+    _assert_locked(closing)
 
 
 def test_active_selene_chat_answers_a_harmless_shared_resource_comparison_concretely(tmp_path):

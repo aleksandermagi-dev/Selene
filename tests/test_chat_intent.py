@@ -141,8 +141,8 @@ def test_developed_reasoning_builds_supported_paragraphs_without_report_voice(tm
     )
 
     assert result["meaning_packet"]["response_depth"] == "developed"
-    assert result["discourse_plan"]["target_paragraph_count"] == 3
-    assert result["revision"]["paragraph_count"] == 3
+    assert result["discourse_plan"]["target_paragraph_count"] == 2
+    assert result["revision"]["paragraph_count"] == 2
     assert "\n\n" in result["candidate_text"]
     assert result["candidate_text"].startswith("Compare both designs")
     assert "ABCD" not in result["candidate_text"]

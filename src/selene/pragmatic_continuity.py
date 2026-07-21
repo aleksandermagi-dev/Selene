@@ -212,22 +212,22 @@ def _ending_decision(
         or handshake.get("required") is True
     )
     intent_name = str(intent.get("intent") or "")
-    if material_question:
-        mode = "ask_one_material_question"
-        question_allowed = True
-        reason = "a consequential ambiguity cannot be resolved from bounded session context"
-    elif intent_name == "farewell":
+    if intent_name == "farewell":
         mode = "natural_close"
         question_allowed = False
         reason = "the user is closing the conversation"
-    elif uncovered:
-        mode = "leave_missing_content_visible_without_padding"
-        question_allowed = False
-        reason = "content is incomplete, but no user detail is known to resolve the domain gap"
     elif intent_name in {"greeting", "gratitude", "affirmation", "warm_connection", "reassurance_received"}:
         mode = "leave_room_without_pressuring"
         question_allowed = False
         reason = "a social turn does not require a habitual follow-up"
+    elif material_question:
+        mode = "ask_one_material_question"
+        question_allowed = True
+        reason = "a consequential ambiguity cannot be resolved from bounded session context"
+    elif uncovered:
+        mode = "leave_missing_content_visible_without_padding"
+        question_allowed = False
+        reason = "content is incomplete, but no user detail is known to resolve the domain gap"
     else:
         mode = "answer_and_stop_when_complete"
         question_allowed = False
@@ -235,7 +235,7 @@ def _ending_decision(
     return {
         "mode": mode,
         "question_allowed": question_allowed,
-        "question_required": material_question,
+        "question_required": material_question and question_allowed,
         "reason": reason,
         "habitual_follow_up_allowed": False,
         "silence_or_completion_is_valid": True,

@@ -81,6 +81,18 @@ def test_discourse_plan_leaves_an_unsupported_obligation_visible_without_filler(
     assert result["content_generation_allowed"] is False
 
 
+def test_developed_discourse_does_not_create_empty_paragraphs_to_reach_a_target():
+    result = build_supported_discourse_plan(
+        {
+            "content_seed": "Use one shared-schedule pilot and compare attendance, wait time, and staffing strain.",
+            "response_depth": "developed",
+        }
+    )
+
+    assert [item["role"] for item in result["paragraph_plan"]] == ["answer"]
+    assert result["closure_plan"]["mode"] == "stop_after_supported_content"
+
+
 def test_discourse_plan_keeps_correction_content_session_scoped():
     result = build_supported_discourse_plan(
         {

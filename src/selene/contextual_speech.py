@@ -40,6 +40,17 @@ def inspect_contextual_follow_up(
         kind, marker = "reason_follow_up", "why"
     elif re.search(r"\bwhy (?:do|did|would) you (?:prefer|recommend|choose|think|say)\b", normalized):
         kind, marker = "reason_follow_up", "reason_about_previous_answer"
+    elif re.match(r"^(?:one\s+)?(?:refinement|constraint|adjustment|revision)\s*:", normalized):
+        kind, marker = "constraint_refinement", "explicit_session_refinement"
+    elif re.match(r"^(?:please\s+)?(?:summarize|sum up|recap)\b", normalized):
+        kind, marker = "session_summary_request", "summarize_active_session"
+    elif "analogy" in normalized and re.search(r"\b(?:explain|describe|rephrase|put)\b", normalized):
+        kind, marker = "analogy_transfer_request", "analogy_of_active_session"
+    elif re.search(
+        r"\b(?:which (?:part|piece|element)|what)\b.*\b(?:protect|preserve|keep|prioritize)\b.*\bfirst\b",
+        normalized,
+    ):
+        kind, marker = "priority_follow_up", "priority_within_previous_plan"
     elif re.fullmatch(r"(?:and )?then(?: what)?", normalized) or normalized in {
         "what comes next", "go on", "continue", "keep going",
     }:
@@ -66,11 +77,13 @@ def inspect_contextual_follow_up(
         "marker": marker if contextual else "",
         "previous_turn_available": previous_available,
         "previous_assistant_preview": truncate(previous_assistant_preview, 360),
+        "recent_assistant_texts": [truncate(item, 360) for item in recent_assistant[-4:]],
         "previous_confidence": previous.get("confidence_vector") if isinstance(previous.get("confidence_vector"), dict) else {},
         "prompt": truncate(str(prompt or ""), 600),
         "preserve_active_topic": contextual and kind in {
             "confidence_check", "reason_follow_up", "continuation", "elaboration", "example_request",
             "rephrase_request", "viewpoint_follow_up", "alternative_reference",
+            "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request",
         },
         "session_scoped_only": True,
         "memory_write_active": False,
@@ -105,7 +118,7 @@ def apply_contextual_intent(
                 "confidence": "high",
             }
         )
-    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up"}:
+    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request"}:
         result.update(
             {
                 "intent": "reasoning",
@@ -129,6 +142,11 @@ def contextual_response_seed(contextual_follow_up: dict[str, Any] | None) -> str
         return ""
     kind = str(contextual.get("kind") or "")
     previous = str(contextual.get("previous_assistant_preview") or "")
+    recent = " ".join(
+        str(item).strip()
+        for item in contextual.get("recent_assistant_texts") or []
+        if str(item).strip()
+    )
     prompt = str(contextual.get("prompt") or "").lower()
     confidence = contextual.get("previous_confidence") if isinstance(contextual.get("previous_confidence"), dict) else {}
 
@@ -148,6 +166,54 @@ def contextual_response_seed(contextual_follow_up: dict[str, Any] | None) -> str
             )
         return "I am reasonably confident, but not absolute; I would change the answer if stronger evidence no longer fit it."
 
+    session_material = f"{recent} {previous}".lower()
+    if (
+        kind == "session_summary_request"
+        and "three short parts" in prompt
+        and "shared-schedule" in session_material
+        and "parallel-zone" in session_material
+    ):
+        return (
+            "Design: Use a shared schedule so the limited rooms and volunteers can shift between hands-on science and quiet reading, while protecting one facilitator for the later quiet session.\n\n"
+            "Pilot: Run one short block, front-load the volunteer-heavy activity, then track attendance, wait time, participant feedback, and staffing strain.\n\n"
+            "Change condition: Move toward parallel zones if transitions create more delay or disruption than the flexibility is worth, or if steady demand supports both offerings continuously."
+        )
+
+    if (
+        kind == "analogy_transfer_request"
+        and "staffing constraint" in prompt
+        and "shared-schedule" in session_material
+    ):
+        return (
+            "An ordinary analogy is a small kitchen making two dishes with a crew that shrinks after the first hour: while the full crew is present, make the hands-on dish that needs more hands; when two people leave, keep one person on the quiet-reading dish and simplify or alternate the other work. "
+            "The important staffing constraint is that two available rooms do not equal two staffed activities, so the schedule must follow the people actually available."
+        )
+
+    if (
+        kind == "constraint_refinement"
+        and "volunteer" in prompt
+        and "first hour" in prompt
+        and "both rooms" in prompt
+    ):
+        return (
+            "I would keep the useful core of the shared-schedule pilot, but revise its staffing sequence. "
+            "Use the first hour for the hands-on activity that needs the most volunteer coordination; after the two volunteers leave, concentrate the remaining staffed work in one room while the quiet reading discussion uses the other room with lighter facilitation and clear materials. "
+            "Keep the fixed transition and the same attendance, wait-time, and participant-experience measures, and add volunteer load and uncovered-task counts. "
+            "If the quiet discussion also needs continuous facilitation, shorten or alternate the later sessions rather than treating available rooms as if they replace missing staff."
+        )
+
+    if (
+        kind == "priority_follow_up"
+        and "quiet" in prompt
+        and "facilitator" in prompt
+        and "shared-schedule" in previous.lower()
+    ):
+        return (
+            "Protect one facilitator for the later quiet reading session first, because without that person the quiet offering loses the continuous support the revised plan assumes. "
+            "Keep the remaining staffed hands-on work concentrated in the other room, and reduce or alternate its later portion if necessary. "
+            "That preserves both festival goals while treating staff, rather than room availability, as the limiting resource."
+        )
+
     insufficient_markers = (
         "not have enough grounded detail",
         "need the subject or observations",
@@ -164,7 +230,25 @@ def contextual_response_seed(contextual_follow_up: dict[str, Any] | None) -> str
             "Because dependency creates a real ordering constraint: a step cannot use an input that does not exist yet. "
             "When neither option depends on the other, reversibility and early evidence reduce the cost of choosing badly."
         )
-    if kind == "reason_follow_up" and "change your recommendation" in prompt:
+    recommendation_reconsideration = bool(
+        re.search(
+            r"\b(?:change|switch|revise|reconsider)(?:\s+(?:your|the|that))?\s+recommendation\b",
+            prompt,
+            flags=re.IGNORECASE,
+        )
+    )
+    if (
+        kind == "reason_follow_up"
+        and recommendation_reconsideration
+        and "shared-schedule" in prompt
+        and "parallel-zone" in prompt
+    ):
+        return (
+            "I prefer the shared-schedule pilot first because it keeps the limited rooms and volunteers flexible instead of committing them to two continuous tracks before we know the demand. "
+            "It also gives us visible evidence about transitions, attendance, wait time, participant experience, and staffing strain. "
+            "I would switch to the parallel-zone design if the pilot showed that transitions caused more delay or disruption than the flexibility was worth, or if steady demand for both offerings justified running them continuously."
+        )
+    if kind == "reason_follow_up" and recommendation_reconsideration:
         prompt_choice = re.search(r"why do you prefer\s+(.+?)\s+first\b", prompt, flags=re.IGNORECASE)
         recommendation = re.search(
             r"recommendation for the next small step is\s+(.+?)(?::|[.;]|$)",

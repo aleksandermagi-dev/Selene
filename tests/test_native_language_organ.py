@@ -119,6 +119,30 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
     _assert_locked(result)
 
 
+def test_nlo_does_not_pad_a_developed_answer_without_distinct_supported_material(tmp_path):
+    conn = _conn(tmp_path)
+    seed = (
+        "Use a short shared-schedule pilot first: alternate the two activities, record attendance and wait time, "
+        "and compare those results with staffing strain before expanding."
+    )
+    result = route_request(
+        conn,
+        "native_language.realize",
+        {
+            "prompt": "Walk me through a pilot and recommend what to try first.",
+            "selected_route": "answer_now",
+            "response_depth": "developed",
+            "content_seed": seed,
+        },
+    )["result"]
+
+    assert result["candidate_text"] == seed
+    assert result["revision"]["paragraph_count"] == 1
+    assert "strongest answer I can support" not in result["candidate_text"]
+    assert "What would reopen the answer" not in result["candidate_text"]
+    _assert_locked(result)
+
+
 def test_nlo_uses_expression_guidance_as_optional_voice_handoff_not_emotion_claim(tmp_path):
     conn = _conn(tmp_path)
     result = route_request(

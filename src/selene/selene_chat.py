@@ -314,6 +314,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         memory_retrieval,
         chat_continuity,
         intelligence_support,
+        contextual_content_seed=contextual_reply,
         hard=bool(hard_blockers),
     )
     domain_content_seed = str(answer_engine_support.get("content_seed") or "")
@@ -529,6 +530,24 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         record_run=True,
         commit=False,
     )
+    ending_decision = (
+        pragmatic_continuity.get("ending_decision")
+        if isinstance(pragmatic_continuity.get("ending_decision"), dict)
+        else {}
+    )
+    if (
+        ending_decision.get("mode") == "ask_one_material_question"
+        and response_coverage.get("all_required_addressed") is True
+        and metacognition.get("fit_state") == "fits_current_question"
+    ):
+        ending_decision.update(
+            {
+                "mode": "answer_and_stop_when_complete",
+                "question_allowed": False,
+                "question_required": False,
+                "reason": "the grounded released answer covered the turn, so the preliminary ambiguity does not require a follow-up",
+            }
+        )
     delivery_constraint = {
         "input_channel": input_channel,
         "character_limit": requested_character_limit,
@@ -1041,15 +1060,22 @@ def _intelligence_support(
             "source_refs": ["selene_chat:intelligence_os_support", *_json_list(route.get("source_refs"))],
         },
     )
+    answer_substance = result.get("answer_substance") if isinstance(result.get("answer_substance"), dict) else {}
+    substance_selected = answer_substance.get("selected_for_answer") is True
     return {
         "used": True,
         "run_id": result.get("run_id"),
         "answer_shape": result.get("answer_shape"),
         "best_current_answer": result.get("best_current_answer"),
-        "answer_substance": result.get("answer_substance") or {},
-        "reasoning_summary": result.get("reasoning_summary"),
-        "support_points": _intelligence_support_points(result),
-        "selected_next_step": result.get("selected_next_step"),
+        "answer_substance": answer_substance,
+        "reasoning_summary": "" if substance_selected else result.get("reasoning_summary"),
+        "support_points": [] if substance_selected else _intelligence_support_points(result),
+        "selected_next_step": "" if substance_selected else result.get("selected_next_step"),
+        "support_suppressed_reason": (
+            "the prompt-grounded answer substance already carries the visible answer without generic reasoning scaffolding"
+            if substance_selected
+            else ""
+        ),
         "confidence": result.get("confidence"),
         "cocoon_support_suggested": bool((result.get("cocoon_suggestion") or {}).get("recommended")),
         "contextual_follow_up_used": reasoning_prompt != text,
@@ -1072,6 +1098,7 @@ def _answer_engine_support(
     chat_continuity: dict[str, Any],
     intelligence_support: dict[str, Any],
     *,
+    contextual_content_seed: str = "",
     hard: bool,
 ) -> dict[str, Any]:
     base = {
@@ -1091,6 +1118,19 @@ def _answer_engine_support(
     }
     if hard:
         return {**base, "reason": "hard Core/Mind boundary resolved before domain answering"}
+    if intent_decision.get("social_turn") is True and intent_decision.get("content_response_requested") is not True:
+        return {
+            **base,
+            "reason": "a complete social turn remains with conversation, NLO, and Voice instead of inheriting domain content",
+        }
+    if str(contextual_content_seed or "").strip():
+        return {
+            **base,
+            "selected_domain": "ordinary_conversation",
+            "reason": "the Conversation Spine already supplied a grounded immediate-session answer",
+            "conversation_spine_turn_id": str(conversation_spine.get("turn_id") or ""),
+            "contextual_content_owned_by_spine": True,
+        }
 
     source_packets = [item for item in chat_payload.get("source_packets") or [] if isinstance(item, dict)][:20]
     engine_payload = {
@@ -1242,9 +1282,15 @@ def _intelligence_support_points(result: dict[str, Any]) -> list[str]:
             elif part and part not in points:
                 points.append(part)
     summary = str(result.get("reasoning_summary") or "").strip()
-    if not points and summary:
+    internal_summary = any(
+        marker in summary.lower()
+        for marker in ("intelligenceos", "candidate model", "challenged them", "reasoning_summary")
+    )
+    if not points and not reopen_points and summary and not internal_summary:
         points.append(summary)
-    return [*points[:2], *reopen_points[:1], *points[2:3]]
+    # Reopening signals belong to fit/confidence handling, not to the visible
+    # reasons supporting the answer itself.
+    return points[:3]
 
 
 def _conversation_policy_reply(text: str) -> str:
@@ -1663,7 +1709,7 @@ def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | N
             FROM selene_chat_messages
             WHERE session_id = ?
             ORDER BY id DESC
-            LIMIT 4
+            LIMIT 16
             """,
             (current_session_id,),
         ).fetchall()

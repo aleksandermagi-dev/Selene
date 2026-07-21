@@ -56,7 +56,7 @@ def interpret_turn_meaning(
     explicit_request = bool(
         re.search(
             r"(?:^|[.!?]\s+)(?:please\s+)?"
-            r"(?:answer|explain|compare|calculate|solve|check|find|show|tell|give|help|plan|review|summarize|describe)\b",
+            r"(?:answer|explain|compare|calculate|solve|check|find|show|tell|give|help|plan|review|summarize|describe|recommend|outline|propose|walk\s+me\s+through)\b",
             routing_text,
         )
     )
@@ -213,6 +213,8 @@ def _intent_candidates(
         reasoning_hits = [item for item in reasoning_hits if item != "how"]
     if reasoning_hits:
         add("reasoning", 55 + min(20, len(reasoning_hits) * 5), "reasoning_structure:" + ",".join(reasoning_hits[:5]))
+    if "reasoning" in scores and "request" in dialogue_acts:
+        add("reasoning", 20, "explicit_substantive_request")
     if question and not self_state_turn and tokens.intersection({"why", "how", "which"}):
         add("reasoning", 18, "open_question_shape")
     if _has_any(routing_text, ("what do you make of", "what makes", "what does that mean", "do you know about", "what do you know about")):
@@ -371,7 +373,7 @@ def _social_match(value: str, kind: str) -> bool:
         "greeting": ("greetings", "hello", "hey", "hi", "good morning", "good afternoon", "good evening"),
         "farewell": (
             "catch you", "talk soon", "see you", "goodbye", "bye", "good night", "i'll be back", "ill be back",
-            "pause here", "pause for now", "stop here", "leave it here", "pick this up later",
+            "pause here", "pause for now", "stop here", "leave it here", "leave it there", "pick this up later",
             "enough for now", "enough for today", "done for now", "done for today",
         ),
         "reassurance": ("don't worry", "dont worry", "you are safe", "you're safe", "you can breathe", "take your time", "no pressure", "it's okay", "its okay"),

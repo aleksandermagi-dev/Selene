@@ -3,6 +3,33 @@ from __future__ import annotations
 from selene.answer_substance import build_answer_substance
 
 
+def test_shared_capacity_prompt_gets_two_concrete_designs_and_a_pilot():
+    result = build_answer_substance(
+        "A neighborhood learning festival has limited rooms and volunteers, but it wants to offer both "
+        "hands-on science activities and quiet reading discussions for children and adults. "
+        "Walk me through two workable designs, compare their tradeoffs, and recommend one small pilot we could try first."
+    )
+
+    assert result["answer_kind"] == "bounded_shared_capacity_design"
+    assert "shared-schedule design" in result["answer"]
+    assert "parallel-zone design" in result["answer"]
+    assert "pilot one short shared-schedule block" in result["answer"]
+    assert result["external_fact_claimed"] is False
+
+
+def test_measurement_comparison_answers_choice_limitation_and_report():
+    result = build_answer_substance(
+        "Compare attendance alone versus attendance plus wait time and participant feedback. "
+        "Which is more useful, what is its limitation, and what would you report?"
+    )
+
+    assert result["answer_kind"] == "bounded_measurement_comparison"
+    assert "more useful than attendance alone" in result["answer"]
+    assert "Its limitation" in result["answer"]
+    assert "I would report attendance for each offering" in result["answer"]
+    assert result["external_fact_claimed"] is False
+
+
 def test_comparison_with_ordering_returns_a_dependency_rule_before_missing_detail():
     result = build_answer_substance("Compare memory and voice. Which should come first?")
 

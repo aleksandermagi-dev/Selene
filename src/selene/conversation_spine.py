@@ -31,7 +31,7 @@ GUARDS: dict[str, Any] = {
 
 _TERM_STOP_WORDS = {
     "about", "after", "again", "also", "and", "answer", "because", "before", "being", "between",
-    "could", "does", "from", "have", "into", "just", "make", "more", "question", "result",
+    "could", "does", "from", "have", "into", "just", "make", "more", "one", "question", "result",
     "how", "should", "some", "that", "the", "their", "them", "then", "there", "these", "thing", "this",
     "those", "through", "what", "when", "where", "which", "while", "with", "would", "your",
 }

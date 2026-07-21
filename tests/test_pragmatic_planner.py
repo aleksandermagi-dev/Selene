@@ -45,6 +45,86 @@ def test_pragmatic_plan_turns_multi_part_prompt_into_visible_obligations():
     assert plan["memory_write_active"] is False
 
 
+def test_compound_question_keeps_choice_limitation_and_report_as_separate_obligations():
+    question = "Which is more useful, what is its limitation, and what would you report?"
+    plan = build_pragmatic_plan(
+        {
+            "prompt": question,
+            "dialogue_workspace": _dialogue([question]),
+        }
+    )
+
+    assert [item["kind"] for item in plan["response_obligations"]] == [
+        "choice_or_priority",
+        "limitation",
+        "requested_output",
+    ]
+    generic = evaluate_response_coverage(plan, "A useful choice compares both options on the same dimensions.")
+    complete = evaluate_response_coverage(
+        plan,
+        "The combined measure is more useful. Its limitation is extra collection effort. I would report attendance and wait time.",
+    )
+
+    assert generic["all_required_addressed"] is False
+    assert generic["unresolved_count"] == 2
+    assert complete["all_required_addressed"] is True
+
+
+def test_structured_summary_request_keeps_each_named_part_inspectable():
+    prompt = (
+        "Summarize the plan for an organizer in three short parts: the design, the pilot, "
+        "and the condition that would make us change course."
+    )
+    plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": {
+                "active_topic": "festival plan",
+                "pragmatics": {
+                    "utterance_units": [{"kind": "direct_request", "text": prompt}],
+                    "previous_turn_available": True,
+                },
+            },
+        }
+    )
+
+    assert [item["coverage_terms"] for item in plan["response_obligations"]] == [
+        ["design"],
+        ["pilot"],
+        ["condition", "make", "change", "course"],
+    ]
+    partial = evaluate_response_coverage(plan, "Change condition: switch if delays become too costly.")
+    assert partial["all_required_addressed"] is False
+    assert partial["unresolved_count"] == 2
+
+
+def test_analogy_request_keeps_constraint_preservation_separate():
+    prompt = (
+        "Explain the logic to a new volunteer using one ordinary analogy, without losing the important staffing constraint."
+    )
+    plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": {
+                "active_topic": "festival staffing",
+                "pragmatics": {"utterance_units": [{"kind": "direct_request", "text": prompt}]},
+            },
+        }
+    )
+
+    assert [item["kind"] for item in plan["response_obligations"]] == [
+        "analogy",
+        "constraint_preservation",
+    ]
+    generic = evaluate_response_coverage(plan, "The logic can be explained in new language without copying wording.")
+    complete = evaluate_response_coverage(
+        plan,
+        "An ordinary analogy is a small kitchen. The staffing constraint is that two rooms do not equal two staffed activities.",
+    )
+    assert generic["all_required_addressed"] is False
+    assert complete["all_required_addressed"] is True
+
+
 def test_pragmatic_plan_treats_help_and_correction_as_bounded_not_factual_inference():
     stuck = build_pragmatic_plan(
         {
@@ -72,6 +152,39 @@ def test_pragmatic_plan_treats_help_and_correction_as_bounded_not_factual_infere
     assert stuck["implicit_meaning"]["not_treated_as_fact"] is True
     assert unsupported_correction["implicit_meaning"]["inferred"] is False
     assert supported_correction["implicit_meaning"]["goal"] == "invite_correction_or_recheck"
+
+
+def test_collaborative_preface_does_not_become_a_second_content_obligation():
+    prompt = (
+        "Let's think through a practical idea together. "
+        "Walk me through two designs, compare their tradeoffs, and recommend a pilot."
+    )
+    plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": {
+                "active_topic": "learning festival design",
+                "open_loops": [],
+                "new_loop_ids": [],
+                "pragmatics": {
+                    "previous_turn_available": False,
+                    "question_units": [],
+                    "indirect_request": {"detected": False},
+                    "utterance_units": [
+                        {"kind": "indirect_request", "text": "Let's think through a practical idea together."},
+                        {
+                            "kind": "direct_request",
+                            "text": "Walk me through two designs, compare their tradeoffs, and recommend a pilot.",
+                        },
+                    ],
+                },
+            },
+        }
+    )
+
+    assert len(plan["response_obligations"]) == 1
+    assert plan["response_obligations"][0]["kind"] == "comparison"
+    assert "recommend a pilot" in plan["response_obligations"][0]["source_text"].lower()
 
 
 def test_ellipsis_uses_only_bounded_session_reference_or_asks():

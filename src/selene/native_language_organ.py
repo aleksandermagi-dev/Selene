@@ -360,10 +360,10 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "answer_engine_supported": answer_engine.get("used") is True,
         "answer_domain": str(answer_engine.get("selected_domain") or "ordinary_conversation"),
         "answer_support": {
-            "supporting_claims": _json_list(answer_packet.get("supporting_claims")),
-            "assumptions": _json_list(answer_packet.get("assumptions")),
-            "limitations": _json_list(answer_packet.get("limitations")),
-            "what_would_change_the_answer": _json_list(answer_packet.get("what_would_change_the_answer")),
+            "supporting_claims": _visible_support_items(answer_packet.get("supporting_claims")),
+            "assumptions": _visible_support_items(answer_packet.get("assumptions")),
+            "limitations": _visible_support_items(answer_packet.get("limitations")),
+            "what_would_change_the_answer": _visible_support_items(answer_packet.get("what_would_change_the_answer")),
             "unanswered_obligations": [
                 item for item in answer_packet.get("unanswered_obligations") or [] if isinstance(item, dict)
             ][:12],
@@ -486,13 +486,13 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "response_depth": response_depth,
             "expression_profile": meaning.get("expression_profile") or "direct",
             "response_obligations": pragmatic_plan.get("response_obligations") or [],
-            "support_points": reasoning_support.get("support_points") or [],
+            "support_points": _visible_support_items(reasoning_support.get("support_points")),
             "examples": [
                 str(item.get("example") or "")
                 for item in (meaning.get("semantic_frame") or {}).get("propositions") or []
                 if isinstance(item, dict) and str(item.get("example") or "").strip()
             ],
-            "next_steps": [reasoning_support.get("selected_next_step")] if reasoning_support.get("selected_next_step") else [],
+            "next_steps": _visible_support_items([reasoning_support.get("selected_next_step")]),
             "answer_support": meaning.get("answer_support") or {},
             "correction_refinement": dialogue.get("correction_refinement") or {},
             "source_refs": meaning.get("source_refs") or [],
@@ -523,7 +523,11 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory", "self_state_report"},
         "question_allowed": bool((pragmatic_continuity.get("ending_decision") or {}).get("question_allowed")),
         "response_depth": response_depth,
-        "target_paragraph_count": 3 if mode == "responsive" and response_depth == "developed" else 1,
+        "target_paragraph_count": (
+            len(supported_discourse.get("paragraph_plan") or [])
+            if mode == "responsive" and response_depth == "developed"
+            else 1
+        ),
         "target_sentence_count": 6 if mode == "responsive" and response_depth == "developed" else 2 if mode == "responsive" else 1,
         "silence_is_valid": mode == "initiative_preview",
         "automatic_delivery": False,
@@ -598,6 +602,9 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
             return f"I have a fuzzy sense of the shape, but not enough to call it a clear memory: {seed} Is that the part you meant?"
         return f"I recognize something around {topic}, but I do not have enough to call it a clear memory. Will you ground the missing piece with me?"
     if intent == "reasoned_answer" and seed:
+        contextual = meaning.get("contextual_follow_up") if isinstance(meaning.get("contextual_follow_up"), dict) else {}
+        if contextual.get("kind") == "session_summary_request":
+            return seed
         seed = _obligation_ordered_seed(seed, meaning, plan)
         if plan.get("response_depth") == "developed":
             return _develop_reasoned_answer(seed, meaning, plan)
@@ -825,17 +832,20 @@ def _develop_reasoned_answer(seed: str, meaning: dict[str, Any], plan: dict[str,
         }
         opener = _pick(key + ":support", support_openers.get(profile, support_openers["explanation"]))
         paragraphs.append(opener + _join_support_points(support_points[:2], leading_that=False))
-    else:
-        paragraphs.append(
-            "That is the strongest answer I can support from the current reasoning. I would rather leave it clean than make it look deeper by adding unsupported detail."
-        )
 
     closure_plan = supported_discourse.get("closure_plan") if isinstance(supported_discourse.get("closure_plan"), dict) else {}
-    reopen_point = str(closure_plan.get("text") or "").strip() or (
-        support_points[2] if len(support_points) > 2 else "better evidence changes the shape"
-    )
+    closure_mode = str(closure_plan.get("mode") or "stop_after_supported_content")
+    reopen_point = str(closure_plan.get("text") or "").strip()
+    if closure_mode == "stop_after_supported_content" or not reopen_point:
+        return "\n\n".join(paragraphs)
     reopen_clause = reopen_point.rstrip(". ")
-    reopen_clause = reopen_clause[0].lower() + reopen_clause[1:] if reopen_clause else "better evidence changes the shape"
+    reopen_clause = reopen_clause[0].lower() + reopen_clause[1:]
+    if closure_mode == "bounded_limit":
+        paragraphs.append(f"One limit is that {reopen_clause}.")
+        return "\n\n".join(paragraphs)
+    if closure_mode == "supported_next_step":
+        paragraphs.append(reopen_point)
+        return "\n\n".join(paragraphs)
     if certainty not in {"clear", "clear_enough", "clear_enough_to_continue"}:
         if "contradictory evidence" in reopen_clause:
             paragraphs.append(_pick(key + ":provisional", [
@@ -1334,6 +1344,24 @@ def _json_list(value: Any) -> list[str]:
         except json.JSONDecodeError:
             return [item.strip() for item in value.split(",") if item.strip()]
     return []
+
+
+def _visible_support_items(value: Any) -> list[str]:
+    internal_markers = (
+        "intelligenceos",
+        "candidate model",
+        "current best model",
+        "challenged them",
+        "answer_provisionally",
+        "answer provisionally",
+        "reasoning_summary",
+        "seek cocoon",
+    )
+    return [
+        item
+        for item in _json_list(value)
+        if not any(marker in item.lower() for marker in internal_markers)
+    ]
 
 
 def _loads(value: Any, fallback: Any) -> Any:

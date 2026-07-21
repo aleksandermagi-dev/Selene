@@ -38,8 +38,16 @@ def build_answer_substance(
     viewpoint = any(marker in lower for marker in ("what do you think", "what is your view", "what's your view", "your thoughts"))
     why_before = re.search(r"\bwhy\s+(?:does|do|should|is|are)\s+(.{2,100}?)\s+(?:come\s+)?before\s+(.{2,100}?)(?:[?.]|$)", lower)
     limited_resource = re.search(r"\blimited\s+([a-z][a-z-]*)(?:\s+and|\s+but|[,.])", lower)
+    limited_capacity = re.search(
+        r"\blimited\s+([a-z][a-z -]{1,60}?)(?:,\s*(?:but|while)|\s+but\b|[.])",
+        lower,
+    )
     paired_goals = re.search(
         r"\bsupport\s+both\s+([a-z][a-z -]{1,60}?)\s+and\s+([a-z][a-z -]{1,60}?)(?:[.?,]|$)",
+        lower,
+    )
+    paired_offerings = re.search(
+        r"\b(?:offer|provide|include)\s+both\s+(.{2,100}?)\s+and\s+(.{2,100}?)(?:\s+for\s+[^.?,]+|[.?,]|$)",
         lower,
     )
 
@@ -80,6 +88,30 @@ def build_answer_substance(
         )
         kind = "dependency_explanation"
         missing_variable = "whether the second step is actually a prerequisite for the first"
+    elif (
+        comparison
+        and "attendance alone" in lower
+        and "wait time" in lower
+        and "participant feedback" in lower
+    ):
+        answer = (
+            "Attendance plus wait time and participant feedback is more useful than attendance alone because it shows not just how many people came, but whether access and the experience worked. "
+            "Its limitation is that feedback can be subjective, the added measures take more effort to collect, and one small pilot may not represent later demand. "
+            "I would report attendance for each offering, the average and longest wait, the recurring feedback themes, and the sample size, then state whether those results support keeping the shared schedule or changing it."
+        )
+        kind = "bounded_measurement_comparison"
+        missing_variable = "the success threshold for access, participant experience, and representative demand"
+    elif comparison and limited_capacity and paired_offerings:
+        resources = limited_capacity.group(1).strip()
+        first_goal = paired_offerings.group(1).strip(" ,")
+        second_goal = paired_offerings.group(2).strip(" ,")
+        answer = (
+            f"I would compare two workable designs. In a shared-schedule design, {first_goal} and {second_goal} alternate through the same {resources}, which preserves flexibility but requires clear transitions. "
+            f"In a parallel-zone design, the {resources} are split between both offerings at the same time, which improves continuity but leaves less spare capacity when demand shifts. "
+            "I would pilot one short shared-schedule block first: use a fixed transition, record attendance and wait time for each offering, ask participants whether the pace worked, and then compare that evidence with the staffing strain before expanding."
+        )
+        kind = "bounded_shared_capacity_design"
+        missing_variable = f"attendance, wait time, participant experience, and staffing strain under the available {resources}"
     elif comparison and limited_resource and paired_goals:
         resource = limited_resource.group(1).strip()
         first_goal = paired_goals.group(1).strip()

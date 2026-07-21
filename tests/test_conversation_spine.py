@@ -166,6 +166,31 @@ def test_spine_rejects_unrelated_reasoning_even_when_the_source_class_is_allowed
     assert "garden" in related["matched_terms"]
 
 
+def test_spine_does_not_treat_incidental_one_as_approved_knowledge_alignment():
+    prompt = "Which part of that revised staffing plan should we protect first?"
+    intent = {**classify_chat_intent(prompt), "intent": "reasoning", "reasoning_requested": True}
+    spine = build_conversation_spine(
+        {
+            "session_id": 151,
+            "prompt": prompt,
+            "intent_decision": intent,
+            "dialogue_workspace": _dialogue(prompt),
+        }
+    )
+
+    result = evaluate_candidate_compatibility(
+        spine,
+        {
+            "source_id": "approved_comprehension",
+            "source_class": "approved_knowledge",
+            "text": "Translate every denomination into one common currency unit.",
+        },
+    )
+
+    assert result["compatible"] is False
+    assert result["matched_terms"] == []
+
+
 def test_spine_response_alignment_is_visible_and_conservative():
     prompt = "Why would the two-zone trial help the garden?"
     intent = {**classify_chat_intent(prompt), "intent": "reasoning", "reasoning_requested": True}

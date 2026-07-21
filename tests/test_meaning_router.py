@@ -84,6 +84,7 @@ def test_ordinary_speech_and_technical_lookalikes_route_by_meaning():
         ("Are you okay?", "self_state", "Are you okay with using SQLite for this?", "direct_conversation"),
         ("Do you remember what I said yesterday?", "memory_recall", "Do you remember how binary search works?", "reasoning"),
         ("That's enough for now.", "farewell", "Should the service pause before writing?", "reasoning"),
+        ("Thank you; we can leave it there for now.", "farewell", "Should we leave the value there?", "reasoning"),
         ("Remember this: close file handles after use.", "memory_candidate", "Remember to close the file handle.", "direct_conversation"),
     )
 
@@ -116,3 +117,20 @@ def test_ordinary_resource_division_is_not_mistaken_for_arithmetic():
 
     assert ordinary["selected_domain"] == "ordinary_conversation"
     assert arithmetic["selected_domain"] == "verified_math"
+
+
+def test_social_opening_cannot_displace_a_later_multi_part_direct_request():
+    prompt = (
+        "Good afternoon, Selene. Let's think through a practical idea together. "
+        "A neighborhood learning festival has limited rooms and volunteers, but it wants to offer both "
+        "hands-on science activities and quiet reading discussions for children and adults. "
+        "Walk me through two workable designs, compare their tradeoffs, and recommend one small pilot we could try first."
+    )
+    result = interpret_turn_meaning(prompt)
+
+    assert result["primary_intent"] == "reasoning"
+    assert result["sentence_shape"]["explicit_request"] is True
+    assert result["sentence_shape"]["mixed_intent_possible"] is True
+    assert "greeting" in result["dialogue_acts"]
+    assert "request" in result["dialogue_acts"]
+    assert result["selected_domain"] == "comparison_planning"

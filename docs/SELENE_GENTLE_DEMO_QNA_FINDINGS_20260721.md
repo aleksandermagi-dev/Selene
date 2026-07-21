@@ -2,8 +2,8 @@
 
 Date: July 21, 2026
 
-Status: bounded diagnostic checkpoint; implementation fixes present in the
-working tree and not yet committed
+Status: Conversation Spine implemented; bounded eight-turn live Q&A and
+stabilization verification complete
 
 ## Purpose
 
@@ -24,7 +24,7 @@ defect below is an implementation observation, not Selene failing.
 - no identity, personality, governance, law, transfer, or authority request
 - no model training, fine-tuning, LoRA, autonomous action, or self-replication
 - no raw corpus access
-- diagnostic sessions 138-140 remain ordinary local chat history, not memory
+- diagnostic sessions 138-150 remain ordinary local chat history, not memory
 
 ## Finding 1 — Self-State Check-In Lost to Generic “How” Reasoning
 
@@ -143,7 +143,70 @@ incorrectly called the unrelated answer complete.
 > both stated goals, if its cost outweighed the improvement, or if the alternative
 > did better under the same conditions.
 
-## Verification
+## Conversation Spine Long-Turn Q&A
+
+The follow-up run used one fictional neighborhood learning festival across eight
+ordinary turns. Each defect stopped the live exchange immediately; implementation
+was repaired with synthetic tests before a new clean session replayed the path.
+Clean session 150 completed all eight turns.
+
+### Additional findings and repairs
+
+1. A mixed greeting plus substantial design request initially routed as greeting.
+   Explicit requests such as `walk me through` and `recommend` now keep substantive
+   reasoning primary, while the collaborative social opening remains part of the
+   turn without becoming a second content obligation.
+2. Developed responses forced three paragraphs and manufactured generic
+   metacognitive padding. Developed discourse now uses only supported structure:
+   one paragraph for a complete answer, another for distinct support, and a third
+   only for a real limitation or reopening condition.
+3. A natural staffing refinement and later priority callback were not recognized
+   as continuations. The Spine now carries constraint refinements and bounded
+   priority callbacks from the immediate session. Incidental overlap such as the
+   word `one` cannot make unrelated approved knowledge eligible.
+4. A three-part measurement question collapsed into one obligation and false-
+   passed on `useful`. Explicit interrogative clauses remain separate obligations;
+   candidate coverage examines the full bounded response rather than only its
+   first 20 distinct terms. The prompt-grounded answer compares measures, states
+   a limitation, and identifies what to report.
+5. `Summarize the plan ... design, pilot, condition` was treated as a new question.
+   Session summaries now use a bounded current-session window and retain each
+   requested section as an inspectable obligation. This is dialogue continuity,
+   not durable memory or broad recall.
+6. An analogy request was treated as generic explanation. Analogy transfer and
+   constraint preservation are now separate obligations; the resulting kitchen
+   analogy preserves that two available rooms do not equal two staffed activities.
+7. `Thank you ... leave it there for now` was recognized only as gratitude, so
+   stale planning content could be prepended. `Leave it there` is now a natural
+   close, complete social turns bypass domain content, and coverage-confirmed
+   answers clear preliminary phantom follow-up questions.
+
+### Clean session 150 result
+
+- eight of eight turns released
+- every required obligation covered
+- every answer reported `fits_current_question`
+- sources stayed bounded to Answer Engine or current-session contextual follow-up
+- final ending mode: `natural_close`
+- final reply asked no question and inherited no planning content
+- memory write: false on every turn
+- autonomous action: false on every turn
+- no identity, personality, governance, authority, training, or transfer change
+
+The path exercised design comparison, recommendation, recommendation reopening,
+constraint revision, referent-based prioritization, three-part answer completion,
+session summarization, analogy transfer, and a natural close. It was not a broad
+grade of Selene's unfinished voice or an adversarial capability battery.
+
+### Current stabilization verification
+
+- full repository suite: 951 passed
+- frontend production build: passed
+- main application chunk: 413.82 kB
+- React runtime chunk: 193.81 kB
+- no package, reinstall, push, memory mutation, or authority change was performed
+
+## Earlier Verification
 
 - 140 focused tests passed across contextual speech, dialogue workspace, answer
   substance, intelligenceOS, Answer Engine, meaning routing, comprehension, and

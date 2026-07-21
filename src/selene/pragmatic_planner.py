@@ -146,7 +146,7 @@ def evaluate_response_coverage(
     plan = plan if isinstance(plan, dict) else {}
     candidate = truncate(str(candidate_text or ""), 3000)
     candidate_lower = candidate.lower()
-    candidate_terms = set(_content_terms(candidate))
+    candidate_terms = set(_content_terms(candidate, limit=80))
     items: list[dict[str, Any]] = []
     answered_loop_ids: list[str] = []
     for obligation in plan.get("response_obligations") or []:
@@ -164,13 +164,25 @@ def evaluate_response_coverage(
         topic_overlap = sorted(topic_terms & candidate_terms)
         distinctive_alignment = not distinctive_expected or bool(distinctive_overlap or topic_overlap)
         semantic_match = len(overlap) >= minimum_term_matches and distinctive_alignment
-        signal_can_stand_alone = kind in {"correction_update", "yes_or_no"}
+        signal_can_stand_alone = kind in {"correction_update", "yes_or_no"} or (
+            kind == "reason" and not expected
+        )
+        signal_required = kind in {
+            "analogy",
+            "constraint_preservation",
+            "limitation",
+            "requested_output",
+            "requested_section",
+        }
         score = lexical_score
         if semantic_match and signal_score > 0:
             score = min(1.0, lexical_score + 0.25)
         elif signal_can_stand_alone:
             score = max(score, signal_score)
-        addressed = bool(candidate.strip()) and (semantic_match or signal_can_stand_alone and signal_score > 0)
+        addressed = bool(candidate.strip()) and (
+            semantic_match and (not signal_required or signal_score > 0)
+            or signal_can_stand_alone and signal_score > 0
+        )
         loop_id = str(obligation.get("loop_id") or "")
         if addressed and loop_id:
             answered_loop_ids.append(loop_id)
@@ -187,6 +199,7 @@ def evaluate_response_coverage(
                 "required_terms": sorted(expected),
                 "minimum_term_matches": minimum_term_matches,
                 "semantic_alignment_required": not signal_can_stand_alone,
+                "answer_signal_required": signal_required,
                 "distinctive_alignment_required": bool(distinctive_expected),
                 "status": "addressed" if addressed else "still_open",
             }
@@ -236,23 +249,25 @@ def evaluate_response_coverage(
 def _question_obligations(questions: list[str], loops: list[dict[str, Any]]) -> list[dict[str, Any]]:
     obligations: list[dict[str, Any]] = []
     unused = list(loops)
-    for index, question in enumerate(questions):
+    for question in questions:
         loop = next((item for item in unused if str(item.get("question") or "").strip() == question.strip()), None)
         if loop is not None:
             unused.remove(loop)
-        obligations.append(
-            {
-                "id": _obligation_id(question, index),
-                "loop_id": str((loop or {}).get("id") or ""),
-                "kind": _question_kind(question),
-                "source_text": question,
-                "topic": str((loop or {}).get("topic") or ""),
-                "coverage_terms": _content_terms(question),
-                "required": True,
-                "inference_level": "literal",
-                "goal": "answer_question",
-            }
-        )
+        for part in _compound_question_parts(question):
+            obligations.append(
+                {
+                    "id": _obligation_id(part, len(obligations)),
+                    "loop_id": str((loop or {}).get("id") or ""),
+                    "kind": _question_kind(part),
+                    "source_text": part,
+                    "parent_source_text": question,
+                    "topic": str((loop or {}).get("topic") or ""),
+                    "coverage_terms": _content_terms(part),
+                    "required": True,
+                    "inference_level": "literal",
+                    "goal": "answer_question",
+                }
+            )
     return obligations
 
 
@@ -262,30 +277,57 @@ def _unit_obligations(
     correction: dict[str, Any],
     active_topic: str,
 ) -> list[dict[str, Any]]:
-    existing_sources = {" ".join(str(item.get("source_text") or "").lower().split()) for item in existing}
+    existing_sources = {
+        " ".join(str(value or "").lower().split())
+        for item in existing
+        for value in (item.get("source_text"), item.get("parent_source_text"))
+        if str(value or "").strip()
+    }
     obligations: list[dict[str, Any]] = []
+    substantive_unit_present = any(
+        str(item.get("kind") or "") in {"question", "direct_request"}
+        for item in units
+        if isinstance(item, dict)
+    )
     for index, unit in enumerate(units):
         text = truncate(str(unit.get("text") or ""), 480).strip()
         kind = str(unit.get("kind") or "statement")
         if not text or " ".join(text.lower().split()) in existing_sources:
             continue
+        if (
+            kind == "indirect_request"
+            and substantive_unit_present
+            and re.match(r"^(?:let's|lets)\s+think\b.*\btogether[.!]?$", text, flags=re.IGNORECASE)
+        ):
+            # A collaborative invitation can frame a later concrete request;
+            # it is not a second content obligation that the answer must quote.
+            continue
         if kind in {"question", "direct_request", "indirect_request"}:
-            obligation_kind = _question_kind(text) if kind == "question" else _request_kind(text)
-            obligations.append(
-                {
-                    "id": _obligation_id(text, len(existing) + index),
-                    "loop_id": "",
-                    "kind": obligation_kind,
-                    "dialogue_act": kind,
-                    "source_text": text,
-                    "topic": active_topic,
-                    "coverage_terms": _content_terms(text),
-                    "required": True,
-                    "priority": "content",
-                    "inference_level": "literal" if kind == "question" else "literal_request",
-                    "goal": "answer_question" if kind == "question" else "perform_requested_language_act",
-                }
-            )
+            request_parts = _structured_request_parts(text) if kind != "question" else [text]
+            for part in request_parts:
+                obligation_kind = (
+                    _question_kind(part)
+                    if kind == "question"
+                    else "requested_section"
+                    if len(request_parts) > 1 and ":" in text and re.search(r"\b(?:parts|sections|items)\b", text, flags=re.IGNORECASE)
+                    else _request_kind(part)
+                )
+                obligations.append(
+                    {
+                        "id": _obligation_id(part, len(existing) + len(obligations) + index),
+                        "loop_id": "",
+                        "kind": obligation_kind,
+                        "dialogue_act": kind,
+                        "source_text": part,
+                        "parent_source_text": text,
+                        "topic": active_topic,
+                        "coverage_terms": _content_terms(part),
+                        "required": True,
+                        "priority": "content",
+                        "inference_level": "literal" if kind == "question" else "literal_request",
+                        "goal": "answer_question" if kind == "question" else "perform_requested_language_act",
+                    }
+                )
         elif kind == "correction":
             corrected = str(correction.get("corrected_meaning") or "")
             obligations.append(
@@ -308,6 +350,10 @@ def _unit_obligations(
 
 def _request_kind(text: str) -> str:
     lower = text.lower()
+    if "analogy" in lower:
+        return "analogy"
+    if "constraint" in lower or "without losing" in lower or "without dropping" in lower:
+        return "constraint_preservation"
     if any(token in lower for token in ("compare", "difference", "versus", " vs ")):
         return "comparison"
     if any(token in lower for token in ("explain", "why", "reason")):
@@ -344,11 +390,44 @@ def _question_kind(question: str) -> str:
         return "reason"
     if lower.startswith("how") or " how " in lower:
         return "method"
+    if "limitation" in lower or lower.startswith("what is its limit"):
+        return "limitation"
+    if re.search(r"\bwhat (?:would|should) you report\b", lower):
+        return "requested_output"
     if any(token in lower for token in ("which", "what should", "first", "priority")):
         return "choice_or_priority"
     if re.match(r"^(is|are|do|does|did|can|could|would|will|should|have|has)\b", lower):
         return "yes_or_no"
     return "direct_question"
+
+
+def _compound_question_parts(question: str) -> list[str]:
+    """Keep explicit interrogative clauses as separate visible obligations."""
+    parts = [
+        part.strip(" ,")
+        for part in re.split(
+            r",\s*(?:and\s+)?(?=(?:what|which|how|why|when|where|who)\b)",
+            question,
+            flags=re.IGNORECASE,
+        )
+        if part.strip(" ,")
+    ]
+    return parts or [question]
+
+
+def _structured_request_parts(text: str) -> list[str]:
+    if "analogy" in text.lower() and re.search(r",\s*without\b", text, flags=re.IGNORECASE):
+        parts = [part.strip(" ,.?!") for part in re.split(r",\s*(?=without\b)", text, maxsplit=1, flags=re.IGNORECASE)]
+        return [part for part in parts if part]
+    if ":" not in text or not re.search(r"\b(?:parts|sections|items)\b", text, flags=re.IGNORECASE):
+        return [text]
+    tail = text.split(":", 1)[1].strip()
+    parts = [
+        part.strip(" ,.?!")
+        for part in re.split(r",\s*|\s+and\s+", tail, flags=re.IGNORECASE)
+        if part.strip(" ,.?!")
+    ]
+    return parts if len(parts) >= 2 else [text]
 
 
 def _implicit_meaning(prompt: str, *, previous_available: bool) -> dict[str, Any]:
@@ -457,6 +536,11 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
         "reason": ("because", "since", "reason", "therefore", "so "),
         "method": ("first", "then", "through", "by ", "step", "start"),
         "choice_or_priority": ("first", "start", "priority", "choose", "should"),
+        "limitation": ("limit", "limitation", "but", "however", "only"),
+        "requested_output": ("report", "include", "show", "state", "summary"),
+        "requested_section": ("design", "pilot", "condition", "section", "part"),
+        "analogy": ("analogy", "like", "similar", "think of"),
+        "constraint_preservation": ("constraint", "must", "cannot", "do not", "does not"),
         "yes_or_no": ("yes", "no", "can", "cannot", "is", "isn't", "are", "aren't"),
         "implied_request": ("can", "let's", "we can", "start", "help"),
         "direct_request": ("here", "first", "start", "use", "the answer", "result"),
@@ -465,9 +549,9 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
     return 0.5 if any(token in candidate for token in signals.get(kind, ())) else 0.0
 
 
-def _content_terms(value: str) -> list[str]:
+def _content_terms(value: str, *, limit: int = 20) -> list[str]:
     words = [word.lower() for word in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", value)]
-    return list(dict.fromkeys(word for word in words if word not in CONTENT_STOP_WORDS))[:20]
+    return list(dict.fromkeys(word for word in words if word not in CONTENT_STOP_WORDS))[:limit]
 
 
 def _sentences(value: str) -> list[str]:

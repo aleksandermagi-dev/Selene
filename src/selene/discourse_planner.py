@@ -215,11 +215,29 @@ def _paragraph_plan(
                 else []
             ),
         ]
-    return [
+    paragraphs = [
         {"index": 1, "role": "answer", "content_unit_ids": thesis, "transition": "none"},
-        {"index": 2, "role": "development", "content_unit_ids": [*bound, *support], "transition": "support"},
-        {"index": 3, "role": "limit_and_closure", "content_unit_ids": limits, "transition": "reopening"},
     ]
+    development = [*bound, *support]
+    if development:
+        paragraphs.append(
+            {
+                "index": len(paragraphs) + 1,
+                "role": "development",
+                "content_unit_ids": development,
+                "transition": "support",
+            }
+        )
+    if limits:
+        paragraphs.append(
+            {
+                "index": len(paragraphs) + 1,
+                "role": "limit_and_closure",
+                "content_unit_ids": limits,
+                "transition": "reopening",
+            }
+        )
+    return paragraphs
 
 
 def _closure_plan(units: list[dict[str, Any]]) -> dict[str, Any]:

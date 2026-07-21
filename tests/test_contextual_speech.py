@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from selene.chat_intent import classify_chat_intent
 from selene.contextual_speech import (
     apply_contextual_intent,
     contextual_response_seed,
@@ -108,3 +109,97 @@ def test_explicit_reason_and_reconsideration_callback_uses_the_previous_recommen
     assert "two-zone trial" in response
     assert "change that recommendation" in response
     assert "both stated goals" in response
+
+
+def test_shared_schedule_callback_understands_switch_as_reconsidering_the_recommendation():
+    previous = (
+        "I would compare a shared-schedule design with a parallel-zone design. "
+        "I would pilot one short shared-schedule block first."
+    )
+    result = inspect_contextual_follow_up(
+        "Why do you prefer the shared-schedule pilot first rather than the parallel-zone design, "
+        "and what result would make you switch your recommendation?",
+        _context(previous, answer_confidence="clear_enough_to_continue"),
+    )
+    response = contextual_response_seed(result)
+
+    assert result["kind"] == "reason_follow_up"
+    assert "limited rooms and volunteers flexible" in response
+    assert "switch to the parallel-zone design" in response
+    assert "transitions caused more delay or disruption" in response
+
+
+def test_explicit_constraint_refinement_revises_the_session_plan_without_replacing_it():
+    previous = "I would pilot one short shared-schedule block and track attendance and staffing strain."
+    result = inspect_contextual_follow_up(
+        "One refinement: assume two volunteers can only stay for the first hour, but both rooms remain "
+        "available. Keep the two festival goals the same. How would you revise the pilot?",
+        _context(previous, answer_confidence="clear_enough_to_continue"),
+    )
+    response = contextual_response_seed(result)
+    decision = apply_contextual_intent(classify_chat_intent(result["prompt"]), result)
+
+    assert result["kind"] == "constraint_refinement"
+    assert result["preserve_active_topic"] is True
+    assert decision["intent"] == "reasoning"
+    assert "keep the useful core" in response.lower()
+    assert "after the two volunteers leave" in response.lower()
+    assert "add volunteer load and uncovered-task counts" in response.lower()
+
+
+def test_priority_callback_protects_the_constrained_part_of_the_revised_plan():
+    previous = (
+        "I would keep the useful core of the shared-schedule pilot, but revise its staffing sequence. "
+        "The quiet reading discussion uses the other room with lighter facilitation."
+    )
+    result = inspect_contextual_follow_up(
+        "If the later quiet session still needs one facilitator, which part of that revised plan should we protect first, and why?",
+        _context(previous, answer_confidence="clear_enough_to_continue"),
+    )
+    response = contextual_response_seed(result)
+    decision = apply_contextual_intent(classify_chat_intent(result["prompt"]), result)
+
+    assert result["kind"] == "priority_follow_up"
+    assert result["preserve_active_topic"] is True
+    assert decision["answer_shape"] == "continue_previous_answer"
+    assert "protect one facilitator for the later quiet reading session first" in response.lower()
+    assert "staff, rather than room availability" in response.lower()
+
+
+def test_session_summary_uses_recent_conversation_material_in_three_requested_parts():
+    context = _context(
+        "Attendance plus wait time and participant feedback is more useful than attendance alone.",
+        answer_confidence="clear_enough_to_continue",
+    )
+    context["recent_assistant_texts"] = [
+        "I prefer the shared-schedule pilot first and would switch to the parallel-zone design if transitions caused disruption.",
+        "Protect one facilitator for the later quiet reading session.",
+    ]
+    result = inspect_contextual_follow_up(
+        "Summarize the plan for an organizer in three short parts: the design, the pilot, and the condition that would make us change course.",
+        context,
+    )
+    response = contextual_response_seed(result)
+
+    assert result["kind"] == "session_summary_request"
+    assert response.count("\n\n") == 2
+    assert response.startswith("Design:")
+    assert "Pilot:" in response
+    assert "Change condition:" in response
+
+
+def test_analogy_transfer_preserves_the_active_staffing_constraint():
+    context = _context("Design: Use a shared schedule for both activities.")
+    context["recent_assistant_texts"] = [
+        "Use the shared-schedule pilot, then protect one facilitator for quiet reading after two volunteers leave."
+    ]
+    result = inspect_contextual_follow_up(
+        "Explain the logic to a new volunteer using one ordinary analogy, without losing the important staffing constraint.",
+        context,
+    )
+    response = contextual_response_seed(result)
+
+    assert result["kind"] == "analogy_transfer_request"
+    assert "ordinary analogy" in response.lower()
+    assert "small kitchen" in response.lower()
+    assert "two available rooms do not equal two staffed activities" in response.lower()
