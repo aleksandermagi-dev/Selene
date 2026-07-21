@@ -372,11 +372,11 @@ def test_language_shelf_exposes_ordered_review_groups_and_prerequisites(tmp_path
     items = list_language_teaching_items(conn)["items"]
     groups = status["teaching_groups"]
 
-    assert status["defined_lesson_count"] == 26
-    assert status["defined_group_count"] == 5
-    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5]
-    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4]
-    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0]
+    assert status["defined_lesson_count"] == 31
+    assert status["defined_group_count"] == 6
+    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5, 6]
+    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4, 5]
+    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0, 0]
     assert [(item["group_order"], item["lesson_order"]) for item in items] == sorted(
         (item["group_order"], item["lesson_order"]) for item in items
     )
@@ -393,6 +393,12 @@ def test_language_shelf_exposes_ordered_review_groups_and_prerequisites(tmp_path
     assert composition["source_refs"][0] == "speech_phase_7:compositional_expression"
     assert composition["available_to_nlo"] is False
 
+    judgment = next(item for item in items if item["lesson_key"] == "grounded_self_state_expression")
+    assert judgment["teaching_group"] == "G6 · Grounded Conversational Judgment"
+    assert judgment["prerequisites"] == ["tender_without_overreach", "contextual_word_choice"]
+    assert judgment["source_refs"][0] == "speech_phase_8:grounded_conversational_judgment"
+    assert judgment["available_to_nlo"] is False
+
 
 def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
     conn = _conn(tmp_path)
@@ -402,7 +408,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         item for item in list_language_teaching_items(conn)["items"] if item["group_order"] > 1
     ]
 
-    assert len(expressive_items) == 16
+    assert len(expressive_items) == 21
     for item in expressive_items:
         blueprint = item["teaching_blueprint"]
         assert blueprint["acquire"]["vocabulary"]
@@ -417,7 +423,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         assert item["available_to_nlo"] is False
 
 
-def test_all_five_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
+def test_all_six_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
     conn = _conn(tmp_path)
     _prepare_review_only(conn)
     memory_before = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
@@ -433,13 +439,36 @@ def test_all_five_groups_can_complete_in_order_without_bypassing_prerequisites_o
     status = language_teaching_status(conn)
     items = list_language_teaching_items(conn)["items"]
 
-    assert status["available_lesson_count"] == 26
+    assert status["available_lesson_count"] == 31
     assert status["candidate_lesson_count"] == 0
-    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4]
+    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4, 5]
     assert all(item["own_review_complete"] is True for item in items)
     assert all(item["prerequisites_complete"] is True for item in items)
     assert all(item["unmet_prerequisites"] == [] for item in items)
     assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == memory_before
+
+
+def test_grounded_judgment_group_graduates_under_standing_language_authorization(tmp_path):
+    conn = _conn(tmp_path)
+    prepared = prepare_language_teaching_shelf(conn)
+    self_state = select_language_guidance(
+        conn,
+        {"prompt": "How are you feeling right now?", "intent_decision": {"intent": "self_state"}},
+    )
+    recall = select_language_guidance(
+        conn,
+        {
+            "prompt": "Do you remember that clearly?",
+            "intent_decision": {"intent": "memory_recall", "memory_recall_requested": True},
+        },
+    )
+
+    assert prepared["held_count"] == 0
+    assert prepared["graduated_count"] == len(LANGUAGE_QOL_LESSONS)
+    assert "grounded_self_state_expression" in self_state["lesson_keys"]
+    assert "recall_confidence_expression" in recall["lesson_keys"]
+    assert self_state["memory_write_active"] is False
+    assert recall["training_allowed"] is False
 
 
 def test_new_lesson_reaches_guidance_only_after_full_review_and_aleks_approval(tmp_path):
