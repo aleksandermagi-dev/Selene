@@ -383,6 +383,8 @@ def _social_match(value: str, kind: str) -> bool:
     }[kind]
     if kind == "greeting":
         return any(re.search(rf"(^|[.!?]\s*){re.escape(pattern)}\b", value) for pattern in patterns)
+    if kind == "farewell" and re.search(r"(?:^|[.!?;]\s*)(?:talk to you later|talk later)(?:\s|[,.!?]|$)", value):
+        return True
     if kind == "affirmation" and re.match(r"^(yes|right)\b", value):
         return True
     return any(pattern in value for pattern in patterns)

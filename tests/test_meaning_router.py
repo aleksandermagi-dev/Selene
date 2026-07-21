@@ -85,6 +85,7 @@ def test_ordinary_speech_and_technical_lookalikes_route_by_meaning():
         ("Do you remember what I said yesterday?", "memory_recall", "Do you remember how binary search works?", "reasoning"),
         ("That's enough for now.", "farewell", "Should the service pause before writing?", "reasoning"),
         ("Thank you; we can leave it there for now.", "farewell", "Should we leave the value there?", "reasoning"),
+        ("Talk to you later.", "farewell", "Can the phone bridge talk to you later?", "direct_conversation"),
         ("Remember this: close file handles after use.", "memory_candidate", "Remember to close the file handle.", "direct_conversation"),
     )
 

@@ -31,6 +31,7 @@ def test_shared_intent_routes_distinct_chat_meanings():
         "Thank you for helping me with that.": ("gratitude", "conversation"),
         "Exactly, that makes sense.": ("affirmation", "conversation"),
         "Catch you soon, Selene!": ("farewell", "conversation"),
+        "Talk to you later, Selene.": ("farewell", "conversation"),
         "Remember this: uncertainty is allowed.": ("memory_candidate", "conversation"),
     }
 

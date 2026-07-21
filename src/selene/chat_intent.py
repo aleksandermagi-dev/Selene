@@ -134,6 +134,8 @@ FAREWELL_PATTERNS = (
     "catch you later",
     "talk soon",
     "talk to you soon",
+    "talk to you later",
+    "talk later",
     "see you soon",
     "see you later",
     "goodbye",

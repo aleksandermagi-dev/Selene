@@ -1588,6 +1588,52 @@ def test_existing_chat_history_does_not_support_an_unrelated_memory_claim(tmp_pa
     _assert_locked(result)
 
 
+def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding_or_retention(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        "Good morning, Selene.",
+        "The storm has passed and the room is quiet again.",
+        "How are you feeling right now?",
+        "What color should the unbuilt observatory curtains be?",
+        "Small correction: I meant the language layer, not the voice layer.",
+        "Thank you for talking this through with me.",
+        "Talk to you later.",
+    ]
+    results = []
+    session_id = None
+    for prompt in prompts:
+        payload = {"text": prompt}
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    greeting, content_light, self_state, uncertainty, correction, gratitude, farewell = results
+    assert greeting["native_language_organ"]["discourse_plan"]["social_act_realization"]["whole_response_template_selected"] is False
+    assert content_light["intent_decision"]["intent"] == "direct_conversation"
+    assert content_light["native_language_organ"]["discourse_plan"]["content_light_realization"]["whole_response_template_selected"] is False
+    assert self_state["self_state"]["response_realization"]["emotion_word_invented"] is False
+    assert "do not have a grounded factual answer" in uncertainty["candidate_text"].lower()
+    assert "attributed source or approved teaching item" in uncertainty["candidate_text"].lower()
+    assert not any(color in uncertainty["candidate_text"].lower() for color in ("red", "blue", "green", "white", "black"))
+    assert correction["native_language_organ"]["discourse_plan"]["social_act_plan"]["intent"] == "receive_correction"
+    assert gratitude["native_language_organ"]["discourse_plan"]["social_act_realization"]["whole_response_template_selected"] is False
+    assert farewell["intent_decision"]["intent"] == "farewell"
+    assert len({result["candidate_text"] for result in results}) == len(results)
+    for result in results:
+        assert result["candidate_text"]
+        assert result["native_language_organ"]["version"] == "v18_compositional_special_expression"
+        assert result["voice_preview"]["nlo_meaning_preserved"] is True
+        assert "current best model" not in result["candidate_text"].lower()
+        assert "response obligation" not in result["candidate_text"].lower()
+        _assert_locked(result)
+
+
 def test_active_selene_chat_sanitizes_internal_memory_labels(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
