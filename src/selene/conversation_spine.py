@@ -240,11 +240,16 @@ def evaluate_candidate_compatibility(
     )
     distinctive = set(str(item).lower() for item in spine.get("distinctive_terms") or [] if str(item))
     matched = sorted(distinctive & set(_distinctive_terms(text)))
+    contextual_approved_memory = source_id == "contextual_approved_memory"
 
     if not text:
         return _compatibility(False, "empty_candidate", False, matched)
-    if source_class not in _SOURCE_CLASSES or source_class not in compatible_classes:
+    if source_class not in _SOURCE_CLASSES or (source_class not in compatible_classes and not contextual_approved_memory):
         return _compatibility(False, "source_class_incompatible_with_current_intent", False, matched)
+    if contextual_approved_memory and (
+        source_class != "memory_reconstruction" or intent_class not in {"reasoning", "direct_content"}
+    ):
+        return _compatibility(False, "contextual_memory_not_suitable_for_current_intent", False, matched)
     if source_id == "reviewed_memory" and intent_class != "memory_recall":
         return _compatibility(False, "memory_candidate_without_recall_intent", False, matched)
     if source_id == "local_chat_continuity" and intent_class != "memory_recall":
@@ -258,7 +263,7 @@ def evaluate_candidate_compatibility(
 
     alignment_required = (
         intent_class in {"reasoning", "direct_content", "contextual_content"}
-        and source_class in {"approved_knowledge", "domain_answer", "language_capability", "reasoning_answer"}
+        and source_class in {"approved_knowledge", "domain_answer", "language_capability", "memory_reconstruction", "reasoning_answer"}
         and bool(distinctive)
     )
     if alignment_required and not matched:

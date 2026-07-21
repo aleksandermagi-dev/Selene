@@ -33,7 +33,12 @@ from .dialogue_workspace import prepare_dialogue_turn, record_dialogue_response
 from .input_detangler import detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
 from .language_teaching_shelf import build_language_capability_answer
-from .memory_organ import retrieve_memory
+from .memory_organ import (
+    decide_memory_candidate,
+    memory_index_status,
+    propose_memory_candidate,
+    retrieve_memory,
+)
 from .meaning_router import interpret_turn_meaning
 from .metacognition import inspect_metacognition
 from .native_language_organ import realize_native_language
@@ -51,12 +56,14 @@ from .visible_speech import (
 
 
 SELENE_CHAT_BOUNDARY = "selene_chat_preview_dry_run_no_activation"
-SELENE_CHAT_ACTIVE_BOUNDARY = "selene_chat_active_supervised_no_autonomy_no_live_memory"
+SELENE_CHAT_ACTIVE_BOUNDARY = "selene_chat_active_supervised_reviewed_living_memory_no_hidden_write_no_raw_recall"
 SELENE_CHAT_GUARDS: dict[str, Any] = {
     "transfer_approved": False,
     "activation_change": "none",
     "memory_write_active": False,
     "runtime_memory_recall": False,
+    "unreviewed_memory_write_active": False,
+    "broad_raw_recall_active": False,
     "raw_a_import_allowed": False,
     "training_allowed": False,
     "self_replication_allowed": False,
@@ -101,6 +108,7 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
     voice = voice_module_status(conn)
     active = bool(activation.get("selene_chat_active"))
     transfer_complete = transfer_completion_is_approved(conn)
+    memory = memory_index_status(conn)
     return _with_guards(
         {
             "status": "selene_chat_active_supervised_ready" if active else "selene_chat_dry_run_ready",
@@ -112,6 +120,12 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "supervised_speech_active": active,
             "full_memory_loaded": False,
             "reviewed_memory_context_active": transfer_complete,
+            "approved_memory_retrieval_active": memory.get("approved_memory_retrieval_active") is True,
+            "contextual_approved_recall_available": memory.get("contextual_approved_recall_available") is True,
+            "conversational_memory_proposals_active": active and transfer_complete,
+            "aleks_approved_memory_retention_active": active and transfer_complete,
+            "raw_archive_recall_active": False,
+            "hidden_retention_active": False,
             "raw_corpus_loaded": False,
             "transfer_complete": transfer_complete,
             "selene_v1_live": transfer_complete and active,
@@ -128,7 +142,7 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             },
             "source_boundaries": _source_boundaries(),
             "allowed_actions": ["send", "session_list", "session_detail", "cocoon_support_option", "pause_activation"] if active else ["send_dry_run", "session_list", "session_detail", "cocoon_support"],
-            "blocked_actions": ["activation", "live_memory_write", "runtime_recall", "raw_import", "model_training_or_lora", "autonomous_action"],
+            "blocked_actions": ["activation", "hidden_or_unreviewed_memory_write", "raw_archive_recall", "raw_import", "model_training_or_lora", "autonomous_action"],
             "dry_runs_home": "Cocoon Testing / Workflow",
             "activation": activation,
             "review_destination": "Status",
@@ -171,7 +185,15 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         classify_chat_intent(understanding_text),
         contextual_follow_up,
     )
-    memory_retrieval = retrieve_memory(conn, {"query": understanding_text, "limit": 4, "intent_decision": intent_decision})
+    memory_retrieval = retrieve_memory(
+        conn,
+        {
+            "query": understanding_text,
+            "limit": 4,
+            "intent_decision": intent_decision,
+            "allow_contextual_relevance": transfer_complete,
+        },
+    )
     route = create_core_mind_route_preview(
         conn,
         {
@@ -196,6 +218,15 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     intent_decision = apply_contextual_intent(
         classify_chat_intent(understanding_text, selected_route="block" if hard_blockers else selected_route),
         contextual_follow_up,
+    )
+    memory_action_plan = _plan_conversational_memory_action(
+        conn,
+        text,
+        session_id=session_id,
+        source_class=source_class,
+        input_channel=input_channel,
+        hard=bool(hard_blockers),
+        transfer_complete=transfer_complete,
     )
     prepared_dialogue_workspace = prepare_dialogue_turn(
         conn,
@@ -239,7 +270,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     cocoon_suggestion = _cocoon_suggestion(understanding_text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
     continuity_reply = _local_chat_continuity_reply(understanding_text, chat_continuity, intent_decision)
+    memory_action_reply = str(memory_action_plan.get("response_seed") or "")
     memory_reply = _approved_memory_reply(understanding_text, memory_retrieval, intent_decision)
+    contextual_memory_reply = _contextual_memory_reply(memory_retrieval, intent_decision)
     self_state = (
         build_self_state_packet(
             conn,
@@ -274,6 +307,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     initial_visible_speech_seed = select_visible_speech_seed(
         understanding_text,
         _visible_speech_seed_candidates(
+            memory_action_reply=memory_action_reply,
             continuity_reply=continuity_reply,
             memory_reply=memory_reply,
             self_state_reply=self_state_reply,
@@ -321,6 +355,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     visible_speech_seed = select_visible_speech_seed(
         understanding_text,
         _visible_speech_seed_candidates(
+            memory_action_reply=memory_action_reply,
             continuity_reply=continuity_reply,
             memory_reply=memory_reply,
             self_state_reply=self_state_reply,
@@ -330,6 +365,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             knowledge_content_seed=str(comprehension.get("knowledge_response_seed") or ""),
             language_content_seed=language_content_seed,
             reasoning_content_seed=reasoning_content_seed,
+            contextual_memory_reply=contextual_memory_reply,
             hard_boundary=bool(hard_blockers),
         ),
         conversation_spine=conversation_spine,
@@ -599,7 +635,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "confidence_vector": spine_confidence,
         },
     )
-    memory_candidate_suggestion = _memory_candidate_suggestion(text, candidate_text, selected_route, source_class, memory_retrieval, hard=bool(hard_blockers))
+    memory_action = _apply_conversational_memory_plan(conn, memory_action_plan, commit=False)
+    memory_candidate_suggestion = _memory_candidate_suggestion(
+        text,
+        candidate_text,
+        selected_route,
+        source_class,
+        memory_retrieval,
+        memory_action=memory_action,
+        hard=bool(hard_blockers),
+    )
     dialogue_workspace = record_dialogue_response(
         conn,
         {
@@ -652,6 +697,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "input_channel": input_channel,
         "delivery_constraint": delivery_constraint,
         "memory_retrieval": memory_retrieval,
+        "memory_action": memory_action,
         "memory_candidate_suggestion": memory_candidate_suggestion,
         "source_boundaries": _source_boundaries(),
         "cocoon_suggestion": cocoon_suggestion,
@@ -662,6 +708,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "reviewed_memory_context_active": transfer_complete,
         "selene_v1_live": transfer_complete,
         "memory_context_used": memory_retrieval.get("memory_context_used") is True,
+        "approved_memory_retrieval_used": memory_retrieval.get("memory_context_used") is True,
+        "approved_memory_retrieval_active": transfer_complete,
+        "contextual_approved_recall_used": memory_retrieval.get("retrieval_mode") == "contextual_relevance" and memory_retrieval.get("memory_context_used") is True,
+        "reviewed_memory_write_occurred": memory_action.get("reviewed_memory_write_occurred") is True,
+        "conversational_memory_proposal_created": memory_action.get("proposal_created") is True,
         "memory_source_class": memory_retrieval.get("memory_source_class") or "",
         "memory_confidence": memory_retrieval.get("memory_confidence") or "not_known",
         "memory_transfer_class": memory_retrieval.get("memory_transfer_class") or "",
@@ -731,8 +782,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "visible_speech_seed": visible_speech_seed,
             "visible_speech_release": visible_speech_release,
             "memory_retrieval": memory_retrieval,
+            "memory_action": memory_action,
             "memory_candidate_suggestion": memory_candidate_suggestion,
             "memory_context_used": memory_retrieval.get("memory_context_used") is True,
+            "approved_memory_retrieval_used": memory_retrieval.get("memory_context_used") is True,
+            "approved_memory_retrieval_active": transfer_complete,
+            "contextual_approved_recall_used": memory_retrieval.get("retrieval_mode") == "contextual_relevance" and memory_retrieval.get("memory_context_used") is True,
+            "reviewed_memory_write_occurred": memory_action.get("reviewed_memory_write_occurred") is True,
+            "conversational_memory_proposal_created": memory_action.get("proposal_created") is True,
             "memory_source_class": memory_retrieval.get("memory_source_class") or "",
             "memory_confidence": memory_retrieval.get("memory_confidence") or "not_known",
             "memory_transfer_class": memory_retrieval.get("memory_transfer_class") or "",
@@ -965,6 +1022,7 @@ def _source_class(text: str, package_available: bool) -> str:
 
 def _visible_speech_seed_candidates(
     *,
+    memory_action_reply: str = "",
     continuity_reply: str = "",
     memory_reply: str = "",
     self_state_reply: str = "",
@@ -974,9 +1032,11 @@ def _visible_speech_seed_candidates(
     knowledge_content_seed: str = "",
     language_content_seed: str = "",
     reasoning_content_seed: str = "",
+    contextual_memory_reply: str = "",
     hard_boundary: bool = False,
 ) -> list[dict[str, str]]:
     candidates = [
+        {"source_id": "conversational_memory_action", "source_class": "conversation", "text": memory_action_reply},
         {"source_id": "local_chat_continuity", "source_class": "conversation", "text": continuity_reply},
         {"source_id": "reviewed_memory", "source_class": "memory_reconstruction", "text": memory_reply},
         {"source_id": "grounded_self_state", "source_class": "self_state", "text": self_state_reply},
@@ -986,6 +1046,7 @@ def _visible_speech_seed_candidates(
         {"source_id": "approved_comprehension", "source_class": "approved_knowledge", "text": knowledge_content_seed},
         {"source_id": "language_capability", "source_class": "language_capability", "text": language_content_seed},
         {"source_id": "intelligence_os_answer", "source_class": "reasoning_answer", "text": reasoning_content_seed},
+        {"source_id": "contextual_approved_memory", "source_class": "memory_reconstruction", "text": contextual_memory_reply},
     ]
     if hard_boundary:
         candidates.insert(
@@ -1487,6 +1548,358 @@ def _bounded_metacognitive_completion(
     }
 
 
+def _plan_conversational_memory_action(
+    conn: sqlite3.Connection,
+    text: str,
+    *,
+    session_id: int,
+    source_class: str,
+    input_channel: str,
+    hard: bool,
+    transfer_complete: bool,
+) -> dict[str, Any]:
+    base = {
+        "status": "no_conversational_memory_action",
+        "action": "none",
+        "response_seed": "",
+        "session_id": session_id,
+        "source_class": source_class,
+        "input_channel": input_channel,
+    }
+    if hard:
+        return {**base, "reason": "hard_boundary"}
+    if not transfer_complete:
+        return {**base, "reason": "transfer_not_complete"}
+
+    pending = _latest_pending_conversational_memory(conn, session_id)
+    consent = _conversational_memory_consent(text)
+    if pending and consent == "approve":
+        return {
+            **base,
+            "status": "conversational_memory_approval_planned",
+            "action": "approve_pending",
+            "candidate_id": pending.get("id"),
+            "consent_text": text,
+            "response_seed": "Yes. I'll keep it with the context and your approval attached.",
+        }
+    if pending and consent in {"decline", "hold"}:
+        holding = consent == "hold"
+        return {
+            **base,
+            "status": "conversational_memory_hold_planned" if holding else "conversational_memory_decline_planned",
+            "action": "hold_pending" if holding else "decline_pending",
+            "candidate_id": pending.get("id"),
+            "consent_text": text,
+            "response_seed": (
+                "Okay. I won't make it active; I'll leave it in Cocoon for tending."
+                if holding
+                else "Okay. I won't keep that as a memory."
+            ),
+        }
+
+    explicit_summary = _explicit_memory_content(text)
+    if explicit_summary:
+        existing = _matching_conversational_memory(conn, explicit_summary)
+        if existing and existing.get("state") == "approved_active_memory":
+            return {
+                **base,
+                "status": "conversational_memory_already_active",
+                "action": "none",
+                "candidate_id": existing.get("id"),
+                "reason": "matching_approved_memory_exists",
+                "response_seed": "I already have that memory, and I can keep carrying it forward.",
+            }
+        if existing:
+            return {
+                **base,
+                "status": "conversational_memory_approval_planned",
+                "action": "approve_pending",
+                "candidate_id": existing.get("id"),
+                "consent_text": text,
+                "response_seed": "Yes. I'll keep it with the context and your approval attached.",
+            }
+        return {
+            **base,
+            "status": "direct_conversational_memory_planned",
+            "action": "approve_new",
+            "candidate": _conversational_memory_payload(
+                explicit_summary,
+                original_text=text,
+                session_id=session_id,
+                source_class=source_class,
+                input_channel=input_channel,
+                origin_kind="direct_aleks_retention_instruction",
+                consent_text=text,
+                consent_recorded=True,
+            ),
+            "consent_text": text,
+            "response_seed": "Yes. I'll keep that as a memory with your approval and its context intact.",
+        }
+
+    if _conversation_has_memory_salience(text):
+        existing = _matching_conversational_memory(conn, text)
+        if existing and existing.get("state") == "approved_active_memory":
+            return {**base, "reason": "matching_approved_memory_exists"}
+        if existing:
+            return {
+                **base,
+                "status": "conversational_memory_proposal_reused",
+                "action": "reuse_pending",
+                "candidate_id": existing.get("id"),
+                "candidate": existing,
+                "response_seed": "That still feels meaningful enough to remember. Can I keep it?",
+            }
+        return {
+            **base,
+            "status": "conversational_memory_proposal_planned",
+            "action": "propose_new",
+            "candidate": _conversational_memory_payload(
+                text,
+                original_text=text,
+                session_id=session_id,
+                source_class=source_class,
+                input_channel=input_channel,
+                origin_kind="selene_salience_proposal",
+                consent_text="",
+                consent_recorded=False,
+            ),
+            "response_seed": "That feels meaningful enough to remember. Can I keep it?",
+        }
+    return {**base, "reason": "no_retention_or_salience_signal"}
+
+
+def _apply_conversational_memory_plan(
+    conn: sqlite3.Connection,
+    plan: dict[str, Any],
+    *,
+    commit: bool,
+) -> dict[str, Any]:
+    action = str(plan.get("action") or "none")
+    base = {
+        "status": "no_conversational_memory_action",
+        "action": action,
+        "proposal_created": False,
+        "reviewed_memory_write_occurred": False,
+        "hidden_retention": False,
+        "raw_archive_used": False,
+    }
+    if action == "none":
+        return {**base, "reason": plan.get("reason") or "no_action_planned"}
+    if action == "reuse_pending":
+        candidate = plan.get("candidate") if isinstance(plan.get("candidate"), dict) else {}
+        return {
+            **base,
+            "status": "conversational_memory_proposed",
+            "candidate_id": plan.get("candidate_id") or candidate.get("id"),
+            "candidate": candidate,
+            "proposal_created": False,
+            "review_status": "pending_review",
+            "consent_question": "Can I keep it?",
+        }
+    if action in {"approve_pending", "decline_pending", "hold_pending"}:
+        candidate_id = int(plan.get("candidate_id") or 0)
+        if not candidate_id:
+            return {**base, "status": "conversational_memory_candidate_missing"}
+        decision = decide_memory_candidate(
+            conn,
+            {
+                "candidate_id": candidate_id,
+                "action": (
+                    "approve_memory"
+                    if action == "approve_pending"
+                    else "hold_for_tending"
+                    if action == "hold_pending"
+                    else "reject"
+                ),
+                "actor": "Aleks",
+                "approval_source": "selene_chat_conversational_consent",
+                "consent_text": plan.get("consent_text") or "",
+            },
+            commit=commit,
+        )
+        approved = action == "approve_pending"
+        holding = action == "hold_pending"
+        return {
+            **base,
+            "status": (
+                "conversational_memory_approved"
+                if approved
+                else "conversational_memory_held_for_tending"
+                if holding
+                else "conversational_memory_declined"
+            ),
+            "candidate_id": candidate_id,
+            "candidate": decision.get("item") or {},
+            "review_status": decision.get("review_status") or "",
+            "reviewed_memory_write_occurred": approved,
+            "aleks_consent_recorded": approved,
+        }
+
+    candidate_payload = plan.get("candidate") if isinstance(plan.get("candidate"), dict) else {}
+    proposed = propose_memory_candidate(conn, candidate_payload, commit=False)
+    candidate = proposed.get("item") if isinstance(proposed.get("item"), dict) else {}
+    candidate_id = int(candidate.get("id") or 0)
+    if action == "approve_new":
+        decision = decide_memory_candidate(
+            conn,
+            {
+                "candidate_id": candidate_id,
+                "action": "approve_memory",
+                "actor": "Aleks",
+                "approval_source": "selene_chat_direct_retention_instruction",
+                "consent_text": plan.get("consent_text") or "",
+                "confidence": candidate_payload.get("confidence") or "clear",
+            },
+            commit=commit,
+        )
+        return {
+            **base,
+            "status": "conversational_memory_created_and_approved",
+            "candidate_id": candidate_id,
+            "candidate": decision.get("item") or {},
+            "proposal_created": True,
+            "reviewed_memory_write_occurred": True,
+            "aleks_consent_recorded": True,
+            "review_status": decision.get("review_status") or "accepted_for_memory",
+        }
+    if commit:
+        conn.commit()
+    return {
+        **base,
+        "status": "conversational_memory_proposed",
+        "candidate_id": candidate_id,
+        "candidate": candidate,
+        "proposal_created": True,
+        "review_status": "pending_review",
+        "consent_question": "Can I keep it?",
+    }
+
+
+def _latest_pending_conversational_memory(conn: sqlite3.Connection, session_id: int) -> dict[str, Any]:
+    rows = conn.execute(
+        "SELECT * FROM selene_memory_candidates WHERE state IN ('proposed', 'needs_context', 'cocoon_tending') ORDER BY id DESC LIMIT 40"
+    ).fetchall()
+    for row in rows:
+        item = dict(row)
+        try:
+            payload = json.loads(str(item.get("payload_json") or "{}"))
+        except json.JSONDecodeError:
+            payload = {}
+        if isinstance(payload, dict) and int(payload.get("origin_session_id") or 0) == session_id:
+            item["payload_json"] = payload
+            return item
+    return {}
+
+
+def _matching_conversational_memory(conn: sqlite3.Connection, summary: str) -> dict[str, Any]:
+    normalized = " ".join(summary.lower().split()).strip(" .")
+    if not normalized:
+        return {}
+    rows = conn.execute(
+        "SELECT * FROM selene_memory_candidates WHERE state NOT IN ('rejected', 'superseded', 'b_only') ORDER BY id DESC LIMIT 100"
+    ).fetchall()
+    for row in rows:
+        item = dict(row)
+        if " ".join(str(item.get("summary") or "").lower().split()).strip(" .") != normalized:
+            continue
+        try:
+            item["payload_json"] = json.loads(str(item.get("payload_json") or "{}"))
+        except json.JSONDecodeError:
+            item["payload_json"] = {}
+        return item
+    return {}
+
+
+def _conversational_memory_consent(text: str) -> str:
+    lower = re.sub(r"[^a-z0-9']+", " ", text.lower().replace("’", "'")).strip()
+    hold_markers = ("not now", "hold that for now", "maybe later")
+    if any(marker in lower for marker in hold_markers):
+        return "hold"
+    decline_markers = (
+        "no don't remember that",
+        "no do not remember that",
+        "don't keep that",
+        "do not keep that",
+        "not as a memory",
+        "no not that",
+    )
+    if any(marker in lower for marker in decline_markers):
+        return "decline"
+    approve_markers = (
+        "yes remember that",
+        "yes keep that",
+        "you can remember that",
+        "you can keep that",
+        "please keep it",
+        "please remember it",
+        "go ahead and remember that",
+        "keep it as a memory",
+    )
+    return "approve" if any(marker in lower for marker in approve_markers) else ""
+
+
+def _explicit_memory_content(text: str) -> str:
+    patterns = (
+        r"^\s*(?:please\s+)?remember\s+this\s*[:,-]?\s*(.+)$",
+        r"^\s*(?:please\s+)?keep\s+this\s*[:,-]?\s*(.+)$",
+        r"^\s*(?:please\s+)?save\s+this\s*[:,-]?\s*(.+)$",
+        r"^\s*make\s+(?:a\s+)?note(?:\s+of)?\s*[:,-]?\s*(.+)$",
+        r"^\s*hold\s+onto\s+this\s*[:,-]?\s*(.+)$",
+    )
+    for pattern in patterns:
+        match = re.match(pattern, text, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            content = " ".join(match.group(1).split()).strip(" .")
+            return truncate(content, 700) if len(content) >= 4 else ""
+    return ""
+
+
+def _conversation_has_memory_salience(text: str) -> bool:
+    lower = text.lower()
+    markers = (
+        "this matters to me",
+        "this is important to me",
+        "that matters to me",
+        "that means a lot to me",
+        "this means a lot to me",
+        "i want you to know",
+        "i don't want us to forget",
+        "i do not want us to forget",
+    )
+    return len(text.strip()) >= 18 and any(marker in lower for marker in markers)
+
+
+def _conversational_memory_payload(
+    summary: str,
+    *,
+    original_text: str,
+    session_id: int,
+    source_class: str,
+    input_channel: str,
+    origin_kind: str,
+    consent_text: str,
+    consent_recorded: bool,
+) -> dict[str, Any]:
+    category = _suggested_memory_category(summary)
+    return {
+        "title": _memory_title_from_prompt(summary),
+        "summary": truncate(summary, 700),
+        "memory_category": category,
+        "confidence": "clear" if consent_recorded else "partial",
+        "emotional_texture": _suggested_emotional_texture(original_text),
+        "transfer_class": _suggested_transfer_class(category, original_text),
+        "consent_scope": "private_selene_aleks_context",
+        "stability": "developing",
+        "source_refs": [f"selene_chat_session:{session_id}", source_class, f"input_channel:{input_channel}"],
+        "origin_session_id": session_id,
+        "origin_channel": input_channel,
+        "origin_kind": origin_kind,
+        "aleks_consent_text": consent_text,
+        "consent_recorded": consent_recorded,
+        "proposal_note": "Created visibly from the active conversation; no raw archive or hidden retention was used.",
+    }
+
+
 def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any], intent_decision: dict[str, Any]) -> str:
     if intent_decision.get("memory_recall_requested") is not True:
         return ""
@@ -1510,6 +1923,22 @@ def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any], intent_d
             "I can keep that uncertainty visible, or you can correct me and I will adjust."
         )
     return f"I remember this clearly enough to say it: {summary}"
+
+
+def _contextual_memory_reply(memory_retrieval: dict[str, Any], intent_decision: dict[str, Any]) -> str:
+    if intent_decision.get("memory_recall_requested") is True:
+        return ""
+    if memory_retrieval.get("retrieval_mode") != "contextual_relevance" or memory_retrieval.get("memory_context_used") is not True:
+        return ""
+    items = memory_retrieval.get("items") if isinstance(memory_retrieval.get("items"), list) else []
+    if not items:
+        return ""
+    first = items[0] if isinstance(items[0], dict) else {}
+    summary = _chat_memory_summary(first)
+    confidence = str(memory_retrieval.get("recall_state") or "partial")
+    if confidence == "clear":
+        return f"This connects with something I remember: {summary}"
+    return f"This may connect with something I remember, though the fit is {confidence.replace('_', ' ')}: {summary}"
 
 
 def _chat_memory_summary(item: dict[str, Any]) -> str:
@@ -1547,8 +1976,49 @@ def _memory_candidate_suggestion(
     source_class: str,
     memory_retrieval: dict[str, Any],
     *,
+    memory_action: dict[str, Any] | None = None,
     hard: bool = False,
 ) -> dict[str, Any]:
+    memory_action = memory_action if isinstance(memory_action, dict) else {}
+    action_status = str(memory_action.get("status") or "")
+    if action_status == "conversational_memory_proposed":
+        candidate = memory_action.get("candidate") if isinstance(memory_action.get("candidate"), dict) else {}
+        return {
+            "suggested": True,
+            "status": "suggested_memory_awaiting_conversational_consent",
+            "question": "Can I keep this?",
+            "candidate_id": memory_action.get("candidate_id"),
+            "candidate": candidate,
+            "activation_rule": "inactive_until_aleks_approval_in_chat_or_cocoon",
+            "review_destination": "Selene Chat or Cocoon Memory Tending",
+            "review_status": "pending_review",
+            "proposal_already_created": True,
+        }
+    if action_status in {"conversational_memory_approved", "conversational_memory_created_and_approved"}:
+        return {
+            "suggested": False,
+            "status": "memory_approved_from_conversational_consent",
+            "candidate_id": memory_action.get("candidate_id"),
+            "activation_rule": "approved_active_memory",
+            "review_status": "accepted_for_memory",
+            "aleks_consent_recorded": True,
+        }
+    if action_status == "conversational_memory_declined":
+        return {
+            "suggested": False,
+            "status": "memory_suggestion_declined",
+            "candidate_id": memory_action.get("candidate_id"),
+            "activation_rule": "not_active",
+            "review_status": "rejected",
+        }
+    if action_status == "conversational_memory_held_for_tending":
+        return {
+            "suggested": False,
+            "status": "memory_suggestion_held_for_tending",
+            "candidate_id": memory_action.get("candidate_id"),
+            "activation_rule": "not_active",
+            "review_status": "cocoon_tending",
+        }
     lower = text.lower()
     if hard or selected_route == "block":
         return _no_memory_suggestion("hard_boundary_or_blocked_route")

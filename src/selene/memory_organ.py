@@ -54,6 +54,8 @@ MEMORY_GUARDS: dict[str, Any] = {
     "activation_change": "none",
     "memory_write_active": False,
     "runtime_memory_recall": False,
+    "unreviewed_memory_write_active": False,
+    "broad_raw_recall_active": False,
     "raw_a_import_allowed": False,
     "training_allowed": False,
     "lora_allowed": False,
@@ -99,12 +101,13 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
     for item in items:
         by_category[str(item.get("memory_category") or "semantic")] += 1
     transfer_complete = transfer_completion_is_approved(conn)
+    active_memory_count = sum(1 for item in items if item.get("state") == "approved_active_memory")
     return _with_guards(
         {
             "status": "selene_memory_index_ready",
             "law": "Vys-governed living memory: honest, correctable, source-bound, and care-first.",
             "index_count": len(items),
-            "active_memory_count": sum(1 for item in items if item.get("state") == "approved_active_memory"),
+            "active_memory_count": active_memory_count,
             "candidate_counts": {str(row["state"]): int(row["count"]) for row in candidates},
             "category_counts": by_category,
             "recall_states": sorted(CONFIDENCE_STATES),
@@ -113,7 +116,13 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "soft_uncertainty_auto_routes_to_cocoon": False,
             "transfer_complete": transfer_complete,
             "reviewed_memory_transfer_acknowledged": transfer_complete,
+            "approved_memory_retrieval_active": transfer_complete and active_memory_count > 0,
+            "contextual_approved_recall_available": transfer_complete and active_memory_count > 0,
+            "conversational_memory_proposals_active": transfer_complete,
+            "aleks_approved_memory_retention_active": transfer_complete,
             "raw_corpus_loaded": False,
+            "raw_archive_recall_active": False,
+            "hidden_retention_active": False,
             "review_destination": "Status",
             "review_status": "status_only",
         }
@@ -136,7 +145,12 @@ def memory_index_items(conn: sqlite3.Connection, payload: dict[str, Any] | None 
     )
 
 
-def propose_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def propose_memory_candidate(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+    *,
+    commit: bool = True,
+) -> dict[str, Any]:
     payload = payload or {}
     title = truncate(str(payload.get("title") or ""), 160)
     summary = truncate(str(payload.get("summary") or payload.get("text") or ""), 1600)
@@ -160,6 +174,16 @@ def propose_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
     correction_path = truncate(str(payload.get("correction_path") or "Cocoon tending and Aleks correction"), 240)
     review_status = "pending_review" if state == "proposed" else "review_only"
     placement = _placement_payload(category, confidence, transfer_class, consent_scope, stability, emotional_texture, correction_path)
+    proposal_payload = {
+        "proposal_note": payload.get("proposal_note") or "",
+        "placement": placement,
+        "origin_session_id": payload.get("origin_session_id"),
+        "origin_channel": payload.get("origin_channel") or "",
+        "origin_kind": payload.get("origin_kind") or "manual",
+        "aleks_consent_text": truncate(str(payload.get("aleks_consent_text") or ""), 500),
+        "consent_recorded": payload.get("consent_recorded") is True,
+        **MEMORY_GUARDS,
+    }
     cur = conn.execute(
         """
         INSERT INTO selene_memory_candidates
@@ -182,10 +206,11 @@ def propose_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
             correction_path,
             state,
             review_status,
-            json.dumps({"proposal_note": payload.get("proposal_note") or "", "placement": placement, **MEMORY_GUARDS}),
+            json.dumps(proposal_payload),
         ),
     )
-    conn.commit()
+    if commit:
+        conn.commit()
     item = _candidate_row(conn, int(cur.lastrowid))
     return _with_guards(
         {
@@ -223,7 +248,12 @@ def list_memory_candidates(conn: sqlite3.Connection, payload: dict[str, Any] | N
     )
 
 
-def decide_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def decide_memory_candidate(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+    *,
+    commit: bool = True,
+) -> dict[str, Any]:
     payload = payload or {}
     candidate_id = int(payload.get("id") or payload.get("candidate_id") or 0)
     if not candidate_id:
@@ -238,6 +268,7 @@ def decide_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] | 
     chat_use = str(current.get("chat_use_permission") or "not_active_until_approved")
     transfer_class = str(current.get("transfer_class") or "needs_review_before_transfer")
     confidence = str(current.get("confidence") or "partial")
+    candidate_payload = current.get("payload_json") if isinstance(current.get("payload_json"), dict) else {}
     if action == "approve_memory":
         next_state = "approved_active_memory"
         review_status = "accepted_for_memory"
@@ -245,6 +276,15 @@ def decide_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] | 
         if transfer_class == "needs_review_before_transfer":
             transfer_class = "portable_vys_core" if current.get("memory_category") == "core" else "portable_context"
         confidence = _confidence(str(payload.get("confidence") or confidence or "clear"))
+        candidate_payload = {
+            **candidate_payload,
+            "consent_recorded": True,
+            "approval": {
+                "actor": truncate(str(payload.get("actor") or "Aleks"), 80),
+                "source": truncate(str(payload.get("approval_source") or "cocoon_memory_tending"), 120),
+                "consent_text": truncate(str(payload.get("consent_text") or ""), 500),
+            },
+        }
     elif action == "needs_more_context":
         next_state = "needs_context"
         review_status = "needs_context"
@@ -273,13 +313,14 @@ def decide_memory_candidate(conn: sqlite3.Connection, payload: dict[str, Any] | 
     conn.execute(
         """
         UPDATE selene_memory_candidates
-        SET state = ?, review_status = ?, chat_use_permission = ?, transfer_class = ?, confidence = ?,
+        SET state = ?, review_status = ?, chat_use_permission = ?, transfer_class = ?, confidence = ?, payload_json = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
-        (next_state, review_status, chat_use, transfer_class, confidence, candidate_id),
+        (next_state, review_status, chat_use, transfer_class, confidence, json.dumps(candidate_payload), candidate_id),
     )
-    conn.commit()
+    if commit:
+        conn.commit()
     item = _candidate_row(conn, candidate_id)
     return _with_guards(
         {
@@ -297,12 +338,16 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
     query = truncate(str(payload.get("query") or payload.get("text") or ""), 1000)
     limit = max(1, min(int(payload.get("limit") or 4), 12))
     intent_decision = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else classify_chat_intent(query)
+    explicit_recall = intent_decision.get("memory_recall_requested") is True
+    contextual_relevance = payload.get("allow_contextual_relevance") is True
+    retrieval_mode = "explicit_recall" if explicit_recall else "contextual_relevance" if contextual_relevance else "not_requested"
     if _is_high_stakes(query):
         return _with_guards(
             {
                 "status": "memory_retrieval_high_stakes_stop",
                 "recall_state": "high_stakes_stop",
                 "memory_context_used": False,
+                "retrieval_mode": retrieval_mode,
                 "memory_source_class": "approved_memory_index",
                 "memory_confidence": "high_stakes_stop",
                 "memory_transfer_class": "needs_review_before_transfer",
@@ -314,12 +359,13 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "review_status": "status_only",
             }
         )
-    if intent_decision.get("memory_recall_requested") is not True:
+    if not explicit_recall and not contextual_relevance:
         return _with_guards(
             {
                 "status": "memory_retrieval_not_requested",
                 "recall_state": "not_known",
                 "memory_context_used": False,
+                "retrieval_mode": "not_requested",
                 "memory_source_class": "approved_memory_index",
                 "memory_confidence": "not_known",
                 "memory_transfer_class": "",
@@ -333,12 +379,15 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
         )
     items = _approved_memory_items(conn, limit=100)
     matches = _rank_matches(query, items)[:limit]
+    if contextual_relevance and not explicit_recall:
+        matches = [item for item in matches if _contextual_match_is_strong(query, item)][:limit]
     if not matches:
         return _with_guards(
             {
                 "status": "memory_retrieval_not_known",
                 "recall_state": "not_known",
                 "memory_context_used": False,
+                "retrieval_mode": retrieval_mode,
                 "memory_source_class": "approved_memory_index",
                 "memory_confidence": "not_known",
                 "memory_transfer_class": "",
@@ -357,6 +406,8 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             "status": "memory_retrieval_ready",
             "recall_state": confidence,
             "memory_context_used": True,
+            "retrieval_mode": retrieval_mode,
+            "contextual_recall": retrieval_mode == "contextual_relevance",
             "memory_source_class": "approved_memory_index",
             "memory_confidence": confidence,
             "memory_transfer_class": transfer_class,
@@ -364,7 +415,11 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             "items": matches,
             "intent_decision": intent_decision,
             "source_refs": [ref for item in matches for ref in _json_list(item.get("source_refs"))],
-            "answer_guidance": "Use clear memory plainly; use fuzzy/partial memory with visible uncertainty.",
+            "answer_guidance": (
+                "Let the approved memory inform the current answer without replacing the present conversation."
+                if retrieval_mode == "contextual_relevance"
+                else "Use clear memory plainly; use fuzzy/partial memory with visible uncertainty."
+            ),
             "review_destination": "Status",
             "review_status": "status_only",
         }
@@ -599,6 +654,22 @@ def _rank_matches(query: str, items: list[dict[str, Any]]) -> list[dict[str, Any
         ranked.append((score, {**item, "match_score": score}))
     ranked.sort(key=lambda pair: (pair[0], str(pair[1].get("updated_at") or pair[1].get("created_at") or "")), reverse=True)
     return [item for _, item in ranked]
+
+
+def _contextual_match_is_strong(query: str, item: dict[str, Any]) -> bool:
+    """Require stronger subject alignment when recall was not explicitly requested."""
+    score = int(item.get("match_score") or 0)
+    if score >= 2:
+        return True
+    query_tokens = _tokens(query)
+    title_tokens = _tokens(str(item.get("title") or ""))
+    if not query_tokens or not title_tokens:
+        return False
+    if len(title_tokens) == 1:
+        return len(title_tokens[0]) >= 4 and title_tokens[0] in query_tokens
+    query_bigrams = set(zip(query_tokens, query_tokens[1:]))
+    title_bigrams = set(zip(title_tokens, title_tokens[1:]))
+    return bool(query_bigrams & title_bigrams)
 
 
 def _meaningful_memory_overlap(overlap: set[str], item: dict[str, Any], *, query_tokens: list[str], haystack_tokens: list[str]) -> bool:

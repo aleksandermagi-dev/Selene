@@ -224,6 +224,12 @@ def read_ceremony_debug_log(limit: int = 300) -> dict[str, object]:
 mark_startup_phase("module_imported")
 
 
+def _hidden_child_process_kwargs() -> dict[str, int]:
+    if os.name == "nt":
+        return {"creationflags": int(getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000))}
+    return {}
+
+
 def _run_local_command(command: list[str], cwd: Path, timeout: int = 30) -> dict[str, object]:
     try:
         completed = subprocess.run(
@@ -233,6 +239,7 @@ def _run_local_command(command: list[str], cwd: Path, timeout: int = 30) -> dict
             text=True,
             timeout=timeout,
             check=False,
+            **_hidden_child_process_kwargs(),
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"ok": False, "error": str(exc), "stdout": "", "stderr": "", "returncode": -1}
@@ -310,6 +317,7 @@ def public_release_sync_checkpoint(db_path: Path) -> dict[str, object]:
             text=True,
             timeout=300,
             check=False,
+            **_hidden_child_process_kwargs(),
         )
     except subprocess.TimeoutExpired as exc:
         return {

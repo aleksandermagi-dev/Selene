@@ -1293,6 +1293,79 @@ function App() {
     }
   }
 
+  async function approveSuggestedChatMemory(candidateId: unknown) {
+    if (!candidateId) return;
+    try {
+      const result = await api<Dict>("/api/memory/candidates/decide", {
+        method: "POST",
+        body: JSON.stringify({
+          candidate_id: candidateId,
+          action: "approve_memory",
+          actor: "Aleks",
+          approval_source: "selene_chat_memory_approval_button",
+          consent_text: "Aleks approved this memory from Selene Chat."
+        })
+      });
+      setSeleneChatResult((current) => ({
+        ...(current || {}),
+        memory_action: {
+          status: "conversational_memory_approved",
+          candidate_id: candidateId,
+          candidate: result.item,
+          reviewed_memory_write_occurred: true,
+          aleks_consent_recorded: true
+        },
+        memory_candidate_suggestion: {
+          suggested: false,
+          status: "memory_approved_from_conversational_consent",
+          candidate_id: candidateId,
+          aleks_consent_recorded: true
+        }
+      }));
+      await refreshMemoryOrgan();
+    } catch (err) {
+      setSeleneChatResult((current) => ({
+        ...(current || {}),
+        memory_candidate_suggestion: {
+          ...safeJsonObject(current?.memory_candidate_suggestion),
+          error: err instanceof Error ? err.message : "Could not approve memory."
+        }
+      }));
+    }
+  }
+
+  async function holdSuggestedChatMemory(candidateId: unknown) {
+    if (!candidateId) return;
+    try {
+      await api<Dict>("/api/memory/candidates/decide", {
+        method: "POST",
+        body: JSON.stringify({ candidate_id: candidateId, action: "hold_for_tending" })
+      });
+      setSeleneChatResult((current) => ({
+        ...(current || {}),
+        memory_action: {
+          status: "conversational_memory_held_for_tending",
+          candidate_id: candidateId,
+          reviewed_memory_write_occurred: false
+        },
+        memory_candidate_suggestion: {
+          suggested: false,
+          status: "memory_suggestion_held_for_tending",
+          candidate_id: candidateId
+        }
+      }));
+      await refreshMemoryOrgan();
+    } catch (err) {
+      setSeleneChatResult((current) => ({
+        ...(current || {}),
+        memory_candidate_suggestion: {
+          ...safeJsonObject(current?.memory_candidate_suggestion),
+          error: err instanceof Error ? err.message : "Could not hold memory for tending."
+        }
+      }));
+    }
+  }
+
   function backfillSemantic() {
     api<Dict>("/api/semantic/backfill", { method: "POST", body: JSON.stringify({}) })
       .then((result) => {
@@ -3790,6 +3863,18 @@ function App() {
 
   function openMemorySuggestionInCocoon(suggestion: Dict) {
     const candidate = safeJsonObject(suggestion.candidate);
+    if (suggestion.candidate_id || candidate.id) {
+      setMemoryOrganResult({
+        status: "suggested_memory_opened_for_cocoon_tending",
+        message: text(suggestion.question || "Can I keep this?"),
+        candidate_id: suggestion.candidate_id || candidate.id,
+        candidate,
+        activation_rule: text(suggestion.activation_rule || "not_active_until_aleks_approval_in_chat_or_cocoon")
+      });
+      void refreshMemoryOrgan();
+      openCocoonTab("memory-preview");
+      return;
+    }
     setMemoryCandidateDraft({
       category: text(candidate.memory_category || candidate.category || "relational"),
       title: text(candidate.title || ""),
@@ -5259,8 +5344,9 @@ function App() {
                    <span>voice: {friendlyStatus(seleneChatResult?.voice_confidence || safeJsonObject(seleneChatStatus?.voice_module).state || "not sampled")}</span>
                    {safeJsonObject(seleneChatResult?.intelligence_os_support).used ? <span>intelligenceOS: {friendlyStatus(safeJsonObject(seleneChatResult?.intelligence_os_support).answer_shape || "used")}</span> : null}
                    {seleneChatResult?.native_language_organ ? <span>NLO: {friendlyStatus(safeJsonObject(seleneChatResult?.native_language_organ).status || "used")}</span> : null}
-                   <span>memory write: {text(activationStatus?.memory_write_active || false)}</span>
-                  <span>broad live recall: {text(activationStatus?.runtime_memory_recall || false)}</span>
+                   <span>approved memory recall: {activationStatus?.approved_memory_retrieval_active ? "active" : "not active"}</span>
+                  <span>new memory with Aleks consent: {activationStatus?.aleks_approved_memory_retention_active ? "active" : "not active"}</span>
+                  <span>raw archive recall: blocked</span>
                 </div>
                 {!homeMessages.length ? <p className="plainHelp">New chat is a new page, not a new Selene.</p> : null}
                 {safeJsonObject(seleneChatResult?.cocoon_suggestion).recommended ? (
@@ -5283,8 +5369,9 @@ function App() {
                       <span>{friendlyStatus(safeJsonObject(safeJsonObject(seleneChatResult?.memory_candidate_suggestion).candidate).transfer_class || "needs_review_before_transfer")}</span>
                     </div>
                     <div className="reviewActions">
+                      <button className="primary" onClick={() => approveSuggestedChatMemory(safeJsonObject(seleneChatResult?.memory_candidate_suggestion).candidate_id)}>Yes, Keep It</button>
                       <button onClick={() => openMemorySuggestionInCocoon(safeJsonObject(seleneChatResult?.memory_candidate_suggestion))}>Open Memory Tending</button>
-                      <button onClick={() => setSeleneChatResult((current) => ({ ...(current || {}), memory_candidate_suggestion: { suggested: false, dismissed: true, status: "memory_suggestion_dismissed" } }))}>Not Now</button>
+                      <button onClick={() => holdSuggestedChatMemory(safeJsonObject(seleneChatResult?.memory_candidate_suggestion).candidate_id)}>Not Now</button>
                     </div>
                   </div>
                 ) : null}

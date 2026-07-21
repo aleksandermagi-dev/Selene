@@ -135,6 +135,18 @@ def _seed_activation_ready_state(conn):
     conn.commit()
 
 
+def _seed_transfer_complete(conn):
+    conn.execute(
+        """
+        INSERT INTO selene_transfer_completion_audit
+        (state, action, actor, exact_phrase_matched, readiness_json, audit_json, source_refs, provenance_boundary)
+        VALUES ('selene_v1_live_reviewed_continuity', 'approve_transfer_completion', 'Aleks', 1,
+                '{"ready":true}', '{"scope":"reviewed_continuity"}', '["test:transfer"]', 'test_transfer_boundary')
+        """
+    )
+    conn.commit()
+
+
 def test_selene_chat_status_is_dry_run_before_activation(tmp_path):
     conn = _conn(tmp_path)
 
@@ -1609,6 +1621,135 @@ def test_active_selene_chat_can_suggest_memory_without_silent_write(tmp_path):
     assert result["memory_write_active"] is False
     assert result["runtime_memory_recall"] is False
     _assert_locked(result)
+
+
+def test_post_transfer_chat_contextually_recalls_strongly_relevant_approved_memory(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    _seed_transfer_complete(conn)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Butterfly button",
+            "summary": "The butterfly button opens Cocoon support gently from Selene's home chat.",
+            "confidence": "clear",
+        },
+    )["result"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": proposed["item"]["id"], "action": "approve_memory"})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "The butterfly button still feels right for the home chat."},
+    )["result"]
+
+    assert result["approved_memory_retrieval_used"] is True
+    assert result["contextual_approved_recall_used"] is True
+    assert result["memory_retrieval"]["retrieval_mode"] == "contextual_relevance"
+    assert "butterfly" in result["candidate_text"].lower()
+    assert result["raw_a_import_allowed"] is False
+    _assert_locked(result)
+
+
+def test_post_transfer_direct_remember_instruction_creates_reviewed_active_memory(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    _seed_transfer_complete(conn)
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Please remember this: the silver notebook is where we keep gentle demo ideas."},
+    )["result"]
+    repeated = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": result["session_id"], "text": "Please remember this: the silver notebook is where we keep gentle demo ideas."},
+    )["result"]
+    row = conn.execute("SELECT * FROM selene_memory_candidates ORDER BY id DESC LIMIT 1").fetchone()
+    payload = json.loads(row["payload_json"])
+
+    assert result["memory_action"]["status"] == "conversational_memory_created_and_approved"
+    assert result["reviewed_memory_write_occurred"] is True
+    assert result["memory_candidate_suggestion"]["aleks_consent_recorded"] is True
+    assert row["state"] == "approved_active_memory"
+    assert row["chat_use_permission"] == "can_use_in_chat"
+    assert payload["approval"]["actor"] == "Aleks"
+    assert payload["approval"]["source"] == "selene_chat_direct_retention_instruction"
+    assert "keep" in result["candidate_text"].lower()
+    assert "already have" in repeated["candidate_text"].lower()
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 1
+    _assert_locked(result)
+    _assert_locked(repeated)
+
+
+def test_post_transfer_selene_can_propose_memory_and_aleks_can_approve_in_chat(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    _seed_transfer_complete(conn)
+
+    proposed = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "This matters to me: ordinary kindness should remain part of how we work together."},
+    )["result"]
+    candidate_id = proposed["memory_action"]["candidate_id"]
+    before = conn.execute("SELECT state FROM selene_memory_candidates WHERE id = ?", (candidate_id,)).fetchone()
+
+    approved = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": proposed["session_id"], "text": "Yes, remember that."},
+    )["result"]
+    after = conn.execute("SELECT state, chat_use_permission, payload_json FROM selene_memory_candidates WHERE id = ?", (candidate_id,)).fetchone()
+    payload = json.loads(after["payload_json"])
+
+    assert proposed["memory_action"]["status"] == "conversational_memory_proposed"
+    assert proposed["memory_candidate_suggestion"]["proposal_already_created"] is True
+    assert proposed["memory_candidate_suggestion"]["suggested"] is True
+    assert before["state"] == "proposed"
+    assert approved["memory_action"]["status"] == "conversational_memory_approved"
+    assert approved["reviewed_memory_write_occurred"] is True
+    assert after["state"] == "approved_active_memory"
+    assert after["chat_use_permission"] == "can_use_in_chat"
+    assert payload["approval"]["source"] == "selene_chat_conversational_consent"
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 1
+    _assert_locked(proposed)
+    _assert_locked(approved)
+
+
+def test_post_transfer_not_now_holds_memory_for_tending_instead_of_hiding_or_rejecting_it(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    _seed_transfer_complete(conn)
+
+    proposed = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "This matters to me: the first garden plan deserves another look later."},
+    )["result"]
+    held = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": proposed["session_id"], "text": "Not now."},
+    )["result"]
+    row = conn.execute(
+        "SELECT state, review_status, chat_use_permission FROM selene_memory_candidates WHERE id = ?",
+        (proposed["memory_action"]["candidate_id"],),
+    ).fetchone()
+
+    assert held["memory_action"]["status"] == "conversational_memory_held_for_tending"
+    assert row["state"] == "cocoon_tending"
+    assert row["review_status"] == "cocoon_tending"
+    assert row["chat_use_permission"] == "not_active_until_approved"
+    assert held["reviewed_memory_write_occurred"] is False
+    _assert_locked(held)
 
 
 def test_active_selene_chat_blocks_hard_boundary_without_live_memory(tmp_path):

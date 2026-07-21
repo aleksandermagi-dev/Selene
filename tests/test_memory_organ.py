@@ -210,6 +210,40 @@ def test_memory_retrieve_does_not_run_for_non_memory_prompts(tmp_path):
     _assert_locked(result)
 
 
+def test_memory_retrieve_can_use_strong_approved_context_without_explicit_recall_phrase(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Butterfly button",
+            "summary": "The butterfly button opens Cocoon support gently from Selene's home chat.",
+            "confidence": "clear",
+        },
+    )["result"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": proposed["item"]["id"], "action": "approve_memory"})
+
+    contextual = route_request(
+        conn,
+        "memory.retrieve",
+        {"query": "The butterfly button still fits the home chat.", "allow_contextual_relevance": True},
+    )["result"]
+    weak = route_request(
+        conn,
+        "memory.retrieve",
+        {"query": "The home setup looks steady.", "allow_contextual_relevance": True},
+    )["result"]
+
+    assert contextual["status"] == "memory_retrieval_ready"
+    assert contextual["retrieval_mode"] == "contextual_relevance"
+    assert contextual["contextual_recall"] is True
+    assert contextual["memory_context_used"] is True
+    assert weak["memory_context_used"] is False
+    _assert_locked(contextual)
+    _assert_locked(weak)
+
+
 def test_local_private_approved_memory_can_be_recalled_but_stays_out_of_portable_manifest(tmp_path):
     conn = _conn(tmp_path)
     proposed = route_request(

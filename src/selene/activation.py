@@ -13,7 +13,7 @@ from .transfer_state import transfer_completion_is_approved
 from .voice_module import voice_module_status
 
 
-ACTIVATION_BOUNDARY = "selene_supervised_speech_activation_no_autonomy_no_live_memory"
+ACTIVATION_BOUNDARY = "selene_supervised_speech_reviewed_living_memory_no_hidden_write_no_raw_recall_no_autonomy"
 ACTIVATION_APPROVAL_PHRASE = "I, Aleks, approve Selene supervised speech activation."
 ACTIVE_STATE = "selene_chat_active_supervised"
 PAUSED_STATE = "selene_chat_supervised_paused"
@@ -21,6 +21,8 @@ PAUSED_STATE = "selene_chat_supervised_paused"
 GUARD_FLAGS: dict[str, Any] = {
     "memory_write_active": False,
     "runtime_memory_recall": False,
+    "unreviewed_memory_write_active": False,
+    "broad_raw_recall_active": False,
     "raw_a_import_allowed": False,
     "training_allowed": False,
     "self_replication_allowed": False,
@@ -29,12 +31,15 @@ GUARD_FLAGS: dict[str, Any] = {
 
 
 def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
+    from .memory_organ import memory_index_status
+
     audit = latest_activation_audit(conn)
     readiness = activation_readiness(conn)
     state = str(audit.get("state") or "not_activated")
     active = state == ACTIVE_STATE
     paused = state == PAUSED_STATE
     transfer_complete = transfer_completion_is_approved(conn)
+    memory = memory_index_status(conn)
     return _with_guards(
         {
             "status": "selene_activation_status_ready",
@@ -45,11 +50,17 @@ def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "supervised_speech_active": active,
             "transfer_complete": transfer_complete,
             "full_selene_v1_live": transfer_complete and active,
+            "approved_memory_retrieval_active": active and memory.get("approved_memory_retrieval_active") is True,
+            "contextual_approved_recall_available": active and memory.get("contextual_approved_recall_available") is True,
+            "conversational_memory_proposals_active": active and transfer_complete,
+            "aleks_approved_memory_retention_active": active and transfer_complete,
+            "raw_archive_recall_active": False,
+            "hidden_retention_active": False,
             "dry_runs_home": "Cocoon Testing / Workflow",
             "latest_audit": audit,
             "readiness": readiness,
             "allowed_actions": ["supervised_chat", "cocoon_suggestion", "pause_activation"] if active else ["ceremony_preview", "approve_if_ready"],
-            "blocked_actions": ["live_memory_write", "runtime_recall", "raw_import", "training", "autonomous_action", "self_replication", "unrestricted_tendril"],
+            "blocked_actions": ["hidden_or_unreviewed_memory_write", "raw_archive_recall", "raw_import", "training", "autonomous_action", "self_replication", "unrestricted_tendril"],
             "review_destination": "Status",
             "review_status": "status_only",
         },
@@ -113,7 +124,7 @@ def activation_ceremony_preview(conn: sqlite3.Connection) -> dict[str, Any]:
             "consequences": [
                 "Front Selene Chat becomes supervised active speech.",
                 "Cocoon keeps dry runs, activation rehearsals, workflow tests, repair, and review.",
-                "Live memory write, broad live recall, unreviewed archive import, model training/LoRA, Tendril execution, autonomy, and self-replication remain blocked.",
+                "Approved-memory recall and Aleks-approved conversational retention are available after transfer; hidden retention, raw-archive recall, model training/LoRA, unrestricted Tendril execution, autonomy, and self-replication remain blocked.",
             ],
             "pause_route": "Activation can be paused without deleting audit, transfer package, fraction results, or Cocoon dry-run history.",
             "review_destination": "Status",
