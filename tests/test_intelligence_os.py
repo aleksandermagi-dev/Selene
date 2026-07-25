@@ -50,6 +50,11 @@ def test_intelligence_os_status_and_abcd_e_reasoning_run(tmp_path):
     assert result["challenge"]["symmetry_rule"].startswith("Every candidate model")
     assert result["evidence_chain"][0]["link"] == "observation"
     assert result["evaluation"]["stage"] == "E"
+    claims = result["claim_evidence_packet"]
+    assert claims["claims_by_type"]["observation"]
+    assert claims["claims_by_type"]["model"]
+    assert claims["claims_by_type"]["conclusion"] == ["intelligence-current-answer"]
+    assert claims["claim_evaluation"]["source_category_is_truth"] is False
     assert result["visible_summary_only"] is True
     assert result["hidden_chain_of_thought_exposed"] is False
     assert runs["items"][0]["id"] == result["run_id"]

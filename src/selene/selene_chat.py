@@ -406,6 +406,24 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         contextual_content_seed=contextual_reply,
         hard=bool(hard_blockers),
     )
+    claim_evidence_packet = next(
+        (
+            item
+            for item in (
+                answer_engine_support.get("claim_evidence_packet"),
+                comprehension.get("claim_evidence_packet"),
+                intelligence_support.get("claim_evidence_packet"),
+            )
+            if isinstance(item, dict) and int(item.get("claim_count") or 0) > 0
+        ),
+        {},
+    )
+    comprehension["active_claim_evidence_handoff"] = {
+        "available": bool(claim_evidence_packet),
+        "claim_count": int(claim_evidence_packet.get("claim_count") or 0),
+        "writes_retained_knowledge": False,
+        "reviewed_knowledge_owner_unchanged": True,
+    }
     domain_content_seed = str(answer_engine_support.get("content_seed") or "")
     visible_speech_seed = select_visible_speech_seed(
         meaning_text,
@@ -442,6 +460,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             ],
             "conversation_spine": conversation_spine,
             "epistemic_revision_plan": epistemic_revision,
+            "claim_evidence_packet": claim_evidence_packet,
         }
     )
     if answer_completion.get("accepted") is True:
@@ -487,6 +506,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
             "epistemic_revision_plan": epistemic_revision,
+            "claim_evidence_packet": claim_evidence_packet,
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
             "answer_engine_support": answer_engine_support,
@@ -623,6 +643,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "answer_completion": answer_completion,
         "conversation_spine": conversation_spine,
         "epistemic_revision_plan": epistemic_revision,
+        "claim_evidence_packet": claim_evidence_packet,
         "response_coverage": response_coverage,
         "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
         "source_refs": [
@@ -798,6 +819,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "contextual_follow_up": contextual_follow_up,
         "conversation_spine": conversation_spine,
         "epistemic_revision": epistemic_revision,
+        "claim_evidence_packet": claim_evidence_packet,
         "self_state": self_state,
         "affect_expression": affect_expression,
         "pragmatic_continuity": pragmatic_continuity,
@@ -887,6 +909,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "contextual_follow_up": contextual_follow_up,
             "conversation_spine": conversation_spine,
             "epistemic_revision": epistemic_revision,
+            "claim_evidence_packet": claim_evidence_packet,
             "self_state": self_state,
             "affect_expression": affect_expression,
             "pragmatic_continuity": pragmatic_continuity,
@@ -1372,6 +1395,7 @@ def _intelligence_support(
             else ""
         ),
         "confidence": result.get("confidence"),
+        "claim_evidence_packet": result.get("claim_evidence_packet") or {},
         "cocoon_support_suggested": bool((result.get("cocoon_suggestion") or {}).get("recommended")),
         "contextual_follow_up_used": reasoning_prompt != text,
         "conversation_spine_turn_id": str(spine.get("turn_id") or ""),
@@ -1400,6 +1424,7 @@ def _answer_engine_support(
         "used": False,
         "selected_domain": "ordinary_conversation",
         "content_seed": "",
+        "claim_evidence_packet": {},
         "adapter_executed": False,
         "answer_generated": False,
         "local_code_chat_connected": False,
@@ -1483,6 +1508,7 @@ def _answer_engine_support(
                 "reasoning_summary": intelligence_support.get("reasoning_summary"),
                 "selected_next_step": intelligence_support.get("selected_next_step"),
                 "confidence": intelligence_support.get("confidence"),
+                "claim_evidence_packet": intelligence_support.get("claim_evidence_packet") or {},
                 "candidate_models": [],
                 "challenge": {},
             }
@@ -1501,6 +1527,13 @@ def _answer_engine_support(
         "content_seed": content_seed,
         "required_answer_fragments": required_fragments,
         "answer_packet": packet,
+        "claim_evidence_packet": (
+            packet.get("claim_evidence_packet")
+            if isinstance(packet.get("claim_evidence_packet"), dict)
+            else result.get("claim_evidence_packet")
+            if isinstance(result.get("claim_evidence_packet"), dict)
+            else {}
+        ),
         "confidence_vector": result.get("confidence_vector") or {},
         "completion_retry": result.get("completion_retry") or {},
         "adapter_executed": result.get("adapter_executed") is True,
@@ -1524,17 +1557,21 @@ def _answer_engine_content_seed(
         return ""
     parts = [direct_answer]
     if domain == "source_backed_research":
+        parts[0] = "Attributed source statements:\n" + direct_answer
         research = result.get("source_research") if isinstance(result.get("source_research"), dict) else {}
         inferences = [str(item.get("text") or "").strip() for item in research.get("inferences") or [] if isinstance(item, dict) and str(item.get("text") or "").strip()]
         if inferences:
-            parts.append("A bounded inference from those attributed statements is: " + " ".join(inferences[:2]))
+            inference_text = " ".join(inferences[:2])
+            if inference_text.lower().startswith("inference:"):
+                inference_text = inference_text.split(":", 1)[1].strip()
+            parts.append("Bounded inference:\n" + inference_text)
         disagreements = research.get("disagreements") if isinstance(research.get("disagreements"), list) else []
         if disagreements:
             labels = [str(item.get("claim_key") or "the cited claim") for item in disagreements[:3] if isinstance(item, dict)]
-            parts.append("The supplied sources disagree about: " + ", ".join(labels) + ".")
+            parts.append("Uncertainty:\nThe supplied claims disagree about: " + ", ".join(labels) + ".")
         missing = [str(item).strip() for item in research.get("missing_evidence") or [] if str(item).strip()]
         if missing:
-            parts.append("What remains unresolved from these sources: " + " ".join(missing[:3]))
+            parts.append("Missing evidence:\n" + " ".join(missing[:3]))
     return truncate("\n\n".join(parts), 5000)
 
 

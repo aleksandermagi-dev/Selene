@@ -97,6 +97,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "bounded_referent_candidates",
                 "structured_correction_refinement",
                 "selective_epistemic_revision_handoff",
+                "typed_claim_evidence_handoff",
                 "aspect_voice_and_mood_realization",
                 "conversation_repair_handoff",
                 "approved_language_teaching_guidance",
@@ -269,6 +270,8 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "ready": bool(candidate),
             "voice_owns_expression_style": True,
             "meaning_must_be_preserved": True,
+            "claim_evidence_packet": meaning.get("claim_evidence_packet") or {},
+            "claim_types_and_confidence_must_be_preserved": True,
             "suggested_category": meaning["voice_category"],
             "expression_guidance": meaning.get("affect_expression_guidance") or {},
             "ending_decision": (plan.get("pragmatic_continuity") or {}).get("ending_decision") or {},
@@ -353,6 +356,19 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         else pragmatics.get("epistemic_update_plan")
         if isinstance(pragmatics.get("epistemic_update_plan"), dict)
         else {}
+    )
+    claim_evidence = next(
+        (
+            item
+            for item in (
+                payload.get("claim_evidence_packet"),
+                answer_packet.get("claim_evidence_packet"),
+                comprehension.get("claim_evidence_packet"),
+                intelligence.get("claim_evidence_packet"),
+            )
+            if isinstance(item, dict) and int(item.get("claim_count") or 0) > 0
+        ),
+        {},
     )
     figurative_interpretation = (
         payload.get("figurative_interpretation")
@@ -462,6 +478,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "conversation_spine": conversation_spine,
         "conversation_spine_used": bool(conversation_spine),
         "epistemic_revision": epistemic_revision,
+        "claim_evidence_packet": claim_evidence,
         "semantic_frame": semantic_frame,
         "supported_semantics": {
             "used": supported_semantics_used and bool(semantic_units_for_formation(supported_semantics)),
@@ -604,6 +621,11 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         if isinstance(meaning.get("epistemic_revision"), dict)
         else {}
     )
+    claim_evidence = (
+        meaning.get("claim_evidence_packet")
+        if isinstance(meaning.get("claim_evidence_packet"), dict)
+        else {}
+    )
     reasoning_support = next(
         (
             item
@@ -628,6 +650,24 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             moves.append("leave_unresolved_contradiction_visible")
         if revision_kind == "competing_explanation":
             moves.append("compare_competing_explanations_without_forcing_resolution")
+    claim_handoff = (
+        claim_evidence.get("expression_handoff")
+        if isinstance(claim_evidence.get("expression_handoff"), dict)
+        else {}
+    )
+    if claim_evidence:
+        if claim_handoff.get("observation_claim_ids"):
+            moves.append("keep_observation_separate_from_interpretation")
+        if claim_handoff.get("attributed_source_statement_ids"):
+            moves.append("attribute_source_statement_without_promoting_it_to_fact")
+        if claim_handoff.get("inference_claim_ids"):
+            moves.append("label_inference_and_preserve_its_basis")
+        if claim_handoff.get("hypothesis_claim_ids") or claim_handoff.get("model_claim_ids"):
+            moves.append("keep_hypothesis_or_model_falsifiable")
+        if claim_handoff.get("uncertainty_claim_ids") or claim_handoff.get("missing_evidence_count"):
+            moves.append("keep_claim_level_uncertainty_visible")
+        if claim_handoff.get("disagreement_count"):
+            moves.append("preserve_claim_level_disagreement")
     if dialogue.get("multi_part_prompt") is True:
         moves.insert(1 if moves else 0, "answer_each_open_question")
     if dialogue.get("resolved_reference"):
@@ -797,6 +837,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "content_light_plan": content_light_plan,
         "special_expression_plan": special_expression_plan,
         "epistemic_revision": epistemic_revision,
+        "claim_evidence_packet": claim_evidence,
     }
 
 

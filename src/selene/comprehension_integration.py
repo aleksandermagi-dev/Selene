@@ -7,6 +7,7 @@ from difflib import SequenceMatcher
 from hashlib import sha256
 from typing import Any
 
+from .claim_evidence import build_claim_evidence_packet
 from .conversation_spine import evaluate_candidate_compatibility
 from .registry import truncate
 
@@ -581,6 +582,34 @@ def build_comprehension_packet(
         answer_eligible_items,
         response_obligations=response_obligations,
     )
+    knowledge_claims = [
+        {
+            "claim_id": f"approved-knowledge-{item.get('id') or item.get('concept_id')}",
+            "claim_type": "conclusion",
+            "text": str(item.get("central_claim") or ""),
+            "source_refs": item.get("source_refs") or [],
+            "evidence_refs": item.get("source_refs") or [],
+            "scope": "; ".join(str(value) for value in item.get("limits") or []),
+            "confidence": str(item.get("confidence") or "reviewed"),
+            "validity": "approved_knowledge_resource",
+            "limitations": item.get("limits") or [],
+            "what_would_change": [
+                "Contradictory attributed evidence or a reviewed correction reopens this knowledge resource."
+            ],
+            "source_category": str(item.get("domain") or "approved_knowledge"),
+        }
+        for item in answer_eligible_items
+        if str(item.get("central_claim") or "").strip()
+    ]
+    claim_evidence = build_claim_evidence_packet(
+        {
+            "claims": knowledge_claims,
+            "accepted_source_refs": [
+                ref for item in answer_eligible_items for ref in item.get("source_refs") or []
+            ],
+            "epistemic_revision": epistemic_revision,
+        }
+    )
     result = _with_guards(
         {
             "status": "comprehension_packet_ready",
@@ -599,6 +628,7 @@ def build_comprehension_packet(
             "knowledge_context": knowledge,
             "knowledge_response_seed": knowledge_response["content_seed"],
             "knowledge_response_basis": knowledge_response,
+            "claim_evidence_packet": claim_evidence,
             "comprehension_handshake": handshake,
             "epistemic_revision": epistemic_revision,
             "metacognitive_check": {

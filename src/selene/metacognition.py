@@ -142,6 +142,12 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     handshake = _dict(comprehension.get("comprehension_handshake"))
     knowledge = _dict(comprehension.get("knowledge_context"))
     answer_packet = _dict(answer_engine.get("answer_packet"))
+    claim_evidence = _dict(
+        payload.get("claim_evidence_packet")
+        or answer_packet.get("claim_evidence_packet")
+        or comprehension.get("claim_evidence_packet")
+        or intelligence.get("claim_evidence_packet")
+    )
     confidence = _confidence_vector(payload, answer_engine)
     source_refs = _source_refs(payload, comprehension, answer_packet)
     evidence_source_refs = _evidence_source_refs(source_refs)
@@ -149,6 +155,11 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     contradictions.extend(_text_list(metacognitive_check.get("contradiction_markers")))
     contradictions.extend(_text_list(metacognitive_check.get("reasoning_challenge_flags")))
     contradictions.extend(_text_list(epistemic_revision.get("unresolved_contradictions")))
+    contradictions.extend(
+        f"claim-level disagreement: {item.get('claim_key')}"
+        for item in claim_evidence.get("disagreements") or []
+        if isinstance(item, dict) and str(item.get("claim_key") or "").strip()
+    )
     contradictions = list(dict.fromkeys(contradictions))[:20]
     revision_handoff = _dict(epistemic_revision.get("metacognitive_handoff"))
     structured_revision = epistemic_revision.get("detected") is True
@@ -176,7 +187,18 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         or answer_packet.get("domain") == "source_backed_research"
     )
     evidence_is_weak = _confidence_is_weak(confidence["evidence_confidence"])
-    source_gap = source_required and not evidence_source_refs
+    claim_handoff = _dict(claim_evidence.get("expression_handoff"))
+    attributed_claims = _text_list(claim_handoff.get("attributed_source_statement_ids"))
+    source_gap = source_required and (
+        not evidence_source_refs
+        or (
+            bool(claim_evidence)
+            and (
+                not attributed_claims
+                or claim_evidence.get("all_citations_trace_to_accepted_sources") is False
+            )
+        )
+    )
     recursion_count = max(0, int(payload.get("reopen_cycle_count") or payload.get("recursion_count") or 0))
     new_material = bool(
         payload.get("new_material_signal")
@@ -292,6 +314,17 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         "stopping": stopping,
         "correction_path": correction_path,
         "epistemic_revision": epistemic_revision,
+        "claim_evidence_packet": claim_evidence,
+        "claim_evidence_assessment": {
+            "claim_count": int(claim_evidence.get("claim_count") or 0),
+            "individual_claim_evaluation": bool(claim_evidence),
+            "source_category_used_as_truth": False,
+            "disagreement_count": len(claim_evidence.get("disagreements") or []),
+            "missing_evidence_count": len(claim_evidence.get("missing_evidence") or []),
+            "direct_answer_inference_and_uncertainty_separate": (
+                claim_evidence.get("direct_answer_inference_and_uncertainty_separate") is True
+            ),
+        },
         "source_refs": source_refs,
         "attributed_evidence_refs": evidence_source_refs,
         "answer_rewritten": False,

@@ -243,6 +243,11 @@ def _domain_answer_packet(
         "limitations": _text_list(payload.get("limitations"))[:20],
         "unanswered_obligations": _normalize_obligations(payload.get("unanswered_obligations") or []),
         "what_would_change_the_answer": _text_list(payload.get("what_would_change_the_answer"))[:20],
+        "claim_evidence_packet": (
+            payload.get("claim_evidence_packet")
+            if isinstance(payload.get("claim_evidence_packet"), dict)
+            else {}
+        ),
         "no_answer_reason": no_answer_reason,
         "evidence_confidence": evidence_confidence,
         "answer_confidence": str(payload.get("answer_confidence") or "not_assessed"),
@@ -492,6 +497,7 @@ def run_source_backed_research_answer(payload: dict[str, Any] | None = None) -> 
             "what_would_change_the_answer": research.get("missing_evidence") or [
                 "Additional attributed source packets relevant to the request."
             ],
+            "claim_evidence_packet": research.get("claim_evidence_packet") or {},
             "evidence_confidence": research["evidence_confidence"],
             "answer_confidence": research["answer_confidence"],
         },
@@ -617,6 +623,11 @@ def run_comparison_planning_answer(
             "limitations": _run_limitations(runs),
             "unanswered_obligations": unresolved,
             "what_would_change_the_answer": _run_unknowns(runs),
+            "claim_evidence_packet": (
+                runs[-1].get("claim_evidence_packet")
+                if isinstance(runs[-1].get("claim_evidence_packet"), dict)
+                else {}
+            ),
             "evidence_confidence": evidence_confidence,
             "answer_confidence": answer_confidence,
         },

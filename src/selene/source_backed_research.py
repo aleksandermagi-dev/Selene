@@ -4,6 +4,7 @@ import re
 from collections import defaultdict
 from typing import Any
 
+from .claim_evidence import build_claim_evidence_packet
 from .library_tendril import LibraryTendrilClient
 from .registry import truncate
 
@@ -45,6 +46,7 @@ def source_backed_research_status() -> dict[str, Any]:
         "version": "v1_attributed_source_packets",
         "attributed_source_packets_required": True,
         "source_statement_inference_separated": True,
+        "typed_claim_evidence_packet_available": True,
         "disagreement_detection": "explicit_claim_key_and_stance",
         "missing_evidence_visible": True,
         "citation_invention_allowed": False,
@@ -144,6 +146,40 @@ def research_from_sources(
         }
         for item in source_statements
     ]
+    typed_claims = [
+        {
+            "claim_id": f"source-statement-{index + 1}",
+            "claim_type": "source_statement",
+            "text": item["text"],
+            "source_refs": [item["source_ref"]],
+            "claim_key": item["claim_key"],
+            "stance": item["stance"],
+            "scope": item["locator"],
+            "confidence": "attributed_not_independently_verified",
+        }
+        for index, item in enumerate(source_statements)
+    ]
+    source_claim_ids = [item["claim_id"] for item in typed_claims]
+    typed_claims.extend(
+        {
+            "claim_id": f"bounded-inference-{index + 1}",
+            "claim_type": "inference",
+            "text": item["text"],
+            "basis_claim_ids": source_claim_ids,
+            "evidence_refs": item.get("basis_refs") or [],
+            "confidence": item.get("confidence") or "bounded",
+            "missing_evidence": missing_evidence,
+        }
+        for index, item in enumerate(inferences)
+    )
+    claim_evidence = build_claim_evidence_packet(
+        {
+            "claims": typed_claims,
+            "citations": citations,
+            "accepted_source_refs": source_refs,
+            "missing_evidence": missing_evidence,
+        }
+    )
     direct = " ".join(
         f"[{item['source_ref']} @ {item['locator']}] {item['text']}" for item in source_statements[:6]
     )
@@ -157,6 +193,7 @@ def research_from_sources(
         "disagreements": disagreements,
         "missing_evidence": missing_evidence,
         "citations": citations,
+        "claim_evidence_packet": claim_evidence,
         "source_refs": cited_refs,
         "accepted_source_refs": source_refs,
         "held_back_packets": held_back,
@@ -387,6 +424,7 @@ def _unable(
         "disagreements": [],
         "missing_evidence": [reason],
         "citations": [],
+        "claim_evidence_packet": build_claim_evidence_packet({"claims": []}),
         "source_refs": [],
         "accepted_source_refs": [],
         "held_back_packets": held_back,

@@ -65,6 +65,10 @@ def test_answer_uses_only_attributed_statements_and_separates_inference():
     assert result["all_citations_trace_to_accepted_packets"] is True
     assert result["citation_invention_allowed"] is False
     assert result["writes_records"] is False
+    claims = result["claim_evidence_packet"]
+    assert claims["claims_by_type"]["source_statement"]
+    assert claims["claims_by_type"]["inference"]
+    assert claims["direct_answer_inference_and_uncertainty_separate"] is True
 
 
 def test_disagreement_and_missing_resolution_evidence_are_visible():

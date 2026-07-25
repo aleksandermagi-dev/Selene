@@ -5,6 +5,7 @@ import re
 import sqlite3
 from typing import Any
 
+from .claim_evidence import build_claim_evidence_packet
 from .answer_substance import build_answer_substance
 from .registry import truncate
 
@@ -131,6 +132,53 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
     answer_substance["selected_for_answer"] = best_current_answer == answer_substance.get("answer")
     summary = _summary(models, challenge, evaluation)
     cocoon_suggestion = _cocoon_suggestion(prompt, challenge, evaluation)
+    observation_claims = [
+        {
+            "claim_id": f"intelligence-observation-{index + 1}",
+            "claim_type": "observation",
+            "text": str(item.get("observation") or ""),
+            "source_refs": source_refs,
+            "source_category": "current_supplied_context",
+            "confidence": "reported_not_independently_verified",
+        }
+        for index, item in enumerate(observations)
+    ]
+    observation_ids = [item["claim_id"] for item in observation_claims]
+    model_claims = [
+        {
+            "claim_id": f"intelligence-model-{index + 1}",
+            "claim_type": "model",
+            "text": str(item.get("name") or ""),
+            "basis_claim_ids": observation_ids,
+            "confidence": evaluation["confidence"],
+            "limitations": item.get("limitations") or [],
+            "what_would_change": item.get("unknowns") or [],
+            "source_category": "reasoning_candidate",
+        }
+        for index, item in enumerate(models)
+    ]
+    conclusion_basis = [*observation_ids, *[item["claim_id"] for item in model_claims]]
+    claim_evidence = build_claim_evidence_packet(
+        {
+            "claims": [
+                *observation_claims,
+                *model_claims,
+                {
+                    "claim_id": "intelligence-current-answer",
+                    "claim_type": "conclusion",
+                    "text": best_current_answer,
+                    "basis_claim_ids": conclusion_basis,
+                    "confidence": evaluation["confidence"],
+                    "what_would_change": [
+                        str(item)
+                        for model in models
+                        for item in model.get("unknowns") or []
+                    ],
+                    "source_category": "reasoning_conclusion",
+                },
+            ]
+        }
+    )
     result = {
         "status": "intelligence_os_reasoning_status_only",
         "organ_name": "intelligenceOS",
@@ -154,6 +202,7 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         "answer_shape": answer_shape,
         "best_current_answer": best_current_answer,
         "answer_substance": answer_substance,
+        "claim_evidence_packet": claim_evidence,
         "confidence": evaluation["confidence"],
         "cocoon_suggestion": cocoon_suggestion,
         "visible_summary_only": True,

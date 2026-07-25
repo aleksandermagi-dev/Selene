@@ -47,6 +47,7 @@ from .chronological_corpus import (
     list_chronological_corpus_arcs,
     route_chronological_corpus_review,
 )
+from .claim_evidence import build_claim_evidence_packet, claim_evidence_status
 from .compressed_structure_braid import (
     compressed_structure_braid_status,
     run_compressed_structure_braid,
@@ -593,6 +594,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": epistemic_revision_status()}
     if route_key == "epistemic_revision.plan":
         return {"route": route_key, "result": build_epistemic_revision_plan(payload)}
+    if route_key == "claim_evidence.status":
+        return {"route": route_key, "result": claim_evidence_status()}
+    if route_key == "claim_evidence.build":
+        return {"route": route_key, "result": build_claim_evidence_packet(payload)}
     if route_key == "comprehension.status":
         return {"route": route_key, "result": comprehension_status(conn)}
     if route_key == "comprehension.concepts.list":

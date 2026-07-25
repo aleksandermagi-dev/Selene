@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from selene.chat_intent import classify_chat_intent
+from selene.claim_evidence import build_claim_evidence_packet
 from selene.db import connect, init_db
 from selene.epistemic_revision import build_epistemic_revision_plan
 from selene.module_router import route_request
@@ -120,6 +121,54 @@ def test_nlo_carries_selective_revision_to_discourse_and_voice(tmp_path):
     assert "leave_unresolved_contradiction_visible" in result["discourse_plan"]["moves"]
     assert result["discourse_plan"]["epistemic_revision"] == revision
     assert result["voice_handoff"]["meaning_must_be_preserved"] is True
+
+
+def test_nlo_preserves_claim_types_disagreement_and_uncertainty_for_voice(tmp_path):
+    conn = _conn(tmp_path)
+    packet = build_claim_evidence_packet(
+        {
+            "claims": [
+                {"claim_id": "obs", "claim_type": "observation", "text": "The readings differ."},
+                {
+                    "claim_id": "report-a",
+                    "claim_type": "source_statement",
+                    "text": "Source A reports an effect.",
+                    "source_refs": ["source:a"],
+                    "claim_key": "effect",
+                    "stance": "support",
+                },
+                {
+                    "claim_id": "report-b",
+                    "claim_type": "source_statement",
+                    "text": "Source B reports no effect.",
+                    "source_refs": ["source:b"],
+                    "claim_key": "effect",
+                    "stance": "oppose",
+                },
+                {
+                    "claim_id": "infer",
+                    "claim_type": "inference",
+                    "text": "The current evidence is inconclusive.",
+                    "basis_claim_ids": ["obs", "report-a", "report-b"],
+                },
+            ]
+        }
+    )
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": "What can we conclude from these sources?",
+            "content_seed": "The current evidence is inconclusive.",
+            "claim_evidence_packet": packet,
+        },
+    )
+
+    moves = result["discourse_plan"]["moves"]
+    assert "keep_observation_separate_from_interpretation" in moves
+    assert "attribute_source_statement_without_promoting_it_to_fact" in moves
+    assert "label_inference_and_preserve_its_basis" in moves
+    assert "preserve_claim_level_disagreement" in moves
+    assert result["voice_handoff"]["claim_types_and_confidence_must_be_preserved"] is True
 
 
 def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):

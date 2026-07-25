@@ -590,6 +590,13 @@ def test_active_selene_chat_uses_only_supplied_attributed_research_packets(tmp_p
     assert "[paper:orbit @ p. 8]" in result["candidate_text"]
     assert support["source_research"]["citation_invention_allowed"] is False
     assert support["source_packets_retained_as_knowledge"] is False
+    claims = result["claim_evidence_packet"]
+    assert claims["claims_by_type"]["source_statement"]
+    assert claims["claims_by_type"]["inference"]
+    assert result["native_language_organ"]["meaning_packet"]["claim_evidence_packet"] == claims
+    assert "Attributed source statements:" in result["candidate_text"]
+    assert "Bounded inference:" in result["candidate_text"]
+    assert "Missing evidence:" in result["candidate_text"]
     assert result["native_language_organ"]["discourse_plan"]["contextual_composition_plan"]["exact_domain_structure_locked"] is True
     assert result["native_language_organ"]["contextual_composition"]["sources_changed"] is False
     assert support["memory_write_active"] is False
