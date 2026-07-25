@@ -235,6 +235,37 @@ def test_natural_correction_and_mixed_check_in_summary_stay_conversational(tmp_p
     assert mixed["memory_write_active"] is False
 
 
+def test_active_chat_applies_scope_revision_without_erasing_session_context_or_writing_memory(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    opening = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Newtonian mechanics explains ordinary motion."},
+    )["result"]
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": opening["session_id"],
+            "text": "More precisely, Newtonian mechanics applies only at low speeds and weak gravity.",
+        },
+    )["result"]
+
+    revision = result["epistemic_revision"]
+    assert revision["update_kind"] == "scope_restriction"
+    assert revision["validity"] == "earlier_claim_valid_only_in_stated_scope"
+    assert revision["model_ancestry"]["preserved"] is True
+    assert result["conversation_spine"]["selective_revision_active"] is True
+    assert result["native_language_organ"]["meaning_packet"]["epistemic_revision"]["update_kind"] == "scope_restriction"
+    assert "low speeds and weak gravity" in result["candidate_text"]
+    assert result["metacognition"]["recommended_action"] != "reopen_current_model"
+    assert result["memory_write_active"] is False
+    assert result["conversational_memory_proposal_created"] is False
+
+
 def test_selene_chat_status_is_dry_run_before_activation(tmp_path):
     conn = _conn(tmp_path)
 

@@ -96,6 +96,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "ordered_response_obligations",
                 "bounded_referent_candidates",
                 "structured_correction_refinement",
+                "selective_epistemic_revision_handoff",
                 "aspect_voice_and_mood_realization",
                 "conversation_repair_handoff",
                 "approved_language_teaching_guidance",
@@ -346,6 +347,13 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    epistemic_revision = (
+        payload.get("epistemic_revision_plan")
+        if isinstance(payload.get("epistemic_revision_plan"), dict)
+        else pragmatics.get("epistemic_update_plan")
+        if isinstance(pragmatics.get("epistemic_update_plan"), dict)
+        else {}
+    )
     figurative_interpretation = (
         payload.get("figurative_interpretation")
         if isinstance(payload.get("figurative_interpretation"), dict)
@@ -453,6 +461,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "analogy_is_equivalence": False,
         "conversation_spine": conversation_spine,
         "conversation_spine_used": bool(conversation_spine),
+        "epistemic_revision": epistemic_revision,
         "semantic_frame": semantic_frame,
         "supported_semantics": {
             "used": supported_semantics_used and bool(semantic_units_for_formation(supported_semantics)),
@@ -524,6 +533,8 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "resolved_reference": pragmatics.get("resolved_reference"),
             "reference_candidates": pragmatics.get("reference_candidates") or [],
             "correction_refinement": pragmatics.get("correction_refinement") or {},
+            "epistemic_revision": epistemic_revision,
+            "epistemic_updates": pragmatics.get("epistemic_updates") or [],
             "utterance_units": pragmatics.get("utterance_units") or [],
             "question_units": pragmatics.get("question_units") or [],
             "multi_part_prompt": pragmatics.get("multi_part_prompt") is True,
@@ -588,6 +599,11 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     turn_flow = meaning.get("turn_flow_plan") if isinstance(meaning.get("turn_flow_plan"), dict) else {}
     language_guidance = meaning.get("language_teaching_guidance") if isinstance(meaning.get("language_teaching_guidance"), dict) else {}
     comprehension = meaning.get("comprehension") if isinstance(meaning.get("comprehension"), dict) else {}
+    epistemic_revision = (
+        meaning.get("epistemic_revision")
+        if isinstance(meaning.get("epistemic_revision"), dict)
+        else {}
+    )
     reasoning_support = next(
         (
             item
@@ -601,6 +617,17 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         moves.insert(0, "ask_one_material_comprehension_question")
     if str(comprehension.get("understanding_state") or "") == "reopened_for_recheck":
         moves.insert(0, "reopen_learned_concept_without_defending_it")
+    if epistemic_revision.get("detected") is True:
+        revision_kind = str(epistemic_revision.get("update_kind") or "")
+        moves.insert(0, "identify_affected_claim_without_resetting_context")
+        if (epistemic_revision.get("preserved_structure") or {}).get("unaffected_structure_may_remain") is True:
+            moves.append("preserve_unaffected_useful_structure")
+        if revision_kind in {"reopening", "unresolved_contradiction"}:
+            moves.append("recheck_changed_dependencies_once")
+        if revision_kind == "unresolved_contradiction":
+            moves.append("leave_unresolved_contradiction_visible")
+        if revision_kind == "competing_explanation":
+            moves.append("compare_competing_explanations_without_forcing_resolution")
     if dialogue.get("multi_part_prompt") is True:
         moves.insert(1 if moves else 0, "answer_each_open_question")
     if dialogue.get("resolved_reference"):
@@ -769,6 +796,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "contextual_composition_plan": contextual_composition_plan,
         "content_light_plan": content_light_plan,
         "special_expression_plan": special_expression_plan,
+        "epistemic_revision": epistemic_revision,
     }
 
 

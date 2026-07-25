@@ -31,6 +31,7 @@ from .contextual_speech import (
     inspect_contextual_follow_up,
 )
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn, record_dialogue_response
+from .epistemic_revision import epistemic_revision_response_seed
 from .figurative_interpretation import interpret_figurative_language
 from .input_detangler import detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
@@ -264,6 +265,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         },
         commit=False,
     )
+    epistemic_revision = (
+        (prepared_dialogue_workspace.get("pragmatics") or {}).get("epistemic_update_plan")
+        if isinstance(prepared_dialogue_workspace.get("pragmatics"), dict)
+        and isinstance(
+            (prepared_dialogue_workspace.get("pragmatics") or {}).get("epistemic_update_plan"),
+            dict,
+        )
+        else {}
+    )
+    epistemic_revision_reply = epistemic_revision_response_seed(epistemic_revision)
     conversation_spine = build_conversation_spine(
         {
             "session_id": session_id,
@@ -355,6 +366,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             self_state_reply=self_state_reply,
             contextual_reply=contextual_reply,
             policy_reply=policy_reply,
+            epistemic_revision_reply=epistemic_revision_reply,
             language_content_seed=language_content_seed,
             reasoning_content_seed=reasoning_content_seed,
         ),
@@ -368,6 +380,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intent_decision": intent_decision,
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
+            "epistemic_revision_plan": epistemic_revision,
             "intelligence_support": intelligence_support,
             "memory_context": memory_retrieval,
             "content_seed": content_seed,
@@ -405,6 +418,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             self_state_reply=self_state_reply,
             contextual_reply=contextual_reply,
             policy_reply=policy_reply,
+            epistemic_revision_reply=epistemic_revision_reply,
             domain_content_seed=domain_content_seed,
             knowledge_content_seed=str(comprehension.get("knowledge_response_seed") or ""),
             language_content_seed=language_content_seed,
@@ -427,6 +441,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 if isinstance(item, dict) and str(item.get("preview") or "").strip()
             ],
             "conversation_spine": conversation_spine,
+            "epistemic_revision_plan": epistemic_revision,
         }
     )
     if answer_completion.get("accepted") is True:
@@ -471,6 +486,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_context": conversation_context,
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
+            "epistemic_revision_plan": epistemic_revision,
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
             "answer_engine_support": answer_engine_support,
@@ -606,6 +622,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "answer_engine_support": answer_engine_support,
         "answer_completion": answer_completion,
         "conversation_spine": conversation_spine,
+        "epistemic_revision_plan": epistemic_revision,
         "response_coverage": response_coverage,
         "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
         "source_refs": [
@@ -780,6 +797,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "intent_decision": intent_decision,
         "contextual_follow_up": contextual_follow_up,
         "conversation_spine": conversation_spine,
+        "epistemic_revision": epistemic_revision,
         "self_state": self_state,
         "affect_expression": affect_expression,
         "pragmatic_continuity": pragmatic_continuity,
@@ -868,6 +886,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intent_decision": intent_decision,
             "contextual_follow_up": contextual_follow_up,
             "conversation_spine": conversation_spine,
+            "epistemic_revision": epistemic_revision,
             "self_state": self_state,
             "affect_expression": affect_expression,
             "pragmatic_continuity": pragmatic_continuity,
@@ -1211,6 +1230,7 @@ def _visible_speech_seed_candidates(
     self_state_reply: str = "",
     contextual_reply: str = "",
     policy_reply: str = "",
+    epistemic_revision_reply: str = "",
     domain_content_seed: str = "",
     knowledge_content_seed: str = "",
     language_content_seed: str = "",
@@ -1231,6 +1251,11 @@ def _visible_speech_seed_candidates(
         {"source_id": "grounded_self_state", "source_class": "self_state", "text": self_state_reply},
         {"source_id": "contextual_follow_up", "source_class": "conversation", "text": contextual_reply},
         {"source_id": "conversation_policy", "source_class": "conversation", "text": policy_reply},
+        {
+            "source_id": "epistemic_revision",
+            "source_class": "conversation",
+            "text": epistemic_revision_reply,
+        },
         {"source_id": "answer_engine", "source_class": "domain_answer", "text": domain_content_seed},
         {"source_id": "approved_comprehension", "source_class": "approved_knowledge", "text": knowledge_content_seed},
         {"source_id": "language_capability", "source_class": "language_capability", "text": language_content_seed},

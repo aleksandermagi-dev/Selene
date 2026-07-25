@@ -60,6 +60,7 @@ def conversation_spine_status() -> dict[str, Any]:
                 "active topic and distinctive anchors",
                 "bounded referents",
                 "previous visible answer claims and recommendations",
+                "selective current-session epistemic updates and model ancestry",
                 "bounded visible session landmarks",
                 "open response obligations",
                 "session topic branches returns dependencies and landings",
@@ -117,6 +118,14 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         }
     )
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    epistemic_revision = (
+        pragmatics.get("epistemic_update_plan")
+        if isinstance(pragmatics.get("epistemic_update_plan"), dict)
+        else {}
+    )
+    epistemic_updates = [
+        item for item in pragmatics.get("epistemic_updates") or [] if isinstance(item, dict)
+    ][-12:]
     thread_braid = pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {}
     previous = _previous_answer(contextual, pragmatics, payload.get("conversation_events"))
     session_landmarks = [
@@ -152,6 +161,8 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             [
                 interpreted,
                 *topic_anchors,
+                str(epistemic_revision.get("target") or ""),
+                str(epistemic_revision.get("revised_claim") or ""),
                 str(resolved_reference.get("resolved_to") or ""),
                 *previous["recommendations"],
             ]
@@ -210,6 +221,9 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
                 "status": referent_status,
             },
             "previous_answer": previous,
+            "epistemic_revision": epistemic_revision,
+            "epistemic_updates": epistemic_updates,
+            "selective_revision_active": epistemic_revision.get("detected") is True,
             "session_landmarks": session_landmarks,
             "relevant_session_landmarks": relevant_landmarks,
             "open_obligations": obligations,

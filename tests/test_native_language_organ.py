@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from selene.chat_intent import classify_chat_intent
 from selene.db import connect, init_db
+from selene.epistemic_revision import build_epistemic_revision_plan
 from selene.module_router import route_request
 from selene.native_language_organ import _reasoned_answer_frames, realize_native_language
 from selene.conversation_thread_loom import build_thread_braid
@@ -93,6 +94,32 @@ def test_nlo_never_realizes_answer_shape_as_visible_reasoning_content(tmp_path):
         str(item.get("text") or "").lower() != "answer_now"
         for item in result["semantic_frame"]["propositions"]
     )
+
+
+def test_nlo_carries_selective_revision_to_discourse_and_voice(tmp_path):
+    conn = _conn(tmp_path)
+    revision = build_epistemic_revision_plan(
+        {
+            "requested_kind": "unresolved_contradiction",
+            "prior_claim": "The first model fits.",
+            "revised_claim": "The second observation conflicts with it.",
+            "contradictions": ["the two results conflict"],
+        }
+    )
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": "These two results still conflict.",
+            "content_seed": "The conflict remains unresolved pending distinguishing evidence.",
+            "epistemic_revision_plan": revision,
+        },
+    )
+
+    assert result["meaning_packet"]["epistemic_revision"]["validity"] == "conflict_unresolved"
+    assert "identify_affected_claim_without_resetting_context" in result["discourse_plan"]["moves"]
+    assert "leave_unresolved_contradiction_visible" in result["discourse_plan"]["moves"]
+    assert result["discourse_plan"]["epistemic_revision"] == revision
+    assert result["voice_handoff"]["meaning_must_be_preserved"] is True
 
 
 def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):

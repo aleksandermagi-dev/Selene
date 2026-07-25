@@ -8,6 +8,10 @@ from typing import Any
 
 from .input_detangler import detangle_user_input
 from .conversation_thread_loom import build_thread_braid
+from .epistemic_revision import (
+    build_epistemic_revision_plan,
+    compact_epistemic_update,
+)
 from .registry import truncate
 
 
@@ -49,6 +53,7 @@ def dialogue_workspace_status(conn: sqlite3.Connection, session_id: int) -> dict
                 "open_loops": [],
                 "completed_loops": [],
                 "corrections": [],
+                "epistemic_updates": [],
                 "preferences": {},
                 "session_landmarks": [],
                 "review_destination": "Status",
@@ -136,6 +141,21 @@ def prepare_dialogue_turn(
         previous,
         contextual_follow_up=contextual_follow_up,
     )
+    prior_pragmatics = prior.get("pragmatics") if isinstance(prior.get("pragmatics"), dict) else {}
+    epistemic_updates = [
+        item for item in prior_pragmatics.get("epistemic_updates") or [] if isinstance(item, dict)
+    ][-12:]
+    epistemic_update_plan = build_epistemic_revision_plan(
+        {
+            "prompt": interpreted_text,
+            "correction_refinement": correction,
+            "previous_claims": [str(previous.get("preview") or "")],
+            "prior_updates": epistemic_updates,
+            "source_refs": [f"selene_chat_session:{session_id}:current_turn"],
+        }
+    )
+    if epistemic_update_plan.get("detected") is True:
+        epistemic_updates.append(compact_epistemic_update(epistemic_update_plan))
     if str(intent.get("intent") or "") == "correction" or correction.get("detected") is True:
         corrections.append({**correction, "status": "active_refinement"})
     figurative_update = (
@@ -148,7 +168,6 @@ def prepare_dialogue_turn(
     preferences = dict(prior.get("preferences") or {})
     preferences.update(_session_preferences(interpreted_text))
     utterance_units = _utterance_units(interpreted_text)
-    prior_pragmatics = prior.get("pragmatics") if isinstance(prior.get("pragmatics"), dict) else {}
     thread_braid = build_thread_braid(
         {
             "session_id": session_id,
@@ -181,6 +200,8 @@ def prepare_dialogue_turn(
         "resolved_reference": reference,
         "reference_candidates": (reference or {}).get("candidates") or [],
         "correction_refinement": correction,
+        "epistemic_update_plan": epistemic_update_plan,
+        "epistemic_updates": epistemic_updates[-12:],
         "utterance_units": utterance_units,
         "question_units": questions,
         "multi_part_prompt": len(questions) > 1,
@@ -207,6 +228,7 @@ def prepare_dialogue_turn(
         "open_loops": loops[-20:],
         "completed_loops": list(prior.get("completed_loops") or [])[-30:],
         "corrections": corrections[-20:],
+        "epistemic_updates": epistemic_updates[-12:],
         "preferences": preferences,
         "last_dialogue_act": pragmatics["dialogue_act"],
         "last_user_preview": truncate(text, 360),
@@ -336,6 +358,11 @@ def _decode(row: sqlite3.Row) -> dict[str, Any]:
             "open_loops": _loads(item.get("open_loops_json"), []),
             "completed_loops": _loads(item.get("completed_loops_json"), []),
             "corrections": _loads(item.get("corrections_json"), []),
+            "epistemic_updates": [
+                value
+                for value in pragmatics.get("epistemic_updates") or []
+                if isinstance(value, dict)
+            ][-12:],
             "preferences": _loads(item.get("preferences_json"), {}),
             "last_dialogue_act": item.get("last_dialogue_act"),
             "last_user_preview": item.get("last_user_preview"),

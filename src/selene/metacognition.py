@@ -128,6 +128,11 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     answer_engine = _dict(payload.get("answer_engine_support"))
     coverage = _dict(payload.get("response_coverage"))
     core_route = _dict(payload.get("core_mind_route") or payload.get("route_preview"))
+    epistemic_revision = _dict(
+        payload.get("epistemic_revision_plan")
+        or payload.get("epistemic_revision")
+        or comprehension.get("epistemic_revision")
+    )
     candidate = truncate(str(payload.get("candidate_text") or payload.get("answer") or ""), 5000).strip()
     hard_boundary = bool(payload.get("hard_boundary") or payload.get("blocked_capabilities"))
     if str(core_route.get("selected_route") or "") == "block":
@@ -143,14 +148,22 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     contradictions = _text_list(payload.get("contradictions"))
     contradictions.extend(_text_list(metacognitive_check.get("contradiction_markers")))
     contradictions.extend(_text_list(metacognitive_check.get("reasoning_challenge_flags")))
+    contradictions.extend(_text_list(epistemic_revision.get("unresolved_contradictions")))
     contradictions = list(dict.fromkeys(contradictions))[:20]
-    correction_received = payload.get("correction_received") is True
+    revision_handoff = _dict(epistemic_revision.get("metacognitive_handoff"))
+    structured_revision = epistemic_revision.get("detected") is True
+    correction_received = (
+        payload.get("correction_received") is True
+        or revision_handoff.get("correction_received") is True
+    )
+    structured_reopen = revision_handoff.get("reopen_requested") is True
     reopen_requested = bool(
         payload.get("reopen_requested")
         or metacognitive_check.get("reopen_suggested")
         or str(comprehension.get("understanding_state") or "") == "reopened_for_recheck"
         or contradictions
-        or correction_received
+        or structured_reopen
+        or (correction_received and not structured_revision)
     )
     material_ambiguity = handshake.get("required") is True
     unresolved_count = int(coverage.get("unresolved_count") or 0)
@@ -165,7 +178,12 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     evidence_is_weak = _confidence_is_weak(confidence["evidence_confidence"])
     source_gap = source_required and not evidence_source_refs
     recursion_count = max(0, int(payload.get("reopen_cycle_count") or payload.get("recursion_count") or 0))
-    new_material = bool(payload.get("new_material_signal") or correction_received or evidence_source_refs)
+    new_material = bool(
+        payload.get("new_material_signal")
+        or correction_received
+        or revision_handoff.get("new_material_present")
+        or evidence_source_refs
+    )
     certainty_overreach = confidence.get("certainty_overreach_detected") is True
 
     familiarity = _familiarity_assessment(payload, comprehension)
@@ -239,6 +257,10 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     )
     correction_path = {
         "available": True,
+        "update_kind": str(epistemic_revision.get("update_kind") or "none"),
+        "affected_target": str(epistemic_revision.get("target") or ""),
+        "validity": str(epistemic_revision.get("validity") or "unchanged"),
+        "model_ancestry": epistemic_revision.get("model_ancestry") or {},
         "sequence": [
             "identify the affected claim or assumption",
             "preserve unaffected useful structure",
@@ -269,6 +291,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         "reopening": reopening,
         "stopping": stopping,
         "correction_path": correction_path,
+        "epistemic_revision": epistemic_revision,
         "source_refs": source_refs,
         "attributed_evidence_refs": evidence_source_refs,
         "answer_rewritten": False,

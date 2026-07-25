@@ -496,6 +496,13 @@ def build_comprehension_packet(
     conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    epistemic_revision = (
+        payload.get("epistemic_revision_plan")
+        if isinstance(payload.get("epistemic_revision_plan"), dict)
+        else pragmatics.get("epistemic_update_plan")
+        if isinstance(pragmatics.get("epistemic_update_plan"), dict)
+        else {}
+    )
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
     content_seed = truncate(str(payload.get("content_seed") or ""), 1800).strip()
     knowledge = retrieve_approved_knowledge(
@@ -527,7 +534,16 @@ def build_comprehension_packet(
     challenge_flags = _text_list(challenge.get("flags") or challenge.get("issues"))
     material_ambiguity = str(ambiguity.get("level") or "") == "material"
     supported = bool(content_seed or answer_eligible_items)
-    if contradiction_markers or challenge_flags:
+    epistemic_handoff = (
+        epistemic_revision.get("metacognitive_handoff")
+        if isinstance(epistemic_revision.get("metacognitive_handoff"), dict)
+        else {}
+    )
+    epistemic_reopen = (
+        epistemic_revision.get("detected") is True
+        and epistemic_handoff.get("reopen_requested") is True
+    )
+    if contradiction_markers or challenge_flags or epistemic_reopen:
         understanding_state = "reopened_for_recheck"
     elif material_ambiguity and not supported:
         understanding_state = "needs_shared_model_check"
@@ -584,10 +600,18 @@ def build_comprehension_packet(
             "knowledge_response_seed": knowledge_response["content_seed"],
             "knowledge_response_basis": knowledge_response,
             "comprehension_handshake": handshake,
+            "epistemic_revision": epistemic_revision,
             "metacognitive_check": {
-                "reopen_suggested": bool(contradiction_markers or challenge_flags),
+                "reopen_suggested": bool(contradiction_markers or challenge_flags or epistemic_reopen),
                 "contradiction_markers": contradiction_markers,
                 "reasoning_challenge_flags": challenge_flags,
+                "epistemic_update_kind": str(epistemic_revision.get("update_kind") or "none"),
+                "unresolved_epistemic_contradictions": (
+                    epistemic_revision.get("unresolved_contradictions") or []
+                ),
+                "selective_revision_preserves_unaffected_structure": (
+                    epistemic_revision.get("detected") is True
+                ),
                 "assumptions_visible": [
                     "The current wording is interpreted through this session only.",
                     "Available knowledge resources may inform the answer but do not govern identity or law.",

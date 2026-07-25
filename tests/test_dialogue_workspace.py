@@ -128,6 +128,30 @@ def test_dialogue_workspace_keeps_corrections_as_refinement_not_memory(tmp_path)
     assert result["runtime_memory_recall"] is False
 
 
+def test_dialogue_workspace_carries_selective_revision_and_ancestry_in_session_only(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "Newtonian mechanics applies only at low speeds and weak gravity."
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "conversation_events": [
+                {"role": "selene", "preview": "Newtonian mechanics explains motion."}
+            ],
+        },
+    )
+
+    revision = result["pragmatics"]["epistemic_update_plan"]
+    update = result["epistemic_updates"][-1]
+    assert revision["update_kind"] == "scope_restriction"
+    assert revision["model_ancestry"]["preserved"] is True
+    assert update["validity"] == "earlier_claim_valid_only_in_stated_scope"
+    assert update["durable_memory_write"] is False
+    assert result["memory_write_active"] is False
+
+
 def test_dialogue_workspace_resolves_ordered_options_from_the_previous_turn(tmp_path):
     conn, session_id = _conn(tmp_path)
     text = "Explain the second one."

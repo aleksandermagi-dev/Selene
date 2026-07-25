@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from selene.db import connect, init_db
+from selene.epistemic_revision import build_epistemic_revision_plan
 from selene.metacognition import evaluate_metacognition
 from selene.module_router import route_request
 
@@ -134,6 +135,48 @@ def test_correction_reopens_once_and_preserves_useful_structure():
     assert repeated["recommended_action"] == "hold_for_new_evidence"
     assert repeated["stopping"]["stop_now"] is True
     assert repeated["stopping"]["endless_self_questioning_allowed"] is False
+
+
+def test_structured_correction_applies_without_unnecessary_reopening():
+    result = evaluate_metacognition(
+        {
+            "prompt": "More precisely, the method works for stable inputs.",
+            "candidate_text": "The method works for stable inputs.",
+            "epistemic_revision_plan": build_epistemic_revision_plan(
+                {
+                    "requested_kind": "refinement",
+                    "prior_claim": "The method works.",
+                    "revised_claim": "The method works for stable inputs.",
+                }
+            ),
+        }
+    )
+
+    assert result["recommended_action"] == "answer_now"
+    assert result["reopening"]["recommended"] is False
+    assert result["correction_path"]["update_kind"] == "refinement"
+    assert result["correction_path"]["model_ancestry"]["preserved"] is True
+
+
+def test_structured_unresolved_contradiction_requests_one_bounded_recheck():
+    result = evaluate_metacognition(
+        {
+            "prompt": "These claims still conflict.",
+            "candidate_text": "The contradiction remains unresolved.",
+            "epistemic_revision_plan": build_epistemic_revision_plan(
+                {
+                    "requested_kind": "unresolved_contradiction",
+                    "prior_claim": "The earlier result holds.",
+                    "revised_claim": "The new result conflicts with it.",
+                    "contradictions": ["earlier and new result conflict"],
+                }
+            ),
+        }
+    )
+
+    assert result["recommended_action"] == "reopen_current_model"
+    assert result["reopening"]["cycle_count"] == 0
+    assert result["epistemic_revision"]["validity"] == "conflict_unresolved"
 
 
 def test_material_ambiguity_asks_one_question_instead_of_interrogating():
