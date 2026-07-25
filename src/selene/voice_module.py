@@ -536,6 +536,8 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             "nlo_meaning_preserved": bool(meaning_text),
             "expression_guidance": expression_guidance,
             "applied_expression_dimensions": expression_guidance.get("dimensions") or {},
+            "contextual_composition_plan": expression_guidance.get("contextual_composition_plan") or {},
+            "contextual_composition": expression_guidance.get("contextual_composition") or {},
             "expression_guidance_changed_meaning": False,
             "evaluation": evaluation,
             "source_refs": [f"voice_language_patterns:{category}", "voice_sentence_primitives"],
@@ -1271,17 +1273,39 @@ def _render_meaning_candidate(
     body = _normalize_voice_paragraphs(meaning_text)
     guidance = expression_guidance if isinstance(expression_guidance, dict) else {}
     dimensions = guidance.get("dimensions") if isinstance(guidance.get("dimensions"), dict) else {}
-    body = _apply_expression_pacing(body, str(dimensions.get("sentence_rhythm") or "natural"))
+    composition_plan = (
+        guidance.get("contextual_composition_plan")
+        if isinstance(guidance.get("contextual_composition_plan"), dict)
+        else {}
+    )
+    body = _apply_expression_pacing(
+        body,
+        str(dimensions.get("sentence_rhythm") or "natural"),
+        response_depth=str(composition_plan.get("response_depth") or "standard"),
+    )
     return _truncate_voice_text(body, 4200)
 
 
-def _apply_expression_pacing(body: str, rhythm: str) -> str:
-    if rhythm != "spacious" or "\n\n" in body:
+def _apply_expression_pacing(
+    body: str,
+    rhythm: str,
+    *,
+    response_depth: str = "standard",
+) -> str:
+    if rhythm == "compact" and response_depth == "brief":
+        return " ".join(item.strip() for item in body.split("\n\n") if item.strip())
+    if rhythm not in {"spacious", "short_spacious", "varied"} or "\n\n" in body:
         return body
     sentences = [item.strip() for item in re.split(r"(?<=[.!?])\s+", body) if item.strip()]
     if len(sentences) < 2:
         return body
-    return f"{sentences[0]}\n\n{' '.join(sentences[1:])}"
+    if rhythm in {"spacious", "short_spacious"}:
+        return f"{sentences[0]}\n\n{' '.join(sentences[1:])}"
+    if len(sentences) >= 3:
+        return f"{sentences[0]}\n\n{' '.join(sentences[1:3])}" + (
+            f"\n\n{' '.join(sentences[3:])}" if len(sentences) > 3 else ""
+        )
+    return body
 
 
 def _normalize_voice_paragraphs(value: str) -> str:

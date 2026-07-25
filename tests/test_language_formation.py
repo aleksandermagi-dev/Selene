@@ -82,7 +82,7 @@ def test_native_language_uses_structured_formation_when_supplied(tmp_path):
         },
     )
 
-    assert result["version"] == "v23_contextual_conversational_micro_moves"
+    assert result["version"] == "v24_contextual_composition_and_modulation"
     assert result["semantic_frame"]["formation_mode"] == "structured"
     assert "Uncertainty remains honest." in result["candidate_text"]
     assert "Selene can ask for the missing piece." in result["candidate_text"]

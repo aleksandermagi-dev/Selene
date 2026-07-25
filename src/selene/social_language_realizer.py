@@ -185,7 +185,16 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         "turn_count": turn_count,
         "affect_dimensions_consulted": {
             key: dimensions.get(key)
-            for key in ("pacing", "warmth", "humor", "restraint", "directness", "sentence_rhythm")
+            for key in (
+                "pacing",
+                "warmth",
+                "humor",
+                "restraint",
+                "directness",
+                "sentence_rhythm",
+                "enthusiasm",
+                "emotional_intensity",
+            )
             if dimensions.get(key) is not None
         },
         "affect_guidance_may_change_meaning": False,

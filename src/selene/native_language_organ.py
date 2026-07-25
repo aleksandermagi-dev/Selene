@@ -12,6 +12,10 @@ from .conversational_micro_moves import (
     compose_conversational_micro_moves,
     realize_conversational_micro_moves,
 )
+from .contextual_composition import (
+    apply_contextual_composition,
+    build_contextual_composition_plan,
+)
 from .conversation_repair import plan_conversation_turn
 from .discourse_planner import build_supported_discourse_plan
 from .language_formation import build_semantic_frame, realize_semantic_frame
@@ -71,7 +75,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v23_contextual_conversational_micro_moves",
+            "version": "v24_contextual_composition_and_modulation",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -82,6 +86,8 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "analogy_without_equivalence_handoff",
                 "contextual_optional_conversational_micro_moves",
                 "attributable_dream_reflection_handoff",
+                "contextual_composition_profile",
+                "meaning_preserving_depth_pacing_register_and_structure_modulation",
                 "grammar_and_morphology_realization",
                 "bounded_pragmatic_planning",
                 "response_obligation_planning",
@@ -225,6 +231,12 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     meaning = _meaning_packet(prompt, payload, mode)
     plan = _discourse_plan(prompt, meaning, payload, mode)
     draft = _realize_sentences(prompt, meaning, plan)
+    contextual_composition = apply_contextual_composition(
+        draft,
+        plan.get("contextual_composition_plan"),
+    )
+    plan["contextual_composition"] = contextual_composition
+    draft = str(contextual_composition.get("candidate_text") or draft)
     micro_move_realization = realize_conversational_micro_moves(
         plan.get("conversational_micro_move_plan"),
         variation_key=(
@@ -238,7 +250,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v23_contextual_conversational_micro_moves",
+        "version": "v24_contextual_composition_and_modulation",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -248,6 +260,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
         "turn_flow_plan": meaning.get("turn_flow_plan") or {},
         "language_teaching_guidance": meaning.get("language_teaching_guidance") or {},
         "discourse_plan": plan,
+        "contextual_composition": contextual_composition,
         "draft_text": draft,
         "candidate_text": candidate,
         "revision": revision,
@@ -262,6 +275,8 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "social_act_realization": plan.get("social_act_realization") or {},
             "conversational_micro_move_plan": plan.get("conversational_micro_move_plan") or {},
             "conversational_micro_move_realization": plan.get("conversational_micro_move_realization") or {},
+            "contextual_composition_plan": plan.get("contextual_composition_plan") or {},
+            "contextual_composition": plan.get("contextual_composition") or {},
             "content_light_plan": plan.get("content_light_plan") or {},
             "content_light_realization": plan.get("content_light_realization") or {},
             "uncertainty_expression_plan": plan.get("uncertainty_expression_plan") or {},
@@ -678,6 +693,21 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "dream_reflection": meaning.get("dream_reflection") or {},
         }
     )
+    contextual_composition_plan = build_contextual_composition_plan(
+        {
+            "prompt": prompt,
+            "intent": intent,
+            "response_depth": response_depth,
+            "expression_profile": meaning.get("expression_profile") or "direct",
+            "answer_domain": meaning.get("answer_domain") or "ordinary_conversation",
+            "supported_discourse": supported_discourse,
+            "pragmatic_continuity": pragmatic_continuity,
+            "contextual_follow_up": meaning.get("contextual_follow_up") or {},
+            "conversation_context": meaning.get("conversation_context") or {},
+            "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+            "conversational_micro_move_plan": conversational_micro_move_plan,
+        }
+    )
     content_light_plan = (
         build_content_light_plan({"prompt": prompt})
         if intent == "direct_answer" and not str(meaning.get("content_seed") or "").strip()
@@ -736,6 +766,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "follow_up_question_by_default": False,
         "social_act_plan": social_act_plan,
         "conversational_micro_move_plan": conversational_micro_move_plan,
+        "contextual_composition_plan": contextual_composition_plan,
         "content_light_plan": content_light_plan,
         "special_expression_plan": special_expression_plan,
     }
@@ -1684,12 +1715,16 @@ def _decode_run(row: sqlite3.Row) -> dict[str, Any]:
 
 def _json_list(value: Any) -> list[str]:
     if isinstance(value, list):
-        return [str(item) for item in value if str(item).strip()]
+        return [str(item) for item in value if item is not None and str(item).strip()]
     if isinstance(value, str) and value.strip():
         try:
             loaded = json.loads(value)
             if isinstance(loaded, list):
-                return [str(item) for item in loaded if str(item).strip()]
+                return [
+                    str(item)
+                    for item in loaded
+                    if item is not None and str(item).strip()
+                ]
         except json.JSONDecodeError:
             return [item.strip() for item in value.split(",") if item.strip()]
     return []

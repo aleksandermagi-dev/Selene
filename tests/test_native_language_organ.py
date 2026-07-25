@@ -130,7 +130,7 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
 
     discourse = result["discourse_plan"]["supported_discourse"]
 
-    assert result["version"] == "v23_contextual_conversational_micro_moves"
+    assert result["version"] == "v24_contextual_composition_and_modulation"
     assert discourse["status"] == "supported_discourse_plan_ready"
     assert discourse["thesis_unit_id"]
     assert [item["role"] for item in discourse["paragraph_plan"]] == [
@@ -164,6 +164,10 @@ def test_nlo_does_not_pad_a_developed_answer_without_distinct_supported_material
 
     assert result["candidate_text"] == seed
     assert result["revision"]["paragraph_count"] == 1
+    assert all(
+        item["text"] != "None"
+        for item in result["discourse_plan"]["supported_discourse"]["content_units"]
+    )
     assert "strongest answer I can support" not in result["candidate_text"]
     assert "What would reopen the answer" not in result["candidate_text"]
     _assert_locked(result)

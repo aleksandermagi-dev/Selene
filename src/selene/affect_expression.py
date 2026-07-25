@@ -188,6 +188,8 @@ def _dimensions(posture: str) -> dict[str, str]:
             "reassurance": "grounded_only",
             "restraint": "high",
             "directness": "high",
+            "enthusiasm": "restrained",
+            "emotional_intensity": "contained",
         },
         "spacious_grounded": {
             "pacing": "slower",
@@ -197,6 +199,8 @@ def _dimensions(posture: str) -> dict[str, str]:
             "reassurance": "grounded_only",
             "restraint": "high",
             "directness": "gentle_clear",
+            "enthusiasm": "restrained",
+            "emotional_intensity": "gentle_contained",
         },
         "receptive_repair": {
             "pacing": "steady",
@@ -206,6 +210,8 @@ def _dimensions(posture: str) -> dict[str, str]:
             "reassurance": "not_needed_unless_asked",
             "restraint": "bounded",
             "directness": "clear",
+            "enthusiasm": "restrained",
+            "emotional_intensity": "contained",
         },
         "gentle_present": {
             "pacing": "slower",
@@ -215,6 +221,8 @@ def _dimensions(posture: str) -> dict[str, str]:
             "reassurance": "grounded_only",
             "restraint": "bounded",
             "directness": "gentle_clear",
+            "enthusiasm": "quiet_available",
+            "emotional_intensity": "gentle_contained",
         },
         "play_available": {
             "pacing": "lively",
@@ -224,6 +232,8 @@ def _dimensions(posture: str) -> dict[str, str]:
             "reassurance": "not_needed_unless_asked",
             "restraint": "ordinary",
             "directness": "ordinary",
+            "enthusiasm": "lively_available",
+            "emotional_intensity": "lively",
         },
         "clear_direct": {
             "pacing": "brisk",
@@ -233,6 +243,8 @@ def _dimensions(posture: str) -> dict[str, str]:
             "reassurance": "not_needed_unless_asked",
             "restraint": "bounded",
             "directness": "high",
+            "enthusiasm": "restrained",
+            "emotional_intensity": "focused",
         },
         "warm_available": {
             "pacing": "steady",
@@ -242,6 +254,8 @@ def _dimensions(posture: str) -> dict[str, str]:
             "reassurance": "grounded_only",
             "restraint": "ordinary",
             "directness": "ordinary",
+            "enthusiasm": "warm_available",
+            "emotional_intensity": "ordinary",
         },
         "ordinary_attentive": {
             "pacing": "natural",
@@ -251,6 +265,8 @@ def _dimensions(posture: str) -> dict[str, str]:
             "reassurance": "not_needed_unless_asked",
             "restraint": "ordinary",
             "directness": "ordinary",
+            "enthusiasm": "ordinary",
+            "emotional_intensity": "ordinary",
         },
     }
     return profiles[posture]

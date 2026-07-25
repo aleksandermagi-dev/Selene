@@ -524,6 +524,8 @@ def test_active_selene_chat_answers_bounded_math_with_exact_result_and_separate_
     assert "18 * 7 = 126." in result["candidate_text"]
     assert support["confidence_vector"]["answer_confidence"] == "verified_exact"
     assert support["confidence_vector"]["expression_confidence"] == "not_assessed"
+    assert result["native_language_organ"]["discourse_plan"]["contextual_composition_plan"]["exact_domain_structure_locked"] is True
+    assert result["native_language_organ"]["contextual_composition"]["applied"] is False
     assert support["memory_write_active"] is False
     _assert_locked(result)
 
@@ -557,6 +559,8 @@ def test_active_selene_chat_uses_only_supplied_attributed_research_packets(tmp_p
     assert "[paper:orbit @ p. 8]" in result["candidate_text"]
     assert support["source_research"]["citation_invention_allowed"] is False
     assert support["source_packets_retained_as_knowledge"] is False
+    assert result["native_language_organ"]["discourse_plan"]["contextual_composition_plan"]["exact_domain_structure_locked"] is True
+    assert result["native_language_organ"]["contextual_composition"]["sources_changed"] is False
     assert support["memory_write_active"] is False
     _assert_locked(result)
 
@@ -588,8 +592,16 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v23_contextual_conversational_micro_moves"
+    assert result["native_language_organ"]["version"] == "v24_contextual_composition_and_modulation"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
+    composition_plan = result["native_language_organ"]["discourse_plan"]["contextual_composition_plan"]
+    composition = result["native_language_organ"]["contextual_composition"]
+    assert composition_plan["response_depth"] == "developed"
+    assert composition_plan["decisions"]["thesis"] == "preserve_supported_thesis_first"
+    assert composition["meaning_preserved"] is True
+    assert composition["facts_added"] is False
+    assert result["voice_preview"]["contextual_composition_plan"] == composition_plan
+    assert result["voice_preview"]["contextual_composition"] == composition
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
     assert [item["role"] for item in discourse["paragraph_plan"]] == ["answer", "development"]
@@ -1868,7 +1880,7 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
     assert len({result["candidate_text"] for result in results}) == len(results)
     for result in results:
         assert result["candidate_text"]
-        assert result["native_language_organ"]["version"] == "v23_contextual_conversational_micro_moves"
+        assert result["native_language_organ"]["version"] == "v24_contextual_composition_and_modulation"
 
 
 def test_gentle_long_session_returns_to_a_visible_recommendation_after_intervening_topics(tmp_path):

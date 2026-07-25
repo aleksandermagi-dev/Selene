@@ -490,6 +490,15 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         },
     )
     pragmatic_continuity = (native_language.get("discourse_plan") or {}).get("pragmatic_continuity") or {}
+    voice_expression_guidance = {
+        **affect_expression,
+        "contextual_composition_plan": (
+            native_language.get("discourse_plan") or {}
+        ).get("contextual_composition_plan")
+        or {},
+        "contextual_composition": native_language.get("contextual_composition") or {},
+        "expression_guidance_changes_meaning": False,
+    }
     if hard_blockers:
         dry_run = {"status": "skipped_hard_boundary", "reason": "Hard boundary blocked before dry-run comparison."}
         voice_preview = generate_voice_preview(
@@ -505,7 +514,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "memory_source_class": memory_retrieval.get("memory_source_class") or "",
                 "local_chat_continuity_used": local_continuity_supported,
                 "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
-                "expression_guidance": affect_expression,
+                "expression_guidance": voice_expression_guidance,
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or ""))
@@ -528,7 +537,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "memory_source_class": memory_retrieval.get("memory_source_class") or "",
                 "local_chat_continuity_used": local_continuity_supported,
                 "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
-                "expression_guidance": affect_expression,
+                "expression_guidance": voice_expression_guidance,
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or dry_run.get("candidate_text") or ""))
@@ -1508,8 +1517,12 @@ def _preserve_answer_engine_invariants(candidate: str, support: dict[str, Any]) 
     if support.get("used") is not True:
         return candidate
     required = [str(item).strip() for item in support.get("required_answer_fragments") or [] if str(item).strip()]
-    candidate_lower = candidate.lower()
-    missing = [item for item in required if item.lower() not in candidate_lower]
+    candidate_surface = " ".join(candidate.lower().split())
+    missing = [
+        item
+        for item in required
+        if " ".join(item.lower().split()) not in candidate_surface
+    ]
     if not missing:
         return candidate
     content_seed = str(support.get("content_seed") or "").strip()

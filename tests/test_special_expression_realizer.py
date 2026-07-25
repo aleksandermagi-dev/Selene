@@ -118,7 +118,7 @@ def test_nlo_routes_boundary_memory_and_initiative_through_special_expression(tm
         special = result["discourse_plan"]["special_expression_realization"]
         assert special["whole_response_template_selected"] is False
         assert special["authority_expanded"] is False
-        assert result["version"] == "v23_contextual_conversational_micro_moves"
+        assert result["version"] == "v24_contextual_composition_and_modulation"
         assert result["memory_write_active"] is False
         assert result["training_allowed"] is False
     assert boundary["discourse_plan"]["special_expression_plan"]["kind"] == "boundary"
