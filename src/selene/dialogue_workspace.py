@@ -77,7 +77,20 @@ def prepare_dialogue_turn(
         if isinstance(payload.get("input_interpretation"), dict)
         else detangle_user_input(text)
     )
-    interpreted_text = truncate(str(input_interpretation.get("interpreted_text") or text), 2400)
+    figurative_interpretation = (
+        payload.get("figurative_interpretation")
+        if isinstance(payload.get("figurative_interpretation"), dict)
+        else {}
+    )
+    interpreted_text = truncate(
+        str(
+            payload.get("interpreted_text")
+            or figurative_interpretation.get("interpreted_text")
+            or input_interpretation.get("interpreted_text")
+            or text
+        ),
+        2400,
+    )
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     contextual_follow_up = (
         payload.get("contextual_follow_up")
@@ -125,6 +138,13 @@ def prepare_dialogue_turn(
     )
     if str(intent.get("intent") or "") == "correction" or correction.get("detected") is True:
         corrections.append({**correction, "status": "active_refinement"})
+    figurative_update = (
+        figurative_interpretation.get("interpretation_update")
+        if isinstance(figurative_interpretation.get("interpretation_update"), dict)
+        else {}
+    )
+    if figurative_update.get("detected") is True:
+        corrections.append({**figurative_update, "status": "active_refinement"})
     preferences = dict(prior.get("preferences") or {})
     preferences.update(_session_preferences(interpreted_text))
     utterance_units = _utterance_units(interpreted_text)
@@ -167,6 +187,7 @@ def prepare_dialogue_turn(
         "indirect_request": _indirect_request(interpreted_text),
         "quoted_material": _quotes(interpreted_text),
         "input_interpretation": input_interpretation,
+        "figurative_interpretation": figurative_interpretation,
         "response_preference": preferences.get("response_depth") or "",
         "previous_turn_available": bool(previous),
         "previous_turn": previous,
@@ -562,6 +583,12 @@ def _session_preferences(text: str) -> dict[str, str]:
         return {"response_depth": "brief", "scope": "current_session_only"}
     if any(item in lower for item in ("go deeper", "long form", "walk me through", "in detail")):
         return {"response_depth": "developed", "scope": "current_session_only"}
+    if any(item in lower for item in ("slow down", "one step at a time", "less at once")):
+        return {
+            "response_depth": "brief",
+            "pacing": "spacious",
+            "scope": "current_session_only",
+        }
     return {}
 
 

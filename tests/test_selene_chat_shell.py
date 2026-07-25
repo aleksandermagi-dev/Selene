@@ -378,6 +378,38 @@ def test_active_selene_chat_sends_supervised_response_and_keeps_soft_uncertainty
     _assert_locked(result)
 
 
+def test_active_chat_carries_figurative_meaning_and_session_scoped_correction(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Let's not beat a dead horse; what should we do next?"},
+    )["result"]
+    correction = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "I meant that literally."},
+    )["result"]
+
+    interpretation = first["figurative_interpretation"]
+    assert interpretation["selected_reading"] == "figurative"
+    assert "keep pushing a settled or unproductive topic" in first["interpreted_text"]
+    assert first["conversation_spine"]["literal_prompt"].startswith("Let's not beat a dead horse")
+    assert first["conversation_spine"]["interpreted_prompt"] == first["interpreted_text"]
+    assert first["native_language_organ"]["meaning_packet"]["figurative_interpretation"][
+        "selected_reading"
+    ] == "figurative"
+    update = correction["figurative_interpretation"]["interpretation_update"]
+    assert update["to_reading"] == "literal"
+    assert update["preserve_surrounding_conversation"] is True
+    assert update["durable_memory_write"] is False
+    _assert_locked(first)
+    _assert_locked(correction)
+
+
 def test_active_selene_chat_can_use_intelligence_os_support_without_architecture_voice(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
@@ -480,7 +512,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v21_supported_semantic_composition"
+    assert result["native_language_organ"]["version"] == "v22_contextual_figurative_meaning"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
@@ -1760,7 +1792,7 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
     assert len({result["candidate_text"] for result in results}) == len(results)
     for result in results:
         assert result["candidate_text"]
-        assert result["native_language_organ"]["version"] == "v21_supported_semantic_composition"
+        assert result["native_language_organ"]["version"] == "v22_contextual_figurative_meaning"
 
 
 def test_gentle_long_session_returns_to_a_visible_recommendation_after_intervening_topics(tmp_path):

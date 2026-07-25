@@ -66,13 +66,15 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v21_supported_semantic_composition",
+            "version": "v22_contextual_figurative_meaning",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
                 "semantic_sentence_realization",
                 "structured_semantic_frames",
                 "supported_semantic_answer_handoff",
+                "literal_and_nonliteral_meaning_handoff",
+                "analogy_without_equivalence_handoff",
                 "grammar_and_morphology_realization",
                 "bounded_pragmatic_planning",
                 "response_obligation_planning",
@@ -220,7 +222,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v21_supported_semantic_composition",
+        "version": "v22_contextual_figurative_meaning",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -311,6 +313,13 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    figurative_interpretation = (
+        payload.get("figurative_interpretation")
+        if isinstance(payload.get("figurative_interpretation"), dict)
+        else pragmatics.get("figurative_interpretation")
+        if isinstance(pragmatics.get("figurative_interpretation"), dict)
+        else {}
+    )
     recent_assistant_texts = [
         str(item).strip()
         for item in conversation.get("recent_assistant_texts") or []
@@ -400,6 +409,9 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "content_source_class": str(visible_speech_seed.get("selected_source_class") or "conversation"),
         "content_source_release_allowed": visible_speech_seed.get("release_allowed") is True,
         "contextual_follow_up": contextual_follow_up,
+        "figurative_interpretation": figurative_interpretation,
+        "literal_and_nonliteral_readings_remain_distinct": True,
+        "analogy_is_equivalence": False,
         "conversation_spine": conversation_spine,
         "conversation_spine_used": bool(conversation_spine),
         "semantic_frame": semantic_frame,

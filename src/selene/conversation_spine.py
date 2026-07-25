@@ -99,6 +99,11 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         raise ValueError("conversation prompt is required")
 
     interpreted = truncate(str(payload.get("interpreted_text") or prompt), 2400).strip()
+    figurative_interpretation = (
+        payload.get("figurative_interpretation")
+        if isinstance(payload.get("figurative_interpretation"), dict)
+        else {}
+    )
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     contextual = payload.get("contextual_follow_up") if isinstance(payload.get("contextual_follow_up"), dict) else {}
@@ -183,6 +188,8 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "turn_id": turn_id,
             "literal_prompt": prompt,
             "interpreted_prompt": interpreted,
+            "figurative_interpretation": figurative_interpretation,
+            "literal_and_nonliteral_readings_remain_distinct": True,
             "grounded_prompt": grounded_prompt,
             "intent_class": intent_class,
             "intent": str(intent.get("intent") or "direct_conversation"),

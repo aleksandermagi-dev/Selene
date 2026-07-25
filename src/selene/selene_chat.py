@@ -31,6 +31,7 @@ from .contextual_speech import (
     inspect_contextual_follow_up,
 )
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn, record_dialogue_response
+from .figurative_interpretation import interpret_figurative_language
 from .input_detangler import detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
 from .language_teaching_shelf import build_language_capability_answer
@@ -182,15 +183,34 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     chat_continuity = _local_chat_continuity(conn, current_session_id=session_id)
     prior_dialogue_workspace = dialogue_workspace_status(conn, session_id)
     conversation_context = _active_conversation_context(chat_continuity, prior_dialogue_workspace)
-    contextual_follow_up = inspect_contextual_follow_up(understanding_text, conversation_context)
+    previous_figurative_interpretation = next(
+        (
+            item
+            for item in reversed(conversation_context.get("recent_figurative_interpretations") or [])
+            if isinstance(item, dict)
+        ),
+        {},
+    )
+    figurative_interpretation = interpret_figurative_language(
+        {
+            "text": understanding_text,
+            "conversation_context": conversation_context,
+            "previous_interpretation": previous_figurative_interpretation,
+        }
+    )
+    meaning_text = truncate(
+        str(figurative_interpretation.get("interpreted_text") or understanding_text),
+        2400,
+    )
+    contextual_follow_up = inspect_contextual_follow_up(meaning_text, conversation_context)
     intent_decision = apply_contextual_intent(
-        classify_chat_intent(understanding_text),
+        classify_chat_intent(meaning_text),
         contextual_follow_up,
     )
     memory_retrieval = retrieve_memory(
         conn,
         {
-            "query": understanding_text,
+            "query": meaning_text,
             "limit": 4,
             "intent_decision": intent_decision,
             "allow_contextual_relevance": transfer_complete,
@@ -199,7 +219,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     route = create_core_mind_route_preview(
         conn,
         {
-            "prompt": understanding_text,
+            "prompt": meaning_text,
             "source_refs": ["selene_chat_active_supervised", *chat_continuity.get("source_refs", []), *memory_retrieval.get("source_refs", [])],
             "suppress_review_queue": True,
         },
@@ -210,15 +230,15 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             [
                 *_hard_boundary_blockers(text, selected_route, route),
                 *(
-                    _hard_boundary_blockers(understanding_text, selected_route, route)
-                    if understanding_text != text
+                    _hard_boundary_blockers(meaning_text, selected_route, route)
+                    if meaning_text != text
                     else []
                 ),
             ]
         )
     )
     intent_decision = apply_contextual_intent(
-        classify_chat_intent(understanding_text, selected_route="block" if hard_blockers else selected_route),
+        classify_chat_intent(meaning_text, selected_route="block" if hard_blockers else selected_route),
         contextual_follow_up,
     )
     memory_action_plan = _plan_conversational_memory_action(
@@ -236,6 +256,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "session_id": session_id,
             "text": text,
             "input_interpretation": input_interpretation,
+            "figurative_interpretation": figurative_interpretation,
+            "interpreted_text": meaning_text,
             "intent_decision": intent_decision,
             "conversation_events": chat_continuity.get("current_session_events") or [],
             "contextual_follow_up": contextual_follow_up,
@@ -246,7 +268,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         {
             "session_id": session_id,
             "prompt": text,
-            "interpreted_text": understanding_text,
+            "interpreted_text": meaning_text,
+            "figurative_interpretation": figurative_interpretation,
             "intent_decision": intent_decision,
             "dialogue_workspace": prepared_dialogue_workspace,
             "contextual_follow_up": contextual_follow_up,
@@ -256,13 +279,13 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     language_capability = build_language_capability_answer(
         conn,
         {
-            "prompt": understanding_text,
+            "prompt": meaning_text,
             "active_topic": prepared_dialogue_workspace.get("active_topic") or "",
         },
     )
     intelligence_support = _intelligence_support(
         conn,
-        understanding_text,
+        meaning_text,
         route,
         chat_continuity,
         intent_decision,
@@ -270,16 +293,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         conversation_spine=conversation_spine,
         hard=bool(hard_blockers),
     )
-    cocoon_suggestion = _cocoon_suggestion(understanding_text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
-    continuity_reply = _local_chat_continuity_reply(understanding_text, chat_continuity, intent_decision)
+    cocoon_suggestion = _cocoon_suggestion(meaning_text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
+    continuity_reply = _local_chat_continuity_reply(meaning_text, chat_continuity, intent_decision)
     memory_action_reply = str(memory_action_plan.get("response_seed") or "")
-    memory_reply = _approved_memory_reply(understanding_text, memory_retrieval, intent_decision)
+    memory_reply = _approved_memory_reply(meaning_text, memory_retrieval, intent_decision)
     contextual_memory_reply = _contextual_memory_reply(memory_retrieval, intent_decision)
     self_state = (
         build_self_state_packet(
             conn,
             {
-                "prompt": understanding_text,
+                "prompt": meaning_text,
                 "session_id": session_id,
                 "active_conversation": True,
                 "hard_boundary": bool(hard_blockers),
@@ -292,7 +315,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     affect_expression = build_affect_expression_guidance(
         conn,
         {
-            "prompt": understanding_text,
+            "prompt": meaning_text,
             "session_id": session_id,
             "affect_signal_id": payload.get("affect_signal_id"),
             "intent_decision": intent_decision,
@@ -313,12 +336,18 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         self_state_reply=self_state_reply,
         contextual_reply=contextual_reply,
     )
-    policy_reply = _conversation_policy_reply(understanding_text)
+    policy_reply = _conversation_policy_reply(meaning_text)
+    figurative_clarification_reply = (
+        str(figurative_interpretation.get("clarification_question") or "")
+        if figurative_interpretation.get("clarification_required") is True
+        else ""
+    )
     reasoning_content_seed = str(intelligence_support.get("best_current_answer") or "")
     language_content_seed = str(language_capability.get("content_seed") or "")
     initial_visible_speech_seed = select_visible_speech_seed(
-        understanding_text,
+        meaning_text,
         _visible_speech_seed_candidates(
+            figurative_clarification_reply=figurative_clarification_reply,
             mixed_conversation_reply=mixed_conversation_reply,
             memory_action_reply=memory_action_reply,
             continuity_reply=continuity_reply,
@@ -335,7 +364,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     comprehension = build_comprehension_packet(
         conn,
         {
-            "prompt": understanding_text,
+            "prompt": meaning_text,
             "intent_decision": intent_decision,
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
@@ -352,7 +381,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     answer_engine_support = _answer_engine_support(
         conn,
-        understanding_text,
+        meaning_text,
         payload,
         intent_decision,
         prepared_dialogue_workspace,
@@ -366,8 +395,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     domain_content_seed = str(answer_engine_support.get("content_seed") or "")
     visible_speech_seed = select_visible_speech_seed(
-        understanding_text,
+        meaning_text,
         _visible_speech_seed_candidates(
+            figurative_clarification_reply=figurative_clarification_reply,
             mixed_conversation_reply=mixed_conversation_reply,
             memory_action_reply=memory_action_reply,
             continuity_reply=continuity_reply,
@@ -387,7 +417,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     content_seed = str(visible_speech_seed.get("content_seed") or "")
     answer_completion = build_bounded_answer_completion(
         {
-            "prompt": understanding_text,
+            "prompt": meaning_text,
             "content_seed": content_seed,
             "response_obligations": conversation_spine.get("open_obligations") or [],
             "knowledge_items": (comprehension.get("knowledge_context") or {}).get("answer_eligible_items") or [],
@@ -420,7 +450,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     native_language = realize_native_language(
         conn,
         {
-            "prompt": understanding_text,
+            "prompt": meaning_text,
+            "figurative_interpretation": figurative_interpretation,
             "selected_route": "block" if hard_blockers else selected_route,
             "source_class": source_class,
             "content_seed": content_seed,
@@ -458,7 +489,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         voice_preview = generate_voice_preview(
             conn,
             {
-                "prompt": understanding_text,
+                "prompt": meaning_text,
                 "route": "block",
                 "source_class": source_class,
                 "meaning_text": native_language.get("candidate_text") or "",
@@ -481,7 +512,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         voice_preview = generate_voice_preview(
             conn,
             {
-                "prompt": understanding_text,
+                "prompt": meaning_text,
                 "route": selected_route,
                 "source_class": source_class,
                 "context_summary": _voice_context_summary(package, dry_run, chat_continuity, memory_retrieval),
@@ -550,7 +581,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     conversation_repair["candidate_source"] = recovery_source
     conversation_repair["final_response_coverage"] = response_coverage
     metacognition_payload = {
-        "prompt": understanding_text,
+        "prompt": meaning_text,
         "candidate_text": candidate_text,
         "core_mind_route": route,
         "hard_boundary": bool(hard_blockers),
@@ -648,7 +679,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         conversation_repair["final_response_coverage"] = response_coverage
     visible_speech_release = inspect_visible_speech(
         candidate_text,
-        prompt=understanding_text,
+        prompt=meaning_text,
         source_id=str(visible_speech_seed.get("selected_source_id") or "none"),
         hard_boundary=bool(hard_blockers),
     )
@@ -713,11 +744,15 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "route_preview": route,
             "activation_state": "selene_chat_active_supervised",
             "input_interpretation": input_interpretation,
+            "figurative_interpretation": figurative_interpretation,
+            "interpreted_text": meaning_text,
             "input_channel": input_channel,
         },
     )
     assistant_payload = {
         "input_interpretation": input_interpretation,
+        "figurative_interpretation": figurative_interpretation,
+        "interpreted_text": meaning_text,
         "route_preview": route,
         "intelligence_os_support": intelligence_support,
         "answer_engine_support": answer_engine_support,
@@ -799,6 +834,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "input_channel": input_channel,
             "delivery_constraint": delivery_constraint,
             "input_interpretation": input_interpretation,
+            "figurative_interpretation": figurative_interpretation,
+            "interpreted_text": meaning_text,
             "selected_route": selected_route,
             "source_class": source_class,
             "cocoon_suggestion": cocoon_suggestion,
@@ -1071,6 +1108,7 @@ def _source_class(text: str, package_available: bool) -> str:
 
 def _visible_speech_seed_candidates(
     *,
+    figurative_clarification_reply: str = "",
     mixed_conversation_reply: str = "",
     memory_action_reply: str = "",
     continuity_reply: str = "",
@@ -1086,6 +1124,11 @@ def _visible_speech_seed_candidates(
     hard_boundary: bool = False,
 ) -> list[dict[str, str]]:
     candidates = [
+        {
+            "source_id": "figurative_meaning_clarification",
+            "source_class": "conversation",
+            "text": figurative_clarification_reply,
+        },
         {"source_id": "mixed_conversation_answer", "source_class": "conversation", "text": mixed_conversation_reply},
         {"source_id": "conversational_memory_action", "source_class": "conversation", "text": memory_action_reply},
         {"source_id": "local_chat_continuity", "source_class": "conversation", "text": continuity_reply},
@@ -2301,6 +2344,13 @@ def _active_conversation_context(
         for item in events
         if str(item.get("role") or "") == "user" and str(item.get("preview") or "").strip()
     ][-8:]
+    recent_figurative_interpretations = [
+        item.get("figurative_interpretation")
+        for item in events
+        if str(item.get("role") or "") == "user"
+        and isinstance(item.get("figurative_interpretation"), dict)
+        and item.get("figurative_interpretation")
+    ][-4:]
     dialogue = dialogue_workspace if isinstance(dialogue_workspace, dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
     return {
@@ -2308,6 +2358,7 @@ def _active_conversation_context(
         "previous_turn": previous_turn,
         "recent_assistant_texts": recent_assistant_texts,
         "recent_user_texts": recent_user_texts,
+        "recent_figurative_interpretations": recent_figurative_interpretations,
         "turn_count": len(events),
         "session_landmarks": [
             item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
@@ -2330,6 +2381,11 @@ def _chat_event_preview(row: sqlite3.Row, *, preview_limit: int = 180) -> dict[s
     answer_engine = payload.get("answer_engine_support") if isinstance(payload.get("answer_engine_support"), dict) else {}
     metacognition = payload.get("metacognition") if isinstance(payload.get("metacognition"), dict) else {}
     intelligence = payload.get("intelligence_os_support") if isinstance(payload.get("intelligence_os_support"), dict) else {}
+    figurative = (
+        payload.get("figurative_interpretation")
+        if isinstance(payload.get("figurative_interpretation"), dict)
+        else {}
+    )
     voice = payload.get("voice_preview") if isinstance(payload.get("voice_preview"), dict) else {}
     vector = metacognition.get("confidence_vector") if isinstance(metacognition.get("confidence_vector"), dict) else {}
     engine_vector = answer_engine.get("confidence_vector") if isinstance(answer_engine.get("confidence_vector"), dict) else {}
@@ -2341,6 +2397,7 @@ def _chat_event_preview(row: sqlite3.Row, *, preview_limit: int = 180) -> dict[s
         "created_at": item.get("created_at"),
         "updated_at": item.get("updated_at"),
         "preview": truncate(str(item.get("content") or ""), max(1, min(int(preview_limit), 900))),
+        "figurative_interpretation": figurative,
         "confidence_vector": {
             "answer_confidence": _first_assessed_confidence(
                 vector.get("answer_confidence"),

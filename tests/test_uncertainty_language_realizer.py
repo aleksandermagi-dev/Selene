@@ -83,7 +83,7 @@ def test_nlo_uses_inspectable_uncertainty_plan_for_unsupported_question(tmp_path
 
     plan = result["discourse_plan"]["uncertainty_expression_plan"]
     realization = result["discourse_plan"]["uncertainty_expression_realization"]
-    assert result["version"] == "v21_supported_semantic_composition"
+    assert result["version"] == "v22_contextual_figurative_meaning"
     assert plan["kind"] == "insufficient_grounding"
     assert realization["whole_response_template_selected"] is False
     assert result["candidate_text"] == realization["candidate_text"]

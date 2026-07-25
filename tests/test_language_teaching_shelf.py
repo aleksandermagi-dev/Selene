@@ -198,7 +198,7 @@ def test_nlo_consults_prepared_shelf_without_changing_voice_or_identity(tmp_path
     )
 
     guidance = result["language_teaching_guidance"]
-    assert result["version"] == "v21_supported_semantic_composition"
+    assert result["version"] == "v22_contextual_figurative_meaning"
     assert guidance["used"] is True
     assert "answer_then_expand" in guidance["lesson_keys"]
     assert "list_or_prose_fit" in guidance["lesson_keys"]
