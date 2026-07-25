@@ -111,7 +111,7 @@ def inspect_contextual_follow_up(
         "kind": kind if contextual else "none",
         "marker": marker if contextual else "",
         "previous_turn_available": previous_available,
-        "previous_assistant_preview": truncate(previous_assistant_preview, 360),
+        "previous_assistant_preview": truncate(previous_assistant_preview, 900),
         "recent_assistant_texts": [truncate(item, 360) for item in recent_assistant[-4:]],
         "recent_user_texts": [truncate(item, 360) for item in recent_user[-8:]],
         "session_landmarks": session_landmarks,
@@ -215,6 +215,7 @@ def contextual_response_seed(
     if contextual.get("detected") is not True:
         return ""
     kind = str(contextual.get("kind") or "")
+    marker = str(contextual.get("marker") or "")
     previous = str(contextual.get("previous_assistant_preview") or "")
     recent = " ".join(
         str(item).strip()
@@ -378,6 +379,14 @@ def contextual_response_seed(
         return (
             "Because using the same standard keeps the comparison fair. Changing the criteria between options would make the conclusion reflect the test rather than the options themselves."
         )
+    if kind == "reason_follow_up" and marker == "why":
+        explicit_reason = _bounded_explicit_reason(previous)
+        if explicit_reason:
+            return explicit_reason
+        return (
+            "I did not state the reason clearly enough in that answer. "
+            "I can explain it, but I need the deciding constraint or evidence rather than inventing one."
+        )
     if kind == "continuation" and any(marker in previous.lower() for marker in insufficient_markers):
         return (
             "Then the useful next step is to name the subject, list the observations any answer must fit, and compare possible answers against them."
@@ -433,6 +442,35 @@ def _matching_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[di
             ranked.append((len(overlap), index, item))
     ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
     return [item for _, _, item in ranked[:6]]
+
+
+def _bounded_explicit_reason(previous: str) -> str:
+    """Reconstruct only a reason stated in the immediately visible answer."""
+    sentences = [
+        item.strip()
+        for item in re.split(r"(?<=[.!?])\s+", " ".join(str(previous or "").split()))
+        if item.strip()
+    ]
+    for index, sentence in enumerate(sentences):
+        match = re.search(r"\bbecause\s+(.+)", sentence, flags=re.IGNORECASE)
+        if not match:
+            continue
+        reason = match.group(1).strip()
+        if not reason:
+            continue
+        reason = reason[0].lower() + reason[1:] if reason[0].isupper() else reason
+        reason = reason.rstrip()
+        if reason[-1:] not in ".!?":
+            reason += "."
+        response = f"Because {reason}"
+        if index + 1 < len(sentences) and re.match(
+            r"^(?:it|this|that)\s+(?:also\s+)?",
+            sentences[index + 1],
+            flags=re.IGNORECASE,
+        ):
+            response = f"{response} {sentences[index + 1]}"
+        return truncate(response, 900)
+    return ""
 
 
 def _landmark_summary(landmarks: list[dict[str, Any]]) -> str:

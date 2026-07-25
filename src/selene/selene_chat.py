@@ -2254,7 +2254,7 @@ def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | N
             """,
             (current_session_id,),
         ).fetchall()
-        current_messages = [_chat_event_preview(row) for row in reversed(current_rows)]
+        current_messages = [_chat_event_preview(row, preview_limit=900) for row in reversed(current_rows)]
     recent_events = [_chat_event_preview(row) for row in reversed(messages)]
     source_refs = [f"selene_chat_session:{item['id']}" for item in recent_sessions[:limit] if item.get("id")]
     if current_session_id:
@@ -2320,7 +2320,7 @@ def _active_conversation_context(
     }
 
 
-def _chat_event_preview(row: sqlite3.Row) -> dict[str, Any]:
+def _chat_event_preview(row: sqlite3.Row, *, preview_limit: int = 180) -> dict[str, Any]:
     item = dict(row)
     try:
         payload = json.loads(str(item.get("payload_json") or "{}"))
@@ -2340,7 +2340,7 @@ def _chat_event_preview(row: sqlite3.Row) -> dict[str, Any]:
         "title": item.get("title"),
         "created_at": item.get("created_at"),
         "updated_at": item.get("updated_at"),
-        "preview": truncate(str(item.get("content") or ""), 180),
+        "preview": truncate(str(item.get("content") or ""), max(1, min(int(preview_limit), 900))),
         "confidence_vector": {
             "answer_confidence": _first_assessed_confidence(
                 vector.get("answer_confidence"),

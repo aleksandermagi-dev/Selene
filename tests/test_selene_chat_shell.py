@@ -1441,6 +1441,49 @@ def test_active_selene_chat_carries_a_recommendation_into_the_immediate_callback
     _assert_locked(callback)
 
 
+def test_active_selene_chat_answers_bare_why_from_the_immediately_visible_reason(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "A neighborhood learning festival has limited rooms and volunteers but wants both hands-on science "
+                "and quiet reading. Compare a shared schedule with parallel zones and recommend a small pilot."
+            )
+        },
+    )["result"]
+    callback = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": first["session_id"],
+            "text": (
+                "Why do you prefer the shared-schedule pilot first rather than the parallel-zone design, "
+                "and what result would make you switch your recommendation?"
+            ),
+        },
+    )["result"]
+    bare_why = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "why?"},
+    )["result"]
+
+    assert "because" in callback["candidate_text"].lower()
+    assert bare_why["contextual_follow_up"]["kind"] == "reason_follow_up"
+    assert bare_why["conversation_spine"]["intent_class"] == "contextual_content"
+    assert bare_why["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert "limited rooms and volunteers flexible" in bare_why["candidate_text"].lower()
+    assert "visible evidence" in bare_why["candidate_text"].lower()
+    assert "not have enough evidence to name the cause" not in bare_why["candidate_text"].lower()
+    assert bare_why["response_coverage"]["all_required_addressed"] is True
+    _assert_locked(bare_why)
+
+
 def test_active_selene_chat_handles_social_turns_with_immediate_context(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

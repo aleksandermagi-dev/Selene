@@ -49,6 +49,40 @@ def test_short_words_without_a_previous_turn_do_not_invent_context():
     assert result["kind"] == "none"
 
 
+def test_bare_reason_follow_up_uses_only_the_explicit_reason_in_the_previous_answer():
+    previous = (
+        "I prefer the shared-schedule pilot first because it keeps the limited rooms and volunteers flexible. "
+        "It also gives us visible evidence before we commit to two continuous tracks."
+    )
+
+    for prompt in ("Why?", "How come?"):
+        follow_up = inspect_contextual_follow_up(
+            prompt,
+            _context(previous, answer_confidence="clear_enough_to_continue"),
+        )
+        response = contextual_response_seed(follow_up)
+
+        assert follow_up["kind"] == "reason_follow_up"
+        assert follow_up["preserve_active_topic"] is True
+        assert response.startswith("Because it keeps the limited rooms and volunteers flexible.")
+        assert "visible evidence before we commit" in response
+        assert "not have enough evidence" not in response
+        assert follow_up["session_scoped_only"] is True
+        assert follow_up["memory_write_active"] is False
+
+
+def test_bare_reason_follow_up_does_not_invent_a_reason_when_the_previous_answer_has_none():
+    previous = "I would start with the shared-schedule pilot."
+    follow_up = inspect_contextual_follow_up("Why?", _context(previous))
+    response = contextual_response_seed(follow_up)
+
+    assert response == (
+        "I did not state the reason clearly enough in that answer. "
+        "I can explain it, but I need the deciding constraint or evidence rather than inventing one."
+    )
+    assert "mechanism that connects" not in response
+
+
 def test_bare_confusion_requests_a_bounded_rephrase_of_the_previous_reply():
     previous = "I do not have enough grounding for a clean answer yet."
     follow_up = inspect_contextual_follow_up("what?", _context(previous))
