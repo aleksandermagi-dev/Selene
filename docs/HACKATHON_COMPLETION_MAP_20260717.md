@@ -225,12 +225,13 @@ judge access must be an explicit decision rather than an accidental release.
 Do not add a packaged installer to the repository without Aleks's explicit
 authorization.
 
-Aleks authorized a bounded downloadable judge build on July 21. The verified
-privacy-safe Windows installer is available at
-`https://github.com/aleksandermagi-dev/Selene/releases/tag/hackathon-judge-v0.1.1`.
-The binary access path is complete. Synchronizing the full event-window source
-history remains a separate privacy review because the local branch includes
-private-miner implementation work that should not be published blindly.
+Aleks authorized a bounded downloadable judge build on July 21, but no event
+submission was ultimately made. The unused public prerelease and remote tag were
+withdrawn on July 25. The privacy-safe packaging protections remain in place;
+there is currently no public binary access path. Synchronizing the full
+event-window source history remains a separate privacy review because the local
+branch includes private-miner implementation work that should not be published
+blindly.
 
 ### P0 — Required Before Submission
 

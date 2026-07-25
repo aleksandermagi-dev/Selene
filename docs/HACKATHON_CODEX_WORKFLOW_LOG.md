@@ -307,7 +307,7 @@ shared conversational spine instead of accumulating independent lexical fixes.
 **Selected checkpoints:** `909a00d`, `789bb1e`, `76c8679`, `f45cbd1`,
 `621f539`, `0769802`, `2d47dd0`, `bedda5d`, `c05fe24`, `af15578`, `eaaa5fd`
 
-### Judge Installer Privacy Audit
+### Judge Installer Privacy Audit (Historical)
 
 **Aleks's direction:** Provide a downloadable Windows EXE so judges can run the
 working application.
@@ -330,15 +330,14 @@ had been uploaded.
 - rebuilt, package-verified, reinstalled, and confirmed zero forbidden installed
   files with healthy/ready startup.
 
-**Release artifact:** `Selene_0.1.1_x64-setup.exe`, 14,576,751 bytes, SHA-256
+**Historical release artifact:** `Selene_0.1.1_x64-setup.exe`, 14,576,751 bytes, SHA-256
 `1E72E7F9E9BF9BB9748C2266E581CA9F7B73017609970F36C566D96623BCCEDC`.
-The build is unsigned and must be labeled accordingly for judges.
+The build was unsigned and labeled accordingly.
 
-**Published evaluation prerelease:**
-`https://github.com/aleksandermagi-dev/Selene/releases/tag/hackathon-judge-v0.1.1`.
-GitHub reported the matching asset digest and byte size. The full local branch
-history was not pushed as part of this action because public-source review of
-private-miner implementation work remains separate.
+**Withdrawal:** No event submission was made. Aleks authorized removal of the
+unused public evaluation prerelease on July 25, and the release and remote tag
+were deleted. The package privacy gate, private-material exclusions, and safe
+upgrade cleanup remain as general installer protections.
 
 ## Current Boundary
 
@@ -363,6 +362,9 @@ preserving Selene's modular architecture and separate authority boundaries.
 - [ ] Keep copyrighted music, unauthorized third-party material, private corpora, personal data, DBs, logs, and confidential blueprints out of the demo and submission repository.
 - [ ] Submit by July 21, 2026 at 5:00 p.m. Pacific / 8:00 p.m. Eastern.
 - [ ] Keep the working project freely available to judges through the end of judging.
+
+Final event outcome: no submission was made; the unused judge prerelease was
+withdrawn on July 25.
 
 ## Logging Policy
 

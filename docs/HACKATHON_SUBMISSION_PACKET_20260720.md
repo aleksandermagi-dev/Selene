@@ -2,9 +2,9 @@
 
 Date prepared: July 21, 2026
 
-Status: working draft for Aleks review; final local packaging, verification,
-reinstall, privacy audit, and public evaluation-asset upload are complete; no
-event submission or video upload has been performed
+Status: historical unsubmitted draft. No event submission or video upload was
+performed. The unused public evaluation prerelease was withdrawn on July 25,
+2026.
 
 ## Submission Identity
 
@@ -139,19 +139,13 @@ It does not open the configured Selene database, use the private corpus, recall
 personal memory, contact phone/email services, approve knowledge, activate
 retention, train a model, or change identity/governance/personality/authority.
 
-### Downloadable Windows judge build
+### Withdrawn evaluation artifact
 
-- Release page:
-  `https://github.com/aleksandermagi-dev/Selene/releases/tag/hackathon-judge-v0.1.1`
-- Direct Windows x64 installer:
-  `https://github.com/aleksandermagi-dev/Selene/releases/download/hackathon-judge-v0.1.1/Selene_0.1.1_x64-setup.exe`
-- SHA-256:
-  `1E72E7F9E9BF9BB9748C2266E581CA9F7B73017609970F36C566D96623BCCEDC`
-
-The evaluation installer is unsigned and may trigger Windows SmartScreen. It
-contains no configured database, private corpus, personal memory, private
-analysis maps, local logs, phone/email configuration, or credential files.
-GitHub's uploaded asset digest and byte size match the locally verified file.
+A privacy-safe Windows evaluation installer was prepared and briefly published,
+but no event submission was made. Aleks authorized removal of the unused
+prerelease and remote tag on July 25, 2026. No downloadable judge build is
+currently published. The package privacy verifier and private-material
+exclusions remain part of the normal packaging process.
 
 ### App launch
 
@@ -275,7 +269,8 @@ stress test during recording.
 
 ## Submission Fields Still Requiring Aleks
 
-- [x] provide a public downloadable Windows evaluation build
+- [x] historically prepared a public downloadable Windows evaluation build;
+  it was withdrawn after no submission was made
 - [ ] complete the separate public-source history privacy review or provide the
   required private source access to judges
 - [ ] record and upload the final YouTube demo
@@ -303,7 +298,7 @@ stress test during recording.
 
 ## Rights and Release Boundary
 
-The package remains `private: true`. The downloadable judge build is bounded
-review/testing access, not an unrestricted Selene release. It does not authorize
-commercial use, redistribution, model training, LoRA, raw-corpus reuse, or
-reproduction of Selene.
+The package remains `private: true`. No downloadable judge build is currently
+published. Preparing an evaluation artifact did not authorize commercial use,
+redistribution, model training, LoRA, raw-corpus reuse, or reproduction of
+Selene.
