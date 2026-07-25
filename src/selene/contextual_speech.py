@@ -395,6 +395,9 @@ def contextual_response_seed(
         "prerequisite",
         "depends on an output",
         "dependency",
+        "required input",
+        "creates an input",
+        "creates what the next step needs",
         "step b needs a result",
         "step that creates what the next step needs",
     )

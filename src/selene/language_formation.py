@@ -130,10 +130,21 @@ def realize_semantic_frame(
     recent_texts: list[str] | None = None,
 ) -> dict[str, Any]:
     propositions = [item for item in frame.get("propositions") or [] if isinstance(item, dict)]
-    realized = [(item, _realize_proposition(item)) for item in propositions]
-    realized = [(item, clause) for item, clause in realized if clause]
-    clauses = [clause for _, clause in realized]
-    relations = [str(item.get("relation") or "") for item, _ in realized]
+    realized = [
+        (
+            index,
+            item,
+            _realize_proposition(
+                item,
+                variation_key=f"{variation_key}|unit:{item.get('id') or index + 1}",
+            ),
+        )
+        for index, item in enumerate(propositions)
+    ]
+    realized = [(index, item, clause) for index, item, clause in realized if clause]
+    clauses = [clause for _, _, clause in realized]
+    relations = [str(item.get("relation") or "") for _, item, _ in realized]
+    moods = [str(item.get("mood") or "declarative") for _, item, _ in realized]
     relation = str(frame.get("discourse_relation") or "sequence")
     text = _compose_clauses(
         clauses,
@@ -141,6 +152,7 @@ def realize_semantic_frame(
         str(frame.get("response_depth") or "standard"),
         variation_key,
         relations=relations,
+        moods=moods,
     )
     recent_texts = recent_texts or []
     if _matches_recent(text, recent_texts) and len(clauses) > 1:
@@ -150,8 +162,27 @@ def realize_semantic_frame(
             str(frame.get("response_depth") or "standard"),
             variation_key + ":alternate",
             relations=list(reversed(relations)),
+            moods=list(reversed(moods)),
         )
     required = [str(item.get("text") or item.get("object") or "").strip() for item in propositions if item.get("required", True)]
+    required_unit_ids = [
+        str(item.get("id") or f"semantic_{index + 1}")
+        for index, item in enumerate(propositions)
+        if item.get("required", True)
+    ]
+    realized_unit_ids = [
+        str(item.get("id") or f"semantic_{index + 1}")
+        for index, item, _ in realized
+    ]
+    required_units_preserved = all(unit_id in realized_unit_ids for unit_id in required_unit_ids)
+    meaning_signature = list(
+        dict.fromkeys(
+            str(marker)
+            for item in propositions
+            for marker in item.get("meaning_keys") or []
+            if str(marker).strip()
+        )
+    )
     return {
         "status": "semantic_frame_realized" if text else "semantic_frame_needs_content",
         "candidate_text": text,
@@ -168,7 +199,14 @@ def realize_semantic_frame(
         ),
         "clause_relations": relations,
         "required_propositions": required,
-        "meaning_preserved": bool(text) or not required,
+        "required_semantic_unit_ids": required_unit_ids,
+        "realized_semantic_unit_ids": realized_unit_ids,
+        "required_semantic_units_preserved": required_units_preserved,
+        "meaning_signature": meaning_signature,
+        "lexical_choice_unit_count": sum(
+            1 for item in propositions if isinstance(item.get("lexical_choices"), dict) and item.get("lexical_choices")
+        ),
+        "meaning_preserved": (bool(text) or not required) and required_units_preserved,
         "source_refs": frame.get("source_refs") or [],
         "expression_directives": frame.get("expression_directives") or {},
         "visible_summary_only": True,
@@ -195,13 +233,17 @@ def _propositions(value: Any, content_seed: str) -> list[dict[str, Any]]:
     return items
 
 
-def _realize_proposition(item: dict[str, Any]) -> str:
+def _realize_proposition(item: dict[str, Any], *, variation_key: str = "") -> str:
     text = " ".join(str(item.get("text") or "").split())
     if text:
         return _sentence(text)
-    subject = " ".join(str(item.get("subject") or "").split())
-    predicate = " ".join(str(item.get("predicate") or item.get("verb") or "").split()).lower()
-    obj = " ".join(str(item.get("object") or item.get("complement") or "").split())
+    subject = _semantic_field(item, "subject", variation_key)
+    predicate = _semantic_field(item, "predicate", variation_key).lower()
+    if not predicate:
+        predicate = " ".join(str(item.get("verb") or "").split()).lower()
+    obj = _semantic_field(item, "object", variation_key)
+    if not obj:
+        obj = " ".join(str(item.get("complement") or "").split())
     mood = str(item.get("mood") or "declarative").lower()
     if mood != "imperative" and not subject:
         return ""
@@ -225,7 +267,7 @@ def _realize_proposition(item: dict[str, Any]) -> str:
     reason = " ".join(str(item.get("reason") or "").split())
     contrast = " ".join(str(item.get("contrast") or "").split())
     example = " ".join(str(item.get("example") or "").split())
-    qualifier = " ".join(str(item.get("qualifier") or "").split())
+    qualifier = _semantic_field(item, "qualifier", variation_key)
     adverbs = _words(item.get("adverbs"))
     if mood == "imperative":
         clause = " ".join(part for part in (predicate, *adverbs, obj) if part)
@@ -236,15 +278,37 @@ def _realize_proposition(item: dict[str, Any]) -> str:
         clause = " ".join(part for part in (subject, verb_phrase, *adverbs, obj) if part)
     if qualifier:
         clause = f"{qualifier.rstrip(', ')}, {_continuation_case(clause)}"
+    digest = sha256((variation_key or str(item.get("id") or "semantic-unit")).encode("utf-8")).hexdigest()
     if reason:
-        clause = f"{clause} because {reason.rstrip('. ')}"
+        if int(digest[:2], 16) % 2:
+            clause = f"Because {reason.rstrip('. ')}, {_continuation_case(clause)}"
+        else:
+            clause = f"{clause} because {reason.rstrip('. ')}"
     if contrast:
         clause = f"{clause}, while {contrast.rstrip('. ')}"
     if condition:
-        clause = f"When {condition.rstrip('. ')}, {_continuation_case(clause)}"
+        if int(digest[2:4], 16) % 2:
+            clause = f"{clause} when {condition.rstrip('. ')}"
+        else:
+            clause = f"When {condition.rstrip('. ')}, {_continuation_case(clause)}"
     if example:
         clause = f"{clause}; for example, {example.rstrip('. ')}"
     return _sentence(clause)
+
+
+def _semantic_field(item: dict[str, Any], field: str, variation_key: str) -> str:
+    base = " ".join(str(item.get(field) or "").split())
+    choices = item.get("lexical_choices") if isinstance(item.get("lexical_choices"), dict) else {}
+    alternatives = [
+        " ".join(str(value).split())
+        for value in choices.get(field) or []
+        if str(value).strip()
+    ]
+    pool = list(dict.fromkeys([base, *alternatives])) if base else list(dict.fromkeys(alternatives))
+    if not pool:
+        return ""
+    digest = sha256(f"{variation_key}|{field}".encode("utf-8")).hexdigest()
+    return pool[int(digest[:8], 16) % len(pool)]
 
 
 def _compose_clauses(
@@ -254,6 +318,7 @@ def _compose_clauses(
     key: str,
     *,
     relations: list[str] | None = None,
+    moods: list[str] | None = None,
 ) -> str:
     if not clauses:
         return ""
@@ -277,10 +342,18 @@ def _compose_clauses(
         connectors = connector_sets.get(clause_relation, connector_sets["sequence"])
         start = int(digest[index * 2:index * 2 + 8] or digest[:8], 16) % len(connectors)
         connector = connectors[(start + index) % len(connectors)]
+        mood = moods[index + 1] if moods and len(moods) > index + 1 else "declarative"
+        continuation = (
+            clause[0].lower() + clause[1:]
+            if mood == "imperative" and clause
+            else _continuation_case(clause)
+        )
         if _starts_with_transition(clause):
             sentences.append(_sentence(clause))
+        elif connector.lower().endswith(" that"):
+            sentences.append(_sentence(f"{connector} {continuation}"))
         else:
-            sentences.append(_sentence(f"{connector}, {_continuation_case(clause)}"))
+            sentences.append(_sentence(f"{connector}, {continuation}"))
     if depth == "developed" and len(sentences) >= 3:
         return "\n\n".join(sentences)
     return " ".join(sentences)
@@ -472,7 +545,8 @@ def _dominant(items: list[dict[str, Any]], key: str, fallback: str) -> str:
 
 
 def _is_structured(item: dict[str, Any]) -> bool:
-    return bool(item.get("subject") and (item.get("predicate") or item.get("verb")))
+    predicate = item.get("predicate") or item.get("verb")
+    return bool(predicate and (item.get("subject") or str(item.get("mood") or "") == "imperative"))
 
 
 def _sentences(value: str) -> list[str]:

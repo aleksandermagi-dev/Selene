@@ -82,7 +82,7 @@ def test_native_language_uses_structured_formation_when_supplied(tmp_path):
         },
     )
 
-    assert result["version"] == "v20_conversation_maturity_composition"
+    assert result["version"] == "v21_supported_semantic_composition"
     assert result["semantic_frame"]["formation_mode"] == "structured"
     assert "Uncertainty remains honest." in result["candidate_text"]
     assert "Selene can ask for the missing piece." in result["candidate_text"]
@@ -203,5 +203,5 @@ def test_formation_realizes_questions_and_instructions_from_structured_meaning()
     result = realize_semantic_frame(frame, variation_key="mood-grammar")
 
     assert "Can Selene carry the thread?" in result["candidate_text"]
-    assert "Keep the source visible." in result["candidate_text"]
+    assert "keep the source visible." in result["candidate_text"].lower()
     assert "mood" in result["grammar_features"]

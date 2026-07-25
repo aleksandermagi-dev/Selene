@@ -26,6 +26,7 @@ from .special_expression_realizer import (
     build_memory_expression_plan,
     realize_special_expression_plan,
 )
+from .supported_semantics import semantic_units_for_formation
 from .uncertainty_language_realizer import build_uncertainty_plan, realize_uncertainty_plan
 
 
@@ -65,12 +66,13 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v20_conversation_maturity_composition",
+            "version": "v21_supported_semantic_composition",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
                 "semantic_sentence_realization",
                 "structured_semantic_frames",
+                "supported_semantic_answer_handoff",
                 "grammar_and_morphology_realization",
                 "bounded_pragmatic_planning",
                 "response_obligation_planning",
@@ -218,7 +220,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v20_conversation_maturity_composition",
+        "version": "v21_supported_semantic_composition",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -276,12 +278,27 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     answer_engine = payload.get("answer_engine_support") if isinstance(payload.get("answer_engine_support"), dict) else {}
     answer_completion = payload.get("answer_completion") if isinstance(payload.get("answer_completion"), dict) else {}
     answer_packet = answer_engine.get("answer_packet") if isinstance(answer_engine.get("answer_packet"), dict) else {}
+    answer_substance = (
+        intelligence.get("answer_substance")
+        if isinstance(intelligence.get("answer_substance"), dict)
+        else {}
+    )
+    supported_semantics = (
+        answer_substance.get("semantic_packet")
+        if isinstance(answer_substance.get("semantic_packet"), dict)
+        else {}
+    )
     comprehension = payload.get("comprehension_context") if isinstance(payload.get("comprehension_context"), dict) else {}
     if not content_seed and intelligence.get("used"):
         content_seed = _truncate_preserving_paragraphs(
             _normalize_paragraphs(str(intelligence.get("best_current_answer") or "")),
             3800,
         )
+    supported_semantics_used = _supported_semantics_owns_content(
+        content_seed,
+        intelligence,
+        str(visible_speech_seed.get("selected_source_id") or "unspecified"),
+    )
     memory = payload.get("memory_context") if isinstance(payload.get("memory_context"), dict) else {}
     self_state = payload.get("self_state_context") if isinstance(payload.get("self_state_context"), dict) else {}
     affect_expression = (
@@ -317,7 +334,13 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         or _infer_certainty(prompt, content_seed)
     )
     affect = str(payload.get("affect") or affect_expression.get("expression_posture") or _infer_affect(prompt))
-    propositions = _propositions(prompt, content_seed, memory, intelligence)
+    propositions = _propositions(
+        prompt,
+        content_seed,
+        memory,
+        intelligence,
+        content_source_id=str(visible_speech_seed.get("selected_source_id") or "unspecified"),
+    )
     pragmatic_plan = build_pragmatic_plan(
         {
             "prompt": prompt,
@@ -380,6 +403,25 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "conversation_spine": conversation_spine,
         "conversation_spine_used": bool(conversation_spine),
         "semantic_frame": semantic_frame,
+        "supported_semantics": {
+            "used": supported_semantics_used and bool(semantic_units_for_formation(supported_semantics)),
+            "status": str(supported_semantics.get("status") or "not_available"),
+            "version": str(supported_semantics.get("version") or ""),
+            "answer_kind": str(supported_semantics.get("answer_kind") or ""),
+            "formation_mode": str(supported_semantics.get("formation_mode") or ""),
+            "required_unit_ids": supported_semantics.get("required_unit_ids") or [],
+            "meaning_signature": supported_semantics.get("meaning_signature") or [],
+            "lexical_semantic_entry_count": int(
+                supported_semantics.get("lexical_semantic_entry_count") or 0
+            ),
+            "available_lexical_semantic_entry_count": int(
+                supported_semantics.get("available_lexical_semantic_entry_count") or 0
+            ),
+            "certainty": str(supported_semantics.get("certainty") or ""),
+            "scope": str(supported_semantics.get("scope") or ""),
+            "source_refs": supported_semantics.get("source_refs") or [],
+            "meaning_change_allowed": False,
+        },
         "formation": formation,
         "formation_text": str(formation.get("candidate_text") or ""),
         "pragmatic_plan": pragmatic_plan,
@@ -1322,9 +1364,36 @@ def _voice_category(intent: str, affect: str, guidance: dict[str, Any] | None = 
     return "conversational_looseness"
 
 
-def _propositions(prompt: str, seed: str, memory: dict[str, Any], intelligence: dict[str, Any]) -> list[dict[str, Any]]:
+def _propositions(
+    prompt: str,
+    seed: str,
+    memory: dict[str, Any],
+    intelligence: dict[str, Any],
+    *,
+    content_source_id: str = "unspecified",
+) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
-    if seed:
+    answer_substance = (
+        intelligence.get("answer_substance")
+        if isinstance(intelligence.get("answer_substance"), dict)
+        else {}
+    )
+    intelligence_semantics_owns_seed = _supported_semantics_owns_content(
+        seed,
+        intelligence,
+        content_source_id,
+    )
+    semantic_packet = (
+        answer_substance.get("semantic_packet")
+        if intelligence_semantics_owns_seed
+        and answer_substance.get("selected_for_answer") is True
+        and isinstance(answer_substance.get("semantic_packet"), dict)
+        else {}
+    )
+    supported_units = semantic_units_for_formation(semantic_packet)
+    if supported_units:
+        items.extend(supported_units)
+    elif seed:
         for index, sentence in enumerate(
             item.strip()
             for item in re.split(r"(?<=[.!?])\s+|\n+", seed)
@@ -1358,6 +1427,20 @@ def _propositions(prompt: str, seed: str, memory: dict[str, Any], intelligence: 
     if not items:
         items.append({"kind": "current_turn", "text": truncate(prompt, 420), "supported": True})
     return items[:12]
+
+
+def _supported_semantics_owns_content(
+    seed: str,
+    intelligence: dict[str, Any],
+    content_source_id: str,
+) -> bool:
+    best_current_answer = " ".join(str(intelligence.get("best_current_answer") or "").split())
+    normalized_seed = " ".join(str(seed or "").split())
+    return (
+        content_source_id in {"unspecified", "intelligence_os_answer"}
+        and bool(best_current_answer)
+        and normalized_seed == best_current_answer
+    )
 
 
 def _sentence_relation(sentence: str) -> str:

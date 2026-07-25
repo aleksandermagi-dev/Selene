@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from .registry import truncate
+from .supported_semantics import build_supported_semantic_packet
 
 
 ANSWER_SUBSTANCE_BOUNDARY = (
@@ -30,6 +31,7 @@ def build_answer_substance(
     kind = "unsupported_fact"
     missing_variable = "the specific claim or observation the answer must fit"
     support_basis = "current_prompt_only"
+    semantic_context: dict[str, str] = {}
 
     comparison = any(marker in lower for marker in ("compare", "difference", "versus", " vs ", "tradeoff", "trade-off", "which option"))
     ordering = any(marker in lower for marker in ("come first", "do first", "start with", "begin with", "priority", "prioritize"))
@@ -58,6 +60,7 @@ def build_answer_substance(
         )
         kind = "bounded_viewpoint"
         missing_variable = "whether a prerequisite or non-negotiable constraint overrides reversibility"
+        semantic_context = {"variant": "reversible_step"}
     elif viewpoint:
         answer = (
             "My current read is that the idea is worth examining, but I would separate what we have observed from what we are inferring before settling on it. "
@@ -72,6 +75,7 @@ def build_answer_substance(
         )
         kind = "conditional_dependency_answer"
         missing_variable = "whether either step depends on an output from the other"
+        semantic_context = {"variant": "reversed_order"}
     elif consequence:
         answer = (
             "Treat that as a conditional change: identify what the changed part feeds, which assumptions depend on it, and what observable result should differ. "
@@ -79,6 +83,7 @@ def build_answer_substance(
         )
         kind = "conditional_consequence_method"
         missing_variable = "the downstream dependency and observable prediction"
+        semantic_context = {"variant": "conditional_change"}
     elif why_before:
         first = why_before.group(1).strip(" ,")
         second = why_before.group(2).strip(" ,")
@@ -88,6 +93,7 @@ def build_answer_substance(
         )
         kind = "dependency_explanation"
         missing_variable = "whether the second step is actually a prerequisite for the first"
+        semantic_context = {"first": first, "second": second}
     elif (
         comparison
         and "attendance alone" in lower
@@ -101,6 +107,7 @@ def build_answer_substance(
         )
         kind = "bounded_measurement_comparison"
         missing_variable = "the success threshold for access, participant experience, and representative demand"
+        semantic_context = {"variant": "measurement_comparison"}
     elif comparison and limited_capacity and paired_offerings:
         resources = limited_capacity.group(1).strip()
         first_goal = paired_offerings.group(1).strip(" ,")
@@ -112,6 +119,11 @@ def build_answer_substance(
         )
         kind = "bounded_shared_capacity_design"
         missing_variable = f"attendance, wait time, participant experience, and staffing strain under the available {resources}"
+        semantic_context = {
+            "resources": resources,
+            "first_goal": first_goal,
+            "second_goal": second_goal,
+        }
     elif comparison and limited_resource and paired_goals:
         resource = limited_resource.group(1).strip()
         first_goal = paired_goals.group(1).strip()
@@ -123,6 +135,11 @@ def build_answer_substance(
         )
         kind = "bounded_shared_resource_comparison"
         missing_variable = f"the measured outcome for {first_goal} and {second_goal} per unit of {resource}"
+        semantic_context = {
+            "resource": resource,
+            "first_goal": first_goal,
+            "second_goal": second_goal,
+        }
     elif comparison and ordering:
         answer = (
             "Start with whichever option supplies a prerequisite the other one needs. If neither depends on the other, "
@@ -130,6 +147,7 @@ def build_answer_substance(
         )
         kind = "comparison_dependency_rule"
         missing_variable = "what each option consumes, produces, and risks"
+        semantic_context = {"variant": "comparison_ordering"}
     elif comparison:
         answer = (
             "Compare the options on the same dimensions: intended outcome, required evidence, constraints, reversibility, and failure cost. "
@@ -137,6 +155,7 @@ def build_answer_substance(
         )
         kind = "comparison_method"
         missing_variable = "which outcome and constraint matter most"
+        semantic_context = {"variant": "shared_dimensions"}
     elif planning or ordering:
         answer = (
             "Begin with the earliest missing prerequisite. If the prerequisites are already present, choose the smallest reversible step that can produce evidence, "
@@ -144,6 +163,7 @@ def build_answer_substance(
         )
         kind = "bounded_planning_method"
         missing_variable = "the intended outcome and the first non-negotiable constraint"
+        semantic_context = {"variant": "prerequisite_then_reversible"}
     elif lower.startswith(("do you know about ", "what do you know about ")):
         subject = re.sub(r"^(?:do you know about|what do you know about)\s+", "", lower).strip(" ?.\t\n")
         subject = subject or topic
@@ -180,6 +200,19 @@ def build_answer_substance(
             f"The missing piece is {missing_variable}."
         )
 
+    semantic_units = _structured_semantic_units(kind, semantic_context)
+    if not semantic_units:
+        semantic_units = _text_grounded_semantic_units(answer)
+    semantic_packet = build_supported_semantic_packet(
+        {
+            "answer_kind": kind,
+            "certainty": "provisional",
+            "scope": "current_prompt_only",
+            "fallback_text": answer,
+            "source_refs": ["answer_substance:current_prompt"],
+            "units": semantic_units,
+        }
+    )
     return {
         "status": "answer_substance_ready",
         "answer": truncate(answer, 1000),
@@ -187,12 +220,330 @@ def build_answer_substance(
         "topic": truncate(topic, 240),
         "missing_variable": truncate(missing_variable, 360),
         "support_basis": support_basis,
+        "semantic_packet": semantic_packet,
+        "semantic_units": semantic_packet["units"],
+        "structured_semantic_handoff": semantic_packet["structured_unit_count"] > 0,
+        "compatibility_fallback_available": semantic_packet["compatibility_fallback_available"],
         "external_fact_claimed": False,
         "source_required_for_factual_claim": kind in {"bounded_knowledge_gap", "source_needed", "causal_evidence_needed"},
         "visible_summary_only": True,
         "hidden_chain_of_thought_exposed": False,
         "provenance_boundary": ANSWER_SUBSTANCE_BOUNDARY,
     }
+
+
+def _structured_semantic_units(kind: str, context: dict[str, str]) -> list[dict[str, Any]]:
+    common = {
+        "source_kind": "prompt_grounded_method",
+        "source_refs": ["answer_substance:current_prompt"],
+        "supported": True,
+    }
+    if kind == "comparison_dependency_rule":
+        return [
+            {
+                **common,
+                "id": "comparison_start_prerequisite",
+                "role": "answer",
+                "relation": "sequence",
+                "predicate": "start with",
+                "object": "the option that supplies a prerequisite the other option needs",
+                "mood": "imperative",
+                "lexical_choices": {
+                    "predicate": ["start with", "begin with"],
+                    "object": [
+                        "the option that supplies a prerequisite the other option needs",
+                        "the option that creates an input the other option requires",
+                    ],
+                },
+                "lexical_semantics": [
+                    {
+                        "id": "initiate_ordering",
+                        "field": "predicate",
+                        "lemma": "start with",
+                        "forms": ["start with", "begin with"],
+                        "sense": "initiate an ordered comparison with the dependency-supplying option",
+                        "part_of_speech": "verb_phrase",
+                        "grammatical_behavior": ["imperative-compatible", "takes an option as its object"],
+                        "registers": ["ordinary", "technical"],
+                        "collocations": ["option", "prerequisite", "step"],
+                        "near_concepts": ["continue with", "finish with"],
+                        "distinctions": ["starting selects the first step; continuing assumes a step already began"],
+                        "concept_refs": ["answer_kind:comparison_dependency_rule"],
+                        "understanding_state": "prompt_grounded",
+                        "source_refs": ["answer_substance:current_prompt"],
+                    }
+                ],
+                "meaning_keys": ["prerequisite controls ordering"],
+            },
+            {
+                **common,
+                "id": "comparison_reversible_fallback",
+                "role": "condition",
+                "relation": "condition",
+                "predicate": "start with",
+                "object": "the smaller reversible step that produces useful evidence sooner",
+                "mood": "imperative",
+                "condition": "neither option depends on the other",
+                "lexical_choices": {
+                    "predicate": ["start with", "try"],
+                    "object": [
+                        "the smaller reversible step that produces useful evidence sooner",
+                        "the smaller reversible option that gives useful evidence sooner",
+                    ],
+                },
+                "meaning_keys": ["reversibility guides nondependent ordering", "early evidence"],
+            },
+            {
+                **common,
+                "id": "comparison_deciding_detail",
+                "role": "support",
+                "relation": "support",
+                "subject": "the deciding detail",
+                "predicate": "be",
+                "object": "what each option consumes, produces, and risks",
+                "meaning_keys": ["compare inputs outputs and risks"],
+            },
+        ]
+    if kind == "dependency_explanation":
+        first = context.get("first") or "the first step"
+        second = context.get("second") or "the later step"
+        return [
+            {
+                **common,
+                "id": "dependency_preserves_input",
+                "role": "answer",
+                "relation": "cause",
+                "subject": f"putting {first} before {second}",
+                "predicate": "preserve",
+                "object": "the input before the later step can reshape it",
+                "meaning_keys": ["ordering preserves input"],
+            },
+            {
+                **common,
+                "id": "dependency_traceability",
+                "role": "support",
+                "relation": "support",
+                "subject": "that ordering",
+                "predicate": "make",
+                "object": "the result easier to trace, test, and correct",
+                "meaning_keys": ["ordering improves traceability and correction"],
+            },
+            {
+                **common,
+                "id": "dependency_reversal_condition",
+                "role": "condition",
+                "relation": "condition",
+                "subject": "the order",
+                "predicate": "reverse",
+                "modality": "should",
+                "condition": f"{second} supplies information {first} requires",
+                "meaning_keys": ["reverse order when dependency reverses"],
+            },
+        ]
+    if kind == "conditional_dependency_answer":
+        return [
+            {
+                **common,
+                "id": "reversal_dependency_gate",
+                "role": "answer",
+                "relation": "condition",
+                "subject": "the reversed order",
+                "predicate": "work",
+                "condition": "the later step does not depend on an output from the earlier one",
+                "meaning_keys": ["reversal works only without dependency"],
+            },
+            {
+                **common,
+                "id": "reversal_missing_input",
+                "role": "condition",
+                "relation": "condition",
+                "subject": "the reversed sequence",
+                "predicate": "remove",
+                "object": "a required input",
+                "condition": "that dependency exists",
+                "meaning_keys": ["dependency makes reversal remove input"],
+            },
+            {
+                **common,
+                "id": "reversal_compare_when_independent",
+                "role": "condition",
+                "relation": "condition",
+                "predicate": "compare",
+                "object": "which order gives clearer evidence with less irreversible cost",
+                "mood": "imperative",
+                "condition": "the steps are independent",
+                "meaning_keys": ["compare evidence and irreversible cost when independent"],
+            },
+        ]
+    if kind == "bounded_viewpoint" and context.get("variant") == "reversible_step":
+        return [
+            {
+                **common,
+                "id": "reversible_step_limits_cost",
+                "role": "answer",
+                "relation": "cause",
+                "subject": "a small reversible step",
+                "predicate": "limit",
+                "object": "the cost of being wrong",
+                "condition": "uncertainty is high",
+                "meaning_keys": ["reversibility limits error cost"],
+            },
+            {
+                **common,
+                "id": "reversible_step_produces_evidence",
+                "role": "support",
+                "relation": "support",
+                "subject": "the step",
+                "predicate": "produce",
+                "object": "evidence for the next choice",
+                "meaning_keys": ["small step produces evidence"],
+            },
+            {
+                **common,
+                "id": "reversible_step_limit",
+                "role": "limit",
+                "relation": "contrast",
+                "subject": "a reversible-step default",
+                "predicate": "override",
+                "object": "a known prerequisite, safety constraint, or settled evidence",
+                "modality": "should",
+                "polarity": "negative",
+                "meaning_keys": ["prerequisites safety and settled evidence outrank reversibility"],
+            },
+        ]
+    if kind == "comparison_method":
+        return [
+            {
+                **common,
+                "id": "comparison_shared_dimensions",
+                "role": "answer",
+                "relation": "sequence",
+                "predicate": "compare",
+                "object": "the options on the same dimensions: intended outcome, required evidence, constraints, reversibility, and failure cost",
+                "mood": "imperative",
+                "meaning_keys": ["compare options on shared dimensions"],
+            },
+            {
+                **common,
+                "id": "comparison_useful_choice",
+                "role": "conclusion",
+                "relation": "conclusion",
+                "subject": "a useful choice",
+                "predicate": "fit",
+                "object": "the goal with fewer unsupported assumptions",
+                "contrast": "the more complete-sounding option is not automatically better",
+                "meaning_keys": ["prefer fit with fewer unsupported assumptions"],
+            },
+        ]
+    if kind == "bounded_planning_method":
+        return [
+            {
+                **common,
+                "id": "planning_prerequisite_first",
+                "role": "answer",
+                "relation": "sequence",
+                "predicate": "begin with",
+                "object": "the earliest missing prerequisite",
+                "mood": "imperative",
+                "lexical_choices": {"predicate": ["begin with", "start with"]},
+                "lexical_semantics": [
+                    {
+                        "id": "begin_prerequisite_sequence",
+                        "field": "predicate",
+                        "lemma": "begin with",
+                        "forms": ["begin with", "start with"],
+                        "sense": "initiate a plan at its earliest unsatisfied dependency",
+                        "part_of_speech": "verb_phrase",
+                        "grammatical_behavior": ["imperative-compatible", "takes a prerequisite as its object"],
+                        "registers": ["ordinary", "planning"],
+                        "collocations": ["prerequisite", "foundation", "first step"],
+                        "near_concepts": ["resume", "expand"],
+                        "distinctions": ["beginning establishes the first step; expanding assumes the foundation exists"],
+                        "concept_refs": ["answer_kind:bounded_planning_method"],
+                        "understanding_state": "prompt_grounded",
+                        "source_refs": ["answer_substance:current_prompt"],
+                    }
+                ],
+                "meaning_keys": ["earliest missing prerequisite comes first"],
+            },
+            {
+                **common,
+                "id": "planning_reversible_evidence",
+                "role": "condition",
+                "relation": "condition",
+                "predicate": "choose",
+                "object": "the smallest reversible step that can produce evidence",
+                "mood": "imperative",
+                "condition": "the prerequisites are already present",
+                "meaning_keys": ["choose reversible evidence-producing step after prerequisites"],
+            },
+            {
+                **common,
+                "id": "planning_check_then_expand",
+                "role": "conclusion",
+                "relation": "sequence",
+                "predicate": "check",
+                "object": "the result before expanding",
+                "mood": "imperative",
+                "meaning_keys": ["verify result before expansion"],
+            },
+        ]
+    if kind == "conditional_consequence_method":
+        return [
+            {
+                **common,
+                "id": "consequence_trace_dependencies",
+                "role": "answer",
+                "relation": "sequence",
+                "predicate": "identify",
+                "object": "what the changed part feeds and which assumptions depend on it",
+                "mood": "imperative",
+                "meaning_keys": ["trace changed dependency and assumptions"],
+            },
+            {
+                **common,
+                "id": "consequence_prediction",
+                "role": "support",
+                "relation": "support",
+                "predicate": "name",
+                "object": "the observable result that should differ",
+                "mood": "imperative",
+                "meaning_keys": ["derive observable prediction"],
+            },
+            {
+                **common,
+                "id": "consequence_no_wording_invention",
+                "role": "conclusion",
+                "relation": "conclusion",
+                "subject": "that method",
+                "predicate": "replace",
+                "object": "a consequence invented from wording alone",
+                "polarity": "negative",
+                "meaning_keys": ["do not invent consequence from wording"],
+            },
+        ]
+    return []
+
+
+def _text_grounded_semantic_units(answer: str) -> list[dict[str, Any]]:
+    sentences = [
+        item.strip()
+        for item in re.split(r"(?<=[.!?])\s+|\n+", str(answer or "").strip())
+        if item.strip()
+    ]
+    return [
+        {
+            "id": f"fallback_{index + 1}",
+            "role": "answer" if index == 0 else "support",
+            "relation": "sequence" if index == 0 else "support",
+            "text": sentence,
+            "source_kind": "compatibility_fallback",
+            "source_refs": ["answer_substance:current_prompt"],
+            "supported": True,
+            "meaning_keys": [truncate(sentence.lower(), 120)],
+        }
+        for index, sentence in enumerate(sentences[:8])
+    ]
 
 
 def _topic_terms(value: str) -> list[str]:

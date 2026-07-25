@@ -480,7 +480,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v20_conversation_maturity_composition"
+    assert result["native_language_organ"]["version"] == "v21_supported_semantic_composition"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     discourse = result["native_language_organ"]["discourse_plan"]["supported_discourse"]
     assert discourse["status"] == "supported_discourse_plan_ready"
@@ -1010,7 +1010,9 @@ def test_active_selene_chat_routes_definition_and_conditional_questions_to_answe
     assert "grounded factual answer" in definition["candidate_text"]
     assert "photosynthesis" in definition["candidate_text"]
     assert consequence["intelligence_os_support"]["answer_substance"]["answer_kind"] == "conditional_dependency_answer"
-    assert "Reversing the order works only if" in consequence["candidate_text"]
+    assert "reversed order" in consequence["candidate_text"].lower()
+    assert "does not depend on an output" in consequence["candidate_text"].lower()
+    assert consequence["native_language_organ"]["formation"]["required_semantic_units_preserved"] is True
     assert definition["visible_speech_release"]["final_release_allowed"] is True
     assert consequence["visible_speech_release"]["final_release_allowed"] is True
     _assert_locked(definition)
@@ -1758,7 +1760,7 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
     assert len({result["candidate_text"] for result in results}) == len(results)
     for result in results:
         assert result["candidate_text"]
-        assert result["native_language_organ"]["version"] == "v20_conversation_maturity_composition"
+        assert result["native_language_organ"]["version"] == "v21_supported_semantic_composition"
 
 
 def test_gentle_long_session_returns_to_a_visible_recommendation_after_intervening_topics(tmp_path):
