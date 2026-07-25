@@ -161,6 +161,6 @@ def test_dialogue_spine_and_nlo_keep_the_figurative_packet_inspectable(tmp_path)
     assert spine["literal_prompt"] == text
     assert spine["interpreted_prompt"] != text
     assert spine["literal_and_nonliteral_readings_remain_distinct"] is True
-    assert nlo["version"] == "v22_contextual_figurative_meaning"
+    assert nlo["version"] == "v23_contextual_conversational_micro_moves"
     assert nlo["meaning_packet"]["figurative_interpretation"]["selected_reading"] == "figurative"
     assert nlo["meaning_packet"]["analogy_is_equivalence"] is False

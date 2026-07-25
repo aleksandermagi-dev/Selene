@@ -447,11 +447,17 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "bounded_completion_used": True,
         }
     local_continuity_supported = bool(continuity_reply)
+    dream_reflection_handoff = _dream_reflection_handoff(
+        conn,
+        payload,
+        prompt=meaning_text,
+    )
     native_language = realize_native_language(
         conn,
         {
             "prompt": meaning_text,
             "figurative_interpretation": figurative_interpretation,
+            "dream_reflection": dream_reflection_handoff,
             "selected_route": "block" if hard_blockers else selected_route,
             "source_class": source_class,
             "content_seed": content_seed,
@@ -752,6 +758,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     assistant_payload = {
         "input_interpretation": input_interpretation,
         "figurative_interpretation": figurative_interpretation,
+        "dream_reflection_handoff": dream_reflection_handoff,
         "interpreted_text": meaning_text,
         "route_preview": route,
         "intelligence_os_support": intelligence_support,
@@ -835,6 +842,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "delivery_constraint": delivery_constraint,
             "input_interpretation": input_interpretation,
             "figurative_interpretation": figurative_interpretation,
+            "dream_reflection_handoff": dream_reflection_handoff,
             "interpreted_text": meaning_text,
             "selected_route": selected_route,
             "source_class": source_class,
@@ -1104,6 +1112,84 @@ def _source_class(text: str, package_available: bool) -> str:
     if package_available:
         return "selene_readable_context"
     return "pre_transfer_dry_run_context"
+
+
+def _dream_reflection_handoff(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any],
+    *,
+    prompt: str,
+) -> dict[str, Any]:
+    """Resolve a Dream reflection from an actual reviewed runtime record.
+
+    Chat payloads may name a record, but they cannot supply or promote the
+    reflection text or review state themselves.
+    """
+
+    lower = prompt.lower()
+    explicitly_relevant = any(
+        marker in lower
+        for marker in (
+            "dream reflection",
+            "dream pattern",
+            "dream state",
+            "dream-state",
+            "reflect on the dream",
+            "from dream",
+        )
+    )
+    try:
+        record_id = int(payload.get("dream_reflection_record_id") or 0)
+    except (TypeError, ValueError):
+        record_id = 0
+    if not explicitly_relevant:
+        return {}
+    if record_id <= 0:
+        return {
+            "available": False,
+            "expression_eligible": False,
+            "reason": "no_attributable_dream_record_requested",
+            "dream_content_supplied_by_chat_payload": False,
+            "dream_is_biological_claim": False,
+        }
+    row = conn.execute(
+        """
+        SELECT id, consolidation_label, proposed_pattern, review_status, source_refs
+        FROM c_runtime_dream_consolidation_records
+        WHERE id = ?
+        """,
+        (record_id,),
+    ).fetchone()
+    if not row:
+        return {
+            "available": False,
+            "expression_eligible": False,
+            "reason": "dream_reflection_record_not_found",
+            "record_id": record_id,
+            "dream_content_supplied_by_chat_payload": False,
+            "dream_is_biological_claim": False,
+        }
+    item = dict(row)
+    review_status = str(item.get("review_status") or "")
+    eligible = review_status in {"approved", "reviewed"}
+    return {
+        "available": eligible,
+        "reflection": str(item.get("proposed_pattern") or "") if eligible else "",
+        "review_status": review_status,
+        "source_refs": [
+            f"dream_consolidation_record:{record_id}",
+            *_json_list(item.get("source_refs")),
+        ],
+        "expression_eligible": eligible,
+        "reason": "reviewed_dream_reflection_ready" if eligible else "dream_reflection_not_reviewed_for_expression",
+        "record_id": record_id,
+        "record_label": str(item.get("consolidation_label") or ""),
+        "dream_content_supplied_by_chat_payload": False,
+        "not_fact_by_default": True,
+        "not_memory_by_default": True,
+        "memory_write_active": False,
+        "dream_is_biological_claim": False,
+    }
 
 
 def _visible_speech_seed_candidates(

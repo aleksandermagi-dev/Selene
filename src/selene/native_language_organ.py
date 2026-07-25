@@ -7,6 +7,11 @@ from hashlib import sha256
 from typing import Any
 
 from .chat_intent import classify_chat_intent
+from .conversational_micro_moves import (
+    build_conversational_micro_move_plan,
+    compose_conversational_micro_moves,
+    realize_conversational_micro_moves,
+)
 from .conversation_repair import plan_conversation_turn
 from .discourse_planner import build_supported_discourse_plan
 from .language_formation import build_semantic_frame, realize_semantic_frame
@@ -66,7 +71,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v22_contextual_figurative_meaning",
+            "version": "v23_contextual_conversational_micro_moves",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
@@ -75,6 +80,8 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "supported_semantic_answer_handoff",
                 "literal_and_nonliteral_meaning_handoff",
                 "analogy_without_equivalence_handoff",
+                "contextual_optional_conversational_micro_moves",
+                "attributable_dream_reflection_handoff",
                 "grammar_and_morphology_realization",
                 "bounded_pragmatic_planning",
                 "response_obligation_planning",
@@ -218,11 +225,20 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     meaning = _meaning_packet(prompt, payload, mode)
     plan = _discourse_plan(prompt, meaning, payload, mode)
     draft = _realize_sentences(prompt, meaning, plan)
+    micro_move_realization = realize_conversational_micro_moves(
+        plan.get("conversational_micro_move_plan"),
+        variation_key=(
+            f"{prompt}|micro|turn:{int((meaning.get('conversation_context') or {}).get('turn_count') or 0)}"
+        ),
+        recent_texts=[str(item) for item in meaning.get("recent_assistant_texts") or []],
+    )
+    plan["conversational_micro_move_realization"] = micro_move_realization
+    draft = compose_conversational_micro_moves(draft, micro_move_realization)
     candidate, revision = _revise_candidate(draft, meaning, plan)
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v22_contextual_figurative_meaning",
+        "version": "v23_contextual_conversational_micro_moves",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
@@ -244,6 +260,8 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "ending_decision": (plan.get("pragmatic_continuity") or {}).get("ending_decision") or {},
             "social_act_plan": plan.get("social_act_plan") or {},
             "social_act_realization": plan.get("social_act_realization") or {},
+            "conversational_micro_move_plan": plan.get("conversational_micro_move_plan") or {},
+            "conversational_micro_move_realization": plan.get("conversational_micro_move_realization") or {},
             "content_light_plan": plan.get("content_light_plan") or {},
             "content_light_realization": plan.get("content_light_realization") or {},
             "uncertainty_expression_plan": plan.get("uncertainty_expression_plan") or {},
@@ -318,6 +336,11 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         if isinstance(payload.get("figurative_interpretation"), dict)
         else pragmatics.get("figurative_interpretation")
         if isinstance(pragmatics.get("figurative_interpretation"), dict)
+        else {}
+    )
+    dream_reflection = (
+        payload.get("dream_reflection")
+        if isinstance(payload.get("dream_reflection"), dict)
         else {}
     )
     recent_assistant_texts = [
@@ -410,6 +433,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "content_source_release_allowed": visible_speech_seed.get("release_allowed") is True,
         "contextual_follow_up": contextual_follow_up,
         "figurative_interpretation": figurative_interpretation,
+        "dream_reflection": dream_reflection,
         "literal_and_nonliteral_readings_remain_distinct": True,
         "analogy_is_equivalence": False,
         "conversation_spine": conversation_spine,
@@ -643,6 +667,17 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
         }
     )
+    conversational_micro_move_plan = build_conversational_micro_move_plan(
+        {
+            "prompt": prompt,
+            "intent": intent,
+            "content_seed": meaning.get("content_seed") or "",
+            "dialogue_workspace": dialogue,
+            "pragmatic_continuity": pragmatic_continuity,
+            "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+            "dream_reflection": meaning.get("dream_reflection") or {},
+        }
+    )
     content_light_plan = (
         build_content_light_plan({"prompt": prompt})
         if intent == "direct_answer" and not str(meaning.get("content_seed") or "").strip()
@@ -700,6 +735,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "braided_discourse_used": thread_braid.get("braided") is True,
         "follow_up_question_by_default": False,
         "social_act_plan": social_act_plan,
+        "conversational_micro_move_plan": conversational_micro_move_plan,
         "content_light_plan": content_light_plan,
         "special_expression_plan": special_expression_plan,
     }
