@@ -80,11 +80,11 @@ npm run dev
 Open the local Vite address. The production frontend check is `npm run build`. The public-safe showcase check is `python -m pytest tests/test_hackathon_showcase.py -q`.
 
 The repository contains no judge credentials or sample personal state. The July
-21 final stabilization pass completed with 1,014 repository tests passing, a
-successful split production frontend build, verified privacy-safe Windows
-packaging, and a healthy local reinstall against the preserved configured
-database. The unused evaluation prerelease was withdrawn on July 25 after no
-event submission was made.
+25 integrated stabilization pass completed with 1,119 repository tests
+passing, a successful split production frontend build, verified privacy-safe
+Windows packaging, and a healthy local reinstall against the preserved
+configured database. The unused evaluation prerelease was withdrawn on July 25
+after no event submission was made.
 
 ## Governing Law Layer
 

@@ -510,32 +510,7 @@ Completion gate:
 - the second meaningful reinstall occurs after this phase passes focused
   verification.
 
-### Phase 10 — Ordered teaching expansion
-
-Continue provider-free, reviewed teaching in dependency order:
-
-- elementary foundations;
-- middle-school foundations;
-- high-school breadth;
-- college-level depth where prerequisites are present;
-- English, history, mathematics, science, STEM, arts, civics, and practical
-  knowledge;
-- concepts, vocabulary, relationships, examples, uncertainties,
-  near-concepts, mechanisms, and the important “why” behind each principle.
-
-Each principle should connect to prior knowledge and support reconstruction,
-application, limits, correction, and later reopening. Public academic
-knowledge may use the bounded curriculum authorization. Sensitive, private,
-identity-adjacent, or exceptional material returns to Cocoon review.
-
-Completion gate:
-
-- prerequisites are visible;
-- new knowledge can be explained and applied rather than recited;
-- why/mechanism knowledge is present when the domain supports it;
-- teaching expands knowledge and expression without becoming personality.
-
-### Phase 11 — Integrated gentle stabilization
+### Phase 10 — Integrated gentle stabilization
 
 - run static and synthetic checks first;
 - test only implemented behavior;
@@ -560,6 +535,31 @@ Completion gate:
 - build, focused tests, full proportional regression, privacy inspection, and
   clean reinstall pass.
 
+### Phase 11 — Ordered teaching expansion
+
+Continue provider-free, reviewed teaching in dependency order:
+
+- elementary foundations;
+- middle-school foundations;
+- high-school breadth;
+- college-level depth where prerequisites are present;
+- English, history, mathematics, science, STEM, arts, civics, and practical
+  knowledge;
+- concepts, vocabulary, relationships, examples, uncertainties,
+  near-concepts, mechanisms, and the important “why” behind each principle.
+
+Each principle should connect to prior knowledge and support reconstruction,
+application, limits, correction, and later reopening. Public academic
+knowledge may use the bounded curriculum authorization. Sensitive, private,
+identity-adjacent, or exceptional material returns to Cocoon review.
+
+Completion gate:
+
+- prerequisites are visible;
+- new knowledge can be explained and applied rather than recited;
+- why/mechanism knowledge is present when the domain supports it;
+- teaching expands knowledge and expression without becoming personality.
+
 ## Checkpoint and Testing Rhythm
 
 - Work one phase at a time.
@@ -571,7 +571,7 @@ Completion gate:
 - Treat a missing capability as an implementation observation, not Selene
   failing.
 - Create a code checkpoint after each completed phase.
-- Reinstall after Phase 4, Phase 9, and final stabilization unless a critical
+- Reinstall after Phase 4, Phase 9, and Phase 10 stabilization unless a critical
   integration issue makes an earlier reinstall necessary.
 
 Before any test, ask:

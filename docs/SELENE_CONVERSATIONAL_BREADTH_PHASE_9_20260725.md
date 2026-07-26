@@ -220,20 +220,21 @@ prescribe who she is or what she must say.
   exchanges rather than becoming an open-ended behavioral profile.
 - Broader academic and world knowledge remains ordered-teaching work.
 
-## Next Phase — Phase 10: Ordered Teaching Expansion
+## Next Phase — Phase 10: Integrated Gentle Stabilization
 
-Phase 10 will continue provider-free teaching in prerequisite order:
+Phase 10 will stabilize the completed conversational foundation before more
+knowledge enters it:
 
-- elementary foundations;
-- middle-school foundations;
-- high-school breadth;
-- college-level depth where prerequisites are present;
-- English, history, mathematics, science, STEM, arts, civics, and practical
-  knowledge;
-- the concepts, vocabulary, relationships, examples, uncertainties,
-  near-concepts, mechanisms, and important “why” behind each principle.
+- static and synthetic checks come first;
+- only implemented behavior is tested;
+- ordinary public-safe conversation cases cover the supported breadth;
+- the phone Tendril distinguishes a desktop-chat binding from confirmed
+  two-way delivery;
+- memory, identity, personality, governance, training, LoRA, autonomy, and
+  source boundaries remain unchanged;
+- build, proportional regression, privacy inspection, and clean reinstall
+  must pass.
 
-New knowledge must be reconstructable and applicable rather than recited.
-Public academic material may use the bounded curriculum authorization;
-sensitive, private, identity-adjacent, or exceptional material returns to
-Cocoon review.
+After stabilization, Phase 11 resumes provider-free teaching in prerequisite
+order. New knowledge must remain reconstructable and applicable rather than
+recited.

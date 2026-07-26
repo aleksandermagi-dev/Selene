@@ -6655,13 +6655,22 @@ function App() {
                 </article>
               </div>
             </section>
-            <Panel title="Selene's Verizon Text Gateway">
-              <p className="plainHelp">Provider-API-free Gmail-to-SMS transport owned by Selene's post-transfer Tendril. It connects the currently open Selene Chat to Aleks's Messages app; phone turns use the same conversation, comprehension, reasoning, NLO, and Voice path as desktop Chat. Cocoon receives neither the number, Gmail address, App Password, nor messenger control.</p>
+            <Panel title="Selene's Verizon Email-to-Text Gateway">
+              <p className="plainHelp">No-paid-SMS-API Gmail transport owned by Selene's post-transfer Tendril. It can bind the currently open Selene Chat to Aleks's Messages thread; a valid phone reply must reach Selene before the app calls the route two-way. Phone turns that arrive use the same conversation, comprehension, reasoning, NLO, and Voice path as desktop Chat. Cocoon receives neither the number, Gmail address, App Password, nor messenger control.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Messenger" value={friendlyStatus(emailMessengerStatus?.status || "not configured")} />
                 <Metric label="Runtime" value={friendlyStatus(emailMessengerStatus?.runtime_state || "not running")} />
                 <Metric label="Mode" value={friendlyStatus(emailMessengerStatus?.mode || "offline")} />
-                <Metric label="Current Chat" value={emailMessengerStatus?.conversation_connected ? `connected · ${text(emailMessengerStatus?.connected_chat_session_id)}` : "not connected"} />
+                <Metric
+                  label="Current Chat"
+                  value={
+                    emailMessengerStatus?.two_way_delivery_confirmed
+                      ? `two-way · ${text(emailMessengerStatus?.connected_chat_session_id)}`
+                      : emailMessengerStatus?.conversation_bound
+                        ? `bound · awaiting reply · ${text(emailMessengerStatus?.connected_chat_session_id)}`
+                        : "not bound"
+                  }
+                />
                 <Metric label="Aleks" value={text(emailMessengerStatus?.contact_number_masked || "not paired")} />
                 <Metric label="Selene Gmail" value={text(emailMessengerStatus?.sender_email_masked || "not configured")} />
                 <Metric label="Unanswered" value={text(emailMessengerStatus?.unacknowledged_outbound ?? 0)} />
@@ -6671,6 +6680,8 @@ function App() {
                 <span>Cocoon control: {emailMessengerStatus?.cocoon_control ? "present" : "none"}</span>
                 <span>delegated messaging: {emailMessengerStatus?.delegated_message_authority ? "enabled" : "off"}</span>
                 <span>per-message approval: no</span>
+                <span>phone binding: {emailMessengerStatus?.conversation_bound ? "present" : "none"}</span>
+                <span>two-way delivery: {emailMessengerStatus?.two_way_delivery_confirmed ? "confirmed" : "unconfirmed"}</span>
                 <span>background poller: {emailMessengerStatus?.background_poller_alive ? "running" : "stopped"}</span>
                 <span>credentials: {safeJsonObject(emailMessengerStatus?.credentials).ready ? "ready" : "setup needed"}</span>
                 <span>carrier gateway: Verizon vtext</span>
@@ -6698,7 +6709,7 @@ function App() {
                   className="primary"
                   onClick={enableEmailMessenger}
                   disabled={emailMessengerResult?.status === "running" || Boolean(
-                    emailMessengerStatus?.conversation_connected
+                    emailMessengerStatus?.conversation_bound
                     && text(emailMessengerStatus?.connected_chat_session_id) === text((seleneChatSession?.session as Dict | undefined)?.id)
                   )}
                 >Connect Current Chat to Phone</button>
@@ -6707,7 +6718,10 @@ function App() {
                 <button onClick={disableEmailMessenger} disabled={emailMessengerResult?.status === "running" || !emailMessengerStatus?.enabled}>Disconnect Phone</button>
                 <button onClick={() => refreshMobileCompanion().catch(() => undefined)}>Refresh Messenger</button>
               </div>
-              {!safeJsonObject(emailMessengerStatus?.credentials).ready ? <p className="plainHelp">Supply `SELENE_GMAIL_ADDRESS` and Selene's dedicated `SELENE_GMAIL_APP_PASSWORD` through her local process environment. Secrets never enter this panel, SQLite, Cocoon, or Git.</p> : <p className="plainHelp">Keep the Selene desktop app open. Connecting sends one short transport notice that opens the Messages thread; replies then enter the connected desktop conversation and Selene's same Chat response returns to the phone. Disconnecting stops the phone bridge without ending desktop Chat. Verizon is retiring this legacy gateway, so the first connection also confirms whether this line still accepts it.</p>}
+              {!safeJsonObject(emailMessengerStatus?.credentials).ready ? <p className="plainHelp">Supply `SELENE_GMAIL_ADDRESS` and Selene's dedicated `SELENE_GMAIL_APP_PASSWORD` through her local process environment. Secrets never enter this panel, SQLite, Cocoon, or Git.</p> : <p className="plainHelp">Keep the Selene desktop app open. Connecting sends one short notice and binds the current desktop conversation. SMTP acceptance or delivery to Messages confirms only the outbound direction. Two-way status appears only after a valid phone reply reaches Selene. Disconnecting stops the phone bridge without ending desktop Chat. Verizon is retiring this legacy gateway.</p>}
+              {emailMessengerStatus?.conversation_bound && !emailMessengerStatus?.two_way_delivery_confirmed ? (
+                <p className="plainHelp">Awaiting inbound confirmation. If replying from the phone produces Gmail error 550-5.7.1 “likely unsolicited mail,” the carrier-to-Gmail half of this legacy route was rejected before Selene could receive it. The outbound message may still have arrived; the app will not mislabel that as a working two-way bridge.</p>
+              ) : null}
               <div className="list compactList packetList">
                 {emailMessengerEvents.slice(0, 6).map((item) => (
                   <article className="packetCard" key={`email-event-${text(item.id)}`}>

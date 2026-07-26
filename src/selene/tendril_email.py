@@ -37,7 +37,8 @@ MAX_GATEWAY_BODY_CHARS = 140
 MAX_INBOUND_BODY_CHARS = 1000
 MAX_SUBJECT_CHARS = 120
 RETURN_TO_DESKTOP_PHRASE = "return to desktop"
-PHONE_CONNECTION_MESSAGE = "Phone connection ready. Reply here to continue this Selene Chat."
+PHONE_CONNECTION_MESSAGE = "Phone link sent. Reply here to confirm two-way Selene Chat."
+GMAIL_CARRIER_REPLY_FAILURE = "gmail_550_5_7_1_unsolicited"
 
 
 class EmailMessengerError(RuntimeError):
@@ -129,7 +130,7 @@ class GmailEmailTransport:
             raise EmailTransportError("Gmail could not deliver the paired message") from None
         return {
             "id": str(message["Message-ID"]),
-            "status": "sent",
+            "status": "smtp_accepted",
             "date_sent": _utc_now(),
         }
 
@@ -211,10 +212,21 @@ def email_status(conn: sqlite3.Connection | None = None) -> dict[str, Any]:
         if row:
             state = dict(row)
     connected_session_id = _optional_int(state.get("chat_session_id"))
-    conversation_connected = bool(
+    conversation_bound = bool(
         conn is not None
         and connected_session_id
         and _chat_session_exists(conn, connected_session_id)
+    )
+    two_way_delivery_confirmed = bool(
+        conversation_bound
+        and str(state.get("last_inbound_at") or "").strip()
+    )
+    connection_state = (
+        "two_way_confirmed"
+        if two_way_delivery_confirmed
+        else "awaiting_inbound_confirmation"
+        if conversation_bound
+        else "not_bound"
     )
     return {
         "status": "email_ready" if _is_ready(config, credentials) else "email_setup_required",
@@ -246,8 +258,17 @@ def email_status(conn: sqlite3.Connection | None = None) -> dict[str, Any]:
         "last_outbound_at": state.get("last_outbound_at") or "",
         "last_poll_at": state.get("last_poll_at") or "",
         "last_poll_status": state.get("last_poll_status") or "not_run",
-        "conversation_connected": conversation_connected,
-        "connected_chat_session_id": connected_session_id if conversation_connected else None,
+        "conversation_bound": conversation_bound,
+        "conversation_connected": two_way_delivery_confirmed,
+        "two_way_delivery_confirmed": two_way_delivery_confirmed,
+        "connection_state": connection_state,
+        "connected_chat_session_id": connected_session_id if conversation_bound else None,
+        "outbound_acceptance_proves_inbound": False,
+        "known_inbound_failure_code": GMAIL_CARRIER_REPLY_FAILURE,
+        "known_inbound_failure_summary": (
+            "A carrier-generated phone reply can be rejected by Gmail before it reaches Selene. "
+            "An outbound notice therefore binds the chat but does not confirm two-way delivery."
+        ),
         "conversation_exit_phrase": RETURN_TO_DESKTOP_PHRASE,
         "boundaries": _email_boundaries(config),
     }
@@ -394,6 +415,9 @@ def send_email(
         "event_id": event_id,
         "provider_message_id": provider_id,
         "delivery_status": str(delivered.get("status") or "sent"),
+        "delivery_scope": "outbound_smtp_submission_only",
+        "handset_delivery_confirmed": False,
+        "inbound_route_confirmed": False,
         "purpose": purpose,
         "contact_id": EMAIL_CONTACT_ID,
         "character_count": len(text),
@@ -425,10 +449,20 @@ def connect_email_chat(
     if not session_id or not _chat_session_exists(conn, session_id):
         raise ValueError("An existing Selene Chat session is required")
     if _email_session_id(conn) == session_id:
+        status = email_status(conn)
+        connection_state = str(status.get("connection_state") or "")
         return {
-            **email_status(conn),
-            "status": "email_chat_already_connected",
-            "message": "This Selene Chat is already connected to the phone transport.",
+            **status,
+            "status": (
+                "email_chat_two_way_confirmed"
+                if connection_state == "two_way_confirmed"
+                else "email_chat_awaiting_inbound_confirmation"
+            ),
+            "message": (
+                "This Selene Chat has confirmed two-way phone delivery."
+                if connection_state == "two_way_confirmed"
+                else "This Selene Chat is bound to the phone transport and still awaits a valid inbound reply."
+            ),
         }
     result = send_email(
         conn,
@@ -442,10 +476,16 @@ def connect_email_chat(
     _set_email_session(conn, session_id)
     return {
         **result,
-        "status": "email_chat_connected",
-        "conversation_connected": True,
+        "status": "email_chat_connection_notice_sent",
+        "conversation_bound": True,
+        "conversation_connected": False,
+        "two_way_delivery_confirmed": False,
+        "connection_state": "awaiting_inbound_confirmation",
         "connected_chat_session_id": session_id,
-        "message": "The current Selene Chat is connected to the phone transport.",
+        "message": (
+            "The current Selene Chat is bound to the phone transport. "
+            "Two-way delivery remains unconfirmed until a valid phone reply reaches Selene."
+        ),
     }
 
 
@@ -761,10 +801,14 @@ def _email_session_id(conn: sqlite3.Connection) -> int | None:
 def _set_email_session(conn: sqlite3.Connection, session_id: int) -> None:
     conn.execute(
         """
-        INSERT INTO email_messaging_state(contact_id, chat_session_id, updated_at)
-        VALUES (?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO email_messaging_state(
+          contact_id, chat_session_id, last_inbound_at, last_poll_status, updated_at
+        )
+        VALUES (?, ?, '', 'awaiting_inbound_confirmation', CURRENT_TIMESTAMP)
         ON CONFLICT(contact_id) DO UPDATE SET
           chat_session_id = excluded.chat_session_id,
+          last_inbound_at = '',
+          last_poll_status = 'awaiting_inbound_confirmation',
           updated_at = CURRENT_TIMESTAMP
         """,
         (EMAIL_CONTACT_ID, session_id),

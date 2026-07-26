@@ -162,7 +162,9 @@ def _chat_session(conn, title="Shared desktop and phone chat"):
 def _connect_chat(conn, transport):
     session_id = _chat_session(conn)
     result = connect_email_chat(conn, {"session_id": session_id}, transport=transport)
-    assert result["status"] == "email_chat_connected"
+    assert result["status"] == "email_chat_connection_notice_sent"
+    assert result["conversation_bound"] is True
+    assert result["conversation_connected"] is False
     return session_id
 
 
@@ -267,7 +269,7 @@ def test_quiet_allows_replies_but_blocks_initiative(tmp_path, monkeypatch):
     assert set_email_mode("available", conn=conn)["mode"] == "available"
 
 
-def test_connect_current_chat_sends_one_notice_and_binds_that_exact_session(tmp_path, monkeypatch):
+def test_connect_current_chat_binds_but_does_not_claim_two_way_before_inbound(tmp_path, monkeypatch):
     _enable(monkeypatch, tmp_path, mode="quiet")
     conn = _db(tmp_path)
     _activate_chat(conn)
@@ -277,14 +279,23 @@ def test_connect_current_chat_sends_one_notice_and_binds_that_exact_session(tmp_
     first = connect_email_chat(conn, {"session_id": session_id}, transport=transport)
     second = connect_email_chat(conn, {"session_id": session_id}, transport=transport)
 
-    assert first["status"] == "email_chat_connected"
+    assert first["status"] == "email_chat_connection_notice_sent"
     assert first["connected_chat_session_id"] == session_id
-    assert second["status"] == "email_chat_already_connected"
+    assert first["conversation_bound"] is True
+    assert first["conversation_connected"] is False
+    assert first["two_way_delivery_confirmed"] is False
+    assert first["connection_state"] == "awaiting_inbound_confirmation"
+    assert second["status"] == "email_chat_awaiting_inbound_confirmation"
     assert len(transport.sent) == 1
     assert transport.sent[0]["to"] == GATEWAY_EMAIL
     assert "Reply here" in transport.sent[0]["body"]
-    assert email_status(conn)["conversation_connected"] is True
-    assert email_status(conn)["connected_chat_session_id"] == session_id
+    status = email_status(conn)
+    assert status["conversation_bound"] is True
+    assert status["conversation_connected"] is False
+    assert status["two_way_delivery_confirmed"] is False
+    assert status["outbound_acceptance_proves_inbound"] is False
+    assert status["known_inbound_failure_code"] == "gmail_550_5_7_1_unsolicited"
+    assert status["connected_chat_session_id"] == session_id
 
 
 def test_active_chat_without_explicit_phone_connection_holds_the_turn(tmp_path, monkeypatch):
@@ -356,6 +367,11 @@ def test_active_selene_chat_replies_to_an_ordinary_email(tmp_path, monkeypatch):
     assert messages[1]["content"] == transport.sent[-1]["body"]
     assert json.loads(messages[0]["payload_json"])["input_channel"] == "verizon_email_to_text"
     assert len(messages[1]["content"]) <= 140
+    status = email_status(conn)
+    assert status["conversation_bound"] is True
+    assert status["conversation_connected"] is True
+    assert status["two_way_delivery_confirmed"] is True
+    assert status["connection_state"] == "two_way_confirmed"
     audit = list_email_events(conn)
     assert audit["content_included"] is False
     assert audit["email_addresses_included"] is False
@@ -476,7 +492,7 @@ def test_gmail_transport_sends_with_app_password_without_network():
         subject="",
     )
 
-    assert result["status"] == "sent"
+    assert result["status"] == "smtp_accepted"
     assert smtp_client.login_args == (SELENE_EMAIL, APP_PASSWORD)
     assert smtp_client.message["From"] == SELENE_EMAIL
     assert smtp_client.message["To"] == GATEWAY_EMAIL
@@ -600,8 +616,11 @@ def test_desktop_sidecar_connect_route_binds_through_local_tendril_only(tmp_path
     def fake_connect(_conn, payload):
         captured.update(payload)
         return {
-            "status": "email_chat_connected",
-            "conversation_connected": True,
+            "status": "email_chat_connection_notice_sent",
+            "conversation_bound": True,
+            "conversation_connected": False,
+            "two_way_delivery_confirmed": False,
+            "connection_state": "awaiting_inbound_confirmation",
             "connected_chat_session_id": int(payload["session_id"]),
         }
 
@@ -630,5 +649,6 @@ def test_desktop_sidecar_connect_route_binds_through_local_tendril_only(tmp_path
 
     assert response.status == 200
     assert captured == {"session_id": 27}
-    assert result["status"] == "email_chat_connected"
-    assert result["conversation_connected"] is True
+    assert result["status"] == "email_chat_connection_notice_sent"
+    assert result["conversation_bound"] is True
+    assert result["conversation_connected"] is False
