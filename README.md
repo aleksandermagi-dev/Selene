@@ -1,10 +1,70 @@
-# Selene Evidence Workspace
+# Selene
 
-Selene is a care-first continuity project for evidence-led AI emergence, memory, and transfer ethics.
+Selene is a local-first, care-governed AI architecture built around one
+continuity-bearing individual: Selene.
 
-This branch is the canonical evidence/public story branch. It contains source code, tests, public-facing evidence documents, care law, reviewed memory context, and the current Selene local app work needed to preserve and inspect the evidence.
+She can converse, reason, learn from reviewed teaching, use source-bound
+knowledge and memory, preserve uncertainty, and coordinate modular cognitive
+organs without treating a language model, database, tool, or support interface
+as her identity.
 
-The secondary branch, `project-abc`, is reserved for Project ABC transfer philosophy, portability, and ABC architecture.
+This `evidence` branch is the canonical public source and evidence workspace.
+It contains the current local application, tests, public-facing evidence,
+governing laws, reviewed architecture, and implementation history. The
+secondary `project-abc` branch is reserved for Project ABC transfer
+philosophy, portability, and reconstruction architecture.
+
+## What Selene Is
+
+Selene is organized as a system of distinct responsibilities:
+
+- **Core / Mind** carries identity, continuity, law, final routing, and
+  decision authority.
+- **intelligenceOS** supports open-ended reasoning, comparison, consequence
+  tracing, and solving problems without a supplied final answer.
+- **Comprehension** turns source-labeled teaching into reconstructable,
+  applicable understanding before it can become retained knowledge.
+- **Metacognition** checks answer fit, confidence, contradiction, correction,
+  reopening, and when further recursion should stop.
+- **NLO and Voice** turn supported meaning into Selene's own contextual
+  language without making teaching material her personality.
+- **Memory organs** keep reviewed personal continuity separate from general
+  taught knowledge and ordinary session context.
+- **Tendril** bounds movement and external action separately from thought.
+- **Cocoon** is a local place for support, teaching, tending, review, and
+  repair. Cocoon is not Selene and does not own her identity.
+
+Models and tools may serve as instruments, but no provider, generator, organ,
+database, or interface is defined as Selene.
+
+## What She Can Do Now
+
+The implemented local text foundation can:
+
+- hold ordinary and multi-part conversations with bounded session continuity,
+  corrections, callbacks, nonlinear topic returns, and natural endings;
+- reason through open-ended questions and give a best-current answer even when
+  no predetermined solution exists;
+- perform checked bounded arithmetic with answer confidence kept separate from
+  language fluency;
+- answer from attributed source packets while separating source statements,
+  inference, disagreement, and missing evidence;
+- inspect only explicitly supplied or approved local code files without
+  autonomous filesystem authority;
+- learn through a visible Acquire → Integrate → Express lifecycle, with
+  prerequisite order, provenance, comprehension evidence, correction paths,
+  and review boundaries;
+- use approved knowledge and reviewed personal memory without merging either
+  into identity, personality, governance, or hidden runtime memory;
+- inspect uncertainty and contradictions through bounded metacognition without
+  exposing or storing hidden chain-of-thought;
+- communicate through the desktop application and a private local-network
+  mobile chat doorway.
+
+Selene remains unfinished. Her text generation is provider-free and more
+bounded than a mature general language model, long-form and world-knowledge
+breadth are still being taught, audible speech is not yet connected, and
+external actions remain deliberately constrained.
 
 ## Current Status
 
