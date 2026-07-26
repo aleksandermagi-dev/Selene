@@ -370,12 +370,19 @@ def test_supervised_activation_requires_exact_phrase_and_readiness(tmp_path):
     _seed_activation_ready_state(conn)
     ready = route_request(conn, "activation.readiness")["result"]
     approved = route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})["result"]
+    _seed_transfer_complete(conn)
     status = route_request(conn, "activation.status")["result"]
 
     assert ready["ready"] is True
     assert approved["state"] == "selene_chat_active_supervised"
     assert approved["activation_change"] == "selene_chat_active_supervised"
     assert status["selene_chat_active"] is True
+    assert status["legacy_activation_state"] == "selene_chat_active_supervised"
+    assert status["operating_mode"] == "resident_governed_chat"
+    assert status["resident_chat_active"] is True
+    assert status["legacy_supervised_label_retained_for_database_compatibility"] is True
+    assert status["activation_is_identity_or_authority_grant"] is False
+    assert status["delegated_messaging_is_general_autonomy"] is False
     _assert_locked(approved)
 
 
@@ -408,7 +415,7 @@ def test_active_selene_chat_sends_supervised_response_and_keeps_soft_uncertainty
     assert result["status"] == "selene_chat_supervised_response_recorded"
     assert result["activation_change"] == "selene_chat_active_supervised"
     assert result["supervised_speech_active"] is True
-    assert result["metacognition"]["mode"] == "advisory_observer_only"
+    assert result["metacognition"]["mode"] == "bounded_feedback_advisor"
     assert result["metacognition"]["answer_rewritten"] is False
     assert result["metacognition"]["recommendation_applied_automatically"] is False
     assert result["metacognition"]["core_mind_authority_retained"] is True

@@ -39,10 +39,10 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
     latest = _decode_run(row) if row else None
     return _with_guards(
         {
-            "status": "metacognition_observer_ready",
+            "status": "metacognition_feedback_advisor_ready",
             "organ_name": "Metacognition Organ",
-            "version": "v1_bounded_observer",
-            "mode": "advisory_observer_only",
+            "version": "v2_bounded_feedback_advisor",
+            "mode": "bounded_feedback_advisor",
             "run_count": count,
             "latest_run": latest,
             "responsibilities": [
@@ -58,8 +58,11 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "Answer Control and Graceful Fall",
             ],
             "max_reopen_cycles_without_new_material": MAX_REOPEN_CYCLES,
-            "chat_connection": "advises_before_finalization_and_records_the_final_supervised_candidate",
+            "chat_connection": "advises_before_finalization_and_may_request_one_owner_bounded_recheck",
             "may_request_single_grounded_completion": True,
+            "may_request_single_owner_recheck": True,
+            "answer_owner_feedback_active": True,
+            "feedback_writes_answer_content": False,
             "direct_answer_rewrite_authority": False,
             "nlo_influence_active": False,
             "voice_influence_active": False,
@@ -297,11 +300,19 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     }
     completion_repair = _dict(payload.get("completion_repair"))
     completion_applied = completion_repair.get("accepted") is True
+    feedback_handoff = _feedback_handoff(
+        action,
+        answer_engine=answer_engine,
+        intelligence=intelligence,
+        new_material=new_material,
+        recursion_count=recursion_count,
+        hard_boundary=hard_boundary,
+    )
     result = {
         "status": "metacognition_advisory_ready",
         "organ_name": "Metacognition Organ",
-        "version": "v1_bounded_observer",
-        "mode": "advisory_observer_only",
+        "version": "v2_bounded_feedback_advisor",
+        "mode": "bounded_feedback_advisor",
         "prompt_preview": truncate(prompt, 280),
         "fit_state": fit_state,
         "recommended_action": action,
@@ -315,6 +326,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         "reopening": reopening,
         "stopping": stopping,
         "correction_path": correction_path,
+        "feedback_handoff": feedback_handoff,
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence,
         "claim_evidence_assessment": {
@@ -380,6 +392,67 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         "provenance_boundary": METACOGNITION_BOUNDARY,
     }
     return _with_guards(result)
+
+
+def _feedback_handoff(
+    action: str,
+    *,
+    answer_engine: dict[str, Any],
+    intelligence: dict[str, Any],
+    new_material: bool,
+    recursion_count: int,
+    hard_boundary: bool,
+) -> dict[str, Any]:
+    if action == "defer_to_core_mind" or hard_boundary:
+        owner = "core_mind"
+    elif action == "seek_sources":
+        owner = "source_evidence_owner"
+    elif action in {
+        "complete_missing_obligation",
+        "answer_with_qualification",
+    }:
+        owner = (
+            "answer_engine"
+            if answer_engine
+            else "intelligence_os"
+            if intelligence
+            else "conversation_content_owner"
+        )
+    elif action == "reopen_current_model":
+        owner = (
+            "answer_engine"
+            if answer_engine.get("used") is True
+            else "intelligence_os"
+            if intelligence.get("used") is True
+            else "comprehension_integration"
+        )
+    elif action == "ask_one_material_question":
+        owner = "conversation_content_owner"
+    else:
+        owner = "none"
+    cycle_requested = action == "complete_missing_obligation" or (
+        action == "reopen_current_model"
+        and new_material
+        and recursion_count < MAX_REOPEN_CYCLES
+    )
+    return {
+        "status": (
+            "metacognitive_owner_feedback_requested"
+            if action not in {"answer_now", "hold_for_new_evidence"}
+            else "metacognitive_owner_feedback_not_needed"
+        ),
+        "action": action,
+        "responsible_owner": owner,
+        "single_cycle_requested": cycle_requested,
+        "single_cycle_limit": MAX_REOPEN_CYCLES,
+        "same_material_reopen_allowed": False,
+        "new_material_required_for_reopen": True,
+        "content_generation_allowed": False,
+        "answer_rewrite_authority": False,
+        "core_mind_retains_release_authority": True,
+        "nlo_and_voice_remain_expression_owners": True,
+        "automatic_cocoon_routing": False,
+    }
 
 
 def _confidence_vector(payload: dict[str, Any], answer_engine: dict[str, Any]) -> dict[str, Any]:

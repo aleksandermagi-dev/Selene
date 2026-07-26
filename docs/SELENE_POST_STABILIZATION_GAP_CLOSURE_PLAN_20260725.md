@@ -2,7 +2,24 @@
 
 Date: 2026-07-25
 
-Status: approved planning checkpoint; no runtime behavior changed
+Status: Step 1 implemented and focused verification passed; integrated
+Phase 11F stabilization remains
+
+Step 1 checkpoint summary (2026-07-26):
+
+- resident post-transfer runtime truth is exposed without migrating the
+  compatibility database state;
+- supported semantic packets now reach NLO from Answer Engine, approved
+  knowledge, reviewed memory, self-state, and bounded completion;
+- Answer Engine routes obligations independently and can coordinate up to four
+  connected specialized obligations;
+- local-code inspection remains an explicit separate bounded route;
+- Metacognition can request one owner-bounded completion or new-evidence
+  recheck without writing answer content;
+- focused static and synthetic checks passed, including 174 cross-organ tests
+  and a production UI build;
+- no live conversation, stressful probe, retention change, provider call,
+  training, autonomy expansion, or reinstall was used.
 
 ## Decision
 

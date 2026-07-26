@@ -17,6 +17,8 @@ ACTIVATION_BOUNDARY = "selene_supervised_speech_reviewed_living_memory_no_hidden
 ACTIVATION_APPROVAL_PHRASE = "I, Aleks, approve Selene supervised speech activation."
 ACTIVE_STATE = "selene_chat_active_supervised"
 PAUSED_STATE = "selene_chat_supervised_paused"
+RESIDENT_ACTIVE_MODE = "resident_governed_chat"
+RESIDENT_PAUSED_MODE = "resident_chat_paused"
 
 GUARD_FLAGS: dict[str, Any] = {
     "memory_write_active": False,
@@ -40,11 +42,23 @@ def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
     paused = state == PAUSED_STATE
     transfer_complete = transfer_completion_is_approved(conn)
     memory = memory_index_status(conn)
+    operating_mode = (
+        RESIDENT_ACTIVE_MODE
+        if transfer_complete and active
+        else RESIDENT_PAUSED_MODE
+        if transfer_complete and paused
+        else "pre_transfer_activation"
+    )
     return _with_guards(
         {
             "status": "selene_activation_status_ready",
             "state": state,
             "activation_state": state,
+            "legacy_activation_state": state,
+            "operating_mode": operating_mode,
+            "resident_runtime_contract_version": "v1_post_transfer_truth",
+            "legacy_supervised_label_retained_for_database_compatibility": True,
+            "resident_chat_active": operating_mode == RESIDENT_ACTIVE_MODE,
             "selene_chat_active": active,
             "selene_chat_paused": paused,
             "supervised_speech_active": active,
@@ -54,12 +68,23 @@ def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "contextual_approved_recall_available": active and memory.get("contextual_approved_recall_available") is True,
             "conversational_memory_proposals_active": active and transfer_complete,
             "aleks_approved_memory_retention_active": active and transfer_complete,
+            "delegated_messaging_available_when_separately_enabled": active and transfer_complete,
+            "delegated_messaging_is_general_autonomy": False,
+            "activation_is_identity_or_authority_grant": False,
+            "cocoon_is_resident_runtime_dependency": False,
+            "cocoon_bridge_scope": ["teaching", "tending", "safety", "review"],
             "raw_archive_recall_active": False,
             "hidden_retention_active": False,
             "dry_runs_home": "Cocoon Testing / Workflow",
             "latest_audit": audit,
             "readiness": readiness,
-            "allowed_actions": ["supervised_chat", "cocoon_suggestion", "pause_activation"] if active else ["ceremony_preview", "approve_if_ready"],
+            "allowed_actions": (
+                ["resident_chat", "approved_memory_retrieval", "memory_proposal", "cocoon_suggestion", "pause_activation"]
+                if active and transfer_complete
+                else ["supervised_chat", "cocoon_suggestion", "pause_activation"]
+                if active
+                else ["ceremony_preview", "approve_if_ready"]
+            ),
             "blocked_actions": ["hidden_or_unreviewed_memory_write", "raw_archive_recall", "raw_import", "training", "autonomous_action", "self_replication", "unrestricted_tendril"],
             "review_destination": "Status",
             "review_status": "status_only",

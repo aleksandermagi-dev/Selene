@@ -10,6 +10,7 @@ from typing import Any
 from .claim_evidence import build_claim_evidence_packet
 from .conversation_spine import evaluate_candidate_compatibility
 from .registry import truncate
+from .supported_semantics import build_text_supported_semantic_packet
 
 
 COMPREHENSION_BOUNDARY = (
@@ -582,6 +583,18 @@ def build_comprehension_packet(
         answer_eligible_items,
         response_obligations=response_obligations,
     )
+    supported_semantics = build_text_supported_semantic_packet(
+        str(knowledge_response.get("content_seed") or ""),
+        answer_kind=str(knowledge_response.get("answer_kind") or "approved_knowledge"),
+        source_kind="approved_knowledge",
+        source_refs=_text_list(knowledge_response.get("source_refs"))[:30],
+        certainty=(
+            str(answer_eligible_items[0].get("confidence") or "reviewed")
+            if answer_eligible_items
+            else "not_available"
+        ),
+        scope="current_question_and_approved_knowledge_limits",
+    )
     knowledge_claims = [
         {
             "claim_id": f"approved-knowledge-{item.get('id') or item.get('concept_id')}",
@@ -654,6 +667,7 @@ def build_comprehension_packet(
             "knowledge_context": knowledge,
             "knowledge_response_seed": knowledge_response["content_seed"],
             "knowledge_response_basis": knowledge_response,
+            "supported_semantics": supported_semantics,
             "claim_evidence_packet": claim_evidence,
             "structural_discovery_knowledge_handoff": structural_discovery_knowledge_handoff,
             "comprehension_handshake": handshake,

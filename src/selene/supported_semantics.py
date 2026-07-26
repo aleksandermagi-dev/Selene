@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from .lexical_semantics import available_lexical_forms, build_lexical_semantic_set
@@ -144,6 +145,69 @@ def semantic_units_for_formation(packet: dict[str, Any] | None) -> list[dict[str
         for item in packet.get("units") or []
         if isinstance(item, dict) and item.get("supported") is True
     ][:16]
+
+
+def build_text_supported_semantic_packet(
+    text: str,
+    *,
+    answer_kind: str,
+    source_kind: str,
+    source_refs: list[str] | None = None,
+    certainty: str = "provisional",
+    scope: str = "current_prompt_only",
+) -> dict[str, Any]:
+    """Turn already-supported visible content into an inspectable NLO handoff.
+
+    This helper does not infer new facts. It preserves the supplied content as
+    source-bound semantic units so NLO can vary expression without losing the
+    answer, qualification, contrast, limit, or conclusion that another organ
+    already established.
+    """
+    normalized = truncate(str(text or "").strip(), 5000)
+    parts = [
+        truncate(" ".join(item.split()), 1200)
+        for item in re.split(r"(?<=[.!?])\s+|\n+", normalized)
+        if item.strip()
+    ][:16]
+    units: list[dict[str, Any]] = []
+    for index, part in enumerate(parts):
+        lower = part.lower()
+        if re.match(r"^(?:however|but|by contrast|on the other hand|still)\b", lower):
+            role, relation = "contrast", "contrast"
+        elif re.match(r"^(?:if|when|unless|in that case)\b", lower):
+            role, relation = "condition", "condition"
+        elif re.match(r"^(?:for example|for instance|as an example)\b", lower):
+            role, relation = "example", "example"
+        elif re.match(r"^(?:a limit|the limit|this does not|it does not|that does not)\b", lower):
+            role, relation = "limit", "contrast"
+        elif re.match(r"^(?:overall|taken together|in short|therefore|so)\b", lower):
+            role, relation = "conclusion", "conclusion"
+        else:
+            role, relation = ("answer", "sequence") if index == 0 else ("support", "support")
+        units.append(
+            {
+                "id": f"{answer_kind}_{index + 1}",
+                "role": role,
+                "relation": relation,
+                "text": part,
+                "required": True,
+                "supported": True,
+                "source_kind": source_kind,
+                "source_refs": source_refs or [],
+                "certainty": certainty,
+                "scope": scope,
+            }
+        )
+    return build_supported_semantic_packet(
+        {
+            "answer_kind": answer_kind,
+            "certainty": certainty,
+            "scope": scope,
+            "source_refs": source_refs or [],
+            "fallback_text": normalized,
+            "units": units,
+        }
+    )
 
 
 def _normalize_unit(

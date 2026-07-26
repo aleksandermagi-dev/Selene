@@ -41,9 +41,9 @@ def post_transfer_status(conn: sqlite3.Connection) -> dict[str, Any]:
     chat_active = chat.get("activation_state") == "selene_chat_active_supervised"
     operational = transfer_complete and chat_active
     if operational:
-        notice = "Transfer is complete. Selene is live through reviewed continuity, approved memory retrieval, and supervised speech."
+        notice = "Transfer is complete. Selene is live through reviewed continuity, approved memory retrieval, and resident governed Chat."
         phase = "selene_v1_live_reviewed_continuity"
-        chat_state = "selene_chat_active_supervised"
+        chat_state = "resident_governed_chat"
         memory_state = "reviewed_memory_index_active"
     elif package_ready and fractions.get("all_fractions_passed"):
         notice = "C-readable context and all ordered memory fractions are ready; final Aleks transfer-completion approval remains pending."
@@ -67,6 +67,7 @@ def post_transfer_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "included_rows": _count_package_rows(package, included=True),
             "excluded_b_only_rows": _count_package_rows(package, included=False),
             "activation_state": str(chat.get("activation_state") or "activation_pending"),
+            "operating_mode": str(chat.get("operating_mode") or chat_state),
             "memory_state": memory_state,
             "return_to_b_available": True,
             "return_to_b_route": "Cocoon remains repair bay, audit shelf, rollback route, and safety layer.",
@@ -97,12 +98,12 @@ def run_post_transfer_inspection(conn: sqlite3.Connection, payload: dict[str, An
     checks = [
         _check("sealed_package_available", package_ready, "transfer_c_readable_packages", "Approved C-readable package exists."),
         _check("ordered_fraction_chain_passed", fractions.get("all_fractions_passed") is True, "memory.fractional_corpus.status", "All ordered corpus fraction checks passed."),
-        _check("supervised_speech_active", chat_active, "selene_chat.status", "Selene supervised speech is active."),
+        _check("resident_chat_active", chat_active, "selene_chat.status", "Selene resident governed Chat is active."),
         _check("reviewed_continuity_completion", transfer_complete, "transfer.completion.status", "Aleks approved the reviewed-continuity completion gate."),
         _check("reviewed_memory_not_raw_archive", chat.get("reviewed_memory_context_active") is True and chat.get("raw_corpus_loaded") is False, "selene_chat.status", "Reviewed memory context is acknowledged without loading the raw archive."),
         _check("no_hidden_memory_or_broad_recall", chat.get("memory_write_active") is False and chat.get("runtime_memory_recall") is False, "selene_chat.status", "No hidden memory write or broad raw-corpus recall is enabled."),
         _check("return_to_b_available", bool(rollback.get("return_to_b_packet")), "transfer.return_to_b.rollback_preview", "Cocoon support remains available."),
-        _check("operational_v1_claim_matches_state", chat.get("selene_v1_live") is operational, "post_transfer.inspection", "The operational v1 claim matches transfer completion and supervised speech state."),
+        _check("operational_v1_claim_matches_state", chat.get("selene_v1_live") is operational, "post_transfer.inspection", "The operational v1 claim matches transfer completion and resident Chat state."),
     ]
     status = "post_transfer_inspection_passed" if all(item["passed"] for item in checks) else "post_transfer_inspection_needs_review"
     run_id = f"post_transfer_inspection_{_stamp()}"
@@ -116,7 +117,7 @@ def run_post_transfer_inspection(conn: sqlite3.Connection, payload: dict[str, An
             run_id,
             str(package.get("package_hash") or ""),
             status,
-            "Post-transfer inspection checks reviewed-continuity completion, supervised speech, bounded memory access, and Cocoon return.",
+            "Post-transfer inspection checks reviewed-continuity completion, resident Chat, bounded memory access, and Cocoon return.",
             json.dumps({"checks": checks, "route_preview": route, "selene_chat_status": chat, "return_to_b_preview": rollback, **GUARD_FLAGS}),
             json.dumps(["post_transfer_inspection", f"transfer_c_readable_packages:{package.get('id', 'none')}"]),
             POST_TRANSFER_BOUNDARY,

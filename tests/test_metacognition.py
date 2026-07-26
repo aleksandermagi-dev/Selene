@@ -54,7 +54,9 @@ def test_status_and_manual_inspection_are_visible_but_advisory(tmp_path):
     runs = route_request(conn, "metacognition.runs.list")["result"]
     detail = route_request(conn, "metacognition.run.detail", {"run_id": result["run_id"]})["result"]
 
-    assert status["mode"] == "advisory_observer_only"
+    assert status["mode"] == "bounded_feedback_advisor"
+    assert status["answer_owner_feedback_active"] is True
+    assert status["feedback_writes_answer_content"] is False
     assert status["nlo_influence_active"] is False
     assert status["private_miner_evidence_connected"] is False
     assert result["fit_state"] == "fits_current_question"
@@ -62,6 +64,7 @@ def test_status_and_manual_inspection_are_visible_but_advisory(tmp_path):
     assert result["stopping"]["stop_now"] is True
     assert result["answer_rewritten"] is False
     assert result["recommendation_applied_automatically"] is False
+    assert result["feedback_handoff"]["responsible_owner"] == "none"
     assert runs["items"][0]["id"] == result["run_id"]
     assert detail["item"]["fit_state"] == "fits_current_question"
     _assert_bounded(status)
@@ -209,9 +212,12 @@ def test_correction_reopens_once_and_preserves_useful_structure():
     assert first["recommended_action"] == "reopen_current_model"
     assert first["reopening"]["preserve_useful_structure"] is True
     assert first["stopping"]["stop_now"] is False
+    assert first["feedback_handoff"]["single_cycle_requested"] is True
+    assert first["feedback_handoff"]["content_generation_allowed"] is False
     assert repeated["recommended_action"] == "hold_for_new_evidence"
     assert repeated["stopping"]["stop_now"] is True
     assert repeated["stopping"]["endless_self_questioning_allowed"] is False
+    assert repeated["feedback_handoff"]["single_cycle_requested"] is False
 
 
 def test_structured_correction_applies_without_unnecessary_reopening():

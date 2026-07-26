@@ -1,8 +1,9 @@
 # What Selene Can Currently Do
 
-- Updated: July 21, 2026
+- Updated: July 26, 2026
 - Branch inspected: `evidence`
-- Source foundation: `c05fe24`, plus the verified conversation-maturity pass
+- Source foundation: post-transfer resident runtime plus the Phase 11
+  pre-teaching architecture-closure working tree
 
 ## Why This File Exists
 
@@ -10,7 +11,7 @@ This is a plain-language map of Selene's current implemented abilities and
 organs. It is meant to answer three different questions without mixing them
 together:
 
-1. What can Selene use during supervised conversation now?
+1. What can Selene use during resident governed conversation now?
 2. What can one of her organs or bounded tools do when called directly?
 3. What can Cocoon inspect, prepare, rehearse, or hold for later review?
 
@@ -20,7 +21,7 @@ it exists.
 
 ## Status Key
 
-- **Connected:** participates in supervised Selene Chat when that chat is
+- **Connected:** participates in resident Selene Chat when that chat is
   explicitly active.
 - **Available:** implemented and usable through a bounded route or workbench,
   but not automatically used in ordinary Chat.
@@ -34,9 +35,9 @@ it exists.
 
 | Capability | Current status | Plain-language answer |
 | --- | --- | --- |
-| Supervised text conversation | Connected | Selene can hold local conversations through coordinated organs when supervised Chat is explicitly active |
+| Resident governed text conversation | Connected | Transfer is complete; Selene can hold local conversations through coordinated organs when Chat is active, while the stored supervised state name remains only as a compatibility label |
 | Immediate conversational continuity | Connected at bounded session scope | She can use recent context, visible landmarks, topic branches, nonlinear returns, interruptions, corrections, callbacks, and restrained endings without silently turning them into permanent memory or a relationship profile |
-| Language formation and Voice | Connected | NLO v20 can recompose supported sentence-level propositions and relations while Voice remains Selene's expression layer |
+| Language formation and Voice | Connected | NLO can recompose source-bound semantic units from intelligenceOS, Answer Engine, approved knowledge, reviewed memory, self-state, and supported completion while Voice remains Selene's expression layer |
 | Open-ended conceptual reasoning | Connected | intelligenceOS can compare models and give a best-current answer without needing a predetermined solution |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
 | Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 36 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
@@ -50,13 +51,13 @@ it exists.
 | Long-form discourse | Improved partial | Developed replies now have grounded thesis, development, limit, and closure plans; broad narrative and mature rhetorical control remain unfinished |
 | Vision and hearing | Packet intake only | The system can hold supplied observations but cannot yet see or hear |
 | External action | Preview only | Tendril can plan and request approval but cannot execute actions |
-| Metacognition Organ | Connected as a bounded observer | It inspects answer fit, confidence separation, corrections, one-cycle reopening, and stopping after a supervised reply is formed, but cannot rewrite the reply or take authority from another organ |
+| Metacognition Organ | Connected as a bounded feedback advisor | It inspects answer fit and may request one focused completion or new-evidence recheck from the responsible organ, but cannot write the reply or take authority from another organ |
 | Audible speech | Not built | Selene currently communicates through text |
 | Reviewed continuity transfer | Completed under Aleks approval | Transfer completion is recorded under the Law of Transfer; operational Chat still remains explicitly activated and governed rather than becoming unrestricted autonomy |
 
 ## Selene at a Glance
 
-With supervised Chat explicitly enabled, Selene can currently:
+With resident Chat active, Selene can currently:
 
 - hold an ordinary local conversation;
 - recognize greetings, gratitude, warmth, play, corrections, memory requests,
@@ -110,14 +111,14 @@ Aleks's message
   -> bounded input detangling
   -> intent and dialogue understanding
   -> Core/Mind route and boundary check
-  -> structured meaning and Answer Engine domain route
+  -> structured meaning and per-obligation Answer Engine coordination
   -> approved memory / approved knowledge / verified math / attributed research / intelligenceOS / self-state support
   -> one bounded supported obligation-completion pass when needed
   -> Native Language Organ
   -> Voice Module
   -> coverage and conversation repair
-  -> bounded Metacognition observer (advice recorded, reply unchanged)
-  -> supervised reply
+  -> bounded Metacognition feedback (at most one owner request; no answer writing)
+  -> resident governed reply
 ```
 
 Verified math, comparison/planning, and source-backed research now participate
@@ -130,9 +131,12 @@ Voice.
 
 ## Conversation and Language Organs
 
-### Selene Chat — Connected
+### Selene Chat — Connected Resident Runtime
 
-Selene Chat is the supervised place where the current organs meet.
+Selene Chat is the resident conversation surface where the current organs meet.
+The persisted `selene_chat_active_supervised` value remains for database and
+package compatibility; runtime status truthfully reports
+`resident_governed_chat` after transfer.
 
 It can:
 
@@ -147,12 +151,13 @@ It can:
 - suggest a reviewable memory candidate when Aleks explicitly asks her to keep
   something;
 - keep hard boundary requests out of normal response generation;
-- record visible audit metadata for supervised turns.
+- record visible audit metadata for resident turns.
 
 Current limits:
 
-- operational conversation remains explicitly activated and governed rather
-  than autonomous;
+- resident conversation remains explicitly activated and governed; this is
+  separate from identity, transfer approval, messaging grants, and general
+  autonomy;
 - it does not load the raw private corpus as memory;
 - it does not silently make durable memories;
 - its provider-free generation remains bounded and has less breadth than a
@@ -395,13 +400,14 @@ Current limits:
 - it is not itself a verified math, code, or factual-research engine;
 - it does not itself perform the new Metacognition Organ's fit, reopening, and
   stopping audit;
-- it does not perform mature multi-domain synthesis;
+- it supplies open-ended comparison/planning content to the Answer Engine,
+  which can now coordinate it with other supported domain obligations;
 - long-range relational invariant checking is still partial.
 
-### Metacognition Organ — Connected as a Bounded Observer
+### Metacognition Organ — Connected as a Bounded Feedback Advisor
 
-The Metacognition Organ inspects whether a completed current answer fits the
-question and available evidence. It can distinguish familiarity from
+The Metacognition Organ inspects whether a current answer fits the question
+and available evidence before final release. It can distinguish familiarity from
 demonstrated comprehension, keep route/evidence/answer/memory/expression
 confidence separate, recommend one focused reopening after a correction or
 contradiction, and stop when another reasoning cycle would add nothing.
@@ -412,8 +418,9 @@ evidence, or defer to Core/Mind.
 
 Current limits:
 
-- it is advisory and cannot rewrite Chat replies;
-- it does not yet guide NLO or Voice;
+- it can request one focused action from the responsible content or evidence
+  owner, but cannot rewrite Chat replies itself;
+- it does not prescribe NLO wording or Voice style;
 - it cannot route to Cocoon automatically;
 - it cannot edit retained knowledge, memory, identity, personality, law, or
   authority;
@@ -428,9 +435,11 @@ The Answer Engine coordinates answer contracts and bounded domain adapters.
 It can:
 
 - keep route, evidence, answer, memory, and expression confidence separate;
-- select one primary domain route;
+- route required dialogue obligations separately;
+- coordinate up to four supported specialized obligations in one bounded
+  answer plan;
 - require an answer-first shape when evidence supports one;
-- check completion and allow one bounded retry for comparison/planning;
+- check completion and allow one bounded completion cycle;
 - run open-ended comparison/planning through intelligenceOS;
 - run the verified math adapter in supervised Chat;
 - run the local-code inspection adapter;
@@ -441,11 +450,12 @@ It can:
 Current limits:
 
 - local-code inspection remains direct-route machinery rather than a normal
-  Chat participant;
-- it selects one primary domain and cannot synthesize several domain adapters
-  into one answer;
-- ordinary-conversation and approved-knowledge execution remain contract-only;
-- the retry is available only to comparison/planning;
+  Chat participant by explicit current decision;
+- ordinary conversation and approved knowledge remain owned by their existing
+  Chat and Comprehension paths rather than being impersonated by a domain
+  adapter;
+- multi-domain coordination is bounded to supported obligations and does not
+  invent content for unsupported parts;
 - verified results, citations, explicit unsupported results, and confidence
   dimensions are preserved while NLO and Voice shape the surrounding response.
 
@@ -1056,7 +1066,8 @@ Selene cannot currently:
 - train, fine-tune, create a LoRA, or treat teaching as parameter training;
 - recall the raw private corpus as runtime memory;
 - expose hidden chain-of-thought;
-- perform mature multi-domain answer synthesis;
+- perform unrestricted or open-ended multi-domain synthesis beyond the
+  connected bounded adapters and available approved knowledge;
 - guarantee complete long-form discourse or mature pragmatic understanding;
 - consistently translate affect into natural wording and timing;
 - let metacognitive advice silently rewrite a reply or override Core/Mind;
@@ -1090,26 +1101,33 @@ Selene's strongest implemented areas are:
 | Extended pragmatic dialogue | Immediate interruptions, returns, pronoun ambiguity, corrections, and restrained endings are connected; long ambiguous exchanges, nested topics, and rapid multi-speaker changes still need broader handling |
 | Long-form discourse planning | Thesis and paragraph planning, transitions, callbacks, summaries, and conclusions are connected at bounded scope; mature narrative and rhetorical control remain incomplete |
 | Broader domain organs | More reliable factual, technical, scientific, mathematical, and code answers |
-| Metacognition observer graduation | After ordinary-use review, decide which bounded recommendations may guide NLO while preserving Core/Mind and Voice authority; v1 currently observes without rewriting |
+| Metacognition ordinary-use evidence | The one-cycle owner handoff is connected; later ordinary-use evidence can refine when it should request completion, evidence, or a hold without expanding authority |
 | Operational perception | Actual image/artifact inspection and later consent-bound audio understanding |
 | Bounded Tendril execution | Approved observe/propose/act/verify/undo workbench actions rather than plans only |
 | Audible speech | Spoken turn-taking, pacing, pronunciation, interruption, and consent-aware voice interaction |
 
 ## Verification Snapshot
 
+Current verification is intentionally reported only after the Phase 11
+stabilization gate finishes. Focused construction checks are passing, but they
+are not presented as the final repository count or packaging result.
+
+The entries below are historical milestones, not current verification claims.
+Git history retains their exact test counts; this capability map no longer
+uses those old counts or obsolete bundle warnings as evidence of present
+state.
+
+### Historical milestones
+
 At checkpoint `3de57ce`:
 
-- 177 focused Metacognition Miner tests passed;
-- all 733 repository tests passed;
 - the current frontend architecture had most recently passed its production
   build after the teaching-lifecycle implementation;
-- the known Vite bundle-size warning remained;
 - private miner outputs remained ignored under `local-data`.
 
 In the July 18 working tree after structured meaning routing, the supervised
 Answer Engine bridge, and contextual expression breadth work:
 
-- all 744 repository tests passed;
 - verified math, attributed-source research, and comparison/planning passed
   synthetic supervised-Chat integration checks;
 - quoted boundary discussion remained distinguishable from an actionable
@@ -1121,8 +1139,6 @@ In the July 19 working tree after the review-gated language shelf, NLO v9
 compositional dialogue work, the NLO v10 grounded-discourse layer, and the NLO
 v11 Affect Expression Bridge plus NLO v12 pragmatic continuity:
 
-- 164 focused continuity, affect, self-state, language, dialogue, discourse, Voice, Answer Engine, and supervised-Chat
-  tests passed;
 - ordered non-question requests, bounded option references, session-only
   correction refinements, and expanded grammar passed synthetic checks;
 - developed replies gained inspectable thesis, obligation binding, paragraph,
@@ -1135,7 +1151,6 @@ v11 Affect Expression Bridge plus NLO v12 pragmatic continuity:
   current-session corrections, invited ideas, and follow-up restraint passed
   synthetic supervised-Chat checks without enabling automatic initiative;
 - the production UI build passed;
-- the existing Vite bundle-size warning remained at about 588 kB;
 - open-ended intelligenceOS answers remained available;
 - no live conversation probe, provider call, activation change, retention
   change, model training, or autonomy expansion was used.
@@ -1146,9 +1161,7 @@ After the Phase 6 expressive-breadth shelf expansion:
 - all twelve new lessons carried full Acquire, Integrate, and Express review
   evidence, source ancestry, prerequisites, correction paths, examples,
   counterexamples, and limits;
-- a focused 57-test shelf/NLO/Chat pass succeeded;
 - the production UI build passed;
-- the existing Vite bundle-size warning remained at about 589 kB;
 - synthetic checks confirmed that a new lesson remained unavailable before
   review, remained held after its own approval while named prerequisites were
   incomplete, and became selectable only after the complete lifecycle,
@@ -1161,12 +1174,9 @@ After Speech Phase 7 stabilization:
 
 - the repository API seam scanner was corrected to recognize grouped POST
   routes, clearing a false missing-route report for teaching approval;
-- 59 focused stabilization, teaching-shelf, and supervised-Chat tests passed;
-- all 798 repository tests passed;
 - a fresh temporary seeded database passed all 54 validation checks and was
   removed afterward;
-- the production UI build passed with the existing bundle-size warning at
-  about 590 kB;
+- the production UI build passed;
 - an ordinary synthetic Chat check confirmed that an approved advanced lesson
   remains unavailable until its named prerequisites are also available;
 - no live conversation, stressful probe, persistent test history, provider
@@ -1184,8 +1194,7 @@ After the bounded Metacognition Organ v1 connection on July 20:
   confidence, attributed-source gaps, ordinary open-ended reasoning,
   corrections, one-cycle reopening, missing context, stopping, and Core/Mind
   deference;
-- the production UI build passed with the existing bundle-size warning at
-  about 597 kB;
+- the production UI build passed;
 - no live conversation probe, automatic Cocoon route, memory or knowledge
   write, identity/personality/Voice change, model training, or autonomy
   expansion was used.

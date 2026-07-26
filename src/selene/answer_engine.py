@@ -11,6 +11,7 @@ from .meaning_router import interpret_turn_meaning
 from .pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
 from .registry import truncate
 from .source_backed_research import research_from_sources
+from .supported_semantics import build_text_supported_semantic_packet
 from .verified_math import verify_bounded_math
 
 
@@ -67,8 +68,8 @@ def answer_engine_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "answer_engine_supervised_chat_bridge_ready",
-            "version": "v4_math_research_comparison_chat_bridge",
-            "phase": "phase_6_meaning_route_and_supervised_chat_bridge",
+            "version": "v5_obligation_coordination_bridge",
+            "phase": "phase_11_pre_teaching_architecture_closure",
             "domains": list(DOMAINS),
             "domain_adapter_status": adapter_status,
             "confidence_dimensions": [
@@ -80,9 +81,11 @@ def answer_engine_status() -> dict[str, Any]:
             ],
             "completion_retry_available": True,
             "completion_retry_limit": 1,
-            "completion_retry_domains": ["comparison_planning"],
-            "domain_routing_mode": "single_primary_domain",
-            "multi_domain_synthesis_available": False,
+            "completion_retry_domains": ["comparison_planning", "coordinated_supported_obligations"],
+            "domain_routing_mode": "per_obligation_domain_coordination",
+            "multi_domain_synthesis_available": True,
+            "multi_domain_synthesis_limit": 4,
+            "ordinary_conversation_remains_open_ended": True,
             "expression_only_math_available": True,
             "domain_request_fallback_obligation_available": True,
             "core_mind_route_owner": True,
@@ -96,7 +99,98 @@ def answer_engine_status() -> dict[str, Any]:
             "source_backed_research_does_not_replace_open_ended_reasoning": True,
             "supervised_chat_domains": ["verified_math", "comparison_planning", "source_backed_research"],
             "local_code_supervised_chat_connected": False,
+            "local_code_chat_decision": "kept_as_an_explicit_separate_inspection_route",
             "source_backed_chat_requires_attributed_packets": True,
+            "review_status": "status_only",
+            "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
+        }
+    )
+
+
+def preview_answer_coordination(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Route each required dialogue obligation without executing an adapter."""
+    request = build_answer_request(payload)
+    obligations = list(request.get("dialogue_obligations") or [])
+    if not obligations:
+        obligations = [
+            {
+                "id": f"turn-{request['request_id']}",
+                "kind": "direct_question",
+                "source_text": request["prompt"],
+                "required": True,
+                "coverage_terms": [],
+            }
+        ]
+    units: list[dict[str, Any]] = []
+    for obligation in obligations[:12]:
+        obligation_domain = (
+            request["requested_domain"]
+            or _obligation_domain_hint(str(obligation.get("kind") or ""))
+        )
+        obligation_request = {
+            **request,
+            "prompt": str(obligation.get("source_text") or request["prompt"]),
+            "requested_domain": obligation_domain,
+            "dialogue_obligations": [obligation],
+            "obligation_count": 1,
+            "meaning_route": interpret_turn_meaning(
+                str(obligation.get("source_text") or request["prompt"]),
+                requested_domain=obligation_domain,
+                source_packets_present=bool(request.get("source_packets")),
+            ),
+        }
+        route = _select_domain(obligation_request)
+        domain = str(route.get("selected_domain") or "ordinary_conversation")
+        if domain == "local_code_inspection":
+            owner = "separate_bounded_code_inspection_route"
+            executable_in_chat = False
+        elif domain in {"verified_math", "comparison_planning", "source_backed_research"}:
+            owner = "answer_engine"
+            executable_in_chat = True
+        elif domain == "approved_knowledge":
+            owner = "comprehension_integration"
+            executable_in_chat = False
+        elif domain == "unsupported":
+            owner = "core_mind"
+            executable_in_chat = False
+        else:
+            owner = "ordinary_conversation_path"
+            executable_in_chat = False
+        units.append(
+            {
+                "obligation": obligation,
+                "selected_domain": domain,
+                "route": route,
+                "responsible_owner": owner,
+                "executable_in_chat": executable_in_chat,
+                "adapter_executed": False,
+            }
+        )
+    domains = list(dict.fromkeys(str(item["selected_domain"]) for item in units))
+    executable_domains = list(
+        dict.fromkeys(
+            str(item["selected_domain"])
+            for item in units
+            if item["executable_in_chat"] is True
+        )
+    )
+    return _with_guards(
+        {
+            "status": "answer_engine_coordination_preview_ready",
+            "request": request,
+            "coordination_units": units,
+            "domains": domains,
+            "executable_chat_domains": executable_domains,
+            "coordination_mode": (
+                "coordinated_multi_domain"
+                if len(domains) > 1
+                else "single_domain"
+            ),
+            "multi_domain": len(domains) > 1,
+            "adapter_executed": False,
+            "answer_generated": False,
+            "completion_cycle_limit": 1,
+            "local_code_chat_connected": False,
             "review_status": "status_only",
             "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
         }
@@ -251,6 +345,18 @@ def _domain_answer_packet(
         "no_answer_reason": no_answer_reason,
         "evidence_confidence": evidence_confidence,
         "answer_confidence": str(payload.get("answer_confidence") or "not_assessed"),
+        "supported_semantics": build_text_supported_semantic_packet(
+            direct_answer or no_answer_reason,
+            answer_kind=f"{domain}_answer",
+            source_kind=(
+                "attributed_source"
+                if domain == "source_backed_research"
+                else "verified_domain_answer"
+            ),
+            source_refs=source_refs,
+            certainty=str(payload.get("answer_confidence") or "not_assessed"),
+            scope=domain,
+        ),
         "adapter_executed": adapter_executed,
         "packet_is_contract_preview": contract_preview,
         "review_status": "status_only",
@@ -878,6 +984,19 @@ def _ensure_domain_request_obligation(request: dict[str, Any], kind: str) -> dic
         "obligation_count": 1,
         "obligation_source": "domain_request_fallback",
     }
+
+
+def _obligation_domain_hint(kind: str) -> str:
+    normalized = str(kind or "").strip().lower()
+    if any(marker in normalized for marker in ("math", "arithmetic", "calculate")):
+        return "verified_math"
+    if any(marker in normalized for marker in ("code", "inspection", "traceback")):
+        return "local_code_inspection"
+    if any(marker in normalized for marker in ("research", "source", "citation")):
+        return "source_backed_research"
+    if any(marker in normalized for marker in ("comparison", "planning", "plan", "option")):
+        return "comparison_planning"
+    return ""
 
 
 def _adapter_not_available(

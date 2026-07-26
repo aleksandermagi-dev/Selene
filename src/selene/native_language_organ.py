@@ -36,7 +36,10 @@ from .special_expression_realizer import (
     build_memory_expression_plan,
     realize_special_expression_plan,
 )
-from .supported_semantics import semantic_units_for_formation
+from .supported_semantics import (
+    build_text_supported_semantic_packet,
+    semantic_units_for_formation,
+)
 from .uncertainty_language_realizer import build_uncertainty_plan, realize_uncertainty_plan
 
 
@@ -343,7 +346,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         if isinstance(intelligence.get("answer_substance"), dict)
         else {}
     )
-    supported_semantics = (
+    intelligence_supported_semantics = (
         answer_substance.get("semantic_packet")
         if isinstance(answer_substance.get("semantic_packet"), dict)
         else {}
@@ -354,13 +357,43 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             _normalize_paragraphs(str(intelligence.get("best_current_answer") or "")),
             3800,
         )
-    supported_semantics_used = _supported_semantics_owns_content(
-        content_seed,
-        intelligence,
-        str(visible_speech_seed.get("selected_source_id") or "unspecified"),
-    )
     memory = payload.get("memory_context") if isinstance(payload.get("memory_context"), dict) else {}
     self_state = payload.get("self_state_context") if isinstance(payload.get("self_state_context"), dict) else {}
+    content_source_id = str(
+        visible_speech_seed.get("selected_source_id") or "unspecified"
+    )
+    content_source_class = str(
+        visible_speech_seed.get("selected_source_class") or "conversation"
+    )
+    supported_semantics = _supported_semantics_for_content(
+        content_seed,
+        content_source_id=content_source_id,
+        content_source_class=content_source_class,
+        intelligence=intelligence,
+        intelligence_semantics=intelligence_supported_semantics,
+        answer_engine=answer_engine,
+        comprehension=comprehension,
+        memory=memory,
+        self_state=self_state,
+    )
+    if not supported_semantics and content_source_id == "bounded_answer_completion":
+        supported_semantics = build_text_supported_semantic_packet(
+            content_seed,
+            answer_kind="bounded_answer_completion",
+            source_kind=(
+                "approved_knowledge"
+                if content_source_class == "approved_knowledge"
+                else "verified_domain_answer"
+                if content_source_class == "domain_answer"
+                else "prompt_grounded_method"
+            ),
+            source_refs=payload.get("source_refs") or [],
+            certainty="bounded_supported_completion",
+            scope="current_dialogue_obligations",
+        )
+    supported_semantics_used = bool(
+        semantic_units_for_formation(supported_semantics)
+    )
     affect_expression = (
         payload.get("affect_expression_guidance")
         if isinstance(payload.get("affect_expression_guidance"), dict)
@@ -451,7 +484,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         content_seed,
         memory,
         intelligence,
-        content_source_id=str(visible_speech_seed.get("selected_source_id") or "unspecified"),
+        supported_semantics=supported_semantics,
     )
     pragmatic_plan = build_pragmatic_plan(
         {
@@ -519,8 +552,8 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "topic": _topic_phrase(prompt),
         "propositions": propositions,
         "content_seed": content_seed,
-        "content_source_id": str(visible_speech_seed.get("selected_source_id") or "unspecified"),
-        "content_source_class": str(visible_speech_seed.get("selected_source_class") or "conversation"),
+        "content_source_id": content_source_id,
+        "content_source_class": content_source_class,
         "content_source_release_allowed": visible_speech_seed.get("release_allowed") is True,
         "contextual_follow_up": contextual_follow_up,
         "figurative_interpretation": figurative_interpretation,
@@ -1650,27 +1683,10 @@ def _propositions(
     memory: dict[str, Any],
     intelligence: dict[str, Any],
     *,
-    content_source_id: str = "unspecified",
+    supported_semantics: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
-    answer_substance = (
-        intelligence.get("answer_substance")
-        if isinstance(intelligence.get("answer_substance"), dict)
-        else {}
-    )
-    intelligence_semantics_owns_seed = _supported_semantics_owns_content(
-        seed,
-        intelligence,
-        content_source_id,
-    )
-    semantic_packet = (
-        answer_substance.get("semantic_packet")
-        if intelligence_semantics_owns_seed
-        and answer_substance.get("selected_for_answer") is True
-        and isinstance(answer_substance.get("semantic_packet"), dict)
-        else {}
-    )
-    supported_units = semantic_units_for_formation(semantic_packet)
+    supported_units = semantic_units_for_formation(supported_semantics)
     if supported_units:
         items.extend(supported_units)
     elif seed:
@@ -1709,18 +1725,81 @@ def _propositions(
     return items[:12]
 
 
-def _supported_semantics_owns_content(
+def _supported_semantics_for_content(
     seed: str,
-    intelligence: dict[str, Any],
+    *,
     content_source_id: str,
-) -> bool:
-    best_current_answer = " ".join(str(intelligence.get("best_current_answer") or "").split())
+    content_source_class: str,
+    intelligence: dict[str, Any],
+    intelligence_semantics: dict[str, Any],
+    answer_engine: dict[str, Any],
+    comprehension: dict[str, Any],
+    memory: dict[str, Any],
+    self_state: dict[str, Any],
+) -> dict[str, Any]:
     normalized_seed = " ".join(str(seed or "").split())
-    return (
-        content_source_id in {"unspecified", "intelligence_os_answer"}
-        and bool(best_current_answer)
-        and normalized_seed == best_current_answer
-    )
+    candidates: list[tuple[bool, str, dict[str, Any]]] = [
+        (
+            content_source_id == "answer_engine"
+            or content_source_class == "domain_answer",
+            str(answer_engine.get("content_seed") or ""),
+            (
+                answer_engine.get("supported_semantics")
+                if isinstance(answer_engine.get("supported_semantics"), dict)
+                else (answer_engine.get("answer_packet") or {}).get(
+                    "supported_semantics"
+                )
+                if isinstance(answer_engine.get("answer_packet"), dict)
+                else {}
+            ),
+        ),
+        (
+            content_source_id == "approved_comprehension"
+            or content_source_class == "approved_knowledge",
+            str(comprehension.get("knowledge_response_seed") or ""),
+            (
+                comprehension.get("supported_semantics")
+                if isinstance(comprehension.get("supported_semantics"), dict)
+                else {}
+            ),
+        ),
+        (
+            content_source_id
+            in {"reviewed_memory", "contextual_approved_memory"}
+            or content_source_class == "memory_reconstruction",
+            str(memory.get("response_seed") or ""),
+            (
+                memory.get("supported_semantics")
+                if isinstance(memory.get("supported_semantics"), dict)
+                else {}
+            ),
+        ),
+        (
+            content_source_id == "grounded_self_state"
+            or content_source_class == "self_state",
+            str(self_state.get("response_seed") or ""),
+            (
+                self_state.get("supported_semantics")
+                if isinstance(self_state.get("supported_semantics"), dict)
+                else {}
+            ),
+        ),
+        (
+            content_source_id in {"unspecified", "intelligence_os_answer"},
+            str(intelligence.get("best_current_answer") or ""),
+            intelligence_semantics,
+        ),
+    ]
+    for source_matches, source_text, packet in candidates:
+        if (
+            source_matches
+            and isinstance(packet, dict)
+            and packet
+            and normalized_seed
+            and normalized_seed == " ".join(source_text.split())
+        ):
+            return packet
+    return {}
 
 
 def _sentence_relation(sentence: str) -> str:

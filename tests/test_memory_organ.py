@@ -49,6 +49,21 @@ def test_memory_index_includes_approved_reference_with_vys_metadata(tmp_path):
     _assert_locked(result)
 
 
+def test_memory_status_names_the_resident_reviewed_lifecycle(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = route_request(conn, "memory.index.status")["result"]
+    lifecycle = result["memory_lifecycle_contract"]
+
+    assert result["resident_memory_contract_version"] == "v1_post_transfer_truth"
+    assert lifecycle["approved_retrieval"] == "approved_active_memory_only"
+    assert lifecycle["new_retention"] == "proposal_then_Aleks_review"
+    assert lifecycle["dream_consolidation"] == "reviewable_proposals_only"
+    assert lifecycle["silent_promotion"] is False
+    assert lifecycle["raw_corpus_recall"] is False
+    _assert_locked(result)
+
+
 def test_memory_candidate_requires_approval_before_chat_use(tmp_path):
     conn = _conn(tmp_path)
 

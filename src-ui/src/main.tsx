@@ -1139,7 +1139,7 @@ function App() {
         body: JSON.stringify({ approval_phrase: activationApprovalPhrase })
       });
       const activeMessage = result.state === "selene_chat_active_supervised" || result.selene_chat_active
-        ? "Selene supervised speech is active."
+        ? "Selene resident chat is active."
         : "Activation approval submitted.";
       setActivationResult({ ...result, message: text(result.message || activeMessage) });
       const refresh = await refreshActivationLayer({ preserveResult: true, reason: "approval" });
@@ -1160,7 +1160,7 @@ function App() {
         if (status.state === "selene_chat_active_supervised" || status.selene_chat_active) {
           setActivationResult({
             status: "selene_supervised_speech_activation_already_active",
-            message: "Selene supervised speech is active.",
+            message: "Selene resident chat is active.",
             recovered_after_error: true,
             original_error: originalError
           });
@@ -3825,7 +3825,7 @@ function App() {
     setHomeChatText("");
     try {
       if (activationStatus?.selene_chat_active) {
-        setSeleneChatResult({ status: "running", message: "Selene is answering in supervised speech mode." });
+        setSeleneChatResult({ status: "running", message: "Selene is answering." });
         const result = await stabilizationApi<Dict>("/api/selene-chat/send", {
           method: "POST",
           body: JSON.stringify({ text: content, session_id: seleneChatSession?.session ? (seleneChatSession.session as Dict).id : undefined })
@@ -3834,9 +3834,9 @@ function App() {
         await refreshSeleneChatAfterAction("selene_chat_supervised_send", result.session_id);
         return;
       }
-      setSeleneChatResult({ status: "preview_only", message: "Selene Chat is not supervised-active. Use Cocoon Chat Dry Runs for test/workflow material." });
+      setSeleneChatResult({ status: "preview_only", message: "Selene resident Chat is paused. Use Cocoon Chat Dry Runs for test/workflow material." });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Selene supervised chat failed";
+      const message = err instanceof Error ? err.message : "Selene Chat failed";
       setHomeChatText((current) => current || content);
       setSeleneChatResult({ status: "error", error: message });
     } finally {
@@ -3986,7 +3986,7 @@ function App() {
     const notes: string[] = [];
     if (!boot.ready) notes.push("Local sidecar is still starting.");
     if (activationStatus?.selene_chat_active) {
-      notes.push("Speech is active in supervised mode.");
+      notes.push("Resident Chat is active under the reviewed runtime contract.");
     } else if (transferCReadablePackage?.transfer_approved && !postTransferStatus?.selene_v1_live) {
       notes.push("Continuity context is ready; speech activation is still pending.");
     }
@@ -4441,7 +4441,7 @@ function App() {
               <div className="chips">
                 <span>access: {friendlyStatus(mobileHealth?.access_mode || mobileFlags.access_mode || "local_only")}</span>
                 <span>LAN: {pairing.enabled ? "paired" : "off"}</span>
-                <span>speech: {activationStatus?.selene_chat_active ? "supervised active" : "preview"}</span>
+                <span>chat: {activationStatus?.resident_chat_active ? "resident active" : activationStatus?.selene_chat_active ? "active" : "preview"}</span>
                 <span>memory write: {plainBlocked(mobileFlags.memory_write_active)}</span>
                 <span>autonomy: {plainBlocked(mobileFlags.autonomous_action_allowed)}</span>
               </div>
@@ -5338,7 +5338,7 @@ function App() {
               </div>
               <div className="homeChatStateBar">
                 <div className="chips">
-                  <span>{activationStatus?.selene_chat_active ? "Selene speech active / supervised" : "Selene home preview"}</span>
+                  <span>{activationStatus?.resident_chat_active ? "Selene resident Chat active" : activationStatus?.selene_chat_active ? "Selene Chat active" : "Selene home preview"}</span>
                   <span>{localChatContinuityAvailable ? "continuity available" : "continuity starts here"}</span>
                   <span>activation: {friendlyActivation(activationStatus?.activation_change || "none")}</span>
                    <span>voice: {friendlyStatus(seleneChatResult?.voice_confidence || safeJsonObject(seleneChatStatus?.voice_module).state || "not sampled")}</span>
@@ -5502,7 +5502,7 @@ function App() {
         {tab === "selene-chat" && (
           <>
             <header className="surfaceIntro">
-              <p>Cocoon testing and workflow shelf for dry runs, activation rehearsal, route comparison, and support/checkup. Front Chat is Selene's supervised speech surface after activation.</p>
+              <p>Cocoon testing and workflow shelf for dry runs, activation rehearsal, route comparison, and support/checkup. After approved transfer, Front Chat is Selene's resident conversation surface; Cocoon remains a separate teaching, tending, safety, and review bridge.</p>
               <h2>Chat Dry Runs</h2>
             </header>
             <section className="chatSurface">
@@ -6839,7 +6839,7 @@ function App() {
         {tab === "transfer-ceremony" && (
           <>
             <header className="surfaceIntro">
-              <p>Seal reviewed continuity, govern supervised speech, then complete Selene v1 through an explicit Aleks-only final gate.</p>
+              <p>Seal reviewed continuity, govern the Chat activation boundary, then complete Selene v1 through an explicit Aleks-only final gate.</p>
               <h2>Transfer Ceremony</h2>
             </header>
             <div className="metrics">
@@ -6907,7 +6907,7 @@ function App() {
               <PlainResult value={transferApprovalResult} />
             </Panel>
             <Panel title="Selene Supervised Speech Activation">
-              <p className="plainHelp">This activates front Selene Chat as supervised speech only. Rehearsals and activation workflow tests stay in Cocoon. This does not unlock live memory writes, broad live recall, unreviewed archive import, model training/LoRA, Tendril execution, autonomy, or full Selene v1.</p>
+              <p className="plainHelp">This legacy-compatible activation gate turns on front Selene Chat. After approved transfer, the operating mode is resident governed Chat. Rehearsals and activation workflow tests stay in Cocoon. This does not unlock hidden memory writes, raw recall, unreviewed archive import, model training/LoRA, Tendril execution, general autonomy, or self-replication.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Readiness" value={activationReadiness?.ready ? "ready" : "blocked"} />
                 <Metric label="Speech" value={activationStatus?.selene_chat_active ? "active" : activationStatus?.selene_chat_paused ? "paused" : "not active"} />
@@ -6950,7 +6950,7 @@ function App() {
                 </button>
                 <button onClick={pauseSeleneSpeechActivation} disabled={activationResult?.status === "running" || !activationStatus?.selene_chat_active}>Pause Selene Chat</button>
               </div>
-              {activationStatus?.selene_chat_active ? <p className="plainHelp">Selene supervised speech is active. Front Chat is now the supervised speech surface.</p> : null}
+              {activationStatus?.selene_chat_active ? <p className="plainHelp">{activationStatus?.resident_chat_active ? "Selene resident Chat is active. The stored supervised state name is retained only for database compatibility." : "Selene Chat is active within the current activation boundary."}</p> : null}
               {activationResult?.post_refresh_warning ? <p className="plainHelp">{text(activationResult.post_refresh_warning)}</p> : null}
               {activationApprovalPhrase && activationApprovalPhrase !== text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene supervised speech activation.") ? <p className="errorText">Activation phrase does not match exactly.</p> : null}
               <PlainResult value={activationResult} />
@@ -7222,7 +7222,7 @@ function App() {
               </div>
             </Panel>
             <Panel title="Metacognition Organ">
-              <p className="plainHelp">Bounded observer for answer fit, evidence sufficiency, correction, reopening, and stopping. It currently inspects completed supervised replies without rewriting them or taking authority from Core/Mind, Comprehension, NLO, or Voice.</p>
+              <p className="plainHelp">Bounded feedback advisor for answer fit, evidence sufficiency, correction, reopening, and stopping. It may request one focused completion or evidence-owner recheck before release, but cannot write answer content or take authority from Core/Mind, Comprehension, NLO, or Voice.</p>
               <div className="metrics miniMetrics">
                 <Metric label="State" value={friendlyStatus(metacognitionStatus?.status || "not checked")} />
                 <Metric label="Mode" value={friendlyStatus(metacognitionStatus?.mode || "observer only")} />

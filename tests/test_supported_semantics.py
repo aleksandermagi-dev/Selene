@@ -8,6 +8,7 @@ from selene.lexical_semantics import available_lexical_forms, build_lexical_sema
 from selene.native_language_organ import realize_native_language
 from selene.supported_semantics import (
     build_supported_semantic_packet,
+    build_text_supported_semantic_packet,
     semantic_units_for_formation,
 )
 
@@ -65,6 +66,61 @@ def test_supported_semantic_packet_keeps_meaning_scope_certainty_and_sources_ins
     assert packet["meaning_change_allowed"] is False
     assert packet["voice_owns_expression_style"] is True
     _assert_locked(packet)
+
+
+def test_text_supported_semantics_preserve_answer_contrast_limit_and_source():
+    packet = build_text_supported_semantic_packet(
+        "The result is four. However, that conclusion only covers ordinary arithmetic.",
+        answer_kind="verified_math_answer",
+        source_kind="verified_domain_answer",
+        source_refs=["verified_math:2+2"],
+        certainty="verified",
+        scope="2+2",
+    )
+
+    units = semantic_units_for_formation(packet)
+    assert [item["role"] for item in units] == ["answer", "contrast"]
+    assert packet["source_refs"] == ["verified_math:2+2"]
+    assert packet["all_units_supported"] is True
+    assert packet["fact_generation_allowed"] is False
+    _assert_locked(packet)
+
+
+def test_non_intelligence_semantic_packets_reach_nlo_without_becoming_new_facts(tmp_path):
+    conn = _conn(tmp_path)
+    seed = "The verified result is four."
+    packet = build_text_supported_semantic_packet(
+        seed,
+        answer_kind="verified_math_answer",
+        source_kind="verified_domain_answer",
+        source_refs=["verified_math:2+2"],
+        certainty="verified",
+        scope="2+2",
+    )
+
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": "What is 2 + 2?",
+            "content_seed": seed,
+            "visible_speech_seed": {
+                "selected_source_id": "answer_engine",
+                "selected_source_class": "domain_answer",
+                "release_allowed": True,
+            },
+            "answer_engine_support": {
+                "content_seed": seed,
+                "supported_semantics": packet,
+            },
+            "intent_decision": classify_chat_intent("What is 2 + 2?"),
+        },
+    )
+
+    handoff = result["meaning_packet"]["supported_semantics"]
+    assert handoff["used"] is True
+    assert handoff["answer_kind"] == "verified_math_answer"
+    assert result["formation"]["required_semantic_units_preserved"] is True
+    assert result["revision"]["unsupported_content_generated"] is False
 
 
 def test_lexical_forms_require_sense_grammar_provenance_and_understanding():

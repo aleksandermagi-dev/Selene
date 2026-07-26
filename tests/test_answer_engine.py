@@ -6,6 +6,7 @@ import pytest
 
 from selene.answer_engine import (
     answer_engine_status,
+    preview_answer_coordination,
     preview_answer_route,
     preview_domain_answer_packet,
     run_comparison_planning_answer,
@@ -40,7 +41,7 @@ def test_answer_engine_status_connects_math_research_and_comparison_while_code_s
     result = answer_engine_status()
 
     assert result["status"] == "answer_engine_supervised_chat_bridge_ready"
-    assert result["phase"] == "phase_6_meaning_route_and_supervised_chat_bridge"
+    assert result["phase"] == "phase_11_pre_teaching_architecture_closure"
     assert set(result["confidence_dimensions"]) == {
         "route_confidence",
         "evidence_confidence",
@@ -59,14 +60,118 @@ def test_answer_engine_status_connects_math_research_and_comparison_while_code_s
     )
     assert result["completion_retry_available"] is True
     assert result["completion_retry_limit"] == 1
-    assert result["domain_routing_mode"] == "single_primary_domain"
-    assert result["multi_domain_synthesis_available"] is False
+    assert result["domain_routing_mode"] == "per_obligation_domain_coordination"
+    assert result["multi_domain_synthesis_available"] is True
     assert result["expression_only_math_available"] is True
     assert result["open_ended_problem_solving_adapter"] == "comparison_planning"
     assert result["open_ended_problem_solving_requires_preexisting_answer"] is False
     assert result["source_backed_research_does_not_replace_open_ended_reasoning"] is True
     assert result["local_code_supervised_chat_connected"] is False
     _assert_locked(result)
+
+
+def test_coordination_preview_routes_each_obligation_and_keeps_code_separate():
+    result = preview_answer_coordination(
+        {
+            "prompt": "Calculate this, compare the options, and inspect the code.",
+            "dialogue_obligations": [
+                {
+                    "id": "math",
+                    "kind": "math_verification",
+                    "source_text": "Calculate 18 * 7.",
+                },
+                {
+                    "id": "comparison",
+                    "kind": "comparison",
+                    "source_text": "Compare the two options.",
+                },
+                {
+                    "id": "code",
+                    "kind": "code_inspection",
+                    "source_text": "Inspect this source code.",
+                },
+            ],
+        }
+    )
+
+    assert result["coordination_mode"] == "coordinated_multi_domain"
+    assert result["domains"] == [
+        "verified_math",
+        "comparison_planning",
+        "local_code_inspection",
+    ]
+    units = {item["obligation"]["id"]: item for item in result["coordination_units"]}
+    assert units["math"]["responsible_owner"] == "answer_engine"
+    assert units["comparison"]["executable_in_chat"] is True
+    assert units["code"]["responsible_owner"] == "separate_bounded_code_inspection_route"
+    assert units["code"]["executable_in_chat"] is False
+    assert result["adapter_executed"] is False
+    _assert_locked(result)
+
+
+def test_chat_bridge_executes_two_supported_domain_obligations_once_each(
+    tmp_path, monkeypatch
+):
+    from selene.selene_chat import _answer_engine_support
+
+    conn = _conn(tmp_path)
+    monkeypatch.setattr(
+        "selene.selene_chat.run_comparison_planning_answer",
+        lambda *_args, **_kwargs: {
+            "status": "answer_engine_comparison_answer_ready",
+            "answer_packet": {
+                "direct_answer": "Option A is the smaller reversible first step.",
+                "no_answer_reason": "",
+                "source_refs": ["test:comparison"],
+                "claim_evidence_packet": {},
+            },
+            "confidence_vector": {"answer_confidence": "provisional"},
+            "adapter_executed": True,
+            "answer_generated": True,
+        },
+    )
+    spine = {
+        "turn_id": "turn-mixed",
+        "open_obligations": [
+            {
+                "id": "math",
+                "kind": "math_verification",
+                "source_text": "Calculate 18 * 7.",
+                "required": True,
+            },
+            {
+                "id": "compare",
+                "kind": "comparison",
+                "source_text": "Compare option A and option B.",
+                "required": True,
+            },
+        ],
+    }
+
+    result = _answer_engine_support(
+        conn,
+        "Calculate 18 * 7 and compare option A with option B.",
+        {},
+        {"content_response_requested": True, "response_depth": "standard"},
+        {},
+        spine,
+        {},
+        {},
+        {},
+        {},
+        hard=False,
+    )
+
+    assert result["selected_domain"] == "coordinated_multi_domain"
+    assert result["coordinated_domains"] == [
+        "verified_math",
+        "comparison_planning",
+    ]
+    assert result["adapter_executed"] is True
+    assert result["answer_generated"] is True
+    assert "126" in result["content_seed"]
+    assert "reversible first step" in result["content_seed"]
+    assert result["supported_semantics"]["status"] == "supported_semantic_packet_ready"
 
 
 @pytest.mark.parametrize(

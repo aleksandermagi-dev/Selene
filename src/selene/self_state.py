@@ -5,6 +5,7 @@ import sqlite3
 from hashlib import sha256
 from typing import Any
 
+from .supported_semantics import build_text_supported_semantic_packet
 
 SELF_STATE_BOUNDARY = "self_state_current_signal_summary_no_diagnosis_memory_write_or_authority_change"
 
@@ -48,6 +49,14 @@ def build_self_state_packet(conn: sqlite3.Connection, payload: dict[str, Any] | 
         source_refs.append(f"emotion_salience_packet:{current_affect.get('id')}")
     if care_posture.get("id"):
         source_refs.append(f"cocoon_care_check:{care_posture['id']}")
+    supported_semantics = build_text_supported_semantic_packet(
+        response_seed,
+        answer_kind="current_self_state_read",
+        source_kind="current_session_observation",
+        source_refs=list(dict.fromkeys(source_refs))[:20],
+        certainty=str(state_read["confidence"]),
+        scope="current_conversation_only",
+    )
     return {
         "status": "self_state_grounded_current_read",
         "used": True,
@@ -56,6 +65,7 @@ def build_self_state_packet(conn: sqlite3.Connection, payload: dict[str, Any] | 
         "state_labels": state_read["state_labels"],
         "confidence": state_read["confidence"],
         "response_seed": response_seed,
+        "supported_semantics": supported_semantics,
         "response_plan": response_plan,
         "response_realization": response_realization,
         "observations": _observations(current_affect, care_posture, active_conversation, hard_boundary),
@@ -90,6 +100,7 @@ def inactive_self_state_packet() -> dict[str, Any]:
         "status": "self_state_not_requested",
         "used": False,
         "response_seed": "",
+        "supported_semantics": {},
         "source_refs": [],
         "review_status": "status_only",
         "provenance_boundary": SELF_STATE_BOUNDARY,

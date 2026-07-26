@@ -7,6 +7,7 @@ from typing import Any
 
 from .activation import activation_is_active, activation_status, record_activation_chat_event
 from .answer_engine import (
+    preview_answer_coordination,
     preview_answer_route,
     run_comparison_planning_answer,
     run_source_backed_research_answer,
@@ -50,6 +51,7 @@ from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
 from .self_state import build_self_state_packet, inactive_self_state_packet
 from .structural_discovery import build_structural_discovery_packet
+from .supported_semantics import build_text_supported_semantic_packet
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
 from .transfer_state import transfer_completion_is_approved
 from .voice_module import generate_voice_preview, voice_module_status
@@ -119,6 +121,9 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "selene_chat_active_supervised_ready" if active else "selene_chat_dry_run_ready",
             "surface": "Selene Chat",
             "state": "selene_chat_active_supervised" if active else "activation_pending" if approved else "pre_transfer_dry_run",
+            "legacy_state": "selene_chat_active_supervised" if active else "activation_pending" if approved else "pre_transfer_dry_run",
+            "operating_mode": str(activation.get("operating_mode") or "pre_transfer_activation"),
+            "resident_chat_active": activation.get("resident_chat_active") is True,
             "preview_label": "Selene Chat" if active else "Selene Chat Preview",
             "activation_state": "selene_chat_active_supervised" if active else "activation_pending" if approved else "pre_transfer_dry_run",
             "dry_run_only": not active,
@@ -352,6 +357,19 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         intent_decision,
         contextual_continuity,
     )
+    memory_response_seed = memory_reply or contextual_memory_reply
+    memory_supported_semantics = build_text_supported_semantic_packet(
+        memory_response_seed,
+        answer_kind=(
+            "explicit_approved_memory_reconstruction"
+            if memory_reply
+            else "contextual_approved_memory_callback"
+        ),
+        source_kind="reviewed_memory",
+        source_refs=_json_list(memory_retrieval.get("source_refs")),
+        certainty=str(memory_retrieval.get("memory_confidence") or "not_known"),
+        scope="approved_personal_memory_for_current_conversation",
+    )
     self_state_reply = str(self_state.get("response_seed") or "")
     contextual_reply = contextual_response_seed(
         contextual_follow_up,
@@ -572,6 +590,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "memory_context_used": memory_retrieval.get("memory_context_used") is True,
                 "memory_source_class": memory_retrieval.get("memory_source_class") or "",
                 "memory_confidence": memory_retrieval.get("memory_confidence") or "not_known",
+                "response_seed": memory_response_seed,
+                "supported_semantics": memory_supported_semantics,
             },
             "continuity_context": {**chat_continuity, "available": local_continuity_supported},
             "conversation_context": conversation_context,
@@ -748,7 +768,18 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         candidate_text,
         content_seed,
         response_coverage,
-        requested=preliminary_metacognition.get("recommended_action") == "complete_missing_obligation",
+        requested=(
+            (
+                preliminary_metacognition.get("feedback_handoff")
+                if isinstance(
+                    preliminary_metacognition.get("feedback_handoff"), dict
+                )
+                else {}
+            ).get("single_cycle_requested")
+            is True
+            and preliminary_metacognition.get("recommended_action")
+            == "complete_missing_obligation"
+        ),
         hard_boundary=bool(hard_blockers),
         conversation_spine=conversation_spine,
         source_id=str(visible_speech_seed.get("selected_source_id") or "none"),
@@ -1673,14 +1704,125 @@ def _answer_engine_support(
         "completion_retry_enabled": chat_payload.get("completion_retry_enabled") is not False,
         "consult_great_library": False,
     }
+    coordination = preview_answer_coordination(engine_payload)
+    units = [
+        item
+        for item in coordination.get("coordination_units") or []
+        if isinstance(item, dict)
+    ]
+    executable_units = [
+        item for item in units if item.get("executable_in_chat") is True
+    ][:4]
     preview = preview_answer_route(engine_payload)
-    route = preview.get("domain_route") if isinstance(preview.get("domain_route"), dict) else {}
+    route = (
+        executable_units[0].get("route")
+        if len(executable_units) == 1
+        and isinstance(executable_units[0].get("route"), dict)
+        else preview.get("domain_route")
+        if isinstance(preview.get("domain_route"), dict)
+        else {}
+    )
     domain = str(route.get("selected_domain") or "ordinary_conversation")
+    if len(executable_units) > 1:
+        domain_results: list[dict[str, Any]] = []
+        content_parts: list[str] = []
+        required_fragments: list[str] = []
+        for unit in executable_units:
+            unit_domain = str(unit.get("selected_domain") or "")
+            obligation = (
+                unit.get("obligation")
+                if isinstance(unit.get("obligation"), dict)
+                else {}
+            )
+            unit_payload = {
+                **engine_payload,
+                "prompt": str(obligation.get("source_text") or text),
+                "requested_domain": unit_domain,
+                "dialogue_obligations": [obligation],
+            }
+            if unit_domain == "verified_math":
+                unit_result = run_verified_math_answer(unit_payload)
+            elif unit_domain == "source_backed_research":
+                unit_result = run_source_backed_research_answer(unit_payload)
+            else:
+                unit_result = run_comparison_planning_answer(conn, unit_payload)
+            unit_packet = (
+                unit_result.get("answer_packet")
+                if isinstance(unit_result.get("answer_packet"), dict)
+                else {}
+            )
+            direct = truncate(str(unit_packet.get("direct_answer") or ""), 5000).strip()
+            unable = truncate(str(unit_packet.get("no_answer_reason") or ""), 1000).strip()
+            part = _answer_engine_content_seed(unit_domain, direct, unable, unit_result)
+            if part and part not in content_parts:
+                content_parts.append(part)
+            if direct:
+                required_fragments.append(direct)
+            elif unable:
+                required_fragments.append(unable)
+            domain_results.append(
+                {
+                    "obligation_id": str(obligation.get("id") or ""),
+                    "domain": unit_domain,
+                    "status": str(unit_result.get("status") or ""),
+                    "answer_packet": unit_packet,
+                    "confidence_vector": unit_result.get("confidence_vector") or {},
+                    "adapter_executed": unit_result.get("adapter_executed") is True,
+                    "answer_generated": unit_result.get("answer_generated") is True,
+                }
+            )
+        coordinated_seed = truncate("\n\n".join(content_parts), 5000)
+        source_refs = list(
+            dict.fromkeys(
+                ref
+                for item in domain_results
+                for ref in _json_list((item.get("answer_packet") or {}).get("source_refs"))
+            )
+        )[:30]
+        supported_semantics = build_text_supported_semantic_packet(
+            coordinated_seed,
+            answer_kind="coordinated_multi_domain_answer",
+            source_kind="verified_domain_answer",
+            source_refs=source_refs,
+            certainty="mixed_domain_confidence",
+            scope="current_dialogue_obligations",
+        )
+        return {
+            **base,
+            "used": bool(coordinated_seed),
+            "selected_domain": "coordinated_multi_domain",
+            "coordinated_domains": list(
+                dict.fromkeys(str(item.get("domain") or "") for item in domain_results)
+            ),
+            "coordination_plan": coordination,
+            "domain_results": domain_results,
+            "content_seed": coordinated_seed,
+            "required_answer_fragments": required_fragments,
+            "supported_semantics": supported_semantics,
+            "answer_packet": {
+                "domain": "coordinated_multi_domain",
+                "direct_answer": coordinated_seed,
+                "source_refs": source_refs,
+                "supported_semantics": supported_semantics,
+                "unanswered_obligations": [
+                    item.get("obligation")
+                    for item in units
+                    if item.get("executable_in_chat") is not True
+                    and str(item.get("selected_domain") or "")
+                    not in {"ordinary_conversation", "approved_knowledge"}
+                ],
+            },
+            "adapter_executed": any(item["adapter_executed"] for item in domain_results),
+            "answer_generated": bool(coordinated_seed),
+            "status": "answer_engine_coordinated_multi_domain_answer_ready",
+            "reason": "bounded adapters answered their own obligations before NLO expression",
+        }
     if domain == "local_code_inspection":
         return {
             **base,
             "selected_domain": domain,
             "domain_route": route,
+            "coordination_plan": coordination,
             "reason": "local-code inspection remains available outside Chat but is intentionally not connected here yet",
             "deferred_by_scope": True,
         }
@@ -1689,6 +1831,7 @@ def _answer_engine_support(
             **base,
             "selected_domain": domain,
             "domain_route": route,
+            "coordination_plan": coordination,
             "reason": "ordinary conversation or approved comprehension remains owned by the existing Chat path",
         }
 
@@ -1722,9 +1865,11 @@ def _answer_engine_support(
         "used": True,
         "selected_domain": domain,
         "domain_route": result.get("domain_route") or route,
+        "coordination_plan": coordination,
         "content_seed": content_seed,
         "required_answer_fragments": required_fragments,
         "answer_packet": packet,
+        "supported_semantics": packet.get("supported_semantics") or {},
         "claim_evidence_packet": (
             packet.get("claim_evidence_packet")
             if isinstance(packet.get("claim_evidence_packet"), dict)
