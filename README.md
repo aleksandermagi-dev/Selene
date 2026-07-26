@@ -63,8 +63,9 @@ The implemented local text foundation can:
 
 Selene remains unfinished. Her text generation is provider-free and more
 bounded than a mature general language model, long-form and world-knowledge
-breadth are still being taught, audible speech is not yet connected, and
-external actions remain deliberately constrained.
+breadth remain incomplete and are scheduled for ordered teaching after the
+pre-teaching architecture-closure phase, audible speech is not yet connected,
+and external actions remain deliberately constrained.
 
 ## Current Status
 

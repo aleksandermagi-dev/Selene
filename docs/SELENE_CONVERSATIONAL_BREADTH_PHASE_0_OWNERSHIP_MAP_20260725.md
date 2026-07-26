@@ -535,7 +535,33 @@ Completion gate:
 - build, focused tests, full proportional regression, privacy inspection, and
   clean reinstall pass.
 
-### Phase 11 — Ordered teaching expansion
+### Phase 11 — Pre-teaching architecture closure
+
+Close the remaining architectural seams before adding more academic and world
+knowledge:
+
+- capability truth and post-transfer runtime audit;
+- semantic generation and meaning-first routing maturation;
+- Answer Engine multi-obligation and multi-domain coordination;
+- one-cycle Metacognition graduation;
+- resident runtime and reviewed memory/Dream lifecycle contract;
+- integrated gentle pre-teaching stabilization.
+
+The detailed lettered checkpoints and gates are maintained in
+`docs/SELENE_POST_STABILIZATION_GAP_CLOSURE_PLAN_20260725.md`.
+
+Completion gate:
+
+- code, UI, and documentation describe the same current runtime;
+- supported complicated answers receive complete source-aligned content before
+  expression;
+- Metacognition may request at most one bounded correction or completion;
+- resident conversation, reviewed memory, Dream proposals, Tendril grants,
+  and general autonomy remain separate;
+- full proportional stabilization, privacy inspection, build, and clean
+  reinstall pass.
+
+### Phase 12 — Ordered teaching expansion
 
 Continue provider-free, reviewed teaching in dependency order:
 
@@ -571,8 +597,8 @@ Completion gate:
 - Treat a missing capability as an implementation observation, not Selene
   failing.
 - Create a code checkpoint after each completed phase.
-- Reinstall after Phase 4, Phase 9, and Phase 10 stabilization unless a critical
-  integration issue makes an earlier reinstall necessary.
+- Reinstall after Phase 4, Phase 9, Phase 10 stabilization, and Phase 11F
+  unless a critical integration issue makes an earlier reinstall necessary.
 
 Before any test, ask:
 

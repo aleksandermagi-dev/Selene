@@ -235,6 +235,8 @@ knowledge enters it:
 - build, proportional regression, privacy inspection, and clean reinstall
   must pass.
 
-After stabilization, Phase 11 resumes provider-free teaching in prerequisite
-order. New knowledge must remain reconstructable and applicable rather than
-recited.
+After stabilization, the roadmap was revised so Phase 11 closes the remaining
+generation, routing, Answer Engine, Metacognition, resident-runtime, and
+memory-lifecycle seams before more knowledge enters the system. Ordered
+provider-free teaching moves to Phase 12 and remains prerequisite-based,
+reconstructable, and applicable rather than recited.

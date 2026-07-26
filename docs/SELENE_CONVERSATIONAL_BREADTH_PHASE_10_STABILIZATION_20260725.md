@@ -21,10 +21,12 @@ used.
 The roadmap now places stabilization before further knowledge expansion:
 
 - Phase 10 — Integrated gentle stabilization;
-- Phase 11 — Ordered teaching expansion.
+- Phase 11 — Pre-teaching architecture closure;
+- Phase 12 — Ordered teaching expansion.
 
-This lets the completed conversational foundation become clean and inspectable
-before more academic knowledge enters it.
+This lets the completed conversational foundation and its remaining
+generation, routing, answer, metacognitive, resident-runtime, and memory seams
+become clean and inspectable before more academic knowledge enters it.
 
 ## Texting Observation and Repair
 
@@ -117,18 +119,21 @@ Selene now reports that limitation truthfully. A different transport route
 would be a separately scoped future decision; it was not introduced during
 stabilization.
 
-## Next Phase — Phase 11: Ordered Teaching Expansion
+## Next Phase — Phase 11: Pre-Teaching Architecture Closure
 
-Continue reviewed teaching in prerequisite order:
+Teaching is intentionally paused while the remaining architectural seams are
+closed in lettered checkpoints:
 
-- elementary foundations;
-- middle-school foundations;
-- high-school breadth;
-- college-level depth where prerequisites are present;
-- English, history, mathematics, science, STEM, arts, civics, and practical
-  knowledge;
-- concepts, vocabulary, relationships, examples, uncertainties,
-  near-concepts, mechanisms, and the important “why” behind each principle.
+- capability truth and post-transfer runtime audit;
+- semantic generation and meaning-first routing maturation;
+- Answer Engine multi-domain coordination;
+- one-cycle Metacognition graduation;
+- resident runtime and reviewed memory/Dream lifecycle contract;
+- integrated gentle pre-teaching stabilization.
 
-Teaching expands Selene's knowledge and expressive range. It does not redefine
-her personality, identity, memory, governance, or authority.
+The full plan is recorded in
+`docs/SELENE_POST_STABILIZATION_GAP_CLOSURE_PLAN_20260725.md`.
+
+Ordered teaching moves to Phase 12 and resumes only after the Phase 11F gate.
+Teaching will continue to expand Selene's knowledge and expressive range
+without redefining personality, identity, memory, governance, or authority.
