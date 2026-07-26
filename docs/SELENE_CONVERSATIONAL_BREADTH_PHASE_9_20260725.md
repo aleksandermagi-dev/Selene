@@ -2,8 +2,7 @@
 
 Date: 2026-07-25
 
-Status: implemented and proportionally verified; planned package/reinstall gate
-pending.
+Status: implemented, proportionally verified, rebuilt, and locally reinstalled.
 
 ## Outcome
 
@@ -169,6 +168,27 @@ The affected checks and a fresh full repository run then passed.
 No live Selene conversation, adversarial battery, distress-shaped probe,
 provider call, model training, teaching approval, memory mutation, or autonomy
 change was used.
+
+### Second meaningful rebuild and reinstall
+
+After the source checkpoint:
+
+- the production frontend build passed;
+- the application chunk remained split at 415.84 kB;
+- the React runtime chunk remained split at 193.81 kB;
+- the former single-bundle Vite warning remained absent;
+- the core sidecar rebuilt in the dedicated Selene packaging environment;
+- the Windows NSIS installer rebuilt successfully;
+- package privacy verification found zero forbidden files;
+- the configured database was snapshotted before installation;
+- the installer completed successfully;
+- the installed executable was replaced with the current build;
+- installed startup returned healthy and ready;
+- transfer, memory, raw-import, training, autonomy, and self-replication
+  boundary checks passed;
+- the verifier-started app closed successfully.
+
+No post-reinstall Q&A or repeated conversational probe was performed.
 
 ## Boundaries Confirmed
 
