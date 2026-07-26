@@ -610,6 +610,32 @@ def build_comprehension_packet(
             "epistemic_revision": epistemic_revision,
         }
     )
+    structural_discovery_knowledge_handoff = {
+        "status": (
+            "approved_knowledge_links_available"
+            if answer_eligible_items
+            else "no_relevant_approved_knowledge_links"
+        ),
+        "items": [
+            {
+                "concept_id": str(item.get("id") or item.get("concept_id") or ""),
+                "domain": str(item.get("domain") or ""),
+                "central_claim": str(item.get("central_claim") or ""),
+                "relationships": item.get("relationships") or [],
+                "limits": item.get("limits") or [],
+                "source_refs": item.get("source_refs") or [],
+                "approved": True,
+                "personal_memory": False,
+            }
+            for item in answer_eligible_items
+            if str(item.get("central_claim") or "").strip()
+            and bool(item.get("source_refs"))
+        ],
+        "knowledge_owner": "Comprehension and Integration Organ",
+        "personal_memory_used": False,
+        "automatic_discovery_claim": False,
+        "writes_records": False,
+    }
     result = _with_guards(
         {
             "status": "comprehension_packet_ready",
@@ -629,6 +655,7 @@ def build_comprehension_packet(
             "knowledge_response_seed": knowledge_response["content_seed"],
             "knowledge_response_basis": knowledge_response,
             "claim_evidence_packet": claim_evidence,
+            "structural_discovery_knowledge_handoff": structural_discovery_knowledge_handoff,
             "comprehension_handshake": handshake,
             "epistemic_revision": epistemic_revision,
             "metacognitive_check": {

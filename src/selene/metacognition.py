@@ -143,6 +143,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     knowledge = _dict(comprehension.get("knowledge_context"))
     answer_packet = _dict(answer_engine.get("answer_packet"))
     conversational_energy = _dict(payload.get("conversational_energy"))
+    structural_discovery = _dict(payload.get("structural_discovery"))
     claim_evidence = _dict(
         payload.get("claim_evidence_packet")
         or answer_packet.get("claim_evidence_packet")
@@ -342,6 +343,28 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
                 )
             ),
             "automatic_cocoon_routing": False,
+        },
+        "structural_discovery": structural_discovery,
+        "structural_discovery_assessment": {
+            "available": bool(structural_discovery),
+            "ready": (
+                structural_discovery.get("status")
+                == "structural_discovery_packet_ready"
+            ),
+            "relation_label": str(
+                (_dict(structural_discovery.get("classification"))).get("label")
+                or ""
+            ),
+            "bridge_traceable": structural_discovery.get("bridge_traceable") is True,
+            "hold_boundary_named": bool(structural_discovery.get("holds_where")),
+            "break_boundary_named": bool(structural_discovery.get("breaks_where"))
+            or str(structural_discovery.get("requested_relation_type") or "")
+            == "equivalence",
+            "analogy_used_as_proof": False,
+            "logical_leap_testable": structural_discovery.get("hypothesis_testable")
+            is True,
+            "private_corpus_wording_used": False,
+            "automatic_conclusion": False,
         },
         "source_refs": source_refs,
         "attributed_evidence_refs": evidence_source_refs,

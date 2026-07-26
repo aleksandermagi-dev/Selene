@@ -52,6 +52,10 @@ from .conversational_energy import (
     build_conversational_energy_plan,
     conversational_energy_status,
 )
+from .structural_discovery import (
+    build_structural_discovery_packet,
+    structural_discovery_status,
+)
 from .compressed_structure_braid import (
     compressed_structure_braid_status,
     run_compressed_structure_braid,
@@ -606,6 +610,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": conversational_energy_status()}
     if route_key == "conversational_energy.plan":
         return {"route": route_key, "result": build_conversational_energy_plan(payload)}
+    if route_key == "structural_discovery.status":
+        return {"route": route_key, "result": structural_discovery_status()}
+    if route_key == "structural_discovery.build":
+        return {"route": route_key, "result": build_structural_discovery_packet(payload)}
     if route_key == "comprehension.status":
         return {"route": route_key, "result": comprehension_status(conn)}
     if route_key == "comprehension.concepts.list":

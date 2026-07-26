@@ -85,6 +85,47 @@ def test_intelligence_os_flags_bias_and_preserves_care_route(tmp_path):
     _assert_locked(result)
 
 
+def test_intelligence_os_carries_a_traceable_cross_domain_hypothesis(tmp_path):
+    conn = _conn(tmp_path)
+    result = route_request(
+        conn,
+        "intelligence_os.reason",
+        {
+            "prompt": "Compare biological feedback with an engineering controller.",
+            "structural_discovery": {
+                "source_domain": "biology",
+                "target_domain": "engineering",
+                "relation_type": "analogy",
+                "source_relation": "A feedback loop senses deviation and changes the next response.",
+                "target_relation": "A controller measures error and adjusts output.",
+                "transferred_relation": "Both use a measured difference to alter the next step.",
+                "mappings": [
+                    {
+                        "source_role": "sensory signal",
+                        "target_role": "measurement input",
+                        "relation_preserved": "reports current state",
+                    },
+                    {
+                        "source_role": "biological response",
+                        "target_role": "controller output",
+                        "relation_preserved": "changes behavior from the measured difference",
+                    },
+                ],
+                "holds_where": ["Both regulate a response from feedback."],
+                "breaks_where": ["Biological growth and evolution are outside the controller mapping."],
+                "source_refs": ["teaching:feedback", "engineering:controller"],
+            },
+        },
+    )["result"]
+
+    discovery = result["structural_discovery"]
+    assert discovery["status"] == "structural_discovery_packet_ready"
+    assert discovery["bridge_traceable"] is True
+    assert discovery["analogy_is_proof"] is False
+    assert discovery["claim_evidence_packet"]["claims_by_type"]["inference"]
+    _assert_locked(result)
+
+
 def test_generic_reasoning_fallback_never_exposes_model_scaffolding(tmp_path):
     conn = _conn(tmp_path)
 

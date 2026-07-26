@@ -7,6 +7,7 @@ from selene.epistemic_revision import build_epistemic_revision_plan
 from selene.module_router import route_request
 from selene.native_language_organ import _reasoned_answer_frames, realize_native_language
 from selene.conversation_thread_loom import build_thread_braid
+from selene.structural_discovery import build_structural_discovery_packet
 
 
 def _conn(tmp_path):
@@ -217,6 +218,60 @@ def test_nlo_carries_supported_initiative_and_collaborative_help_without_pressur
     assert help_request["voice_handoff"]["conversational_energy"] == help_plan
     assert help_request["voice_handoff"]["conversational_energy_realization"]["pressure_added"] is False
     assert help_request["discourse_plan"]["question_allowed"] is True
+
+
+def test_nlo_preserves_structural_mapping_limits_and_hypothesis_for_voice(tmp_path):
+    conn = _conn(tmp_path)
+    discovery = build_structural_discovery_packet(
+        {
+            "source_domain": "biology",
+            "target_domain": "engineering",
+            "relation_type": "causal_connection",
+            "source_relation": "A feedback loop senses deviation and changes the next response.",
+            "target_relation": "A controller measures error and adjusts output.",
+            "transferred_relation": "Both use a measured difference to alter the next step.",
+            "mappings": [
+                {
+                    "source_role": "sensory signal",
+                    "target_role": "measurement input",
+                    "relation_preserved": "reports current state",
+                },
+                {
+                    "source_role": "biological response",
+                    "target_role": "controller output",
+                    "relation_preserved": "changes behavior from the measured difference",
+                },
+            ],
+            "holds_where": ["Both regulate a response from feedback."],
+            "breaks_where": ["Biological growth and evolution are outside the controller mapping."],
+            "mechanism": "Designers translated the documented relation into controller logic.",
+            "evidence_refs": ["paper:design-history"],
+            "hypothesis": {
+                "statement": "The biological model influenced the controller design.",
+                "discriminating_observations": ["Dated design notes should contain the mapping before implementation."],
+                "counterexamples": ["An earlier independent controller would weaken the influence claim."],
+            },
+        }
+    )
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": "Explain the proposed connection and how we could check it.",
+            "content_seed": discovery["response_seed"],
+            "claim_evidence_packet": discovery["claim_evidence_packet"],
+            "structural_discovery": discovery,
+        },
+    )
+
+    moves = result["discourse_plan"]["moves"]
+    assert "name_the_transferred_structural_relation" in moves
+    assert "state_where_the_mapping_breaks" in moves
+    assert "keep_analogy_distinct_from_proof" in moves
+    assert "label_logical_leap_as_hypothesis" in moves
+    assert "name_discriminating_observation" in moves
+    assert result["voice_handoff"]["structural_discovery"] == discovery
+    assert result["voice_handoff"]["voice_may_upgrade_structural_relation"] is False
+    assert "analogy is not proof" in result["candidate_text"]
 
 
 def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):

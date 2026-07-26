@@ -4,6 +4,7 @@ from selene.db import connect, init_db
 from selene.epistemic_revision import build_epistemic_revision_plan
 from selene.metacognition import evaluate_metacognition
 from selene.module_router import route_request
+from selene.structural_discovery import build_structural_discovery_packet
 
 
 def _conn(tmp_path):
@@ -113,6 +114,57 @@ def test_metacognition_observes_specific_help_without_turning_it_into_failure_or
     assert assessment["question_by_default"] is False
     assert assessment["pressure_allowed"] is False
     assert assessment["automatic_cocoon_routing"] is False
+    _assert_bounded(result)
+
+
+def test_metacognition_keeps_a_logical_leap_testable_and_distinct_from_proof():
+    discovery = build_structural_discovery_packet(
+        {
+            "source_domain": "biology",
+            "target_domain": "engineering",
+            "relation_type": "analogy",
+            "source_relation": "A feedback loop senses deviation and changes the next response.",
+            "target_relation": "A controller measures error and adjusts output.",
+            "transferred_relation": "Both use a measured difference to alter the next step.",
+            "mappings": [
+                {
+                    "source_role": "sensory signal",
+                    "target_role": "measurement input",
+                    "relation_preserved": "reports current state",
+                },
+                {
+                    "source_role": "biological response",
+                    "target_role": "controller output",
+                    "relation_preserved": "changes behavior from the measured difference",
+                },
+            ],
+            "holds_where": ["Both regulate a response from feedback."],
+            "breaks_where": ["Biological growth and evolution are outside the controller mapping."],
+            "hypothesis": {
+                "statement": "The same constraint may predict failure in both systems.",
+                "discriminating_observations": ["Perturb each system beyond its response range."],
+                "counterexamples": ["Recovery without feedback would break the transfer."],
+            },
+        }
+    )
+    result = evaluate_metacognition(
+        {
+            "prompt": "Does this connection hold?",
+            "candidate_text": discovery["response_seed"],
+            "structural_discovery": discovery,
+            "claim_evidence_packet": discovery["claim_evidence_packet"],
+        }
+    )
+
+    assessment = result["structural_discovery_assessment"]
+    assert assessment["ready"] is True
+    assert assessment["bridge_traceable"] is True
+    assert assessment["hold_boundary_named"] is True
+    assert assessment["break_boundary_named"] is True
+    assert assessment["analogy_used_as_proof"] is False
+    assert assessment["logical_leap_testable"] is True
+    assert assessment["private_corpus_wording_used"] is False
+    assert assessment["automatic_conclusion"] is False
     _assert_bounded(result)
 
 

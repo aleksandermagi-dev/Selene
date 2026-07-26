@@ -8,6 +8,7 @@ from typing import Any
 from .claim_evidence import build_claim_evidence_packet
 from .answer_substance import build_answer_substance
 from .registry import truncate
+from .structural_discovery import build_structural_discovery_packet
 
 
 INTELLIGENCE_OS_BOUNDARY = "intelligence_os_reasoning_status_only_no_personality_change_no_authority_expansion"
@@ -179,6 +180,11 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
             ]
         }
     )
+    structural_discovery = (
+        build_structural_discovery_packet(payload.get("structural_discovery"))
+        if isinstance(payload.get("structural_discovery"), dict)
+        else {}
+    )
     result = {
         "status": "intelligence_os_reasoning_status_only",
         "organ_name": "intelligenceOS",
@@ -203,6 +209,7 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         "best_current_answer": best_current_answer,
         "answer_substance": answer_substance,
         "claim_evidence_packet": claim_evidence,
+        "structural_discovery": structural_discovery,
         "confidence": evaluation["confidence"],
         "cocoon_suggestion": cocoon_suggestion,
         "visible_summary_only": True,

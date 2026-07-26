@@ -256,6 +256,13 @@ def test_guided_understanding_can_be_reviewed_and_retained_as_knowledge(tmp_path
     assert packet["knowledge_context"]["memory_source"] is False
     assert packet["knowledge_context"]["governance_source"] is False
     assert "differs from a perfect circle" in packet["knowledge_response_seed"]
+    discovery_handoff = packet["structural_discovery_knowledge_handoff"]
+    assert discovery_handoff["status"] == "approved_knowledge_links_available"
+    assert discovery_handoff["items"][0]["concept_id"] == str(approved["item"]["id"])
+    assert discovery_handoff["items"][0]["approved"] is True
+    assert discovery_handoff["items"][0]["personal_memory"] is False
+    assert discovery_handoff["personal_memory_used"] is False
+    assert discovery_handoff["automatic_discovery_claim"] is False
     _assert_locked(approved)
     _assert_locked(packet)
 

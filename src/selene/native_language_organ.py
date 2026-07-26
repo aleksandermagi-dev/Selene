@@ -100,6 +100,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "selective_epistemic_revision_handoff",
                 "typed_claim_evidence_handoff",
                 "bounded_curiosity_initiative_and_collaborative_help_handoff",
+                "structural_analogy_hypothesis_and_discovery_handoff",
                 "aspect_voice_and_mood_realization",
                 "conversation_repair_handoff",
                 "approved_language_teaching_guidance",
@@ -287,6 +288,8 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "meaning_must_be_preserved": True,
             "claim_evidence_packet": meaning.get("claim_evidence_packet") or {},
             "claim_types_and_confidence_must_be_preserved": True,
+            "structural_discovery": meaning.get("structural_discovery") or {},
+            "voice_may_upgrade_structural_relation": False,
             "suggested_category": meaning["voice_category"],
             "expression_guidance": meaning.get("affect_expression_guidance") or {},
             "ending_decision": (plan.get("pragmatic_continuity") or {}).get("ending_decision") or {},
@@ -390,6 +393,11 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     conversational_energy_input = (
         payload.get("conversational_energy_input")
         if isinstance(payload.get("conversational_energy_input"), dict)
+        else {}
+    )
+    structural_discovery = (
+        payload.get("structural_discovery")
+        if isinstance(payload.get("structural_discovery"), dict)
         else {}
     )
     figurative_interpretation = (
@@ -502,6 +510,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence,
         "conversational_energy_input": conversational_energy_input,
+        "structural_discovery": structural_discovery,
         "semantic_frame": semantic_frame,
         "supported_semantics": {
             "used": supported_semantics_used and bool(semantic_units_for_formation(supported_semantics)),
@@ -691,6 +700,34 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             moves.append("keep_claim_level_uncertainty_visible")
         if claim_handoff.get("disagreement_count"):
             moves.append("preserve_claim_level_disagreement")
+    structural_discovery = (
+        meaning.get("structural_discovery")
+        if isinstance(meaning.get("structural_discovery"), dict)
+        else {}
+    )
+    discovery_handoff = (
+        structural_discovery.get("expression_handoff")
+        if isinstance(structural_discovery.get("expression_handoff"), dict)
+        else {}
+    )
+    if structural_discovery.get("status") == "structural_discovery_packet_ready":
+        moves.extend(
+            [
+                "name_the_transferred_structural_relation",
+                "map_source_and_target_roles",
+                "state_where_the_mapping_holds",
+                "state_where_the_mapping_breaks",
+                "keep_analogy_distinct_from_proof",
+            ]
+        )
+        if discovery_handoff.get("hypothesis_statement"):
+            moves.extend(
+                [
+                    "label_logical_leap_as_hypothesis",
+                    "name_discriminating_observation",
+                    "name_counterexample_or_failure_condition",
+                ]
+            )
     if dialogue.get("multi_part_prompt") is True:
         moves.insert(1 if moves else 0, "answer_each_open_question")
     if dialogue.get("resolved_reference"):
@@ -898,6 +935,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "special_expression_plan": special_expression_plan,
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence,
+        "structural_discovery": structural_discovery,
     }
 
 

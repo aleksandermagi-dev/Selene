@@ -517,6 +517,69 @@ def test_active_chat_asks_for_exact_collaborative_help_after_using_available_sup
     _assert_locked(resumed)
 
 
+def test_active_chat_expresses_a_cross_domain_hypothesis_without_promoting_analogy_to_proof(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "Map the feedback relationship from biology to engineering and tell me how we could test the connection.",
+            "structural_discovery": {
+                "source_domain": "biology",
+                "target_domain": "engineering",
+                "relation_type": "causal_connection",
+                "source_relation": "A feedback loop senses deviation and changes the next response.",
+                "target_relation": "A controller measures error and adjusts output.",
+                "transferred_relation": "Both use a measured difference to alter the next step.",
+                "mappings": [
+                    {
+                        "source_role": "sensory signal",
+                        "target_role": "measurement input",
+                        "relation_preserved": "reports current state",
+                    },
+                    {
+                        "source_role": "biological response",
+                        "target_role": "controller output",
+                        "relation_preserved": "changes behavior from measured deviation",
+                    },
+                ],
+                "holds_where": ["Both regulate a response from feedback."],
+                "breaks_where": ["Biological growth and evolution are outside the controller mapping."],
+                "mechanism": "Designers translated a documented biological relation into controller logic.",
+                "evidence_refs": ["paper:design-history"],
+                "hypothesis": {
+                    "statement": "The biological model influenced the controller design.",
+                    "discriminating_observations": [
+                        "Dated design notes should contain the role mapping before implementation."
+                    ],
+                    "counterexamples": [
+                        "An earlier independent controller would weaken the influence claim."
+                    ],
+                },
+            },
+        },
+    )["result"]
+
+    discovery = result["structural_discovery"]
+    assert discovery["status"] == "structural_discovery_packet_ready"
+    assert result["visible_speech_seed"]["selected_source_id"] == "structural_discovery"
+    assert "structural relationship I am transferring" in result["candidate_text"]
+    assert "analogy is not proof" in result["candidate_text"]
+    assert "A discriminating check would be:" in result["candidate_text"]
+    assert result["claim_evidence_packet"]["claims_by_type"]["hypothesis"]
+    assert result["native_language_organ"]["voice_handoff"]["structural_discovery"] == discovery
+    assert result["voice_preview"]["structural_discovery"] == discovery
+    assessment = result["metacognition"]["structural_discovery_assessment"]
+    assert assessment["bridge_traceable"] is True
+    assert assessment["logical_leap_testable"] is True
+    assert assessment["analogy_used_as_proof"] is False
+    assert discovery["private_corpus_wording_allowed"] is False
+    _assert_locked(result)
+
+
 def test_active_chat_carries_figurative_meaning_and_session_scoped_correction(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

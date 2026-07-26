@@ -48,6 +48,7 @@ from .native_language_organ import realize_native_language
 from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
 from .self_state import build_self_state_packet, inactive_self_state_packet
+from .structural_discovery import build_structural_discovery_packet
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
 from .transfer_state import transfer_completion_is_approved
 from .voice_module import generate_voice_preview, voice_module_status
@@ -406,10 +407,50 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         contextual_content_seed=contextual_reply,
         hard=bool(hard_blockers),
     )
+    structural_discovery_input = (
+        payload.get("structural_discovery")
+        if isinstance(payload.get("structural_discovery"), dict)
+        else {}
+    )
+    structural_discovery = (
+        build_structural_discovery_packet(
+            {
+                **structural_discovery_input,
+                "approved_knowledge_links": [
+                    *(
+                        structural_discovery_input.get("approved_knowledge_links")
+                        if isinstance(
+                            structural_discovery_input.get("approved_knowledge_links"),
+                            list,
+                        )
+                        else []
+                    ),
+                    *(
+                        (
+                            comprehension.get("structural_discovery_knowledge_handoff")
+                            or {}
+                        ).get("items")
+                        or []
+                    ),
+                ],
+                "source_provenance_class": structural_discovery_input.get(
+                    "source_provenance_class"
+                )
+                or "current_conversation",
+            }
+        )
+        if structural_discovery_input
+        else {}
+    )
     claim_evidence_packet = next(
         (
             item
             for item in (
+                (
+                    structural_discovery.get("claim_evidence_packet")
+                    if isinstance(structural_discovery.get("claim_evidence_packet"), dict)
+                    else {}
+                ),
                 answer_engine_support.get("claim_evidence_packet"),
                 comprehension.get("claim_evidence_packet"),
                 intelligence_support.get("claim_evidence_packet"),
@@ -425,6 +466,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "reviewed_knowledge_owner_unchanged": True,
     }
     domain_content_seed = str(answer_engine_support.get("content_seed") or "")
+    structural_discovery_content_seed = str(
+        structural_discovery.get("response_seed") or ""
+    )
     visible_speech_seed = select_visible_speech_seed(
         meaning_text,
         _visible_speech_seed_candidates(
@@ -437,6 +481,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             contextual_reply=contextual_reply,
             policy_reply=policy_reply,
             epistemic_revision_reply=epistemic_revision_reply,
+            structural_discovery_content_seed=structural_discovery_content_seed,
             domain_content_seed=domain_content_seed,
             knowledge_content_seed=str(comprehension.get("knowledge_response_seed") or ""),
             language_content_seed=language_content_seed,
@@ -461,6 +506,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "epistemic_revision_plan": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
+            "structural_discovery": structural_discovery,
         }
     )
     if answer_completion.get("accepted") is True:
@@ -517,6 +563,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "epistemic_revision_plan": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
+            "structural_discovery": structural_discovery,
             "conversational_energy_input": conversational_energy_input,
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
@@ -550,6 +597,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         or {},
         "contextual_composition": native_language.get("contextual_composition") or {},
         "conversational_energy": conversational_energy,
+        "structural_discovery": structural_discovery,
         "expression_guidance_changes_meaning": False,
     }
     if hard_blockers:
@@ -661,6 +709,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "conversation_spine": conversation_spine,
         "epistemic_revision_plan": epistemic_revision,
         "claim_evidence_packet": claim_evidence_packet,
+        "structural_discovery": structural_discovery,
         "conversational_energy": conversational_energy,
         "response_coverage": response_coverage,
         "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
@@ -838,6 +887,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "conversation_spine": conversation_spine,
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence_packet,
+        "structural_discovery": structural_discovery,
         "self_state": self_state,
         "affect_expression": affect_expression,
         "pragmatic_continuity": pragmatic_continuity,
@@ -929,6 +979,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "epistemic_revision": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
+            "structural_discovery": structural_discovery,
             "conversational_energy": conversational_energy,
             "self_state": self_state,
             "affect_expression": affect_expression,
@@ -1274,6 +1325,7 @@ def _visible_speech_seed_candidates(
     contextual_reply: str = "",
     policy_reply: str = "",
     epistemic_revision_reply: str = "",
+    structural_discovery_content_seed: str = "",
     domain_content_seed: str = "",
     knowledge_content_seed: str = "",
     language_content_seed: str = "",
@@ -1298,6 +1350,11 @@ def _visible_speech_seed_candidates(
             "source_id": "epistemic_revision",
             "source_class": "conversation",
             "text": epistemic_revision_reply,
+        },
+        {
+            "source_id": "structural_discovery",
+            "source_class": "reasoning_answer",
+            "text": structural_discovery_content_seed,
         },
         {"source_id": "answer_engine", "source_class": "domain_answer", "text": domain_content_seed},
         {"source_id": "approved_comprehension", "source_class": "approved_knowledge", "text": knowledge_content_seed},
