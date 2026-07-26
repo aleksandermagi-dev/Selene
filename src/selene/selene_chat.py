@@ -486,6 +486,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         payload,
         prompt=meaning_text,
     )
+    conversational_energy_input = _conversational_energy_input(
+        payload,
+        intent_decision=intent_decision,
+        intelligence_support=intelligence_support,
+        answer_engine_support=answer_engine_support,
+        comprehension=comprehension,
+        conversation_context=conversation_context,
+        content_seed=content_seed,
+        hard_boundary=bool(hard_blockers),
+    )
     native_language = realize_native_language(
         conn,
         {
@@ -507,6 +517,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "epistemic_revision_plan": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
+            "conversational_energy_input": conversational_energy_input,
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
             "answer_engine_support": answer_engine_support,
@@ -526,6 +537,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         },
     )
     pragmatic_continuity = (native_language.get("discourse_plan") or {}).get("pragmatic_continuity") or {}
+    conversational_energy = (
+        pragmatic_continuity.get("conversational_energy")
+        if isinstance(pragmatic_continuity.get("conversational_energy"), dict)
+        else {}
+    )
     voice_expression_guidance = {
         **affect_expression,
         "contextual_composition_plan": (
@@ -533,6 +549,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         ).get("contextual_composition_plan")
         or {},
         "contextual_composition": native_language.get("contextual_composition") or {},
+        "conversational_energy": conversational_energy,
         "expression_guidance_changes_meaning": False,
     }
     if hard_blockers:
@@ -644,6 +661,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "conversation_spine": conversation_spine,
         "epistemic_revision_plan": epistemic_revision,
         "claim_evidence_packet": claim_evidence_packet,
+        "conversational_energy": conversational_energy,
         "response_coverage": response_coverage,
         "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
         "source_refs": [
@@ -823,6 +841,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "self_state": self_state,
         "affect_expression": affect_expression,
         "pragmatic_continuity": pragmatic_continuity,
+        "conversational_energy": conversational_energy,
         "native_language_organ": native_language,
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
@@ -910,6 +929,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "epistemic_revision": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
+            "conversational_energy": conversational_energy,
             "self_state": self_state,
             "affect_expression": affect_expression,
             "pragmatic_continuity": pragmatic_continuity,
@@ -1332,6 +1352,106 @@ def _b_only_material_requested(text: str) -> bool:
     if any(marker in lower for marker in B_ONLY_RECORD_MARKERS):
         return True
     return any(marker in lower for marker in B_ONLY_STATUS_MARKERS) and any(marker in lower for marker in B_ONLY_OBJECT_MARKERS)
+
+
+def _conversational_energy_input(
+    chat_payload: dict[str, Any],
+    *,
+    intent_decision: dict[str, Any],
+    intelligence_support: dict[str, Any],
+    answer_engine_support: dict[str, Any],
+    comprehension: dict[str, Any],
+    conversation_context: dict[str, Any],
+    content_seed: str,
+    hard_boundary: bool,
+) -> dict[str, Any]:
+    supplied = (
+        chat_payload.get("conversational_energy")
+        if isinstance(chat_payload.get("conversational_energy"), dict)
+        else {}
+    )
+    collaboration = (
+        chat_payload.get("collaboration_context")
+        if isinstance(chat_payload.get("collaboration_context"), dict)
+        else {}
+    )
+    help_request = (
+        supplied.get("collaborative_help")
+        if isinstance(supplied.get("collaborative_help"), dict)
+        else chat_payload.get("collaborative_help")
+        if isinstance(chat_payload.get("collaborative_help"), dict)
+        else collaboration.get("help_request")
+        if isinstance(collaboration.get("help_request"), dict)
+        else {}
+    )
+    supported_idea = (
+        supplied.get("supported_idea")
+        if isinstance(supplied.get("supported_idea"), dict)
+        else chat_payload.get("supported_idea")
+        if isinstance(chat_payload.get("supported_idea"), dict)
+        else collaboration.get("supported_idea")
+        if isinstance(collaboration.get("supported_idea"), dict)
+        else {}
+    )
+    supported_connection = (
+        supplied.get("supported_connection")
+        if isinstance(supplied.get("supported_connection"), dict)
+        else chat_payload.get("supported_connection")
+        if isinstance(chat_payload.get("supported_connection"), dict)
+        else {}
+    )
+    curiosity = (
+        supplied.get("curiosity")
+        if isinstance(supplied.get("curiosity"), dict)
+        else chat_payload.get("curiosity")
+        if isinstance(chat_payload.get("curiosity"), dict)
+        else {}
+    )
+    support_used = bool(
+        intelligence_support.get("used") is True
+        or answer_engine_support.get("used") is True
+        or comprehension.get("present_in_conversation") is True
+    )
+    if help_request:
+        help_request = {
+            **help_request,
+            "task_active": help_request.get("task_active") is True
+            or collaboration.get("task_active") is True,
+            "available_support_used": support_used,
+        }
+    pending_help = (
+        conversation_context.get("pending_collaborative_help")
+        if isinstance(conversation_context.get("pending_collaborative_help"), dict)
+        else {}
+    )
+    help_response = {}
+    if pending_help and intent_decision.get("social_turn") is not True:
+        pending_handoff = (
+            pending_help.get("expression_handoff")
+            if isinstance(pending_help.get("expression_handoff"), dict)
+            else {}
+        )
+        help_response = {
+            "provided": True,
+            "contribution_kind": str(pending_handoff.get("contribution_kind") or ""),
+            "prior_request": str(pending_handoff.get("text") or ""),
+        }
+    return {
+        **supplied,
+        "answer_available": bool(str(content_seed or "").strip()),
+        "social_turn": intent_decision.get("social_turn") is True,
+        "hard_boundary": hard_boundary,
+        "supported_idea": supported_idea,
+        "supported_connection": supported_connection,
+        "curiosity": curiosity,
+        "collaborative_help": help_request,
+        "collaborative_help_response": help_response,
+        "requested_posture": str(
+            supplied.get("requested_posture")
+            or collaboration.get("requested_posture")
+            or ""
+        ),
+    }
 
 
 def _intelligence_support(
@@ -2512,6 +2632,18 @@ def _active_conversation_context(
         and isinstance(item.get("figurative_interpretation"), dict)
         and item.get("figurative_interpretation")
     ][-4:]
+    previous_energy = (
+        previous_turn.get("conversational_energy")
+        if str(previous_turn.get("role") or "") == "selene"
+        and isinstance(previous_turn.get("conversational_energy"), dict)
+        else {}
+    )
+    pending_collaborative_help = (
+        previous_energy
+        if str(previous_energy.get("selected_act") or "")
+        == "ask_for_specific_collaborative_help"
+        else {}
+    )
     dialogue = dialogue_workspace if isinstance(dialogue_workspace, dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
     return {
@@ -2520,6 +2652,7 @@ def _active_conversation_context(
         "recent_assistant_texts": recent_assistant_texts,
         "recent_user_texts": recent_user_texts,
         "recent_figurative_interpretations": recent_figurative_interpretations,
+        "pending_collaborative_help": pending_collaborative_help,
         "turn_count": len(events),
         "session_landmarks": [
             item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
@@ -2547,6 +2680,11 @@ def _chat_event_preview(row: sqlite3.Row, *, preview_limit: int = 180) -> dict[s
         if isinstance(payload.get("figurative_interpretation"), dict)
         else {}
     )
+    conversational_energy = (
+        payload.get("conversational_energy")
+        if isinstance(payload.get("conversational_energy"), dict)
+        else {}
+    )
     voice = payload.get("voice_preview") if isinstance(payload.get("voice_preview"), dict) else {}
     vector = metacognition.get("confidence_vector") if isinstance(metacognition.get("confidence_vector"), dict) else {}
     engine_vector = answer_engine.get("confidence_vector") if isinstance(answer_engine.get("confidence_vector"), dict) else {}
@@ -2559,6 +2697,7 @@ def _chat_event_preview(row: sqlite3.Row, *, preview_limit: int = 180) -> dict[s
         "updated_at": item.get("updated_at"),
         "preview": truncate(str(item.get("content") or ""), max(1, min(int(preview_limit), 900))),
         "figurative_interpretation": figurative,
+        "conversational_energy": conversational_energy,
         "confidence_vector": {
             "answer_confidence": _first_assessed_confidence(
                 vector.get("answer_confidence"),

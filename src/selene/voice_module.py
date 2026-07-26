@@ -538,6 +538,8 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             "applied_expression_dimensions": expression_guidance.get("dimensions") or {},
             "contextual_composition_plan": expression_guidance.get("contextual_composition_plan") or {},
             "contextual_composition": expression_guidance.get("contextual_composition") or {},
+            "conversational_energy": expression_guidance.get("conversational_energy") or {},
+            "conversational_energy_changed_meaning": False,
             "expression_guidance_changed_meaning": False,
             "evaluation": evaluation,
             "source_refs": [f"voice_language_patterns:{category}", "voice_sentence_primitives"],

@@ -171,6 +171,54 @@ def test_nlo_preserves_claim_types_disagreement_and_uncertainty_for_voice(tmp_pa
     assert result["voice_handoff"]["claim_types_and_confidence_must_be_preserved"] is True
 
 
+def test_nlo_carries_supported_initiative_and_collaborative_help_without_pressure(tmp_path):
+    conn = _conn(tmp_path)
+    idea = realize_native_language(
+        conn,
+        {
+            "prompt": "How should we stabilize this parser?",
+            "content_seed": "Start with the smallest reproducible parser fault.",
+            "conversational_energy_input": {
+                "supported_idea": {
+                    "text": "Try the reversible token-boundary change before widening the grammar.",
+                    "why_it_matters": "It isolates the earliest unstable dependency.",
+                    "relevance": "high",
+                    "supported": True,
+                    "advances_current_task": True,
+                }
+            },
+        },
+    )
+    help_request = realize_native_language(
+        conn,
+        {
+            "prompt": "Continue diagnosing the settings issue.",
+            "content_seed": "The stored value is present, so the remaining split is between refresh and rendering.",
+            "conversational_energy_input": {
+                "collaborative_help": {
+                    "task_active": True,
+                    "available_support_used": True,
+                    "contribution_kind": "missing_observation",
+                    "request": "What appears immediately after you reopen the settings panel",
+                    "why_it_matters": "That observation separates refresh failure from rendering failure.",
+                    "materiality": "blocking",
+                }
+            },
+        },
+    )
+
+    idea_plan = idea["discourse_plan"]["conversational_energy"]
+    help_plan = help_request["discourse_plan"]["conversational_energy"]
+    assert idea_plan["selected_act"] == "answer_and_offer_supported_idea"
+    assert "reversible token-boundary change" in idea["candidate_text"]
+    assert "offer_one_supported_idea_without_pressure" in idea["discourse_plan"]["moves"]
+    assert help_plan["selected_act"] == "ask_for_specific_collaborative_help"
+    assert "What appears immediately" in help_request["candidate_text"]
+    assert help_request["voice_handoff"]["conversational_energy"] == help_plan
+    assert help_request["voice_handoff"]["conversational_energy_realization"]["pressure_added"] is False
+    assert help_request["discourse_plan"]["question_allowed"] is True
+
+
 def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
     conn = _conn(tmp_path)
     result = route_request(

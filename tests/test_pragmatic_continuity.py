@@ -116,6 +116,30 @@ def test_initiative_requires_current_turn_invitation_and_never_auto_delivers():
     assert not_invited["initiative_expansion_allowed"] is False
 
 
+def test_current_turn_energy_can_offer_supported_idea_but_never_auto_speak():
+    result = build_pragmatic_continuity_plan(
+        {
+            "prompt": "Continue with the parser stabilization.",
+            "intent_decision": {"intent": "reasoning", "social_turn": False},
+            "conversational_energy_input": {
+                "answer_available": True,
+                "supported_idea": {
+                    "text": "Test the reversible token-boundary change first.",
+                    "relevance": "high",
+                    "supported": True,
+                    "advances_current_task": True,
+                },
+            },
+        }
+    )
+
+    energy = result["conversational_energy"]
+    assert energy["selected_act"] == "answer_and_offer_supported_idea"
+    assert energy["automatic_speech_allowed"] is False
+    assert energy["automatic_delivery"] is False
+    assert result["initiative_expansion_allowed"] is False
+
+
 def test_correction_and_response_preference_remain_session_refinements_not_profile():
     result = build_pragmatic_continuity_plan(
         {

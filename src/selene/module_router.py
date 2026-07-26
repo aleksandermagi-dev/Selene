@@ -48,6 +48,10 @@ from .chronological_corpus import (
     route_chronological_corpus_review,
 )
 from .claim_evidence import build_claim_evidence_packet, claim_evidence_status
+from .conversational_energy import (
+    build_conversational_energy_plan,
+    conversational_energy_status,
+)
 from .compressed_structure_braid import (
     compressed_structure_braid_status,
     run_compressed_structure_braid,
@@ -598,6 +602,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": claim_evidence_status()}
     if route_key == "claim_evidence.build":
         return {"route": route_key, "result": build_claim_evidence_packet(payload)}
+    if route_key == "conversational_energy.status":
+        return {"route": route_key, "result": conversational_energy_status()}
+    if route_key == "conversational_energy.plan":
+        return {"route": route_key, "result": build_conversational_energy_plan(payload)}
     if route_key == "comprehension.status":
         return {"route": route_key, "result": comprehension_status(conn)}
     if route_key == "comprehension.concepts.list":

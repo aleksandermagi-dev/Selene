@@ -88,6 +88,31 @@ def test_fluent_wording_does_not_become_evidence_or_comprehension():
     assert confidence["certainty_overreach_detected"] is True
     assert confidence["voice_confidence_is_answer_correctness"] is False
     assert result["recommended_action"] == "answer_with_qualification"
+
+
+def test_metacognition_observes_specific_help_without_turning_it_into_failure_or_cocoon():
+    result = evaluate_metacognition(
+        {
+            "prompt": "Can we finish diagnosing the settings issue?",
+            "candidate_text": "The stored value is present. What appears when you reopen the panel?",
+            "response_coverage": {"addressed_count": 1, "unresolved_count": 0},
+            "conversational_energy": {
+                "selected_act": "ask_for_specific_collaborative_help",
+                "optional_addition_selected": True,
+                "help_contract": {
+                    "exact_missing_contribution_named": True,
+                    "help_is_failure": False,
+                },
+            },
+        }
+    )
+
+    assessment = result["conversational_energy_assessment"]
+    assert assessment["selected_act"] == "ask_for_specific_collaborative_help"
+    assert assessment["collaborative_help_specific"] is True
+    assert assessment["question_by_default"] is False
+    assert assessment["pressure_allowed"] is False
+    assert assessment["automatic_cocoon_routing"] is False
     _assert_bounded(result)
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .conversational_energy import build_conversational_energy_plan
 from .registry import truncate
 
 
@@ -40,6 +41,34 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
     interruption = _interruption_plan(prompt, transition, dialogue)
     ending = _ending_decision(prompt, intent, pragmatic, comprehension, referent)
     initiative = _initiative_decision(prompt, ending)
+    energy_input = (
+        payload.get("conversational_energy_input")
+        if isinstance(payload.get("conversational_energy_input"), dict)
+        else {}
+    )
+    conversational_energy = build_conversational_energy_plan(
+        {
+            **energy_input,
+            "ending_decision": ending,
+            "initiative_decision": initiative,
+            "social_turn": intent.get("social_turn") is True,
+            "interruption_kind": transition.get("kind") or "",
+            "hard_boundary": energy_input.get("hard_boundary") is True,
+        }
+    )
+    energy_act = str(conversational_energy.get("selected_act") or "")
+    if energy_act in {
+        "ask_for_specific_collaborative_help",
+        "answer_then_ask_relevant_curiosity",
+    }:
+        ending = {
+            **ending,
+            "mode": energy_act,
+            "question_allowed": True,
+            "question_required": energy_act == "ask_for_specific_collaborative_help",
+            "reason": conversational_energy.get("reason") or ending.get("reason"),
+            "habitual_follow_up_allowed": False,
+        }
     speaker = _speaker_scope(prompt, payload.get("speaker_context"))
     return {
         "status": "pragmatic_continuity_plan_ready",
@@ -49,6 +78,7 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
         "interruption_plan": interruption,
         "ending_decision": ending,
         "initiative_decision": initiative,
+        "conversational_energy": conversational_energy,
         "speaker_scope": speaker,
         "active_correction": _active_correction(dialogue),
         "response_preference": dict(dialogue.get("preferences") or {}),

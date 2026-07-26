@@ -6,7 +6,7 @@ from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.activation import ACTIVATION_APPROVAL_PHRASE
 from selene.core_mind_runtime import RUNTIME_TYPES
-from selene.selene_chat import _bounded_metacognitive_completion
+from selene.selene_chat import _active_conversation_context, _bounded_metacognitive_completion
 
 
 def _conn(tmp_path):
@@ -54,6 +54,30 @@ def _approve_language_lesson(conn, lesson_key: str):
         "teaching.lifecycle.approve",
         {"concept_id": concept_id, "aleks_approved": True, "approval_actor": "Aleks"},
     )
+
+
+def test_old_collaborative_help_is_not_revived_after_an_intervening_exchange():
+    context = _active_conversation_context(
+        {
+            "current_session_events": [
+                {
+                    "role": "selene",
+                    "preview": "What appears after you reopen the panel?",
+                    "conversational_energy": {
+                        "selected_act": "ask_for_specific_collaborative_help"
+                    },
+                },
+                {"role": "user", "preview": "I will check later."},
+                {
+                    "role": "selene",
+                    "preview": "All right; it can wait.",
+                    "conversational_energy": {"selected_act": "answer_and_land"},
+                },
+            ]
+        }
+    )
+
+    assert context["pending_collaborative_help"] == {}
 
 
 def _seed_c_readable_package(conn):
@@ -407,6 +431,90 @@ def test_active_selene_chat_sends_supervised_response_and_keeps_soft_uncertainty
     assert len(session["messages"]) == 2
     assert conn.execute("SELECT COUNT(*) FROM metacognition_runs").fetchone()[0] == 1
     _assert_locked(result)
+
+
+def test_active_chat_carries_one_supported_idea_without_permission_pressure(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "How should we stabilize the parser change?",
+            "supported_idea": {
+                "text": "Try the reversible token-boundary change before widening the grammar.",
+                "why_it_matters": "It isolates the earliest unstable dependency.",
+                "relevance": "high",
+                "supported": True,
+                "advances_current_task": True,
+            },
+        },
+    )["result"]
+
+    energy = result["conversational_energy"]
+    assert energy["selected_act"] == "answer_and_offer_supported_idea"
+    assert "reversible token-boundary change" in result["candidate_text"]
+    assert energy["initiative_contract"]["pressure_allowed"] is False
+    assert energy["automatic_speech_allowed"] is False
+    assert energy["automatic_cocoon_routing"] is False
+    assert result["native_language_organ"]["voice_handoff"]["conversational_energy"] == energy
+    assert result["voice_preview"]["conversational_energy"] == energy
+    assert result["voice_preview"]["conversational_energy_changed_meaning"] is False
+    assert result["metacognition"]["conversational_energy_assessment"]["optional_addition_selected"] is True
+    _assert_locked(result)
+
+
+def test_active_chat_asks_for_exact_collaborative_help_after_using_available_support(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "How should we diagnose whether this settings issue is refresh or rendering?",
+            "collaboration_context": {
+                "task_active": True,
+                "help_request": {
+                    "contribution_kind": "missing_observation",
+                    "request": "What appears immediately after you reopen the settings panel",
+                    "why_it_matters": "That observation separates refresh failure from rendering failure.",
+                    "materiality": "blocking",
+                },
+            },
+        },
+    )["result"]
+
+    energy = result["conversational_energy"]
+    assert energy["selected_act"] == "ask_for_specific_collaborative_help"
+    assert energy["help_contract"]["available_support_used_first"] is True
+    assert energy["help_contract"]["resume_after_contribution"] is True
+    assert "What appears immediately after you reopen" in result["candidate_text"]
+    assert result["pragmatic_continuity"]["ending_decision"]["question_allowed"] is True
+    assert result["metacognition"]["conversational_energy_assessment"]["collaborative_help_specific"] is True
+    assert energy["automatic_cocoon_routing"] is False
+    _assert_locked(result)
+
+    resumed = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": result["session_id"],
+            "text": "The saved value appears only after I close and reopen the whole app.",
+        },
+    )["result"]
+
+    resumed_energy = resumed["conversational_energy"]
+    assert resumed_energy["selected_act"] == "answer_and_resume_shared_task"
+    assert resumed_energy["help_contract"]["contribution_received"] is True
+    assert resumed_energy["help_contract"]["incorporate_current_turn_and_resume"] is True
+    assert "incorporate_aleks_contribution_and_resume_shared_task" in resumed[
+        "native_language_organ"
+    ]["discourse_plan"]["moves"]
+    _assert_locked(resumed)
 
 
 def test_active_chat_carries_figurative_meaning_and_session_scoped_correction(tmp_path):

@@ -17,6 +17,7 @@ from .contextual_composition import (
     build_contextual_composition_plan,
 )
 from .conversation_repair import plan_conversation_turn
+from .conversational_energy import realize_conversational_energy
 from .discourse_planner import build_supported_discourse_plan
 from .language_formation import build_semantic_frame, realize_semantic_frame
 from .language_teaching_shelf import language_teaching_status, select_language_guidance
@@ -98,6 +99,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "structured_correction_refinement",
                 "selective_epistemic_revision_handoff",
                 "typed_claim_evidence_handoff",
+                "bounded_curiosity_initiative_and_collaborative_help_handoff",
                 "aspect_voice_and_mood_realization",
                 "conversation_repair_handoff",
                 "approved_language_teaching_guidance",
@@ -127,7 +129,11 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "run_count": count,
             "latest_run": _decode_run(latest) if latest else None,
             "responsive_generation": "active_when_called_by_supervised_chat",
-            "initiative_state": "preview_or_notes_only_not_automatic_speech",
+            "initiative_state": (
+                "autonomous initiation remains preview_or_notes_only; one bounded responsive current-turn "
+                "idea, connection, curiosity, or help request may be expressed when supported"
+            ),
+            "responsive_current_turn_initiative_is_automatic_speech": False,
             "language_teaching_shelf": language_teaching_status(conn),
             "law": "Meaning comes from Selene's organs; NLO gives it language; Voice makes the language hers.",
             "review_destination": "Status",
@@ -248,6 +254,15 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     )
     plan["conversational_micro_move_realization"] = micro_move_realization
     draft = compose_conversational_micro_moves(draft, micro_move_realization)
+    conversational_energy_realization = realize_conversational_energy(
+        draft,
+        plan.get("conversational_energy"),
+        variation_key=(
+            f"{prompt}|energy|turn:{int((meaning.get('conversation_context') or {}).get('turn_count') or 0)}"
+        ),
+    )
+    plan["conversational_energy_realization"] = conversational_energy_realization
+    draft = str(conversational_energy_realization.get("candidate_text") or draft)
     candidate, revision = _revise_candidate(draft, meaning, plan)
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
@@ -275,6 +290,8 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "suggested_category": meaning["voice_category"],
             "expression_guidance": meaning.get("affect_expression_guidance") or {},
             "ending_decision": (plan.get("pragmatic_continuity") or {}).get("ending_decision") or {},
+            "conversational_energy": plan.get("conversational_energy") or {},
+            "conversational_energy_realization": plan.get("conversational_energy_realization") or {},
             "social_act_plan": plan.get("social_act_plan") or {},
             "social_act_realization": plan.get("social_act_realization") or {},
             "conversational_micro_move_plan": plan.get("conversational_micro_move_plan") or {},
@@ -369,6 +386,11 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             if isinstance(item, dict) and int(item.get("claim_count") or 0) > 0
         ),
         {},
+    )
+    conversational_energy_input = (
+        payload.get("conversational_energy_input")
+        if isinstance(payload.get("conversational_energy_input"), dict)
+        else {}
     )
     figurative_interpretation = (
         payload.get("figurative_interpretation")
@@ -479,6 +501,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "conversation_spine_used": bool(conversation_spine),
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence,
+        "conversational_energy_input": conversational_energy_input,
         "semantic_frame": semantic_frame,
         "supported_semantics": {
             "used": supported_semantics_used and bool(semantic_units_for_formation(supported_semantics)),
@@ -711,8 +734,39 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             },
             "intent_decision": meaning.get("intent_decision") or {},
             "comprehension": comprehension,
+            "conversational_energy_input": {
+                "answer_available": bool(str(meaning.get("content_seed") or "").strip()),
+                "answer_complete": (
+                    bool(str(meaning.get("content_seed") or "").strip())
+                    and not bool(supported_discourse.get("uncovered_obligation_ids"))
+                ),
+                "hard_boundary": intent == "hold_boundary",
+                **(
+                    meaning.get("conversational_energy_input")
+                    if isinstance(meaning.get("conversational_energy_input"), dict)
+                    else {}
+                ),
+            },
         }
     )
+    conversational_energy = (
+        pragmatic_continuity.get("conversational_energy")
+        if isinstance(pragmatic_continuity.get("conversational_energy"), dict)
+        else {}
+    )
+    energy_act = str(conversational_energy.get("selected_act") or "")
+    energy_moves = {
+        "answer_and_offer_supported_idea": "offer_one_supported_idea_without_pressure",
+        "answer_and_surface_supported_connection": "surface_one_relevant_connection_without_hijacking",
+        "answer_then_ask_relevant_curiosity": "ask_one_curiosity_question_that_matters",
+        "ask_for_specific_collaborative_help": "ask_for_exact_missing_contribution_then_resume",
+        "answer_and_resume_shared_task": "incorporate_aleks_contribution_and_resume_shared_task",
+        "wait_and_listen": "wait_without_forcing_continuation",
+        "stay_quiet": "allow_silence_when_nothing_useful_is_ready",
+        "close_naturally": "let_the_exchange_end_naturally",
+    }
+    if energy_act in energy_moves:
+        moves.append(energy_moves[energy_act])
     transition_kind = str((pragmatic_continuity.get("topic_transition") or {}).get("kind") or "")
     if transition_kind == "explicit_return":
         moves.insert(0, "resume_named_session_topic")
@@ -733,7 +787,12 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     if "land" in braid_actions:
         moves.append("land_on_final_named_thread")
     ending_mode = str((pragmatic_continuity.get("ending_decision") or {}).get("mode") or "")
-    if ending_mode in {"answer_and_stop_when_complete", "natural_close", "leave_room_without_pressuring"}:
+    if ending_mode in {
+        "answer_and_stop_when_complete",
+        "natural_close",
+        "leave_room_without_pressuring",
+        "close_naturally",
+    }:
         moves.append("end_without_habitual_follow_up")
     correction_refinement = dialogue.get("correction_refinement") if isinstance(dialogue.get("correction_refinement"), dict) else {}
     corrected_meaning = str(correction_refinement.get("corrected_meaning") or "").strip()
@@ -827,6 +886,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "uncovered_obligation_ids": supported_discourse.get("uncovered_obligation_ids") or [],
         "content_generation_for_gaps_allowed": False,
         "pragmatic_continuity": pragmatic_continuity,
+        "conversational_energy": conversational_energy,
         "thread_braid": thread_braid,
         "thread_traversal": thread_braid.get("turn_traversal") or [],
         "braided_discourse_used": thread_braid.get("braided") is True,

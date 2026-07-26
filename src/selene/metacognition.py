@@ -142,6 +142,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     handshake = _dict(comprehension.get("comprehension_handshake"))
     knowledge = _dict(comprehension.get("knowledge_context"))
     answer_packet = _dict(answer_engine.get("answer_packet"))
+    conversational_energy = _dict(payload.get("conversational_energy"))
     claim_evidence = _dict(
         payload.get("claim_evidence_packet")
         or answer_packet.get("claim_evidence_packet")
@@ -324,6 +325,23 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
             "direct_answer_inference_and_uncertainty_separate": (
                 claim_evidence.get("direct_answer_inference_and_uncertainty_separate") is True
             ),
+        },
+        "conversational_energy": conversational_energy,
+        "conversational_energy_assessment": {
+            "selected_act": str(conversational_energy.get("selected_act") or ""),
+            "optional_addition_selected": conversational_energy.get("optional_addition_selected") is True,
+            "question_by_default": False,
+            "pressure_allowed": False,
+            "collaborative_help_specific": (
+                str(conversational_energy.get("selected_act") or "")
+                == "ask_for_specific_collaborative_help"
+                and bool(
+                    (_dict(conversational_energy.get("help_contract"))).get(
+                        "exact_missing_contribution_named"
+                    )
+                )
+            ),
+            "automatic_cocoon_routing": False,
         },
         "source_refs": source_refs,
         "attributed_evidence_refs": evidence_source_refs,
