@@ -301,6 +301,7 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "conversational_micro_move_realization": plan.get("conversational_micro_move_realization") or {},
             "contextual_composition_plan": plan.get("contextual_composition_plan") or {},
             "contextual_composition": plan.get("contextual_composition") or {},
+            "contextual_continuity": meaning.get("contextual_continuity") or {},
             "content_light_plan": plan.get("content_light_plan") or {},
             "content_light_realization": plan.get("content_light_realization") or {},
             "uncertainty_expression_plan": plan.get("uncertainty_expression_plan") or {},
@@ -363,6 +364,16 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     affect_expression = (
         payload.get("affect_expression_guidance")
         if isinstance(payload.get("affect_expression_guidance"), dict)
+        else {}
+    )
+    contextual_continuity = (
+        payload.get("contextual_continuity")
+        if isinstance(payload.get("contextual_continuity"), dict)
+        else {}
+    )
+    contextual_expression = (
+        contextual_continuity.get("expression_handoff")
+        if isinstance(contextual_continuity.get("expression_handoff"), dict)
         else {}
     )
     continuity = payload.get("continuity_context") if isinstance(payload.get("continuity_context"), dict) else {}
@@ -472,7 +483,12 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "content_seed": content_seed,
             "intent_decision": intent_decision,
             "answer_shape": payload.get("answer_shape") or intent_decision.get("answer_shape"),
-            "response_depth": payload.get("response_depth") or pragmatics.get("response_preference") or intent_decision.get("response_depth"),
+            "response_depth": (
+                payload.get("response_depth")
+                or contextual_expression.get("response_depth")
+                or pragmatics.get("response_preference")
+                or intent_decision.get("response_depth")
+            ),
             "certainty": certainty,
             "affect": affect,
             "source_refs": payload.get("source_refs") or [],
@@ -493,7 +509,13 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "intent": intent,
         "intent_decision": intent_decision,
         "answer_shape": str(payload.get("answer_shape") or intent_decision.get("answer_shape") or "direct_answer"),
-        "response_depth": str(payload.get("response_depth") or pragmatics.get("response_preference") or intent_decision.get("response_depth") or "standard"),
+        "response_depth": str(
+            payload.get("response_depth")
+            or contextual_expression.get("response_depth")
+            or pragmatics.get("response_preference")
+            or intent_decision.get("response_depth")
+            or "standard"
+        ),
         "topic": _topic_phrase(prompt),
         "propositions": propositions,
         "content_seed": content_seed,
@@ -542,6 +564,8 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "affect": affect,
         "affect_expression_guidance": affect_expression,
         "affect_expression_is_emotion_claim": False,
+        "contextual_continuity": contextual_continuity,
+        "remembered_wording_may_be_used_as_script": False,
         "relationship_posture": "warm_honest_adult_to_adult",
         "selected_route": route,
         "source_class": str(payload.get("source_class") or "current_conversation"),
@@ -648,6 +672,11 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     turn_flow = meaning.get("turn_flow_plan") if isinstance(meaning.get("turn_flow_plan"), dict) else {}
     language_guidance = meaning.get("language_teaching_guidance") if isinstance(meaning.get("language_teaching_guidance"), dict) else {}
     comprehension = meaning.get("comprehension") if isinstance(meaning.get("comprehension"), dict) else {}
+    contextual_continuity = (
+        meaning.get("contextual_continuity")
+        if isinstance(meaning.get("contextual_continuity"), dict)
+        else {}
+    )
     epistemic_revision = (
         meaning.get("epistemic_revision")
         if isinstance(meaning.get("epistemic_revision"), dict)
@@ -771,6 +800,8 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             },
             "intent_decision": meaning.get("intent_decision") or {},
             "comprehension": comprehension,
+            "contextual_continuity": contextual_continuity,
+            "speaker_context": contextual_continuity.get("speaker_scope") or {},
             "conversational_energy_input": {
                 "answer_available": bool(str(meaning.get("content_seed") or "").strip()),
                 "answer_complete": (
@@ -854,6 +885,8 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "pragmatic_continuity": pragmatic_continuity,
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
             "dream_reflection": meaning.get("dream_reflection") or {},
+            "shared_joke": contextual_continuity.get("shared_joke_context") or {},
+            "contextual_continuity": contextual_continuity,
         }
     )
     contextual_composition_plan = build_contextual_composition_plan(
@@ -936,6 +969,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence,
         "structural_discovery": structural_discovery,
+        "contextual_continuity": contextual_continuity,
     }
 
 

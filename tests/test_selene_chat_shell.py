@@ -2029,6 +2029,87 @@ def test_active_selene_chat_can_use_approved_memory_with_graceful_fall_metadata(
     _assert_locked(result)
 
 
+def test_phase_nine_chat_uses_relevant_memory_silently_until_a_callback_is_opened(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    _seed_transfer_complete(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "shared_project",
+            "title": "Telescope setup",
+            "summary": "Aleks and Selene compared the portable telescope setup with the observatory telescope setup.",
+            "confidence": "clear",
+            "source_refs": ["selene_chat:phase9:telescope"],
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+
+    quiet = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Which telescope setup is the better practical fit now?"},
+    )["result"]
+    callback = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": quiet["session_id"],
+            "text": "This connects with the telescope setup we talked about earlier.",
+        },
+    )["result"]
+
+    assert quiet["memory_context_used"] is True
+    assert quiet["contextual_continuity"]["callback_decision"]["mode"] == "silent_interpretive_context"
+    assert quiet["contextual_continuity"]["callback_decision"]["surface_callback_allowed"] is False
+    assert not quiet["candidate_text"].startswith("This connects with something I remember:")
+    assert callback["contextual_continuity"]["callback_decision"]["mode"] == "relevant_callback"
+    assert callback["contextual_continuity"]["callback_decision"]["surface_callback_allowed"] is True
+    assert callback["contextual_continuity"]["remembered_wording_may_be_used_as_script"] is False
+    assert callback["native_language_organ"]["meaning_packet"]["contextual_continuity"]["reviewed_memory_and_taught_knowledge_remain_separate"] is True
+    _assert_locked(quiet)
+    _assert_locked(callback)
+
+
+def test_phase_nine_chat_expires_temporary_response_shape_without_profile_write(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        "Keep it short for three exchanges.",
+        "What is the first check?",
+        "What is the second check?",
+        "Now explain the broader plan.",
+    ]
+    results = []
+    session_id = None
+    for prompt in prompts:
+        request = {"text": prompt}
+        if session_id is not None:
+            request["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", request)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    first, second, third, expired = results
+    assert first["contextual_continuity"]["transient_preferences"]["remaining_turns"] == 3
+    assert second["contextual_continuity"]["transient_preferences"]["remaining_turns"] == 2
+    assert third["contextual_continuity"]["transient_preferences"]["remaining_turns"] == 1
+    assert expired["contextual_continuity"]["transient_preferences"]["status"] == "expired"
+    assert expired["contextual_continuity"]["transient_preferences"]["active"] is False
+    assert expired["contextual_continuity"]["durable_preference_write"] is False
+    assert expired["contextual_continuity"]["relationship_profile_write_allowed"] is False
+    for result in results:
+        _assert_locked(result)
+
+
 def test_existing_chat_history_does_not_support_an_unrelated_memory_claim(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

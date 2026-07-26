@@ -25,6 +25,7 @@ from .conversation_spine import (
     evaluate_candidate_compatibility,
     finalize_conversation_spine,
 )
+from .contextual_continuity import build_contextual_continuity_plan
 from .contextual_speech import (
     apply_contextual_intent,
     contextual_response_seed,
@@ -309,7 +310,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     continuity_reply = _local_chat_continuity_reply(meaning_text, chat_continuity, intent_decision)
     memory_action_reply = str(memory_action_plan.get("response_seed") or "")
     memory_reply = _approved_memory_reply(meaning_text, memory_retrieval, intent_decision)
-    contextual_memory_reply = _contextual_memory_reply(memory_retrieval, intent_decision)
     self_state = (
         build_self_state_packet(
             conn,
@@ -324,6 +324,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         if intent_decision.get("self_state_requested") is True
         else inactive_self_state_packet()
     )
+    contextual_continuity = build_contextual_continuity_plan(
+        {
+            "prompt": meaning_text,
+            "intent_decision": intent_decision,
+            "dialogue_workspace": prepared_dialogue_workspace,
+            "memory_context": memory_retrieval,
+            "current_session_events": chat_continuity.get("current_session_events") or [],
+            "speaker_context": payload.get("speaker_context"),
+        }
+    )
     affect_expression = build_affect_expression_guidance(
         conn,
         {
@@ -333,8 +343,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intent_decision": intent_decision,
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
+            "contextual_continuity": contextual_continuity,
             "hard_boundary": bool(hard_blockers),
         },
+    )
+    contextual_memory_reply = _contextual_memory_reply(
+        memory_retrieval,
+        intent_decision,
+        contextual_continuity,
     )
     self_state_reply = str(self_state.get("response_seed") or "")
     contextual_reply = contextual_response_seed(
@@ -572,6 +588,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "comprehension_context": comprehension,
             "self_state_context": self_state,
             "affect_expression_guidance": affect_expression,
+            "contextual_continuity": contextual_continuity,
+            "speaker_context": contextual_continuity.get("speaker_scope") or {},
             "intent_decision": intent_decision,
             "contextual_follow_up": contextual_follow_up,
             "response_depth": payload.get("response_depth"),
@@ -598,6 +616,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "contextual_composition": native_language.get("contextual_composition") or {},
         "conversational_energy": conversational_energy,
         "structural_discovery": structural_discovery,
+        "contextual_continuity": contextual_continuity,
         "expression_guidance_changes_meaning": False,
     }
     if hard_blockers:
@@ -890,6 +909,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "structural_discovery": structural_discovery,
         "self_state": self_state,
         "affect_expression": affect_expression,
+        "contextual_continuity": contextual_continuity,
         "pragmatic_continuity": pragmatic_continuity,
         "conversational_energy": conversational_energy,
         "native_language_organ": native_language,
@@ -983,6 +1003,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversational_energy": conversational_energy,
             "self_state": self_state,
             "affect_expression": affect_expression,
+            "contextual_continuity": contextual_continuity,
             "pragmatic_continuity": pragmatic_continuity,
             "native_language_organ": native_language,
             "dry_run_comparison": dry_run,
@@ -2377,20 +2398,44 @@ def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any], intent_d
     return f"I remember this clearly enough to say it: {summary}"
 
 
-def _contextual_memory_reply(memory_retrieval: dict[str, Any], intent_decision: dict[str, Any]) -> str:
+def _contextual_memory_reply(
+    memory_retrieval: dict[str, Any],
+    intent_decision: dict[str, Any],
+    contextual_continuity: dict[str, Any] | None = None,
+) -> str:
     if intent_decision.get("memory_recall_requested") is True:
         return ""
     if memory_retrieval.get("retrieval_mode") != "contextual_relevance" or memory_retrieval.get("memory_context_used") is not True:
         return ""
+    callback = (
+        contextual_continuity.get("callback_decision")
+        if isinstance(contextual_continuity, dict)
+        and isinstance(contextual_continuity.get("callback_decision"), dict)
+        else {}
+    )
     items = memory_retrieval.get("items") if isinstance(memory_retrieval.get("items"), list) else []
     if not items:
         return ""
     first = items[0] if isinstance(items[0], dict) else {}
-    summary = _chat_memory_summary(first)
+    subject = truncate(
+        str(
+            callback.get("subject_label")
+            or first.get("title")
+            or "that earlier thread"
+        ).strip(),
+        160,
+    )
+    if callback and callback.get("surface_callback_allowed") is not True:
+        if callback.get("silent_influence_allowed") is True and subject:
+            return f"{subject} remains relevant to the current point."
+        return ""
     confidence = str(memory_retrieval.get("recall_state") or "partial")
     if confidence == "clear":
-        return f"This connects with something I remember: {summary}"
-    return f"This may connect with something I remember, though the fit is {confidence.replace('_', ' ')}: {summary}"
+        return f"This connects with our earlier {subject} thread."
+    return (
+        f"This may connect with our earlier {subject} thread, though the fit is "
+        f"{confidence.replace('_', ' ')}."
+    )
 
 
 def _chat_memory_summary(item: dict[str, Any]) -> str:

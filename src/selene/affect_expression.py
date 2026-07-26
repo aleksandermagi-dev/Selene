@@ -40,11 +40,19 @@ def build_affect_expression_guidance(
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    contextual_continuity = (
+        payload.get("contextual_continuity")
+        if isinstance(payload.get("contextual_continuity"), dict)
+        else {}
+    )
     signal = _current_session_signal(conn, session_id, payload.get("affect_signal_id"))
     cues = _conversation_cues(prompt, str(intent.get("intent") or ""), pragmatics)
     signal_shape = _signal_shape(signal)
     posture = _expression_posture(cues, signal_shape, hard_boundary)
-    dimensions = _dimensions(posture)
+    dimensions = _apply_contextual_continuity(
+        _dimensions(posture),
+        contextual_continuity,
+    )
     refs = ["affect_expression:current_turn"]
     if signal:
         refs.extend(_json_list(signal.get("source_refs")))
@@ -67,6 +75,8 @@ def build_affect_expression_guidance(
         "evidence_may_not_be_replaced_by_alignment": True,
         "user_tone_is_not_selene_emotion": True,
         "internal_state_claim": False,
+        "contextual_continuity_used": bool(contextual_continuity),
+        "transient_preference_is_personality": False,
         "source_refs": list(dict.fromkeys(refs))[:20],
         "visible_summary_only": True,
         "hidden_inner_trace_exposed": False,
@@ -282,6 +292,37 @@ def _voice_category(posture: str) -> str:
         "clear_direct": "technical_directness",
         "warm_available": "warmth_care",
     }.get(posture, "conversational_looseness")
+
+
+def _apply_contextual_continuity(
+    dimensions: dict[str, str],
+    contextual_continuity: dict[str, Any],
+) -> dict[str, str]:
+    if not contextual_continuity:
+        return dimensions
+    updated = dict(dimensions)
+    handoff = (
+        contextual_continuity.get("expression_handoff")
+        if isinstance(contextual_continuity.get("expression_handoff"), dict)
+        else {}
+    )
+    if str(handoff.get("pacing") or ""):
+        updated["pacing"] = str(handoff["pacing"])
+    if str(handoff.get("directness") or ""):
+        updated["directness"] = str(handoff["directness"])
+    if str(handoff.get("response_depth") or "") == "brief":
+        updated["sentence_rhythm"] = "compact"
+    elif str(handoff.get("response_depth") or "") == "developed":
+        updated["sentence_rhythm"] = "varied"
+    humor = str(
+        (contextual_continuity.get("humor_decision") or {}).get("posture")
+        or ""
+    )
+    if humor == "hold":
+        updated["humor"] = "avoid"
+    elif humor == "available_not_required":
+        updated["humor"] = "available_not_required"
+    return updated
 
 
 def _append_if(items: list[str], value: str, condition: bool) -> None:

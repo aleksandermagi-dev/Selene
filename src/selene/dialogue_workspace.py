@@ -165,8 +165,13 @@ def prepare_dialogue_turn(
     )
     if figurative_update.get("detected") is True:
         corrections.append({**figurative_update, "status": "active_refinement"})
-    preferences = dict(prior.get("preferences") or {})
-    preferences.update(_session_preferences(interpreted_text))
+    preferences = _advance_session_preferences(
+        prior.get("preferences") if isinstance(prior.get("preferences"), dict) else {},
+        original_text=text,
+        interpreted_text=interpreted_text,
+        figurative_interpretation=figurative_interpretation,
+        contextual_follow_up=contextual_follow_up,
+    )
     utterance_units = _utterance_units(interpreted_text)
     thread_braid = build_thread_braid(
         {
@@ -604,19 +609,195 @@ def _merge_entities(existing: list[Any], new: list[dict[str, str]]) -> list[dict
     return list(merged.values())[-30:]
 
 
-def _session_preferences(text: str) -> dict[str, str]:
-    lower = text.lower()
-    if any(item in lower for item in ("keep it short", "short answer", "briefly", "be brief")):
-        return {"response_depth": "brief", "scope": "current_session_only"}
-    if any(item in lower for item in ("go deeper", "long form", "walk me through", "in detail")):
-        return {"response_depth": "developed", "scope": "current_session_only"}
-    if any(item in lower for item in ("slow down", "one step at a time", "less at once")):
-        return {
-            "response_depth": "brief",
-            "pacing": "spacious",
-            "scope": "current_session_only",
+def _advance_session_preferences(
+    prior: dict[str, Any],
+    *,
+    original_text: str,
+    interpreted_text: str,
+    figurative_interpretation: dict[str, Any],
+    contextual_follow_up: dict[str, Any],
+) -> dict[str, Any]:
+    """Advance temporary conversational instructions without making a profile.
+
+    A response-shape request belongs to the visible session and expires after a
+    small number of user turns.  Explicit releases and clear topic changes yield
+    it immediately.  This state is deliberately unsuitable for durable memory.
+    """
+
+    original_lower = " ".join(original_text.lower().replace("’", "'").split())
+    interpreted_lower = " ".join(interpreted_text.lower().split())
+    prior_transient = (
+        prior.get("transient")
+        if isinstance(prior.get("transient"), dict)
+        else {}
+    )
+    prior_directives = (
+        prior_transient.get("directives")
+        if isinstance(prior_transient.get("directives"), dict)
+        else {
+            key: prior[key]
+            for key in ("response_depth", "pacing", "directness")
+            if str(prior.get(key) or "")
         }
+    )
+    prior_remaining = max(0, int(prior_transient.get("remaining_turns") or 0))
+    release_requested = any(
+        marker in original_lower
+        for marker in (
+            "back to normal",
+            "normal length",
+            "regular length",
+            "normal pace",
+            "regular pace",
+            "you can be expansive",
+            "you don't need to be brief",
+            "you do not need to be brief",
+            "don't keep it short",
+            "do not keep it short",
+            "forget the short",
+        )
+    )
+    topic_change = any(
+        marker in original_lower
+        for marker in (
+            "new topic",
+            "different topic",
+            "on another topic",
+            "separate topic",
+            "separate question",
+            "moving on to",
+        )
+    ) or str(contextual_follow_up.get("kind") or "") == "separate_topic"
+    new_directives = _session_preference_directives(
+        original_lower,
+        interpreted_lower,
+        figurative_interpretation,
+    )
+
+    if new_directives:
+        directives = {**prior_directives, **new_directives}
+        remaining = _preference_duration(original_lower)
+        return _preference_packet(
+            directives,
+            remaining_turns=remaining,
+            status="active",
+            source="explicit_current_turn",
+            started_this_turn=True,
+        )
+
+    if release_requested or topic_change:
+        return _preference_packet(
+            {},
+            remaining_turns=0,
+            status="released_by_user" if release_requested else "yielded_on_context_change",
+            source="explicit_current_turn",
+            started_this_turn=False,
+        )
+
+    if prior_directives and prior_remaining > 1:
+        return _preference_packet(
+            prior_directives,
+            remaining_turns=prior_remaining - 1,
+            status="active",
+            source="carried_current_session_instruction",
+            started_this_turn=False,
+        )
+    if prior_directives:
+        return _preference_packet(
+            {},
+            remaining_turns=0,
+            status="expired",
+            source="bounded_turn_expiry",
+            started_this_turn=False,
+        )
     return {}
+
+
+def _session_preference_directives(
+    original_lower: str,
+    interpreted_lower: str,
+    figurative_interpretation: dict[str, Any],
+) -> dict[str, str]:
+    directives: dict[str, str] = {}
+    if any(
+        item in original_lower
+        for item in ("keep it short", "short answer", "briefly", "be brief")
+    ):
+        directives["response_depth"] = "brief"
+    if any(
+        item in original_lower
+        for item in ("go deeper", "long form", "walk me through", "in detail")
+    ):
+        directives["response_depth"] = "developed"
+    conversational_slow_down = (
+        str(figurative_interpretation.get("selected_reading") or "") == "figurative"
+        and "conversational pace" in str(
+            figurative_interpretation.get("intended_meaning") or interpreted_lower
+        ).lower()
+    )
+    if conversational_slow_down or any(
+        item in original_lower for item in ("one step at a time", "less at once")
+    ):
+        directives["response_depth"] = "brief"
+        directives["pacing"] = "spacious"
+    if any(
+        item in original_lower
+        for item in (
+            "be direct",
+            "straight answer",
+            "get to the point",
+            "no preamble",
+        )
+    ):
+        directives["directness"] = "high"
+    return directives
+
+
+def _preference_duration(lower: str) -> int:
+    numbered = re.search(r"\b(?:for|next)\s+(\d+)\s+(?:turns?|exchanges?|replies|answers?)\b", lower)
+    if numbered:
+        return max(1, min(int(numbered.group(1)), 6))
+    worded = re.search(
+        r"\b(?:for|next)\s+(one|two|three|four|five|six)\s+(?:turns?|exchanges?|replies|answers?)\b",
+        lower,
+    )
+    if worded:
+        return {
+            "one": 1,
+            "two": 2,
+            "three": 3,
+            "four": 4,
+            "five": 5,
+            "six": 6,
+        }[worded.group(1)]
+    if any(marker in lower for marker in ("this answer", "this reply", "this one")):
+        return 1
+    return 3
+
+
+def _preference_packet(
+    directives: dict[str, str],
+    *,
+    remaining_turns: int,
+    status: str,
+    source: str,
+    started_this_turn: bool,
+) -> dict[str, Any]:
+    active = bool(directives) and remaining_turns > 0 and status == "active"
+    return {
+        **(directives if active else {}),
+        "scope": "current_session_only",
+        "transient": {
+            "active": active,
+            "status": status,
+            "directives": dict(directives) if active else {},
+            "remaining_turns": remaining_turns if active else 0,
+            "started_this_turn": started_this_turn,
+            "source": source,
+            "durable_preference_write": False,
+            "expires_automatically": True,
+        },
+    }
 
 
 def _indirect_request(text: str) -> dict[str, Any]:

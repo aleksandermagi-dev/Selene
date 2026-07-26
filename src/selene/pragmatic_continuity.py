@@ -31,6 +31,11 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
     pragmatic = payload.get("pragmatic_plan") if isinstance(payload.get("pragmatic_plan"), dict) else {}
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     comprehension = payload.get("comprehension") if isinstance(payload.get("comprehension"), dict) else {}
+    contextual_continuity = (
+        payload.get("contextual_continuity")
+        if isinstance(payload.get("contextual_continuity"), dict)
+        else {}
+    )
     thread_braid = (
         pragmatic.get("thread_braid")
         if isinstance(pragmatic.get("thread_braid"), dict)
@@ -70,6 +75,11 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
             "habitual_follow_up_allowed": False,
         }
     speaker = _speaker_scope(prompt, payload.get("speaker_context"))
+    transient_preferences = (
+        contextual_continuity.get("transient_preferences")
+        if isinstance(contextual_continuity.get("transient_preferences"), dict)
+        else {}
+    )
     return {
         "status": "pragmatic_continuity_plan_ready",
         "version": "v1_session_continuity_and_restraint",
@@ -81,7 +91,17 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
         "conversational_energy": conversational_energy,
         "speaker_scope": speaker,
         "active_correction": _active_correction(dialogue),
-        "response_preference": dict(dialogue.get("preferences") or {}),
+        "response_preference": (
+            dict(transient_preferences.get("directives") or {})
+            if transient_preferences.get("active") is True
+            else {}
+            if contextual_continuity
+            else dict(dialogue.get("preferences") or {})
+        ),
+        "transient_preferences": transient_preferences,
+        "callback_decision": contextual_continuity.get("callback_decision") or {},
+        "shared_joke_context": contextual_continuity.get("shared_joke_context") or {},
+        "remembered_wording_may_be_used_as_script": False,
         "open_loop_ids": [
             str(item.get("id") or "")
             for item in dialogue.get("open_loops") or []
