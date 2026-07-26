@@ -88,7 +88,8 @@ def test_metacognition_status_and_inspection_endpoints_are_reachable(tmp_path):
     server.conn.close()
 
     assert get_response.status == 200
-    assert status_payload["status"] == "metacognition_observer_ready"
+    assert status_payload["status"] == "metacognition_feedback_advisor_ready"
+    assert status_payload["mode"] == "bounded_feedback_advisor"
     assert post_response.status == 200
     assert inspect_payload["status"] == "metacognition_advisory_ready"
     assert inspect_payload["answer_rewritten"] is False

@@ -2,8 +2,7 @@
 
 Date: 2026-07-25
 
-Status: Step 1 implemented and focused verification passed; integrated
-Phase 11F stabilization remains
+Status: completed, stabilized, rebuilt, and locally reinstalled
 
 Step 1 checkpoint summary (2026-07-26):
 
@@ -20,6 +19,27 @@ Step 1 checkpoint summary (2026-07-26):
   and a production UI build;
 - no live conversation, stressful probe, retention change, provider call,
   training, autonomy expansion, or reinstall was used.
+
+Step 2 stabilization summary (2026-07-26):
+
+- all 1,124 repository tests passed;
+- `python -m selene validate`, Rust/Tauri `cargo check`, Python compilation,
+  production TypeScript/Vite build, and cleanup dry run passed;
+- static stabilization reported zero findings, zero frontend API paths missing
+  backend routes, zero tracked excluded paths, and zero secret-like tracked
+  matches;
+- the frontend remained split at 417.05 kB for the application and 193.81 kB
+  for the React runtime, with no oversized single-bundle warning;
+- the configured database was snapshotted outside the repository;
+- the provider-free sidecar, release executable, and NSIS installer rebuilt;
+- the silent reinstall completed with exit code zero;
+- installed startup returned healthy and ready;
+- package privacy verification found zero forbidden files and no configured
+  database, credentials, private corpus, or private analysis maps;
+- the verifier-started application closed successfully;
+- no live conversation, stressful probe, memory or knowledge retention,
+  provider-model call, training, LoRA, identity/personality/governance change,
+  general autonomy, or self-replication was used.
 
 ## Decision
 

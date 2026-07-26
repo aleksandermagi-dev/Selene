@@ -1108,9 +1108,23 @@ Selene's strongest implemented areas are:
 
 ## Verification Snapshot
 
-Current verification is intentionally reported only after the Phase 11
-stabilization gate finishes. Focused construction checks are passing, but they
-are not presented as the final repository count or packaging result.
+Phase 11 pre-teaching stabilization completed on July 26, 2026:
+
+- all 1,124 repository tests passed;
+- Python validation and compilation, Rust/Tauri checking, the production
+  TypeScript/Vite build, and the cleanup dry run passed;
+- static stabilization found zero findings, zero frontend API paths missing
+  backend routes, zero tracked excluded paths, and zero secret-like tracked
+  matches;
+- the split application and React runtime chunks were 417.05 kB and
+  193.81 kB, with no oversized single-bundle warning;
+- the provider-free sidecar, release executable, and NSIS installer rebuilt;
+- the configured database was snapshotted outside the repository before a
+  successful silent reinstall;
+- installed startup was healthy and ready;
+- package privacy verification found zero forbidden files and no configured
+  database, credentials, private corpus, or private analysis maps;
+- the verifier-started application closed successfully.
 
 The entries below are historical milestones, not current verification claims.
 Git history retains their exact test counts; this capability map no longer
