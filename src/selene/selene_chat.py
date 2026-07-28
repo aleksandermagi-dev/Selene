@@ -1635,6 +1635,19 @@ def _formation_braid_candidates(
         if isinstance(intelligence_support.get("answer_substance"), dict)
         else {}
     )
+    hypothesis_attempt = (
+        intelligence_support.get("hypothesis_attempt")
+        if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
+        else {}
+    )
+    intelligence_semantics = (
+        hypothesis_attempt.get("semantic_packet")
+        if hypothesis_attempt.get("selected_for_answer") is True
+        and isinstance(hypothesis_attempt.get("semantic_packet"), dict)
+        else intelligence_substance.get("semantic_packet")
+        if isinstance(intelligence_substance.get("semantic_packet"), dict)
+        else {}
+    )
     packet_by_source = {
         "answer_engine": answer_semantics,
         "approved_comprehension": (
@@ -1650,9 +1663,7 @@ def _formation_braid_candidates(
             else {}
         ),
         "intelligence_os_answer": (
-            intelligence_substance.get("semantic_packet")
-            if isinstance(intelligence_substance.get("semantic_packet"), dict)
-            else {}
+            intelligence_semantics
         ),
     }
     refs_by_source = {
@@ -1968,6 +1979,20 @@ def _answer_engine_support(
             "reason": "the Conversation Spine already supplied a grounded immediate-session answer",
             "conversation_spine_turn_id": str(conversation_spine.get("turn_id") or ""),
             "contextual_content_owned_by_spine": True,
+        }
+    hypothesis_attempt = (
+        intelligence_support.get("hypothesis_attempt")
+        if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
+        else {}
+    )
+    if hypothesis_attempt.get("selected_for_answer") is True:
+        return {
+            **base,
+            "reason": (
+                "the current-prompt bounded hypothesis remains an intelligenceOS "
+                "epistemic attempt rather than a verified domain answer"
+            ),
+            "bounded_hypothesis_owned_by_intelligence_os": True,
         }
 
     source_packets = [item for item in chat_payload.get("source_packets") or [] if isinstance(item, dict)][:20]

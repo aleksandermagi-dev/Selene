@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from .registry import truncate
+from .supported_semantics import build_text_supported_semantic_packet
 
 
 BOUNDED_HYPOTHESIS_BOUNDARY = (
@@ -182,6 +183,7 @@ def build_bounded_hypothesis_attempt(
         "That is a hypothesis from the pattern you gave me, not a fact I already know. "
         "It assumes no other important condition changed; repeating the comparison while changing only that condition would test it."
     )
+    response_seed = truncate(response, 1200)
     return _with_guards(
         {
             "status": "bounded_hypothesis_attempt_ready",
@@ -189,7 +191,15 @@ def build_bounded_hypothesis_attempt(
             "epistemic_class": "open_hypothesis",
             "validity": "open_hypothesis",
             "confidence": "bounded_visible_pattern_inference",
-            "response_seed": truncate(response, 1200),
+            "response_seed": response_seed,
+            "semantic_packet": build_text_supported_semantic_packet(
+                response_seed,
+                answer_kind="bounded_hypothesis",
+                source_kind="current_prompt_observation",
+                source_refs=["bounded_hypothesis:visible_prompt_relation"],
+                certainty="open_hypothesis",
+                scope="current_visible_prompt_only",
+            ),
             "label": label.strip(),
             "visible_basis": {
                 **relation,

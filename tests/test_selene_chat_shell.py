@@ -2267,7 +2267,15 @@ def test_new_bounded_hypothesis_flow_attempts_only_when_visible_basis_exists(tmp
     assert hypothesis["offered"] is True
     assert hypothesis["selected_for_answer"] is True
     assert "my best guess" in attempt["candidate_text"].lower()
+    assert attempt["candidate_text"].lower().count("my best guess") == 1
     assert "not a fact i already know" in attempt["candidate_text"].lower()
+    assert "do not have enough grounded detail" not in attempt["candidate_text"].lower()
+    assert attempt["answer_engine_support"]["used"] is False
+    assert (
+        attempt["answer_engine_support"]["bounded_hypothesis_owned_by_intelligence_os"]
+        is True
+    )
+    assert attempt["visible_speech_seed"]["selected_source_id"] == "intelligence_os_answer"
     assert attempt["metacognition"]["bounded_hypothesis"]["offered"] is True
     assert attempt["metacognition"]["bounded_hypothesis"]["ordinary_wrongness_is_failure"] is False
     assert attempt["affect_expression"]["technical_focus_requires_emotional_flatness"] is False
