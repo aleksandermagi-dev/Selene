@@ -2313,6 +2313,7 @@ def test_new_bounded_hypothesis_flow_attempts_only_when_visible_basis_exists(tmp
     assert hypothesis["selected_for_answer"] is True
     assert "my best guess" in attempt["candidate_text"].lower()
     assert attempt["candidate_text"].lower().count("my best guess") == 1
+    assert not attempt["candidate_text"].startswith("Against the same criteria")
     assert "not a fact i already know" in attempt["candidate_text"].lower()
     assert "do not have enough grounded detail" not in attempt["candidate_text"].lower()
     assert attempt["answer_engine_support"]["used"] is False
@@ -2345,6 +2346,50 @@ def test_new_bounded_hypothesis_flow_attempts_only_when_visible_basis_exists(tmp
         assert result["memory_write_active"] is False
         assert result["runtime_memory_recall"] is False
         _assert_locked(result)
+
+
+def test_bounded_hypothesis_owns_visible_seed_before_unrelated_knowledge(monkeypatch, tmp_path):
+    import selene.selene_chat as chat_module
+
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    monkeypatch.setattr(
+        chat_module,
+        "select_visible_speech_seed",
+        lambda *_args, **_kwargs: {
+            "status": "visible_speech_seed_selected",
+            "content_seed": (
+                "A fixed monetary total can be composed from different "
+                "combinations of denominations."
+            ),
+            "selected_source_id": "approved_comprehension",
+            "selected_source_class": "approved_knowledge",
+            "inspected_candidates": [],
+        },
+    )
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "The same plant perked up after we moved it into brighter light. "
+                "What is your best guess why?"
+            )
+        },
+    )["result"]
+
+    assert result["visible_speech_seed"]["selected_source_id"] == "intelligence_os_answer"
+    assert result["visible_speech_seed"]["bounded_hypothesis_remains_primary"] is True
+    assert "my best guess" in result["candidate_text"].lower()
+    assert "monetary total" not in result["candidate_text"].lower()
+    assert {
+        item["source_id"]
+        for item in result["formation_braid"]["selected_candidates"]
+    } == {"intelligence_os_answer"}
+    _assert_locked(result)
 
 
 def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):

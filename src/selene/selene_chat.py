@@ -579,6 +579,23 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         visible_speech_candidates,
         conversation_spine=conversation_spine,
     )
+    bounded_hypothesis = (
+        intelligence_support.get("hypothesis_attempt")
+        if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
+        else {}
+    )
+    if (
+        bounded_hypothesis.get("selected_for_answer") is True
+        and str(bounded_hypothesis.get("response_seed") or "").strip()
+    ):
+        visible_speech_seed = {
+            **visible_speech_seed,
+            "status": "visible_speech_seed_selected_bounded_hypothesis",
+            "content_seed": str(bounded_hypothesis["response_seed"]),
+            "selected_source_id": "intelligence_os_answer",
+            "selected_source_class": "reasoning_answer",
+            "bounded_hypothesis_remains_primary": True,
+        }
     content_seed = str(visible_speech_seed.get("content_seed") or "")
     answer_completion = build_bounded_answer_completion(
         {
@@ -596,11 +613,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
         }
-    )
-    bounded_hypothesis = (
-        intelligence_support.get("hypothesis_attempt")
-        if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
-        else {}
     )
     if bounded_hypothesis.get("selected_for_answer") is True:
         answer_completion = {
@@ -738,6 +750,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "speaker_context": contextual_continuity.get("speaker_scope") or {},
             "intent_decision": intent_decision,
             "contextual_follow_up": contextual_follow_up,
+            "expression_profile": (
+                "explanation"
+                if bounded_hypothesis.get("selected_for_answer") is True
+                else ""
+            ),
             "response_depth": payload.get("response_depth"),
             "source_refs": [
                 "selene_chat:native_language",

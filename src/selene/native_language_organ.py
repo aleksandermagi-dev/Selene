@@ -569,7 +569,10 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         ),
         recent_texts=recent_assistant_texts,
     )
-    expression_profile = _expression_profile(prompt, intent_decision, intent)
+    expression_profile = str(
+        payload.get("expression_profile")
+        or _expression_profile(prompt, intent_decision, intent)
+    )
     variation_context = _variation_context(expression_profile, conversation, recent_assistant_texts)
     return {
         "intent": intent,

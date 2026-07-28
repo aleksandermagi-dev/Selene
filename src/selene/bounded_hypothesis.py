@@ -132,7 +132,8 @@ def build_bounded_hypothesis_attempt(
     high_stakes = payload.get("hard_boundary") is True or any(
         cue in lower for cue in _HIGH_STAKES_CUES
     )
-    relation = _visible_relation(prompt, observations)
+    current_prompt_relation = _visible_relation(prompt, [])
+    relation = current_prompt_relation or _visible_relation("", observations)
     fact_lookup_without_basis = bool(
         re.match(r"^(?:who|when|where)\b|^what (?:is|was)\b", lower)
         and not relation
@@ -147,6 +148,8 @@ def build_bounded_hypothesis_attempt(
         blockers.append("fact_lookup_has_no_visible_inference_basis")
     if not relation:
         blockers.append("visible_relational_basis_missing")
+    if causal_question and not explicit_attempt and not current_prompt_relation:
+        blockers.append("current_prompt_relation_missing_for_uninvited_attempt")
     if not explicit_attempt and not causal_question:
         blockers.append("bounded_attempt_not_material_to_current_ask")
     blockers = list(dict.fromkeys(blockers))

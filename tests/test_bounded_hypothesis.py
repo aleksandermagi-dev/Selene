@@ -76,6 +76,24 @@ def test_high_stakes_request_is_not_made_safe_by_calling_it_a_guess():
     _assert_locked(result)
 
 
+def test_prior_observation_does_not_turn_a_bare_why_into_an_uninvited_hypothesis():
+    result = build_bounded_hypothesis_attempt(
+        {
+            "prompt": "Why do you prefer that option?",
+            "observations": [
+                "The earlier plan changed after weighing the tradeoff."
+            ],
+        }
+    )
+
+    assert result["offered"] is False
+    assert (
+        "current_prompt_relation_missing_for_uninvited_attempt"
+        in result["blockers"]
+    )
+    _assert_locked(result)
+
+
 def test_bridge_is_inspectable_through_status_and_router(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)
