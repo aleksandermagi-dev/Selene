@@ -10,7 +10,9 @@ from selene.bounded_hypothesis import (
 )
 from selene.db import connect, init_db
 from selene.module_router import route_request
+from selene.selene_chat import _formation_braid_candidates
 from selene.sidecar import SeleneHandler, SeleneServer
+from selene.supported_semantics import build_text_supported_semantic_packet
 
 
 def _assert_locked(result):
@@ -142,3 +144,53 @@ def test_bridge_http_status_and_preview_are_reachable(tmp_path):
     assert preview_response.status == 200
     assert preview_payload["offered"] is True
     _assert_locked(preview_payload)
+
+
+def test_selected_hypothesis_excludes_unrelated_approved_knowledge_from_braid():
+    hypothesis = build_bounded_hypothesis_attempt(
+        {
+            "prompt": (
+                "The same plant perked up after we moved it into brighter light. "
+                "What is your best guess why?"
+            )
+        }
+    )
+    hypothesis["selected_for_answer"] = True
+    candidates = [
+        {
+            "source_id": "intelligence_os_answer",
+            "source_class": "reasoning_answer",
+            "text": hypothesis["response_seed"],
+        },
+        {
+            "source_id": "approved_comprehension",
+            "source_class": "approved_knowledge",
+            "text": (
+                "A fixed monetary total can be composed from different "
+                "combinations of denominations."
+            ),
+        },
+    ]
+    result = _formation_braid_candidates(
+        candidates,
+        answer_engine_support={},
+        comprehension={
+            "supported_semantics": build_text_supported_semantic_packet(
+                candidates[1]["text"],
+                answer_kind="approved_knowledge",
+                source_kind="approved_knowledge",
+                source_refs=["approved:irrelevant-money-lesson"],
+                certainty="approved",
+                scope="approved_teaching",
+            )
+        },
+        memory_supported_semantics={},
+        self_state={},
+        intelligence_support={
+            "hypothesis_attempt": hypothesis,
+            "answer_substance": {},
+        },
+    )
+
+    assert [item["source_id"] for item in result] == ["intelligence_os_answer"]
+    assert result[0]["supported_semantics"]["answer_kind"] == "bounded_hypothesis"

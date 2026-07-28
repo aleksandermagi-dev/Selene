@@ -1681,6 +1681,11 @@ def _formation_braid_candidates(
     result: list[dict[str, Any]] = []
     for candidate in candidates:
         source_id = str(candidate.get("source_id") or "")
+        if (
+            hypothesis_attempt.get("selected_for_answer") is True
+            and source_id != "intelligence_os_answer"
+        ):
+            continue
         packet = packet_by_source.get(source_id) or {}
         result.append(
             {

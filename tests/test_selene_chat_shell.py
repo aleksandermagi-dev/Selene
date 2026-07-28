@@ -2276,6 +2276,10 @@ def test_new_bounded_hypothesis_flow_attempts_only_when_visible_basis_exists(tmp
         is True
     )
     assert attempt["visible_speech_seed"]["selected_source_id"] == "intelligence_os_answer"
+    assert {
+        item["source_id"]
+        for item in attempt["formation_braid"]["selected_candidates"]
+    } == {"intelligence_os_answer"}
     assert attempt["metacognition"]["bounded_hypothesis"]["offered"] is True
     assert attempt["metacognition"]["bounded_hypothesis"]["ordinary_wrongness_is_failure"] is False
     assert attempt["affect_expression"]["technical_focus_requires_emotional_flatness"] is False
