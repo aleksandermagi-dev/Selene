@@ -72,6 +72,8 @@ ALLOWED_ORIGINS = {
 }
 
 SIDECAR_VERSION = "0.1.1"
+MAX_DESKTOP_REQUEST_BYTES = 1_000_000
+MAX_MOBILE_REQUEST_BYTES = 16_384
 STARTUP_STARTED_AT = time.perf_counter()
 SIDECAR_BIND = "127.0.0.1"
 STARTUP_LOCK = threading.Lock()
@@ -409,13 +411,38 @@ def watch_parent_process(parent_pid: int | None) -> None:
 class SeleneHandler(BaseHTTPRequestHandler):
     server_version = "SeleneSidecar/0.1"
 
+    def log_message(self, format: str, *args: object) -> None:
+        # BaseHTTPRequestHandler normally logs the complete request target,
+        # including query strings. Mobile pairing credentials arrive once in
+        # that query, so record only the path and never forward raw arguments.
+        write_stabilization_debug_log(
+            "sidecar_http",
+            "request",
+            method=str(getattr(self, "command", "") or ""),
+            path=urlparse(str(getattr(self, "path", "") or "")).path,
+            client_scope="local" if self._is_local_client() else "nonlocal",
+        )
+
     def _send(self, status: int, body: bytes, content_type: str = "application/json") -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        self.send_header("Cache-Control", "no-store")
+        if content_type.startswith("text/html"):
+            self.send_header(
+                "Content-Security-Policy",
+                "default-src 'self'; base-uri 'none'; frame-ancestors 'none'; "
+                "form-action 'self'; img-src 'self' data:; script-src 'self'; "
+                "style-src 'self' 'unsafe-inline'; connect-src 'self'",
+            )
         origin = self.headers.get("Origin")
         if origin in ALLOWED_ORIGINS:
             self.send_header("Access-Control-Allow-Origin", origin)
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Vary", "Origin")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Selene-Mobile-Pairing")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.end_headers()
         self.wfile.write(body)
@@ -448,12 +475,21 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "guard_flags": mobile_blocked_action("mobile_pairing")["guard_flags"],
         }, 403))
 
+    def _deny_non_mobile_remote_request(self, parsed_path: str) -> bool:
+        if self._is_local_client() or parsed_path.startswith("/api/mobile/"):
+            return False
+        self._send(*json_bytes({
+            "error": "This route is available only from desktop/local Selene",
+            "status": "remote_surface_blocked",
+            "mobile_surface": "/mobile",
+            "cocoon_exposed": False,
+            "desktop_admin_exposed": False,
+        }, 403))
+        return True
+
     def _serve_mobile_asset(self, parsed_path: str) -> bool:
         if parsed_path not in {"/mobile", "/mobile/"} and not parsed_path.startswith("/assets/"):
             return False
-        if not self._mobile_allowed():
-            self._send_mobile_forbidden()
-            return True
         root = mobile_web_root()
         path = root / "index.html" if parsed_path in {"/mobile", "/mobile/"} else root / parsed_path.lstrip("/")
         try:
@@ -482,16 +518,6 @@ class SeleneHandler(BaseHTTPRequestHandler):
             content_type = "image/png"
         elif resolved.suffix in {".jpg", ".jpeg"}:
             content_type = "image/jpeg"
-        if resolved.name == "index.html":
-            insert = (
-                "<script>"
-                "window.__SELENE_API_BASE__=window.location.origin;"
-                "try{var p=new URLSearchParams(window.location.search).get('pairing')||'';"
-                "if(p)localStorage.setItem('selene_mobile_pairing',p)}catch(e){}"
-                "</script>"
-            )
-            text_body = body.decode("utf-8").replace("<head>", f"<head>{insert}", 1)
-            body = text_body.encode("utf-8")
         self._send(200, body, content_type)
         return True
 
@@ -500,6 +526,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
         qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
         conn = self.server.conn
         if self._serve_mobile_asset(parsed.path):
+            return
+        if self._deny_non_mobile_remote_request(parsed.path):
             return
         if parsed.path == "/health":
             if not startup_snapshot().get("first_health_ms"):
@@ -531,12 +559,21 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 return
             if not startup_snapshot().get("first_health_ms"):
                 mark_startup_phase("first_health", first_health_ms=round((time.perf_counter() - STARTUP_STARTED_AT) * 1000, 1))
-            self._send(*json_bytes(mobile_health(health_payload())))
+            public_health = {
+                "status": "ok",
+                "sidecar_version": SIDECAR_VERSION,
+                "resident_runtime_online": True,
+            }
+            self._send(*json_bytes(mobile_health(health_payload() if self._is_local_client() else public_health)))
         elif parsed.path == "/api/mobile/pairing/status":
             if not self._mobile_allowed():
                 self._send_mobile_forbidden()
                 return
-            self._send(*json_bytes({**mobile_pairing_state(), "current_bind": SIDECAR_BIND, "guard_flags": mobile_blocked_action("mobile_pairing_status")["guard_flags"]}))
+            self._send(*json_bytes({
+                **mobile_pairing_state(include_secret=self._is_local_client()),
+                "current_bind": SIDECAR_BIND if self._is_local_client() else "owner_network",
+                "guard_flags": mobile_blocked_action("mobile_pairing_status")["guard_flags"],
+            }))
         elif parsed.path == "/api/mobile/chat/sessions":
             if not self._mobile_allowed():
                 self._send_mobile_forbidden()
@@ -929,7 +966,17 @@ class SeleneHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         request_path = urlparse(self.path).path
-        length = int(self.headers.get("Content-Length", "0") or "0")
+        if self._deny_non_mobile_remote_request(request_path):
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+        except ValueError:
+            self._send(*json_bytes({"error": "invalid content length"}, 400))
+            return
+        request_limit = MAX_MOBILE_REQUEST_BYTES if request_path.startswith("/api/mobile/") else MAX_DESKTOP_REQUEST_BYTES
+        if length < 0 or length > request_limit:
+            self._send(*json_bytes({"error": "request body is too large"}, 413))
+            return
         raw = self.rfile.read(length).decode("utf-8") if length else "{}"
         try:
             body = json.loads(raw)

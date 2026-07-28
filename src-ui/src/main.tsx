@@ -858,7 +858,7 @@ function App() {
 
     async function pollHealth(attempt: number) {
       try {
-        const health = await api<Dict>("/health");
+        const health = await api<Dict>(isMobileOnly ? "/api/mobile/health" : "/health");
         if (cancelled) return;
         const startup = (health.startup || {}) as Dict;
         const seedStatus = text(startup.seed_status || "");

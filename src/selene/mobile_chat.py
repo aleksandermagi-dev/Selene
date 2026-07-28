@@ -5,6 +5,7 @@ import json
 import secrets
 import socket
 from typing import Any
+from urllib.parse import urlencode
 
 from .chat import get_session, list_sessions, send_chat_message
 from .activation import activation_is_active
@@ -52,7 +53,7 @@ def mobile_pairing_config_path() -> Any:
     return local_data_dir() / PAIRING_CONFIG
 
 
-def mobile_pairing_state() -> dict[str, Any]:
+def mobile_pairing_state(*, include_secret: bool = True) -> dict[str, Any]:
     path = mobile_pairing_config_path()
     try:
         raw = path.read_text(encoding="utf-8")
@@ -62,21 +63,27 @@ def mobile_pairing_state() -> dict[str, Any]:
     enabled = bool(data.get("enabled"))
     code = str(data.get("pairing_code") or "")
     bind = "0.0.0.0" if enabled else "127.0.0.1"
-    urls = [f"http://{ip}:8766/mobile?pairing={code}" for ip in _local_ipv4_addresses() if enabled and code]
+    query = urlencode({"pairing": code}) if code else ""
+    urls = [
+        f"http://{ip}:8766/mobile?{query}"
+        for ip in _local_ipv4_addresses()
+        if enabled and code
+    ]
     return {
         "status": "mobile_pairing_enabled" if enabled else "mobile_pairing_disabled",
         "enabled": enabled,
         "lan_pairing_enabled": enabled,
         "bind": bind,
-        "pairing_code": code if enabled else "",
-        "phone_urls": urls,
+        "pairing_code": code if enabled and include_secret else "",
+        "phone_urls": urls if include_secret else [],
+        "pairing_secret_included": bool(enabled and include_secret and code),
         "restart_required": False,
         "guard_flags": _mobile_guard_flags_for_pairing({"enabled": enabled}),
     }
 
 
 def mobile_pairing_enable(current_bind: str = "127.0.0.1") -> dict[str, Any]:
-    code = secrets.token_urlsafe(12)
+    code = secrets.token_urlsafe(32)
     path = mobile_pairing_config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"enabled": True, "pairing_code": code}
@@ -104,7 +111,7 @@ def mobile_pairing_code_valid(value: str | None) -> bool:
 
 
 def mobile_health(health: dict[str, Any] | None = None) -> dict[str, Any]:
-    pairing = mobile_pairing_state()
+    pairing = mobile_pairing_state(include_secret=False)
     payload: dict[str, Any] = {
         "status": "mobile_chat_ready",
         "surface": "mobile_chat_lan_companion" if pairing["enabled"] else "mobile_chat_same_device_dev_preview",
@@ -157,12 +164,12 @@ def mobile_list_sessions(conn: sqlite3.Connection) -> dict[str, Any]:
         result = list_selene_chat_sessions(conn)
         result["items"] = result.get("items", [])
         result["mobile_chat_engine"] = "selene_chat_active_supervised"
-        result["guard_flags"] = mobile_guard_flags()
+        result["guard_flags"] = _mobile_guard_flags_for_pairing(mobile_pairing_state(include_secret=False))
         return result
     return {
         "items": list_sessions(conn),
         "mobile_chat_engine": "legacy_native_preview",
-        "guard_flags": _mobile_guard_flags_for_pairing(mobile_pairing_state()),
+        "guard_flags": _mobile_guard_flags_for_pairing(mobile_pairing_state(include_secret=False)),
     }
 
 

@@ -10,7 +10,14 @@ declare global {
   }
 }
 
+const mobileSameOriginBase =
+  typeof window !== "undefined" &&
+  (window.location.pathname === "/mobile" || window.location.pathname === "/mobile/")
+    ? window.location.origin
+    : "";
+
 const configuredApiBase =
+  mobileSameOriginBase ||
   (typeof window !== "undefined" && window.__SELENE_API_BASE__) ||
   import.meta.env?.VITE_SELENE_API_BASE ||
   "http://127.0.0.1:8766";
@@ -24,6 +31,14 @@ function mobilePairingHeader(): Record<string, string> {
     const fromUrl = params.get("pairing") || params.get("pairing_code") || "";
     if (fromUrl) {
       window.localStorage?.setItem("selene_mobile_pairing", fromUrl);
+      params.delete("pairing");
+      params.delete("pairing_code");
+      const cleanSearch = params.toString();
+      window.history.replaceState(
+        {},
+        document.title,
+        `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ""}${window.location.hash}`
+      );
     }
     const token = fromUrl || window.localStorage?.getItem("selene_mobile_pairing") || "";
     return token ? { "X-Selene-Mobile-Pairing": token } : {};

@@ -4,6 +4,7 @@ import http.client
 import json
 import threading
 
+import selene.sidecar as sidecar_module
 from selene.db import connect
 from selene.mobile_chat import (
     mobile_capture_review,
@@ -56,7 +57,13 @@ def test_mobile_pairing_is_disabled_by_default_and_desktop_gated(tmp_path, monke
     assert enabled["lan_pairing_enabled"] is True
     assert enabled["restart_required"] is True
     assert enabled["pairing_code"]
+    assert len(enabled["pairing_code"]) >= 40
     assert mobile_pairing_code_valid(enabled["pairing_code"]) is True
+    redacted = mobile_pairing_state(include_secret=False)
+    assert redacted["pairing_code"] == ""
+    assert redacted["phone_urls"] == []
+    assert redacted["pairing_secret_included"] is False
+    assert enabled["pairing_code"] not in json.dumps(mobile_health())
 
     disabled = mobile_pairing_disable()
     assert disabled["lan_pairing_enabled"] is False
@@ -204,3 +211,106 @@ def test_mobile_sidecar_routes_block_non_chat_actions(tmp_path):
     assert blocked["status"] == "mobile_action_blocked"
     assert blocked["guard_flags"]["transfer_approved"] is False
     assert blocked["guard_flags"]["activation_change"] == "none"
+
+
+def test_nonlocal_surface_exposes_only_static_mobile_and_paired_mobile_api(tmp_path, monkeypatch):
+    monkeypatch.setenv("SELENE_DATA_DIR", str(tmp_path))
+    web_root = tmp_path / "dist-ui"
+    web_root.mkdir()
+    (web_root / "index.html").write_text("<html><head></head><body>Selene mobile</body></html>", encoding="utf-8")
+    monkeypatch.setattr(sidecar_module, "mobile_web_root", lambda: web_root)
+    access_log = []
+    monkeypatch.setattr(
+        sidecar_module,
+        "write_stabilization_debug_log",
+        lambda source, event, **extra: access_log.append({"source": source, "event": event, **extra}),
+    )
+
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.sqlite3")
+    pairing = mobile_pairing_enable("0.0.0.0")
+    token = pairing["pairing_code"]
+    monkeypatch.setattr(SeleneHandler, "_is_local_client", lambda self: False)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    port = server.server_address[1]
+
+    try:
+        page_conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        page_conn.request("GET", f"/mobile?pairing={token}")
+        page_response = page_conn.getresponse()
+        page_body = page_response.read().decode("utf-8")
+        page_conn.close()
+
+        blocked_conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        blocked_conn.request("GET", "/api/dashboard", headers={"X-Selene-Mobile-Pairing": token})
+        blocked_response = blocked_conn.getresponse()
+        blocked = json.loads(blocked_response.read().decode("utf-8"))
+        blocked_conn.close()
+
+        missing_conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        missing_conn.request("GET", "/api/mobile/health")
+        missing_response = missing_conn.getresponse()
+        missing_conn.close()
+
+        mobile_conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        mobile_conn.request("GET", "/api/mobile/health", headers={"X-Selene-Mobile-Pairing": token})
+        mobile_response = mobile_conn.getresponse()
+        mobile = json.loads(mobile_response.read().decode("utf-8"))
+        mobile_conn.close()
+
+        status_conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        status_conn.request("GET", "/api/mobile/pairing/status", headers={"X-Selene-Mobile-Pairing": token})
+        status_response = status_conn.getresponse()
+        status = json.loads(status_response.read().decode("utf-8"))
+        status_conn.close()
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+        server.server_close()
+        server.conn.close()
+
+    assert page_response.status == 200
+    assert "Selene mobile" in page_body
+    assert page_response.getheader("Content-Security-Policy")
+    assert token not in json.dumps(access_log)
+    assert blocked_response.status == 403
+    assert blocked["status"] == "remote_surface_blocked"
+    assert blocked["cocoon_exposed"] is False
+    assert missing_response.status == 403
+    assert mobile_response.status == 200
+    assert mobile["sidecar"]["resident_runtime_online"] is True
+    assert "capabilities" not in mobile["sidecar"]
+    assert status_response.status == 200
+    assert status["pairing_code"] == ""
+    assert status["phone_urls"] == []
+    assert status["pairing_secret_included"] is False
+
+
+def test_mobile_request_body_has_a_small_public_limit(tmp_path, monkeypatch):
+    monkeypatch.setenv("SELENE_DATA_DIR", str(tmp_path))
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.sqlite3")
+    token = mobile_pairing_enable("0.0.0.0")["pairing_code"]
+    monkeypatch.setattr(SeleneHandler, "_is_local_client", lambda self: False)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    port = server.server_address[1]
+
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        conn.request(
+            "POST",
+            "/api/mobile/chat/send",
+            body=json.dumps({"text": "A" * 20_000}),
+            headers={"Content-Type": "application/json", "X-Selene-Mobile-Pairing": token},
+        )
+        response = conn.getresponse()
+        result = json.loads(response.read().decode("utf-8"))
+        conn.close()
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+        server.server_close()
+        server.conn.close()
+
+    assert response.status == 413
+    assert result["error"] == "request body is too large"
