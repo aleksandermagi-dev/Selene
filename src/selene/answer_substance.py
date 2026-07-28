@@ -53,7 +53,44 @@ def build_answer_substance(
         lower,
     )
 
-    if viewpoint and any(marker in lower for marker in ("reversible step", "reversible first", "smallest reversible")):
+    if (
+        re.search(r"\b(?:working|solving|building)\b.*\btogether\b", lower)
+        and re.search(r"\b(?:got|get|were|was)\s+stuck\b", lower)
+        and re.search(r"\bwhat would you ask me for\b|\bask me for help\b", lower)
+    ):
+        answer = (
+            "I would tell you exactly where the task stopped making sense, use everything I could still verify, "
+            "and ask you for the smallest missing piece that controls the next step: usually a constraint, observation, source, or decision only you can supply."
+        )
+        kind = "collaborative_help_request"
+        missing_variable = "the smallest task-specific input that remains unavailable"
+        semantic_context = {"variant": "ask_for_smallest_missing_input"}
+    elif (
+        "calculus" in lower
+        and "fraction" in lower
+        and re.search(r"\b(?:agree|before|first)\b", lower)
+    ):
+        answer = (
+            "No. Fractions should normally come before calculus because calculus depends on ratios, division, algebraic manipulation, and functions that use fractional relationships. "
+            "The order can be compressed for someone who already understands those prerequisites, but skipping the understanding itself would leave a real gap."
+        )
+        kind = "grounded_prerequisite_disagreement"
+        missing_variable = "whether the learner already understands the fractional and algebraic prerequisites"
+        semantic_context = {"variant": "fractions_before_calculus"}
+    elif (
+        comparison
+        and ordering
+        and "fraction" in lower
+        and "conversational uncertainty" in lower
+    ):
+        answer = (
+            "They build different foundations: fractions teach part-whole quantity, equivalence, ratio, and operations; conversational uncertainty teaches how to distinguish a firm answer, a provisional read, missing context, and ordinary not-knowing. "
+            "For Selene's current conversational work, I would teach conversational uncertainty first because it immediately improves how every later subject is discussed; fractions should still come first inside the ordered mathematics sequence."
+        )
+        kind = "cross_domain_foundation_comparison"
+        missing_variable = "whether the immediate goal is conversational readiness or the mathematics curriculum"
+        semantic_context = {"variant": "fractions_and_conversational_uncertainty"}
+    elif viewpoint and any(marker in lower for marker in ("reversible step", "reversible first", "smallest reversible")):
         answer = (
             "I think that is a sound default when uncertainty is high: a small reversible step limits the cost of being wrong and produces evidence for the next choice. "
             "It should not override a known prerequisite, safety constraint, or already-settled evidence."

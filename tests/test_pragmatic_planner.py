@@ -182,9 +182,12 @@ def test_collaborative_preface_does_not_become_a_second_content_obligation():
         }
     )
 
-    assert len(plan["response_obligations"]) == 1
-    assert plan["response_obligations"][0]["kind"] == "comparison"
-    assert "recommend a pilot" in plan["response_obligations"][0]["source_text"].lower()
+    assert [item["kind"] for item in plan["response_obligations"]] == [
+        "method",
+        "comparison",
+        "choice_or_priority",
+    ]
+    assert "recommend a pilot" in plan["response_obligations"][-1]["source_text"].lower()
 
 
 def test_ellipsis_uses_only_bounded_session_reference_or_asks():
@@ -331,3 +334,96 @@ def test_pragmatic_plan_keeps_correction_scope_separate_from_content_obligations
     }
     assert plan["response_constraints"][1]["kind"] == "correction_scope"
     assert plan["memory_write_active"] is False
+
+
+def test_natural_series_and_compound_question_become_separate_obligations():
+    series = (
+        "First, give me a short recap, then say how my correction changed the answer, "
+        "and finally recommend the next step."
+    )
+    series_plan = build_pragmatic_plan(
+        {
+            "prompt": series,
+            "dialogue_workspace": {
+                "active_topic": "conversation repair",
+                "pragmatics": {
+                    "utterance_units": [
+                        {"id": "utterance_1", "text": series, "kind": "direct_request", "position": 0}
+                    ]
+                },
+            },
+        }
+    )
+    math_plan = build_pragmatic_plan(
+        {
+            "prompt": "Why does 2+2=4, and give me a different example?",
+            "dialogue_workspace": _dialogue(
+                ["Why does 2+2=4, and give me a different example?"]
+            ),
+        }
+    )
+
+    assert [item["kind"] for item in series_plan["response_obligations"]] == [
+        "direct_request",
+        "direct_request",
+        "choice_or_priority",
+    ]
+    assert [item["kind"] for item in math_plan["response_obligations"]] == [
+        "reason",
+        "direct_question",
+    ]
+
+
+def test_coverage_does_not_accept_unrelated_yes_correction_or_summary_scaffolds():
+    yes_plan = build_pragmatic_plan(
+        {
+            "prompt": "Do you agree that calculus should come before fractions?",
+            "dialogue_workspace": _dialogue(
+                ["Do you agree that calculus should come before fractions?"]
+            ),
+        }
+    )
+    correction_plan = build_pragmatic_plan(
+        {
+            "prompt": "Actually, I meant conversational uncertainty, not mathematical uncertainty.",
+            "dialogue_workspace": {
+                "active_topic": "conversational uncertainty",
+                "pragmatics": {
+                    "utterance_units": [
+                        {
+                            "id": "utterance_1",
+                            "text": "Actually, I meant conversational uncertainty, not mathematical uncertainty.",
+                            "kind": "correction",
+                            "position": 0,
+                        }
+                    ],
+                    "correction_refinement": {
+                        "detected": True,
+                        "corrected_meaning": "conversational uncertainty",
+                        "replaced_meaning": "mathematical uncertainty",
+                    },
+                },
+            },
+        }
+    )
+    summary_plan = build_pragmatic_plan(
+        {
+            "prompt": "Before we stop, give me one short recap of this conversation.",
+            "dialogue_workspace": _dialogue(
+                ["Before we stop, give me one short recap of this conversation."]
+            ),
+        }
+    )
+
+    assert evaluate_response_coverage(
+        yes_plan,
+        "Calculus is a branch of mathematics.",
+    )["all_required_addressed"] is False
+    assert evaluate_response_coverage(
+        correction_plan,
+        "First, sequence words organize steps.",
+    )["all_required_addressed"] is False
+    assert evaluate_response_coverage(
+        summary_plan,
+        "I can help with that.",
+    )["all_required_addressed"] is False

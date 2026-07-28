@@ -81,6 +81,12 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
             continue
         kind = str(obligation.get("kind") or "direct_question")
         source_text = truncate(str(obligation.get("source_text") or prompt), 700)
+        reasoning_text = truncate(
+            source_text
+            if not prompt or prompt.lower() in source_text.lower()
+            else f"{source_text} Current full request: {prompt}",
+            1800,
+        )
         if kind == "correction_update":
             continue
         knowledge = _best_knowledge_item(source_text, knowledge_items)
@@ -90,7 +96,7 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
             "comparison", "reason", "method", "choice_or_priority", "direct_request", "direct_question",
             "constraint_preservation", "limitation", "requested_output", "requested_section",
         }:
-            substance = build_answer_substance(source_text, observations)
+            substance = build_answer_substance(reasoning_text, observations)
             fragment = truncate(str(substance.get("answer") or ""), 1200)
             support_kind = str(substance.get("answer_kind") or "prompt_grounded_method")
             if substance.get("source_required_for_factual_claim") is True or support_kind in {
@@ -159,8 +165,21 @@ def _best_knowledge_item(text: str, items: list[dict[str, Any]]) -> dict[str, An
             ]
         )
         overlap = query & set(_terms(haystack))
-        if overlap:
-            scored.append((len(overlap), -index, item))
+        anchored = query & set(item.get("answer_alignment_terms") or [])
+        subject = query & set(item.get("answer_subject_terms") or [])
+        alignment_metadata_present = (
+            "answer_alignment_terms" in item or "answer_subject_terms" in item
+        )
+        if alignment_metadata_present:
+            if not anchored and not subject:
+                continue
+        else:
+            title_overlap = query & set(_terms(str(item.get("title") or "")))
+            generic = {"answer", "change", "choose", "first", "reason", "result", "step"}
+            distinctive_overlap = overlap - generic
+            if not title_overlap and len(distinctive_overlap) < 2:
+                continue
+        scored.append((len(overlap) + 2 * len(anchored) + 3 * len(subject), -index, item))
     scored.sort(key=lambda value: (value[0], value[1]), reverse=True)
     return scored[0][2] if scored else None
 

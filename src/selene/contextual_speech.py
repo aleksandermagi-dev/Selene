@@ -48,9 +48,18 @@ def inspect_contextual_follow_up(
         kind, marker = "reason_follow_up", "why"
     elif re.search(r"\bwhy (?:do|did|would) you (?:prefer|recommend|choose|think|say)\b", normalized):
         kind, marker = "reason_follow_up", "reason_about_previous_answer"
+    elif re.search(
+        r"\bwhat about (?:this|our) (?:conversation|chat) makes you say that\b",
+        normalized,
+    ):
+        kind, marker = "reason_follow_up", "reason_about_present_self_report"
     elif re.match(r"^(?:one\s+)?(?:refinement|constraint|adjustment|revision)\s*:", normalized):
         kind, marker = "constraint_refinement", "explicit_session_refinement"
-    elif re.match(r"^(?:please\s+)?(?:summarize|sum up|recap)\b", normalized):
+    elif re.search(
+        r"\b(?:(?:please\s+)?(?:summarize|sum up|recap)\b|"
+        r"(?:give|tell|show)\s+(?:me|us)\s+(?:a\s+)?(?:short\s+|brief\s+)?(?:summary|recap)\b)",
+        normalized,
+    ):
         kind, marker = "session_summary_request", "summarize_active_session"
     elif re.search(
         r"\b(?:what (?:has|have) (?:this|our) (?:conversation|chat) been about|"
@@ -70,6 +79,8 @@ def inspect_contextual_follow_up(
         normalized,
     ):
         kind, marker = "priority_follow_up", "priority_within_previous_plan"
+    elif re.search(r"\b(?:what(?:'s| is) the )?revised order\b", normalized):
+        kind, marker = "priority_follow_up", "revise_previous_order"
     elif re.fullmatch(r"(?:and )?then(?: what)?", normalized) or normalized in {
         "what comes next", "go on", "continue", "keep going",
     }:
@@ -322,6 +333,17 @@ def contextual_response_seed(
             "Keep the remaining staffed hands-on work concentrated in the other room, and reduce or alternate its later portion if necessary. "
             "That preserves both festival goals while treating staff, rather than room availability, as the limiting resource."
         )
+    if kind == "priority_follow_up" and marker == "revise_previous_order":
+        previous_lower = previous.lower()
+        if "calculus" in previous_lower and "fraction" in previous_lower:
+            return (
+                "Fractions first, then the algebra and functions that build on them, and calculus after those prerequisites are steady. "
+                "That order stays reopenable if a particular learner already has the required foundations."
+            )
+        return (
+            "Put the prerequisite-producing step first, then the step that uses it. "
+            "If the earlier evidence changed which dependency is real, revise only that part of the order."
+        )
 
     insufficient_markers = (
         "not have enough grounded detail",
@@ -329,10 +351,31 @@ def contextual_response_seed(
         "missing enough context",
         "do not know enough",
     )
+    if kind == "reason_follow_up" and marker == "reason_about_present_self_report":
+        return (
+            "Because this exchange is calm and focused, and I have enough immediate context to stay with what you are asking. "
+            "That supports describing my present attention; it is not a claim about a hidden feeling or a permanent state."
+        )
     if kind == "reason_follow_up" and any(marker in previous.lower() for marker in insufficient_markers):
         return (
             "Because I have the direction of the question, but not the observations or standard that would decide the answer. "
             "Without those, I would be choosing a conclusion first and fitting reasons afterward."
+        )
+    if (
+        kind == "reason_follow_up"
+        and "prerequisite" in previous.lower()
+        and re.search(r"\b(?:prefer|recommend)\b", prompt)
+        and re.search(r"\bwhat would change\b|\bchange your recommendation\b", prompt)
+    ):
+        prompt_choice = re.search(
+            r"(?:prefer|recommend)\s+(.+?)\s+first\b",
+            prompt,
+            flags=re.IGNORECASE,
+        )
+        choice = prompt_choice.group(1).strip() if prompt_choice else "that option"
+        return (
+            f"I prefer {choice} first because the current ordering makes its prerequisite role and correction cost easier to inspect. "
+            "I would change that recommendation if the other option supplied a required input, produced better evidence under the same constraints, or made the first step unnecessary."
         )
     if kind == "reason_follow_up" and "prerequisite" in previous.lower():
         return (

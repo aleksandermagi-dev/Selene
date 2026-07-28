@@ -410,8 +410,21 @@ def _topic(text: str) -> str:
 
 
 def _question_units(text: str) -> list[str]:
-    sentences = re.split(r"(?<=[.!?])[\"”']?\s+", text.strip())
-    units = [item.strip(" ,.;") for item in sentences if item.endswith("?") and item.strip(" ,.;?")]
+    units: list[str] = []
+    for sentence in re.split(r"(?<=[.!?])[\"”']?\s+", text.strip()):
+        sentence = sentence.strip()
+        if not sentence.endswith("?") or not sentence.strip(" ,.;?"):
+            continue
+        segments = _utterance_units(sentence)
+        if any(str(item.get("kind") or "") == "correction" for item in segments):
+            units.extend(
+                str(item.get("text") or "").strip(" ,.;")
+                for item in segments
+                if str(item.get("kind") or "") == "question"
+                and str(item.get("text") or "").strip(" ,.;?")
+            )
+        else:
+            units.append(sentence.strip(" ,.;"))
     return [item if item.endswith("?") else item + "?" for item in units[:8]]
 
 
@@ -533,8 +546,10 @@ def _correction_refinement(
             "durable_memory_write": False,
         }
     patterns = (
-        r"\b(?:i meant|what i meant was)\s+(.+?)\s*,?\s+not\s+(.+?)(?:[.!?]|$)",
-        r"\bnot\s+(.+?)\s*[,;]\s*(?:i meant\s+)?(.+?)(?:[.!?]|$)",
+        r"\b(?:i meant|what i meant was)\s+(.+?)\s*,?\s+not\s+(.+?)"
+        r"(?=,\s+(?:and\s+)?(?:can|could|would|will|what|which|how|why|tell|explain)\b|[.!?]|$)",
+        r"\bnot\s+(.+?)\s*[,;]\s*(?:i meant\s+)?(.+?)"
+        r"(?=,\s+(?:and\s+)?(?:can|could|would|will|what|which|how|why|tell|explain)\b|[.!?]|$)",
     )
     corrected = ""
     replaced = ""
@@ -572,7 +587,22 @@ def _correction_refinement(
 
 def _utterance_units(text: str) -> list[dict[str, Any]]:
     units: list[dict[str, Any]] = []
-    for index, raw in enumerate(re.split(r"(?<=[.!?])[\"”']?\s+|\n+", text.strip())):
+    raw_units: list[str] = []
+    for sentence in re.split(r"(?<=[.!?])[\"”']?\s+|\n+", text.strip()):
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        pieces = [
+            part.strip(" ,")
+            for part in re.split(
+                r"(?i)(?:;\s*|,\s*(?:and\s+)?)(?=(?:can|could|would|will|what|which|how|why|"
+                r"compare|explain|give|tell|show|list|summarize|recap|recommend|choose)\b)",
+                sentence,
+            )
+            if part.strip(" ,")
+        ]
+        raw_units.extend(pieces or [sentence])
+    for index, raw in enumerate(raw_units):
         value = raw.strip()
         if not value:
             continue

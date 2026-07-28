@@ -88,6 +88,41 @@ def test_sarcasm_requires_explicit_or_multiple_visible_cues():
     assert "sarcasm" in explicit["detected_forms"]
 
 
+def test_ordinary_comparison_is_not_misclassified_as_an_analogy():
+    packet = interpret_figurative_language(
+        {"text": "Compare fractions and conversational uncertainty."}
+    )
+
+    assert packet["selected_reading"] == "literal"
+    assert "analogy" not in packet["detected_forms"]
+
+
+def test_quoted_sequence_metaphor_and_situational_sarcasm_use_visible_cues():
+    metaphor = interpret_figurative_language(
+        {
+            "text": (
+                "When I say 'laying tracks before driving the train,' "
+                "what do I mean?"
+            )
+        }
+    )
+    sarcasm = interpret_figurative_language(
+        {
+            "text": (
+                "The power goes out in the middle of the work. "
+                "Wonderfully convenient."
+            )
+        }
+    )
+
+    assert metaphor["selected_reading"] == "figurative"
+    assert "metaphor" in metaphor["detected_forms"]
+    assert "foundation or prerequisites" in metaphor["intended_meaning"]
+    assert "foundation or prerequisites" in metaphor["interpreted_text"]
+    assert sarcasm["selected_reading"] == "figurative"
+    assert "sarcasm" in sarcasm["detected_forms"]
+
+
 def test_ambiguous_figure_only_requests_clarification_when_answer_depends_on_it():
     statement = interpret_figurative_language({"text": "The storm passed."})
     material_question = interpret_figurative_language(

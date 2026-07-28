@@ -428,6 +428,11 @@ def run_verified_math_answer(payload: dict[str, Any] | None = None) -> dict[str,
     )
     verified = verification.get("verified") is True
     direct_answer = str(verification.get("result_summary") or "").strip() if verified else ""
+    if verified:
+        direct_answer = truncate(
+            f"{direct_answer} {_verified_math_explanation(request['prompt'], verification)}".strip(),
+            5000,
+        )
     no_answer_reason = "" if verified else str(verification.get("no_answer_reason") or "").strip()
     packet = _domain_answer_packet(
         {
@@ -483,6 +488,45 @@ def run_verified_math_answer(payload: dict[str, Any] | None = None) -> dict[str,
             "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
         }
     )
+
+
+def _verified_math_explanation(prompt: str, verification: dict[str, Any]) -> str:
+    """Add only explanation/example material derivable from a verified addition."""
+    lower = str(prompt or "").lower()
+    asks_why = bool(re.search(r"\bwhy\b|\bexplain\b", lower))
+    asks_example = bool(
+        re.search(r"\b(?:different|another|distinct)\s+example\b|\bgive (?:me )?an example\b", lower)
+    )
+    if not asks_why and not asks_example:
+        return ""
+    expression = str(
+        verification.get("normalized_expression")
+        or verification.get("expression")
+        or ""
+    ).replace(" ", "")
+    addition = re.fullmatch(
+        r"(\d+)\+(\d+)(?:=(\d+))?",
+        expression,
+    )
+    if not addition:
+        return ""
+    left = int(addition.group(1))
+    right = int(addition.group(2))
+    result = left + right
+    parts: list[str] = []
+    if asks_why:
+        parts.append(
+            f"Because addition counts combined quantities: {left} items together with "
+            f"{right} more items gives {result} items."
+        )
+    if asks_example:
+        example_left = left + 1
+        example_result = example_left + right
+        parts.append(
+            f"A different example is {example_left} + {right} = {example_result}: "
+            f"{example_left} items together with {right} more gives {example_result}."
+        )
+    return " ".join(parts)
 
 
 def run_local_code_inspection_answer(payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -835,7 +879,45 @@ def _combine_answer_parts(initial: str, supplement: str) -> str:
         return initial
     if supplement in initial:
         return initial
-    return truncate(f"{initial}\n\n{supplement}".strip(), 5000)
+    initial_sentences = _answer_sentences(initial)
+    accepted: list[str] = []
+    for sentence in _answer_sentences(supplement):
+        terms = _answer_terms(sentence)
+        duplicate = any(
+            _term_similarity(terms, _answer_terms(existing)) >= 0.72
+            for existing in [*initial_sentences, *accepted]
+        )
+        if not duplicate:
+            accepted.append(sentence)
+    if not accepted:
+        return initial
+    return truncate(f"{initial}\n\n{' '.join(accepted)}".strip(), 5000)
+
+
+def _answer_sentences(value: str) -> list[str]:
+    return [
+        item.strip()
+        for item in re.split(r"(?<=[.!?])\s+|\n+", str(value or "").strip())
+        if item.strip()
+    ]
+
+
+def _answer_terms(value: str) -> set[str]:
+    stop = {
+        "about", "also", "and", "are", "because", "for", "from", "have", "into",
+        "that", "the", "then", "this", "with", "would", "you", "your",
+    }
+    return {
+        word
+        for word in re.findall(r"[a-z][a-z0-9_-]{2,}", value.lower())
+        if word not in stop
+    }
+
+
+def _term_similarity(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    return len(left & right) / len(left | right)
 
 
 def _completion_retry_result(

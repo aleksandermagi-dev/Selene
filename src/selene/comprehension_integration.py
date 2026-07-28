@@ -804,8 +804,9 @@ def _answer_eligible_knowledge_items(
         return []
     query_terms = set(_terms(prompt))
     generic = {
-        "answer", "changed", "conversation", "different", "handle", "language", "lesson", "lessons",
-        "material", "ordinary", "review", "reviewed", "short", "thing", "things", "version",
+        "answer", "change", "changed", "compare", "conversation", "different", "example", "first",
+        "handle", "help", "language", "lesson", "lessons", "material", "next", "ordinary",
+        "reason", "review", "reviewed", "say", "short", "step", "thing", "things", "version",
     }
     eligible: list[dict[str, Any]] = []
     for item in items:
@@ -836,8 +837,22 @@ def _answer_eligible_knowledge_items(
             continue
         overlap = set(item.get("matched_terms") or []) & query_terms
         distinctive_overlap = {term for term in overlap if term not in generic}
-        if not distinctive_overlap:
+        title_terms = set(
+            _terms(
+                " ".join(
+                    [
+                        str(item.get("title") or ""),
+                        str(item.get("domain") or ""),
+                        str(item.get("concept_key") or "").replace("_", " "),
+                    ]
+                )
+            )
+        ) - generic
+        subject_overlap = distinctive_overlap & title_terms
+        if not subject_overlap and len(distinctive_overlap) < 2:
             continue
+        item["answer_alignment_terms"] = sorted(distinctive_overlap)
+        item["answer_subject_terms"] = sorted(subject_overlap)
         eligible.append(item)
     return eligible
 
@@ -936,9 +951,13 @@ def _best_knowledge_item_for_text(text: str, items: list[dict[str, Any]]) -> dic
                 *[str(value) for value in item.get("limits") or []],
             ]
         )
-        score = len(terms & set(_terms(haystack)))
-        if score:
-            ranked.append((score, -index, item))
+        overlap = terms & set(_terms(haystack))
+        anchored = terms & set(item.get("answer_alignment_terms") or [])
+        subject = terms & set(item.get("answer_subject_terms") or [])
+        if not anchored and not subject:
+            continue
+        score = len(overlap) + (2 * len(anchored)) + (3 * len(subject))
+        ranked.append((score, -index, item))
     ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
     return ranked[0][2] if ranked else None
 

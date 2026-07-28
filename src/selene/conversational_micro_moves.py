@@ -199,7 +199,7 @@ def build_conversational_micro_move_plan(
 
     if content_seed and _disagreement_requested(lower):
         stance = _supported_stance(content_seed)
-        if stance:
+        if stance and not _answer_already_states_stance(content_seed):
             playful_disagreement = any(cue.lower() in lower for cue in _PLAY_CUES)
             moves.append(
                 _move(
@@ -213,7 +213,7 @@ def build_conversational_micro_move_plan(
                     source="supported_answer_content",
                 )
             )
-        else:
+        elif not stance:
             held.append(
                 {
                     "move": "disagreement",
@@ -624,7 +624,10 @@ def _apology_reason(
             "you kept doing",
         )
     )
-    repeated = len([item for item in dialogue.get("corrections") or [] if isinstance(item, dict)]) > 1
+    repeated = (
+        len([item for item in dialogue.get("corrections") or [] if isinstance(item, dict)]) > 1
+        and any(cue in lower for cue in ("again", "still", "kept", "keep doing", "same mistake"))
+    )
     if impact:
         return "the current turn explicitly identifies an effect from the misunderstanding"
     if repeated:
@@ -637,6 +640,8 @@ def _disagreement_requested(lower: str) -> bool:
         cue in lower
         for cue in (
             "do you disagree",
+            "do you agree",
+            "be honest",
             "tell me if you disagree",
             "push back",
             "debate me",
@@ -651,6 +656,20 @@ def _supported_stance(content: str) -> str:
     if any(
         cue in lower
         for cue in (
+            "i disagree",
+            "no.",
+            "no,",
+            "not correct",
+            "is incorrect",
+            "does not hold",
+            "is wrong",
+            "the evidence does not support",
+        )
+    ):
+        return "direct"
+    if any(
+        cue in lower
+        for cue in (
             "partly",
             "part of",
             "however",
@@ -661,19 +680,17 @@ def _supported_stance(content: str) -> str:
         )
     ):
         return "qualified"
-    if any(
-        cue in lower
-        for cue in (
-            "i disagree",
-            "not correct",
-            "is incorrect",
-            "does not hold",
-            "is wrong",
-            "the evidence does not support",
-        )
-    ):
-        return "direct"
     return ""
+
+
+def _answer_already_states_stance(content: str) -> bool:
+    return bool(
+        re.match(
+            r"^\s*(?:yes|no|i agree|i disagree|i do not agree)\b",
+            content,
+            flags=re.IGNORECASE,
+        )
+    )
 
 
 def _user_opened_dark_humor(lower: str) -> bool:

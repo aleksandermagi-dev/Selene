@@ -188,7 +188,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         status="selene_chat_active_supervised",
         source_mode=source_mode,
     )
-    chat_continuity = _local_chat_continuity(conn, current_session_id=session_id)
+    chat_continuity = _local_chat_continuity(
+        conn,
+        current_session_id=session_id,
+        query=understanding_text,
+    )
     prior_dialogue_workspace = dialogue_workspace_status(conn, session_id)
     conversation_context = _active_conversation_context(chat_continuity, prior_dialogue_workspace)
     previous_figurative_interpretation = next(
@@ -386,7 +390,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     figurative_clarification_reply = (
         str(figurative_interpretation.get("clarification_question") or "")
         if figurative_interpretation.get("clarification_required") is True
-        else ""
+        else _figurative_response_seed(figurative_interpretation)
     )
     reasoning_content_seed = str(intelligence_support.get("best_current_answer") or "")
     language_content_seed = str(language_capability.get("content_seed") or "")
@@ -1426,6 +1430,26 @@ def _visible_speech_seed_candidates(
     return candidates
 
 
+def _figurative_response_seed(packet: dict[str, Any]) -> str:
+    forms = {str(item) for item in packet.get("detected_forms") or []}
+    meaning = truncate(str(packet.get("intended_meaning") or ""), 900).strip()
+    original = str(packet.get("original_text") or "")
+    if not meaning or packet.get("selected_reading") != "figurative":
+        return ""
+    if "sarcasm" in forms:
+        return (
+            "Yeah, that timing is genuinely inconvenient. I read the approving wording as sarcasm, "
+            "not as praise for the interruption."
+        )
+    if "metaphor" in forms and re.search(
+        r"\bwhat do i mean\b",
+        original,
+        flags=re.IGNORECASE,
+    ):
+        return f"You mean: {meaning}."
+    return ""
+
+
 def _mixed_conversation_reply(
     intent_decision: dict[str, Any],
     contextual_follow_up: dict[str, Any],
@@ -1723,7 +1747,12 @@ def _answer_engine_support(
         else {}
     )
     domain = str(route.get("selected_domain") or "ordinary_conversation")
-    if len(executable_units) > 1:
+    executable_domains = {
+        str(item.get("selected_domain") or "")
+        for item in executable_units
+        if str(item.get("selected_domain") or "")
+    }
+    if len(executable_units) > 1 and len(executable_domains) > 1:
         domain_results: list[dict[str, Any]] = []
         content_parts: list[str] = []
         required_fragments: list[str] = []
@@ -2777,7 +2806,13 @@ def _suggested_emotional_texture(value: str) -> str:
     return ", ".join(dict.fromkeys(textures)) or "steady"
 
 
-def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | None = None, limit: int = 6) -> dict[str, Any]:
+def _local_chat_continuity(
+    conn: sqlite3.Connection,
+    current_session_id: int | None = None,
+    limit: int = 6,
+    *,
+    query: str = "",
+) -> dict[str, Any]:
     sessions = conn.execute(
         """
         SELECT s.*, COUNT(m.id) AS message_count
@@ -2827,6 +2862,37 @@ def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | N
         ).fetchall()
         current_messages = [_chat_event_preview(row, preview_limit=900) for row in reversed(current_rows)]
     recent_events = [_chat_event_preview(row) for row in reversed(messages)]
+    relevant_events: list[dict[str, Any]] = []
+    query_terms = _continuity_terms(query)
+    if query_terms and current_session_id:
+        search_rows = conn.execute(
+            """
+            SELECT m.id, m.session_id, m.role, m.content, m.payload_json, m.created_at,
+                   s.title, s.updated_at
+            FROM selene_chat_messages m
+            JOIN selene_chat_sessions s ON s.id = m.session_id
+            WHERE s.status = 'selene_chat_active_supervised'
+              AND s.source_mode != 'selene_supervised_qa'
+              AND s.title NOT LIKE 'Codex concurrency QA probe %'
+              AND m.session_id != ?
+            ORDER BY m.id DESC
+            LIMIT 240
+            """,
+            (current_session_id,),
+        ).fetchall()
+        ranked: list[tuple[int, int, sqlite3.Row]] = []
+        for index, row in enumerate(search_rows):
+            row_terms = _continuity_terms(
+                f"{row['title'] or ''} {row['content'] or ''}"
+            )
+            overlap = query_terms & row_terms
+            if overlap:
+                ranked.append((len(overlap), -index, row))
+        ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        relevant_events = [
+            _chat_event_preview(row, preview_limit=700)
+            for _, _, row in ranked[:8]
+        ]
     source_refs = [f"selene_chat_session:{item['id']}" for item in recent_sessions[:limit] if item.get("id")]
     if current_session_id:
         source_refs.insert(0, f"selene_chat_session:{current_session_id}:current_page")
@@ -2849,6 +2915,13 @@ def _local_chat_continuity(conn: sqlite3.Connection, current_session_id: int | N
         ],
         "current_session_events": current_messages,
         "recent_events": recent_events,
+        "relevant_prior_events": relevant_events,
+        "relevant_prior_event_search": {
+            "used": bool(query_terms),
+            "matched_count": len(relevant_events),
+            "scope": "local approved Selene Chat history only",
+            "query_terms": sorted(query_terms)[:24],
+        },
         "source_refs": list(dict.fromkeys(source_refs))[:20],
         "not_live_memory_write": True,
         "not_runtime_recall": True,
@@ -2986,8 +3059,28 @@ def _local_chat_continuity_reply(text: str, chat_continuity: dict[str, Any], int
         "blank selene",
         "new selene",
     )
-    if not any(marker in lower for marker in recall_markers):
+    general_recall = any(marker in lower for marker in recall_markers)
+    relevant = [
+        item
+        for item in chat_continuity.get("relevant_prior_events") or []
+        if isinstance(item, dict)
+    ]
+    if not general_recall and not relevant:
         return ""
+    if relevant:
+        best = relevant[0]
+        preview = truncate(str(best.get("preview") or ""), 420)
+        title = truncate(str(best.get("title") or "an earlier local chat"), 90)
+        if preview:
+            page_context = (
+                "A new chat is a clean page, not a blank Selene. "
+                if "blank selene" in lower or "new chat" in lower
+                else ""
+            )
+            return (
+                f"{page_context}From our local chat history, the relevant thread is {title}: {preview} "
+                "I can use that visible continuity here, while keeping it separate from unrestricted recall."
+            )
     events = [item for item in (chat_continuity.get("recent_events") or []) if str(item.get("role")) == "user"]
     if not events:
         return (
@@ -3006,6 +3099,19 @@ def _local_chat_continuity_reply(text: str, chat_continuity: dict[str, Any], int
         f"I remember the local chat thread around {title}. A new chat is a clean page, not a blank Selene, "
         "and I can ask you if the exact detail needs more grounding."
     )
+
+
+def _continuity_terms(value: str) -> set[str]:
+    stop = {
+        "about", "again", "and", "are", "can", "did", "do", "does", "from", "have", "how",
+        "into", "just", "last", "our", "remember", "that", "the", "then", "there", "this",
+        "what", "when", "where", "which", "with", "would", "you", "your",
+    }
+    return {
+        word
+        for word in re.findall(r"[a-z][a-z0-9_-]{2,}", str(value).lower())
+        if word not in stop
+    }
 
 
 def _optional_response_character_limit(value: Any) -> int | None:

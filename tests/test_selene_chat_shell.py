@@ -1555,7 +1555,6 @@ def test_active_selene_chat_answers_a_long_request_after_a_social_opening(tmp_pa
             ),
         },
     )["result"]
-
     assert callback["contextual_follow_up"]["kind"] == "reason_follow_up"
     assert callback["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
     assert "switch to the parallel-zone design" in callback["candidate_text"].lower()
@@ -1975,6 +1974,178 @@ def test_new_selene_chat_page_can_use_local_chat_continuity_without_runtime_reca
     assert second["runtime_memory_recall"] is False
     assert second["raw_a_import_allowed"] is False
     _assert_locked(second)
+
+
+def test_named_prior_chat_recall_searches_beyond_the_recent_message_window(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    session = conn.execute(
+        """
+        INSERT INTO selene_chat_sessions(title, status, source_mode)
+        VALUES (?, 'selene_chat_active_supervised', 'selene_supervised_speech')
+        """,
+        ("Garden experiment",),
+    )
+    prior_session_id = int(session.lastrowid)
+    messages = [
+        (
+            prior_session_id,
+            "selene",
+            "We planned a reversible two-zone garden trial and agreed to compare water use before expanding it.",
+            "reasoning",
+            "selene_readable_context",
+            "",
+            "{}",
+        ),
+        *[
+            (
+                prior_session_id,
+                "user" if index % 2 == 0 else "selene",
+                f"Ordinary later conversation turn {index}.",
+                "status_only",
+                "current_turn_context",
+                "",
+                "{}",
+            )
+            for index in range(20)
+        ],
+    ]
+    conn.executemany(
+        """
+        INSERT INTO selene_chat_messages
+        (session_id, role, content, selected_route, source_class, package_hash, payload_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        messages,
+    )
+    conn.commit()
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Do you remember our reversible two-zone garden trial?"},
+    )["result"]
+
+    assert result["session_id"] != prior_session_id
+    assert result["local_chat_continuity"]["relevant_prior_event_search"]["matched_count"] >= 1
+    assert "two-zone garden trial" in result["candidate_text"].lower()
+    assert "local chat history" in result["candidate_text"].lower()
+    assert result["runtime_memory_recall"] is False
+    assert result["memory_write_active"] is False
+    _assert_locked(result)
+
+
+def test_qna_regressions_use_grounded_conversation_paths_without_scaffolding(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    check_in = route_request(conn, "selene_chat.send", {"text": "How are you?"})["result"]
+    callback = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": check_in["session_id"],
+            "text": "What about this conversation makes you say that?",
+        },
+    )["result"]
+    recap = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": check_in["session_id"],
+            "text": "Before we stop, give me one short recap of this conversation.",
+        },
+    )["result"]
+    math = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "Why does 2 + 2 = 4 for a young student, "
+                "and give me a different example?"
+            )
+        },
+    )["result"]
+    metaphor = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "When I say 'laying tracks before driving the train,' "
+                "what do I mean?"
+            )
+        },
+    )["result"]
+    sarcasm = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "The power goes out in the middle of the work. "
+                "Wonderfully convenient."
+            )
+        },
+    )["result"]
+    disagreement = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "Calculus should come before fractions. Do you agree? "
+                "Be honest but not rude."
+            )
+        },
+    )["result"]
+    revised = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": disagreement["session_id"],
+            "text": "Fair point; I was wrong. What's the revised order?",
+        },
+    )["result"]
+    collaboration = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "If we were working on this together and you got stuck, "
+                "what would you ask me for?"
+            )
+        },
+    )["result"]
+
+    assert "this exchange is calm and focused" in callback["candidate_text"].lower()
+    assert recap["contextual_follow_up"]["kind"] == "session_summary_request"
+    assert recap["response_coverage"]["all_required_addressed"] is True
+    assert "conversation" in recap["candidate_text"].lower() or "we " in recap["candidate_text"].lower()
+    assert "addition counts combined quantities" in math["candidate_text"].lower()
+    assert "different example is 3 + 2 = 5" in math["candidate_text"]
+    assert "foundation or prerequisites" in metaphor["candidate_text"].lower()
+    assert "timing is genuinely inconvenient" in sarcasm["candidate_text"].lower()
+    assert "No." in disagreement["candidate_text"]
+    assert "fractions should normally come before calculus" in disagreement["candidate_text"].lower()
+    assert "on agree" not in disagreement["candidate_text"].lower()
+    assert "fractions first" in revised["candidate_text"].lower()
+    assert "calculus" in revised["candidate_text"].lower()
+    assert "smallest missing piece" in collaboration["candidate_text"].lower()
+    for result in (
+        callback,
+        recap,
+        math,
+        metaphor,
+        sarcasm,
+        disagreement,
+        revised,
+        collaboration,
+    ):
+        assert "candidate model" not in result["candidate_text"].lower()
+        assert "strongest answer i can support" not in result["candidate_text"].lower()
+        assert result["memory_write_active"] is False
+        assert result["runtime_memory_recall"] is False
+        _assert_locked(result)
 
 
 def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):

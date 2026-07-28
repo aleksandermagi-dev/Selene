@@ -503,6 +503,26 @@ def test_verified_math_adapter_returns_exact_answer_without_expression_confidenc
     _assert_locked(result)
 
 
+def test_verified_addition_can_explain_why_and_supply_a_distinct_example():
+    result = run_verified_math_answer(
+        {
+            "prompt": (
+                "Why does 2 + 2 = 4 for a young student, "
+                "and give me a different example?"
+            )
+        }
+    )
+    answer = result["answer_packet"]["direct_answer"]
+
+    assert result["adapter_executed"] is True
+    assert result["math_verification"]["verified"] is True
+    assert "addition counts combined quantities" in answer
+    assert "2 items together with 2 more items gives 4" in answer
+    assert "A different example is 3 + 2 = 5" in answer
+    assert result["confidence_vector"]["answer_confidence"] == "verified_exact"
+    _assert_locked(result)
+
+
 def test_verified_math_adapter_accepts_an_expression_without_a_duplicate_prompt():
     result = run_verified_math_answer({"expression": "0.1 + 0.2"})
 

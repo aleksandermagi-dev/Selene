@@ -321,7 +321,20 @@ def spine_response_alignment(spine: dict[str, Any] | None, candidate_text: str) 
     distinctive = set(str(item).lower() for item in spine.get("distinctive_terms") or [] if str(item))
     matched = sorted(distinctive & set(_distinctive_terms(candidate)))
     intent_class = str(spine.get("intent_class") or "")
-    required = intent_class in {"reasoning", "direct_content", "contextual_content"} and bool(distinctive)
+    contextual = (
+        spine.get("contextual_follow_up")
+        if isinstance(spine.get("contextual_follow_up"), dict)
+        else {}
+    )
+    immediate_callback = (
+        contextual.get("detected") is True
+        and str(contextual.get("kind") or "") != "topic_shift"
+    )
+    required = (
+        intent_class in {"reasoning", "direct_content", "contextual_content"}
+        and bool(distinctive)
+        and not immediate_callback
+    )
     aligned = bool(candidate) and (not required or bool(matched))
     return {
         "status": "spine_response_aligned" if aligned else "spine_response_not_aligned",

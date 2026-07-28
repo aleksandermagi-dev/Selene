@@ -30,7 +30,8 @@ CONTENT_STOP_WORDS = {
 }
 
 GENERIC_ALIGNMENT_TERMS = {
-    "answer", "change", "first", "make", "next", "question", "reason", "result", "step",
+    "answer", "change", "changed", "first", "give", "make", "next", "question", "reason",
+    "result", "say", "second", "step", "tell", "then",
 }
 
 
@@ -103,6 +104,24 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
                 "required": True,
                 "inference_level": "bounded",
                 "goal": inferred_goal,
+            }
+        )
+    if (
+        not obligations
+        and intent.get("content_response_requested") is True
+        and intent.get("social_turn") is not True
+    ):
+        obligations.append(
+            {
+                "id": _obligation_id(prompt, 0),
+                "loop_id": "",
+                "kind": "direct_question" if "?" in prompt else "direct_request",
+                "source_text": prompt,
+                "topic": str(dialogue.get("active_topic") or ""),
+                "coverage_terms": _content_terms(prompt),
+                "required": True,
+                "inference_level": "literal",
+                "goal": "answer_content_request",
             }
         )
     spine_obligations = [
@@ -204,7 +223,7 @@ def evaluate_response_coverage(
         distinctive_alignment = not distinctive_expected or bool(distinctive_overlap or topic_overlap)
         semantic_match = len(overlap) >= minimum_term_matches and distinctive_alignment
         signal_can_stand_alone = kind in {
-            "correction_update", "yes_or_no", "self_state_check_in", "rephrase_request", "session_summary",
+            "self_state_check_in", "rephrase_request",
         } or (
             kind == "reason" and not expected
         )
@@ -221,9 +240,16 @@ def evaluate_response_coverage(
             score = min(1.0, lexical_score + 0.25)
         elif signal_can_stand_alone:
             score = max(score, signal_score)
-        addressed = bool(candidate.strip()) and (
+        special_semantic_gate = _special_semantic_gate(
+            kind,
+            candidate_lower,
+            distinctive_alignment=distinctive_alignment,
+            expected_terms=expected,
+        )
+        addressed = bool(candidate.strip()) and special_semantic_gate and (
             semantic_match and (not signal_required or signal_score > 0)
             or signal_can_stand_alone and signal_score > 0
+            or kind in {"correction_update", "yes_or_no", "session_summary"} and signal_score > 0
         )
         loop_id = str(obligation.get("loop_id") or "")
         if addressed and loop_id:
@@ -349,7 +375,11 @@ def _unit_obligations(
             # it is not a second content obligation that the answer must quote.
             continue
         if kind in {"question", "direct_request", "indirect_request"}:
-            request_parts = _structured_request_parts(text) if kind != "question" else [text]
+            request_parts = (
+                _compound_question_parts(text)
+                if kind == "question"
+                else _structured_request_parts(text)
+            )
             for part in request_parts:
                 obligation_kind = (
                     _question_kind(part)
@@ -517,7 +547,9 @@ def _contains_self_state_check_in(value: str) -> bool:
 def _contains_session_summary_request(value: str) -> bool:
     return bool(
         re.search(
-            r"\b(?:what (?:has|have) (?:this|our) (?:conversation|chat) been about|"
+            r"\b(?:(?:give|tell|show)\s+(?:me|us)\s+(?:a\s+)?(?:short\s+|brief\s+)?"
+            r"(?:summary|recap)|(?:summarize|sum up|recap)\s+(?:this|our|the)\s+"
+            r"(?:conversation|chat)|what (?:has|have) (?:this|our) (?:conversation|chat) been about|"
             r"what have we been (?:talking|speaking) about)\b",
             value,
             flags=re.IGNORECASE,
@@ -527,15 +559,10 @@ def _contains_session_summary_request(value: str) -> bool:
 
 def _compound_question_parts(question: str) -> list[str]:
     """Keep explicit interrogative clauses as separate visible obligations."""
-    parts = [
-        part.strip(" ,")
-        for part in re.split(
-            r",\s*(?:and\s+)?(?=(?:what|which|how|why|when|where|who)\b)",
-            question,
-            flags=re.IGNORECASE,
-        )
-        if part.strip(" ,")
-    ]
+    parts = _split_coordinated_acts(
+        question,
+        interrogative=True,
+    )
     return parts or [question]
 
 
@@ -543,15 +570,44 @@ def _structured_request_parts(text: str) -> list[str]:
     if "analogy" in text.lower() and re.search(r",\s*without\b", text, flags=re.IGNORECASE):
         parts = [part.strip(" ,.?!") for part in re.split(r",\s*(?=without\b)", text, maxsplit=1, flags=re.IGNORECASE)]
         return [part for part in parts if part]
-    if ":" not in text or not re.search(r"\b(?:parts|sections|items)\b", text, flags=re.IGNORECASE):
-        return [text]
-    tail = text.split(":", 1)[1].strip()
+    if ":" in text and re.search(r"\b(?:parts|sections|items)\b", text, flags=re.IGNORECASE):
+        tail = text.split(":", 1)[1].strip()
+        parts = [
+            part.strip(" ,.?!")
+            for part in re.split(r",\s*|\s+and\s+", tail, flags=re.IGNORECASE)
+            if part.strip(" ,.?!")
+        ]
+        if len(parts) >= 2:
+            return parts
+    return _split_coordinated_acts(text, interrogative=False)
+
+
+def _split_coordinated_acts(text: str, *, interrogative: bool) -> list[str]:
+    """Split only visibly coordinated asks, preserving ordinary noun lists."""
+    action = (
+        r"(?:what|which|how|why|when|where|who|"
+        r"can|could|would|will|"
+        r"compare|explain|give|tell|show|list|summarize|recap|say|"
+        r"recommend|choose|name|describe|identify|walk)"
+    )
+    normalized = re.sub(
+        r"(?i)\b(?:first|second|third|finally|lastly)\s*,?\s*",
+        "",
+        text,
+    ).strip()
     parts = [
         part.strip(" ,.?!")
-        for part in re.split(r",\s*|\s+and\s+", tail, flags=re.IGNORECASE)
+        for part in re.split(
+            rf"(?i)(?:;\s*|,\s*(?:and\s+)?|\s+and\s+|\s+then\s+)(?={action}\b)",
+            normalized,
+        )
         if part.strip(" ,.?!")
     ]
-    return parts if len(parts) >= 2 else [text]
+    if len(parts) < 2:
+        return [text]
+    if interrogative and text.rstrip().endswith("?"):
+        parts = [f"{part}?" for part in parts]
+    return parts
 
 
 def _implicit_meaning(prompt: str, *, previous_available: bool) -> dict[str, Any]:
@@ -665,15 +721,65 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
         "requested_section": ("design", "pilot", "condition", "section", "part"),
         "analogy": ("analogy", "like", "similar", "think of"),
         "constraint_preservation": ("constraint", "must", "cannot", "do not", "does not"),
-        "yes_or_no": ("yes", "no", "can", "cannot", "is", "isn't", "are", "aren't"),
+        "yes_or_no": ("yes", "no", "not completely", "i agree", "i disagree", "that is", "that isn't", "that is not"),
         "implied_request": ("can", "let's", "we can", "start", "help"),
         "direct_request": ("here", "first", "start", "use", "the answer", "result"),
-        "correction_update": ("right", "correction", "meant", "changed", "instead", "second", "first"),
+        "correction_update": (
+            "you're right", "you are right", "i understand the correction",
+            "i understand the corrected meaning", "i have the changed meaning",
+            "i'll use", "i will use", "instead",
+        ),
         "self_state_check_in": ("i ", "i'm", "my ", "present", "current", "attentive", "here"),
         "rephrase_request": ("put simply", "in plain terms", "said that awkwardly", "what i mean"),
-        "session_summary": ("this conversation has been about", "we have been", "we've been"),
+        "session_summary": ("this conversation has been about", "we have been", "we've been", "we covered", "we discussed", "recap:", "summary:"),
     }
     return 0.5 if any(token in candidate for token in signals.get(kind, ())) else 0.0
+
+
+def _special_semantic_gate(
+    kind: str,
+    candidate: str,
+    *,
+    distinctive_alignment: bool,
+    expected_terms: set[str],
+) -> bool:
+    if kind == "yes_or_no":
+        expected_present = bool(expected_terms)
+        expected_stance_only = (
+            expected_present
+            and not distinctive_alignment
+            and expected_terms
+            <= {
+                "agree", "agreement", "believe", "confident", "correct",
+                "right", "sure", "think", "true",
+            }
+        )
+        return bool(
+            re.search(
+                r"^(?:yes|no)\b|\b(?:i agree|i disagree|that is correct|that is not correct|"
+                r"not completely|i would|i would not|i do|i do not)\b",
+                candidate.strip(),
+            )
+        ) and (distinctive_alignment or not expected_present or expected_stance_only)
+    if kind == "correction_update":
+        expected_present = bool(expected_terms)
+        return bool(
+            re.search(
+                r"\b(?:you(?:'re| are) right|i (?:understand|have) the correction|"
+                r"i understand the corrected meaning|i have the changed meaning|"
+                r"i(?:'ll| will) use|instead|rather than|that changes)\b",
+                candidate,
+            )
+        ) and (distinctive_alignment or not expected_present)
+    if kind == "session_summary":
+        return bool(
+            re.search(
+                r"\b(?:this conversation|this chat|we (?:have|'ve) (?:covered|discussed|been)|"
+                r"we talked|recap|summary)\b",
+                candidate,
+            )
+        )
+    return True
 
 
 def _content_terms(value: str, *, limit: int = 20) -> list[str]:

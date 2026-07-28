@@ -375,6 +375,32 @@ def test_dialogue_workspace_splits_quoted_correction_from_confirmation_question(
     assert [item["kind"] for item in result["pragmatics"]["utterance_units"]] == ["correction", "question"]
 
 
+def test_dialogue_workspace_keeps_correction_and_followup_ask_separate_in_one_sentence(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = (
+        "Actually, I meant conversational uncertainty, not mathematical uncertainty, "
+        "and can you compare them now?"
+    )
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "conversation_events": [{"role": "selene", "preview": "I compared the wrong concepts."}],
+        },
+    )
+
+    correction = result["pragmatics"]["correction_refinement"]
+    assert correction["corrected_meaning"] == "conversational uncertainty"
+    assert correction["replaced_meaning"] == "mathematical uncertainty"
+    assert [item["kind"] for item in result["pragmatics"]["utterance_units"]] == [
+        "correction",
+        "question",
+    ]
+    assert result["pragmatics"]["question_units"] == ["can you compare them now?"]
+
+
 def test_dialogue_workspace_routes_are_status_only_and_idempotent(tmp_path):
     conn, session_id = _conn(tmp_path)
     text = "Could you explain that?"

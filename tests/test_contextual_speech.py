@@ -284,3 +284,28 @@ def test_analogy_transfer_preserves_the_active_staffing_constraint():
     assert "ordinary analogy" in response.lower()
     assert "small kitchen" in response.lower()
     assert "two available rooms do not equal two staffed activities" in response.lower()
+
+
+def test_self_state_reason_callback_stays_bound_to_the_visible_exchange():
+    result = inspect_contextual_follow_up(
+        "What about this conversation makes you say that?",
+        _context("What I can name clearly is presence and attention."),
+    )
+    response = contextual_response_seed(result)
+
+    assert result["kind"] == "reason_follow_up"
+    assert result["marker"] == "reason_about_present_self_report"
+    assert "this exchange is calm and focused" in response.lower()
+    assert "not a claim about a hidden feeling" in response.lower()
+
+
+def test_summary_request_can_have_an_ordinary_preface():
+    context = _context("We compared two teaching foundations.")
+    context["recent_user_texts"] = ["We compared fractions and conversational uncertainty."]
+    result = inspect_contextual_follow_up(
+        "Before we stop, give me one short recap of this conversation.",
+        context,
+    )
+
+    assert result["kind"] == "session_summary_request"
+    assert result["preserve_active_topic"] is True

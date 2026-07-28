@@ -165,6 +165,14 @@ def interpret_figurative_language(payload: dict[str, Any] | None = None) -> dict
     if analogy:
         matches.append(analogy)
 
+    quoted_figure = _quoted_figure_request(text)
+    if quoted_figure:
+        matches.append(quoted_figure)
+        interpreted = _replace_quoted_expression(
+            interpreted,
+            str(quoted_figure.get("meaning") or ""),
+        )
+
     explicit = _explicit_nonliteral(text)
     if explicit:
         matches.append(explicit)
@@ -292,7 +300,7 @@ def _packet(
 
 def _analogy(text: str) -> dict[str, Any]:
     explicit = re.search(
-        r"\b(?:like|similar to|an analogy(?: between| for)?|compare)\s+(.+?)\s+(?:and|to|is like)\s+(.+?)(?:[.!?]|$)",
+        r"\b(?:like|similar to|an analogy(?: between| for)?)\s+(.+?)\s+(?:and|to|is like)\s+(.+?)(?:[.!?]|$)",
         text,
         flags=re.IGNORECASE,
     )
@@ -314,6 +322,50 @@ def _analogy(text: str) -> dict[str, Any]:
         "mapping_limit": "unmapped properties are not carried across",
         "equivalence_claimed": False,
     }
+
+
+def _quoted_figure_request(text: str) -> dict[str, Any]:
+    request = re.search(
+        r"\bwhen i say\s+[\"“'](.+?)[\"”']\s*,?\s*what do i mean\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not request:
+        return {}
+    surface = request.group(1).strip()
+    lower = surface.lower()
+    meaning = ""
+    if (
+        re.search(r"\b(?:lay|build|make|put|set)\w*\b.*\b(?:track|foundation|road|bridge)\w*\b", lower)
+        and re.search(r"\bbefore\b.*\b(?:driv|use|cross|travel|run)\w*\b", lower)
+    ):
+        meaning = "establish the needed foundation or prerequisites before trying to use what depends on them"
+    elif re.search(r"\bbefore\b", lower):
+        first, second = re.split(r"\bbefore\b", surface, maxsplit=1, flags=re.IGNORECASE)
+        meaning = (
+            f"the first activity, {first.strip()}, supplies or protects something needed before "
+            f"the later activity, {second.strip()}"
+        )
+    if not meaning:
+        return {}
+    return {
+        "form": "metaphor",
+        "surface": surface,
+        "meaning": meaning,
+        "confidence": "bounded",
+        "cues": ["speaker_requested_meaning_of_quoted_expression", "visible_sequence_mapping"],
+    }
+
+
+def _replace_quoted_expression(text: str, meaning: str) -> str:
+    if not meaning:
+        return text
+    return re.sub(
+        r"[\"“'](.+?)[\"”']",
+        meaning,
+        text,
+        count=1,
+    )
 
 
 def _explicit_nonliteral(text: str) -> dict[str, Any]:
@@ -353,11 +405,21 @@ def _sarcasm(text: str, context_text: str) -> dict[str, Any]:
     )
     contradiction = any(
         marker in lower
-        for marker in ("great, another", "just what i needed", "what a wonderful failure", "love that for me")
+        for marker in (
+            "great, another",
+            "just what i needed",
+            "what a wonderful failure",
+            "love that for me",
+            "wonderfully convenient",
+            "very convenient",
+        )
     )
     adverse_context = any(
         marker in f"{lower} {context_text}"
-        for marker in ("broke", "failed", "crashed", "problem", "storm", "lost", "wrong")
+        for marker in (
+            "broke", "failed", "crashed", "problem", "storm", "lost", "wrong",
+            "power went out", "power goes out", "outage", "interrupted",
+        )
     )
     if not explicit and not (contradiction and adverse_context):
         return {}

@@ -102,6 +102,8 @@ REASONING_PATTERNS = (
     "what do you make",
     "what makes",
     "what would make",
+    "what would you ask me for",
+    "if you got stuck",
     "what does that mean",
     "most useful next",
     "what should we",
