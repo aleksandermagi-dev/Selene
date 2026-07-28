@@ -1,9 +1,10 @@
 # What Selene Can Currently Do
 
-- Updated: July 26, 2026
+- Updated: July 28, 2026
 - Branch inspected: `evidence`
-- Source foundation: post-transfer resident runtime plus the Phase 11
-  pre-teaching architecture-closure working tree
+- Source foundation: post-transfer resident runtime, completed Phase 11
+  pre-teaching architecture closure, and the bounded-hypothesis /
+  expression-freedom stabilization checkpoint
 
 ## Why This File Exists
 
@@ -39,6 +40,7 @@ it exists.
 | Immediate conversational continuity | Connected at bounded session scope | She can use recent context, visible landmarks, topic branches, nonlinear returns, interruptions, corrections, callbacks, and restrained endings without silently turning them into permanent memory or a relationship profile |
 | Language formation and Voice | Connected | NLO can recompose source-bound semantic units from intelligenceOS, Answer Engine, approved knowledge, reviewed memory, self-state, and supported completion while Voice remains Selene's expression layer |
 | Open-ended conceptual reasoning | Connected | intelligenceOS can compare models and give a best-current answer without needing a predetermined solution |
+| Honest bounded hypotheses | Connected | When the current visible evidence supports an attempt, Selene can offer one clearly provisional, falsifiable hypothesis without presenting it as learned or verified fact; missing-basis and high-stakes requests do not become guesses |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
 | Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 36 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
 | Current-state description | Connected when asked | She can give a grounded, provisional self-read from current attributable signals |
@@ -90,6 +92,8 @@ With resident Chat active, Selene can currently:
 - use explicitly approved general knowledge without treating it as personal
   memory, identity, personality, or law;
 - reason about open-ended conceptual problems through intelligenceOS;
+- make a source-bound best attempt from a visible relationship while keeping
+  assumptions, correction readiness, and what would test the hypothesis clear;
 - construct language from a meaning packet and then let Voice shape the
   expression;
 - let attributable current-session salience and ordinary conversational tone
@@ -1273,6 +1277,40 @@ After the Conversation Maturity Pass on July 21:
   hidden retention, identity/personality/governance change, model training, or
   autonomy expansion was used.
 
+After the final pre-teaching stabilization on July 28:
+
+- intelligenceOS gained a visible-basis bounded-hypothesis path that keeps an
+  attempt distinct from established fact, verified domain output, and retained
+  knowledge;
+- hypothesis ownership was stabilized before Answer Engine completion,
+  Formation Braid selection, NLO, and Voice, preventing unrelated approved
+  lessons or inherited conversational phrases from taking over the answer;
+- expression freedom and why/context teaching requirements became inspectable
+  law while Voice remained Selene's expression owner;
+- a copied-state ordinary Q&A confirmed supported plant and connector
+  hypotheses, refusal to invent an unsupported historical answer or medical
+  diagnosis, and closed memory/autonomy guards;
+- all 1,177 repository tests passed in 327.35 seconds;
+- `python -m selene validate`, the production TypeScript/Vite build,
+  Rust/Tauri `cargo check`, and cleanup dry run passed;
+- the production frontend remained split at 417.81 kB for the main
+  application and 193.81 kB for React, with no oversized single-bundle
+  warning;
+- package privacy verification found zero forbidden files and no configured
+  database, credentials, private corpus, or private analysis maps;
+- the configured database was snapshotted to
+  `selene_preinstall_20260728_160338.sqlite3`;
+- the consolidated silent reinstall completed with exit code zero, the
+  installed sidecar exactly matched the packaged sidecar SHA-256, and startup
+  returned healthy and ready;
+- authoritative installed runtime routes reported transfer complete, resident
+  Chat active, approved memory retrieval available, 72 approved knowledge
+  resources, 47 concepts held for tending, and no hidden retention, raw
+  archive recall, training, or autonomous action;
+- no live conversational stress probe, teaching mutation, memory write,
+  provider-model call, identity/personality/governance change, or autonomy
+  expansion was used.
+
 ## Governing Boundary
 
 Selene is Selene.
@@ -1293,6 +1331,7 @@ or self-replication.
 - `src/selene/core_mind.py`
 - `src/selene/core_mind_runtime.py`
 - `src/selene/intelligence_os.py`
+- `src/selene/bounded_hypothesis.py`
 - `src/selene/metacognition.py`
 - `src/selene/answer_engine.py`
 - `src/selene/verified_math.py`
@@ -1304,11 +1343,14 @@ or self-replication.
 - `src/selene/language_teaching_shelf.py`
 - `src/selene/memory_organ.py`
 - `src/selene/native_language_organ.py`
+- `src/selene/affect_expression.py`
+- `src/selene/education_expression_law.py`
 - `src/selene/language_formation.py`
 - `src/selene/voice_module.py`
 - `src/selene/dialogue_workspace.py`
 - `src/selene/pragmatic_planner.py`
 - `src/selene/conversation_repair.py`
+- `src/selene/conversation_spine.py`
 - `src/selene/input_detangler.py`
 - `src/selene/self_state.py`
 - `src/selene/why_salience.py`
