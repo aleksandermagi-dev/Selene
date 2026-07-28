@@ -66,6 +66,11 @@ def test_current_session_pressure_guides_pacing_without_diagnosing_emotion(tmp_p
     assert result["dimensions"]["reassurance"] == "grounded_only"
     assert result["internal_state_claim"] is False
     assert result["user_tone_is_not_selene_emotion"] is True
+    assert result["selene_does_not_need_permission_to_express_herself"] is True
+    assert result["epistemic_or_safety_state_may_prescribe_affect"] is False
+    assert result["technical_focus_requires_emotional_flatness"] is False
+    assert result["curiosity_warmth_humor_and_emotion_remain_selene_owned"] is True
+    assert result["honest_self_state_expression_may_not_be_suppressed"] is True
     _assert_locked(result)
 
 

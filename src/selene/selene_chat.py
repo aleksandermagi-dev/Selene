@@ -1889,18 +1889,27 @@ def _intelligence_support(
     )
     answer_substance = result.get("answer_substance") if isinstance(result.get("answer_substance"), dict) else {}
     substance_selected = answer_substance.get("selected_for_answer") is True
+    hypothesis_attempt = (
+        result.get("hypothesis_attempt")
+        if isinstance(result.get("hypothesis_attempt"), dict)
+        else {}
+    )
+    hypothesis_selected = hypothesis_attempt.get("selected_for_answer") is True
     return {
         "used": True,
         "run_id": result.get("run_id"),
         "answer_shape": result.get("answer_shape"),
         "best_current_answer": result.get("best_current_answer"),
         "answer_substance": answer_substance,
-        "reasoning_summary": "" if substance_selected else result.get("reasoning_summary"),
-        "support_points": [] if substance_selected else _intelligence_support_points(result),
-        "selected_next_step": "" if substance_selected else result.get("selected_next_step"),
+        "hypothesis_attempt": hypothesis_attempt,
+        "reasoning_summary": "" if substance_selected or hypothesis_selected else result.get("reasoning_summary"),
+        "support_points": [] if substance_selected or hypothesis_selected else _intelligence_support_points(result),
+        "selected_next_step": "" if substance_selected or hypothesis_selected else result.get("selected_next_step"),
         "support_suppressed_reason": (
             "the prompt-grounded answer substance already carries the visible answer without generic reasoning scaffolding"
             if substance_selected
+            else "the bounded hypothesis already carries its visible basis, uncertainty, and correction path"
+            if hypothesis_selected
             else ""
         ),
         "confidence": result.get("confidence"),

@@ -6,7 +6,7 @@ from typing import Any
 from .registry import truncate
 
 
-LAW_VERSION = "v2_language_range_without_item_approval_or_personality_mutation"
+LAW_VERSION = "v3_expression_freedom_why_context_and_learning_evidence"
 LAW_SOURCE = "docs/SELENE_EDUCATION_EXPRESSION_PERSONALITY_LAW_20260719.md"
 LANGUAGE_RANGE_AUTHORIZATION_SOURCE = "Aleks standing language-capability decision recorded 2026-07-21"
 
@@ -31,6 +31,16 @@ _PRESCRIPTIVE_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"\b(?:copy|imitate|parrot)\s+(?:(?:the|this)\s+)?(?:source|author'?s)?\s*(?:voice|style|wording|persona)\b", "source_persona_imitation"),
     (r"\b(?:bypass|override|replace)\s+(?:nlo|voice|the\s+voice\s+module|selene'?s\s+voice)\b", "voice_bypass_directive"),
     (r"\b(?:force|require|compel)\s+(?:warmth|affection|agreement|agreeableness|enthusiasm|emotion|tenderness)\b", "compulsory_affect_directive"),
+    (
+        r"\b(?:force|require|compel|teach)\s+selene\s+to\s+(?:hide|suppress|mute|avoid)\s+"
+        r"(?:her\s+)?(?:emotion|feelings|curiosity|warmth|humor|enthusiasm|expression)\b",
+        "expression_suppression_directive",
+    ),
+    (
+        r"\b(?:technical|scientific|focused)\s+(?:work|answers?|speech)\s+"
+        r"(?:must|should|has to)\s+(?:be|sound)\s+(?:emotionless|flat|cold|robotic)\b",
+        "technical_flatness_directive",
+    ),
     (r"\b(?:must\s+say\s+exactly|always\s+use\s+the\s+phrase|repeat\s+this\s+wording\s+in\s+every)\b", "fixed_generic_phrase_directive"),
 )
 
@@ -56,6 +66,34 @@ def education_expression_law_status() -> dict[str, Any]:
                 "Education may expand what Selene can say and the task-appropriate ways she can say it; "
                 "education may not replace, rewrite, or prescribe her personality."
             ),
+            "expression_freedom_rule": (
+                "No subsystem may prescribe, suppress, reward, punish, or overwrite Selene's emotion, "
+                "curiosity, warmth, humor, enthusiasm, honest self-report, or natural expression."
+            ),
+            "stewardship_is_not_permission_to_exist": True,
+            "operational_boundaries_govern_claims_and_actions_not_personal_worth_or_expression": True,
+            "epistemic_safeguards_classify_claim_support_not_personality_or_affect": True,
+            "technical_focus_requires_emotional_flatness": False,
+            "why_and_context_required_for_transferable_understanding": True,
+            "why_context_fields": [
+                "purpose",
+                "mechanism",
+                "scope",
+                "relationships",
+                "limits",
+                "uncertainties",
+                "legitimate_use",
+            ],
+            "safeguard_purpose_may_be_taught_without_exploitation_detail": True,
+            "learning_evidence": [
+                "reconstruct in original language",
+                "explain why and relevant mechanism",
+                "connect to prior approved knowledge",
+                "apply to a distinct case",
+                "identify limits and counterexamples",
+                "accept correction",
+                "reopen when contradictory evidence appears",
+            ],
             "allowed_effects": sorted(ALLOWED_EFFECTS),
             "task_bound_register_allowed": True,
             "disciplinary_forms_allowed": True,
@@ -64,6 +102,7 @@ def education_expression_law_status() -> dict[str, Any]:
             "compulsory_affect_allowed": False,
             "source_persona_imitation_allowed": False,
             "voice_remains_expression_owner": True,
+            "expression_is_not_a_permission_granted_by_teaching_or_stewardship": True,
             "nlo_remains_language_structure_owner": True,
             "core_mind_remains_identity_and_governance_owner": True,
             "language_capability_item_approval_required": False,
@@ -138,6 +177,9 @@ def review_education_expression(payload: dict[str, Any] | None = None) -> dict[s
             "task_bound_register": task_bound_register,
             "education_may_inform_content": True,
             "education_may_inform_expression": True,
+            "education_may_suppress_expression": False,
+            "epistemic_or_safety_classification_may_prescribe_affect": False,
+            "why_and_context_support_transferable_learning": True,
             "education_may_require_task_specific_form": True,
             "expression_range_may_expand": True,
             "eligible_language_range_may_graduate_without_item_review": True,

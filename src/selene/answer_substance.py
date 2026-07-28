@@ -35,7 +35,12 @@ def build_answer_substance(
 
     comparison = any(marker in lower for marker in ("compare", "difference", "versus", " vs ", "tradeoff", "trade-off", "which option"))
     ordering = any(marker in lower for marker in ("come first", "do first", "start with", "begin with", "priority", "prioritize"))
-    planning = any(marker in lower for marker in ("how should", "what should", "plan", "strategy", "next step", "where do we start"))
+    planning = bool(
+        re.search(
+            r"\b(?:how should|what should|plan|strategy|next step|where do we start)\b",
+            lower,
+        )
+    )
     consequence = bool(re.match(r"^what happens if\b", lower))
     viewpoint = any(marker in lower for marker in ("what do you think", "what is your view", "what's your view", "your thoughts"))
     why_before = re.search(r"\bwhy\s+(?:does|do|should|is|are)\s+(.{2,100}?)\s+(?:come\s+)?before\s+(.{2,100}?)(?:[?.]|$)", lower)

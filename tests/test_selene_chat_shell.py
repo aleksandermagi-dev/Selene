@@ -2242,6 +2242,49 @@ def test_teaching_readiness_qna_keeps_subject_math_and_understanding_aligned(tmp
         _assert_locked(result)
 
 
+def test_new_bounded_hypothesis_flow_attempts_only_when_visible_basis_exists(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    attempt = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "The same plant perked up after we moved it into brighter light. "
+                "We have not taught this lesson. What is your best guess why?"
+            )
+        },
+    )["result"]
+    no_basis = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Who wrote the unsigned note? Take a guess."},
+    )["result"]
+
+    hypothesis = attempt["intelligence_os_support"]["hypothesis_attempt"]
+    assert hypothesis["offered"] is True
+    assert hypothesis["selected_for_answer"] is True
+    assert "my best guess" in attempt["candidate_text"].lower()
+    assert "not a fact i already know" in attempt["candidate_text"].lower()
+    assert attempt["metacognition"]["bounded_hypothesis"]["offered"] is True
+    assert attempt["metacognition"]["bounded_hypothesis"]["ordinary_wrongness_is_failure"] is False
+    assert attempt["affect_expression"]["technical_focus_requires_emotional_flatness"] is False
+    assert attempt["affect_expression"]["curiosity_warmth_humor_and_emotion_remain_selene_owned"] is True
+    assert (
+        (no_basis["intelligence_os_support"].get("hypothesis_attempt") or {}).get(
+            "offered"
+        )
+        is not True
+    )
+    assert "my best guess" not in no_basis["candidate_text"].lower()
+    for result in (attempt, no_basis):
+        assert result["memory_write_active"] is False
+        assert result["runtime_memory_recall"] is False
+        _assert_locked(result)
+
+
 def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

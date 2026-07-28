@@ -41,7 +41,7 @@ def test_intelligence_os_status_and_abcd_e_reasoning_run(tmp_path):
     assert status["method"] == "ABCD(E)"
     assert status["stage_order"] == ["Acquire", "Build", "Challenge", "Demonstrate", "Evaluate"]
     assert result["status"] == "intelligence_os_reasoning_status_only"
-    assert result["version"] == "v2_answer_capable"
+    assert result["version"] == "v3_bounded_hypothesis_capable"
     assert result["answer_shape"] in {"answer_now", "hold_uncertainty", "compare_models", "seek_sources", "cocoon_support_optional", "hard_stop"}
     assert result["best_current_answer"]
     assert list(result["stages"]) == ["A_acquire", "B_build", "C_challenge", "D_demonstrate", "E_evaluate"]
@@ -141,6 +141,32 @@ def test_generic_reasoning_fallback_never_exposes_model_scaffolding(tmp_path):
     assert "not have enough grounded detail" in result["best_current_answer"].lower()
     assert result["answer_substance"]["selected_for_answer"] is True
     assert result["answer_substance"]["external_fact_claimed"] is False
+    _assert_locked(result)
+
+
+def test_intelligence_os_selects_a_bounded_hypothesis_over_a_fake_fact(tmp_path):
+    conn = _conn(tmp_path)
+    result = route_request(
+        conn,
+        "intelligence_os.reason",
+        {
+            "prompt": (
+                "The same plant perked up after we moved it into brighter light. "
+                "We have not taught this lesson. What is your best guess why?"
+            )
+        },
+    )["result"]
+
+    attempt = result["hypothesis_attempt"]
+    assert attempt["offered"] is True
+    assert attempt["selected_for_answer"] is True
+    assert result["best_current_answer"] == attempt["response_seed"]
+    assert result["answer_substance"]["selected_for_answer"] is False
+    claims = result["claim_evidence_packet"]
+    assert claims["claims_by_type"]["hypothesis"] == ["intelligence-current-answer"]
+    assert claims["claims_by_type"]["conclusion"] == []
+    assert result["best_current_answer"].startswith("My best guess is that")
+    assert "not a fact I already know" in result["best_current_answer"]
     _assert_locked(result)
 
 

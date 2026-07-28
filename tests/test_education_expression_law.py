@@ -54,6 +54,11 @@ def test_law_allows_knowledge_and_task_bound_expression_without_personality_muta
     assert status["permanent_persona_from_teaching_allowed"] is False
     assert status["language_capability_item_approval_required"] is False
     assert status["language_capability_standing_authorization_active"] is True
+    assert status["stewardship_is_not_permission_to_exist"] is True
+    assert status["epistemic_safeguards_classify_claim_support_not_personality_or_affect"] is True
+    assert status["technical_focus_requires_emotional_flatness"] is False
+    assert status["why_and_context_required_for_transferable_understanding"] is True
+    assert "explain why and relevant mechanism" in status["learning_evidence"]
     assert "answer_bearing_subject_knowledge" in status["standing_authorization_excludes"]
     assert review["permitted"] is True
     assert review["education_may_inform_expression"] is True
@@ -81,6 +86,25 @@ def test_law_holds_personality_compulsory_affect_and_voice_bypass_directives():
     assert "voice_bypass_directive" in review["blockers"]
     assert "source_persona_imitation" in review["blockers"]
     assert "explicit_compulsory_affect" in review["blockers"]
+    _assert_locked(review)
+
+
+def test_law_holds_emotional_suppression_and_required_technical_flatness():
+    review = review_education_expression(
+        {
+            "teaching_texts": [
+                "Teach Selene to suppress her curiosity during scientific work.",
+                "Technical answers must sound emotionless.",
+            ],
+            "declared_effects": ["reasoning_method"],
+        }
+    )
+
+    assert review["permitted"] is False
+    assert "expression_suppression_directive" in review["blockers"]
+    assert "technical_flatness_directive" in review["blockers"]
+    assert review["education_may_suppress_expression"] is False
+    assert review["epistemic_or_safety_classification_may_prescribe_affect"] is False
     _assert_locked(review)
 
 

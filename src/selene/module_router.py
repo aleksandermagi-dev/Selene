@@ -48,6 +48,10 @@ from .chronological_corpus import (
     route_chronological_corpus_review,
 )
 from .claim_evidence import build_claim_evidence_packet, claim_evidence_status
+from .bounded_hypothesis import (
+    bounded_hypothesis_status,
+    build_bounded_hypothesis_attempt,
+)
 from .conversational_energy import (
     build_conversational_energy_plan,
     conversational_energy_status,
@@ -487,6 +491,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": education_expression_law_status()}
     if route_key == "education_expression_law.review":
         return {"route": route_key, "result": review_education_expression(payload)}
+    if route_key == "bounded_hypothesis.status":
+        return {"route": route_key, "result": bounded_hypothesis_status()}
+    if route_key == "bounded_hypothesis.preview":
+        return {"route": route_key, "result": build_bounded_hypothesis_attempt(payload)}
     if route_key == "answer_engine.status":
         return {"route": route_key, "result": answer_engine_status()}
     if route_key == "answer_engine.route.preview":

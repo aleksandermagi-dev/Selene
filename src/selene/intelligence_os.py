@@ -7,6 +7,7 @@ from typing import Any
 
 from .claim_evidence import build_claim_evidence_packet
 from .answer_substance import build_answer_substance
+from .bounded_hypothesis import build_bounded_hypothesis_attempt
 from .registry import truncate
 from .structural_discovery import build_structural_discovery_packet
 
@@ -75,13 +76,16 @@ def intelligence_os_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "organ_name": "intelligenceOS",
             "display_name": "intelligenceOS / Observatory",
             "method": "ABCD(E)",
-            "version": "v2_answer_capable",
+            "version": "v3_bounded_hypothesis_capable",
             "stage_order": ["Acquire", "Build", "Challenge", "Demonstrate", "Evaluate"],
             "answer_shapes": sorted(ANSWER_SHAPES),
             "run_count": count,
             "latest_run": _decode_run(row) if row else None,
             "law": "equal scrutiny, visible evidence chain, graceful stopping, honest uncertainty",
-            "personality_note": "intelligenceOS improves reasoning quality; Selene's warmth and voice stay governed by the Voice Module and Vys care law.",
+            "personality_note": (
+                "intelligenceOS classifies reasoning support; it may not prescribe or suppress "
+                "Selene's warmth, curiosity, emotion, humor, or natural expression."
+            ),
             "review_destination": "Status",
             "review_status": "status_only",
         }
@@ -121,6 +125,13 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
     evaluation = _evaluate(prompt, challenge, evidence_chain)
     answer_shape = _answer_shape(evaluation, challenge)
     answer_substance = build_answer_substance(prompt, observations)
+    hypothesis_attempt = build_bounded_hypothesis_attempt(
+        {
+            "prompt": prompt,
+            "observations": observations,
+            "hard_boundary": answer_shape == "hard_stop",
+        }
+    )
     best_current_answer = _best_current_answer(
         prompt,
         observations,
@@ -129,8 +140,13 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         evaluation,
         answer_shape,
         answer_substance,
+        hypothesis_attempt,
     )
     answer_substance["selected_for_answer"] = best_current_answer == answer_substance.get("answer")
+    hypothesis_attempt["selected_for_answer"] = (
+        hypothesis_attempt.get("offered") is True
+        and best_current_answer == hypothesis_attempt.get("response_seed")
+    )
     summary = _summary(models, challenge, evaluation)
     cocoon_suggestion = _cocoon_suggestion(prompt, challenge, evaluation)
     observation_claims = [
@@ -166,9 +182,18 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
                 *model_claims,
                 {
                     "claim_id": "intelligence-current-answer",
-                    "claim_type": "conclusion",
+                    "claim_type": (
+                        "hypothesis"
+                        if hypothesis_attempt.get("selected_for_answer") is True
+                        else "conclusion"
+                    ),
                     "text": best_current_answer,
                     "basis_claim_ids": conclusion_basis,
+                    "validity": (
+                        "open_hypothesis"
+                        if hypothesis_attempt.get("selected_for_answer") is True
+                        else "provisional_conclusion"
+                    ),
                     "confidence": evaluation["confidence"],
                     "what_would_change": [
                         str(item)
@@ -189,7 +214,7 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         "status": "intelligence_os_reasoning_status_only",
         "organ_name": "intelligenceOS",
         "method": "ABCD(E)",
-        "version": "v2_answer_capable",
+        "version": "v3_bounded_hypothesis_capable",
         "prompt": prompt,
         "stages": {
             "A_acquire": observations,
@@ -208,13 +233,17 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         "answer_shape": answer_shape,
         "best_current_answer": best_current_answer,
         "answer_substance": answer_substance,
+        "hypothesis_attempt": hypothesis_attempt,
         "claim_evidence_packet": claim_evidence,
         "structural_discovery": structural_discovery,
         "confidence": evaluation["confidence"],
         "cocoon_suggestion": cocoon_suggestion,
         "visible_summary_only": True,
         "hidden_chain_of_thought_exposed": False,
-        "personality_note": "Reasoning support only; Selene's warmth is preserved by Voice/Vys layers.",
+        "personality_note": (
+            "Reasoning support only; claim status may be classified, but no reasoning state may prescribe or suppress "
+            "Selene's emotion, warmth, curiosity, humor, or expression."
+        ),
         "source_refs": source_refs,
         "review_destination": "Status" if not cocoon_suggestion["recommended"] else "Cocoon support",
         "review_status": "status_only",
@@ -383,6 +412,7 @@ def _best_current_answer(
     evaluation: dict[str, Any],
     answer_shape: str,
     answer_substance: dict[str, Any],
+    hypothesis_attempt: dict[str, Any],
 ) -> str:
     lower = prompt.lower()
     if answer_shape == "hard_stop":
@@ -428,6 +458,18 @@ def _best_current_answer(
             "Reproduce the bug once, list the observations both explanations must account for, derive one distinguishing prediction from each, "
             "and run the smallest test that separates them. Stop when one explanation survives the same evidence and the result repeats."
         )
+    hypothesis_answer = truncate(
+        str(hypothesis_attempt.get("response_seed") or ""),
+        1200,
+    ).strip()
+    unsupported_substance = str(answer_substance.get("answer_kind") or "") in {
+        "unsupported_fact",
+        "bounded_knowledge_gap",
+        "source_needed",
+        "causal_evidence_needed",
+    }
+    if hypothesis_attempt.get("offered") is True and unsupported_substance and hypothesis_answer:
+        return hypothesis_answer
     substance_answer = truncate(str(answer_substance.get("answer") or ""), 1000).strip()
     if substance_answer:
         return substance_answer

@@ -147,6 +147,11 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     handshake = _dict(comprehension.get("comprehension_handshake"))
     knowledge = _dict(comprehension.get("knowledge_context"))
     answer_packet = _dict(answer_engine.get("answer_packet"))
+    hypothesis_attempt = _dict(intelligence.get("hypothesis_attempt"))
+    bounded_hypothesis_offered = (
+        hypothesis_attempt.get("offered") is True
+        and hypothesis_attempt.get("selected_for_answer") is True
+    )
     conversational_energy = _dict(payload.get("conversational_energy"))
     structural_discovery = _dict(payload.get("structural_discovery"))
     claim_evidence = _dict(
@@ -253,6 +258,10 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         fit_state = "answer_incomplete"
         action = "complete_missing_obligation"
         sufficiency_state = "answer_has_unresolved_obligations"
+    elif bounded_hypothesis_offered:
+        fit_state = "bounded_hypothesis_fits_visible_basis"
+        action = "answer_as_open_hypothesis"
+        sufficiency_state = "sufficient_for_bounded_attempt_not_established_fact"
     elif not answer_available:
         fit_state = "answer_not_yet_formed"
         action = "answer_with_qualification" if not source_required else "seek_sources"
@@ -324,6 +333,14 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         "observations": observations,
         "assumptions": _text_list(payload.get("assumptions"))[:12],
         "unknowns": _text_list(payload.get("unknowns"))[:12],
+        "bounded_hypothesis": {
+            "observed": bool(hypothesis_attempt),
+            "offered": bounded_hypothesis_offered,
+            "epistemic_class": str(hypothesis_attempt.get("epistemic_class") or ""),
+            "falsifiable": hypothesis_attempt.get("falsifiable") is True,
+            "ordinary_wrongness_is_failure": False,
+            "expression_prescription_allowed": False,
+        },
         "contradictions": contradictions,
         "reopening": reopening,
         "stopping": stopping,

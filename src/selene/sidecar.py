@@ -695,6 +695,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "test_impact_law.status")["result"]))
         elif parsed.path == "/api/education-expression-law/status":
             self._send(*json_bytes(route_request(conn, "education_expression_law.status")["result"]))
+        elif parsed.path == "/api/bounded-hypothesis/status":
+            self._send(*json_bytes(route_request(conn, "bounded_hypothesis.status")["result"]))
         elif parsed.path == "/api/answer-engine/status":
             self._send(*json_bytes(route_request(conn, "answer_engine.status")["result"]))
         elif parsed.path == "/api/comprehension/concepts":
@@ -1353,6 +1355,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/education-expression-law/review":
             route_key = "education_expression_law.review"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/bounded-hypothesis/preview":
+            route_key = "bounded_hypothesis.preview"
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
