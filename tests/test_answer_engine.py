@@ -178,6 +178,7 @@ def test_chat_bridge_executes_two_supported_domain_obligations_once_each(
     ("prompt", "domain"),
     [
         ("What is 18 * 7?", "verified_math"),
+        ("What is 18 times 7?", "verified_math"),
         ("Inspect this Python traceback and function.", "local_code_inspection"),
         ("Compare both approaches and plan the next step.", "comparison_planning"),
         ("Research this claim and cite the source paper.", "source_backed_research"),

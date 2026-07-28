@@ -2,10 +2,46 @@ from __future__ import annotations
 
 from selene.chat_intent import classify_chat_intent
 from selene.contextual_speech import (
+    _bounded_social_session_summary,
+    _landmark_summary,
+    _matching_landmarks,
     apply_contextual_intent,
     contextual_response_seed,
     inspect_contextual_follow_up,
 )
+
+
+def test_social_summary_yields_when_the_session_contains_substantive_work():
+    result = _bounded_social_session_summary(
+        [
+            "Good morning, how are you?",
+            "Before another lesson, what prerequisite should we check?",
+        ]
+    )
+
+    assert result == ""
+
+
+def test_incomplete_landmarks_are_not_used_for_callbacks_or_summaries():
+    landmarks = [
+        {
+            "kind": "conclusion",
+            "topic": "teaching",
+            "summary": "An unrelated incomplete teaching answer.",
+            "coverage_complete_at_recording": False,
+        },
+        {
+            "kind": "recommendation",
+            "topic": "teaching",
+            "summary": "Check the earliest missing prerequisite first.",
+            "coverage_complete_at_recording": True,
+        },
+    ]
+
+    assert _matching_landmarks("What did we decide about teaching?", landmarks) == [
+        landmarks[1]
+    ]
+    assert _landmark_summary(landmarks) == landmarks[1]["summary"]
 
 
 def _context(previous: str, *, answer_confidence: str = "provisional") -> dict:

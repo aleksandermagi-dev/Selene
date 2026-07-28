@@ -203,13 +203,17 @@ def evaluate_response_coverage(
 ) -> dict[str, Any]:
     plan = plan if isinstance(plan, dict) else {}
     candidate = truncate(str(candidate_text or ""), 3000)
-    candidate_lower = candidate.lower()
-    candidate_terms = set(_content_terms(candidate, limit=80))
     items: list[dict[str, Any]] = []
     answered_loop_ids: list[str] = []
     for obligation in plan.get("response_obligations") or []:
         if not isinstance(obligation, dict):
             continue
+        obligation_candidate = _candidate_without_request_echo(
+            candidate,
+            str(obligation.get("source_text") or ""),
+        )
+        candidate_lower = obligation_candidate.lower()
+        candidate_terms = set(_content_terms(obligation_candidate, limit=80))
         expected = {str(item).lower() for item in obligation.get("coverage_terms") or [] if str(item)}
         overlap = sorted(expected & candidate_terms)
         lexical_score = len(overlap) / len(expected) if expected else 0.0
@@ -567,6 +571,14 @@ def _compound_question_parts(question: str) -> list[str]:
 
 
 def _structured_request_parts(text: str) -> list[str]:
+    if re.match(r"^(?:then|next|finally)\s+return\b", text, flags=re.IGNORECASE) and re.search(
+        r"\band\s+(?:explain|answer|summarize)\b",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        # "Return to X and explain Y" is one content act. The return phrase
+        # selects the thread; it is not a separate answerable request.
+        return [text]
     if "analogy" in text.lower() and re.search(r",\s*without\b", text, flags=re.IGNORECASE):
         parts = [part.strip(" ,.?!") for part in re.split(r",\s*(?=without\b)", text, maxsplit=1, flags=re.IGNORECASE)]
         return [part for part in parts if part]
@@ -580,6 +592,30 @@ def _structured_request_parts(text: str) -> list[str]:
         if len(parts) >= 2:
             return parts
     return _split_coordinated_acts(text, interrogative=False)
+
+
+def _candidate_without_request_echo(candidate: str, source_text: str) -> str:
+    """Do not let an echoed request label count as its own answer."""
+    normalized_candidate = " ".join(candidate.split())
+    normalized_source = " ".join(source_text.strip(" .?!").split())
+    if normalized_source and normalized_candidate.lower().startswith(
+        f"{normalized_source.lower()}:"
+    ):
+        return normalized_candidate[len(normalized_source) + 1 :].strip()
+    if ":" not in candidate:
+        return candidate
+    lead, remainder = candidate.split(":", 1)
+    if not remainder.strip() or not re.search(
+        r"\b(?:answer|back to|explain|question|recap|return to|summarize)\b",
+        lead,
+        flags=re.IGNORECASE,
+    ):
+        return candidate
+    lead_terms = set(_content_terms(lead, limit=30))
+    source_terms = set(_content_terms(source_text, limit=30))
+    if len(lead_terms & source_terms) >= 2:
+        return remainder.strip()
+    return candidate
 
 
 def _split_coordinated_acts(text: str, *, interrogative: bool) -> list[str]:
@@ -799,7 +835,11 @@ def _utterance_units(value: str) -> list[dict[str, Any]]:
             kind = "question"
         elif re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", lower):
             kind = "correction"
-        elif re.match(r"^(?:please\s+)?(?:compare|explain|show|tell|help|give|list|summarize|check|walk)\b", lower):
+        elif re.match(
+            r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
+            r"(?:compare|explain|show|tell|help|give|list|summarize|check|walk|return\b.*\b(?:explain|answer|summarize))\b",
+            lower,
+        ):
             kind = "direct_request"
         elif re.search(r"\b(?:could you|would you|can you|i need you to|let's|lets)\b", lower):
             kind = "indirect_request"

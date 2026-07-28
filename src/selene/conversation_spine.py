@@ -447,6 +447,8 @@ def _relevant_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[di
     query = set(_distinctive_terms(prompt))
     ranked: list[tuple[int, int, dict[str, Any]]] = []
     for index, item in enumerate(landmarks):
+        if item.get("coverage_complete_at_recording") is False:
+            continue
         text = " ".join(
             [
                 str(item.get("topic") or ""),

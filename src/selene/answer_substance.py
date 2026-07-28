@@ -52,8 +52,38 @@ def build_answer_substance(
         r"\b(?:offer|provide|include)\s+both\s+(.{2,100}?)\s+and\s+(.{2,100}?)(?:\s+for\s+[^.?,]+|[.?,]|$)",
         lower,
     )
+    fluency_without_transfer = (
+        re.search(r"\b(?:repeat|say|word|phrase).{0,80}\bfluent", lower)
+        or "fluent wording" in lower
+    ) and re.search(
+        r"\b(?:cannot|can't|could not|couldn't|does not|doesn't)\b.{0,100}"
+        r"\b(?:apply|use|transfer)\b.{0,80}\b(?:new|different|distinct)\b.{0,30}\bexample\b",
+        lower,
+    )
+    exact_answer_vs_understanding = (
+        "exact answer" in lower
+        and "understanding" in lower
+        and any(marker in lower for marker in ("different", "distinction", "not the same", "isn't the same", "is not the same"))
+    )
 
-    if (
+    if fluency_without_transfer:
+        answer = (
+            "Fluent wording without use in a new example shows familiarity, not transferable understanding. "
+            "The next step is to reopen the lesson, find the missing prerequisite or distinction, teach it through a different example, "
+            "then check reconstruction and application again."
+        )
+        kind = "reopen_fluency_without_transfer"
+        missing_variable = "which prerequisite or distinction is blocking transfer"
+        semantic_context = {"variant": "fluency_without_transfer"}
+    elif exact_answer_vs_understanding:
+        answer = (
+            "An exact answer can be correct for one case; understanding also includes why it works, how to apply it to a different case, "
+            "where it stops applying, and how to revise it when contrary evidence appears."
+        )
+        kind = "exactness_understanding_distinction"
+        missing_variable = "whether the idea transfers beyond the single result"
+        semantic_context = {"variant": "exactness_vs_understanding"}
+    elif (
         re.search(r"\b(?:working|solving|building)\b.*\btogether\b", lower)
         and re.search(r"\b(?:got|get|were|was)\s+stuck\b", lower)
         and re.search(r"\bwhat would you ask me for\b|\bask me for help\b", lower)
@@ -195,7 +225,8 @@ def build_answer_substance(
         semantic_context = {"variant": "shared_dimensions"}
     elif planning or ordering:
         answer = (
-            "Begin with the earliest missing prerequisite. If the prerequisites are already present, choose the smallest reversible step that can produce evidence, "
+            "Begin with the earliest missing prerequisite, because later steps cannot reliably use a foundation that is absent. "
+            "If the prerequisites are already present, choose the smallest reversible step that can produce evidence, "
             "check the result, and only then expand."
         )
         kind = "bounded_planning_method"
@@ -502,6 +533,16 @@ def _structured_semantic_units(kind: str, context: dict[str, str]) -> list[dict[
                     }
                 ],
                 "meaning_keys": ["earliest missing prerequisite comes first"],
+            },
+            {
+                **common,
+                "id": "planning_prerequisite_reason",
+                "role": "support",
+                "relation": "cause",
+                "subject": "later steps",
+                "predicate": "cannot reliably use",
+                "object": "a foundation that is absent",
+                "meaning_keys": ["missing prerequisite prevents reliable later use"],
             },
             {
                 **common,

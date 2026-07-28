@@ -3,6 +3,28 @@ from __future__ import annotations
 from selene.answer_substance import build_answer_substance
 
 
+def test_fluency_without_distinct_application_reopens_understanding():
+    result = build_answer_substance(
+        "If Selene can repeat an idea fluently but cannot use it in a new example, what should we do next?"
+    )
+
+    assert result["answer_kind"] == "reopen_fluency_without_transfer"
+    assert "familiarity, not transferable understanding" in result["answer"]
+    assert "check reconstruction and application again" in result["answer"]
+    assert result["external_fact_claimed"] is False
+
+
+def test_exact_answer_is_distinguished_from_transferable_understanding():
+    result = build_answer_substance(
+        "Explain why getting one exact answer is not the same as understanding."
+    )
+
+    assert result["answer_kind"] == "exactness_understanding_distinction"
+    assert "correct for one case" in result["answer"]
+    assert "apply it to a different case" in result["answer"]
+    assert result["external_fact_claimed"] is False
+
+
 def test_shared_capacity_prompt_gets_two_concrete_designs_and_a_pilot():
     result = build_answer_substance(
         "A neighborhood learning festival has limited rooms and volunteers, but it wants to offer both "

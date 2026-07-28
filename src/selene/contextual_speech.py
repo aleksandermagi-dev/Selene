@@ -477,6 +477,8 @@ def _matching_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[di
     }
     ranked: list[tuple[int, int, dict[str, Any]]] = []
     for index, item in enumerate(landmarks):
+        if item.get("coverage_complete_at_recording") is False:
+            continue
         words = set(
             re.findall(
                 r"[a-z][a-z0-9_-]{2,}",
@@ -520,6 +522,10 @@ def _bounded_explicit_reason(previous: str) -> str:
 
 
 def _landmark_summary(landmarks: list[dict[str, Any]]) -> str:
+    landmarks = [
+        item for item in landmarks
+        if item.get("coverage_complete_at_recording") is not False
+    ]
     selected: list[dict[str, Any]] = []
     for preferred in ("recommendation", "condition", "limit", "conclusion"):
         candidate = next(
@@ -552,6 +558,25 @@ def _bounded_social_session_summary(recent_user_texts: list[str]) -> str:
     greeted = bool(re.search(r"\b(?:hey|hello|hi|greetings|good morning|good afternoon|good evening)\b", normalized))
     checked_in = bool(re.search(r"\bwhat(?:'s|s| is) up\b|\bhow are you\b", normalized))
     clarified = bool(re.search(r"\bwhen i say\b.*\bi mean\b|\bwhat(?:'s|s| is) up\s+means\s+how are you\b", normalized))
+    residual = normalized
+    for pattern in (
+        r"\b(?:hey|hello|hi|greetings|good morning|good afternoon|good evening)\b"
+        r"(?:\s+[a-z][a-z0-9_-]{1,40})?",
+        r"\bwhat(?:'s|s| is) up(?: with you)?\b",
+        r"\bhow are you(?: doing| feeling| holding up)?(?: right now| today| lately)?\b",
+        r"\bwhen i say\b.*?\bi mean\b[^.!?]*",
+        r"\b(?:nice|good|great|glad|thanks|thank you|okay|alright|agreed)\b",
+        r"\b(?:we got|that piece|working|makes sense|does that distinction make sense)\b",
+        r"\bwhat about this conversation makes you say that\b",
+    ):
+        residual = re.sub(pattern, " ", residual)
+    residual_terms = [
+        term
+        for term in re.findall(r"[a-z][a-z0-9_-]{2,}", residual)
+        if term not in {"when", "say", "mean", "does", "that", "distinction"}
+    ]
+    if residual_terms:
+        return ""
     parts: list[str] = []
     if greeted:
         parts.append("greeting each other")

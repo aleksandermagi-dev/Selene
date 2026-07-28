@@ -1993,6 +1993,13 @@ def _answer_engine_support(
     executable_units = [
         item for item in units if item.get("executable_in_chat") is True
     ][:4]
+    prompt_grounded_units = [
+        item
+        for item in units
+        if item.get("executable_in_chat") is not True
+        and str(item.get("selected_domain") or "") == "ordinary_conversation"
+        and isinstance(item.get("obligation"), dict)
+    ][:4]
     preview = preview_answer_route(engine_payload)
     route = (
         executable_units[0].get("route")
@@ -2008,11 +2015,28 @@ def _answer_engine_support(
         for item in executable_units
         if str(item.get("selected_domain") or "")
     }
-    if len(executable_units) > 1 and len(executable_domains) > 1:
+    coordinated_prompt_units = (
+        [
+            item
+            for item in prompt_grounded_units
+            if str((item.get("obligation") or {}).get("kind") or "")
+            in {"reason", "method"}
+        ]
+        if executable_domains == {"verified_math"}
+        else []
+    )
+    coordinated_units = [
+        item
+        for item in units
+        if item in executable_units or item in coordinated_prompt_units
+    ][:4]
+    if executable_units and len(coordinated_units) > 1 and (
+        len(executable_domains) > 1 or coordinated_prompt_units
+    ):
         domain_results: list[dict[str, Any]] = []
         content_parts: list[str] = []
         required_fragments: list[str] = []
-        for unit in executable_units:
+        for unit in coordinated_units:
             unit_domain = str(unit.get("selected_domain") or "")
             obligation = (
                 unit.get("obligation")
@@ -2025,7 +2049,45 @@ def _answer_engine_support(
                 "requested_domain": unit_domain,
                 "dialogue_obligations": [obligation],
             }
-            if unit_domain == "verified_math":
+            if unit_domain == "ordinary_conversation":
+                reasoning_run = run_intelligence_os_reason(
+                    conn,
+                    {
+                        "prompt": unit_payload["prompt"],
+                        "source_refs": ["selene_chat:prompt_grounded_reasoning"],
+                        "observations": engine_payload.get("observations") or [],
+                    },
+                )
+                substance = (
+                    reasoning_run.get("answer_substance")
+                    if isinstance(reasoning_run.get("answer_substance"), dict)
+                    else {}
+                )
+                direct = truncate(
+                    str(reasoning_run.get("best_current_answer") or ""),
+                    5000,
+                ).strip()
+                unit_domain = "prompt_grounded_reasoning"
+                unit_packet = {
+                    "domain": unit_domain,
+                    "direct_answer": direct,
+                    "no_answer_reason": "" if direct else "No prompt-grounded answer was available.",
+                    "source_refs": ["selene_chat:prompt_grounded_reasoning"],
+                    "supported_semantics": substance.get("semantic_packet") or {},
+                    "unanswered_obligations": [] if direct else [obligation],
+                }
+                unit_result = {
+                    "status": "prompt_grounded_reasoning_ready" if direct else "prompt_grounded_reasoning_unavailable",
+                    "answer_packet": unit_packet,
+                    "confidence_vector": {
+                        "evidence_confidence": "current_prompt_only",
+                        "answer_confidence": str(reasoning_run.get("confidence") or "provisional"),
+                        "expression_confidence": "not_assessed",
+                    },
+                    "adapter_executed": False,
+                    "answer_generated": bool(direct),
+                }
+            elif unit_domain == "verified_math":
                 unit_result = run_verified_math_answer(unit_payload)
             elif unit_domain == "source_backed_research":
                 unit_result = run_source_backed_research_answer(unit_payload)
@@ -2038,7 +2100,11 @@ def _answer_engine_support(
             )
             direct = truncate(str(unit_packet.get("direct_answer") or ""), 5000).strip()
             unable = truncate(str(unit_packet.get("no_answer_reason") or ""), 1000).strip()
-            part = _answer_engine_content_seed(unit_domain, direct, unable, unit_result)
+            part = (
+                direct
+                if unit_domain == "prompt_grounded_reasoning"
+                else _answer_engine_content_seed(unit_domain, direct, unable, unit_result)
+            )
             if part and part not in content_parts:
                 content_parts.append(part)
             if direct:

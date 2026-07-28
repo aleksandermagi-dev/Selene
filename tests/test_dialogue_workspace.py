@@ -327,6 +327,34 @@ def test_dialogue_workspace_extracts_structured_correction_and_direct_requests(t
     ]
 
 
+def test_dialogue_workspace_keeps_then_return_and_explain_as_a_direct_request(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = (
+        "What is 18 times 7? "
+        "Then return to the lesson question and explain why an exact answer is not the same as understanding."
+    )
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+        },
+    )
+    plan = build_pragmatic_plan(
+        {"prompt": text, "dialogue_workspace": result}
+    )
+
+    assert [item["kind"] for item in result["pragmatics"]["utterance_units"]] == [
+        "question",
+        "direct_request",
+    ]
+    assert [item["kind"] for item in plan["response_obligations"]] == [
+        "direct_question",
+        "reason",
+    ]
+
+
 def test_dialogue_workspace_extracts_phrase_meaning_correction_without_memory_write(tmp_path):
     conn, session_id = _conn(tmp_path)
     text = "whats up means how are you"

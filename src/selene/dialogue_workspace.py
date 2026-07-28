@@ -664,7 +664,11 @@ def _utterance_units(text: str) -> list[dict[str, Any]]:
             "when i say" in lower and "i mean" in lower
         ):
             kind = "correction"
-        elif re.match(r"^(?:please\s+)?(?:compare|explain|show|tell|help|give|list|summarize|check|walk)\b", lower):
+        elif re.match(
+            r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
+            r"(?:compare|explain|show|tell|help|give|list|summarize|check|walk|return\b.*\b(?:explain|answer|summarize))\b",
+            lower,
+        ):
             kind = "direct_request"
         elif re.search(r"\b(?:could you|would you|can you|i need you to|let's|lets)\b", lower):
             kind = "indirect_request"

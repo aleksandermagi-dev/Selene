@@ -802,11 +802,23 @@ def _answer_eligible_knowledge_items(
     )
     if not answer_requested:
         return []
-    query_terms = set(_terms(prompt))
+    # Response-shape wording is not part of the subject being asked about.
+    # Keeping it out of the query prevents phrases such as "in one sentence"
+    # from making an unrelated lesson about sentences look relevant.
+    subject_query = re.sub(
+        r"\b(?:in|using)\s+(?:one|two|three|four|five|\d+)\s+"
+        r"(?:short\s+|brief\s+)?(?:parts?|points?|sentences?|paragraphs?|steps?)\b",
+        " ",
+        prompt,
+        flags=re.IGNORECASE,
+    )
+    query_terms = set(_terms(subject_query))
     generic = {
-        "answer", "change", "changed", "compare", "conversation", "different", "example", "first",
-        "handle", "help", "language", "lesson", "lessons", "material", "next", "ordinary",
-        "reason", "review", "reviewed", "say", "short", "step", "thing", "things", "version",
+        "answer", "another", "apply", "back", "but", "cannot", "change", "changed", "check",
+        "compare", "conversation", "different", "do", "example", "explain", "first", "give",
+        "handle", "help", "idea", "language", "lesson", "lessons", "make", "material", "most",
+        "new", "next", "one", "ordinary", "practical", "question", "reason", "return", "review",
+        "reviewed", "say", "should", "short", "step", "thing", "things", "use", "version", "why",
     }
     eligible: list[dict[str, Any]] = []
     for item in items:
@@ -849,7 +861,10 @@ def _answer_eligible_knowledge_items(
             )
         ) - generic
         subject_overlap = distinctive_overlap & title_terms
-        if not subject_overlap and len(distinctive_overlap) < 2:
+        # Approved knowledge may answer only when the prompt names the
+        # concept's subject. Peripheral overlap in claims or examples is not
+        # enough to redirect an otherwise ordinary question.
+        if not subject_overlap:
             continue
         item["answer_alignment_terms"] = sorted(distinctive_overlap)
         item["answer_subject_terms"] = sorted(subject_overlap)

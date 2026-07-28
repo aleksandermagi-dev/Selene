@@ -261,6 +261,22 @@ def _extract_expression(prompt: str) -> str:
         return ""
     if re.search(r"[A-Za-z]\s*[+\-*/^=×÷]|[+\-*/^=×÷]\s*[A-Za-z]", prompt):
         return ""
+    natural = re.search(
+        r"\b(?P<left>\d+(?:\.\d+)?)\s+"
+        r"(?P<operator>plus|minus|times|multiplied\s+by|divided\s+by)\s+"
+        r"(?P<right>\d+(?:\.\d+)?)\b",
+        prompt,
+        flags=re.IGNORECASE,
+    )
+    if natural:
+        operator = {
+            "plus": "+",
+            "minus": "-",
+            "times": "*",
+            "multiplied by": "*",
+            "divided by": "/",
+        }[" ".join(natural.group("operator").lower().split())]
+        return f"{natural.group('left')} {operator} {natural.group('right')}"
     spans = [item.strip() for item in re.findall(r"[0-9.()+\-*/%^=×÷−\s]{3,}", prompt)]
     candidates = [
         item

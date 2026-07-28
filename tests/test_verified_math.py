@@ -51,6 +51,17 @@ def test_prompt_wrapper_and_equality_checks_are_bounded():
     assert "not correct" in incorrect["result_summary"]
 
 
+def test_plain_language_binary_arithmetic_is_extracted_without_broad_interpretation():
+    result = verify_bounded_math(
+        {"prompt": "What is 18 times 7? Then return to the lesson question."}
+    )
+
+    assert result["status"] == "verified_math_result_ready"
+    assert result["expression"] == "18 * 7"
+    assert result["result_value"] == "126"
+    assert result["expression_source"] == "prompt_extracted"
+
+
 @pytest.mark.parametrize(
     "payload",
     [

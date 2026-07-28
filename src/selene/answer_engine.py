@@ -1107,6 +1107,13 @@ def _looks_like_math(value: str) -> bool:
         return True
     if _contains_any(lower, ("multiply", "divide")) and re.search(r"\d", value):
         return True
+    if re.search(
+        r"\b\d+(?:\.\d+)?\s+(?:plus|minus|times|multiplied\s+by|divided\s+by)\s+"
+        r"\d+(?:\.\d+)?\b",
+        value,
+        flags=re.IGNORECASE,
+    ):
+        return True
     return bool(re.search(r"\b\d+(?:\.\d+)?\s*(?:\+|-|\*|/|=|%|\^|×|÷)\s*\d", value))
 
 

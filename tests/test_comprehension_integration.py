@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from selene.comprehension_integration import _answer_eligible_knowledge_items
 from selene.db import connect, init_db
 from selene.module_router import route_request
 
@@ -24,6 +25,43 @@ def _assert_locked(result):
     assert result["lora_allowed"] is False
     assert result["autonomous_action_allowed"] is False
     assert result["self_replication_allowed"] is False
+
+
+def test_answer_knowledge_requires_named_subject_not_generic_or_format_overlap():
+    intent = {
+        "intent": "reasoning",
+        "reasoning_requested": True,
+        "dialogue_acts": ["question"],
+    }
+    sentence_item = {
+        "title": "Sentence acts",
+        "domain": "language",
+        "concept_key": "sentence_acts",
+        "central_claim": "A sentence can answer one practical question.",
+        "principles": [],
+        "relationships": [],
+        "matched_terms": ["answer", "one", "practical", "question", "sentence"],
+    }
+    unrelated = _answer_eligible_knowledge_items(
+        "What is 18 times 7? Explain the distinction in one sentence.",
+        intent,
+        [sentence_item],
+    )
+    relevant_item = {
+        **sentence_item,
+        "title": "Orbital shape",
+        "domain": "astronomy",
+        "concept_key": "orbital_shape",
+        "matched_terms": ["orbital", "shape", "explain"],
+    }
+    relevant = _answer_eligible_knowledge_items(
+        "Explain orbital shape.",
+        intent,
+        [relevant_item],
+    )
+
+    assert unrelated == []
+    assert relevant[0]["answer_subject_terms"] == ["orbital", "shape"]
 
 
 def _propose(conn):

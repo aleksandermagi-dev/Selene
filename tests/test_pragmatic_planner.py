@@ -98,6 +98,30 @@ def test_structured_summary_request_keeps_each_named_part_inspectable():
     assert partial["unresolved_count"] == 2
 
 
+def test_echoed_request_prefix_does_not_satisfy_session_summary_coverage():
+    prompt = "Back to teaching: summarize the standard we settled on in two short points."
+    plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": {
+                "active_topic": "teaching standard",
+                "pragmatics": {
+                    "utterance_units": [{"kind": "direct_request", "text": prompt}],
+                    "previous_turn_available": True,
+                },
+            },
+        }
+    )
+
+    result = evaluate_response_coverage(
+        plan,
+        "Back to teaching: summarize the standard we settled on in two short points: "
+        "This conversation began with a greeting.",
+    )
+
+    assert result["all_required_addressed"] is False
+
+
 def test_analogy_request_keeps_constraint_preservation_separate():
     prompt = (
         "Explain the logic to a new volunteer using one ordinary analogy, without losing the important staffing constraint."

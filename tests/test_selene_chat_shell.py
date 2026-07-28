@@ -2197,6 +2197,51 @@ def test_qna_regressions_use_grounded_conversation_paths_without_scaffolding(tmp
         _assert_locked(result)
 
 
+def test_teaching_readiness_qna_keeps_subject_math_and_understanding_aligned(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        "Before we teach another lesson, what should we check first, and why does that matter?",
+        "If Selene can repeat an idea fluently but cannot use it in a new example, what should we do next?",
+        (
+            "What is 18 times 7? Then return to the lesson question and explain why "
+            "an exact answer is not the same as understanding."
+        ),
+    ]
+    results = []
+    session_id = None
+    for prompt in prompts:
+        payload = {"text": prompt}
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    prerequisite, transfer, math_and_understanding = results
+    assert "earliest missing prerequisite" in prerequisite["candidate_text"].lower()
+    assert "because later steps cannot reliably use" in prerequisite["candidate_text"].lower()
+    assert "familiarity, not transferable understanding" in transfer["candidate_text"].lower()
+    assert "reconstruction and application" in transfer["candidate_text"].lower()
+    assert "126" in math_and_understanding["candidate_text"]
+    assert "correct for one case" in math_and_understanding["candidate_text"].lower()
+    assert prerequisite["response_coverage"]["all_required_addressed"] is True, prerequisite
+    assert transfer["response_coverage"]["all_required_addressed"] is True, json.dumps(
+        {
+            "candidate": transfer["candidate_text"],
+            "coverage": transfer["response_coverage"],
+        },
+        indent=2,
+    )
+    assert math_and_understanding["response_coverage"]["all_required_addressed"] is True, math_and_understanding
+    assert all(item["memory_write_active"] is False for item in results)
+    assert all(item["runtime_memory_recall"] is False for item in results)
+    for result in results:
+        _assert_locked(result)
+
+
 def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
