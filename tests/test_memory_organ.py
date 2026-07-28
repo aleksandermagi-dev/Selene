@@ -64,6 +64,102 @@ def test_memory_status_names_the_resident_reviewed_lifecycle(tmp_path):
     _assert_locked(result)
 
 
+def test_memory_index_separates_retrieval_memory_from_cocoon_support(tmp_path):
+    conn = _conn(tmp_path)
+    conn.execute(
+        """
+        INSERT INTO b_approved_memory_references
+        (source_candidate_table, source_candidate_id, core_memory_layer, title, reference_summary,
+         source_refs, provenance_boundary)
+        VALUES ('core_memory_candidates', 1, 'interaction_memory', 'Approved conversation memory',
+                'A source-linked memory that may support bounded recall.',
+                '["memory:test"]', 'test_boundary')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO memory_fractional_corpus_manifests
+        (fraction_index, fraction_label, status, summary, source_refs, provenance_boundary)
+        VALUES (1, '1/4', 'tests_passed_ready_for_next_fraction',
+                'A bounded corpus-fraction test summary.', '["fraction:test"]', 'test_boundary')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO vessel_working_memory_packets
+        (current_task, expiry_cleanup_note, interrupt_resume_note, source_refs, provenance_boundary)
+        VALUES ('Keep the current test task available', 'Expire after this test.',
+                'Resume only inside this test.', '["working:test"]', 'test_boundary')
+        """
+    )
+    route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "reflective",
+            "title": "Unreviewed candidate",
+            "summary": "This stays in Cocoon until Aleks reviews it.",
+        },
+    )
+    conn.commit()
+
+    status = route_request(conn, "memory.index.status")["result"]
+    index = route_request(conn, "memory.index.items")["result"]
+    fraction = next(item for item in index["items"] if item["source_table"] == "memory_fractional_corpus_manifests")
+    working = next(item for item in index["items"] if item["source_table"] == "vessel_working_memory_packets")
+    approved = next(item for item in index["items"] if item["source_table"] == "b_approved_memory_references")
+
+    assert status["active_memory_count"] == 1
+    assert status["retrieval_eligible_count"] == 1
+    assert status["memory_review_count"] == 1
+    assert status["support_only_count"] == 2
+    assert status["index_truth"]["corpus_fraction_previews_are_active_memory"] is False
+    assert index["group_counts"] == {"approved_memory": 1, "memory_review": 1, "support_only": 2}
+    assert approved["retrieval_eligible"] is True
+    assert approved["display_region"] == "selene_memory"
+    assert fraction["state"] == "b_only"
+    assert fraction["retrieval_eligible"] is False
+    assert fraction["memory_context_used"] is False
+    assert fraction["display_region"] == "cocoon_support"
+    assert working["retrieval_eligible"] is False
+    assert working["title"] == "Keep the current test task available"
+    _assert_locked(status)
+    _assert_locked(index)
+
+
+def test_approved_state_without_chat_eligibility_does_not_count_as_active_memory(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Local exclusion check",
+            "summary": "Approval state alone must not override an explicit do-not-transfer boundary.",
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+    excluded = route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "mark_do_not_transfer"},
+    )["result"]["item"]
+    status = route_request(conn, "memory.index.status")["result"]
+
+    assert excluded["state"] == "approved_active_memory"
+    assert excluded["transfer_class"] == "do_not_transfer"
+    assert excluded["retrieval_eligible"] is False
+    assert excluded["memory_context_used"] is False
+    assert excluded["display_region"] == "cocoon_memory_review"
+    assert status["active_memory_count"] == 0
+    assert status["retrieval_eligible_count"] == 0
+    _assert_locked(status)
+
+
 def test_memory_candidate_requires_approval_before_chat_use(tmp_path):
     conn = _conn(tmp_path)
 

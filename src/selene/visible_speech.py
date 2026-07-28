@@ -112,6 +112,7 @@ def select_visible_speech_seed(
                 "source_id": source_id,
                 "source_class": source_class,
                 "text": text,
+                "obligation_ids": candidate.get("obligation_ids") or [],
             },
         )
         if compatibility.get("compatible") is not True:

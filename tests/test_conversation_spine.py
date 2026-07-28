@@ -235,6 +235,49 @@ def test_spine_rejects_unrelated_reasoning_even_when_the_source_class_is_allowed
     assert "garden" in related["matched_terms"]
 
 
+def test_spine_accepts_current_turn_domain_output_owned_by_an_open_obligation():
+    prompt = "Could you calculate 18 * 7 for me?"
+    intent = {
+        **classify_chat_intent(prompt),
+        "intent": "reasoning",
+        "reasoning_requested": True,
+    }
+    spine = build_conversation_spine(
+        {
+            "session_id": 150,
+            "prompt": prompt,
+            "intent_decision": intent,
+            "dialogue_workspace": _dialogue(prompt, topic="calculate"),
+        }
+    )
+    obligation_id = spine["open_obligations"][0]["id"]
+
+    result = evaluate_candidate_compatibility(
+        spine,
+        {
+            "source_id": "answer_engine",
+            "source_class": "domain_answer",
+            "text": "18 * 7 = 126.",
+            "obligation_ids": [obligation_id],
+        },
+    )
+    stale = evaluate_candidate_compatibility(
+        spine,
+        {
+            "source_id": "answer_engine",
+            "source_class": "domain_answer",
+            "text": "18 * 7 = 126.",
+            "obligation_ids": ["a_different_turn"],
+        },
+    )
+
+    assert result["compatible"] is True
+    assert result["reason"] == "candidate_owned_by_current_response_obligation"
+    assert result["matched_obligation_ids"] == [obligation_id]
+    assert stale["compatible"] is False
+    assert stale["reason"] == "candidate_lacks_distinctive_topic_alignment"
+
+
 def test_spine_does_not_treat_incidental_one_as_approved_knowledge_alignment():
     prompt = "Which part of that revised staffing plan should we protect first?"
     intent = {**classify_chat_intent(prompt), "intent": "reasoning", "reasoning_requested": True}

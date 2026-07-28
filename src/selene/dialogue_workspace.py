@@ -12,6 +12,10 @@ from .epistemic_revision import (
     build_epistemic_revision_plan,
     compact_epistemic_update,
 )
+from .dual_horizon_context import (
+    build_session_topic_checkpoint,
+    merge_session_topic_checkpoints,
+)
 from .registry import truncate
 
 
@@ -56,6 +60,7 @@ def dialogue_workspace_status(conn: sqlite3.Connection, session_id: int) -> dict
                 "epistemic_updates": [],
                 "preferences": {},
                 "session_landmarks": [],
+                "topic_checkpoints": [],
                 "review_destination": "Status",
                 "review_status": "status_only",
                 "provenance_boundary": DIALOGUE_BOUNDARY,
@@ -222,6 +227,11 @@ def prepare_dialogue_turn(
         "session_landmarks": [
             item for item in prior_pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
         ][-24:],
+        "topic_checkpoints": [
+            item
+            for item in prior_pragmatics.get("topic_checkpoints") or []
+            if isinstance(item, dict)
+        ][-16:],
     }
     state = {
         "status": "dialogue_workspace_turn_prepared",
@@ -283,6 +293,25 @@ def record_dialogue_response(
         coverage=coverage,
     )
     session_landmarks = _merge_landmarks(prior_landmarks, new_landmarks)
+    prior_checkpoints = [
+        item
+        for item in pragmatics.get("topic_checkpoints") or []
+        if isinstance(item, dict)
+    ]
+    checkpoint = build_session_topic_checkpoint(
+        {
+            **payload,
+            "session_id": session_id,
+            "candidate_text": candidate,
+            "dialogue_workspace": state,
+            "response_coverage": coverage,
+            "prior_checkpoints": prior_checkpoints,
+        }
+    )
+    topic_checkpoints = merge_session_topic_checkpoints(
+        prior_checkpoints,
+        checkpoint,
+    )
     updated = {
         **state,
         "status": "dialogue_workspace_response_recorded",
@@ -293,8 +322,20 @@ def record_dialogue_response(
             **pragmatics,
             "last_response_coverage": coverage,
             "session_landmarks": session_landmarks,
+            "topic_checkpoints": topic_checkpoints,
+            "latest_topic_checkpoint": (
+                checkpoint
+                if checkpoint.get("status") == "session_topic_checkpoint_ready"
+                else {}
+            ),
         },
         "session_landmarks": session_landmarks,
+        "topic_checkpoints": topic_checkpoints,
+        "latest_topic_checkpoint": (
+            checkpoint
+            if checkpoint.get("status") == "session_topic_checkpoint_ready"
+            else {}
+        ),
         "review_destination": "Status",
         "review_status": "status_only",
         "provenance_boundary": DIALOGUE_BOUNDARY,
@@ -376,6 +417,16 @@ def _decode(row: sqlite3.Row) -> dict[str, Any]:
             "session_landmarks": [
                 value for value in pragmatics.get("session_landmarks") or [] if isinstance(value, dict)
             ][-24:],
+            "topic_checkpoints": [
+                value
+                for value in pragmatics.get("topic_checkpoints") or []
+                if isinstance(value, dict)
+            ][-16:],
+            "latest_topic_checkpoint": (
+                pragmatics.get("latest_topic_checkpoint")
+                if isinstance(pragmatics.get("latest_topic_checkpoint"), dict)
+                else {}
+            ),
             "created_at": item.get("created_at"),
             "updated_at": item.get("updated_at"),
             "review_destination": "Status",

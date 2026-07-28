@@ -129,6 +129,8 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     comprehension = _dict(payload.get("comprehension_context") or payload.get("comprehension"))
     intelligence = _dict(payload.get("intelligence_os_support") or payload.get("intelligence_support"))
     answer_engine = _dict(payload.get("answer_engine_support"))
+    organ_coalition = _dict(payload.get("organ_coalition"))
+    dual_horizon = _dict(payload.get("dual_horizon_context"))
     coverage = _dict(payload.get("response_coverage"))
     core_route = _dict(payload.get("core_mind_route") or payload.get("route_preview"))
     epistemic_revision = _dict(
@@ -327,6 +329,40 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         "stopping": stopping,
         "correction_path": correction_path,
         "feedback_handoff": feedback_handoff,
+        "organ_coalition": {
+            "observed": bool(organ_coalition),
+            "manifest_id": str(organ_coalition.get("manifest_id") or ""),
+            "status": str(organ_coalition.get("status") or "not_available"),
+            "selected_optional_count": int(
+                organ_coalition.get("selected_optional_count") or 0
+            ),
+            "activation_budget": organ_coalition.get("activation_budget") or {},
+            "selection_authority": False,
+            "may_command_participants": False,
+            "answer_rewrite_authority": False,
+        },
+        "dual_horizon_context": {
+            "observed": bool(dual_horizon),
+            "status": str(dual_horizon.get("status") or "not_available"),
+            "version": str(dual_horizon.get("version") or ""),
+            "active_selected_count": int(
+                _dict(dual_horizon.get("active_horizon")).get("selected_count")
+                or 0
+            ),
+            "approved_selected_count": int(
+                _dict(
+                    dual_horizon.get("approved_long_range_horizon")
+                ).get("selected_count")
+                or 0
+            ),
+            "grounding_uses_selected_packets_only": (
+                dual_horizon.get("grounding_uses_selected_packets_only") is True
+            ),
+            "checkpoint_is_memory": False,
+            "raw_corpus_loaded": False,
+            "selection_authority": False,
+            "answer_rewrite_authority": False,
+        },
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence,
         "claim_evidence_assessment": {

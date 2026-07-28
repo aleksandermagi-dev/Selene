@@ -216,7 +216,17 @@ def test_repaired_ordinary_check_in_confusion_and_phrase_correction_flow(tmp_pat
     for result in (check_in, confused, corrected, typoed):
         assert "answer_now" not in result["candidate_text"].lower()
         assert "interpreting a graph" not in result["candidate_text"].lower()
+        assert result["formation_braid"]["selection_is_answer_authority"] is False
         assert result["memory_write_active"] is False
+    for result in (check_in, confused, typoed):
+        assert result["formation_braid"]["status"] == "selective_formation_braid_ready"
+        assert (
+            result["native_language_organ"]["meaning_packet"]["formation_braid"][
+                "used"
+            ]
+            is True
+        )
+    assert corrected["formation_braid"]["status"] == "selective_formation_braid_unavailable"
 
 
 def test_natural_correction_and_mixed_check_in_summary_stay_conversational(tmp_path):
@@ -730,11 +740,50 @@ def test_active_selene_chat_answers_bounded_math_with_exact_result_and_separate_
     assert support["used"] is True
     assert support["selected_domain"] == "verified_math"
     assert support["answer_packet"]["direct_answer"] == "18 * 7 = 126."
-    assert "18 * 7 = 126." in result["candidate_text"]
+    assert result["candidate_text"] == "18 * 7 = 126."
+    assert result["response_coverage"]["unresolved_count"] == 0
+    assert result["response_coverage"]["domain_owner_coverage_applied"] is True
+    assert result["metacognition"]["fit_state"] == "fits_current_question"
+    assert result["metacognition"]["recommended_action"] == "answer_now"
     assert support["confidence_vector"]["answer_confidence"] == "verified_exact"
     assert support["confidence_vector"]["expression_confidence"] == "not_assessed"
     assert result["native_language_organ"]["discourse_plan"]["contextual_composition_plan"]["exact_domain_structure_locked"] is True
     assert result["native_language_organ"]["contextual_composition"]["applied"] is False
+    assert result["formation_braid"]["status"] == "selective_formation_braid_ready"
+    assert result["formation_braid"]["exactness_lock_count"] == 1
+    assert result["native_language_organ"]["meaning_packet"]["formation_braid"]["used"] is True
+    coalition = result["organ_coalition"]
+    assert coalition["status"] == "bounded_organ_coalition_final"
+    assert coalition["is_organ"] is False
+    assert next(
+        item
+        for item in coalition["optional_content_participants"]
+        if item["participant_id"] == "answer_engine"
+    )["status"] == "completed"
+    assert coalition["obligation_owner_map"][0]["adapter_executed"] is True
+    assert (
+        result["native_language_organ"]["meaning_packet"]["organ_coalition"][
+            "manifest_id"
+        ]
+        == coalition["manifest_id"]
+    )
+    assert result["metacognition"]["organ_coalition_observed"] is True
+    assert result["metacognition"]["organ_coalition_selection_authority"] is False
+    horizon = result["dual_horizon_context"]
+    assert horizon["status"] == "dual_horizon_context_ready"
+    assert horizon["checkpoint_created"] is True
+    assert horizon["resulting_topic_checkpoint"]["session_only"] is True
+    assert horizon["resulting_topic_checkpoint"]["durable_memory"] is False
+    assert result["conversation_spine"]["version"] == (
+        "v3_dual_horizon_grounding"
+    )
+    assert (
+        result["native_language_organ"]["meaning_packet"][
+            "dual_horizon_context"
+        ]["observed"]
+        is True
+    )
+    assert result["metacognition"]["dual_horizon_context"]["observed"] is True
     assert support["memory_write_active"] is False
     _assert_locked(result)
 

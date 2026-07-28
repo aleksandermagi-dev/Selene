@@ -86,6 +86,9 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "semantic_sentence_realization",
                 "structured_semantic_frames",
                 "supported_semantic_answer_handoff",
+                "selective_current_obligation_formation_braid_handoff",
+                "bounded_organ_coalition_manifest_handoff",
+                "dual_horizon_selected_context_handoff",
                 "literal_and_nonliteral_meaning_handoff",
                 "analogy_without_equivalence_handoff",
                 "contextual_optional_conversational_micro_moves",
@@ -365,16 +368,46 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     content_source_class = str(
         visible_speech_seed.get("selected_source_class") or "conversation"
     )
-    supported_semantics = _supported_semantics_for_content(
-        content_seed,
-        content_source_id=content_source_id,
-        content_source_class=content_source_class,
-        intelligence=intelligence,
-        intelligence_semantics=intelligence_supported_semantics,
-        answer_engine=answer_engine,
-        comprehension=comprehension,
-        memory=memory,
-        self_state=self_state,
+    formation_braid = (
+        payload.get("formation_braid")
+        if isinstance(payload.get("formation_braid"), dict)
+        else {}
+    )
+    braid_supported_semantics = (
+        formation_braid.get("supported_semantics")
+        if (
+            formation_braid.get("status") == "selective_formation_braid_ready"
+            and isinstance(formation_braid.get("supported_semantics"), dict)
+        )
+        else {}
+    )
+    formation_braid_used = bool(
+        semantic_units_for_formation(braid_supported_semantics)
+    )
+    organ_coalition = (
+        payload.get("organ_coalition")
+        if isinstance(payload.get("organ_coalition"), dict)
+        else {}
+    )
+    dual_horizon_context = (
+        payload.get("dual_horizon_context")
+        if isinstance(payload.get("dual_horizon_context"), dict)
+        else {}
+    )
+    supported_semantics = (
+        braid_supported_semantics
+        if formation_braid_used
+        else _supported_semantics_for_content(
+            content_seed,
+            content_source_id=content_source_id,
+            content_source_class=content_source_class,
+            intelligence=intelligence,
+            intelligence_semantics=intelligence_supported_semantics,
+            answer_engine=answer_engine,
+            comprehension=comprehension,
+            memory=memory,
+            self_state=self_state,
+        )
     )
     if not supported_semantics and content_source_id == "bounded_answer_completion":
         supported_semantics = build_text_supported_semantic_packet(
@@ -482,8 +515,8 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     propositions = _propositions(
         prompt,
         content_seed,
-        memory,
-        intelligence,
+        {} if formation_braid_used else memory,
+        {} if formation_braid_used else intelligence,
         supported_semantics=supported_semantics,
     )
     pragmatic_plan = build_pragmatic_plan(
@@ -566,6 +599,81 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "claim_evidence_packet": claim_evidence,
         "conversational_energy_input": conversational_energy_input,
         "structural_discovery": structural_discovery,
+        "formation_braid": {
+            "used": formation_braid_used,
+            "status": str(formation_braid.get("status") or "not_available"),
+            "version": str(formation_braid.get("version") or ""),
+            "primary_source_id": str(
+                formation_braid.get("primary_source_id") or ""
+            ),
+            "selected_candidates": formation_braid.get("selected_candidates") or [],
+            "excluded_candidates": formation_braid.get("excluded_candidates") or [],
+            "selected_packet_count": int(
+                formation_braid.get("selected_packet_count") or 0
+            ),
+            "selected_unit_count": int(
+                formation_braid.get("selected_unit_count") or 0
+            ),
+            "obligation_coverage": formation_braid.get("obligation_coverage") or {},
+            "protective_roles_preserved": (
+                formation_braid.get("protective_roles_preserved") or []
+            ),
+            "exactness_lock_count": int(
+                formation_braid.get("exactness_lock_count") or 0
+            ),
+            "selection_is_answer_authority": False,
+            "meaning_change_allowed": False,
+            "hidden_chain_of_thought_exposed": False,
+        },
+        "organ_coalition": {
+            "observed": bool(organ_coalition),
+            "status": str(organ_coalition.get("status") or "not_available"),
+            "version": str(organ_coalition.get("version") or ""),
+            "manifest_id": str(organ_coalition.get("manifest_id") or ""),
+            "stage": str(organ_coalition.get("stage") or ""),
+            "selected_optional_count": int(
+                organ_coalition.get("selected_optional_count") or 0
+            ),
+            "activation_budget": organ_coalition.get("activation_budget") or {},
+            "obligation_owner_map": (
+                organ_coalition.get("obligation_owner_map") or []
+            ),
+            "is_organ": False,
+            "invokes_organs": False,
+            "changes_meaning": False,
+            "selection_authority": False,
+            "hidden_chain_of_thought_exposed": False,
+        },
+        "dual_horizon_context": {
+            "observed": bool(dual_horizon_context),
+            "status": str(
+                dual_horizon_context.get("status") or "not_available"
+            ),
+            "version": str(dual_horizon_context.get("version") or ""),
+            "active_selected_count": int(
+                _dict(dual_horizon_context.get("active_horizon")).get(
+                    "selected_count"
+                )
+                or 0
+            ),
+            "approved_selected_count": int(
+                _dict(
+                    dual_horizon_context.get("approved_long_range_horizon")
+                ).get("selected_count")
+                or 0
+            ),
+            "grounding_uses_selected_packets_only": (
+                dual_horizon_context.get(
+                    "grounding_uses_selected_packets_only"
+                )
+                is True
+            ),
+            "checkpoint_is_memory": False,
+            "raw_corpus_loaded": False,
+            "selection_authority": False,
+            "changes_supported_meaning": False,
+            "hidden_chain_of_thought_exposed": False,
+        },
         "semantic_frame": semantic_frame,
         "supported_semantics": {
             "used": supported_semantics_used and bool(semantic_units_for_formation(supported_semantics)),
@@ -1943,6 +2051,10 @@ def _signal_list(value: Any) -> list[dict[str, Any]]:
                 relevance = 0.0
             items.append({**item, "relevance": relevance})
     return items[:20]
+
+
+def _dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
 
 
 def _store_run(conn: sqlite3.Connection, result: dict[str, Any]) -> int:

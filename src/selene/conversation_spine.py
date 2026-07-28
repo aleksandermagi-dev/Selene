@@ -283,6 +283,19 @@ def evaluate_candidate_compatibility(
     )
     distinctive = set(str(item).lower() for item in spine.get("distinctive_terms") or [] if str(item))
     matched = sorted(distinctive & set(_distinctive_terms(text)))
+    open_obligation_ids = {
+        str(item.get("id") or "")
+        for item in spine.get("open_obligations") or []
+        if isinstance(item, dict) and str(item.get("id") or "")
+    }
+    candidate_obligation_ids = {
+        str(item)
+        for item in candidate.get("obligation_ids") or []
+        if str(item)
+    }
+    matched_obligation_ids = sorted(
+        open_obligation_ids & candidate_obligation_ids
+    )
     contextual_approved_memory = source_id == "contextual_approved_memory"
 
     if not text:
@@ -303,6 +316,16 @@ def evaluate_candidate_compatibility(
         return _compatibility(False, "contextual_candidate_without_callback", False, matched)
     if contextual.get("detected") is True and source_class in {"approved_knowledge", "memory_reconstruction"}:
         return _compatibility(False, "callback_must_remain_grounded_in_immediate_conversation", False, matched)
+    if matched_obligation_ids:
+        return {
+            **_compatibility(
+                True,
+                "candidate_owned_by_current_response_obligation",
+                False,
+                matched,
+            ),
+            "matched_obligation_ids": matched_obligation_ids,
+        }
 
     alignment_required = (
         intent_class in {"reasoning", "direct_content", "contextual_content"}

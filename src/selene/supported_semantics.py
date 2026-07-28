@@ -288,6 +288,23 @@ def _normalize_unit(
         "scope": truncate(str(raw.get("scope") or packet_scope), 240),
         "source_kind": source_kind,
         "source_refs": refs,
+        "origin_packet_id": truncate(str(raw.get("origin_packet_id") or ""), 120),
+        "origin_unit_id": truncate(str(raw.get("origin_unit_id") or ""), 120),
+        "origin_source_class": truncate(
+            str(raw.get("origin_source_class") or ""),
+            80,
+        ),
+        "obligation_ids": _text_list(
+            raw.get("obligation_ids"),
+            limit=20,
+            width=120,
+        ),
+        "selection_reasons": _text_list(
+            raw.get("selection_reasons"),
+            limit=12,
+            width=120,
+        ),
+        "exactness_lock": raw.get("exactness_lock") is True,
         "meaning_change_allowed": False,
     }
 

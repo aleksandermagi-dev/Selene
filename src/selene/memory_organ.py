@@ -98,26 +98,48 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
     items = _collect_index_items(conn, limit=500)
     candidates = conn.execute("SELECT state, COUNT(*) AS count FROM selene_memory_candidates GROUP BY state").fetchall()
     by_category: dict[str, int] = {category: 0 for category in sorted(MEMORY_CATEGORIES)}
+    approved_by_category: dict[str, int] = {category: 0 for category in sorted(MEMORY_CATEGORIES)}
+    record_class_counts: dict[str, int] = {}
     for item in items:
-        by_category[str(item.get("memory_category") or "semantic")] += 1
+        category = str(item.get("memory_category") or "semantic")
+        by_category[category] += 1
+        record_class = str(item.get("record_class") or "unclassified")
+        record_class_counts[record_class] = record_class_counts.get(record_class, 0) + 1
+        if item.get("retrieval_eligible") is True:
+            approved_by_category[category] += 1
     transfer_complete = transfer_completion_is_approved(conn)
-    active_memory_count = sum(1 for item in items if item.get("state") == "approved_active_memory")
+    retrieval_eligible_count = _retrieval_eligible_count(conn)
+    memory_review_count = sum(1 for item in items if item.get("display_region") == "cocoon_memory_review")
+    support_only_count = sum(1 for item in items if item.get("display_region") == "cocoon_support")
     return _with_guards(
         {
             "status": "selene_memory_index_ready",
             "law": "Vys-governed living memory: honest, correctable, source-bound, and care-first.",
             "index_count": len(items),
-            "active_memory_count": active_memory_count,
+            "active_memory_count": retrieval_eligible_count,
+            "approved_memory_count": retrieval_eligible_count,
+            "retrieval_eligible_count": retrieval_eligible_count,
+            "memory_review_count": memory_review_count,
+            "support_only_count": support_only_count,
             "candidate_counts": {str(row["state"]): int(row["count"]) for row in candidates},
             "category_counts": by_category,
+            "approved_memory_category_counts": approved_by_category,
+            "record_class_counts": record_class_counts,
+            "index_truth": {
+                "active_memory_definition": "retrieval_eligible_approved_memory_only",
+                "memory_candidates_are_active": False,
+                "corpus_fraction_previews_are_active_memory": False,
+                "working_context_packets_are_active_memory": False,
+                "review_and_support_records_remain_visible_in_cocoon": True,
+            },
             "recall_states": sorted(CONFIDENCE_STATES),
             "transfer_classes": sorted(TRANSFER_CLASSES),
             "cocoon_language": "support_tending_checkup_not_exile_or_punishment",
             "soft_uncertainty_auto_routes_to_cocoon": False,
             "transfer_complete": transfer_complete,
             "reviewed_memory_transfer_acknowledged": transfer_complete,
-            "approved_memory_retrieval_active": transfer_complete and active_memory_count > 0,
-            "contextual_approved_recall_available": transfer_complete and active_memory_count > 0,
+            "approved_memory_retrieval_active": transfer_complete and retrieval_eligible_count > 0,
+            "contextual_approved_recall_available": transfer_complete and retrieval_eligible_count > 0,
             "conversational_memory_proposals_active": transfer_complete,
             "aleks_approved_memory_retention_active": transfer_complete,
             "memory_lifecycle_contract": {
@@ -144,11 +166,19 @@ def memory_index_items(conn: sqlite3.Connection, payload: dict[str, Any] | None 
     limit = max(1, min(int(payload.get("limit") or 100), 500))
     category = str(payload.get("category") or "").strip().lower()
     items = _collect_index_items(conn, limit=limit, category=category if category in MEMORY_CATEGORIES else None)
+    groups = {
+        "approved_memory": [item for item in items if item.get("retrieval_eligible") is True],
+        "memory_review": [item for item in items if item.get("display_region") == "cocoon_memory_review"],
+        "support_only": [item for item in items if item.get("display_region") == "cocoon_support"],
+    }
     return _with_guards(
         {
             "status": "selene_memory_index_items_ready",
             "items": items,
             "count": len(items),
+            "groups": groups,
+            "group_counts": {key: len(value) for key, value in groups.items()},
+            "active_memory_definition": "retrieval_eligible_approved_memory_only",
             "review_destination": "Status",
             "review_status": "status_only",
         }
@@ -537,6 +567,29 @@ def _approved_memory_items(conn: sqlite3.Connection, *, limit: int) -> list[dict
     return items[:limit]
 
 
+def _retrieval_eligible_count(conn: sqlite3.Connection) -> int:
+    candidate_count = int(
+        conn.execute(
+            """
+            SELECT COUNT(*) FROM selene_memory_candidates
+            WHERE state = 'approved_active_memory'
+              AND chat_use_permission = 'can_use_in_chat'
+              AND transfer_class NOT IN ('b_only', 'do_not_transfer', 'needs_review_before_transfer')
+            """
+        ).fetchone()[0]
+    )
+    reference_count = int(
+        conn.execute(
+            """
+            SELECT COUNT(*) FROM b_approved_memory_references
+            WHERE review_status = 'accepted_for_memory_accession'
+              AND COALESCE(status, '') != 'approved_reference_superseded_non_active'
+            """
+        ).fetchone()[0]
+    )
+    return candidate_count + reference_count
+
+
 def _decode_candidate(row: sqlite3.Row) -> dict[str, Any]:
     item = dict(row)
     item["memory_category"] = _category(item.get("memory_category"))
@@ -544,7 +597,16 @@ def _decode_candidate(row: sqlite3.Row) -> dict[str, Any]:
     item["payload_json"] = _loads_dict(item.get("payload_json"))
     item["source_table"] = "selene_memory_candidates"
     item["source_id"] = item.get("id")
-    item["memory_context_used"] = item.get("state") == "approved_active_memory"
+    retrieval_eligible = (
+        item.get("state") == "approved_active_memory"
+        and item.get("chat_use_permission") == "can_use_in_chat"
+        and item.get("transfer_class") not in {"b_only", "do_not_transfer", "needs_review_before_transfer"}
+    )
+    item["record_class"] = "approved_memory" if retrieval_eligible else "memory_candidate"
+    item["retrieval_eligible"] = retrieval_eligible
+    item["display_region"] = "selene_memory" if retrieval_eligible else "cocoon_memory_review"
+    item["retention_status"] = "approved_memory" if retrieval_eligible else str(item.get("state") or "proposed")
+    item["memory_context_used"] = retrieval_eligible
     return item
 
 
@@ -582,6 +644,10 @@ def _approved_reference_item(row: sqlite3.Row) -> dict[str, Any]:
         "review_status": review_status or "accepted_for_memory",
         "status": item.get("status") or "approved_reference_non_active",
         "created_at": item.get("created_at"),
+        "record_class": "approved_memory_reference" if accepted else "superseded_memory_reference",
+        "retrieval_eligible": accepted,
+        "display_region": "selene_memory" if accepted else "cocoon_memory_review",
+        "retention_status": "approved_memory" if accepted else "superseded",
         "memory_context_used": accepted,
     }
 
@@ -602,26 +668,30 @@ def _fraction_item(row: sqlite3.Row) -> dict[str, Any]:
         "stability": "tested_preview",
         "confidence": "partial",
         "emotional_texture": _emotional_texture(summary),
-        "transfer_class": "portable_context",
-        "chat_use_permission": "summary_only",
+        "transfer_class": "b_only",
+        "chat_use_permission": "not_active",
         "correction_path": "Cocoon tending and fraction rerun",
-        "state": "approved_active_memory",
+        "state": "b_only",
         "review_status": item.get("review_status") or "status_only",
         "status": item.get("status"),
         "created_at": item.get("updated_at"),
-        "memory_context_used": True,
+        "record_class": "corpus_fraction_preview",
+        "retrieval_eligible": False,
+        "display_region": "cocoon_support",
+        "retention_status": "review_only_support",
+        "memory_context_used": False,
     }
 
 
 def _working_memory_item(row: sqlite3.Row) -> dict[str, Any]:
     item = dict(row)
-    summary = str(item.get("summary") or item.get("active_task") or "")
+    summary = str(item.get("summary") or item.get("current_task") or "")
     return {
         "id": f"working-memory-{item.get('id')}",
         "source_id": item.get("id"),
         "source_table": "vessel_working_memory_packets",
         "memory_category": "working",
-        "title": item.get("active_task") or "Working memory packet",
+        "title": item.get("current_task") or "Working memory packet",
         "summary": summary,
         "source_refs": _json_list(item.get("source_refs")),
         "provenance_boundary": item.get("provenance_boundary") or MEMORY_ORGAN_BOUNDARY,
@@ -636,6 +706,10 @@ def _working_memory_item(row: sqlite3.Row) -> dict[str, Any]:
         "review_status": item.get("review_status") or "status_only",
         "status": item.get("status"),
         "created_at": item.get("created_at"),
+        "record_class": "working_context_packet",
+        "retrieval_eligible": False,
+        "display_region": "cocoon_support",
+        "retention_status": "temporary_context_only",
         "memory_context_used": False,
     }
 

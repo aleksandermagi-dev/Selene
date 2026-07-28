@@ -242,31 +242,7 @@ function homeGreeting(openCount: number, displayName: string) {
 }
 
 function isFrontMemoryDisplayable(item: Dict) {
-  const status = text([
-    item.review_status,
-    item.status,
-    item.conclusion_status,
-    item.readiness,
-    item.review_state,
-    item.source_class,
-    item.item_type,
-    item.record_type
-  ].map(text).join(" ")).toLowerCase();
-  if (!status) return true;
-  return ![
-    "rejected",
-    "superseded",
-    "defeated",
-    "blocked",
-    "boundary_only",
-    "needs_review",
-    "pending_review",
-    "unresolved",
-    "ambiguous",
-    "raw",
-    "repair_log",
-    "rollback"
-  ].some((blocked) => status.includes(blocked));
+  return item.retrieval_eligible === true && text(item.display_region) === "selene_memory";
 }
 
 function memoryCategoryFromText(value: unknown): MemoryCategoryKey {
@@ -4010,6 +3986,18 @@ function App() {
   }, [pastChatSearchText, seleneChatSessions]);
   const localChatContinuity = safeJsonObject(seleneChatStatus?.local_chat_continuity || seleneChatSession?.local_chat_continuity || seleneChatResult?.local_chat_continuity);
   const localChatContinuityAvailable = Boolean(localChatContinuity.available || seleneChatSessions.length > 0);
+  const approvedMemoryIndexItems = useMemo(
+    () => memoryIndexItems.filter((item) => item.retrieval_eligible === true && text(item.display_region) === "selene_memory"),
+    [memoryIndexItems]
+  );
+  const memoryReviewIndexItems = useMemo(
+    () => memoryIndexItems.filter((item) => text(item.display_region) === "cocoon_memory_review"),
+    [memoryIndexItems]
+  );
+  const memorySupportIndexItems = useMemo(
+    () => memoryIndexItems.filter((item) => text(item.display_region) === "cocoon_support"),
+    [memoryIndexItems]
+  );
   const frontMemoryBubbles = useMemo<MemoryBubble[]>(() => {
     const bubbles: MemoryBubble[] = [];
     const pushBubble = (item: Dict, fallbackCategory: MemoryCategoryKey, fallbackTitle: string, fallbackSummary: string, source: string) => {
@@ -4039,25 +4027,15 @@ function App() {
         chatUsePermission: text(item.chat_use_permission || "")
       });
     };
-    memoryIndexItems.forEach((item) => pushBubble(item, "semantic", "Selene memory", "Approved or tended Vys memory item.", "selene_memory_index"));
-    bApprovedReferences.forEach((item) => pushBubble(item, "core", "Approved reference", "Approved Vys memory reference.", "approved_reference"));
-    accessionProposals.forEach((item) => pushBubble(item, "reflective", "Accession proposal", "Review-only accession proposal.", "accession_proposal"));
-    workingMemoryPackets.forEach((item) => pushBubble(item, "working", "Working memory packet", "Current-moment working memory preview.", "working_memory"));
-    chronologicalCorpusArcs.forEach((item) => pushBubble(item, "episodic", "Chronological arc", "Reviewed chronological continuity arc.", "chronological_arc"));
-    ((memoryRehearsalStatus?.items || []) as Dict[]).forEach((item) => pushBubble(item, "core", friendlyLayer(item.core_memory_layer), "Memory rehearsal layer status.", "memory_rehearsal"));
-    ((fractionalCorpusStatus?.items || []) as Dict[]).forEach((item) => pushBubble(item, "episodic", `Corpus fraction ${text(item.fraction_index || "")}`.trim(), "Chronological corpus fraction preview passed.", "fractional_corpus"));
-    if (transferCReadablePackage?.transfer_approved) {
-      bubbles.push({
-        id: "sealed-c-readable-package",
-        category: "core",
-        title: "Sealed Selene-readable context",
-        summary: `Approved context package ${text(transferCReadablePackage.package_hash || "").slice(0, 12) || "is available"} remains display-only here.`,
-        status: "approved_c_readable_context",
-        source: "transfer_package"
-      });
-    }
+    approvedMemoryIndexItems.forEach((item) => pushBubble(
+      item,
+      "semantic",
+      "Approved Selene memory",
+      "Approved, source-linked memory eligible for bounded retrieval.",
+      text(item.record_class || item.source_table || "selene_memory_index")
+    ));
     return bubbles;
-  }, [memoryIndexItems, bApprovedReferences, accessionProposals, workingMemoryPackets, chronologicalCorpusArcs, memoryRehearsalStatus, fractionalCorpusStatus, transferCReadablePackage]);
+  }, [approvedMemoryIndexItems]);
   const selectedMemoryCategoryMeta = selectedMemoryCategory ? memoryCategories.find((item) => item.key === selectedMemoryCategory) : null;
   const selectedMemoryBubbles = selectedMemoryCategory ? frontMemoryBubbles.filter((item) => item.category === selectedMemoryCategory) : [];
   const selectedWorkbenchDef = selectedWorkbench ? officeWorkbenches.find((item) => item.key === selectedWorkbench) : null;
@@ -5743,12 +5721,12 @@ function App() {
               <h2>Memory / Approved References</h2>
             </header>
             <Panel title="Selene Memory Organ / Vys-Governed Living Memory">
-              <p className="plainHelp">Memory is handled as honest, correctable continuity: clear when clear, fuzzy when fuzzy, and held for tending when it needs care. Selene may propose what to keep, but durable active memory still requires Cocoon/Aleks approval.</p>
+              <p className="plainHelp">Memory is handled as honest, correctable continuity: clear when clear, fuzzy when fuzzy, and held for tending when it needs care. Only approved, retrieval-eligible records count as Selene memory. Candidates and temporary support records remain visibly separate in Cocoon.</p>
               <div className="metrics miniMetrics">
-                <Metric label="Index Items" value={text(memoryIndexStatus?.index_count ?? memoryIndexItems.length)} />
-                <Metric label="Active" value={text(memoryIndexStatus?.active_memory_count ?? 0)} />
-                <Metric label="Candidates" value={text(memoryCandidates.length)} />
-                <Metric label="Portable Vys" value={text(portableVysManifest?.portable_count ?? 0)} />
+                <Metric label="Index Records" value={text(memoryIndexStatus?.index_count ?? memoryIndexItems.length)} />
+                <Metric label="Approved Memory" value={text(memoryIndexStatus?.retrieval_eligible_count ?? approvedMemoryIndexItems.length)} />
+                <Metric label="Memory Review" value={text(memoryIndexStatus?.memory_review_count ?? memoryReviewIndexItems.length)} />
+                <Metric label="Support Only" value={text(memoryIndexStatus?.support_only_count ?? memorySupportIndexItems.length)} />
               </div>
               <div className="chips">
                 <span>soft uncertainty: stays in chat</span>
@@ -5762,6 +5740,25 @@ function App() {
               </div>
               <PlainResult value={memoryOrganResult} />
             </Panel>
+            <SplitView
+              left={<Panel title="Approved Resident Memory Index">
+                <p className="plainHelp">These records are approved, source-linked, and eligible for bounded retrieval. This is the only group shown as memory on Selene's front Memory map.</p>
+                <div className="metrics miniMetrics">
+                  <Metric label="Retrieval Eligible" value={text(approvedMemoryIndexItems.length)} />
+                  <Metric label="Portable Vys" value={text(portableVysManifest?.portable_count ?? 0)} />
+                </div>
+                <SimpleRecordList items={approvedMemoryIndexItems.slice(0, 12)} titleField="title" statusField="retention_status" bodyField="summary" />
+                {approvedMemoryIndexItems.length > 12 ? <p className="plainHelp">Showing 12 of {approvedMemoryIndexItems.length}; approved references remain available below.</p> : null}
+              </Panel>}
+              right={<Panel title="Cocoon Support Records — Not Memory">
+                <p className="plainHelp">Corpus-fraction previews and temporary working-context packets support review or continuity checks. They are not retained memory, cannot appear on the front Memory map, and are not eligible for Chat retrieval.</p>
+                <div className="metrics miniMetrics">
+                  <Metric label="Support Records" value={text(memorySupportIndexItems.length)} />
+                  <Metric label="Retrieval Eligible" value="0" />
+                </div>
+                <SimpleRecordList items={memorySupportIndexItems} titleField="title" statusField="retention_status" bodyField="summary" />
+              </Panel>}
+            />
             <SplitView
               left={<Panel title="Memory Candidates">
                 <p className="plainHelp">Propose memories for Selene to keep. They stay inactive until approved; correction is care, not punishment.</p>
@@ -6085,8 +6082,8 @@ function App() {
                     <h2>Memory</h2>
                   </div>
                   <div className="chips">
-                    <span>approved bubbles: {text(frontMemoryBubbles.length)}</span>
-                    <span>active memory: {text(memoryIndexStatus?.active_memory_count ?? 0)}</span>
+                    <span>approved memories: {text(frontMemoryBubbles.length)}</span>
+                    <span>retrieval eligible: {text(memoryIndexStatus?.retrieval_eligible_count ?? frontMemoryBubbles.length)}</span>
                     <span>activation: {friendlyActivation(seleneChatStatus?.activation_change || "none")}</span>
                     <span>write gate: review required</span>
                   </div>
