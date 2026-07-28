@@ -597,7 +597,20 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "structural_discovery": structural_discovery,
         }
     )
-    if _domain_answer_is_complete(answer_engine_support):
+    bounded_hypothesis = (
+        intelligence_support.get("hypothesis_attempt")
+        if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
+        else {}
+    )
+    if bounded_hypothesis.get("selected_for_answer") is True:
+        answer_completion = {
+            **answer_completion,
+            "status": "bounded_answer_completion_not_needed_hypothesis_complete",
+            "accepted": False,
+            "content_seed": content_seed,
+            "bounded_hypothesis_remains_primary": True,
+        }
+    elif _domain_answer_is_complete(answer_engine_support):
         answer_completion = {
             **answer_completion,
             "status": "bounded_answer_completion_not_needed_domain_answer_complete",

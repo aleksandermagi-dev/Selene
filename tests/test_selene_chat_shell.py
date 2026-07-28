@@ -2246,6 +2246,51 @@ def test_new_bounded_hypothesis_flow_attempts_only_when_visible_basis_exists(tmp
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
     route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    unrelated = route_request(
+        conn,
+        "comprehension.concepts.propose",
+        {
+            "title": "Equivalent currency totals",
+            "domain": "mathematics",
+            "material": (
+                "A fixed monetary total can be composed from different "
+                "combinations of denominations."
+            ),
+            "principles": [
+                "Two collections are equivalent when their subtotals have the same value."
+            ],
+            "limits": ["Every denomination must first be translated into one common unit."],
+            "source_refs": ["teaching:mathematics:currency-equivalence"],
+        },
+    )["result"]
+    route_request(
+        conn,
+        "comprehension.understanding.evaluate",
+        {
+            "concept_id": unrelated["item"]["id"],
+            "teach_back": (
+                "Different coin combinations can represent the same total value "
+                "once each amount uses one common unit."
+            ),
+            "application": (
+                "Four quarters and ten dimes both equal one dollar after converting "
+                "them to cents."
+            ),
+            "limits": [
+                "Matching coin counts alone does not establish equal value.",
+                "Currencies cannot be mixed without a conversion rate.",
+            ],
+            "source_alignment": True,
+        },
+    )
+    route_request(
+        conn,
+        "comprehension.concepts.decide",
+        {
+            "concept_id": unrelated["item"]["id"],
+            "action": "approve_knowledge",
+        },
+    )
 
     attempt = route_request(
         conn,
@@ -2276,6 +2321,11 @@ def test_new_bounded_hypothesis_flow_attempts_only_when_visible_basis_exists(tmp
         is True
     )
     assert attempt["visible_speech_seed"]["selected_source_id"] == "intelligence_os_answer"
+    assert (
+        attempt["answer_completion"]["status"]
+        == "bounded_answer_completion_not_needed_hypothesis_complete"
+    )
+    assert attempt["answer_completion"]["accepted"] is False
     assert {
         item["source_id"]
         for item in attempt["formation_braid"]["selected_candidates"]
