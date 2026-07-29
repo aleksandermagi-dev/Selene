@@ -2175,17 +2175,19 @@ function App() {
     if (refreshes[5].status === "fulfilled") setCurriculumAuthorizations(refreshes[5].value.items || []);
   }
 
-  async function runCurriculumAction(action: "activate" | "prepare" | "teach" | "activate_language_math" | "prepare_language_math" | "teach_language_math" | "activate_operations_measurement" | "prepare_operations_measurement" | "teach_operations_measurement" | "activate_geometry_algorithms" | "prepare_geometry_algorithms" | "teach_geometry_algorithms" | "activate_equal_groups_data_money" | "prepare_equal_groups_data_money" | "teach_equal_groups_data_money" | "revoke", authorizationId?: unknown) {
+  async function runCurriculumAction(action: "activate" | "prepare" | "teach" | "activate_language_math" | "prepare_language_math" | "teach_language_math" | "activate_operations_measurement" | "prepare_operations_measurement" | "teach_operations_measurement" | "activate_geometry_algorithms" | "prepare_geometry_algorithms" | "teach_geometry_algorithms" | "activate_equal_groups_data_money" | "prepare_equal_groups_data_money" | "teach_equal_groups_data_money" | "activate_mass_capacity" | "prepare_mass_capacity" | "teach_mass_capacity" | "revoke", authorizationId?: unknown) {
     if (action === "activate" && !window.confirm("Authorize this bounded F1 science and inquiry group? Every item must still complete Acquire, Integrate, Express, comprehension, and source checks. Exceptions return to Cocoon.")) return;
     if (action === "activate_language_math" && !window.confirm("Authorize this bounded F1 language and number group? It is separate from the science authorization, and every item still requires the full teaching and comprehension lifecycle.")) return;
     if (action === "activate_operations_measurement" && !window.confirm("Authorize this bounded F1 operations, data, measurement, and time group? It remains separate from the first two authorizations and keeps the same exception review law.")) return;
     if (action === "activate_geometry_algorithms" && !window.confirm("Authorize this bounded F1 geometry, equal-shares, and algorithmic-foundations group? Computation remains conceptual and grants no execution, filesystem, memory, or autonomy authority.")) return;
     if (action === "activate_equal_groups_data_money" && !window.confirm("Authorize this bounded F1 equal-groups, graph-literacy, and money-math group? Currency material remains arithmetic knowledge only, and exceptions still return to Cocoon.")) return;
+    if (action === "activate_mass_capacity" && !window.confirm("Authorize this bounded F1 mass-and-capacity group? It preserves the scientific mass/weight distinction, teaches measurement rather than imitation, and keeps every identity, personality, memory, training, and autonomy boundary unchanged.")) return;
     if (action === "teach" && !window.confirm("Run the four-item F1 science and inquiry group through the visible teaching lifecycle under its active authorization? This creates general knowledge resources only; it does not write memory or change identity, personality, governance, training, or autonomy.")) return;
     if (action === "teach_language_math" && !window.confirm("Run the eight-item F1 language and number group through the visible teaching lifecycle under its active authorization? Exceptions will be held in Cocoon rather than retained.")) return;
     if (action === "teach_operations_measurement" && !window.confirm("Run the eight-item F1 operations, data, measurement, and time group through the visible teaching lifecycle? Exceptions will be held rather than forced through.")) return;
     if (action === "teach_geometry_algorithms" && !window.confirm("Run the eight-item F1 geometry, equal-shares, and algorithmic-foundations group through the visible teaching lifecycle? This teaches inspectable knowledge only; it cannot change Selene's identity, personality, governance, memory, training, or authority.")) return;
     if (action === "teach_equal_groups_data_money" && !window.confirm("Run the eight-item F1 equal-groups, graph-literacy, and money-math group through Acquire, Integrate, Express, and comprehension? This is general academic knowledge, not financial advice or external authority.")) return;
+    if (action === "teach_mass_capacity" && !window.confirm("Run the six-item F1 mass-and-capacity group through Acquire, Integrate, Express, and comprehension? Unsupported or source-conflicting material will be held rather than forced through.")) return;
     if (action === "revoke" && !window.confirm("Revoke this curriculum authorization for future retention? Previously retained knowledge stays attributable and can still be reopened or superseded.")) return;
     setCurriculumActionResult({ status: "running", operation: action });
     const endpoint = action === "activate"
@@ -2198,6 +2200,8 @@ function App() {
         ? "/api/curriculum-authorization/activate-f1-geometry-algorithms"
       : action === "activate_equal_groups_data_money"
         ? "/api/curriculum-authorization/activate-f1-equal-groups-data-money"
+      : action === "activate_mass_capacity"
+        ? "/api/curriculum-authorization/activate-f1-mass-capacity"
       : action === "prepare"
         ? "/api/curriculum-foundation/prepare-f1"
         : action === "prepare_language_math"
@@ -2208,6 +2212,8 @@ function App() {
           ? "/api/curriculum-foundation/prepare-f1-geometry-algorithms"
         : action === "prepare_equal_groups_data_money"
           ? "/api/curriculum-foundation/prepare-f1-equal-groups-data-money"
+        : action === "prepare_mass_capacity"
+          ? "/api/curriculum-foundation/prepare-f1-mass-capacity"
         : action === "teach"
           ? "/api/curriculum-foundation/teach-f1"
           : action === "teach_language_math"
@@ -2218,6 +2224,8 @@ function App() {
             ? "/api/curriculum-foundation/teach-f1-geometry-algorithms"
           : action === "teach_equal_groups_data_money"
             ? "/api/curriculum-foundation/teach-f1-equal-groups-data-money"
+          : action === "teach_mass_capacity"
+            ? "/api/curriculum-foundation/teach-f1-mass-capacity"
           : "/api/curriculum-authorization/revoke";
     const body = action === "activate"
       ? {
@@ -2248,6 +2256,12 @@ function App() {
             aleks_authorized: true,
             authorization_actor: "Aleks",
             authorization_basis: "Aleks authorized the bounded F1 public-academic equal-groups, graph-literacy, and money-math group."
+          }
+      : action === "activate_mass_capacity"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic mass-and-capacity foundation group."
           }
       : action === "revoke"
         ? { authorization_id: authorizationId, aleks_revoked: true, authorization_actor: "Aleks" }
@@ -6273,6 +6287,8 @@ function App() {
                 <Metric label="Geometry/Algorithms Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.fourth_group).retained_count ?? 0)} />
                 <Metric label="Groups/Data/Money Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.fifth_group).prepared_count ?? 0)} />
                 <Metric label="Groups/Data/Money Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.fifth_group).retained_count ?? 0)} />
+                <Metric label="Mass/Capacity Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.sixth_group).prepared_count ?? 0)} />
+                <Metric label="Mass/Capacity Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.sixth_group).retained_count ?? 0)} />
               </div>
               <div className="chips">
                 <span>item clicks inside scope: {plainBlocked(curriculumAuthorizationStatus?.individual_academic_item_approval_required_inside_scope ?? false)}</span>
@@ -6305,6 +6321,11 @@ function App() {
                 <button className="primary" onClick={() => runCurriculumAction("activate_equal_groups_data_money")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_equal_groups_data_money_v1")}>Authorize F1 Groups + Data + Money</button>
                 <button onClick={() => runCurriculumAction("prepare_equal_groups_data_money")} disabled={curriculumActionResult?.status === "running"}>Prepare Eight Groups + Data + Money Lessons</button>
                 <button className="primary" onClick={() => runCurriculumAction("teach_equal_groups_data_money")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_equal_groups_data_money_v1")}>Teach Groups + Data + Money</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_mass_capacity")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_mass_capacity_v1")}>Authorize F1 Mass + Capacity</button>
+                <button onClick={() => runCurriculumAction("prepare_mass_capacity")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Mass + Capacity Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_mass_capacity")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_mass_capacity_v1")}>Teach Mass + Capacity</button>
               </div>
               {curriculumActionResult ? <div className="comprehensionReviewResult">
                 <strong>{friendlyStatus(curriculumActionResult.status)}</strong>

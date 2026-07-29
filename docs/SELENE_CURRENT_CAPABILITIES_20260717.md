@@ -42,7 +42,7 @@ it exists.
 | Open-ended conceptual reasoning | Connected | intelligenceOS can compare models and give a best-current answer without needing a predetermined solution |
 | Honest bounded hypotheses | Connected | When the current visible evidence supports an attempt, Selene can offer one clearly provisional, falsifiable hypothesis without presenting it as learned or verified fact; missing-basis and high-stakes requests do not become guesses |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
-| Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 36 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
+| Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 42 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
 | Current-state description | Connected when asked | She can give a grounded, provisional self-read from current attributable signals |
 | Exact arithmetic | Connected | She can answer bounded exact arithmetic in supervised Chat and keep answer confidence separate from fluency |
 | Local-code inspection | Available separately | She can inspect explicitly supplied or approved files without scanning, executing, or writing |
@@ -128,7 +128,7 @@ Aleks's message
 Verified math, comparison/planning, and source-backed research now participate
 in this live Chat path. Local-code inspection remains intentionally separate.
 
-Five bounded F1 curriculum groups containing 36 foundations are retained as
+Six bounded F1 curriculum groups containing 42 foundations are retained as
 reviewed general knowledge. They remain separate from
 personal memory, identity, personality, governance, execution authority, and
 Voice.
@@ -1310,6 +1310,26 @@ After the final pre-teaching stabilization on July 28:
 - no live conversational stress probe, teaching mutation, memory write,
   provider-model call, identity/personality/governance change, or autonomy
   expansion was used.
+
+After F1 Mass and Capacity Group 6 on July 29:
+
+- six source-linked foundations completed Acquire, Integrate, Express,
+  comprehension, and bounded curriculum retention;
+- the group distinguishes measured attributes, mass from gravitational weight,
+  capacity from current contents, estimates from measurements, and liquid
+  height from calibrated volume;
+- all six concepts are available as approved general knowledge under
+  authorization record 7, raising approved knowledge resources from 72 to 78
+  and F1 retained foundations from 36 to 42;
+- the source shelf expanded to 121 verified files with zero failures using a
+  Core Knowledge measurement bridge plus NIST mass and volume references;
+- focused curriculum tests and the production frontend build passed;
+- the configured database was snapshotted to
+  `selene.pre_f1_mass_capacity_group6_20260729.sqlite3`;
+- static retrieval selected the new concepts while reporting memory, identity,
+  and governance source flags false; and
+- no live conversation, stress test, memory write, model training, identity,
+  personality, governance, or autonomy change was used.
 
 ## Governing Boundary
 

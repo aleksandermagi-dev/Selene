@@ -20,14 +20,15 @@ setting, and reopen it when a correction or contradiction changes the fit.
 The target is not speed, grade performance, phrase recall, or imitation of a
 school system. The target is transferable understanding.
 
-Current implementation checkpoint: five independently authorized F1 groups
+Current implementation checkpoint: six independently authorized F1 groups
 have completed Acquire, Integrate, Express, comprehension, and retention,
-providing 36 reviewed foundations across inquiry, language, number,
+providing 42 reviewed foundations across inquiry, language, number,
 operations, data, measurement, time, geometry, equal shares, spatial
 reference, bounded algorithmic reasoning, equal groups, informal sharing and
 grouping, odd and even, rectangular arrays, graph literacy, and arithmetic-only
-monetary value. This is progress within F1, not a claim that F1 or T1 is
-complete.
+monetary value, plus mass, the mass/weight distinction, capacity, contained
+volume, fair measurement, liters, milliliters, and bounded scale reading. This
+is progress within F1, not a claim that F1 or T1 is complete.
 
 ```text
 source-labeled foundations

@@ -1,6 +1,6 @@
 # Selene Curriculum Source Shelf
 
-Date: 2026-07-19
+Date: 2026-07-19; expanded 2026-07-29 for F1 Group 6
 
 Status: source acquisition checkpoint; review only
 
@@ -14,10 +14,10 @@ The first curriculum source shelf is present locally under:
 
 The shelf contains:
 
-- 39 cataloged source candidates;
-- 28 locally mirrored, revision- or checksum-pinned sources;
-- 118 verified files;
-- approximately 1.33 GB of source artifacts;
+- 42 cataloged source candidates;
+- 31 locally mirrored, revision- or checksum-pinned sources;
+- 121 verified files;
+- approximately 1.34 GB of source artifacts;
 - coverage candidates for all 23 source-family keys in the foundational
   curriculum map;
 - 11 authoritative catalogs held for later artifact-level selection; and
@@ -118,6 +118,9 @@ be reproduced and verified without committing source corpora.
 | CKMath Grade 2 Unit 1 | Artifact SHA-256 | Picture graphs, bar graphs, categorical counts, comparison, and answerability | A graph represents supplied data; it does not establish cause or collection quality |
 | CKMath Grade 2 Unit 6 | Artifact SHA-256 | Coin value, equivalent monetary composition, and addition/subtraction in a U.S.-currency context | Arithmetic knowledge only; currency details are jurisdiction- and time-specific, and this is not financial advice |
 | CKMath Grade 2 Unit 8 | Artifact SHA-256 | Equal groups, informal sharing, odd/even, pairs, arrays, rows, columns, and repeated addition | Conceptual foundation only; it does not establish full multiplication or division fluency |
+| CKMath Grade 3 Unit 6 Teacher Guide | Artifact SHA-256 | Bridge from early direct comparison into mass and liquid-volume measurement | F1 use is restricted to explicitly identified prerequisites and foundational comparison; elementary use of “weight” does not erase the technical mass/weight distinction |
+| NIST SI Units — Mass | Artifact SHA-256 | Authoritative mass, weight, kilogram, and gram terminology | Technical detail must be reduced without describing kilograms as force units; linked media may have separate terms |
+| NIST SI Units — Volume | Artifact SHA-256 | Authoritative volume, capacity, liter, and milliliter terminology | F1 use is limited to foundational attribute and unit relationships rather than later conversion procedures |
 | CKSci Grade 1 Science for Everyone | Artifact SHA-256 | Observation, questions, measurement, prediction, data, models, and design pilot | Review third-party images, links, and optional digital engagements |
 | CKHG Grade 1 Lessons in Civics | Artifact SHA-256 | Community, rules, laws, fairness, citizenship, and historical examples | U.S. jurisdiction must remain explicit; add plural perspectives |
 | CKLA Grade 1 The Human Body | Artifact SHA-256 | Body systems, care, germs, disease, vaccines, and health vocabulary pilot | Older health material requires current-source verification; never medical advice |
@@ -195,8 +198,8 @@ than by indiscriminate corpus ingestion.
 
 The acquisition utility completed with:
 
-- 28 mirrored sources;
-- 118 checked files;
+- 31 mirrored sources;
+- 121 checked files;
 - zero provider acquisition failures;
 - zero missing files; and
 - zero SHA-256 mismatches.

@@ -189,6 +189,7 @@ from .curriculum_authorization import (
     activate_f1_foundation_authorization,
     activate_f1_geometry_algorithms_authorization,
     activate_f1_language_math_authorization,
+    activate_f1_mass_capacity_authorization,
     activate_f1_operations_measurement_authorization,
     curriculum_authorization_status,
     evaluate_curriculum_coverage,
@@ -197,12 +198,14 @@ from .curriculum_authorization import (
     prepare_f1_equal_groups_data_money_group,
     prepare_f1_geometry_algorithms_group,
     prepare_f1_language_math_group,
+    prepare_f1_mass_capacity_group,
     prepare_f1_operations_measurement_group,
     revoke_curriculum_authorization,
     teach_f1_foundation_group,
     teach_f1_equal_groups_data_money_group,
     teach_f1_geometry_algorithms_group,
     teach_f1_language_math_group,
+    teach_f1_mass_capacity_group,
     teach_f1_operations_measurement_group,
 )
 from .teaching_lifecycle import (
@@ -664,6 +667,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": activate_f1_geometry_algorithms_authorization(conn, payload)}
     if route_key == "curriculum.authorization.activate_f1_equal_groups_data_money":
         return {"route": route_key, "result": activate_f1_equal_groups_data_money_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_mass_capacity":
+        return {"route": route_key, "result": activate_f1_mass_capacity_authorization(conn, payload)}
     if route_key == "curriculum.authorization.revoke":
         return {"route": route_key, "result": revoke_curriculum_authorization(conn, payload)}
     if route_key == "curriculum.authorization.evaluate":
@@ -688,6 +693,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": prepare_f1_equal_groups_data_money_group(conn, payload)}
     if route_key == "curriculum.foundation.teach_f1_equal_groups_data_money":
         return {"route": route_key, "result": teach_f1_equal_groups_data_money_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_mass_capacity":
+        return {"route": route_key, "result": prepare_f1_mass_capacity_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_mass_capacity":
+        return {"route": route_key, "result": teach_f1_mass_capacity_group(conn, payload)}
     if route_key == "native_language.status":
         return {"route": route_key, "result": native_language_status(conn)}
     if route_key == "native_language.realize":

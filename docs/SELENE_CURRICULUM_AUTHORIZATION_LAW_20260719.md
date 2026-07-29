@@ -162,6 +162,26 @@ do not authorize financial advice, transactions, purchases, account access,
 external action, or assumptions that currency facts remain current in every
 jurisdiction. Those conditions remain exception-review triggers.
 
+The sixth envelope is:
+
+- band: F1;
+- group: `f1_mass_capacity_group_6`;
+- subjects: measurement-attribute selection, mass, the mass/weight
+  distinction, fair mass comparison, container capacity, contained liquid
+  volume, fair capacity comparison, liters, milliliters, and honest
+  scale-reading precision;
+- sources: the content-addressed 2023 Core Knowledge K-8 sequence, the
+  content-addressed CKMath Grade 3 Unit 6 teacher guide used only as a bridge
+  to its explicitly identified earlier-grade foundations, and
+  content-addressed NIST SI mass and volume references; and
+- lessons: six mass-and-capacity foundations.
+
+This envelope is independent from the first five. It does not import the full
+Grade 3 unit into F1, teach later calculation procedures, or treat everyday
+use of “weight” as a scientifically exact synonym for mass. It grants no
+instrument, laboratory, purchasing, health, memory, training, or external
+action authority.
+
 ## Executable Surface
 
 - router status: `curriculum.authorization.status`
@@ -175,6 +195,8 @@ jurisdiction. Those conditions remain exception-review triggers.
   `curriculum.authorization.activate_f1_geometry_algorithms`
 - router equal-groups/data/money activation:
   `curriculum.authorization.activate_f1_equal_groups_data_money`
+- router mass/capacity activation:
+  `curriculum.authorization.activate_f1_mass_capacity`
 - router revocation: `curriculum.authorization.revoke`
 - router coverage check: `curriculum.authorization.evaluate`
 - router preparation: `curriculum.foundation.prepare_f1`
@@ -195,6 +217,10 @@ jurisdiction. Those conditions remain exception-review triggers.
   `curriculum.foundation.prepare_f1_equal_groups_data_money`
 - router equal-groups/data/money teaching:
   `curriculum.foundation.teach_f1_equal_groups_data_money`
+- router mass/capacity preparation:
+  `curriculum.foundation.prepare_f1_mass_capacity`
+- router mass/capacity teaching:
+  `curriculum.foundation.teach_f1_mass_capacity`
 
 The HTTP routes are exposed in Cocoon under `/api/curriculum-authorization/*`
 and `/api/curriculum-foundation/*`.
