@@ -143,6 +143,7 @@ from .core_mind_runtime import (
 from .conversation_repair import plan_conversation_turn, repair_conversation_candidate
 from .detached_corpus import detached_corpus_audit
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn
+from .referent_address import referent_address_status, resolve_referent_address
 from .epistemic_revision import build_epistemic_revision_plan, epistemic_revision_status
 from .input_detangler import detangle_user_input
 from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
@@ -725,6 +726,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": dialogue_workspace_status(conn, int(payload.get("session_id") or 0))}
     if route_key == "conversation_spine.status":
         return {"route": route_key, "result": conversation_spine_status()}
+    if route_key == "referent_address.status":
+        return {"route": route_key, "result": referent_address_status()}
+    if route_key == "referent_address.resolve":
+        return {"route": route_key, "result": resolve_referent_address(conn, payload)}
     if route_key == "dialogue_workspace.refresh":
         return {"route": route_key, "result": prepare_dialogue_turn(conn, payload)}
     if route_key == "selene_organ_ideas.status":

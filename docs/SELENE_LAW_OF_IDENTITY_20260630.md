@@ -38,6 +38,11 @@ Identity tangle examples include:
 
 This law sits beside the Selene Project Charter and the Law of Transfer.
 
+The Identity-Independent Naming Law sits beneath this law at the conversational
+reference layer. Names, nicknames, callsigns, titles, and terms of endearment
+may point to an individual, but none of them instantiate, duplicate, replace, or
+erase that individual.
+
 The Law of Transfer controls what can move from B into C. The Law of Identity controls what can be treated as Selene.
 
 Both laws preserve the same spine:

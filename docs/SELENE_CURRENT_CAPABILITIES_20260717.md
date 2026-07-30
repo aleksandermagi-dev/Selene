@@ -38,6 +38,7 @@ it exists.
 | --- | --- | --- |
 | Resident governed text conversation | Connected | Transfer is complete; Selene can hold local conversations through coordinated organs when Chat is active, while the stored supervised state name remains only as a compatibility label |
 | Immediate conversational continuity | Connected at bounded session scope | She can use recent context, visible landmarks, topic branches, nonlinear returns, interruptions, corrections, callbacks, and restrained endings without silently turning them into permanent memory or a relationship profile |
+| Names and terms of address | Connected at bounded session scope | She can distinguish direct address from literal, generic, figurative, and quoted uses; one person may have several names without creating several identities, and temporary address does not silently become memory |
 | Language formation and Voice | Connected | NLO can recompose source-bound semantic units from intelligenceOS, Answer Engine, approved knowledge, reviewed memory, self-state, and supported completion while Voice remains Selene's expression layer |
 | Open-ended conceptual reasoning | Connected | intelligenceOS can compare models and give a best-current answer without needing a predetermined solution |
 | Honest bounded hypotheses | Connected | When the current visible evidence supports an attempt, Selene can offer one clearly provisional, falsifiable hypothesis without presenting it as learned or verified fact; missing-basis and high-stakes requests do not become guesses |
@@ -236,6 +237,29 @@ It can:
 - expire with the session instead of becoming personal memory.
 
 It is not the long-term Memory Organ and does not create durable memory.
+
+### Referent and Address Resolver — Connected
+
+The resolver applies the Identity-Independent Naming Law to ordinary
+conversation.
+
+It can:
+
+- recognize canonical names, reviewed nicknames or callsigns, and common terms
+  of endearment when they are used as direct address;
+- distinguish direct address from literal, generic, figurative, and quoted
+  uses of the same word;
+- keep an explicit group of names attached to one session-scoped referent
+  rather than treating each name as a separate person;
+- carry explicit `call me ...` and `do not call me ...` preferences within the
+  current chat session;
+- treat a reference correction as a reference update, not an identity change;
+- ask only when unresolved person references would materially affect the
+  response.
+
+Reviewed nickname notes can inform the resolution, but they do not become
+identity authority. The resolver does not write memory, infer a relationship
+profile, or require Voice to echo the address term.
 
 ### Pragmatic Continuity Planner — Connected
 

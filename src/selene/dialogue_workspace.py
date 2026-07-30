@@ -16,6 +16,7 @@ from .dual_horizon_context import (
     build_session_topic_checkpoint,
     merge_session_topic_checkpoints,
 )
+from .referent_address import resolve_referent_address
 from .registry import truncate
 
 
@@ -108,6 +109,7 @@ def prepare_dialogue_turn(
         else {}
     )
     prior = dialogue_workspace_status(conn, session_id)
+    prior_pragmatics = prior.get("pragmatics") if isinstance(prior.get("pragmatics"), dict) else {}
     events = _events(conn, session_id, payload.get("conversation_events"))
     previous = events[-1] if events else {}
     active_topic = _active_topic(
@@ -139,6 +141,43 @@ def prepare_dialogue_turn(
     )
     if reference:
         referents[reference["token"]] = reference
+    referent_address = resolve_referent_address(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "interpreted_text": interpreted_text,
+            "speaker_context": payload.get("speaker_context"),
+            "prior_state": prior_pragmatics.get("referent_address") or {},
+        },
+    )
+    direct_address = (
+        referent_address.get("direct_address")
+        if isinstance(referent_address.get("direct_address"), dict)
+        else {}
+    )
+    if direct_address:
+        referents[f"address:{direct_address.get('normalized') or direct_address.get('token')}"] = {
+            "token": direct_address.get("token"),
+            "resolved_to": direct_address.get("referent"),
+            "resolution_status": direct_address.get("resolution_status"),
+            "confidence": direct_address.get("confidence"),
+            "reference_kind": "direct_address",
+            "session_scoped": True,
+        }
+    for assertion in referent_address.get("alias_assertions") or []:
+        if not isinstance(assertion, dict):
+            continue
+        for alias in assertion.get("aliases") or []:
+            referents[f"alias:{str(alias).casefold()}"] = {
+                "token": str(alias),
+                "resolved_to": str(assertion.get("referent") or "current_user"),
+                "resolution_status": "explicit_session_alias",
+                "confidence": "high",
+                "reference_kind": "name_or_alias",
+                "session_scoped": True,
+                "identity_change": False,
+            }
     entities = _merge_entities(prior.get("entities") or [], _extract_entities(interpreted_text))
     corrections = list(prior.get("corrections") or [])
     correction = _correction_refinement(
@@ -146,7 +185,6 @@ def prepare_dialogue_turn(
         previous,
         contextual_follow_up=contextual_follow_up,
     )
-    prior_pragmatics = prior.get("pragmatics") if isinstance(prior.get("pragmatics"), dict) else {}
     epistemic_updates = [
         item for item in prior_pragmatics.get("epistemic_updates") or [] if isinstance(item, dict)
     ][-12:]
@@ -208,6 +246,7 @@ def prepare_dialogue_turn(
         "dialogue_act": str(intent.get("dialogue_act") or intent.get("intent") or "direct_conversation"),
         "active_topic": active_topic,
         "resolved_reference": reference,
+        "referent_address": referent_address,
         "reference_candidates": (reference or {}).get("candidates") or [],
         "correction_refinement": correction,
         "epistemic_update_plan": epistemic_update_plan,

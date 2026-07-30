@@ -118,6 +118,11 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         }
     )
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    referent_address = (
+        pragmatics.get("referent_address")
+        if isinstance(pragmatics.get("referent_address"), dict)
+        else {}
+    )
     epistemic_revision = (
         pragmatics.get("epistemic_update_plan")
         if isinstance(pragmatics.get("epistemic_update_plan"), dict)
@@ -217,9 +222,12 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "entities": [item for item in dialogue.get("entities") or [] if isinstance(item, dict)][:20],
             "referents": {
                 "resolved_current": resolved_reference or None,
+                "address_resolution": referent_address or None,
                 "known_session_referents": dialogue.get("referents") if isinstance(dialogue.get("referents"), dict) else {},
                 "status": referent_status,
             },
+            "referent_address": referent_address,
+            "names_are_identity_objects": False,
             "previous_answer": previous,
             "epistemic_revision": epistemic_revision,
             "epistemic_updates": epistemic_updates,

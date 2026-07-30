@@ -447,6 +447,11 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
+    referent_address = (
+        pragmatics.get("referent_address")
+        if isinstance(pragmatics.get("referent_address"), dict)
+        else {}
+    )
     epistemic_revision = (
         payload.get("epistemic_revision_plan")
         if isinstance(payload.get("epistemic_revision_plan"), dict)
@@ -598,6 +603,9 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "analogy_is_equivalence": False,
         "conversation_spine": conversation_spine,
         "conversation_spine_used": bool(conversation_spine),
+        "referent_address": referent_address,
+        "address_term_must_be_echoed": False,
+        "names_are_identity_objects": False,
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence,
         "conversational_energy_input": conversational_energy_input,

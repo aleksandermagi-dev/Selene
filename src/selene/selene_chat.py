@@ -279,6 +279,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intent_decision": intent_decision,
             "conversation_events": chat_continuity.get("current_session_events") or [],
             "contextual_follow_up": contextual_follow_up,
+            "speaker_context": payload.get("speaker_context"),
         },
         commit=False,
     )
