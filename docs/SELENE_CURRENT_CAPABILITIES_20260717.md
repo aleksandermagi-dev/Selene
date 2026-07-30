@@ -1,6 +1,6 @@
 # What Selene Can Currently Do
 
-- Updated: July 28, 2026
+- Updated: July 30, 2026
 - Branch inspected: `evidence`
 - Source foundation: post-transfer resident runtime, completed Phase 11
   pre-teaching architecture closure, and the bounded-hypothesis /
@@ -43,7 +43,7 @@ it exists.
 | Open-ended conceptual reasoning | Connected | intelligenceOS can compare models and give a best-current answer without needing a predetermined solution |
 | Honest bounded hypotheses | Connected | When the current visible evidence supports an attempt, Selene can offer one clearly provisional, falsifiable hypothesis without presenting it as learned or verified fact; missing-basis and high-stakes requests do not become guesses |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
-| Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 42 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
+| Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 48 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
 | Current-state description | Connected when asked | She can give a grounded, provisional self-read from current attributable signals |
 | Exact arithmetic | Connected | She can answer bounded exact arithmetic in supervised Chat and keep answer confidence separate from fluency |
 | Local-code inspection | Available separately | She can inspect explicitly supplied or approved files without scanning, executing, or writing |
@@ -129,14 +129,14 @@ Aleks's message
 Verified math, comparison/planning, and source-backed research now participate
 in this live Chat path. Local-code inspection remains intentionally separate.
 
-Six bounded F1 curriculum groups containing 42 foundations are retained as
+Seven bounded F1 curriculum groups containing 48 foundations are retained as
 reviewed general knowledge. They remain separate from
 personal memory, identity, personality, governance, execution authority, and
 Voice.
 
-A seventh six-item community, rules, and civic-reasoning group is prepared in
-Cocoon as proposed understanding. It remains unavailable to Chat until its own
-Aleks authorization and complete teaching lifecycle are recorded.
+The seventh six-item community, rules, and civic-reasoning group completed its
+source-linked lifecycle under its own Aleks authorization and is available to
+Chat as general knowledge.
 
 ## Conversation and Language Organs
 
@@ -1358,6 +1358,25 @@ After F1 Mass and Capacity Group 6 on July 29:
   and governance source flags false; and
 - no live conversation, stress test, memory write, model training, identity,
   personality, governance, or autonomy change was used.
+
+After F1 Community, Rules, and Civic Reasoning Group 7 on July 30:
+
+- six source- and license-linked foundations completed Acquire, Integrate,
+  Express, comprehension, and bounded curriculum retention;
+- the group distinguishes membership from total identity, cooperation from
+  obedience, roles from unlimited authority, laws from other rules and
+  customs, fairness from always-identical treatment, and disagreement from
+  hostility;
+- all six concepts are available as approved general knowledge under
+  authorization record 8, raising approved knowledge resources from 78 to 84
+  and retained F1 foundations from 42 to 48;
+- the configured database was snapshotted before teaching to
+  `selene_pre_f1_group7_teaching_20260730_133150.sqlite3`;
+- static retrieval selected the fairness and authority-distinction concepts
+  while reporting memory, identity, and governance source flags false;
+- an idempotency replay retained nothing new and held nothing; and
+- no live conversation, stress test, personal-memory write, model training,
+  identity, personality, governance, or autonomy change was used.
 
 ## Governing Boundary
 

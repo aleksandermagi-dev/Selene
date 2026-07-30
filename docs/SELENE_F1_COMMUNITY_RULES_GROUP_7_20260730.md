@@ -2,8 +2,8 @@
 
 Date: 2026-07-30
 
-Status: implementation and source review complete; six candidates prepared;
-authorization and retention still require an explicit Aleks decision.
+Status: authorized by Aleks and retained after the complete teaching lifecycle;
+all six foundations are available as reviewed general knowledge.
 
 ## Why This Group Comes Next
 
@@ -103,18 +103,31 @@ The sufficient implementation check is synthetic:
 No live conversation, adversarial prompt, or broad voice assessment is needed
 to verify this infrastructure.
 
-## Current Prepared State
+## Retained State
 
 The configured database was snapshotted before preparation to:
 
 `C:\Users\aleks\AppData\Local\Selene\data\db-inspection-snapshots\selene_inspection_20260730_131834.sqlite3`
 
-Preparation then created candidate IDs 126-131 in curriculum order. All six
-remain:
+It was snapshotted again immediately before authorization and teaching to:
 
-- `proposed_understanding`;
-- `not_active_until_approved`;
-- unavailable to Chat;
+`C:\Users\aleks\AppData\Local\Selene\data\db-inspection-snapshots\selene_pre_f1_group7_teaching_20260730_133150.sqlite3`
+
+Aleks then explicitly authorized and requested teaching of F1 Group 7.
+Authorization record 8 covers only
+`f1_community_rules_group_7` and the two reviewed source IDs.
+
+Candidate IDs 126-131 completed Acquire, Integrate, Express, comprehension,
+source alignment, and curriculum-authorized retention. All six are now:
+
+- `approved_knowledge_resource`;
+- `approved_for_knowledge_use`;
+- `available_as_knowledge_resource`;
 - source- and license-linked;
-- outside personal memory;
-- unretained and unauthorised.
+- outside personal memory, identity, personality, and governance.
+
+Approved knowledge resources increased from 78 to 84, and retained F1
+foundations increased from 42 to 48. Static retrieval selected the fairness
+and authority-distinction foundations without using memory, identity, or
+governance as a source. An idempotency replay retained nothing new, recognized
+all six existing resources, and held nothing.

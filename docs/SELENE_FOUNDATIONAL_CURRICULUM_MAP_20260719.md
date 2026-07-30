@@ -20,20 +20,23 @@ setting, and reopen it when a correction or contradiction changes the fit.
 The target is not speed, grade performance, phrase recall, or imitation of a
 school system. The target is transferable understanding.
 
-Current implementation checkpoint: six independently authorized F1 groups
+Current implementation checkpoint: seven independently authorized F1 groups
 have completed Acquire, Integrate, Express, comprehension, and retention,
-providing 42 reviewed foundations across inquiry, language, number,
+providing 48 reviewed foundations across inquiry, language, number,
 operations, data, measurement, time, geometry, equal shares, spatial
 reference, bounded algorithmic reasoning, equal groups, informal sharing and
 grouping, odd and even, rectangular arrays, graph literacy, and arithmetic-only
 monetary value, plus mass, the mass/weight distinction, capacity, contained
-volume, fair measurement, liters, milliliters, and bounded scale reading. This
-is progress within F1, not a claim that F1 or T1 is complete.
+volume, fair measurement, liters, milliliters, bounded scale reading,
+community, cooperation, contextual rules, authority distinctions, fairness,
+and reasoned participation. This is progress within F1, not a claim that F1
+or T1 is complete.
 
-F1 Group 7 is now implemented as a separately bounded community, rules, and
-civic-reasoning group. Its six source-linked candidates are prepared for
-Cocoon review, but they do not become retained knowledge until Aleks explicitly
-activates that group's authorization and the full lifecycle succeeds.
+F1 Group 7 is retained as a separately bounded community, rules, and
+civic-reasoning group under Aleks authorization record 8. Its six source-linked
+foundations completed the full lifecycle and are available as general
+knowledge while remaining separate from personal memory, identity,
+personality, governance, and legal advice.
 
 ```text
 source-labeled foundations
