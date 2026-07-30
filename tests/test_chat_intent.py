@@ -58,6 +58,17 @@ def test_social_or_corrective_opening_does_not_hide_a_content_request():
         assert decision["answer_shape"] == "acknowledge_then_answer"
 
 
+def test_ordinary_suggestion_request_routes_as_bounded_planning_reasoning():
+    decision = classify_chat_intent(
+        "I have juice, a notebook, and ten minutes. Suggest one modest way to use the time."
+    )
+
+    assert decision["intent"] == "reasoning"
+    assert decision["reasoning_requested"] is True
+    assert "request" in decision["dialogue_acts"]
+    assert decision["meaning_route"]["selected_domain"] == "comparison_planning"
+
+
 def test_correction_confirmation_is_not_invented_as_a_second_content_request():
     decision = classify_chat_intent(
         'When I say "what\'s up," I mean "how are you." Does that distinction make sense?'

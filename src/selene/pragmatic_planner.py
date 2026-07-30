@@ -794,6 +794,10 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
             "that is",
             "that isn't",
             "that is not",
+            "still hold",
+            "still applies",
+            "continues to",
+            "changes the answer",
         ),
         "implied_request": ("can", "let's", "we can", "start", "help"),
         "direct_request": ("here", "first", "start", "use", "the answer", "result"),
@@ -830,7 +834,10 @@ def _special_semantic_gate(
         return bool(
             re.search(
                 r"^(?:yes|no)\b|\b(?:i agree|i disagree|that is correct|that is not correct|"
-                r"not completely|not always|not necessarily|i would|i would not|i do|i do not)\b",
+                r"not completely|not always|not necessarily|i would|i would not|i do|i do not|"
+                r"(?:the\s+)?(?:aim|plan|idea|recommendation)\s+still\s+holds?|"
+                r"(?:the\s+)?(?:aim|plan|idea|recommendation)\s+still\s+applies|"
+                r"(?:the\s+)?(?:new\s+)?evidence\s+changes?\s+the\s+answer)\b",
                 candidate.strip(),
             )
         ) and (distinctive_alignment or not expected_present or expected_stance_only)
@@ -871,7 +878,9 @@ def _term_key(word: str) -> str:
         "fairly": "fair",
         "fairness": "fair",
         "identically": "identical",
+        "holds": "hold",
         "opportunities": "opportunity",
+        "plans": "plan",
         "questions": "question",
         "reasons": "reason",
         "reflections": "reflection",
@@ -897,7 +906,8 @@ def _utterance_units(value: str) -> list[dict[str, Any]]:
             kind = "correction"
         elif re.match(
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
-            r"(?:compare|explain|show|tell|help|give|list|summarize|check|walk|return\b.*\b(?:explain|answer|summarize))\b",
+            r"(?:compare|explain|show|tell|help|give|list|summarize|check|"
+            r"recommend|suggest|propose|outline|walk|return\b.*\b(?:explain|answer|summarize))\b",
             lower,
         ):
             kind = "direct_request"

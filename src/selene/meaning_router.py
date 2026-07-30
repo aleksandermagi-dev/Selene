@@ -56,7 +56,7 @@ def interpret_turn_meaning(
     explicit_request = bool(
         re.search(
             r"(?:^|[.!?]\s+)(?:please\s+)?"
-            r"(?:answer|explain|compare|calculate|solve|check|find|show|tell|give|help|plan|review|summarize|describe|recommend|outline|propose|walk\s+me\s+through)\b",
+            r"(?:answer|explain|compare|calculate|solve|check|find|show|tell|give|help|plan|review|summarize|describe|recommend|suggest|outline|propose|walk\s+me\s+through)\b",
             routing_text,
         )
     )
@@ -218,6 +218,7 @@ def _intent_candidates(
         "why", "how", "explain", "compare", "solve", "calculate", "plan",
         "reason", "evidence", "contradiction", "tradeoff", "tradeoffs",
         "design", "build", "debug", "meaning", "cause", "causes", "should",
+        "recommend", "suggest", "propose", "outline",
     }
     self_state_turn = "self_state_question" in dialogue_acts
     reasoning_hits = sorted(tokens.intersection(reasoning_terms))
@@ -294,7 +295,13 @@ def _domain_candidates(
         add("source_backed_research", 84, "attributed_source_packets_supplied")
     elif _has_any(routing_text, ("cite", "citation", "sources", "source-backed", "research", "paper", "study", "literature")):
         add("source_backed_research", 62, "research_request_without_supplied_packet")
-    if _has_any(routing_text, ("compare", "tradeoff", "trade-off", "pros and cons", "which option", "prioritize", "strategy", "plan")):
+    if _has_any(
+        routing_text,
+        (
+            "compare", "tradeoff", "trade-off", "pros and cons", "which option",
+            "prioritize", "strategy", "plan", "recommend", "suggest", "propose",
+        ),
+    ):
         add("comparison_planning", 74, "comparison_or_planning_structure")
     if _has_any(routing_text, ("traceback", "stack trace", "source code", "code review", ".py", ".ts", ".tsx", "sql query")):
         add("local_code_inspection", 70, "code_inspection_material_or_request")

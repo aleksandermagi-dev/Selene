@@ -59,6 +59,11 @@ from .self_state import build_self_state_packet, inactive_self_state_packet
 from .selective_formation_braid import build_selective_formation_braid
 from .structural_discovery import build_structural_discovery_packet
 from .supported_semantics import build_text_supported_semantic_packet
+from .test_impact_law import (
+    DIAGNOSTIC_REVIEW_STATUS,
+    DIAGNOSTIC_SOURCE_MODE,
+    diagnostic_non_attribution_context,
+)
 from .transfer_protocol import c_chat_dry_run, latest_c_readable_package
 from .transfer_state import transfer_completion_is_approved
 from .voice_module import generate_voice_preview, voice_module_status
@@ -183,22 +188,26 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     approved = bool(package.get("transfer_approved"))
     transfer_complete = transfer_completion_is_approved(conn)
     source_class = _source_class(text, approved)
-    qa_probe = payload.get("qa_probe") is True
-    source_mode = "selene_supervised_qa" if qa_probe else "selene_supervised_speech"
+    requested_session_id = int(payload.get("session_id") or 0)
+    qa_probe, source_mode, session_id = _resolve_chat_session_mode(
+        conn,
+        text=text,
+        requested_session_id=requested_session_id,
+        qa_probe_requested=payload.get("qa_probe") is True,
+    )
+    diagnostic_context = diagnostic_non_attribution_context(
+        active=qa_probe,
+        session_id=session_id,
+    )
     input_channel = str(payload.get("input_channel") or payload.get("speaker") or "desktop").strip().lower()
     if input_channel not in {"desktop", "mobile", "verizon_email_to_text"}:
         input_channel = "desktop"
     requested_character_limit = _optional_response_character_limit(payload.get("response_character_limit"))
-    session_id = int(payload.get("session_id") or 0) or _create_session(
-        conn,
-        text,
-        status="selene_chat_active_supervised",
-        source_mode=source_mode,
-    )
     chat_continuity = _local_chat_continuity(
         conn,
         current_session_id=session_id,
         query=understanding_text,
+        diagnostic_only=qa_probe,
     )
     prior_dialogue_workspace = dialogue_workspace_status(conn, session_id)
     conversation_context = _active_conversation_context(chat_continuity, prior_dialogue_workspace)
@@ -232,14 +241,19 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "query": meaning_text,
             "limit": 4,
             "intent_decision": intent_decision,
-            "allow_contextual_relevance": transfer_complete,
+            "allow_contextual_relevance": transfer_complete and not qa_probe,
         },
     )
     route = create_core_mind_route_preview(
         conn,
         {
             "prompt": meaning_text,
-            "source_refs": ["selene_chat_active_supervised", *chat_continuity.get("source_refs", []), *memory_retrieval.get("source_refs", [])],
+            "source_refs": [
+                "selene_chat_active_supervised",
+                *_json_list(diagnostic_context.get("source_refs")),
+                *chat_continuity.get("source_refs", []),
+                *memory_retrieval.get("source_refs", []),
+            ],
             "suppress_review_queue": True,
         },
     )
@@ -268,6 +282,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         input_channel=input_channel,
         hard=bool(hard_blockers),
         transfer_complete=transfer_complete,
+        diagnostic_only=qa_probe,
     )
     prepared_dialogue_workspace = prepare_dialogue_turn(
         conn,
@@ -377,6 +392,21 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "hard_boundary": bool(hard_blockers),
         },
     )
+    if qa_probe:
+        self_state = {
+            **self_state,
+            "diagnostic_context": diagnostic_context,
+            "diagnostic_result_is_self_state_evidence": False,
+            "persistent_self_state_update": False,
+            "review_status": DIAGNOSTIC_REVIEW_STATUS,
+        }
+        affect_expression = {
+            **affect_expression,
+            "diagnostic_context": diagnostic_context,
+            "diagnostic_result_is_affect_baseline": False,
+            "persistent_affect_update": False,
+            "review_status": DIAGNOSTIC_REVIEW_STATUS,
+        }
     dream_reflection_handoff = _dream_reflection_handoff(
         conn,
         payload,
@@ -456,12 +486,22 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "content_seed": content_seed,
             "source_refs": [
                 "selene_chat:comprehension",
+                *_json_list(diagnostic_context.get("source_refs")),
                 *_json_list(route.get("source_refs")),
                 *_json_list(memory_retrieval.get("source_refs")),
             ],
             "record_run": False,
         },
     )
+    if qa_probe:
+        comprehension = {
+            **comprehension,
+            "diagnostic_context": diagnostic_context,
+            "teaching_eligible": False,
+            "retention_eligible": False,
+            "approved_knowledge_eligible": False,
+            "review_status": DIAGNOSTIC_REVIEW_STATUS,
+        }
     dual_horizon_context = build_dual_horizon_context(
         {
             "prompt": meaning_text,
@@ -758,6 +798,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "speaker_context": contextual_continuity.get("speaker_scope") or {},
             "intent_decision": intent_decision,
             "contextual_follow_up": contextual_follow_up,
+            "diagnostic_context": diagnostic_context,
             "expression_profile": (
                 "explanation"
                 if bounded_hypothesis.get("selected_for_answer") is True
@@ -771,6 +812,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 *_json_list(self_state.get("source_refs")),
             ],
         },
+        record_run=not qa_probe,
     )
     pragmatic_continuity = (native_language.get("discourse_plan") or {}).get("pragmatic_continuity") or {}
     conversational_energy = (
@@ -909,8 +951,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "conversational_energy": conversational_energy,
         "response_coverage": response_coverage,
         "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
+        "diagnostic_context": diagnostic_context,
         "source_refs": [
             "selene_chat:metacognition_observer",
+            *_json_list(diagnostic_context.get("source_refs")),
             *_json_list(route.get("source_refs")),
             *_json_list(comprehension.get("source_refs")),
         ],
@@ -969,7 +1013,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "response_coverage": response_coverage,
             "completion_repair": completion_repair,
         },
-        record_run=True,
+        record_run=not qa_probe,
         commit=False,
     )
     ending_decision = (
@@ -1081,6 +1125,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         memory_retrieval,
         memory_action=memory_action,
         hard=bool(hard_blockers),
+        diagnostic_only=qa_probe,
     )
     dialogue_workspace = record_dialogue_response(
         conn,
@@ -1094,7 +1139,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "epistemic_revision": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
+            "diagnostic_context": diagnostic_context,
             "source_refs": [
+                *_json_list(diagnostic_context.get("source_refs")),
                 *_json_list(route.get("source_refs")),
                 *_json_list(memory_retrieval.get("source_refs")),
                 *_json_list((answer_engine_support.get("answer_packet") or {}).get("source_refs")),
@@ -1131,9 +1178,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "figurative_interpretation": figurative_interpretation,
             "interpreted_text": meaning_text,
             "input_channel": input_channel,
+            "diagnostic_context": diagnostic_context,
         },
     )
     assistant_payload = {
+        "diagnostic_context": diagnostic_context,
         "input_interpretation": input_interpretation,
         "figurative_interpretation": figurative_interpretation,
         "dream_reflection_handoff": dream_reflection_handoff,
@@ -1203,7 +1252,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     event_id = record_activation_chat_event(
         conn,
-        event_type="supervised_chat_turn",
+        event_type=(
+            "diagnostic_chat_turn"
+            if qa_probe
+            else "supervised_chat_turn"
+        ),
         session_id=session_id,
         message_id=assistant_message_id,
         selected_route=selected_route,
@@ -1213,7 +1266,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         cocoon_suggestion=cocoon_suggestion,
         blocked_capabilities=hard_blockers,
         payload=assistant_payload,
-        review_status="status_only",
+        review_status=(
+            DIAGNOSTIC_REVIEW_STATUS
+            if qa_probe
+            else "status_only"
+        ),
     )
     conn.commit()
     return _with_guards(
@@ -1224,6 +1281,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "assistant_message_id": assistant_message_id,
             "activation_event_id": event_id,
             "candidate_text": candidate_text,
+            "diagnostic_context": diagnostic_context,
+            "diagnostic_only": qa_probe,
             "input_channel": input_channel,
             "delivery_constraint": delivery_constraint,
             "input_interpretation": input_interpretation,
@@ -1290,7 +1349,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "reviewed_memory_context_active": transfer_complete,
             "selene_v1_live": transfer_complete,
             "review_destination": "Cocoon support" if hard_blockers else "Status",
-            "review_status": "status_only",
+            "review_status": (
+                DIAGNOSTIC_REVIEW_STATUS
+                if qa_probe
+                else "status_only"
+            ),
         },
         transfer_approved=approved,
         active=True,
@@ -1460,6 +1523,45 @@ def _create_session(conn: sqlite3.Connection, text: str, *, status: str = "pre_t
         (truncate(text, 64) or "Selene chat", status, source_mode),
     )
     return int(cur.lastrowid)
+
+
+def _resolve_chat_session_mode(
+    conn: sqlite3.Connection,
+    *,
+    text: str,
+    requested_session_id: int,
+    qa_probe_requested: bool,
+) -> tuple[bool, str, int]:
+    """Bind diagnostic status to a dedicated session for its full lifetime."""
+    if requested_session_id <= 0:
+        source_mode = (
+            DIAGNOSTIC_SOURCE_MODE
+            if qa_probe_requested
+            else "selene_supervised_speech"
+        )
+        session_id = _create_session(
+            conn,
+            text,
+            status="selene_chat_active_supervised",
+            source_mode=source_mode,
+        )
+        return qa_probe_requested, source_mode, session_id
+
+    row = conn.execute(
+        "SELECT source_mode FROM selene_chat_sessions WHERE id = ?",
+        (requested_session_id,),
+    ).fetchone()
+    if row is None:
+        raise ValueError("Selene Chat session not found")
+    existing_mode = str(row["source_mode"] or "")
+    existing_is_qa = existing_mode == DIAGNOSTIC_SOURCE_MODE
+    if qa_probe_requested and not existing_is_qa:
+        raise ValueError(
+            "diagnostic QA requires a dedicated diagnostic session"
+        )
+    if existing_is_qa:
+        return True, DIAGNOSTIC_SOURCE_MODE, requested_session_id
+    return False, existing_mode or "selene_supervised_speech", requested_session_id
 
 
 def _insert_message(
@@ -1874,11 +1976,15 @@ def _figurative_response_seed(packet: dict[str, Any]) -> str:
             "Yeah, that timing is genuinely inconvenient. I read the approving wording as sarcasm, "
             "not as praise for the interruption."
         )
-    if "metaphor" in forms and re.search(
-        r"\bwhat do i mean\b",
+    if forms & {"metaphor", "personification"} and re.search(
+        r"\b(?:what do i mean|what does (?:that|this|it) mean|"
+        r"how do you (?:read|interpret|understand) (?:that|this|it)|"
+        r"how would you (?:read|interpret|understand) (?:that|this|it))\b",
         original,
         flags=re.IGNORECASE,
     ):
+        if re.search(r"\bhow (?:do|would) you\b", original, flags=re.IGNORECASE):
+            return f"I read it as: {meaning}."
         return f"You mean: {meaning}."
     return ""
 
@@ -2873,6 +2979,7 @@ def _plan_conversational_memory_action(
     input_channel: str,
     hard: bool,
     transfer_complete: bool,
+    diagnostic_only: bool = False,
 ) -> dict[str, Any]:
     base = {
         "status": "no_conversational_memory_action",
@@ -2881,7 +2988,17 @@ def _plan_conversational_memory_action(
         "session_id": session_id,
         "source_class": source_class,
         "input_channel": input_channel,
+        "diagnostic_only": diagnostic_only,
     }
+    if diagnostic_only:
+        return {
+            **base,
+            "reason": "diagnostic_non_attribution_law",
+            "memory_eligible": False,
+            "proposal_allowed": False,
+            "approval_allowed": False,
+            "review_status": DIAGNOSTIC_REVIEW_STATUS,
+        }
     if hard:
         return {**base, "reason": "hard_boundary"}
     if not transfer_complete:
@@ -3318,8 +3435,18 @@ def _memory_candidate_suggestion(
     *,
     memory_action: dict[str, Any] | None = None,
     hard: bool = False,
+    diagnostic_only: bool = False,
 ) -> dict[str, Any]:
     memory_action = memory_action if isinstance(memory_action, dict) else {}
+    if diagnostic_only:
+        return {
+            **_no_memory_suggestion(
+                "diagnostic_non_attribution_law"
+            ),
+            "diagnostic_only": True,
+            "memory_eligible": False,
+            "review_status": DIAGNOSTIC_REVIEW_STATUS,
+        }
     action_status = str(memory_action.get("status") or "")
     if action_status == "conversational_memory_proposed":
         candidate = memory_action.get("candidate") if isinstance(memory_action.get("candidate"), dict) else {}
@@ -3481,6 +3608,7 @@ def _local_chat_continuity(
     limit: int = 6,
     *,
     query: str = "",
+    diagnostic_only: bool = False,
 ) -> dict[str, Any]:
     sessions = conn.execute(
         """
@@ -3496,7 +3624,11 @@ def _local_chat_continuity(
         """,
         (max(1, min(int(limit), 12)),),
     ).fetchall()
-    recent_sessions = [dict(row) for row in sessions]
+    recent_sessions = (
+        []
+        if diagnostic_only
+        else [dict(row) for row in sessions]
+    )
     params: list[Any] = []
     where = (
         "WHERE s.status = 'selene_chat_active_supervised' "
@@ -3530,9 +3662,13 @@ def _local_chat_continuity(
             (current_session_id,),
         ).fetchall()
         current_messages = [_chat_event_preview(row, preview_limit=900) for row in reversed(current_rows)]
-    recent_events = [_chat_event_preview(row) for row in reversed(messages)]
+    recent_events = (
+        []
+        if diagnostic_only
+        else [_chat_event_preview(row) for row in reversed(messages)]
+    )
     relevant_events: list[dict[str, Any]] = []
-    query_terms = _continuity_terms(query)
+    query_terms = set() if diagnostic_only else _continuity_terms(query)
     if query_terms and current_session_id:
         search_rows = conn.execute(
             """
@@ -3569,7 +3705,14 @@ def _local_chat_continuity(
         "available": bool(recent_sessions or current_messages),
         "source_class": "local_supervised_chat_history",
         "scope": "local Selene Chat sessions only",
-        "continuity_note": "A new chat is a new page, not a new Selene.",
+        "continuity_note": (
+            "Diagnostic continuity is limited to this QA session and cannot "
+            "become ordinary relationship continuity."
+            if diagnostic_only
+            else "A new chat is a new page, not a new Selene."
+        ),
+        "diagnostic_only": diagnostic_only,
+        "ordinary_prior_continuity_imported": False if diagnostic_only else bool(recent_sessions or recent_events),
         "current_session_id": current_session_id,
         "recent_sessions": [
             {

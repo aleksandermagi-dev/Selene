@@ -192,6 +192,55 @@ def test_intelligence_os_returns_useful_method_when_conclusion_is_not_yet_ground
     _assert_locked(why)
 
 
+def test_intelligence_os_selects_composed_resource_plan_as_answer_substance(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = route_request(
+        conn,
+        "intelligence_os.reason",
+        {
+            "prompt": (
+                "We have lemonade, a drawing pad, and thirty minutes. "
+                "Recommend one modest way to use that time."
+            )
+        },
+    )["result"]
+
+    assert result["answer_substance"]["answer_kind"] == "bounded_resource_plan"
+    assert result["answer_substance"]["selected_for_answer"] is True
+    assert result["best_current_answer"] == result["answer_substance"]["answer"]
+    assert result["answer_substance"]["structured_semantic_handoff"] is True
+    assert "lemonade" in result["best_current_answer"]
+    assert "drawing pad" in result["best_current_answer"]
+    _assert_locked(result)
+
+
+def test_intelligence_os_uses_recent_visible_context_to_revise_a_constraint(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = route_request(
+        conn,
+        "intelligence_os.reason",
+        {
+            "prompt": "We only have six minutes now. Does that plan still hold?",
+            "observations": [
+                (
+                    "We have lemonade, a drawing pad, and thirty minutes. "
+                    "Recommend one modest way to use that time."
+                )
+            ],
+        },
+    )["result"]
+
+    substance = result["answer_substance"]
+    assert substance["answer_kind"] == "constraint_revised_plan"
+    assert substance["support_basis"] == "current_prompt_and_recent_conversation"
+    assert substance["selected_for_answer"] is True
+    assert "six minutes" in result["best_current_answer"]
+    assert "aim still holds" in result["best_current_answer"]
+    _assert_locked(result)
+
+
 def test_intelligence_os_stopping_rule_and_hard_boundaries(tmp_path):
     conn = _conn(tmp_path)
 

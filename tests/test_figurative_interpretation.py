@@ -6,6 +6,7 @@ from selene.db import connect, init_db
 from selene.dialogue_workspace import prepare_dialogue_turn
 from selene.figurative_interpretation import interpret_figurative_language
 from selene.native_language_organ import realize_native_language
+from selene.selene_chat import _figurative_response_seed
 
 
 def _conn(tmp_path):
@@ -121,6 +122,24 @@ def test_quoted_sequence_metaphor_and_situational_sarcasm_use_visible_cues():
     assert "foundation or prerequisites" in metaphor["interpreted_text"]
     assert sarcasm["selected_reading"] == "figurative"
     assert "sarcasm" in sarcasm["detected_forms"]
+
+
+def test_quoted_personification_can_be_requested_with_ordinary_interpretation_wording():
+    packet = interpret_figurative_language(
+        {
+            "text": (
+                'If I say the printer is "being stubborn," '
+                "how do you interpret that?"
+            )
+        }
+    )
+
+    assert packet["selected_reading"] == "figurative"
+    assert "personification" in packet["detected_forms"]
+    assert "not a literal emotional state" in packet["intended_meaning"]
+    assert "nonhuman_subject_given_human_quality" in packet["contextual_cues"]
+    assert _figurative_response_seed(packet).startswith("I read it as:")
+    _assert_locked(packet)
 
 
 def test_ambiguous_figure_only_requests_clarification_when_answer_depends_on_it():

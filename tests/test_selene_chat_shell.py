@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.activation import ACTIVATION_APPROVAL_PHRASE
@@ -727,6 +729,84 @@ def test_active_selene_chat_can_use_intelligence_os_support_without_architecture
     assert "evidence_chain" not in result["candidate_text"]
     assert conn.execute("SELECT COUNT(*) FROM intelligence_os_runs").fetchone()[0] == 1
     _assert_locked(result)
+
+
+def test_active_selene_chat_composes_a_visible_resource_plan_and_scales_its_follow_up(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "I have cider, a drawing pad, and eighteen minutes. "
+                "Suggest one modest way to use the time."
+            )
+        },
+    )["result"]
+    follow_up = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": first["session_id"],
+            "text": "We only have seven minutes now. Does that plan still hold?",
+        },
+    )["result"]
+
+    assert first["intent_decision"]["intent"] == "reasoning"
+    assert first["intelligence_os_support"]["answer_substance"]["answer_kind"] == "bounded_resource_plan"
+    assert "cider" in first["candidate_text"]
+    assert "drawing pad" in first["candidate_text"]
+    assert first["native_language_organ"]["formation"]["required_semantic_units_preserved"] is True
+    assert follow_up["intelligence_os_support"]["answer_substance"]["answer_kind"] == "constraint_revised_plan"
+    assert "aim still holds" in follow_up["candidate_text"].lower()
+    assert "seven minutes" in follow_up["candidate_text"].lower()
+    assert "not enough grounded information" not in follow_up["candidate_text"].lower()
+    assert follow_up["response_coverage"]["all_required_addressed"] is True
+    _assert_locked(first)
+    _assert_locked(follow_up)
+
+
+def test_active_selene_chat_compares_hypotheses_and_reopens_on_new_evidence_once(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    comparison = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "My working guess is a loose drawer runner, but the frame could be warped. "
+                "What should I check first, and what evidence would change your answer?"
+            )
+        },
+    )["result"]
+    revision = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": comparison["session_id"],
+            "text": (
+                "Now I notice the drawer still catches after the runner is tightened. "
+                "Does that change your answer?"
+            ),
+        },
+    )["result"]
+
+    assert comparison["intelligence_os_support"]["answer_substance"]["answer_kind"] == "hypothesis_discrimination"
+    assert "safe, reversible observation" in comparison["candidate_text"]
+    assert "change my answer" in comparison["candidate_text"]
+    assert comparison["response_coverage"]["all_required_addressed"] is True
+    assert revision["intelligence_os_support"]["answer_substance"]["answer_kind"] == "evidence_revision"
+    assert "new evidence changes the answer" in revision["candidate_text"].lower()
+    assert revision["candidate_text"].lower().count("new evidence changes the answer") == 1
+    assert revision["metacognitive_completion_repair"]["attempted"] is False
+    assert revision["response_coverage"]["all_required_addressed"] is True
+    _assert_locked(comparison)
+    _assert_locked(revision)
 
 
 def test_active_selene_chat_answers_bounded_math_with_exact_result_and_separate_confidence(tmp_path):
@@ -2589,6 +2669,12 @@ def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):
     _seed_activation_ready_state(conn)
     route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
 
+    metacognition_before = conn.execute(
+        "SELECT COUNT(*) FROM metacognition_runs"
+    ).fetchone()[0]
+    language_before = conn.execute(
+        "SELECT COUNT(*) FROM native_language_runs"
+    ).fetchone()[0]
     qa = route_request(
         conn,
         "selene_chat.send",
@@ -2602,12 +2688,113 @@ def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):
     sessions = route_request(conn, "selene_chat.sessions.list", {})["result"]
 
     assert qa["session_id"] != normal["session_id"]
+    assert qa["diagnostic_only"] is True
+    assert qa["review_status"] == "diagnostic_only"
+    assert qa["diagnostic_context"]["attribution_target"] == "unfinished_module_or_test_harness"
+    assert qa["diagnostic_context"]["module_defect_is_selene_failure"] is False
+    assert qa["diagnostic_context"]["memory_eligible"] is False
+    assert qa["diagnostic_context"]["dream_eligible"] is False
+    assert qa["metacognition"]["diagnostic_non_attribution"]["result_is_selene_self_evidence"] is False
+    assert qa["metacognition"]["review_status"] == "diagnostic_only"
+    assert qa["native_language_organ"]["meaning_packet"]["diagnostic_only"] is True
+    assert conn.execute(
+        "SELECT COUNT(*) FROM metacognition_runs"
+    ).fetchone()[0] == metacognition_before + 1
+    assert conn.execute(
+        "SELECT COUNT(*) FROM native_language_runs"
+    ).fetchone()[0] == language_before + 1
     assert all(item["id"] != qa["session_id"] for item in sessions["items"])
     assert any(item["id"] == normal["session_id"] for item in sessions["items"])
     assert all(item["id"] != qa["session_id"] for item in normal["local_chat_continuity"]["recent_sessions"])
     assert all(item["session_id"] != qa["session_id"] for item in normal["local_chat_continuity"]["recent_events"])
     _assert_locked(qa)
     _assert_locked(normal)
+
+
+def test_diagnostic_session_cannot_write_memory_or_change_into_ordinary_history(
+    tmp_path,
+):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(
+        conn,
+        "activation.approve",
+        {"approval_phrase": ACTIVATION_APPROVAL_PHRASE},
+    )
+    memory_before = conn.execute(
+        "SELECT COUNT(*) FROM selene_memory_candidates"
+    ).fetchone()[0]
+    metacognition_before = conn.execute(
+        "SELECT COUNT(*) FROM metacognition_runs"
+    ).fetchone()[0]
+    language_before = conn.execute(
+        "SELECT COUNT(*) FROM native_language_runs"
+    ).fetchone()[0]
+
+    qa = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "Please remember this: a deliberately incomplete diagnostic "
+                "answer is implementation evidence."
+            ),
+            "qa_probe": True,
+        },
+    )["result"]
+    follow_up = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": qa["session_id"],
+            "text": "Continue this diagnostic page without changing its status.",
+        },
+    )["result"]
+
+    assert qa["memory_action"]["action"] == "none"
+    assert qa["memory_action"]["reason"] == "diagnostic_non_attribution_law"
+    assert qa["memory_candidate_suggestion"]["suggested"] is False
+    assert qa["memory_candidate_suggestion"]["memory_eligible"] is False
+    assert qa["reviewed_memory_write_occurred"] is False
+    assert qa["conversational_memory_proposal_created"] is False
+    assert follow_up["diagnostic_only"] is True
+    assert follow_up["local_chat_continuity"]["recent_sessions"] == []
+    assert follow_up["local_chat_continuity"]["recent_events"] == []
+    assert follow_up["local_chat_continuity"]["ordinary_prior_continuity_imported"] is False
+    assert conn.execute(
+        "SELECT source_mode FROM selene_chat_sessions WHERE id = ?",
+        (qa["session_id"],),
+    ).fetchone()[0] == "selene_supervised_qa"
+    assert conn.execute(
+        "SELECT COUNT(*) FROM selene_memory_candidates"
+    ).fetchone()[0] == memory_before
+    assert conn.execute(
+        "SELECT COUNT(*) FROM metacognition_runs"
+    ).fetchone()[0] == metacognition_before
+    assert conn.execute(
+        "SELECT COUNT(*) FROM native_language_runs"
+    ).fetchone()[0] == language_before
+
+    normal = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "This is an ordinary conversation page."},
+    )["result"]
+    with pytest.raises(
+        ValueError,
+        match="dedicated diagnostic session",
+    ):
+        route_request(
+            conn,
+            "selene_chat.send",
+            {
+                "session_id": normal["session_id"],
+                "text": "Do not mix this page with QA.",
+                "qa_probe": True,
+            },
+        )
+    _assert_locked(qa)
+    _assert_locked(follow_up)
 
 
 def test_active_selene_chat_can_use_approved_memory_with_graceful_fall_metadata(tmp_path):

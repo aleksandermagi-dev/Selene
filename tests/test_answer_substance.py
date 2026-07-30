@@ -111,3 +111,104 @@ def test_limited_resource_comparison_answers_both_options_and_recommends_a_small
     assert "vegetables and pollinators" in result["answer"]
     assert "recommendation for the next small step" in result["answer"]
     assert result["external_fact_claimed"] is False
+
+
+def test_visible_resources_and_time_form_a_bounded_plan_without_external_facts():
+    result = build_answer_substance(
+        "I have coffee, a sketchbook, and fifteen minutes. "
+        "Suggest a simple way to use the time."
+    )
+
+    assert result["answer_kind"] == "bounded_resource_plan"
+    assert "fifteen minutes" in result["answer"]
+    assert "coffee" in result["answer"]
+    assert "sketchbook" in result["answer"]
+    assert result["structured_semantic_handoff"] is True
+    assert result["external_fact_claimed"] is False
+
+
+def test_competing_hypotheses_get_one_discriminating_check_and_revision_condition():
+    result = build_answer_substance(
+        "My working guess is a loose drawer runner, but the frame could be warped. "
+        "What should I check first, and what evidence would change your answer?"
+    )
+
+    assert result["answer_kind"] == "hypothesis_discrimination"
+    assert "smallest safe, reversible observation" in result["answer"]
+    assert "loose drawer runner" in result["answer"]
+    assert "frame being warped" in result["answer"]
+    assert "shift toward" in result["answer"]
+    assert result["external_fact_claimed"] is False
+
+
+def test_useful_guess_remains_distinct_from_verified_knowledge():
+    result = build_answer_substance(
+        "Could you ever make a guess when the answer is not known yet?"
+    )
+
+    assert result["answer_kind"] == "bounded_guess_policy"
+    assert result["answer"].startswith("Yes.")
+    assert "what would make me revise it" in result["answer"]
+    assert "separate from something verified" in result["answer"]
+
+
+def test_new_evidence_reopens_only_the_prior_conclusion():
+    result = build_answer_substance(
+        "Now I notice the drawer still catches after the runner is tightened. "
+        "Does that change your answer?",
+        [
+            {
+                "observation": (
+                    "My working guess is a loose drawer runner, but the frame could be warped. "
+                    "What should I check first?"
+                )
+            }
+        ],
+    )
+
+    assert result["answer_kind"] == "evidence_revision"
+    assert "would not defend the earlier guess unchanged" in result["answer"]
+    assert "observations that still fit remain useful" in result["answer"]
+    assert result["support_basis"] == "current_prompt_and_recent_conversation"
+    assert result["memory_write_active"] is False
+
+
+def test_changed_time_constraint_scales_prior_plan_without_discarding_its_aim():
+    result = build_answer_substance(
+        "We only have five minutes now. Does the plan still hold?",
+        [
+            {
+                "observation": (
+                    "I have tea, a notebook, and twenty minutes. "
+                    "Recommend a simple way to use the time."
+                )
+            }
+        ],
+    )
+
+    assert result["answer_kind"] == "constraint_revised_plan"
+    assert "aim still holds" in result["answer"]
+    assert "twenty minutes to only have five minutes" not in result["answer"]
+    assert "five minutes" in result["answer"]
+    assert "one quick note" in result["answer"]
+
+
+def test_follow_up_can_request_reason_then_a_bounded_number_of_steps():
+    result = build_answer_substance(
+        "Give me the reason first, then the two smallest steps.",
+        [
+            {
+                "observation": (
+                    "I have cocoa, a journal, and twelve minutes. "
+                    "What could I do with them?"
+                )
+            }
+        ],
+    )
+
+    assert result["answer_kind"] == "contextual_answer_development"
+    assert result["answer"].startswith("Reason first:")
+    assert "Step 1:" in result["answer"]
+    assert "Step 2:" in result["answer"]
+    assert "Step 3:" not in result["answer"]
+    assert result["structured_semantic_handoff"] is True

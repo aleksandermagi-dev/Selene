@@ -31,7 +31,8 @@ def build_answer_substance(
     kind = "unsupported_fact"
     missing_variable = "the specific claim or observation the answer must fit"
     support_basis = "current_prompt_only"
-    semantic_context: dict[str, str] = {}
+    semantic_context: dict[str, Any] = {}
+    ordinary_operation = _ordinary_prompt_grounded_operation(text, observations or [])
 
     comparison = any(marker in lower for marker in ("compare", "difference", "versus", " vs ", "tradeoff", "trade-off", "which option"))
     ordering = any(marker in lower for marker in ("come first", "do first", "start with", "begin with", "priority", "prioritize"))
@@ -125,6 +126,14 @@ def build_answer_substance(
         kind = "cross_domain_foundation_comparison"
         missing_variable = "whether the immediate goal is conversational readiness or the mathematics curriculum"
         semantic_context = {"variant": "fractions_and_conversational_uncertainty"}
+    elif ordinary_operation:
+        answer = str(ordinary_operation["answer"])
+        kind = str(ordinary_operation["answer_kind"])
+        missing_variable = str(ordinary_operation["missing_variable"])
+        support_basis = str(ordinary_operation.get("support_basis") or "current_prompt_only")
+        semantic_context = {
+            "units": ordinary_operation.get("semantic_units") or [],
+        }
     elif viewpoint and any(marker in lower for marker in ("reversible step", "reversible first", "smallest reversible")):
         answer = (
             "I think that is a sound default when uncertainty is high: a small reversible step limits the cost of being wrong and produces evidence for the next choice. "
@@ -299,18 +308,34 @@ def build_answer_substance(
         "compatibility_fallback_available": semantic_packet["compatibility_fallback_available"],
         "external_fact_claimed": False,
         "source_required_for_factual_claim": kind in {"bounded_knowledge_gap", "source_needed", "causal_evidence_needed"},
+        "memory_write_active": False,
+        "runtime_memory_recall": False,
+        "training_allowed": False,
+        "lora_allowed": False,
+        "autonomous_action_allowed": False,
+        "identity_change": False,
+        "personality_change": False,
+        "governance_change": False,
+        "authority_change": False,
         "visible_summary_only": True,
         "hidden_chain_of_thought_exposed": False,
         "provenance_boundary": ANSWER_SUBSTANCE_BOUNDARY,
     }
 
 
-def _structured_semantic_units(kind: str, context: dict[str, str]) -> list[dict[str, Any]]:
+def _structured_semantic_units(kind: str, context: dict[str, Any]) -> list[dict[str, Any]]:
     common = {
         "source_kind": "prompt_grounded_method",
         "source_refs": ["answer_substance:current_prompt"],
         "supported": True,
     }
+    supplied_units = [
+        item
+        for item in context.get("units") or []
+        if isinstance(item, dict)
+    ]
+    if supplied_units:
+        return supplied_units[:12]
     if kind == "comparison_dependency_rule":
         return [
             {
@@ -632,3 +657,647 @@ def _text_grounded_semantic_units(answer: str) -> list[dict[str, Any]]:
 def _topic_terms(value: str) -> list[str]:
     words = [word.lower() for word in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", value)]
     return list(dict.fromkeys(word for word in words if word not in _STOP_WORDS))[:12]
+
+
+def _ordinary_prompt_grounded_operation(
+    prompt: str,
+    observations: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build ordinary answers from visible premises and recent conversation.
+
+    These operations do not supply external facts. They combine only the
+    request's stated resources, candidate explanations, constraints, and
+    corrections into an inspectable answer.
+    """
+
+    lower = " ".join(prompt.lower().replace("’", "'").split())
+    history = _observation_texts(observations)
+
+    revision = _evidence_revision_operation(prompt, lower, history)
+    if revision:
+        return revision
+
+    constraint = _constraint_revision_operation(prompt, lower, history)
+    if constraint:
+        return constraint
+
+    follow_up = _answer_development_operation(prompt, lower, history)
+    if follow_up:
+        return follow_up
+
+    hypothesis = _hypothesis_discrimination_operation(prompt, lower)
+    if hypothesis:
+        return hypothesis
+
+    if re.search(r"\b(?:would|could|can|do)\s+you\b.{0,45}\bguess\b", lower):
+        answer = (
+            "Yes. If the visible evidence supports a useful attempt, I can give my best guess, "
+            "say what it is based on, and name what would make me revise it. I would keep the guess "
+            "clearly separate from something verified."
+        )
+        return _operation(
+            answer=answer,
+            answer_kind="bounded_guess_policy",
+            missing_variable="the visible evidence that would support a particular guess",
+            units=[
+                _unit(
+                    "guess_allowed",
+                    "answer",
+                    "condition",
+                    subject="I",
+                    predicate="can give",
+                    obj="my best guess",
+                    condition="the visible evidence supports a useful attempt",
+                    meaning_keys=["useful evidence-bounded guess is allowed"],
+                ),
+                _unit(
+                    "guess_basis",
+                    "support",
+                    "support",
+                    subject="I",
+                    predicate="state",
+                    obj="what the guess is based on and what would make me revise it",
+                    meaning_keys=["guess includes basis and revision condition"],
+                ),
+                _unit(
+                    "guess_not_verified",
+                    "limit",
+                    "contrast",
+                    subject="the guess",
+                    predicate="remain separate from",
+                    obj="something verified",
+                    meaning_keys=["guess and verified knowledge remain distinct"],
+                ),
+            ],
+        )
+
+    plan = _resource_plan_operation(prompt, lower)
+    if plan:
+        return plan
+    return {}
+
+
+def _resource_plan_operation(prompt: str, lower: str) -> dict[str, Any]:
+    planning_request = bool(
+        re.search(
+            r"\b(?:suggest|recommend|plan|how should|what should|what could|"
+            r"make use of|use (?:the|my|our) time|fit into)\b",
+            lower,
+        )
+    )
+    duration = _duration(prompt)
+    resources = _available_resources(prompt)
+    if not planning_request or not duration or not resources:
+        return {}
+
+    primary, secondary = _resource_roles(resources)
+    reflective_secondary = _is_reflective_resource(secondary)
+    if secondary and reflective_secondary:
+        recommendation = (
+            f"Use the {duration} for one small, complete pause: start with {primary}, "
+            f"then use {secondary} to capture one thought or small idea rather than starting a large task."
+        )
+        step_one = f"Settle in with {primary}."
+        step_two = f"Use {secondary} for one bounded note, sketch, or idea."
+    elif secondary:
+        recommendation = (
+            f"Use the {duration} for one small, complete activity with {primary} and {secondary}, "
+            "and choose a stopping point before it expands into a larger task."
+        )
+        step_one = f"Set up the smallest useful combination of {primary} and {secondary}."
+        step_two = "Complete only that bounded piece, then stop."
+    else:
+        recommendation = (
+            f"Use the {duration} for one small, complete activity with {primary}, "
+            "and stop before it expands into a larger task."
+        )
+        step_one = f"Choose one clear use for {primary}."
+        step_two = "Do only that small piece, then leave yourself a clean stopping point."
+    reason = (
+        f"That fits the stated {duration} and the materials already available, "
+        "so the activity can feel finished without requiring a larger commitment."
+    )
+    answer = f"{recommendation} {reason}"
+    return _operation(
+        answer=answer,
+        answer_kind="bounded_resource_plan",
+        missing_variable="whether rest, reflection, or output is the preferred immediate goal",
+        units=[
+            _unit(
+                "resource_plan_recommendation",
+                "answer",
+                "sequence",
+                predicate="use",
+                obj=f"the {duration} for one small complete activity using {primary}"
+                    + (f" and {secondary}" if secondary else ""),
+                mood="imperative",
+                meaning_keys=["recommendation fits stated time and resources"],
+            ),
+            _unit(
+                "resource_plan_reason",
+                "support",
+                "cause",
+                subject="the recommendation",
+                predicate="fit",
+                obj=f"the stated {duration} and available materials without a larger commitment",
+                meaning_keys=["bounded plan fits visible constraints"],
+            ),
+            _unit(
+                "resource_plan_step_one",
+                "support",
+                "sequence",
+                text=step_one,
+                meaning_keys=["first small step"],
+            ),
+            _unit(
+                "resource_plan_step_two",
+                "conclusion",
+                "sequence",
+                text=step_two,
+                meaning_keys=["second small step and stopping point"],
+            ),
+        ],
+    )
+
+
+def _hypothesis_discrimination_operation(prompt: str, lower: str) -> dict[str, Any]:
+    pair = _hypothesis_pair(prompt)
+    if not pair:
+        return {}
+    primary, alternative = pair
+    asks_for_test = any(
+        marker in lower
+        for marker in (
+            "first thing", "first check", "check first", "test first",
+            "what evidence", "change your mind", "change the answer",
+            "distinguish", "tell them apart",
+        )
+    )
+    if not asks_for_test:
+        return {}
+    answer = (
+        f"Check the smallest safe, reversible observation on which {primary} and {alternative} "
+        f"predict different results. If changing only the condition implied by {primary} removes the "
+        f"problem, that supports {primary}. If it does not, and evidence in the form of an observation expected specifically "
+        f"under {alternative} appears, I would change my answer and shift toward {alternative}. Until then, both remain "
+        "possible and the first is only the current best guess."
+    )
+    return _operation(
+        answer=answer,
+        answer_kind="hypothesis_discrimination",
+        missing_variable=f"the safe observation that differs between {primary} and {alternative}",
+        units=[
+            _unit(
+                "hypothesis_first_check",
+                "answer",
+                "sequence",
+                predicate="check",
+                obj=f"the smallest safe reversible observation that separates {primary} from {alternative}",
+                mood="imperative",
+                meaning_keys=["use one discriminating observation"],
+            ),
+            _unit(
+                "hypothesis_primary_support",
+                "condition",
+                "condition",
+                subject=f"an isolated change to {primary}",
+                predicate="support",
+                obj=primary,
+                condition="that change removes the observed problem",
+                meaning_keys=["primary model gains support from its distinguishing prediction"],
+            ),
+            _unit(
+                "hypothesis_revision",
+                "reopening",
+                "contrast",
+                subject="I",
+                predicate="change",
+                obj=f"my answer and shift toward {alternative}",
+                condition=f"the check does not support {primary} and evidence expected under {alternative} appears",
+                meaning_keys=["contrary evidence reopens and revises the guess"],
+            ),
+            _unit(
+                "hypothesis_uncertainty",
+                "limit",
+                "contrast",
+                subject=primary,
+                predicate="remain",
+                obj="the current best guess rather than a verified conclusion",
+                meaning_keys=["working guess remains provisional"],
+            ),
+        ],
+    )
+
+
+def _evidence_revision_operation(
+    prompt: str,
+    lower: str,
+    history: list[str],
+) -> dict[str, Any]:
+    asks_revision = any(
+        marker in lower
+        for marker in (
+            "does that change", "does this change", "would that change",
+            "revise your", "change your answer", "change your mind",
+            "now i see", "now we see", "new evidence", "new observation",
+        )
+    )
+    if not asks_revision:
+        return {}
+    prior_text = _latest_matching(history, _hypothesis_pair)
+    pair = _hypothesis_pair(prior_text) if prior_text else ()
+    evidence = _new_evidence(prompt)
+    if not evidence or not pair:
+        return {}
+    primary, alternative = pair
+    visible_evidence = evidence[0].upper() + evidence[1:] if evidence else evidence
+    answer = (
+        f"Yes. {visible_evidence} is new evidence, so I would not defend the earlier guess unchanged. "
+        f"It lowers my confidence in {primary} and reopens the comparison with {alternative}. "
+        f"I would now ask which explanation actually predicts {evidence}; the observations that still "
+        "fit remain useful, but the conclusion should update."
+    )
+    return _operation(
+        answer=answer,
+        answer_kind="evidence_revision",
+        missing_variable=f"which of {primary} or {alternative} predicts the new observation",
+        support_basis="current_prompt_and_recent_conversation",
+        units=[
+            _unit(
+                "revision_direct_answer",
+                "answer",
+                "cause",
+                subject="the new evidence",
+                predicate="change",
+                obj="the answer",
+                meaning_keys=["new evidence changes the answer"],
+            ),
+            _unit(
+                "revision_new_evidence",
+                "support",
+                "cause",
+                subject=f"the new observation that {evidence}",
+                predicate="lower",
+                obj=f"confidence in {primary}",
+                source_kind="current_session_observation",
+                source_refs=["answer_substance:recent_conversation_observations"],
+                meaning_keys=["new evidence changes prior confidence"],
+            ),
+            _unit(
+                "revision_reopen",
+                "reopening",
+                "contrast",
+                subject="the comparison",
+                predicate="reopen",
+                obj=f"{primary} versus {alternative}",
+                meaning_keys=["reopen competing explanations"],
+            ),
+            _unit(
+                "revision_preserve",
+                "conclusion",
+                "conclusion",
+                subject="the parts of the earlier observations that still fit",
+                predicate="remain",
+                obj="useful while the conclusion updates",
+                meaning_keys=["preserve useful evidence while revising conclusion"],
+            ),
+        ],
+    )
+
+
+def _constraint_revision_operation(
+    prompt: str,
+    lower: str,
+    history: list[str],
+) -> dict[str, Any]:
+    if not any(
+        marker in lower
+        for marker in ("still hold", "plan still", "change the plan", "adjust the plan", "only have")
+    ):
+        return {}
+    new_duration = _duration(prompt)
+    prior_text = _latest_matching(history, lambda value: _duration(value) and _available_resources(value))
+    if not new_duration or not prior_text:
+        return {}
+    old_duration = _duration(prior_text)
+    resources = _available_resources(prior_text)
+    primary, secondary = _resource_roles(resources)
+    secondary_step = (
+        f", use {secondary} for only one quick note or sketch"
+        if _is_reflective_resource(secondary)
+        else f", use {secondary} only for the same smaller activity"
+        if secondary
+        else ""
+    )
+    answer = (
+        f"The aim still holds, but the scope should shrink from {old_duration} to {new_duration}. "
+        f"Keep {primary} as the anchor"
+        + secondary_step
+        + ", and stop there instead of trying to complete the larger version of the plan."
+    )
+    return _operation(
+        answer=answer,
+        answer_kind="constraint_revised_plan",
+        missing_variable="whether the shortened activity still meets the immediate goal",
+        support_basis="current_prompt_and_recent_conversation",
+        units=[
+            _unit(
+                "constraint_preserve_aim",
+                "answer",
+                "contrast",
+                subject="the aim",
+                predicate="still hold",
+                obj="with a smaller scope",
+                meaning_keys=["preserve aim while revising scope"],
+            ),
+            _unit(
+                "constraint_update_duration",
+                "support",
+                "cause",
+                subject=f"the change from {old_duration} to {new_duration}",
+                predicate="require",
+                obj="a shorter version of the plan",
+                source_kind="current_session_observation",
+                source_refs=["answer_substance:recent_conversation_observations"],
+                meaning_keys=["new time constraint changes plan size"],
+            ),
+            _unit(
+                "constraint_stopping_point",
+                "conclusion",
+                "sequence",
+                predicate="stop after",
+                obj="one bounded use of the available materials",
+                mood="imperative",
+                meaning_keys=["short plan has clear stopping point"],
+            ),
+        ],
+    )
+
+
+def _answer_development_operation(
+    prompt: str,
+    lower: str,
+    history: list[str],
+) -> dict[str, Any]:
+    wants_reason_first = bool(
+        re.search(r"\b(?:reason|why)\s+first\b|\bstart with (?:the )?(?:reason|why)\b", lower)
+    )
+    step_match = re.search(r"\b(one|two|three|1|2|3)\s+(?:smallest\s+)?steps?\b", lower)
+    if not wants_reason_first and not step_match:
+        return {}
+    prior_text = _latest_matching(history, lambda value: _duration(value) and _available_resources(value))
+    if not prior_text:
+        return {}
+    duration = _duration(prior_text)
+    resources = _available_resources(prior_text)
+    primary, secondary = _resource_roles(resources)
+    count = _number_value(step_match.group(1)) if step_match else 2
+    reason = (
+        f"The plan fits the available {duration} and uses what is already present without turning "
+        "a small opening into a large commitment."
+    )
+    possible_steps = [
+        f"Settle in with {primary}.",
+        (
+            f"Use {secondary} for one bounded note, sketch, or idea."
+            if _is_reflective_resource(secondary)
+            else f"Use {primary} and {secondary} for one bounded version of the activity."
+            if secondary
+            else f"Choose one bounded use for {primary}."
+        ),
+        "Stop at the planned endpoint and leave any larger idea for later.",
+    ]
+    steps = possible_steps[: max(1, min(count, 3))]
+    answer = "Reason first: " + reason + " " + " ".join(
+        f"Step {index + 1}: {step}" for index, step in enumerate(steps)
+    )
+    return _operation(
+        answer=answer,
+        answer_kind="contextual_answer_development",
+        missing_variable="whether a different immediate goal should replace the prior plan",
+        support_basis="current_prompt_and_recent_conversation",
+        units=[
+            _unit(
+                "development_reason_first",
+                "answer",
+                "cause",
+                subject="the prior plan",
+                predicate="fit",
+                obj=f"the available {duration} and stated materials without a larger commitment",
+                source_kind="current_session_observation",
+                source_refs=["answer_substance:recent_conversation_observations"],
+                meaning_keys=["reason precedes requested steps"],
+            ),
+            *[
+                _unit(
+                    f"development_step_{index + 1}",
+                    "support" if index + 1 < len(steps) else "conclusion",
+                    "sequence",
+                    text=f"Step {index + 1}: {step}",
+                    source_kind="current_session_observation",
+                    source_refs=["answer_substance:recent_conversation_observations"],
+                    meaning_keys=[f"requested step {index + 1}"],
+                )
+                for index, step in enumerate(steps)
+            ],
+        ],
+    )
+
+
+def _operation(
+    *,
+    answer: str,
+    answer_kind: str,
+    missing_variable: str,
+    units: list[dict[str, Any]],
+    support_basis: str = "current_prompt_only",
+) -> dict[str, Any]:
+    return {
+        "answer": truncate(answer, 1000),
+        "answer_kind": answer_kind,
+        "missing_variable": missing_variable,
+        "semantic_units": units,
+        "support_basis": support_basis,
+    }
+
+
+def _unit(
+    unit_id: str,
+    role: str,
+    relation: str,
+    *,
+    text: str = "",
+    subject: str = "",
+    predicate: str = "",
+    obj: str = "",
+    mood: str = "declarative",
+    condition: str = "",
+    source_kind: str = "prompt_grounded_method",
+    source_refs: list[str] | None = None,
+    meaning_keys: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "id": unit_id,
+        "role": role,
+        "relation": relation,
+        "text": text,
+        "subject": subject,
+        "predicate": predicate,
+        "object": obj,
+        "mood": mood,
+        "condition": condition,
+        "source_kind": source_kind,
+        "source_refs": source_refs or ["answer_substance:current_prompt"],
+        "supported": True,
+        "meaning_keys": meaning_keys or [],
+    }
+
+
+def _observation_texts(observations: list[dict[str, Any]]) -> list[str]:
+    return [
+        truncate(str(item.get("observation") or item.get("preview") or ""), 900).strip()
+        for item in observations
+        if isinstance(item, dict)
+        and str(item.get("observation") or item.get("preview") or "").strip()
+    ]
+
+
+def _latest_matching(values: list[str], predicate: Any) -> str:
+    for value in reversed(values):
+        try:
+            if predicate(value):
+                return value
+        except (AttributeError, TypeError, ValueError):
+            continue
+    return ""
+
+
+def _hypothesis_pair(text: str) -> tuple[str, str] | None:
+    normalized = " ".join(str(text or "").replace("’", "'").split())
+    match = re.search(
+        r"\b(?:my\s+)?(?:best|working|initial|current)\s+"
+        r"(?:guess|hypothesis|read)\s+(?:is|would be|:)\s+(.+?)"
+        r"(?:,\s*|\s+)(?:but|although|while)\s+(.+?)(?:[.?!]|$)",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    primary = _clean_hypothesis(match.group(1))
+    alternative = _clean_hypothesis(match.group(2))
+    return (primary, alternative) if primary and alternative else None
+
+
+def _clean_hypothesis(value: str) -> str:
+    cleaned = re.sub(
+        r"^(?:it|there|the problem|the cause)\s+(?:could|might|may|can)\s+(?:also\s+)?(?:be\s+)?",
+        "",
+        value.strip(" ,"),
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.split(
+        r"\b(?:what|which|how)\b.{0,35}\b(?:check|evidence|change|distinguish)\b",
+        cleaned,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0]
+    modal_description = re.match(
+        r"^(.*?)\s+(?:could|might|may)\s+be\s+(.+)$",
+        cleaned.strip(" ,"),
+        flags=re.IGNORECASE,
+    )
+    if modal_description:
+        cleaned = (
+            f"{modal_description.group(1).strip()} being "
+            f"{modal_description.group(2).strip()}"
+        )
+    return truncate(cleaned.strip(" ,"), 180)
+
+
+def _new_evidence(prompt: str) -> str:
+    text = " ".join(str(prompt or "").split())
+    patterns = (
+        r"\b(?:now|then)\s+(?:i|we)\s+(?:see|saw|found|notice|noticed|observe|observed)\s+(.+?)(?:[.?!]|$)",
+        r"\b(?:new evidence|new observation)\s*(?:is|:)?\s*(.+?)(?:[.?!]|$)",
+        r"\b(?:i|we)\s+(?:also\s+)?(?:see|saw|found|notice|noticed|observe|observed)\s+(.+?)(?:[.?!]|$)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match:
+            return truncate(match.group(1).strip(" ,"), 240)
+    return ""
+
+
+def _duration(text: str) -> str:
+    match = re.search(
+        r"\b(?:only\s+|about\s+|around\s+|roughly\s+)?"
+        r"(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+        r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|"
+        r"twenty|twenty-five|thirty|forty|forty-five|fifty|sixty|\d+)\s+"
+        r"(minutes?|hours?)\b",
+        str(text or ""),
+        flags=re.IGNORECASE,
+    )
+    return (
+        f"{match.group(1).lower()} {match.group(2).lower()}"
+        if match
+        else ""
+    )
+
+
+def _available_resources(text: str) -> list[str]:
+    match = re.search(
+        r"\b(?:i|we)\s+(?:only\s+)?(?:have got|have|got)\s+(.+?)(?:[.;?!]|$)",
+        str(text or ""),
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return []
+    phrase = re.sub(
+        r"(?:,\s*|\s+and\s+)?(?:only\s+|about\s+|around\s+|roughly\s+)?"
+        r"(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+        r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|"
+        r"twenty|twenty-five|thirty|forty|forty-five|fifty|sixty|\d+)\s+"
+        r"(?:minutes?|hours?)\b",
+        "",
+        match.group(1),
+        flags=re.IGNORECASE,
+    ).strip(" ,")
+    parts = [
+        re.sub(r"^(?:and\s+)?(?:a|an|the|some)\s+", "", item.strip(), flags=re.IGNORECASE)
+        for item in re.split(r"\s*,\s*|\s+and\s+", phrase)
+        if item.strip()
+    ]
+    return [truncate(item, 120) for item in parts if item][:6]
+
+
+def _resource_roles(resources: list[str]) -> tuple[str, str]:
+    if not resources:
+        return "what is available", ""
+    reflective = next(
+        (item for item in resources if _is_reflective_resource(item)),
+        "",
+    )
+    primary = next((item for item in resources if item != reflective), resources[0])
+    secondary = reflective if reflective and reflective != primary else (
+        resources[1] if len(resources) > 1 else ""
+    )
+    return primary, secondary
+
+
+def _is_reflective_resource(value: str) -> bool:
+    return any(
+        marker in str(value or "").lower()
+        for marker in (
+            "notebook", "journal", "paper", "pad", "pen", "pencil",
+            "sketchbook", "canvas", "book", "notes",
+        )
+    )
+
+
+def _number_value(value: str) -> int:
+    return {
+        "one": 1,
+        "two": 2,
+        "three": 3,
+    }.get(str(value).lower(), int(value) if str(value).isdigit() else 2)

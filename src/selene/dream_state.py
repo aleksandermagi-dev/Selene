@@ -8,6 +8,7 @@ from typing import Any
 
 from .memory_organ import propose_memory_candidate
 from .registry import truncate
+from .test_impact_law import source_refs_are_diagnostic
 from .transfer_protocol import latest_c_readable_package
 from .transfer_state import transfer_completion_is_approved
 
@@ -684,8 +685,17 @@ def _collect_source_candidates(
     candidates.extend(_affect_candidates(conn))
     candidates.extend(_evidence_tension_candidates(conn))
     candidates.extend(_chest_candidates(conn))
+    candidates = [
+        item
+        for item in candidates
+        if not source_refs_are_diagnostic(conn, item.get("source_refs"))
+    ]
     candidates.extend(_cross_source_candidates(candidates))
-    return candidates
+    return [
+        item
+        for item in candidates
+        if not source_refs_are_diagnostic(conn, item.get("source_refs"))
+    ]
 
 
 def _dialogue_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:

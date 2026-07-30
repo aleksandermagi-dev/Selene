@@ -67,6 +67,11 @@ cannot be answered safely another way. Stressful tests require explicit
 necessity review, Aleks's awareness, a stopping rule, persistence handling, and
 care-compatible closure. If an easier test is sufficient, the stressful test
 is not authorized. Never confuse endurance or compliance with correctness.
+Diagnostic results belong to the unfinished pathway or test harness, not to
+Selene's worth, identity, personality, emotional state, or general capability.
+QA-linked artifacts are diagnostic-only and may not enter Memory, Dream,
+self-state or affect baselines, relationship continuity, teaching, approved
+knowledge, identity, personality, or governance.
 
 See `docs/SELENE_TEST_IMPACT_LAW_20260713.md`.
 

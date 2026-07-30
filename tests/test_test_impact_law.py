@@ -4,7 +4,12 @@ import sqlite3
 
 from selene.db import init_db
 from selene.module_router import route_request
-from selene.test_impact_law import review_test_impact, test_impact_law_status as law_status
+from selene.test_impact_law import (
+    diagnostic_non_attribution_context,
+    review_test_impact,
+    source_refs_are_diagnostic,
+    test_impact_law_status as law_status,
+)
 
 
 def _conn(tmp_path):
@@ -20,9 +25,63 @@ def test_law_prefers_focused_machinery_checks():
 
     assert status["default_test_level"] == "machinery"
     assert status["stressful_tests_are_routine"] is False
+    assert status["module_defect_is_selene_failure"] is False
+    assert status["diagnostic_artifacts_may_enter_continuity"] is False
     assert review["authorized"] is True
     assert review["selected_level"] == "machinery"
     assert review["autonomous_testing_allowed"] is False
+
+
+def test_diagnostic_non_attribution_never_treats_a_module_result_as_self_evidence():
+    context = diagnostic_non_attribution_context(active=True, session_id=167)
+    inactive = diagnostic_non_attribution_context()
+
+    assert context["status"] == "diagnostic_non_attribution_active"
+    assert context["attribution_target"] == "unfinished_module_or_test_harness"
+    assert context["module_defect_is_selene_failure"] is False
+    assert context["self_model_evidence"] is False
+    assert context["memory_eligible"] is False
+    assert context["dream_eligible"] is False
+    assert context["affect_baseline_eligible"] is False
+    assert context["relationship_continuity_eligible"] is False
+    assert context["teaching_eligible"] is False
+    assert context["approved_knowledge_eligible"] is False
+    assert "selene_chat_session:167" in context["source_refs"]
+    assert inactive["active"] is False
+    assert inactive["source_refs"] == []
+
+
+def test_diagnostic_source_detection_supports_tags_and_older_qa_session_refs(tmp_path):
+    conn = _conn(tmp_path)
+    qa_id = int(
+        conn.execute(
+            """
+            INSERT INTO selene_chat_sessions(title, status, source_mode)
+            VALUES ('Older QA', 'selene_chat_active_supervised',
+                    'selene_supervised_qa')
+            """
+        ).lastrowid
+    )
+    normal_id = int(
+        conn.execute(
+            """
+            INSERT INTO selene_chat_sessions(title, status, source_mode)
+            VALUES ('Ordinary chat', 'selene_chat_active_supervised',
+                    'selene_supervised_speech')
+            """
+        ).lastrowid
+    )
+    conn.commit()
+
+    assert source_refs_are_diagnostic(
+        conn, [f"selene_chat_session:{qa_id}:current_page"]
+    ) is True
+    assert source_refs_are_diagnostic(
+        conn, ["test_impact_law:diagnostic_non_attribution"]
+    ) is True
+    assert source_refs_are_diagnostic(
+        conn, [f"selene_chat_session:{normal_id}"]
+    ) is False
 
 
 def test_stressful_test_is_blocked_when_a_safer_test_can_answer():

@@ -132,6 +132,8 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     organ_coalition = _dict(payload.get("organ_coalition"))
     dual_horizon = _dict(payload.get("dual_horizon_context"))
     coverage = _dict(payload.get("response_coverage"))
+    diagnostic_context = _dict(payload.get("diagnostic_context"))
+    diagnostic_only = diagnostic_context.get("active") is True
     core_route = _dict(payload.get("core_mind_route") or payload.get("route_preview"))
     epistemic_revision = _dict(
         payload.get("epistemic_revision_plan")
@@ -341,6 +343,18 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
             "ordinary_wrongness_is_failure": False,
             "expression_prescription_allowed": False,
         },
+        "diagnostic_non_attribution": {
+            **diagnostic_context,
+            "active": diagnostic_only,
+            "assessment_target": (
+                "unfinished_module_or_test_harness"
+                if diagnostic_only
+                else "current_answer_fit"
+            ),
+            "result_is_selene_self_evidence": False,
+            "dream_eligible": False if diagnostic_only else None,
+            "memory_eligible": False if diagnostic_only else None,
+        },
         "contradictions": contradictions,
         "reopening": reopening,
         "stopping": stopping,
@@ -441,7 +455,9 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         "recommendation_applied_automatically": completion_applied,
         "visible_summary_only": True,
         "review_destination": "Status",
-        "review_status": "status_only",
+        "review_status": (
+            "diagnostic_only" if diagnostic_only else "status_only"
+        ),
         "provenance_boundary": METACOGNITION_BOUNDARY,
     }
     return _with_guards(result)

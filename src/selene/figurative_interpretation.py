@@ -325,35 +325,68 @@ def _analogy(text: str) -> dict[str, Any]:
 
 
 def _quoted_figure_request(text: str) -> dict[str, Any]:
-    request = re.search(
-        r"\bwhen i say\s+[\"“'](.+?)[\"”']\s*,?\s*what do i mean\b",
+    quoted = re.search(r"[\"“'](.+?)[\"”']", text)
+    interpretation_request = re.search(
+        r"\b(?:what do i mean|what does (?:that|this|it) mean|"
+        r"how do you (?:read|interpret|understand) (?:that|this|it)|"
+        r"how would you (?:read|interpret|understand) (?:that|this|it))\b",
         text,
         flags=re.IGNORECASE,
     )
-    if not request:
+    if not quoted or not interpretation_request:
         return {}
-    surface = request.group(1).strip()
+    surface = quoted.group(1).strip()
     lower = surface.lower()
     meaning = ""
+    form = "metaphor"
+    cues = ["speaker_requested_meaning_of_quoted_expression"]
     if (
         re.search(r"\b(?:lay|build|make|put|set)\w*\b.*\b(?:track|foundation|road|bridge)\w*\b", lower)
         and re.search(r"\bbefore\b.*\b(?:driv|use|cross|travel|run)\w*\b", lower)
     ):
         meaning = "establish the needed foundation or prerequisites before trying to use what depends on them"
+        cues.append("visible_sequence_mapping")
     elif re.search(r"\bbefore\b", lower):
         first, second = re.split(r"\bbefore\b", surface, maxsplit=1, flags=re.IGNORECASE)
         meaning = (
             f"the first activity, {first.strip()}, supplies or protects something needed before "
             f"the later activity, {second.strip()}"
         )
+        cues.append("visible_sequence_mapping")
+    else:
+        personification = re.match(
+            r"^(?:the\s+)?(.+?)\s+(?:is|was|keeps)\s+(?:being\s+)?"
+            r"(dramatic|stubborn|grumpy|angry|happy|sulking|complaining|temperamental)\b",
+            surface,
+            flags=re.IGNORECASE,
+        )
+        if not personification:
+            personification = re.search(
+                r"\b(?:i|we)\s+say\s+(?:the\s+)?([a-z][a-z0-9 _-]{0,50}?)\s+"
+                r"(?:is|was|keeps)\s+"
+                r"[\"“'](?:being\s+)?"
+                r"(dramatic|stubborn|grumpy|angry|happy|sulking|complaining|temperamental)"
+                r"[,;:!?]?[\"”']",
+                text,
+                flags=re.IGNORECASE,
+            )
+        if personification:
+            subject = personification.group(1).strip()
+            quality = personification.group(2).lower()
+            meaning = (
+                f"{subject} is being personified: '{quality}' describes how its behavior seems "
+                "exaggerated, troublesome, or attention-demanding, not a literal emotional state"
+            )
+            form = "personification"
+            cues.append("nonhuman_subject_given_human_quality")
     if not meaning:
         return {}
     return {
-        "form": "metaphor",
+        "form": form,
         "surface": surface,
         "meaning": meaning,
         "confidence": "bounded",
-        "cues": ["speaker_requested_meaning_of_quoted_expression", "visible_sequence_mapping"],
+        "cues": cues,
     }
 
 

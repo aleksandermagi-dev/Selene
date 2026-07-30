@@ -64,7 +64,7 @@ def _workspace(
 
 def _seed_sources(conn):
     _workspace(conn)
-    _workspace(
+    qa_session_id = _workspace(
         conn,
         source_mode="selene_supervised_qa",
         topic="QA SECRET TOPIC",
@@ -83,6 +83,28 @@ def _seed_sources(conn):
             "A source-backed answer still needs one material detail.",
             json.dumps(["metacognition:test:1"]),
         ),
+    )
+    conn.execute(
+        """
+        INSERT INTO metacognition_runs
+        (prompt_preview, fit_state, recommended_action, sufficiency_state,
+         source_refs, provenance_boundary)
+        VALUES ('QA SECRET METACOGNITION', 'answer_incomplete',
+                'complete_missing_obligation',
+                'answer_has_unresolved_obligations', ?,
+                'test_qa_metacognition')
+        """,
+        (json.dumps([f"selene_chat_session:{qa_session_id}:current_page"]),),
+    )
+    conn.execute(
+        """
+        INSERT INTO vessel_emotion_salience_packets
+        (signal_type, uncertainty, repair_need, core_choice_route, source_refs,
+         provenance_boundary)
+        VALUES ('QA SECRET AFFECT', 'bounded', 'QA SECRET REPAIR',
+                'diagnostic_only', ?, 'test_qa_affect')
+        """,
+        (json.dumps([f"selene_chat_session:{qa_session_id}"]),),
     )
     propose_memory_candidate(
         conn,

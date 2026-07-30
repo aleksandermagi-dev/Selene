@@ -164,7 +164,12 @@ def list_native_language_runs(conn: sqlite3.Connection, limit: int = 50) -> dict
     )
 
 
-def realize_native_language(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def realize_native_language(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+    *,
+    record_run: bool = True,
+) -> dict[str, Any]:
     payload = payload or {}
     prompt = truncate(str(payload.get("prompt") or payload.get("text") or ""), 2400)
     if not prompt.strip():
@@ -183,7 +188,8 @@ def realize_native_language(conn: sqlite3.Connection, payload: dict[str, Any] | 
         ),
     }
     result = _build_language_result(prompt, payload, mode="responsive")
-    result["run_id"] = _store_run(conn, result)
+    if record_run:
+        result["run_id"] = _store_run(conn, result)
     return _with_guards(result)
 
 
@@ -494,6 +500,11 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         if isinstance(payload.get("dream_reflection"), dict)
         else {}
     )
+    diagnostic_context = (
+        payload.get("diagnostic_context")
+        if isinstance(payload.get("diagnostic_context"), dict)
+        else {}
+    )
     recent_assistant_texts = [
         str(item).strip()
         for item in conversation.get("recent_assistant_texts") or []
@@ -581,6 +592,9 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     variation_context = _variation_context(expression_profile, conversation, recent_assistant_texts)
     return {
         "intent": intent,
+        "diagnostic_context": diagnostic_context,
+        "diagnostic_only": diagnostic_context.get("active") is True,
+        "diagnostic_result_is_selene_self_evidence": False,
         "intent_decision": intent_decision,
         "answer_shape": str(payload.get("answer_shape") or intent_decision.get("answer_shape") or "direct_answer"),
         "response_depth": str(
