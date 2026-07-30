@@ -53,6 +53,24 @@ def inspect_contextual_follow_up(
         normalized,
     ):
         kind, marker = "reason_follow_up", "reason_about_present_self_report"
+    elif previous_assistant_preview and (
+        (
+            re.search(r"\b(?:your|that|the previous) answer\b", normalized)
+            and re.search(
+                r"\b(?:change|conclusion|develop|evidence|explain|expand|reason|short)\b",
+                normalized,
+            )
+        )
+        or re.match(
+            r"^(?:now\s+)?give me (?:the\s+)?(?:short|brief|direct) answer\b",
+            normalized,
+        )
+        or (
+            re.match(r"^(?:now\s+)?put (?:the|your) conclusion first\b", normalized)
+            and re.search(r"\b(?:answer|evidence|explain|reason)\b", normalized)
+        )
+    ):
+        kind, marker = "answer_development", "develop_previous_answer"
     elif re.match(r"^(?:one\s+)?(?:refinement|constraint|adjustment|revision)\s*:", normalized):
         kind, marker = "constraint_refinement", "explicit_session_refinement"
     elif re.search(
@@ -133,7 +151,7 @@ def inspect_contextual_follow_up(
             "confidence_check", "reason_follow_up", "continuation", "elaboration", "example_request",
             "rephrase_request", "viewpoint_follow_up", "alternative_reference",
             "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request",
-            "named_callback", "meaning_correction",
+            "named_callback", "meaning_correction", "answer_development",
         },
         "session_scoped_only": True,
         "memory_write_active": False,
@@ -198,7 +216,7 @@ def apply_contextual_intent(
                 "confidence": "high",
             }
         )
-    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback"}:
+    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback", "answer_development"}:
         result.update(
             {
                 "intent": "reasoning",
@@ -529,7 +547,13 @@ def _landmark_summary(landmarks: list[dict[str, Any]]) -> str:
     selected: list[dict[str, Any]] = []
     for preferred in ("recommendation", "condition", "limit", "conclusion"):
         candidate = next(
-            (item for item in reversed(landmarks) if item.get("kind") == preferred and item not in selected),
+            (
+                item
+                for item in reversed(landmarks)
+                if item.get("kind") == preferred
+                and item not in selected
+                and not _summary_near_duplicate(item, selected)
+            ),
             None,
         )
         if candidate:
@@ -537,7 +561,29 @@ def _landmark_summary(landmarks: list[dict[str, Any]]) -> str:
     if not selected:
         selected = list(reversed(landmarks[-3:]))
     selected.sort(key=lambda item: landmarks.index(item))
-    return " ".join(str(item.get("summary") or "") for item in selected[:4] if str(item.get("summary") or ""))
+    summaries = [
+        str(item.get("summary") or "").strip()
+        for item in selected[:3]
+        if str(item.get("summary") or "").strip()
+    ]
+    if len(summaries) == 1:
+        return summaries[0]
+    return f"We covered these points: {' '.join(summaries)}" if summaries else ""
+
+
+def _summary_near_duplicate(
+    candidate: dict[str, Any],
+    selected: list[dict[str, Any]],
+) -> bool:
+    terms = set(re.findall(r"[a-z][a-z0-9'-]{3,}", str(candidate.get("summary") or "").lower()))
+    if not terms:
+        return True
+    for item in selected:
+        other = set(re.findall(r"[a-z][a-z0-9'-]{3,}", str(item.get("summary") or "").lower()))
+        union = terms | other
+        if union and len(terms & other) / len(union) >= 0.72:
+            return True
+    return False
 
 
 def _bounded_rephrase(previous: str) -> str:

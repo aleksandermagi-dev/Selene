@@ -89,7 +89,9 @@ PATTERN_STOPWORDS = {
     "after",
     "again",
     "answer",
+    "answered",
     "attributable",
+    "available",
     "before",
     "candidate",
     "context",
@@ -106,14 +108,24 @@ PATTERN_STOPWORDS = {
     "might",
     "open",
     "pattern",
+    "question",
+    "questions",
+    "reason",
     "record",
+    "recorded",
     "reflection",
+    "remains",
     "review",
+    "reviewed",
     "source",
+    "state",
     "still",
     "that",
     "this",
     "thread",
+    "useful",
+    "used",
+    "using",
     "with",
     "without",
 }
@@ -220,7 +232,10 @@ def run_dream_cycle(
     started_by = truncate(
         str(payload.get("started_by") or "explicit_local_request"), 120
     )
-    source_candidates = _collect_source_candidates(conn)
+    source_candidates = _deduplicate_source_candidates(
+        conn,
+        _collect_source_candidates(conn),
+    )
     existing_keys = {
         str(row["reflection_key"])
         for row in conn.execute(
@@ -677,7 +692,7 @@ def _dialogue_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     rows = conn.execute(
         """
         SELECT w.id, w.session_id, w.active_topic, w.open_loops_json,
-               w.corrections_json, w.updated_at
+               w.corrections_json, w.last_selene_preview, w.updated_at
         FROM selene_dialogue_workspaces AS w
         JOIN selene_chat_sessions AS s ON s.id = w.session_id
         WHERE s.source_mode != 'selene_supervised_qa'
@@ -693,7 +708,11 @@ def _dialogue_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
             _loads(row["open_loops_json"], [])[-6:], start=1
         ):
             summary = _summary_from_value(loop)
-            if not summary:
+            if not _dialogue_loop_is_reflectable(
+                loop,
+                summary,
+                last_selene_preview=str(row["last_selene_preview"] or ""),
+            ):
                 continue
             items.append(
                 _candidate(
@@ -932,15 +951,28 @@ def _cross_source_candidates(
 ) -> list[dict[str, Any]]:
     patterns: list[dict[str, Any]] = []
     seen_pairs: set[tuple[str, str]] = set()
+    candidate_terms = [_pattern_terms(item) for item in candidates]
+    term_frequency: dict[str, int] = {}
+    for terms in candidate_terms:
+        for term in terms:
+            term_frequency[term] = term_frequency.get(term, 0) + 1
+    maximum_frequency = max(3, len(candidates) // 4)
     for left_index, left in enumerate(candidates):
-        left_terms = _pattern_terms(left)
+        left_terms = candidate_terms[left_index]
         if len(left_terms) < 3:
             continue
-        for right in candidates[left_index + 1 :]:
+        for right_index, right in enumerate(
+            candidates[left_index + 1 :],
+            start=left_index + 1,
+        ):
             if left["reflection_kind"] == right["reflection_kind"]:
                 continue
-            right_terms = _pattern_terms(right)
-            overlap = sorted(left_terms & right_terms)
+            right_terms = candidate_terms[right_index]
+            overlap = sorted(
+                term
+                for term in left_terms & right_terms
+                if term_frequency.get(term, 0) <= maximum_frequency
+            )
             if len(overlap) < 3:
                 continue
             pair = tuple(sorted((left["reflection_key"], right["reflection_key"])))
@@ -992,6 +1024,93 @@ def _pattern_terms(item: dict[str, Any]) -> set[str]:
     return {
         term
         for term in re.findall(r"[a-z][a-z0-9'-]{3,}", text)
+        if term not in PATTERN_STOPWORDS
+    }
+
+
+def _dialogue_loop_is_reflectable(
+    loop: Any,
+    summary: str,
+    *,
+    last_selene_preview: str,
+) -> bool:
+    if not summary or len(summary.split()) < 4:
+        return False
+    if isinstance(loop, dict) and str(loop.get("status") or "open") != "open":
+        return False
+    question_terms = _meaningful_terms(summary)
+    if len(question_terms) < 3:
+        return False
+    answer_terms = _meaningful_terms(last_selene_preview)
+    if answer_terms:
+        overlap = question_terms & answer_terms
+        # Coverage is deliberately conservative, so a loop can survive after
+        # a visible answer substantially addressed its subject. Dream should
+        # not turn that bookkeeping residue into a fresh reflection.
+        if len(overlap) >= 3 and len(overlap) / len(question_terms) >= 0.6:
+            return False
+    return True
+
+
+def _deduplicate_source_candidates(
+    conn: sqlite3.Connection,
+    candidates: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    existing = [
+        {
+            "reflection_kind": str(row["reflection_kind"]),
+            "title": str(row["title"]),
+            "reflection": str(row["reflection"]),
+        }
+        for row in conn.execute(
+            """
+            SELECT reflection_kind, title, reflection
+            FROM selene_dream_reflections
+            """
+        ).fetchall()
+    ]
+    accepted: list[dict[str, Any]] = []
+    seen = [_semantic_reflection_terms(item) for item in existing]
+    for candidate in candidates:
+        terms = _semantic_reflection_terms(candidate)
+        if not terms[1]:
+            continue
+        if any(_near_duplicate_reflection(terms, prior) for prior in seen):
+            continue
+        accepted.append(candidate)
+        seen.append(terms)
+    return accepted
+
+
+def _semantic_reflection_terms(
+    item: dict[str, Any],
+) -> tuple[str, frozenset[str]]:
+    kind = str(item.get("reflection_kind") or "")
+    text = " ".join(
+        str(item.get(key) or "")
+        for key in ("title", "reflection")
+    )
+    return kind, frozenset(_meaningful_terms(text))
+
+
+def _near_duplicate_reflection(
+    left: tuple[str, frozenset[str]],
+    right: tuple[str, frozenset[str]],
+) -> bool:
+    if left[0] != right[0] or not left[1] or not right[1]:
+        return False
+    overlap = len(left[1] & right[1])
+    union = len(left[1] | right[1])
+    return bool(union) and (
+        left[1] == right[1]
+        or overlap >= 6 and overlap / union >= 0.82
+    )
+
+
+def _meaningful_terms(value: str) -> set[str]:
+    return {
+        term
+        for term in re.findall(r"[a-z][a-z0-9'-]{3,}", value.lower())
         if term not in PATTERN_STOPWORDS
     }
 

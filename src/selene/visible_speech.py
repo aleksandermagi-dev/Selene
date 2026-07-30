@@ -33,6 +33,8 @@ INTERNAL_ONLY_SOURCE_CLASSES = {
 _SERIALIZED_METADATA_PATTERNS = (
     re.compile(r"\b(?:review_status|selected_route|source_refs|provenance_boundary)\b", re.IGNORECASE),
     re.compile(r"\bstatus_only\b", re.IGNORECASE),
+    re.compile(r"\bcurrent full request\b", re.IGNORECASE),
+    re.compile(r"\breflection memory source\s*:", re.IGNORECASE),
     re.compile(
         r"\b(?:answer_now|return_to_b|create_review_packet|rehearse_speech)\b",
         re.IGNORECASE,
@@ -54,6 +56,8 @@ _INTERNAL_REASONING_SCAFFOLDS = (
     "current best model as the provisional fit",
     "answer provisionally, ask aleks, or seek cocoon support",
     "selected next step",
+    "current full request",
+    "reflection memory source:",
     "stay corrigible",
 )
 

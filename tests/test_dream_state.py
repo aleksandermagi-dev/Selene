@@ -188,6 +188,52 @@ def test_dream_cycle_uses_attributable_non_qa_sources_and_is_idempotent(
     _assert_guards(repeated)
 
 
+def test_dream_cycle_filters_answered_loop_residue_and_duplicate_affect_packets(
+    tmp_path,
+):
+    conn = _conn(tmp_path)
+    session_id = _workspace(
+        conn,
+        topic="garden water comparison",
+        open_loop="Which garden used less water during the measured week?",
+        correction="",
+    )
+    conn.execute(
+        """
+        UPDATE selene_dialogue_workspaces
+        SET last_selene_preview = ?
+        WHERE session_id = ?
+        """,
+        (
+            "The east garden used less water during the measured week.",
+            session_id,
+        ),
+    )
+    for source_id in (1, 2):
+        conn.execute(
+            """
+            INSERT INTO vessel_emotion_salience_packets
+            (signal_type, continuity_pressure, care_warmth, uncertainty,
+             repair_need, action_energy, balance_state, evidence_need,
+             core_choice_route, source_refs, provenance_boundary)
+            VALUES ('steady_review', 'low', 'warm', 'bounded',
+                    'check the same handoff', 'available', 'steady',
+                    'visible confirmation', 'ordinary_chat', ?,
+                    'test_affect_signal')
+            """,
+            (json.dumps([f"affect:test:{source_id}"]),),
+        )
+    conn.commit()
+
+    result = run_dream_cycle(conn, {"cycle_label": "Filtered Dream inputs"})
+    kinds = [item["reflection_kind"] for item in result["reflections"]]
+
+    assert "open_thread" not in kinds
+    assert kinds.count("affect_tending") == 1
+    assert result["new_reflection_count"] == 1
+    _assert_guards(result)
+
+
 def test_dream_reflection_requires_aleks_and_approved_reflection_reaches_chat(
     tmp_path,
 ):

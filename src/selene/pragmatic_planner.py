@@ -73,7 +73,14 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
         for item in obligations:
             source_text = str(item.get("source_text") or "")
             if _contains_self_state_check_in(source_text):
-                specialized.append({**item, "kind": "self_state_check_in", "coverage_terms": [], "goal": "answer_present_state"})
+                specialized.append(
+                    {
+                        **item,
+                        "kind": "self_state_check_in",
+                        "coverage_terms": _self_state_context_terms(source_text),
+                        "goal": "answer_present_state_and_named_context",
+                    }
+                )
             elif _contains_session_summary_request(source_text):
                 specialized.append({**item, "kind": "session_summary", "coverage_terms": [], "goal": "summarize_current_session"})
             elif len(obligations) == 1 and str(item.get("kind") or "") == "direct_question":
@@ -226,9 +233,9 @@ def evaluate_response_coverage(
         topic_overlap = sorted(topic_terms & candidate_terms)
         distinctive_alignment = not distinctive_expected or bool(distinctive_overlap or topic_overlap)
         semantic_match = len(overlap) >= minimum_term_matches and distinctive_alignment
-        signal_can_stand_alone = kind in {
-            "self_state_check_in", "rephrase_request",
-        } or (
+        signal_can_stand_alone = (
+            kind == "self_state_check_in" and not expected
+        ) or kind == "rephrase_request" or (
             kind == "reason" and not expected
         )
         signal_required = kind in {
@@ -561,6 +568,20 @@ def _contains_session_summary_request(value: str) -> bool:
     )
 
 
+def _self_state_context_terms(value: str) -> list[str]:
+    remainder = re.sub(
+        r"\bhow are you(?: doing| feeling| holding up)?\b|\bwhat(?:'s|s| is) up(?: with you)?\b",
+        " ",
+        value,
+        flags=re.IGNORECASE,
+    )
+    return [
+        term
+        for term in _content_terms(remainder)
+        if term not in {"feeling", "holding", "up"}
+    ][:8]
+
+
 def _compound_question_parts(question: str) -> list[str]:
     """Keep explicit interrogative clauses as separate visible obligations."""
     parts = _split_coordinated_acts(
@@ -624,12 +645,17 @@ def _split_coordinated_acts(text: str, *, interrogative: bool) -> list[str]:
         r"(?:what|which|how|why|when|where|who|"
         r"can|could|would|will|"
         r"compare|explain|give|tell|show|list|summarize|recap|say|"
-        r"recommend|choose|name|describe|identify|walk)"
+        r"recommend|choose|name|describe|identify|walk|use|add|include|put)"
     )
     normalized = re.sub(
         r"(?i)\b(?:first|second|third|finally|lastly)\s*,?\s*",
         "",
         text,
+    ).strip()
+    normalized = re.sub(
+        r"(?i)^(?:before we [^,]{2,80}|after that|at this point|for now)\s*,\s*",
+        "",
+        normalized,
     ).strip()
     parts = [
         part.strip(" ,.?!")
@@ -757,7 +783,18 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
         "requested_section": ("design", "pilot", "condition", "section", "part"),
         "analogy": ("analogy", "like", "similar", "think of"),
         "constraint_preservation": ("constraint", "must", "cannot", "do not", "does not"),
-        "yes_or_no": ("yes", "no", "not completely", "i agree", "i disagree", "that is", "that isn't", "that is not"),
+        "yes_or_no": (
+            "yes",
+            "no",
+            "not completely",
+            "not always",
+            "not necessarily",
+            "i agree",
+            "i disagree",
+            "that is",
+            "that isn't",
+            "that is not",
+        ),
         "implied_request": ("can", "let's", "we can", "start", "help"),
         "direct_request": ("here", "first", "start", "use", "the answer", "result"),
         "correction_update": (
@@ -793,7 +830,7 @@ def _special_semantic_gate(
         return bool(
             re.search(
                 r"^(?:yes|no)\b|\b(?:i agree|i disagree|that is correct|that is not correct|"
-                r"not completely|i would|i would not|i do|i do not)\b",
+                r"not completely|not always|not necessarily|i would|i would not|i do|i do not)\b",
                 candidate.strip(),
             )
         ) and (distinctive_alignment or not expected_present or expected_stance_only)
@@ -819,8 +856,31 @@ def _special_semantic_gate(
 
 
 def _content_terms(value: str, *, limit: int = 20) -> list[str]:
-    words = [word.lower() for word in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", value)]
+    words = [
+        _term_key(word.lower())
+        for word in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", value)
+    ]
     return list(dict.fromkeys(word for word in words if word not in CONTENT_STOP_WORDS))[:limit]
+
+
+def _term_key(word: str) -> str:
+    return {
+        "answers": "answer",
+        "differences": "difference",
+        "effects": "effect",
+        "fairly": "fair",
+        "fairness": "fair",
+        "identically": "identical",
+        "opportunities": "opportunity",
+        "questions": "question",
+        "reasons": "reason",
+        "reflections": "reflection",
+        "rules": "rule",
+        "situations": "situation",
+        "treated": "treat",
+        "treating": "treat",
+        "treatment": "treat",
+    }.get(word, word)
 
 
 def _sentences(value: str) -> list[str]:

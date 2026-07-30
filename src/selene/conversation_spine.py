@@ -322,7 +322,14 @@ def evaluate_candidate_compatibility(
         return _compatibility(False, "self_state_candidate_without_self_state_intent", False, matched)
     if source_id == "contextual_follow_up" and contextual.get("detected") is not True:
         return _compatibility(False, "contextual_candidate_without_callback", False, matched)
-    if contextual.get("detected") is True and source_class in {"approved_knowledge", "memory_reconstruction"}:
+    if (
+        contextual.get("detected") is True
+        and source_class in {"approved_knowledge", "memory_reconstruction"}
+        and not (
+            source_class == "approved_knowledge"
+            and str(contextual.get("kind") or "") == "answer_development"
+        )
+    ):
         return _compatibility(False, "callback_must_remain_grounded_in_immediate_conversation", False, matched)
     if matched_obligation_ids:
         return {
@@ -500,6 +507,14 @@ def _compatible_source_classes(intent_class: str, contextual: dict[str, Any]) ->
     if intent_class == "social":
         return ["conversation", "language_capability"]
     if contextual.get("detected") is True:
+        if str(contextual.get("kind") or "") == "answer_development":
+            return [
+                "conversation",
+                "domain_answer",
+                "approved_knowledge",
+                "reasoning_answer",
+                "language_capability",
+            ]
         return ["conversation", "domain_answer", "reasoning_answer", "language_capability"]
     return ["conversation", "domain_answer", "approved_knowledge", "language_capability", "reasoning_answer"]
 

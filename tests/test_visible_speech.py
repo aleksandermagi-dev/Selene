@@ -79,6 +79,22 @@ def test_final_release_holds_bare_internal_route_values():
     assert "internal_metadata_visible" in result["issues"]
 
 
+def test_final_release_holds_internal_completion_and_memory_source_labels():
+    completion = inspect_visible_speech(
+        "Current full request: explain the conclusion.",
+        prompt="Can you explain the conclusion?",
+    )
+    memory_label = inspect_visible_speech(
+        "Reflection memory source: slow dawn.",
+        prompt="What did Dream reflect on?",
+    )
+
+    assert completion["release_allowed"] is False
+    assert "internal_metadata_visible" in completion["issues"]
+    assert memory_label["release_allowed"] is False
+    assert "internal_metadata_visible" in memory_label["issues"]
+
+
 def test_explicit_architecture_discussion_can_use_natural_architecture_language():
     result = inspect_visible_speech(
         "A response obligation is the part of a mixed message that the answer still needs to address.",

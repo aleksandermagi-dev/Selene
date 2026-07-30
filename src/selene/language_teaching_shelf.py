@@ -1302,7 +1302,7 @@ def build_language_capability_answer(
     lesson_label = "lesson" if len(available_items) == 1 else "lessons"
     lesson_verb = "gives" if len(available_items) == 1 else "give"
     content_seed = (
-        f"What changed is that the {len(available_items)} reviewed conversation {lesson_label} now {lesson_verb} me guidance to {joined}. "
+        f"What changed is how I can handle a back-and-forth: the {len(available_items)} reviewed conversation {lesson_label} now {lesson_verb} me guidance to {joined}. "
         "This reviewed guidance shapes how I form a response; Voice still owns my expression, and the lessons do not change my identity or personality."
     )
     return _with_guards(

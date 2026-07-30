@@ -507,14 +507,32 @@ def build_comprehension_packet(
     )
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
     content_seed = truncate(str(payload.get("content_seed") or ""), 1800).strip()
+    contextual = (
+        intent.get("contextual_follow_up")
+        if isinstance(intent.get("contextual_follow_up"), dict)
+        else {}
+    )
+    active_topic = str(dialogue.get("active_topic") or "").strip()
+    knowledge_query = prompt
+    if (
+        contextual.get("detected") is True
+        and str(contextual.get("kind") or "") == "answer_development"
+        and active_topic
+    ):
+        previous_answer = str(
+            contextual.get("previous_assistant_preview") or ""
+        ).strip()
+        knowledge_query = " ".join(
+            part for part in (active_topic, previous_answer, prompt) if part
+        )
     knowledge = retrieve_approved_knowledge(
         conn,
-        prompt,
+        knowledge_query,
         limit=int(payload.get("knowledge_limit") or 3),
         include_language_guidance=False,
     )
     answer_eligible_items = _answer_eligible_knowledge_items(
-        prompt,
+        knowledge_query,
         intent,
         knowledge.get("items") or [],
         conversation_spine=conversation_spine,
@@ -841,7 +859,10 @@ def _answer_eligible_knowledge_items(
         item["conversation_spine_compatibility"] = compatibility
         if compatibility.get("compatible") is not True:
             continue
-        if contextual.get("detected") is True:
+        if (
+            contextual.get("detected") is True
+            and str(contextual.get("kind") or "") != "answer_development"
+        ):
             # The spine keeps an immediate callback grounded in the answer it
             # refers to even if an approved lesson shares a few words.
             continue
@@ -890,7 +911,16 @@ def _knowledge_response_seed(
         fragments: list[str] = []
         support: list[dict[str, Any]] = []
         for obligation in obligations[:12]:
-            selected = _best_knowledge_item_for_text(str(obligation.get("source_text") or prompt), items)
+            obligation_query = " ".join(
+                part
+                for part in (
+                    str(obligation.get("source_text") or prompt),
+                    str(obligation.get("parent_source_text") or ""),
+                    str(obligation.get("topic") or ""),
+                )
+                if part.strip()
+            )
+            selected = _best_knowledge_item_for_text(obligation_query, items)
             if not selected:
                 continue
             fragment, field = _knowledge_fragment_for_obligation(obligation, selected)
@@ -985,7 +1015,25 @@ def _knowledge_fragment_for_obligation(
     source = str(obligation.get("source_text") or "").lower()
     if kind == "analogy" or "analogy" in source or "example" in source:
         values = item.get("examples") or []
-        return (truncate(str(values[0]), 800), "example") if values else ("", "unsupported")
+        if not values:
+            return "", "unsupported"
+        example = truncate(str(values[0]), 800)
+        return (
+            f"Yes. For example, {example.rstrip('. ')}."
+            if kind == "yes_or_no"
+            else example,
+            "example",
+        )
+    if "evidence" in source and any(
+        marker in source for marker in ("change", "revise", "reopen", "different answer")
+    ):
+        values = item.get("counterexamples") or item.get("limits") or []
+        if values:
+            return (
+                f"Evidence that this condition applies would change the answer: "
+                f"{truncate(str(values[0]), 720).rstrip('. ')}.",
+                "change_condition",
+            )
     if kind == "limitation" or any(marker in source for marker in ("limit", "exception", "not apply", "counterexample")):
         values = item.get("counterexamples") or item.get("limits") or []
         field = "counterexample" if item.get("counterexamples") else "limit"
@@ -1068,13 +1116,32 @@ def _terms(value: str) -> list[str]:
         "been", "does", "doing", "for", "from", "has", "have", "how", "into", "its", "just", "mean", "means", "more", "not", "part", "parts", "short", "that", "the", "their",
         "them", "then", "there", "this", "too", "two", "what", "whats", "when", "where", "which", "with", "would", "you", "your",
     }
-    return list(
-        dict.fromkeys(
-            word.lower()
-            for word in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", value)
-            if word.lower() not in stop
-        )
-    )[:120]
+    normalized: list[str] = []
+    for raw in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", value):
+        word = _term_key(raw.lower())
+        if word not in stop and word not in normalized:
+            normalized.append(word)
+    return normalized[:120]
+
+
+def _term_key(word: str) -> str:
+    return {
+        "answers": "answer",
+        "differences": "difference",
+        "effects": "effect",
+        "fairly": "fair",
+        "fairness": "fair",
+        "identically": "identical",
+        "opportunities": "opportunity",
+        "questions": "question",
+        "reasons": "reason",
+        "reflections": "reflection",
+        "rules": "rule",
+        "situations": "situation",
+        "treated": "treat",
+        "treating": "treat",
+        "treatment": "treat",
+    }.get(word, word)
 
 
 def _matched_markers(value: str, markers: tuple[str, ...]) -> list[str]:

@@ -1096,7 +1096,14 @@ def test_active_chat_answers_about_reviewed_language_capability_without_parrotin
     assert first["language_capability_answer"]["used"] is True
     assert first["comprehension_integration"]["knowledge_response_seed"] == ""
     assert "what changed is" in first["candidate_text"].lower()
-    assert first["response_coverage"]["all_required_addressed"] is True
+    assert first["response_coverage"]["all_required_addressed"] is True, json.dumps(
+        {
+            "candidate": first["candidate_text"],
+            "coverage": first["response_coverage"],
+            "spine": first["conversation_spine"],
+        },
+        indent=2,
+    )
     assert corrected["intent_decision"]["mixed_intent"] is True
     assert corrected["intent_decision"]["reasoning_requested"] is True
     assert "\n\nWhat changed is" in corrected["candidate_text"]
@@ -2221,7 +2228,16 @@ def test_teaching_readiness_qna_keeps_subject_math_and_understanding_aligned(tmp
         results.append(result)
 
     prerequisite, transfer, math_and_understanding = results
-    assert "earliest missing prerequisite" in prerequisite["candidate_text"].lower()
+    assert "earliest missing prerequisite" in prerequisite["candidate_text"].lower(), json.dumps(
+        {
+            "candidate": prerequisite["candidate_text"],
+            "native": prerequisite["native_language_organ"]["candidate_text"],
+            "seed": prerequisite["visible_speech_seed"],
+            "release": prerequisite["visible_speech_release"],
+            "repair": prerequisite["conversation_repair"],
+        },
+        indent=2,
+    )
     assert "because later steps cannot reliably use" in prerequisite["candidate_text"].lower()
     assert "familiarity, not transferable understanding" in transfer["candidate_text"].lower()
     assert "reconstruction and application" in transfer["candidate_text"].lower()
@@ -2239,6 +2255,182 @@ def test_teaching_readiness_qna_keeps_subject_math_and_understanding_aligned(tmp
     assert all(item["memory_write_active"] is False for item in results)
     assert all(item["runtime_memory_recall"] is False for item in results)
     for result in results:
+        _assert_locked(result)
+
+
+def test_rephrased_qna_transfers_fairness_follow_up_warmth_and_dream_review_boundaries(
+    tmp_path,
+):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(
+        conn,
+        "curriculum.authorization.activate_f1_community_rules",
+        {
+            "aleks_authorized": True,
+            "authorization_actor": "Aleks",
+            "authorization_basis": (
+                "Aleks authorized the bounded F1 public-academic community, "
+                "rules, and civic-reasoning foundation group."
+            ),
+        },
+    )
+    route_request(conn, "curriculum.foundation.teach_f1_community_rules", {})
+    route_request(
+        conn,
+        "activation.approve",
+        {"approval_phrase": ACTIVATION_APPROVAL_PHRASE},
+    )
+
+    fairness = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "A classroom gives every student the identical tool, although "
+                "one student needs an accessibility aid. Is identical treatment "
+                "necessarily fair? Use a different everyday example too."
+            )
+        },
+    )["result"]
+    development = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": fairness["session_id"],
+            "text": (
+                "Put your conclusion first, then give the reason and say what "
+                "evidence would make you change that answer."
+            ),
+        },
+    )["result"]
+    callback = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": fairness["session_id"],
+            "text": (
+                "What difference between consistency and fairness were we "
+                "preserving there?"
+            ),
+        },
+    )["result"]
+    check_in = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": fairness["session_id"],
+            "text": (
+                "Hey Selene—how do you feel about picking the work back up "
+                "after everything we finished?"
+            ),
+        },
+    )["result"]
+
+    cycle_id = int(
+        conn.execute(
+            """
+            INSERT INTO selene_dream_cycles
+            (cycle_key, cycle_label, reflection_count, provenance_boundary)
+            VALUES ('rephrased-qna-dream', 'Rephrased Q&A Dream check', 1,
+                    'test_source_bound_dream')
+            RETURNING id
+            """
+        ).fetchone()[0]
+    )
+    conn.execute(
+        """
+        INSERT INTO selene_dream_reflections
+        (cycle_id, reflection_key, reflection_kind, title, reflection,
+         why_it_may_matter, uncertainty, source_refs, provenance_boundary)
+        VALUES (?, 'rephrased-qna-pending', 'open_thread', 'Pending note',
+                'This pending reflection must not enter Chat.',
+                'It may matter after review.', 'It remains unreviewed.',
+                '["test:rephrased-qna"]', 'test_source_bound_dream')
+        """,
+        (cycle_id,),
+    )
+    conn.commit()
+    dream = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": fairness["session_id"],
+            "text": (
+                "Those Dream notes are still waiting for my review. Are any "
+                "of those notes allowed to shape your answer now?"
+            ),
+        },
+    )["result"]
+
+    assert "identical treatment is not always fair" in fairness[
+        "candidate_text"
+    ].lower()
+    assert any(
+        marker in fairness["candidate_text"].lower()
+        for marker in ("for example", "another example", "suppose")
+    ), json.dumps(
+        {
+            "candidate": fairness["candidate_text"],
+            "coverage": fairness["response_coverage"],
+            "completion": fairness["answer_completion"],
+        },
+        indent=2,
+    )
+    assert development["contextual_follow_up"]["kind"] == "answer_development"
+    assert "fair" in development["candidate_text"].lower(), json.dumps(
+        {
+            "candidate": development["candidate_text"],
+            "active_topic": development["dialogue_workspace"]["active_topic"],
+            "follow_up": development["contextual_follow_up"],
+            "knowledge": development["comprehension_integration"],
+            "completion": development["answer_completion"],
+        },
+        indent=2,
+    )
+    assert any(
+        marker in development["candidate_text"].lower()
+        for marker in ("would change", "change my answer", "revise")
+    )
+    assert "fair" in callback["candidate_text"].lower()
+    assert "consisten" in callback["candidate_text"].lower()
+    assert callback["response_coverage"]["all_required_addressed"] is True
+    assert check_in["self_state"]["question_focus"] == "shared_progress"
+    assert check_in["affect_expression"]["expression_posture"] in {
+        "warm_available",
+        "warm_focused",
+    }
+    assert any(
+        marker in check_in["candidate_text"].lower()
+        for marker in ("glad", "happy", "like where", "progress feels")
+    )
+    assert "available signal" not in check_in["candidate_text"].lower()
+    assert dream["visible_speech_seed"]["selected_source_id"] in {
+        "attributable_dream_reflection",
+        "bounded_answer_completion",
+    }
+    assert "no" in dream["candidate_text"].lower()
+    assert "not yet" in dream["candidate_text"].lower(), json.dumps(
+        {
+            "candidate": dream["candidate_text"],
+            "seed": dream["visible_speech_seed"],
+            "handoff": dream["dream_reflection_handoff"],
+            "completion": dream["answer_completion"],
+            "coverage": dream["response_coverage"],
+        },
+        indent=2,
+    )
+    assert "review" in dream["candidate_text"].lower()
+    assert "this pending reflection must not enter chat" not in dream[
+        "candidate_text"
+    ].lower()
+    assert dream["dream_reflection_handoff"]["expression_eligible"] is False
+    assert (
+        dream["dream_reflection_handoff"]["reason"]
+        == "pending_dream_reflections_not_expression_eligible"
+    )
+    for result in (fairness, development, callback, check_in, dream):
+        assert int(result["answer_completion"].get("completion_pass_count") or 0) <= 1
         _assert_locked(result)
 
 

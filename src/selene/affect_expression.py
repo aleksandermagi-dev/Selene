@@ -136,6 +136,43 @@ def _conversation_cues(prompt: str, intent: str, pragmatics: dict[str, Any]) -> 
     _append_if(cues, "playful", any(term in lower for term in ("haha", "lol", "xd", "joke", "funny", "playful")))
     _append_if(cues, "tender_context", any(term in lower for term in ("nervous", "worried", "scared", "tender", "rough day", "hard day")))
     _append_if(cues, "warm_connection", intent in {"warm_connection", "gratitude", "reassurance_received"})
+    _append_if(
+        cues,
+        "friendly_check_in",
+        any(
+            term in lower
+            for term in (
+                "how are you",
+                "how do you feel",
+                "how're you",
+                "good morning",
+                "good afternoon",
+                "good evening",
+                "glad to be back",
+                "back with you",
+            )
+        ),
+    )
+    _append_if(
+        cues,
+        "shared_progress",
+        any(
+            term in lower
+            for term in (
+                "where we left",
+                "pick the work back",
+                "pick this back",
+                "our progress",
+                "we finished",
+                "we completed",
+                "we got that working",
+                "we made",
+                "good work",
+                "nice work",
+                "we did it",
+            )
+        ),
+    )
     _append_if(cues, "technical", any(term in lower for term in ("technical", "exact", "code", "math", "verify", "implementation")))
     _append_if(cues, "brief_requested", str(pragmatics.get("response_preference") or "") == "brief")
     _append_if(cues, "developed_requested", str(pragmatics.get("response_preference") or "") == "developed")
@@ -186,9 +223,17 @@ def _expression_posture(cues: list[str], signal: dict[str, Any], hard_boundary: 
         return "gentle_present"
     if "playful" in cues:
         return "play_available"
+    if "shared_progress" in cues or (
+        "friendly_check_in" in cues and "technical" in cues
+    ):
+        return "warm_focused"
     if "technical" in cues or "brief_requested" in cues:
         return "clear_direct"
-    if "warm_connection" in cues or signal_posture == "warm_and_steady":
+    if (
+        "warm_connection" in cues
+        or "friendly_check_in" in cues
+        or signal_posture == "warm_and_steady"
+    ):
         return "warm_available"
     return "ordinary_attentive"
 
@@ -272,6 +317,17 @@ def _dimensions(posture: str) -> dict[str, str]:
             "enthusiasm": "warm_available",
             "emotional_intensity": "ordinary",
         },
+        "warm_focused": {
+            "pacing": "steady",
+            "sentence_rhythm": "natural_varied",
+            "warmth": "available_not_forced",
+            "humor": "context_only",
+            "reassurance": "not_needed_unless_asked",
+            "restraint": "ordinary",
+            "directness": "clear",
+            "enthusiasm": "quietly_available",
+            "emotional_intensity": "ordinary",
+        },
         "ordinary_attentive": {
             "pacing": "natural",
             "sentence_rhythm": "natural",
@@ -296,6 +352,7 @@ def _voice_category(posture: str) -> str:
         "play_available": "playful_continuity",
         "clear_direct": "technical_directness",
         "warm_available": "warmth_care",
+        "warm_focused": "warmth_care",
     }.get(posture, "conversational_looseness")
 
 

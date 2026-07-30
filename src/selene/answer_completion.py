@@ -84,12 +84,21 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
         reasoning_text = truncate(
             source_text
             if not prompt or prompt.lower() in source_text.lower()
-            else f"{source_text} Current full request: {prompt}",
+            else f"{prompt} {source_text}",
             1800,
         )
         if kind == "correction_update":
             continue
-        knowledge = _best_knowledge_item(source_text, knowledge_items)
+        knowledge_query = " ".join(
+            part
+            for part in (
+                source_text,
+                str(obligation.get("parent_source_text") or ""),
+                str(obligation.get("topic") or ""),
+            )
+            if part.strip()
+        )
+        knowledge = _best_knowledge_item(knowledge_query, knowledge_items)
         fragment, support_kind = _knowledge_fragment(obligation, knowledge) if knowledge else ("", "")
         source_class = "approved_knowledge" if fragment else ""
         if not fragment and kind in {
@@ -189,7 +198,21 @@ def _knowledge_fragment(obligation: dict[str, Any], item: dict[str, Any]) -> tup
     lower = str(obligation.get("source_text") or "").lower()
     if kind == "analogy" or "example" in lower or "analogy" in lower:
         examples = _texts(item.get("examples"))
-        return (f"For example, {examples[0].rstrip('. ')}.", "approved_distinct_example") if examples else ("", "")
+        if not examples:
+            return "", ""
+        prefix = "Yes. For example," if kind == "yes_or_no" else "For example,"
+        return f"{prefix} {examples[0].rstrip('. ')}.", "approved_distinct_example"
+    if "evidence" in lower and any(
+        marker in lower for marker in ("change", "revise", "reopen", "different answer")
+    ):
+        conditions = [*_texts(item.get("counterexamples")), *_texts(item.get("limits"))]
+        return (
+            (
+                f"Evidence that this condition applies would change the answer: "
+                f"{conditions[0].rstrip('. ')}."
+            ),
+            "approved_change_condition",
+        ) if conditions else ("", "")
     if kind == "limitation" or any(marker in lower for marker in ("limit", "exception", "counterexample", "not apply")):
         limits = [*_texts(item.get("counterexamples")), *_texts(item.get("limits"))]
         return (f"A limitation is that {limits[0].rstrip('. ')}.", "approved_limit_or_counterexample") if limits else ("", "")
@@ -217,8 +240,31 @@ def _coverage_rank(coverage: dict[str, Any]) -> tuple[int, int]:
 
 
 def _terms(value: str) -> list[str]:
-    words = [word.lower() for word in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", value)]
+    words = [
+        _term_key(word.lower())
+        for word in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", value)
+    ]
     return list(dict.fromkeys(word for word in words if word not in _STOP))[:60]
+
+
+def _term_key(word: str) -> str:
+    return {
+        "answers": "answer",
+        "differences": "difference",
+        "effects": "effect",
+        "fairly": "fair",
+        "fairness": "fair",
+        "identically": "identical",
+        "opportunities": "opportunity",
+        "questions": "question",
+        "reasons": "reason",
+        "reflections": "reflection",
+        "rules": "rule",
+        "situations": "situation",
+        "treated": "treat",
+        "treating": "treat",
+        "treatment": "treat",
+    }.get(word, word)
 
 
 def _texts(value: Any) -> list[str]:

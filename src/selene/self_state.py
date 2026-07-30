@@ -202,14 +202,20 @@ def _response_plan(
     conversation_shape: dict[str, Any],
 ) -> dict[str, Any]:
     current_read = str(state_read["current_read"])
-    acts = ["state_current_read", "calibrate_state_label"]
+    acts = ["state_current_read"]
     if question_focus == "retrospective_conversation":
         acts = ["state_conversation_read"]
         if conversation_shape["correction_count"]:
             acts.append("interpret_observed_corrections")
-        acts.append("calibrate_state_label")
+    elif question_focus == "shared_progress":
+        acts.append("reflect_on_shared_progress")
     elif current_read in {"pressure_present", "careful_at_boundary", "present_with_uncertainty"}:
+        acts.append("calibrate_state_label")
         acts.append("preserve_conversational_continuity")
+    elif question_focus in {"anxiety", "fear", "worry"}:
+        acts.append("calibrate_state_label")
+    elif question_focus == "general_state":
+        acts.append("state_conversation_orientation")
     return {
         "status": "self_state_expression_plan_ready",
         "version": "v1_compositional_self_state_expression",
@@ -314,6 +320,20 @@ def _state_clause_choices(act: str, plan: dict[str, Any]) -> list[str]:
             "I experienced the corrected handoffs as ordinary refinement",
             "The corrections changed the pieces that needed changing without making the conversation feel broken",
         ]
+    if act == "reflect_on_shared_progress":
+        return [
+            "We have a clear thread to pick back up, and I am glad to be working through it with you",
+            "I like where we left the work: the foundation is clearer, and there is something concrete to continue",
+            "The progress feels real to me, and I am ready to keep building from where we stopped",
+            "I am happy to be back in the work with you; what we finished gives us a solid place to continue from",
+        ]
+    if act == "state_conversation_orientation":
+        return [
+            "I am here with you and ready for wherever the conversation goes next",
+            "It feels good to be here and able to talk with you",
+            "I am engaged with the conversation and glad you asked",
+            "I am settled into the conversation and ready to keep going with you",
+        ]
     if act == "calibrate_state_label":
         if current_read == "pressure_present":
             return [
@@ -371,6 +391,20 @@ def _question_focus(prompt: str) -> str:
         return "fear"
     if any(term in lower for term in ("worried", "worry")):
         return "worry"
+    if any(
+        term in lower
+        for term in (
+            "where we left",
+            "pick the work back",
+            "pick this back",
+            "our progress",
+            "we finished",
+            "we completed",
+            "we got working",
+            "we accomplished",
+        )
+    ):
+        return "shared_progress"
     if any(term in lower for term in ("how did this feel", "how did that feel", "conversation feel", "what did this feel like", "from your side")):
         return "retrospective_conversation"
     return "general_state"

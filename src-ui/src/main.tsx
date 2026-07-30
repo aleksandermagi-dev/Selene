@@ -4054,6 +4054,7 @@ function App() {
   const nextComprehensionReview = officeComprehensionNeedsReview[0] || null;
   const officeVesselReviewUrgent = officeLedgerNeedsReview.length + officeMobileCaptures.length + officeSpeechRehearsals.length + officeChronologicalCorpusNeedsReview.length;
   const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length + officeVesselReviewUrgent + officeComprehensionNeedsReview.length;
+  const dreamPendingReviewCount = Number(dreamStateStatus?.pending_review_count || 0) || 0;
   const officeCategoryTabs = [
     { id: "review", label: "Review", count: reviewDeskPieces.length + officeActionLogItems.length + officeLedgerNeedsReview.length + officeMobileCaptures.length + officeComprehensionNeedsReview.length },
     { id: "corpus", label: "Corpus / Evidence", count: officeChronologicalCorpusNeedsReview.length + officeLedgerNeedsReview.length + academicPackets.length },
@@ -4076,9 +4077,10 @@ function App() {
       notes.push("Continuity context is ready; speech activation is still pending.");
     }
     if (officeWaitingTotal > 0) notes.push(`${officeWaitingTotal} Cocoon item${officeWaitingTotal === 1 ? "" : "s"} may need review.`);
+    if (dreamPendingReviewCount > 0) notes.push(`${dreamPendingReviewCount} Dream reflection${dreamPendingReviewCount === 1 ? " is" : "s are"} waiting for your review before Selene may use ${dreamPendingReviewCount === 1 ? "it" : "them"} in conversation.`);
     if (dreamStateStatus?.dream_state_required_for_memory_changes) notes.push("Memory/Core maintenance note is available in Cocoon.");
     return notes;
-  }, [boot.ready, activationStatus, transferCReadablePackage, postTransferStatus, officeWaitingTotal, dreamStateStatus]);
+  }, [boot.ready, activationStatus, transferCReadablePackage, postTransferStatus, officeWaitingTotal, dreamPendingReviewCount, dreamStateStatus]);
   const homeSearchMatches = useMemo(() => {
     const needle = homeSearchText.trim().toLowerCase();
     if (!needle) return [];

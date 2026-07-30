@@ -30,6 +30,8 @@ ARCHITECTURE_LEAKS = (
     "response obligation",
     "repair path",
     "evidence chain",
+    "current full request",
+    "reflection memory source:",
     "answer_now",
     "return_to_b",
     "create_review_packet",

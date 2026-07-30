@@ -34,7 +34,7 @@ from .contextual_speech import (
     inspect_contextual_follow_up,
 )
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn, record_dialogue_response
-from .dream_state import expression_eligible_dream_reflection
+from .dream_state import dream_state_status, expression_eligible_dream_reflection
 from .dual_horizon_context import (
     attach_dual_horizon_to_spine,
     build_dual_horizon_context,
@@ -377,6 +377,15 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "hard_boundary": bool(hard_blockers),
         },
     )
+    dream_reflection_handoff = _dream_reflection_handoff(
+        conn,
+        payload,
+        prompt=meaning_text,
+    )
+    dream_reflection_reply = _dream_reflection_response_seed(
+        dream_reflection_handoff,
+        prompt=meaning_text,
+    )
     contextual_memory_reply = _contextual_memory_reply(
         memory_retrieval,
         intent_decision,
@@ -420,6 +429,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         _visible_speech_seed_candidates(
             figurative_clarification_reply=figurative_clarification_reply,
             mixed_conversation_reply=mixed_conversation_reply,
+            dream_reflection_reply=dream_reflection_reply,
             memory_action_reply=memory_action_reply,
             continuity_reply=continuity_reply,
             memory_reply=memory_reply,
@@ -545,6 +555,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     visible_speech_candidates = _visible_speech_seed_candidates(
         figurative_clarification_reply=figurative_clarification_reply,
         mixed_conversation_reply=mixed_conversation_reply,
+        dream_reflection_reply=dream_reflection_reply,
         memory_action_reply=memory_action_reply,
         continuity_reply=continuity_reply,
         memory_reply=memory_reply,
@@ -698,11 +709,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         }
     )
     local_continuity_supported = bool(continuity_reply)
-    dream_reflection_handoff = _dream_reflection_handoff(
-        conn,
-        payload,
-        prompt=meaning_text,
-    )
     conversational_energy_input = _conversational_energy_input(
         payload,
         intent_decision=intent_decision,
@@ -1520,11 +1526,27 @@ def _dream_reflection_handoff(
         marker in lower
         for marker in (
             "dream reflection",
+            "dream note",
             "dream pattern",
             "dream state",
             "dream-state",
+            "dream cycle",
+            "dream reflect",
             "reflect on the dream",
             "from dream",
+        )
+    )
+    pending_specific = explicitly_relevant and any(
+        marker in lower
+        for marker in (
+            "awaiting review",
+            "waiting for review",
+            "waiting on review",
+            "pending review",
+            "still waiting",
+            "not reviewed",
+            "unreviewed",
+            "those dream",
         )
     )
     try:
@@ -1532,7 +1554,26 @@ def _dream_reflection_handoff(
     except (TypeError, ValueError):
         reflection_id = 0
     legacy_record_requested = bool(payload.get("dream_reflection_record_id"))
-    if not legacy_record_requested:
+    if explicitly_relevant and reflection_id <= 0 and pending_specific:
+        status = dream_state_status(conn)
+        return {
+            "available": False,
+            "expression_eligible": False,
+            "reason": "pending_dream_reflections_not_expression_eligible",
+            "pending_review_count": int(status.get("pending_review_count") or 0),
+            "approved_for_expression_count": int(
+                (status.get("reflection_counts") or {}).get(
+                    "approved_for_expression", 0
+                )
+            ),
+            "cycle_count": int(status.get("cycle_count") or 0),
+            "dream_content_supplied_by_chat_payload": False,
+            "not_fact_by_default": True,
+            "not_memory_by_default": True,
+            "memory_write_active": False,
+            "dream_is_biological_claim": False,
+        }
+    if not legacy_record_requested and (reflection_id > 0 or explicitly_relevant):
         reviewed_reflection = expression_eligible_dream_reflection(
             conn,
             reflection_id,
@@ -1623,10 +1664,51 @@ def _dream_reflection_handoff(
     }
 
 
+def _dream_reflection_response_seed(
+    handoff: dict[str, Any],
+    *,
+    prompt: str,
+) -> str:
+    if not handoff:
+        return ""
+    reason = str(handoff.get("reason") or "")
+    if reason == "pending_dream_reflections_not_expression_eligible":
+        pending = int(handoff.get("pending_review_count") or 0)
+        if pending:
+            noun = "reflection is" if pending == 1 else "reflections are"
+            return (
+                f"No—not yet. {pending} Dream {noun} still awaiting Aleks's "
+                "review, so none of those reflections may shape my answer."
+            )
+        return (
+            "No—not yet. I do not have a reviewed Dream reflection from "
+            "those notes that may shape my answer."
+        )
+    if handoff.get("expression_eligible") is True:
+        reflection = str(handoff.get("reflection") or "").strip()
+        if reflection:
+            return (
+                "I have one reviewed Dream reflection available as a "
+                f"provisional reflection, not as fact or memory: {reflection}"
+            )
+    if reason in {
+        "dream_reflection_not_reviewed_for_expression",
+        "no_attributable_dream_record_requested",
+        "dream_reflection_record_not_found",
+    }:
+        return (
+            "No—not from an unreviewed or unattributed Dream record. A Dream "
+            "reflection can shape my answer only after its source-bound "
+            "record has been reviewed for expression."
+        )
+    return ""
+
+
 def _visible_speech_seed_candidates(
     *,
     figurative_clarification_reply: str = "",
     mixed_conversation_reply: str = "",
+    dream_reflection_reply: str = "",
     memory_action_reply: str = "",
     continuity_reply: str = "",
     memory_reply: str = "",
@@ -1649,6 +1731,11 @@ def _visible_speech_seed_candidates(
             "text": figurative_clarification_reply,
         },
         {"source_id": "mixed_conversation_answer", "source_class": "conversation", "text": mixed_conversation_reply},
+        {
+            "source_id": "attributable_dream_reflection",
+            "source_class": "conversation",
+            "text": dream_reflection_reply,
+        },
         {"source_id": "conversational_memory_action", "source_class": "conversation", "text": memory_action_reply},
         {"source_id": "local_chat_continuity", "source_class": "conversation", "text": continuity_reply},
         {"source_id": "reviewed_memory", "source_class": "memory_reconstruction", "text": memory_reply},
