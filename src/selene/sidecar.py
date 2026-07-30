@@ -1476,6 +1476,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/curriculum-authorization/activate-f1-operations-measurement",
             "/api/curriculum-authorization/activate-f1-geometry-algorithms",
             "/api/curriculum-authorization/activate-f1-mass-capacity",
+            "/api/curriculum-authorization/activate-f1-community-rules",
             "/api/curriculum-authorization/revoke",
             "/api/curriculum-authorization/evaluate",
             "/api/curriculum-foundation/prepare-f1",
@@ -1491,6 +1492,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/curriculum-foundation/teach-f1-equal-groups-data-money",
             "/api/curriculum-foundation/prepare-f1-mass-capacity",
             "/api/curriculum-foundation/teach-f1-mass-capacity",
+            "/api/curriculum-foundation/prepare-f1-community-rules",
+            "/api/curriculum-foundation/teach-f1-community-rules",
         }:
             route_key = {
                 "/api/curriculum-authorization/activate-f1": "curriculum.authorization.activate_f1",
@@ -1499,6 +1502,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/curriculum-authorization/activate-f1-geometry-algorithms": "curriculum.authorization.activate_f1_geometry_algorithms",
                 "/api/curriculum-authorization/activate-f1-equal-groups-data-money": "curriculum.authorization.activate_f1_equal_groups_data_money",
                 "/api/curriculum-authorization/activate-f1-mass-capacity": "curriculum.authorization.activate_f1_mass_capacity",
+                "/api/curriculum-authorization/activate-f1-community-rules": "curriculum.authorization.activate_f1_community_rules",
                 "/api/curriculum-authorization/revoke": "curriculum.authorization.revoke",
                 "/api/curriculum-authorization/evaluate": "curriculum.authorization.evaluate",
                 "/api/curriculum-foundation/prepare-f1": "curriculum.foundation.prepare_f1",
@@ -1513,6 +1517,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/curriculum-foundation/teach-f1-equal-groups-data-money": "curriculum.foundation.teach_f1_equal_groups_data_money",
                 "/api/curriculum-foundation/prepare-f1-mass-capacity": "curriculum.foundation.prepare_f1_mass_capacity",
                 "/api/curriculum-foundation/teach-f1-mass-capacity": "curriculum.foundation.teach_f1_mass_capacity",
+                "/api/curriculum-foundation/prepare-f1-community-rules": "curriculum.foundation.prepare_f1_community_rules",
+                "/api/curriculum-foundation/teach-f1-community-rules": "curriculum.foundation.teach_f1_community_rules",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))

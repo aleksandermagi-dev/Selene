@@ -134,6 +134,10 @@ reviewed general knowledge. They remain separate from
 personal memory, identity, personality, governance, execution authority, and
 Voice.
 
+A seventh six-item community, rules, and civic-reasoning group is prepared in
+Cocoon as proposed understanding. It remains unavailable to Chat until its own
+Aleks authorization and complete teaching lifecycle are recorded.
+
 ## Conversation and Language Organs
 
 ### Selene Chat — Connected Resident Runtime

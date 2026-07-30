@@ -30,6 +30,11 @@ monetary value, plus mass, the mass/weight distinction, capacity, contained
 volume, fair measurement, liters, milliliters, and bounded scale reading. This
 is progress within F1, not a claim that F1 or T1 is complete.
 
+F1 Group 7 is now implemented as a separately bounded community, rules, and
+civic-reasoning group. Its six source-linked candidates are prepared for
+Cocoon review, but they do not become retained knowledge until Aleks explicitly
+activates that group's authorization and the full lifecycle succeeds.
+
 ```text
 source-labeled foundations
   -> relationships among foundations

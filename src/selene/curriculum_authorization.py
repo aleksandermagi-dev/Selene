@@ -29,6 +29,12 @@ from .curriculum_f1_group6 import (
     LESSONS as F1_GROUP6_LESSONS,
     SCOPE as F1_GROUP6_SCOPE,
 )
+from .curriculum_f1_group7 import (
+    AUTHORIZATION_KEY as F1_GROUP7_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP7_KEY,
+    LESSONS as F1_GROUP7_LESSONS,
+    SCOPE as F1_GROUP7_SCOPE,
+)
 from .teaching_lifecycle import (
     acquire_teaching_item,
     approve_teaching_lifecycle_under_authorization,
@@ -589,6 +595,13 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
         "F1 mass and capacity foundations — group 6",
         F1_GROUP6_SCOPE["source_ids"],
     )
+    seventh_group = _group_progress(
+        conn,
+        F1_GROUP7_LESSONS,
+        F1_GROUP7_KEY,
+        "F1 community, rules, and civic reasoning — group 7",
+        F1_GROUP7_SCOPE["source_ids"],
+    )
     return _with_guards(
         {
             "status": "curriculum_authorization_ready",
@@ -603,7 +616,8 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "fourth_group": fourth_group,
             "fifth_group": fifth_group,
             "sixth_group": sixth_group,
-            "groups": [first_group, second_group, third_group, fourth_group, fifth_group, sixth_group],
+            "seventh_group": seventh_group,
+            "groups": [first_group, second_group, third_group, fourth_group, fifth_group, sixth_group, seventh_group],
             "exception_classes": list(EXCEPTION_CLASSES),
             "review_destination": "Cocoon Teaching / Lessons",
             "provenance_boundary": PROVENANCE_BOUNDARY,
@@ -698,6 +712,19 @@ def activate_f1_mass_capacity_authorization(
         authorization_key=F1_GROUP6_AUTHORIZATION_KEY,
         title="F1 mass and capacity foundations — group 6",
         scope=F1_GROUP6_SCOPE,
+    )
+
+
+def activate_f1_community_rules_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP7_AUTHORIZATION_KEY,
+        title="F1 community, rules, and civic reasoning — group 7",
+        scope=F1_GROUP7_SCOPE,
     )
 
 
@@ -1031,6 +1058,31 @@ def teach_f1_mass_capacity_group(
         lessons=F1_GROUP6_LESSONS,
         group_key=F1_GROUP6_KEY,
         authorization_key=F1_GROUP6_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_community_rules_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP7_LESSONS,
+        group_key=F1_GROUP7_KEY,
+    )
+
+
+def teach_f1_community_rules_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP7_LESSONS,
+        group_key=F1_GROUP7_KEY,
+        authorization_key=F1_GROUP7_AUTHORIZATION_KEY,
     )
 
 

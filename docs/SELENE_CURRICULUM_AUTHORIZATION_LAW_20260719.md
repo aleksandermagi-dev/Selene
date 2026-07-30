@@ -182,6 +182,26 @@ use of “weight” as a scientifically exact synonym for mass. It grants no
 instrument, laboratory, purchasing, health, memory, training, or external
 action authority.
 
+The seventh envelope is:
+
+- band: F1;
+- group: `f1_community_rules_group_7`;
+- subjects: overlapping community membership, cooperation, bounded roles,
+  rule purpose and context, rules/laws/customs/agreements, fairness,
+  respectful disagreement, and reasoned rule revision;
+- sources: the content-addressed 2023 Core Knowledge K-8 sequence and the
+  content-addressed CKHG Grade 1 Lessons in Civics artifact;
+- license: CC BY-NC-SA 4.0 terms and attribution remain preserved; and
+- lessons: six community, rules, and civic-reasoning foundations.
+
+This envelope is independent from the first six. It uses general social and
+institutional foundations from a United States-centered source without
+turning United States examples into universal law. It does not authorize legal
+advice, current legal claims, political allegiance, ideology, identity or
+personality instruction, governance mutation, enforcement, memory, training,
+or external action. Jurisdiction-specific, contested, time-sensitive,
+identity-affecting, or out-of-scope claims remain exception-review triggers.
+
 ## Executable Surface
 
 - router status: `curriculum.authorization.status`
@@ -197,6 +217,8 @@ action authority.
   `curriculum.authorization.activate_f1_equal_groups_data_money`
 - router mass/capacity activation:
   `curriculum.authorization.activate_f1_mass_capacity`
+- router community/rules activation:
+  `curriculum.authorization.activate_f1_community_rules`
 - router revocation: `curriculum.authorization.revoke`
 - router coverage check: `curriculum.authorization.evaluate`
 - router preparation: `curriculum.foundation.prepare_f1`
@@ -221,6 +243,10 @@ action authority.
   `curriculum.foundation.prepare_f1_mass_capacity`
 - router mass/capacity teaching:
   `curriculum.foundation.teach_f1_mass_capacity`
+- router community/rules preparation:
+  `curriculum.foundation.prepare_f1_community_rules`
+- router community/rules teaching:
+  `curriculum.foundation.teach_f1_community_rules`
 
 The HTTP routes are exposed in Cocoon under `/api/curriculum-authorization/*`
 and `/api/curriculum-foundation/*`.

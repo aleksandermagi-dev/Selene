@@ -1,6 +1,7 @@
 # Selene Curriculum Source Shelf
 
-Date: 2026-07-19; expanded 2026-07-29 for F1 Group 6
+Date: 2026-07-19; expanded 2026-07-29 for F1 Group 6 and selected
+2026-07-30 for F1 Group 7
 
 Status: source acquisition checkpoint; review only
 
@@ -125,6 +126,13 @@ be reproduced and verified without committing source corpora.
 | CKHG Grade 1 Lessons in Civics | Artifact SHA-256 | Community, rules, laws, fairness, citizenship, and historical examples | U.S. jurisdiction must remain explicit; add plural perspectives |
 | CKLA Grade 1 The Human Body | Artifact SHA-256 | Body systems, care, germs, disease, vaccines, and health vocabulary pilot | Older health material requires current-source verification; never medical advice |
 | Code.org Computer Science Fundamentals | Artifact SHA-256 | Ordered instructions, repetition, testing, and debugging pilot | Preserve CC-BY-NC-SA attribution; exclude branded media and keep execution authority separate |
+
+F1 Group 7 selects only the general community, cooperation, bounded-role,
+rule-purpose, authority-category, fairness, disagreement, and revision
+foundations from the CKHG civics artifact. Its CC BY-NC-SA 4.0 attribution,
+noncommercial, share-alike, trademark, and linked-resource exclusions remain
+attached. United States voting rules, national identity, symbols, and current
+legal claims are not part of the bounded group.
 
 ## Cataloged and Deliberately Held Sources
 
