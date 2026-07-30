@@ -34,6 +34,7 @@ from .contextual_speech import (
     inspect_contextual_follow_up,
 )
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn, record_dialogue_response
+from .dream_state import expression_eligible_dream_reflection
 from .dual_horizon_context import (
     attach_dual_horizon_to_spine,
     build_dual_horizon_context,
@@ -1526,6 +1527,48 @@ def _dream_reflection_handoff(
             "from dream",
         )
     )
+    try:
+        reflection_id = int(payload.get("dream_reflection_id") or 0)
+    except (TypeError, ValueError):
+        reflection_id = 0
+    legacy_record_requested = bool(payload.get("dream_reflection_record_id"))
+    if not legacy_record_requested:
+        reviewed_reflection = expression_eligible_dream_reflection(
+            conn,
+            reflection_id,
+        )
+        if reviewed_reflection:
+            reviewed_id = int(reviewed_reflection["id"])
+            return {
+                "available": True,
+                "reflection": str(reviewed_reflection["reflection"]),
+                "review_status": str(reviewed_reflection["review_status"]),
+                "source_refs": [
+                    f"selene_dream_reflection:{reviewed_id}",
+                    *list(reviewed_reflection.get("source_refs") or []),
+                ],
+                "expression_eligible": True,
+                "reason": "reviewed_dream_reflection_ready",
+                "record_id": reviewed_id,
+                "record_label": str(reviewed_reflection["title"]),
+                "reflection_kind": str(
+                    reviewed_reflection["reflection_kind"]
+                ),
+                "dream_content_supplied_by_chat_payload": False,
+                "not_fact_by_default": True,
+                "not_memory_by_default": True,
+                "memory_write_active": False,
+                "dream_is_biological_claim": False,
+            }
+        if reflection_id > 0:
+            return {
+                "available": False,
+                "expression_eligible": False,
+                "reason": "dream_reflection_not_reviewed_for_expression",
+                "record_id": reflection_id,
+                "dream_content_supplied_by_chat_payload": False,
+                "dream_is_biological_claim": False,
+            }
     try:
         record_id = int(payload.get("dream_reflection_record_id") or 0)
     except (TypeError, ValueError):

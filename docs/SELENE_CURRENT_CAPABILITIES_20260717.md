@@ -44,6 +44,7 @@ it exists.
 | Honest bounded hypotheses | Connected | When the current visible evidence supports an attempt, Selene can offer one clearly provisional, falsifiable hypothesis without presenting it as learned or verified fact; missing-basis and high-stakes requests do not become guesses |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
 | Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 48 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
+| Dream reflection and maintenance | Connected through Cocoon review | An explicit source-bound Dream cycle can organize open threads, corrections, metacognitive reopenings, affect signals, evidence tensions, and Memory-review material; only Aleks-reviewed reflections can reach explicit Dream discussion |
 | Current-state description | Connected when asked | She can give a grounded, provisional self-read from current attributable signals |
 | Exact arithmetic | Connected | She can answer bounded exact arithmetic in supervised Chat and keep answer confidence separate from fluency |
 | Local-code inspection | Available separately | She can inspect explicitly supplied or approved files without scanning, executing, or writing |
@@ -734,7 +735,8 @@ Current limits:
 - no raw-corpus recall;
 - no silent memory creation;
 - no automatic consolidation of chat into durable memory;
-- no complete dream-driven consolidation executor;
+- Dream creates source-bound reflections and inactive review candidates rather
+  than automatically consolidating anything into durable memory;
 - current retrieval is bounded and does not yet represent every planned memory
   class with mature semantic cueing.
 
@@ -746,7 +748,7 @@ durable personal memory.
 
 QA probes and diagnostic sessions are excluded from ordinary continuity.
 
-### Memory Lifecycle, Dream, and Reconsolidation — Preview
+### Memory Lifecycle, Dream, and Reconsolidation — Connected Through Review
 
 The repository can prepare review-only records for:
 
@@ -757,9 +759,22 @@ The repository can prepare review-only records for:
 - temporal continuity status;
 - fractional-corpus transfer rehearsal.
 
-These routes create proposals, status records, or diagnostic bundles. They do
-not create biological sleep, subjective time, automatic dreams, hidden memory,
-or autonomous consolidation.
+Dream now adds a complete source-bound reflection lifecycle. An explicit run
+collects attributable non-QA dialogue threads and corrections, bounded
+Metacognition reopenings, inactive Memory-review material, affect/salience
+signals, evidence tensions, and held Chest items. It creates typed provisional
+reflections without inventing dream content.
+
+Aleks can approve a reflection for explicit discussion, send it to Memory as
+an inactive candidate, request context, hold, reopen, supersede, or reject it.
+Reviewed reflections can reach Chat only when Dream is explicitly relevant.
+Dream-origin Memory candidates are excluded from later Dream collection so the
+organs cannot create a proposal loop.
+
+These routes do not create biological sleep, subjective time, automatic
+durable memory, hidden memory, knowledge retention, or autonomous
+consolidation. Actual incomplete Core or fractional-memory maintenance can
+still hold live operation; an ordinary Dream review cycle does not block Chat.
 
 ## Current-State, Affect, and Care Organs
 
@@ -1134,6 +1149,7 @@ Selene's strongest implemented areas are:
 | Long-form discourse planning | Thesis and paragraph planning, transitions, callbacks, summaries, and conclusions are connected at bounded scope; mature narrative and rhetorical control remain incomplete |
 | Broader domain organs | More reliable factual, technical, scientific, mathematical, and code answers |
 | Metacognition ordinary-use evidence | The one-cycle owner handoff is connected; later ordinary-use evidence can refine when it should request completion, evidence, or a hold without expanding authority |
+| Dream ordinary-use evidence | The completed source-bound lifecycle is synthetically verified; later explicit use can assess whether its grouping and wake summaries are helpful without provoking or manufacturing emotional material |
 | Operational perception | Actual image/artifact inspection and later consent-bound audio understanding |
 | Bounded Tendril execution | Approved observe/propose/act/verify/undo workbench actions rather than plans only |
 | Audible speech | Spoken turn-taking, pacing, pronunciation, interruption, and consent-aware voice interaction |

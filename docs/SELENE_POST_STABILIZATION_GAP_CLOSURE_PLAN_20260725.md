@@ -271,7 +271,11 @@ These are real future capabilities, but they do not block Phase 12 teaching.
 
 ### Memory and Dream maturation
 
-- deepen reviewed consolidation and reconsolidation workflows;
+- **Dream lifecycle completed July 30, 2026:** explicit source-bound cycles,
+  typed provisional reflections, Aleks review decisions, inactive Memory
+  routing, anti-recursion, wake summaries, and reviewed explicit Chat handoff;
+- deepen reviewed consolidation and reconsolidation workflows only when
+  ordinary use identifies a concrete remaining need;
 - improve semantic retrieval cues and temporal continuity;
 - keep all durable changes reviewable and source-bound.
 

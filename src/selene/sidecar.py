@@ -802,6 +802,18 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "memory.fractional_corpus.status")["result"]))
         elif parsed.path == "/api/memory/dream-state/status":
             self._send(*json_bytes(route_request(conn, "memory.dream_state.status")["result"]))
+        elif parsed.path == "/api/dream/cycles":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "dream.cycles.list", qs)["result"]))
+        elif parsed.path.startswith("/api/dream/cycles/"):
+            try:
+                cycle_id = int(parsed.path.removeprefix("/api/dream/cycles/"))
+                self._send(*json_bytes(route_request(conn, "dream.cycles.get", {"cycle_id": cycle_id})["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif parsed.path == "/api/dream/reflections":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "dream.reflections.list", qs)["result"]))
         elif parsed.path == "/api/memory/index/status":
             self._send(*json_bytes(route_request(conn, "memory.index.status")["result"]))
         elif parsed.path == "/api/memory/index/items":
@@ -1892,6 +1904,21 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/c-memory/dream-consolidation":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "c_memory.dream_consolidation.propose", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/dream/cycles/run":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "dream.cycles.run", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/dream/cycles/wake":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "dream.cycles.wake", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/dream/reflections/decide":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "dream.reflections.decide", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/cycle/run":

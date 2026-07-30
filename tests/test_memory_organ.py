@@ -55,10 +55,13 @@ def test_memory_status_names_the_resident_reviewed_lifecycle(tmp_path):
     result = route_request(conn, "memory.index.status")["result"]
     lifecycle = result["memory_lifecycle_contract"]
 
-    assert result["resident_memory_contract_version"] == "v1_post_transfer_truth"
+    assert result["resident_memory_contract_version"] == "v2_dream_review_bridge"
     assert lifecycle["approved_retrieval"] == "approved_active_memory_only"
     assert lifecycle["new_retention"] == "proposal_then_Aleks_review"
-    assert lifecycle["dream_consolidation"] == "reviewable_proposals_only"
+    assert lifecycle["dream_consolidation"] == (
+        "source_bound_reflections_then_Aleks_review; "
+        "Memory routing creates an inactive candidate only"
+    )
     assert lifecycle["silent_promotion"] is False
     assert lifecycle["raw_corpus_recall"] is False
     _assert_locked(result)

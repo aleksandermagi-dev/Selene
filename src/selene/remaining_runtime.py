@@ -740,6 +740,14 @@ def remaining_runtime_status(conn: sqlite3.Connection) -> dict[str, Any]:
         {
             "status": "remaining_blueprint_runtime_shelves_ready",
             "record_counts": {key: _count(conn, table) for key, table in tables.items()},
+            "completed_dream_lifecycle": {
+                "cycles": _count(conn, "selene_dream_cycles"),
+                "reflections": _count(conn, "selene_dream_reflections"),
+                "boundary": (
+                    "source-bound reflections require Aleks review; "
+                    "no silent memory or knowledge promotion"
+                ),
+            },
             "memory_lifecycle": memory_lifecycle_status(conn),
             "temporal_continuity": temporal_continuity_status(conn),
             "decision": "shelves_ready_review_only",

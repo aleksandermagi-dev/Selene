@@ -1245,6 +1245,59 @@ CREATE TABLE IF NOT EXISTS c_runtime_wake_sleep_dream_cycles (
 
 CREATE INDEX IF NOT EXISTS idx_c_runtime_wake_sleep_dream_cycles_status ON c_runtime_wake_sleep_dream_cycles(status, review_status);
 
+CREATE TABLE IF NOT EXISTS selene_dream_cycles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cycle_key TEXT NOT NULL UNIQUE,
+  cycle_label TEXT NOT NULL,
+  phase TEXT NOT NULL DEFAULT 'awaiting_review',
+  started_by TEXT NOT NULL DEFAULT 'explicit_local_request',
+  source_snapshot_json TEXT NOT NULL DEFAULT '[]',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  reflection_count INTEGER NOT NULL DEFAULT 0,
+  summary_json TEXT NOT NULL DEFAULT '{}',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'pending_review',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_dream_cycles_state
+ON selene_dream_cycles(phase, review_status, created_at);
+
+CREATE TABLE IF NOT EXISTS selene_dream_reflections (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cycle_id INTEGER NOT NULL,
+  reflection_key TEXT NOT NULL UNIQUE,
+  reflection_kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  reflection TEXT NOT NULL,
+  why_it_may_matter TEXT NOT NULL,
+  uncertainty TEXT NOT NULL,
+  confidence TEXT NOT NULL DEFAULT 'provisional',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  state TEXT NOT NULL DEFAULT 'pending_review',
+  review_status TEXT NOT NULL DEFAULT 'pending_review',
+  expression_eligible INTEGER NOT NULL DEFAULT 0,
+  memory_candidate_id INTEGER,
+  superseded_by_id INTEGER,
+  decision_note TEXT NOT NULL DEFAULT '',
+  reviewed_by TEXT NOT NULL DEFAULT '',
+  provenance_boundary TEXT NOT NULL,
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (cycle_id) REFERENCES selene_dream_cycles(id),
+  FOREIGN KEY (memory_candidate_id) REFERENCES selene_memory_candidates(id),
+  FOREIGN KEY (superseded_by_id) REFERENCES selene_dream_reflections(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_dream_reflections_state
+ON selene_dream_reflections(state, review_status, expression_eligible, updated_at);
+
+CREATE INDEX IF NOT EXISTS idx_selene_dream_reflections_cycle
+ON selene_dream_reflections(cycle_id, id);
+
 CREATE TABLE IF NOT EXISTS c_runtime_causal_sandbox_records (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   question TEXT NOT NULL,

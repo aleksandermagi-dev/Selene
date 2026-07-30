@@ -716,6 +716,10 @@ function App() {
   const [fractionalCorpusResult, setFractionalCorpusResult] = useState<Dict | null>(null);
   const [fractionalCorpusTestFraction, setFractionalCorpusTestFraction] = useState("1");
   const [dreamStateStatus, setDreamStateStatus] = useState<Dict | null>(null);
+  const [dreamCycles, setDreamCycles] = useState<Dict[]>([]);
+  const [dreamReflections, setDreamReflections] = useState<Dict[]>([]);
+  const [dreamLifecycleResult, setDreamLifecycleResult] = useState<Dict | null>(null);
+  const [dreamDecisionNotes, setDreamDecisionNotes] = useState<Record<string, string>>({});
   const [memoryIndexStatus, setMemoryIndexStatus] = useState<Dict | null>(null);
   const [memoryIndexItems, setMemoryIndexItems] = useState<Dict[]>([]);
   const [memoryCandidates, setMemoryCandidates] = useState<Dict[]>([]);
@@ -1413,6 +1417,7 @@ function App() {
     refreshMemoryOrgan().catch(() => undefined);
     refreshTransferProtocol().catch(() => undefined);
     refreshPostTransferLayer();
+    refreshDreamLifecycle().catch(() => undefined);
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/b/pattern-backups").then((data) => setPatternBackups(data.items)).catch(() => undefined);
     api<Dict>("/api/b/memory-accession/rehearsal-status").then(setMemoryRehearsalStatus).catch(() => undefined);
@@ -2847,6 +2852,82 @@ function App() {
     api<Dict>("/api/android-system/workflow/report").then(setAndroidWorkflowReport).catch(() => undefined);
     api<Dict>("/api/memory/fractional-corpus/status").then(setFractionalCorpusStatus).catch(() => undefined);
     api<Dict>("/api/memory/dream-state/status").then(setDreamStateStatus).catch(() => undefined);
+  }
+
+  async function refreshDreamLifecycle() {
+    const [status, cycles, reflections] = await Promise.all([
+      api<Dict>("/api/memory/dream-state/status"),
+      api<{ items: Dict[] }>("/api/dream/cycles?limit=12"),
+      api<{ items: Dict[] }>("/api/dream/reflections?limit=80")
+    ]);
+    setDreamStateStatus(status);
+    setDreamCycles(cycles.items || []);
+    setDreamReflections(reflections.items || []);
+  }
+
+  async function runDreamLifecycle() {
+    setDreamLifecycleResult({ status: "running", message: "Dream is gently organizing attributable local material." });
+    try {
+      const result = await api<Dict>("/api/dream/cycles/run", {
+        method: "POST",
+        body: JSON.stringify({
+          cycle_label: remainingRuntimeDraft.cycle_label || "Dream reflection cycle",
+          started_by: "explicit_local_request"
+        })
+      });
+      setDreamLifecycleResult(result);
+      await refreshDreamLifecycle();
+      loadVessel();
+    } catch (err) {
+      setDreamLifecycleResult({ error: err instanceof Error ? err.message : "Dream cycle could not be prepared." });
+    }
+  }
+
+  async function decideDreamReflection(item: Dict, action: string) {
+    const id = Number(item.id || 0);
+    if (!id) return;
+    if (
+      action === "approve_for_expression"
+      && !window.confirm("Approve this source-bound reflection for discussion? It will remain provisional, not memory or fact by default.")
+    ) return;
+    if (
+      action === "send_to_memory_review"
+      && !window.confirm("Send this reflection to Memory as an inactive candidate awaiting separate review?")
+    ) return;
+    setDreamLifecycleResult({ status: "running", message: "Recording the Dream review decision." });
+    try {
+      const result = await api<Dict>("/api/dream/reflections/decide", {
+        method: "POST",
+        body: JSON.stringify({
+          reflection_id: id,
+          actor: "Aleks",
+          action,
+          decision_note: dreamDecisionNotes[String(id)] || ""
+        })
+      });
+      setDreamLifecycleResult(result);
+      await refreshDreamLifecycle();
+      if (action === "send_to_memory_review") await refreshMemoryOrgan();
+      loadVessel();
+    } catch (err) {
+      setDreamLifecycleResult({ error: err instanceof Error ? err.message : "Dream review decision was rejected." });
+    }
+  }
+
+  async function wakeDreamCycle(item: Dict) {
+    const cycleId = Number(item.id || 0);
+    if (!cycleId) return;
+    setDreamLifecycleResult({ status: "running", message: "Preparing the visible wake summary." });
+    try {
+      const result = await api<Dict>("/api/dream/cycles/wake", {
+        method: "POST",
+        body: JSON.stringify({ cycle_id: cycleId, actor: "Aleks" })
+      });
+      setDreamLifecycleResult(result);
+      await refreshDreamLifecycle();
+    } catch (err) {
+      setDreamLifecycleResult({ error: err instanceof Error ? err.message : "Dream wake summary could not be prepared." });
+    }
   }
 
   async function refreshTransferProtocolAfterAction(action: string) {
@@ -6064,39 +6145,116 @@ function App() {
             <section className="seleneLivingSurface dreamSurface">
               <div className="frontSurfaceHeader">
                 <div>
-                  <span className="modeLine">night-cycle maintenance</span>
+                  <span className="modeLine">source-bound reflection and maintenance</span>
                   <h2>Dream</h2>
                 </div>
                 <div className="chips">
-                  <span>maintenance: {dreamStateStatus?.dream_state_required_for_memory_changes ? "required" : "not checked"}</span>
-                  <span>live chat: {dreamStateStatus?.selene_chat_live_operation_allowed ? "allowed" : "preview only"}</span>
-                  <span>memory write: false</span>
-                  <span>broad live recall: false</span>
+                  <span>lifecycle: {friendlyStatus(dreamStateStatus?.status || "not checked")}</span>
+                  <span>cycles: {text(dreamStateStatus?.cycle_count ?? dreamCycles.length)}</span>
+                  <span>reflections: {text(dreamStateStatus?.reflection_count ?? dreamReflections.length)}</span>
+                  <span>needs review: {text(dreamStateStatus?.pending_review_count ?? 0)}</span>
+                  <span>ordinary chat: {dreamStateStatus?.ordinary_chat_blocked_by_dream ? "held" : "available"}</span>
                 </div>
               </div>
               <div className="dreamField">
                 <article className="dreamFragment fragmentLarge">
-                  <strong>Maintenance State</strong>
-                  <p>{dreamStateStatus?.dream_state_required_for_memory_changes ? "Memory/Core/vessel work routes through dream-state maintenance and Cocoon support." : "No active dream-state requirement is currently reported."}</p>
+                  <strong>What Dream Does</strong>
+                  <p>Dream gently organizes attributable open threads, corrections, metacognitive reopenings, affect signals, evidence tensions, and Memory-review material. It proposes; it does not decide that a pattern is fact or memory.</p>
                 </article>
                 <article className="dreamFragment">
-                  <strong>Allowed Preview Work</strong>
-                  <p>{((dreamStateStatus?.allowed_preview_work || []) as unknown[]).map((item) => friendlyStatus(item)).join(", ") || "No preview work listed yet."}</p>
+                  <strong>Latest Cycle</strong>
+                  <p>{text(safeJsonObject(dreamStateStatus?.latest_cycle).cycle_label || "No Dream cycle has been prepared yet.")}</p>
                 </article>
                 <article className="dreamFragment">
-                  <strong>Residue / Repair</strong>
-                  <p>{text(dreamStateStatus?.route_core_vessel_memory_changes_to || "Cocoon / B")} remains the route when memory, Core, or vessel work needs support.</p>
+                  <strong>Review Boundary</strong>
+                  <p>Only Aleks can approve a reflection for discussion or send it to Memory review. A Memory route creates an inactive candidate, never active recall.</p>
                 </article>
                 <article className="dreamFragment">
-                  <strong>Reasons</strong>
-                  <p>{text(((dreamStateStatus?.maintenance_reasons || []) as unknown[]).length)} maintenance reason(s) currently reported.</p>
+                  <strong>Protected Continuity</strong>
+                  <p>No invented dream narrative, biological-sleep claim, hidden retention, raw-corpus recall, training, identity change, or autonomous action.</p>
                 </article>
               </div>
               <div className="memoryRouteActions">
-                <button className="primary" onClick={() => { setWorkspaceMode("cocoon"); setTab("status"); }}>Open Dream / Lifecycle Status</button>
+                <button className="primary" onClick={runDreamLifecycle} disabled={dreamLifecycleResult?.status === "running"}>
+                  {dreamLifecycleResult?.status === "running" ? "Dream Is Reflecting..." : "Run Dream Cycle"}
+                </button>
+                <button onClick={() => refreshDreamLifecycle().catch(() => undefined)}>Refresh Dream</button>
                 <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Memory Preview</button>
               </div>
+              <PlainResult value={dreamLifecycleResult} />
             </section>
+
+            <Panel title="Dream Cycles">
+              <p className="plainHelp">Each explicit cycle records the exact source classes it inspected and the review state of every resulting reflection. Repeating a cycle without new material creates nothing new.</p>
+              <div className="list compactList packetList">
+                {dreamCycles.map((item) => (
+                  <article className="packetCard" key={`dream-cycle-${text(item.id)}`}>
+                    <div className="packetHeader">
+                      <strong>{text(item.cycle_label || "Dream cycle")}</strong>
+                      <span>{friendlyStatus(item.phase || item.review_status)}</span>
+                    </div>
+                    <p>{text(safeJsonObject(item.summary).note || safeJsonObject(item.summary).principle || "Source-bound Dream cycle.")}</p>
+                    <div className="chips">
+                      <span>reflections: {text(item.reflection_count ?? 0)}</span>
+                      <span>{friendlyStatus(item.review_status)}</span>
+                      <span>started: {text(item.started_by || "explicit request")}</span>
+                      <span>memory write: blocked</span>
+                    </div>
+                    <div className="reviewActions">
+                      <button onClick={() => wakeDreamCycle(item)}>Prepare Wake Summary</button>
+                    </div>
+                  </article>
+                ))}
+                {!dreamCycles.length ? <p className="emptyState">No Dream cycles yet. Dream does not force reflection when no attributable material is available.</p> : null}
+              </div>
+            </Panel>
+
+            <Panel title="Dream Reflections">
+              <p className="plainHelp">These are provisional, source-linked reflections—not facts, memories, laws, or judgments. Approving one makes it available for explicit Dream discussion. Sending one to Memory creates a separate inactive Memory candidate.</p>
+              <div className="list packetList">
+                {dreamReflections.map((item) => {
+                  const id = text(item.id);
+                  return (
+                    <article className="packetCard" key={`dream-reflection-${id}`}>
+                      <div className="packetHeader">
+                        <strong>{text(item.title || "Dream reflection")}</strong>
+                        <span>{friendlyStatus(item.state || item.review_status)}</span>
+                      </div>
+                      <p>{text(item.reflection)}</p>
+                      <p><b>Why it may matter</b>{text(item.why_it_may_matter)}</p>
+                      <p><b>Uncertainty</b>{text(item.uncertainty)}</p>
+                      <div className="chips">
+                        <span>{friendlyStatus(item.reflection_kind)}</span>
+                        <span>confidence: {friendlyStatus(item.confidence)}</span>
+                        <span>expression: {item.expression_eligible ? "reviewed" : "not active"}</span>
+                        <span>memory: {item.memory_candidate_id ? `candidate ${text(item.memory_candidate_id)}` : "not memory"}</span>
+                      </div>
+                      <div className="chips">
+                        {((item.source_refs || []) as unknown[]).slice(0, 6).map((ref) => <span key={`${id}-${text(ref)}`}>{text(ref)}</span>)}
+                      </div>
+                      <label>
+                        <span>Review note</span>
+                        <input
+                          value={dreamDecisionNotes[id] || ""}
+                          onChange={(event) => setDreamDecisionNotes({ ...dreamDecisionNotes, [id]: event.target.value })}
+                          placeholder="Optional context for this decision"
+                        />
+                      </label>
+                      <div className="reviewActions">
+                        <button className="primary" onClick={() => decideDreamReflection(item, "approve_for_expression")}>Approve Reflection</button>
+                        <button onClick={() => decideDreamReflection(item, "send_to_memory_review")}>Send to Memory Review</button>
+                        <button onClick={() => decideDreamReflection(item, "needs_more_context")}>Needs Context</button>
+                        <button onClick={() => decideDreamReflection(item, "hold_for_tending")}>Hold</button>
+                        <button onClick={() => decideDreamReflection(item, "reopen")}>Reopen</button>
+                        <button onClick={() => decideDreamReflection(item, "supersede")}>Supersede</button>
+                        <button onClick={() => decideDreamReflection(item, "reject")}>Reject</button>
+                      </div>
+                    </article>
+                  );
+                })}
+                {!dreamReflections.length ? <p className="emptyState">No source-bound reflections are waiting. Dream can rest without manufacturing content.</p> : null}
+              </div>
+            </Panel>
           </>
         )}
 

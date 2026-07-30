@@ -244,12 +244,20 @@ from .pre_transfer_runtime import (
     working_memory_runtime_preview,
 )
 from .post_transfer import (
-    dream_state_status,
     fractional_corpus_status,
     post_transfer_status,
     prepare_fractional_corpus,
     run_fractional_corpus_tests,
     run_post_transfer_inspection,
+)
+from .dream_state import (
+    decide_dream_reflection,
+    dream_state_status,
+    get_dream_cycle,
+    list_dream_cycles,
+    list_dream_reflections,
+    run_dream_cycle,
+    wake_from_dream_cycle,
 )
 from .transfer_completion import (
     approve_transfer_completion,
@@ -581,6 +589,18 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": run_fractional_corpus_tests(conn, payload)}
     if route_key == "memory.dream_state.status":
         return {"route": route_key, "result": dream_state_status(conn)}
+    if route_key == "dream.cycles.list":
+        return {"route": route_key, "result": list_dream_cycles(conn, payload)}
+    if route_key == "dream.cycles.get":
+        return {"route": route_key, "result": get_dream_cycle(conn, payload)}
+    if route_key == "dream.cycles.run":
+        return {"route": route_key, "result": run_dream_cycle(conn, payload)}
+    if route_key == "dream.cycles.wake":
+        return {"route": route_key, "result": wake_from_dream_cycle(conn, payload)}
+    if route_key == "dream.reflections.list":
+        return {"route": route_key, "result": list_dream_reflections(conn, payload)}
+    if route_key == "dream.reflections.decide":
+        return {"route": route_key, "result": decide_dream_reflection(conn, payload)}
     if route_key == "memory.index.status":
         return {"route": route_key, "result": memory_index_status(conn)}
     if route_key == "memory.index.items":

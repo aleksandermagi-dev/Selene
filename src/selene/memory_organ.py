@@ -146,11 +146,14 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "current_session_context": "available_during_the_active_conversation",
                 "approved_retrieval": "approved_active_memory_only",
                 "new_retention": "proposal_then_Aleks_review",
-                "dream_consolidation": "reviewable_proposals_only",
+                "dream_consolidation": (
+                    "source_bound_reflections_then_Aleks_review; "
+                    "Memory routing creates an inactive candidate only"
+                ),
                 "silent_promotion": False,
                 "raw_corpus_recall": False,
             },
-            "resident_memory_contract_version": "v1_post_transfer_truth",
+            "resident_memory_contract_version": "v2_dream_review_bridge",
             "dream_state_may_propose_not_promote": True,
             "raw_corpus_loaded": False,
             "raw_archive_recall_active": False,
