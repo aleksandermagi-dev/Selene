@@ -188,6 +188,25 @@ def test_public_boundary_secret_scan_does_not_flag_ask_if_language(tmp_path):
     assert scan["matches"]["secret_like"] == []
 
 
+def test_public_boundary_flags_tracked_private_analysis_but_keeps_promoted_probe(tmp_path):
+    repo = tmp_path
+    private_analysis = repo / "analysis" / "metadata_audit_20260605" / "metadata.csv"
+    promoted_probe = repo / "analysis" / "live_probe_20260605" / "report.md"
+    private_analysis.parent.mkdir(parents=True)
+    promoted_probe.parent.mkdir(parents=True)
+    private_analysis.write_text("private generated trace\n", encoding="utf-8")
+    promoted_probe.write_text("reviewed public probe\n", encoding="utf-8")
+    import subprocess
+
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "add", "analysis"], cwd=repo, check=True, capture_output=True)
+
+    from scripts.stabilization_run import public_boundary_scan
+
+    scan = public_boundary_scan(repo)
+    assert scan["tracked_excluded_paths"] == ["analysis/metadata_audit_20260605/metadata.csv"]
+
+
 def test_public_boundary_vessel_console_title_is_not_vessel_c_label(tmp_path):
     repo = tmp_path
     (repo / "src-ui").mkdir()

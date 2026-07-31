@@ -58,6 +58,56 @@ def test_sidecar_shutdown_endpoint_stops_server(tmp_path):
     assert not thread.is_alive()
 
 
+def test_sidecar_rejects_cross_site_browser_post_before_state_change(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    conn.request(
+        "POST",
+        "/shutdown",
+        body="{}",
+        headers={"Content-Type": "text/plain", "Origin": "https://untrusted.example"},
+    )
+    response = conn.getresponse()
+    payload = json.loads(response.read().decode("utf-8"))
+    conn.close()
+
+    assert response.status == 403
+    assert payload["status"] == "browser_origin_blocked"
+    assert payload["activation_change"] == "none"
+    assert payload["memory_write_active"] is False
+    assert thread.is_alive()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    server.server_close()
+    server.conn.close()
+
+
+def test_sidecar_allows_configured_desktop_browser_origin(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    conn.request("GET", "/health", headers={"Origin": "http://127.0.0.1:5173"})
+    response = conn.getresponse()
+    payload = json.loads(response.read().decode("utf-8"))
+    allowed_origin = response.getheader("Access-Control-Allow-Origin")
+    conn.close()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    server.server_close()
+    server.conn.close()
+
+    assert response.status == 200
+    assert payload["status"] == "ok"
+    assert allowed_origin == "http://127.0.0.1:5173"
+
+
 def test_metacognition_status_and_inspection_endpoints_are_reachable(tmp_path):
     server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -244,10 +294,18 @@ def test_tauri_release_and_sidecar_helpers_are_configured_without_console_window
     repo = Path(__file__).resolve().parents[1]
     main_rs = (repo / "src-tauri" / "src" / "main.rs").read_text(encoding="utf-8")
     lib_rs = (repo / "src-tauri" / "src" / "lib.rs").read_text(encoding="utf-8")
+    tauri_config = json.loads((repo / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8"))
+    cargo_manifest = (repo / "src-tauri" / "Cargo.toml").read_text(encoding="utf-8")
 
     assert 'windows_subsystem = "windows"' in main_rs
     assert "CREATE_NO_WINDOW" in lib_rs
     assert ".stdout(Stdio::null())" in lib_rs
     assert ".stderr(Stdio::null())" in lib_rs
     assert "command.creation_flags(CREATE_NO_WINDOW)" in lib_rs
-    assert ".creation_flags(CREATE_NO_WINDOW)" in lib_rs
+    assert tauri_config["app"]["security"]["csp"]["default-src"]
+    assert "http://127.0.0.1:8766" in tauri_config["app"]["security"]["csp"]["connect-src"]
+    assert "tauri-plugin-shell" not in cargo_manifest
+    assert "tauri_plugin_shell::init" not in lib_rs
+    assert "setup_sidecar_port_occupied_refused" in lib_rs
+    assert "setup_reuse_healthy_sidecar" not in lib_rs
+    assert "Stop-Process -Id" not in lib_rs

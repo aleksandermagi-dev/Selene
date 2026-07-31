@@ -253,7 +253,14 @@ def test_nonlocal_surface_exposes_only_static_mobile_and_paired_mobile_api(tmp_p
         missing_conn.close()
 
         mobile_conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        mobile_conn.request("GET", "/api/mobile/health", headers={"X-Selene-Mobile-Pairing": token})
+        mobile_conn.request(
+            "GET",
+            "/api/mobile/health",
+            headers={
+                "Origin": f"http://127.0.0.1:{port}",
+                "X-Selene-Mobile-Pairing": token,
+            },
+        )
         mobile_response = mobile_conn.getresponse()
         mobile = json.loads(mobile_response.read().decode("utf-8"))
         mobile_conn.close()

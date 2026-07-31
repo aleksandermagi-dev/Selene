@@ -183,7 +183,13 @@ def seam_mismatch_scan(repo_root: Path, api_paths: list[str], ui_api_paths: list
 
 def public_boundary_scan(repo_root: Path) -> dict[str, Any]:
     tracked = run_git_lines(repo_root, ["git", "ls-files"])
-    excluded_pattern = re.compile(r"(^|/)(New UI|new stuff|codex_chest|might help|exports|dist-ui|dist-sidecar|build-sidecar|src-tauri/target)/|(\.sqlite3?|\.db|\.exe|\.msi|\.tgz|\.log)$", re.IGNORECASE)
+    excluded_pattern = re.compile(
+        r"(^|/)(New UI|new stuff|codex_chest|might help|exports|dist-ui|dist-sidecar|build-sidecar|"
+        r"src-tauri/target|DevelopmentalCorpusArchive_[^/]*|Ref material for codex|Selene Voice Module|AleksOSminer)/|"
+        r"^analysis/(?!live_layer_20260528/|live_probe_20260602/|live_probe_20260605/)|"
+        r"(\.sqlite3?|\.db|\.exe|\.msi|\.tgz|\.log)$",
+        re.IGNORECASE,
+    )
     tracked_excluded = [path for path in tracked if excluded_pattern.search(path)]
     grep_patterns = {
         "secret_like": r"(OPENAI_API_KEY|sk-[A-Za-z0-9_-]{16,}|github_pat_[A-Za-z0-9_]{16,}|ghp_[A-Za-z0-9]{16,}|\b(password|secret|token)\s*=\s*['\"][^'\"]{8,})",

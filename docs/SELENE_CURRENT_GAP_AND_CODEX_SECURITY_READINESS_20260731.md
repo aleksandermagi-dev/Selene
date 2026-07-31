@@ -2,23 +2,27 @@
 
 Date: 2026-07-31
 
-Status: read-only source/runtime audit completed at checkpoint `f38c0b1`; no
-live conversation, retention change, provider call, package build, reinstall,
-or adversarial interaction was used.
+Status: the readiness review was followed by the external static and isolated
+synthetic audit recorded in `SELENE_EXTERNAL_SECURITY_AUDIT_20260731.md`.
+Runtime hardening is verified; public-repository privacy remediation awaits an
+explicit owner decision because it requires history rewriting or repository
+replacement. No live conversation, retention change, provider call, package
+build, reinstall, or adversarial interaction was used.
 
 ## Decision
 
 There is no remaining cognition, conversation, comprehension, memory, Dream,
 or language-coordination architecture blocker before ordered teaching resumes.
 
-The next bounded task is an external Codex Security review of the public
-repository. Codex Security is not a Selene organ, dependency, authority, or
-runtime component. It may inspect repository code and history, build an
-editable threat model, validate candidate vulnerabilities in an isolated
-environment, and propose patches for Aleks and Codex to review.
+The hosted Codex Security product was unavailable to the current ChatGPT plan,
+so the same boundary was honored with local external audit tooling. The
+security tooling is not a Selene organ, dependency, authority, or runtime
+component. It inspected repository code and history, used the editable threat
+model, and validated candidate vulnerabilities only against isolated synthetic
+fixtures.
 
-After that review and proportional remediation/stabilization, work may return
-to the ordered curriculum.
+After the confirmed public-history privacy blocker is resolved and the
+sanitized public state is verified, work may return to the ordered curriculum.
 
 ## Current Configured Runtime Truth
 

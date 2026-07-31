@@ -448,7 +448,29 @@ class SeleneHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_OPTIONS(self) -> None:
+        if self._deny_untrusted_browser_origin(urlparse(self.path).path):
+            return
         self._send(204, b"")
+
+    def _browser_origin_allowed(self, request_path: str) -> bool:
+        origin = str(self.headers.get("Origin") or "").strip()
+        if not origin or origin in ALLOWED_ORIGINS:
+            return True
+        if request_path.startswith("/api/mobile/"):
+            parsed = urlparse(origin)
+            return parsed.scheme in {"http", "https"} and parsed.netloc == str(self.headers.get("Host") or "").strip()
+        return False
+
+    def _deny_untrusted_browser_origin(self, request_path: str) -> bool:
+        if self._browser_origin_allowed(request_path):
+            return False
+        self._send(*json_bytes({
+            "error": "untrusted browser origin",
+            "status": "browser_origin_blocked",
+            "activation_change": "none",
+            "memory_write_active": False,
+        }, 403))
+        return True
 
     def _is_local_client(self) -> bool:
         host = self.client_address[0] if self.client_address else ""
@@ -523,6 +545,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        if self._deny_untrusted_browser_origin(parsed.path):
+            return
         qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
         conn = self.server.conn
         if self._serve_mobile_asset(parsed.path):
@@ -982,6 +1006,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         request_path = urlparse(self.path).path
+        if self._deny_untrusted_browser_origin(request_path):
+            return
         if self._deny_non_mobile_remote_request(request_path):
             return
         try:

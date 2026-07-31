@@ -1,5 +1,5 @@
 use std::fs::{create_dir_all, OpenOptions};
-use std::io::{Read, Write};
+use std::io::Write;
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
@@ -90,12 +90,20 @@ impl SidecarState {
         if let Ok(mut child) = self.0.lock() {
             if let Some(mut child) = child.take() {
                 let child_id = child.id();
-                log_debug("tauri", "sidecar_owned_child_shutdown_start", &format!("pid={child_id}"));
+                log_debug(
+                    "tauri",
+                    "sidecar_owned_child_shutdown_start",
+                    &format!("pid={child_id}"),
+                );
                 request_sidecar_shutdown();
                 sleep(Duration::from_millis(500));
                 let _ = child.kill();
                 let _ = child.wait();
-                log_debug("tauri", "sidecar_owned_child_shutdown_complete", &format!("pid={child_id}"));
+                log_debug(
+                    "tauri",
+                    "sidecar_owned_child_shutdown_complete",
+                    &format!("pid={child_id}"),
+                );
             } else {
                 log_debug("tauri", "sidecar_state_no_owned_child", "");
             }
@@ -112,38 +120,6 @@ impl Drop for SidecarState {
     }
 }
 
-fn sidecar_health_ok() -> bool {
-    log_debug("tauri", "sidecar_health_check_start", "");
-    let mut stream = match TcpStream::connect_timeout(
-        &"127.0.0.1:8766".parse().expect("valid sidecar address"),
-        Duration::from_millis(500),
-    ) {
-        Ok(stream) => stream,
-        Err(err) => {
-            log_debug("tauri", "sidecar_health_check_connect_failed", &err.to_string());
-            return false;
-        }
-    };
-    let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
-    let _ = stream.set_write_timeout(Some(Duration::from_secs(2)));
-    let request = concat!(
-        "GET /health HTTP/1.1\r\n",
-        "Host: 127.0.0.1:8766\r\n",
-        "Connection: close\r\n",
-        "\r\n"
-    );
-    if let Err(err) = stream.write_all(request.as_bytes()) {
-        log_debug("tauri", "sidecar_health_check_write_failed", &err.to_string());
-        return false;
-    }
-    let mut response = String::new();
-    let ok = stream.read_to_string(&mut response).is_ok()
-        && response.starts_with("HTTP/1.0 200")
-        && response.contains("\"status\":\"ok\"");
-    log_debug("tauri", "sidecar_health_check_complete", &format!("ok={ok}; bytes={}", response.len()));
-    ok
-}
-
 fn sidecar_port_open() -> bool {
     TcpStream::connect_timeout(
         &"127.0.0.1:8766".parse().expect("valid sidecar address"),
@@ -152,55 +128,13 @@ fn sidecar_port_open() -> bool {
     .is_ok()
 }
 
-fn wait_for_sidecar_port_close(timeout: Duration) -> bool {
-    let mut waited = Duration::from_millis(0);
-    while waited < timeout {
-        if !sidecar_port_open() {
-            return true;
-        }
-        sleep(Duration::from_millis(200));
-        waited += Duration::from_millis(200);
-    }
-    !sidecar_port_open()
-}
-
-fn stop_stale_sidecars() {
-    log_debug("tauri", "stop_stale_sidecars_start", "");
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-        for image_name in [
-            "selene-sidecar.exe",
-            "selene-sidecar-x86_64-pc-windows-msvc.exe",
-        ] {
-            let _ = Command::new("taskkill")
-                .args(["/F", "/IM", image_name])
-                .creation_flags(CREATE_NO_WINDOW)
-                .output();
-        }
-
-        let _ = Command::new("powershell")
-            .args([
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-Command",
-                "$ownerPids = @(Get-NetTCPConnection -LocalPort 8766 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($ownerPid in $ownerPids) { Stop-Process -Id $ownerPid -Force -ErrorAction SilentlyContinue }",
-            ])
-            .creation_flags(CREATE_NO_WINDOW)
-            .output();
-        sleep(Duration::from_millis(750));
-    }
-    log_debug("tauri", "stop_stale_sidecars_complete", "");
-}
-
 fn sidecar_executable(resource_dir: Option<PathBuf>) -> std::io::Result<PathBuf> {
     let exe_dir = std::env::current_exe()?
         .parent()
         .map(PathBuf::from)
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "missing app exe directory"))?;
+        .ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::NotFound, "missing app exe directory")
+        })?;
     let current_dir = std::env::current_dir()?;
     let mut candidates = vec![];
     if let Some(resource_dir) = resource_dir {
@@ -245,12 +179,21 @@ fn sidecar_executable(resource_dir: Option<PathBuf>) -> std::io::Result<PathBuf>
     candidates
         .into_iter()
         .find(|path| path.exists())
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "selene sidecar executable not found"))
+        .ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "selene sidecar executable not found",
+            )
+        })
 }
 
 fn spawn_hidden_sidecar(parent_pid: &str, resource_dir: Option<PathBuf>) -> std::io::Result<Child> {
     let exe = sidecar_executable(resource_dir)?;
-    log_debug("tauri", "sidecar_spawn_start", &format!("exe={}; parent_pid={parent_pid}", exe.display()));
+    log_debug(
+        "tauri",
+        "sidecar_spawn_start",
+        &format!("exe={}; parent_pid={parent_pid}", exe.display()),
+    );
     let mut command = Command::new(exe);
     command
         .args(["--seed", "--port", "8766", "--parent-pid", parent_pid])
@@ -267,7 +210,11 @@ fn spawn_hidden_sidecar(parent_pid: &str, resource_dir: Option<PathBuf>) -> std:
 
     let child = command.spawn();
     match &child {
-        Ok(child) => log_debug("tauri", "sidecar_spawn_complete", &format!("pid={}", child.id())),
+        Ok(child) => log_debug(
+            "tauri",
+            "sidecar_spawn_complete",
+            &format!("pid={}", child.id()),
+        ),
         Err(err) => log_debug("tauri", "sidecar_spawn_failed", &err.to_string()),
     }
     child
@@ -306,22 +253,11 @@ pub fn run() {
             read_transfer_ceremony_debug_log,
             close_app
         ])
-        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             log_debug("tauri", "setup_start", &format!("pid={}", std::process::id()));
             if sidecar_port_open() {
-                log_debug("tauri", "setup_sidecar_port_open", "");
-                if sidecar_health_ok() {
-                    log_debug("tauri", "setup_reuse_healthy_sidecar", "");
-                    app.manage(SidecarState(Mutex::new(None)));
-                    return Ok(());
-                } else {
-                    log_debug("tauri", "setup_unhealthy_sidecar_restart", "");
-                    request_sidecar_shutdown();
-                    if !wait_for_sidecar_port_close(Duration::from_secs(3)) {
-                        stop_stale_sidecars();
-                    }
-                }
+                log_debug("tauri", "setup_sidecar_port_occupied_refused", "port=8766");
+                return Err("Selene cannot verify ownership of the process already listening on port 8766. Close the existing Selene instance or sidecar before reopening the app.".into());
             }
             let parent_pid = std::process::id().to_string();
             let resource_dir = app.path().resource_dir().ok();
