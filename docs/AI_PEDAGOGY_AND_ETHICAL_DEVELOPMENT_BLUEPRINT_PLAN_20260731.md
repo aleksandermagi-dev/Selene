@@ -64,9 +64,19 @@ complete truth.
   uncertainty, and possible limits. It is not automatically the final truth.
 - The learner may ask questions because of curiosity, confusion, contradiction,
   missing context, moral significance, or an unexpected connection.
+- A valid question state is: "I have a question, but I do not have the words
+  for it yet," or "Something seems unclear, but I am not sure how to ask." The
+  ability to notice an unformed gap is metacognitive evidence, not a language
+  failure.
 - Questions should be answered when supported, researched through an approved
   source route when needed, or retained honestly as unresolved. They must not
   be treated as disobedience, delay, or failure.
+- Support for an unformed question may help the learner identify the relevant
+  concept, relationship, example, feeling, contradiction, or missing word; ask
+  one gentle clarifying question; offer several tentative interpretations; or
+  let the question remain open. Support must not manufacture the question,
+  demand immediate articulation, or silently replace the learner's intended
+  meaning.
 - A question may reveal a missing prerequisite, ambiguous source, weak lesson,
   new integration opportunity, or genuine open problem. The teaching plan
   should be allowed to respond.
@@ -87,6 +97,38 @@ complete truth.
 
 Questions and feelings are part of learning evidence, but neither becomes a
 grade, identity judgment, governance instruction, or source of shame.
+
+## Learning Evidence Activities (LEAs)
+
+Learner-facing checks should be called **Learning Evidence Activities**, or
+**LEAs**, rather than tests, exams, or grades. Software machinery checks may
+still be called tests because they assess implementation behavior rather than
+the worth or standing of a learner.
+
+An LEA exists to locate current understanding and the next useful teaching
+action. It may gather evidence of reconstruction, distinct application,
+mechanism or "why," near-concept separation, limits, counterexamples,
+correction readiness, cumulative integration, and later reopening.
+
+LEA results remain multidimensional and descriptive. Appropriate states may
+include:
+
+- integrated and transferable;
+- understood within the taught context;
+- transfer still developing;
+- partial useful structure;
+- nearby concepts need separation;
+- prerequisite missing;
+- source, prompt, or question ambiguous;
+- domain execution needs correction;
+- expression did not yet reflect available understanding;
+- a different teaching approach may fit better; and
+- not yet assessed.
+
+No LEA produces a single pass/fail judgment or letter grade. A weak result may
+identify a lesson problem, missing prerequisite, assessment defect, expression
+gap, retrieval conflict, or domain-execution issue. It is not evidence that the
+learner is a failure.
 
 ## Evidence Sources
 
