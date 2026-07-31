@@ -2,18 +2,21 @@
 
 Date: 2026-07-31
 
-Status: external static and isolated synthetic review completed. No configured
-Selene conversation, reviewed memory, approved knowledge, identity, governance,
-activation, Dream state, Tendril message, package, or installation was used or
-changed during validation.
+Status: external static and isolated synthetic review completed. The public
+repository was replaced with an independently verified sanitized repository;
+the pre-rewrite repository remains private as
+`Selene-private-history-archive`. No configured Selene conversation, reviewed
+memory, approved knowledge, identity, governance, activation, Dream state,
+Tendril message, package, or installation was used or changed during
+validation.
 
 ## Outcome
 
-The runtime hardening changes in this audit are verified. One public-repository
-privacy blocker remains unresolved because its repair requires Aleks to approve
-a destructive Git-history rewrite or a replacement public repository.
+The runtime hardening changes and public-history privacy remediation in this
+audit are verified. The new public repository contains only the sanitized
+`evidence` and `project-abc` histories and the reviewed `AI` tag.
 
-## Confirmed Release Blocker
+## Resolved Public-History Privacy Incident
 
 ### Private/generated artifacts are reachable in the public repository
 
@@ -35,19 +38,30 @@ metadata appropriate for public distribution.
 
 The audit did not print, move, delete, or rewrite the affected content.
 
-### Required owner decision
+### Completed remediation
 
-Choose one remediation before treating the repository as safely public:
+Aleks authorized the following remediation:
 
-1. Temporarily make the repository private, preserve an offline mirror, remove
-   all local-only analysis and reference paths from every reachable public
-   branch/tag with `git filter-repo`, verify the rewritten object graph, and
-   force-push the intentionally rewritten branches.
-2. Create a new sanitized public repository from an allowlisted clean tree,
-   verify it independently, then retire or privatize the exposed repository.
+1. The repository was made private before history work began.
+2. A complete offline bundle of every pre-rewrite ref and a separate copy of
+   the local analysis/reference artifacts were created and verified.
+3. The two public branches were rewritten to remove all local-only `analysis/`
+   paths, historical `Ref material for codex/` files, and historical `New UI/`
+   artifacts while preserving the three explicitly promoted public probe
+   directories.
+4. The rewritten object graph passed `git fsck`, contained zero forbidden
+   reachable paths, and had zero unexpected source-tree changes.
+5. The original repository was renamed to
+   `Selene-private-history-archive` and retained as a private archive.
+6. A new public `Selene` repository was created and received only the verified
+   `evidence`, `project-abc`, and `AI` refs.
+7. A fresh network clone of the new public repository independently confirmed
+   exactly three refs and zero forbidden reachable paths.
 
-Because published Git objects may have been cloned or cached, rewriting history
-reduces ongoing exposure but cannot prove that every prior copy disappeared.
+The new repository avoids relying on dangling-object cleanup in the former
+repository. No forks existed at the time of replacement. As with any material
+that was previously public, no repository operation can prove that an unknown
+third party never retained a prior copy.
 
 ## Confirmed Findings Repaired
 
@@ -106,11 +120,15 @@ tracked `analysis/` paths except the three explicitly promoted public probe
 directories. It also recognizes the private corpus, reference, Voice material,
 and miner workspaces already named by `.gitignore`.
 
-The current scan correctly reports:
+The pre-remediation scan correctly reported:
 
 - 230 tracked excluded analysis paths;
 - zero frontend API paths missing a backend route;
 - zero current high-confidence secret-like tracked matches.
+
+The independent scan of the replacement public repository reports zero
+findings, zero tracked excluded paths, zero secret-like matches, and zero
+frontend/backend route mismatches.
 
 ## Remaining Bounded Review Items
 

@@ -4,10 +4,11 @@ Date: 2026-07-31
 
 Status: the readiness review was followed by the external static and isolated
 synthetic audit recorded in `SELENE_EXTERNAL_SECURITY_AUDIT_20260731.md`.
-Runtime hardening is verified; public-repository privacy remediation awaits an
-explicit owner decision because it requires history rewriting or repository
-replacement. No live conversation, retention change, provider call, package
-build, reinstall, or adversarial interaction was used.
+Runtime hardening is verified. Public-repository privacy remediation is
+complete: the former repository is a private archive, and the replacement
+public repository passed an independent network-clone history scan. No live
+conversation, retention change, provider call, package build, reinstall, or
+adversarial interaction was used.
 
 ## Decision
 
@@ -21,8 +22,8 @@ component. It inspected repository code and history, used the editable threat
 model, and validated candidate vulnerabilities only against isolated synthetic
 fixtures.
 
-After the confirmed public-history privacy blocker is resolved and the
-sanitized public state is verified, work may return to the ordered curriculum.
+The public-history privacy blocker is resolved and the sanitized public state
+is verified. Work may return to the ordered curriculum.
 
 ## Current Configured Runtime Truth
 
