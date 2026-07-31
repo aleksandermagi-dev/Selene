@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from selene.answer_completion import build_bounded_answer_completion
+from selene.supported_semantics import build_supported_semantic_packet
 
 
 def _obligations():
@@ -55,10 +56,102 @@ def test_one_bounded_pass_supplies_missing_supported_obligations_without_authori
     assert "The reason is that" in result["content_seed"]
     assert "A limitation is that" in result["content_seed"]
     assert {item["obligation_id"] for item in result["resolutions"]} == {"reason", "limit"}
+    assert {
+        obligation_id
+        for unit in result["supported_semantics"]["units"]
+        for obligation_id in unit["obligation_ids"]
+    } == {"reason", "limit"}
     assert all(item["source_refs"] == ["lesson:garden-pilot"] for item in result["resolutions"])
     assert result["recursion_allowed"] is False
     assert result["provider_call_allowed"] is False
     assert result["memory_write_active"] is False
+
+
+def test_supported_paraphrase_prevents_redundant_completion():
+    obligation = {
+        "id": "reason",
+        "kind": "reason",
+        "source_text": "Why should we start with the reversible garden design?",
+        "coverage_terms": ["start", "reversible", "garden", "design"],
+        "required": True,
+    }
+    packet = build_supported_semantic_packet(
+        {
+            "answer_kind": "approved_reason",
+            "units": [
+                {
+                    "id": "reason-unit",
+                    "role": "support",
+                    "text": "A small reversible trial lets us learn before committing.",
+                    "obligation_ids": ["reason"],
+                    "source_kind": "approved_knowledge",
+                    "source_refs": ["lesson:garden-pilot"],
+                }
+            ],
+        }
+    )
+
+    result = build_bounded_answer_completion(
+        {
+            "prompt": obligation["source_text"],
+            "content_seed": "A small reversible trial lets us learn before committing.",
+            "response_obligations": [obligation],
+            "supported_semantics": packet,
+        }
+    )
+
+    assert result["attempted"] is False
+    assert result["accepted"] is False
+    assert result["initial_coverage"]["all_required_addressed"] is True
+    assert result["content_seed"] == "A small reversible trial lets us learn before committing."
+
+
+def test_unsupported_yes_or_no_names_missing_ground_without_topic_scaffold():
+    obligation = {
+        "id": "yes-no",
+        "kind": "yes_or_no",
+        "source_text": "Did the greenhouse stay above freezing on Tuesday?",
+        "coverage_terms": ["greenhouse", "freezing", "tuesday"],
+        "required": True,
+    }
+
+    result = build_bounded_answer_completion(
+        {
+            "prompt": obligation["source_text"],
+            "content_seed": "",
+            "response_obligations": [obligation],
+        }
+    )
+
+    assert result["accepted"] is True
+    assert result["final_coverage"]["all_required_addressed"] is True
+    assert result["resolutions"][0]["missing_ground"] == "evidence that distinguishes yes from no"
+    assert "reliable yes or no" in result["content_seed"]
+    assert not result["content_seed"].startswith("On ")
+    assert result["supported_semantics"]["units"][0]["obligation_ids"] == ["yes-no"]
+
+
+def test_correction_only_gap_does_not_trigger_empty_completion_pass():
+    result = build_bounded_answer_completion(
+        {
+            "prompt": "Actually, I meant the smaller garden.",
+            "content_seed": "",
+            "response_obligations": [
+                {
+                    "id": "correction",
+                    "kind": "correction_update",
+                    "source_text": "Actually, I meant the smaller garden.",
+                    "coverage_terms": ["smaller", "garden"],
+                    "required": True,
+                }
+            ],
+        }
+    )
+
+    assert result["attempted"] is False
+    assert result["accepted"] is False
+    assert result["status"] == "bounded_answer_completion_no_supported_addition"
+    assert result["count"] == 0
     assert result["identity_change"] is False
     assert result["personality_change"] is False
     assert result["governance_change"] is False

@@ -54,6 +54,127 @@ GUARDS: dict[str, Any] = {
     "authority_change": False,
 }
 
+
+def map_supported_semantics_to_obligations(
+    packet: dict[str, Any] | None,
+    obligations: list[dict[str, Any]] | None,
+) -> dict[str, Any]:
+    """Map already-supported meaning units to current response obligations.
+
+    Explicit obligation ids are authoritative for the current turn. In their
+    absence, inference stays conservative: the unit must share meaningful
+    subject matter with the obligation and support the requested response
+    function. A generic answer unit therefore cannot satisfy a requested
+    reason, example, contrast, or limitation merely by mentioning its topic.
+    """
+    obligation_items = [
+        item for item in (obligations or []) if isinstance(item, dict)
+    ][:20]
+    required_ids = [
+        str(item.get("id") or f"obligation_{index + 1}")
+        for index, item in enumerate(obligation_items)
+        if item.get("required") is not False
+    ]
+    units = semantic_units_for_formation(packet)
+    packet_supported = bool(units) and bool(
+        isinstance(packet, dict) and packet.get("all_units_supported") is True
+    )
+    matches: dict[str, list[str]] = {item: [] for item in required_ids}
+    match_basis: dict[str, list[str]] = {item: [] for item in required_ids}
+    if packet_supported:
+        obligation_map = {
+            str(item.get("id") or f"obligation_{index + 1}"): {
+                "functions": _obligation_functions(item),
+                "terms": _terms(
+                    " ".join(
+                        [
+                            str(item.get("source_text") or ""),
+                            str(item.get("parent_source_text") or ""),
+                            str(item.get("topic") or ""),
+                            str(item.get("kind") or ""),
+                        ]
+                    )
+                ),
+            }
+            for index, item in enumerate(obligation_items)
+            if item.get("required") is not False
+        }
+        for unit in units:
+            unit_id = str(unit.get("id") or "semantic_unit")
+            explicit_ids = {
+                str(item)
+                for item in unit.get("obligation_ids") or []
+                if str(item) in obligation_map
+            }
+            for obligation_id in explicit_ids:
+                matches[obligation_id].append(unit_id)
+                match_basis[obligation_id].append("explicit_obligation_id")
+            if explicit_ids:
+                continue
+
+            unit_functions = _unit_response_functions(unit)
+            unit_terms = _terms(
+                " ".join(
+                    [
+                        str(unit.get("text") or ""),
+                        str(unit.get("subject") or ""),
+                        str(unit.get("predicate") or ""),
+                        str(unit.get("object") or ""),
+                        str(unit.get("condition") or ""),
+                        str(unit.get("reason") or ""),
+                        str(unit.get("contrast") or ""),
+                        str(unit.get("example") or ""),
+                        *[str(item) for item in unit.get("meaning_keys") or []],
+                    ]
+                )
+            )
+            for obligation_id, obligation in obligation_map.items():
+                requested_functions = obligation["functions"]
+                specialized = requested_functions - {"answer"}
+                function_match = bool(
+                    unit_functions & (specialized or requested_functions)
+                )
+                if function_match and _meaningful_overlap(
+                    unit_terms, obligation["terms"]
+                ):
+                    matches[obligation_id].append(unit_id)
+                    match_basis[obligation_id].append(
+                        "response_function_and_meaning_overlap"
+                    )
+
+    covered_ids = [item for item in required_ids if matches[item]]
+    uncovered_ids = [item for item in required_ids if not matches[item]]
+    return _with_guards(
+        {
+            "status": (
+                "supported_semantics_mapped"
+                if packet_supported
+                else "supported_semantics_unavailable"
+            ),
+            "packet_supported": packet_supported,
+            "required_ids": required_ids,
+            "covered_ids": covered_ids,
+            "uncovered_ids": uncovered_ids,
+            "matched_unit_ids": {
+                key: list(dict.fromkeys(value)) for key, value in matches.items()
+            },
+            "match_basis": {
+                key: list(dict.fromkeys(value))
+                for key, value in match_basis.items()
+            },
+            "covered_count": len(covered_ids),
+            "required_count": len(required_ids),
+            "all_required_covered": bool(required_ids) and not uncovered_ids,
+            "method": (
+                "explicit_current_turn_obligation_ids_or_conservative_"
+                "response_function_and_meaning_overlap"
+            ),
+            "visible_summary_only": True,
+            "hidden_chain_of_thought_exposed": False,
+            "provenance_boundary": FORMATION_BRAID_BOUNDARY,
+        }
+    )
+
 _STOP = {
     "about",
     "after",
@@ -206,6 +327,7 @@ def build_selective_formation_braid(
             continue
 
         available_units = []
+        duplicate_supported_meaning = False
         for unit in candidate["units"]:
             unit_obligation_ids = (
                 list(candidate["candidate_obligation_ids"])
@@ -220,12 +342,19 @@ def build_selective_formation_braid(
                 continue
             fingerprint = _unit_fingerprint(unit)
             if fingerprint and fingerprint in selected_fingerprints:
+                duplicate_supported_meaning = True
+                continue
+            if any(
+                _semantically_redundant_unit(unit, selected_unit)
+                for selected_unit in selected_units
+            ):
+                duplicate_supported_meaning = True
                 continue
             available_units.append((unit, fingerprint, unit_obligation_ids))
         if not available_units:
             reason = (
                 "duplicate_supported_meaning"
-                if candidate["primary"]
+                if duplicate_supported_meaning
                 else "no_requested_response_function"
             )
             excluded.append({**summary, "reason": reason})
@@ -638,6 +767,40 @@ def _unit_fingerprint(unit: dict[str, Any]) -> str:
     if text:
         return text
     return "|".join(str(item).lower() for item in unit.get("meaning_keys") or [])
+
+
+def _semantically_redundant_unit(
+    candidate: dict[str, Any],
+    selected: dict[str, Any],
+) -> bool:
+    """Reject a second rendering of meaning the selected braid already has."""
+    if not (_unit_response_functions(candidate) & _unit_response_functions(selected)):
+        return False
+    candidate_terms = _unit_terms(candidate)
+    selected_terms = _unit_terms(selected)
+    if not candidate_terms or not selected_terms:
+        return False
+    overlap = candidate_terms & selected_terms
+    smaller = min(len(candidate_terms), len(selected_terms))
+    return len(overlap) >= 3 and len(overlap) / smaller >= 0.6
+
+
+def _unit_terms(unit: dict[str, Any]) -> set[str]:
+    return _terms(
+        " ".join(
+            [
+                str(unit.get("text") or ""),
+                str(unit.get("subject") or ""),
+                str(unit.get("predicate") or ""),
+                str(unit.get("object") or ""),
+                str(unit.get("condition") or ""),
+                str(unit.get("reason") or ""),
+                str(unit.get("contrast") or ""),
+                str(unit.get("example") or ""),
+                *[str(item) for item in unit.get("meaning_keys") or []],
+            ]
+        )
+    )
 
 
 def _meaningful_overlap(left: set[str], right: set[str]) -> bool:

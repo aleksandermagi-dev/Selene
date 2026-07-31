@@ -407,6 +407,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             content_seed,
             content_source_id=content_source_id,
             content_source_class=content_source_class,
+            answer_completion=answer_completion,
             intelligence=intelligence,
             intelligence_semantics=intelligence_supported_semantics,
             answer_engine=answer_engine,
@@ -1863,6 +1864,7 @@ def _supported_semantics_for_content(
     *,
     content_source_id: str,
     content_source_class: str,
+    answer_completion: dict[str, Any],
     intelligence: dict[str, Any],
     intelligence_semantics: dict[str, Any],
     answer_engine: dict[str, Any],
@@ -1872,6 +1874,17 @@ def _supported_semantics_for_content(
 ) -> dict[str, Any]:
     normalized_seed = " ".join(str(seed or "").split())
     candidates: list[tuple[bool, str, dict[str, Any]]] = [
+        (
+            content_source_id == "bounded_answer_completion",
+            str(answer_completion.get("content_seed") or ""),
+            (
+                answer_completion.get("supported_semantics")
+                if isinstance(
+                    answer_completion.get("supported_semantics"), dict
+                )
+                else {}
+            ),
+        ),
         (
             content_source_id == "answer_engine"
             or content_source_class == "domain_answer",

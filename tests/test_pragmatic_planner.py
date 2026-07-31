@@ -3,6 +3,7 @@ from __future__ import annotations
 from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
+from selene.supported_semantics import build_supported_semantic_packet
 
 
 def _dialogue(questions: list[str]) -> dict:
@@ -284,6 +285,176 @@ def test_response_coverage_rejects_answer_shaped_but_unrelated_content():
     assert unrelated["unresolved_count"] == 1
     assert unrelated["all_required_addressed"] is False
     assert unrelated["items"][0]["semantic_alignment_required"] is True
+
+
+def test_supported_semantic_obligation_id_covers_a_paraphrased_visible_answer():
+    obligation = {
+        "id": "garden-choice",
+        "kind": "choice_or_priority",
+        "source_text": "Which garden design should we choose first?",
+        "coverage_terms": ["garden", "design", "choose", "first"],
+        "required": True,
+    }
+    packet = build_supported_semantic_packet(
+        {
+            "answer_kind": "prompt_grounded_choice",
+            "units": [
+                {
+                    "id": "pilot-answer",
+                    "role": "answer",
+                    "text": "Begin with the reversible pilot.",
+                    "obligation_ids": ["garden-choice"],
+                    "source_kind": "prompt_grounded_method",
+                }
+            ],
+        }
+    )
+
+    coverage = evaluate_response_coverage(
+        {"response_obligations": [obligation]},
+        "Begin with the reversible pilot.",
+        supported_semantics=packet,
+    )
+
+    assert coverage["all_required_addressed"] is True
+    assert coverage["items"][0]["semantic_addressed"] is True
+    assert coverage["items"][0]["coverage_basis"] == "supported_semantics"
+    assert coverage["items"][0]["matched_semantic_unit_ids"] == ["pilot-answer"]
+
+
+def test_semantic_inference_requires_meaning_and_requested_response_function():
+    reason_obligation = {
+        "id": "pilot-reason",
+        "kind": "reason",
+        "source_text": "Why does the reversible pilot reduce garden risk?",
+        "coverage_terms": ["reversible", "pilot", "garden", "risk"],
+        "required": True,
+    }
+    limit_obligation = {
+        "id": "pilot-limit",
+        "kind": "limitation",
+        "source_text": "What limitation applies to the reversible garden pilot?",
+        "coverage_terms": ["limitation", "reversible", "garden", "pilot"],
+        "required": True,
+    }
+    reason_packet = build_supported_semantic_packet(
+        {
+            "answer_kind": "reason",
+            "units": [
+                {
+                    "id": "risk-reason",
+                    "role": "support",
+                    "text": "The reversible garden pilot reduces risk because it can be changed after observation.",
+                    "source_kind": "prompt_grounded_method",
+                }
+            ],
+        }
+    )
+    generic_packet = build_supported_semantic_packet(
+        {
+            "answer_kind": "generic",
+            "units": [
+                {
+                    "id": "pilot-answer",
+                    "role": "answer",
+                    "text": "The reversible garden pilot can begin now.",
+                    "source_kind": "prompt_grounded_method",
+                }
+            ],
+        }
+    )
+
+    reason = evaluate_response_coverage(
+        {"response_obligations": [reason_obligation]},
+        "It lowers the risk because we can revise it after seeing the result.",
+        supported_semantics=reason_packet,
+    )
+    generic_limit = evaluate_response_coverage(
+        {"response_obligations": [limit_obligation]},
+        "The reversible garden pilot can begin now.",
+        supported_semantics=generic_packet,
+    )
+
+    assert reason["all_required_addressed"] is True
+    assert reason["items"][0]["semantic_addressed"] is True
+    assert generic_limit["all_required_addressed"] is False
+    assert generic_limit["items"][0]["semantic_addressed"] is False
+
+
+def test_unsupported_semantic_unit_cannot_claim_obligation_coverage():
+    obligation = {
+        "id": "source-answer",
+        "kind": "direct_question",
+        "source_text": "What did the attributed source report?",
+        "coverage_terms": ["attributed", "source", "report"],
+        "required": True,
+    }
+    packet = build_supported_semantic_packet(
+        {
+            "answer_kind": "unverified",
+            "units": [
+                {
+                    "id": "unsupported-claim",
+                    "text": "It reported a result.",
+                    "supported": False,
+                    "obligation_ids": ["source-answer"],
+                }
+            ],
+        }
+    )
+
+    coverage = evaluate_response_coverage(
+        {"response_obligations": [obligation]},
+        "It reported a result.",
+        supported_semantics=packet,
+    )
+
+    assert coverage["all_required_addressed"] is False
+    assert coverage["supported_semantic_coverage"]["packet_supported"] is False
+
+
+def test_explicit_semantic_obligation_id_does_not_spill_into_a_similar_part():
+    obligations = [
+        {
+            "id": "garden-reason",
+            "kind": "reason",
+            "source_text": "Why does the garden pilot reduce commitment risk?",
+            "coverage_terms": ["garden", "pilot", "commitment", "risk"],
+            "required": True,
+        },
+        {
+            "id": "water-reason",
+            "kind": "reason",
+            "source_text": "Why does the garden pilot reduce water risk?",
+            "coverage_terms": ["garden", "pilot", "water", "risk"],
+            "required": True,
+        },
+    ]
+    packet = build_supported_semantic_packet(
+        {
+            "answer_kind": "one_reason",
+            "units": [
+                {
+                    "id": "commitment-reason",
+                    "role": "support",
+                    "text": "The garden pilot reduces commitment risk because it remains reversible.",
+                    "obligation_ids": ["garden-reason"],
+                    "source_kind": "prompt_grounded_method",
+                }
+            ],
+        }
+    )
+
+    coverage = evaluate_response_coverage(
+        {"response_obligations": obligations},
+        "It stays reversible, so we can change course.",
+        supported_semantics=packet,
+    )
+
+    semantic = coverage["supported_semantic_coverage"]
+    assert semantic["covered_ids"] == ["garden-reason"]
+    assert semantic["uncovered_ids"] == ["water-reason"]
+    assert coverage["all_required_addressed"] is False
 
 
 def test_pragmatic_plan_route_is_status_only(tmp_path):

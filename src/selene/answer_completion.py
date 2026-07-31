@@ -6,6 +6,10 @@ from typing import Any
 from .answer_substance import build_answer_substance
 from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
+from .supported_semantics import (
+    build_supported_semantic_packet,
+    semantic_units_for_formation,
+)
 
 
 COMPLETION_BOUNDARY = (
@@ -46,8 +50,18 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
     knowledge_items = [item for item in payload.get("knowledge_items") or [] if isinstance(item, dict)][:10]
     observations = [item for item in payload.get("observations") or [] if isinstance(item, dict)][:20]
     spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
+    selected_semantics = (
+        payload.get("supported_semantics")
+        if isinstance(payload.get("supported_semantics"), dict)
+        else {}
+    )
     coverage_plan = {"response_obligations": obligations}
-    initial_coverage = evaluate_response_coverage(coverage_plan, seed, conversation_spine=spine)
+    initial_coverage = evaluate_response_coverage(
+        coverage_plan,
+        seed,
+        conversation_spine=spine,
+        supported_semantics=selected_semantics,
+    )
     base = {
         "status": "bounded_answer_completion_not_needed",
         "attempted": False,
@@ -59,6 +73,7 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
         "content_seed": seed,
         "initial_coverage": initial_coverage,
         "final_coverage": initial_coverage,
+        "supported_semantics": selected_semantics,
         "resolutions": [],
         "source_classes": [],
         "unsupported_parts_remain_visible": True,
@@ -73,6 +88,7 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
         if isinstance(item, dict) and item.get("addressed") is not True
     }
     fragments: list[str] = []
+    completion_units: list[dict[str, Any]] = []
     resolutions: list[dict[str, Any]] = []
     source_classes: list[str] = []
     for obligation in obligations:
@@ -116,15 +132,35 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
             else:
                 source_class = "reasoning_answer"
         if not fragment:
-            topic = " ".join(_terms(source_text)[:8]) or "that part"
-            fragment = (
-                f"On {topic}, I do not have enough grounded information to answer that part reliably yet."
-            )
+            fragment, missing_ground = _unsupported_fragment(obligation)
             support_kind = "explicit_unsupported_part"
             source_class = "conversation"
+        else:
+            missing_ground = (
+                _missing_ground(obligation)
+                if support_kind == "explicit_unsupported_part"
+                else ""
+            )
         key = " ".join(fragment.lower().split()).rstrip(". ")
-        if key and key not in {" ".join(item.lower().split()).rstrip(". ") for item in fragments}:
+        fragment_is_new = bool(
+            key
+            and key not in {
+                " ".join(item.lower().split()).rstrip(". ")
+                for item in fragments
+            }
+            and key not in " ".join(seed.lower().split())
+        )
+        if fragment_is_new:
             fragments.append(fragment)
+            completion_units.append(
+                _completion_semantic_unit(
+                    obligation,
+                    fragment,
+                    source_class=source_class,
+                    source_refs=_texts((knowledge or {}).get("source_refs")),
+                    unsupported=support_kind == "explicit_unsupported_part",
+                )
+            )
         resolutions.append(
             {
                 "obligation_id": obligation_id,
@@ -134,13 +170,53 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
                 "concept_id": (knowledge or {}).get("id") or (knowledge or {}).get("concept_id"),
                 "source_refs": _texts((knowledge or {}).get("source_refs")),
                 "unsupported": support_kind == "explicit_unsupported_part",
+                "missing_ground": missing_ground,
+                "added_to_answer": fragment_is_new,
             }
         )
         source_classes.append(source_class)
 
+    if not fragments:
+        return _with_guards(
+            {
+                **base,
+                "status": "bounded_answer_completion_no_supported_addition",
+                "resolutions": resolutions,
+                "source_classes": list(dict.fromkeys(source_classes)),
+                "unsupported_resolution_count": sum(
+                    1 for item in resolutions if item.get("unsupported") is True
+                ),
+            }
+        )
+
     combined = _combine(seed, fragments)
-    final_coverage = evaluate_response_coverage(coverage_plan, combined, conversation_spine=spine)
-    improved = _coverage_rank(final_coverage) > _coverage_rank(initial_coverage)
+    combined_semantics = _combined_semantic_packet(
+        selected_semantics,
+        completion_units,
+        fallback_text=combined,
+    )
+    final_coverage = evaluate_response_coverage(
+        coverage_plan,
+        combined,
+        conversation_spine=spine,
+        supported_semantics=combined_semantics,
+    )
+    initially_addressed = {
+        str(item.get("obligation_id") or "")
+        for item in initial_coverage.get("items") or []
+        if isinstance(item, dict) and item.get("addressed") is True
+    }
+    finally_addressed = {
+        str(item.get("obligation_id") or "")
+        for item in final_coverage.get("items") or []
+        if isinstance(item, dict) and item.get("addressed") is True
+    }
+    newly_addressed_ids = sorted(finally_addressed - initially_addressed)
+    improved = bool(
+        combined != seed
+        and newly_addressed_ids
+        and _coverage_rank(final_coverage) > _coverage_rank(initial_coverage)
+    )
     status = "bounded_answer_completion_improved" if improved else "bounded_answer_completion_no_improvement"
     return _with_guards(
         {
@@ -152,11 +228,145 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
             "content_seed": combined if improved else seed,
             "initial_coverage": initial_coverage,
             "final_coverage": final_coverage if improved else initial_coverage,
+            "supported_semantics": combined_semantics if improved else selected_semantics,
+            "newly_addressed_obligation_ids": newly_addressed_ids,
             "resolutions": resolutions,
             "source_classes": list(dict.fromkeys(source_classes)),
             "unsupported_resolution_count": sum(1 for item in resolutions if item.get("unsupported") is True),
         }
     )
+
+
+def _completion_semantic_unit(
+    obligation: dict[str, Any],
+    text: str,
+    *,
+    source_class: str,
+    source_refs: list[str],
+    unsupported: bool,
+) -> dict[str, Any]:
+    kind = str(obligation.get("kind") or "direct_question")
+    role, relation = {
+        "reason": ("support", "cause"),
+        "method": ("support", "sequence"),
+        "analogy": ("example", "example"),
+        "limitation": ("limit", "contrast"),
+        "constraint_preservation": ("condition", "condition"),
+        "comparison": ("contrast", "contrast"),
+    }.get(kind, ("answer", "sequence"))
+    return {
+        "id": f"completion_{str(obligation.get('id') or 'part')}",
+        "role": role,
+        "relation": relation,
+        "text": text,
+        "required": True,
+        "supported": True,
+        "source_kind": (
+            "compatibility_fallback"
+            if unsupported
+            else "approved_knowledge"
+            if source_class == "approved_knowledge"
+            else "verified_domain_answer"
+            if source_class == "domain_answer"
+            else "prompt_grounded_method"
+        ),
+        "source_refs": source_refs,
+        "certainty": "missing_ground_explicit" if unsupported else "bounded_supported_completion",
+        "scope": "current_dialogue_obligation_only",
+        "obligation_ids": [str(obligation.get("id") or "")],
+        "meaning_keys": _terms(
+            " ".join(
+                [
+                    str(obligation.get("source_text") or ""),
+                    str(obligation.get("topic") or ""),
+                ]
+            )
+        )[:12],
+    }
+
+
+def _combined_semantic_packet(
+    selected: dict[str, Any],
+    completion_units: list[dict[str, Any]],
+    *,
+    fallback_text: str,
+) -> dict[str, Any]:
+    selected_units = semantic_units_for_formation(selected)
+    return build_supported_semantic_packet(
+        {
+            "answer_kind": "bounded_answer_completion",
+            "certainty": "mixed_bounded_support",
+            "scope": "current_dialogue_obligations",
+            "source_refs": [
+                str(item) for item in selected.get("source_refs") or [] if str(item)
+            ],
+            "fallback_text": fallback_text,
+            "units": [*selected_units, *completion_units],
+        }
+    )
+
+
+def _unsupported_fragment(obligation: dict[str, Any]) -> tuple[str, str]:
+    kind = str(obligation.get("kind") or "direct_question")
+    missing_ground = _missing_ground(obligation)
+    messages = {
+        "yes_or_no": (
+            "I cannot answer that with a reliable yes or no from what I have yet. "
+            "I would need evidence that distinguishes the two possibilities."
+        ),
+        "analogy": (
+            "I do not have enough supported meaning to make that analogy without inventing the connection. "
+            "I would need to know which relationship the analogy must preserve."
+        ),
+        "choice_or_priority": (
+            "I cannot choose that reliably from the information available yet. "
+            "I would need the outcome and constraints that should decide the choice."
+        ),
+        "reason": (
+            "I do not have enough ground to give a reliable reason yet. "
+            "I would need a supported mechanism or relationship that explains it."
+        ),
+        "limitation": (
+            "I do not know the relevant limit from the information available yet. "
+            "I would need a supported boundary, exception, or counterexample."
+        ),
+        "method": (
+            "I cannot give reliable steps from the information available yet. "
+            "I would need the inputs and constraints that determine the method."
+        ),
+        "requested_output": (
+            "I cannot supply that requested part reliably from what I have yet. "
+            "I would need supported content for that part."
+        ),
+        "requested_section": (
+            "I cannot supply that requested section reliably from what I have yet. "
+            "I would need supported content for that section."
+        ),
+    }
+    return (
+        messages.get(
+            kind,
+            (
+                "I cannot answer that part reliably from the information currently available. "
+                "I would need an attributed fact, approved concept, or visible observation that answers it."
+            ),
+        ),
+        missing_ground,
+    )
+
+
+def _missing_ground(obligation: dict[str, Any]) -> str:
+    kind = str(obligation.get("kind") or "direct_question")
+    return {
+        "yes_or_no": "evidence that distinguishes yes from no",
+        "analogy": "the relationship the analogy must preserve",
+        "choice_or_priority": "the deciding outcome and constraints",
+        "reason": "a supported mechanism or explanatory relationship",
+        "limitation": "a supported boundary, exception, or counterexample",
+        "method": "the inputs and constraints that determine the steps",
+        "requested_output": "supported content for the requested output",
+        "requested_section": "supported content for the requested section",
+    }.get(kind, "an attributed fact, approved concept, or visible observation")
 
 
 def _best_knowledge_item(text: str, items: list[dict[str, Any]]) -> dict[str, Any] | None:

@@ -760,6 +760,14 @@ def test_active_selene_chat_composes_a_visible_resource_plan_and_scales_its_foll
     assert "cider" in first["candidate_text"]
     assert "drawing pad" in first["candidate_text"]
     assert first["native_language_organ"]["formation"]["required_semantic_units_preserved"] is True
+    assert first["answer_completion"]["accepted"] is False
+    assert first["answer_completion"]["initial_coverage"]["all_required_addressed"] is True
+    assert (
+        first["answer_completion"]["initial_coverage"]
+        ["supported_semantic_coverage"]["all_required_covered"]
+        is True
+    )
+    assert first["candidate_text"].lower().count("use the eighteen minutes") == 1
     assert follow_up["intelligence_os_support"]["answer_substance"]["answer_kind"] == "constraint_revised_plan"
     assert "aim still holds" in follow_up["candidate_text"].lower()
     assert "seven minutes" in follow_up["candidate_text"].lower()

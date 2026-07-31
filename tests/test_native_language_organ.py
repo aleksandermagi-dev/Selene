@@ -8,6 +8,7 @@ from selene.module_router import route_request
 from selene.native_language_organ import _reasoned_answer_frames, realize_native_language
 from selene.conversation_thread_loom import build_thread_braid
 from selene.structural_discovery import build_structural_discovery_packet
+from selene.supported_semantics import build_supported_semantic_packet
 
 
 def _conn(tmp_path):
@@ -37,6 +38,48 @@ def test_reasoned_answer_frames_preserve_first_person_capitalization():
 
     assert all(" is i " not in item.lower() for item in frames)
     assert "My current answer is this: I do not have" in frames[1]
+
+
+def test_nlo_uses_typed_bounded_completion_semantics(tmp_path):
+    conn = _conn(tmp_path)
+    seed = "I would need evidence that distinguishes the two possibilities."
+    packet = build_supported_semantic_packet(
+        {
+            "answer_kind": "bounded_answer_completion",
+            "units": [
+                {
+                    "id": "completion_yes_no",
+                    "role": "answer",
+                    "text": seed,
+                    "obligation_ids": ["yes-no"],
+                    "source_kind": "compatibility_fallback",
+                    "certainty": "missing_ground_explicit",
+                }
+            ],
+        }
+    )
+
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": "Did the greenhouse stay above freezing?",
+            "content_seed": seed,
+            "visible_speech_seed": {
+                "selected_source_id": "bounded_answer_completion",
+                "selected_source_class": "reasoning_answer",
+            },
+            "answer_completion": {
+                "content_seed": seed,
+                "supported_semantics": packet,
+            },
+        },
+        record_run=False,
+    )
+
+    semantics = result["meaning_packet"]["supported_semantics"]
+    assert semantics["used"] is True
+    assert semantics["answer_kind"] == "bounded_answer_completion"
+    assert semantics["required_unit_ids"] == ["completion_yes_no"]
 
 
 def test_nlo_builds_meaning_discourse_and_original_sentence_run(tmp_path):

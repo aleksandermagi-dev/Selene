@@ -649,6 +649,25 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "selected_source_class": "reasoning_answer",
             "bounded_hypothesis_remains_primary": True,
         }
+    precompletion_formation_candidates = _formation_braid_candidates(
+        visible_speech_candidates,
+        answer_engine_support=answer_engine_support,
+        comprehension=comprehension,
+        memory_supported_semantics=memory_supported_semantics,
+        self_state=self_state,
+        intelligence_support=intelligence_support,
+    )
+    selected_supported_semantics = next(
+        (
+            item.get("supported_semantics")
+            for item in precompletion_formation_candidates
+            if str(item.get("source_id") or "")
+            == str(visible_speech_seed.get("selected_source_id") or "")
+            and isinstance(item.get("supported_semantics"), dict)
+            and item.get("supported_semantics")
+        ),
+        {},
+    )
     content_seed = str(visible_speech_seed.get("content_seed") or "")
     answer_completion = build_bounded_answer_completion(
         {
@@ -665,6 +684,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "epistemic_revision_plan": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
+            "supported_semantics": selected_supported_semantics,
         }
     )
     if bounded_hypothesis.get("selected_for_answer") is True:
@@ -703,14 +723,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     formation_candidates = (
         []
         if answer_completion.get("accepted") is True
-        else _formation_braid_candidates(
-            visible_speech_candidates,
-            answer_engine_support=answer_engine_support,
-            comprehension=comprehension,
-            memory_supported_semantics=memory_supported_semantics,
-            self_state=self_state,
-            intelligence_support=intelligence_support,
-        )
+        else precompletion_formation_candidates
     )
     formation_braid = build_selective_formation_braid(
         {

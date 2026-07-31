@@ -207,14 +207,27 @@ def evaluate_response_coverage(
     candidate_text: str,
     *,
     conversation_spine: dict[str, Any] | None = None,
+    supported_semantics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     plan = plan if isinstance(plan, dict) else {}
     candidate = truncate(str(candidate_text or ""), 3000)
+    obligations = [
+        item
+        for item in plan.get("response_obligations") or []
+        if isinstance(item, dict)
+    ]
+    # Imported at evaluation time to avoid coupling pragmatic-plan creation to
+    # the later supported-meaning selection pass.
+    from .selective_formation_braid import map_supported_semantics_to_obligations
+
+    semantic_coverage = map_supported_semantics_to_obligations(
+        supported_semantics,
+        obligations,
+    )
+    semantic_matches = semantic_coverage.get("matched_unit_ids") or {}
     items: list[dict[str, Any]] = []
     answered_loop_ids: list[str] = []
-    for obligation in plan.get("response_obligations") or []:
-        if not isinstance(obligation, dict):
-            continue
+    for obligation in obligations:
         obligation_candidate = _candidate_without_request_echo(
             candidate,
             str(obligation.get("source_text") or ""),
@@ -257,20 +270,39 @@ def evaluate_response_coverage(
             distinctive_alignment=distinctive_alignment,
             expected_terms=expected,
         )
-        addressed = bool(candidate.strip()) and special_semantic_gate and (
+        visible_text_addressed = bool(candidate.strip()) and special_semantic_gate and (
             semantic_match and (not signal_required or signal_score > 0)
             or signal_can_stand_alone and signal_score > 0
             or kind in {"correction_update", "yes_or_no", "session_summary"} and signal_score > 0
         )
+        obligation_id = str(obligation.get("id") or "")
+        matched_semantic_unit_ids = [
+            str(item) for item in semantic_matches.get(obligation_id) or []
+        ]
+        semantic_addressed = bool(candidate.strip() and matched_semantic_unit_ids)
+        addressed = visible_text_addressed or semantic_addressed
         loop_id = str(obligation.get("loop_id") or "")
         if addressed and loop_id:
             answered_loop_ids.append(loop_id)
         items.append(
             {
-                "obligation_id": str(obligation.get("id") or ""),
+                "obligation_id": obligation_id,
                 "loop_id": loop_id,
                 "kind": kind,
                 "addressed": addressed,
+                "visible_text_addressed": visible_text_addressed,
+                "semantic_addressed": semantic_addressed,
+                "matched_semantic_unit_ids": matched_semantic_unit_ids,
+                "semantic_match_basis": (semantic_coverage.get("match_basis") or {}).get(obligation_id) or [],
+                "coverage_basis": (
+                    "visible_text_and_supported_semantics"
+                    if visible_text_addressed and semantic_addressed
+                    else "supported_semantics"
+                    if semantic_addressed
+                    else "visible_text"
+                    if visible_text_addressed
+                    else "unresolved"
+                ),
                 "coverage_score": round(score, 3),
                 "matched_terms": overlap,
                 "matched_distinctive_terms": distinctive_overlap,
@@ -300,7 +332,16 @@ def evaluate_response_coverage(
             "matched_terms": [],
             "distinctive_terms": [],
         }
-    grounding_unresolved = int(spine_alignment.get("required") is True and spine_alignment.get("aligned") is not True)
+    semantic_grounding_override = bool(
+        candidate.strip()
+        and semantic_coverage.get("all_required_covered") is True
+        and obligation_coverage_complete
+    )
+    grounding_unresolved = int(
+        spine_alignment.get("required") is True
+        and spine_alignment.get("aligned") is not True
+        and not semantic_grounding_override
+    )
     return _with_guards(
         {
             "status": "response_coverage_checked",
@@ -313,10 +354,12 @@ def evaluate_response_coverage(
             "items": items,
             "conversation_spine_alignment": spine_alignment,
             "conversation_spine_used": bool(conversation_spine),
+            "supported_semantic_coverage": semantic_coverage,
+            "semantic_grounding_override": semantic_grounding_override,
             "method": (
-                "conservative_visible_obligation_and_spine_alignment_not_semantic_certainty"
+                "conservative_visible_and_supported_semantic_obligation_and_spine_alignment"
                 if conversation_spine
-                else "conservative_visible_text_alignment_not_semantic_certainty"
+                else "conservative_visible_and_supported_semantic_obligation_alignment"
             ),
             "visible_summary_only": True,
             "hidden_chain_of_thought_exposed": False,

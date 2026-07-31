@@ -243,6 +243,70 @@ def test_distinct_answer_units_can_cover_distinct_current_message_parts():
     assert result["obligation_coverage"]["uncovered_ids"] == []
 
 
+def test_secondary_organ_cannot_repeat_primary_meaning_with_a_different_structure():
+    result = build_selective_formation_braid(
+        {
+            "prompt": "Suggest a small use for eighteen minutes with cider and a drawing pad.",
+            "primary_source_id": "answer_engine",
+            "primary_source_class": "domain_answer",
+            "primary_text": (
+                "Use the eighteen minutes for one small pause with cider and "
+                "the drawing pad."
+            ),
+            "response_obligations": [
+                {
+                    "id": "small-plan",
+                    "kind": "choice_or_priority",
+                    "source_text": "Suggest a small use for eighteen minutes with cider and a drawing pad.",
+                    "required": True,
+                }
+            ],
+            "candidates": [
+                {
+                    "source_id": "answer_engine",
+                    "source_class": "domain_answer",
+                    "primary": True,
+                    "obligation_ids": ["small-plan"],
+                    "supported_semantics": _packet(
+                        _unit(
+                            "visible-plan",
+                            "Use the eighteen minutes for one small pause with cider and the drawing pad.",
+                        )
+                    ),
+                },
+                {
+                    "source_id": "intelligence_os_answer",
+                    "source_class": "reasoning_answer",
+                    "obligation_ids": ["small-plan"],
+                    "supported_semantics": build_supported_semantic_packet(
+                        {
+                            "answer_kind": "resource_plan",
+                            "units": [
+                                    {
+                                        "id": "structured-plan",
+                                        "role": "answer",
+                                        "subject": "the plan",
+                                        "predicate": "use",
+                                    "object": "the eighteen minutes for one small pause using cider and drawing pad",
+                                    "source_kind": "prompt_grounded_method",
+                                }
+                            ],
+                        }
+                    ),
+                },
+            ],
+        }
+    )
+
+    units = semantic_units_for_formation(result["supported_semantics"])
+    assert [item["origin_unit_id"] for item in units] == ["visible-plan"]
+    assert any(
+        item["source_id"] == "intelligence_os_answer"
+        and item["reason"] == "duplicate_supported_meaning"
+        for item in result["excluded_candidates"]
+    )
+
+
 def test_exact_domain_meaning_and_sources_remain_locked():
     result = build_selective_formation_braid(
         {
