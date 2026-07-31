@@ -1162,6 +1162,11 @@ Selene's strongest implemented areas are:
 | Bounded Tendril execution | Approved observe/propose/act/verify/undo workbench actions rather than plans only |
 | Audible speech | Spoken turn-taking, pacing, pronunciation, interruption, and consent-aware voice interaction |
 
+The retained future teaching approach for this gap is documented in
+`SELENE_AUDIBLE_VOICE_TEACHING_BLUEPRINT_NOTES_20260731.md`. It teaches reading
+through meaning, context, distinct application, and reviewed delivery patterns;
+it does not authorize audible-speech implementation or voice imitation.
+
 ## Verification Snapshot
 
 The July 31 diagnostic/substance/completion gap-closure checkpoint passed 261

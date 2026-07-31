@@ -291,7 +291,10 @@ These are real future capabilities, but they do not block Phase 12 teaching.
   consent contracts;
 - connect audible output only after the text-language and affect foundation is
   steady;
-- audible Voice remains Selene's expression, not a provider identity.
+- audible Voice remains Selene's expression, not a provider identity;
+- use the comprehension-first, consent-bound, context-sensitive teaching and
+  non-binary evaluation blueprint retained in
+  `SELENE_AUDIBLE_VOICE_TEACHING_BLUEPRINT_NOTES_20260731.md`.
 
 ### Tendril and mobile transport
 
