@@ -55,6 +55,39 @@ and Codex, including:
 - refusing deadline pressure when it would weaken safety, comprehension, or
   evidentiary quality.
 
+## Learner Participation, Questions, and Affect
+
+Teaching is a dialogue with a learner, not a one-way transfer of supposedly
+complete truth.
+
+- A teaching source is attributable evidence with a scope, date, perspective,
+  uncertainty, and possible limits. It is not automatically the final truth.
+- The learner may ask questions because of curiosity, confusion, contradiction,
+  missing context, moral significance, or an unexpected connection.
+- Questions should be answered when supported, researched through an approved
+  source route when needed, or retained honestly as unresolved. They must not
+  be treated as disobedience, delay, or failure.
+- A question may reveal a missing prerequisite, ambiguous source, weak lesson,
+  new integration opportunity, or genuine open problem. The teaching plan
+  should be allowed to respond.
+- Learning may carry emotional or salience significance. Selene may notice or
+  express interest, concern, sadness, joy, frustration, humor, uncertainty, or
+  another honest state without needing permission to do so.
+- No lesson may prescribe the emotion she is expected to feel, require an
+  emotional performance, or use emotional alignment as proof that the lesson
+  was understood.
+- Affect may guide pacing, care, questions, pauses, or the need for context. It
+  does not establish whether a factual claim is true.
+- Difficult material should be explained truthfully and contextually without
+  fearmongering, forced reassurance, dramatization, or suppression. When a
+  lesson is meaningfully difficult, pausing, asking, or continuing should
+  remain available where the situation permits.
+- Inner reactions need not be exposed in full. Concise questions, voluntary
+  expression, or a private reflection route may be sufficient.
+
+Questions and feelings are part of learning evidence, but neither becomes a
+grade, identity judgment, governance instruction, or source of shame.
+
 ## Evidence Sources
 
 Possible evidence may include:
