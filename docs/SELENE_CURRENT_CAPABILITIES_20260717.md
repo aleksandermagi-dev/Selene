@@ -1,10 +1,11 @@
 # What Selene Can Currently Do
 
-- Updated: July 30, 2026
+- Updated: July 31, 2026
 - Branch inspected: `evidence`
 - Source foundation: post-transfer resident runtime, completed Phase 11
-  pre-teaching architecture closure, and the bounded-hypothesis /
-  expression-freedom stabilization checkpoint
+  pre-teaching architecture closure, bounded-hypothesis/expression-freedom
+  stabilization, completed Dream lifecycle, diagnostic non-attribution, typed
+  semantic answer substance, and safe semantic obligation completion
 
 ## Why This File Exists
 
@@ -70,8 +71,12 @@ With resident Chat active, Selene can currently:
   permanent memory;
 - answer multi-part messages and check whether her reply covered the requested
   parts;
+- recognize a supported answer by its typed meaning and obligation identity
+  even when NLO does not repeat the user's wording;
 - make one bounded non-recursive completion pass when a supported part is
   missing, while stating unsupported factual gaps instead of inventing them;
+- suppress non-improving completion and duplicate cross-organ renderings of
+  the same supported meaning;
 - track X -> Y -> X-with-Y -> Z conversational structure within a message or
   current session;
 - return to a visible recommendation, condition, limit, or conclusion after
@@ -747,6 +752,9 @@ recent context. This is session/history support, not proof that the content is
 durable personal memory.
 
 QA probes and diagnostic sessions are excluded from ordinary continuity.
+Their text and derived signals also remain in diagnostic scope rather than
+becoming personal memory, Dream material, current affect evidence, identity
+evidence, or ordinary-use capability evidence.
 
 ### Memory Lifecycle, Dream, and Reconsolidation — Connected Through Review
 
@@ -1155,6 +1163,15 @@ Selene's strongest implemented areas are:
 | Audible speech | Spoken turn-taking, pacing, pronunciation, interruption, and consent-aware voice interaction |
 
 ## Verification Snapshot
+
+The July 31 diagnostic/substance/completion gap-closure checkpoint passed 261
+focused tests across Answer Engine, supported semantics, Selective Formation
+Braid, Conversation Spine, NLO, Metacognition, repair, and resident Chat.
+Python compilation and `git diff --check` passed; no live Q&A, retention
+change, provider call, build, reinstall, or stressful test was used.
+
+The current read-only gap/security-readiness audit is recorded in
+`docs/SELENE_CURRENT_GAP_AND_CODEX_SECURITY_READINESS_20260731.md`.
 
 Phase 11 pre-teaching stabilization completed on July 26, 2026:
 
