@@ -86,6 +86,9 @@ def test_sidecar_study_workspace_round_trip_is_local_and_source_bound(tmp_path):
     thread.start()
 
     conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    conn.request("GET", "/api/study/materials")
+    materials_response = conn.getresponse()
+    materials = json.loads(materials_response.read().decode("utf-8"))
     conn.request(
         "POST",
         "/api/study/sessions/start",
@@ -106,6 +109,8 @@ def test_sidecar_study_workspace_round_trip_is_local_and_source_bound(tmp_path):
     server.conn.close()
 
     assert response.status == 200
+    assert materials_response.status == 200
+    assert materials["items"][0]["id"] == concept["id"]
     assert detail_response.status == 200
     assert detail["item"]["focus"] == "Why equal groups multiply"
     assert detail["item"]["concepts"][0]["id"] == concept["id"]

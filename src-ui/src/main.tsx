@@ -716,6 +716,7 @@ function App() {
   const [fractionalCorpusResult, setFractionalCorpusResult] = useState<Dict | null>(null);
   const [fractionalCorpusTestFraction, setFractionalCorpusTestFraction] = useState("1");
   const [studyStatus, setStudyStatus] = useState<Dict | null>(null);
+  const [studyMaterials, setStudyMaterials] = useState<Dict[]>([]);
   const [studySessions, setStudySessions] = useState<Dict[]>([]);
   const [studySession, setStudySession] = useState<Dict | null>(null);
   const [studyActionResult, setStudyActionResult] = useState<Dict | null>(null);
@@ -2872,11 +2873,13 @@ function App() {
   }
 
   async function refreshStudyWorkspace(preferredSessionId?: number) {
-    const [status, sessions] = await Promise.all([
+    const [status, materials, sessions] = await Promise.all([
       api<Dict>("/api/study/status"),
+      api<{ items: Dict[] }>("/api/study/materials?limit=500"),
       api<{ items: Dict[] }>("/api/study/sessions?limit=40")
     ]);
     setStudyStatus(status);
+    setStudyMaterials(materials.items || []);
     setStudySessions(sessions.items || []);
     const currentId = preferredSessionId || Number(safeJsonObject(studySession?.item).id || 0);
     if (currentId) {
@@ -6266,6 +6269,7 @@ function App() {
                 </div>
                 <div className="chips">
                   <span>{friendlyStatus(studyStatus?.status || "not checked")}</span>
+                  <span>materials: {text(studyStatus?.eligible_material_count ?? studyMaterials.length)}</span>
                   <span>active: {text(studyStatus?.active_count ?? 0)}</span>
                   <span>open questions: {text(studyStatus?.open_question_count ?? 0)}</span>
                   <span>pass / fail: not used</span>
@@ -6294,10 +6298,13 @@ function App() {
                   <span>Approved knowledge</span>
                   <select value={studyConceptId} onChange={(event) => setStudyConceptId(event.target.value)}>
                     <option value="">Choose an approved concept</option>
-                    {comprehensionConcepts
-                      .filter((item) => text(item.state) === "approved_knowledge_resource" && text(item.chat_use_permission) === "available_as_knowledge_resource")
-                      .map((item) => <option key={`study-concept-${text(item.id)}`} value={text(item.id)}>{text(item.title)}</option>)}
+                    {studyMaterials.map((item) => (
+                      <option key={`study-concept-${text(item.id)}`} value={text(item.id)}>
+                        {text(item.title)}{item.domain ? ` — ${text(item.domain)}` : ""}
+                      </option>
+                    ))}
                   </select>
+                  {!studyMaterials.length ? <span className="fieldHint">No approved Study material is currently available.</span> : null}
                 </label>
                 <label>
                   <span>Session title</span>

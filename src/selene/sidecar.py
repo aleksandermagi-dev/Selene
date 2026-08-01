@@ -730,6 +730,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "comprehension.concepts.list", qs)["result"]))
         elif parsed.path == "/api/study/status":
             self._send(*json_bytes(route_request(conn, "study.status")["result"]))
+        elif parsed.path == "/api/study/materials":
+            self._send(*json_bytes(route_request(conn, "study.materials.list", qs)["result"]))
         elif parsed.path == "/api/study/sessions":
             self._send(*json_bytes(route_request(conn, "study.sessions.list", qs)["result"]))
         elif parsed.path.startswith("/api/study/sessions/"):

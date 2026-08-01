@@ -47,6 +47,16 @@ def study_workspace_status(conn: sqlite3.Connection) -> dict[str, Any]:
     open_questions = int(
         conn.execute("SELECT COUNT(*) FROM selene_study_questions WHERE status = 'open'").fetchone()[0]
     )
+    eligible_materials = int(
+        conn.execute(
+            """
+            SELECT COUNT(*) FROM selene_comprehension_concepts
+            WHERE state = 'approved_knowledge_resource'
+              AND review_status = 'approved_for_knowledge_use'
+              AND chat_use_permission = 'available_as_knowledge_resource'
+            """
+        ).fetchone()[0]
+    )
     return _with_guards(
         {
             "status": "selene_study_workspace_ready",
@@ -56,11 +66,45 @@ def study_workspace_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "active_count": int(row["active"] or 0),
             "paused_count": int(row["paused"] or 0),
             "open_question_count": open_questions,
+            "eligible_material_count": eligible_materials,
             "question_answer_rule": (
                 "Aleks's answer is attributable session knowledge immediately and becomes a source-labeled "
                 "teaching update candidate for durable use."
             ),
             "durable_use_rule": "Durable Chat use still follows the inspectable comprehension and teaching lifecycle.",
+            "review_status": "status_only",
+            "provenance_boundary": STUDY_BOUNDARY,
+        }
+    )
+
+
+def list_study_materials(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    limit = max(1, min(int(payload.get("limit") or 200), 500))
+    rows = conn.execute(
+        """
+        SELECT id, title, domain, central_claim, confidence, source_refs, updated_at
+        FROM selene_comprehension_concepts
+        WHERE state = 'approved_knowledge_resource'
+          AND review_status = 'approved_for_knowledge_use'
+          AND chat_use_permission = 'available_as_knowledge_resource'
+        ORDER BY domain ASC, title ASC, id ASC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    items = []
+    for row in rows:
+        item = dict(row)
+        item["source_refs"] = _loads(item.get("source_refs"), [])
+        item["study_eligible"] = True
+        items.append(item)
+    return _with_guards(
+        {
+            "status": "selene_study_materials_ready",
+            "items": items,
+            "eligible_count": len(items),
+            "eligibility_rule": "approved, Chat-eligible knowledge only",
             "review_status": "status_only",
             "provenance_boundary": STUDY_BOUNDARY,
         }

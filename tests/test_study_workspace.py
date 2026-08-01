@@ -10,6 +10,7 @@ from selene.module_router import route_request
 from selene.study_workspace import (
     answer_study_question,
     ask_study_question,
+    list_study_materials,
     start_study_session,
     study_workspace_status,
     update_study_session,
@@ -89,6 +90,21 @@ def test_study_workspace_uses_only_approved_knowledge_and_keeps_visible_evidence
         start_study_session(conn, {"concept_ids": [unapproved_id]})
 
 
+def test_study_material_catalog_surfaces_only_approved_chat_eligible_knowledge(tmp_path):
+    conn = _conn(tmp_path)
+    approved_id = _concept(conn)
+    unapproved_id = _concept(conn, approved=False)
+
+    status = study_workspace_status(conn)
+    materials = list_study_materials(conn)
+
+    assert status["eligible_material_count"] == 1
+    assert [item["id"] for item in materials["items"]] == [approved_id]
+    assert materials["items"][0]["study_eligible"] is True
+    assert unapproved_id not in [item["id"] for item in materials["items"]]
+    _assert_locked(materials)
+
+
 def test_aleks_answer_resolves_question_in_session_and_proposes_attributed_update(tmp_path):
     conn = _conn(tmp_path)
     concept_id = _concept(conn)
@@ -145,10 +161,14 @@ def test_question_without_words_is_supported_without_inventing_content(tmp_path)
 
 def test_study_routes_are_registered_and_status_is_selene_owned(tmp_path):
     conn = _conn(tmp_path)
+    concept_id = _concept(conn)
     direct = study_workspace_status(conn)
     routed = route_request(conn, "study.status")["result"]
+    routed_materials = route_request(conn, "study.materials.list")["result"]
 
     assert direct["owner"] == "Selene"
     assert routed["status"] == "selene_study_workspace_ready"
+    assert routed["eligible_material_count"] == 1
+    assert routed_materials["items"][0]["id"] == concept_id
     assert routed["study_is_cocoon"] is False
     _assert_locked(routed)

@@ -229,6 +229,7 @@ from .study_workspace import (
     answer_study_question,
     ask_study_question,
     get_study_session,
+    list_study_materials,
     list_study_sessions,
     start_study_session,
     study_workspace_status,
@@ -682,6 +683,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": build_comprehension_packet(conn, payload)}
     if route_key == "study.status":
         return {"route": route_key, "result": study_workspace_status(conn)}
+    if route_key == "study.materials.list":
+        return {"route": route_key, "result": list_study_materials(conn, payload)}
     if route_key == "study.sessions.list":
         return {"route": route_key, "result": list_study_sessions(conn, payload)}
     if route_key == "study.session.detail":
