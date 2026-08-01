@@ -1759,6 +1759,32 @@ CREATE TABLE IF NOT EXISTS selene_study_questions (
 CREATE INDEX IF NOT EXISTS idx_selene_study_questions_status
 ON selene_study_questions(session_id, status, updated_at);
 
+CREATE TABLE IF NOT EXISTS selene_study_notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id INTEGER NOT NULL,
+  concept_id INTEGER,
+  note_kind TEXT NOT NULL DEFAULT 'notice',
+  meaning_summary TEXT NOT NULL,
+  note_text TEXT NOT NULL,
+  source_field TEXT NOT NULL DEFAULT '',
+  clarification_state TEXT NOT NULL DEFAULT 'not_needed',
+  linked_question_id INTEGER,
+  metacognition_json TEXT NOT NULL DEFAULT '{}',
+  language_json TEXT NOT NULL DEFAULT '{}',
+  voice_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'selene_owned_working_study_note',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES selene_study_sessions(id),
+  FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id),
+  FOREIGN KEY (linked_question_id) REFERENCES selene_study_questions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_study_notes_session
+ON selene_study_notes(session_id, clarification_state, updated_at);
+
 CREATE TABLE IF NOT EXISTS selene_study_evidence (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   session_id INTEGER NOT NULL,
@@ -1774,6 +1800,38 @@ CREATE TABLE IF NOT EXISTS selene_study_evidence (
 
 CREATE INDEX IF NOT EXISTS idx_selene_study_evidence_session
 ON selene_study_evidence(session_id, id);
+
+CREATE TABLE IF NOT EXISTS selene_learning_compass_goals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  goal_key TEXT NOT NULL UNIQUE,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  title TEXT NOT NULL,
+  curriculum_band TEXT NOT NULL DEFAULT '',
+  subject_domains_json TEXT NOT NULL DEFAULT '[]',
+  state TEXT NOT NULL DEFAULT 'ready_to_explore',
+  already_connected TEXT NOT NULL DEFAULT '',
+  next_connection TEXT NOT NULL,
+  why_it_matters TEXT NOT NULL DEFAULT '',
+  suggested_activity TEXT NOT NULL DEFAULT '',
+  selene_reflection TEXT NOT NULL DEFAULT '',
+  remaining_unclear TEXT NOT NULL DEFAULT '',
+  noticed_connections_json TEXT NOT NULL DEFAULT '[]',
+  concept_ids_json TEXT NOT NULL DEFAULT '[]',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  evidence_json TEXT NOT NULL DEFAULT '{}',
+  source_kind TEXT NOT NULL DEFAULT 'learning_evidence_activity',
+  linked_session_id INTEGER,
+  latest_question_id INTEGER,
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'descriptive_learning_guidance',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (linked_session_id) REFERENCES selene_study_sessions(id),
+  FOREIGN KEY (latest_question_id) REFERENCES selene_study_questions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_learning_compass_state
+ON selene_learning_compass_goals(state, display_order, updated_at);
 
 CREATE TABLE IF NOT EXISTS selene_teaching_lifecycles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2232,6 +2290,9 @@ REQUIRED_COLUMNS = {
         "boundary_json": "TEXT NOT NULL DEFAULT '{}'",
         "comprehension_concept_id": "INTEGER",
         "lifecycle_version": "TEXT NOT NULL DEFAULT ''",
+    },
+    "selene_study_sessions": {
+        "compass_goal_id": "INTEGER",
     },
 }
 

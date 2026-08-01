@@ -228,11 +228,18 @@ from .teaching_lifecycle import (
 from .study_workspace import (
     answer_study_question,
     ask_study_question,
+    form_study_note,
     get_study_session,
+    list_learning_compass,
+    list_open_study_attention,
     list_study_materials,
     list_study_sessions,
+    seed_prior_f1_lea_learning_compass,
+    start_learning_compass_goal,
     start_study_session,
     study_workspace_status,
+    update_learning_compass_goal,
+    update_study_note_clarification,
     update_study_session,
 )
 from .my_office_cleanup import clean_up_my_office_residue
@@ -685,6 +692,16 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": study_workspace_status(conn)}
     if route_key == "study.materials.list":
         return {"route": route_key, "result": list_study_materials(conn, payload)}
+    if route_key == "study.attention.open":
+        return {"route": route_key, "result": list_open_study_attention(conn, payload)}
+    if route_key == "study.compass.list":
+        return {"route": route_key, "result": list_learning_compass(conn, payload)}
+    if route_key == "study.compass.seed_prior_f1_lea":
+        return {"route": route_key, "result": seed_prior_f1_lea_learning_compass(conn, payload)}
+    if route_key == "study.compass.start":
+        return {"route": route_key, "result": start_learning_compass_goal(conn, payload)}
+    if route_key == "study.compass.update":
+        return {"route": route_key, "result": update_learning_compass_goal(conn, payload)}
     if route_key == "study.sessions.list":
         return {"route": route_key, "result": list_study_sessions(conn, payload)}
     if route_key == "study.session.detail":
@@ -697,6 +714,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": ask_study_question(conn, payload)}
     if route_key == "study.question.answer":
         return {"route": route_key, "result": answer_study_question(conn, payload)}
+    if route_key == "study.note.form":
+        return {"route": route_key, "result": form_study_note(conn, payload)}
+    if route_key == "study.note.clarification.update":
+        return {"route": route_key, "result": update_study_note_clarification(conn, payload)}
     if route_key == "teaching.lifecycle.status":
         return {"route": route_key, "result": teaching_lifecycle_status(conn)}
     if route_key == "teaching.lifecycle.list":

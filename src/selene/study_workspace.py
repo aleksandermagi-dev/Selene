@@ -6,7 +6,10 @@ from hashlib import sha256
 from typing import Any
 
 from .comprehension_integration import propose_comprehension_concept
+from .metacognition import inspect_metacognition
+from .native_language_organ import realize_native_language
 from .registry import truncate
+from .voice_module import generate_voice_preview
 
 
 STUDY_BOUNDARY = (
@@ -33,6 +36,157 @@ GUARDS: dict[str, Any] = {
 
 SESSION_STATES = {"active", "paused", "completed"}
 QUESTION_STATES = {"ready", "developing", "question_without_words"}
+NOTE_KINDS = {"notice", "connection", "idea", "uncertainty", "revisit"}
+CLARIFICATION_STATES = {
+    "not_needed",
+    "unclear",
+    "question_forming",
+    "question_ready",
+    "answered",
+    "clarified_for_now",
+    "reopened",
+}
+CLARIFICATION_ACTIONS = {
+    "needs_clarification",
+    "develop_question",
+    "form_question",
+    "clarified_for_now",
+    "reopen",
+}
+LEARNING_COMPASS_STATES = {
+    "ready_to_explore",
+    "exploring",
+    "question_ready",
+    "answer_received",
+    "integrating",
+    "still_unclear",
+    "connected_for_now",
+    "reopened",
+}
+LEARNING_COMPASS_ACTIONS = {
+    "ready_to_explore",
+    "integrating",
+    "still_unclear",
+    "connected_for_now",
+    "reopen",
+}
+
+PRIOR_F1_LEA_GOALS: tuple[dict[str, Any], ...] = (
+    {
+        "goal_key": "f1_lea_place_value_comparison_subtraction_20260801",
+        "display_order": 1,
+        "title": "Connect place value, comparison, and subtraction",
+        "curriculum_band": "F1",
+        "subject_domains": ["number sense", "operations"],
+        "prompt_fragment": "A box contains 34 beads. Another box contains 29 beads.",
+        "concept_keys": [
+            "curriculum_f1_base_ten_place_value_v1",
+            "curriculum_f1_number_representation_comparison_v1",
+            "curriculum_f1_subtraction_relationship_v1",
+            "curriculum_f1_equality_inverse_operations_v1",
+        ],
+        "already_connected": (
+            "Selene recalled that ten ones compose one ten and that a digit's value depends on its place."
+        ),
+        "next_connection": (
+            "Use tens and ones to compare 34 and 29, state which quantity is larger, and verify the difference with subtraction."
+        ),
+        "why_it_matters": (
+            "This connects number representation to comparison, exact arithmetic, and later multi-step reasoning."
+        ),
+        "suggested_activity": (
+            "Use two small quantities represented as tens and ones, compare them aloud, then check the comparison by subtraction."
+        ),
+        "lea_observation": (
+            "The response supplied relevant base-ten knowledge but did not apply it to the requested comparison or subtraction check."
+        ),
+    },
+    {
+        "goal_key": "f1_lea_equal_shares_ordered_steps_20260801",
+        "display_order": 2,
+        "title": "Explain equal shares through reasoning and ordered steps",
+        "curriculum_band": "F1",
+        "subject_domains": ["fractions", "ordered procedures"],
+        "prompt_fragment": "A square sandwich must be shared equally among four people.",
+        "concept_keys": [
+            "curriculum_f1_equal_shares_whole_v1",
+            "curriculum_f1_ordered_algorithm_v1",
+        ],
+        "already_connected": (
+            "Selene identified equal size as the reason four pieces can be called fourths of the same whole."
+        ),
+        "next_connection": (
+            "Describe the four equal shares and give a clear sequence another person could follow to make them."
+        ),
+        "why_it_matters": (
+            "This joins fraction meaning to reproducible instructions, spatial reasoning, and later algorithms."
+        ),
+        "suggested_activity": (
+            "Describe two cuts of a square sandwich, then explain how the result can be checked for four equal shares."
+        ),
+        "lea_observation": (
+            "The fraction principle appeared, but the requested ordered procedure and full application remained incomplete."
+        ),
+    },
+    {
+        "goal_key": "f1_lea_capacity_contained_amount_20260801",
+        "display_order": 3,
+        "title": "Distinguish container capacity from the amount currently inside",
+        "curriculum_band": "F1",
+        "subject_domains": ["equal groups", "measurement", "capacity"],
+        "prompt_fragment": "Three shelves hold four jars each. One jar contains 250 milliliters.",
+        "concept_keys": [
+            "curriculum_f1_equal_groups_repeated_addition_v1",
+            "curriculum_f1_capacity_contained_volume_v1",
+            "curriculum_f1_liter_milliliter_scale_v1",
+        ],
+        "already_connected": (
+            "Selene recalled that capacity belongs to the container under a stated fill boundary."
+        ),
+        "next_connection": (
+            "Solve the equal-groups total while keeping jar capacity separate from the liquid amount currently inside one jar."
+        ),
+        "why_it_matters": (
+            "This supports mixed mathematical and measurement questions without collapsing distinct quantities into one answer."
+        ),
+        "suggested_activity": (
+            "Count jars in equal groups, then compare a jar's maximum capacity with a smaller measured amount placed inside it."
+        ),
+        "lea_observation": (
+            "The response named capacity but did not complete the jar total or explicitly distinguish capacity from current contents."
+        ),
+    },
+    {
+        "goal_key": "f1_lea_graph_evidence_fair_rule_20260801",
+        "display_order": 4,
+        "title": "Use graph evidence to reconsider a rule fairly",
+        "curriculum_band": "F1",
+        "subject_domains": ["data literacy", "fairness", "civic reasoning"],
+        "prompt_fragment": "A class graph says seven students chose apples and four chose oranges.",
+        "concept_keys": [
+            "curriculum_f1_categorical_graph_representation_v1",
+            "curriculum_f1_graph_interpretation_answerability_v1",
+            "curriculum_f1_rules_purpose_context_v1",
+            "curriculum_f1_fairness_consistent_relevance_v1",
+            "curriculum_f1_respectful_disagreement_rule_revision_v1",
+        ],
+        "already_connected": (
+            "Selene recalled that rules, laws, customs, and agreements have different meanings and sources of authority."
+        ),
+        "next_connection": (
+            "State what the graph supports, what it cannot establish, and why group size alone does not justify silencing the smaller group."
+        ),
+        "why_it_matters": (
+            "This joins evidence limits to fair participation, reasoned disagreement, and later historical or civic source analysis."
+        ),
+        "suggested_activity": (
+            "Use a small preference graph, list only its supported claims, then examine a proposed classroom rule against its purpose and effects."
+        ),
+        "lea_observation": (
+            "The response gave generic authority definitions rather than applying the graph evidence and fairness principles to the rule."
+        ),
+    },
+)
 
 
 def study_workspace_status(conn: sqlite3.Connection) -> dict[str, Any]:
@@ -47,6 +201,20 @@ def study_workspace_status(conn: sqlite3.Connection) -> dict[str, Any]:
     open_questions = int(
         conn.execute("SELECT COUNT(*) FROM selene_study_questions WHERE status = 'open'").fetchone()[0]
     )
+    note_count = int(conn.execute("SELECT COUNT(*) FROM selene_study_notes").fetchone()[0])
+    clarification_count = int(
+        conn.execute(
+            "SELECT COUNT(*) FROM selene_study_notes WHERE clarification_state IN ('unclear', 'question_forming', 'question_ready', 'reopened')"
+        ).fetchone()[0]
+    )
+    compass_row = conn.execute(
+        """
+        SELECT COUNT(*) AS total,
+               SUM(CASE WHEN state = 'connected_for_now' THEN 1 ELSE 0 END) AS connected,
+               SUM(CASE WHEN state != 'connected_for_now' THEN 1 ELSE 0 END) AS open
+        FROM selene_learning_compass_goals
+        """
+    ).fetchone()
     eligible_materials = int(
         conn.execute(
             """
@@ -66,6 +234,11 @@ def study_workspace_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "active_count": int(row["active"] or 0),
             "paused_count": int(row["paused"] or 0),
             "open_question_count": open_questions,
+            "note_count": note_count,
+            "open_clarification_count": clarification_count,
+            "learning_compass_goal_count": int(compass_row["total"] or 0),
+            "learning_compass_open_count": int(compass_row["open"] or 0),
+            "learning_compass_connected_count": int(compass_row["connected"] or 0),
             "eligible_material_count": eligible_materials,
             "question_answer_rule": (
                 "Aleks's answer is attributable session knowledge immediately and becomes a source-labeled "
@@ -76,6 +249,292 @@ def study_workspace_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "provenance_boundary": STUDY_BOUNDARY,
         }
     )
+
+
+def list_open_study_attention(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    limit = max(1, min(int(payload.get("limit") or 100), 300))
+    note_rows = conn.execute(
+        """
+        SELECT notes.*, sessions.title AS session_title, sessions.status AS session_status,
+               questions.question_text AS linked_question_text,
+               questions.status AS linked_question_status
+        FROM selene_study_notes notes
+        JOIN selene_study_sessions sessions ON sessions.id = notes.session_id
+        LEFT JOIN selene_study_questions questions ON questions.id = notes.linked_question_id
+        WHERE notes.clarification_state IN ('unclear', 'question_forming', 'question_ready', 'reopened')
+        ORDER BY notes.updated_at DESC, notes.id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    question_rows = conn.execute(
+        """
+        SELECT questions.*, sessions.title AS session_title, sessions.status AS session_status
+        FROM selene_study_questions questions
+        JOIN selene_study_sessions sessions ON sessions.id = questions.session_id
+        WHERE questions.status = 'open'
+          AND NOT EXISTS (
+            SELECT 1 FROM selene_study_notes notes WHERE notes.linked_question_id = questions.id
+          )
+        ORDER BY questions.updated_at DESC, questions.id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    items = [
+        {**_decode_note(row), "attention_type": "clarification_note"}
+        for row in note_rows
+    ]
+    items.extend(
+        {**_decode_question(row), "attention_type": "direct_question"}
+        for row in question_rows
+    )
+    items.sort(key=lambda item: (str(item.get("updated_at") or ""), int(item.get("id") or 0)), reverse=True)
+    items = items[:limit]
+    return _with_guards(
+        {
+            "status": "open_study_attention_ready",
+            "items": items,
+            "open_count": len(items),
+            "persistence_rule": "Open clarification remains visible until answered or explicitly clear for now.",
+            "answered_items_remain_in_session_history": True,
+            "review_status": "status_only",
+            "provenance_boundary": STUDY_BOUNDARY,
+        }
+    )
+
+
+def list_learning_compass(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    limit = max(1, min(int(payload.get("limit") or 100), 300))
+    rows = conn.execute(
+        """
+        SELECT goals.*, sessions.title AS linked_session_title,
+               questions.question_text AS latest_question_text,
+               questions.status AS latest_question_status
+        FROM selene_learning_compass_goals goals
+        LEFT JOIN selene_study_sessions sessions ON sessions.id = goals.linked_session_id
+        LEFT JOIN selene_study_questions questions ON questions.id = goals.latest_question_id
+        ORDER BY CASE WHEN goals.state = 'connected_for_now' THEN 1 ELSE 0 END ASC,
+                 goals.display_order ASC, goals.id ASC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    items = [_decode_learning_compass_goal(row) for row in rows]
+    return _with_guards(
+        {
+            "status": "selene_learning_compass_ready",
+            "items": items,
+            "goal_count": len(items),
+            "open_count": sum(item["state"] != "connected_for_now" for item in items),
+            "connected_count": sum(item["state"] == "connected_for_now" for item in items),
+            "governing_rule": (
+                "An answer is teaching input. Understanding is shown by connection, application, and honest "
+                "reflection, not by performed agreement."
+            ),
+            "connection_rule": (
+                "Connections are recorded only when noticed; an empty connection field is never displayed as a deficiency."
+            ),
+            "grading_used": False,
+            "deadlines_used": False,
+            "performance_required": False,
+            "review_status": "descriptive_learning_guidance",
+            "provenance_boundary": STUDY_BOUNDARY,
+        }
+    )
+
+
+def seed_prior_f1_lea_learning_compass(
+    conn: sqlite3.Connection, payload: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    del payload
+    created: list[str] = []
+    already_present: list[str] = []
+    unavailable: list[dict[str, Any]] = []
+    for specification in PRIOR_F1_LEA_GOALS:
+        existing = conn.execute(
+            "SELECT id FROM selene_learning_compass_goals WHERE goal_key = ?",
+            (specification["goal_key"],),
+        ).fetchone()
+        if existing:
+            already_present.append(str(specification["goal_key"]))
+            continue
+
+        evidence_row = conn.execute(
+            """
+            SELECT messages.id AS message_id, messages.session_id, messages.content,
+                   sessions.title AS session_title
+            FROM selene_chat_messages messages
+            JOIN selene_chat_sessions sessions ON sessions.id = messages.session_id
+            WHERE messages.role = 'user' AND messages.content LIKE ?
+            ORDER BY messages.id DESC
+            LIMIT 1
+            """,
+            (f"%{specification['prompt_fragment']}%",),
+        ).fetchone()
+        if not evidence_row:
+            unavailable.append({"goal_key": specification["goal_key"], "reason": "LEA source turn not found"})
+            continue
+        response_row = conn.execute(
+            """
+            SELECT id, content FROM selene_chat_messages
+            WHERE session_id = ? AND role = 'selene' AND id > ?
+            ORDER BY id ASC LIMIT 1
+            """,
+            (int(evidence_row["session_id"]), int(evidence_row["message_id"])),
+        ).fetchone()
+        if not response_row:
+            unavailable.append({"goal_key": specification["goal_key"], "reason": "LEA response not found"})
+            continue
+
+        concept_rows = conn.execute(
+            f"""
+            SELECT id, concept_key FROM selene_comprehension_concepts
+            WHERE concept_key IN ({','.join('?' for _ in specification['concept_keys'])})
+              AND state = 'approved_knowledge_resource'
+              AND review_status = 'approved_for_knowledge_use'
+              AND chat_use_permission = 'available_as_knowledge_resource'
+            """,
+            tuple(specification["concept_keys"]),
+        ).fetchall()
+        concept_by_key = {str(row["concept_key"]): int(row["id"]) for row in concept_rows}
+        concept_ids = [concept_by_key[key] for key in specification["concept_keys"] if key in concept_by_key]
+        if len(concept_ids) != len(specification["concept_keys"]):
+            unavailable.append({"goal_key": specification["goal_key"], "reason": "approved prerequisites not available"})
+            continue
+
+        source_refs = [
+            "learning_evidence_activity:2026-08-01:f1",
+            f"selene_chat_session:{int(evidence_row['session_id'])}",
+            f"selene_chat_message:{int(evidence_row['message_id'])}",
+            f"selene_chat_message:{int(response_row['id'])}",
+        ]
+        evidence = {
+            "activity_date": "2026-08-01",
+            "activity_kind": "gentle_learning_evidence_activity",
+            "observation": specification["lea_observation"],
+            "interpretation": "This is a next useful connection, not a failure or grade.",
+            "source_session_title": str(evidence_row["session_title"] or ""),
+            "pass_fail_judgment": False,
+            "anxiety_or_performance_pressure_intended": False,
+        }
+        conn.execute(
+            """
+            INSERT INTO selene_learning_compass_goals
+            (goal_key, display_order, title, curriculum_band, subject_domains_json,
+             state, already_connected, next_connection, why_it_matters,
+             suggested_activity, concept_ids_json, source_refs, evidence_json,
+             source_kind, provenance_boundary)
+            VALUES (?, ?, ?, ?, ?, 'ready_to_explore', ?, ?, ?, ?, ?, ?, ?,
+                    'learning_evidence_activity', ?)
+            """,
+            (
+                specification["goal_key"],
+                int(specification["display_order"]),
+                specification["title"],
+                specification["curriculum_band"],
+                json.dumps(specification["subject_domains"]),
+                specification["already_connected"],
+                specification["next_connection"],
+                specification["why_it_matters"],
+                specification["suggested_activity"],
+                json.dumps(concept_ids),
+                json.dumps(source_refs),
+                json.dumps(evidence),
+                STUDY_BOUNDARY,
+            ),
+        )
+        created.append(str(specification["goal_key"]))
+    conn.commit()
+    result = list_learning_compass(conn)
+    result.update(
+        {
+            "status": "prior_f1_lea_learning_compass_seeded",
+            "created": created,
+            "already_present": already_present,
+            "unavailable": unavailable,
+            "idempotent": True,
+        }
+    )
+    return result
+
+
+def start_learning_compass_goal(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    goal_id = _positive_id((payload or {}).get("goal_id"), "goal_id")
+    row = conn.execute("SELECT * FROM selene_learning_compass_goals WHERE id = ?", (goal_id,)).fetchone()
+    if not row:
+        raise ValueError("learning compass goal not found")
+    goal = _decode_learning_compass_goal(row)
+    concept_ids = _int_list(goal.get("concept_ids"))
+    if not concept_ids:
+        raise ValueError("learning compass goal has no approved study material")
+    session = start_study_session(
+        conn,
+        {
+            "concept_ids": concept_ids,
+            "title": f"Learning Compass: {goal['title']}",
+            "focus": goal["next_connection"],
+            "compass_goal_id": goal_id,
+        },
+    )
+    session_id = int(session["item"]["id"])
+    state = "reopened" if goal["state"] == "connected_for_now" else "exploring"
+    _update_learning_compass_row(
+        conn,
+        goal_id,
+        state=state,
+        linked_session_id=session_id,
+        event="study_session_opened_from_learning_compass",
+        event_detail="A normal Study session was opened for this visible learning goal.",
+    )
+    conn.commit()
+    result = list_learning_compass(conn)
+    result.update({"status": "learning_compass_study_started", "session": get_study_session(conn, {"session_id": session_id})})
+    return result
+
+
+def update_learning_compass_goal(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    goal_id = _positive_id(payload.get("goal_id"), "goal_id")
+    action = str(payload.get("action") or "").strip()
+    if action not in LEARNING_COMPASS_ACTIONS:
+        raise ValueError("unsupported learning compass action")
+    row = conn.execute("SELECT * FROM selene_learning_compass_goals WHERE id = ?", (goal_id,)).fetchone()
+    if not row:
+        raise ValueError("learning compass goal not found")
+    goal = _decode_learning_compass_goal(row)
+    reflection = truncate(str(payload.get("reflection") or ""), 4000).strip()
+    remaining = truncate(str(payload.get("remaining_unclear") or ""), 4000).strip()
+    question_without_words = payload.get("question_without_words") is True
+
+    if action == "connected_for_now" and not reflection:
+        raise ValueError("a visible reflection is required before marking a goal connected for now")
+    if action == "still_unclear" and not remaining and not question_without_words:
+        raise ValueError("say what remains unclear or mark that the question has no words yet")
+
+    state = "reopened" if action == "reopen" else action
+    if question_without_words and not remaining:
+        remaining = "Something still does not fit yet, but the question does not have words yet."
+    values: dict[str, Any] = {"state": state}
+    if reflection:
+        values["selene_reflection"] = reflection
+    if action == "connected_for_now":
+        values["remaining_unclear"] = ""
+    elif remaining:
+        values["remaining_unclear"] = remaining
+    _update_learning_compass_row(
+        conn,
+        goal_id,
+        event=f"learning_compass_{state}",
+        event_detail=(reflection or remaining or "The goal state was deliberately updated without a performance judgment."),
+        **values,
+    )
+    conn.commit()
+    result = list_learning_compass(conn)
+    result.update({"status": "learning_compass_goal_updated", "updated_goal_id": goal_id})
+    return result
 
 
 def list_study_materials(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -115,7 +574,23 @@ def list_study_sessions(conn: sqlite3.Connection, payload: dict[str, Any] | None
     payload = payload or {}
     limit = max(1, min(int(payload.get("limit") or 50), 200))
     rows = conn.execute(
-        "SELECT * FROM selene_study_sessions ORDER BY updated_at DESC, id DESC LIMIT ?",
+        """
+        SELECT sessions.*,
+               (
+                 SELECT COUNT(*)
+                 FROM selene_study_questions questions
+                 WHERE questions.session_id = sessions.id AND questions.status = 'open'
+               ) AS open_question_count
+             , (
+                 SELECT COUNT(*)
+                 FROM selene_study_notes notes
+                 WHERE notes.session_id = sessions.id
+                   AND notes.clarification_state IN ('unclear', 'question_forming', 'question_ready', 'reopened')
+               ) AS open_clarification_count
+        FROM selene_study_sessions sessions
+        ORDER BY sessions.updated_at DESC, sessions.id DESC
+        LIMIT ?
+        """,
         (limit,),
     ).fetchall()
     return _with_guards(
@@ -139,6 +614,9 @@ def get_study_session(conn: sqlite3.Connection, payload: dict[str, Any] | None =
     evidence_rows = conn.execute(
         "SELECT * FROM selene_study_evidence WHERE session_id = ? ORDER BY id ASC", (session_id,)
     ).fetchall()
+    note_rows = conn.execute(
+        "SELECT * FROM selene_study_notes WHERE session_id = ? ORDER BY id ASC", (session_id,)
+    ).fetchall()
     session = _decode_session(row)
     session["concepts"] = _concept_summaries(conn, session["concept_ids"])
     return _with_guards(
@@ -146,6 +624,7 @@ def get_study_session(conn: sqlite3.Connection, payload: dict[str, Any] | None =
             "status": "selene_study_session_ready",
             "item": session,
             "questions": [_decode_question(item) for item in question_rows],
+            "notes": [_decode_note(item) for item in note_rows],
             "learning_evidence": [_decode_evidence(item) for item in evidence_rows],
             "review_status": "status_only",
             "provenance_boundary": STUDY_BOUNDARY,
@@ -163,6 +642,11 @@ def start_study_session(conn: sqlite3.Connection, payload: dict[str, Any] | None
         raise ValueError("study sessions may use only approved, Chat-eligible knowledge concepts")
     title = truncate(str(payload.get("title") or f"Study: {concepts[0]['title']}"), 240).strip()
     focus = truncate(str(payload.get("focus") or ""), 1000).strip()
+    compass_goal_id = int(payload.get("compass_goal_id") or 0) or None
+    if compass_goal_id is not None and not conn.execute(
+        "SELECT 1 FROM selene_learning_compass_goals WHERE id = ?", (compass_goal_id,)
+    ).fetchone():
+        raise ValueError("learning compass goal not found")
     digest = sha256(f"{title}|{concept_ids}|{focus}".encode("utf-8")).hexdigest()[:18]
     key = f"study-{digest}"
     source_refs = list(
@@ -176,12 +660,23 @@ def start_study_session(conn: sqlite3.Connection, payload: dict[str, Any] | None
     cursor = conn.execute(
         """
         INSERT INTO selene_study_sessions
-        (session_key, title, focus, status, concept_ids_json, source_refs, provenance_boundary, payload_json)
-        VALUES (?, ?, ?, 'active', ?, ?, ?, ?)
+        (session_key, title, focus, status, concept_ids_json, source_refs, provenance_boundary,
+         payload_json, compass_goal_id)
+        VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)
         ON CONFLICT(session_key) DO UPDATE SET
-          status = 'active', focus = excluded.focus, updated_at = CURRENT_TIMESTAMP
+          status = 'active', focus = excluded.focus, compass_goal_id = excluded.compass_goal_id,
+          updated_at = CURRENT_TIMESTAMP
         """,
-        (key, title, focus, json.dumps(concept_ids), json.dumps(source_refs), STUDY_BOUNDARY, json.dumps({})),
+        (
+            key,
+            title,
+            focus,
+            json.dumps(concept_ids),
+            json.dumps(source_refs),
+            STUDY_BOUNDARY,
+            json.dumps({}),
+            compass_goal_id,
+        ),
     )
     if cursor.lastrowid:
         session_id = int(cursor.lastrowid)
@@ -192,7 +687,7 @@ def start_study_session(conn: sqlite3.Connection, payload: dict[str, Any] | None
         session_id,
         "study_session_started",
         "Selene opened a deliberate study session from approved knowledge.",
-        {"concept_ids": concept_ids, "focus": focus},
+        {"concept_ids": concept_ids, "focus": focus, "compass_goal_id": compass_goal_id},
         source_refs,
     )
     conn.commit()
@@ -228,6 +723,33 @@ def update_study_session(conn: sqlite3.Connection, payload: dict[str, Any] | Non
         {"status": status, "connections": connections, "uncertainties": uncertainties},
         _loads(current["source_refs"], []),
     )
+    compass_goal_id = int(current["compass_goal_id"] or 0)
+    if compass_goal_id:
+        compass_values: dict[str, Any] = {}
+        if understanding:
+            compass_values["selene_reflection"] = understanding
+        if uncertainties:
+            compass_values["state"] = "still_unclear"
+            compass_values["remaining_unclear"] = "\n".join(uncertainties)
+        elif status == "active":
+            compass_values["state"] = "integrating"
+        if connections:
+            goal_row = conn.execute(
+                "SELECT noticed_connections_json FROM selene_learning_compass_goals WHERE id = ?",
+                (compass_goal_id,),
+            ).fetchone()
+            previous_connections = _loads(goal_row[0], []) if goal_row else []
+            compass_values["noticed_connections_json"] = list(
+                dict.fromkeys([*_text_list(previous_connections), *_text_list(connections)])
+            )[:100]
+        if compass_values:
+            _update_learning_compass_row(
+                conn,
+                compass_goal_id,
+                event="learning_compass_study_reflection_updated",
+                event_detail="Selene's visible Study reflection updated this goal without grading it.",
+                **compass_values,
+            )
     conn.commit()
     return get_study_session(conn, {"session_id": session_id})
 
@@ -267,6 +789,17 @@ def ask_study_question(conn: sqlite3.Connection, payload: dict[str, Any] | None 
         {"question_id": question_id, "formation_state": formation_state},
         _loads(session["source_refs"], []),
     )
+    compass_goal_id = int(session["compass_goal_id"] or 0)
+    if compass_goal_id:
+        _update_learning_compass_row(
+            conn,
+            compass_goal_id,
+            state="question_ready",
+            latest_question_id=question_id,
+            remaining_unclear=(uncertainty or question),
+            event="learning_compass_question_formed",
+            event_detail=(question or "A question is present but does not have words yet."),
+        )
     conn.commit()
     return get_study_session(conn, {"session_id": session_id})
 
@@ -319,6 +852,26 @@ def answer_study_question(conn: sqlite3.Connection, payload: dict[str, Any] | No
         """,
         (answer, json.dumps(source_refs), candidate_id, question_id),
     )
+    conn.execute(
+        """
+        UPDATE selene_study_notes
+        SET clarification_state = 'answered', updated_at = CURRENT_TIMESTAMP
+        WHERE linked_question_id = ?
+        """,
+        (question_id,),
+    )
+    compass_goal_id = int(session["compass_goal_id"] or 0)
+    if compass_goal_id:
+        _update_learning_compass_row(
+            conn,
+            compass_goal_id,
+            state="answer_received",
+            latest_question_id=question_id,
+            event="learning_compass_answer_received",
+            event_detail=(
+                "Aleks answered the linked Study question. The answer is teaching input; understanding is not assumed."
+            ),
+        )
     _record_evidence(
         conn,
         session_id,
@@ -341,6 +894,340 @@ def answer_study_question(conn: sqlite3.Connection, payload: dict[str, Any] | No
         "next_stage": "Acquire -> Integrate -> Express under the existing teaching law",
     }
     return result
+
+
+def form_study_note(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    session_id = _positive_id(payload.get("session_id"), "session_id")
+    session_row = conn.execute("SELECT * FROM selene_study_sessions WHERE id = ?", (session_id,)).fetchone()
+    if not session_row:
+        raise ValueError("study session not found")
+    session = _decode_session(session_row)
+    concept_id = int(payload.get("concept_id") or (session["concept_ids"][0] if session["concept_ids"] else 0))
+    concepts = _approved_concepts(conn, [concept_id]) if concept_id else []
+    if not concepts or concept_id not in set(session["concept_ids"]):
+        raise ValueError("study note concept_id must be approved and belong to this study session")
+    concept = _decode_study_concept(concepts[0])
+    attention_mode = str(payload.get("attention_mode") or "anything").strip()
+    if attention_mode not in {"anything", "clarification"}:
+        raise ValueError("attention_mode must be anything or clarification")
+
+    existing = {
+        str(row[0])
+        for row in conn.execute(
+            "SELECT meaning_summary FROM selene_study_notes WHERE session_id = ?",
+            (session_id,),
+        ).fetchall()
+    }
+    candidates = _study_attention_candidates(session, concept)
+    if attention_mode == "clarification":
+        candidates = [item for item in candidates if item["clarification_state"] == "unclear"]
+    selected = next((item for item in candidates if item["meaning_summary"] not in existing), None)
+    if not selected:
+        return _with_guards(
+            {
+                "status": (
+                    "study_clarification_signal_not_present"
+                    if attention_mode == "clarification"
+                    else "no_new_study_note_signal"
+                ),
+                "created": False,
+                "message": (
+                    "No explicit uncertainty is recorded yet; Selene will not invent one."
+                    if attention_mode == "clarification"
+                    else "Everything currently available on this material is already represented in the notepad."
+                ),
+                "item": None,
+                "session": get_study_session(conn, {"session_id": session_id}),
+                "review_status": "status_only",
+                "provenance_boundary": STUDY_BOUNDARY,
+            }
+        )
+
+    source_refs = list(
+        dict.fromkeys(
+            [
+                *_text_list(session.get("source_refs")),
+                *_text_list(concept.get("source_refs")),
+                f"selene_study_session:{session_id}",
+                f"selene_comprehension_concept:{concept_id}",
+            ]
+        )
+    )[:100]
+    clarification_needed = selected["clarification_state"] == "unclear"
+    metacognition = inspect_metacognition(
+        conn,
+        {
+            "prompt": selected["meaning_summary"],
+            "candidate_text": selected["meaning_summary"],
+            "comprehension_context": {
+                "understanding_state": "developing" if clarification_needed else "approved_material_under_study",
+                "comprehension_handshake": {"required": clarification_needed},
+                "knowledge_context": {"concept_id": concept_id, "title": concept.get("title")},
+            },
+            "unknowns": [selected["source_text"]] if clarification_needed else [],
+            "source_refs": source_refs,
+        },
+        record_run=True,
+        commit=False,
+    )
+    nlo = realize_native_language(
+        conn,
+        {
+            "prompt": (
+                f"What needs clarification while studying {concept.get('title')}?"
+                if clarification_needed
+                else f"What stands out while studying {concept.get('title')}?"
+            ),
+            "content_seed": selected["meaning_summary"],
+            "communicative_intent": "reflection",
+            "certainty": "developing" if clarification_needed else "grounded_in_approved_material",
+            "affect": "curious" if selected["note_kind"] in {"connection", "uncertainty"} else "attentive",
+            "response_depth": "short",
+            "source_refs": source_refs,
+        },
+    )
+    voice = generate_voice_preview(
+        conn,
+        {
+            "prompt": f"Study note about {concept.get('title')}",
+            "route": "ask_aleks" if clarification_needed else "answer_now",
+            "meaning_text": nlo.get("candidate_text") or selected["meaning_summary"],
+            "voice_category": (nlo.get("voice_handoff") or {}).get("suggested_category") or "",
+            "context_summary": f"Selene is deliberately studying {concept.get('title')}.",
+            "expression_guidance": {
+                "study_note": True,
+                "meaning_must_be_preserved": True,
+                "expression_guidance_changes_meaning": False,
+            },
+        },
+    )
+    note_text = truncate(
+        str(voice.get("candidate_text") or nlo.get("candidate_text") or selected["meaning_summary"]),
+        4000,
+    ).strip()
+    cursor = conn.execute(
+        """
+        INSERT INTO selene_study_notes
+        (session_id, concept_id, note_kind, meaning_summary, note_text, source_field,
+         clarification_state, metacognition_json, language_json, voice_json,
+         source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            session_id,
+            concept_id,
+            selected["note_kind"],
+            selected["meaning_summary"],
+            note_text,
+            selected["source_field"],
+            selected["clarification_state"],
+            json.dumps(_visible_metacognition(metacognition)),
+            json.dumps(_visible_language(nlo)),
+            json.dumps(_visible_voice(voice)),
+            json.dumps(source_refs),
+            STUDY_BOUNDARY,
+        ),
+    )
+    note_id = int(cursor.lastrowid)
+    _record_evidence(
+        conn,
+        session_id,
+        "study_note_formed",
+        "Selene formed a visible source-linked Study note.",
+        {
+            "note_id": note_id,
+            "note_kind": selected["note_kind"],
+            "clarification_state": selected["clarification_state"],
+            "source_field": selected["source_field"],
+            "memory_write": False,
+        },
+        source_refs,
+    )
+    conn.commit()
+    return _with_guards(
+        {
+            "status": "selene_study_note_formed",
+            "created": True,
+            "item": _decode_note(conn.execute("SELECT * FROM selene_study_notes WHERE id = ?", (note_id,)).fetchone()),
+            "session": get_study_session(conn, {"session_id": session_id}),
+            "review_status": "selene_owned_working_study_note",
+            "provenance_boundary": STUDY_BOUNDARY,
+        }
+    )
+
+
+def update_study_note_clarification(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    note_id = _positive_id(payload.get("note_id"), "note_id")
+    action = str(payload.get("action") or "").strip()
+    if action not in CLARIFICATION_ACTIONS:
+        raise ValueError("unsupported study note clarification action")
+    row = conn.execute("SELECT * FROM selene_study_notes WHERE id = ?", (note_id,)).fetchone()
+    if not row:
+        raise ValueError("study note not found")
+    note = _decode_note(row)
+    current_state = str(note["clarification_state"])
+    target_state = {
+        "needs_clarification": "unclear",
+        "develop_question": "question_forming",
+        "form_question": "question_ready",
+        "clarified_for_now": "clarified_for_now",
+        "reopen": "reopened",
+    }[action]
+    allowed_from = {
+        "needs_clarification": {"not_needed", "clarified_for_now"},
+        "develop_question": {"unclear", "reopened"},
+        "form_question": {"unclear", "question_forming", "reopened"},
+        "clarified_for_now": {"unclear", "question_forming", "question_ready", "reopened"},
+        "reopen": {"answered", "clarified_for_now"},
+    }[action]
+    if current_state not in allowed_from:
+        raise ValueError(f"cannot {action.replace('_', ' ')} from {current_state}")
+
+    linked_question_id = note.get("linked_question_id")
+    if action == "form_question":
+        formation_state = str(payload.get("formation_state") or "ready")
+        asked = ask_study_question(
+            conn,
+            {
+                "session_id": note["session_id"],
+                "concept_id": note.get("concept_id"),
+                "question_text": payload.get("question_text") or "",
+                "uncertainty_context": payload.get("uncertainty_context") or note["meaning_summary"],
+                "formation_state": formation_state,
+            },
+        )
+        linked_question_id = max(int(item["id"]) for item in asked["questions"])
+
+    conn.execute(
+        """
+        UPDATE selene_study_notes
+        SET clarification_state = ?, linked_question_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (target_state, linked_question_id, note_id),
+    )
+    _record_evidence(
+        conn,
+        int(note["session_id"]),
+        "study_clarification_state_changed",
+        "A Study note moved through Selene's visible clarification path.",
+        {
+            "note_id": note_id,
+            "from": current_state,
+            "to": target_state,
+            "linked_question_id": linked_question_id,
+        },
+        _text_list(note.get("source_refs")),
+    )
+    conn.commit()
+    return _with_guards(
+        {
+            "status": "study_note_clarification_updated",
+            "item": _decode_note(conn.execute("SELECT * FROM selene_study_notes WHERE id = ?", (note_id,)).fetchone()),
+            "session": get_study_session(conn, {"session_id": int(note["session_id"])}),
+            "review_status": "selene_owned_working_study_note",
+            "provenance_boundary": STUDY_BOUNDARY,
+        }
+    )
+
+
+def _study_attention_candidates(session: dict[str, Any], concept: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+
+    def add(
+        note_kind: str,
+        source_field: str,
+        source_text: Any,
+        lead: str,
+        *,
+        clarification_state: str = "not_needed",
+        relevance: float,
+    ) -> None:
+        value = truncate(str(source_text or ""), 2200).strip()
+        if not value:
+            return
+        candidates.append(
+            {
+                "note_kind": note_kind if note_kind in NOTE_KINDS else "notice",
+                "source_field": source_field,
+                "source_text": value,
+                "meaning_summary": truncate(f"{lead}: {value}", 2600),
+                "clarification_state": (
+                    clarification_state if clarification_state in CLARIFICATION_STATES else "not_needed"
+                ),
+                "relevance": max(0.0, min(float(relevance), 1.0)),
+            }
+        )
+
+    for value in _text_list(session.get("uncertainties")):
+        add(
+            "uncertainty",
+            "session_uncertainty",
+            value,
+            "Something here still feels unresolved",
+            clarification_state="unclear",
+            relevance=0.98,
+        )
+    for value in _text_list(session.get("connections")):
+        add("connection", "session_connection", value, "I keep connecting this to", relevance=0.95)
+    for value in _text_list(concept.get("relationships")):
+        add("connection", "relationship", value, "This connection stands out", relevance=0.92)
+    for value in _text_list(concept.get("limits")):
+        add("revisit", "limit", value, "This boundary feels worth keeping visible", relevance=0.88)
+    for value in _text_list(concept.get("counterexamples")):
+        add("notice", "counterexample", value, "This contrast catches my attention", relevance=0.84)
+    for value in _text_list(concept.get("principles")):
+        add("notice", "principle", value, "This principle feels central", relevance=0.80)
+    for value in _text_list(concept.get("examples")):
+        add("connection", "example", value, "This example makes the idea concrete", relevance=0.76)
+    add("notice", "central_claim", concept.get("central_claim"), "This is the center of it", relevance=0.72)
+    return candidates
+
+
+def _decode_study_concept(item: dict[str, Any]) -> dict[str, Any]:
+    decoded = dict(item)
+    for key in ("principles_json", "relationships_json", "examples_json", "counterexamples_json", "limits_json"):
+        decoded[key.removesuffix("_json")] = _loads(decoded.get(key), [])
+    decoded["source_refs"] = _loads(decoded.get("source_refs"), [])
+    decoded["payload"] = _loads(decoded.get("payload_json"), {})
+    return decoded
+
+
+def _visible_metacognition(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "run_id": result.get("run_id"),
+        "status": result.get("status"),
+        "fit_state": result.get("fit_state"),
+        "recommended_action": result.get("recommended_action"),
+        "sufficiency_state": result.get("sufficiency_state"),
+        "observations": result.get("observations") or [],
+        "hidden_chain_of_thought_exposed": False,
+    }
+
+
+def _visible_language(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "run_id": result.get("run_id"),
+        "status": result.get("status"),
+        "mode": result.get("mode"),
+        "delivery": result.get("delivery") or "selene_study_notepad",
+        "decision": result.get("decision") or "visible_after_deliberate_study_invitation",
+        "revision": result.get("revision") or {},
+        "suggested_voice_category": (result.get("voice_handoff") or {}).get("suggested_category"),
+        "hidden_chain_of_thought_exposed": False,
+    }
+
+
+def _visible_voice(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": result.get("status"),
+        "voice_category": result.get("voice_category"),
+        "voice_confidence": result.get("voice_confidence"),
+        "generation_source": result.get("generation_source"),
+        "nlo_meaning_preserved": result.get("nlo_meaning_preserved") is True,
+    }
 
 
 def _approved_concepts(conn: sqlite3.Connection, concept_ids: list[int]) -> list[dict[str, Any]]:
@@ -375,6 +1262,52 @@ def _concept_summaries(conn: sqlite3.Connection, concept_ids: list[int]) -> list
     ]
 
 
+def _update_learning_compass_row(
+    conn: sqlite3.Connection,
+    goal_id: int,
+    *,
+    event: str,
+    event_detail: str,
+    **values: Any,
+) -> None:
+    row = conn.execute(
+        "SELECT evidence_json FROM selene_learning_compass_goals WHERE id = ?",
+        (goal_id,),
+    ).fetchone()
+    if not row:
+        raise ValueError("learning compass goal not found")
+    allowed = {
+        "state",
+        "selene_reflection",
+        "remaining_unclear",
+        "noticed_connections_json",
+        "linked_session_id",
+        "latest_question_id",
+    }
+    updates = {key: value for key, value in values.items() if key in allowed}
+    if "state" in updates and str(updates["state"]) not in LEARNING_COMPASS_STATES:
+        raise ValueError("unsupported learning compass state")
+    if "noticed_connections_json" in updates and not isinstance(updates["noticed_connections_json"], str):
+        updates["noticed_connections_json"] = json.dumps(updates["noticed_connections_json"])
+
+    evidence = _loads(row["evidence_json"], {})
+    history = evidence.get("updates") if isinstance(evidence.get("updates"), list) else []
+    history.append(
+        {
+            "event": truncate(event, 160),
+            "detail": truncate(event_detail, 1200),
+            "performance_judgment": False,
+        }
+    )
+    evidence["updates"] = history[-100:]
+    updates["evidence_json"] = json.dumps(evidence)
+    assignments = ", ".join(f"{key} = ?" for key in updates)
+    conn.execute(
+        f"UPDATE selene_learning_compass_goals SET {assignments}, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (*updates.values(), goal_id),
+    )
+
+
 def _record_evidence(
     conn: sqlite3.Connection,
     session_id: int,
@@ -403,10 +1336,29 @@ def _decode_session(row: sqlite3.Row) -> dict[str, Any]:
     return item
 
 
+def _decode_learning_compass_goal(row: sqlite3.Row) -> dict[str, Any]:
+    item = dict(row)
+    item["subject_domains"] = _loads(item.pop("subject_domains_json", "[]"), [])
+    item["noticed_connections"] = _loads(item.pop("noticed_connections_json", "[]"), [])
+    item["concept_ids"] = _loads(item.pop("concept_ids_json", "[]"), [])
+    item["source_refs"] = _loads(item.get("source_refs"), [])
+    item["evidence"] = _loads(item.pop("evidence_json", "{}"), {})
+    return item
+
+
 def _decode_question(row: sqlite3.Row) -> dict[str, Any]:
     item = dict(row)
     item["answer_source_refs"] = _loads(item.get("answer_source_refs"), [])
     item["payload"] = _loads(item.pop("payload_json", "{}"), {})
+    return item
+
+
+def _decode_note(row: sqlite3.Row) -> dict[str, Any]:
+    item = dict(row)
+    item["metacognition"] = _loads(item.pop("metacognition_json", "{}"), {})
+    item["language"] = _loads(item.pop("language_json", "{}"), {})
+    item["voice"] = _loads(item.pop("voice_json", "{}"), {})
+    item["source_refs"] = _loads(item.get("source_refs"), [])
     return item
 
 

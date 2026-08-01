@@ -732,6 +732,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "study.status")["result"]))
         elif parsed.path == "/api/study/materials":
             self._send(*json_bytes(route_request(conn, "study.materials.list", qs)["result"]))
+        elif parsed.path == "/api/study/attention":
+            self._send(*json_bytes(route_request(conn, "study.attention.open", qs)["result"]))
+        elif parsed.path == "/api/study/compass":
+            self._send(*json_bytes(route_request(conn, "study.compass.list", qs)["result"]))
         elif parsed.path == "/api/study/sessions":
             self._send(*json_bytes(route_request(conn, "study.sessions.list", qs)["result"]))
         elif parsed.path.startswith("/api/study/sessions/"):
@@ -1518,12 +1522,22 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/study/sessions/update",
             "/api/study/questions/ask",
             "/api/study/questions/answer",
+            "/api/study/notes/form",
+            "/api/study/notes/clarification",
+            "/api/study/compass/seed-prior-f1-lea",
+            "/api/study/compass/start",
+            "/api/study/compass/update",
         }:
             route_key = {
                 "/api/study/sessions/start": "study.session.start",
                 "/api/study/sessions/update": "study.session.update",
                 "/api/study/questions/ask": "study.question.ask",
                 "/api/study/questions/answer": "study.question.answer",
+                "/api/study/notes/form": "study.note.form",
+                "/api/study/notes/clarification": "study.note.clarification.update",
+                "/api/study/compass/seed-prior-f1-lea": "study.compass.seed_prior_f1_lea",
+                "/api/study/compass/start": "study.compass.start",
+                "/api/study/compass/update": "study.compass.update",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))

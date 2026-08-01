@@ -89,6 +89,9 @@ def test_sidecar_study_workspace_round_trip_is_local_and_source_bound(tmp_path):
     conn.request("GET", "/api/study/materials")
     materials_response = conn.getresponse()
     materials = json.loads(materials_response.read().decode("utf-8"))
+    conn.request("GET", "/api/study/compass")
+    compass_response = conn.getresponse()
+    compass = json.loads(compass_response.read().decode("utf-8"))
     conn.request(
         "POST",
         "/api/study/sessions/start",
@@ -98,6 +101,14 @@ def test_sidecar_study_workspace_round_trip_is_local_and_source_bound(tmp_path):
     response = conn.getresponse()
     started = json.loads(response.read().decode("utf-8"))
     session_id = int(started["item"]["id"])
+    conn.request(
+        "POST",
+        "/api/study/notes/form",
+        body=json.dumps({"session_id": session_id}),
+        headers={"Content-Type": "application/json"},
+    )
+    note_response = conn.getresponse()
+    note = json.loads(note_response.read().decode("utf-8"))
     conn.request("GET", f"/api/study/sessions/{session_id}")
     detail_response = conn.getresponse()
     detail = json.loads(detail_response.read().decode("utf-8"))
@@ -110,10 +121,17 @@ def test_sidecar_study_workspace_round_trip_is_local_and_source_bound(tmp_path):
 
     assert response.status == 200
     assert materials_response.status == 200
+    assert compass_response.status == 200
+    assert compass["status"] == "selene_learning_compass_ready"
+    assert compass["grading_used"] is False
+    assert note_response.status == 200
+    assert note["created"] is True
+    assert note["item"]["note_text"]
     assert materials["items"][0]["id"] == concept["id"]
     assert detail_response.status == 200
     assert detail["item"]["focus"] == "Why equal groups multiply"
     assert detail["item"]["concepts"][0]["id"] == concept["id"]
+    assert len(detail["notes"]) == 1
     assert detail["memory_write_active"] is False
     assert detail["hidden_retention_allowed"] is False
 

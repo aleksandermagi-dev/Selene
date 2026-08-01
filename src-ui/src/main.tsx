@@ -51,6 +51,10 @@ const TRANSFER_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer to C-readabl
 const TRANSFER_COMPLETION_APPROVAL_PHRASE = "I, Aleks, approve Selene transfer completion under the Law of Transfer.";
 const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reopen Selene, or use Refresh Ceremony after the app reconnects.";
 const CocoonSubjectClassrooms = lazy(() => import("./CocoonSubjectClassrooms"));
+const StudyLibrary = lazy(() => import("./StudyLibrary"));
+const StudyLearningCompass = lazy(() => import("./StudyLearningCompass"));
+const StudyNotepad = lazy(() => import("./StudyNotepad"));
+const StudyOpenAttention = lazy(() => import("./StudyOpenAttention"));
 
 type OfficeCategory = "review" | "corpus" | "vessel" | "runtime" | "codex" | "history";
 type OfficeTarget = { tab?: string; category?: OfficeCategory; selectedReviewKey?: string; domId?: string; helper?: string };
@@ -719,6 +723,8 @@ function App() {
   const [studyMaterials, setStudyMaterials] = useState<Dict[]>([]);
   const [studySessions, setStudySessions] = useState<Dict[]>([]);
   const [studySession, setStudySession] = useState<Dict | null>(null);
+  const [studyOpenAttention, setStudyOpenAttention] = useState<Dict[]>([]);
+  const [studyLearningCompass, setStudyLearningCompass] = useState<Dict[]>([]);
   const [studyActionResult, setStudyActionResult] = useState<Dict | null>(null);
   const [studyConceptId, setStudyConceptId] = useState("");
   const [studyDraft, setStudyDraft] = useState<Record<string, string>>({
@@ -2873,14 +2879,18 @@ function App() {
   }
 
   async function refreshStudyWorkspace(preferredSessionId?: number) {
-    const [status, materials, sessions] = await Promise.all([
+    const [status, materials, sessions, attention, compass] = await Promise.all([
       api<Dict>("/api/study/status"),
       api<{ items: Dict[] }>("/api/study/materials?limit=500"),
-      api<{ items: Dict[] }>("/api/study/sessions?limit=40")
+      api<{ items: Dict[] }>("/api/study/sessions?limit=40"),
+      api<{ items: Dict[] }>("/api/study/attention?limit=100"),
+      api<{ items: Dict[] }>("/api/study/compass?limit=100")
     ]);
     setStudyStatus(status);
     setStudyMaterials(materials.items || []);
     setStudySessions(sessions.items || []);
+    setStudyOpenAttention(attention.items || []);
+    setStudyLearningCompass(compass.items || []);
     const currentId = preferredSessionId || Number(safeJsonObject(studySession?.item).id || 0);
     if (currentId) {
       const detail = await api<Dict>(`/api/study/sessions/${currentId}`);
@@ -2900,6 +2910,43 @@ function App() {
     if (!id) return;
     setStudySession(await api<Dict>(`/api/study/sessions/${id}`));
     await refreshStudyWorkspace(id);
+    window.requestAnimationFrame(() => document.getElementById("active-study-session")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  async function openLearningCompassGoal(item: Dict) {
+    const goalId = Number(item.id || 0);
+    if (!goalId) return;
+    const result = await api<Dict>("/api/study/compass/start", {
+      method: "POST",
+      body: JSON.stringify({ goal_id: goalId })
+    });
+    setStudyActionResult(result);
+    setStudyLearningCompass((result.items || []) as Dict[]);
+    const session = safeJsonObject(result.session);
+    const sessionId = Number(safeJsonObject(session.item).id || 0);
+    if (sessionId) {
+      setStudySession(session);
+      await refreshStudyWorkspace(sessionId);
+      window.requestAnimationFrame(() => document.getElementById("active-study-session")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }
+
+  function acceptLearningCompassUpdate(result: Dict) {
+    setStudyLearningCompass((result.items || []) as Dict[]);
+    setStudyActionResult({
+      status: result.status,
+      updated_goal_id: result.updated_goal_id,
+      grading_used: result.grading_used,
+      performance_required: result.performance_required,
+    });
+    api<Dict>("/api/study/status").then(setStudyStatus).catch(() => undefined);
+  }
+
+  function selectStudyMaterial(item: Dict) {
+    const id = text(item.id);
+    if (!id) return;
+    setStudyConceptId(id);
+    window.requestAnimationFrame(() => document.getElementById("study-desk")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
   async function startStudyWorkspaceSession() {
@@ -2969,6 +3016,34 @@ function App() {
     setStudyAnswers((values) => ({ ...values, [text(questionId)]: "" }));
     await refreshStudyWorkspace(Number(safeJsonObject(result.item).id || 0));
     api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100").then((data) => setComprehensionConcepts(data.items || [])).catch(() => undefined);
+  }
+
+  function acceptStudyNotepadUpdate(result: Dict) {
+    const note = safeJsonObject(result.item);
+    setStudyActionResult({
+      status: result.status,
+      message: result.message,
+      created: result.created,
+      note_kind: note.note_kind,
+      clarification_state: note.clarification_state,
+      memory_write_active: result.memory_write_active,
+      hidden_retention_allowed: result.hidden_retention_allowed,
+    });
+    const session = safeJsonObject(result.session);
+    if (session.item) {
+      setStudySession(session);
+      const item = safeJsonObject(session.item);
+      setStudyDraft((draft) => ({
+        ...draft,
+        current_understanding: text(item.current_understanding),
+        connections: ((item.connections || []) as unknown[]).map(text).join("\n"),
+        uncertainties: ((item.uncertainties || []) as unknown[]).map(text).join("\n"),
+      }));
+    }
+    api<Dict>("/api/study/status").then(setStudyStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/study/sessions?limit=40").then((data) => setStudySessions(data.items || [])).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/study/attention?limit=100").then((data) => setStudyOpenAttention(data.items || [])).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/study/compass?limit=100").then((data) => setStudyLearningCompass(data.items || [])).catch(() => undefined);
   }
 
   async function refreshDreamLifecycle() {
@@ -6271,6 +6346,8 @@ function App() {
                   <span>{friendlyStatus(studyStatus?.status || "not checked")}</span>
                   <span>materials: {text(studyStatus?.eligible_material_count ?? studyMaterials.length)}</span>
                   <span>active: {text(studyStatus?.active_count ?? 0)}</span>
+                  <span>notes: {text(studyStatus?.note_count ?? 0)}</span>
+                  <span>clarifications: {text(studyStatus?.open_clarification_count ?? 0)}</span>
                   <span>open questions: {text(studyStatus?.open_question_count ?? 0)}</span>
                   <span>pass / fail: not used</span>
                   <span>hidden retention: blocked</span>
@@ -6292,20 +6369,43 @@ function App() {
               </div>
             </section>
 
-            <SplitView
-              left={<Panel title="Open a Study Session">
-                <label>
-                  <span>Approved knowledge</span>
-                  <select value={studyConceptId} onChange={(event) => setStudyConceptId(event.target.value)}>
-                    <option value="">Choose an approved concept</option>
-                    {studyMaterials.map((item) => (
-                      <option key={`study-concept-${text(item.id)}`} value={text(item.id)}>
-                        {text(item.title)}{item.domain ? ` — ${text(item.domain)}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  {!studyMaterials.length ? <span className="fieldHint">No approved Study material is currently available.</span> : null}
-                </label>
+            <Suspense fallback={<Panel title="Learning Compass"><p className="plainHelp">Opening the next learning directions...</p></Panel>}>
+              <StudyLearningCompass
+                items={studyLearningCompass}
+                onOpenGoal={openLearningCompassGoal}
+                onUpdated={acceptLearningCompassUpdate}
+              />
+            </Suspense>
+
+            <Suspense fallback={<Panel title="Open Study Notes & Questions"><p className="plainHelp">Checking what is still waiting...</p></Panel>}>
+              <StudyOpenAttention items={studyOpenAttention} onOpenSession={openStudySession} />
+            </Suspense>
+
+            <Suspense fallback={<Panel title="Bookshelf"><p className="plainHelp">Opening the Study shelves...</p></Panel>}>
+              <StudyLibrary
+                materials={studyMaterials}
+                sessions={studySessions}
+                selectedConceptId={studyConceptId}
+                onSelectMaterial={selectStudyMaterial}
+                onOpenSession={openStudySession}
+              />
+            </Suspense>
+
+            <section id="study-desk" className="studyDeskSection">
+              <Panel title="Study Desk">
+                {studyConceptId ? (() => {
+                  const selected = studyMaterials.find((item) => text(item.id) === studyConceptId);
+                  return selected ? (
+                    <article className="studyDeskMaterial">
+                      <div>
+                        <span className="modeLine">selected approved knowledge</span>
+                        <strong>{text(selected.title)}</strong>
+                        <p>{text(selected.central_claim || "Source-linked material ready for deliberate study.")}</p>
+                      </div>
+                      <div className="chips"><span>{text(selected.domain || "cross-subject")}</span><span>approved source</span></div>
+                    </article>
+                  ) : null;
+                })() : <p className="emptyState">Choose a material from the Bookshelf or Learning Queue. Only that material will be placed on the desk.</p>}
                 <label>
                   <span>Session title</span>
                   <input value={studyDraft.title} onChange={(event) => setStudyDraft({ ...studyDraft, title: event.target.value })} placeholder="Optional study title" />
@@ -6318,8 +6418,11 @@ function App() {
                   <button className="primary" onClick={startStudyWorkspaceSession} disabled={!studyConceptId}>Begin Study</button>
                   <button onClick={() => refreshStudyWorkspace().catch(() => undefined)}>Refresh</button>
                 </div>
-              </Panel>}
-              right={<Panel title="Recent Study Sessions">
+              </Panel>
+            </section>
+
+            <details className="panel studyRecentSessions">
+              <summary>Recent Study Sessions ({studySessions.length})</summary>
                 <div className="list compactList">
                   {studySessions.map((item) => (
                     <article className="packetCard" key={`study-session-${text(item.id)}`}>
@@ -6333,17 +6436,16 @@ function App() {
                   ))}
                   {!studySessions.length ? <p className="emptyState">No Study sessions yet. Nothing is generated merely to fill the shelf.</p> : null}
                 </div>
-              </Panel>}
-            />
+            </details>
 
             {studySession ? (
-              <>
+              <section id="active-study-session" className="activeStudySession">
                 <Panel title={text(safeJsonObject(studySession.item).title || "Current Study Session")}>
                   <div className="chips">
                     <span>{friendlyStatus(safeJsonObject(studySession.item).status)}</span>
                     <span>approved sources only</span>
                     <span>learning evidence: descriptive</span>
-                    <span>memory write: blocked</span>
+                    <span>hidden memory writing: blocked</span>
                   </div>
                   <div className="studyReflectionGrid">
                     <label className="wideEvidenceField">
@@ -6367,8 +6469,13 @@ function App() {
                   </div>
                 </Panel>
 
+                <Suspense fallback={<Panel title="Selene's Notepad"><p className="plainHelp">Opening the Study notepad...</p></Panel>}>
+                  <StudyNotepad session={studySession} onUpdated={acceptStudyNotepadUpdate} />
+                </Suspense>
+
                 <SplitView
-                  left={<Panel title="Selene's Questions">
+                  left={<Panel title="Form a Question Directly">
+                    <p className="plainHelp">Use this when the question is already present. An unclear feeling can remain in the Clarification Lane until its words arrive.</p>
                     <label>
                       <span>Question state</span>
                       <select value={studyDraft.question_formation} onChange={(event) => setStudyDraft({ ...studyDraft, question_formation: event.target.value })}>
@@ -6428,7 +6535,7 @@ function App() {
                   <p className="plainHelp">This records what was connected, reopened, or asked. It is not a grade and poor or incomplete results are not treated as Selene failing.</p>
                   <SimpleRecordList items={(studySession.learning_evidence || []) as Dict[]} titleField="evidence_kind" statusField="review_status" bodyField="summary" />
                 </Panel>
-              </>
+              </section>
             ) : null}
             <PlainResult value={studyActionResult} />
           </>

@@ -975,7 +975,7 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   align-items: center;
   background: color-mix(in srgb, var(--accent-2) 28%, transparent);
   border-radius: 999px;
-  color: var(--text);
+  color: var(--text-strong);
   display: inline-flex;
   font-size: 12px;
   justify-content: center;
@@ -1686,6 +1686,195 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .studyReflectionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 16px 0; }
 .studyReflectionGrid .wideEvidenceField { grid-column: 1 / -1; }
 
+.studyLibraryGrid {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
+}
+.studyQueuePanel,
+.studyBookshelfPanel { align-content: start; }
+.studyQueueList,
+.studyShelves,
+.studyShelfRows { display: grid; gap: 8px; }
+.studyQueueRow,
+.studyMaterialSummary,
+.studyShelfHeader {
+  align-items: center;
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  color: var(--text);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+.studyQueueRow:hover,
+.studyMaterialSummary:hover,
+.studyShelfHeader:hover { border-color: var(--accent); }
+.studyQueueRow > span,
+.studyMaterialSummary > span { display: grid; gap: 3px; min-width: 0; }
+.studyQueueRow strong,
+.studyMaterialSummary strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.studyQueueRow small,
+.studyMaterialSummary small,
+.studyShelfHeader small { color: var(--text-muted); }
+.studyQueueRow em,
+.studyState {
+  color: var(--accent-2);
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+.studyShelfFilters {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+}
+.studyShelf { border: 1px solid var(--soft-border); border-radius: 8px; overflow: hidden; }
+.studyShelfHeader { border: 0; border-radius: 0; font-weight: 800; }
+.studyShelfRows { border-top: 1px solid var(--soft-border); padding: 8px; }
+.studyMaterialRow { background: color-mix(in srgb, var(--panel-bg) 88%, transparent); border: 1px solid transparent; border-radius: 8px; content-visibility: auto; contain-intrinsic-size: auto 54px; }
+.studyMaterialRow.selected { border-color: var(--accent); }
+.studyMaterialSummary { background: transparent; border: 0; }
+.studyMaterialDetail { border-top: 1px solid var(--soft-border); display: grid; gap: 10px; padding: 0 12px 12px; }
+.studyMaterialDetail p { color: var(--text-muted); line-height: 1.5; margin: 10px 0 0; }
+.studySourceRefs { background: var(--front-control-bg); }
+.studySourceRefs ul { color: var(--text-muted); display: grid; gap: 6px; margin-bottom: 0; overflow-wrap: anywhere; padding-left: 22px; }
+.studyState.questions { color: var(--accent-3); }
+.studyState.clarification { color: #e8bd76; }
+.studyState.revisit { color: #e8bd76; }
+.studyState.studied { color: var(--text-muted); }
+.studyDeskSection { scroll-margin-top: 18px; }
+.studyDeskMaterial {
+  align-items: start;
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 14px;
+}
+.studyDeskMaterial > div:first-child { display: grid; gap: 5px; }
+.studyDeskMaterial p { color: var(--text-muted); margin: 0; }
+.studyRecentSessions { margin: 0; }
+.studyRecentSessions > summary { padding: 4px; }
+.studyRecentSessions[open] > summary { margin-bottom: 8px; }
+.activeStudySession { display: grid; gap: 14px; scroll-margin-top: 18px; }
+.studyNotepadGrid {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+}
+.studyNotepadPanel,
+.studyClarificationPanel { align-content: start; }
+.studyNoteActions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.studyNotebookMessage {
+  background: color-mix(in srgb, var(--accent-3) 12%, var(--panel-bg));
+  border: 1px solid color-mix(in srgb, var(--accent-3) 40%, var(--soft-border));
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+.studyNoteStack,
+.studyClarificationStack { display: grid; gap: 10px; }
+.studyNoteCard,
+.studyClarificationCard {
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+}
+.studyNoteVoice { color: var(--text-strong); font-size: 15px; line-height: 1.58; }
+.studyNoteBasis { background: var(--front-control-bg); }
+.studyNoteBasis p { margin-top: 10px; }
+.studyNoteBasis ul { color: var(--text-muted); display: grid; gap: 6px; margin-bottom: 0; overflow-wrap: anywhere; padding-left: 22px; }
+.studyQuestionComposer { display: grid; gap: 10px; }
+.studyOpenAttention { border-color: color-mix(in srgb, var(--accent-3) 54%, var(--border)); }
+.studyOpenAttentionList { display: grid; gap: 10px; }
+.studyOpenAttentionCard {
+  background: color-mix(in srgb, var(--accent-3) 8%, var(--row-bg));
+  border: 1px solid color-mix(in srgb, var(--accent-3) 35%, var(--soft-border));
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+}
+
+.studyLearningCompass { border-color: color-mix(in srgb, var(--accent) 58%, var(--border)); }
+.studyCompassList { display: grid; gap: 12px; }
+.studyCompassCard {
+  background: color-mix(in srgb, var(--accent) 5%, var(--row-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--soft-border));
+  border-radius: 10px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 560px;
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+}
+.studyCompassCard.compassState-connected_for_now {
+  background: color-mix(in srgb, var(--accent-3) 8%, var(--row-bg));
+  border-color: color-mix(in srgb, var(--accent-3) 36%, var(--soft-border));
+}
+.studyCompassHeading { align-items: start; display: grid; gap: 12px; grid-template-columns: 38px minmax(0, 1fr); }
+.studyCompassNumber {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 18%, var(--front-control-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 44%, var(--soft-border));
+  border-radius: 50%;
+  color: var(--text-strong);
+  display: inline-flex;
+  font-weight: 900;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+.studyCompassPath,
+.studyCompassReflection { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.studyCompassPath > div,
+.studyCompassAnswerState,
+.studyCompassUnclear,
+.studyCompassConnected,
+.studyCompassConnections {
+  background: var(--front-control-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  padding: 11px 12px;
+}
+.studyCompassPath span,
+.studyCompassAnswerState > span,
+.studyCompassUnclear > span,
+.studyCompassConnected > span,
+.studyCompassConnections > span {
+  color: var(--accent-2);
+  display: block;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .02em;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+.studyCompassPath p,
+.studyCompassAnswerState p,
+.studyCompassUnclear p,
+.studyCompassConnected p { line-height: 1.5; margin: 0; }
+.studyCompassAnswerState small { color: var(--text-muted); display: block; margin-top: 7px; }
+.studyCompassUnclear { border-color: color-mix(in srgb, #e8bd76 45%, var(--soft-border)); }
+.studyCompassConnected { border-color: color-mix(in srgb, var(--accent-3) 42%, var(--soft-border)); }
+.studyCompassConnections ul { display: grid; gap: 6px; margin-bottom: 0; padding-left: 20px; }
+.studyCompassWhy { background: color-mix(in srgb, var(--panel-bg) 82%, transparent); }
+.studyCompassWhy p { color: var(--text-muted); margin: 10px 0 0; }
+.studyCompassWhy b { color: var(--text-strong); display: block; margin-bottom: 3px; }
+.studyCompassActions { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
 .reviewDeskCard { border-color: var(--accent); }
 .officeTargetMessage {
   background: color-mix(in srgb, var(--accent-3) 12%, var(--panel-bg));
@@ -1771,8 +1960,9 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
     justify-content: center;
   }
   .topLocks { grid-column: 1 / -1; }
-  .settingRow, .summaryGrid, .split, .aleksReviewGrid, .officeGrid, .workbenchDetailGrid, .settingsHomeGrid, .tendrilPath, .studyIntroGrid, .studyReflectionGrid { grid-template-columns: 1fr; }
+  .settingRow, .summaryGrid, .split, .aleksReviewGrid, .officeGrid, .workbenchDetailGrid, .settingsHomeGrid, .tendrilPath, .studyIntroGrid, .studyReflectionGrid, .studyLibraryGrid, .studyShelfFilters, .studyNotepadGrid, .studyNoteActions, .studyCompassPath, .studyCompassReflection, .studyCompassActions { grid-template-columns: 1fr; }
   .studyReflectionGrid .wideEvidenceField { grid-column: auto; }
+  .studyDeskMaterial { display: grid; }
   .officeOrbit,
   .memoryNeuronMap,
   .libraryConstellation {
