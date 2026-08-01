@@ -8,6 +8,7 @@ from selene.contextual_speech import (
     apply_contextual_intent,
     contextual_response_seed,
     inspect_contextual_follow_up,
+    session_fact_response_seed,
 )
 
 
@@ -20,6 +21,26 @@ def test_social_summary_yields_when_the_session_contains_substantive_work():
     )
 
     assert result == ""
+
+
+def test_session_fact_callback_answers_the_visible_details_without_memory():
+    spine = {
+        "session_facts": [
+            {"kind": "dimensions", "text": "The dimensions are six feet by eight feet."},
+            {"kind": "count", "text": "There are two chairs."},
+        ],
+        "relevant_session_facts": [
+            {"kind": "dimensions", "text": "The dimensions are six feet by eight feet."},
+            {"kind": "count", "text": "There are two chairs."},
+        ],
+    }
+
+    response = session_fact_response_seed(
+        "What were the dimensions and how many chairs did I say?",
+        spine,
+    )
+
+    assert response == "The dimensions are six feet by eight feet. There are two chairs."
 
 
 def test_incomplete_landmarks_are_not_used_for_callbacks_or_summaries():

@@ -57,6 +57,36 @@ def test_conversation_spine_collects_one_shared_grounding_packet():
     assert spine["authority_change"] is False
 
 
+def test_conversation_spine_carries_correctable_user_facts_only_within_the_session():
+    prompt = "What were the porch dimensions and how many chairs did I say?"
+    spine = build_conversation_spine(
+        {
+            "session_id": 31,
+            "prompt": prompt,
+            "intent_decision": classify_chat_intent(prompt),
+            "dialogue_workspace": _dialogue(prompt, topic="porch layout"),
+            "conversation_events": [
+                {
+                    "id": 1,
+                    "role": "user",
+                    "preview": "The porch is six feet by eight feet and I want two chairs near the outlet.",
+                },
+                {
+                    "id": 2,
+                    "role": "user",
+                    "preview": "Correction: the outlet is beside the chairs. Keep the garden side open.",
+                },
+            ],
+        }
+    )
+
+    fact_text = " ".join(item["text"] for item in spine["relevant_session_facts"])
+    assert "six feet by eight feet" in fact_text
+    assert "two chairs" in fact_text
+    assert spine["session_facts_are_durable_memory"] is False
+    assert spine["memory_write_active"] is False
+
+
 def test_conversation_spine_exposes_the_dialogue_workspaces_shared_thread_braid():
     prompt = "Plan the garden. Then move to irrigation. Back to the garden: use that to revise it."
     dialogue = _dialogue(prompt, topic="garden")

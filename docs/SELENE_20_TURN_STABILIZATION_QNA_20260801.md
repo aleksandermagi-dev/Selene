@@ -203,3 +203,53 @@ Full stabilization report:
 Further teaching should not be used to conceal these routing and completion
 defects. The existing knowledge can be expanded after the answer pathway reliably
 uses the right source for the right question.
+
+## Bounded Repair Pass
+
+Status: implemented and proportionally verified on August 1, 2026
+
+The five repair steps taken from this diagnostic are now connected:
+
+1. Approved knowledge needs strong subject alignment. Weak incidental words such
+   as `inside`, `current`, or conversational `fair point` cannot redirect an
+   ordinary request by themselves.
+2. Verified math recognizes bounded number-word arithmetic and equal-part
+   remainder questions. Arithmetic owns its exact result and arithmetic `why`;
+   a genuinely separate conceptual obligation may still be coordinated beside it.
+3. The Conversation Spine derives small answerable facts from visible user turns,
+   applies later corrections, and uses them for callbacks, plan updates, and
+   requested summaries. This fact braid is current-session state, not durable
+   memory.
+4. The one-pass completion layer can receive the exact missing obligation and
+   matching current-session fact. It remains limited to one non-recursive pass and
+   cannot invent facts or change memory, identity, personality, governance, or
+   authority.
+5. `sardine can` carries a supported crowded-space interpretation into visible
+   speech; an explicit small-joke request is treated as a one-turn answer
+   obligation; and ordinary possible-but-unchecked situations use natural
+   uncertainty instead of academic evidence boilerplate.
+
+Proportional evidence:
+
+- 222 broader Chat, completion, spine, contextual speech, figurative, math,
+  Answer Engine, and comprehension tests passed;
+- a fresh eight-turn diagnostic replay covered number-word math, a corrected
+  porch layout, exact fact callback, three-point summary, ordinary uncertainty,
+  figurative interpretation, and one brief joke with a return to topic;
+- the full repository run reached 1,283 passes with one unrelated Windows mobile
+  HTTP connection-abort race; that exact mobile-limit test passed immediately on
+  isolated rerun;
+- `npm run build`, `npm run clean:check`, `python -m selene validate`, and
+  `git diff --check` passed; line-ending notices remain the expected Windows
+  LF/CRLF warnings.
+- the core sidecar and NSIS installer rebuilt and passed package privacy,
+  installed-startup, health, transfer-state, and boundary verification;
+- the configured database was snapshotted before reinstall at
+  `C:\Users\aleks\AppData\Local\Selene\data\db-inspection-snapshots\selene_inspection_20260801_153951.sqlite3`;
+- silent reinstall completed successfully, and installed diagnostic sessions
+  181 and 182 passed the repaired-path replay and final corrected-plan
+  punctuation check with no retained-memory write or memory proposal.
+
+No teaching approval, retained-memory write, identity/personality/governance
+mutation, model training, provider call, autonomy expansion, or stressful live
+probe was used by this repair pass.

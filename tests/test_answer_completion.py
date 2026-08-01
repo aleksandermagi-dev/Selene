@@ -158,6 +158,39 @@ def test_correction_only_gap_does_not_trigger_empty_completion_pass():
     assert result["authority_change"] is False
 
 
+def test_one_pass_completion_uses_the_exact_missing_obligation_and_session_fact():
+    result = build_bounded_answer_completion(
+        {
+            "prompt": "What were the porch dimensions and how many chairs did I say?",
+            "content_seed": "The porch details are still in this session.",
+            "response_obligations": [
+                {
+                    "id": "details",
+                    "kind": "direct_question",
+                    "source_text": "What were the porch dimensions and how many chairs did I say?",
+                    "coverage_terms": ["porch", "dimensions", "chairs"],
+                    "required": True,
+                }
+            ],
+            "conversation_spine": {
+                "relevant_session_facts": [
+                    {"kind": "dimensions", "text": "The porch dimensions are six feet by eight feet."},
+                    {"kind": "count", "text": "There are two chairs."},
+                ]
+            },
+        }
+    )
+
+    assert result["attempted"] is True
+    assert result["accepted"] is True
+    assert result["newly_addressed_obligation_ids"] == ["details"]
+    assert "six feet by eight feet" in result["content_seed"]
+    assert "two chairs" in result["content_seed"]
+    assert result["resolutions"][0]["resolution"] == "current_session_fact"
+    assert result["count"] == 1
+    assert result["recursion_allowed"] is False
+
+
 def test_unsupported_part_is_named_instead_of_invented():
     obligation = {
         "id": "temperature",

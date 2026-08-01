@@ -830,13 +830,23 @@ def _answer_eligible_knowledge_items(
         prompt,
         flags=re.IGNORECASE,
     )
+    subject_query = re.sub(
+        r"^(?:yes|yeah|no|okay|alright|exactly|right|fair point|good point|got it|i see)\b[,:.!?\s-]*",
+        " ",
+        subject_query,
+        flags=re.IGNORECASE,
+    )
     query_terms = set(_terms(subject_query))
     generic = {
         "answer", "another", "apply", "back", "but", "cannot", "change", "changed", "check",
         "compare", "conversation", "different", "do", "example", "explain", "first", "give",
         "handle", "help", "idea", "language", "lesson", "lessons", "make", "material", "most",
         "new", "next", "one", "ordinary", "practical", "question", "reason", "return", "review",
-        "reviewed", "say", "should", "short", "step", "thing", "things", "use", "version", "why",
+        "reviewed", "say", "should", "short", "simple", "student", "learner", "young", "step",
+        "thing", "things", "use", "version", "why",
+    }
+    weak_subject_terms = {
+        "available", "current", "equal", "inside", "outside", "possible", "same",
     }
     eligible: list[dict[str, Any]] = []
     for item in items:
@@ -885,10 +895,41 @@ def _answer_eligible_knowledge_items(
         # Approved knowledge may answer only when the prompt names the
         # concept's subject. Peripheral overlap in claims or examples is not
         # enough to redirect an otherwise ordinary question.
-        if not subject_overlap:
+        strong_subject_overlap = subject_overlap - weak_subject_terms
+        subject_query_terms = query_terms - generic - weak_subject_terms
+        explicit_single_focus = bool(
+            len(strong_subject_overlap) == 1
+            and any(
+                re.search(
+                    rf"\b(?:explain|define|describe|understand|what\s+is|how\s+does|why\s+does|tell\s+me\s+about)"
+                    rf"\b.{{0,45}}\b{re.escape(term)}\b",
+                    subject_query,
+                    flags=re.IGNORECASE,
+                )
+                for term in strong_subject_overlap
+            )
+        )
+        sufficiently_specific = bool(
+            len(strong_subject_overlap) >= 2
+            or (
+                len(strong_subject_overlap) == 1
+                and (
+                    len(subject_query_terms) <= 2
+                    or explicit_single_focus
+                    or len(distinctive_overlap - weak_subject_terms) >= 2
+                )
+            )
+        )
+        if not sufficiently_specific:
             continue
         item["answer_alignment_terms"] = sorted(distinctive_overlap)
-        item["answer_subject_terms"] = sorted(subject_overlap)
+        item["answer_subject_terms"] = sorted(strong_subject_overlap)
+        item["answer_subject_alignment"] = {
+            "strong_term_count": len(strong_subject_overlap),
+            "prompt_subject_term_count": len(subject_query_terms),
+            "explicit_single_focus": explicit_single_focus,
+            "peripheral_terms_ignored": sorted(subject_overlap & weak_subject_terms),
+        }
         eligible.append(item)
     return eligible
 

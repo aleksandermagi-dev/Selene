@@ -64,6 +64,34 @@ def test_answer_knowledge_requires_named_subject_not_generic_or_format_overlap()
     assert relevant[0]["answer_subject_terms"] == ["orbital", "shape"]
 
 
+def test_weak_incidental_subject_word_does_not_redirect_an_ordinary_plan():
+    intent = {
+        "intent": "reasoning",
+        "reasoning_requested": True,
+        "dialogue_acts": ["question"],
+    }
+    capacity_item = {
+        "title": "Container capacity differs from amount currently inside",
+        "domain": "measurement",
+        "concept_key": "container_capacity_inside",
+        "central_claim": "Capacity and current liquid volume are different quantities.",
+        "principles": [],
+        "relationships": [],
+        "matched_terms": ["inside", "current"],
+    }
+
+    eligible = _answer_eligible_knowledge_items(
+        (
+            "The porch is six feet by eight feet. Put two chairs beside the outlet "
+            "and keep the garden side open. What layout would you use?"
+        ),
+        intent,
+        [capacity_item],
+    )
+
+    assert eligible == []
+
+
 def test_science_multi_part_synthesis_keeps_topic_continuity_and_builds_bounded_application():
     observation = {
         "id": 48,

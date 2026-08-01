@@ -324,11 +324,18 @@ def _looks_like_math(raw: str, routing_text: str) -> bool:
         return True
     if _has_any(routing_text, ("multiply", "divide")) and re.search(r"\d", raw):
         return True
+    number = r"(?:\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
     if re.search(
-        r"\b\d+(?:\.\d+)?\s+(?:plus|minus|times|multiplied\s+by|divided\s+by)\s+"
-        r"\d+(?:\.\d+)?\b",
+        rf"\b{number}\s+(?:plus|minus|times|multiplied\s+by|divided\s+by)\s+"
+        rf"{number}\b",
         raw,
         flags=re.IGNORECASE,
+    ):
+        return True
+    if (
+        re.search(r"\b(?:fraction|part)\b", raw, flags=re.IGNORECASE)
+        and re.search(r"\b(?:equal\s+(?:slices?|parts?|pieces?))\b", raw, flags=re.IGNORECASE)
+        and re.search(r"\b(?:remain|remains|remaining|left)\b", raw, flags=re.IGNORECASE)
     ):
         return True
     return bool(re.search(r"\b\d+(?:\.\d+)?\s*(?:\+|-|\*|/|=|%|\^|×|÷)\s*\d", raw))

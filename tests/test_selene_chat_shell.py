@@ -2996,8 +2996,9 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
     assert content_light["intent_decision"]["intent"] == "direct_conversation"
     assert content_light["native_language_organ"]["discourse_plan"]["content_light_realization"]["whole_response_template_selected"] is False
     assert self_state["self_state"]["response_realization"]["emotion_word_invented"] is False
-    assert "do not have a grounded factual answer" in uncertainty["candidate_text"].lower()
-    assert "attributed source or approved teaching item" in uncertainty["candidate_text"].lower()
+    assert "have not chosen" in uncertainty["candidate_text"].lower()
+    assert "compare options" in uncertainty["candidate_text"].lower()
+    assert "attributed source" not in uncertainty["candidate_text"].lower()
     assert not any(color in uncertainty["candidate_text"].lower() for color in ("red", "blue", "green", "white", "black"))
     assert correction["native_language_organ"]["discourse_plan"]["social_act_plan"]["intent"] == "receive_correction"
     assert gratitude["native_language_organ"]["discourse_plan"]["social_act_realization"]["whole_response_template_selected"] is False
@@ -3006,6 +3007,63 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
     for result in results:
         assert result["candidate_text"]
         assert result["native_language_organ"]["version"] == "v24_contextual_composition_and_modulation"
+
+
+def test_short_diagnostic_replay_repairs_math_session_facts_uncertainty_and_play(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        "What is two plus two, and why?",
+        (
+            "The porch is six feet by eight feet. I want two chairs near the outlet, "
+            "and keep the garden side open."
+        ),
+        "Correction: the outlet is beside the chairs. Update the cord plan with that.",
+        "What were the porch dimensions and how many chairs did I say?",
+        "Summarize our three settled porch points.",
+        "The blue mug may be on the porch, but neither of us has checked. Do we know where it is?",
+        "When I say this porch feels like a sardine can, what do I mean?",
+        "Give me one little joke about our porch-planning committee, then return to the layout.",
+    ]
+    results = []
+    session_id = None
+    for index, prompt in enumerate(prompts):
+        payload = {"text": prompt}
+        if index == 0:
+            payload["qa_probe"] = True
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    math, _, correction, callback, summary, uncertainty, figurative, humor = results
+    assert "verified_math" in {
+        math["answer_engine_support"]["selected_domain"],
+        *math["answer_engine_support"].get("coordinated_domains", []),
+    }
+    assert "4" in math["candidate_text"]
+    assert "addition" in math["candidate_text"].lower()
+    assert "outlet is beside the chairs" in correction["candidate_text"].lower()
+    assert "secure it away from the walking path" in correction["candidate_text"].lower()
+    assert "six feet by eight feet" in callback["candidate_text"].lower()
+    assert "two chairs" in callback["candidate_text"].lower()
+    assert all(f"{index}." in summary["candidate_text"] for index in (1, 2, 3)), summary["candidate_text"]
+    assert "4." not in summary["candidate_text"]
+    assert "garden side open" in summary["candidate_text"].lower()
+    assert "possible rather than known" in uncertainty["candidate_text"].lower()
+    assert "cramped or overcrowded" in figurative["candidate_text"].lower()
+    assert "compare the relationship" not in figurative["candidate_text"].lower()
+    assert "approved a motion" in humor["candidate_text"].lower()
+    assert "back to the layout" in humor["candidate_text"].lower()
+    assert "the our" not in humor["candidate_text"].lower()
+    for result in results:
+        assert result["diagnostic_only"] is True
+        assert result["reviewed_memory_write_occurred"] is False
+        assert result["conversational_memory_proposal_created"] is False
+        _assert_locked(result)
 
 
 def test_gentle_long_session_returns_to_a_visible_recommendation_after_intervening_topics(tmp_path):

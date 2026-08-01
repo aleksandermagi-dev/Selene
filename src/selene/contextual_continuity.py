@@ -348,6 +348,13 @@ def _humor_decision(
     shared_joke: dict[str, Any],
     affect: dict[str, Any],
 ) -> dict[str, Any]:
+    explicit_humor_request = bool(
+        re.search(
+            r"\b(?:give|tell|make|write|share)\s+(?:me\s+)?(?:one\s+|a\s+|an\s+)?"
+            r"(?:little\s+|small\s+|quick\s+|short\s+)?(?:joke|pun)\b",
+            lower,
+        )
+    )
     user_opened_play = _contains_any(lower, _PLAY_CUES)
     tender = _contains_any(lower, _TENDER_CUES)
     affect_humor = str((affect.get("dimensions") or {}).get("humor") or "")
@@ -357,6 +364,9 @@ def _humor_decision(
     elif affect_humor in {"avoid", "avoid_unless_context_reopens"} and not user_opened_play:
         posture = "hold"
         reason = "Current-session affect guidance calls for restraint."
+    elif explicit_humor_request:
+        posture = "requested_once"
+        reason = "The user explicitly requested one bounded humorous aside."
     elif user_opened_play:
         posture = "available_not_required"
         reason = "The user visibly opened a playful register in this turn."
@@ -368,13 +378,14 @@ def _humor_decision(
         "reason": reason,
         "tender_context": tender,
         "user_opened_play": user_opened_play,
+        "explicit_humor_request": explicit_humor_request,
         "shared_joke_available": shared_joke.get("available") is True,
         "shared_joke_may_surface": (
             shared_joke.get("available") is True
             and user_opened_play
             and posture == "available_not_required"
         ),
-        "humor_required": False,
+        "humor_required": explicit_humor_request,
         "one_fitting_turn_then_release": True,
     }
 

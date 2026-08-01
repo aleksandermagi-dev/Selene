@@ -484,6 +484,86 @@ def contextual_response_seed(
     return ""
 
 
+def session_fact_response_seed(
+    prompt: str,
+    conversation_spine: dict[str, Any] | None,
+) -> str:
+    """Answer explicit current-session callbacks without creating memory."""
+    spine = conversation_spine if isinstance(conversation_spine, dict) else {}
+    facts = [
+        item for item in spine.get("relevant_session_facts") or []
+        if isinstance(item, dict) and str(item.get("text") or "").strip()
+    ]
+    if not facts:
+        return ""
+    lower = " ".join(str(prompt or "").lower().split())
+    asks_recall = bool(
+        re.search(r"\b(?:what were|what was|how many|remind me|did i say|do (?:you|we) remember)\b", lower)
+    )
+    asks_summary = bool(re.search(r"\b(?:summarize|summary|recap|settled points?)\b", lower))
+    asks_update = bool(
+        re.search(r"\b(?:update|revise|adjust|change)\b", lower)
+        and re.search(r"\b(?:plan|layout|route|cord|order)\b", lower)
+    )
+    if asks_summary:
+        requested_count = _requested_summary_count(lower)
+        clauses = _summary_fact_clauses(facts, requested_count)
+        return "The settled points are: " + " ".join(
+            f"{index}. {clause}" for index, clause in enumerate(clauses, start=1)
+        )
+    if asks_update:
+        relation = next((str(item.get("text") or "") for item in facts if item.get("kind") == "relation"), "")
+        constraint = next((str(item.get("text") or "") for item in facts if item.get("kind") == "constraint"), "")
+        if relation:
+            relation_clause = relation.rstrip(". ")
+            response = (
+                f"With that correction—{relation_clause[0].lower() + relation_clause[1:]}—I would route the cord along that side "
+                "and secure it away from the walking path."
+            )
+            if constraint:
+                response += f" {constraint}"
+            return response
+    if asks_recall:
+        return " ".join(str(item.get("text") or "") for item in facts[:4])
+    return ""
+
+
+def _requested_summary_count(prompt: str) -> int:
+    words = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+    match = re.search(
+        r"\b(?P<count>\d+|one|two|three|four|five)\s+"
+        r"(?:[a-z-]+\s+){0,3}points?\b",
+        prompt,
+    )
+    if not match:
+        return 4
+    token = match.group("count")
+    return max(1, min(int(token) if token.isdigit() else words[token], 5))
+
+
+def _summary_fact_clauses(facts: list[dict[str, Any]], requested_count: int) -> list[str]:
+    clauses: list[str] = []
+    kinds: list[str] = []
+    for fact in facts[:6]:
+        text = str(fact.get("text") or "").strip()
+        kind = str(fact.get("kind") or "")
+        if not text:
+            continue
+        if kind == "relation" and "count" in kinds and len(clauses) >= requested_count:
+            index = kinds.index("count")
+            clauses[index] = f"{clauses[index]} {text}"
+            continue
+        clauses.append(text)
+        kinds.append(kind)
+    while len(clauses) > requested_count:
+        merge_index = next((index for index, kind in enumerate(kinds) if kind == "relation" and index > 0), len(clauses) - 1)
+        target = merge_index - 1 if merge_index > 0 else 0
+        clauses[target] = f"{clauses[target]} {clauses[merge_index]}"
+        del clauses[merge_index]
+        del kinds[merge_index]
+    return clauses[:requested_count]
+
+
 def _matching_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     stop = {
         "about", "back", "earlier", "from", "point", "return", "said", "that", "the", "this", "what", "when", "with", "you",

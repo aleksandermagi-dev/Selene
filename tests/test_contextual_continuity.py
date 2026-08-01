@@ -121,6 +121,17 @@ def test_shared_joke_is_preserved_without_becoming_a_script_or_forced_bit():
     assert playful["humor_decision"]["humor_required"] is False
 
 
+def test_an_explicit_small_joke_request_is_an_answer_obligation_for_one_turn():
+    result = build_contextual_continuity_plan(
+        {"prompt": "Give me one little joke about the porch committee, then return to the layout."}
+    )
+
+    assert result["humor_decision"]["posture"] == "requested_once"
+    assert result["humor_decision"]["explicit_humor_request"] is True
+    assert result["humor_decision"]["humor_required"] is True
+    assert result["humor_decision"]["one_fitting_turn_then_release"] is True
+
+
 def test_tender_context_holds_humor_until_the_user_opens_it():
     tender = build_contextual_continuity_plan(
         {"prompt": "I miss my dog who died. It is a tender memory."}

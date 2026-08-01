@@ -103,7 +103,16 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
             else f"{prompt} {source_text}",
             1800,
         )
-        if kind == "correction_update":
+        fact_fragment = _session_fact_fragment(obligation, spine)
+        if fact_fragment:
+            fragment, support_kind, source_class = (
+                fact_fragment,
+                "current_session_fact",
+                "conversation",
+            )
+        else:
+            fragment, support_kind, source_class = "", "", ""
+        if kind == "correction_update" and not fragment:
             continue
         knowledge_query = " ".join(
             part
@@ -114,9 +123,10 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
             )
             if part.strip()
         )
-        knowledge = _best_knowledge_item(knowledge_query, knowledge_items)
-        fragment, support_kind = _knowledge_fragment(obligation, knowledge) if knowledge else ("", "")
-        source_class = "approved_knowledge" if fragment else ""
+        knowledge = _best_knowledge_item(knowledge_query, knowledge_items) if not fragment else None
+        if knowledge:
+            fragment, support_kind = _knowledge_fragment(obligation, knowledge)
+            source_class = "approved_knowledge" if fragment else ""
         if not fragment and kind in {
             "comparison", "reason", "method", "choice_or_priority", "direct_request", "direct_question",
             "constraint_preservation", "limitation", "requested_output", "requested_section",
@@ -235,6 +245,37 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
             "unsupported_resolution_count": sum(1 for item in resolutions if item.get("unsupported") is True),
         }
     )
+
+
+def _session_fact_fragment(
+    obligation: dict[str, Any],
+    spine: dict[str, Any],
+) -> str:
+    facts = [
+        item for item in spine.get("relevant_session_facts") or []
+        if isinstance(item, dict) and str(item.get("text") or "").strip()
+    ]
+    if not facts:
+        return ""
+    query = " ".join(
+        str(value or "")
+        for value in (
+            obligation.get("source_text"),
+            obligation.get("parent_source_text"),
+            obligation.get("topic"),
+        )
+    )
+    query_terms = set(_terms(query))
+    kind = str(obligation.get("kind") or "")
+    selected = [
+        item for item in facts
+        if query_terms & set(_terms(str(item.get("text") or "")))
+    ]
+    if kind == "session_summary":
+        selected = facts
+    if not selected:
+        return ""
+    return " ".join(str(item.get("text") or "") for item in selected[:4])
 
 
 def _completion_semantic_unit(

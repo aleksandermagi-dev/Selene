@@ -137,6 +137,8 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
     ][-24:]
     relevant_landmarks = _relevant_landmarks(interpreted, session_landmarks)
+    session_facts = _session_facts(payload.get("conversation_events"), current_prompt=interpreted)
+    relevant_session_facts = _relevant_session_facts(interpreted, session_facts)
     resolved_reference = (
         pragmatic_plan.get("resolved_reference")
         if isinstance(pragmatic_plan.get("resolved_reference"), dict)
@@ -191,6 +193,12 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             f"{grounded_prompt} Relevant visible points from this session: {landmark_text}",
             3600,
         )
+    if relevant_session_facts:
+        fact_text = " ".join(str(item.get("text") or "") for item in relevant_session_facts[:6])
+        grounded_prompt = truncate(
+            f"{grounded_prompt} Relevant user-supplied facts from this session: {fact_text}",
+            4000,
+        )
     turn_id = "conversation-turn-" + sha256(
         f"{session_id}|{interpreted}|{previous['preview']}".encode("utf-8")
     ).hexdigest()[:16]
@@ -234,6 +242,9 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "selective_revision_active": epistemic_revision.get("detected") is True,
             "session_landmarks": session_landmarks,
             "relevant_session_landmarks": relevant_landmarks,
+            "session_facts": session_facts,
+            "relevant_session_facts": relevant_session_facts,
+            "session_facts_are_durable_memory": False,
             "open_obligations": obligations,
             "obligation_sequence": [str(item.get("id") or "") for item in obligations],
             "pragmatic_plan": pragmatic_plan,
@@ -264,6 +275,160 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "provenance_boundary": CONVERSATION_SPINE_BOUNDARY,
         }
     )
+
+
+_NUMBER_WORD = r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+
+
+def _session_facts(events: Any, *, current_prompt: str) -> list[dict[str, Any]]:
+    """Derive small answerable facts from visible user turns in this session only."""
+    source_events = [item for item in events or [] if isinstance(item, dict)][-16:]
+    user_events = [
+        (str(item.get("id") or index), str(item.get("preview") or ""))
+        for index, item in enumerate(source_events)
+        if str(item.get("role") or "") == "user" and str(item.get("preview") or "").strip()
+    ]
+    user_events.append(("current_prompt", current_prompt))
+    facts: list[dict[str, Any]] = []
+    for order, (event_id, text) in enumerate(user_events):
+        for fact in _extract_session_facts(text, event_id=event_id, order=order):
+            replacement_key = str(fact.get("replacement_key") or "")
+            if replacement_key:
+                facts = [item for item in facts if str(item.get("replacement_key") or "") != replacement_key]
+            duplicate_key = str(fact.get("fact_key") or "")
+            facts = [item for item in facts if str(item.get("fact_key") or "") != duplicate_key]
+            facts.append(fact)
+    return facts[-20:]
+
+
+def _extract_session_facts(text: str, *, event_id: str, order: int) -> list[dict[str, Any]]:
+    normalized = " ".join(str(text or "").replace("’", "'").split())
+    lower = normalized.lower()
+    if not normalized:
+        return []
+    facts: list[dict[str, Any]] = []
+
+    dimensions = re.search(
+        rf"\b(?P<left>{_NUMBER_WORD})\s*(?P<unit>feet|foot|ft)\s+by\s+"
+        rf"(?P<right>{_NUMBER_WORD})\s*(?:feet|foot|ft)?\b",
+        lower,
+        flags=re.IGNORECASE,
+    )
+    if dimensions:
+        left, right = dimensions.group("left"), dimensions.group("right")
+        facts.append(
+            _session_fact(
+                "dimensions",
+                f"The dimensions are {left} feet by {right} feet.",
+                f"dimensions:{left}:{right}",
+                "dimensions",
+                event_id,
+                order,
+            )
+        )
+
+    for match in re.finditer(
+        rf"\b(?P<count>{_NUMBER_WORD})\s+(?P<object>chairs?|seats?|tables?|doors?|windows?|outlets?)\b",
+        lower,
+        flags=re.IGNORECASE,
+    ):
+        count, obj = match.group("count"), match.group("object")
+        facts.append(
+            _session_fact(
+                "count",
+                f"There are {count} {obj}.",
+                f"count:{obj}:{count}",
+                f"count:{obj.rstrip('s')}",
+                event_id,
+                order,
+            )
+        )
+
+    relation = re.search(
+        r"\b(?:the\s+)?(?P<subject>[a-z][a-z-]{2,30})\s+(?:is|sits|stands)\s+"
+        r"(?P<relation>beside|next\s+to|near|behind|in\s+front\s+of|left\s+of|right\s+of)\s+"
+        r"(?:the\s+)?(?P<object>[a-z][a-z-]{2,30})\b",
+        lower,
+        flags=re.IGNORECASE,
+    )
+    if relation:
+        subject = relation.group("subject")
+        rel = " ".join(relation.group("relation").split())
+        obj = relation.group("object")
+        facts.append(
+            _session_fact(
+                "relation",
+                f"The {subject} is {rel} the {obj}.",
+                f"relation:{subject}:{rel}:{obj}",
+                f"relation:{subject}",
+                event_id,
+                order,
+            )
+        )
+
+    keep = re.search(
+        r"\bkeep\s+(?:the\s+)?(?P<object>[a-z][a-z-]*(?:\s+[a-z][a-z-]*){0,4}?)\s+"
+        r"(?P<state>open|clear|free|unblocked)\b",
+        lower,
+        flags=re.IGNORECASE,
+    )
+    if keep:
+        obj, state = keep.group("object"), keep.group("state")
+        facts.append(
+            _session_fact(
+                "constraint",
+                f"Keep the {obj} {state}.",
+                f"constraint:{obj}:{state}",
+                f"constraint:{obj}",
+                event_id,
+                order,
+            )
+        )
+    return facts
+
+
+def _session_fact(
+    kind: str,
+    text: str,
+    fact_key: str,
+    replacement_key: str,
+    event_id: str,
+    order: int,
+) -> dict[str, Any]:
+    return {
+        "kind": kind,
+        "text": text,
+        "fact_key": fact_key,
+        "replacement_key": replacement_key,
+        "source_event_id": event_id,
+        "order": order,
+        "terms": _distinctive_terms(text),
+        "source_class": "current_session_user_statement",
+        "durable_memory": False,
+    }
+
+
+def _relevant_session_facts(prompt: str, facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    lower = str(prompt or "").lower()
+    summary_request = bool(re.search(r"\b(?:summarize|summary|recap|settled points?)\b", lower))
+    query_terms = set(_distinctive_terms(prompt))
+    ranked: list[tuple[int, int, dict[str, Any]]] = []
+    for index, fact in enumerate(facts):
+        terms = set(str(item) for item in fact.get("terms") or [])
+        overlap = query_terms & terms
+        kind = str(fact.get("kind") or "")
+        cue_match = bool(
+            kind == "dimensions" and re.search(r"\b(?:dimension|dimensions|size|feet|foot)\b", lower)
+            or kind == "count" and overlap
+            or kind == "relation" and re.search(r"\b(?:where|beside|near|cord|outlet|chair)\b", lower)
+            or kind == "constraint" and re.search(r"\b(?:keep|open|clear|layout|plan|settled)\b", lower)
+        )
+        if summary_request or overlap or cue_match:
+            ranked.append((4 if cue_match else 2 if overlap else 1, index, fact))
+    ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
+    selected = [item for _, _, item in ranked[:6]]
+    selected.sort(key=lambda item: int(item.get("order") or 0))
+    return selected
 
 
 def evaluate_candidate_compatibility(

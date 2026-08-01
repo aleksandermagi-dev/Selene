@@ -27,6 +27,7 @@ _GUARDS: dict[str, Any] = {
 }
 
 _IDIOMS: tuple[tuple[str, str], ...] = (
+    ("sardine can", "feel cramped or overcrowded, with too little comfortable room to move"),
     ("beat a dead horse", "keep pushing a settled or unproductive topic"),
     ("beating a dead horse", "keep pushing a settled or unproductive topic"),
     ("walk on eggshells", "act with excessive caution from fear of causing a problem"),
@@ -161,7 +162,7 @@ def interpret_figurative_language(payload: dict[str, Any] | None = None) -> dict
                 }
             )
 
-    analogy = _analogy(text)
+    analogy = {} if any(item.get("form") == "idiom" for item in matches) else _analogy(text)
     if analogy:
         matches.append(analogy)
 

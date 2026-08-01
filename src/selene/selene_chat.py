@@ -32,6 +32,7 @@ from .contextual_speech import (
     apply_contextual_intent,
     contextual_response_seed,
     inspect_contextual_follow_up,
+    session_fact_response_seed,
 )
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn, record_dialogue_response
 from .dream_state import dream_state_status, expression_eligible_dream_reflection
@@ -446,6 +447,23 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         dialogue_workspace=prepared_dialogue_workspace,
         conversation_spine=conversation_spine,
     )
+    session_fact_reply = session_fact_response_seed(meaning_text, conversation_spine)
+    if (
+        session_fact_reply
+        and epistemic_revision_reply
+        and re.search(r"\b(?:update|revise|adjust|change)\b", meaning_text, flags=re.IGNORECASE)
+    ):
+        session_fact_reply = f"{epistemic_revision_reply.strip()}\n\n{session_fact_reply.strip()}"
+        epistemic_revision_reply = ""
+    ordinary_uncertainty_reply = _ordinary_uncertainty_response_seed(
+        meaning_text,
+        conversation_spine,
+    )
+    explicit_humor_reply = _explicit_humor_response_seed(
+        meaning_text,
+        conversation_spine,
+        contextual_continuity,
+    )
     mixed_conversation_reply = _mixed_conversation_reply(
         intent_decision,
         contextual_follow_up,
@@ -464,6 +482,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         meaning_text,
         _visible_speech_seed_candidates(
             figurative_clarification_reply=figurative_clarification_reply,
+            explicit_humor_reply=explicit_humor_reply,
+            ordinary_uncertainty_reply=ordinary_uncertainty_reply,
             mixed_conversation_reply=mixed_conversation_reply,
             dream_reflection_reply=dream_reflection_reply,
             memory_action_reply=memory_action_reply,
@@ -471,6 +491,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             memory_reply=memory_reply,
             self_state_reply=self_state_reply,
             contextual_reply=contextual_reply,
+            session_fact_reply=session_fact_reply,
             policy_reply=policy_reply,
             epistemic_revision_reply=epistemic_revision_reply,
             language_content_seed=language_content_seed,
@@ -533,7 +554,12 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         memory_retrieval,
         chat_continuity,
         intelligence_support,
-        contextual_content_seed=contextual_reply,
+        contextual_content_seed=(
+            explicit_humor_reply
+            or ordinary_uncertainty_reply
+            or session_fact_reply
+            or contextual_reply
+        ),
         hard=bool(hard_blockers),
     )
     structural_discovery_input = (
@@ -608,6 +634,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     visible_speech_candidates = _visible_speech_seed_candidates(
         figurative_clarification_reply=figurative_clarification_reply,
+        explicit_humor_reply=explicit_humor_reply,
+        ordinary_uncertainty_reply=ordinary_uncertainty_reply,
         mixed_conversation_reply=mixed_conversation_reply,
         dream_reflection_reply=dream_reflection_reply,
         memory_action_reply=memory_action_reply,
@@ -615,6 +643,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         memory_reply=memory_reply,
         self_state_reply=self_state_reply,
         contextual_reply=contextual_reply,
+        session_fact_reply=session_fact_reply,
         policy_reply=policy_reply,
         epistemic_revision_reply=epistemic_revision_reply,
         structural_discovery_content_seed=structural_discovery_content_seed,
@@ -690,7 +719,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "response_obligations": conversation_spine.get("open_obligations") or [],
             "knowledge_items": (comprehension.get("knowledge_context") or {}).get("answer_eligible_items") or [],
             "observations": [
-                {"observation": str(item.get("preview") or "")}
+                {
+                    "observation": str(item.get("preview") or ""),
+                    "role": str(item.get("role") or ""),
+                }
                 for item in (chat_continuity.get("current_session_events") or [])[-8:]
                 if isinstance(item, dict) and str(item.get("preview") or "").strip()
             ],
@@ -716,6 +748,27 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "accepted": False,
             "content_seed": content_seed,
             "domain_answer_remains_primary": True,
+        }
+    elif str(visible_speech_seed.get("selected_source_id") or "") == "grounded_self_state":
+        answer_completion = {
+            **answer_completion,
+            "status": "bounded_answer_completion_not_needed_grounded_self_state_complete",
+            "accepted": False,
+            "content_seed": content_seed,
+            "grounded_self_state_remains_primary": True,
+        }
+    elif str(visible_speech_seed.get("selected_source_id") or "") in {
+        "current_session_facts",
+        "explicit_humor_request",
+        "figurative_meaning_clarification",
+        "ordinary_uncertainty",
+    }:
+        answer_completion = {
+            **answer_completion,
+            "status": "bounded_answer_completion_not_needed_bounded_conversation_answer_complete",
+            "accepted": False,
+            "content_seed": content_seed,
+            "bounded_conversation_answer_remains_primary": True,
         }
     if answer_completion.get("accepted") is True:
         content_seed = str(answer_completion.get("content_seed") or content_seed)
@@ -952,6 +1005,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             recovery_source = "native_language_repetition_recovery"
     candidate_text = _selene_label_candidate(str(conversation_repair.get("candidate_text") or candidate_text))
     candidate_text = _preserve_answer_engine_invariants(candidate_text, answer_engine_support)
+    candidate_text = _preserve_bounded_conversation_invariants(
+        candidate_text,
+        content_seed,
+        str(visible_speech_seed.get("selected_source_id") or "none"),
+    )
     response_coverage = _evaluate_chat_response_coverage(
         native_language.get("pragmatic_plan"),
         candidate_text,
@@ -1020,6 +1078,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     if completion_repair.get("attempted") is True:
         proposed_candidate = _selene_label_candidate(str(completion_repair.get("candidate_text") or candidate_text))
         proposed_candidate = _preserve_answer_engine_invariants(proposed_candidate, answer_engine_support)
+        proposed_candidate = _preserve_bounded_conversation_invariants(
+            proposed_candidate,
+            content_seed,
+            str(visible_speech_seed.get("selected_source_id") or "none"),
+        )
         proposed_coverage = _evaluate_chat_response_coverage(
             native_language.get("pragmatic_plan"),
             proposed_candidate,
@@ -1842,6 +1905,8 @@ def _dream_reflection_response_seed(
 def _visible_speech_seed_candidates(
     *,
     figurative_clarification_reply: str = "",
+    explicit_humor_reply: str = "",
+    ordinary_uncertainty_reply: str = "",
     mixed_conversation_reply: str = "",
     dream_reflection_reply: str = "",
     memory_action_reply: str = "",
@@ -1849,6 +1914,7 @@ def _visible_speech_seed_candidates(
     memory_reply: str = "",
     self_state_reply: str = "",
     contextual_reply: str = "",
+    session_fact_reply: str = "",
     policy_reply: str = "",
     epistemic_revision_reply: str = "",
     structural_discovery_content_seed: str = "",
@@ -1865,6 +1931,16 @@ def _visible_speech_seed_candidates(
             "source_class": "conversation",
             "text": figurative_clarification_reply,
         },
+        {
+            "source_id": "explicit_humor_request",
+            "source_class": "conversation",
+            "text": explicit_humor_reply,
+        },
+        {
+            "source_id": "ordinary_uncertainty",
+            "source_class": "conversation",
+            "text": ordinary_uncertainty_reply,
+        },
         {"source_id": "mixed_conversation_answer", "source_class": "conversation", "text": mixed_conversation_reply},
         {
             "source_id": "attributable_dream_reflection",
@@ -1875,6 +1951,7 @@ def _visible_speech_seed_candidates(
         {"source_id": "local_chat_continuity", "source_class": "conversation", "text": continuity_reply},
         {"source_id": "reviewed_memory", "source_class": "memory_reconstruction", "text": memory_reply},
         {"source_id": "grounded_self_state", "source_class": "self_state", "text": self_state_reply},
+        {"source_id": "current_session_facts", "source_class": "conversation", "text": session_fact_reply},
         {"source_id": "contextual_follow_up", "source_class": "conversation", "text": contextual_reply},
         {"source_id": "conversation_policy", "source_class": "conversation", "text": policy_reply},
         {
@@ -2009,7 +2086,7 @@ def _figurative_response_seed(packet: dict[str, Any]) -> str:
             "Yeah, that timing is genuinely inconvenient. I read the approving wording as sarcasm, "
             "not as praise for the interruption."
         )
-    if forms & {"metaphor", "personification"} and re.search(
+    if forms & {"idiom", "metaphor", "personification"} and re.search(
         r"\b(?:what do i mean|what does (?:that|this|it) mean|"
         r"how do you (?:read|interpret|understand) (?:that|this|it)|"
         r"how would you (?:read|interpret|understand) (?:that|this|it))\b",
@@ -2020,6 +2097,86 @@ def _figurative_response_seed(packet: dict[str, Any]) -> str:
             return f"I read it as: {meaning}."
         return f"You mean: {meaning}."
     return ""
+
+
+def _ordinary_uncertainty_response_seed(
+    prompt: str,
+    conversation_spine: dict[str, Any] | None,
+) -> str:
+    """Express ordinary not-knowing without turning it into research scaffolding."""
+    text = " ".join(str(prompt or "").replace("’", "'").split())
+    lower = text.lower()
+    possible = re.search(
+        r"\b(?P<subject>(?:the\s+)?[a-z][a-z0-9' -]{0,70}?)\s+may\s+(?P<predicate>[^,.;?]{2,100})"
+        r"[,;]?\s+but\s+(?P<unchecked>(?:neither\s+of\s+us|we|i|you)[^.;?]{0,80}(?:check|checked|verify|verified|looked))",
+        text,
+        flags=re.IGNORECASE,
+    )
+    asks_known = bool(re.search(r"\b(?:do we know|do you know|is it known|are we sure|can we tell)\b", lower))
+    if possible and asks_known:
+        subject = possible.group("subject").strip()
+        predicate = possible.group("predicate").strip()
+        return (
+            f"Not yet. {subject[0].upper() + subject[1:]} may {predicate}, but we have not checked, "
+            "so it is possible rather than known."
+        )
+    if asks_known and re.search(r"\b(?:have(?:n't| not) checked|has(?:n't| not) been checked|neither of us)\b", lower):
+        return "Not yet. It is possible, but we have not checked, so we do not currently know."
+    if (
+        re.search(r"\b(?:unbuilt|not built|not chosen|haven't chosen|have not chosen)\b", lower)
+        and re.search(r"\b(?:what|which)\b.*\b(?:should|would)\b", lower)
+    ):
+        subject = "the choice"
+        subject_match = re.search(r"\b(?:what|which)\s+(.+?)\s+should\b", lower)
+        if subject_match:
+            subject = truncate(subject_match.group(1).strip(), 100)
+        return (
+            f"We have not chosen {subject} yet. I can help compare options once we know the setting, "
+            "the practical constraints, and what kind of feel we want."
+        )
+    return ""
+
+
+def _explicit_humor_response_seed(
+    prompt: str,
+    conversation_spine: dict[str, Any] | None,
+    contextual_continuity: dict[str, Any] | None,
+) -> str:
+    continuity = contextual_continuity if isinstance(contextual_continuity, dict) else {}
+    decision = continuity.get("humor_decision") if isinstance(continuity.get("humor_decision"), dict) else {}
+    if decision.get("explicit_humor_request") is not True:
+        return ""
+    text = " ".join(str(prompt or "").split())
+    subject_match = re.search(
+        r"\b(?:joke|pun)\s+about\s+(.+?)(?:,|;|\s+then\b|\s+and\s+(?:then\s+)?return\b|[.!?]|$)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    subject = truncate(subject_match.group(1).strip(), 140) if subject_match else "this"
+    if "committee" in subject.lower():
+        article = "" if subject.lower().startswith(("a ", "an ", "the ", "our ", "your ", "their ")) else "the "
+        joke = f"One little joke: {article}{subject} approved a motion to schedule fewer meetings about scheduling meetings."
+    else:
+        joke = f"One little joke: {subject} asked for a quick decision and somehow got a committee meeting."
+
+    return_match = re.search(
+        r"\b(?:then\s+)?return\s+to\s+(?:the\s+)?(?P<topic>[^.!?]+)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not return_match:
+        return joke
+    return_topic = truncate(return_match.group("topic").strip(" ,;"), 100)
+    spine = conversation_spine if isinstance(conversation_spine, dict) else {}
+    facts = [
+        str(item.get("text") or "").strip()
+        for item in spine.get("session_facts") or []
+        if isinstance(item, dict) and str(item.get("text") or "").strip()
+    ][-4:]
+    grounded_return = " ".join(facts)
+    if grounded_return:
+        return f"{joke}\n\nBack to the {return_topic}: {grounded_return}"
+    return f"{joke}\n\nBack to the {return_topic}."
 
 
 def _mixed_conversation_reply(
@@ -2354,12 +2511,16 @@ def _answer_engine_support(
         for item in executable_units
         if str(item.get("selected_domain") or "")
     }
+    # Verified math owns the reason for its own arithmetic result. A distinct
+    # conceptual request (for example, exactness versus understanding) remains
+    # a separate obligation and may be answered alongside the calculation.
     coordinated_prompt_units = (
         [
             item
             for item in prompt_grounded_units
             if str((item.get("obligation") or {}).get("kind") or "")
             in {"reason", "method"}
+            and not _prompt_grounded_unit_belongs_to_verified_math(item)
         ]
         if executable_domains == {"verified_math"}
         else []
@@ -2578,6 +2739,23 @@ def _answer_engine_support(
     }
 
 
+def _prompt_grounded_unit_belongs_to_verified_math(unit: dict[str, Any]) -> bool:
+    obligation = unit.get("obligation") if isinstance(unit.get("obligation"), dict) else {}
+    source = " ".join(str(obligation.get("source_text") or "").lower().split()).strip(" ?.!")
+    if source in {"why", "explain why", "show why", "how"}:
+        return True
+    number = r"(?:\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+    return bool(
+        re.search(r"\b(?:addition|subtraction|multiplication|division|arithmetic)\b", source)
+        or re.search(
+            rf"\b{number}\s+(?:plus|minus|times|multiplied\s+by|divided\s+by)\s+{number}\b",
+            source,
+            flags=re.IGNORECASE,
+        )
+        or re.search(r"\b\d+(?:\.\d+)?\s*(?:\+|-|\*|/|=|×|÷)\s*\d", source)
+    )
+
+
 def _answer_engine_content_seed(
     domain: str,
     direct_answer: str,
@@ -2671,6 +2849,22 @@ def _preserve_answer_engine_invariants(candidate: str, support: dict[str, Any]) 
     if candidate and candidate not in content_seed:
         return _selene_label_candidate(f"{content_seed}\n\n{candidate}")
     return _selene_label_candidate(content_seed)
+
+
+def _preserve_bounded_conversation_invariants(
+    candidate: str,
+    content_seed: str,
+    source_id: str,
+) -> str:
+    if source_id not in {
+        "current_session_facts",
+        "explicit_humor_request",
+        "figurative_meaning_clarification",
+        "ordinary_uncertainty",
+    }:
+        return candidate
+    seed = str(content_seed or "").strip()
+    return _selene_label_candidate(seed) if seed else candidate
 
 
 def _domain_answer_is_complete(support: dict[str, Any]) -> bool:

@@ -86,7 +86,12 @@ def verify_bounded_math(payload: dict[str, Any] | None = None) -> dict[str, Any]
             expression=supplied,
             expression_source="explicit_expression",
         )
-    expression = supplied or _extract_expression(prompt)
+    fraction_remainder = _extract_fraction_remainder(prompt) if not supplied else None
+    expression = supplied or (
+        str(fraction_remainder.get("expression") or "")
+        if fraction_remainder
+        else _extract_expression(prompt)
+    )
     expression_source = "explicit_expression" if supplied else "prompt_extracted"
     if not expression:
         return _unable(
@@ -133,8 +138,14 @@ def verify_bounded_math(payload: dict[str, Any] | None = None) -> dict[str, Any]
         evaluated = _evaluate_expression(expression)
         value = evaluated["value"]
         formatted = _format_fraction(value)
+        if fraction_remainder and value.denominator != 1:
+            formatted = f"{value.numerator}/{value.denominator}"
         decimal_approximation = _decimal_approximation(value)
-        summary = f"{expression.strip()} = {formatted}."
+        summary = (
+            f"{formatted} remains."
+            if fraction_remainder
+            else f"{expression.strip()} = {formatted}."
+        )
         return _ready(
             expression=expression,
             normalized_expression=evaluated["normalized"],
@@ -145,6 +156,7 @@ def verify_bounded_math(payload: dict[str, Any] | None = None) -> dict[str, Any]
             checked_steps=evaluated["steps"],
             result_summary=summary,
             expression_source=expression_source,
+            word_problem=fraction_remainder or {},
         )
     except (SyntaxError, ValueError, ZeroDivisionError, OverflowError) as exc:
         return _unable(str(exc), expression=expression, expression_source=expression_source)
@@ -277,10 +289,11 @@ def _extract_expression(prompt: str) -> str:
         return ""
     if re.search(r"[A-Za-z]\s*[+\-*/^=×÷]|[+\-*/^=×÷]\s*[A-Za-z]", prompt):
         return ""
+    number = r"(?:\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
     natural = re.search(
-        r"\b(?P<left>\d+(?:\.\d+)?)\s+"
+        rf"\b(?P<left>{number})\s+"
         r"(?P<operator>plus|minus|times|multiplied\s+by|divided\s+by)\s+"
-        r"(?P<right>\d+(?:\.\d+)?)\b",
+        rf"(?P<right>{number})\b",
         prompt,
         flags=re.IGNORECASE,
     )
@@ -292,7 +305,12 @@ def _extract_expression(prompt: str) -> str:
             "multiplied by": "*",
             "divided by": "/",
         }[" ".join(natural.group("operator").lower().split())]
-        return f"{natural.group('left')} {operator} {natural.group('right')}"
+        left_token = natural.group("left").lower()
+        right_token = natural.group("right").lower()
+        left = left_token if re.fullmatch(r"\d+(?:\.\d+)?", left_token) else _small_number(left_token)
+        right = right_token if re.fullmatch(r"\d+(?:\.\d+)?", right_token) else _small_number(right_token)
+        if left is not None and right is not None:
+            return f"{left} {operator} {right}"
     number = r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
     equal_groups = re.search(
         rf"\b(?P<groups>{number})\s+"
@@ -325,6 +343,34 @@ def _extract_expression(prompt: str) -> str:
     if candidates:
         return max(candidates, key=len)
     return ""
+
+
+def _extract_fraction_remainder(prompt: str) -> dict[str, Any] | None:
+    """Recognize one bounded equal-part remainder problem without guessing units."""
+    if not prompt or not re.search(r"\b(?:fraction|part)\b", prompt, flags=re.IGNORECASE):
+        return None
+    number = r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+    match = re.search(
+        rf"\b(?:cut|split|divid(?:e|ed))\b.{{0,45}}?\b(?:into\s+)?(?P<total>{number})\s+equal\s+"
+        rf"(?:slices?|parts?|pieces?)\b.{{0,90}}?\b(?:eat|ate|remove|removed|take|took|use|used)\s+"
+        rf"(?P<used>{number})\s+(?:of\s+(?:the\s+)?)?(?:slices?|parts?|pieces?)\b.{{0,70}}?"
+        r"\b(?:remain|remains|remaining|left)\b",
+        prompt,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    total = _small_number(match.group("total"))
+    used = _small_number(match.group("used"))
+    if total is None or used is None or total <= 0 or used < 0 or used > total:
+        return None
+    return {
+        "kind": "equal_part_remainder",
+        "total_parts": total,
+        "used_parts": used,
+        "remaining_parts": total - used,
+        "expression": f"({total} - {used}) / {total}",
+    }
 
 
 def _small_number(value: str) -> int | None:

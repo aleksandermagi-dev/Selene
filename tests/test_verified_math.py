@@ -62,6 +62,24 @@ def test_plain_language_binary_arithmetic_is_extracted_without_broad_interpretat
     assert result["expression_source"] == "prompt_extracted"
 
 
+def test_number_word_addition_and_equal_slice_remainder_are_verified():
+    addition = verify_bounded_math({"prompt": "What is two plus two, and why?"})
+    remainder = verify_bounded_math(
+        {
+            "prompt": (
+                "One pizza is cut into four equal slices and I eat one slice. "
+                "What fraction remains?"
+            )
+        }
+    )
+
+    assert addition["expression"] == "2 + 2"
+    assert addition["result_value"] == "4"
+    assert remainder["result_value"] == "3/4"
+    assert remainder["word_problem"]["kind"] == "equal_part_remainder"
+    assert remainder["result_summary"] == "3/4 remains."
+
+
 def test_high_confidence_equal_group_word_problem_is_verified_without_guessing():
     result = verify_bounded_math(
         {"prompt": "Three shelves hold four jars each. How many jars are there altogether?"}

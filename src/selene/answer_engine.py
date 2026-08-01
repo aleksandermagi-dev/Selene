@@ -513,6 +513,19 @@ def _verified_math_explanation(prompt: str, verification: dict[str, Any]) -> str
         or verification.get("expression")
         or ""
     ).replace(" ", "")
+    word_problem = (
+        verification.get("word_problem")
+        if isinstance(verification.get("word_problem"), dict)
+        else {}
+    )
+    if word_problem.get("kind") == "equal_part_remainder":
+        total = int(word_problem.get("total_parts") or 0)
+        used = int(word_problem.get("used_parts") or 0)
+        remaining = int(word_problem.get("remaining_parts") or 0)
+        return (
+            f"There were {total} equal parts and {used} was used, leaving {remaining}; "
+            f"{remaining} of {total} equal parts is {remaining}/{total}."
+        )
     addition = re.fullmatch(
         r"(\d+)\+(\d+)(?:=(\d+))?",
         expression,
@@ -1116,11 +1129,18 @@ def _looks_like_math(value: str) -> bool:
         return True
     if _contains_any(lower, ("multiply", "divide")) and re.search(r"\d", value):
         return True
+    number = r"(?:\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
     if re.search(
-        r"\b\d+(?:\.\d+)?\s+(?:plus|minus|times|multiplied\s+by|divided\s+by)\s+"
-        r"\d+(?:\.\d+)?\b",
+        rf"\b{number}\s+(?:plus|minus|times|multiplied\s+by|divided\s+by)\s+"
+        rf"{number}\b",
         value,
         flags=re.IGNORECASE,
+    ):
+        return True
+    if (
+        re.search(r"\b(?:fraction|part)\b", value, flags=re.IGNORECASE)
+        and re.search(r"\b(?:equal\s+(?:slices?|parts?|pieces?))\b", value, flags=re.IGNORECASE)
+        and re.search(r"\b(?:remain|remains|remaining|left)\b", value, flags=re.IGNORECASE)
     ):
         return True
     number = r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"

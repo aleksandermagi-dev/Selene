@@ -571,6 +571,14 @@ def test_verified_addition_can_explain_why_and_supply_a_distinct_example():
     _assert_locked(result)
 
 
+def test_number_word_math_routes_before_approved_knowledge_and_explains_why():
+    result = run_verified_math_answer({"prompt": "What is two plus two, and why?"})
+
+    assert result["domain_route"]["selected_domain"] == "verified_math"
+    assert result["math_verification"]["result_value"] == "4"
+    assert "addition counts combined quantities" in result["answer_packet"]["direct_answer"]
+
+
 def test_verified_math_adapter_accepts_an_expression_without_a_duplicate_prompt():
     result = run_verified_math_answer({"expression": "0.1 + 0.2"})
 
