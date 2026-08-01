@@ -3,6 +3,9 @@
 Selene is a local-first, care-governed AI architecture built around one
 continuity-bearing individual: Selene.
 
+For the short, non-technical explanation, see
+[Selene: Quick Overview](QUICK_README.md).
+
 She can converse, reason, learn from reviewed teaching, use source-bound
 knowledge and memory, preserve uncertainty, and coordinate modular cognitive
 organs without treating a language model, database, tool, or support interface
