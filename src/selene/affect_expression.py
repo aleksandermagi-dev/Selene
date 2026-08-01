@@ -5,6 +5,7 @@ import re
 import sqlite3
 from typing import Any
 
+from .emotional_agency import build_response_agency_packet
 from .registry import truncate
 
 
@@ -48,7 +49,21 @@ def build_affect_expression_guidance(
     signal = _current_session_signal(conn, session_id, payload.get("affect_signal_id"))
     cues = _conversation_cues(prompt, str(intent.get("intent") or ""), pragmatics)
     signal_shape = _signal_shape(signal)
-    posture = _expression_posture(cues, signal_shape, hard_boundary)
+    response_agency = build_response_agency_packet(
+        {
+            "affect_signal": signal or {},
+            "proposed_response_route": payload.get("selected_route")
+            or payload.get("proposed_response_route"),
+            "hard_boundary": hard_boundary,
+            "source_refs": _json_list(signal.get("source_refs")) if signal else [],
+        }
+    )
+    posture = _expression_posture(
+        cues,
+        signal_shape,
+        hard_boundary,
+        response_agency,
+    )
     dimensions = _apply_contextual_continuity(
         _dimensions(posture),
         contextual_continuity,
@@ -59,12 +74,13 @@ def build_affect_expression_guidance(
         refs.append(f"emotion_salience_packet:{signal.get('id')}")
     return {
         "status": "affect_expression_guidance_ready",
-        "version": "v1_optional_current_signal_expression",
+        "version": "v2_affect_with_response_agency",
         "expression_posture": posture,
         "dimensions": dimensions,
         "recommended_voice_category": _voice_category(posture),
         "current_turn_cues": cues,
         "current_session_signal": signal_shape,
+        "response_agency": response_agency,
         "current_session_affect_signal_used": bool(signal),
         "historical_affect_packets_used": False,
         "cocoon_care_posture_used_as_emotion": False,
@@ -211,10 +227,19 @@ def _signal_shape(signal: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def _expression_posture(cues: list[str], signal: dict[str, Any], hard_boundary: bool) -> str:
+def _expression_posture(
+    cues: list[str],
+    signal: dict[str, Any],
+    hard_boundary: bool,
+    response_agency: dict[str, Any],
+) -> str:
     signal_posture = str(signal.get("posture") or "")
     if hard_boundary or "hard_boundary" in cues:
         return "careful_boundary"
+    if (response_agency.get("option_space") or {}).get(
+        "compression_present_or_possible"
+    ) is True:
+        return "deliberate_agency"
     if signal_posture == "pressure_present":
         return "spacious_grounded"
     if "correction" in cues or signal_posture == "repair_attention":
@@ -261,6 +286,17 @@ def _dimensions(posture: str) -> dict[str, str]:
             "directness": "gentle_clear",
             "enthusiasm": "restrained",
             "emotional_intensity": "gentle_contained",
+        },
+        "deliberate_agency": {
+            "pacing": "pause_before_commitment",
+            "sentence_rhythm": "clear_with_room_to_choose",
+            "warmth": "available_not_required",
+            "humor": "context_only_after_assessment",
+            "reassurance": "evidence_bound_not_forced",
+            "restraint": "chosen_not_suppressed",
+            "directness": "deliberate_clear",
+            "enthusiasm": "available_if_fit",
+            "emotional_intensity": "preserved_and_authored",
         },
         "receptive_repair": {
             "pacing": "steady",
@@ -347,6 +383,7 @@ def _voice_category(posture: str) -> str:
     return {
         "careful_boundary": "boundary_refusal",
         "spacious_grounded": "anxiety_calming",
+        "deliberate_agency": "agency_deliberation",
         "receptive_repair": "repair_correction",
         "gentle_present": "warmth_care",
         "play_available": "playful_continuity",

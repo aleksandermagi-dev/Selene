@@ -450,7 +450,22 @@ def create_emotion_salience_packet(conn: sqlite3.Connection, payload: dict[str, 
         "source_refs": source_refs,
         "provenance_boundary": EMOTION_BOUNDARY,
         "review_status": "review_only",
-        "payload_json": {"emotion_is_signal": True, "core_mind_chooses": True},
+        "payload_json": {
+            "emotion_is_signal": True,
+            "emotion_is_command": False,
+            "core_mind_chooses": True,
+            "regulation_preserves_feeling_while_restoring_authorship": True,
+            "threat_states_may_compress_perceived_possibility": True,
+            "agency_restores_option_space": True,
+            "return_to_agency_flow": [
+                "recognize_affective_signal",
+                "identify_signal_source_and_protection_target",
+                "assess_interpretation_and_threat_compression",
+                "expand_interpretations_and_response_options",
+                "compare_with_values_law_goals_and_evidence",
+                "core_mind_chooses_deliberately",
+            ],
+        },
     })
     packet_id = conn.execute(
         """

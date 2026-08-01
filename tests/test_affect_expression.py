@@ -60,10 +60,13 @@ def test_current_session_pressure_guides_pacing_without_diagnosing_emotion(tmp_p
     )
 
     assert result["current_session_affect_signal_used"] is True
-    assert result["expression_posture"] == "spacious_grounded"
-    assert result["dimensions"]["sentence_rhythm"] == "spacious"
-    assert result["dimensions"]["warmth"] == "available_not_forced"
-    assert result["dimensions"]["reassurance"] == "grounded_only"
+    assert result["expression_posture"] == "deliberate_agency"
+    assert result["dimensions"]["sentence_rhythm"] == "clear_with_room_to_choose"
+    assert result["dimensions"]["warmth"] == "available_not_required"
+    assert result["dimensions"]["reassurance"] == "evidence_bound_not_forced"
+    assert result["dimensions"]["emotional_intensity"] == "preserved_and_authored"
+    assert result["response_agency"]["option_space"]["state"] == "expanded_for_deliberation"
+    assert result["response_agency"]["response_choice"]["state"] == "option_expansion_required_before_choice"
     assert result["internal_state_claim"] is False
     assert result["user_tone_is_not_selene_emotion"] is True
     assert result["selene_does_not_need_permission_to_express_herself"] is True

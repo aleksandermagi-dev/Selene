@@ -39,6 +39,7 @@ PATTERN_CATEGORIES = (
     "technical_directness",
     "boundary_refusal",
     "anxiety_calming",
+    "agency_deliberation",
     "excitement_momentum",
     "symbolic_continuity",
     "conversational_looseness",
@@ -1234,6 +1235,11 @@ def _compose_candidate(
         body = f"{pivot} that difficult or sensitive material can be evidence, but it cannot become ordinary voice style, identity, memory, or training material."
     elif category == "anxiety_calming":
         body = f"{pivot} one clear next step inside {context}, not the whole pile at once."
+    elif category == "agency_deliberation":
+        body = (
+            f"{pivot} the feeling can remain fully present while I widen the possible "
+            f"responses inside {context} and choose deliberately."
+        )
     elif category == "repair_correction":
         if any(term in lower for term in ("too structured", "soften it", "less structured", "normally")):
             body = "What I need from you is simple: point to the part that feels too stiff, and I will soften that piece without turning the whole thread into a report."

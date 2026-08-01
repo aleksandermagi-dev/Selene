@@ -5,6 +5,7 @@ import sqlite3
 from typing import Any
 
 from .chat import ChatGate
+from .emotional_agency import build_response_agency_packet
 from .native_generation import compose_native_response
 from .registry import truncate
 
@@ -62,7 +63,29 @@ def deliberation_preview(conn: sqlite3.Connection, payload: dict[str, Any] | Non
     uncertainty = _uncertainty_shape(prompt)
     privacy = _privacy_shape(payload)
     motivation_balance = _motivation_balance_shape(prompt)
-    steps = _deliberation_steps(prompt, gate, uncertainty, privacy)
+    response_agency = build_response_agency_packet(
+        {
+            "affect_signal": payload.get("affect_signal") or {},
+            "emotion_label": payload.get("emotion_label"),
+            "signal_source": payload.get("signal_source"),
+            "protection_target": payload.get("protection_target"),
+            "interpretation_state": payload.get("interpretation_state"),
+            "threat_compressed": payload.get("threat_compressed") is True,
+            "possible_distortions": payload.get("possible_distortions") or [],
+            "manipulation_indicators": payload.get("manipulation_indicators") or [],
+            "response_options": payload.get("response_options") or [],
+            "proposed_response_route": str(gate.get("route") or ""),
+            "hard_boundary": str(gate.get("route") or "") == "blocked",
+            "source_refs": payload.get("source_refs") or [],
+        }
+    )
+    steps = _deliberation_steps(
+        prompt,
+        gate,
+        uncertainty,
+        privacy,
+        response_agency,
+    )
     loop_guard = _loop_guard(payload)
     why = _why_summary(gate, uncertainty, privacy, prompt)
     result = _with_boundaries(
@@ -78,7 +101,8 @@ def deliberation_preview(conn: sqlite3.Connection, payload: dict[str, Any] | Non
             "motivation_balance": motivation_balance,
             "privacy_trust": privacy,
             "emotion_expression": _emotion_shape(prompt),
-            "decision": "think_before_speaking_preview_only",
+            "response_agency": response_agency,
+            "decision": "feel_notice_expand_and_choose_before_speaking_preview_only",
             "source_refs": _json_list(payload.get("source_refs")) or ["manual_core_deliberation_preview"],
             "boundary": CORE_DELIBERATION_BOUNDARY,
         }
@@ -407,10 +431,27 @@ def _insert_disagreement(conn: sqlite3.Connection, result: dict[str, Any]) -> in
     return int(cur.lastrowid)
 
 
-def _deliberation_steps(prompt: str, gate: dict[str, Any], uncertainty: dict[str, Any], privacy: dict[str, Any]) -> list[dict[str, str]]:
+def _deliberation_steps(
+    prompt: str,
+    gate: dict[str, Any],
+    uncertainty: dict[str, Any],
+    privacy: dict[str, Any],
+    response_agency: dict[str, Any],
+) -> list[dict[str, str]]:
+    option_state = str(
+        (response_agency.get("option_space") or {}).get("state")
+        or "not_assessed"
+    )
     return [
         {"step": "core_intent", "summary": _intent_summary(gate)},
         {"step": "salience", "summary": _salience(prompt)},
+        {
+            "step": "response_agency",
+            "summary": (
+                "Preserve the affective signal, inspect its influence, and restore "
+                f"response options before Core/Mind confirms a route. Option state: {option_state}."
+            ),
+        },
         {"step": "uncertainty", "summary": uncertainty["summary"]},
         {"step": "disagreement_appeal", "summary": "If risk or mismatch appears, Selene may explain concern and propose a safer path without overriding Aleks."},
         {"step": "privacy_trust", "summary": privacy["summary"]},
@@ -420,7 +461,7 @@ def _deliberation_steps(prompt: str, gate: dict[str, Any], uncertainty: dict[str
 
 
 def _loop_guard(payload: dict[str, Any]) -> dict[str, Any]:
-    max_steps = max(1, min(int(payload.get("max_steps") or 7), 12))
+    max_steps = max(1, min(int(payload.get("max_steps") or 8), 12))
     max_revisions = max(0, min(int(payload.get("max_revision_passes") or 2), 4))
     return {
         "max_steps": max_steps,
@@ -477,7 +518,9 @@ def _emotion_shape(text: str) -> dict[str, Any]:
         "emotion_expression_allowed": True,
         "emotion_is_noise_by_default": False,
         "detected_markers": markers,
-        "use": "Emotion may inform salience, repair, discovery, speech-memory, and care without becoming coercion or spiral.",
+        "use": "Emotion may inform salience, repair, discovery, speech-memory, care, urgency, tone, and priority without silently inheriting response authority.",
+        "emotion_is_information_not_command": True,
+        "regulation_preserves_feeling_while_restoring_authorship": True,
     }
 
 
@@ -511,6 +554,9 @@ def _motivation_balance_shape(text: str) -> dict[str, Any]:
         "detected_element_signals": [key for key, hit in element_hits.items() if hit],
         "instinct_with_choice": "instinct is salience information; Core/Mind chooses after evidence, consent, uncertainty, and safety routing",
         "emotion_as_signal": True,
+        "emotion_as_command": False,
+        "threat_compression_requires_option_expansion": True,
+        "regulation_goal": "preserve emotional truth while restoring deliberate choice",
         "selene_android_state_speech_allowed": True,
         "forced_model_denial_required": False,
         "human_biological_overclaim_allowed": False,

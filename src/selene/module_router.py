@@ -143,6 +143,10 @@ from .core_mind_runtime import (
 from .conversation_repair import plan_conversation_turn, repair_conversation_candidate
 from .detached_corpus import detached_corpus_audit
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn
+from .emotional_agency import (
+    build_response_agency_packet,
+    emotional_agency_status,
+)
 from .referent_address import referent_address_status, resolve_referent_address
 from .epistemic_revision import build_epistemic_revision_plan, epistemic_revision_status
 from .input_detangler import detangle_user_input
@@ -633,6 +637,10 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
     if route_key == "metacognition.run.detail":
         item = get_metacognition_run(conn, int(payload.get("id") or payload.get("run_id") or 0))
         return {"route": route_key, "result": item or {"error": "not found"}}
+    if route_key == "emotional_agency.status":
+        return {"route": route_key, "result": emotional_agency_status()}
+    if route_key == "emotional_agency.preview":
+        return {"route": route_key, "result": build_response_agency_packet(payload)}
     if route_key == "epistemic_revision.status":
         return {"route": route_key, "result": epistemic_revision_status()}
     if route_key == "epistemic_revision.plan":

@@ -703,6 +703,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes({"error": "invalid run id"}, 400))
         elif parsed.path == "/api/metacognition/status":
             self._send(*json_bytes(route_request(conn, "metacognition.status")["result"]))
+        elif parsed.path == "/api/emotional-agency/status":
+            self._send(*json_bytes(route_request(conn, "emotional_agency.status")["result"]))
         elif parsed.path == "/api/metacognition/runs":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "metacognition.runs.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
@@ -1457,6 +1459,13 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*logged_route_error(route_key, exc))
         elif request_path == "/api/metacognition/inspect":
             route_key = "metacognition.inspect"
+            try:
+                write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
+                self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*logged_route_error(route_key, exc))
+        elif request_path == "/api/emotional-agency/preview":
+            route_key = "emotional_agency.preview"
             try:
                 write_stabilization_debug_log("sidecar", "route_start", route=route_key, request_bytes=len(raw))
                 self._send(*logged_route_json_bytes(route_key, route_request(self.server.conn, route_key, body)["result"]))

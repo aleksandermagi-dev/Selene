@@ -41,7 +41,7 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
         {
             "status": "metacognition_feedback_advisor_ready",
             "organ_name": "Metacognition Organ",
-            "version": "v2_bounded_feedback_advisor",
+            "version": "v3_bounded_feedback_with_response_agency",
             "mode": "bounded_feedback_advisor",
             "run_count": count,
             "latest_run": latest,
@@ -50,12 +50,15 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "check answer fit and evidence sufficiency",
                 "distinguish familiarity from demonstrated comprehension",
                 "recommend correction and bounded reopening",
+                "inspect whether affective influence and response authority remain separate",
+                "notice a threat-compressed option space and return an unmade choice to Core/Mind",
                 "recommend when to answer, qualify, ask, seek sources, hold, or stop",
             ],
             "project_neutral_blueprint_ancestry": [
                 "Evidence and Correction Ledger",
                 "Comprehension and Transfer Cycle",
                 "Answer Control and Graceful Fall",
+                "Emotion and Response Agency Law",
             ],
             "max_reopen_cycles_without_new_material": MAX_REOPEN_CYCLES,
             "chat_connection": "advises_before_finalization_and_may_request_one_owner_bounded_recheck",
@@ -156,6 +159,17 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     )
     conversational_energy = _dict(payload.get("conversational_energy"))
     structural_discovery = _dict(payload.get("structural_discovery"))
+    affect_expression = _dict(payload.get("affect_expression"))
+    response_agency = _dict(
+        payload.get("response_agency")
+        or affect_expression.get("response_agency")
+    )
+    agency_choice_state = str(
+        _dict(response_agency.get("response_choice")).get("state") or ""
+    )
+    agency_choice_pending = (
+        agency_choice_state == "option_expansion_required_before_choice"
+    )
     claim_evidence = _dict(
         payload.get("claim_evidence_packet")
         or answer_packet.get("claim_evidence_packet")
@@ -236,6 +250,10 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         fit_state = "core_mind_boundary_controls"
         action = "defer_to_core_mind"
         sufficiency_state = "boundary_resolved_outside_metacognition"
+    elif agency_choice_pending:
+        fit_state = "affective_influence_visible_response_choice_pending"
+        action = "defer_to_core_mind"
+        sufficiency_state = "restore_option_space_before_response_choice"
     elif reopen_requested and recursion_count < MAX_REOPEN_CYCLES:
         fit_state = "contradiction_or_correction_requires_recheck"
         action = "reopen_current_model"
@@ -324,7 +342,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     result = {
         "status": "metacognition_advisory_ready",
         "organ_name": "Metacognition Organ",
-        "version": "v2_bounded_feedback_advisor",
+        "version": "v3_bounded_feedback_with_response_agency",
         "mode": "bounded_feedback_advisor",
         "prompt_preview": truncate(prompt, 280),
         "fit_state": fit_state,
@@ -422,6 +440,26 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
                 )
             ),
             "automatic_cocoon_routing": False,
+        },
+        "response_agency": response_agency,
+        "response_agency_assessment": {
+            "observed": bool(response_agency),
+            "choice_state": agency_choice_state or "not_available",
+            "threat_compression_state": str(
+                _dict(response_agency.get("influence_assessment")).get(
+                    "threat_compression_state"
+                )
+                or "not_available"
+            ),
+            "option_space_state": str(
+                _dict(response_agency.get("option_space")).get("state")
+                or "not_available"
+            ),
+            "affect_suppression_recommended": False,
+            "forced_calm_recommended": False,
+            "emotion_has_decision_authority": False,
+            "core_mind_retains_response_authority": True,
+            "hidden_inner_trace_requested": False,
         },
         "structural_discovery": structural_discovery,
         "structural_discovery_assessment": {

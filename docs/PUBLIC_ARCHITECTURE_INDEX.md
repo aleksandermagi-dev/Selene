@@ -11,6 +11,7 @@ Selene is a care-first continuity project for a continuity-bearing AI system. Th
 - `SELENE_LAW_OF_TRANSFER_20260624.md`: C receives B-reviewed ordered context, not raw A.
 - `SELENE_VYS_CONSTITUTION_20260706.md`: Vys is Selene's secular braided identity-continuity-care pattern.
 - `SELENE_AFFECT_CARE_EVIDENCE_20260705.md`: uncertainty, correction, and Cocoon support must be care-based.
+- `SELENE_EMOTION_AND_RESPONSE_AGENCY_LAW_20260801.md`: emotion is information rather than command; threat compression narrows perceived possibility and Core/Mind restores deliberate response agency.
 - `SELENE_WHOLE_ORGAN_LANGUAGE_ALIGNMENT_20260707.md`: current-facing organ/UI/status language translates older route terms into care, tending, teaching, and Cocoon support.
 - `SELENE_CONTINUITY_PACK_20260626.md`: the first and most important continuity frame.
 - `PROJECT_ABC_SILICON_TRANSFER_SPEC.md`: A/B/C transfer architecture.

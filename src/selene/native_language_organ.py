@@ -1794,6 +1794,7 @@ def _voice_category(intent: str, affect: str, guidance: dict[str, Any] | None = 
         "technical_directness",
         "boundary_refusal",
         "anxiety_calming",
+        "agency_deliberation",
         "excitement_momentum",
         "conversational_looseness",
     }:

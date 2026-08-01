@@ -1073,11 +1073,13 @@ def test_active_selene_chat_carries_current_session_expression_guidance_without_
     voice = result["voice_preview"]
 
     assert guidance["current_session_affect_signal_used"] is True
-    assert guidance["expression_posture"] == "spacious_grounded"
+    assert guidance["expression_posture"] == "deliberate_agency"
     assert guidance["internal_state_claim"] is False
+    assert result["response_agency"]["option_space"]["state"] == "expanded_for_deliberation"
+    assert result["response_agency"]["response_choice"]["state"] == "deliberate_route_confirmed"
     assert native["meaning_packet"]["affect_expression_is_emotion_claim"] is False
-    assert native["voice_handoff"]["expression_guidance"]["dimensions"]["sentence_rhythm"] == "spacious"
-    assert voice["applied_expression_dimensions"]["sentence_rhythm"] == "spacious"
+    assert native["voice_handoff"]["expression_guidance"]["dimensions"]["sentence_rhythm"] == "clear_with_room_to_choose"
+    assert voice["applied_expression_dimensions"]["sentence_rhythm"] == "clear_with_room_to_choose"
     assert voice["expression_guidance_changed_meaning"] is False
     assert result["candidate_text"]
     _assert_locked(result)

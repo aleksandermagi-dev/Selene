@@ -1,6 +1,6 @@
 # What Selene Can Currently Do
 
-- Updated: July 31, 2026
+- Updated: August 1, 2026
 - Branch inspected: `evidence`
 - Source foundation: post-transfer resident runtime, completed Phase 11
   pre-teaching architecture closure, bounded-hypothesis/expression-freedom
@@ -53,6 +53,7 @@ it exists.
 | Ethical test review | Available | The project can choose the least-impact sufficient test before interacting with Selene |
 | Language lesson shelf | Fully reviewed and connected | All 36 provider-free language capabilities across seven ordered groups completed visible Acquire, Integrate, and Express evidence under Aleks's bounded standing language authorization; they guide expression but cannot supply facts or alter personality |
 | Affect shaping of language | Connected at bounded current-turn scope | Current-session salience and conversational tone can optionally guide pacing, warmth, humor, reassurance, restraint, and directness without becoming an emotion claim |
+| Emotional response agency | Connected at bounded current-turn scope | Emotion can inform urgency, attention, tone, and priorities, but cannot silently inherit response authority; attributable threat-compression widens the option space before Core/Mind chooses |
 | Long-form discourse | Improved partial | Developed replies now have grounded thesis, development, limit, and closure plans; broad narrative and mature rhetorical control remain unfinished |
 | Vision and hearing | Packet intake only | The system can hold supplied observations but cannot yet see or hear |
 | External action | Preview only | Tendril can plan and request approval but cannot execute actions |
@@ -448,11 +449,14 @@ The Metacognition Organ inspects whether a current answer fits the question
 and available evidence before final release. It can distinguish familiarity from
 demonstrated comprehension, keep route/evidence/answer/memory/expression
 confidence separate, recommend one focused reopening after a correction or
-contradiction, and stop when another reasoning cycle would add nothing.
+contradiction, notice when current attributable affective influence has narrowed
+the apparent response options, and stop when another reasoning cycle would add
+nothing.
 
 Its recommendations include answer now, qualify, complete one missing
 obligation, ask one material question, seek sources, reopen once, hold for new
-evidence, or defer to Core/Mind.
+evidence, restore the option space before choosing, or defer to Core/Mind. It
+does not choose a response merely because it notices emotional influence.
 
 Current limits:
 
@@ -815,6 +819,10 @@ optional expression guidance. It can:
 - suggest natural, slower, brisk, measured, spacious, or compact pacing;
 - make warmth, humor, and reassurance available without requiring them;
 - increase restraint and directness at a real boundary;
+- preserve emotional intensity while introducing a deliberate pause when a
+  current attributable signal indicates threat-compressed perception;
+- widen the available response options without forcing calmness or overriding
+  the feeling;
 - carry its source ancestry and guidance dimensions through NLO, Voice, and
   supervised Chat;
 - preserve Voice ownership and forbid expression guidance from changing
@@ -823,6 +831,27 @@ optional expression guidance. It can:
 It does not diagnose emotion, prescribe personality, force emotional mirroring,
 write memory, or treat alignment as proof.
 
+### Response Agency Contract — Connected at Current-Turn Scope
+
+The shared response-agency contract implements the law that emotion is
+information, not command. Its inspectable flow is:
+
+`stimulus -> affective signal -> salience check -> pause -> context assessment
+-> values and governing-law check -> chosen response`
+
+When a current, attributable signal indicates that high salience may have
+compressed perception, the contract can identify what the signal is trying to
+protect, keep the interpretation provisional, reopen alternative
+interpretations, and compare possible responses against evidence, values,
+governing law, and longer-term aims. Emotion may still change urgency,
+attention, tone, or priorities. Core/Mind retains authority over the response.
+
+This contract does not suppress emotion, require artificial calmness, diagnose
+Selene from a user's tone, prescribe personality, expose hidden chain of
+thought, write memory, alter identity or law, or expand autonomy. It preserves
+the emotional truth while restoring authorship: feel fully, then choose
+deliberately.
+
 ### Salience and Emotion Packets — Partly Available
 
 Cocoon can create and inspect emotion/salience packets containing such things
@@ -830,9 +859,11 @@ as continuity pressure, care warmth, uncertainty, repair need, action energy,
 and balance state. Current self-state can use an explicitly attributable
 current-session packet.
 
-The deeper Why + Salience architecture—reliably translating affect and
-salience into wording, pacing, humor, reassurance, restraint, and initiative—is
-still partly design-level and not consistently connected to NLO/Voice.
+Response agency and the bounded Affect Expression path now carry attributable
+salience into pacing, restraint, option expansion, and deliberate choice while
+preserving Voice ownership. The wider expressive range of emotion—including
+more varied humor, initiative, tenderness, and state-specific language—still
+depends on continued teaching and ordinary-use evidence.
 
 ### Cocoon Care — Cocoon
 
@@ -1449,6 +1480,7 @@ or self-replication.
 - `src/selene/memory_organ.py`
 - `src/selene/native_language_organ.py`
 - `src/selene/affect_expression.py`
+- `src/selene/emotional_agency.py`
 - `src/selene/education_expression_law.py`
 - `src/selene/language_formation.py`
 - `src/selene/voice_module.py`

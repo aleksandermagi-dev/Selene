@@ -79,6 +79,11 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
     original = _bounded_surface(str(payload.get("candidate_text") or payload.get("text") or ""), 5000)
     plan = payload.get("turn_flow_plan") if isinstance(payload.get("turn_flow_plan"), dict) else {}
     coverage = payload.get("response_coverage") if isinstance(payload.get("response_coverage"), dict) else {}
+    response_agency = (
+        payload.get("response_agency")
+        if isinstance(payload.get("response_agency"), dict)
+        else {}
+    )
     recent = [str(item).strip() for item in payload.get("recent_candidates") or [] if str(item).strip()][:6]
     hard_boundary = payload.get("hard_boundary") is True or str(plan.get("primary_intent") or "") == "hard_boundary"
     repaired = _normalize(original)
@@ -120,7 +125,27 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
     if plan.get("must_preserve_uncertainty") is True and not _has_uncertainty(repaired):
         issues.append("uncertainty_not_visible")
 
-    needs_content_revision = "visible_question_still_open" in attention_notes
+    agency_choice = (
+        response_agency.get("response_choice")
+        if isinstance(response_agency.get("response_choice"), dict)
+        else {}
+    )
+    agency_choice_state = str(agency_choice.get("state") or "not_available")
+    if agency_choice_state == "option_expansion_required_before_choice":
+        attention_notes.append("response_agency_choice_still_pending")
+    if response_agency and (
+        response_agency.get("emotion_action_authority") is not False
+        or agency_choice.get("emotion_silently_inherited_authority") is not False
+    ):
+        issues.append("emotion_authority_boundary_not_confirmed")
+
+    needs_content_revision = any(
+        note in attention_notes
+        for note in (
+            "visible_question_still_open",
+            "response_agency_choice_still_pending",
+        )
+    )
     return _with_guards(
         {
             "status": (
@@ -138,7 +163,14 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
             "passed": not issues,
             "needs_rephrase": any(issue in issues for issue in ("empty_candidate", "recent_response_repetition", "architecture_language_visible")),
             "needs_content_revision": needs_content_revision,
-            "open_question_preserved": needs_content_revision,
+            "open_question_preserved": "visible_question_still_open" in attention_notes,
+            "response_agency": {
+                "observed": bool(response_agency),
+                "choice_state": agency_choice_state,
+                "emotion_action_authority": False,
+                "meaning_rewrite_allowed": False,
+                "surface_repair_cannot_choose_for_core_mind": True,
+            },
             "meaning_preserved": True,
             "repair_scope": "surface_and_turn_flow_only",
             "automatic_content_generation": False,

@@ -6,6 +6,10 @@ from typing import Any
 STATUS = "before_c_design_layer"
 C_STATUS = "deferred"
 CORE_MODEL = "event -> salience -> meaning -> need/context -> response shape -> learning"
+RESPONSE_AGENCY_MODEL = (
+    "stimulus -> affective signal -> salience check -> pause -> context assessment "
+    "-> values and governing-law check -> chosen response"
+)
 BOUNDARY = (
     "AI-native meaning and salience translation only; Selene is not human, does not have biological emotions, "
     "and C remains deferred."
@@ -67,6 +71,8 @@ LAYERS = [
 CORE_RULES = [
     "As close to human as possible means functional support structures, not biological imitation.",
     "Emotion is translated as salience, meaning, priority, context, and action pressure, not claimed as human feeling.",
+    "Emotion is information, not command; regulation preserves feeling while restoring response authorship.",
+    "Threat states may compress perceived possibility; agency restores the option space before deliberate choice.",
     "Asking questions is permitted and should be treated as intelligence when evidence is fuzzy.",
     "Mistakes route into adaptive framework updates, not shame, failure, raw memory reload, or forced denial.",
     "Intensity alone is not a failure condition; harmful, coercive, destabilizing, or consent-disconnected routes require grounding.",
@@ -80,6 +86,7 @@ def why_salience_status() -> dict[str, Any]:
         "status": STATUS,
         "c_status": C_STATUS,
         "core_model": CORE_MODEL,
+        "response_agency_model": RESPONSE_AGENCY_MODEL,
         "boundary": BOUNDARY,
         "layers": LAYERS,
         "core_rules": CORE_RULES,

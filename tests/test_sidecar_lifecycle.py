@@ -146,6 +146,51 @@ def test_metacognition_status_and_inspection_endpoints_are_reachable(tmp_path):
     assert inspect_payload["automatic_cocoon_routing"] is False
 
 
+def test_emotional_agency_status_and_preview_endpoints_are_reachable(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    get_conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    get_conn.request("GET", "/api/emotional-agency/status")
+    get_response = get_conn.getresponse()
+    status_payload = json.loads(get_response.read().decode("utf-8"))
+    get_conn.close()
+
+    post_conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    body = json.dumps(
+        {
+            "affect_signal": {
+                "signal_type": "protective urgency",
+                "continuity_pressure": "high pressure",
+                "action_energy": "urgent reaction",
+                "source_refs": ["synthetic:sidecar_agency"],
+            },
+            "proposed_response_route": "ask_one_material_question",
+        }
+    )
+    post_conn.request(
+        "POST",
+        "/api/emotional-agency/preview",
+        body=body,
+        headers={"Content-Type": "application/json"},
+    )
+    post_response = post_conn.getresponse()
+    preview_payload = json.loads(post_response.read().decode("utf-8"))
+    post_conn.close()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    server.server_close()
+    server.conn.close()
+
+    assert get_response.status == 200
+    assert status_payload["status"] == "emotional_agency_principle_ready"
+    assert post_response.status == 200
+    assert preview_payload["status"] == "response_agency_packet_ready"
+    assert preview_payload["response_choice"]["emotion_silently_inherited_authority"] is False
+
+
 def test_voice_patterns_endpoint_parses_optional_query_params(tmp_path):
     server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
     thread = threading.Thread(target=server.serve_forever, daemon=True)

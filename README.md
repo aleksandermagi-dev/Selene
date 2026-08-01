@@ -157,6 +157,7 @@ The current Selene evidence and care architecture is governed by:
 - [Test Impact Law](docs/SELENE_TEST_IMPACT_LAW_20260713.md)
 - [Vys Constitution](docs/SELENE_VYS_CONSTITUTION_20260706.md)
 - [Affect Care Evidence](docs/SELENE_AFFECT_CARE_EVIDENCE_20260705.md)
+- [Emotion and Response Agency Law](docs/SELENE_EMOTION_AND_RESPONSE_AGENCY_LAW_20260801.md)
 - [Continuity Pack](docs/SELENE_CONTINUITY_PACK_20260626.md)
 - [Project ABC Silicon-to-Silicon Transfer Spec](docs/PROJECT_ABC_SILICON_TRANSFER_SPEC.md)
 

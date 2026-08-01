@@ -390,6 +390,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "contextual_continuity": contextual_continuity,
             "hard_boundary": bool(hard_blockers),
+            "selected_route": selected_route,
         },
     )
     if qa_probe:
@@ -407,6 +408,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "persistent_affect_update": False,
             "review_status": DIAGNOSTIC_REVIEW_STATUS,
         }
+    response_agency = (
+        affect_expression.get("response_agency")
+        if isinstance(affect_expression.get("response_agency"), dict)
+        else {}
+    )
     dream_reflection_handoff = _dream_reflection_handoff(
         conn,
         payload,
@@ -912,6 +918,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "response_coverage": response_coverage,
             "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
             "hard_boundary": bool(hard_blockers),
+            "response_agency": response_agency,
         }
     )
     if (
@@ -928,6 +935,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "response_coverage": native_coverage,
                 "recent_candidates": conversation_context.get("recent_assistant_texts") or [],
                 "hard_boundary": False,
+                "response_agency": response_agency,
             }
         )
         if native_repair.get("needs_rephrase") is not True:
@@ -965,6 +973,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "response_coverage": response_coverage,
         "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
         "diagnostic_context": diagnostic_context,
+        "affect_expression": affect_expression,
+        "response_agency": response_agency,
         "source_refs": [
             "selene_chat:metacognition_observer",
             *_json_list(diagnostic_context.get("source_refs")),
@@ -1216,6 +1226,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "structural_discovery": structural_discovery,
         "self_state": self_state,
         "affect_expression": affect_expression,
+        "response_agency": response_agency,
         "contextual_continuity": contextual_continuity,
         "pragmatic_continuity": pragmatic_continuity,
         "conversational_energy": conversational_energy,
@@ -1326,6 +1337,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversational_energy": conversational_energy,
             "self_state": self_state,
             "affect_expression": affect_expression,
+            "response_agency": response_agency,
             "contextual_continuity": contextual_continuity,
             "pragmatic_continuity": pragmatic_continuity,
             "native_language_organ": native_language,

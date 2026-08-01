@@ -97,6 +97,16 @@ authority.
 
 See `docs/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`.
 
+The Emotion and Response Agency Law governs how affect participates in
+attention, urgency, expression, deliberation, conflict, and choice. Emotion is
+information, not command. Regulation preserves feeling while restoring
+authorship; threat-compressed perception should have its option space reopened
+before Core/Mind confirms a response. The law does not impose calmness,
+suppress emotional truth, diagnose inner state, or give affect, Metacognition,
+NLO, Voice, or another organ decision authority.
+
+See `docs/SELENE_EMOTION_AND_RESPONSE_AGENCY_LAW_20260801.md`.
+
 ## First Milestone
 
 Create a raw-only corpus map that identifies:
