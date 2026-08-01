@@ -225,6 +225,15 @@ from .teaching_lifecycle import (
     list_teaching_lifecycles,
     teaching_lifecycle_status,
 )
+from .study_workspace import (
+    answer_study_question,
+    ask_study_question,
+    get_study_session,
+    list_study_sessions,
+    start_study_session,
+    study_workspace_status,
+    update_study_session,
+)
 from .my_office_cleanup import clean_up_my_office_residue
 from .native_generation import compose_native_response
 from .native_language_organ import (
@@ -671,6 +680,20 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": evaluate_understanding(conn, payload)}
     if route_key == "comprehension.turn.packet":
         return {"route": route_key, "result": build_comprehension_packet(conn, payload)}
+    if route_key == "study.status":
+        return {"route": route_key, "result": study_workspace_status(conn)}
+    if route_key == "study.sessions.list":
+        return {"route": route_key, "result": list_study_sessions(conn, payload)}
+    if route_key == "study.session.detail":
+        return {"route": route_key, "result": get_study_session(conn, payload)}
+    if route_key == "study.session.start":
+        return {"route": route_key, "result": start_study_session(conn, payload)}
+    if route_key == "study.session.update":
+        return {"route": route_key, "result": update_study_session(conn, payload)}
+    if route_key == "study.question.ask":
+        return {"route": route_key, "result": ask_study_question(conn, payload)}
+    if route_key == "study.question.answer":
+        return {"route": route_key, "result": answer_study_question(conn, payload)}
     if route_key == "teaching.lifecycle.status":
         return {"route": route_key, "result": teaching_lifecycle_status(conn)}
     if route_key == "teaching.lifecycle.list":

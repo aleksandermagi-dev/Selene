@@ -280,6 +280,25 @@ def evaluate_response_coverage(
             str(item) for item in semantic_matches.get(obligation_id) or []
         ]
         semantic_addressed = bool(candidate.strip() and matched_semantic_unit_ids)
+        obligation_language = " ".join(
+            [
+                str(obligation.get("source_text") or ""),
+                str(obligation.get("parent_source_text") or ""),
+            ]
+        ).lower()
+        quantitative_required = bool(
+            re.search(r"\b(?:how many|altogether|calculate|count|total)\b", obligation_language)
+        )
+        quantitative_answer_present = bool(
+            re.search(
+                r"\b(?:\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|"
+                r"eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b",
+                candidate_lower,
+            )
+        )
+        if quantitative_required and not quantitative_answer_present:
+            visible_text_addressed = False
+            semantic_addressed = False
         addressed = visible_text_addressed or semantic_addressed
         loop_id = str(obligation.get("loop_id") or "")
         if addressed and loop_id:
@@ -688,7 +707,8 @@ def _split_coordinated_acts(text: str, *, interrogative: bool) -> list[str]:
         r"(?:what|which|how|why|when|where|who|"
         r"can|could|would|will|"
         r"compare|explain|give|tell|show|list|summarize|recap|say|"
-        r"recommend|choose|name|describe|identify|walk|use|add|include|put)"
+        r"recommend|choose|name|describe|identify|state|separate|distinguish|"
+        r"calculate|count|walk|use|add|include|put)"
     )
     normalized = re.sub(
         r"(?i)\b(?:first|second|third|finally|lastly)\s*,?\s*",
@@ -923,6 +943,13 @@ def _term_key(word: str) -> str:
         "identically": "identical",
         "holds": "hold",
         "opportunities": "opportunity",
+        "observations": "observation",
+        "interpretations": "interpretation",
+        "conclusions": "conclusion",
+        "investigations": "investigation",
+        "revised": "revise",
+        "revisable": "revise",
+        "revision": "revise",
         "plans": "plan",
         "questions": "question",
         "reasons": "reason",
@@ -950,7 +977,8 @@ def _utterance_units(value: str) -> list[dict[str, Any]]:
         elif re.match(
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
             r"(?:compare|explain|show|tell|help|give|list|summarize|check|"
-            r"recommend|suggest|propose|outline|walk|return\b.*\b(?:explain|answer|summarize))\b",
+            r"recommend|suggest|propose|outline|walk|describe|identify|state|"
+            r"separate|distinguish|calculate|count|return\b.*\b(?:explain|answer|summarize))\b",
             lower,
         ):
             kind = "direct_request"

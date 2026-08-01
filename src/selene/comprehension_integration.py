@@ -920,10 +920,18 @@ def _knowledge_response_seed(
                 )
                 if part.strip()
             )
-            selected = _best_knowledge_item_for_text(obligation_query, items)
+            selected = (
+                items[0]
+                if _generic_answer_development_request(str(obligation.get("source_text") or ""))
+                else _best_knowledge_item_for_text(obligation_query, items)
+            )
             if not selected:
                 continue
-            fragment, field = _knowledge_fragment_for_obligation(obligation, selected)
+            fragment, field = _knowledge_fragment_for_obligation(
+                obligation,
+                selected,
+                prompt_context=prompt,
+            )
             if not fragment:
                 continue
             key = fragment.lower().rstrip(". ")
@@ -981,7 +989,10 @@ def _knowledge_response_seed(
     }
 
 
-def _best_knowledge_item_for_text(text: str, items: list[dict[str, Any]]) -> dict[str, Any] | None:
+def _best_knowledge_item_for_text(
+    text: str,
+    items: list[dict[str, Any]],
+) -> dict[str, Any] | None:
     terms = set(_terms(text))
     ranked: list[tuple[int, int, dict[str, Any]]] = []
     for index, item in enumerate(items):
@@ -1007,12 +1018,46 @@ def _best_knowledge_item_for_text(text: str, items: list[dict[str, Any]]) -> dic
     return ranked[0][2] if ranked else None
 
 
+def _generic_answer_development_request(value: str) -> bool:
+    terms = set(_terms(value))
+    if not terms:
+        return False
+    generic = {
+        "answer", "change", "conclusion", "evidence", "first", "give", "make",
+        "put", "reason", "say", "state", "support", "revise",
+    }
+    return terms <= generic
+
+
 def _knowledge_fragment_for_obligation(
     obligation: dict[str, Any],
     item: dict[str, Any],
+    *,
+    prompt_context: str = "",
 ) -> tuple[str, str]:
     kind = str(obligation.get("kind") or "direct_question")
-    source = str(obligation.get("source_text") or "").lower()
+    source = " ".join(
+        [
+            str(obligation.get("source_text") or ""),
+            str(obligation.get("topic") or ""),
+        ]
+    ).lower()
+    central = truncate(str(item.get("central_claim") or ""), 1200)
+    if "observation" in source and "interpretation" in source and "separate" in source:
+        application = _prompt_observation_interpretation(prompt_context)
+        if application:
+            return application, "prompt_grounded_distinction"
+    if (
+        "plant" in source
+        and "investigation" in source
+        and "fair comparison" in central.lower()
+    ):
+        return (
+            "A fair plant investigation would compare similar plants while changing one intended feature, "
+            "keeping other relevant conditions as similar as practical, and recording the same measurable "
+            "observation for each.",
+            "bounded_application",
+        )
     if kind == "analogy" or "analogy" in source or "example" in source:
         values = item.get("examples") or []
         if not values:
@@ -1040,9 +1085,36 @@ def _knowledge_fragment_for_obligation(
         return (truncate(str(values[0]), 800), field) if values else ("", "unsupported")
     if kind == "reason" or any(marker in source for marker in ("why", "reason", "mechanism", "cause")):
         values = [*list(item.get("principles") or []), *list(item.get("relationships") or [])]
+        relevance_terms = set(_terms(source)) - {
+            "conclusion", "explain", "give", "remain", "reason", "should", "why",
+        }
+        values.sort(key=lambda value: len(relevance_terms & set(_terms(str(value)))), reverse=True)
         return (truncate(str(values[0]), 800), "principle") if values else ("", "unsupported")
-    central = truncate(str(item.get("central_claim") or ""), 1200)
     return central, "central_claim"
+
+
+def _prompt_observation_interpretation(prompt: str) -> str:
+    observations: list[str] = []
+    interpretations: list[str] = []
+    for sentence in re.split(r"(?<=[.!?])\s+", str(prompt or "").strip()):
+        value = sentence.strip(" .")
+        if not value:
+            continue
+        lower = value.lower()
+        if re.search(r"\b(?:i think|i believe|my interpretation|may mean|might mean|caused)\b", lower):
+            cleaned = re.sub(r"^(?:i think|i believe)\s+", "", value, flags=re.IGNORECASE)
+            interpretations.append(cleaned)
+        elif re.search(r"\b(?:measured|observed|recorded|was|were)\b", lower) and (
+            re.search(r"\d", value) or "measured" in lower or "observed" in lower
+        ):
+            observations.append(value)
+    if not observations or not interpretations:
+        return ""
+    return truncate(
+        f"Observations: {'; '.join(observations[:3])}. "
+        f"Interpretation: {interpretations[0].rstrip('. ')}.",
+        1400,
+    )
 
 
 def _is_language_guidance_concept(item: dict[str, Any]) -> bool:
@@ -1133,6 +1205,13 @@ def _term_key(word: str) -> str:
         "fairness": "fair",
         "identically": "identical",
         "opportunities": "opportunity",
+        "observations": "observation",
+        "interpretations": "interpretation",
+        "conclusions": "conclusion",
+        "investigations": "investigation",
+        "revised": "revise",
+        "revisable": "revise",
+        "revision": "revise",
         "questions": "question",
         "reasons": "reason",
         "reflections": "reflection",

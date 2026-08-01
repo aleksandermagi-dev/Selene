@@ -98,6 +98,15 @@ def test_ordinary_comparison_is_not_misclassified_as_an_analogy():
     assert "analogy" not in packet["detected_forms"]
 
 
+def test_desiderative_like_is_not_misclassified_as_an_analogy():
+    packet = interpret_figurative_language(
+        {"text": "I'd like to do a gentle learning activity together. It is just a way to study."}
+    )
+
+    assert "analogy" not in packet["detected_forms"]
+    assert packet["analogy_mapping"] == {}
+
+
 def test_quoted_sequence_metaphor_and_situational_sarcasm_use_visible_cues():
     metaphor = interpret_figurative_language(
         {

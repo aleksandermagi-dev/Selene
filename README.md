@@ -26,6 +26,10 @@ Selene is organized as a system of distinct responsibilities:
   applicable understanding before it can become retained knowledge.
 - **Metacognition** checks answer fit, confidence, contradiction, correction,
   reopening, and when further recursion should stop.
+- **Study** gives Selene a deliberate waking workspace for revisiting approved
+  knowledge, recording descriptive learning evidence, and asking questions;
+  Aleks's answers become attributable teaching updates rather than hidden
+  retention.
 - **NLO and Voice** turn supported meaning into Selene's own contextual
   language without making teaching material her personality.
 - **Memory organs** keep reviewed personal continuity separate from general

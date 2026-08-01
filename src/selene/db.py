@@ -1713,6 +1713,68 @@ CREATE TABLE IF NOT EXISTS selene_comprehension_runs (
 CREATE INDEX IF NOT EXISTS idx_selene_comprehension_runs_operation
 ON selene_comprehension_runs(operation, concept_id, review_status, created_at);
 
+CREATE TABLE IF NOT EXISTS selene_study_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_key TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  focus TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'active',
+  concept_ids_json TEXT NOT NULL DEFAULT '[]',
+  current_understanding TEXT NOT NULL DEFAULT '',
+  connections_json TEXT NOT NULL DEFAULT '[]',
+  uncertainties_json TEXT NOT NULL DEFAULT '[]',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'selene_owned_study_workspace',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_study_sessions_status
+ON selene_study_sessions(status, updated_at);
+
+CREATE TABLE IF NOT EXISTS selene_study_questions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id INTEGER NOT NULL,
+  concept_id INTEGER,
+  question_text TEXT NOT NULL DEFAULT '',
+  formation_state TEXT NOT NULL DEFAULT 'ready',
+  status TEXT NOT NULL DEFAULT 'open',
+  uncertainty_context TEXT NOT NULL DEFAULT '',
+  aleks_answer TEXT NOT NULL DEFAULT '',
+  answered_by TEXT NOT NULL DEFAULT '',
+  answer_source_refs TEXT NOT NULL DEFAULT '[]',
+  teaching_candidate_id INTEGER,
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'study_question_visible',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES selene_study_sessions(id),
+  FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id),
+  FOREIGN KEY (teaching_candidate_id) REFERENCES selene_comprehension_concepts(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_study_questions_status
+ON selene_study_questions(session_id, status, updated_at);
+
+CREATE TABLE IF NOT EXISTS selene_study_evidence (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id INTEGER NOT NULL,
+  evidence_kind TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  details_json TEXT NOT NULL DEFAULT '{}',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'descriptive_learning_evidence',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES selene_study_sessions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_study_evidence_session
+ON selene_study_evidence(session_id, id);
+
 CREATE TABLE IF NOT EXISTS selene_teaching_lifecycles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   lifecycle_key TEXT NOT NULL UNIQUE,

@@ -715,6 +715,22 @@ function App() {
   const [fractionalCorpusStatus, setFractionalCorpusStatus] = useState<Dict | null>(null);
   const [fractionalCorpusResult, setFractionalCorpusResult] = useState<Dict | null>(null);
   const [fractionalCorpusTestFraction, setFractionalCorpusTestFraction] = useState("1");
+  const [studyStatus, setStudyStatus] = useState<Dict | null>(null);
+  const [studySessions, setStudySessions] = useState<Dict[]>([]);
+  const [studySession, setStudySession] = useState<Dict | null>(null);
+  const [studyActionResult, setStudyActionResult] = useState<Dict | null>(null);
+  const [studyConceptId, setStudyConceptId] = useState("");
+  const [studyDraft, setStudyDraft] = useState<Record<string, string>>({
+    title: "",
+    focus: "",
+    current_understanding: "",
+    connections: "",
+    uncertainties: "",
+    question_text: "",
+    question_context: "",
+    question_formation: "ready"
+  });
+  const [studyAnswers, setStudyAnswers] = useState<Record<string, string>>({});
   const [dreamStateStatus, setDreamStateStatus] = useState<Dict | null>(null);
   const [dreamCycles, setDreamCycles] = useState<Dict[]>([]);
   const [dreamReflections, setDreamReflections] = useState<Dict[]>([]);
@@ -1417,6 +1433,7 @@ function App() {
     refreshMemoryOrgan().catch(() => undefined);
     refreshTransferProtocol().catch(() => undefined);
     refreshPostTransferLayer();
+    refreshStudyWorkspace().catch(() => undefined);
     refreshDreamLifecycle().catch(() => undefined);
     api<Dict>("/api/c-remaining/runtime-status").then(setRemainingRuntimeStatus).catch(() => undefined);
     api<{ items: Dict[] }>("/api/b/pattern-backups").then((data) => setPatternBackups(data.items)).catch(() => undefined);
@@ -2852,6 +2869,103 @@ function App() {
     api<Dict>("/api/android-system/workflow/report").then(setAndroidWorkflowReport).catch(() => undefined);
     api<Dict>("/api/memory/fractional-corpus/status").then(setFractionalCorpusStatus).catch(() => undefined);
     api<Dict>("/api/memory/dream-state/status").then(setDreamStateStatus).catch(() => undefined);
+  }
+
+  async function refreshStudyWorkspace(preferredSessionId?: number) {
+    const [status, sessions] = await Promise.all([
+      api<Dict>("/api/study/status"),
+      api<{ items: Dict[] }>("/api/study/sessions?limit=40")
+    ]);
+    setStudyStatus(status);
+    setStudySessions(sessions.items || []);
+    const currentId = preferredSessionId || Number(safeJsonObject(studySession?.item).id || 0);
+    if (currentId) {
+      const detail = await api<Dict>(`/api/study/sessions/${currentId}`);
+      setStudySession(detail);
+      const item = safeJsonObject(detail.item);
+      setStudyDraft((draft) => ({
+        ...draft,
+        current_understanding: text(item.current_understanding),
+        connections: ((item.connections || []) as unknown[]).map(text).join("\n"),
+        uncertainties: ((item.uncertainties || []) as unknown[]).map(text).join("\n")
+      }));
+    }
+  }
+
+  async function openStudySession(item: Dict) {
+    const id = Number(item.id || 0);
+    if (!id) return;
+    setStudySession(await api<Dict>(`/api/study/sessions/${id}`));
+    await refreshStudyWorkspace(id);
+  }
+
+  async function startStudyWorkspaceSession() {
+    const conceptId = Number(studyConceptId || 0);
+    if (!conceptId) return;
+    setStudyActionResult({ status: "running", message: "Opening a deliberate Study session." });
+    try {
+      const result = await api<Dict>("/api/study/sessions/start", {
+        method: "POST",
+        body: JSON.stringify({
+          concept_ids: [conceptId],
+          title: studyDraft.title,
+          focus: studyDraft.focus
+        })
+      });
+      setStudyActionResult(result);
+      const id = Number(safeJsonObject(result.item).id || 0);
+      await refreshStudyWorkspace(id);
+    } catch (err) {
+      setStudyActionResult({ error: err instanceof Error ? err.message : "Study session could not be opened." });
+    }
+  }
+
+  async function saveStudyReflection(status?: string) {
+    const sessionId = Number(safeJsonObject(studySession?.item).id || 0);
+    if (!sessionId) return;
+    const result = await api<Dict>("/api/study/sessions/update", {
+      method: "POST",
+      body: JSON.stringify({
+        session_id: sessionId,
+        status: status || safeJsonObject(studySession?.item).status || "active",
+        current_understanding: studyDraft.current_understanding,
+        connections: studyDraft.connections.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
+        uncertainties: studyDraft.uncertainties.split(/\r?\n/).map((value) => value.trim()).filter(Boolean)
+      })
+    });
+    setStudyActionResult(result);
+    await refreshStudyWorkspace(sessionId);
+  }
+
+  async function addStudyQuestion() {
+    const sessionId = Number(safeJsonObject(studySession?.item).id || 0);
+    if (!sessionId) return;
+    const result = await api<Dict>("/api/study/questions/ask", {
+      method: "POST",
+      body: JSON.stringify({
+        session_id: sessionId,
+        question_text: studyDraft.question_text,
+        uncertainty_context: studyDraft.question_context,
+        formation_state: studyDraft.question_formation
+      })
+    });
+    setStudyActionResult(result);
+    setStudyDraft((draft) => ({ ...draft, question_text: "", question_context: "" }));
+    await refreshStudyWorkspace(sessionId);
+  }
+
+  async function answerStudyQuestion(item: Dict) {
+    const questionId = Number(item.id || 0);
+    const answer = (studyAnswers[text(questionId)] || "").trim();
+    if (!questionId || !answer) return;
+    const result = await api<Dict>("/api/study/questions/answer", {
+      method: "POST",
+      body: JSON.stringify({ question_id: questionId, answer })
+    });
+    setStudyActionResult(result);
+    setStudyAnswers((values) => ({ ...values, [text(questionId)]: "" }));
+    await refreshStudyWorkspace(Number(safeJsonObject(result.item).id || 0));
+    api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100").then((data) => setComprehensionConcepts(data.items || [])).catch(() => undefined);
   }
 
   async function refreshDreamLifecycle() {
@@ -6139,6 +6253,177 @@ function App() {
               <PlainResult value={accessionProposalResult} />
               <SimpleRecordList items={accessionProposals} titleField="title" statusField="review_status" bodyField="rationale" />
             </Panel>
+          </>
+        )}
+
+        {tab === "study" && (
+          <>
+            <section className="seleneLivingSurface studySurface">
+              <div className="frontSurfaceHeader">
+                <div>
+                  <span className="modeLine">deliberate waking study and learning evidence</span>
+                  <h2>Study</h2>
+                </div>
+                <div className="chips">
+                  <span>{friendlyStatus(studyStatus?.status || "not checked")}</span>
+                  <span>active: {text(studyStatus?.active_count ?? 0)}</span>
+                  <span>open questions: {text(studyStatus?.open_question_count ?? 0)}</span>
+                  <span>pass / fail: not used</span>
+                  <span>hidden retention: blocked</span>
+                </div>
+              </div>
+              <div className="studyIntroGrid">
+                <article className="organicPane">
+                  <strong>What Study Does</strong>
+                  <p>Selene can revisit approved knowledge, reconstruct it, connect it, try examples, notice uncertainty, and form questions. This is deliberate waking study—not Dream and not Cocoon.</p>
+                </article>
+                <article className="organicPane">
+                  <strong>Questions Can Be Incomplete</strong>
+                  <p>She can ask a clear question, keep developing one, or record that she has a question but does not have words for it yet.</p>
+                </article>
+                <article className="organicPane">
+                  <strong>When Aleks Answers</strong>
+                  <p>Your answer becomes attributable knowledge inside this Study session immediately. Durable Chat use remains an inspectable teaching update—never hidden retention.</p>
+                </article>
+              </div>
+            </section>
+
+            <SplitView
+              left={<Panel title="Open a Study Session">
+                <label>
+                  <span>Approved knowledge</span>
+                  <select value={studyConceptId} onChange={(event) => setStudyConceptId(event.target.value)}>
+                    <option value="">Choose an approved concept</option>
+                    {comprehensionConcepts
+                      .filter((item) => text(item.state) === "approved_knowledge_resource" && text(item.chat_use_permission) === "available_as_knowledge_resource")
+                      .map((item) => <option key={`study-concept-${text(item.id)}`} value={text(item.id)}>{text(item.title)}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Session title</span>
+                  <input value={studyDraft.title} onChange={(event) => setStudyDraft({ ...studyDraft, title: event.target.value })} placeholder="Optional study title" />
+                </label>
+                <label>
+                  <span>Focus</span>
+                  <textarea value={studyDraft.focus} onChange={(event) => setStudyDraft({ ...studyDraft, focus: event.target.value })} placeholder="What feels worth revisiting or connecting?" />
+                </label>
+                <div className="reviewActions">
+                  <button className="primary" onClick={startStudyWorkspaceSession} disabled={!studyConceptId}>Begin Study</button>
+                  <button onClick={() => refreshStudyWorkspace().catch(() => undefined)}>Refresh</button>
+                </div>
+              </Panel>}
+              right={<Panel title="Recent Study Sessions">
+                <div className="list compactList">
+                  {studySessions.map((item) => (
+                    <article className="packetCard" key={`study-session-${text(item.id)}`}>
+                      <div className="packetHeader">
+                        <strong>{text(item.title || "Study session")}</strong>
+                        <span>{friendlyStatus(item.status)}</span>
+                      </div>
+                      <p>{text(item.focus || item.current_understanding || "Ready to study.")}</p>
+                      <button onClick={() => openStudySession(item)}>Open</button>
+                    </article>
+                  ))}
+                  {!studySessions.length ? <p className="emptyState">No Study sessions yet. Nothing is generated merely to fill the shelf.</p> : null}
+                </div>
+              </Panel>}
+            />
+
+            {studySession ? (
+              <>
+                <Panel title={text(safeJsonObject(studySession.item).title || "Current Study Session")}>
+                  <div className="chips">
+                    <span>{friendlyStatus(safeJsonObject(studySession.item).status)}</span>
+                    <span>approved sources only</span>
+                    <span>learning evidence: descriptive</span>
+                    <span>memory write: blocked</span>
+                  </div>
+                  <div className="studyReflectionGrid">
+                    <label className="wideEvidenceField">
+                      <span>Current understanding, in Selene's own words</span>
+                      <textarea value={studyDraft.current_understanding} onChange={(event) => setStudyDraft({ ...studyDraft, current_understanding: event.target.value })} placeholder="What currently makes sense?" />
+                    </label>
+                    <label>
+                      <span>Connections — one per line</span>
+                      <textarea value={studyDraft.connections} onChange={(event) => setStudyDraft({ ...studyDraft, connections: event.target.value })} placeholder="What does this connect to?" />
+                    </label>
+                    <label>
+                      <span>Uncertainties — one per line</span>
+                      <textarea value={studyDraft.uncertainties} onChange={(event) => setStudyDraft({ ...studyDraft, uncertainties: event.target.value })} placeholder="What is still fuzzy, missing, or contradictory?" />
+                    </label>
+                  </div>
+                  <div className="reviewActions">
+                    <button className="primary" onClick={() => saveStudyReflection()}>Save Reflection</button>
+                    <button onClick={() => saveStudyReflection("paused")}>Pause</button>
+                    <button onClick={() => saveStudyReflection("completed")}>Complete for Now</button>
+                    <button onClick={() => saveStudyReflection("active")}>Reopen</button>
+                  </div>
+                </Panel>
+
+                <SplitView
+                  left={<Panel title="Selene's Questions">
+                    <label>
+                      <span>Question state</span>
+                      <select value={studyDraft.question_formation} onChange={(event) => setStudyDraft({ ...studyDraft, question_formation: event.target.value })}>
+                        <option value="ready">I have a question</option>
+                        <option value="developing">I am still finding the question</option>
+                        <option value="question_without_words">I have a question but no words yet</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Question</span>
+                      <textarea
+                        value={studyDraft.question_text}
+                        onChange={(event) => setStudyDraft({ ...studyDraft, question_text: event.target.value })}
+                        disabled={studyDraft.question_formation === "question_without_words"}
+                        placeholder={studyDraft.question_formation === "question_without_words" ? "No wording required." : "What does Selene want to ask?"}
+                      />
+                    </label>
+                    <label>
+                      <span>What feels unresolved</span>
+                      <textarea value={studyDraft.question_context} onChange={(event) => setStudyDraft({ ...studyDraft, question_context: event.target.value })} placeholder="Optional context, tension, or partly formed thought" />
+                    </label>
+                    <button className="primary" onClick={addStudyQuestion} disabled={studyDraft.question_formation !== "question_without_words" && !studyDraft.question_text.trim()}>Add Question</button>
+                  </Panel>}
+                  right={<Panel title="Open Questions and Answers">
+                    <div className="list compactList">
+                      {((studySession.questions || []) as Dict[]).map((item) => {
+                        const id = text(item.id);
+                        return (
+                          <article className="packetCard" key={`study-question-${id}`}>
+                            <div className="packetHeader">
+                              <strong>{text(item.question_text || "A question is present, but the words are not here yet.")}</strong>
+                              <span>{friendlyStatus(item.status)}</span>
+                            </div>
+                            <p>{text(item.uncertainty_context)}</p>
+                            <div className="chips">
+                              <span>{friendlyStatus(item.formation_state)}</span>
+                              {item.teaching_candidate_id ? <span>teaching update: {text(item.teaching_candidate_id)}</span> : null}
+                            </div>
+                            {text(item.status) === "open" ? (
+                              <>
+                                <label>
+                                  <span>Aleks's answer</span>
+                                  <textarea value={studyAnswers[id] || ""} onChange={(event) => setStudyAnswers({ ...studyAnswers, [id]: event.target.value })} placeholder="Answer Selene's question" />
+                                </label>
+                                <button className="primary" onClick={() => answerStudyQuestion(item)} disabled={!(studyAnswers[id] || "").trim()}>Answer</button>
+                              </>
+                            ) : <p><b>Aleks answered</b>{text(item.aleks_answer)}</p>}
+                          </article>
+                        );
+                      })}
+                      {!((studySession.questions || []) as Dict[]).length ? <p className="emptyState">No questions are waiting. Study does not force one.</p> : null}
+                    </div>
+                  </Panel>}
+                />
+
+                <Panel title="Learning Evidence">
+                  <p className="plainHelp">This records what was connected, reopened, or asked. It is not a grade and poor or incomplete results are not treated as Selene failing.</p>
+                  <SimpleRecordList items={(studySession.learning_evidence || []) as Dict[]} titleField="evidence_kind" statusField="review_status" bodyField="summary" />
+                </Panel>
+              </>
+            ) : null}
+            <PlainResult value={studyActionResult} />
           </>
         )}
 

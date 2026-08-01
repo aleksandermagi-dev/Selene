@@ -687,7 +687,8 @@ def _utterance_units(text: str) -> list[dict[str, Any]]:
             for part in re.split(
                 r"(?i)(?:;\s*|,\s*(?:and\s+)?)(?=(?:can|could|would|will|what|which|how|why|"
                 r"compare|explain|give|tell|show|list|summarize|recap|recommend|choose|"
-                r"use|add|include|name|say|put)\b)",
+                r"use|add|include|name|say|put|describe|identify|state|separate|"
+                r"distinguish|calculate|count)\b)",
                 sentence,
             )
             if part.strip(" ,")
@@ -707,7 +708,8 @@ def _utterance_units(text: str) -> list[dict[str, Any]]:
         elif re.match(
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
             r"(?:compare|explain|show|tell|help|give|list|summarize|check|walk|"
-            r"use|add|include|name|say|put|return\b.*\b(?:explain|answer|summarize))\b",
+            r"use|add|include|name|say|put|describe|identify|state|separate|"
+            r"distinguish|calculate|count|return\b.*\b(?:explain|answer|summarize))\b",
             lower,
         ):
             kind = "direct_request"

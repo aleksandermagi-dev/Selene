@@ -538,6 +538,7 @@ def _normalize_obligation(item: dict[str, Any]) -> dict[str, Any]:
         "loop_id": str(item.get("loop_id") or ""),
         "kind": str(item.get("kind") or "direct_question"),
         "source_text": truncate(str(item.get("source_text") or ""), 600),
+        "parent_source_text": truncate(str(item.get("parent_source_text") or ""), 600),
         "topic": truncate(str(item.get("topic") or ""), 300),
         "coverage_terms": _text_list(item.get("coverage_terms"), limit=24),
         "required": item.get("required") is not False,

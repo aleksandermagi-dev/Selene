@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from selene.comprehension_integration import _answer_eligible_knowledge_items
+from selene.comprehension_integration import _answer_eligible_knowledge_items, _knowledge_response_seed
 from selene.db import connect, init_db
 from selene.module_router import route_request
 
@@ -62,6 +62,58 @@ def test_answer_knowledge_requires_named_subject_not_generic_or_format_overlap()
 
     assert unrelated == []
     assert relevant[0]["answer_subject_terms"] == ["orbital", "shape"]
+
+
+def test_science_multi_part_synthesis_keeps_topic_continuity_and_builds_bounded_application():
+    observation = {
+        "id": 48,
+        "title": "Observation and interpretation are different",
+        "central_claim": "An observation reports what can be noticed; an interpretation proposes what it may mean.",
+        "principles": [
+            "State what was observed before explaining it.",
+            "An interpretation should remain revisable when new observations appear.",
+        ],
+        "relationships": ["Careful observation supports model revision."],
+        "examples": [],
+        "counterexamples": [],
+        "limits": [],
+        "answer_alignment_terms": ["observation", "interpretation", "evidence", "revise"],
+        "answer_subject_terms": ["observation", "interpretation"],
+        "source_refs": ["test:science-observation"],
+    }
+    fair_comparison = {
+        "id": 50,
+        "title": "Fair comparisons keep relevant conditions clear",
+        "central_claim": "A fair comparison changes one intended feature while keeping other relevant conditions similar.",
+        "principles": ["Record the same measurable observation for each comparison."],
+        "relationships": ["Fair conditions help an interpretation fit the evidence."],
+        "examples": [],
+        "counterexamples": [],
+        "limits": [],
+        "answer_alignment_terms": ["fair", "investigation", "observation", "evidence"],
+        "answer_subject_terms": ["fair"],
+        "source_refs": ["test:science-comparison"],
+    }
+    topic = "observations interpretations fair plant investigation"
+    response = _knowledge_response_seed(
+        (
+            "Two similar plants were measured after one week. Plant A was 12 cm tall and Plant B was 9 cm tall. "
+            "I think extra light caused the difference. Separate the observations, describe a fair plant "
+            "investigation, and explain revision."
+        ),
+        [observation, fair_comparison],
+        response_obligations=[
+            {"id": "separate", "kind": "direct_request", "source_text": "Separate observations from interpretations", "topic": topic},
+            {"id": "investigate", "kind": "direct_request", "source_text": "describe one fair plant investigation", "topic": topic},
+            {"id": "revise", "kind": "reason", "source_text": "explain why a conclusion can be revised by new evidence", "topic": topic},
+        ],
+    )
+
+    assert "Plant A was 12 cm tall" in response["content_seed"]
+    assert "Interpretation: extra light caused the difference" in response["content_seed"]
+    assert "fair plant investigation" in response["content_seed"].lower()
+    assert "revisable when new observations appear" in response["content_seed"]
+    assert "Insulting" not in response["content_seed"]
 
 
 def _propose(conn):

@@ -594,7 +594,15 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "writes_retained_knowledge": False,
         "reviewed_knowledge_owner_unchanged": True,
     }
+    knowledge_content_seed = str(comprehension.get("knowledge_response_seed") or "")
     domain_content_seed = str(answer_engine_support.get("content_seed") or "")
+    if _answer_engine_yields_to_approved_knowledge(answer_engine_support, knowledge_content_seed):
+        domain_content_seed = ""
+        answer_engine_support = {
+            **answer_engine_support,
+            "yielded_to_approved_knowledge": True,
+            "yield_reason": "incomplete comparison/planning output could not outrank relevant approved knowledge",
+        }
     structural_discovery_content_seed = str(
         structural_discovery.get("response_seed") or ""
     )
@@ -611,7 +619,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         epistemic_revision_reply=epistemic_revision_reply,
         structural_discovery_content_seed=structural_discovery_content_seed,
         domain_content_seed=domain_content_seed,
-        knowledge_content_seed=str(comprehension.get("knowledge_response_seed") or ""),
+        knowledge_content_seed=knowledge_content_seed,
         language_content_seed=language_content_seed,
         reasoning_content_seed=reasoning_content_seed,
         contextual_memory_reply=contextual_memory_reply,
@@ -2600,8 +2608,49 @@ def _answer_engine_content_seed(
     return truncate("\n\n".join(parts), 5000)
 
 
+def _answer_engine_yields_to_approved_knowledge(
+    support: dict[str, Any],
+    knowledge_content_seed: str,
+) -> bool:
+    """Do not let an incomplete open-ended adapter hide relevant reviewed knowledge.
+
+    Verified arithmetic and attributed research retain precedence. The yield is
+    limited to comparison/planning output that explicitly remains incomplete,
+    unsupported, or missing grounded detail.
+    """
+    if not knowledge_content_seed.strip():
+        return False
+    domain = str(support.get("selected_domain") or "")
+    if domain != "comparison_planning":
+        return False
+    packet = support.get("answer_packet") if isinstance(support.get("answer_packet"), dict) else {}
+    confidence = support.get("confidence_vector") if isinstance(support.get("confidence_vector"), dict) else {}
+    status = str(support.get("status") or "").lower()
+    seed = str(support.get("content_seed") or "").lower()
+    unanswered = [item for item in packet.get("unanswered_obligations") or [] if item]
+    explicitly_incomplete = bool(
+        unanswered
+        or str(packet.get("no_answer_reason") or "").strip()
+        or "incomplete" in status
+        or str(packet.get("answer_confidence") or confidence.get("answer_confidence") or "")
+        == "partial_missing_obligations"
+        or any(
+            marker in seed
+            for marker in (
+                "not enough grounded detail",
+                "cannot answer that part reliably",
+                "do not have enough ground",
+                "need an attributed fact",
+            )
+        )
+    )
+    return explicitly_incomplete
+
+
 def _preserve_answer_engine_invariants(candidate: str, support: dict[str, Any]) -> str:
     if support.get("used") is not True:
+        return candidate
+    if support.get("yielded_to_approved_knowledge") is True:
         return candidate
     content_seed = str(support.get("content_seed") or "").strip()
     if _domain_answer_should_be_direct_only(support) and content_seed:

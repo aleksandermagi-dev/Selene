@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
 from selene.sidecar import SeleneHandler, SeleneServer
+from selene.comprehension_integration import propose_comprehension_concept
 
 
 class _ConcurrencyProbeHandler(BaseHTTPRequestHandler):
@@ -56,6 +57,60 @@ def test_sidecar_shutdown_endpoint_stops_server(tmp_path):
     assert payload["activation_change"] == "none"
     assert payload["memory_write_active"] is False
     assert not thread.is_alive()
+
+
+def test_sidecar_study_workspace_round_trip_is_local_and_source_bound(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    concept = propose_comprehension_concept(
+        server.conn,
+        {
+            "concept_key": "sidecar-study-concept",
+            "title": "Equal groups",
+            "domain": "mathematics.operations",
+            "material": "Equal groups can be represented with multiplication.",
+            "source_refs": ["curriculum:test:equal-groups"],
+        },
+    )["item"]
+    server.conn.execute(
+        """
+        UPDATE selene_comprehension_concepts
+        SET state = 'approved_knowledge_resource', review_status = 'approved_for_knowledge_use',
+            retention_state = 'retained_reviewed_knowledge',
+            chat_use_permission = 'available_as_knowledge_resource'
+        WHERE id = ?
+        """,
+        (concept["id"],),
+    )
+    server.conn.commit()
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    conn.request(
+        "POST",
+        "/api/study/sessions/start",
+        body=json.dumps({"concept_ids": [concept["id"]], "focus": "Why equal groups multiply"}),
+        headers={"Content-Type": "application/json"},
+    )
+    response = conn.getresponse()
+    started = json.loads(response.read().decode("utf-8"))
+    session_id = int(started["item"]["id"])
+    conn.request("GET", f"/api/study/sessions/{session_id}")
+    detail_response = conn.getresponse()
+    detail = json.loads(detail_response.read().decode("utf-8"))
+    conn.close()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    server.server_close()
+    server.conn.close()
+
+    assert response.status == 200
+    assert detail_response.status == 200
+    assert detail["item"]["focus"] == "Why equal groups multiply"
+    assert detail["item"]["concepts"][0]["id"] == concept["id"]
+    assert detail["memory_write_active"] is False
+    assert detail["hidden_retention_allowed"] is False
 
 
 def test_sidecar_rejects_cross_site_browser_post_before_state_change(tmp_path):

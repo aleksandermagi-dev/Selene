@@ -1674,6 +1674,18 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 
 .modeLine { color: var(--accent-2); display: block; font-size: 13px; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; }
 
+.studySurface { display: grid; gap: 16px; }
+.studyIntroGrid,
+.studyReflectionGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.studyIntroGrid .organicPane { min-height: 130px; }
+.studyIntroGrid p { color: var(--text-muted); margin-bottom: 0; }
+.studyReflectionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 16px 0; }
+.studyReflectionGrid .wideEvidenceField { grid-column: 1 / -1; }
+
 .reviewDeskCard { border-color: var(--accent); }
 .officeTargetMessage {
   background: color-mix(in srgb, var(--accent-3) 12%, var(--panel-bg));
@@ -1759,7 +1771,8 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
     justify-content: center;
   }
   .topLocks { grid-column: 1 / -1; }
-  .settingRow, .summaryGrid, .split, .aleksReviewGrid, .officeGrid, .workbenchDetailGrid, .settingsHomeGrid, .tendrilPath { grid-template-columns: 1fr; }
+  .settingRow, .summaryGrid, .split, .aleksReviewGrid, .officeGrid, .workbenchDetailGrid, .settingsHomeGrid, .tendrilPath, .studyIntroGrid, .studyReflectionGrid { grid-template-columns: 1fr; }
+  .studyReflectionGrid .wideEvidenceField { grid-column: auto; }
   .officeOrbit,
   .memoryNeuronMap,
   .libraryConstellation {

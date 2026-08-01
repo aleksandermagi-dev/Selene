@@ -109,6 +109,51 @@ def test_coordination_preview_routes_each_obligation_and_keeps_code_separate():
     _assert_locked(result)
 
 
+def test_answer_request_preserves_obligation_context_for_completion():
+    result = preview_answer_route(
+        {
+            "prompt": "Describe the evidence and explain why it can change.",
+            "dialogue_obligations": [
+                {
+                    "id": "evidence",
+                    "kind": "reason",
+                    "source_text": "explain why it can change",
+                    "parent_source_text": "Describe the evidence and explain why it can change.",
+                    "topic": "revisable scientific conclusions",
+                    "required": True,
+                }
+            ],
+        }
+    )
+
+    obligation = result["request"]["dialogue_obligations"][0]
+    assert obligation["parent_source_text"].startswith("Describe the evidence")
+    assert obligation["topic"] == "revisable scientific conclusions"
+
+
+def test_strong_equal_group_math_cue_outranks_general_approved_knowledge_route():
+    result = preview_answer_route(
+        {
+            "prompt": "Three shelves hold four jars each. How many jars are there altogether?",
+            "comprehension_context": {
+                "knowledge_context": {
+                    "available": True,
+                    "answer_eligible_items": [
+                        {
+                            "id": 1,
+                            "title": "Equal groups",
+                            "central_claim": "Equal groups connect to multiplication.",
+                            "source_refs": ["test:equal-groups"],
+                        }
+                    ],
+                }
+            },
+        }
+    )
+
+    assert result["domain_route"]["selected_domain"] == "verified_math"
+
+
 def test_chat_bridge_executes_two_supported_domain_obligations_once_each(
     tmp_path, monkeypatch
 ):
@@ -178,6 +223,8 @@ def test_chat_bridge_executes_two_supported_domain_obligations_once_each(
     ("prompt", "domain"),
     [
         ("What is 18 * 7?", "verified_math"),
+        ("Three shelves hold four jars each. How many jars are there altogether?", "verified_math"),
+        ("Compare 34 vs 29 and show the subtraction difference.", "verified_math"),
         ("What is 18 times 7?", "verified_math"),
         ("Inspect this Python traceback and function.", "local_code_inspection"),
         ("Compare both approaches and plan the next step.", "comparison_planning"),

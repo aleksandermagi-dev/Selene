@@ -19,6 +19,22 @@ MAX_AST_NODES = 80
 MAX_POWER = 20
 MAX_RESULT_DIGITS = 240
 
+_SMALL_NUMBER_WORDS = {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+}
+
 _BINARY_SYMBOLS: dict[type[ast.operator], str] = {
     ast.Add: "+",
     ast.Sub: "-",
@@ -277,6 +293,29 @@ def _extract_expression(prompt: str) -> str:
             "divided by": "/",
         }[" ".join(natural.group("operator").lower().split())]
         return f"{natural.group('left')} {operator} {natural.group('right')}"
+    number = r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+    equal_groups = re.search(
+        rf"\b(?P<groups>{number})\s+"
+        r"(?:rows?|shelves|groups?|boxes|bags|teams?|tables?|trays)\b"
+        rf".{{0,80}}?\b(?P<each>{number})\s+"
+        r"[a-z][a-z-]*(?:\s+[a-z][a-z-]*){0,2}\s+each\b",
+        prompt,
+        flags=re.IGNORECASE,
+    )
+    if equal_groups:
+        groups = _small_number(equal_groups.group("groups"))
+        each = _small_number(equal_groups.group("each"))
+        if groups is not None and each is not None:
+            return f"{groups} * {each}"
+    comparison = re.search(
+        r"\b(?P<left>\d+)\b\s*(?:vs\.?|versus|compared\s+(?:with|to))\s*\b(?P<right>\d+)\b",
+        prompt,
+        flags=re.IGNORECASE,
+    )
+    if comparison and re.search(r"\b(?:subtract(?:ion)?|difference|how many more)\b", prompt, flags=re.IGNORECASE):
+        left = int(comparison.group("left"))
+        right = int(comparison.group("right"))
+        return f"{max(left, right)} - {min(left, right)}"
     spans = [item.strip() for item in re.findall(r"[0-9.()+\-*/%^=×÷−\s]{3,}", prompt)]
     candidates = [
         item
@@ -286,6 +325,13 @@ def _extract_expression(prompt: str) -> str:
     if candidates:
         return max(candidates, key=len)
     return ""
+
+
+def _small_number(value: str) -> int | None:
+    token = value.lower().strip()
+    if token.isdigit():
+        return int(token)
+    return _SMALL_NUMBER_WORDS.get(token)
 
 
 def _ready(**payload: Any) -> dict[str, Any]:

@@ -731,6 +731,30 @@ def test_active_selene_chat_can_use_intelligence_os_support_without_architecture
     _assert_locked(result)
 
 
+def test_incomplete_comparison_adapter_yields_to_relevant_approved_knowledge():
+    from selene.selene_chat import _answer_engine_yields_to_approved_knowledge, _preserve_answer_engine_invariants
+
+    incomplete = {
+        "selected_domain": "comparison_planning",
+        "status": "answer_engine_comparison_incomplete_after_bounded_retry",
+        "content_seed": "There is not enough grounded detail to answer this yet.",
+        "answer_packet": {"unanswered_obligations": [{"id": "science"}]},
+    }
+    verified = {
+        "selected_domain": "verified_math",
+        "status": "answer_engine_verified_math_answer_ready",
+        "content_seed": "3 * 4 = 12.",
+        "answer_packet": {"unanswered_obligations": []},
+    }
+
+    assert _answer_engine_yields_to_approved_knowledge(incomplete, "Plants need a fair comparison.") is True
+    assert _answer_engine_yields_to_approved_knowledge(verified, "Equal groups can be multiplied.") is False
+    assert _preserve_answer_engine_invariants(
+        "Approved science knowledge.",
+        {**incomplete, "used": True, "yielded_to_approved_knowledge": True},
+    ) == "Approved science knowledge."
+
+
 def test_active_selene_chat_composes_a_visible_resource_plan_and_scales_its_follow_up(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

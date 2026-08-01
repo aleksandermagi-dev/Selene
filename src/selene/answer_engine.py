@@ -123,18 +123,27 @@ def preview_answer_coordination(payload: dict[str, Any] | None = None) -> dict[s
         ]
     units: list[dict[str, Any]] = []
     for obligation in obligations[:12]:
+        source_text = str(obligation.get("source_text") or request["prompt"])
+        parent_source = str(obligation.get("parent_source_text") or "")
+        obligation_prompt = source_text
+        if parent_source and re.search(
+            r"\b(?:how many|altogether|calculate|count|total)\b",
+            source_text,
+            flags=re.IGNORECASE,
+        ):
+            obligation_prompt = f"{parent_source} {source_text}"
         obligation_domain = (
             request["requested_domain"]
             or _obligation_domain_hint(str(obligation.get("kind") or ""))
         )
         obligation_request = {
             **request,
-            "prompt": str(obligation.get("source_text") or request["prompt"]),
+            "prompt": obligation_prompt,
             "requested_domain": obligation_domain,
             "dialogue_obligations": [obligation],
             "obligation_count": 1,
             "meaning_route": interpret_turn_meaning(
-                str(obligation.get("source_text") or request["prompt"]),
+                obligation_prompt,
                 requested_domain=obligation_domain,
                 source_packets_present=bool(request.get("source_packets")),
             ),
@@ -1010,7 +1019,7 @@ def _select_domain(request: dict[str, Any]) -> dict[str, Any]:
             selected, confidence, basis, signal = "approved_knowledge", "bounded", "approved comprehension knowledge is available", "approved_knowledge"
         else:
             selected, confidence, basis, signal = "ordinary_conversation", "low", "no specialized domain meaning; ordinary conversation is the least-claiming route", "structured_default"
-    if not requested and selected == "ordinary_conversation" and _looks_like_math(prompt):
+    if not requested and selected in {"ordinary_conversation", "comparison_planning", "approved_knowledge"} and _looks_like_math(prompt):
         selected, confidence, basis, signal = "verified_math", "bounded", "numeric or symbolic verification cues", "math_cues"
     elif not requested and selected == "ordinary_conversation" and _contains_any(lower, ("traceback", "stack trace", "function", "class ", "source code", "code review", ".py", ".ts", ".tsx", "sql query")):
         selected, confidence, basis, signal = "local_code_inspection", "bounded", "explicit code-inspection cues", "code_cues"
@@ -1114,6 +1123,18 @@ def _looks_like_math(value: str) -> bool:
         flags=re.IGNORECASE,
     ):
         return True
+    number = r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+    if re.search(
+        rf"\b{number}\s+(?:rows?|shelves|groups?|boxes|bags|teams?|tables?|trays)\b"
+        rf".{{0,80}}?\b{number}\s+[a-z][a-z-]*(?:\s+[a-z][a-z-]*){{0,2}}\s+each\b",
+        value,
+        flags=re.IGNORECASE,
+    ):
+        return True
+    if re.search(r"\b\d+\b\s*(?:vs\.?|versus|compared\s+(?:with|to))\s*\b\d+\b", value, flags=re.IGNORECASE) and re.search(
+        r"\b(?:subtract(?:ion)?|difference|how many more)\b", value, flags=re.IGNORECASE
+    ):
+        return True
     return bool(re.search(r"\b\d+(?:\.\d+)?\s*(?:\+|-|\*|/|=|%|\^|×|÷)\s*\d", value))
 
 
@@ -1145,6 +1166,8 @@ def _normalize_obligations(value: Any) -> list[dict[str, Any]]:
                     "id": truncate(str(item.get("id") or item.get("obligation_id") or f"obligation-{index + 1}"), 120),
                     "kind": truncate(str(item.get("kind") or "direct_question"), 80),
                     "source_text": source_text,
+                    "parent_source_text": truncate(str(item.get("parent_source_text") or ""), 600),
+                    "topic": truncate(str(item.get("topic") or ""), 240),
                     "required": item.get("required") is not False,
                     "coverage_terms": _text_list(item.get("coverage_terms"))[:20],
                 }

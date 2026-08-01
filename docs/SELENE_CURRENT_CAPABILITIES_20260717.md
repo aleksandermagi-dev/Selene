@@ -45,6 +45,7 @@ it exists.
 | Honest bounded hypotheses | Connected | When the current visible evidence supports an attempt, Selene can offer one clearly provisional, falsifiable hypothesis without presenting it as learned or verified fact; missing-basis and high-stakes requests do not become guesses |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
 | Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 48 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
+| Deliberate Study workspace | Connected as a Selene-owned workspace | She can revisit selected approved knowledge, record understanding, connections and uncertainty, pause or reopen study, and form clear, developing, or not-yet-worded questions without turning Study into Dream, Memory, or Cocoon |
 | Dream reflection and maintenance | Connected through Cocoon review | An explicit source-bound Dream cycle can organize open threads, corrections, metacognitive reopenings, affect signals, evidence tensions, and Memory-review material; only Aleks-reviewed reflections can reach explicit Dream discussion |
 | Current-state description | Connected when asked | She can give a grounded, provisional self-read from current attributable signals |
 | Exact arithmetic | Connected | She can answer bounded exact arithmetic in supervised Chat and keep answer confidence separate from fluency |
@@ -99,6 +100,10 @@ With resident Chat active, Selene can currently:
   leaving it inactive until review;
 - use explicitly approved general knowledge without treating it as personal
   memory, identity, personality, or law;
+- open a deliberate Study session over approved knowledge, preserve visible
+  learning evidence, and ask a question even when she has not found its words;
+- use Aleks's answer immediately inside that Study session while creating a
+  source-labeled, non-active teaching update for inspectable integration;
 - reason about open-ended conceptual problems through intelligenceOS;
 - make a source-bound best attempt from a visible relationship while keeping
   assumptions, correction readiness, and what would test the hypothesis clear;
@@ -586,6 +591,27 @@ The research-integrity tools can:
 These are structured research tools, not a broad autonomous researcher.
 
 ## Knowledge and Learning Organs
+
+### Study Workspace — Connected on Selene's Side
+
+Study is a deliberate waking workspace owned by Selene. It can:
+
+- start only from selected approved, Chat-eligible knowledge;
+- record current understanding in original language;
+- record connections and uncertainties;
+- pause, complete for now, or reopen a session;
+- hold ready questions, developing questions, and questions without words;
+- receive an attributable answer from Aleks;
+- use that answer within the active Study context immediately;
+- create a visible proposed-understanding candidate for durable integration;
+- preserve descriptive LEA evidence without pass/fail grading.
+
+The answer candidate remains inactive for general Chat until the existing
+teaching lifecycle is completed under the applicable authorization. Study does
+not write Memory, change identity/personality/governance, train a model, expose
+hidden reasoning, or route itself automatically into Cocoon.
+
+See `SELENE_STUDY_WORKSPACE_CONTRACT_20260801.md`.
 
 ### Comprehension and Integration Organ — Connected for Approved Knowledge
 

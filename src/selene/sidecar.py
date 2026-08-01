@@ -728,6 +728,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/comprehension/concepts":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "comprehension.concepts.list", qs)["result"]))
+        elif parsed.path == "/api/study/status":
+            self._send(*json_bytes(route_request(conn, "study.status")["result"]))
+        elif parsed.path == "/api/study/sessions":
+            self._send(*json_bytes(route_request(conn, "study.sessions.list", qs)["result"]))
+        elif parsed.path.startswith("/api/study/sessions/"):
+            try:
+                session_id = int(parsed.path.removeprefix("/api/study/sessions/"))
+                self._send(*json_bytes(route_request(conn, "study.session.detail", {"session_id": session_id})["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif parsed.path == "/api/teaching-lifecycle/status":
             self._send(*json_bytes(route_request(conn, "teaching.lifecycle.status")["result"]))
         elif parsed.path == "/api/teaching-lifecycle/items":
@@ -1497,6 +1507,22 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/comprehension/turn-packet":
             route_key = "comprehension.turn.packet"
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path in {
+            "/api/study/sessions/start",
+            "/api/study/sessions/update",
+            "/api/study/questions/ask",
+            "/api/study/questions/answer",
+        }:
+            route_key = {
+                "/api/study/sessions/start": "study.session.start",
+                "/api/study/sessions/update": "study.session.update",
+                "/api/study/questions/ask": "study.question.ask",
+                "/api/study/questions/answer": "study.question.answer",
+            }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:

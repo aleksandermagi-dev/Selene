@@ -99,6 +99,29 @@ def test_structured_summary_request_keeps_each_named_part_inspectable():
     assert partial["unresolved_count"] == 2
 
 
+def test_quantitative_obligation_requires_a_visible_quantity_not_only_topic_words():
+    plan = {
+        "response_obligations": [
+            {
+                "id": "jars",
+                "kind": "method",
+                "source_text": "How many jars are there altogether?",
+                "parent_source_text": "Three shelves hold four jars each. How many jars are there altogether?",
+                "coverage_terms": ["many", "jars", "altogether"],
+                "required": True,
+            }
+        ]
+    }
+    prose_only = evaluate_response_coverage(
+        plan,
+        "Both the number of groups and the number in each group are needed to determine how many jars there are.",
+    )
+    quantified = evaluate_response_coverage(plan, "There are 12 jars altogether.")
+
+    assert prose_only["all_required_addressed"] is False
+    assert quantified["all_required_addressed"] is True
+
+
 def test_echoed_request_prefix_does_not_satisfy_session_summary_coverage():
     prompt = "Back to teaching: summarize the standard we settled on in two short points."
     plan = build_pragmatic_plan(

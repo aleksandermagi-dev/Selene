@@ -56,6 +56,37 @@ def test_dialogue_workspace_separates_context_sentence_from_following_question(t
     assert prepared["open_loops"][0]["question"] == "Are you receiving this clearly?"
 
 
+def test_dialogue_workspace_recognizes_learning_activity_request_verbs(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = (
+        "Separate the observation from the interpretation, then describe a fair investigation, "
+        "and explain why the conclusion can be revised."
+    )
+    prepared = prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": text, "intent_decision": classify_chat_intent(text)},
+    )
+    plan = build_pragmatic_plan({"prompt": text, "dialogue_workspace": prepared})
+
+    sources = [item["source_text"].lower() for item in plan["response_obligations"]]
+    assert len(sources) == 3
+    assert sources[0].startswith("separate the observation")
+    assert sources[1].startswith("describe a fair investigation")
+    assert sources[2].startswith("explain why the conclusion")
+
+
+def test_learning_activity_statement_is_not_treated_as_a_correction(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "This is not pass or fail. It is a way to see what is connected and what needs more study."
+    prepared = prepare_dialogue_turn(
+        conn,
+        {"session_id": session_id, "text": text, "intent_decision": classify_chat_intent(text)},
+    )
+
+    assert prepared["pragmatics"]["correction_refinement"]["detected"] is False
+    assert all(item["kind"] != "correction" for item in prepared["pragmatics"]["utterance_units"])
+
+
 def test_dialogue_workspace_closes_only_questions_covered_by_visible_response(tmp_path):
     conn, session_id = _conn(tmp_path)
     text = "Can you compare memory and voice? What should we build first?"

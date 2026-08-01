@@ -62,6 +62,26 @@ def test_plain_language_binary_arithmetic_is_extracted_without_broad_interpretat
     assert result["expression_source"] == "prompt_extracted"
 
 
+def test_high_confidence_equal_group_word_problem_is_verified_without_guessing():
+    result = verify_bounded_math(
+        {"prompt": "Three shelves hold four jars each. How many jars are there altogether?"}
+    )
+
+    assert result["status"] == "verified_math_result_ready"
+    assert result["expression"] == "3 * 4"
+    assert result["result_value"] == "12"
+
+
+def test_explicit_numeric_comparison_can_verify_the_requested_subtraction():
+    result = verify_bounded_math(
+        {"prompt": "Compare 34 vs 29 and show the subtraction difference."}
+    )
+
+    assert result["status"] == "verified_math_result_ready"
+    assert result["expression"] == "34 - 29"
+    assert result["result_value"] == "5"
+
+
 @pytest.mark.parametrize(
     "payload",
     [

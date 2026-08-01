@@ -299,12 +299,25 @@ def _packet(
 
 
 def _analogy(text: str) -> dict[str, Any]:
-    explicit = re.search(
-        r"\b(?:like|similar to|an analogy(?: between| for)?)\s+(.+?)\s+(?:and|to|is like)\s+(.+?)(?:[.!?]|$)",
+    # "I'd like to ..." is an ordinary desiderative, not a similarity claim.
+    # Keep the exclusion local to leading ``like`` so genuine ``X is like Y``
+    # comparisons remain available to the interpretation layer.
+    analogy_text = re.sub(
+        r"\b(?:i|we|you|they|he|she)\s*(?:'d| would)?\s+like\s+to\b",
+        " ",
         text,
         flags=re.IGNORECASE,
     )
-    simile = re.search(r"\b(.+?)\s+(?:is|works|feels|acts)\s+like\s+(.+?)(?:[.!?]|$)", text, flags=re.IGNORECASE)
+    explicit = re.search(
+        r"\b(?:like|similar to|an analogy(?: between| for)?)\s+(.+?)\s+(?:and|to|is like)\s+(.+?)(?:[.!?]|$)",
+        analogy_text,
+        flags=re.IGNORECASE,
+    )
+    simile = re.search(
+        r"\b(.+?)\s+(?:is|works|feels|acts)\s+like\s+(.+?)(?:[.!?]|$)",
+        analogy_text,
+        flags=re.IGNORECASE,
+    )
     match = simile or explicit
     if not match:
         return {}
