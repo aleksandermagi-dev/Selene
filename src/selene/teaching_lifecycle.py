@@ -588,10 +588,16 @@ def approve_teaching_lifecycle_under_authorization(
             concept_payload = json.loads(str(concept.get("payload_json") or "{}"))
         except (json.JSONDecodeError, TypeError):
             concept_payload = {}
+        covered_source_types = authorization_scope.get("covered_source_types")
+        if not isinstance(covered_source_types, list):
+            legacy_source_type = str(authorization_scope.get("covered_source_type") or "")
+            covered_source_types = [legacy_source_type] if legacy_source_type else []
         if (
             concept.get("domain") != "language_and_conversation"
             or not str(concept.get("concept_key") or "").startswith("language_lesson:")
-            or concept_payload.get("teaching_source_type") != "project_authored_provider_free_language_lesson"
+            or str(concept_payload.get("teaching_source_type") or "") not in {
+                str(source_type) for source_type in covered_source_types if str(source_type)
+            }
             or authorization_decision.get("guidance_only") is not True
             or ((authorization_decision.get("eligibility") or {}).get("eligible") is not True)
         ):

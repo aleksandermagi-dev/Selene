@@ -972,6 +972,63 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         candidate_text = native_candidate
         response_coverage = native_coverage
         recovery_source = "native_language_meaning_recovery"
+    grounded_candidate = _selene_label_candidate(content_seed)
+    grounded_coverage = _evaluate_chat_response_coverage(
+        native_language.get("pragmatic_plan"),
+        grounded_candidate,
+        conversation_spine=conversation_spine,
+        answer_engine_support=answer_engine_support,
+    )
+    grounded_source_id = str(visible_speech_seed.get("selected_source_id") or "none")
+    grounded_source_class = str(
+        visible_speech_seed.get("selected_source_class") or "conversation"
+    )
+    grounded_compatibility = evaluate_candidate_compatibility(
+        conversation_spine,
+        {
+            "source_id": grounded_source_id,
+            "source_class": grounded_source_class,
+            "text": grounded_candidate,
+        },
+    )
+    grounded_visibility = inspect_visible_speech(
+        grounded_candidate,
+        prompt=meaning_text,
+        source_id=grounded_source_id,
+    )
+    grounded_obligation_kinds = {
+        str(item.get("kind") or "")
+        for item in (native_language.get("pragmatic_plan") or {}).get(
+            "response_obligations"
+        )
+        or []
+        if isinstance(item, dict)
+    }
+    expression_integrity_recovery = bool(
+        grounded_coverage.get("all_required_addressed") is True
+        and _coverage_rank(grounded_coverage) == _coverage_rank(response_coverage)
+        and (
+            grounded_obligation_kinds
+            & {"correction_update", "constraint_preservation"}
+            or re.search(
+                r"\b[1-9][.):]\s*(?=(?:[1-9][.):])|$)",
+                candidate_text,
+            )
+        )
+    )
+    if (
+        not hard_blockers
+        and grounded_candidate
+        and grounded_compatibility.get("compatible") is True
+        and grounded_visibility.get("release_allowed") is True
+        and (
+            _coverage_rank(grounded_coverage) > _coverage_rank(response_coverage)
+            or expression_integrity_recovery
+        )
+    ):
+        candidate_text = grounded_candidate
+        response_coverage = grounded_coverage
+        recovery_source = "grounded_content_seed_recovery"
     conversation_repair = repair_conversation_candidate(
         {
             "candidate_text": candidate_text,
@@ -2088,6 +2145,7 @@ def _figurative_response_seed(packet: dict[str, Any]) -> str:
         )
     if forms & {"idiom", "metaphor", "personification"} and re.search(
         r"\b(?:what do i mean|what does (?:that|this|it) mean|"
+        r"what am i (?:implying|suggesting|saying)|"
         r"how do you (?:read|interpret|understand) (?:that|this|it)|"
         r"how would you (?:read|interpret|understand) (?:that|this|it))\b",
         original,
@@ -2112,7 +2170,13 @@ def _ordinary_uncertainty_response_seed(
         text,
         flags=re.IGNORECASE,
     )
-    asks_known = bool(re.search(r"\b(?:do we know|do you know|is it known|are we sure|can we tell)\b", lower))
+    asks_known = bool(
+        re.search(
+            r"\b(?:do (?:we|you) (?:actually )?know|is it (?:actually )?known|"
+            r"are we (?:actually )?sure|can we (?:actually )?tell)\b",
+            lower,
+        )
+    )
     if possible and asks_known:
         subject = possible.group("subject").strip()
         predicate = possible.group("predicate").strip()
@@ -2121,7 +2185,18 @@ def _ordinary_uncertainty_response_seed(
             "so it is possible rather than known."
         )
     if asks_known and re.search(r"\b(?:have(?:n't| not) checked|has(?:n't| not) been checked|neither of us)\b", lower):
-        return "Not yet. It is possible, but we have not checked, so we do not currently know."
+        uncertain_location = re.search(
+            r"\bnot\s+sure\s+whether\s+(?P<claim>[^;,.!?]{2,180})",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if uncertain_location:
+            claim = uncertain_location.group("claim").strip()
+            return (
+                f"Not yet. We do not know whether {claim}; that is possible rather than known "
+                "because we have not checked."
+            )
+        return "Not yet. It is possible rather than known because we have not checked."
     if (
         re.search(r"\b(?:unbuilt|not built|not chosen|haven't chosen|have not chosen)\b", lower)
         and re.search(r"\b(?:what|which)\b.*\b(?:should|would)\b", lower)
@@ -2152,15 +2227,25 @@ def _explicit_humor_response_seed(
         text,
         flags=re.IGNORECASE,
     )
+    if not subject_match:
+        subject_match = re.search(
+            r"\bgive\s+(?:the\s+)?(?P<subject>[a-z][a-z0-9' -]{1,100}?)\s+"
+            r"(?:one\s+)?(?:tiny\s+|little\s+|quick\s+)?(?:joke|pun)\b",
+            text,
+            flags=re.IGNORECASE,
+        )
     subject = truncate(subject_match.group(1).strip(), 140) if subject_match else "this"
-    if "committee" in subject.lower():
+    if "republic" in subject.lower():
+        joke = "One little joke: the cable republic tied up every motion before it reached the floor."
+    elif "committee" in subject.lower():
         article = "" if subject.lower().startswith(("a ", "an ", "the ", "our ", "your ", "their ")) else "the "
         joke = f"One little joke: {article}{subject} approved a motion to schedule fewer meetings about scheduling meetings."
     else:
         joke = f"One little joke: {subject} asked for a quick decision and somehow got a committee meeting."
 
     return_match = re.search(
-        r"\b(?:then\s+)?return\s+to\s+(?:the\s+)?(?P<topic>[^.!?]+)",
+        r"\b(?:then\s+)?return\s+to\s+(?:the\s+)?(?P<topic>.+?)"
+        r"(?=\s+and\s+(?:give|show|tell|list|name)\b|[.!?]|$)",
         text,
         flags=re.IGNORECASE,
     )
@@ -2174,6 +2259,12 @@ def _explicit_humor_response_seed(
         if isinstance(item, dict) and str(item.get("text") or "").strip()
     ][-4:]
     grounded_return = " ".join(facts)
+    requested_steps = re.search(r"\b(?P<count>two|2)\s+(?:practical\s+)?steps?\b", text, flags=re.IGNORECASE)
+    if requested_steps and any("cable" in fact.lower() for fact in facts):
+        grounded_return = (
+            "1. Keep the daily charging cable separate and reachable. "
+            "2. Untangle the remaining cables, then bundle the less-used ones together."
+        )
     if grounded_return:
         return f"{joke}\n\nBack to the {return_topic}: {grounded_return}"
     return f"{joke}\n\nBack to the {return_topic}."

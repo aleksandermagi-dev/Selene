@@ -1525,8 +1525,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/study/notes/form",
             "/api/study/notes/clarification",
             "/api/study/compass/seed-prior-f1-lea",
+            "/api/study/compass/seed-language-foundations",
             "/api/study/compass/start",
             "/api/study/compass/update",
+            "/api/study/pondering/create",
+            "/api/study/pondering/update",
+            "/api/study/representations/try",
         }:
             route_key = {
                 "/api/study/sessions/start": "study.session.start",
@@ -1536,8 +1540,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/study/notes/form": "study.note.form",
                 "/api/study/notes/clarification": "study.note.clarification.update",
                 "/api/study/compass/seed-prior-f1-lea": "study.compass.seed_prior_f1_lea",
+                "/api/study/compass/seed-language-foundations": "study.compass.seed_language_foundations",
                 "/api/study/compass/start": "study.compass.start",
                 "/api/study/compass/update": "study.compass.update",
+                "/api/study/pondering/create": "study.pondering.create",
+                "/api/study/pondering/update": "study.pondering.update",
+                "/api/study/representations/try": "study.representation.try",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))

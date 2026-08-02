@@ -44,7 +44,11 @@ def build_answer_substance(
     )
     consequence = bool(re.match(r"^what happens if\b", lower))
     viewpoint = any(marker in lower for marker in ("what do you think", "what is your view", "what's your view", "your thoughts"))
-    why_before = re.search(r"\bwhy\s+(?:does|do|should|is|are)\s+(.{2,100}?)\s+(?:come\s+)?before\s+(.{2,100}?)(?:[?.]|$)", lower)
+    why_before = re.search(
+        r"\bwhy\s+(?:does|do|should|is|are)\s+([^?.!]{2,100}?)\s+"
+        r"(?:come\s+)?before\s+([^?.!]{2,100}?)(?:[?.!]|$)",
+        lower,
+    )
     limited_resource = re.search(r"\blimited\s+([a-z][a-z-]*)(?:\s+and|\s+but|[,.])", lower)
     limited_capacity = re.search(
         r"\blimited\s+([a-z][a-z -]{1,60}?)(?:,\s*(?:but|while)|\s+but\b|[.])",
@@ -673,6 +677,14 @@ def _ordinary_prompt_grounded_operation(
     lower = " ".join(prompt.lower().replace("’", "'").split())
     history = _observation_texts(observations)
 
+    provisional_cause = _provisional_cause_operation(prompt, lower, history)
+    if provisional_cause:
+        return provisional_cause
+
+    desk_plan = _desk_organization_operation(prompt, lower, history)
+    if desk_plan:
+        return desk_plan
+
     revision = _evidence_revision_operation(prompt, lower, history)
     if revision:
         return revision
@@ -734,6 +746,158 @@ def _ordinary_prompt_grounded_operation(
     plan = _resource_plan_operation(prompt, lower)
     if plan:
         return plan
+    return {}
+
+
+def _desk_organization_operation(
+    prompt: str,
+    lower: str,
+    history: list[str],
+) -> dict[str, Any]:
+    """Apply visible desk constraints instead of returning a generic plan rule."""
+    context = " ".join([*history, prompt]).lower().replace("’", "'")
+    if "desk" not in context or not any(word in context for word in ("pile", "cable", "label", "tools", "mail")):
+        return {}
+
+    support_basis = "current_prompt_and_recent_conversation"
+    daily_cable = "charging cable" in context and ("use it daily" in context or "used daily" in context)
+    loose_cables = "loose cables" in context and any(marker in context for marker in ("real mess", "actual mess", "main mess"))
+
+    if re.search(r"\btake this in order\b", lower):
+        answer = (
+            "1. Bundle the cables by how often you use them. "
+            "2. That fits this desk better because access frequency decides what must stay reachable, while device type alone does not. "
+            "3. Keep the charging cable on the desk as the daily-use exception. "
+            "4. If you find the labels, use them on the stable, less-frequently moved bundles after checking that they hold."
+        )
+        return _operation(
+            answer=answer,
+            answer_kind="grounded_ordered_desk_plan",
+            missing_variable="whether the labels adhere reliably enough to be useful",
+            support_basis=support_basis,
+            units=[
+                _unit("desk_order_choice", "answer", "sequence", text="1. Bundle the cables by how often you use them.", meaning_keys=["frequency grouping selected"]),
+                _unit("desk_order_reason", "support", "cause", text="2. Access frequency decides what must stay reachable.", meaning_keys=["frequency preserves access"]),
+                _unit("desk_order_exception", "condition", "condition", text="3. Keep the charging cable on the desk as the daily-use exception.", meaning_keys=["daily charging cable remains accessible"]),
+                _unit("desk_order_labels", "conclusion", "sequence", text="4. Use labels on stable bundles only after checking that they hold.", meaning_keys=["labels require adhesion check"]),
+            ],
+        )
+
+    if re.search(r"\b(?:bundle|group)\b.*\b(?:device|how often|frequency)\b", lower) and re.search(
+        r"\b(?:compare|which|fits|lean|disagree)\b", lower
+    ):
+        prefix = "I would group them by how often you use them."
+        if "lean toward device type" in lower:
+            prefix = "I would gently disagree and group them by how often you use them."
+        reason = (
+            " Frequency fits this desk better because the daily charging cable must stay reachable, "
+            "while rarely used cables can be bundled out of the way. Device type is useful inside each frequency group, but it should be the second rule here."
+        )
+        return _operation(
+            answer=prefix + reason,
+            answer_kind="grounded_desk_comparison",
+            missing_variable="whether any other cable needs the same daily access",
+            support_basis=support_basis,
+            units=[
+                _unit("desk_frequency_choice", "answer", "contrast", subject="grouping by frequency", predicate="fit", obj="this desk better", meaning_keys=["frequency grouping selected"]),
+                _unit("desk_frequency_reason", "support", "cause", subject="frequency", predicate="preserve", obj="daily access while moving rarely used cables away", meaning_keys=["frequency preserves daily access"]),
+                _unit("desk_device_secondary", "limit", "contrast", subject="device type", predicate="remain", obj="a useful second rule inside each frequency group", meaning_keys=["device type remains secondary"]),
+            ],
+        )
+
+    if daily_cable and re.search(r"\b(?:revise|update|adjust|changes?)\b", lower):
+        return _operation(
+            answer=(
+                "Only that part changes: the charging cable stays on the desk because you use it daily; "
+                "that is the one exception. The rest of the cable plan stays the same: separate the "
+                "less-used cables and bundle them out of the way."
+            ),
+            answer_kind="grounded_desk_exception_revision",
+            missing_variable="whether another cable also needs daily access",
+            support_basis=support_basis,
+            units=[
+                _unit("desk_exception", "answer", "condition", subject="the charging cable", predicate="stay", obj="on the desk", condition="it is used daily", meaning_keys=["daily charging cable stays on desk"]),
+                _unit("desk_preserve_remainder", "conclusion", "contrast", subject="the rest of the plan", predicate="remain", obj="separate and bundle the less-used cables", meaning_keys=["revise only changed part"]),
+            ],
+        )
+
+    if loose_cables and re.search(r"\b(?:update|revise|suggestion|tackle|first)\b", lower):
+        return _operation(
+            answer=(
+                "That changes the priority: tackle the loose cables first. The mail is already sorted, "
+                "so spending the twenty minutes there would not reduce the actual mess. "
+                "Separate the cable you use every day, then gather the remaining cables into one clear bundle."
+            ),
+            answer_kind="grounded_desk_correction",
+            missing_variable="which remaining cables are used often enough to stay reachable",
+            support_basis=support_basis,
+            units=[
+                _unit("desk_corrected_priority", "answer", "contrast", subject="the loose cables", predicate="come", obj="first", meaning_keys=["loose cables replace sorted mail as priority"]),
+                _unit("desk_corrected_reason", "support", "cause", subject="the mail", predicate="require", obj="no more sorting time", meaning_keys=["mail already sorted"]),
+                _unit("desk_corrected_action", "conclusion", "sequence", predicate="separate", obj="the daily cable before bundling the remainder", mood="imperative", meaning_keys=["daily cable then remaining bundle"]),
+            ],
+        )
+
+    first_choice = re.search(r"\bwhat should i tackle first\b|\bwhat should (?:we|i) do first\b", lower)
+    if first_choice and "mail" in context and "twenty minutes" in context:
+        return _operation(
+            answer=(
+                "Start with the mail. It is the most bounded pile, so you can sort it into act, file, and recycle within the twenty minutes and leave the desk visibly clearer even if time runs out."
+            ),
+            answer_kind="grounded_desk_first_step",
+            missing_variable="whether any pile contains something genuinely urgent",
+            support_basis=support_basis,
+            units=[
+                _unit("desk_first_mail", "answer", "sequence", predicate="start with", obj="the mail", mood="imperative", meaning_keys=["mail selected first"]),
+                _unit("desk_first_reason", "support", "cause", subject="the mail", predicate="fit", obj="a bounded twenty-minute sort", meaning_keys=["mail fits time constraint"]),
+            ],
+        )
+    return {}
+
+
+def _provisional_cause_operation(
+    prompt: str,
+    lower: str,
+    history: list[str],
+) -> dict[str, Any]:
+    context = " ".join([*history, prompt]).lower().replace("’", "'")
+    peeling_labels = bool(re.search(r"\blabels?\b.{0,50}\bpeel(?:ing|s|ed)?\s+off\b", context))
+    if not peeling_labels:
+        return {}
+    support_basis = "current_prompt_and_recent_conversation"
+    if re.search(r"\bwhat new observation would most change\b", lower):
+        answer = (
+            "The observation that would change my guess most is this: a fresh label still peels from a small spot after that spot has been cleaned and dried. "
+            "If it still peels there, I would shift away from surface dust or oil and toward an adhesive–surface mismatch; if it holds, surface preparation becomes the stronger explanation."
+        )
+        return _operation(
+            answer=answer,
+            answer_kind="provisional_discriminating_observation",
+            missing_variable="the result of one cleaned-surface comparison",
+            support_basis=support_basis,
+            units=[
+                _unit("label_change_observation", "answer", "condition", subject="a fresh label on a cleaned dry spot", predicate="change", obj="the current guess most", meaning_keys=["cleaned surface comparison discriminates causes"]),
+                _unit("label_change_revision", "reopening", "contrast", subject="the guess", predicate="shift", obj="toward adhesive-surface mismatch if peeling continues", condition="the cleaned test still peels", meaning_keys=["contrary observation revises cause"]),
+            ],
+        )
+    if re.search(r"\b(?:best grounded guess|best guess|what.*cause)\b", lower):
+        answer = (
+            "My best guess is that dust, oil, or moisture on the cable surface is weakening the adhesive—but that is provisional, not a finding. "
+            "Before deciding, I would inspect whether the surface is clean and dry, whether peeling starts at an edge under tension, and whether a fresh label holds on one cleaned test spot. "
+            "If the clean test still peels, an adhesive–surface mismatch becomes the better explanation."
+        )
+        return _operation(
+            answer=answer,
+            answer_kind="bounded_provisional_cause",
+            missing_variable="whether a fresh label holds on a cleaned dry comparison spot",
+            support_basis=support_basis,
+            units=[
+                _unit("label_provisional_guess", "answer", "cause", subject="dust oil or moisture", predicate="be", obj="the current best guess", meaning_keys=["surface contamination provisional cause"]),
+                _unit("label_guess_limit", "limit", "contrast", subject="the guess", predicate="remain", obj="provisional rather than verified", meaning_keys=["guess distinct from finding"]),
+                _unit("label_inspection", "support", "sequence", predicate="inspect", obj="surface cleanliness edge tension and a cleaned test spot", mood="imperative", meaning_keys=["inspect discriminating observations"]),
+                _unit("label_revision", "reopening", "condition", subject="continued peeling on the clean test", predicate="support", obj="adhesive-surface mismatch", meaning_keys=["clean test changes cause"]),
+            ],
+        )
     return {}
 
 

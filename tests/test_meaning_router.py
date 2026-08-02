@@ -63,6 +63,17 @@ def test_ordinary_self_check_in_outranks_generic_how_reasoning():
     assert procedural["primary_intent"] == "reasoning"
 
 
+def test_epistemic_actually_question_is_not_misrouted_as_correction():
+    result = interpret_turn_meaning(
+        "I'm not sure whether the spare labels are in the top drawer; "
+        "neither of us has checked. Do we actually know?"
+    )
+
+    assert "question" in result["dialogue_acts"]
+    assert "correction" not in result["dialogue_acts"]
+    assert result["primary_intent"] == "direct_conversation"
+
+
 def test_colloquial_and_embedded_check_ins_route_to_self_state():
     prompts = (
         "whats up?",

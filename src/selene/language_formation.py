@@ -256,6 +256,7 @@ def _realize_proposition(item: dict[str, Any], *, variation_key: str = "") -> st
     if object_modifiers and obj:
         obj = " ".join([*object_modifiers, obj])
     tense = str(item.get("tense") or "present")
+    subject_number = str(item.get("subject_number") or "").strip().lower()
     aspect = str(item.get("aspect") or "simple")
     voice = str(item.get("voice") or "active")
     agent = " ".join(str(item.get("agent") or "").split())
@@ -272,9 +273,29 @@ def _realize_proposition(item: dict[str, Any], *, variation_key: str = "") -> st
     if mood == "imperative":
         clause = " ".join(part for part in (predicate, *adverbs, obj) if part)
     elif mood == "interrogative":
-        clause = _interrogative_clause(subject, predicate, obj, tense, aspect, modality, polarity, voice, adverbs)
+        clause = _interrogative_clause(
+            subject,
+            predicate,
+            obj,
+            tense,
+            aspect,
+            modality,
+            polarity,
+            voice,
+            adverbs,
+            subject_number,
+        )
     else:
-        verb_phrase = _verb_phrase(subject, predicate, tense, aspect, modality, polarity, voice)
+        verb_phrase = _verb_phrase(
+            subject,
+            predicate,
+            tense,
+            aspect,
+            modality,
+            polarity,
+            voice,
+            subject_number,
+        )
         clause = " ".join(part for part in (subject, verb_phrase, *adverbs, obj) if part)
     if qualifier:
         clause = f"{qualifier.rstrip(', ')}, {_continuation_case(clause)}"
@@ -378,10 +399,13 @@ def _verb_phrase(
     modality: str,
     polarity: str,
     voice: str,
+    subject_number: str = "",
 ) -> str:
     base, tail = _split_predicate(predicate)
     negative = polarity == "negative"
     suffix = f" {tail}" if tail else ""
+    if tense == "future" and not modality:
+        modality = "will"
     if modality:
         if voice == "passive":
             core = f"be {_past_participle(base)}{suffix}"
@@ -395,21 +419,21 @@ def _verb_phrase(
             core = predicate
         return f"{modality}{' not' if negative else ''} {core}"
     if voice == "passive":
-        auxiliary = _conjugate("be", subject, tense)
+        auxiliary = _conjugate("be", subject, tense, subject_number)
         return f"{auxiliary}{' not' if negative else ''} {_past_participle(base)}{suffix}"
     if aspect == "progressive":
-        auxiliary = _conjugate("be", subject, tense)
+        auxiliary = _conjugate("be", subject, tense, subject_number)
         return f"{auxiliary}{' not' if negative else ''} {_present_participle(base)}{suffix}"
     if aspect == "perfect":
-        auxiliary = _conjugate("have", subject, tense)
+        auxiliary = _conjugate("have", subject, tense, subject_number)
         return f"{auxiliary}{' not' if negative else ''} {_past_participle(base)}{suffix}"
     if aspect == "perfect_progressive":
-        auxiliary = _conjugate("have", subject, tense)
+        auxiliary = _conjugate("have", subject, tense, subject_number)
         return f"{auxiliary}{' not' if negative else ''} been {_present_participle(base)}{suffix}"
     if negative:
-        auxiliary = "did" if tense == "past" else "does" if _third_person_singular(subject) else "do"
+        auxiliary = "did" if tense == "past" else "does" if _third_person_singular(subject, subject_number) else "do"
         return f"{auxiliary} not {predicate}"
-    return f"{_conjugate(base, subject, tense)}{suffix}"
+    return f"{_conjugate(base, subject, tense, subject_number)}{suffix}"
 
 
 def _interrogative_clause(
@@ -422,10 +446,13 @@ def _interrogative_clause(
     polarity: str,
     voice: str,
     adverbs: list[str],
+    subject_number: str = "",
 ) -> str:
     base, tail = _split_predicate(predicate)
     negative = " not" if polarity == "negative" else ""
     suffix = f" {tail}" if tail else ""
+    if tense == "future" and not modality:
+        modality = "will"
     if modality:
         if voice == "passive":
             core = f"be {_past_participle(base)}{suffix}"
@@ -439,13 +466,13 @@ def _interrogative_clause(
             core = predicate
         return " ".join(part for part in (f"{modality}{negative}", subject, core, *adverbs, obj) if part) + "?"
     if voice == "passive" or aspect == "progressive":
-        auxiliary = _conjugate("be", subject, tense)
+        auxiliary = _conjugate("be", subject, tense, subject_number)
         core = f"{_past_participle(base)}{suffix}" if voice == "passive" else f"{_present_participle(base)}{suffix}"
     elif aspect in {"perfect", "perfect_progressive"}:
-        auxiliary = _conjugate("have", subject, tense)
+        auxiliary = _conjugate("have", subject, tense, subject_number)
         core = f"been {_present_participle(base)}{suffix}" if aspect == "perfect_progressive" else f"{_past_participle(base)}{suffix}"
     else:
-        auxiliary = "did" if tense == "past" else "does" if _third_person_singular(subject) else "do"
+        auxiliary = "did" if tense == "past" else "does" if _third_person_singular(subject, subject_number) else "do"
         core = predicate
     return " ".join(part for part in (f"{auxiliary}{negative}", subject, core, *adverbs, obj) if part) + "?"
 
@@ -490,7 +517,7 @@ def _words(value: Any) -> list[str]:
     return []
 
 
-def _conjugate(verb: str, subject: str, tense: str) -> str:
+def _conjugate(verb: str, subject: str, tense: str, subject_number: str = "") -> str:
     lower_subject = subject.lower().strip()
     person = lower_subject if lower_subject in {"i", "you", "we", "they"} else "default"
     if tense == "past":
@@ -502,10 +529,12 @@ def _conjugate(verb: str, subject: str, tense: str) -> str:
             return verb[:-1] + "ied"
         return verb + "ed"
     if verb in IRREGULAR_PRESENT:
-        if not _third_person_singular(subject) and verb not in {"be"}:
+        if verb == "be" and subject_number == "plural":
+            return "are"
+        if not _third_person_singular(subject, subject_number) and verb not in {"be"}:
             return verb
         return IRREGULAR_PRESENT[verb].get(person, IRREGULAR_PRESENT[verb]["default"])
-    if not _third_person_singular(subject):
+    if not _third_person_singular(subject, subject_number):
         return verb
     if verb.endswith(("s", "sh", "ch", "x", "z", "o")):
         return verb + "es"
@@ -514,7 +543,11 @@ def _conjugate(verb: str, subject: str, tense: str) -> str:
     return verb + "s"
 
 
-def _third_person_singular(subject: str) -> bool:
+def _third_person_singular(subject: str, subject_number: str = "") -> bool:
+    if subject_number == "plural":
+        return False
+    if subject_number == "singular":
+        return True
     lower = subject.lower().strip()
     return lower not in {"i", "you", "we", "they"} and not lower.endswith(" and i") and " and " not in lower
 

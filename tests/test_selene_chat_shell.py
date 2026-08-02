@@ -3066,6 +3066,79 @@ def test_short_diagnostic_replay_repairs_math_session_facts_uncertainty_and_play
         _assert_locked(result)
 
 
+def test_gentle_desk_replay_repairs_grounding_obligations_and_provisional_inference(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        "Hey Selene :) I've got a quiet afternoon and a mildly chaotic desk. How are you doing?",
+        "The desk has three piles: mail, project notes, and tools. I only have twenty minutes. What should I tackle first, and why?",
+        "Tiny correction: the mail is already sorted; the loose cables are the real mess. Update your suggestion.",
+        "Before we go further, what two facts about the desk plan have we settled?",
+        "I'm not sure whether the spare labels are in the top drawer; neither of us has checked. Do we actually know?",
+        "Fair xD. The cable pile looks like it has founded a tiny republic. What am I implying?",
+        "Give the republic one tiny joke, then return to the practical plan and give me two steps.",
+        "One nuance: keep the charging cable on the desk because I use it daily. Revise only the part that changes.",
+        "Now compare two approaches: bundle cables by device, or bundle them by how often I use them. Which fits this situation better?",
+        "I lean toward device type, but I may be wrong. Disagree if the evidence points elsewhere.",
+        "Take this in order: name the best approach, explain the reason, return to the charging-cable exception, then end with what I should do with the labels if I find them.",
+        "If the labels keep peeling off after a day, what is your best grounded guess about the cause, and what would you inspect before deciding?",
+        "That answer can be provisional. What new observation would most change your current guess?",
+        "Nice :) Summarize our plan in three short points, then let the conversation end naturally.",
+    ]
+    results = []
+    session_id = None
+    for index, prompt in enumerate(prompts):
+        payload = {"text": prompt}
+        if index == 0:
+            payload["qa_probe"] = True
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    (
+        _, first_plan, correction, callback, uncertainty, figurative, humor,
+        exception, comparison, disagreement, ordered, provisional, discriminating,
+        summary,
+    ) = results
+    assert "start with the mail" in first_plan["candidate_text"].lower()
+    assert "loose cables first" in correction["candidate_text"].lower()
+    assert "mail is already sorted" in correction["candidate_text"].lower()
+    assert "mail is already sorted" in callback["candidate_text"].lower()
+    assert "loose cables" in callback["candidate_text"].lower()
+    assert uncertainty["intent_decision"]["intent"] != "correction"
+    assert "possible rather than known" in uncertainty["candidate_text"].lower()
+    assert "small society" in figurative["candidate_text"].lower()
+    assert "joke:" in humor["candidate_text"].lower()
+    assert "1." in humor["candidate_text"] and "2." in humor["candidate_text"]
+    assert "charging cable stays on the desk" in exception["candidate_text"].lower()
+    assert "how often you use" in comparison["candidate_text"].lower()
+    assert "frequency fits this desk better" in disagreement["candidate_text"].lower()
+    assert "device type remains a useful second rule" in disagreement["candidate_text"].lower()
+    assert all(f"{index}." in ordered["candidate_text"] for index in (1, 2, 3, 4))
+    assert "best guess" in provisional["candidate_text"].lower()
+    assert "provisional" in provisional["candidate_text"].lower()
+    assert "cleaned" in discriminating["candidate_text"].lower()
+    assert all(f"{index}." in summary["candidate_text"] for index in (1, 2, 3))
+    assert "clean stopping point" in summary["candidate_text"].lower()
+    fact_counts = [
+        len(result["conversation_spine"].get("session_facts") or [])
+        for result in results
+    ]
+    assert fact_counts == sorted(fact_counts)
+    assert fact_counts[-1] >= 6
+    for result in results:
+        assert result["response_coverage"]["all_required_addressed"] is True
+        assert "earliest missing prerequisite" not in result["candidate_text"].lower()
+        assert result["diagnostic_only"] is True
+        assert result["reviewed_memory_write_occurred"] is False
+        assert result["conversational_memory_proposal_created"] is False
+        _assert_locked(result)
+
+
 def test_gentle_long_session_returns_to_a_visible_recommendation_after_intervening_topics(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

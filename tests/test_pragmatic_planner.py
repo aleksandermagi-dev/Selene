@@ -554,6 +554,51 @@ def test_pragmatic_plan_keeps_correction_scope_separate_from_content_obligations
     assert plan["memory_write_active"] is False
 
 
+def test_short_update_clause_is_owned_by_the_correction_obligation():
+    prompt = (
+        "Tiny correction: the mail is already sorted; the loose cables are the real mess. "
+        "Update your suggestion."
+    )
+    correction = {
+        "detected": True,
+        "corrected_meaning": "the mail is already sorted; the loose cables are the real mess",
+        "replaced_meaning": "start with the mail",
+        "scope": "current_session_refinement_only",
+    }
+    plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": {
+                "active_topic": "desk plan",
+                "pragmatics": {
+                    "utterance_units": [
+                        {
+                            "id": "utterance_1",
+                            "text": "Tiny correction: the mail is already sorted; the loose cables are the real mess.",
+                            "kind": "correction",
+                            "position": 0,
+                        },
+                        {
+                            "id": "utterance_2",
+                            "text": "Update your suggestion.",
+                            "kind": "direct_request",
+                            "position": 1,
+                        },
+                    ],
+                    "correction_refinement": correction,
+                },
+            },
+        }
+    )
+
+    assert [item["kind"] for item in plan["response_obligations"]] == [
+        "correction_update"
+    ]
+    assert plan["response_obligations"][0]["goal"] == (
+        "acknowledge_and_apply_corrected_meaning"
+    )
+
+
 def test_natural_series_and_compound_question_become_separate_obligations():
     series = (
         "First, give me a short recap, then say how my correction changed the answer, "

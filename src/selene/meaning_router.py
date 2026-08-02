@@ -56,7 +56,8 @@ def interpret_turn_meaning(
     explicit_request = bool(
         re.search(
             r"(?:^|[.!?]\s+)(?:please\s+)?"
-            r"(?:answer|explain|compare|calculate|solve|check|find|show|tell|give|help|plan|review|summarize|describe|recommend|suggest|outline|propose|walk\s+me\s+through)\b",
+            r"(?:answer|explain|compare|calculate|solve|check|find|show|tell|give|help|plan|review|"
+            r"summarize|describe|recommend|suggest|outline|propose|revise|update|adjust|walk\s+me\s+through)\b",
             routing_text,
         )
     )
@@ -148,9 +149,7 @@ def _dialogue_acts(routing_text: str, tokens: set[str], question: bool, explicit
     if _has_any(routing_text, ("correction", "i meant", "rather than", "not what i meant")) or re.search(
         r"\bwhen i say\s+quoted material\s*,?\s*i mean\s+quoted material\b",
         routing_text,
-    ) or (
-        "actually" in routing_text and not topic_shift
-    ):
+    ) or _actually_marks_correction(routing_text, topic_shift=topic_shift):
         acts.append("correction")
     if _is_memory_candidate(routing_text):
         acts.append("memory_candidate")
@@ -181,6 +180,30 @@ def _dialogue_acts(routing_text: str, tokens: set[str], question: bool, explicit
     if not acts:
         acts.append("statement")
     return list(dict.fromkeys(acts))
+
+
+def _actually_marks_correction(value: str, *, topic_shift: bool) -> bool:
+    """Treat ``actually`` as revision only when it revises visible content.
+
+    In ordinary questions such as ``do we actually know?`` the word marks
+    epistemic emphasis, not a correction.  A bare lexical hit must not seize
+    the correction route.
+    """
+    if topic_shift or "actually" not in value:
+        return False
+    if re.search(
+        r"\b(?:do|does|did|can|could|would|will|is|are|was|were|have|has)\s+"
+        r"(?:we|i|you|it|that|this|they|he|she)\s+actually\b",
+        value,
+    ):
+        return False
+    return bool(
+        re.search(
+            r"(?:^|[.!?;]\s*|\bbut\s+)actually\s*,?\s+"
+            r"(?:the|a|an|i|we|you|it|that|this|they|he|she)\b",
+            value,
+        )
+    )
 
 
 def _intent_candidates(
@@ -218,7 +241,7 @@ def _intent_candidates(
         "why", "how", "explain", "compare", "solve", "calculate", "plan",
         "reason", "evidence", "contradiction", "tradeoff", "tradeoffs",
         "design", "build", "debug", "meaning", "cause", "causes", "should",
-        "recommend", "suggest", "propose", "outline",
+        "recommend", "suggest", "propose", "outline", "revise", "update", "adjust",
     }
     self_state_turn = "self_state_question" in dialogue_acts
     reasoning_hits = sorted(tokens.intersection(reasoning_terms))

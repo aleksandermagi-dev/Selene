@@ -1833,6 +1833,54 @@ CREATE TABLE IF NOT EXISTS selene_learning_compass_goals (
 CREATE INDEX IF NOT EXISTS idx_selene_learning_compass_state
 ON selene_learning_compass_goals(state, display_order, updated_at);
 
+CREATE TABLE IF NOT EXISTS selene_study_pondering_threads (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  thread_key TEXT NOT NULL UNIQUE,
+  session_id INTEGER NOT NULL,
+  compass_goal_id INTEGER,
+  question_id INTEGER,
+  title TEXT NOT NULL,
+  state TEXT NOT NULL DEFAULT 'active',
+  current_fit TEXT NOT NULL DEFAULT '',
+  missing_bridge TEXT NOT NULL DEFAULT '',
+  prerequisite_needed TEXT NOT NULL DEFAULT '',
+  representation_preferences_json TEXT NOT NULL DEFAULT '[]',
+  revisit_cue TEXT NOT NULL DEFAULT '',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'visible_open_learning_thread',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES selene_study_sessions(id),
+  FOREIGN KEY (compass_goal_id) REFERENCES selene_learning_compass_goals(id),
+  FOREIGN KEY (question_id) REFERENCES selene_study_questions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_study_pondering_threads_state
+ON selene_study_pondering_threads(session_id, state, updated_at);
+
+CREATE TABLE IF NOT EXISTS selene_study_representation_attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  thread_id INTEGER NOT NULL,
+  session_id INTEGER NOT NULL,
+  representation_kind TEXT NOT NULL,
+  input_json TEXT NOT NULL DEFAULT '{}',
+  operations_json TEXT NOT NULL DEFAULT '[]',
+  output_json TEXT NOT NULL DEFAULT '{}',
+  observation TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'visible_attempt',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'descriptive_learning_evidence',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (thread_id) REFERENCES selene_study_pondering_threads(id),
+  FOREIGN KEY (session_id) REFERENCES selene_study_sessions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_study_representation_attempts_thread
+ON selene_study_representation_attempts(thread_id, id);
+
 CREATE TABLE IF NOT EXISTS selene_teaching_lifecycles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   lifecycle_key TEXT NOT NULL UNIQUE,

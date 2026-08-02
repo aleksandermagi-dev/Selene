@@ -65,6 +65,44 @@ def test_formation_handles_tense_polarity_and_modality_without_model_generation(
     assert "we may revisit the answer." in text
 
 
+def test_formation_uses_explicit_noun_number_and_future_time_without_guessing_content():
+    frame = build_semantic_frame(
+        {
+            "semantic_frame": {
+                "propositions": [
+                    {
+                        "subject": "the lesson",
+                        "subject_number": "singular",
+                        "predicate": "remain",
+                        "object": "available",
+                    },
+                    {
+                        "subject": "the lessons",
+                        "subject_number": "plural",
+                        "predicate": "remain",
+                        "object": "reviewable",
+                    },
+                    {
+                        "subject": "Selene",
+                        "predicate": "treat",
+                        "object": "a future condition as a present fact",
+                        "tense": "future",
+                        "polarity": "negative",
+                    },
+                ]
+            }
+        }
+    )
+
+    result = realize_semantic_frame(frame, variation_key="number-time-foundation")
+
+    assert "The lesson remains available." in result["candidate_text"]
+    assert "the lessons remain reviewable." in result["candidate_text"]
+    assert "Selene will not treat a future condition as a present fact." in result["candidate_text"]
+    assert result["meaning_preserved"] is True
+    assert result["hidden_chain_of_thought_exposed"] is False
+
+
 def test_native_language_uses_structured_formation_when_supplied(tmp_path):
     conn = _conn(tmp_path)
     prompt = "Say this naturally."

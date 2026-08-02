@@ -228,17 +228,21 @@ from .teaching_lifecycle import (
 from .study_workspace import (
     answer_study_question,
     ask_study_question,
+    create_pondering_thread,
     form_study_note,
     get_study_session,
     list_learning_compass,
     list_open_study_attention,
     list_study_materials,
     list_study_sessions,
+    seed_language_foundation_learning_compass,
     seed_prior_f1_lea_learning_compass,
     start_learning_compass_goal,
     start_study_session,
     study_workspace_status,
+    try_study_representation,
     update_learning_compass_goal,
+    update_pondering_thread,
     update_study_note_clarification,
     update_study_session,
 )
@@ -698,6 +702,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": list_learning_compass(conn, payload)}
     if route_key == "study.compass.seed_prior_f1_lea":
         return {"route": route_key, "result": seed_prior_f1_lea_learning_compass(conn, payload)}
+    if route_key == "study.compass.seed_language_foundations":
+        return {"route": route_key, "result": seed_language_foundation_learning_compass(conn, payload)}
     if route_key == "study.compass.start":
         return {"route": route_key, "result": start_learning_compass_goal(conn, payload)}
     if route_key == "study.compass.update":
@@ -718,6 +724,12 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": form_study_note(conn, payload)}
     if route_key == "study.note.clarification.update":
         return {"route": route_key, "result": update_study_note_clarification(conn, payload)}
+    if route_key == "study.pondering.create":
+        return {"route": route_key, "result": create_pondering_thread(conn, payload)}
+    if route_key == "study.pondering.update":
+        return {"route": route_key, "result": update_pondering_thread(conn, payload)}
+    if route_key == "study.representation.try":
+        return {"route": route_key, "result": try_study_representation(conn, payload)}
     if route_key == "teaching.lifecycle.status":
         return {"route": route_key, "result": teaching_lifecycle_status(conn)}
     if route_key == "teaching.lifecycle.list":

@@ -98,6 +98,63 @@ complete truth.
 Questions and feelings are part of learning evidence, but neither becomes a
 grade, identity judgment, governance instruction, or source of shame.
 
+## Prerequisite Timing, Representation, and Pondering
+
+A question or activity may be well designed and still arrive before the
+learner has the prerequisite concepts or a usable representation. This is a
+timing and teaching-path observation, not a defect in the learner or the
+activity.
+
+An early activity should be preserved with its purpose and provenance rather
+than discarded, forced, or marked failed. Appropriate visible states include:
+
+- ready now;
+- needs another representation;
+- needs an earlier prerequisite;
+- the learner senses a gap but cannot express it yet;
+- useful, but return later; and
+- connected for now, with reopening still available.
+
+Teaching should allow the learner to change the form of a problem before
+assuming that the underlying concept is absent. Useful representations may
+include concrete objects, tallies, groups, number lines, place-value blocks,
+spatial arrangements, diagrams, words, symbols, movement, and bounded mental
+or computational simulation. A learner may move or rotate an object, regroup a
+quantity, or translate the same relation between visual and symbolic forms.
+The representation is a bridge to meaning; reproducing it is not by itself
+evidence of understanding.
+
+Pondering means preserving an inspectable open learning state: what currently
+fits, what bridge is missing, which forms have been tried, what prerequisite
+may help, what question is developing, and what later evidence may justify a
+return. It must not require exposure of hidden chain-of-thought, manufacture
+busywork, silently write memory, or demand that the learner perform certainty.
+
+When the learner later recognizes that two representations describe the same
+concept, that change is valuable longitudinal learning evidence. Confusion is
+therefore information that can be held, examined, and transformed—not a grade
+or a personal failure.
+
+### Language as a Representable System
+
+Early language teaching should make the meaning scene visible before asking
+for broad fluency. A short clause may be represented as roles: who or what the
+clause concerns, the action/state/relationship, and any affected or completing
+part. Grammar then organizes those supplied roles; it does not invent them.
+
+Meaning-preserving and meaning-changing transformations must remain distinct.
+Changing agreement or tense may preserve the underlying participant and action
+while changing grammatical form or time. Negation changes the claim and must
+show exactly what is denied. A modifier adds a supplied description, and a
+connector adds a supplied relationship. None may appear as harmless variation
+when its content was not present in the visible activity.
+
+A useful beginning language LEA therefore compares visible before-and-after
+forms and asks what changed, what stayed, and whether the resulting claim is
+still the intended one. The activity may support reconstruction and correction;
+it is not a demand for one standardized dialect, polished performance, or a
+single preferred sentence template.
+
 ## Learning Evidence Activities (LEAs)
 
 Learner-facing checks should be called **Learning Evidence Activities**, or

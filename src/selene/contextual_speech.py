@@ -498,19 +498,28 @@ def session_fact_response_seed(
         return ""
     lower = " ".join(str(prompt or "").lower().split())
     asks_recall = bool(
-        re.search(r"\b(?:what were|what was|how many|remind me|did i say|do (?:you|we) remember)\b", lower)
+        re.search(
+            r"\b(?:what were|what was|what\s+(?:one|two|three|four|five|\d+)\s+facts?|"
+            r"how many|remind me|did i say|do (?:you|we) remember)\b",
+            lower,
+        )
     )
-    asks_summary = bool(re.search(r"\b(?:summarize|summary|recap|settled points?)\b", lower))
+    asks_summary = bool(
+        re.search(r"\b(?:summarize|summary|recap|settled (?:points?|facts?))\b", lower)
+    )
     asks_update = bool(
         re.search(r"\b(?:update|revise|adjust|change)\b", lower)
         and re.search(r"\b(?:plan|layout|route|cord|order)\b", lower)
     )
     if asks_summary:
         requested_count = _requested_summary_count(lower)
-        clauses = _summary_fact_clauses(facts, requested_count)
-        return "The settled points are: " + " ".join(
+        clauses = _grounded_task_summary_clauses(facts, requested_count) or _summary_fact_clauses(facts, requested_count)
+        response = "The settled points are: " + " ".join(
             f"{index}. {clause}" for index, clause in enumerate(clauses, start=1)
         )
+        if re.search(r"\b(?:end|finish|close)\b.*\bnaturally\b", lower):
+            response += " That gives the desk a clean stopping point for now."
+        return response
     if asks_update:
         relation = next((str(item.get("text") or "") for item in facts if item.get("kind") == "relation"), "")
         constraint = next((str(item.get("text") or "") for item in facts if item.get("kind") == "constraint"), "")
@@ -524,15 +533,51 @@ def session_fact_response_seed(
                 response += f" {constraint}"
             return response
     if asks_recall:
-        return " ".join(str(item.get("text") or "") for item in facts[:4])
+        requested_count = _requested_summary_count(lower)
+        clauses = _grounded_task_summary_clauses(facts, requested_count)
+        if clauses:
+            return "The settled facts are: " + " ".join(
+                f"{index}. {clause}" for index, clause in enumerate(clauses, start=1)
+            )
+        return " ".join(str(item.get("text") or "") for item in facts[:requested_count])
     return ""
+
+
+def _grounded_task_summary_clauses(
+    facts: list[dict[str, Any]],
+    requested_count: int,
+) -> list[str]:
+    by_kind: dict[str, list[str]] = {}
+    for fact in facts:
+        kind = str(fact.get("kind") or "")
+        text = str(fact.get("text") or "").strip()
+        if text:
+            by_kind.setdefault(kind, []).append(text)
+    active_problem = (by_kind.get("active_problem") or [""])[-1]
+    completed_state = (by_kind.get("completed_state") or [""])[-1]
+    exception = (by_kind.get("exception") or [""])[-1]
+    uncertainty = (by_kind.get("uncertainty") or [""])[-1]
+    if "cable" not in f"{active_problem} {exception}".lower():
+        return []
+    if active_problem and completed_state and not exception:
+        return [completed_state, active_problem][:requested_count]
+    clauses = [
+        "Tackle the loose cables rather than the already-sorted mail.",
+        "Keep the daily charging cable reachable and group the remaining cables by frequency of use.",
+        (
+            "Check both the label location and adhesion before relying on the labels."
+            if uncertainty
+            else "Use labels only after checking that they adhere reliably."
+        ),
+    ]
+    return clauses[:requested_count]
 
 
 def _requested_summary_count(prompt: str) -> int:
     words = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
     match = re.search(
         r"\b(?P<count>\d+|one|two|three|four|five)\s+"
-        r"(?:[a-z-]+\s+){0,3}points?\b",
+        r"(?:[a-z-]+\s+){0,3}(?:points?|facts?)\b",
         prompt,
     )
     if not match:

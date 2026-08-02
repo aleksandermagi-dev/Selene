@@ -354,6 +354,12 @@ def _humor_decision(
             r"(?:little\s+|small\s+|quick\s+|short\s+)?(?:joke|pun)\b",
             lower,
         )
+        or re.search(
+            r"\bgive\s+(?:the\s+)?[a-z][a-z0-9' -]{1,100}?\s+"
+            r"(?:one\s+)?(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
+            r"(?:joke|pun)\b",
+            lower,
+        )
     )
     user_opened_play = _contains_any(lower, _PLAY_CUES)
     tender = _contains_any(lower, _TENDER_CUES)

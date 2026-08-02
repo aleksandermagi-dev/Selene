@@ -372,11 +372,11 @@ def test_language_shelf_exposes_ordered_review_groups_and_prerequisites(tmp_path
     items = list_language_teaching_items(conn)["items"]
     groups = status["teaching_groups"]
 
-    assert status["defined_lesson_count"] == 36
-    assert status["defined_group_count"] == 7
-    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5, 6, 7]
-    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4, 5, 5]
-    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0, 0, 0]
+    assert status["defined_lesson_count"] == 43
+    assert status["defined_group_count"] == 8
+    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4, 5, 5, 7]
+    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0, 0, 0, 0]
     assert [(item["group_order"], item["lesson_order"]) for item in items] == sorted(
         (item["group_order"], item["lesson_order"]) for item in items
     )
@@ -405,6 +405,14 @@ def test_language_shelf_exposes_ordered_review_groups_and_prerequisites(tmp_path
     assert maturity["source_refs"][0] == "speech_phase_9:mature_conversation_composition"
     assert maturity["available_to_nlo"] is False
 
+    grammar = next(item for item in items if item["lesson_key"] == "sentence_core_from_meaning_roles")
+    assert grammar["teaching_group"] == "G8 · Grammar Foundations and Word Fit"
+    assert grammar["prerequisites"] == ["reference_continuity"]
+    assert grammar["source_refs"][0] == "speech_phase_9:mature_conversation_composition"
+    assert "license:CC-BY-NC-SA-3.0-Unported" in grammar["source_refs"]
+    assert "attribution:Core Knowledge Foundation 2013" in grammar["source_refs"]
+    assert grammar["available_to_nlo"] is False
+
 
 def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
     conn = _conn(tmp_path)
@@ -414,7 +422,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         item for item in list_language_teaching_items(conn)["items"] if item["group_order"] > 1
     ]
 
-    assert len(expressive_items) == 26
+    assert len(expressive_items) == 33
     for item in expressive_items:
         blueprint = item["teaching_blueprint"]
         assert blueprint["acquire"]["vocabulary"]
@@ -429,7 +437,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         assert item["available_to_nlo"] is False
 
 
-def test_all_seven_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
+def test_all_eight_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
     conn = _conn(tmp_path)
     _prepare_review_only(conn)
     memory_before = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
@@ -445,9 +453,9 @@ def test_all_seven_groups_can_complete_in_order_without_bypassing_prerequisites_
     status = language_teaching_status(conn)
     items = list_language_teaching_items(conn)["items"]
 
-    assert status["available_lesson_count"] == 36
+    assert status["available_lesson_count"] == 43
     assert status["candidate_lesson_count"] == 0
-    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4, 5, 5]
+    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4, 5, 5, 7]
     assert all(item["own_review_complete"] is True for item in items)
     assert all(item["prerequisites_complete"] is True for item in items)
     assert all(item["unmet_prerequisites"] == [] for item in items)
@@ -502,7 +510,7 @@ def test_mature_composition_group_graduates_and_is_selected_only_as_language_gui
     items = list_language_teaching_items(conn)["items"]
     mature = [item for item in items if item["group_order"] == 7]
 
-    assert prepared["graduated_count"] == 36
+    assert prepared["graduated_count"] == 43
     assert len(mature) == 5
     assert all(item["available_to_nlo"] is True for item in mature)
     assert "long_session_callback_grounding" in guidance["lesson_keys"]
@@ -512,6 +520,63 @@ def test_mature_composition_group_graduates_and_is_selected_only_as_language_gui
     assert guidance["identity_change"] is False
     assert guidance["personality_change"] is False
     assert guidance["training_allowed"] is False
+
+
+def test_grammar_foundation_group_keeps_source_provenance_and_stays_guidance_only(tmp_path):
+    conn = _conn(tmp_path)
+    memory_before = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
+
+    prepared = prepare_language_teaching_shelf(conn)
+    items = list_language_teaching_items(conn)["items"]
+    grammar_items = [item for item in items if item["group_order"] == 8]
+    concept_row = conn.execute(
+        "SELECT payload_json FROM selene_comprehension_concepts WHERE concept_key = ?",
+        ("language_lesson:sentence_core_from_meaning_roles",),
+    ).fetchone()
+
+    assert prepared["held_count"] == 0
+    assert len(grammar_items) == 7
+    assert all(item["available_to_nlo"] is True for item in grammar_items)
+    assert [item["lesson_order"] for item in grammar_items] == list(range(1, 8))
+    assert "license:CC-BY-NC-SA-3.0-Unported" in grammar_items[0]["source_refs"]
+    assert "attribution:Core Knowledge Foundation 2013" in grammar_items[0]["source_refs"]
+    assert '"teaching_source_type": "reviewed_public_grammar_source"' in concept_row["payload_json"]
+    assert '"source_attribution_preserved": true' in concept_row["payload_json"]
+    assert '"source_license_preserved": true' in concept_row["payload_json"]
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == memory_before
+    assert prepared["memory_write_active"] is False
+    assert prepared["identity_change"] is False
+    assert prepared["personality_change"] is False
+    assert prepared["governance_change"] is False
+    assert prepared["training_allowed"] is False
+    assert prepared["autonomous_action_allowed"] is False
+
+
+def test_grammar_and_word_fit_guidance_reaches_nlo_without_inventing_content(tmp_path):
+    conn = _conn(tmp_path)
+    prepare_language_teaching_shelf(conn)
+    prompt = "Please rewrite this sentence in past tense and choose a more natural word pair."
+    seed = "The reviewed lesson keeps the supplied meaning intact."
+
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": classify_chat_intent(prompt),
+            "content_seed": seed,
+        },
+    )
+    policy = result["meaning_packet"]["language_realization_policy"]
+
+    assert "tense_tracks_time_relation" in policy["approved_lesson_keys"]
+    assert "lexical_sense_and_word_pair_fit" in policy["approved_lesson_keys"]
+    assert policy["tense_and_polarity"] is True
+    assert policy["lexical_sense_fit"] is True
+    assert policy["content_generation_allowed"] is False
+    assert policy["meaning_change_allowed"] is False
+    assert seed.lower() in result["candidate_text"].lower()
+    assert result["memory_write_active"] is False
+    assert result["training_allowed"] is False
 
 
 def test_new_lesson_reaches_guidance_only_after_full_review_and_aleks_approval(tmp_path):

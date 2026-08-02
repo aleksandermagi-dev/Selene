@@ -1573,6 +1573,50 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
         "meaning_drift_check",
         {"preserve_supported_meaning", "verify_no_meaning_drift", "keep_required_qualifiers_with_claim"},
     )
+    grammar_role_alignment = enable(
+        "grammar_role_alignment",
+        {
+            "map_meaning_roles_before_wording",
+            "form_complete_sentence_core",
+            "preserve_supported_participant_relations",
+            "align_subject_and_verb_number",
+            "preserve_lemma_while_inflecting",
+        },
+    )
+    tense_and_polarity = enable(
+        "tense_and_polarity",
+        {
+            "align_verb_tense_with_time",
+            "keep_tense_consistent_with_event_order",
+            "attach_negation_to_supported_scope",
+            "preserve_tense_and_participant_roles",
+            "distinguish_not_all_from_none",
+        },
+    )
+    modifier_attachment = enable(
+        "modifier_attachment",
+        {
+            "attach_modifier_to_intended_role",
+            "choose_specificity_from_supported_context",
+            "move_or_split_ambiguous_modifier",
+        },
+    )
+    relation_fit = enable(
+        "relation_fit",
+        {
+            "choose_connector_from_supported_relation",
+            "join_only_related_clauses",
+            "split_when_one_connector_cannot_preserve_the_relation",
+        },
+    )
+    lexical_sense_fit = enable(
+        "lexical_sense_fit",
+        {
+            "choose_sense_before_surface_form",
+            "check_grammar_and_word_pair_fit",
+            "prefer_plain_precise_word_over_novel_mismatch",
+        },
+    )
     return {
         "status": "approved_language_realization_ready" if features else "no_operational_language_guidance",
         "used": bool(features),
@@ -1586,6 +1630,11 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
         "information_focus": information_focus,
         "contextual_word_choice": contextual_word_choice,
         "meaning_drift_check": meaning_drift_check,
+        "grammar_role_alignment": grammar_role_alignment,
+        "tense_and_polarity": tense_and_polarity,
+        "modifier_attachment": modifier_attachment,
+        "relation_fit": relation_fit,
+        "lexical_sense_fit": lexical_sense_fit,
         "meaning_change_allowed": False,
         "content_generation_allowed": False,
         "personality_change_allowed": False,

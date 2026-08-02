@@ -151,6 +151,26 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
                 if support_kind == "explicit_unsupported_part"
                 else ""
             )
+        if (
+            fragment
+            and support_kind != "explicit_unsupported_part"
+            and not _fragment_fulfills_obligation(obligation, fragment)
+        ):
+            resolutions.append(
+                {
+                    "obligation_id": obligation_id,
+                    "kind": kind,
+                    "resolution": "held_semantically_misaligned_addition",
+                    "source_class": source_class,
+                    "concept_id": (knowledge or {}).get("id") or (knowledge or {}).get("concept_id"),
+                    "source_refs": _texts((knowledge or {}).get("source_refs")),
+                    "unsupported": support_kind == "explicit_unsupported_part",
+                    "missing_ground": _missing_ground(obligation),
+                    "added_to_answer": False,
+                }
+            )
+            source_classes.append(source_class)
+            continue
         key = " ".join(fragment.lower().split()).rstrip(". ")
         fragment_is_new = bool(
             key
@@ -324,6 +344,24 @@ def _completion_semantic_unit(
             )
         )[:12],
     }
+
+
+def _fragment_fulfills_obligation(
+    obligation: dict[str, Any],
+    fragment: str,
+) -> bool:
+    """Require the proposed addition itself to answer the missing act.
+
+    Completion semantics may not certify their own text merely by naming an
+    obligation id.  The visible fragment must first pass the same conservative
+    semantic-act check used for a released answer.
+    """
+    coverage = evaluate_response_coverage(
+        {"response_obligations": [obligation]},
+        fragment,
+        supported_semantics={},
+    )
+    return coverage.get("all_required_addressed") is True
 
 
 def _combined_semantic_packet(

@@ -162,7 +162,16 @@ def interpret_figurative_language(payload: dict[str, Any] | None = None) -> dict
                 }
             )
 
-    analogy = {} if any(item.get("form") == "idiom" for item in matches) else _analogy(text)
+    society_metaphor = _emergent_society_metaphor(text)
+    if society_metaphor:
+        matches.append(society_metaphor)
+        interpreted = society_metaphor["meaning"]
+
+    analogy = (
+        {}
+        if society_metaphor or any(item.get("form") == "idiom" for item in matches)
+        else _analogy(text)
+    )
     if analogy:
         matches.append(analogy)
 
@@ -442,6 +451,30 @@ def _explicit_nonliteral(text: str) -> dict[str, Any]:
             "cues": ["explicit_understatement_marker"],
         }
     return {}
+
+
+def _emergent_society_metaphor(text: str) -> dict[str, Any]:
+    match = re.search(
+        r"\b(?:the\s+)?(?P<subject>[a-z][a-z0-9 _-]{1,80}?)\s+"
+        r"(?:looks?|seems?)\s+like\s+(?:it\s+)?(?:has\s+)?"
+        r"(?:founded|formed|declared|started)\s+(?:a\s+)?(?:tiny\s+|little\s+)?"
+        r"(?:republic|nation|kingdom|society|government)\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return {}
+    subject = match.group("subject").strip()
+    return {
+        "form": "personification",
+        "surface": truncate(match.group(0).strip(), 500),
+        "meaning": (
+            f"the {subject} has become numerous, tangled, or self-organized enough "
+            "to jokingly resemble a small society with a life of its own"
+        ),
+        "confidence": "bounded",
+        "cues": ["nonhuman_group_given_social_agency", "playful_exaggeration"],
+    }
 
 
 def _sarcasm(text: str, context_text: str) -> dict[str, Any]:

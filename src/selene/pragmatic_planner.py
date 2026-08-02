@@ -30,7 +30,7 @@ CONTENT_STOP_WORDS = {
 }
 
 GENERIC_ALIGNMENT_TERMS = {
-    "answer", "change", "changed", "first", "give", "make", "next", "question", "reason",
+    "answer", "approach", "best", "change", "changed", "explain", "first", "give", "make", "matter", "name", "next", "question", "reason",
     "result", "say", "second", "step", "tell", "then",
 }
 
@@ -246,10 +246,22 @@ def evaluate_response_coverage(
         topic_overlap = sorted(topic_terms & candidate_terms)
         distinctive_alignment = not distinctive_expected or bool(distinctive_overlap or topic_overlap)
         semantic_match = len(overlap) >= minimum_term_matches and distinctive_alignment
+        requested_item_count = _requested_item_count(
+            " ".join(
+                [
+                    str(obligation.get("source_text") or ""),
+                    str(obligation.get("parent_source_text") or ""),
+                ]
+            ).lower()
+        )
         signal_can_stand_alone = (
             kind == "self_state_check_in" and not expected
-        ) or kind == "rephrase_request" or (
-            kind == "reason" and not expected
+        ) or kind in {
+            "rephrase_request", "closure", "choice_or_priority", "constraint_preservation"
+        } or (
+            kind == "reason" and not distinctive_expected
+        ) or (
+            kind in {"method", "session_summary"} and requested_item_count > 0
         )
         signal_required = kind in {
             "analogy",
@@ -269,6 +281,12 @@ def evaluate_response_coverage(
             candidate_lower,
             distinctive_alignment=distinctive_alignment,
             expected_terms=expected,
+            request_text=" ".join(
+                [
+                    str(obligation.get("source_text") or ""),
+                    str(obligation.get("parent_source_text") or ""),
+                ]
+            ).lower(),
         )
         visible_text_addressed = bool(candidate.strip()) and special_semantic_gate and (
             semantic_match and (not signal_required or signal_score > 0)
@@ -279,7 +297,18 @@ def evaluate_response_coverage(
         matched_semantic_unit_ids = [
             str(item) for item in semantic_matches.get(obligation_id) or []
         ]
-        semantic_addressed = bool(candidate.strip() and matched_semantic_unit_ids)
+        performance_gate_required = kind in {
+            "humor",
+            "closure",
+            "method",
+            "requested_output",
+            "session_summary",
+        }
+        semantic_addressed = bool(
+            candidate.strip()
+            and matched_semantic_unit_ids
+            and (special_semantic_gate or not performance_gate_required)
+        )
         obligation_language = " ".join(
             [
                 str(obligation.get("source_text") or ""),
@@ -435,9 +464,29 @@ def _unit_obligations(
     for index, unit in enumerate(units):
         text = truncate(str(unit.get("text") or ""), 480).strip()
         kind = str(unit.get("kind") or "statement")
-        if not text or " ".join(text.lower().split()) in existing_sources:
+        normalized_text = " ".join(text.lower().strip(" .?!").split())
+        if not text or any(
+            normalized_text == source.strip(" .?!")
+            or len(normalized_text) >= 12 and normalized_text in source
+            for source in existing_sources
+        ):
             continue
         if _is_response_format_directive(text):
+            continue
+        if (
+            correction.get("detected") is True
+            and kind in {"direct_request", "indirect_request"}
+            and re.fullmatch(
+                r"(?:please\s+)?(?:update|revise|adjust)\s+(?:your\s+|the\s+)?"
+                r"(?:suggestion|answer|plan|recommendation)",
+                text.strip(" .?!"),
+                flags=re.IGNORECASE,
+            )
+        ):
+            # Applying the corrected meaning is already the correction
+            # obligation's explicit goal; a short "update your suggestion"
+            # clause must not create a second obligation that can only be
+            # satisfied by parroting the request words.
             continue
         if (
             kind == "indirect_request"
@@ -447,7 +496,17 @@ def _unit_obligations(
             # A collaborative invitation can frame a later concrete request;
             # it is not a second content obligation that the answer must quote.
             continue
-        if kind in {"question", "direct_request", "indirect_request"}:
+        request_like_statement = bool(
+            kind == "statement"
+            and re.search(
+                r"(?:^|[):.!?]\s*)(?:summarize|recap|take\s+(?:this|these)\s+in\s+order|"
+                r"give|tell|show|compare|explain|name|revise|update|adjust|return|"
+                r"let\s+the\s+(?:conversation|chat)\s+end)\b",
+                text,
+                flags=re.IGNORECASE,
+            )
+        )
+        if kind in {"question", "direct_request", "indirect_request"} or request_like_statement:
             request_parts = (
                 _compound_question_parts(text)
                 if kind == "question"
@@ -466,7 +525,7 @@ def _unit_obligations(
                         "id": _obligation_id(part, len(existing) + len(obligations) + index),
                         "loop_id": "",
                         "kind": obligation_kind,
-                        "dialogue_act": kind,
+                        "dialogue_act": "direct_request" if request_like_statement else kind,
                         "source_text": part,
                         "parent_source_text": text,
                         "topic": active_topic,
@@ -499,9 +558,23 @@ def _unit_obligations(
 
 def _request_kind(text: str) -> str:
     lower = text.lower()
+    if re.search(r"\b(?:joke|pun)\b", lower):
+        return "humor"
+    if re.search(r"\b(?:let|allow)\b.*\b(?:conversation|chat)\b.*\bend\b|\bend\b.*\bnaturally\b", lower):
+        return "closure"
+    if re.search(
+        r"(?:^|[):.!?]\s*)(?:summarize|recap)\b|\bsummary\b",
+        lower,
+    ):
+        return "session_summary"
     if "analogy" in lower:
         return "analogy"
-    if "constraint" in lower or "without losing" in lower or "without dropping" in lower:
+    if (
+        "constraint" in lower
+        or "without losing" in lower
+        or "without dropping" in lower
+        or re.search(r"\b(?:revise|update|adjust)\b.*\bonly\b.*\bpart\b.*\bchanges?\b", lower)
+    ):
         return "constraint_preservation"
     if any(token in lower for token in ("compare", "difference", "versus", " vs ")):
         return "comparison"
@@ -511,6 +584,10 @@ def _request_kind(text: str) -> str:
         return "method"
     if any(token in lower for token in ("choose", "recommend", "priority", "first")):
         return "choice_or_priority"
+    if re.search(r"\b(?:name|state)\b.*\b(?:best|preferred)\s+(?:approach|option|choice)\b", lower):
+        return "choice_or_priority"
+    if re.match(r"^(?:then\s+|next\s+|finally\s+)?return\s+to\b", lower):
+        return "callback"
     return "direct_request"
 
 
@@ -581,6 +658,8 @@ def _question_kind(question: str) -> str:
         return "session_summary"
     if any(token in lower for token in ("compare", "difference", "versus", " vs ")):
         return "comparison"
+    if re.search(r"\b(?:best grounded guess|best guess|current guess|provisional)\b", lower):
+        return "provisional_inference"
     if lower.startswith("why") or " why " in lower:
         return "reason"
     if lower.startswith("how") or " how " in lower:
@@ -623,7 +702,8 @@ def _contains_session_summary_request(value: str) -> bool:
             r"\b(?:(?:give|tell|show)\s+(?:me|us)\s+(?:a\s+)?(?:short\s+|brief\s+)?"
             r"(?:summary|recap)|(?:summarize|sum up|recap)\s+(?:this|our|the)\s+"
             r"(?:conversation|chat)|what (?:has|have) (?:this|our) (?:conversation|chat) been about|"
-            r"what have we been (?:talking|speaking) about)\b",
+            r"what have we been (?:talking|speaking) about|"
+            r"what\s+(?:one|two|three|four|five|\d+)\s+facts?.*\bsettled)\b",
             value,
             flags=re.IGNORECASE,
         )
@@ -650,10 +730,25 @@ def _compound_question_parts(question: str) -> list[str]:
         question,
         interrogative=True,
     )
+    if len(parts) > 1 and re.match(
+        r"^(?:if|when|assuming|given that)\b",
+        parts[0],
+        flags=re.IGNORECASE,
+    ):
+        parts = parts[1:]
     return parts or [question]
 
 
 def _structured_request_parts(text: str) -> list[str]:
+    ordered = re.match(r"^(?:take|do|answer)\s+(?:this|these)\s+in\s+order\s*:\s*(.+)$", text, flags=re.IGNORECASE)
+    if ordered:
+        parts = [
+            part.strip(" ,.?!")
+            for part in re.split(r",\s*(?:then\s+)?|\s+then\s+", ordered.group(1), flags=re.IGNORECASE)
+            if part.strip(" ,.?!")
+        ]
+        if len(parts) >= 2:
+            return parts
     if re.match(r"^(?:then|next|finally)\s+return\b", text, flags=re.IGNORECASE) and re.search(
         r"\band\s+(?:explain|answer|summarize)\b",
         text,
@@ -707,8 +802,8 @@ def _split_coordinated_acts(text: str, *, interrogative: bool) -> list[str]:
         r"(?:what|which|how|why|when|where|who|"
         r"can|could|would|will|"
         r"compare|explain|give|tell|show|list|summarize|recap|say|"
-        r"recommend|choose|name|describe|identify|state|separate|distinguish|"
-        r"calculate|count|walk|use|add|include|put)"
+        r"recommend|choose|name|describe|identify|state|separate|distinguish|revise|update|adjust|"
+        r"calculate|count|walk|use|add|include|put|return|end|let)"
     )
     normalized = re.sub(
         r"(?i)\b(?:first|second|third|finally|lastly)\s*,?\s*",
@@ -839,16 +934,20 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
     signals = {
         "comparison": ("both", "whereas", "while", "difference", "compared", "than"),
         "reason": ("because", "since", "reason", "therefore", "so "),
-        "method": ("first", "then", "through", "by ", "step", "start"),
-        "choice_or_priority": ("first", "start", "priority", "choose", "should"),
+        "method": ("first", "then", "through", "by ", "step", "start", "1.", "2."),
+        "choice_or_priority": ("first", "start", "priority", "choose", "should", "bundle", "group"),
         "limitation": ("limit", "limitation", "but", "however", "only"),
         "requested_output": ("report", "include", "show", "state", "summary"),
         "requested_section": ("design", "pilot", "condition", "section", "part"),
         "analogy": ("analogy", "like", "similar", "think of"),
-        "constraint_preservation": ("constraint", "must", "cannot", "do not", "does not"),
+        "constraint_preservation": (
+            "constraint", "must", "cannot", "do not", "does not",
+            "only that part changes", "the rest", "remains", "stays",
+        ),
         "yes_or_no": (
             "yes",
             "no",
+            "not yet",
             "not completely",
             "not always",
             "not necessarily",
@@ -871,7 +970,14 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
         ),
         "self_state_check_in": ("i ", "i'm", "my ", "present", "current", "attentive", "here"),
         "rephrase_request": ("put simply", "in plain terms", "said that awkwardly", "what i mean"),
-        "session_summary": ("this conversation has been about", "we have been", "we've been", "we covered", "we discussed", "recap:", "summary:"),
+        "session_summary": ("this conversation has been about", "we have been", "we've been", "we covered", "we discussed", "recap:", "summary:", "settled points"),
+        "humor": ("joke:", "pun:", "one little joke", "one quick joke"),
+        "closure": ("for now", "leave it there", "stop there", "talk later", "clean stopping point", "good place to leave"),
+        "callback": ("back to", "returning to", "keep", "exception"),
+        "provisional_inference": (
+            "best guess", "provisional", "my current guess", "i would inspect",
+            "before deciding", "change my guess", "would change the guess",
+        ),
     }
     return 0.5 if any(token in candidate for token in signals.get(kind, ())) else 0.0
 
@@ -882,7 +988,62 @@ def _special_semantic_gate(
     *,
     distinctive_alignment: bool,
     expected_terms: set[str],
+    request_text: str = "",
 ) -> bool:
+    if kind == "humor":
+        return bool(re.search(r"\b(?:joke|pun)\s*:", candidate))
+    if kind == "closure":
+        return bool(
+            re.search(
+                r"\b(?:for now|leave (?:it|the conversation) (?:here|there)|"
+                r"good place to (?:leave|stop)|clean stopping point|talk (?:later|soon)|"
+                r"we can (?:pause|stop|leave it))\b",
+                candidate,
+            )
+        )
+    if kind in {"method", "requested_output"}:
+        requested_count = _requested_item_count(request_text)
+        if requested_count > 1:
+            numbered = {
+                int(item)
+                for item in re.findall(r"(?:^|\s)([1-9])\s*[.):]", candidate)
+            }
+            named = sum(
+                1
+                for marker in ("first", "second", "third", "fourth", "fifth")[:requested_count]
+                if re.search(rf"\b{marker}\b", candidate)
+            )
+            return len(numbered) >= requested_count or named >= requested_count
+    if kind == "session_summary":
+        requested_count = _requested_item_count(request_text)
+        if requested_count > 1:
+            numbered = {
+                int(item)
+                for item in re.findall(r"(?:^|\s)([1-9])\s*[.):]", candidate)
+            }
+            named = sum(
+                1
+                for marker in ("first", "second", "third", "fourth", "fifth")[:requested_count]
+                if re.search(rf"\b{marker}\b", candidate)
+            )
+            return len(numbered) >= requested_count or named >= requested_count
+    if kind == "provisional_inference":
+        return bool(
+            re.search(
+                r"\b(?:best guess|provisional|current guess|change my guess|"
+                r"would change (?:my|the) guess)\b",
+                candidate,
+            )
+        )
+    if kind == "constraint_preservation":
+        return bool(
+            re.search(
+                r"\b(?:constraint\b|only (?:that|this|the) part changes?|"
+                r"the rest (?:of [^.;]{1,80} )?(?:stays?|remains?) (?:the )?same|"
+                r"the rest [^.;]{0,80}\b(?:stays?|remains?)\b)",
+                candidate,
+            )
+        )
     if kind == "yes_or_no":
         expected_present = bool(expected_terms)
         expected_stance_only = (
@@ -896,7 +1057,7 @@ def _special_semantic_gate(
         )
         return bool(
             re.search(
-                r"^(?:yes|no)\b|\b(?:i agree|i disagree|that is correct|that is not correct|"
+                r"^(?:yes|no|not yet)\b|\b(?:i agree|i disagree|that is correct|that is not correct|"
                 r"not completely|not always|not necessarily|i would|i would not|i do|i do not|"
                 r"(?:the\s+)?(?:aim|plan|idea|recommendation)\s+still\s+holds?|"
                 r"(?:the\s+)?(?:aim|plan|idea|recommendation)\s+still\s+applies|"
@@ -923,6 +1084,19 @@ def _special_semantic_gate(
             )
         )
     return True
+
+
+def _requested_item_count(value: str) -> int:
+    words = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+    match = re.search(
+        r"\b(?P<count>\d+|one|two|three|four|five)\s+"
+        r"(?:short\s+|brief\s+|practical\s+)?(?:parts?|points?|steps?|items?|sections?|facts?)\b",
+        value,
+    )
+    if not match:
+        return 0
+    token = match.group("count")
+    return int(token) if token.isdigit() else words.get(token, 0)
 
 
 def _content_terms(value: str, *, limit: int = 20) -> list[str]:
@@ -977,7 +1151,7 @@ def _utterance_units(value: str) -> list[dict[str, Any]]:
         elif re.match(
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
             r"(?:compare|explain|show|tell|help|give|list|summarize|check|"
-            r"recommend|suggest|propose|outline|walk|describe|identify|state|"
+            r"recommend|suggest|propose|outline|walk|describe|identify|state|revise|update|adjust|"
             r"separate|distinguish|calculate|count|return\b.*\b(?:explain|answer|summarize))\b",
             lower,
         ):

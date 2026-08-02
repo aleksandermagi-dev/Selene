@@ -270,7 +270,10 @@ def _acknowledgement_kind(acts: list[dict[str, Any]]) -> str:
 def _has_acknowledgement(value: str, kind: str) -> bool:
     lower = value.lower()
     markers = {
-        "correction": ("correction", "you're right", "you are right", "i see", "i have the changed", "got it"),
+        "correction": (
+            "correction", "you're right", "you are right", "i see",
+            "i have the changed", "got it", "that changes",
+        ),
         "gratitude": ("you're welcome", "you are welcome", "of course", "glad", "thank you"),
         "warm_connection": ("i'm with you", "i am with you", "glad", "here with you"),
         "partial_agreement": ("qualification matters", "i have the distinction", "yes—but", "yes, but"),

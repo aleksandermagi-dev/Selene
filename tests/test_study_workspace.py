@@ -6,21 +6,27 @@ import pytest
 
 from selene.comprehension_integration import propose_comprehension_concept
 from selene.db import init_db
+from selene.language_teaching_shelf import prepare_language_teaching_shelf
 from selene.module_router import route_request
 from selene.study_workspace import (
+    LANGUAGE_FOUNDATION_COMPASS_GOALS,
     PRIOR_F1_LEA_GOALS,
     answer_study_question,
     ask_study_question,
+    create_pondering_thread,
     form_study_note,
     list_learning_compass,
     list_study_sessions,
     list_study_materials,
     list_open_study_attention,
+    seed_language_foundation_learning_compass,
     seed_prior_f1_lea_learning_compass,
     start_learning_compass_goal,
     start_study_session,
     study_workspace_status,
+    try_study_representation,
     update_learning_compass_goal,
+    update_pondering_thread,
     update_study_note_clarification,
     update_study_session,
 )
@@ -371,6 +377,34 @@ def test_prior_lea_seeds_four_descriptive_compass_goals_idempotently(tmp_path):
     _assert_locked(second)
 
 
+def test_language_foundation_compass_uses_reviewed_lessons_and_precedes_deferred_math(tmp_path):
+    conn = _conn(tmp_path)
+    _prior_f1_lea_fixture(conn)
+    seed_prior_f1_lea_learning_compass(conn)
+    prepare_language_teaching_shelf(conn)
+
+    first = seed_language_foundation_learning_compass(conn)
+    second = seed_language_foundation_learning_compass(conn)
+    language_goals = [item for item in first["items"] if item["source_kind"] == "guided_language_foundation"]
+    prior_goals = [item for item in first["items"] if item["source_kind"] == "learning_evidence_activity"]
+
+    assert len(first["created"]) == len(LANGUAGE_FOUNDATION_COMPASS_GOALS) == 3
+    assert [item["display_order"] for item in language_goals] == [1, 2, 3]
+    assert [item["display_order"] for item in prior_goals] == [11, 12, 13, 14]
+    assert first["reordered_existing_goal_count"] == 4
+    assert first["live_assessment_performed"] is False
+    assert first["teaching_material_mutated"] is False
+    assert all(item["state"] == "ready_to_explore" for item in language_goals)
+    assert all(item["evidence"]["pass_fail_judgment"] is False for item in language_goals)
+    assert all(item["evidence"]["synthetic_check_only"] is True for item in language_goals)
+    assert "license:CC-BY-NC-SA-3.0-Unported" in language_goals[0]["source_refs"]
+    assert len(second["created"]) == 0
+    assert len(second["already_present"]) == 3
+    assert second["reordered_existing_goal_count"] == 0
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_locked(second)
+
+
 def test_compass_answer_updates_goal_without_claiming_understanding(tmp_path):
     conn = _conn(tmp_path)
     _prior_f1_lea_fixture(conn)
@@ -484,11 +518,210 @@ def test_study_routes_are_registered_and_status_is_selene_owned(tmp_path):
     routed = route_request(conn, "study.status")["result"]
     routed_materials = route_request(conn, "study.materials.list")["result"]
     routed_compass = route_request(conn, "study.compass.list")["result"]
+    routed_language_compass = route_request(conn, "study.compass.seed_language_foundations")["result"]
 
     assert direct["owner"] == "Selene"
     assert routed["status"] == "selene_study_workspace_ready"
     assert routed["eligible_material_count"] == 1
     assert routed_materials["items"][0]["id"] == concept_id
     assert routed_compass["status"] == "selene_learning_compass_ready"
+    assert routed_language_compass["status"] == "language_foundation_learning_compass_seeded"
+    assert len(routed_language_compass["unavailable"]) == 3
+    assert routed_language_compass["live_assessment_performed"] is False
     assert routed["study_is_cocoon"] is False
     _assert_locked(routed)
+
+
+def test_pondering_thread_can_hold_a_prerequisite_ahead_activity_without_grading(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _concept(conn)
+    session_id = int(start_study_session(conn, {"concept_ids": [concept_id], "focus": "Compare 34 and 29"})["item"]["id"])
+
+    held = create_pondering_thread(
+        conn,
+        {
+            "session_id": session_id,
+            "title": "Why subtraction verifies the comparison",
+            "state": "needs_prerequisite",
+            "current_fit": "I can see that 34 is more than 29.",
+            "missing_bridge": "I do not yet see why subtraction is the check.",
+            "prerequisite_needed": "Subtraction as comparison and difference",
+            "representation_preferences": ["objects", "place_value"],
+        },
+    )
+    thread = held["pondering_threads"][0]
+    status = study_workspace_status(conn)
+    attention = list_open_study_attention(conn)
+
+    assert thread["state"] == "needs_prerequisite"
+    assert thread["representation_preferences"] == ["objects", "place_value"]
+    assert status["open_pondering_count"] == 1
+    assert attention["items"][0]["attention_type"] == "pondering_thread"
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_locked(held)
+
+
+def test_visible_representation_attempts_support_tallies_place_value_and_rotation(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _concept(conn)
+    session_id = int(start_study_session(conn, {"concept_ids": [concept_id]})["item"]["id"])
+    thread_id = int(create_pondering_thread(conn, {"session_id": session_id, "title": "Try another form"})["pondering_threads"][0]["id"])
+
+    try_study_representation(
+        conn, {"thread_id": thread_id, "representation_kind": "tallies", "quantity": 12}
+    )
+    try_study_representation(
+        conn, {"thread_id": thread_id, "representation_kind": "place_value", "quantity": 34}
+    )
+    rotated = try_study_representation(
+        conn,
+        {
+            "thread_id": thread_id,
+            "representation_kind": "spatial_object",
+            "label": "arrow",
+            "shape": "arrow",
+            "x": 40,
+            "y": 50,
+            "move_x": 15,
+            "move_y": -10,
+            "rotate_degrees": 90,
+            "observation": "The same object now points in a different direction.",
+        },
+    )
+    attempts = rotated["pondering_threads"][0]["representation_attempts"]
+
+    assert attempts[0]["output"]["groups"] == ["||||/", "||||/", "||"]
+    assert attempts[1]["output"] == {"quantity": 34, "hundreds": 0, "tens": 3, "ones": 4, "expanded": "0 + 30 + 4"}
+    assert attempts[2]["output"]["rotation"] == 90
+    assert attempts[2]["output"]["x"] == 55
+    assert attempts[2]["output"]["y"] == 40
+    assert attempts[2]["observation"].startswith("The same object")
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_locked(rotated)
+
+    routed = route_request(
+        conn,
+        "study.representation.try",
+        {"thread_id": thread_id, "representation_kind": "groups", "quantity": 10, "group_size": 3},
+    )["result"]
+    assert routed["pondering_threads"][0]["representation_attempts"][-1]["output"]["remainder"] == 1
+    _assert_locked(routed)
+
+
+def test_sentence_role_and_transformation_representations_are_visible_and_bounded(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _concept(conn)
+    session_id = int(start_study_session(conn, {"concept_ids": [concept_id]})["item"]["id"])
+    thread_id = int(
+        create_pondering_thread(conn, {"session_id": session_id, "title": "Inspect a sentence shape"})[
+            "pondering_threads"
+        ][0]["id"]
+    )
+
+    roles = try_study_representation(
+        conn,
+        {
+            "thread_id": thread_id,
+            "representation_kind": "sentence_roles",
+            "subject": "the lesson",
+            "subject_number": "singular",
+            "predicate": "remain",
+            "object": "available",
+        },
+    )
+    transformed = try_study_representation(
+        conn,
+        {
+            "thread_id": thread_id,
+            "representation_kind": "sentence_transform",
+            "subject": "Selene",
+            "subject_number": "singular",
+            "predicate": "carry",
+            "object": "thread",
+            "tense": "future",
+            "polarity": "negative",
+            "object_modifier": "the reviewed",
+            "relation": "contrast",
+            "second_subject": "the source",
+            "second_predicate": "remain",
+            "second_object": "visible",
+            "observation": "The time, denial, description, and relationship are all visible changes.",
+        },
+    )
+    attempts = transformed["pondering_threads"][0]["representation_attempts"]
+    role_output = roles["pondering_threads"][0]["representation_attempts"][0]["output"]
+    transformed_output = attempts[-1]["output"]
+
+    assert role_output["sentence"] == "The lesson remains available."
+    assert [item["role"] for item in role_output["roles"]] == ["subject", "predicate", "object"]
+    assert role_output["meaning_preserved"] is True
+    assert transformed_output["before_sentence"] == "Selene carries thread."
+    assert "Selene will not carry the reviewed thread." in transformed_output["sentence"]
+    assert "the source will remain visible" in transformed_output["sentence"]
+    assert transformed_output["relation"] == "contrast"
+    assert transformed_output["required_semantic_units_preserved"] is True
+    assert transformed_output["meaning_preserved_within_explicit_transformation"] is True
+    assert transformed_output["original_claim_unchanged"] is False
+    assert transformed_output["claim_change_is_visible_and_requested"] is True
+    assert transformed_output["unsupported_content_added"] is False
+    assert transformed_output["hidden_chain_of_thought_exposed"] is False
+    assert attempts[-1]["observation"].startswith("The time")
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_locked(transformed)
+
+
+def test_pondering_thread_can_return_later_reopen_and_integrate_for_now(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _concept(conn)
+    session_id = int(start_study_session(conn, {"concept_ids": [concept_id]})["item"]["id"])
+    thread_id = int(create_pondering_thread(
+        conn,
+        {"session_id": session_id, "title": "An early question", "state": "return_later", "revisit_cue": "After place value"},
+    )["pondering_threads"][0]["id"])
+
+    reopened = update_pondering_thread(conn, {"thread_id": thread_id, "state": "reopened"})
+    integrated = update_pondering_thread(
+        conn,
+        {"thread_id": thread_id, "state": "integrated_for_now", "current_fit": "The two forms now describe the same quantity."},
+    )
+
+    assert reopened["pondering_threads"][0]["state"] == "reopened"
+    assert integrated["pondering_threads"][0]["state"] == "integrated_for_now"
+    assert list_open_study_attention(conn)["open_count"] == 0
+    _assert_locked(integrated)
+
+
+def test_representation_workbench_rejects_unbounded_or_unsupported_simulation(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _concept(conn)
+    session_id = int(start_study_session(conn, {"concept_ids": [concept_id]})["item"]["id"])
+    thread_id = int(create_pondering_thread(conn, {"session_id": session_id, "title": "Bounded forms"})["pondering_threads"][0]["id"])
+
+    with pytest.raises(ValueError, match="unsupported representation"):
+        try_study_representation(conn, {"thread_id": thread_id, "representation_kind": "arbitrary_code"})
+    with pytest.raises(ValueError, match="between 0 and 200"):
+        try_study_representation(conn, {"thread_id": thread_id, "representation_kind": "objects", "quantity": 1000})
+    with pytest.raises(ValueError, match="between -360 and 360"):
+        try_study_representation(
+            conn,
+            {"thread_id": thread_id, "representation_kind": "spatial_object", "rotate_degrees": 900},
+        )
+    with pytest.raises(ValueError, match="visible subject and predicate"):
+        try_study_representation(
+            conn,
+            {"thread_id": thread_id, "representation_kind": "sentence_roles", "subject": "the lesson"},
+        )
+    with pytest.raises(ValueError, match="choose a clause relationship"):
+        try_study_representation(
+            conn,
+            {
+                "thread_id": thread_id,
+                "representation_kind": "sentence_transform",
+                "subject": "the lesson",
+                "predicate": "remain",
+                "second_subject": "the source",
+                "second_predicate": "stay",
+            },
+        )
+    assert conn.execute("SELECT COUNT(*) FROM selene_study_representation_attempts").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0

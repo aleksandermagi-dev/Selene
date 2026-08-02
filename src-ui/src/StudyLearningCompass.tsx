@@ -20,6 +20,9 @@ const STATE_LABELS: Record<string, string> = {
   still_unclear: "Still unclear",
   connected_for_now: "Connected for now",
   reopened: "Reopened",
+  needs_representation: "Needs another representation",
+  needs_prerequisite: "Needs an earlier foundation",
+  return_later: "Useful, but early — return later",
 };
 
 function stateLabel(value: unknown) {
@@ -194,6 +197,17 @@ export default function StudyLearningCompass({ items, onOpenGoal, onUpdated }: S
                   <button disabled={Boolean(busy)} onClick={() => updateGoal(goal, "reopen")}>Reopen this goal</button>
                 )}
               </div>
+              {state !== "connected_for_now" ? (
+                <details className="studyCompassConditions">
+                  <summary>Adjust the learning conditions</summary>
+                  <p className="plainHelp">A useful activity can arrive before its representation or prerequisite. Preserve it and change the path—not the learner.</p>
+                  <div className="reviewActions">
+                    <button disabled={Boolean(busy)} onClick={() => updateGoal(goal, "needs_representation")}>Try Another Representation</button>
+                    <button disabled={Boolean(busy) || !unclear.trim()} onClick={() => updateGoal(goal, "needs_prerequisite")}>Needs an Earlier Foundation</button>
+                    <button disabled={Boolean(busy)} onClick={() => updateGoal(goal, "return_later")}>Useful—Return Later</button>
+                  </div>
+                </details>
+              ) : null}
 
               <details className="studyNoteBasis">
                 <summary>Learning evidence and provenance</summary>

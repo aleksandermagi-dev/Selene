@@ -137,7 +137,16 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
     ][-24:]
     relevant_landmarks = _relevant_landmarks(interpreted, session_landmarks)
-    session_facts = _session_facts(payload.get("conversation_events"), current_prompt=interpreted)
+    prior_session_facts = [
+        item
+        for item in pragmatics.get("session_facts") or []
+        if isinstance(item, dict)
+    ]
+    session_facts = _session_facts(
+        payload.get("conversation_events"),
+        current_prompt=interpreted,
+        prior_facts=prior_session_facts,
+    )
     relevant_session_facts = _relevant_session_facts(interpreted, session_facts)
     resolved_reference = (
         pragmatic_plan.get("resolved_reference")
@@ -277,10 +286,19 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
     )
 
 
-_NUMBER_WORD = r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+_NUMBER_WORD = (
+    r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+    r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|"
+    r"forty|fifty|sixty)"
+)
 
 
-def _session_facts(events: Any, *, current_prompt: str) -> list[dict[str, Any]]:
+def _session_facts(
+    events: Any,
+    *,
+    current_prompt: str,
+    prior_facts: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     """Derive small answerable facts from visible user turns in this session only."""
     source_events = [item for item in events or [] if isinstance(item, dict)][-16:]
     user_events = [
@@ -289,7 +307,11 @@ def _session_facts(events: Any, *, current_prompt: str) -> list[dict[str, Any]]:
         if str(item.get("role") or "") == "user" and str(item.get("preview") or "").strip()
     ]
     user_events.append(("current_prompt", current_prompt))
-    facts: list[dict[str, Any]] = []
+    facts: list[dict[str, Any]] = [
+        dict(item)
+        for item in prior_facts or []
+        if str(item.get("fact_key") or "") and str(item.get("text") or "").strip()
+    ][-20:]
     for order, (event_id, text) in enumerate(user_events):
         for fact in _extract_session_facts(text, event_id=event_id, order=order):
             replacement_key = str(fact.get("replacement_key") or "")
@@ -307,6 +329,126 @@ def _extract_session_facts(text: str, *, event_id: str, order: int) -> list[dict
     if not normalized:
         return []
     facts: list[dict[str, Any]] = []
+
+    duration = re.search(
+        rf"\b(?:i|we)\s+(?:only\s+)?have\s+(?P<count>{_NUMBER_WORD})\s+"
+        r"(?P<unit>minutes?|hours?)\b",
+        lower,
+        flags=re.IGNORECASE,
+    )
+    if duration:
+        count, unit = duration.group("count"), duration.group("unit")
+        facts.append(
+            _session_fact(
+                "time_constraint",
+                f"The available time is {count} {unit}.",
+                f"time:{count}:{unit}",
+                "time:available",
+                event_id,
+                order,
+            )
+        )
+
+    inventory = re.search(
+        r"\b(?:the\s+)?(?P<place>[a-z][a-z-]{1,30})\s+has\s+"
+        rf"(?:{_NUMBER_WORD}\s+)?(?P<collection>piles?|groups?|stacks?|areas?|sections?)\s*:\s*"
+        r"(?P<items>[^.!?]{3,180})",
+        lower,
+        flags=re.IGNORECASE,
+    )
+    if inventory:
+        place = inventory.group("place")
+        items = [
+            re.sub(r"^and\s+", "", item.strip(" ,"), flags=re.IGNORECASE)
+            for item in re.split(r",\s*|\s+and\s+", inventory.group("items"))
+            if item.strip(" ,")
+        ][:8]
+        if items:
+            joined = ", ".join(items[:-1]) + (f", and {items[-1]}" if len(items) > 1 else items[0])
+            facts.append(
+                _session_fact(
+                    "inventory",
+                    f"The {place} has {joined}.",
+                    f"inventory:{place}:{'|'.join(items)}",
+                    f"inventory:{place}",
+                    event_id,
+                    order,
+                )
+            )
+
+    state_patterns = (
+        (
+            "completed_state",
+            r"\b(?:the\s+)?(?P<subject>[a-z][a-z-]*(?:\s+[a-z][a-z-]*){0,4}?)\s+"
+            r"(?:is|are)\s+(?P<state>already\s+(?:sorted|finished|done|organized|cleared))\b",
+        ),
+        (
+            "active_problem",
+            r"\b(?:the\s+)?(?P<subject>[a-z][a-z-]*(?:\s+[a-z][a-z-]*){0,4}?)\s+"
+            r"(?:is|are)\s+(?P<state>the\s+(?:real|actual|main)\s+(?:mess|problem|priority|issue))\b",
+        ),
+    )
+    for kind, pattern in state_patterns:
+        for match in re.finditer(pattern, lower, flags=re.IGNORECASE):
+            subject = match.group("subject").strip()
+            state = match.group("state").strip()
+            copula = "are" if subject.endswith("s") else "is"
+            facts.append(
+                _session_fact(
+                    kind,
+                    f"The {subject} {copula} {state}.",
+                    f"state:{subject}:{state}",
+                    f"state:{subject}",
+                    event_id,
+                    order,
+                )
+            )
+
+    keep_reason = re.search(
+        r"\bkeep\s+(?:the\s+)?(?P<object>[a-z][a-z-]*(?:\s+[a-z][a-z-]*){0,4}?)\s+"
+        r"(?P<place>on|in|near|by)\s+(?:the\s+)?(?P<location>[a-z][a-z-]*(?:\s+[a-z][a-z-]*){0,3}?)\s+"
+        r"because\s+(?P<reason>[^.!?]{2,100})",
+        lower,
+        flags=re.IGNORECASE,
+    )
+    if keep_reason:
+        obj = keep_reason.group("object").strip()
+        place = keep_reason.group("place")
+        location = keep_reason.group("location").strip()
+        reason = keep_reason.group("reason").strip(" ,")
+        if reason.startswith("i "):
+            reason = "I " + reason[2:]
+        facts.append(
+            _session_fact(
+                "exception",
+                f"Keep the {obj} {place} the {location} because {reason}.",
+                f"exception:{obj}:{place}:{location}:{reason}",
+                f"exception:{obj}",
+                event_id,
+                order,
+            )
+        )
+
+    unchecked_location = re.search(
+        r"\b(?:not\s+sure\s+whether|maybe|may(?:be)?|might)\s+"
+        r"(?:the\s+)?(?P<object>[a-z][a-z-]*(?:\s+[a-z][a-z-]*){0,4}?)\s+"
+        r"(?:is|are)\s+(?P<location>[^;,.!?]{2,100}).{0,100}\b"
+        r"(?:not\s+checked|hasn't\s+been\s+checked|haven't\s+checked|neither\s+of\s+us\s+has\s+checked)\b",
+        lower,
+        flags=re.IGNORECASE,
+    )
+    if unchecked_location:
+        obj = unchecked_location.group("object").strip()
+        facts.append(
+            _session_fact(
+                "uncertainty",
+                f"The location of the {obj} has not been checked.",
+                f"uncertainty:location:{obj}",
+                f"location:{obj}",
+                event_id,
+                order,
+            )
+        )
 
     dimensions = re.search(
         rf"\b(?P<left>{_NUMBER_WORD})\s*(?P<unit>feet|foot|ft)\s+by\s+"
@@ -410,7 +552,9 @@ def _session_fact(
 
 def _relevant_session_facts(prompt: str, facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     lower = str(prompt or "").lower()
-    summary_request = bool(re.search(r"\b(?:summarize|summary|recap|settled points?)\b", lower))
+    summary_request = bool(
+        re.search(r"\b(?:summarize|summary|recap|settled (?:points?|facts?))\b", lower)
+    )
     query_terms = set(_distinctive_terms(prompt))
     ranked: list[tuple[int, int, dict[str, Any]]] = []
     for index, fact in enumerate(facts):
@@ -422,6 +566,14 @@ def _relevant_session_facts(prompt: str, facts: list[dict[str, Any]]) -> list[di
             or kind == "count" and overlap
             or kind == "relation" and re.search(r"\b(?:where|beside|near|cord|outlet|chair)\b", lower)
             or kind == "constraint" and re.search(r"\b(?:keep|open|clear|layout|plan|settled)\b", lower)
+            or kind == "time_constraint" and re.search(r"\b(?:time|minute|hour|plan|first|tackle)\b", lower)
+            or kind == "inventory" and re.search(r"\b(?:desk|pile|group|stack|plan|settled|fact)\b", lower)
+            or kind in {"completed_state", "active_problem"} and re.search(
+                r"\b(?:correction|update|revise|plan|suggestion|settled|fact|desk|mess|problem|first|tackle)\b",
+                lower,
+            )
+            or kind == "exception" and re.search(r"\b(?:keep|exception|cable|daily|plan|revise|return|settled)\b", lower)
+            or kind == "uncertainty" and re.search(r"\b(?:know|checked|sure|location|label|drawer)\b", lower)
         )
         if summary_request or overlap or cue_match:
             ranked.append((4 if cue_match else 2 if overlap else 1, index, fact))

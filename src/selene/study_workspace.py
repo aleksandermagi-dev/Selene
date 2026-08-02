@@ -6,6 +6,7 @@ from hashlib import sha256
 from typing import Any
 
 from .comprehension_integration import propose_comprehension_concept
+from .language_formation import build_semantic_frame, realize_semantic_frame
 from .metacognition import inspect_metacognition
 from .native_language_organ import realize_native_language
 from .registry import truncate
@@ -62,6 +63,9 @@ LEARNING_COMPASS_STATES = {
     "still_unclear",
     "connected_for_now",
     "reopened",
+    "needs_representation",
+    "needs_prerequisite",
+    "return_later",
 }
 LEARNING_COMPASS_ACTIONS = {
     "ready_to_explore",
@@ -69,7 +73,101 @@ LEARNING_COMPASS_ACTIONS = {
     "still_unclear",
     "connected_for_now",
     "reopen",
+    "needs_representation",
+    "needs_prerequisite",
+    "return_later",
 }
+PONDERING_STATES = {
+    "active",
+    "needs_representation",
+    "needs_prerequisite",
+    "question_forming",
+    "waiting_for_answer",
+    "return_later",
+    "integrated_for_now",
+    "reopened",
+}
+OPEN_PONDERING_STATES = PONDERING_STATES - {"integrated_for_now"}
+REPRESENTATION_KINDS = {
+    "objects",
+    "tallies",
+    "groups",
+    "place_value",
+    "spatial_object",
+    "sentence_roles",
+    "sentence_transform",
+}
+
+LANGUAGE_FOUNDATION_COMPASS_GOALS: tuple[dict[str, Any], ...] = (
+    {
+        "goal_key": "language_foundation_sentence_scene_20260801",
+        "display_order": 1,
+        "title": "L1 · See the meaning roles inside a sentence",
+        "curriculum_band": "Language foundation",
+        "subject_domains": ["sentence formation", "meaning roles"],
+        "concept_keys": ["language_lesson:sentence_core_from_meaning_roles"],
+        "already_connected": (
+            "The reviewed foundation separates who or what a clause concerns from the action, state, description, or relationship being expressed."
+        ),
+        "next_connection": (
+            "Build a short sentence from visible role cards, then reconstruct the same supported scene in a different word order only when the meaning still fits."
+        ),
+        "why_it_matters": (
+            "A visible meaning map gives grammar something stable to organize and makes awkward wording easier to repair without changing the idea."
+        ),
+        "suggested_activity": (
+            "Place one participant, one action or state, and an optional affected object into role cards; read the resulting sentence and name only what each card contributes."
+        ),
+    },
+    {
+        "goal_key": "language_foundation_number_time_negation_20260801",
+        "display_order": 2,
+        "title": "L2 · Change form while tracking number, time, and negation",
+        "curriculum_band": "Language foundation",
+        "subject_domains": ["agreement", "tense", "negation"],
+        "concept_keys": [
+            "language_lesson:noun_verb_number_agreement",
+            "language_lesson:tense_tracks_time_relation",
+            "language_lesson:negation_preserves_scope",
+        ],
+        "already_connected": (
+            "The reviewed foundation keeps the participant and action visible while grammatical form tracks singular or plural, event time, and exactly what is denied."
+        ),
+        "next_connection": (
+            "Compare two visible forms of one supplied sentence and identify which feature changed, which meaning stayed, and whether the new form makes a different claim."
+        ),
+        "why_it_matters": (
+            "This supports correction, recall, planning, and ordinary conversation without letting tense or negation silently distort the supported content."
+        ),
+        "suggested_activity": (
+            "Start with a short present statement, then deliberately choose one change—plural, past, future, or negative—and inspect the before and after forms."
+        ),
+    },
+    {
+        "goal_key": "language_foundation_detail_relation_word_fit_20260801",
+        "display_order": 3,
+        "title": "L3 · Add detail and relationships without drifting",
+        "curriculum_band": "Language foundation",
+        "subject_domains": ["modifiers", "conjunctions", "word fit"],
+        "concept_keys": [
+            "language_lesson:modifier_attachment_and_specificity",
+            "language_lesson:conjunction_matches_relation",
+            "language_lesson:lexical_sense_and_word_pair_fit",
+        ],
+        "already_connected": (
+            "The reviewed foundation treats descriptions, connectors, and word choices as meaning-bearing decisions rather than decoration."
+        ),
+        "next_connection": (
+            "Attach one supported detail to its intended role and connect a second clause with the relationship that actually holds."
+        ),
+        "why_it_matters": (
+            "This is the bridge from correct sentence cores to natural, precise language that can explain and connect ideas without source parroting."
+        ),
+        "suggested_activity": (
+            "Add one modifier or a second clause to a short sentence, compare the result with the original, and remove anything the supplied scene does not support."
+        ),
+    },
+)
 
 PRIOR_F1_LEA_GOALS: tuple[dict[str, Any], ...] = (
     {
@@ -207,6 +305,15 @@ def study_workspace_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "SELECT COUNT(*) FROM selene_study_notes WHERE clarification_state IN ('unclear', 'question_forming', 'question_ready', 'reopened')"
         ).fetchone()[0]
     )
+    pondering_count = int(conn.execute("SELECT COUNT(*) FROM selene_study_pondering_threads").fetchone()[0])
+    open_pondering_count = int(
+        conn.execute(
+            "SELECT COUNT(*) FROM selene_study_pondering_threads WHERE state != 'integrated_for_now'"
+        ).fetchone()[0]
+    )
+    representation_attempt_count = int(
+        conn.execute("SELECT COUNT(*) FROM selene_study_representation_attempts").fetchone()[0]
+    )
     compass_row = conn.execute(
         """
         SELECT COUNT(*) AS total,
@@ -236,6 +343,9 @@ def study_workspace_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "open_question_count": open_questions,
             "note_count": note_count,
             "open_clarification_count": clarification_count,
+            "pondering_thread_count": pondering_count,
+            "open_pondering_count": open_pondering_count,
+            "representation_attempt_count": representation_attempt_count,
             "learning_compass_goal_count": int(compass_row["total"] or 0),
             "learning_compass_open_count": int(compass_row["open"] or 0),
             "learning_compass_connected_count": int(compass_row["connected"] or 0),
@@ -245,6 +355,10 @@ def study_workspace_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "teaching update candidate for durable use."
             ),
             "durable_use_rule": "Durable Chat use still follows the inspectable comprehension and teaching lifecycle.",
+            "pondering_rule": (
+                "Confusion may remain open, change representation, identify a prerequisite, or return later without becoming a failure."
+            ),
+            "simulation_rule": "Representation attempts are bounded visible learning artifacts, not hidden reasoning or world action.",
             "review_status": "status_only",
             "provenance_boundary": STUDY_BOUNDARY,
         }
@@ -282,6 +396,17 @@ def list_open_study_attention(conn: sqlite3.Connection, payload: dict[str, Any] 
         """,
         (limit,),
     ).fetchall()
+    pondering_rows = conn.execute(
+        """
+        SELECT threads.*, sessions.title AS session_title, sessions.status AS session_status
+        FROM selene_study_pondering_threads threads
+        JOIN selene_study_sessions sessions ON sessions.id = threads.session_id
+        WHERE threads.state != 'integrated_for_now'
+        ORDER BY threads.updated_at DESC, threads.id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
     items = [
         {**_decode_note(row), "attention_type": "clarification_note"}
         for row in note_rows
@@ -289,6 +414,10 @@ def list_open_study_attention(conn: sqlite3.Connection, payload: dict[str, Any] 
     items.extend(
         {**_decode_question(row), "attention_type": "direct_question"}
         for row in question_rows
+    )
+    items.extend(
+        {**_decode_pondering_thread(row), "attention_type": "pondering_thread"}
+        for row in pondering_rows
     )
     items.sort(key=lambda item: (str(item.get("updated_at") or ""), int(item.get("id") or 0)), reverse=True)
     items = items[:limit]
@@ -461,6 +590,129 @@ def seed_prior_f1_lea_learning_compass(
     return result
 
 
+def seed_language_foundation_learning_compass(
+    conn: sqlite3.Connection, payload: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Prepare prerequisite-first language directions from already reviewed guidance.
+
+    These are guided Study directions, not conclusions drawn from a live test.
+    Their source concepts must already have completed the language teaching
+    lifecycle and be available as reviewed resources.
+    """
+    del payload
+    created: list[str] = []
+    already_present: list[str] = []
+    unavailable: list[dict[str, Any]] = []
+    reordered_existing_goal_count = int(
+        conn.execute(
+            """
+            UPDATE selene_learning_compass_goals
+            SET display_order = display_order + 10, updated_at = CURRENT_TIMESTAMP
+            WHERE source_kind = 'learning_evidence_activity' AND display_order < 10
+            """
+        ).rowcount
+    )
+    for specification in LANGUAGE_FOUNDATION_COMPASS_GOALS:
+        existing = conn.execute(
+            "SELECT id FROM selene_learning_compass_goals WHERE goal_key = ?",
+            (specification["goal_key"],),
+        ).fetchone()
+        if existing:
+            already_present.append(str(specification["goal_key"]))
+            continue
+
+        concept_rows = conn.execute(
+            f"""
+            SELECT id, concept_key, source_refs FROM selene_comprehension_concepts
+            WHERE concept_key IN ({','.join('?' for _ in specification['concept_keys'])})
+              AND state = 'approved_knowledge_resource'
+              AND review_status = 'approved_for_knowledge_use'
+              AND chat_use_permission = 'available_as_knowledge_resource'
+            """,
+            tuple(specification["concept_keys"]),
+        ).fetchall()
+        concept_by_key = {str(row["concept_key"]): row for row in concept_rows}
+        if any(key not in concept_by_key for key in specification["concept_keys"]):
+            unavailable.append(
+                {
+                    "goal_key": specification["goal_key"],
+                    "reason": "reviewed language prerequisites not available",
+                }
+            )
+            continue
+        concept_ids = [int(concept_by_key[key]["id"]) for key in specification["concept_keys"]]
+        source_refs = list(
+            dict.fromkeys(
+                [
+                    "guided_study_activity:language_foundations:2026-08-01",
+                    *[
+                        source
+                        for key in specification["concept_keys"]
+                        for source in _loads(concept_by_key[key]["source_refs"], [])
+                        if str(source)
+                    ],
+                ]
+            )
+        )[:100]
+        evidence = {
+            "activity_date": "2026-08-01",
+            "activity_kind": "gentle_guided_language_foundation",
+            "observation": (
+                "This direction comes from the reviewed prerequisite sequence. It is prepared for exploration, "
+                "not inferred from a performance score."
+            ),
+            "interpretation": (
+                "Visible reconstruction or transformation may offer learning evidence later; needing another form "
+                "or prerequisite remains a normal study state."
+            ),
+            "pass_fail_judgment": False,
+            "anxiety_or_performance_pressure_intended": False,
+            "synthetic_check_only": True,
+        }
+        conn.execute(
+            """
+            INSERT INTO selene_learning_compass_goals
+            (goal_key, display_order, title, curriculum_band, subject_domains_json,
+             state, already_connected, next_connection, why_it_matters,
+             suggested_activity, concept_ids_json, source_refs, evidence_json,
+             source_kind, provenance_boundary)
+            VALUES (?, ?, ?, ?, ?, 'ready_to_explore', ?, ?, ?, ?, ?, ?, ?,
+                    'guided_language_foundation', ?)
+            """,
+            (
+                specification["goal_key"],
+                int(specification["display_order"]),
+                specification["title"],
+                specification["curriculum_band"],
+                json.dumps(specification["subject_domains"]),
+                specification["already_connected"],
+                specification["next_connection"],
+                specification["why_it_matters"],
+                specification["suggested_activity"],
+                json.dumps(concept_ids),
+                json.dumps(source_refs),
+                json.dumps(evidence),
+                STUDY_BOUNDARY,
+            ),
+        )
+        created.append(str(specification["goal_key"]))
+    conn.commit()
+    result = list_learning_compass(conn)
+    result.update(
+        {
+            "status": "language_foundation_learning_compass_seeded",
+            "created": created,
+            "already_present": already_present,
+            "unavailable": unavailable,
+            "reordered_existing_goal_count": reordered_existing_goal_count,
+            "idempotent": True,
+            "live_assessment_performed": False,
+            "teaching_material_mutated": False,
+        }
+    )
+    return result
+
+
 def start_learning_compass_goal(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     goal_id = _positive_id((payload or {}).get("goal_id"), "goal_id")
     row = conn.execute("SELECT * FROM selene_learning_compass_goals WHERE id = ?", (goal_id,)).fetchone()
@@ -534,6 +786,188 @@ def update_learning_compass_goal(conn: sqlite3.Connection, payload: dict[str, An
     conn.commit()
     result = list_learning_compass(conn)
     result.update({"status": "learning_compass_goal_updated", "updated_goal_id": goal_id})
+    return result
+
+
+def create_pondering_thread(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    session_id = _positive_id(payload.get("session_id"), "session_id")
+    session = conn.execute("SELECT * FROM selene_study_sessions WHERE id = ?", (session_id,)).fetchone()
+    if not session:
+        raise ValueError("study session not found")
+    state = str(payload.get("state") or "active").strip()
+    if state not in PONDERING_STATES:
+        raise ValueError("unsupported pondering state")
+    title = truncate(str(payload.get("title") or session["focus"] or session["title"]), 300).strip()
+    if not title:
+        raise ValueError("a visible pondering-thread title is required")
+    compass_goal_id = int(payload.get("compass_goal_id") or session["compass_goal_id"] or 0) or None
+    if compass_goal_id is not None and not conn.execute(
+        "SELECT 1 FROM selene_learning_compass_goals WHERE id = ?", (compass_goal_id,)
+    ).fetchone():
+        raise ValueError("learning compass goal not found")
+    question_id = int(payload.get("question_id") or 0) or None
+    if question_id is not None and not conn.execute(
+        "SELECT 1 FROM selene_study_questions WHERE id = ? AND session_id = ?", (question_id, session_id)
+    ).fetchone():
+        raise ValueError("pondering question must belong to this study session")
+    current_fit = truncate(str(payload.get("current_fit") or ""), 4000).strip()
+    missing_bridge = truncate(str(payload.get("missing_bridge") or ""), 4000).strip()
+    prerequisite_needed = truncate(str(payload.get("prerequisite_needed") or ""), 2000).strip()
+    revisit_cue = truncate(str(payload.get("revisit_cue") or ""), 2000).strip()
+    preferences = [item for item in _text_list(payload.get("representation_preferences")) if item in REPRESENTATION_KINDS]
+    if state == "integrated_for_now" and not current_fit:
+        raise ValueError("a visible reflection is required before connecting a pondering thread for now")
+    source_refs = list(dict.fromkeys([
+        *_loads(session["source_refs"], []),
+        f"selene_study_session:{session_id}",
+        *([f"selene_learning_compass_goal:{compass_goal_id}"] if compass_goal_id else []),
+        *([f"selene_study_question:{question_id}"] if question_id else []),
+    ]))[:100]
+    thread_key = "ponder-" + sha256(f"{session_id}|{compass_goal_id}|{question_id}|{title}".encode("utf-8")).hexdigest()[:20]
+    conn.execute(
+        """
+        INSERT INTO selene_study_pondering_threads
+        (thread_key, session_id, compass_goal_id, question_id, title, state, current_fit,
+         missing_bridge, prerequisite_needed, representation_preferences_json, revisit_cue,
+         source_refs, provenance_boundary, payload_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(thread_key) DO UPDATE SET
+          state = excluded.state, current_fit = excluded.current_fit,
+          missing_bridge = excluded.missing_bridge,
+          prerequisite_needed = excluded.prerequisite_needed,
+          representation_preferences_json = excluded.representation_preferences_json,
+          revisit_cue = excluded.revisit_cue, updated_at = CURRENT_TIMESTAMP
+        """,
+        (
+            thread_key, session_id, compass_goal_id, question_id, title, state, current_fit,
+            missing_bridge, prerequisite_needed, json.dumps(preferences), revisit_cue,
+            json.dumps(source_refs), STUDY_BOUNDARY, json.dumps({"visible_deliberation": True}),
+        ),
+    )
+    thread_id = int(conn.execute(
+        "SELECT id FROM selene_study_pondering_threads WHERE thread_key = ?", (thread_key,)
+    ).fetchone()[0])
+    _record_evidence(
+        conn, session_id, "pondering_thread_held",
+        "Selene kept a visible learning thread open without treating incompleteness as failure.",
+        {"thread_id": thread_id, "state": state, "missing_bridge": missing_bridge}, source_refs,
+    )
+    if compass_goal_id and state in {"needs_representation", "needs_prerequisite", "return_later"}:
+        _update_learning_compass_row(
+            conn, compass_goal_id, state=state,
+            remaining_unclear=(missing_bridge or prerequisite_needed or revisit_cue),
+            event=f"learning_compass_{state}",
+            event_detail="The activity remains available while its learning conditions are adjusted.",
+        )
+    conn.commit()
+    result = get_study_session(conn, {"session_id": session_id})
+    result.update({"status": "study_pondering_thread_ready", "updated_thread_id": thread_id})
+    return result
+
+
+def update_pondering_thread(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    thread_id = _positive_id(payload.get("thread_id"), "thread_id")
+    row = conn.execute("SELECT * FROM selene_study_pondering_threads WHERE id = ?", (thread_id,)).fetchone()
+    if not row:
+        raise ValueError("pondering thread not found")
+    state = str(payload.get("state") or row["state"]).strip()
+    if state not in PONDERING_STATES:
+        raise ValueError("unsupported pondering state")
+    current_fit = truncate(str(payload.get("current_fit", row["current_fit"]) or ""), 4000).strip()
+    missing_bridge = truncate(str(payload.get("missing_bridge", row["missing_bridge"]) or ""), 4000).strip()
+    prerequisite_needed = truncate(
+        str(payload.get("prerequisite_needed", row["prerequisite_needed"]) or ""), 2000
+    ).strip()
+    revisit_cue = truncate(str(payload.get("revisit_cue", row["revisit_cue"]) or ""), 2000).strip()
+    preferences = (
+        [item for item in _text_list(payload.get("representation_preferences")) if item in REPRESENTATION_KINDS]
+        if "representation_preferences" in payload else _loads(row["representation_preferences_json"], [])
+    )
+    if state == "integrated_for_now" and not current_fit:
+        raise ValueError("a visible reflection is required before connecting a pondering thread for now")
+    conn.execute(
+        """
+        UPDATE selene_study_pondering_threads
+        SET state = ?, current_fit = ?, missing_bridge = ?, prerequisite_needed = ?,
+            representation_preferences_json = ?, revisit_cue = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (state, current_fit, missing_bridge, prerequisite_needed, json.dumps(preferences), revisit_cue, thread_id),
+    )
+    session_id = int(row["session_id"])
+    _record_evidence(
+        conn, session_id, "pondering_thread_updated",
+        "The open learning thread changed state through visible reflection.",
+        {"thread_id": thread_id, "state": state, "current_fit": current_fit, "missing_bridge": missing_bridge},
+        _loads(row["source_refs"], []),
+    )
+    compass_goal_id = int(row["compass_goal_id"] or 0)
+    if compass_goal_id:
+        compass_state = (
+            "connected_for_now" if state == "integrated_for_now"
+            else "reopened" if state == "active"
+            else state
+        )
+        if compass_state in LEARNING_COMPASS_STATES:
+            values: dict[str, Any] = {"state": compass_state}
+            if current_fit:
+                values["selene_reflection"] = current_fit
+            if state == "integrated_for_now":
+                values["remaining_unclear"] = ""
+            else:
+                values["remaining_unclear"] = missing_bridge or prerequisite_needed or revisit_cue
+            _update_learning_compass_row(
+                conn, compass_goal_id, event=f"pondering_thread_{state}",
+                event_detail="A visible pondering thread updated this learning direction.", **values,
+            )
+    conn.commit()
+    result = get_study_session(conn, {"session_id": session_id})
+    result.update({"status": "study_pondering_thread_updated", "updated_thread_id": thread_id})
+    return result
+
+
+def try_study_representation(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    thread_id = _positive_id(payload.get("thread_id"), "thread_id")
+    thread = conn.execute("SELECT * FROM selene_study_pondering_threads WHERE id = ?", (thread_id,)).fetchone()
+    if not thread:
+        raise ValueError("pondering thread not found")
+    kind = str(payload.get("representation_kind") or "").strip()
+    if kind not in REPRESENTATION_KINDS:
+        raise ValueError("unsupported representation kind")
+    input_state, operations, output_state = _simulate_representation(kind, payload)
+    observation = truncate(str(payload.get("observation") or ""), 3000).strip()
+    source_refs = list(dict.fromkeys([
+        *_loads(thread["source_refs"], []), f"selene_study_pondering_thread:{thread_id}"
+    ]))[:100]
+    cursor = conn.execute(
+        """
+        INSERT INTO selene_study_representation_attempts
+        (thread_id, session_id, representation_kind, input_json, operations_json,
+         output_json, observation, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            thread_id, int(thread["session_id"]), kind, json.dumps(input_state), json.dumps(operations),
+            json.dumps(output_state), observation, json.dumps(source_refs), STUDY_BOUNDARY,
+        ),
+    )
+    attempt_id = int(cursor.lastrowid)
+    preferences = list(dict.fromkeys([*_loads(thread["representation_preferences_json"], []), kind]))
+    conn.execute(
+        "UPDATE selene_study_pondering_threads SET representation_preferences_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (json.dumps(preferences), thread_id),
+    )
+    _record_evidence(
+        conn, int(thread["session_id"]), "representation_attempted",
+        "Selene tried a bounded visible representation to inspect the concept from another form.",
+        {"thread_id": thread_id, "attempt_id": attempt_id, "representation_kind": kind}, source_refs,
+    )
+    conn.commit()
+    result = get_study_session(conn, {"session_id": int(thread["session_id"])})
+    result.update({"status": "study_representation_attempt_ready", "attempt_id": attempt_id})
     return result
 
 
@@ -617,6 +1051,18 @@ def get_study_session(conn: sqlite3.Connection, payload: dict[str, Any] | None =
     note_rows = conn.execute(
         "SELECT * FROM selene_study_notes WHERE session_id = ? ORDER BY id ASC", (session_id,)
     ).fetchall()
+    pondering_rows = conn.execute(
+        "SELECT * FROM selene_study_pondering_threads WHERE session_id = ? ORDER BY id ASC", (session_id,)
+    ).fetchall()
+    pondering_threads = []
+    for pondering_row in pondering_rows:
+        thread = _decode_pondering_thread(pondering_row)
+        attempt_rows = conn.execute(
+            "SELECT * FROM selene_study_representation_attempts WHERE thread_id = ? ORDER BY id ASC",
+            (int(pondering_row["id"]),),
+        ).fetchall()
+        thread["representation_attempts"] = [_decode_representation_attempt(item) for item in attempt_rows]
+        pondering_threads.append(thread)
     session = _decode_session(row)
     session["concepts"] = _concept_summaries(conn, session["concept_ids"])
     return _with_guards(
@@ -625,6 +1071,7 @@ def get_study_session(conn: sqlite3.Connection, payload: dict[str, Any] | None =
             "item": session,
             "questions": [_decode_question(item) for item in question_rows],
             "notes": [_decode_note(item) for item in note_rows],
+            "pondering_threads": pondering_threads,
             "learning_evidence": [_decode_evidence(item) for item in evidence_rows],
             "review_status": "status_only",
             "provenance_boundary": STUDY_BOUNDARY,
@@ -1346,11 +1793,269 @@ def _decode_learning_compass_goal(row: sqlite3.Row) -> dict[str, Any]:
     return item
 
 
+def _decode_pondering_thread(row: sqlite3.Row) -> dict[str, Any]:
+    item = dict(row)
+    item["representation_preferences"] = _loads(item.pop("representation_preferences_json", "[]"), [])
+    item["source_refs"] = _loads(item.get("source_refs"), [])
+    item["payload"] = _loads(item.pop("payload_json", "{}"), {})
+    return item
+
+
+def _decode_representation_attempt(row: sqlite3.Row) -> dict[str, Any]:
+    item = dict(row)
+    item["input"] = _loads(item.pop("input_json", "{}"), {})
+    item["operations"] = _loads(item.pop("operations_json", "[]"), [])
+    item["output"] = _loads(item.pop("output_json", "{}"), {})
+    item["source_refs"] = _loads(item.get("source_refs"), [])
+    return item
+
+
 def _decode_question(row: sqlite3.Row) -> dict[str, Any]:
     item = dict(row)
     item["answer_source_refs"] = _loads(item.get("answer_source_refs"), [])
     item["payload"] = _loads(item.pop("payload_json", "{}"), {})
     return item
+
+
+def _simulate_representation(kind: str, payload: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
+    if kind in {"sentence_roles", "sentence_transform"}:
+        return _simulate_sentence_representation(kind, payload)
+    if kind in {"objects", "tallies", "groups", "place_value"}:
+        quantity = _bounded_integer(payload.get("quantity"), "quantity", 0, 200)
+    if kind == "objects":
+        shape = str(payload.get("shape") or "circle").strip()
+        if shape not in {"circle", "square", "triangle"}:
+            raise ValueError("object shape must be circle, square, or triangle")
+        items = [
+            {"id": index + 1, "shape": shape, "x": 3 + (index % 20) * 5, "y": 8 + (index // 20) * 10}
+            for index in range(quantity)
+        ]
+        return {"quantity": quantity, "shape": shape}, [{"operation": "arrange", "columns": 20}], {
+            "quantity": quantity, "items": items, "description": f"{quantity} visible {shape} objects"
+        }
+    if kind == "tallies":
+        groups = ["||||/" for _ in range(quantity // 5)]
+        if quantity % 5:
+            groups.append("|" * (quantity % 5))
+        return {"quantity": quantity}, [{"operation": "group_tallies", "size": 5}], {
+            "quantity": quantity, "groups": groups, "full_groups": quantity // 5, "remainder": quantity % 5
+        }
+    if kind == "groups":
+        group_size = _bounded_integer(payload.get("group_size"), "group_size", 1, 50)
+        full_groups, remainder = divmod(quantity, group_size)
+        return {"quantity": quantity, "group_size": group_size}, [{"operation": "partition_equal_groups"}], {
+            "quantity": quantity,
+            "group_size": group_size,
+            "groups": [group_size for _ in range(full_groups)],
+            "remainder": remainder,
+            "equal_partition_complete": remainder == 0,
+        }
+    if kind == "place_value":
+        hundreds, remainder = divmod(quantity, 100)
+        tens, ones = divmod(remainder, 10)
+        return {"quantity": quantity}, [{"operation": "decompose_base_ten"}], {
+            "quantity": quantity, "hundreds": hundreds, "tens": tens, "ones": ones,
+            "expanded": f"{hundreds * 100} + {tens * 10} + {ones}",
+        }
+
+    label = truncate(str(payload.get("label") or "object"), 80).strip() or "object"
+    shape = str(payload.get("shape") or "arrow").strip()
+    if shape not in {"arrow", "rectangle", "square", "triangle"}:
+        raise ValueError("spatial shape must be arrow, rectangle, square, or triangle")
+    x = _bounded_number(payload.get("x", 50), "x", 0, 100)
+    y = _bounded_number(payload.get("y", 50), "y", 0, 100)
+    rotation = _bounded_number(payload.get("rotation", 0), "rotation", -3600, 3600)
+    move_x = _bounded_number(payload.get("move_x", 0), "move_x", -100, 100)
+    move_y = _bounded_number(payload.get("move_y", 0), "move_y", -100, 100)
+    rotate_degrees = _bounded_number(payload.get("rotate_degrees", 0), "rotate_degrees", -360, 360)
+    output_x = max(0.0, min(100.0, x + move_x))
+    output_y = max(0.0, min(100.0, y + move_y))
+    output_rotation = (rotation + rotate_degrees) % 360
+    operations = []
+    if move_x or move_y:
+        operations.append({"operation": "move", "x": move_x, "y": move_y})
+    if rotate_degrees:
+        operations.append({"operation": "rotate", "degrees": rotate_degrees})
+    if not operations:
+        operations.append({"operation": "observe_orientation"})
+    return (
+        {"label": label, "shape": shape, "x": x, "y": y, "rotation": rotation % 360},
+        operations,
+        {"label": label, "shape": shape, "x": output_x, "y": output_y, "rotation": output_rotation},
+    )
+
+
+def _simulate_sentence_representation(
+    kind: str, payload: dict[str, Any]
+) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
+    subject = truncate(" ".join(str(payload.get("subject") or "").split()), 160).strip()
+    predicate = truncate(" ".join(str(payload.get("predicate") or "").split()), 160).strip()
+    obj = truncate(" ".join(str(payload.get("object") or "").split()), 240).strip()
+    if not subject or not predicate:
+        raise ValueError("sentence representations require a visible subject and predicate")
+    subject_number = str(payload.get("subject_number") or "singular").strip().lower()
+    if subject_number not in {"singular", "plural"}:
+        raise ValueError("subject number must be singular or plural")
+
+    base_proposition: dict[str, Any] = {
+        "id": "sentence_core",
+        "subject": subject,
+        "subject_number": subject_number,
+        "predicate": predicate,
+        "object": obj,
+        "tense": "present",
+        "polarity": "positive",
+        "required": True,
+        "meaning_keys": ["subject", "predicate", *( ["object"] if obj else [] )],
+    }
+    base_frame = build_semantic_frame(
+        {"semantic_frame": {"response_depth": "short", "propositions": [base_proposition]}}
+    )
+    base_result = realize_semantic_frame(base_frame, variation_key="study-sentence-base")
+    roles = [
+        {"role": "subject", "label": "Who or what", "value": subject},
+        {"role": "predicate", "label": "Action, state, or relation", "value": predicate},
+    ]
+    if obj:
+        roles.append({"role": "object", "label": "Affected or completing part", "value": obj})
+    input_state = {
+        "roles": roles,
+        "sentence": base_result["candidate_text"],
+        "subject_number": subject_number,
+        "tense": "present",
+        "polarity": "positive",
+    }
+    if kind == "sentence_roles":
+        return (
+            input_state,
+            [{"operation": "map_visible_meaning_roles"}, {"operation": "form_sentence_core"}],
+            {
+                **input_state,
+                "required_semantic_units_preserved": base_result["required_semantic_units_preserved"],
+                "meaning_preserved": base_result["meaning_preserved"],
+                "hidden_chain_of_thought_exposed": False,
+                "description": "Visible meaning-role cards arranged as one sentence core",
+            },
+        )
+
+    tense = str(payload.get("tense") or "present").strip().lower()
+    polarity = str(payload.get("polarity") or "positive").strip().lower()
+    if tense not in {"present", "past", "future"}:
+        raise ValueError("sentence tense must be present, past, or future")
+    if polarity not in {"positive", "negative"}:
+        raise ValueError("sentence polarity must be positive or negative")
+    subject_modifier = truncate(" ".join(str(payload.get("subject_modifier") or "").split()), 120).strip()
+    object_modifier = truncate(" ".join(str(payload.get("object_modifier") or "").split()), 120).strip()
+    relation = str(payload.get("relation") or "").strip().lower()
+    if relation not in {"", "support", "contrast", "cause", "sequence"}:
+        raise ValueError("sentence relation must be support, contrast, cause, sequence, or empty")
+
+    transformed = {
+        **base_proposition,
+        "tense": tense,
+        "polarity": polarity,
+        "subject_modifiers": [subject_modifier] if subject_modifier else [],
+        "object_modifiers": [object_modifier] if object_modifier else [],
+    }
+    propositions = [transformed]
+    second_subject = truncate(" ".join(str(payload.get("second_subject") or "").split()), 160).strip()
+    second_predicate = truncate(" ".join(str(payload.get("second_predicate") or "").split()), 160).strip()
+    second_object = truncate(" ".join(str(payload.get("second_object") or "").split()), 240).strip()
+    if relation:
+        if not second_subject or not second_predicate:
+            raise ValueError("a visible second subject and predicate are required for a clause relationship")
+        propositions.append(
+            {
+                "id": "related_clause",
+                "subject": second_subject,
+                "predicate": second_predicate,
+                "object": second_object,
+                "tense": tense,
+                "polarity": "positive",
+                "relation": relation,
+                "required": True,
+                "meaning_keys": ["second_subject", "second_predicate", *( ["second_object"] if second_object else [] )],
+            }
+        )
+    elif second_subject or second_predicate or second_object:
+        raise ValueError("choose a clause relationship before supplying a second clause")
+
+    operations: list[dict[str, Any]] = []
+    if tense != "present":
+        operations.append({"operation": "change_tense", "from": "present", "to": tense})
+    if polarity != "positive":
+        operations.append({"operation": "change_polarity", "from": "positive", "to": polarity})
+    if subject_modifier:
+        operations.append({"operation": "attach_subject_modifier", "value": subject_modifier})
+    if object_modifier:
+        operations.append({"operation": "attach_object_modifier", "value": object_modifier})
+    if relation:
+        operations.append({"operation": "connect_supplied_clause", "relation": relation})
+    if not operations:
+        operations.append({"operation": "observe_stable_sentence_core"})
+    transformed_frame = build_semantic_frame(
+        {
+            "semantic_frame": {
+                "response_depth": "standard",
+                "discourse_relation": relation or "sequence",
+                "propositions": propositions,
+                "meaning_constraints": [
+                    "use only the visible supplied roles",
+                    "preserve every required proposition",
+                    "do not add unsupported participants or relationships",
+                ],
+            }
+        }
+    )
+    transformed_result = realize_semantic_frame(
+        transformed_frame,
+        variation_key=f"study-sentence-transform|{tense}|{polarity}|{relation}",
+    )
+    original_claim_unchanged = not any(
+        (tense != "present", polarity != "positive", subject_modifier, object_modifier, relation)
+    )
+    return (
+        input_state,
+        operations,
+        {
+            "before_sentence": base_result["candidate_text"],
+            "sentence": transformed_result["candidate_text"],
+            "roles": roles,
+            "tense": tense,
+            "polarity": polarity,
+            "subject_number": subject_number,
+            "subject_modifier": subject_modifier,
+            "object_modifier": object_modifier,
+            "relation": relation,
+            "required_semantic_units_preserved": transformed_result["required_semantic_units_preserved"],
+            "meaning_preserved_within_explicit_transformation": transformed_result["meaning_preserved"],
+            "original_claim_unchanged": original_claim_unchanged,
+            "claim_change_is_visible_and_requested": not original_claim_unchanged,
+            "transformation_source": "visible_supplied_controls",
+            "unsupported_content_added": False,
+            "hidden_chain_of_thought_exposed": False,
+        },
+    )
+
+
+def _bounded_integer(value: Any, label: str, minimum: int, maximum: int) -> int:
+    try:
+        result = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{label} must be an integer") from exc
+    if result < minimum or result > maximum:
+        raise ValueError(f"{label} must be between {minimum} and {maximum}")
+    return result
+
+
+def _bounded_number(value: Any, label: str, minimum: float, maximum: float) -> float:
+    try:
+        result = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{label} must be a number") from exc
+    if result < minimum or result > maximum:
+        raise ValueError(f"{label} must be between {minimum:g} and {maximum:g}")
+    return round(result, 4)
 
 
 def _decode_note(row: sqlite3.Row) -> dict[str, Any]:

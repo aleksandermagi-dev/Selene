@@ -9,6 +9,7 @@ type StudyOpenAttentionProps = {
 
 function attentionState(item: Dict) {
   if (text(item.attention_type) === "direct_question") return "Question ready";
+  if (text(item.attention_type) === "pondering_thread") return friendlyStatus(item.state);
   const labels: Record<string, string> = {
     unclear: "Unclear",
     question_forming: "Question forming",
@@ -32,9 +33,12 @@ export default function StudyOpenAttention({ items, onOpenSession }: StudyOpenAt
       <div className="studyOpenAttentionList">
         {items.map((item) => {
           const isQuestion = text(item.attention_type) === "direct_question";
+          const isPondering = text(item.attention_type) === "pondering_thread";
           const display = isQuestion
             ? text(item.question_text || "A question is present, but its words are not here yet.")
-            : text(item.note_text || item.meaning_summary);
+            : isPondering
+              ? text(item.missing_bridge || item.current_fit || item.title)
+              : text(item.note_text || item.meaning_summary);
           return (
             <article className="studyOpenAttentionCard" key={`${text(item.attention_type)}-${text(item.id)}`}>
               <div className="packetHeader">
@@ -43,7 +47,7 @@ export default function StudyOpenAttention({ items, onOpenSession }: StudyOpenAt
               </div>
               <p>{display}</p>
               <div className="chips">
-                <span>{isQuestion ? "direct question" : friendlyStatus(item.note_kind)}</span>
+                <span>{isQuestion ? "direct question" : isPondering ? "open pondering thread" : friendlyStatus(item.note_kind)}</span>
                 <span>session: {friendlyStatus(item.session_status)}</span>
               </div>
               <button className="primary" onClick={() => onOpenSession({ id: item.session_id })}>Open its Study session</button>

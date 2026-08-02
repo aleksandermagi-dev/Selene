@@ -53,6 +53,7 @@ const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reo
 const CocoonSubjectClassrooms = lazy(() => import("./CocoonSubjectClassrooms"));
 const StudyLibrary = lazy(() => import("./StudyLibrary"));
 const StudyLearningCompass = lazy(() => import("./StudyLearningCompass"));
+const StudyPonderingLab = lazy(() => import("./StudyPonderingLab"));
 const StudyNotepad = lazy(() => import("./StudyNotepad"));
 const StudyOpenAttention = lazy(() => import("./StudyOpenAttention"));
 
@@ -2931,6 +2932,21 @@ function App() {
     }
   }
 
+  async function prepareLanguageFoundationCompass() {
+    setStudyActionResult({ status: "running", message: "Preparing the prerequisite-first language directions." });
+    try {
+      const result = await api<Dict>("/api/study/compass/seed-language-foundations", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      setStudyActionResult(result);
+      setStudyLearningCompass((result.items || []) as Dict[]);
+      await refreshStudyWorkspace();
+    } catch (error) {
+      setStudyActionResult({ error: error instanceof Error ? error.message : "The language foundation directions could not be prepared." });
+    }
+  }
+
   function acceptLearningCompassUpdate(result: Dict) {
     setStudyLearningCompass((result.items || []) as Dict[]);
     setStudyActionResult({
@@ -3033,6 +3049,30 @@ function App() {
     if (session.item) {
       setStudySession(session);
       const item = safeJsonObject(session.item);
+      setStudyDraft((draft) => ({
+        ...draft,
+        current_understanding: text(item.current_understanding),
+        connections: ((item.connections || []) as unknown[]).map(text).join("\n"),
+        uncertainties: ((item.uncertainties || []) as unknown[]).map(text).join("\n"),
+      }));
+    }
+    api<Dict>("/api/study/status").then(setStudyStatus).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/study/sessions?limit=40").then((data) => setStudySessions(data.items || [])).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/study/attention?limit=100").then((data) => setStudyOpenAttention(data.items || [])).catch(() => undefined);
+    api<{ items: Dict[] }>("/api/study/compass?limit=100").then((data) => setStudyLearningCompass(data.items || [])).catch(() => undefined);
+  }
+
+  function acceptStudyPonderingUpdate(result: Dict) {
+    setStudyActionResult({
+      status: result.status,
+      updated_thread_id: result.updated_thread_id,
+      attempt_id: result.attempt_id,
+      memory_write_active: result.memory_write_active,
+      hidden_retention_allowed: result.hidden_retention_allowed,
+    });
+    if (result.item) {
+      setStudySession(result);
+      const item = safeJsonObject(result.item);
       setStudyDraft((draft) => ({
         ...draft,
         current_understanding: text(item.current_understanding),
@@ -6349,6 +6389,8 @@ function App() {
                   <span>notes: {text(studyStatus?.note_count ?? 0)}</span>
                   <span>clarifications: {text(studyStatus?.open_clarification_count ?? 0)}</span>
                   <span>open questions: {text(studyStatus?.open_question_count ?? 0)}</span>
+                  <span>open pondering: {text(studyStatus?.open_pondering_count ?? 0)}</span>
+                  <span>representations: {text(studyStatus?.representation_attempt_count ?? 0)}</span>
                   <span>pass / fail: not used</span>
                   <span>hidden retention: blocked</span>
                 </div>
@@ -6366,6 +6408,14 @@ function App() {
                   <strong>When Aleks Answers</strong>
                   <p>Your answer becomes attributable knowledge inside this Study session immediately. Durable Chat use remains an inspectable teaching update—never hidden retention.</p>
                 </article>
+                <article className="organicPane">
+                  <strong>Useful, but Early</strong>
+                  <p>A question can be preserved while Selene tries objects, tallies, groups, place value, spatial movement, sentence-role cards, or an earlier prerequisite. Incompleteness is learning state, not failure.</p>
+                </article>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={prepareLanguageFoundationCompass}>Prepare Language Foundations</button>
+                <span className="plainHelp">Creates three guided directions from already reviewed language lessons. It does not run a test or assume understanding.</span>
               </div>
             </section>
 
@@ -6468,6 +6518,10 @@ function App() {
                     <button onClick={() => saveStudyReflection("active")}>Reopen</button>
                   </div>
                 </Panel>
+
+                <Suspense fallback={<Panel title="Pondering & Representation Lab"><p className="plainHelp">Opening the visible representation workbench...</p></Panel>}>
+                  <StudyPonderingLab session={studySession} onUpdated={acceptStudyPonderingUpdate} />
+                </Suspense>
 
                 <Suspense fallback={<Panel title="Selene's Notepad"><p className="plainHelp">Opening the Study notepad...</p></Panel>}>
                   <StudyNotepad session={studySession} onUpdated={acceptStudyNotepadUpdate} />

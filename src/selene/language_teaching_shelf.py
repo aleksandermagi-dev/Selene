@@ -32,6 +32,15 @@ LANGUAGE_RANGE_AUTHORIZATION_BOUNDARY = (
     "affect_authority_answer_content_source_imitation_or_meaning_invention"
 )
 
+GRAMMAR_FOUNDATION_SOURCE_REFS = [
+    "curriculum_source:core_knowledge_g1_ela_unit7",
+    "sha256:4b273318aa4c38413b2e112f18339124f95df0688451fe30ad3bfea6fae066a9",
+    "source_locator:CKLA_G1_U7_TG_web.pdf:alignment_and_lessons_3_12_and_pausing_point",
+    "license:CC-BY-NC-SA-3.0-Unported",
+    "attribution:Core Knowledge Foundation 2013",
+    "https://creativecommons.org/licenses/by-nc-sa/3.0/",
+]
+
 FOUNDATION_TEACHING_GROUP = "G1 · Provider-Free Conversation Foundations"
 
 GUARDS: dict[str, Any] = {
@@ -480,6 +489,111 @@ LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
         "apply_when": ["cross_concept_question", "comparison", "explanation_with_limit", "application"],
         "response_moves": ["select_relevant_approved_concepts", "bind_each_to_the_question_part", "preserve_source_and_limit_boundaries"],
         "constraints": ["Do not treat language guidance as answer-bearing knowledge.", "Do not merge disagreement or uncertainty into a falsely unified claim."],
+    },
+    {
+        "key": "sentence_core_from_meaning_roles",
+        "title": "Build a sentence core from meaning roles",
+        "category": "grammar_foundation",
+        "teaching_group": "G8 · Grammar Foundations and Word Fit",
+        "group_order": 8,
+        "lesson_order": 1,
+        "prerequisites": ["reference_continuity"],
+        "purpose": "Build an ordinary clause around who or what it concerns and what action, state, description, or relationship is being expressed before adding optional detail.",
+        "apply_when": ["sentence_formation", "direct_answer", "explanation", "reconstruction"],
+        "response_moves": ["map_meaning_roles_before_wording", "form_complete_sentence_core", "preserve_supported_participant_relations"],
+        "constraints": ["Do not force every sentence into one subject-verb-object template.", "Do not add a participant, action, or object that the supported meaning does not contain."],
+        "teaching_source_type": "reviewed_public_grammar_source",
+        "source_refs": GRAMMAR_FOUNDATION_SOURCE_REFS,
+    },
+    {
+        "key": "noun_verb_number_agreement",
+        "title": "Let noun and verb number fit",
+        "category": "grammar_foundation",
+        "teaching_group": "G8 · Grammar Foundations and Word Fit",
+        "group_order": 8,
+        "lesson_order": 2,
+        "prerequisites": ["sentence_core_from_meaning_roles"],
+        "purpose": "Choose a verb form that agrees with a singular or plural subject in an ordinary present-tense clause while preserving the intended participant and action.",
+        "apply_when": ["structured_sentence", "present_tense", "singular_subject", "plural_subject"],
+        "response_moves": ["align_subject_and_verb_number", "preserve_lemma_while_inflecting", "repair_agreement_locally"],
+        "constraints": ["Do not treat dialect difference as lack of intelligence or personal failure.", "Do not replace the intended action merely to avoid an agreement decision."],
+        "teaching_source_type": "reviewed_public_grammar_source",
+        "source_refs": GRAMMAR_FOUNDATION_SOURCE_REFS,
+    },
+    {
+        "key": "tense_tracks_time_relation",
+        "title": "Let tense track the intended time relation",
+        "category": "grammar_foundation",
+        "teaching_group": "G8 · Grammar Foundations and Word Fit",
+        "group_order": 8,
+        "lesson_order": 3,
+        "prerequisites": ["noun_verb_number_agreement"],
+        "purpose": "Use past, present, or future verb forms to preserve when an event or state is located rather than choosing tense only by surface familiarity.",
+        "apply_when": ["past_event", "present_state", "future_plan", "sequence", "correction"],
+        "response_moves": ["align_verb_tense_with_time", "keep_tense_consistent_with_event_order", "repair_only_affected_time_relations"],
+        "constraints": ["Do not force one tense across events that occur at different times.", "Do not turn a possible future into a present fact."],
+        "teaching_source_type": "reviewed_public_grammar_source",
+        "source_refs": GRAMMAR_FOUNDATION_SOURCE_REFS,
+    },
+    {
+        "key": "negation_preserves_scope",
+        "title": "Place negation on the meaning it actually denies",
+        "category": "grammar_foundation",
+        "teaching_group": "G8 · Grammar Foundations and Word Fit",
+        "group_order": 8,
+        "lesson_order": 4,
+        "prerequisites": ["tense_tracks_time_relation"],
+        "purpose": "Form a negative clause without silently changing which action, state, quantity, or possibility is being denied.",
+        "apply_when": ["negative_statement", "correction", "limit", "contrast"],
+        "response_moves": ["attach_negation_to_supported_scope", "preserve_tense_and_participant_roles", "distinguish_not_all_from_none"],
+        "constraints": ["Do not widen a local denial into a universal claim.", "Do not treat absence of evidence as evidence of the opposite."],
+        "teaching_source_type": "reviewed_public_grammar_source",
+        "source_refs": GRAMMAR_FOUNDATION_SOURCE_REFS,
+    },
+    {
+        "key": "modifier_attachment_and_specificity",
+        "title": "Attach descriptions to what they describe",
+        "category": "grammar_foundation",
+        "teaching_group": "G8 · Grammar Foundations and Word Fit",
+        "group_order": 8,
+        "lesson_order": 5,
+        "prerequisites": ["sentence_core_from_meaning_roles"],
+        "purpose": "Use determiners and modifiers to identify or describe the intended participant, object, action, degree, or condition without creating an ambiguous attachment.",
+        "apply_when": ["description", "reference", "comparison", "technical_precision"],
+        "response_moves": ["attach_modifier_to_intended_role", "choose_specificity_from_supported_context", "move_or_split_ambiguous_modifier"],
+        "constraints": ["Do not add vivid detail that is not supported.", "Do not mistake a modifier for the identity or full definition of what it describes."],
+        "teaching_source_type": "reviewed_public_grammar_source",
+        "source_refs": GRAMMAR_FOUNDATION_SOURCE_REFS,
+    },
+    {
+        "key": "conjunction_matches_relation",
+        "title": "Choose a conjunction for the real relationship",
+        "category": "grammar_foundation",
+        "teaching_group": "G8 · Grammar Foundations and Word Fit",
+        "group_order": 8,
+        "lesson_order": 6,
+        "prerequisites": ["negation_preserves_scope", "modifier_attachment_and_specificity"],
+        "purpose": "Join words, phrases, or clauses with a conjunction that preserves whether the relation is addition, contrast, choice, result, or reason.",
+        "apply_when": ["compound_sentence", "contrast", "choice", "cause", "reason"],
+        "response_moves": ["choose_connector_from_supported_relation", "join_only_related_clauses", "split_when_one_connector_cannot_preserve_the_relation"],
+        "constraints": ["Do not use because when the support establishes only sequence or association.", "Do not make a sentence longer when separate sentences would keep the relationship clearer."],
+        "teaching_source_type": "reviewed_public_grammar_source",
+        "source_refs": GRAMMAR_FOUNDATION_SOURCE_REFS,
+    },
+    {
+        "key": "lexical_sense_and_word_pair_fit",
+        "title": "Choose a word by sense, grammar, and nearby meaning",
+        "category": "lexical_foundation",
+        "teaching_group": "G8 · Grammar Foundations and Word Fit",
+        "group_order": 8,
+        "lesson_order": 7,
+        "prerequisites": ["modifier_attachment_and_specificity", "contextual_word_choice"],
+        "purpose": "Choose among understood words by the intended sense, grammatical role, register, and the nearby words they naturally relate to rather than by synonym appearance alone.",
+        "apply_when": ["lexical_choice", "paraphrase", "awkward_wording", "register_shift", "technical_term"],
+        "response_moves": ["choose_sense_before_surface_form", "check_grammar_and_word_pair_fit", "prefer_plain_precise_word_over_novel_mismatch"],
+        "constraints": ["Do not treat dictionary similarity as interchangeable meaning.", "Do not choose novelty over a precise established term or imitate a source persona."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/lexical_semantics.py:v1_sense_grounded_lexicon"],
     },
 )
 
@@ -1025,6 +1139,111 @@ LANGUAGE_LESSON_EVIDENCE: dict[str, dict[str, Any]] = {
         "conversational_participation": "One approved concept supplies the mechanism, while the second supplies the boundary case. Together they answer the question, but neither should be made to claim what only the other supports.",
         "correction_response": "If a concept was used beyond its scope, remove that fragment, preserve the still-supported pieces, and reopen the unsupported relationship.",
     },
+    "sentence_core_from_meaning_roles": {
+        "vocabulary": ["sentence core", "subject", "predicate", "object", "complement", "meaning role"],
+        "uncertainties": ["Conversation may omit an understood subject, and passive or multi-clause sentences may organize the same roles differently."],
+        "near_concept_distinctions": ["A grammatical subject organizes a clause; an agent is the participant responsible for an action and is not always the grammatical subject."],
+        "examples": ["The lantern glowed has a participant and a state or action; Mina moved the lantern adds an affected object."],
+        "counterexamples": ["A pile of familiar words does not become a clear sentence when their relationships remain unspecified."],
+        "scope_of_application": "Use as the first representation of an ordinary clause, then allow questions, commands, passive structures, omitted understood subjects, and additional clauses when the intended meaning requires them.",
+        "explanation": "A sentence becomes easier to form when its meaning roles are clear first: what the clause concerns, what it says about that participant, and which other participants or descriptions complete the relationship.",
+        "distinct_examples": ["The update changed the schedule identifies an event and its affected object without adding who intentionally caused it."],
+        "analogies": ["Meaning roles are labeled places in a small scene; grammar arranges those places into a sentence."],
+        "questions": ["Who or what is this clause about, and what supported action, state, or relationship belongs to it?"],
+        "comparisons": ["A sentence core preserves the load-bearing relation; modifiers add supported detail around that core."],
+        "conversational_participation": "The core is that the update changed the schedule. I can add when or why only if that detail is supported.",
+        "correction_response": "If a participant or relationship lands in the wrong role, restore the supported meaning map and rebuild only the affected clause.",
+    },
+    "noun_verb_number_agreement": {
+        "vocabulary": ["singular", "plural", "agreement", "verb form", "inflection"],
+        "uncertainties": ["Collective nouns, coordinated subjects, fixed expressions, and dialects can require more context than a basic singular/plural rule."],
+        "near_concept_distinctions": ["Agreement changes a grammatical form to fit the subject; it does not change which action the verb means."],
+        "examples": ["The lamp glows and The lamps glow preserve the same action while the noun and verb forms agree."],
+        "counterexamples": ["The lamps glows mismatches an ordinary plural subject with a singular present-tense verb form."],
+        "scope_of_application": "Use for ordinary singular and plural subjects in basic present-tense English clauses while leaving dialect-sensitive or structurally complex cases open to context.",
+        "explanation": "Nouns and verbs work together. In basic present-tense clauses, the verb form reflects whether the grammatical subject is singular or plural, while the underlying action remains the same.",
+        "distinct_examples": ["One process runs; two processes run."],
+        "analogies": ["Agreement is a connector fitting the two parts of one clause without replacing either part."],
+        "questions": ["Is the grammatical subject singular or plural, and which verb form fits that clause?"],
+        "comparisons": ["Runs and run can express one action while fitting different subject-number contexts."],
+        "conversational_participation": "The single process runs, while the two worker processes run beside it.",
+        "correction_response": "If agreement is awkward, keep the intended subject and action, change the local verb form, and avoid turning the repair into a judgment about the speaker.",
+    },
+    "tense_tracks_time_relation": {
+        "vocabulary": ["past", "present", "future", "tense", "event time", "sequence"],
+        "uncertainties": ["English tense can also express habits, hypotheticals, narrative viewpoint, or scheduled futures, so clock time alone does not settle every form."],
+        "near_concept_distinctions": ["Tense locates or frames an event in time; certainty describes how strongly the event or claim is supported."],
+        "examples": ["Yesterday the process stopped; today it runs; tomorrow it will run again if the repair holds."],
+        "counterexamples": ["Saying the process runs tomorrow as a settled fact can erase a condition that remains uncertain."],
+        "scope_of_application": "Use for ordinary past, present, and future event relations, preserving conditions and different times inside the same explanation.",
+        "explanation": "Tense helps the listener place actions and states in time. It should follow the supported event relation rather than drift because a nearby sentence used another tense.",
+        "distinct_examples": ["The lesson was prepared earlier, is available now, and will be revisited after its prerequisite."],
+        "analogies": ["Tense places an event on a timeline; it does not decide whether the event is certain."],
+        "questions": ["When does each event occur, and does one event's tense accidentally pull another into the wrong time?"],
+        "comparisons": ["Past, present, and future forms can describe the same action at different locations in time."],
+        "conversational_participation": "The source arrived yesterday, the review is open now, and we will decide after the missing context is available.",
+        "correction_response": "If a tense implies the wrong time or certainty, restore the event order and revise only the dependent wording.",
+    },
+    "negation_preserves_scope": {
+        "vocabulary": ["negation", "scope", "polarity", "local denial", "universal denial"],
+        "uncertainties": ["Words such as only, all, ever, yet, and necessarily can materially change the scope of a negative statement."],
+        "near_concept_distinctions": ["Not all means at least one exception may exist; none denies every member of the stated set."],
+        "examples": ["The evidence does not establish the cause denies support for one conclusion without denying that the observation occurred."],
+        "counterexamples": ["Turning We cannot verify every case into No case is true widens a bounded evidence limit into an unsupported universal denial."],
+        "scope_of_application": "Use for ordinary negative statements, corrections, limitations, and contrasts while naming the exact action, state, quantity, or modal claim being denied.",
+        "explanation": "Negation is meaningful only when its scope is clear. The sentence should deny the supported target and preserve nearby observations, possibilities, and quantities that were not denied.",
+        "distinct_examples": ["The lesson is not ready for application yet does not claim that the lesson is useless or permanently unavailable."],
+        "analogies": ["Negation is a boundary drawn around one claim, not black paint poured over the whole scene."],
+        "questions": ["Exactly which relation is being denied, and what nearby meaning must remain true or open?"],
+        "comparisons": ["A local negative corrects one claim; a universal negative excludes every case in its named scope."],
+        "conversational_participation": "That result is not verified yet. The observation still stands; what remains open is the explanation.",
+        "correction_response": "If the negative became broader than the evidence, narrow its scope and restore each meaning that was accidentally erased.",
+    },
+    "modifier_attachment_and_specificity": {
+        "vocabulary": ["modifier", "determiner", "adjective", "adverb", "attachment", "specificity"],
+        "uncertainties": ["A modifier placed near two plausible targets may remain ambiguous even when the sentence is grammatical."],
+        "near_concept_distinctions": ["A determiner helps identify which item or how it is bounded; a descriptive modifier adds a supported quality or manner."],
+        "examples": ["The revised plan arrived quickly attaches revised to plan and quickly to arrived."],
+        "counterexamples": ["I moved the lamp beside the chair carefully can leave unclear whether carefully describes the movement or the lamp's placement."],
+        "scope_of_application": "Use modifiers to add supported identity, quality, degree, manner, time, or location detail. Reposition or split the clause when attachment materially changes the meaning.",
+        "explanation": "Descriptions help only when the listener can tell what they modify. Start from the sentence core, attach each supported detail to its intended role, and remove detail that does not help the current purpose.",
+        "distinct_examples": ["The smaller blue container holds the sample identifies which container without claiming that color affects capacity."],
+        "analogies": ["A modifier is a label with an arrow; its value depends on the arrow reaching the intended part."],
+        "questions": ["What does this description modify, and could a nearby word plausibly receive it instead?"],
+        "comparisons": ["Specific wording identifies the intended role; decorative detail adds surface texture without improving the relation."],
+        "conversational_participation": "The recently revised schedule is shorter. Recently describes the revision, while shorter compares the schedule itself.",
+        "correction_response": "If a modifier points to the wrong part, move it beside the intended role or separate the meanings into clearer clauses.",
+    },
+    "conjunction_matches_relation": {
+        "vocabulary": ["conjunction", "coordination", "addition", "contrast", "choice", "reason", "result"],
+        "uncertainties": ["Several relations may hold between two clauses, and the most useful connector depends on which one the answer needs to make explicit."],
+        "near_concept_distinctions": ["And adds or coordinates; but marks contrast; or presents alternatives; so marks a result; because supplies a reason."],
+        "examples": ["The source is available, but its prerequisite is missing marks a contrast between availability and readiness."],
+        "counterexamples": ["The pavement is wet because clouds are visible invents a cause when the observations establish only coexistence."],
+        "scope_of_application": "Use conjunctions and transitions only for relationships supported by the meaning packet. Split clauses when one connector would hide separate qualifications or conclusions.",
+        "explanation": "Connectors tell the listener how ideas relate. Choosing one is a meaning decision: addition, contrast, choice, reason, and result are not interchangeable decorations.",
+        "distinct_examples": ["The activity is useful, so we will preserve it, but we will return after the prerequisite is taught."],
+        "analogies": ["A conjunction is the labeled joint between two pieces; the label should describe the joint that actually exists."],
+        "questions": ["Are these clauses adding, contrasting, offering choices, giving a reason, or stating a result?"],
+        "comparisons": ["Because claims a reason; after states sequence and does not by itself establish cause."],
+        "conversational_participation": "The question is useful, but it arrived early, so we can keep it and return after the foundation is ready.",
+        "correction_response": "If a connector implies an unsupported relation, replace or remove it and preserve the two underlying claims separately.",
+    },
+    "lexical_sense_and_word_pair_fit": {
+        "vocabulary": ["sense", "grammatical role", "collocation", "register", "near concept", "plain precision"],
+        "uncertainties": ["Several words may be grammatically possible while only one sounds natural in the current register or preserves the exact technical distinction."],
+        "near_concept_distinctions": ["A synonym shares some meaning; an interchangeable form also has to fit the grammatical role, nearby words, register, and intended distinction."],
+        "examples": ["Make a decision is an established ordinary pairing; perform a decision is understandable but does not fit the same natural verb-noun relationship."],
+        "counterexamples": ["Replacing use with utilize everywhere increases formality without improving precision and can make ordinary speech awkward."],
+        "scope_of_application": "Use only among words whose relevant sense and grammatical behavior are understood from the prompt, approved knowledge, or reviewed language guidance. Keep exact terms where a standard or distinction requires them.",
+        "explanation": "Natural word choice is more than rotating synonyms. Choose the intended sense first, then check the word's grammatical behavior, nearby pairings, task register, and whether a simpler precise form already fits.",
+        "distinct_examples": ["A process reaches a conclusion, while a person draws a conclusion; both may describe related outcomes but their participant roles differ."],
+        "analogies": ["Near words are tools with similar shapes but different fittings; the surrounding sentence determines which one locks into place."],
+        "questions": ["Does this word express the intended sense here, and does it naturally fit the role and nearby words?"],
+        "comparisons": ["Lexical variety changes surface form within understood limits; lexical novelty introduces an unreviewed or mismatched form."],
+        "conversational_participation": "The plain word fits better here. The longer alternative is possible, but it sounds formal without adding a useful distinction.",
+        "correction_response": "If a word is technically possible but awkward or imprecise, keep the supported meaning and replace only that lexical choice with a better-fitting understood form.",
+    },
 }
 
 
@@ -1280,6 +1499,18 @@ def build_language_capability_answer(
             },
             "carry nonlinear thread returns, complete every supported part, ground long-session callbacks, and compose across approved concepts without inventing content",
         ),
+        (
+            {
+                "sentence_core_from_meaning_roles",
+                "noun_verb_number_agreement",
+                "tense_tracks_time_relation",
+                "negation_preserves_scope",
+                "modifier_attachment_and_specificity",
+                "conjunction_matches_relation",
+                "lexical_sense_and_word_pair_fit",
+            },
+            "form complete sentence cores, preserve agreement, time and negation, attach descriptions clearly, express the supported relation between clauses, and choose words that fit their intended sense",
+        ),
     ]
     capabilities = [description for keys, description in capability_groups if keys & available_keys]
     if not capabilities:
@@ -1532,6 +1763,43 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
         )
     ):
         score += 7
+    grammar_request = any(
+        marker in lower
+        for marker in (
+            "grammar", "sentence", "wording", "rephrase", "rewrite", "say this", "say that",
+            "subject", "verb", "tense", "negative", "negation", "modifier", "conjunction",
+            "word choice", "sounds awkward", "sound natural",
+        )
+    )
+    if key == "sentence_core_from_meaning_roles" and (
+        grammar_request or intent_name in {"direct_answer", "reasoned_answer"}
+    ):
+        score += 3
+    if key == "noun_verb_number_agreement" and any(
+        marker in lower for marker in ("agreement", "singular", "plural", "subject", "verb")
+    ):
+        score += 6
+    if key == "tense_tracks_time_relation" and any(
+        marker in lower for marker in ("tense", "past", "present", "future", "yesterday", "tomorrow", "earlier", "later")
+    ):
+        score += 6
+    if key == "negation_preserves_scope" and any(
+        marker in lower for marker in ("negative", "negation", "not all", "none", "didn't", "did not", "isn't", "is not")
+    ):
+        score += 6
+    if key == "modifier_attachment_and_specificity" and any(
+        marker in lower for marker in ("modifier", "describe", "description", "ambiguous", "which one", "specific")
+    ):
+        score += 6
+    if key == "conjunction_matches_relation" and any(
+        marker in lower for marker in ("conjunction", "because", "but", "although", "therefore", "so that", "connect the")
+    ):
+        score += 6
+    if key == "lexical_sense_and_word_pair_fit" and (
+        grammar_request
+        or any(marker in lower for marker in ("better word", "which word", "synonym", "collocation", "word pair"))
+    ):
+        score += 5
     return score
 
 
@@ -1661,12 +1929,21 @@ def _ensure_language_concept(
             "source_refs": _lesson_source_refs(key, lesson),
             "confidence": "developing",
             "correction_path": "Return the language lesson to Cocoon, revise its evidence, and reopen NLO guidance only after Aleks review.",
-            "teaching_source_type": "project_authored_provider_free_language_lesson",
+            "teaching_source_type": str(
+                lesson.get("teaching_source_type") or "project_authored_provider_free_language_lesson"
+            ),
             "source_metadata": {
                 "language_lesson_key": key,
                 **_lesson_group_metadata(lesson),
                 "language_lesson_blueprint": blueprint,
                 "lesson_content_and_boundaries_are_separate": True,
+                "source_refs": _lesson_source_refs(key, lesson),
+                "source_attribution_preserved": any(
+                    str(ref).startswith("attribution:") for ref in _lesson_source_refs(key, lesson)
+                ),
+                "source_license_preserved": any(
+                    str(ref).startswith("license:") for ref in _lesson_source_refs(key, lesson)
+                ),
                 "provider_used": False,
             },
         },
@@ -1756,11 +2033,12 @@ def _lesson_source_refs(key: str, lesson: dict[str, Any] | None = None) -> list[
         source_phase = "speech_phase_6:reviewed_expressive_breadth"
     else:
         source_phase = "speech_phase_1:provider_free_language_foundations"
-    return [
+    return list(dict.fromkeys([
         source_phase,
         f"language_lesson:{key}",
         "docs:SELENE_EDUCATION_EXPRESSION_PERSONALITY_LAW_20260719",
-    ]
+        *[str(ref) for ref in lesson.get("source_refs") or [] if str(ref)],
+    ]))
 
 
 def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, Any]:
@@ -1772,7 +2050,11 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
         "authorization_class": "language_capability_range",
         "guidance_only": True,
         "covered_domain": "language_and_conversation",
-        "covered_source_type": "project_authored_provider_free_language_lesson",
+        "covered_source_types": [
+            "project_authored_provider_free_language_lesson",
+            "reviewed_public_grammar_source",
+            "reviewed_public_and_project_grammar_guidance",
+        ],
         "covered_effects": [
             "grammar",
             "vocabulary_range",

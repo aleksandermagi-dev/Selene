@@ -263,6 +263,11 @@ def prepare_dialogue_turn(
         "previous_turn": previous,
         "contextual_follow_up": contextual_follow_up,
         "thread_braid": thread_braid,
+        "session_facts": [
+            item
+            for item in prior_pragmatics.get("session_facts") or []
+            if isinstance(item, dict)
+        ][-20:],
         "session_landmarks": [
             item for item in prior_pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
         ][-24:],
@@ -322,6 +327,16 @@ def record_dialogue_response(
         else:
             open_loops.append(item)
     pragmatics = state.get("pragmatics") if isinstance(state.get("pragmatics"), dict) else {}
+    conversation_spine = (
+        payload.get("conversation_spine")
+        if isinstance(payload.get("conversation_spine"), dict)
+        else {}
+    )
+    session_facts = [
+        item
+        for item in conversation_spine.get("session_facts") or pragmatics.get("session_facts") or []
+        if isinstance(item, dict)
+    ][-20:]
     prior_landmarks = [
         item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
     ]
@@ -359,6 +374,7 @@ def record_dialogue_response(
         "last_selene_preview": truncate(candidate, 360),
         "pragmatics": {
             **pragmatics,
+            "session_facts": session_facts,
             "last_response_coverage": coverage,
             "session_landmarks": session_landmarks,
             "topic_checkpoints": topic_checkpoints,
@@ -638,7 +654,7 @@ def _correction_refinement(
     patterns = (
         r"\b(?:i meant|what i meant was)\s+(.+?)\s*,?\s+not\s+(.+?)"
         r"(?=,\s+(?:and\s+)?(?:can|could|would|will|what|which|how|why|tell|explain)\b|[.!?]|$)",
-        r"\bnot\s+(.+?)\s*[,;]\s*(?:i meant\s+)?(.+?)"
+        r"(?:^|\b(?:actually|correction)\s*[:,]?\s+)not\s+(.+?)\s*[,;]\s*(?:i meant\s+)?(.+?)"
         r"(?=,\s+(?:and\s+)?(?:can|could|would|will|what|which|how|why|tell|explain)\b|[.!?]|$)",
     )
     corrected = ""
@@ -663,7 +679,16 @@ def _correction_refinement(
         definition = re.fullmatch(r"(.{1,100}?)\s+means\s+(.{1,240}?)[.!?]?", normalized, flags=re.IGNORECASE)
         if definition:
             replaced, corrected = definition.group(1), definition.group(2)
-    detected = bool(corrected or re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", normalized, flags=re.IGNORECASE))
+    explicit_marker = bool(
+        re.search(r"\b(?:i meant|not what i meant|correction)\b", normalized, flags=re.IGNORECASE)
+        or re.search(
+            r"(?:^|[.!?;]\s*|\bbut\s+)actually\s*,?\s+"
+            r"(?:the|a|an|i|we|you|it|that|this|they|he|she)\b",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+    )
+    detected = bool(corrected or explicit_marker)
     return {
         "detected": detected,
         "summary": truncate(normalized, 360) if detected else "",
@@ -709,7 +734,7 @@ def _utterance_units(text: str) -> list[dict[str, Any]]:
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
             r"(?:compare|explain|show|tell|help|give|list|summarize|check|walk|"
             r"use|add|include|name|say|put|describe|identify|state|separate|"
-            r"distinguish|calculate|count|return\b.*\b(?:explain|answer|summarize))\b",
+            r"distinguish|calculate|count|revise|update|adjust|return\b.*\b(?:explain|answer|summarize))\b",
             lower,
         ):
             kind = "direct_request"
