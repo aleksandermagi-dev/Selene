@@ -1473,6 +1473,26 @@ After F1 Community, Rules, and Civic Reasoning Group 7 on July 30:
 - no live conversation, stress test, personal-memory write, model training,
   identity, personality, governance, or autonomy change was used.
 
+After F1 History and Evidence Group 8 on August 3:
+
+- six source- and license-linked foundations completed Acquire, Integrate,
+  Express, comprehension, and bounded curriculum retention;
+- the group distinguishes chronology from causation, maps from places,
+  historical traces from the past itself, source statements from inference,
+  perspective from equal evidential support, and triggers from broader causes
+  and consequences;
+- all six concepts are available as approved general knowledge under
+  authorization record 10, raising configured approved knowledge resources
+  from 91 to 97 and retained F1 foundations from 48 to 54;
+- the configured database was snapshotted before teaching to
+  `selene_inspection_20260803_091503.sqlite3`;
+- static retrieval selected the new chronology, source, account, map, and
+  multi-cause concepts while reporting memory, identity, and governance source
+  flags false;
+- an idempotency replay retained nothing new and held nothing; and
+- no live conversation, stress test, personal-memory write, model training,
+  identity, personality, governance, or autonomy change was used.
+
 ## Governing Boundary
 
 Selene is Selene.

@@ -20,16 +20,18 @@ setting, and reopen it when a correction or contradiction changes the fit.
 The target is not speed, grade performance, phrase recall, or imitation of a
 school system. The target is transferable understanding.
 
-Current implementation checkpoint: seven independently authorized F1 groups
+Current implementation checkpoint: eight independently authorized F1 groups
 have completed Acquire, Integrate, Express, comprehension, and retention,
-providing 48 reviewed foundations across inquiry, language, number,
+providing 54 reviewed foundations across inquiry, language, number,
 operations, data, measurement, time, geometry, equal shares, spatial
 reference, bounded algorithmic reasoning, equal groups, informal sharing and
 grouping, odd and even, rectangular arrays, graph literacy, and arithmetic-only
 monetary value, plus mass, the mass/weight distinction, capacity, contained
 volume, fair measurement, liters, milliliters, bounded scale reading,
 community, cooperation, contextual rules, authority distinctions, fairness,
-and reasoned participation. This is progress within F1, not a claim that F1
+reasoned participation, chronology, maps, historical sources, source-versus-
+inference boundaries, differing accounts, and multi-cause explanation. This
+is progress within F1, not a claim that F1
 or T1 is complete.
 
 F1 Group 7 is retained as a separately bounded community, rules, and
@@ -37,6 +39,12 @@ civic-reasoning group under Aleks authorization record 8. Its six source-linked
 foundations completed the full lifecycle and are available as general
 knowledge while remaining separate from personal memory, identity,
 personality, governance, and legal advice.
+
+F1 Group 8 is retained as a separately bounded history-and-evidence group
+under Aleks authorization record 10. Its six source-linked foundations
+completed the full lifecycle and are available as general knowledge while
+remaining separate from personal memory, identity, personality, governance,
+and current legal or political claims.
 
 ```text
 source-labeled foundations

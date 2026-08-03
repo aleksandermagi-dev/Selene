@@ -1,7 +1,7 @@
 # Selene Curriculum Source Shelf
 
 Date: 2026-07-19; expanded 2026-07-29 for F1 Group 6 and selected
-2026-07-30 for F1 Group 7
+2026-07-30 for F1 Group 7; selected 2026-08-03 for F1 Group 8
 
 Status: source acquisition checkpoint; review only
 
@@ -133,6 +133,13 @@ foundations from the CKHG civics artifact. Its CC BY-NC-SA 4.0 attribution,
 noncommercial, share-alike, trademark, and linked-resource exclusions remain
 attached. United States voting rules, national identity, symbols, and current
 legal claims are not part of the bounded group.
+
+F1 Group 8 selects only foundational chronology, map-model, historical-trace,
+source-versus-inference, differing-account, and multi-cause explanation
+relationships from the content-addressed sequence and Grade 1 civics artifact.
+It preserves the same CC BY-NC-SA 4.0 attribution and exclusions. No artifact
+images, national-identity instruction, current political claims, or legal
+claims are used.
 
 ## Cataloged and Deliberately Held Sources
 
