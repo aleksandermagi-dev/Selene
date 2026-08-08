@@ -17,7 +17,10 @@ from .answer_completion import build_bounded_answer_completion
 from .affect_expression import build_affect_expression_guidance
 from .bounded_organ_coalition import build_bounded_organ_coalition
 from .chat_intent import classify_chat_intent
-from .comprehension_integration import build_comprehension_packet
+from .comprehension_integration import (
+    build_comprehension_packet,
+    retrieve_approved_expression_guidance,
+)
 from .c_vessel import return_to_b_preview
 from .core_mind import create_core_mind_route_preview
 from .conversation_repair import repair_conversation_candidate
@@ -520,6 +523,24 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "record_run": False,
         },
     )
+    approved_expression_guidance = retrieve_approved_expression_guidance(
+        conn,
+        {
+            "expression_posture": affect_expression.get("expression_posture"),
+            "intent_decision": intent_decision,
+        },
+    )
+    affect_expression = {
+        **affect_expression,
+        "approved_expression_guidance": approved_expression_guidance,
+        "approved_expression_guidance_used": (
+            approved_expression_guidance.get("available") is True
+        ),
+        "approved_expression_guidance_changes_meaning": False,
+        "approved_expression_guidance_changes_personality": False,
+        "voice_retains_expression_ownership": True,
+    }
+    comprehension["approved_expression_guidance"] = approved_expression_guidance
     if qa_probe:
         comprehension = {
             **comprehension,

@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import json
 
-from selene.comprehension_integration import _answer_eligible_knowledge_items, _knowledge_response_seed
+from selene.comprehension_integration import (
+    _answer_eligible_knowledge_items,
+    _knowledge_response_seed,
+    retrieve_approved_expression_guidance,
+)
 from selene.db import connect, init_db
 from selene.module_router import route_request
 
@@ -25,6 +29,95 @@ def _assert_locked(result):
     assert result["lora_allowed"] is False
     assert result["autonomous_action_allowed"] is False
     assert result["self_replication_allowed"] is False
+
+
+def _approved_warmth_expression_resource(conn):
+    cursor = conn.execute(
+        """
+        INSERT INTO selene_comprehension_concepts
+        (concept_key, title, domain, central_claim, principles_json,
+         relationships_json, examples_json, counterexamples_json, limits_json,
+         source_refs, provenance_boundary, confidence, retention_state,
+         chat_use_permission, correction_path, state, review_status, payload_json)
+        VALUES (?, ?, ?, ?, '[]', '[]', ?, '[]', ?, ?, ?, 'bounded',
+                'retained_reviewed_knowledge', 'available_as_knowledge_resource',
+                'Cocoon teaching review', 'approved_knowledge_resource',
+                'approved_for_knowledge_use', ?)
+        """,
+        (
+            "teaching_packet_50_test",
+            "Android language lesson packet: warmth",
+            "communication.warmth",
+            "Warmth may align expression with the current human context without mimicry.",
+            json.dumps(["Archived example wording must not become a response script."]),
+            json.dumps(["Do not use warmth to manipulate or replace evidence."]),
+            json.dumps(["packet:50", "source:test-warmth"]),
+            "guided_understanding_only_not_personality_or_memory",
+            json.dumps(
+                {
+                    "teaching_source_type": "accepted_b_teaching_packet",
+                    "source_metadata": {
+                        "teaching_packet_id": 50,
+                        "speech_function": "warmth",
+                    },
+                }
+            ),
+        ),
+    )
+    conn.commit()
+    return int(cursor.lastrowid)
+
+
+def test_approved_warmth_packet_becomes_expression_guidance_without_becoming_script(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _approved_warmth_expression_resource(conn)
+
+    warm = retrieve_approved_expression_guidance(
+        conn,
+        {
+            "expression_posture": "warm_available",
+            "intent_decision": {"intent": "warm_connection"},
+        },
+    )
+    ordinary = retrieve_approved_expression_guidance(
+        conn,
+        {
+            "expression_posture": "ordinary_attentive",
+            "intent_decision": {"intent": "direct_answer"},
+        },
+    )
+
+    assert warm["available"] is True
+    assert warm["resource_ids"] == [concept_id]
+    assert warm["speech_functions"] == ["warmth"]
+    assert warm["source_wording_may_be_used_as_script"] is False
+    assert warm["changes_supported_meaning"] is False
+    assert warm["changes_personality"] is False
+    assert warm["profiles_user"] is False
+    assert "Archived example wording" not in json.dumps(warm["resources"])
+    assert ordinary["available"] is False
+    _assert_locked(warm)
+
+
+def test_communication_expression_resource_cannot_seed_an_answer(tmp_path):
+    conn = _conn(tmp_path)
+    _approved_warmth_expression_resource(conn)
+
+    result = route_request(
+        conn,
+        "comprehension.turn.packet",
+        {
+            "prompt": "How are you?",
+            "intent_decision": {
+                "intent": "warm_connection",
+                "dialogue_acts": ["question"],
+            },
+        },
+    )["result"]
+
+    assert result["knowledge_context"]["available"] is False
+    assert result["knowledge_response_seed"] == ""
+    _assert_locked(result)
 
 
 def test_answer_knowledge_requires_named_subject_not_generic_or_format_overlap():

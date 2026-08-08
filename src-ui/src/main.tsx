@@ -7033,6 +7033,28 @@ function App() {
                   const isOpen = openComprehensionId === Number(item.id);
                   const sourceRefs = Array.isArray(item.source_refs) ? item.source_refs : [];
                   const isRunning = result?.status === "running";
+                  const acquireSnapshot = safeJsonObject(lifecycle?.acquire);
+                  const integrateSnapshotForReview = safeJsonObject(lifecycle?.integrate);
+                  const expressSnapshotForReview = safeJsonObject(lifecycle?.express);
+                  const resultSnapshot = safeJsonObject(result?.snapshot);
+                  const missingFields = Array.from(new Set([
+                    ...(Array.isArray(acquireSnapshot.missing_fields) ? acquireSnapshot.missing_fields.map(text) : []),
+                    ...(Array.isArray(integrateSnapshotForReview.missing_fields) ? integrateSnapshotForReview.missing_fields.map(text) : []),
+                    ...(Array.isArray(expressSnapshotForReview.missing_fields) ? expressSnapshotForReview.missing_fields.map(text) : []),
+                    ...(Array.isArray(resultSnapshot.missing_fields) ? resultSnapshot.missing_fields.map(text) : [])
+                  ].filter(Boolean)));
+                  const isExpressionResource = text(item.domain).startsWith("communication.");
+                  const approvalButtonLabel = !acquireComplete
+                    ? "Complete Acquire First"
+                    : !integrateComplete
+                      ? "Complete Integrate First"
+                      : !expressComplete
+                        ? "Complete Express First"
+                        : !evidenceSufficient
+                          ? "Understanding Evidence Needs Review"
+                          : isExpressionResource
+                            ? "Approve Expression Resource"
+                            : "Approve Exception Item";
                   return <article id={`comprehension-candidate-${text(item.id)}`} key={`comprehension-${text(item.id)}`} className="comprehensionCandidate">
                     <div className="row">
                       <strong>{text(item.title)}</strong>
@@ -7045,6 +7067,10 @@ function App() {
                       <span className={integrateComplete ? "complete" : ""}><b>2 · Integrate</b>{friendlyStatus(lifecycle?.integrate_status || "not started")}</span>
                       <span className={expressComplete ? "complete" : ""}><b>3 · Express</b>{friendlyStatus(lifecycle?.express_status || "not started")}</span>
                     </div>
+                    {missingFields.length ? <div className="comprehensionSourceBox">
+                      <strong>What this review still needs</strong>
+                      <p>{missingFields.map((field) => friendlyStatus(field)).join(", ")}. Add or revise these fields in the relevant stage below; nothing has been retained yet.</p>
+                    </div> : null}
                     <div className="reviewActions">
                       <button onClick={() => setOpenComprehensionId(isOpen ? 0 : Number(item.id))}>{isOpen ? "Close Candidate Review" : "Open Candidate Review"}</button>
                     </div>
@@ -7110,10 +7136,10 @@ function App() {
                       </div>
                       </section>
                       <div className="aleksKnowledgeApproval">
-                        <strong>Aleks exception retention decision</strong>
-                        <p>{lifecycle?.approval_mode === "curriculum_authorization" ? "This item was retained under the visible bounded curriculum authorization after completing all lifecycle and comprehension checks. It remains reopenable and attributable." : allStagesComplete && evidenceSufficient ? "Acquire, Integrate, and Express are complete with source-linked understanding evidence. Use this explicit decision for an exception or an item outside a curriculum authorization; it does not create personal memory." : "An explicit exception decision remains unavailable until all three lifecycle stages and the source-linked understanding evaluation are complete."}</p>
+                        <strong>{isExpressionResource ? "Aleks expression-resource decision" : "Aleks exception retention decision"}</strong>
+                        <p>{lifecycle?.approval_mode === "curriculum_authorization" ? "This item was retained under the visible bounded curriculum authorization after completing all lifecycle and comprehension checks. It remains reopenable and attributable." : allStagesComplete && evidenceSufficient ? isExpressionResource ? "Acquire, Integrate, and Express are complete. Approval makes this an optional, context-sensitive expression resource for NLO and Voice; it does not prescribe a mood, personality, or script." : "Acquire, Integrate, and Express are complete with source-linked understanding evidence. Use this explicit decision for an exception or an item outside a curriculum authorization; it does not create personal memory." : `Approval is waiting because ${!acquireComplete ? "Acquire is incomplete" : !integrateComplete ? "Integrate is incomplete" : !expressComplete ? "Express is incomplete" : "the understanding evidence still needs review"}. Complete the visible stage above; the button is intentionally unavailable until then.`}</p>
                         <div className="reviewActions">
-                          <button className="primary" onClick={() => decideComprehensionCandidate(item, "approve_knowledge")} disabled={!allStagesComplete || !evidenceSufficient || isRunning || lifecycle?.approval_mode === "curriculum_authorization"}>Approve Exception Item</button>
+                          <button className="primary" onClick={() => decideComprehensionCandidate(item, "approve_knowledge")} disabled={!allStagesComplete || !evidenceSufficient || isRunning || lifecycle?.approval_mode === "curriculum_authorization"} title={!allStagesComplete || !evidenceSufficient ? approvalButtonLabel : undefined}>{approvalButtonLabel}</button>
                           <button onClick={() => decideComprehensionCandidate(item, "supersede")} disabled={isRunning}>Supersede</button>
                           <button onClick={() => decideComprehensionCandidate(item, "reject")} disabled={isRunning}>Reject</button>
                         </div>
@@ -7121,6 +7147,7 @@ function App() {
                       {result ? <div className="comprehensionReviewResult">
                         <strong>{friendlyStatus(result.status)}</strong>
                         {result.error ? <p>{text(result.error)}</p> : null}
+                        {Array.isArray(resultSnapshot.missing_fields) && resultSnapshot.missing_fields.length ? <p>Still needed: {resultSnapshot.missing_fields.map((field) => friendlyStatus(field)).join(", ")}.</p> : null}
                         {typeof result.passed_core_dimension_count === "number" ? <p>{text(result.passed_core_dimension_count)} of {text(result.required_core_dimension_count)} required evidence dimensions are ready. {text(result.recommended_next_step)}</p> : null}
                         {result.action ? <p>Recorded action: {friendlyStatus(result.action)}.</p> : null}
                       </div> : storedEvidence.status ? <p className="plainHelp">Latest evaluation: {friendlyStatus(storedEvidence.status)} ({text(storedEvidence.passed_core_dimension_count ?? 0)} of 4 required dimensions).</p> : null}

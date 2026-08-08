@@ -800,6 +800,139 @@ def retrieve_approved_knowledge(
     }
 
 
+def retrieve_approved_expression_guidance(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Select approved communication lessons as expression support, never answer text.
+
+    Historical teaching packets can contain useful conversational structure, but
+    their wording must not become a script.  This handoff exposes only the
+    approved resource identity, its bounded principle, limits, and provenance to
+    NLO/Voice when the current conversational posture actually fits.
+    """
+
+    payload = payload or {}
+    posture = str(payload.get("expression_posture") or "ordinary_attentive")
+    intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
+    intent_name = str(intent.get("intent") or "")
+    rows = conn.execute(
+        """
+        SELECT * FROM selene_comprehension_concepts
+        WHERE state = 'approved_knowledge_resource'
+          AND review_status = 'approved_for_knowledge_use'
+          AND chat_use_permission = 'available_as_knowledge_resource'
+          AND domain LIKE 'communication.%'
+        ORDER BY updated_at DESC, id DESC
+        """
+    ).fetchall()
+    selected: list[dict[str, Any]] = []
+    for row in rows:
+        item = _decode_concept(row)
+        item_payload = item.get("payload") if isinstance(item.get("payload"), dict) else {}
+        source_metadata = (
+            item_payload.get("source_metadata")
+            if isinstance(item_payload.get("source_metadata"), dict)
+            else {}
+        )
+        if str(item_payload.get("teaching_source_type") or "") != "accepted_b_teaching_packet":
+            continue
+        speech_function = str(
+            source_metadata.get("speech_function")
+            or str(item.get("domain") or "").removeprefix("communication.")
+        ).strip()
+        if not _expression_resource_applies(speech_function, posture, intent_name):
+            continue
+        selected.append(
+            {
+                "concept_id": int(item["id"]),
+                "concept_key": str(item.get("concept_key") or ""),
+                "title": str(item.get("title") or ""),
+                "speech_function": speech_function,
+                "guidance_principle": str(item.get("central_claim") or ""),
+                "limits": [str(value) for value in item.get("limits") or []][:6],
+                "source_refs": [str(value) for value in item.get("source_refs") or []][:40],
+                "retention_state": str(item.get("retention_state") or ""),
+                "review_status": str(item.get("review_status") or ""),
+            }
+        )
+        if len(selected) >= 4:
+            break
+    return _with_guards(
+        {
+            "status": (
+                "approved_expression_guidance_available"
+                if selected
+                else "no_applicable_approved_expression_guidance"
+            ),
+            "available": bool(selected),
+            "expression_posture": posture,
+            "intent": intent_name,
+            "resources": selected,
+            "resource_ids": [item["concept_id"] for item in selected],
+            "speech_functions": list(
+                dict.fromkeys(item["speech_function"] for item in selected)
+            ),
+            "source_refs": list(
+                dict.fromkeys(
+                    ref for item in selected for ref in item.get("source_refs") or []
+                )
+            )[:50],
+            "expression_only": True,
+            "source_wording_may_be_used_as_script": False,
+            "changes_supported_meaning": False,
+            "changes_personality": False,
+            "changes_identity": False,
+            "creates_emotion_claim": False,
+            "profiles_user": False,
+            "voice_retains_expression_ownership": True,
+            "review_status": "status_only",
+            "provenance_boundary": COMPREHENSION_BOUNDARY,
+        }
+    )
+
+
+def _expression_resource_applies(
+    speech_function: str,
+    posture: str,
+    intent_name: str,
+) -> bool:
+    postures = {
+        "warmth": {
+            "warm_available",
+            "warm_focused",
+            "gentle_present",
+            "deliberate_agency",
+            "careful_boundary",
+        },
+        "playful_continuity": {"play_available"},
+        "repair": {"receptive_repair"},
+        "correction": {"receptive_repair"},
+        "boundary": {"careful_boundary"},
+        "technical_explanation": {"clear_direct", "warm_focused"},
+        "uncertainty": {"deliberate_agency", "spacious_grounded"},
+        "grounding": {"gentle_present", "spacious_grounded"},
+    }
+    intents = {
+        "warmth": {
+            "greeting",
+            "greet_presently",
+            "warm_connection",
+            "gratitude",
+            "receive_gratitude",
+            "reassurance_received",
+            "receive_reassurance",
+        },
+        "playful_continuity": {"playful_connection"},
+        "repair": {"correction", "receive_correction"},
+        "correction": {"correction", "receive_correction"},
+        "boundary": {"hard_boundary"},
+    }
+    return posture in postures.get(speech_function, set()) or intent_name in intents.get(
+        speech_function, set()
+    )
+
+
 def _answer_eligible_knowledge_items(
     prompt: str,
     intent: dict[str, Any],
@@ -1159,8 +1292,10 @@ def _prompt_observation_interpretation(prompt: str) -> str:
 
 
 def _is_language_guidance_concept(item: dict[str, Any]) -> bool:
+    domain = str(item.get("domain") or "")
     return (
-        str(item.get("domain") or "") == "language_and_conversation"
+        domain == "language_and_conversation"
+        or domain.startswith("communication.")
         or str(item.get("concept_key") or "").startswith("language_lesson:")
     )
 

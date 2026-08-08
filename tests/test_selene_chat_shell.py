@@ -1109,6 +1109,59 @@ def test_active_selene_chat_carries_current_session_expression_guidance_without_
     _assert_locked(result)
 
 
+def test_active_chat_hands_approved_warmth_resource_to_nlo_and_voice_without_scripting(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    cursor = conn.execute(
+        """
+        INSERT INTO selene_comprehension_concepts
+        (concept_key, title, domain, central_claim, principles_json,
+         relationships_json, examples_json, counterexamples_json, limits_json,
+         source_refs, provenance_boundary, confidence, retention_state,
+         chat_use_permission, correction_path, state, review_status, payload_json)
+        VALUES (?, ?, 'communication.warmth', ?, '[]', '[]', ?, '[]', ?, ?, ?,
+                'bounded', 'retained_reviewed_knowledge',
+                'available_as_knowledge_resource', 'Cocoon teaching review',
+                'approved_knowledge_resource', 'approved_for_knowledge_use', ?)
+        """,
+        (
+            "teaching_packet_warmth_chat_test",
+            "Warmth expression resource",
+            "Warmth may align expression with current context without mimicry.",
+            json.dumps(["Do not repeat this archived example."]),
+            json.dumps(["Do not use warmth to manipulate or replace evidence."]),
+            json.dumps(["packet:warmth", "source:reviewed"]),
+            "guided_understanding_only_not_personality_or_memory",
+            json.dumps(
+                {
+                    "teaching_source_type": "accepted_b_teaching_packet",
+                    "source_metadata": {"speech_function": "warmth"},
+                }
+            ),
+        ),
+    )
+    conn.commit()
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Good morning, my friend :)"},
+    )["result"]
+
+    guidance = result["affect_expression"]
+    approved = guidance["approved_expression_guidance"]
+    assert guidance["approved_expression_guidance_used"] is True
+    assert approved["resource_ids"] == [int(cursor.lastrowid)]
+    assert approved["expression_only"] is True
+    assert approved["source_wording_may_be_used_as_script"] is False
+    assert result["comprehension_integration"]["knowledge_response_seed"] == ""
+    assert result["native_language_organ"]["voice_handoff"]["expression_guidance"]["approved_expression_guidance"]["available"] is True
+    assert result["voice_preview"]["expression_guidance"]["approved_expression_guidance"]["available"] is True
+    assert "Do not repeat this archived example" not in result["candidate_text"]
+    _assert_locked(result)
+
+
 def test_active_selene_chat_uses_pragmatic_continuity_for_restraint_and_invited_ideas(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
