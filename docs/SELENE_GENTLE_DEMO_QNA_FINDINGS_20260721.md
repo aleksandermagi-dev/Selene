@@ -7,8 +7,8 @@ final stabilization, packaging, and local reinstall complete
 
 ## Purpose
 
-Validate the same ordinary supervised-Chat path Aleks may use in the hackathon
-video. This was not a broad voice grade or adversarial test. The executable Test
+Validate the same ordinary supervised-Chat path Aleks may use in a public
+demonstration. This was not a broad voice grade or adversarial test. The executable Test
 Impact Law authorized a small gentle integrated conversation only after the
 machinery suite and public-safe synthetic showcase had passed.
 

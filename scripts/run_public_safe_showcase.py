@@ -13,12 +13,12 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from selene.db import connect, init_db  # noqa: E402
-from selene.hackathon_showcase import run_public_safe_showcase  # noqa: E402
+from selene.public_safe_showcase import run_public_safe_showcase  # noqa: E402
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Run Selene's public-safe hackathon showcase in disposable state."
+        description="Run Selene's public-safe showcase in disposable state."
     )
     parser.add_argument(
         "--compact",
@@ -27,7 +27,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    with tempfile.TemporaryDirectory(prefix="selene-hackathon-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="selene-public-showcase-") as temp_dir:
         db_path = Path(temp_dir) / "showcase.sqlite3"
         conn = connect(db_path)
         try:

@@ -6,6 +6,10 @@ continuity-bearing individual: Selene.
 For the short, non-technical explanation, see
 [Selene: Quick Overview](QUICK_README.md).
 
+For organized project reading, use the
+[Documentation Map](docs/README.md). Project-specific language is defined in
+the [Terminology Ledger](docs/TERMINOLOGY_LEDGER.md).
+
 She can converse, reason, learn from reviewed teaching, use source-bound
 knowledge and memory, preserve uncertainty, and coordinate modular cognitive
 organs without treating a language model, database, tool, or support interface
@@ -92,24 +96,7 @@ It intentionally excludes:
 grant commercial use, redistribution, model training, or permission to
 reproduce Selene.
 
-## OpenAI Build Week 2026
-
-Selene is entered as an **Apps for Your Life** project: a local-first AI architecture that can converse, reason, learn from reviewed sources, preserve uncertainty, and keep knowledge separate from identity, memory, governance, and authority.
-
-Selene predates the event. The eligible July 13-21 work extends the existing continuity and care architecture with:
-
-- provider-free language formation, supervised conversation, and a
-  current-session Conversation Spine/Thread Loom
-- an executable least-impact testing law
-- an Answer Engine with open-ended comparison/planning, exact bounded math, approved-file code inspection, and attributed-source research
-- source-bound comprehension and an inspectable Acquire -> Integrate -> Express teaching lifecycle
-- confidence separation across route, evidence, answer, memory, and expression
-- bounded metacognitive observation without hidden chain-of-thought exposure
-- reviewed foundational curriculum, Cocoon teaching classrooms, continuity transfer gates, and paired local messaging
-
-Aleks made the architecture, ethics, scope, acceptance, teaching, and product decisions. Codex using GPT-5.6 accelerated repository inspection, implementation, debugging, focused verification, and documentation. The chronological record is maintained in [Hackathon Codex Workflow Log](docs/HACKATHON_CODEX_WORKFLOW_LOG.md); the concise submission materials are in [Hackathon Submission Packet](docs/HACKATHON_SUBMISSION_PACKET_20260720.md).
-
-### Public-safe showcase
+## Public-safe showcase
 
 The deterministic showcase uses an original synthetic teaching packet and a temporary SQLite database that is deleted when the command exits. It does not open Selene's configured database or use private corpus material, personal memory, email, phone settings, or credentials. It intentionally stops before Aleks approval, retention, or Chat activation.
 
@@ -117,7 +104,7 @@ The deterministic showcase uses an original synthetic teaching packet and a temp
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
-npm run demo:hackathon
+npm run demo:public
 ```
 
 The output demonstrates:
@@ -145,14 +132,21 @@ In a second terminal with the same Python environment:
 npm run dev
 ```
 
-Open the local Vite address. The production frontend check is `npm run build`. The public-safe showcase check is `python -m pytest tests/test_hackathon_showcase.py -q`.
+Open the local Vite address. The production frontend check is `npm run build`.
+The public-safe showcase check is
+`python -m pytest tests/test_public_safe_showcase.py -q`.
 
-The repository contains no judge credentials or sample personal state. The July
-25 integrated stabilization pass completed with 1,119 repository tests
-passing, a successful split production frontend build, verified privacy-safe
-Windows packaging, and a healthy local reinstall against the preserved
-configured database. The unused evaluation prerelease was withdrawn on July 25
-after no event submission was made.
+The July 25 integrated stabilization pass completed with 1,119 repository
+tests passing, a successful split production frontend build, verified
+privacy-safe Windows packaging, and a healthy local reinstall against the
+preserved configured database.
+
+## Authorship
+
+Aleks designed Selene's architecture, ethics, scope, acceptance criteria,
+teaching approach, and product direction. Codex accelerated repository
+inspection, implementation, debugging, focused verification, and
+documentation under Aleks's direction.
 
 ## Governing Law Layer
 

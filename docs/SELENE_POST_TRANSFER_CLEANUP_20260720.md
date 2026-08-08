@@ -84,8 +84,7 @@ to remove working organs or safety evidence.
 - `exports/`, `output/`, `tmp/`, and `local-data/` without item-level review;
 - current tests and backend organs;
 - public-release artifacts;
-- Great Library or Vault material; and
-- `docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
+- Great Library or Vault material.
 
 No package, installer, reinstall, publication, memory mutation, teaching
 approval, identity change, or Great Library accession occurred during this

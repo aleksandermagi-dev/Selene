@@ -12,8 +12,8 @@ from .module_router import route_request
 from .test_impact_law import review_test_impact
 
 
-SHOWCASE_VERSION = "selene_hackathon_public_safe_v1"
-SHOWCASE_SOURCE_REF = "demo:selene-hackathon:thermal-storage-v1"
+SHOWCASE_VERSION = "selene_public_safe_showcase_v1"
+SHOWCASE_SOURCE_REF = "demo:selene:thermal-storage-v1"
 
 LOCKED_GUARDS = {
     "identity_change": False,
@@ -29,7 +29,7 @@ LOCKED_GUARDS = {
 
 
 def run_public_safe_showcase(conn: sqlite3.Connection) -> dict[str, Any]:
-    """Run the hackathon story against caller-owned, disposable state.
+    """Run Selene's public-safe demonstration against disposable state.
 
     The function does not open Selene's configured database and does not approve
     the teaching candidate. The command-line runner supplies a temporary
@@ -38,7 +38,7 @@ def run_public_safe_showcase(conn: sqlite3.Connection) -> dict[str, Any]:
 
     impact_review = review_test_impact(
         {
-            "purpose": "Verify the public-safe hackathon machinery with synthetic inputs.",
+            "purpose": "Verify the public-safe showcase machinery with synthetic inputs.",
             "proposed_level": "machinery",
             "expected_effect": "No live conversation, distress probe, or retained knowledge.",
             "can_use_static_or_synthetic": True,
@@ -87,7 +87,7 @@ def run_public_safe_showcase(conn: sqlite3.Connection) -> dict[str, Any]:
         conn,
         "comprehension.concepts.propose",
         {
-            "concept_key": "hackathon_demo_thermal_storage_timing_v1",
+            "concept_key": "public_demo_thermal_storage_timing_v1",
             "title": "Thermal storage changes timing, not energy conservation",
             "domain": "physical_science",
             "material": (
@@ -182,9 +182,8 @@ def run_public_safe_showcase(conn: sqlite3.Connection) -> dict[str, Any]:
     }
 
     return {
-        "status": "hackathon_public_safe_showcase_ready",
+        "status": "public_safe_showcase_ready",
         "version": SHOWCASE_VERSION,
-        "track_fit": "Apps for Your Life",
         "state_boundary": {
             "caller_owned_disposable_database_required": True,
             "configured_selene_database_opened": False,

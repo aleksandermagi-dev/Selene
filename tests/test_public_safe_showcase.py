@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from selene.db import connect, init_db
-from selene.hackathon_showcase import LOCKED_GUARDS, run_public_safe_showcase
+from selene.public_safe_showcase import LOCKED_GUARDS, run_public_safe_showcase
 
 
 def test_public_safe_showcase_uses_disposable_state_and_stops_before_approval(tmp_path):
@@ -10,14 +10,14 @@ def test_public_safe_showcase_uses_disposable_state_and_stops_before_approval(tm
 
     result = run_public_safe_showcase(conn)
 
-    assert result["status"] == "hackathon_public_safe_showcase_ready"
+    assert result["status"] == "public_safe_showcase_ready"
     assert result["state_boundary"]["configured_selene_database_opened"] is False
     assert result["state_boundary"]["private_corpus_used"] is False
     assert result["ethical_test_review"]["stressful_test_necessary"] is False
     assert result["answer_engine"]["open_ended_problem"]["direct_answer"]
     assert result["answer_engine"]["verified_math"]["direct_answer"] == "18 * 7 = 126."
     assert result["answer_engine"]["source_backed_research"]["source_refs"] == [
-        "demo:selene-hackathon:thermal-storage-v1"
+        "demo:selene:thermal-storage-v1"
     ]
     assert result["teaching_lifecycle"]["stage_history"] == ["acquire", "integrate", "express"]
     assert result["teaching_lifecycle"]["approval_status"] == "awaiting_aleks_review"

@@ -182,7 +182,7 @@ Required repair direction:
 - duplicate route keys, API paths, schema items, UI tabs, speech functions,
   tracked source files, and core memory layers: 0
 - substantive Python modules unreachable from normal entry points: 1 intentional
-  standalone hackathon showcase module
+  standalone public-safe showcase module
 - frontend modules unreachable from the application entry point: 0
 - generated/rebuildable output found by dry-run cleanup: about 2.8 GB, almost all
   Rust target artifacts; no cleanup was applied

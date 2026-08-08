@@ -49,7 +49,7 @@ Today the same turn is interpreted independently by several modules:
 Each module is bounded, but small lexical disagreements can cascade. A shared
 turn-grounding packet makes those decisions compositional instead of coincidental.
 
-## Hackathon-Bounded Scope
+## Bounded Stabilization Scope
 
 ### Phase 1 — Shared Turn Grounding Packet
 
@@ -189,5 +189,5 @@ The stabilization is ready for the demo when:
 3. run the synthetic matrix;
 4. run copied-state checks;
 5. let Aleks conduct the single larger ordinary Q&A;
-6. freeze, verify, record, and submit;
-7. resume broader teaching only after the hackathon submission is secure.
+6. freeze, verify, and record the stabilized path;
+7. resume broader teaching only after the stabilization evidence is secure.
