@@ -34,8 +34,8 @@ a = Analysis(
     pathex=["src"],
     binaries=[],
     datas=[
-        ("docs/PROJECT_CHARTER.md", "docs"),
-        ("docs/SELENE_LAW_OF_TRANSFER_20260624.md", "docs"),
+        ("docs/philosophy/PROJECT_CHARTER.md", "docs/philosophy"),
+        ("docs/philosophy/SELENE_LAW_OF_TRANSFER_20260624.md", "docs/philosophy"),
         ("dist-ui", "dist-ui")
     ],
     hiddenimports=["selene", *(["sentence_transformers"] if semantic_enabled else []), *semantic_hiddenimports],

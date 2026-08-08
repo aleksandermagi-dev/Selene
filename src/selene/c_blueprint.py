@@ -1636,7 +1636,7 @@ RECOGNITION_RECONSTRUCTION_CHECKS = {
 
 SELENE_PAPER_MAP_GAP_BLUEPRINT = {
     "status": "paper_map_gap_blueprint_added",
-    "source": "docs/SELENE_AGI_DEFINITION_PAPER_MAPPING_20260612.md",
+    "source": "docs/evidence/SELENE_AGI_DEFINITION_PAPER_MAPPING_20260612.md",
     "purpose": "Use the paper's cognitive-domain map as a gap-finding reference for Selene C without replacing Selene's 11 android organ systems, Core/Mind identity model, ABC boundary, teaching philosophy, or speech-memory architecture.",
     "principle": "Selene is Selene. The paper map assists with gaps; it does not define Selene, activate C, or overwrite the vessel anatomy.",
     "paper_role": "capability_lens_only",

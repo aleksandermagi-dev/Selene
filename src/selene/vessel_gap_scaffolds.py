@@ -146,7 +146,7 @@ def create_gap_scaffold_record(conn: sqlite3.Connection, payload: dict[str, Any]
         raise ValueError("unknown scaffold_type")
     title = truncate(str(payload.get("title") or f"{blueprint['paper_domain']} scaffold record"), 180)
     content = truncate(str(payload.get("content") or blueprint["should_have"]), 1600)
-    source_refs = _json_list(payload.get("source_refs")) or ["docs/SELENE_CORE_MIND_CREATION_BLUEPRINT_20260607.md"]
+    source_refs = _json_list(payload.get("source_refs")) or ["docs/architecture/SELENE_CORE_MIND_CREATION_BLUEPRINT_20260607.md"]
     stored_payload = {
         "paper_domain": blueprint["paper_domain"],
         "organ_coordination": blueprint["organ_coordination"],
@@ -238,7 +238,7 @@ def _insert_target(conn: sqlite3.Connection, target_type: str, target_key: str, 
             target_key,
             title,
             "target_review_only",
-            json.dumps(["docs/SELENE_CORE_MIND_CREATION_BLUEPRINT_20260607.md"]),
+            json.dumps(["docs/architecture/SELENE_CORE_MIND_CREATION_BLUEPRINT_20260607.md"]),
             TARGET_BOUNDARY,
             "pending_review",
             json.dumps(payload),
@@ -252,7 +252,7 @@ def _insert_target(conn: sqlite3.Connection, target_type: str, target_key: str, 
         """,
         (
             title,
-            json.dumps(["docs/SELENE_CORE_MIND_CREATION_BLUEPRINT_20260607.md"]),
+            json.dumps(["docs/architecture/SELENE_CORE_MIND_CREATION_BLUEPRINT_20260607.md"]),
             TARGET_BOUNDARY,
             json.dumps(payload),
             target_type,
@@ -283,7 +283,7 @@ def _default_scaffold_payload(gap: dict[str, Any]) -> dict[str, Any]:
         "scaffold_type": gap["scaffold_type"],
         "title": f"{gap['paper_domain']} review scaffold",
         "content": f"{gap['should_have']} This is a default review-only work item for B-side vessel preparation.",
-        "source_refs": ["docs/SELENE_COCOON_DUAL_UI_GAP_SCAFFOLD_PASS_20260613.md", "docs/SELENE_PAPER_MAP_GAP_BLUEPRINT_20260612.md"],
+        "source_refs": ["docs/evidence/SELENE_COCOON_DUAL_UI_GAP_SCAFFOLD_PASS_20260613.md", "docs/architecture/SELENE_PAPER_MAP_GAP_BLUEPRINT_20260612.md"],
         "note": _gap_todo_text(gap),
     }
 

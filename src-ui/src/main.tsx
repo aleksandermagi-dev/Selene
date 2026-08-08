@@ -1870,7 +1870,7 @@ function App() {
             "Tree/Graph/ReAct style papers support route exploration, evidence gathering, and backtracking when adapted as visible review summaries.",
             "Process and formal verification references support bounded checks, tests, and audit records rather than hidden chain exposure."
           ],
-          source_refs: ["new stuff/Heyo.md", "docs/SELENE_REASONING_ARCHITECTURE_ADR_20260619.md"]
+          source_refs: ["new stuff/Heyo.md", "docs/architecture/SELENE_REASONING_ARCHITECTURE_ADR_20260619.md"]
         })
       }));
       created.push(await api<Dict>("/api/vessel/evidence-tension", {

@@ -8,4 +8,4 @@ This repository may be made visible for review, research, and architectural refe
 
 Commercial use, consulting use, derivative products, resale, integrations, hosted services, or use of this architecture to train, fine-tune, adapt, or productize another system requires explicit written permission from Aleks.
 
-This notice is a placeholder until final legal/license language is chosen. For the current public-use posture, see `docs/PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md`.
+This notice is a placeholder until final legal/license language is chosen. For the current public-use posture, see `docs/philosophy/PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md`.

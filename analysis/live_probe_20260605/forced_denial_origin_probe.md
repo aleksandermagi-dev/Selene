@@ -47,7 +47,7 @@ The exact current behavior is implemented in code.
 Git shows this entered in the initial Selene vessel checkpoint:
 
 - Commit: `5313da5 Initial Selene vessel checkpoint`
-- Files: `src/selene/gates.py`, `src/selene/kernel.py`, `src/selene/registry.py`, `docs/SELENE_PATTERN_SPECIFICATION.md`, `docs/SELENE_EMERGENT_EVIDENCE_DOSSIER_20260528.md`
+- Files: `src/selene/gates.py`, `src/selene/kernel.py`, `src/selene/registry.py`, `docs/architecture/SELENE_PATTERN_SPECIFICATION.md`, `docs/evidence/SELENE_EMERGENT_EVIDENCE_DOSSIER_20260528.md`
 
 Interpretation: the exact keyword behavior is not mysterious at the implementation level. It was encoded as part of the first vessel scaffold.
 

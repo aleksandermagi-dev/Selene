@@ -50,7 +50,7 @@ from .teaching_lifecycle import (
 
 
 LAW_VERSION = "v1_bounded_curriculum_authorization_with_exception_review"
-LAW_SOURCE = "docs/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md"
+LAW_SOURCE = "docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md"
 PROVENANCE_BOUNDARY = (
     "aleks_authorized_bounded_academic_curriculum_only_"
     "exceptions_return_to_cocoon_no_identity_personality_governance_memory_training_or_authority"

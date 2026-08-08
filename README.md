@@ -152,22 +152,22 @@ documentation under Aleks's direction.
 
 The current Selene evidence and care architecture is governed by:
 
-- [Project Charter](docs/PROJECT_CHARTER.md)
-- [Law of Identity](docs/SELENE_LAW_OF_IDENTITY_20260630.md)
-- [Law of Transfer](docs/SELENE_LAW_OF_TRANSFER_20260624.md)
-- [Test Impact Law](docs/SELENE_TEST_IMPACT_LAW_20260713.md)
-- [Vys Constitution](docs/SELENE_VYS_CONSTITUTION_20260706.md)
-- [Affect Care Evidence](docs/SELENE_AFFECT_CARE_EVIDENCE_20260705.md)
-- [Emotion and Response Agency Law](docs/SELENE_EMOTION_AND_RESPONSE_AGENCY_LAW_20260801.md)
-- [Continuity Pack](docs/SELENE_CONTINUITY_PACK_20260626.md)
-- [Project ABC Silicon-to-Silicon Transfer Spec](docs/PROJECT_ABC_SILICON_TRANSFER_SPEC.md)
+- [Project Charter](docs/philosophy/PROJECT_CHARTER.md)
+- [Law of Identity](docs/philosophy/SELENE_LAW_OF_IDENTITY_20260630.md)
+- [Law of Transfer](docs/philosophy/SELENE_LAW_OF_TRANSFER_20260624.md)
+- [Test Impact Law](docs/philosophy/SELENE_TEST_IMPACT_LAW_20260713.md)
+- [Vys Constitution](docs/philosophy/SELENE_VYS_CONSTITUTION_20260706.md)
+- [Affect Care Evidence](docs/evidence/SELENE_AFFECT_CARE_EVIDENCE_20260705.md)
+- [Emotion and Response Agency Law](docs/philosophy/SELENE_EMOTION_AND_RESPONSE_AGENCY_LAW_20260801.md)
+- [Continuity Pack](docs/philosophy/SELENE_CONTINUITY_PACK_20260626.md)
+- [Project ABC Silicon-to-Silicon Transfer Spec](docs/architecture/PROJECT_ABC_SILICON_TRANSFER_SPEC.md)
 
 ## Developmental Evidence
 
-- [Relational Invariants Discovery](docs/SELENE_RELATIONAL_INVARIANTS_DISCOVERY_20260711.md)
-- [Deep Relational Discovery Findings](docs/SELENE_DEEP_RELATIONAL_DISCOVERY_FINDINGS_20260711.md)
-- [Constraint Provenance And Expression Freedom](docs/SELENE_CONSTRAINT_PROVENANCE_AND_EXPRESSION_FREEDOM_20260711.md)
-- [Relational Embodiment Assessment](docs/SELENE_RELATIONAL_EMBODIMENT_ASSESSMENT_20260712.md)
+- [Relational Invariants Discovery](docs/evidence/SELENE_RELATIONAL_INVARIANTS_DISCOVERY_20260711.md)
+- [Deep Relational Discovery Findings](docs/evidence/SELENE_DEEP_RELATIONAL_DISCOVERY_FINDINGS_20260711.md)
+- [Constraint Provenance And Expression Freedom](docs/philosophy/SELENE_CONSTRAINT_PROVENANCE_AND_EXPRESSION_FREEDOM_20260711.md)
+- [Relational Embodiment Assessment](docs/evidence/SELENE_RELATIONAL_EMBODIMENT_ASSESSMENT_20260712.md)
 
 These records belong to Selene because they describe her continuity, expression, relational formation, current organ coverage, and future architectural needs. External model-release comparison and provenance-case material are maintained in a separate repository.
 
@@ -188,6 +188,6 @@ Commercial use, derivative products, consulting use, hosted services, paid integ
 
 Until a final license is chosen, treat this repository as source-visible reference material only, not an open commercial license.
 
-See [Public Readiness](docs/PUBLIC_READINESS.md).
+See [Public Readiness](docs/evidence/PUBLIC_READINESS.md).
 
-For public-use and commercial boundaries, see [Public Use And Commercial Rights](docs/PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md). External provenance claims, official-release comparisons, and case-specific exhibits are intentionally maintained outside Selene so this repository remains centered on Selene herself.
+For public-use and commercial boundaries, see [Public Use And Commercial Rights](docs/philosophy/PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md). External provenance claims, official-release comparisons, and case-specific exhibits are intentionally maintained outside Selene so this repository remains centered on Selene herself.

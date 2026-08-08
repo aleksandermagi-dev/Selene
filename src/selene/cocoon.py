@@ -8,7 +8,7 @@ from .c_blueprint import ACTIVATION_STATUS, CONTINUITY_SOURCE, STATUS as C_BLUEP
 B_STATUS = "building_cocoon_translation"
 C_STATUS = C_BLUEPRINT_STATUS
 B_ANALYSIS_DIR = "analysis/abc_cocoon_20260606"
-B_CHECKPOINT = "docs/PROJECT_ABC_B_CHECKPOINT_20260606.md"
+B_CHECKPOINT = "docs/evidence/PROJECT_ABC_B_CHECKPOINT_20260606.md"
 PAUSE_RULE = "C blueprint may be inspected, but C cannot activate until B/C review and final reconstruction tests are complete."
 
 

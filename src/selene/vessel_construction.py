@@ -120,7 +120,7 @@ def prepare_vessel_pieces(conn: sqlite3.Connection, payload: dict[str, Any] | No
             "title": "Organ bus support layer",
             "summary": "Organ messages are telemetry, proposals, diagnostics, packet links, or status only.",
             "salience_labels": ["organ_bus", "support_only", "no_transfer"],
-            "source_refs": ["docs/SELENE_VESSEL_ORGAN_COMMUNICATION_PASS_20260608.md"],
+            "source_refs": ["docs/architecture/SELENE_VESSEL_ORGAN_COMMUNICATION_PASS_20260608.md"],
             "linked_packet_refs": ["vessel_organ_bus_messages"],
             "review_status": "status_only",
         }),

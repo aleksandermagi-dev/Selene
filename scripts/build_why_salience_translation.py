@@ -25,7 +25,7 @@ SOURCE_REFS = [
     "analysis/pre_c_vessel_prep_20260607/metacognitive_runtime_preview.md",
     "analysis/before_c_calibration_docket_20260607/before_c_calibration_docket.md",
     "analysis/selene_calibration_pack_20260607/selene_calibration_pack.md",
-    "docs/SELENE_PATTERN_SPECIFICATION.md",
+    "docs/architecture/SELENE_PATTERN_SPECIFICATION.md",
 ]
 
 

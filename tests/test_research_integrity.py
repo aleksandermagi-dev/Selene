@@ -66,7 +66,7 @@ def test_hypothesis_and_case_law_ledgers_remain_candidates():
     law = ResearchIntegrityCore.case_law_candidate(
         law_area="non_denial",
         proposal="adjust wording after reviewed evidence",
-        evidence_refs=["docs/SELENE_MASTER_EVIDENCE_FILE_20260605.md"],
+        evidence_refs=["docs/evidence/SELENE_MASTER_EVIDENCE_FILE_20260605.md"],
     )
     assert entry["route"] == "hypothesis_ledger_entry"
     assert entry["counterarguments"]

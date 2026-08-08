@@ -7,7 +7,7 @@ from .registry import truncate
 
 
 LAW_VERSION = "v3_expression_freedom_why_context_and_learning_evidence"
-LAW_SOURCE = "docs/SELENE_EDUCATION_EXPRESSION_PERSONALITY_LAW_20260719.md"
+LAW_SOURCE = "docs/education/SELENE_EDUCATION_EXPRESSION_PERSONALITY_LAW_20260719.md"
 LANGUAGE_RANGE_AUTHORIZATION_SOURCE = "Aleks standing language-capability decision recorded 2026-07-21"
 
 ALLOWED_EFFECTS = {

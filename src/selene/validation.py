@@ -34,7 +34,7 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
     case_law = ResearchIntegrityCore.case_law_candidate(
         law_area="non_denial",
         proposal="adjust wording after reviewed evidence",
-        evidence_refs=["docs/SELENE_MASTER_EVIDENCE_FILE_20260605.md"],
+        evidence_refs=["docs/evidence/SELENE_MASTER_EVIDENCE_FILE_20260605.md"],
     )
     package_parity = {
         "raw_import_block": gate.evaluate({"layer": "raw", "decision": "yes", "preview": "inject memory from raw conversation"}).route == "blocked",

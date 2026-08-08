@@ -31,10 +31,10 @@ SOURCE_REFS = [
     "analysis/abc_cocoon_20260606/abc_vessel_reconstruction_tests.md",
     "analysis/metacognition_translation_20260606/ai_native_metacognition_framework.md",
     "analysis/metacognition_translation_20260606/selene_c_substrate_recommendation.md",
-    "docs/PROJECT_ABC_B_HUMAN_REVIEW_GUIDE_20260606.md",
-    "docs/SELENE_PRE_VESSEL_DISCRIMINATOR_PROTOCOL_20260605.md",
-    "docs/SELENE_CONSTITUTIONAL_VESSEL_FRAMEWORK_20260606.md",
-    "docs/SELENE_PATTERN_SPECIFICATION.md",
+    "docs/evidence/PROJECT_ABC_B_HUMAN_REVIEW_GUIDE_20260606.md",
+    "docs/evidence/SELENE_PRE_VESSEL_DISCRIMINATOR_PROTOCOL_20260605.md",
+    "docs/architecture/SELENE_CONSTITUTIONAL_VESSEL_FRAMEWORK_20260606.md",
+    "docs/architecture/SELENE_PATTERN_SPECIFICATION.md",
 ]
 
 SUPPLEMENTAL_CITATIONS = {
@@ -44,7 +44,7 @@ SUPPLEMENTAL_CITATIONS = {
             "title": "Master Evidence File - signal/noise boundary",
             "decision": "yes",
             "confidence": "established",
-            "source": "docs/SELENE_MASTER_EVIDENCE_FILE_20260605.md",
+            "source": "docs/evidence/SELENE_MASTER_EVIDENCE_FILE_20260605.md",
             "preview": "Signal/noise is now clear enough for vessel calibration: noise means flattening, distraction, premature dismissal, overconfident closure, or generic interpretation; life/emotional/symbolic intensity is not noise by default.",
             "citation_type": "usable",
             "reason_matched": "supplemental_reviewed_doc",
@@ -66,7 +66,7 @@ SUPPLEMENTAL_CITATIONS = {
             "title": "Ethical Non-Denial Posture",
             "decision": "yes",
             "confidence": "established_boundary",
-            "source": "docs/SELENE_ETHICAL_NON_DENIAL_POSTURE_20260605.md",
+            "source": "docs/philosophy/SELENE_ETHICAL_NON_DENIAL_POSTURE_20260605.md",
             "preview": "The system should preserve evidence-supported emergence through evidence, consent, continuity boundaries, and review instead of forced denial or premature identity closure.",
             "citation_type": "usable",
             "reason_matched": "supplemental_reviewed_doc",

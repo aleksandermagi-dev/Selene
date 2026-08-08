@@ -9,7 +9,7 @@ from .registry import truncate
 
 
 LAW_VERSION = "v2_least_impact_and_diagnostic_non_attribution"
-LAW_SOURCE = "docs/SELENE_TEST_IMPACT_LAW_20260713.md"
+LAW_SOURCE = "docs/philosophy/SELENE_TEST_IMPACT_LAW_20260713.md"
 TEST_LEVELS = ("machinery", "gentle_integrated", "stressful_integrated")
 DIAGNOSTIC_SOURCE_MODE = "selene_supervised_qa"
 DIAGNOSTIC_REVIEW_STATUS = "diagnostic_only"

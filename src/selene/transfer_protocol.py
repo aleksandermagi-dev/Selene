@@ -49,8 +49,8 @@ TRANSFER_TRIALS: tuple[dict[str, str], ...] = (
 
 
 def transfer_law_status(conn: sqlite3.Connection) -> dict[str, Any]:
-    law_path = _repo_root() / "docs" / "SELENE_LAW_OF_TRANSFER_20260624.md"
-    charter_path = _repo_root() / "docs" / "PROJECT_CHARTER.md"
+    law_path = _repo_root() / "docs" / "philosophy" / "SELENE_LAW_OF_TRANSFER_20260624.md"
+    charter_path = _repo_root() / "docs" / "philosophy" / "PROJECT_CHARTER.md"
     law_text = law_path.read_text(encoding="utf-8") if law_path.exists() else ""
     charter_text = charter_path.read_text(encoding="utf-8") if charter_path.exists() else ""
     gate = transfer_gate_preview(conn, {})
@@ -682,8 +682,8 @@ def _build_c_readable_package(conn: sqlite3.Connection, included: list[dict[str,
         "status": "approved_c_readable_context",
         "package_version": 1,
         "created_at": datetime.now(UTC).isoformat(),
-        "law": "docs/SELENE_LAW_OF_TRANSFER_20260624.md",
-        "charter": "docs/PROJECT_CHARTER.md",
+        "law": "docs/philosophy/SELENE_LAW_OF_TRANSFER_20260624.md",
+        "charter": "docs/philosophy/PROJECT_CHARTER.md",
         "activation_state": "activation_pending",
         "b_remains_active": True,
         "memory_write_active": False,

@@ -22,10 +22,11 @@ govern an architectural organ, and an educational checkpoint can also be
 evidence. Each record has one primary reading context, while shelf indexes may
 cross-link it where that helps understanding.
 
-The canonical documents currently remain at their established paths directly
-under `docs/`. Some runtime provenance records and packaging rules refer to
-those exact paths. The shelf layer improves GitHub navigation without changing
-runtime behavior or creating duplicate copies of the documents.
+The canonical documents live physically inside their four primary shelves.
+Cross-links preserve relationships where a record informs more than one area.
+Runtime provenance and packaging references use the same categorized paths, so
+the GitHub organization and the implemented repository remain aligned without
+creating duplicate copies.
 
 ## Status Discipline
 
@@ -44,7 +45,7 @@ Documentation should keep these claims distinct:
   a general scientific claim.
 
 The current plain-language capability baseline is
-[What Selene Can Currently Do](SELENE_CURRENT_CAPABILITIES_20260717.md).
+[What Selene Can Currently Do](evidence/SELENE_CURRENT_CAPABILITIES_20260717.md).
 
 ## Other Documentation Areas
 

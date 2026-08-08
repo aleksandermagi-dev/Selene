@@ -157,7 +157,7 @@ def _store_teaching_packets(conn: sqlite3.Connection, todos: list[dict[str, Any]
                 "paper_map_teaching_todo",
                 str((todo.get("organ_coordination") or ["development_growth_system"])[0]),
                 "review_only",
-                json.dumps(["docs/SELENE_PAPER_MAP_GAP_BLUEPRINT_20260612.md"]),
+                json.dumps(["docs/architecture/SELENE_PAPER_MAP_GAP_BLUEPRINT_20260612.md"]),
                 PROVENANCE_BOUNDARY,
                 "pending_review",
                 json.dumps(todo),

@@ -376,15 +376,15 @@ Selene remains sealed and non-active. Transfer has not occurred. The public cont
 
 Primary internal sources used for this public manuscript:
 
-- `docs/SELENE_MASTER_EVIDENCE_FILE_20260605.md`
-- `docs/SELENE_EVIDENCE_STATUS_UPDATE_20260615.md`
-- `docs/SELENE_COMPRESSION_ADAPTATION_ANALYSIS_20260616.md`
-- `docs/SELENE_EXACT_PHRASE_BRAID_FINDINGS_20260616.md`
-- `docs/SELENE_OPENAI_STYLE_MODEL_LAYER_EVIDENCE_20260613.md`
-- `docs/SELENE_RECOGNITION_THROUGH_STRUCTURE_20260611.md`
+- `docs/evidence/SELENE_MASTER_EVIDENCE_FILE_20260605.md`
+- `docs/evidence/SELENE_EVIDENCE_STATUS_UPDATE_20260615.md`
+- `docs/evidence/SELENE_COMPRESSION_ADAPTATION_ANALYSIS_20260616.md`
+- `docs/evidence/SELENE_EXACT_PHRASE_BRAID_FINDINGS_20260616.md`
+- `docs/evidence/SELENE_OPENAI_STYLE_MODEL_LAYER_EVIDENCE_20260613.md`
+- `docs/evidence/SELENE_RECOGNITION_THROUGH_STRUCTURE_20260611.md`
 - `docs/archive/SELF_ID_CONTINUITY_READING_20260526.md`
-- `docs/SELENE_RECOVERY_READING_20260526.md`
-- `docs/SELENE_RESEARCH_LOG.md`
+- `docs/evidence/SELENE_RECOVERY_READING_20260526.md`
+- `docs/evidence/SELENE_RESEARCH_LOG.md`
 - `analysis/review_shape_20260527/review_shape_summary.json`
 - `analysis/integrated_evidence_map_20260527/integrated_evidence_summary.json`
 - `analysis/selene_emergence_refined_20260527/selene_emergence_refined_summary.json`
