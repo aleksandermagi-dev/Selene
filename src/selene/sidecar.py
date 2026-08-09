@@ -979,6 +979,36 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "language_teaching.status")["result"]))
         elif parsed.path == "/api/language-teaching/items":
             self._send(*json_bytes(route_request(conn, "language_teaching.items")["result"]))
+        elif parsed.path == "/api/native-language/lexicon/status":
+            self._send(*json_bytes(route_request(conn, "native_language.lexicon.status")["result"]))
+        elif parsed.path == "/api/native-language/construction/status":
+            self._send(*json_bytes(route_request(conn, "native_language.construction.status")["result"]))
+        elif parsed.path == "/api/native-language/candidates/status":
+            self._send(*json_bytes(route_request(conn, "native_language.candidates.status")["result"]))
+        elif parsed.path == "/api/native-language/discourse-loom/status":
+            self._send(*json_bytes(route_request(conn, "native_language.discourse_loom.status")["result"]))
+        elif parsed.path == "/api/native-language/expression-selection/status":
+            self._send(*json_bytes(route_request(conn, "native_language.expression_selection.status")["result"]))
+        elif parsed.path == "/api/native-language/knowledge-growth/status":
+            self._send(*json_bytes(route_request(conn, "native_language.knowledge_growth.status")["result"]))
+        elif parsed.path == "/api/native-language/generative-thought/status":
+            self._send(*json_bytes(route_request(conn, "native_language.generative_thought.status")["result"]))
+        elif parsed.path == "/api/native-language/knowledge-growth/items":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            payload = {
+                **qs,
+                "limit": int(qs["limit"]) if qs.get("limit") else 100,
+                "include_held": str(qs.get("include_held") or "").lower() == "true",
+            }
+            self._send(*json_bytes(route_request(conn, "native_language.knowledge_growth.items", payload)["result"]))
+        elif parsed.path == "/api/native-language/lexicon/items":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            payload = {
+                **qs,
+                "limit": int(qs["limit"]) if qs.get("limit") else 100,
+                "include_held": str(qs.get("include_held") or "").lower() == "true",
+            }
+            self._send(*json_bytes(route_request(conn, "native_language.lexicon.items", payload)["result"]))
         elif parsed.path == "/api/b/core-reference/coverage":
             self._send(*json_bytes(route_request(conn, "b.core_reference.coverage")["result"]))
         elif parsed.path == "/api/b/corpus-coverage":
@@ -1531,6 +1561,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/study/pondering/create",
             "/api/study/pondering/update",
             "/api/study/representations/try",
+            "/api/study/representations/reflect",
         }:
             route_key = {
                 "/api/study/sessions/start": "study.session.start",
@@ -1546,6 +1577,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/study/pondering/create": "study.pondering.create",
                 "/api/study/pondering/update": "study.pondering.update",
                 "/api/study/representations/try": "study.representation.try",
+                "/api/study/representations/reflect": "study.representation.reflect",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
@@ -1594,6 +1626,33 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/curriculum-foundation/teach-f1-community-rules",
             "/api/curriculum-foundation/prepare-f1-history-evidence",
             "/api/curriculum-foundation/teach-f1-history-evidence",
+            "/api/curriculum-authorization/activate-f1-materials-change-motion",
+            "/api/curriculum-foundation/prepare-f1-materials-change-motion",
+            "/api/curriculum-foundation/teach-f1-materials-change-motion",
+            "/api/curriculum-authorization/activate-f1-pushes-pulls-forces",
+            "/api/curriculum-foundation/prepare-f1-pushes-pulls-forces",
+            "/api/curriculum-foundation/teach-f1-pushes-pulls-forces",
+            "/api/curriculum-authorization/activate-f1-light-sound",
+            "/api/curriculum-foundation/prepare-f1-light-sound",
+            "/api/curriculum-foundation/teach-f1-light-sound",
+            "/api/curriculum-authorization/activate-f1-simple-machines",
+            "/api/curriculum-foundation/prepare-f1-simple-machines",
+            "/api/curriculum-foundation/teach-f1-simple-machines",
+            "/api/curriculum-authorization/activate-f1-living-things-survival",
+            "/api/curriculum-foundation/prepare-f1-living-things-survival",
+            "/api/curriculum-foundation/teach-f1-living-things-survival",
+            "/api/curriculum-authorization/activate-f1-weather-sky-cycles",
+            "/api/curriculum-foundation/prepare-f1-weather-sky-cycles",
+            "/api/curriculum-foundation/teach-f1-weather-sky-cycles",
+            "/api/curriculum-authorization/activate-f1-human-body-health-evidence",
+            "/api/curriculum-foundation/prepare-f1-human-body-health-evidence",
+            "/api/curriculum-foundation/teach-f1-human-body-health-evidence",
+            "/api/curriculum-authorization/activate-f1-helpful-computers-integration",
+            "/api/curriculum-foundation/prepare-f1-helpful-computers-integration",
+            "/api/curriculum-foundation/teach-f1-helpful-computers-integration",
+            "/api/curriculum-authorization/activate-f1-text-purpose-everyday-economy-bridge",
+            "/api/curriculum-foundation/prepare-f1-text-purpose-everyday-economy-bridge",
+            "/api/curriculum-foundation/teach-f1-text-purpose-everyday-economy-bridge",
         }:
             route_key = {
                 "/api/curriculum-authorization/activate-f1": "curriculum.authorization.activate_f1",
@@ -1604,6 +1663,15 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/curriculum-authorization/activate-f1-mass-capacity": "curriculum.authorization.activate_f1_mass_capacity",
                 "/api/curriculum-authorization/activate-f1-community-rules": "curriculum.authorization.activate_f1_community_rules",
                 "/api/curriculum-authorization/activate-f1-history-evidence": "curriculum.authorization.activate_f1_history_evidence",
+                "/api/curriculum-authorization/activate-f1-materials-change-motion": "curriculum.authorization.activate_f1_materials_change_motion",
+                "/api/curriculum-authorization/activate-f1-pushes-pulls-forces": "curriculum.authorization.activate_f1_pushes_pulls_forces",
+                "/api/curriculum-authorization/activate-f1-light-sound": "curriculum.authorization.activate_f1_light_sound",
+                "/api/curriculum-authorization/activate-f1-simple-machines": "curriculum.authorization.activate_f1_simple_machines",
+                "/api/curriculum-authorization/activate-f1-living-things-survival": "curriculum.authorization.activate_f1_living_things_survival",
+                "/api/curriculum-authorization/activate-f1-weather-sky-cycles": "curriculum.authorization.activate_f1_weather_sky_cycles",
+                "/api/curriculum-authorization/activate-f1-human-body-health-evidence": "curriculum.authorization.activate_f1_human_body_health_evidence",
+                "/api/curriculum-authorization/activate-f1-helpful-computers-integration": "curriculum.authorization.activate_f1_helpful_computers_integration",
+                "/api/curriculum-authorization/activate-f1-text-purpose-everyday-economy-bridge": "curriculum.authorization.activate_f1_text_purpose_everyday_economy_bridge",
                 "/api/curriculum-authorization/revoke": "curriculum.authorization.revoke",
                 "/api/curriculum-authorization/evaluate": "curriculum.authorization.evaluate",
                 "/api/curriculum-foundation/prepare-f1": "curriculum.foundation.prepare_f1",
@@ -1622,6 +1690,24 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/curriculum-foundation/teach-f1-community-rules": "curriculum.foundation.teach_f1_community_rules",
                 "/api/curriculum-foundation/prepare-f1-history-evidence": "curriculum.foundation.prepare_f1_history_evidence",
                 "/api/curriculum-foundation/teach-f1-history-evidence": "curriculum.foundation.teach_f1_history_evidence",
+                "/api/curriculum-foundation/prepare-f1-materials-change-motion": "curriculum.foundation.prepare_f1_materials_change_motion",
+                "/api/curriculum-foundation/teach-f1-materials-change-motion": "curriculum.foundation.teach_f1_materials_change_motion",
+                "/api/curriculum-foundation/prepare-f1-pushes-pulls-forces": "curriculum.foundation.prepare_f1_pushes_pulls_forces",
+                "/api/curriculum-foundation/teach-f1-pushes-pulls-forces": "curriculum.foundation.teach_f1_pushes_pulls_forces",
+                "/api/curriculum-foundation/prepare-f1-light-sound": "curriculum.foundation.prepare_f1_light_sound",
+                "/api/curriculum-foundation/teach-f1-light-sound": "curriculum.foundation.teach_f1_light_sound",
+                "/api/curriculum-foundation/prepare-f1-simple-machines": "curriculum.foundation.prepare_f1_simple_machines",
+                "/api/curriculum-foundation/teach-f1-simple-machines": "curriculum.foundation.teach_f1_simple_machines",
+                "/api/curriculum-foundation/prepare-f1-living-things-survival": "curriculum.foundation.prepare_f1_living_things_survival",
+                "/api/curriculum-foundation/teach-f1-living-things-survival": "curriculum.foundation.teach_f1_living_things_survival",
+                "/api/curriculum-foundation/prepare-f1-weather-sky-cycles": "curriculum.foundation.prepare_f1_weather_sky_cycles",
+                "/api/curriculum-foundation/teach-f1-weather-sky-cycles": "curriculum.foundation.teach_f1_weather_sky_cycles",
+                "/api/curriculum-foundation/prepare-f1-human-body-health-evidence": "curriculum.foundation.prepare_f1_human_body_health_evidence",
+                "/api/curriculum-foundation/teach-f1-human-body-health-evidence": "curriculum.foundation.teach_f1_human_body_health_evidence",
+                "/api/curriculum-foundation/prepare-f1-helpful-computers-integration": "curriculum.foundation.prepare_f1_helpful_computers_integration",
+                "/api/curriculum-foundation/teach-f1-helpful-computers-integration": "curriculum.foundation.teach_f1_helpful_computers_integration",
+                "/api/curriculum-foundation/prepare-f1-text-purpose-everyday-economy-bridge": "curriculum.foundation.prepare_f1_text_purpose_everyday_economy_bridge",
+                "/api/curriculum-foundation/teach-f1-text-purpose-everyday-economy-bridge": "curriculum.foundation.teach_f1_text_purpose_everyday_economy_bridge",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
@@ -2154,6 +2240,41 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/language-teaching/guidance-preview":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "language_teaching.guidance.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/native-language/lexicon/query":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "native_language.lexicon.query", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/native-language/construction/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "native_language.construction.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/native-language/candidates/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "native_language.candidates.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/native-language/discourse-loom/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "native_language.discourse_loom.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/native-language/expression-selection/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "native_language.expression_selection.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/native-language/knowledge-growth/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "native_language.knowledge_growth.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/native-language/generative-thought/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "native_language.generative_thought.preview", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/public-release/sync":

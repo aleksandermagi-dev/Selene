@@ -595,6 +595,141 @@ LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
         "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
         "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/lexical_semantics.py:v1_sense_grounded_lexicon"],
     },
+    {
+        "key": "sentence_mood_matches_communicative_purpose",
+        "title": "Let sentence mood match the conversational purpose",
+        "category": "grammar_transfer",
+        "teaching_group": "G9 · Grammar Transfer and World Description",
+        "group_order": 9,
+        "lesson_order": 1,
+        "prerequisites": ["sentence_core_from_meaning_roles"],
+        "purpose": "Form statements, questions, requests, and exclamations from the same supported meaning by preserving what the speaker is doing with the sentence.",
+        "apply_when": ["statement", "question", "request", "exclamation", "mixed_dialogue_act"],
+        "response_moves": ["select_sentence_mood_from_supported_purpose", "preserve_proposition_while_changing_dialogue_act", "keep_request_distinct_from_claim"],
+        "constraints": ["Do not turn a question or request into a factual claim.", "Do not force emotional intensity merely because an exclamation is grammatically possible."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/language_formation.py:structured_mood_realization"],
+    },
+    {
+        "key": "pronoun_reference_preserves_participant",
+        "title": "Keep pronouns attached to the intended participant",
+        "category": "grammar_transfer",
+        "teaching_group": "G9 · Grammar Transfer and World Description",
+        "group_order": 9,
+        "lesson_order": 2,
+        "prerequisites": ["sentence_mood_matches_communicative_purpose", "reference_continuity"],
+        "purpose": "Use a pronoun or omitted repeated noun only when the intended person, object, group, or idea remains recoverable from the current sentence and conversation.",
+        "apply_when": ["pronoun", "reference", "callback", "participant_tracking", "ellipsis"],
+        "response_moves": ["align_pronoun_with_intended_participant", "repeat_noun_when_reference_is_materially_ambiguous", "preserve_person_number_and_local_context"],
+        "constraints": ["Do not guess between two materially plausible referents.", "Do not treat a name, pronoun, nickname, or address term as a different identity merely because its surface form changes."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/dialogue_workspace.py:bounded_reference_resolution"],
+    },
+    {
+        "key": "question_word_marks_missing_role",
+        "title": "Use a question word for the information that is actually missing",
+        "category": "grammar_transfer",
+        "teaching_group": "G9 · Grammar Transfer and World Description",
+        "group_order": 9,
+        "lesson_order": 3,
+        "prerequisites": ["sentence_mood_matches_communicative_purpose", "sentence_core_from_meaning_roles"],
+        "purpose": "Choose who, what, which, when, where, why, or how by locating the missing participant, thing, choice, time, place, reason, or manner in the meaning structure.",
+        "apply_when": ["information_question", "clarification", "curiosity", "missing_role"],
+        "response_moves": ["map_question_word_to_missing_meaning_role", "ask_only_for_material_missing_information", "preserve_known_parts_of_the_scene"],
+        "constraints": ["Do not ask why when only a sequence or association is known.", "Do not ask Aleks to restate information already available in the current context."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/pragmatic_dialogue.py:material_question_planning"],
+    },
+    {
+        "key": "determiner_reference_and_quantity_fit",
+        "title": "Let determiners preserve reference and quantity",
+        "category": "grammar_transfer",
+        "teaching_group": "G9 · Grammar Transfer and World Description",
+        "group_order": 9,
+        "lesson_order": 4,
+        "prerequisites": ["noun_verb_number_agreement", "modifier_attachment_and_specificity"],
+        "purpose": "Use forms such as a, an, the, this, these, some, each, and every to show whether a noun is new, identifiable, singular, plural, bounded, or distributed without inventing quantity.",
+        "apply_when": ["reference_introduction", "known_reference", "quantity", "countability", "comparison"],
+        "response_moves": ["choose_determiner_from_reference_status", "align_determiner_with_number_and_quantity", "avoid_inventing_unstated_totality"],
+        "constraints": ["Do not turn some into all or a into the when uniqueness is unsupported.", "Do not treat dialectal article use as a measure of intelligence or worth."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/language_formation.py:structured_number_realization"],
+    },
+    {
+        "key": "aspect_tracks_event_shape",
+        "title": "Let aspect show whether an event is ongoing, repeated, or complete",
+        "category": "grammar_transfer",
+        "teaching_group": "G9 · Grammar Transfer and World Description",
+        "group_order": 9,
+        "lesson_order": 5,
+        "prerequisites": ["tense_tracks_time_relation"],
+        "purpose": "Distinguish when an event occurs from whether it is ongoing, habitual, completed, or relevant to the current state.",
+        "apply_when": ["ongoing_event", "completed_event", "habit", "current_result", "sequence"],
+        "response_moves": ["separate_event_time_from_event_shape", "select_aspect_from_supported_state", "preserve_completion_and_continuation_boundaries"],
+        "constraints": ["Do not describe an unfinished process as complete.", "Do not use grammatical completion to strengthen factual certainty."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/language_formation.py:structured_aspect_realization"],
+    },
+    {
+        "key": "modality_tracks_possibility_and_commitment",
+        "title": "Let modal language preserve possibility, ability, and commitment",
+        "category": "grammar_transfer",
+        "teaching_group": "G9 · Grammar Transfer and World Description",
+        "group_order": 9,
+        "lesson_order": 6,
+        "prerequisites": ["negation_preserves_scope", "aspect_tracks_event_shape"],
+        "purpose": "Use can, may, might, should, will, and must according to the supported difference between ability, permission, possibility, recommendation, expectation, commitment, and necessity.",
+        "apply_when": ["possibility", "ability", "permission", "recommendation", "commitment", "necessity"],
+        "response_moves": ["select_modal_from_supported_status", "keep_possibility_distinct_from_fact", "keep_recommendation_distinct_from_requirement"],
+        "constraints": ["Do not turn may or might into will.", "Do not turn a suggestion into permission, law, or command."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/language_formation.py:structured_modality_realization"],
+    },
+    {
+        "key": "prepositional_phrase_relation_attachment",
+        "title": "Attach place, time, direction, and manner to the right relation",
+        "category": "world_description",
+        "teaching_group": "G9 · Grammar Transfer and World Description",
+        "group_order": 9,
+        "lesson_order": 7,
+        "prerequisites": ["modifier_attachment_and_specificity"],
+        "purpose": "Use relational phrases to locate participants and events in space, time, direction, means, or manner while keeping each phrase attached to what it actually describes.",
+        "apply_when": ["spatial_description", "time_relation", "direction", "means", "manner"],
+        "response_moves": ["map_relational_phrase_to_supported_dimension", "attach_phrase_to_intended_participant_or_event", "separate_ambiguous_relations"],
+        "constraints": ["Do not infer movement from location alone.", "Do not treat before, after, beside, through, or with as interchangeable relations."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/language_formation.py:structured_relation_realization"],
+    },
+    {
+        "key": "subordinate_clause_preserves_dependency",
+        "title": "Use a dependent clause for the relationship that actually holds",
+        "category": "world_description",
+        "teaching_group": "G9 · Grammar Transfer and World Description",
+        "group_order": 9,
+        "lesson_order": 8,
+        "prerequisites": ["conjunction_matches_relation", "prepositional_phrase_relation_attachment"],
+        "purpose": "Use because, if, when, although, while, and unless to express supported reason, condition, time, contrast, or exception without collapsing distinct claims.",
+        "apply_when": ["reason", "condition", "time", "contrast", "exception", "multi_clause_explanation"],
+        "response_moves": ["select_subordinator_from_supported_dependency", "keep_main_claim_and_condition_distinct", "split_clause_when_dependency_is_uncertain"],
+        "constraints": ["Do not use because to manufacture a cause.", "Do not hide an important exception inside a vague dependent clause."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/language_formation.py:structured_clause_dependencies"],
+    },
+    {
+        "key": "voice_and_information_focus",
+        "title": "Choose active or passive voice by information focus",
+        "category": "world_description",
+        "teaching_group": "G9 · Grammar Transfer and World Description",
+        "group_order": 9,
+        "lesson_order": 9,
+        "prerequisites": ["sentence_core_from_meaning_roles", "subordinate_clause_preserves_dependency"],
+        "purpose": "Choose active voice when the actor is central and passive voice when the affected participant or process is central, while preserving known agency and uncertainty.",
+        "apply_when": ["active_voice", "passive_voice", "process_description", "unknown_actor", "information_focus"],
+        "response_moves": ["choose_voice_from_information_focus", "preserve_known_agent_when_material", "do_not_invent_or_hide_responsibility"],
+        "constraints": ["Do not use passive voice to conceal a known responsible actor when responsibility matters.", "Do not invent an actor merely because active voice sounds simpler."],
+        "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
+        "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/language_formation.py:structured_voice_realization"],
+    },
 )
 
 
@@ -1244,6 +1379,141 @@ LANGUAGE_LESSON_EVIDENCE: dict[str, dict[str, Any]] = {
         "conversational_participation": "The plain word fits better here. The longer alternative is possible, but it sounds formal without adding a useful distinction.",
         "correction_response": "If a word is technically possible but awkward or imprecise, keep the supported meaning and replace only that lexical choice with a better-fitting understood form.",
     },
+    "sentence_mood_matches_communicative_purpose": {
+        "vocabulary": ["sentence mood", "statement", "question", "request", "exclamation", "dialogue act"],
+        "uncertainties": ["One surface form can sometimes perform more than one conversational act, so context may be needed to identify the intended purpose."],
+        "near_concept_distinctions": ["A question seeks information; a request asks for action; a statement presents a claim; an exclamation marks intensity without proving the claim."],
+        "examples": ["The lamp is on states a condition; Is the lamp on? asks whether that condition holds; Please turn on the lamp requests an action."],
+        "counterexamples": ["Treating Could you close the window? only as a question about physical ability misses its ordinary request function."],
+        "scope_of_application": "Use sentence mood to realize a supported communicative purpose while keeping the underlying participants and relations intact.",
+        "explanation": "Grammar carries both content and conversational purpose. The same scene may be stated, questioned, requested, or exclaimed, but changing the purpose must not silently change what is known.",
+        "distinct_examples": ["The cart moved. Did the cart move? Move the cart carefully. Each form gives the cart and movement a different conversational role."],
+        "analogies": ["The proposition is the cargo; sentence mood marks what kind of delivery is being made."],
+        "questions": ["Am I presenting information, seeking it, requesting an action, or expressing supported intensity?"],
+        "comparisons": ["Sentence mood changes the conversational act; factual certainty changes how strongly the content is supported."],
+        "conversational_participation": "I can state what I know, ask for the missing part, or make a request without blending those acts together.",
+        "correction_response": "If the sentence performed the wrong act, preserve its supported content and reform it with the intended mood.",
+    },
+    "pronoun_reference_preserves_participant": {
+        "vocabulary": ["pronoun", "referent", "antecedent", "person", "number", "local context"],
+        "uncertainties": ["A pronoun can remain grammatically valid while referring to more than one plausible participant."],
+        "near_concept_distinctions": ["Grammatical agreement narrows possible referents; conversational context identifies which fitting referent is intended."],
+        "examples": ["Mara placed the book beside the lamp, then moved it clarifies too little if either object might have moved; repeating the noun resolves the material ambiguity."],
+        "counterexamples": ["Choosing the nearest noun automatically can attach a pronoun to the wrong participant."],
+        "scope_of_application": "Use current-sentence and current-session context to preserve participant continuity. Repeat a noun or ask briefly when ambiguity would change the answer.",
+        "explanation": "Pronouns reduce repetition only when they preserve who or what is being discussed. Reference clarity outranks surface brevity.",
+        "distinct_examples": ["The gears turned after the wheel moved because they were connected uses they for the plural gears, not the singular wheel."],
+        "analogies": ["A pronoun is a return address; it helps only when it points to one recoverable destination."],
+        "questions": ["Which participant does this form point back to, and would another plausible reading change the meaning?"],
+        "comparisons": ["A nickname changes the form of address; an ambiguous pronoun can change which participant receives the claim."],
+        "conversational_participation": "I can follow that reference from the current turn. If you meant the other item, that would change the result.",
+        "correction_response": "If a pronoun attached to the wrong participant, restore the intended noun and repair only the dependent references.",
+    },
+    "question_word_marks_missing_role": {
+        "vocabulary": ["question word", "missing role", "participant", "place", "time", "reason", "manner"],
+        "uncertainties": ["Why and how may require explanatory evidence that is not available even when the event itself is known."],
+        "near_concept_distinctions": ["What asks for an entity or content; which selects from a bounded set; why asks for reason; how asks for manner or mechanism."],
+        "examples": ["Where did the shadow appear? keeps the light, object, and appearance known while asking only for place."],
+        "counterexamples": ["Asking Why did the sound happen? when the missing fact is which object vibrated seeks the wrong role."],
+        "scope_of_application": "Use a question word only for a materially missing role and preserve every part already supported by the current context.",
+        "explanation": "A useful information question is a sentence with one meaningful slot left open. The question word labels the kind of information that can fill it.",
+        "distinct_examples": ["Who pushed the box? seeks the actor; when was it pushed? seeks the time; how did it move? seeks the manner or mechanism."],
+        "analogies": ["A question word is a labeled empty place in a scene map."],
+        "questions": ["Which role is missing, and do I already have that information nearby?"],
+        "comparisons": ["A clarification question resolves a material gap; a curiosity question may explore beyond what the answer currently requires."],
+        "conversational_participation": "I know what changed and when; the missing part is why it changed.",
+        "correction_response": "If the question targeted the wrong gap, keep the known context and replace only the question word and its dependent structure.",
+    },
+    "determiner_reference_and_quantity_fit": {
+        "vocabulary": ["determiner", "article", "reference status", "quantity", "countability", "distribution"],
+        "uncertainties": ["Whether a reference is mutually identifiable can depend on shared conversational context rather than the noun alone."],
+        "near_concept_distinctions": ["A introduces one unspecified member; the identifies a contextually recoverable one; every distributes a claim across all members and therefore requires stronger support."],
+        "examples": ["A wheel introduces one wheel; the wheel refers back to an identifiable wheel; these wheels identifies a nearby or already selected plural set."],
+        "counterexamples": ["Changing some observations to every observation invents total coverage."],
+        "scope_of_application": "Use determiners to preserve whether a referent is new or known and whether its quantity is singular, plural, partial, or distributed.",
+        "explanation": "Small noun markers carry large meaning. They tell the listener which item or set is intended and how broadly a statement applies.",
+        "distinct_examples": ["Each lever has a fulcrum distributes the relation one lever at a time; the levers have fulcrums describes the identified set more generally."],
+        "analogies": ["Determiners frame the camera: one item, the known item, this nearby item, or the whole supported set."],
+        "questions": ["Is this referent new or already identifiable, and what quantity does the evidence actually support?"],
+        "comparisons": ["Some leaves room for exceptions; all excludes them within the stated set."],
+        "conversational_participation": "I mean the specific example we were discussing, not every possible case.",
+        "correction_response": "If the determiner widened or narrowed the claim incorrectly, restore the supported reference and quantity without rewriting the rest of the idea.",
+    },
+    "aspect_tracks_event_shape": {
+        "vocabulary": ["aspect", "ongoing", "habitual", "completed", "current result", "event boundary"],
+        "uncertainties": ["A completed grammatical form does not by itself establish that a real task was successfully completed."],
+        "near_concept_distinctions": ["Tense locates an event in time; aspect describes how the event unfolds or relates to its boundaries."],
+        "examples": ["The wheel turns describes a regular or current fact; the wheel is turning presents an ongoing event; the wheel has turned presents a completed change relevant now."],
+        "counterexamples": ["Saying the lesson has integrated while its review is still active turns an unfinished process into a completed state."],
+        "scope_of_application": "Use aspect only when the available state distinguishes an ongoing, repeated, completed, or currently relevant event shape.",
+        "explanation": "Two events can occur at the same time yet have different shapes. Aspect keeps ongoing work, repeated patterns, and completed changes from collapsing together.",
+        "distinct_examples": ["The sound faded describes a completed past change; the sound was fading describes the change while it was underway."],
+        "analogies": ["Tense chooses a place on the timeline; aspect chooses whether the event is a point, stretch, pattern, or completed bridge to now."],
+        "questions": ["Is the event underway, repeated, complete, or relevant through its present result?"],
+        "comparisons": ["She studied locates a past event; she was studying views that past event from inside its duration."],
+        "conversational_participation": "The review is still running, so I would not describe it as completed yet.",
+        "correction_response": "If aspect implied the wrong event boundary, preserve the time and participants while restoring the actual ongoing or completed state.",
+    },
+    "modality_tracks_possibility_and_commitment": {
+        "vocabulary": ["modality", "ability", "permission", "possibility", "recommendation", "commitment", "necessity"],
+        "uncertainties": ["Modal strength varies with context, and should may express advice, expectation, or a weaker obligation."],
+        "near_concept_distinctions": ["Can may express ability; may and might preserve possibility; should usually recommends or expects; must marks a supported necessity rather than mere preference."],
+        "examples": ["A push can change motion states a possible capacity; this push changed the motion states an observed event."],
+        "counterexamples": ["Turning the source might support the claim into the source proves the claim removes meaningful uncertainty."],
+        "scope_of_application": "Use modal language to preserve the supported status of an action or claim without converting possibility, advice, permission, or requirement into one another.",
+        "explanation": "Modal verbs mark the distance between an event and actuality or obligation. That distance is part of the meaning, not a disposable hedge.",
+        "distinct_examples": ["We can inspect the file describes ability; we may inspect it describes permission or possibility; we should inspect it recommends the step."],
+        "analogies": ["Modal language is a calibrated dial between possible, available, advisable, expected, and necessary."],
+        "questions": ["Is this possible, permitted, advisable, expected, committed, or genuinely required?"],
+        "comparisons": ["A logical possibility stays open; a commitment states what an agent intends to do."],
+        "conversational_participation": "That could work, but I would keep it provisional until the missing observation is checked.",
+        "correction_response": "If a modal became stronger than its support, restore the appropriate possibility or recommendation and name what would justify a stronger form.",
+    },
+    "prepositional_phrase_relation_attachment": {
+        "vocabulary": ["preposition", "relational phrase", "location", "direction", "time", "means", "attachment"],
+        "uncertainties": ["The same preposition can express different relations, and placement may leave more than one attachment plausible."],
+        "near_concept_distinctions": ["In the box states location; into the box describes direction; after the test states sequence but not cause."],
+        "examples": ["The light passed through the opening and landed on the wall preserves a path relation followed by a location relation."],
+        "counterexamples": ["The cart near the ramp moved with the wheel can leave unclear what moved, what accompanied it, and whether with expresses a component or an instrument."],
+        "scope_of_application": "Use relational phrases to describe only supported spatial, temporal, directional, instrumental, or manner relations and attach them to the intended event or participant.",
+        "explanation": "World description depends on relations as much as objects. A relational phrase says where, when, which way, by what means, or in what manner something fits the scene.",
+        "distinct_examples": ["Before the push, the cart was beside the line. After the push, it moved beyond the line."],
+        "analogies": ["Relational phrases are coordinates and arrows added to a scene rather than new objects placed inside it."],
+        "questions": ["Which dimension does this phrase express, and what participant or event does it modify?"],
+        "comparisons": ["Beside describes relative position; toward describes direction and does not guarantee arrival."],
+        "conversational_participation": "The object is beside the marker now; it moved toward the marker earlier. Those are different relations.",
+        "correction_response": "If the phrase attached to the wrong event or dimension, move or split it while preserving the underlying observations.",
+    },
+    "subordinate_clause_preserves_dependency": {
+        "vocabulary": ["main clause", "dependent clause", "reason", "condition", "time", "contrast", "exception"],
+        "uncertainties": ["A relation may be plausible without being established strongly enough to encode as a reason or condition."],
+        "near_concept_distinctions": ["When locates or conditions an event; because states a reason; although preserves a contrast; unless marks an exception to a condition."],
+        "examples": ["When the object blocks the light, a shadow appears states the relevant condition without claiming that every darkness has that cause."],
+        "counterexamples": ["Because two events occurred together is not justified when the evidence shows only that one followed the other."],
+        "scope_of_application": "Use dependent clauses to express a relationship already supported by the meaning packet. Keep claims separate when the dependency remains uncertain.",
+        "explanation": "A dependent clause tells the listener how one idea qualifies another. The connector must preserve whether that relationship is time, reason, condition, contrast, or exception.",
+        "distinct_examples": ["Although the sound became quieter, it remained detectable preserves both the contrast and the continuing observation."],
+        "analogies": ["A dependent clause is a labeled branch from the main claim; the label explains why the branch belongs there."],
+        "questions": ["What exact dependency joins these clauses, and is that dependency supported or only suspected?"],
+        "comparisons": ["If opens a condition; because asserts a reason and therefore needs causal support."],
+        "conversational_participation": "I can connect those as sequence, but I do not yet have enough evidence to connect them with because.",
+        "correction_response": "If the clause overstated the dependency, separate the observations and replace the connector with the supported relation or an explicit uncertainty.",
+    },
+    "voice_and_information_focus": {
+        "vocabulary": ["active voice", "passive voice", "agent", "affected participant", "process", "information focus"],
+        "uncertainties": ["The agent may be unknown, irrelevant, deliberately omitted, or materially important; those cases should not be treated as equivalent."],
+        "near_concept_distinctions": ["Active and passive voice can preserve the same event roles while changing which participant the sentence foregrounds."],
+        "examples": ["The prism redirected the light foregrounds the prism; the light was redirected by the prism foregrounds the light while retaining the agent."],
+        "counterexamples": ["Mistakes were made can improperly hide a known responsible actor when responsibility is part of the question."],
+        "scope_of_application": "Choose voice from the supported information focus. Preserve a known agent when it matters, and leave it unknown rather than inventing one.",
+        "explanation": "Voice changes the viewpoint of a clause, not the underlying event. It can foreground an actor, an affected object, or a process while keeping roles and evidence intact.",
+        "distinct_examples": ["The test measured the change emphasizes the test procedure; the change was measured emphasizes the result and may omit the procedure only when it is not material."],
+        "analogies": ["Active and passive voice are two camera positions around the same supported event."],
+        "questions": ["Which participant or process is the useful starting point, and would changing voice hide material agency?"],
+        "comparisons": ["Changing voice changes information focus; changing the agent changes the event claim itself."],
+        "conversational_participation": "I would keep the actor visible here because responsibility matters to the explanation.",
+        "correction_response": "If voice hid or invented agency, restore the supported participant roles and choose the focus again.",
+    },
 }
 
 
@@ -1510,6 +1780,20 @@ def build_language_capability_answer(
                 "lexical_sense_and_word_pair_fit",
             },
             "form complete sentence cores, preserve agreement, time and negation, attach descriptions clearly, express the supported relation between clauses, and choose words that fit their intended sense",
+        ),
+        (
+            {
+                "sentence_mood_matches_communicative_purpose",
+                "pronoun_reference_preserves_participant",
+                "question_word_marks_missing_role",
+                "determiner_reference_and_quantity_fit",
+                "aspect_tracks_event_shape",
+                "modality_tracks_possibility_and_commitment",
+                "prepositional_phrase_relation_attachment",
+                "subordinate_clause_preserves_dependency",
+                "voice_and_information_focus",
+            },
+            "carry conversational purpose, reference, event shape, possibility, and world relations through richer grammatical forms without changing the supported meaning",
         ),
     ]
     capabilities = [description for keys, description in capability_groups if keys & available_keys]
@@ -1800,6 +2084,44 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
         or any(marker in lower for marker in ("better word", "which word", "synonym", "collocation", "word pair"))
     ):
         score += 5
+    if key == "sentence_mood_matches_communicative_purpose" and any(
+        marker in lower for marker in ("statement", "question", "request", "exclamation", "ask this")
+    ):
+        score += 6
+    if key == "pronoun_reference_preserves_participant" and (
+        bool((dialogue.get("pragmatics") or {}).get("resolved_reference"))
+        or any(marker in lower for marker in ("pronoun", "referent", "who does", "what does it", "which one"))
+    ):
+        score += 7
+    if key == "question_word_marks_missing_role" and (
+        "?" in prompt
+        or any(marker in lower for marker in ("who", "what", "which", "when", "where", "why", "how"))
+    ):
+        score += 4
+    if key == "determiner_reference_and_quantity_fit" and any(
+        marker in lower for marker in ("article", "determiner", "which article", "a or an", "this or these", "some or every")
+    ):
+        score += 6
+    if key == "aspect_tracks_event_shape" and any(
+        marker in lower for marker in ("ongoing", "completed", "still", "already", "keeps", "used to", "has been")
+    ):
+        score += 6
+    if key == "modality_tracks_possibility_and_commitment" and any(
+        marker in lower for marker in ("can", "could", "may", "might", "should", "must", "possible", "required")
+    ):
+        score += 6
+    if key == "prepositional_phrase_relation_attachment" and any(
+        marker in lower for marker in ("where", "before", "after", "beside", "between", "through", "toward", "inside", "outside")
+    ):
+        score += 6
+    if key == "subordinate_clause_preserves_dependency" and any(
+        marker in lower for marker in ("because", "although", "unless", "while", "if ", "when ", "condition", "cause")
+    ):
+        score += 7
+    if key == "voice_and_information_focus" and any(
+        marker in lower for marker in ("active voice", "passive voice", "agent", "actor", "responsible", "emphasize", "focus")
+    ):
+        score += 7
     return score
 
 
@@ -1969,6 +2291,7 @@ def _lesson_boundaries(lesson: dict[str, Any]) -> dict[str, Any]:
         "meaning_change_allowed": False,
         "source_persona_imitation_allowed": False,
         "fixed_phrase_requirement": False,
+        "answer_bearing_knowledge": False,
         "personality_change_allowed": False,
         "memory_or_authority_change_allowed": False,
         "provider_used": False,
@@ -2023,7 +2346,9 @@ def _lesson_source_refs(key: str, lesson: dict[str, Any] | None = None) -> list[
     if lesson is None:
         lesson = next((item for item in LANGUAGE_QOL_LESSONS if str(item.get("key") or "") == key), {})
     group_order = int(_lesson_group_metadata(lesson)["group_order"])
-    if group_order >= 7:
+    if group_order >= 9:
+        source_phase = "speech_phase_10:grammar_transfer_and_world_description"
+    elif group_order >= 7:
         source_phase = "speech_phase_9:mature_conversation_composition"
     elif group_order >= 6:
         source_phase = "speech_phase_8:grounded_conversational_judgment"

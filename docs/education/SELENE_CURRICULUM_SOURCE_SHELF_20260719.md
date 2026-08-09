@@ -1,7 +1,8 @@
 # Selene Curriculum Source Shelf
 
 Date: 2026-07-19; expanded 2026-07-29 for F1 Group 6 and selected
-2026-07-30 for F1 Group 7; selected 2026-08-03 for F1 Group 8
+2026-07-30 for F1 Group 7; selected 2026-08-03 for F1 Group 8; expanded
+2026-08-08 for F1 Groups 10 through 16
 
 Status: source acquisition checkpoint; review only
 
@@ -15,10 +16,10 @@ The first curriculum source shelf is present locally under:
 
 The shelf contains:
 
-- 42 cataloged source candidates;
-- 31 locally mirrored, revision- or checksum-pinned sources;
-- 121 verified files;
-- approximately 1.34 GB of source artifacts;
+- 52 cataloged source candidates;
+- 41 locally mirrored, revision- or checksum-pinned sources;
+- 131 verified source files;
+- approximately 1.36 GiB of shelf files;
 - coverage candidates for all 23 source-family keys in the foundational
   curriculum map;
 - 11 authoritative catalogs held for later artifact-level selection; and
@@ -123,8 +124,18 @@ be reproduced and verified without committing source corpora.
 | NIST SI Units — Mass | Artifact SHA-256 | Authoritative mass, weight, kilogram, and gram terminology | Technical detail must be reduced without describing kilograms as force units; linked media may have separate terms |
 | NIST SI Units — Volume | Artifact SHA-256 | Authoritative volume, capacity, liter, and milliliter terminology | F1 use is limited to foundational attribute and unit relationships rather than later conversion procedures |
 | CKSci Grade 1 Science for Everyone | Artifact SHA-256 | Observation, questions, measurement, prediction, data, models, and design pilot | Review third-party images, links, and optional digital engagements |
+| CKSci Kindergarten Pushes and Pulls | Artifact SHA-256 | Force as push/pull, strength and direction, changes in motion, surface effects, noncontact examples, and design iteration | Conceptual foundation only; advanced mechanics and safety-critical engineering remain later work, and third-party links/media are excluded |
+| CKSci Grade 1 Exploring Light and Sound | Artifact SHA-256 | Vibration and sound, light sources and illumination, material interactions, shadows, signals, and communication design | Experiential foundation only; advanced wave theory, hazardous sensory exposure, source images, and third-party links/media are excluded |
+| CKSci Grade 1 Simple Machines | Artifact SHA-256 | Force-direction and force-distance tradeoffs, ramps, wheels and axles, gears, levers, pulleys, wedges, screws, compound machines, and design | Qualitative foundation only; powered machinery, load ratings, source images, third-party links/media, and safety-critical construction are excluded |
+| CKSci Kindergarten Needs of Plants and Animals | Artifact SHA-256 | Living things, differing organism needs, environmental resources, habitats, observation, and bounded habitat models | Classification edge cases remain explicit; source images, third-party resources, harmful deprivation, and ecological-policy claims are excluded |
+| CKSci Grade 1 Plant and Animal Survival | Artifact SHA-256 | External parts and functions, environmental responses, young-adult similarity and variation, care behavior, and survival | Genetics, inheritance mechanisms, species expertise, wildlife handling, diagnosis, source images, and third-party resources are excluded |
+| CKSci Kindergarten Weather Patterns Teacher Guide | Artifact SHA-256 | Weather conditions, local records, seasonal patterns, bounded forecasting, and the purpose of severe-weather warnings | Climate analysis, operational forecasting, source images, scripted activities, and independent safety authority are excluded |
+| CKSci Grade 1 Sun, Moon, and Stars | Artifact SHA-256 | Apparent sky patterns, Earth rotation and day/night, changing daylight, Moon phases, constellations, and bounded prediction | Direct solar viewing, navigation, orbital calculation, astrology, astrophysics, cosmology, source images, and third-party resources are excluded |
 | CKHG Grade 1 Lessons in Civics | Artifact SHA-256 | Community, rules, laws, fairness, citizenship, and historical examples | U.S. jurisdiction must remain explicit; add plural perspectives |
 | CKLA Grade 1 The Human Body | Artifact SHA-256 | Body systems, care, germs, disease, vaccines, and health vocabulary pilot | Older health material requires current-source verification; never medical advice |
+| CKSci Grade 1 Helpful Computers | Artifact SHA-256 | Computer purposes, components, input-process-output, data, accounts, privacy, saving, algorithms, debugging, attribution, and design | CC-BY-NC-SA source; exclude images, scripted activities, links, credentials, and any implication of device, network, filesystem, execution, surveillance, or autonomy authority |
+| MedlinePlus Evaluating Health Information | HTML snapshot SHA-256 | Current NLM summary for source, date, purpose, evidence, review, and qualified-provider limits | Use only the public-domain NLM health-topic summary; exclude copyrighted encyclopedia, images, linked material, and individualized advice |
+| MedlinePlus Patient Rights | HTML snapshot SHA-256 | Current NLM summary for respect, participation, privacy, refusal, informed consent, and patient-advocate pathways | U.S. context must remain explicit; state, age, capacity, emergency, facility, and legal details vary; exclude copyrighted linked content |
 | Code.org Computer Science Fundamentals | Artifact SHA-256 | Ordered instructions, repetition, testing, and debugging pilot | Preserve CC-BY-NC-SA attribution; exclude branded media and keep execution authority separate |
 
 F1 Group 7 selects only the general community, cooperation, bounded-role,
@@ -140,6 +151,97 @@ relationships from the content-addressed sequence and Grade 1 civics artifact.
 It preserves the same CC BY-NC-SA 4.0 attribution and exclusions. No artifact
 images, national-identity instruction, current political claims, or legal
 claims are used.
+
+F1 Group 10 selects bounded force-as-interaction, strength, direction, motion
+change, surface/friction, gravity/magnetism, and safe design-iteration
+foundations from the checksum-pinned Kindergarten Pushes and Pulls artifact.
+Its CC BY-NC-SA 4.0 attribution, noncommercial, share-alike, trademark, and
+third-party-resource exclusions remain attached. Source images and scripted
+activities are not used as teaching content. Precise mechanics, field theory,
+universal surface claims, and safety-critical engineering remain outside the
+group.
+
+F1 Group 11 selects bounded sound/vibration cause and effect, safe sound
+comparison, source/illumination visibility, visible-light material behavior,
+shadow models, and light-or-sound signal design from the checksum-pinned Grade
+1 Exploring Light and Sound artifact. Its CC BY-NC-SA 4.0 attribution,
+noncommercial, share-alike, trademark, and third-party-resource exclusions
+remain attached. Source images and scripted activities are not used as teaching
+content. Quantitative acoustics, wave and electromagnetic theory, hazardous
+brightness or loudness, and safety-critical communication remain outside the
+group.
+
+F1 Group 12 selects bounded machine/task/input/output relationships,
+force-distance and force-direction tradeoffs, ramps, wheels and axles, gears,
+levers, pulleys, wedges, screws, and compound-machine design from the
+checksum-pinned Grade 1 Simple Machines artifact. Its CC BY-NC-SA 4.0
+attribution, noncommercial, share-alike, trademark, and third-party-resource
+exclusions remain attached. Source images and scripted activities are not used
+as teaching content. Free-energy implications, quantitative mechanics,
+powered-machine operation, ratings, rigging, and safety-critical construction
+remain outside the group.
+
+F1 Group 13 selects bounded living-status classification, organism needs,
+habitat-resource fit, external parts and functions, environmental responses,
+young-adult similarity and variation, care, and evidence-based design from the
+checksum-pinned Kindergarten Needs of Plants and Animals and Grade 1 Plant and
+Animal Survival artifacts. Their CC BY-NC-SA 4.0 attribution, noncommercial,
+share-alike, trademark, and third-party-resource exclusions remain attached.
+Source images and scripted classroom activities are not used as teaching
+content. Genetics, detailed reproduction, species-level care, diagnosis,
+wildlife handling, harmful deprivation, ecological policy, and real habitat
+intervention remain outside the group.
+
+F1 Group 14 selects bounded weather observation, contextual measurement,
+seasonal and hemispheric limits, Earth rotation and day/night, apparent Sun,
+Moon, and star patterns, and evidence-proportional prediction from the
+checksum-pinned Kindergarten Weather Patterns teacher guide and Grade 1 Sun,
+Moon, and Stars artifact. Their CC BY-NC-SA 4.0 attribution, noncommercial,
+share-alike, trademark, and third-party-resource exclusions remain attached.
+Source images and scripted classroom activities are not used as teaching
+content. Climate analysis, severe-weather operations, direct or magnified
+solar observation, navigation, orbital calculation, astrology, astrophysics,
+and cosmology remain outside the group. Current severe-weather decisions must
+use authoritative local warnings rather than this lesson.
+
+F1 Group 15 selects bounded human-body organization, skeletal-muscular
+interaction, breathing and circulation, digestion and absorption, sensory and
+nervous information, ordinary care, health-source evaluation, informed
+consent, and qualified-help boundaries. Stable anatomy foundations come from
+the checksum-pinned 2013 Core Knowledge artifact under CC BY-NC-SA 3.0; its
+outdated or oversimplified health claims, source images, scripted activities,
+and third-party links are excluded. The care-and-evidence lesson is
+supplemented by checksum-pinned NLM public-domain health-topic summaries with
+their item-specific copyright exclusions and review dates preserved. The
+group grants no diagnosis, prescription, triage, symptom interpretation,
+touching authority, disclosure authority, legal advice, or replacement for
+qualified current care.
+
+F1 Group 16 selects bounded computer/tool/task-fit distinctions,
+hardware-software-data and input-process-output-storage roles, algorithms and
+debugging, conceptual networks and messages, privacy-security-access
+distinctions, and a cross-domain F1 integration cycle from the checksum-pinned
+Grade 1 Helpful Computers artifact and Code.org Computer Science Fundamentals
+snapshot. Both sources retain CC BY-NC-SA 4.0 attribution, noncommercial,
+share-alike, trademark, artwork, video, and third-party-resource exclusions.
+Source language, images, branded activities, real credentials, and operational
+procedures are not retained. The group grants no device, account, filesystem,
+network, code-execution, monitoring, surveillance, memory, training, identity,
+governance, or autonomy authority. Its integration lesson coordinates only
+previously approved F1 knowledge and adds no unreviewed factual claim.
+
+F1 Group 17 is retained under authorization record 20. Its text-purpose and question-role
+bridges use the checksum-pinned Core Knowledge sequence. Its everyday-economy
+bridges use the checksum-pinned Federal Reserve Bank of St. Louis *Goods and
+Services* page and *Making Choices* activity, with the source-specific
+noncommercial educational-use, reprint, and attribution notices preserved.
+The selected material distinguishes stories from informational texts by main
+purpose, maps question words to missing roles and evidence, treats needs and
+wants as context-sensitive, and distinguishes goods, services, and tools while
+allowing mixed cases. It excludes branded scripts, media, student responses,
+financial advice, identity or personality rules, and formal symmetry. No
+Group 17 items completed the separate authorization and teaching lifecycle;
+all four are now source-attributed and Chat-active as general knowledge.
 
 ## Cataloged and Deliberately Held Sources
 
@@ -170,7 +272,7 @@ This is seed availability, not sufficiency.
 | ELA-1 through ELA-3 | Core Knowledge sequence and Grade 1 language pilot; multi-turn, EXAMS, Topical-Chat, and research-handbook structure |
 | CONV-1 and CONV-2 | OASST1, Everyday Conversations, Multi-Turn-Instruct, Topical-Chat, and bounded underwriting dialogue |
 | MATH-1 through MATH-3 | K-8 sequence, Grade 1 and bounded Grade 2 math units, GSM8K, EXAMS, Open Logic, and checked-computation lessons |
-| SCI-0 through SCI-3 | K-8 sequence, Grade 1 science-method pilot, human-body pilot, research handbook, and EXAMS inventory |
+| SCI-0 through SCI-3 | K-8 sequence, Grade 1 science-method pilot, Kindergarten pushes/pulls pilot, human-body pilot, research handbook, and EXAMS inventory |
 | HIST-1, HIST-2, and CIV-1 | K-8 sequence, Grade 1 civics pilot, Met metadata, and EXAMS inventory |
 | TECH-1 and ENG-1 | Carpentries shell, Git, and Python lessons plus the Grade 1 science/design pilot |
 | RES-1 and LOGIC-1 | Open Science Handbook, Carpentries, Topical-Chat grounding, Open Logic, GSM8K, and EXAMS |
@@ -213,8 +315,8 @@ than by indiscriminate corpus ingestion.
 
 The acquisition utility completed with:
 
-- 31 mirrored sources;
-- 121 checked files;
+- 43 mirrored sources;
+- 133 checked files;
 - zero provider acquisition failures;
 - zero missing files; and
 - zero SHA-256 mismatches.

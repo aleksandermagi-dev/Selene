@@ -254,7 +254,7 @@ def test_nlo_exposes_micro_move_and_dream_reflection_plans(tmp_path):
 
     plan = result["discourse_plan"]["conversational_micro_move_plan"]
     realized = result["discourse_plan"]["conversational_micro_move_realization"]
-    assert result["version"] == "v24_contextual_composition_and_modulation"
+    assert result["version"] == "v31_generative_thought_expression"
     assert plan["dream_reflection"]["available"] is True
     assert "dream_reflection" in _move_names(plan)
     assert realized["dream_content_invented"] is False

@@ -120,7 +120,7 @@ def test_group8_completes_lifecycle_retains_and_is_idempotent(tmp_path):
     assert result["retained_count"] == 6
     assert result["held_count"] == 0
     assert status["eighth_group"]["retained_count"] == 6
-    assert len(status["groups"]) == 8
+    assert len(status["groups"]) == 17
     assert len(rows) == 6
     assert all(row["approval_mode"] == "curriculum_authorization" for row in rows)
     assert all(row["authorization_id"] == authorization["item"]["id"] for row in rows)

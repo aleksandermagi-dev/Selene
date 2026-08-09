@@ -39,6 +39,7 @@ def build_supported_discourse_plan(payload: dict[str, Any] | None = None) -> dic
     answer_support = payload.get("answer_support") if isinstance(payload.get("answer_support"), dict) else {}
     thread_braid = payload.get("thread_braid") if isinstance(payload.get("thread_braid"), dict) else {}
     units = _content_units(
+        payload.get("supported_content_units"),
         seed,
         payload.get("support_points"),
         payload.get("examples"),
@@ -81,6 +82,7 @@ def build_supported_discourse_plan(payload: dict[str, Any] | None = None) -> dic
 
 
 def _content_units(
+    supported_content_units_value: Any,
     seed: str,
     support_points_value: Any,
     examples_value: Any,
@@ -88,32 +90,44 @@ def _content_units(
     answer_support: dict[str, Any],
     correction: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    raw: list[tuple[str, str, str]] = []
+    raw: list[tuple[str, str, str, dict[str, Any]]] = []
+    allowed_roles = {
+        "thesis", "correction", "support", "assumption", "example",
+        "counterexample", "limitation", "reopening", "conclusion",
+    }
+    for item in supported_content_units_value or []:
+        if not isinstance(item, dict) or item.get("supported") is not True:
+            continue
+        text = truncate(str(item.get("text") or ""), 900).strip()
+        role = str(item.get("role") or "support")
+        if not text or role not in allowed_roles:
+            continue
+        raw.append((text, role, str(item.get("source") or "supplied_supported_content"), item))
     for index, sentence in enumerate(_sentences(seed)):
-        raw.append((sentence, "thesis" if index == 0 else "support", "supplied_content_seed"))
+        raw.append((sentence, "thesis" if index == 0 else "support", "supplied_content_seed", {}))
     for value in _strings(support_points_value):
-        raw.append((value, "support", "intelligence_support"))
+        raw.append((value, "support", "intelligence_support", {}))
     for value in _strings(examples_value):
-        raw.append((value, "example", "supplied_semantic_example"))
+        raw.append((value, "example", "supplied_semantic_example", {}))
     for value in _strings(next_steps_value):
-        raw.append((value, "conclusion", "intelligence_support"))
+        raw.append((value, "conclusion", "intelligence_support", {}))
     for value in _strings(answer_support.get("supporting_claims")):
-        raw.append((value, "support", "answer_engine_support"))
+        raw.append((value, "support", "answer_engine_support", {}))
     for value in _strings(answer_support.get("assumptions")):
-        raw.append((value, "assumption", "answer_engine_support"))
+        raw.append((value, "assumption", "answer_engine_support", {}))
     for value in _strings(answer_support.get("limitations")):
-        raw.append((value, "limitation", "answer_engine_support"))
+        raw.append((value, "limitation", "answer_engine_support", {}))
     for value in _strings(answer_support.get("what_would_change_the_answer")):
-        raw.append((value, "reopening", "answer_engine_support"))
+        raw.append((value, "reopening", "answer_engine_support", {}))
     corrected = truncate(str(correction.get("corrected_meaning") or ""), 300).strip()
     replaced = truncate(str(correction.get("replaced_meaning") or ""), 300).strip()
     if correction.get("detected") is True and corrected:
         text = f"{corrected} rather than {replaced}" if replaced else corrected
-        raw.append((text, "correction", "current_session_correction"))
+        raw.append((text, "correction", "current_session_correction", {}))
 
     units: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for text, role, source in raw:
+    for text, role, source, metadata in raw:
         normalized = truncate(" ".join(text.split()), 900).strip()
         key = normalized.lower().rstrip(". ")
         if not key or key in seen:
@@ -127,6 +141,15 @@ def _content_units(
                 "source": source,
                 "terms": _terms(normalized),
                 "supported": True,
+                "source_refs": _strings(metadata.get("source_refs"))[:20],
+                "knowledge_concept_id": metadata.get("concept_id"),
+                "knowledge_field": str(metadata.get("knowledge_field") or ""),
+                "text_was_already_selected_for_answer": (
+                    metadata.get("text_was_already_selected_for_answer") is True
+                ),
+                "text_generated_by_growth_bridge": (
+                    metadata.get("text_generated_by_growth_bridge") is True
+                ),
             }
         )
     return units[:30]
@@ -230,7 +253,7 @@ def _paragraph_plan(
     support = [
         str(item["id"])
         for item in units
-        if item.get("role") in {"support", "assumption", "example"}
+        if item.get("role") in {"support", "assumption", "example", "counterexample"}
         and str(item["id"]) not in thesis
         and str(item["id"]) not in bound
     ]

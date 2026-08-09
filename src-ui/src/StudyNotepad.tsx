@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { api } from "./api";
 import { friendlyStatus, safeJsonObject, text } from "./helpers";
@@ -39,23 +39,37 @@ function clarificationLabel(value: unknown) {
 export default function StudyNotepad({ session, onUpdated }: StudyNotepadProps) {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [selectedConceptId, setSelectedConceptId] = useState("");
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, string>>({});
   const sessionItem = safeJsonObject(session.item);
   const sessionId = Number(sessionItem.id || 0);
+  const concepts = (sessionItem.concepts || []) as Dict[];
+  const conceptKey = concepts.map((item) => text(item.id)).join(":");
+  const conceptTitles = useMemo(
+    () => new Map(concepts.map((item) => [text(item.id), text(item.title || "Study material")])),
+    [conceptKey],
+  );
   const notes = (session.notes || []) as Dict[];
   const clarificationNotes = useMemo(
     () => notes.filter((item) => text(item.clarification_state) !== "not_needed"),
     [notes],
   );
 
+  useEffect(() => {
+    setSelectedConceptId((current) => (
+      current && conceptTitles.has(current) ? current : text(concepts[0]?.id)
+    ));
+  }, [sessionId, conceptKey]);
+
   async function formNote(attentionMode: "anything" | "clarification") {
-    if (!sessionId || busy) return;
+    const conceptId = Number(selectedConceptId || 0);
+    if (!sessionId || !conceptId || busy) return;
     setBusy(attentionMode);
     setMessage("");
     try {
       const result = await api<Dict>("/api/study/notes/form", {
         method: "POST",
-        body: JSON.stringify({ session_id: sessionId, attention_mode: attentionMode }),
+        body: JSON.stringify({ session_id: sessionId, concept_id: conceptId, attention_mode: attentionMode }),
       });
       setMessage(text(result.message || (result.created ? "Selene added a note." : "Nothing new needed a note.")));
       onUpdated(result);
@@ -98,9 +112,17 @@ export default function StudyNotepad({ session, onUpdated }: StudyNotepadProps) 
           </div>
           <span>{notes.length} notes</span>
         </div>
+        <label className="studyNotepadConceptPicker">
+          <span>Material Selene is looking at</span>
+          <select value={selectedConceptId} onChange={(event) => setSelectedConceptId(event.target.value)} disabled={Boolean(busy) || !concepts.length}>
+            {concepts.map((concept) => (
+              <option key={`study-note-concept-${text(concept.id)}`} value={text(concept.id)}>{text(concept.title || "Study material")}</option>
+            ))}
+          </select>
+        </label>
         <div className="reviewActions studyNoteActions">
-          <button className="primary" disabled={Boolean(busy)} onClick={() => formNote("anything")}>What stands out?</button>
-          <button disabled={Boolean(busy)} onClick={() => formNote("clarification")}>Check for clarification</button>
+          <button className="primary" disabled={Boolean(busy) || !selectedConceptId} onClick={() => formNote("anything")}>What stands out here?</button>
+          <button disabled={Boolean(busy) || !selectedConceptId} onClick={() => formNote("clarification")}>Check this for clarification</button>
         </div>
         <p className="plainHelp">Clarification is formed only from uncertainty already recorded in this Study session. Selene will not invent confusion to fill the page.</p>
         {message ? <p className="studyNotebookMessage" role="status" aria-live="polite">{message}</p> : null}
@@ -114,6 +136,7 @@ export default function StudyNotepad({ session, onUpdated }: StudyNotepadProps) 
                   <strong>Selene</strong>
                   <span>{noteKindLabel(note.note_kind)}</span>
                 </div>
+                <small className="studyNoteConcept">Looking at: {conceptTitles.get(text(note.concept_id)) || "Study material"}</small>
                 <p className="studyNoteVoice">{text(note.note_text)}</p>
                 <div className="chips">
                   <span>{clarificationLabel(state)}</span>

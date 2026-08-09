@@ -96,6 +96,7 @@ REPRESENTATION_KINDS = {
     "spatial_object",
     "sentence_roles",
     "sentence_transform",
+    "sentence_scene",
 }
 
 LANGUAGE_FOUNDATION_COMPASS_GOALS: tuple[dict[str, Any], ...] = (
@@ -105,18 +106,23 @@ LANGUAGE_FOUNDATION_COMPASS_GOALS: tuple[dict[str, Any], ...] = (
         "title": "L1 · See the meaning roles inside a sentence",
         "curriculum_band": "Language foundation",
         "subject_domains": ["sentence formation", "meaning roles"],
-        "concept_keys": ["language_lesson:sentence_core_from_meaning_roles"],
+        "concept_keys": [
+            "language_lesson:sentence_core_from_meaning_roles",
+            "language_lesson:sentence_mood_matches_communicative_purpose",
+            "language_lesson:pronoun_reference_preserves_participant",
+            "language_lesson:question_word_marks_missing_role",
+        ],
         "already_connected": (
             "The reviewed foundation separates who or what a clause concerns from the action, state, description, or relationship being expressed."
         ),
         "next_connection": (
-            "Build a short sentence from visible role cards, then reconstruct the same supported scene in a different word order only when the meaning still fits."
+            "Build a short sentence from visible role cards, change its conversational purpose without changing the scene, then track a participant through a pronoun and one genuinely missing question role."
         ),
         "why_it_matters": (
             "A visible meaning map gives grammar something stable to organize and makes awkward wording easier to repair without changing the idea."
         ),
         "suggested_activity": (
-            "Place one participant, one action or state, and an optional affected object into role cards; read the resulting sentence and name only what each card contributes."
+            "Use one approved world scene. Mark participant, action or state, affected object, place, and time; form a statement, one useful question, and a clear callback while preserving the same supported scene."
         ),
     },
     {
@@ -129,18 +135,21 @@ LANGUAGE_FOUNDATION_COMPASS_GOALS: tuple[dict[str, Any], ...] = (
             "language_lesson:noun_verb_number_agreement",
             "language_lesson:tense_tracks_time_relation",
             "language_lesson:negation_preserves_scope",
+            "language_lesson:determiner_reference_and_quantity_fit",
+            "language_lesson:aspect_tracks_event_shape",
+            "language_lesson:modality_tracks_possibility_and_commitment",
         ],
         "already_connected": (
             "The reviewed foundation keeps the participant and action visible while grammatical form tracks singular or plural, event time, and exactly what is denied."
         ),
         "next_connection": (
-            "Compare two visible forms of one supplied sentence and identify which feature changed, which meaning stayed, and whether the new form makes a different claim."
+            "Transform one supplied sentence across number, time, event shape, possibility, and negation while naming which meaning changed and which meanings remained stable."
         ),
         "why_it_matters": (
             "This supports correction, recall, planning, and ordinary conversation without letting tense or negation silently distort the supported content."
         ),
         "suggested_activity": (
-            "Start with a short present statement, then deliberately choose one change—plural, past, future, or negative—and inspect the before and after forms."
+            "Start with one short world description. Change only one feature at a time—quantity, time, ongoing or complete state, possibility, or negation—and compare each result with the original."
         ),
     },
     {
@@ -153,18 +162,21 @@ LANGUAGE_FOUNDATION_COMPASS_GOALS: tuple[dict[str, Any], ...] = (
             "language_lesson:modifier_attachment_and_specificity",
             "language_lesson:conjunction_matches_relation",
             "language_lesson:lexical_sense_and_word_pair_fit",
+            "language_lesson:prepositional_phrase_relation_attachment",
+            "language_lesson:subordinate_clause_preserves_dependency",
+            "language_lesson:voice_and_information_focus",
         ],
         "already_connected": (
             "The reviewed foundation treats descriptions, connectors, and word choices as meaning-bearing decisions rather than decoration."
         ),
         "next_connection": (
-            "Attach one supported detail to its intended role and connect a second clause with the relationship that actually holds."
+            "Locate a world scene in place and time, add one supported detail, connect a second clause through its real dependency, and choose information focus without hiding or inventing agency."
         ),
         "why_it_matters": (
             "This is the bridge from correct sentence cores to natural, precise language that can explain and connect ideas without source parroting."
         ),
         "suggested_activity": (
-            "Add one modifier or a second clause to a short sentence, compare the result with the original, and remove anything the supplied scene does not support."
+            "Take one approved observation, add a place or time relation and one descriptive detail, then form a second clause for reason, condition, time, or contrast only when that relationship is supported."
         ),
     },
 )
@@ -602,6 +614,7 @@ def seed_language_foundation_learning_compass(
     del payload
     created: list[str] = []
     already_present: list[str] = []
+    refreshed: list[str] = []
     unavailable: list[dict[str, Any]] = []
     reordered_existing_goal_count = int(
         conn.execute(
@@ -614,12 +627,9 @@ def seed_language_foundation_learning_compass(
     )
     for specification in LANGUAGE_FOUNDATION_COMPASS_GOALS:
         existing = conn.execute(
-            "SELECT id FROM selene_learning_compass_goals WHERE goal_key = ?",
+            "SELECT * FROM selene_learning_compass_goals WHERE goal_key = ?",
             (specification["goal_key"],),
         ).fetchone()
-        if existing:
-            already_present.append(str(specification["goal_key"]))
-            continue
 
         concept_rows = conn.execute(
             f"""
@@ -669,6 +679,39 @@ def seed_language_foundation_learning_compass(
             "anxiety_or_performance_pressure_intended": False,
             "synthetic_check_only": True,
         }
+        if existing:
+            existing_evidence = _loads(existing["evidence_json"], {})
+            if isinstance(existing_evidence, dict) and existing_evidence.get("updates"):
+                evidence["updates"] = existing_evidence["updates"]
+            conn.execute(
+                """
+                UPDATE selene_learning_compass_goals
+                SET display_order = ?, title = ?, curriculum_band = ?, subject_domains_json = ?,
+                    already_connected = ?, next_connection = ?, why_it_matters = ?,
+                    suggested_activity = ?, concept_ids_json = ?, source_refs = ?,
+                    evidence_json = ?, source_kind = 'guided_language_foundation',
+                    provenance_boundary = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (
+                    int(specification["display_order"]),
+                    specification["title"],
+                    specification["curriculum_band"],
+                    json.dumps(specification["subject_domains"]),
+                    specification["already_connected"],
+                    specification["next_connection"],
+                    specification["why_it_matters"],
+                    specification["suggested_activity"],
+                    json.dumps(concept_ids),
+                    json.dumps(source_refs),
+                    json.dumps(evidence),
+                    STUDY_BOUNDARY,
+                    int(existing["id"]),
+                ),
+            )
+            already_present.append(str(specification["goal_key"]))
+            refreshed.append(str(specification["goal_key"]))
+            continue
         conn.execute(
             """
             INSERT INTO selene_learning_compass_goals
@@ -703,6 +746,7 @@ def seed_language_foundation_learning_compass(
             "status": "language_foundation_learning_compass_seeded",
             "created": created,
             "already_present": already_present,
+            "refreshed": refreshed,
             "unavailable": unavailable,
             "reordered_existing_goal_count": reordered_existing_goal_count,
             "idempotent": True,
@@ -968,6 +1012,117 @@ def try_study_representation(conn: sqlite3.Connection, payload: dict[str, Any] |
     conn.commit()
     result = get_study_session(conn, {"session_id": int(thread["session_id"])})
     result.update({"status": "study_representation_attempt_ready", "attempt_id": attempt_id})
+    return result
+
+
+def form_study_representation_reflection(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Form visible L1 evidence from Selene's bounded representation, never from supplied prose."""
+    payload = payload or {}
+    attempt_id = _positive_id(payload.get("attempt_id"), "attempt_id")
+    row = conn.execute(
+        """
+        SELECT attempts.*, sessions.compass_goal_id, goals.goal_key
+        FROM selene_study_representation_attempts attempts
+        JOIN selene_study_sessions sessions ON sessions.id = attempts.session_id
+        LEFT JOIN selene_learning_compass_goals goals ON goals.id = sessions.compass_goal_id
+        WHERE attempts.id = ?
+        """,
+        (attempt_id,),
+    ).fetchone()
+    if not row:
+        raise ValueError("study representation attempt not found")
+    if row["representation_kind"] != "sentence_scene":
+        raise ValueError("a sentence-scene representation is required for this L1 reflection")
+    if str(row["goal_key"] or "") != "language_foundation_sentence_scene_20260801":
+        raise ValueError("this reflection route is bounded to the L1 sentence-scene learning direction")
+
+    output = _loads(row["output_json"], {})
+    required = {
+        "same_scene_preserved": True,
+        "pronoun_reference_clear": True,
+        "unsupported_content_added": False,
+        "hidden_chain_of_thought_exposed": False,
+    }
+    if any(output.get(key) is not expected for key, expected in required.items()):
+        raise ValueError("the visible sentence-scene evidence is not sufficient to form an L1 reflection")
+    subject = truncate(str(output.get("pronoun_antecedent") or "the participant"), 160).strip()
+    pronoun = truncate(str(output.get("callback_pronoun") or "the pronoun"), 40).strip()
+    missing_role = truncate(str(output.get("missing_role") or "missing role"), 80).strip()
+    reflection = truncate(
+        (
+            "I can keep one supported scene stable while arranging its visible meaning roles as a statement, "
+            f"asking a useful question about the missing {missing_role} role, and referring back to {subject} "
+            f"as {pronoun} without changing who the pronoun names."
+        ),
+        4000,
+    )
+    session_id = int(row["session_id"])
+    compass_goal_id = int(row["compass_goal_id"] or 0)
+    session_status = "completed" if payload.get("connect_for_now") is True else "active"
+    conn.execute(
+        "UPDATE selene_study_sessions SET current_understanding = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (reflection, session_status, session_id),
+    )
+    conn.execute(
+        """
+        UPDATE selene_study_pondering_threads
+        SET state = ?, current_fit = ?, missing_bridge = '', prerequisite_needed = '',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (
+            "integrated_for_now" if payload.get("connect_for_now") is True else "active",
+            reflection,
+            int(row["thread_id"]),
+        ),
+    )
+    _record_evidence(
+        conn,
+        session_id,
+        "l1_sentence_scene_reflection_formed",
+        reflection,
+        {
+            "attempt_id": attempt_id,
+            "statement": output.get("statement"),
+            "question": output.get("question"),
+            "callback": output.get("callback"),
+            "same_scene_preserved": True,
+            "performance_judgment": False,
+        },
+        _loads(row["source_refs"], []),
+    )
+    if payload.get("connect_for_now") is True:
+        _update_learning_compass_row(
+            conn,
+            compass_goal_id,
+            state="connected_for_now",
+            selene_reflection=reflection,
+            remaining_unclear="",
+            event="l1_sentence_scene_connected_for_now",
+            event_detail="Selene formed a visible L1 reflection from bounded sentence-scene evidence; it may be reopened later.",
+        )
+    else:
+        _update_learning_compass_row(
+            conn,
+            compass_goal_id,
+            state="integrating",
+            selene_reflection=reflection,
+            event="l1_sentence_scene_reflection_formed",
+            event_detail="Selene formed a visible L1 reflection without claiming completion.",
+        )
+    conn.commit()
+    result = get_study_session(conn, {"session_id": session_id})
+    result.update(
+        {
+            "status": "study_representation_reflection_formed",
+            "reflection": reflection,
+            "connected_for_now": payload.get("connect_for_now") is True,
+            "reflection_source": "selene_bounded_sentence_scene_representation",
+        }
+    )
     return result
 
 
@@ -1595,6 +1750,8 @@ def _study_attention_candidates(session: dict[str, Any], concept: dict[str, Any]
         value = truncate(str(source_text or ""), 2200).strip()
         if not value:
             return
+        if source_field in {"relationship", "principle"} and _machine_shaped_study_label(value):
+            return
         candidates.append(
             {
                 "note_kind": note_kind if note_kind in NOTE_KINDS else "notice",
@@ -1631,6 +1788,12 @@ def _study_attention_candidates(session: dict[str, Any], concept: dict[str, Any]
         add("connection", "example", value, "This example makes the idea concrete", relevance=0.76)
     add("notice", "central_claim", concept.get("central_claim"), "This is the center of it", relevance=0.72)
     return candidates
+
+
+def _machine_shaped_study_label(value: str) -> bool:
+    """Keep internal routing/response-move keys out of Selene's visible notes."""
+    compact = value.replace("_", "").replace("-", "")
+    return not any(character.isspace() for character in value) and value == value.lower() and compact.isalnum()
 
 
 def _decode_study_concept(item: dict[str, Any]) -> dict[str, Any]:
@@ -1818,7 +1981,7 @@ def _decode_question(row: sqlite3.Row) -> dict[str, Any]:
 
 
 def _simulate_representation(kind: str, payload: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
-    if kind in {"sentence_roles", "sentence_transform"}:
+    if kind in {"sentence_roles", "sentence_transform", "sentence_scene"}:
         return _simulate_sentence_representation(kind, payload)
     if kind in {"objects", "tallies", "groups", "place_value"}:
         quantity = _bounded_integer(payload.get("quantity"), "quantity", 0, 200)
@@ -1938,6 +2101,9 @@ def _simulate_sentence_representation(
             },
         )
 
+    if kind == "sentence_scene":
+        return _simulate_sentence_scene(input_state, base_proposition, base_result, roles, payload)
+
     tense = str(payload.get("tense") or "present").strip().lower()
     polarity = str(payload.get("polarity") or "positive").strip().lower()
     if tense not in {"present", "past", "future"}:
@@ -2007,6 +2173,8 @@ def _simulate_sentence_representation(
             }
         }
     )
+
+
     transformed_result = realize_semantic_frame(
         transformed_frame,
         variation_key=f"study-sentence-transform|{tense}|{polarity}|{relation}",
@@ -2035,6 +2203,105 @@ def _simulate_sentence_representation(
             "unsupported_content_added": False,
             "hidden_chain_of_thought_exposed": False,
         },
+    )
+
+
+def _simulate_sentence_scene(
+    input_state: dict[str, Any],
+    base_proposition: dict[str, Any],
+    base_result: dict[str, Any],
+    roles: list[dict[str, Any]],
+    payload: dict[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
+    subject = str(base_proposition["subject"])
+    predicate = str(base_proposition["predicate"])
+    obj = str(base_proposition.get("object") or "")
+    place = truncate(" ".join(str(payload.get("place") or "").split()), 160).strip()
+    time = truncate(" ".join(str(payload.get("time") or "").split()), 160).strip()
+    pronoun = str(payload.get("callback_pronoun") or "it").strip().lower()
+    if pronoun not in {"it", "she", "he", "they"}:
+        raise ValueError("callback pronoun must be it, she, he, or they")
+    question_role = str(payload.get("question_role") or "place").strip().lower()
+    if question_role not in {"object", "place", "time", "reason", "manner"}:
+        raise ValueError("question role must be object, place, time, reason, or manner")
+    if question_role == "object" and not obj:
+        raise ValueError("an object is required when the question asks about the object role")
+    if question_role == "place" and not place:
+        raise ValueError("a place is required when the question asks about the place role")
+    if question_role == "time" and not time:
+        raise ValueError("a time is required when the question asks about the time role")
+
+    scene_roles = [*roles]
+    if place:
+        scene_roles.append({"role": "place", "label": "Where", "value": place})
+    if time:
+        scene_roles.append({"role": "time", "label": "When", "value": time})
+
+    def with_adjuncts(sentence: str) -> str:
+        stem = sentence.rstrip(".?!")
+        if place:
+            stem = f"{stem} {place}"
+        if time:
+            stem = f"{stem} {time}"
+        return f"{stem}."
+
+    statement = with_adjuncts(str(base_result["candidate_text"]))
+    callback_frame = build_semantic_frame(
+        {
+            "semantic_frame": {
+                "response_depth": "short",
+                "propositions": [{**base_proposition, "id": "sentence_callback", "subject": pronoun}],
+            }
+        }
+    )
+    callback_result = realize_semantic_frame(callback_frame, variation_key=f"study-sentence-callback|{pronoun}")
+    callback = with_adjuncts(str(callback_result["candidate_text"]))
+
+    question_word = {
+        "object": "What",
+        "place": "Where",
+        "time": "When",
+        "reason": "Why",
+        "manner": "How",
+    }[question_role]
+    question_parts = [question_word, "does", subject, predicate]
+    if obj and question_role != "object":
+        question_parts.append(obj)
+    if place and question_role not in {"place", "object"}:
+        question_parts.append(place)
+    if time and question_role not in {"time", "object"}:
+        question_parts.append(time)
+    question = " ".join(question_parts).strip() + "?"
+
+    output = {
+        **input_state,
+        "roles": scene_roles,
+        "statement": statement,
+        "question": question,
+        "callback": callback,
+        "missing_role": question_role,
+        "question_word": question_word.lower(),
+        "pronoun_antecedent": subject,
+        "callback_pronoun": pronoun,
+        "same_scene_preserved": True,
+        "pronoun_reference_clear": True,
+        "required_semantic_units_preserved": (
+            base_result["required_semantic_units_preserved"]
+            and callback_result["required_semantic_units_preserved"]
+        ),
+        "unsupported_content_added": False,
+        "hidden_chain_of_thought_exposed": False,
+        "description": "One supported scene shown as visible roles, a statement, one missing-role question, and a clear pronoun callback",
+    }
+    return (
+        {**input_state, "place": place, "time": time, "callback_pronoun": pronoun, "question_role": question_role},
+        [
+            {"operation": "map_visible_meaning_roles"},
+            {"operation": "form_statement"},
+            {"operation": "ask_for_one_missing_role", "role": question_role},
+            {"operation": "form_clear_pronoun_callback", "antecedent": subject, "pronoun": pronoun},
+        ],
+        output,
     )
 
 

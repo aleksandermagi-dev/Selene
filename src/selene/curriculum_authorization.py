@@ -41,6 +41,60 @@ from .curriculum_f1_group8 import (
     LESSONS as F1_GROUP8_LESSONS,
     SCOPE as F1_GROUP8_SCOPE,
 )
+from .curriculum_f1_group9 import (
+    AUTHORIZATION_KEY as F1_GROUP9_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP9_KEY,
+    LESSONS as F1_GROUP9_LESSONS,
+    SCOPE as F1_GROUP9_SCOPE,
+)
+from .curriculum_f1_group10 import (
+    AUTHORIZATION_KEY as F1_GROUP10_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP10_KEY,
+    LESSONS as F1_GROUP10_LESSONS,
+    SCOPE as F1_GROUP10_SCOPE,
+)
+from .curriculum_f1_group11 import (
+    AUTHORIZATION_KEY as F1_GROUP11_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP11_KEY,
+    LESSONS as F1_GROUP11_LESSONS,
+    SCOPE as F1_GROUP11_SCOPE,
+)
+from .curriculum_f1_group12 import (
+    AUTHORIZATION_KEY as F1_GROUP12_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP12_KEY,
+    LESSONS as F1_GROUP12_LESSONS,
+    SCOPE as F1_GROUP12_SCOPE,
+)
+from .curriculum_f1_group13 import (
+    AUTHORIZATION_KEY as F1_GROUP13_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP13_KEY,
+    LESSONS as F1_GROUP13_LESSONS,
+    SCOPE as F1_GROUP13_SCOPE,
+)
+from .curriculum_f1_group14 import (
+    AUTHORIZATION_KEY as F1_GROUP14_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP14_KEY,
+    LESSONS as F1_GROUP14_LESSONS,
+    SCOPE as F1_GROUP14_SCOPE,
+)
+from .curriculum_f1_group15 import (
+    AUTHORIZATION_KEY as F1_GROUP15_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP15_KEY,
+    LESSONS as F1_GROUP15_LESSONS,
+    SCOPE as F1_GROUP15_SCOPE,
+)
+from .curriculum_f1_group16 import (
+    AUTHORIZATION_KEY as F1_GROUP16_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP16_KEY,
+    LESSONS as F1_GROUP16_LESSONS,
+    SCOPE as F1_GROUP16_SCOPE,
+)
+from .curriculum_f1_group17 import (
+    AUTHORIZATION_KEY as F1_GROUP17_AUTHORIZATION_KEY,
+    GROUP_KEY as F1_GROUP17_KEY,
+    LESSONS as F1_GROUP17_LESSONS,
+    SCOPE as F1_GROUP17_SCOPE,
+)
 from .teaching_lifecycle import (
     acquire_teaching_item,
     approve_teaching_lifecycle_under_authorization,
@@ -615,6 +669,69 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
         "F1 history and evidence foundations — group 8",
         F1_GROUP8_SCOPE["source_ids"],
     )
+    ninth_group = _group_progress(
+        conn,
+        F1_GROUP9_LESSONS,
+        F1_GROUP9_KEY,
+        "F1 materials, change, and motion foundations — group 9",
+        F1_GROUP9_SCOPE["source_ids"],
+    )
+    tenth_group = _group_progress(
+        conn,
+        F1_GROUP10_LESSONS,
+        F1_GROUP10_KEY,
+        "F1 pushes, pulls, and forces foundations — group 10",
+        F1_GROUP10_SCOPE["source_ids"],
+    )
+    eleventh_group = _group_progress(
+        conn,
+        F1_GROUP11_LESSONS,
+        F1_GROUP11_KEY,
+        "F1 light and sound foundations — group 11",
+        F1_GROUP11_SCOPE["source_ids"],
+    )
+    twelfth_group = _group_progress(
+        conn,
+        F1_GROUP12_LESSONS,
+        F1_GROUP12_KEY,
+        "F1 simple machines and mechanical systems — group 12",
+        F1_GROUP12_SCOPE["source_ids"],
+    )
+    thirteenth_group = _group_progress(
+        conn,
+        F1_GROUP13_LESSONS,
+        F1_GROUP13_KEY,
+        "F1 living things, needs, parts, and survival — group 13",
+        F1_GROUP13_SCOPE["source_ids"],
+    )
+    fourteenth_group = _group_progress(
+        conn,
+        F1_GROUP14_LESSONS,
+        F1_GROUP14_KEY,
+        "F1 weather, seasons, Earth, Sun, Moon, and sky cycles — group 14",
+        F1_GROUP14_SCOPE["source_ids"],
+    )
+    fifteenth_group = _group_progress(
+        conn,
+        F1_GROUP15_LESSONS,
+        F1_GROUP15_KEY,
+        "F1 human body systems, care, and health evidence — group 15",
+        F1_GROUP15_SCOPE["source_ids"],
+    )
+    sixteenth_group = _group_progress(
+        conn,
+        F1_GROUP16_LESSONS,
+        F1_GROUP16_KEY,
+        "F1 helpful computers and cross-domain integration — group 16",
+        F1_GROUP16_SCOPE["source_ids"],
+    )
+    seventeenth_group = _group_progress(
+        conn,
+        F1_GROUP17_LESSONS,
+        F1_GROUP17_KEY,
+        "F1 text purpose and everyday economy closure bridge — group 17",
+        F1_GROUP17_SCOPE["source_ids"],
+    )
     return _with_guards(
         {
             "status": "curriculum_authorization_ready",
@@ -631,7 +748,16 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "sixth_group": sixth_group,
             "seventh_group": seventh_group,
             "eighth_group": eighth_group,
-            "groups": [first_group, second_group, third_group, fourth_group, fifth_group, sixth_group, seventh_group, eighth_group],
+            "ninth_group": ninth_group,
+            "tenth_group": tenth_group,
+            "eleventh_group": eleventh_group,
+            "twelfth_group": twelfth_group,
+            "thirteenth_group": thirteenth_group,
+            "fourteenth_group": fourteenth_group,
+            "fifteenth_group": fifteenth_group,
+            "sixteenth_group": sixteenth_group,
+            "seventeenth_group": seventeenth_group,
+            "groups": [first_group, second_group, third_group, fourth_group, fifth_group, sixth_group, seventh_group, eighth_group, ninth_group, tenth_group, eleventh_group, twelfth_group, thirteenth_group, fourteenth_group, fifteenth_group, sixteenth_group, seventeenth_group],
             "exception_classes": list(EXCEPTION_CLASSES),
             "review_destination": "Cocoon Teaching / Lessons",
             "provenance_boundary": PROVENANCE_BOUNDARY,
@@ -752,6 +878,123 @@ def activate_f1_history_evidence_authorization(
         authorization_key=F1_GROUP8_AUTHORIZATION_KEY,
         title="F1 history and evidence foundations — group 8",
         scope=F1_GROUP8_SCOPE,
+    )
+
+
+def activate_f1_materials_change_motion_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP9_AUTHORIZATION_KEY,
+        title="F1 materials, change, and motion foundations — group 9",
+        scope=F1_GROUP9_SCOPE,
+    )
+
+
+def activate_f1_pushes_pulls_forces_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP10_AUTHORIZATION_KEY,
+        title="F1 pushes, pulls, and forces foundations — group 10",
+        scope=F1_GROUP10_SCOPE,
+    )
+
+
+def activate_f1_light_sound_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP11_AUTHORIZATION_KEY,
+        title="F1 light and sound foundations — group 11",
+        scope=F1_GROUP11_SCOPE,
+    )
+
+
+def activate_f1_simple_machines_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP12_AUTHORIZATION_KEY,
+        title="F1 simple machines and mechanical systems — group 12",
+        scope=F1_GROUP12_SCOPE,
+    )
+
+
+def activate_f1_living_things_survival_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP13_AUTHORIZATION_KEY,
+        title="F1 living things, needs, parts, and survival — group 13",
+        scope=F1_GROUP13_SCOPE,
+    )
+
+
+def activate_f1_weather_sky_cycles_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP14_AUTHORIZATION_KEY,
+        title="F1 weather, seasons, Earth, Sun, Moon, and sky cycles — group 14",
+        scope=F1_GROUP14_SCOPE,
+    )
+
+
+def activate_f1_human_body_health_evidence_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP15_AUTHORIZATION_KEY,
+        title="F1 human body systems, care, and health evidence — group 15",
+        scope=F1_GROUP15_SCOPE,
+    )
+
+
+def activate_f1_helpful_computers_integration_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP16_AUTHORIZATION_KEY,
+        title="F1 helpful computers and cross-domain integration — group 16",
+        scope=F1_GROUP16_SCOPE,
+    )
+
+
+def activate_f1_text_purpose_everyday_economy_bridge_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F1_GROUP17_AUTHORIZATION_KEY,
+        title="F1 text purpose and everyday economy closure bridge — group 17",
+        scope=F1_GROUP17_SCOPE,
     )
 
 
@@ -1135,6 +1378,231 @@ def teach_f1_history_evidence_group(
         lessons=F1_GROUP8_LESSONS,
         group_key=F1_GROUP8_KEY,
         authorization_key=F1_GROUP8_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_materials_change_motion_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP9_LESSONS,
+        group_key=F1_GROUP9_KEY,
+    )
+
+
+def teach_f1_materials_change_motion_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP9_LESSONS,
+        group_key=F1_GROUP9_KEY,
+        authorization_key=F1_GROUP9_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_pushes_pulls_forces_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP10_LESSONS,
+        group_key=F1_GROUP10_KEY,
+    )
+
+
+def teach_f1_pushes_pulls_forces_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP10_LESSONS,
+        group_key=F1_GROUP10_KEY,
+        authorization_key=F1_GROUP10_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_light_sound_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP11_LESSONS,
+        group_key=F1_GROUP11_KEY,
+    )
+
+
+def teach_f1_light_sound_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP11_LESSONS,
+        group_key=F1_GROUP11_KEY,
+        authorization_key=F1_GROUP11_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_simple_machines_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP12_LESSONS,
+        group_key=F1_GROUP12_KEY,
+    )
+
+
+def teach_f1_simple_machines_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP12_LESSONS,
+        group_key=F1_GROUP12_KEY,
+        authorization_key=F1_GROUP12_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_living_things_survival_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP13_LESSONS,
+        group_key=F1_GROUP13_KEY,
+    )
+
+
+def teach_f1_living_things_survival_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP13_LESSONS,
+        group_key=F1_GROUP13_KEY,
+        authorization_key=F1_GROUP13_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_weather_sky_cycles_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP14_LESSONS,
+        group_key=F1_GROUP14_KEY,
+    )
+
+
+def teach_f1_weather_sky_cycles_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP14_LESSONS,
+        group_key=F1_GROUP14_KEY,
+        authorization_key=F1_GROUP14_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_human_body_health_evidence_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP15_LESSONS,
+        group_key=F1_GROUP15_KEY,
+    )
+
+
+def teach_f1_human_body_health_evidence_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP15_LESSONS,
+        group_key=F1_GROUP15_KEY,
+        authorization_key=F1_GROUP15_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_helpful_computers_integration_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP16_LESSONS,
+        group_key=F1_GROUP16_KEY,
+    )
+
+
+def teach_f1_helpful_computers_integration_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP16_LESSONS,
+        group_key=F1_GROUP16_KEY,
+        authorization_key=F1_GROUP16_AUTHORIZATION_KEY,
+    )
+
+
+def prepare_f1_text_purpose_everyday_economy_bridge_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP17_LESSONS,
+        group_key=F1_GROUP17_KEY,
+    )
+
+
+def teach_f1_text_purpose_everyday_economy_bridge_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F1_GROUP17_LESSONS,
+        group_key=F1_GROUP17_KEY,
+        authorization_key=F1_GROUP17_AUTHORIZATION_KEY,
     )
 
 

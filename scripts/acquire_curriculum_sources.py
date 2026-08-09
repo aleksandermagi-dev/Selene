@@ -470,6 +470,104 @@ SOURCES: list[dict[str, Any]] = [
         risks=["teacher-led digital engagements are not required", "review third-party images and links"],
     ),
     direct(
+        "core_knowledge_k_needs_plants_animals",
+        "CKSci Kindergarten Unit 2: Needs of Plants and Animals",
+        "https://www.coreknowledge.org/wp-content/uploads/2020/07/CKSci_GKU2_NeedsOfPlantsAnimals.zip",
+        families=["SCI-0", "SCI-1", "SCI-2", "ENG-1", "RES-1", "ELA-2"],
+        bands=["F1"],
+        license_id="artifact-embedded Core Knowledge / Creative Commons terms",
+        role="bounded foundational living things, organism needs, habitats, natural resources, and evidence-based habitat design",
+        risks=[
+            "review third-party images, links, and optional online resources separately",
+            "living and nonliving classification includes uncertain, dormant, dead, and formerly living cases that require careful wording",
+            "habitat examples are foundations rather than complete ecology or environmental-policy instruction",
+        ],
+    ),
+    direct(
+        "core_knowledge_g1_plant_animal_survival",
+        "CKSci Grade 1 Unit 2: Plant and Animal Survival",
+        "https://www.coreknowledge.org/wp-content/uploads/2020/06/CKSci_G1U2_Plant-and-Animal-Survival.zip",
+        families=["SCI-0", "SCI-1", "SCI-2", "ENG-1", "RES-1", "ELA-2"],
+        bands=["F1"],
+        license_id="artifact-embedded Core Knowledge / Creative Commons terms",
+        role="bounded foundational organism parts and functions, environmental responses, parent-young similarities, care, and survival",
+        risks=[
+            "review third-party images, links, and optional online resources separately",
+            "traits, inherited variation, reproduction, and life cycles remain introductory and require later expansion",
+            "wildlife care examples do not authorize handling, feeding, moving, or treating wild or injured animals",
+        ],
+    ),
+    direct(
+        "core_knowledge_k_weather_patterns",
+        "CKSci Kindergarten Unit 4: Weather Patterns — Teacher Guide",
+        "https://www.coreknowledge.org/wp-content/uploads/2020/07/CKSci_GKU4_Weather-Patterns_TG.pdf",
+        families=["SCI-0", "SCI-1", "SCI-2", "MATH-1", "ENG-1", "RES-1", "ELA-2"],
+        bands=["F1"],
+        license_id="artifact-embedded Core Knowledge / Creative Commons terms",
+        role="bounded foundational sunlight heating, weather observation and records, recurring patterns, prediction, shade design, and warning awareness",
+        risks=[
+            "review third-party images, links, and optional online resources separately",
+            "weather-pattern foundations do not establish climate trends or severe-weather operational authority",
+            "temperature, sunlight, storm, and outdoor observations require explicit sensory and physical-safety limits",
+        ],
+    ),
+    direct(
+        "core_knowledge_g1_sun_moon_stars",
+        "CKSci Grade 1 Unit 1: Sun, Moon, and Stars",
+        "https://www.coreknowledge.org/wp-content/uploads/2020/07/CKSci_G1U1_Sun-Moon-and-Stars.zip",
+        families=["SCI-0", "SCI-1", "SCI-2", "MATH-1", "RES-1", "ELA-2"],
+        bands=["F1"],
+        license_id="artifact-embedded Core Knowledge / Creative Commons terms",
+        role="bounded foundational day and night, apparent Sun movement, daylight change, Moon appearance, star patterns, repeated observations, and prediction",
+        risks=[
+            "review third-party images, links, and optional online resources separately",
+            "direct or magnified solar observation is excluded; use time records, shadows, diagrams, or approved indirect observation",
+            "orbital calculation, astrophysics, cosmology, navigation, and precise astronomical prediction remain later instruction",
+        ],
+    ),
+    direct(
+        "core_knowledge_k_pushes_pulls",
+        "CKSci Kindergarten Unit 1: Pushes and Pulls",
+        "https://www.coreknowledge.org/wp-content/uploads/2020/06/CKSci_GKU1_Pushes-and-Pulls.zip",
+        families=["SCI-0", "SCI-1", "SCI-2", "ENG-1", "RES-1", "ELA-2"],
+        bands=["F1"],
+        license_id="artifact-embedded Core Knowledge / Creative Commons terms",
+        role="bounded foundational pushes, pulls, force direction and strength, changes in motion, surface effects, and engineering-design pilot",
+        risks=[
+            "review third-party images, links, and optional online resources separately",
+            "kindergarten force descriptions are conceptual foundations rather than a complete mechanics treatment",
+            "gravity, magnetism, friction, and noncontact forces require bounded wording and later expansion",
+        ],
+    ),
+    direct(
+        "core_knowledge_g1_light_sound",
+        "CKSci Grade 1 Unit 3: Exploring Light and Sound",
+        "https://www.coreknowledge.org/wp-content/uploads/2020/06/CKSci_G1U3_Exploring-Light-and-Sound.zip",
+        families=["SCI-0", "SCI-1", "SCI-2", "ENG-1", "RES-1", "ELA-2"],
+        bands=["F1"],
+        license_id="artifact-embedded Core Knowledge / Creative Commons terms",
+        role="bounded foundational light sources, illumination, shadows, material interactions, vibration, sound, communication, and engineering-design pilot",
+        risks=[
+            "review third-party images, links, and optional online resources separately",
+            "bright-light and loud-sound activities require explicit sensory-safety limits",
+            "wave, frequency, wavelength, energy, and electromagnetic explanations remain later teaching",
+        ],
+    ),
+    direct(
+        "core_knowledge_g1_simple_machines",
+        "CKSci Grade 1 Unit 4: Simple Machines",
+        "https://www.coreknowledge.org/wp-content/uploads/2020/08/CKSci_G1U4_Simple-Machines_W2.zip",
+        families=["SCI-0", "SCI-1", "SCI-2", "ENG-1", "RES-1", "ELA-2"],
+        bands=["F1"],
+        license_id="artifact-embedded Core Knowledge / Creative Commons terms",
+        role="bounded foundational ramps, wheels and axles, levers, pulleys, wedges, screws, gears, compound machines, and engineering-design pilot",
+        risks=[
+            "review third-party images, links, and optional online resources separately",
+            "everyday statements that a machine makes work easier require force-distance and task-context boundaries",
+            "powered machinery, mechanical ratings, and safety-critical design remain outside this elementary source",
+        ],
+    ),
+    direct(
         "core_knowledge_g1_civics",
         "CKHG Grade 1 Unit 10: Lessons in Civics",
         "https://www.coreknowledge.org/wp-content/uploads/2023/12/CKHG_G1U10_LessonsInCivics_Web_W1.zip",
@@ -490,6 +588,58 @@ SOURCES: list[dict[str, Any]] = [
         risks=["older edition and health claims require current-source verification", "knowledge resource only; never medical advice", "review embedded images and notices"],
     ),
     direct(
+        "core_knowledge_g1_helpful_computers",
+        "CKSci Grade 1 Unit 6: Helpful Computers",
+        "https://www.coreknowledge.org/wp-content/uploads/2023/09/CKSci_G1U6_HelpfulComputers_Unit_Materials_W2.zip",
+        families=["TECH-1", "ENG-1", "RES-1", "ELA-2", "CIV-1"],
+        bands=["F1"],
+        license_id="artifact-embedded CC-BY-NC-SA-4.0",
+        role="bounded computer systems, input-process-output, data, accounts, privacy, algorithms, debugging, attribution, and design foundation",
+        risks=[
+            "preserve noncommercial and share-alike attribution terms",
+            "exclude third-party images, links, trademarks, and scripted activities from retained teaching",
+            "procedural knowledge grants no device, network, filesystem, code-execution, surveillance, credential, or autonomy authority",
+            "account, password, and internet examples require current privacy and security boundaries rather than operational credential handling",
+        ],
+    ),
+    direct(
+        "medlineplus_evaluating_health_information_current",
+        "MedlinePlus: Evaluating Health Information",
+        "https://medlineplus.gov/evaluatinghealthinformation.html",
+        families=["HEALTH-1", "RES-1", "ELA-2", "LOGIC-1"],
+        bands=["F1", "F2"],
+        license_id="U.S.-federal-public-domain-health-topic-summary-with-item-specific-exceptions",
+        role="current bounded health-source evaluation, update, purpose, evidence, and qualified-provider limits",
+        risks=[
+            "use only the NLM-authored health-topic summary identified as public domain",
+            "exclude A.D.A.M. encyclopedia content, images, journal abstracts, linked resources, and other copyrighted material",
+            "health information supports questions and discussion but does not diagnose or replace a qualified provider",
+        ],
+        provider="National Library of Medicine / MedlinePlus",
+        source_kind="current federal health-information page snapshot",
+        license_scope="NLM-authored public-domain health-topic summary only; item-specific and linked copyright exclusions remain attached",
+        max_bytes=10_000_000,
+    ),
+    direct(
+        "medlineplus_patient_rights_current",
+        "MedlinePlus: Patient Rights",
+        "https://medlineplus.gov/patientrights.html",
+        families=["HEALTH-1", "CIV-1", "RES-1", "ELA-2"],
+        bands=["F1", "F2"],
+        license_id="U.S.-federal-public-domain-health-topic-summary-with-item-specific-exceptions",
+        role="bounded informed-consent, respect, questions, participation, and patient-rights foundation",
+        risks=[
+            "use only the NLM-authored health-topic summary identified as public domain",
+            "United States context must remain explicit and state, facility, capacity, age, and emergency rules vary",
+            "exclude A.D.A.M. encyclopedia content, images, linked handouts, and other copyrighted material",
+            "general rights literacy only; not legal advice or individualized consent determination",
+        ],
+        provider="National Library of Medicine / MedlinePlus",
+        source_kind="current federal health-information page snapshot",
+        license_scope="NLM-authored public-domain health-topic summary only; item-specific and linked copyright exclusions remain attached",
+        max_bytes=10_000_000,
+    ),
+    direct(
         "code_org_csf_curriculum_guide",
         "Code.org Computer Science Fundamentals Curriculum",
         "https://code.org/en-US/curriculum/computer-science-fundamentals",
@@ -501,6 +651,50 @@ SOURCES: list[dict[str, Any]] = [
         provider="Code.org",
         source_kind="bounded web curriculum artifact",
         license_scope="Code.org-authored curriculum text under CC-BY-NC-SA-4.0; preserve attribution and exclude third-party media",
+    ),
+    direct(
+        "stlouisfed_goods_services_elementary",
+        "Federal Reserve Bank of St. Louis: Goods and Services",
+        "https://www.stlouisfed.org/education/exploring-economics-video-series/goods-and-services",
+        families=["CIV-1", "LIFE-1", "ELA-1", "ELA-2"],
+        bands=["F1"],
+        license_id="InC-EDU-noncommercial-personal-or-educational-use-with-attribution",
+        role="bounded elementary distinction among wants, goods, and services with ordinary examples",
+        risks=[
+            "preserve the Federal Reserve Bank of St. Louis copyright notice and attribution link",
+            "do not reproduce the resource, transcript, song, media, or branded activity",
+            "the source defines economic categories; it does not decide a person's moral worth or universal needs",
+            "commercial reuse requires separate rights review or permission",
+        ],
+        provider="Federal Reserve Bank of St. Louis Economic Education",
+        source_kind="bounded elementary economics page snapshot",
+        license_scope=(
+            "individual resource available for noncommercial personal or educational use under the provider's "
+            "Permitted Use policy; retain notices and attribution; selected concepts are paraphrased, not copied"
+        ),
+        max_bytes=10_000_000,
+    ),
+    direct(
+        "stlouisfed_making_choices_needs_wants",
+        "Federal Reserve Bank of St. Louis: Making Choices Badge Activities",
+        "https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/education/scouts/pdf/making-choices-badge-activities.pdf",
+        families=["CIV-1", "LIFE-1", "ELA-1", "ELA-2"],
+        bands=["F1"],
+        license_id="InC-EDU-educational-reprint-with-attribution",
+        role="bounded elementary needs, wants, goods, choice, and context distinction",
+        risks=[
+            "retain the embedded Federal Reserve Bank of St. Louis copyright notice and attribution",
+            "do not reproduce the lesson, story, worksheets, images, or branded activity as Selene teaching text",
+            "need and want classifications depend on the person and situation and must not become moral judgments",
+            "commercial reuse requires separate rights review or permission",
+        ],
+        provider="Federal Reserve Bank of St. Louis Economic Education",
+        source_kind="bounded elementary economics PDF",
+        license_scope=(
+            "educational reprint or photocopy permission with provider credit; selected concepts are "
+            "paraphrased and source notices remain attached"
+        ),
+        max_bytes=25_000_000,
     ),
     catalog_only(
         "catalog_core_knowledge_k8",
@@ -634,7 +828,14 @@ def _request_json(url: str) -> Any:
 
 def _download(url: str, destination: Path, max_bytes: int) -> tuple[str, int]:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    request = Request(url, headers={"User-Agent": USER_AGENT})
+    request = Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/pdf,text/html,application/zip,application/octet-stream,*/*;q=0.8",
+            "Connection": "close",
+        },
+    )
     digest = hashlib.sha256()
     written = 0
     with urlopen(request, timeout=180) as response:

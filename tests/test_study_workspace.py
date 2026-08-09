@@ -273,6 +273,47 @@ def test_selene_notepad_forms_source_linked_note_without_inventing_clarification
     _assert_locked(formed)
 
 
+def test_selene_notepad_skips_internal_machine_labels_in_visible_study_voice(tmp_path):
+    conn = _conn(tmp_path)
+    result = propose_comprehension_concept(
+        conn,
+        {
+            "concept_key": "study-test-visible-grammar-note",
+            "title": "Visible grammar note",
+            "domain": "language_and_conversation",
+            "central_claim": "A sentence keeps its participant roles visible while grammar organizes them.",
+            "relationships": ["sentence_formation", "explanation", "A clear sentence helps a listener track the same scene."],
+            "principles": ["map_meaning_roles_before_wording"],
+            "limits": ["A different word order is useful only when it preserves the supported meaning."],
+            "source_refs": ["language_lesson:test:visible_grammar_note"],
+        },
+    )
+    concept_id = int(result["item"]["id"])
+    conn.execute(
+        """
+        UPDATE selene_comprehension_concepts
+        SET state = 'approved_knowledge_resource', review_status = 'approved_for_knowledge_use',
+            retention_state = 'retained_reviewed_knowledge',
+            chat_use_permission = 'available_as_knowledge_resource'
+        WHERE id = ?
+        """,
+        (concept_id,),
+    )
+    conn.commit()
+    session_id = int(start_study_session(conn, {"concept_ids": [concept_id]})["item"]["id"])
+
+    formed = form_study_note(conn, {"session_id": session_id, "concept_id": concept_id})
+
+    assert formed["created"] is True
+    assert formed["item"]["source_field"] == "relationship"
+    assert formed["item"]["meaning_summary"].endswith(
+        "A clear sentence helps a listener track the same scene."
+    )
+    assert "sentence_formation" not in formed["item"]["note_text"]
+    assert "map_meaning_roles_before_wording" not in formed["item"]["note_text"]
+    _assert_locked(formed)
+
+
 def test_clarification_lane_moves_uncertainty_into_question_and_tracks_answer(tmp_path):
     conn = _conn(tmp_path)
     concept_id = _concept(conn)
@@ -384,9 +425,21 @@ def test_language_foundation_compass_uses_reviewed_lessons_and_precedes_deferred
     prepare_language_teaching_shelf(conn)
 
     first = seed_language_foundation_learning_compass(conn)
+    first_language_goal = next(
+        item for item in first["items"] if item["source_kind"] == "guided_language_foundation"
+    )
+    update_learning_compass_goal(
+        conn,
+        {
+            "goal_id": first_language_goal["id"],
+            "action": "still_unclear",
+            "remaining_unclear": "The participant roles are visible, but the question form still needs another representation.",
+        },
+    )
     second = seed_language_foundation_learning_compass(conn)
     language_goals = [item for item in first["items"] if item["source_kind"] == "guided_language_foundation"]
     prior_goals = [item for item in first["items"] if item["source_kind"] == "learning_evidence_activity"]
+    refreshed_goal = next(item for item in second["items"] if int(item["id"]) == int(first_language_goal["id"]))
 
     assert len(first["created"]) == len(LANGUAGE_FOUNDATION_COMPASS_GOALS) == 3
     assert [item["display_order"] for item in language_goals] == [1, 2, 3]
@@ -400,6 +453,9 @@ def test_language_foundation_compass_uses_reviewed_lessons_and_precedes_deferred
     assert "license:CC-BY-NC-SA-3.0-Unported" in language_goals[0]["source_refs"]
     assert len(second["created"]) == 0
     assert len(second["already_present"]) == 3
+    assert len(second["refreshed"]) == 3
+    assert refreshed_goal["state"] == "still_unclear"
+    assert "another representation" in refreshed_goal["remaining_unclear"]
     assert second["reordered_existing_goal_count"] == 0
     assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
     _assert_locked(second)
@@ -668,6 +724,62 @@ def test_sentence_role_and_transformation_representations_are_visible_and_bounde
     assert attempts[-1]["observation"].startswith("The time")
     assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
     _assert_locked(transformed)
+
+
+def test_l1_sentence_scene_forms_statement_question_callback_and_selene_owned_reflection(tmp_path):
+    conn = _conn(tmp_path)
+    for concept_key in LANGUAGE_FOUNDATION_COMPASS_GOALS[0]["concept_keys"]:
+        _approved_concept_with_key(conn, concept_key)
+    seeded = seed_language_foundation_learning_compass(conn)
+    goal = next(item for item in seeded["items"] if item["goal_key"] == "language_foundation_sentence_scene_20260801")
+    started = start_learning_compass_goal(conn, {"goal_id": goal["id"]})
+    session_id = int(started["session"]["item"]["id"])
+    thread_id = int(
+        create_pondering_thread(
+            conn,
+            {"session_id": session_id, "title": "Keep one scene stable across three forms"},
+        )["pondering_threads"][0]["id"]
+    )
+
+    represented = try_study_representation(
+        conn,
+        {
+            "thread_id": thread_id,
+            "representation_kind": "sentence_scene",
+            "subject": "the seedling",
+            "predicate": "grow",
+            "place": "near the window",
+            "callback_pronoun": "it",
+            "question_role": "place",
+        },
+    )
+    attempt = represented["pondering_threads"][0]["representation_attempts"][0]
+    output = attempt["output"]
+    reflected = route_request(
+        conn,
+        "study.representation.reflect",
+        {"attempt_id": attempt["id"], "connect_for_now": True},
+    )["result"]
+    refreshed_goal = next(
+        item for item in list_learning_compass(conn)["items"] if int(item["id"]) == int(goal["id"])
+    )
+
+    assert output["statement"] == "The seedling grows near the window."
+    assert output["question"] == "Where does the seedling grow?"
+    assert output["callback"] == "It grows near the window."
+    assert [item["role"] for item in output["roles"]] == ["subject", "predicate", "place"]
+    assert output["same_scene_preserved"] is True
+    assert output["pronoun_reference_clear"] is True
+    assert reflected["reflection_source"] == "selene_bounded_sentence_scene_representation"
+    assert "missing place role" in reflected["reflection"]
+    assert "the seedling as it" in reflected["reflection"]
+    assert refreshed_goal["state"] == "connected_for_now"
+    assert refreshed_goal["selene_reflection"] == reflected["reflection"]
+    assert reflected["item"]["status"] == "completed"
+    assert reflected["pondering_threads"][0]["state"] == "integrated_for_now"
+    assert list_open_study_attention(conn)["open_count"] == 0
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_locked(reflected)
 
 
 def test_pondering_thread_can_return_later_reopen_and_integrate_for_now(tmp_path):

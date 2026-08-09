@@ -969,7 +969,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v24_contextual_composition_and_modulation"
+    assert result["native_language_organ"]["version"] == "v31_generative_thought_expression"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     composition_plan = result["native_language_organ"]["discourse_plan"]["contextual_composition_plan"]
     composition = result["native_language_organ"]["contextual_composition"]
@@ -3059,7 +3059,7 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
     assert len({result["candidate_text"] for result in results}) == len(results)
     for result in results:
         assert result["candidate_text"]
-        assert result["native_language_organ"]["version"] == "v24_contextual_composition_and_modulation"
+        assert result["native_language_organ"]["version"] == "v31_generative_thought_expression"
 
 
 def test_short_diagnostic_replay_repairs_math_session_facts_uncertainty_and_play(tmp_path):

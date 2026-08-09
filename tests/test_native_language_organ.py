@@ -352,7 +352,7 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
 
     discourse = result["discourse_plan"]["supported_discourse"]
 
-    assert result["version"] == "v24_contextual_composition_and_modulation"
+    assert result["version"] == "v31_generative_thought_expression"
     assert discourse["status"] == "supported_discourse_plan_ready"
     assert discourse["thesis_unit_id"]
     assert [item["role"] for item in discourse["paragraph_plan"]] == [

@@ -20,9 +20,9 @@ setting, and reopen it when a correction or contradiction changes the fit.
 The target is not speed, grade performance, phrase recall, or imitation of a
 school system. The target is transferable understanding.
 
-Current implementation checkpoint: eight independently authorized F1 groups
+Current implementation checkpoint: seventeen independently authorized F1 groups
 have completed Acquire, Integrate, Express, comprehension, and retention,
-providing 54 reviewed foundations across inquiry, language, number,
+providing 106 reviewed foundations across inquiry, language, number,
 operations, data, measurement, time, geometry, equal shares, spatial
 reference, bounded algorithmic reasoning, equal groups, informal sharing and
 grouping, odd and even, rectangular arrays, graph literacy, and arithmetic-only
@@ -31,8 +31,54 @@ volume, fair measurement, liters, milliliters, bounded scale reading,
 community, cooperation, contextual rules, authority distinctions, fairness,
 reasoned participation, chronology, maps, historical sources, source-versus-
 inference boundaries, differing accounts, and multi-cause explanation. This
-is progress within F1, not a claim that F1
-or T1 is complete.
+now also includes material properties and change, motion, force interactions,
+surface effects, gravity, magnetism, vibration, sound, illumination, light and
+material interactions, shadows, elementary signal design, qualitative
+simple-machine systems and tradeoffs, living-status evidence, organism needs,
+habitats, external parts and functions, environmental responses, young-adult
+similarity and variation, bounded care reasoning, weather observations,
+contextual records, seasonal and hemispheric limits, Earth rotation and
+day/night, apparent sky patterns, bounded prediction, interacting human-body
+systems, support and movement, breathing and circulation, digestion and
+absorption, sensory and nervous information, ordinary care, health-source
+evaluation, consent, qualified-help boundaries, computer systems, task fit,
+hardware, software, represented data, input-process-output-storage roles,
+algorithms, debugging, conceptual networks, privacy, security, access
+distinctions, and bounded cross-domain problem solving. This is a retained F1
+teaching checkpoint, not yet a claim that F1 or T1 is complete. The closure
+audit has now inspected the evidence and the four bounded Group 17 bridge
+resources have completed review and retention under authorization record 20.
+
+F1 Group 14 is retained under Aleks authorization record 17 as six approved
+general knowledge resources. It covers weather and climate timescale
+distinctions, contextual weather records, regional and hemispheric seasonal
+limits, Earth rotation and day/night, apparent Sun, Moon, and star patterns,
+and evidence-proportional prediction. The group remains separate from personal
+memory, identity, personality, governance, training, safety authority, and
+autonomy.
+
+F1 Group 15 is retained under Aleks authorization record 18 as six approved
+general knowledge resources. It covers interacting human-body systems,
+support and movement, breathing and circulation, digestion and absorption,
+sensory and nervous information, ordinary care, health-source evaluation,
+consent, and qualified-help boundaries. It remains separate from personal
+memory, identity, personality, governance, training, medical or legal
+authority, and autonomy.
+
+F1 Group 16 is retained under Aleks authorization record 19 as six approved
+general knowledge resources. It covers computer/tool/task-fit limits, hardware
+and software, data and input-process-output-storage roles, algorithms,
+programs, testing and debugging, conceptual networks and messages, privacy,
+security, authentication, authorization, responsibility, and bounded
+cross-domain F1 integration. It remains separate from personal memory,
+identity, personality, governance, credentials, device or network authority,
+code execution, training, surveillance, and autonomy.
+
+F1 Group 17 is retained under Aleks authorization record 20 as four approved
+general knowledge resources. It covers text purpose, question-to-evidence fit,
+contextual needs and wants, and goods/services/tools distinctions. Formal line
+symmetry is deliberately deferred to its later position in the pinned
+sequence rather than being mislabeled as an F1 failure.
 
 F1 Group 7 is retained as a separately bounded community, rules, and
 civic-reasoning group under Aleks authorization record 8. Its six source-linked
@@ -45,6 +91,13 @@ under Aleks authorization record 10. Its six source-linked foundations
 completed the full lifecycle and are available as general knowledge while
 remaining separate from personal memory, identity, personality, governance,
 and current legal or political claims.
+
+The F1 completion order is fixed in
+`SELENE_F1_GROUPS_12_16_COMPLETION_SEQUENCE_20260808.md`. It preserves five
+coherent groups rather than compressing every residual requirement into one
+miscellaneous package. All five and the subsequent four-item closure bridge
+are now retained. F2 remains a separate curriculum decision rather than an
+automatic consequence of closing F1.
 
 ```text
 source-labeled foundations

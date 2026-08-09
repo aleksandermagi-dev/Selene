@@ -18,10 +18,11 @@ const REPRESENTATION_LABELS: Record<string, string> = {
   spatial_object: "Move or rotate an object",
   sentence_roles: "Sentence meaning-role cards",
   sentence_transform: "Before and after sentence",
+  sentence_scene: "Statement, question, and callback",
 };
 
 const NUMERIC_REPRESENTATIONS = new Set(["objects", "tallies", "groups", "place_value"]);
-const SENTENCE_REPRESENTATIONS = new Set(["sentence_roles", "sentence_transform"]);
+const SENTENCE_REPRESENTATIONS = new Set(["sentence_roles", "sentence_transform", "sentence_scene"]);
 
 const PONDERING_LABELS: Record<string, string> = {
   active: "Actively pondering",
@@ -66,6 +67,10 @@ type RepresentationDraft = {
   second_subject: string;
   second_predicate: string;
   second_object: string;
+  place: string;
+  time: string;
+  callback_pronoun: string;
+  question_role: string;
   observation: string;
 };
 
@@ -93,6 +98,10 @@ const DEFAULT_REPRESENTATION: RepresentationDraft = {
   second_subject: "",
   second_predicate: "",
   second_object: "",
+  place: "near the window",
+  time: "",
+  callback_pronoun: "it",
+  question_role: "place",
   observation: "",
 };
 
@@ -162,6 +171,21 @@ function representationVisual(attempt: Dict) {
           <span>{text(output.polarity)}</span>
           {text(output.relation) ? <span>{text(output.relation)}</span> : null}
           <span>{output.original_claim_unchanged ? "same claim" : "claim changed by visible controls"}</span>
+        </div>
+      </div>
+    );
+  }
+  if (kind === "sentence_scene") {
+    const roles = (output.roles || []) as Dict[];
+    return (
+      <div className="representationSentenceShape">
+        <div className="sentenceRoleCards">
+          {roles.map((role, index) => <span key={`scene-role-${index}`}><small>{text(role.label)}</small><b>{text(role.value)}</b></span>)}
+        </div>
+        <div className="sentenceBeforeAfter">
+          <span><small>Statement</small><b>{text(output.statement)}</b></span>
+          <span><small>Useful question · missing {text(output.missing_role)}</small><b>{text(output.question)}</b></span>
+          <span><small>Clear callback · {text(output.callback_pronoun)} refers to {text(output.pronoun_antecedent)}</small><b>{text(output.callback)}</b></span>
         </div>
       </div>
     );
@@ -297,6 +321,10 @@ export default function StudyPonderingLab({ session, onUpdated }: StudyPondering
           second_subject: draft.second_subject,
           second_predicate: draft.second_predicate,
           second_object: draft.second_object,
+          place: draft.place,
+          time: draft.time,
+          callback_pronoun: draft.callback_pronoun,
+          question_role: draft.question_role,
           observation: draft.observation,
         }),
       });
@@ -304,6 +332,25 @@ export default function StudyPonderingLab({ session, onUpdated }: StudyPondering
       onUpdated(result);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The representation could not be formed.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function formRepresentationReflection(attempt: Dict) {
+    const attemptId = Number(attempt.id || 0);
+    if (!attemptId || busy) return;
+    setBusy(`${attemptId}:reflection`);
+    setMessage("");
+    try {
+      const result = await api<Dict>("/api/study/representations/reflect", {
+        method: "POST",
+        body: JSON.stringify({ attempt_id: attemptId, connect_for_now: true }),
+      });
+      setMessage("Selene formed a visible L1 reflection from this scene and connected it for now. It can be reopened later.");
+      onUpdated(result);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The visible reflection could not be formed.");
     } finally {
       setBusy("");
     }
@@ -411,6 +458,14 @@ export default function StudyPonderingLab({ session, onUpdated }: StudyPondering
                       ) : null}
                     </>
                   ) : null}
+                  {representation.kind === "sentence_scene" ? (
+                    <>
+                      <label><span>Where (optional unless asked)</span><input value={representation.place} onChange={(event) => setRepresentationField(thread, "place", event.target.value)} /></label>
+                      <label><span>When (optional unless asked)</span><input value={representation.time} onChange={(event) => setRepresentationField(thread, "time", event.target.value)} /></label>
+                      <label><span>Clear callback pronoun</span><select value={representation.callback_pronoun} onChange={(event) => setRepresentationField(thread, "callback_pronoun", event.target.value)}><option value="it">It</option><option value="she">She</option><option value="he">He</option><option value="they">They</option></select></label>
+                      <label><span>Role the useful question asks for</span><select value={representation.question_role} onChange={(event) => setRepresentationField(thread, "question_role", event.target.value)}><option value="object">Affected or completing part</option><option value="place">Where</option><option value="time">When</option><option value="reason">Why</option><option value="manner">How</option></select></label>
+                    </>
+                  ) : null}
                   <label className="wideEvidenceField"><span>What does Selene notice?</span><textarea value={representation.observation} onChange={(event) => setRepresentationField(thread, "observation", event.target.value)} placeholder="Optional. The representation can exist before its meaning is clear." /></label>
                 </div>
                 <button className="primary" disabled={Boolean(busy)} onClick={() => tryRepresentation(thread)}>Try This Form</button>
@@ -423,6 +478,7 @@ export default function StudyPonderingLab({ session, onUpdated }: StudyPondering
                       <div className="packetHeader"><strong>{REPRESENTATION_LABELS[text(attempt.representation_kind)]}</strong><span>visible attempt {text(attempt.id)}</span></div>
                       {representationVisual(attempt)}
                       {text(attempt.observation) ? <p><b>Selene noticed</b>{text(attempt.observation)}</p> : <p className="plainHelp">No interpretation is required yet. This form can be revisited.</p>}
+                      {text(attempt.representation_kind) === "sentence_scene" ? <div className="reviewActions"><button className="primary" disabled={Boolean(busy)} onClick={() => formRepresentationReflection(attempt)}>Form L1 Reflection &amp; Connect for Now</button></div> : null}
                     </article>
                   ))}
                 </div>

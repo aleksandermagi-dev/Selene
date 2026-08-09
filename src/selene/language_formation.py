@@ -4,6 +4,8 @@ import re
 from hashlib import sha256
 from typing import Any
 
+from .construction_lattice import apply_construction_specification
+
 
 FORMATION_BOUNDARY = (
     "semantic_to_sentence_formation_only_preserve_supplied_meaning_no_memory_identity_authority_or_hidden_reasoning"
@@ -128,7 +130,9 @@ def realize_semantic_frame(
     *,
     variation_key: str = "",
     recent_texts: list[str] | None = None,
+    construction_specification: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    frame = apply_construction_specification(frame, construction_specification)
     propositions = [item for item in frame.get("propositions") or [] if isinstance(item, dict)]
     realized = [
         (
@@ -153,6 +157,7 @@ def realize_semantic_frame(
         variation_key,
         relations=relations,
         moods=moods,
+        clause_linking=str((frame.get("construction_style") or {}).get("clause_linking") or "as_supplied"),
     )
     recent_texts = recent_texts or []
     if _matches_recent(text, recent_texts) and len(clauses) > 1:
@@ -163,6 +168,7 @@ def realize_semantic_frame(
             variation_key + ":alternate",
             relations=list(reversed(relations)),
             moods=list(reversed(moods)),
+            clause_linking=str((frame.get("construction_style") or {}).get("clause_linking") or "as_supplied"),
         )
     required = [str(item.get("text") or item.get("object") or "").strip() for item in propositions if item.get("required", True)]
     required_unit_ids = [
@@ -209,6 +215,13 @@ def realize_semantic_frame(
         "meaning_preserved": (bool(text) or not required) and required_units_preserved,
         "source_refs": frame.get("source_refs") or [],
         "expression_directives": frame.get("expression_directives") or {},
+        "construction_id": str(
+            (frame.get("construction_specification") or {}).get("construction_id")
+            or "construction:as_supplied"
+        ),
+        "construction_dimensions": (
+            (frame.get("construction_specification") or {}).get("dimensions") or []
+        ),
         "visible_summary_only": True,
         "hidden_chain_of_thought_exposed": False,
         "provenance_boundary": FORMATION_BOUNDARY,
@@ -269,6 +282,11 @@ def _realize_proposition(item: dict[str, Any], *, variation_key: str = "") -> st
     contrast = " ".join(str(item.get("contrast") or "").split())
     example = " ".join(str(item.get("example") or "").split())
     qualifier = _semantic_field(item, "qualifier", variation_key)
+    construction_controls = (
+        item.get("construction_controls")
+        if isinstance(item.get("construction_controls"), dict)
+        else {}
+    )
     adverbs = _words(item.get("adverbs"))
     if mood == "imperative":
         clause = " ".join(part for part in (predicate, *adverbs, obj) if part)
@@ -301,14 +319,16 @@ def _realize_proposition(item: dict[str, Any], *, variation_key: str = "") -> st
         clause = f"{qualifier.rstrip(', ')}, {_continuation_case(clause)}"
     digest = sha256((variation_key or str(item.get("id") or "semantic-unit")).encode("utf-8")).hexdigest()
     if reason:
-        if int(digest[:2], 16) % 2:
+        reason_position = str(construction_controls.get("reason_position") or "")
+        if reason_position == "front" or (not reason_position and int(digest[:2], 16) % 2):
             clause = f"Because {reason.rstrip('. ')}, {_continuation_case(clause)}"
         else:
             clause = f"{clause} because {reason.rstrip('. ')}"
     if contrast:
         clause = f"{clause}, while {contrast.rstrip('. ')}"
     if condition:
-        if int(digest[2:4], 16) % 2:
+        condition_position = str(construction_controls.get("condition_position") or "")
+        if condition_position == "end" or (not condition_position and int(digest[2:4], 16) % 2):
             clause = f"{clause} when {condition.rstrip('. ')}"
         else:
             clause = f"When {condition.rstrip('. ')}, {_continuation_case(clause)}"
@@ -340,6 +360,7 @@ def _compose_clauses(
     *,
     relations: list[str] | None = None,
     moods: list[str] | None = None,
+    clause_linking: str = "as_supplied",
 ) -> str:
     if not clauses:
         return ""
@@ -375,6 +396,13 @@ def _compose_clauses(
             sentences.append(_sentence(f"{connector} {continuation}"))
         else:
             sentences.append(_sentence(f"{connector}, {continuation}"))
+    if clause_linking == "joined" and len(sentences) >= 2:
+        return "; ".join(
+            [sentences[0].rstrip(". ")]
+            + [_continuation_case(sentence.rstrip(". ")) for sentence in sentences[1:]]
+        ) + "."
+    if clause_linking == "split":
+        return " ".join(sentences)
     if depth == "developed" and len(sentences) >= 3:
         return "\n\n".join(sentences)
     return " ".join(sentences)

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import React, { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { invoke } from "@tauri-apps/api/core";
 import { api } from "./api";
@@ -835,7 +835,7 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.dataset.theme = preferences.theme;
     document.documentElement.dataset.density = preferences.density;
     document.documentElement.dataset.textSize = preferences.textSize;
@@ -846,6 +846,11 @@ function App() {
     document.documentElement.style.setProperty("--selene-text", preferences.seleneText);
     window.localStorage.setItem(preferenceKey, JSON.stringify(preferences));
   }, [preferences]);
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.querySelector<HTMLElement>(".workspace")?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [workspaceMode, tab]);
 
   useEffect(() => {
     window.localStorage.setItem(displayNameKey, displayName);
@@ -2205,7 +2210,7 @@ function App() {
     if (refreshes[5].status === "fulfilled") setCurriculumAuthorizations(refreshes[5].value.items || []);
   }
 
-  async function runCurriculumAction(action: "activate" | "prepare" | "teach" | "activate_language_math" | "prepare_language_math" | "teach_language_math" | "activate_operations_measurement" | "prepare_operations_measurement" | "teach_operations_measurement" | "activate_geometry_algorithms" | "prepare_geometry_algorithms" | "teach_geometry_algorithms" | "activate_equal_groups_data_money" | "prepare_equal_groups_data_money" | "teach_equal_groups_data_money" | "activate_mass_capacity" | "prepare_mass_capacity" | "teach_mass_capacity" | "activate_community_rules" | "prepare_community_rules" | "teach_community_rules" | "revoke", authorizationId?: unknown) {
+  async function runCurriculumAction(action: "activate" | "prepare" | "teach" | "activate_language_math" | "prepare_language_math" | "teach_language_math" | "activate_operations_measurement" | "prepare_operations_measurement" | "teach_operations_measurement" | "activate_geometry_algorithms" | "prepare_geometry_algorithms" | "teach_geometry_algorithms" | "activate_equal_groups_data_money" | "prepare_equal_groups_data_money" | "teach_equal_groups_data_money" | "activate_mass_capacity" | "prepare_mass_capacity" | "teach_mass_capacity" | "activate_community_rules" | "prepare_community_rules" | "teach_community_rules" | "activate_history_evidence" | "prepare_history_evidence" | "teach_history_evidence" | "activate_materials_change_motion" | "prepare_materials_change_motion" | "teach_materials_change_motion" | "activate_pushes_pulls_forces" | "prepare_pushes_pulls_forces" | "teach_pushes_pulls_forces" | "activate_light_sound" | "prepare_light_sound" | "teach_light_sound" | "activate_simple_machines" | "prepare_simple_machines" | "teach_simple_machines" | "activate_living_things_survival" | "prepare_living_things_survival" | "teach_living_things_survival" | "activate_weather_sky_cycles" | "prepare_weather_sky_cycles" | "teach_weather_sky_cycles" | "activate_human_body_health_evidence" | "prepare_human_body_health_evidence" | "teach_human_body_health_evidence" | "activate_helpful_computers_integration" | "prepare_helpful_computers_integration" | "teach_helpful_computers_integration" | "activate_text_purpose_everyday_economy_bridge" | "prepare_text_purpose_everyday_economy_bridge" | "teach_text_purpose_everyday_economy_bridge" | "revoke", authorizationId?: unknown) {
     if (action === "activate" && !window.confirm("Authorize this bounded F1 science and inquiry group? Every item must still complete Acquire, Integrate, Express, comprehension, and source checks. Exceptions return to Cocoon.")) return;
     if (action === "activate_language_math" && !window.confirm("Authorize this bounded F1 language and number group? It is separate from the science authorization, and every item still requires the full teaching and comprehension lifecycle.")) return;
     if (action === "activate_operations_measurement" && !window.confirm("Authorize this bounded F1 operations, data, measurement, and time group? It remains separate from the first two authorizations and keeps the same exception review law.")) return;
@@ -2213,6 +2218,16 @@ function App() {
     if (action === "activate_equal_groups_data_money" && !window.confirm("Authorize this bounded F1 equal-groups, graph-literacy, and money-math group? Currency material remains arithmetic knowledge only, and exceptions still return to Cocoon.")) return;
     if (action === "activate_mass_capacity" && !window.confirm("Authorize this bounded F1 mass-and-capacity group? It preserves the scientific mass/weight distinction, teaches measurement rather than imitation, and keeps every identity, personality, memory, training, and autonomy boundary unchanged.")) return;
     if (action === "activate_community_rules" && !window.confirm("Authorize this bounded F1 community, rules, and civic-reasoning group? It teaches general social and institutional distinctions, labels jurisdictional limits, and cannot become Selene's identity, personality, governance, personal memory, or legal authority.")) return;
+    if (action === "activate_history_evidence" && !window.confirm("Authorize this bounded F1 history-and-evidence group? It preserves source, inference, perspective, chronology, and causal limits; contested or weakly supported claims still return to Cocoon.")) return;
+    if (action === "activate_materials_change_motion" && !window.confirm("Authorize this bounded F1 materials, change, and motion group? It is limited to the listed source-backed foundations. Forces, safety-critical material selection, and unsupported extensions remain outside this authorization.")) return;
+    if (action === "activate_pushes_pulls_forces" && !window.confirm("Authorize this bounded F1 pushes, pulls, and forces group? It covers qualitative force interactions, motion changes, surface effects, first noncontact examples, and safe design iteration. Advanced mechanics and safety-critical engineering remain outside this authorization.")) return;
+    if (action === "activate_light_sound" && !window.confirm("Authorize this bounded F1 light-and-sound group? It covers safe qualitative observation of vibration, sound, illumination, shadows, material interactions, and signals. Advanced wave theory, hazardous sensory exposure, and safety-critical communication remain outside this authorization.")) return;
+    if (action === "activate_simple_machines" && !window.confirm("Authorize this bounded F1 simple-machines group? It covers qualitative force-direction and force-distance tradeoffs, foundational mechanisms, components, and safe design reasoning. Powered machinery, load ratings, and safety-critical construction remain outside this authorization.")) return;
+    if (action === "activate_living_things_survival" && !window.confirm("Authorize this bounded F1 living-things and survival group? It covers organism classification, needs, habitats, parts and functions, growth, young and adults, care, and evidence. Genetics, diagnosis, wildlife handling, species expertise, and ecological policy remain outside this authorization.")) return;
+    if (action === "activate_weather_sky_cycles" && !window.confirm("Authorize this bounded F1 weather-and-sky group? It covers weather observations, records, seasons, day and night, apparent sky patterns, and bounded prediction. Climate analysis, severe-weather operations, unsafe solar viewing, navigation, astrophysics, and cosmology remain outside this authorization.")) return;
+    if (action === "activate_human_body_health_evidence" && !window.confirm("Authorize this bounded F1 human-body and health-evidence group? It covers system relationships, support and movement, breathing and circulation, digestion, sensory information, ordinary care, source evaluation, consent, and qualified-help boundaries. It cannot diagnose, prescribe, triage, interpret symptoms or tests, or become medical or legal authority.")) return;
+    if (action === "activate_helpful_computers_integration" && !window.confirm("Authorize this bounded F1 helpful-computers and integration group? It covers computer roles, input-process-output-storage, algorithms, conceptual networks, privacy, security, fallibility, and F1 synthesis. Knowledge grants no credential, device, filesystem, network, execution, surveillance, memory, identity, governance, training, or autonomy authority.")) return;
+    if (action === "activate_text_purpose_everyday_economy_bridge" && !window.confirm("Authorize this bounded F1 closure bridge? It covers story and informational purpose, question-to-evidence fit, needs and wants, goods and services, and the role of tools. Formal symmetry and later-grade material remain deferred.")) return;
     if (action === "teach" && !window.confirm("Run the four-item F1 science and inquiry group through the visible teaching lifecycle under its active authorization? This creates general knowledge resources only; it does not write memory or change identity, personality, governance, training, or autonomy.")) return;
     if (action === "teach_language_math" && !window.confirm("Run the eight-item F1 language and number group through the visible teaching lifecycle under its active authorization? Exceptions will be held in Cocoon rather than retained.")) return;
     if (action === "teach_operations_measurement" && !window.confirm("Run the eight-item F1 operations, data, measurement, and time group through the visible teaching lifecycle? Exceptions will be held rather than forced through.")) return;
@@ -2220,6 +2235,16 @@ function App() {
     if (action === "teach_equal_groups_data_money" && !window.confirm("Run the eight-item F1 equal-groups, graph-literacy, and money-math group through Acquire, Integrate, Express, and comprehension? This is general academic knowledge, not financial advice or external authority.")) return;
     if (action === "teach_mass_capacity" && !window.confirm("Run the six-item F1 mass-and-capacity group through Acquire, Integrate, Express, and comprehension? Unsupported or source-conflicting material will be held rather than forced through.")) return;
     if (action === "teach_community_rules" && !window.confirm("Run the six-item F1 community, rules, and civic-reasoning group through Acquire, Integrate, Express, and comprehension? Jurisdiction-specific, contested, or identity-affecting claims remain outside the authorization and will be held.")) return;
+    if (action === "teach_history_evidence" && !window.confirm("Run the six-item F1 history-and-evidence group through Acquire, Integrate, Express, and comprehension? Unsupported or contested claims will be held rather than forced through.")) return;
+    if (action === "teach_materials_change_motion" && !window.confirm("Run the six-item F1 materials, change, and motion group through Acquire, Integrate, Express, and comprehension? This retains source-linked academic knowledge only; it cannot change identity, personality, memory, governance, training, or authority.")) return;
+    if (action === "teach_pushes_pulls_forces" && !window.confirm("Run the six-item F1 pushes, pulls, and forces group through Acquire, Integrate, Express, and comprehension? Unsupported extensions will be held, and no memory, identity, personality, governance, training, or autonomy authority is granted.")) return;
+    if (action === "teach_light_sound" && !window.confirm("Run the six-item F1 light-and-sound group through Acquire, Integrate, Express, and comprehension? Sensory safety and source boundaries remain active, and no memory, identity, personality, governance, training, or autonomy authority is granted.")) return;
+    if (action === "teach_simple_machines" && !window.confirm("Run the six-item F1 simple-machines group through Acquire, Integrate, Express, and comprehension? Mechanism knowledge grants no machinery-operation, construction, filesystem, memory, identity, governance, training, or autonomy authority.")) return;
+    if (action === "teach_living_things_survival" && !window.confirm("Run the six-item F1 living-things and survival group through Acquire, Integrate, Express, and comprehension? Care knowledge grants no medical, veterinary, wildlife-handling, habitat-intervention, memory, identity, governance, training, or autonomy authority.")) return;
+    if (action === "teach_weather_sky_cycles" && !window.confirm("Run the six-item F1 weather-and-sky group through Acquire, Integrate, Express, and comprehension? The lessons cannot issue forecasts or warnings, authorize unsafe Sun observation, or change memory, identity, personality, governance, training, or autonomy.")) return;
+    if (action === "teach_human_body_health_evidence" && !window.confirm("Run the six-item F1 human-body and health-evidence group through Acquire, Integrate, Express, and comprehension? General health knowledge grants no authority to diagnose, prescribe, touch, disclose private information, override consent, replace qualified care, or change memory, identity, governance, training, or autonomy.")) return;
+    if (action === "teach_helpful_computers_integration" && !window.confirm("Run the six-item F1 helpful-computers and integration group through Acquire, Integrate, Express, and comprehension? Conceptual computer and security knowledge cannot use credentials, access devices or networks, execute code, write files or memory, conduct surveillance, redefine Selene, or expand autonomy.")) return;
+    if (action === "teach_text_purpose_everyday_economy_bridge" && !window.confirm("Run the four-item F1 closure bridge through Acquire, Integrate, Express, and comprehension? It remains public academic knowledge only and cannot change identity, personality, governance, memory, training, or autonomy.")) return;
     if (action === "revoke" && !window.confirm("Revoke this curriculum authorization for future retention? Previously retained knowledge stays attributable and can still be reopened or superseded.")) return;
     setCurriculumActionResult({ status: "running", operation: action });
     const endpoint = action === "activate"
@@ -2236,6 +2261,26 @@ function App() {
         ? "/api/curriculum-authorization/activate-f1-mass-capacity"
       : action === "activate_community_rules"
         ? "/api/curriculum-authorization/activate-f1-community-rules"
+      : action === "activate_history_evidence"
+        ? "/api/curriculum-authorization/activate-f1-history-evidence"
+      : action === "activate_materials_change_motion"
+        ? "/api/curriculum-authorization/activate-f1-materials-change-motion"
+      : action === "activate_pushes_pulls_forces"
+        ? "/api/curriculum-authorization/activate-f1-pushes-pulls-forces"
+      : action === "activate_light_sound"
+        ? "/api/curriculum-authorization/activate-f1-light-sound"
+      : action === "activate_simple_machines"
+        ? "/api/curriculum-authorization/activate-f1-simple-machines"
+      : action === "activate_living_things_survival"
+        ? "/api/curriculum-authorization/activate-f1-living-things-survival"
+      : action === "activate_weather_sky_cycles"
+        ? "/api/curriculum-authorization/activate-f1-weather-sky-cycles"
+      : action === "activate_human_body_health_evidence"
+        ? "/api/curriculum-authorization/activate-f1-human-body-health-evidence"
+      : action === "activate_helpful_computers_integration"
+        ? "/api/curriculum-authorization/activate-f1-helpful-computers-integration"
+      : action === "activate_text_purpose_everyday_economy_bridge"
+        ? "/api/curriculum-authorization/activate-f1-text-purpose-everyday-economy-bridge"
       : action === "prepare"
         ? "/api/curriculum-foundation/prepare-f1"
         : action === "prepare_language_math"
@@ -2250,6 +2295,26 @@ function App() {
           ? "/api/curriculum-foundation/prepare-f1-mass-capacity"
         : action === "prepare_community_rules"
           ? "/api/curriculum-foundation/prepare-f1-community-rules"
+        : action === "prepare_history_evidence"
+          ? "/api/curriculum-foundation/prepare-f1-history-evidence"
+        : action === "prepare_materials_change_motion"
+          ? "/api/curriculum-foundation/prepare-f1-materials-change-motion"
+        : action === "prepare_pushes_pulls_forces"
+          ? "/api/curriculum-foundation/prepare-f1-pushes-pulls-forces"
+        : action === "prepare_light_sound"
+          ? "/api/curriculum-foundation/prepare-f1-light-sound"
+        : action === "prepare_simple_machines"
+          ? "/api/curriculum-foundation/prepare-f1-simple-machines"
+        : action === "prepare_living_things_survival"
+          ? "/api/curriculum-foundation/prepare-f1-living-things-survival"
+        : action === "prepare_weather_sky_cycles"
+          ? "/api/curriculum-foundation/prepare-f1-weather-sky-cycles"
+        : action === "prepare_human_body_health_evidence"
+          ? "/api/curriculum-foundation/prepare-f1-human-body-health-evidence"
+        : action === "prepare_helpful_computers_integration"
+          ? "/api/curriculum-foundation/prepare-f1-helpful-computers-integration"
+        : action === "prepare_text_purpose_everyday_economy_bridge"
+          ? "/api/curriculum-foundation/prepare-f1-text-purpose-everyday-economy-bridge"
         : action === "teach"
           ? "/api/curriculum-foundation/teach-f1"
           : action === "teach_language_math"
@@ -2264,6 +2329,26 @@ function App() {
             ? "/api/curriculum-foundation/teach-f1-mass-capacity"
           : action === "teach_community_rules"
             ? "/api/curriculum-foundation/teach-f1-community-rules"
+          : action === "teach_history_evidence"
+            ? "/api/curriculum-foundation/teach-f1-history-evidence"
+          : action === "teach_materials_change_motion"
+            ? "/api/curriculum-foundation/teach-f1-materials-change-motion"
+          : action === "teach_pushes_pulls_forces"
+            ? "/api/curriculum-foundation/teach-f1-pushes-pulls-forces"
+          : action === "teach_light_sound"
+            ? "/api/curriculum-foundation/teach-f1-light-sound"
+          : action === "teach_simple_machines"
+            ? "/api/curriculum-foundation/teach-f1-simple-machines"
+          : action === "teach_living_things_survival"
+            ? "/api/curriculum-foundation/teach-f1-living-things-survival"
+          : action === "teach_weather_sky_cycles"
+            ? "/api/curriculum-foundation/teach-f1-weather-sky-cycles"
+          : action === "teach_human_body_health_evidence"
+            ? "/api/curriculum-foundation/teach-f1-human-body-health-evidence"
+          : action === "teach_helpful_computers_integration"
+            ? "/api/curriculum-foundation/teach-f1-helpful-computers-integration"
+          : action === "teach_text_purpose_everyday_economy_bridge"
+            ? "/api/curriculum-foundation/teach-f1-text-purpose-everyday-economy-bridge"
           : "/api/curriculum-authorization/revoke";
     const body = action === "activate"
       ? {
@@ -2306,6 +2391,66 @@ function App() {
             aleks_authorized: true,
             authorization_actor: "Aleks",
             authorization_basis: "Aleks authorized the bounded F1 public-academic community, rules, and civic-reasoning foundation group."
+          }
+      : action === "activate_history_evidence"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic history and evidence foundation group."
+          }
+      : action === "activate_materials_change_motion"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic materials, change, and motion foundation group."
+          }
+      : action === "activate_pushes_pulls_forces"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic pushes, pulls, and forces foundation group."
+          }
+      : action === "activate_light_sound"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic light and sound foundation group."
+          }
+      : action === "activate_simple_machines"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic simple machines and mechanical systems foundation group."
+          }
+      : action === "activate_living_things_survival"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic living things, needs, parts, and survival foundation group."
+          }
+      : action === "activate_weather_sky_cycles"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic weather, seasons, Earth, Sun, Moon, and sky cycles foundation group."
+          }
+      : action === "activate_human_body_health_evidence"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic human body systems, care, and health-evidence foundation group."
+          }
+      : action === "activate_helpful_computers_integration"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic helpful-computers and cross-domain integration foundation group."
+          }
+      : action === "activate_text_purpose_everyday_economy_bridge"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized the bounded F1 public-academic text-purpose and everyday-economy closure bridge."
           }
       : action === "revoke"
         ? { authorization_id: authorizationId, aleks_revoked: true, authorization_actor: "Aleks" }
@@ -6918,6 +7063,26 @@ function App() {
                 <Metric label="Mass/Capacity Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.sixth_group).retained_count ?? 0)} />
                 <Metric label="Community/Rules Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.seventh_group).prepared_count ?? 0)} />
                 <Metric label="Community/Rules Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.seventh_group).retained_count ?? 0)} />
+                <Metric label="History/Evidence Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.eighth_group).prepared_count ?? 0)} />
+                <Metric label="History/Evidence Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.eighth_group).retained_count ?? 0)} />
+                <Metric label="Materials/Change/Motion Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.ninth_group).prepared_count ?? 0)} />
+                <Metric label="Materials/Change/Motion Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.ninth_group).retained_count ?? 0)} />
+                <Metric label="Pushes/Pulls/Forces Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.tenth_group).prepared_count ?? 0)} />
+                <Metric label="Pushes/Pulls/Forces Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.tenth_group).retained_count ?? 0)} />
+                <Metric label="Light/Sound Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.eleventh_group).prepared_count ?? 0)} />
+                <Metric label="Light/Sound Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.eleventh_group).retained_count ?? 0)} />
+                <Metric label="Simple Machines Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.twelfth_group).prepared_count ?? 0)} />
+                <Metric label="Simple Machines Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.twelfth_group).retained_count ?? 0)} />
+                <Metric label="Living Things Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.thirteenth_group).prepared_count ?? 0)} />
+                <Metric label="Living Things Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.thirteenth_group).retained_count ?? 0)} />
+                <Metric label="Weather/Sky Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.fourteenth_group).prepared_count ?? 0)} />
+                <Metric label="Weather/Sky Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.fourteenth_group).retained_count ?? 0)} />
+                <Metric label="Human Body/Health Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.fifteenth_group).prepared_count ?? 0)} />
+                <Metric label="Human Body/Health Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.fifteenth_group).retained_count ?? 0)} />
+                <Metric label="Helpful Computers/F1 Integration Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.sixteenth_group).prepared_count ?? 0)} />
+                <Metric label="Helpful Computers/F1 Integration Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.sixteenth_group).retained_count ?? 0)} />
+                <Metric label="F1 Closure Bridge Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.seventeenth_group).prepared_count ?? 0)} />
+                <Metric label="F1 Closure Bridge Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.seventeenth_group).retained_count ?? 0)} />
               </div>
               <div className="chips">
                 <span>item clicks inside scope: {plainBlocked(curriculumAuthorizationStatus?.individual_academic_item_approval_required_inside_scope ?? false)}</span>
@@ -6960,6 +7125,56 @@ function App() {
                 <button className="primary" onClick={() => runCurriculumAction("activate_community_rules")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_community_rules_civic_reasoning_v1")}>Authorize F1 Community + Rules</button>
                 <button onClick={() => runCurriculumAction("prepare_community_rules")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Community + Rules Lessons</button>
                 <button className="primary" onClick={() => runCurriculumAction("teach_community_rules")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_community_rules_civic_reasoning_v1")}>Teach Community + Rules</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_history_evidence")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_history_evidence_foundations_v1")}>Authorize F1 History + Evidence</button>
+                <button onClick={() => runCurriculumAction("prepare_history_evidence")} disabled={curriculumActionResult?.status === "running"}>Prepare Six History + Evidence Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_history_evidence")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_history_evidence_foundations_v1")}>Teach History + Evidence</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_materials_change_motion")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_materials_change_motion_v1")}>Authorize F1 Materials + Motion</button>
+                <button onClick={() => runCurriculumAction("prepare_materials_change_motion")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Materials + Motion Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_materials_change_motion")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_materials_change_motion_v1")}>Teach Materials + Motion</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_pushes_pulls_forces")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_pushes_pulls_forces_v1")}>Authorize F1 Pushes + Pulls</button>
+                <button onClick={() => runCurriculumAction("prepare_pushes_pulls_forces")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Pushes + Pulls Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_pushes_pulls_forces")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_pushes_pulls_forces_v1")}>Teach Pushes + Pulls</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_light_sound")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_light_sound_v1")}>Authorize F1 Light + Sound</button>
+                <button onClick={() => runCurriculumAction("prepare_light_sound")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Light + Sound Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_light_sound")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_light_sound_v1")}>Teach Light + Sound</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_simple_machines")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_simple_machines_v1")}>Authorize F1 Simple Machines</button>
+                <button onClick={() => runCurriculumAction("prepare_simple_machines")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Simple Machine Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_simple_machines")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_simple_machines_v1")}>Teach Simple Machines</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_living_things_survival")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_living_things_survival_v1")}>Authorize F1 Living Things + Survival</button>
+                <button onClick={() => runCurriculumAction("prepare_living_things_survival")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Living Things Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_living_things_survival")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_living_things_survival_v1")}>Teach Living Things + Survival</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_weather_sky_cycles")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_weather_sky_cycles_v1")}>Authorize F1 Weather + Sky</button>
+                <button onClick={() => runCurriculumAction("prepare_weather_sky_cycles")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Weather + Sky Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_weather_sky_cycles")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_weather_sky_cycles_v1")}>Teach Weather + Sky</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_human_body_health_evidence")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_human_body_health_evidence_v1")}>Authorize F1 Human Body + Health Evidence</button>
+                <button onClick={() => runCurriculumAction("prepare_human_body_health_evidence")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Human Body + Health Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_human_body_health_evidence")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_human_body_health_evidence_v1")}>Teach Human Body + Health Evidence</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_helpful_computers_integration")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_helpful_computers_integration_v1")}>Authorize F1 Helpful Computers + Integration</button>
+                <button onClick={() => runCurriculumAction("prepare_helpful_computers_integration")} disabled={curriculumActionResult?.status === "running"}>Prepare Six Helpful Computers + Integration Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_helpful_computers_integration")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_helpful_computers_integration_v1")}>Teach Helpful Computers + F1 Integration</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_text_purpose_everyday_economy_bridge")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_text_purpose_everyday_economy_bridge_v1")}>Authorize F1 Closure Bridge</button>
+                <button onClick={() => runCurriculumAction("prepare_text_purpose_everyday_economy_bridge")} disabled={curriculumActionResult?.status === "running"}>Prepare Four Closure Bridge Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_text_purpose_everyday_economy_bridge")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_text_purpose_everyday_economy_bridge_v1")}>Teach F1 Closure Bridge</button>
               </div>
               {curriculumActionResult ? <div className="comprehensionReviewResult">
                 <strong>{friendlyStatus(curriculumActionResult.status)}</strong>

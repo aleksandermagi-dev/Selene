@@ -188,6 +188,34 @@ from .language_teaching_shelf import (
     prepare_language_teaching_shelf,
     select_language_guidance,
 )
+from .living_lexicon import (
+    list_living_lexicon,
+    living_lexicon_status,
+    query_living_lexicon,
+)
+from .construction_lattice import (
+    build_construction_lattice,
+    construction_lattice_status,
+)
+from .candidate_garden import candidate_garden_status, cultivate_candidate_garden
+from .discourse_loom import discourse_loom_status, weave_supported_discourse
+from .context_expression_selector import (
+    build_expression_selection_context,
+    context_expression_selector_status,
+    select_candidate_garden,
+    select_discourse_loom,
+)
+from .knowledge_language_growth import (
+    build_knowledge_language_growth,
+    knowledge_language_growth_status,
+    list_knowledge_language_resources,
+)
+from .generative_thought_expression import (
+    build_generative_thought_expression,
+    generative_thought_expression_status,
+)
+from .discourse_planner import build_supported_discourse_plan
+from .language_formation import build_semantic_frame
 from .education_expression_law import education_expression_law_status, review_education_expression
 from .curriculum_authorization import (
     activate_f1_equal_groups_data_money_authorization,
@@ -197,6 +225,15 @@ from .curriculum_authorization import (
     activate_f1_mass_capacity_authorization,
     activate_f1_community_rules_authorization,
     activate_f1_history_evidence_authorization,
+    activate_f1_materials_change_motion_authorization,
+    activate_f1_pushes_pulls_forces_authorization,
+    activate_f1_light_sound_authorization,
+    activate_f1_simple_machines_authorization,
+    activate_f1_living_things_survival_authorization,
+    activate_f1_weather_sky_cycles_authorization,
+    activate_f1_human_body_health_evidence_authorization,
+    activate_f1_helpful_computers_integration_authorization,
+    activate_f1_text_purpose_everyday_economy_bridge_authorization,
     activate_f1_operations_measurement_authorization,
     curriculum_authorization_status,
     evaluate_curriculum_coverage,
@@ -208,6 +245,15 @@ from .curriculum_authorization import (
     prepare_f1_mass_capacity_group,
     prepare_f1_community_rules_group,
     prepare_f1_history_evidence_group,
+    prepare_f1_materials_change_motion_group,
+    prepare_f1_pushes_pulls_forces_group,
+    prepare_f1_light_sound_group,
+    prepare_f1_simple_machines_group,
+    prepare_f1_living_things_survival_group,
+    prepare_f1_weather_sky_cycles_group,
+    prepare_f1_human_body_health_evidence_group,
+    prepare_f1_helpful_computers_integration_group,
+    prepare_f1_text_purpose_everyday_economy_bridge_group,
     prepare_f1_operations_measurement_group,
     revoke_curriculum_authorization,
     teach_f1_foundation_group,
@@ -217,6 +263,15 @@ from .curriculum_authorization import (
     teach_f1_mass_capacity_group,
     teach_f1_community_rules_group,
     teach_f1_history_evidence_group,
+    teach_f1_materials_change_motion_group,
+    teach_f1_pushes_pulls_forces_group,
+    teach_f1_light_sound_group,
+    teach_f1_simple_machines_group,
+    teach_f1_living_things_survival_group,
+    teach_f1_weather_sky_cycles_group,
+    teach_f1_human_body_health_evidence_group,
+    teach_f1_helpful_computers_integration_group,
+    teach_f1_text_purpose_everyday_economy_bridge_group,
     teach_f1_operations_measurement_group,
 )
 from .teaching_lifecycle import (
@@ -233,6 +288,7 @@ from .study_workspace import (
     ask_study_question,
     create_pondering_thread,
     form_study_note,
+    form_study_representation_reflection,
     get_study_session,
     list_learning_compass,
     list_open_study_attention,
@@ -733,6 +789,8 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": update_pondering_thread(conn, payload)}
     if route_key == "study.representation.try":
         return {"route": route_key, "result": try_study_representation(conn, payload)}
+    if route_key == "study.representation.reflect":
+        return {"route": route_key, "result": form_study_representation_reflection(conn, payload)}
     if route_key == "teaching.lifecycle.status":
         return {"route": route_key, "result": teaching_lifecycle_status(conn)}
     if route_key == "teaching.lifecycle.list":
@@ -767,6 +825,24 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": activate_f1_community_rules_authorization(conn, payload)}
     if route_key == "curriculum.authorization.activate_f1_history_evidence":
         return {"route": route_key, "result": activate_f1_history_evidence_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_materials_change_motion":
+        return {"route": route_key, "result": activate_f1_materials_change_motion_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_pushes_pulls_forces":
+        return {"route": route_key, "result": activate_f1_pushes_pulls_forces_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_light_sound":
+        return {"route": route_key, "result": activate_f1_light_sound_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_simple_machines":
+        return {"route": route_key, "result": activate_f1_simple_machines_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_living_things_survival":
+        return {"route": route_key, "result": activate_f1_living_things_survival_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_weather_sky_cycles":
+        return {"route": route_key, "result": activate_f1_weather_sky_cycles_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_human_body_health_evidence":
+        return {"route": route_key, "result": activate_f1_human_body_health_evidence_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_helpful_computers_integration":
+        return {"route": route_key, "result": activate_f1_helpful_computers_integration_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f1_text_purpose_everyday_economy_bridge":
+        return {"route": route_key, "result": activate_f1_text_purpose_everyday_economy_bridge_authorization(conn, payload)}
     if route_key == "curriculum.authorization.revoke":
         return {"route": route_key, "result": revoke_curriculum_authorization(conn, payload)}
     if route_key == "curriculum.authorization.evaluate":
@@ -803,6 +879,42 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": prepare_f1_history_evidence_group(conn, payload)}
     if route_key == "curriculum.foundation.teach_f1_history_evidence":
         return {"route": route_key, "result": teach_f1_history_evidence_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_materials_change_motion":
+        return {"route": route_key, "result": prepare_f1_materials_change_motion_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_materials_change_motion":
+        return {"route": route_key, "result": teach_f1_materials_change_motion_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_pushes_pulls_forces":
+        return {"route": route_key, "result": prepare_f1_pushes_pulls_forces_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_pushes_pulls_forces":
+        return {"route": route_key, "result": teach_f1_pushes_pulls_forces_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_light_sound":
+        return {"route": route_key, "result": prepare_f1_light_sound_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_light_sound":
+        return {"route": route_key, "result": teach_f1_light_sound_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_simple_machines":
+        return {"route": route_key, "result": prepare_f1_simple_machines_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_simple_machines":
+        return {"route": route_key, "result": teach_f1_simple_machines_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_living_things_survival":
+        return {"route": route_key, "result": prepare_f1_living_things_survival_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_living_things_survival":
+        return {"route": route_key, "result": teach_f1_living_things_survival_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_weather_sky_cycles":
+        return {"route": route_key, "result": prepare_f1_weather_sky_cycles_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_weather_sky_cycles":
+        return {"route": route_key, "result": teach_f1_weather_sky_cycles_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_human_body_health_evidence":
+        return {"route": route_key, "result": prepare_f1_human_body_health_evidence_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_human_body_health_evidence":
+        return {"route": route_key, "result": teach_f1_human_body_health_evidence_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_helpful_computers_integration":
+        return {"route": route_key, "result": prepare_f1_helpful_computers_integration_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_helpful_computers_integration":
+        return {"route": route_key, "result": teach_f1_helpful_computers_integration_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f1_text_purpose_everyday_economy_bridge":
+        return {"route": route_key, "result": prepare_f1_text_purpose_everyday_economy_bridge_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f1_text_purpose_everyday_economy_bridge":
+        return {"route": route_key, "result": teach_f1_text_purpose_everyday_economy_bridge_group(conn, payload)}
     if route_key == "native_language.status":
         return {"route": route_key, "result": native_language_status(conn)}
     if route_key == "native_language.realize":
@@ -825,6 +937,164 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": prepare_language_teaching_shelf(conn, payload)}
     if route_key == "language_teaching.guidance.preview":
         return {"route": route_key, "result": select_language_guidance(conn, payload)}
+    if route_key == "native_language.lexicon.status":
+        return {"route": route_key, "result": living_lexicon_status(conn)}
+    if route_key == "native_language.lexicon.items":
+        return {"route": route_key, "result": list_living_lexicon(conn, payload)}
+    if route_key == "native_language.lexicon.query":
+        return {"route": route_key, "result": query_living_lexicon(conn, payload)}
+    if route_key == "native_language.construction.status":
+        return {"route": route_key, "result": construction_lattice_status()}
+    if route_key == "native_language.construction.preview":
+        return {
+            "route": route_key,
+            "result": build_construction_lattice(build_semantic_frame(payload)),
+        }
+    if route_key == "native_language.candidates.status":
+        return {"route": route_key, "result": candidate_garden_status()}
+    if route_key == "native_language.candidates.preview":
+        frame = build_semantic_frame(payload)
+        lattice = build_construction_lattice(frame)
+        return {
+            "route": route_key,
+            "result": cultivate_candidate_garden(
+                frame,
+                lattice,
+                variation_key=str(payload.get("variation_key") or "candidate-preview"),
+                recent_texts=[str(item) for item in payload.get("recent_texts") or []],
+                contextual_plan=(
+                    payload.get("contextual_plan")
+                    if isinstance(payload.get("contextual_plan"), dict)
+                    else {}
+                ),
+                supported_discourse=(
+                    payload.get("supported_discourse")
+                    if isinstance(payload.get("supported_discourse"), dict)
+                    else {}
+                ),
+                max_candidates=int(payload.get("candidate_limit") or 8),
+            ),
+        }
+    if route_key == "native_language.discourse_loom.status":
+        return {"route": route_key, "result": discourse_loom_status()}
+    if route_key == "native_language.discourse_loom.preview":
+        supported_discourse = (
+            payload.get("supported_discourse")
+            if isinstance(payload.get("supported_discourse"), dict)
+            else build_supported_discourse_plan(payload)
+        )
+        return {
+            "route": route_key,
+            "result": weave_supported_discourse(
+                supported_discourse,
+                selected_formation=(
+                    payload.get("selected_formation")
+                    if isinstance(payload.get("selected_formation"), dict)
+                    else {}
+                ),
+                response_depth=str(payload.get("response_depth") or "standard"),
+                contextual_plan=(
+                    payload.get("contextual_plan")
+                    if isinstance(payload.get("contextual_plan"), dict)
+                    else {}
+                ),
+                recent_texts=[str(item) for item in payload.get("recent_texts") or []],
+            ),
+        }
+    if route_key == "native_language.expression_selection.status":
+        return {"route": route_key, "result": context_expression_selector_status()}
+    if route_key == "native_language.expression_selection.preview":
+        frame = build_semantic_frame(payload)
+        lattice = build_construction_lattice(frame)
+        supported_discourse = (
+            payload.get("supported_discourse")
+            if isinstance(payload.get("supported_discourse"), dict)
+            else build_supported_discourse_plan(payload)
+        )
+        contextual_plan = (
+            payload.get("contextual_plan")
+            if isinstance(payload.get("contextual_plan"), dict)
+            else {}
+        )
+        context = build_expression_selection_context(
+            {
+                **payload,
+                "contextual_composition_plan": contextual_plan,
+            }
+        )
+        garden = select_candidate_garden(
+            cultivate_candidate_garden(
+                frame,
+                lattice,
+                variation_key=str(payload.get("variation_key") or "expression-selection-preview"),
+                recent_texts=[str(item) for item in payload.get("recent_texts") or []],
+                contextual_plan=contextual_plan,
+                supported_discourse=supported_discourse,
+                max_candidates=int(payload.get("candidate_limit") or 8),
+            ),
+            context,
+        )
+        loom = select_discourse_loom(
+            weave_supported_discourse(
+                supported_discourse,
+                selected_formation=(
+                    garden.get("selected_formation")
+                    if isinstance(garden.get("selected_formation"), dict)
+                    else {}
+                ),
+                response_depth=str(payload.get("response_depth") or "standard"),
+                contextual_plan=contextual_plan,
+                recent_texts=[str(item) for item in payload.get("recent_texts") or []],
+            ),
+            context,
+        )
+        return {
+            "route": route_key,
+            "result": {
+                "status": "context_expression_selection_preview_ready",
+                "version": "v1_invariant_gated_context_expression_selection",
+                "context": context,
+                "candidate_garden": garden,
+                "discourse_loom": loom,
+                "formation_selection": garden.get("context_expression_selection") or {},
+                "discourse_selection": loom.get("context_expression_selection") or {},
+                "meaning_change_allowed": False,
+                "fact_generation_allowed": False,
+                "certainty_change_allowed": False,
+                "evidence_change_allowed": False,
+                "source_change_allowed": False,
+                "memory_write_active": False,
+                "identity_change_allowed": False,
+                "personality_change_allowed": False,
+                "governance_change_allowed": False,
+                "authority_change_allowed": False,
+                "voice_owns_expression_style": True,
+                "hidden_chain_of_thought_exposed": False,
+                "database_write_performed": False,
+            },
+        }
+    if route_key == "native_language.knowledge_growth.status":
+        return {"route": route_key, "result": knowledge_language_growth_status(conn)}
+    if route_key == "native_language.knowledge_growth.items":
+        return {
+            "route": route_key,
+            "result": list_knowledge_language_resources(conn, payload),
+        }
+    if route_key == "native_language.knowledge_growth.preview":
+        return {
+            "route": route_key,
+            "result": build_knowledge_language_growth(conn, payload),
+        }
+    if route_key == "native_language.generative_thought.status":
+        return {
+            "route": route_key,
+            "result": generative_thought_expression_status(),
+        }
+    if route_key == "native_language.generative_thought.preview":
+        return {
+            "route": route_key,
+            "result": build_generative_thought_expression(payload),
+        }
     if route_key == "native_language.runs.list":
         return {"route": route_key, "result": list_native_language_runs(conn, int(payload.get("limit") or 50))}
     if route_key == "dialogue_workspace.status":

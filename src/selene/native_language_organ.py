@@ -7,6 +7,7 @@ from hashlib import sha256
 from typing import Any
 
 from .chat_intent import classify_chat_intent
+from .candidate_garden import candidate_garden_status, cultivate_candidate_garden
 from .conversational_micro_moves import (
     build_conversational_micro_move_plan,
     compose_conversational_micro_moves,
@@ -16,11 +17,35 @@ from .contextual_composition import (
     apply_contextual_composition,
     build_contextual_composition_plan,
 )
+from .context_expression_selector import (
+    build_expression_selection_context,
+    context_expression_selector_status,
+    select_candidate_garden,
+    select_discourse_loom,
+)
 from .conversation_repair import plan_conversation_turn
 from .conversational_energy import realize_conversational_energy
+from .construction_lattice import (
+    build_construction_lattice,
+    construction_lattice_status,
+)
 from .discourse_planner import build_supported_discourse_plan
+from .discourse_loom import discourse_loom_status, weave_supported_discourse
+from .generative_thought_expression import (
+    build_generative_thought_expression,
+    generative_thought_expression_status,
+    realize_generative_thought_expression,
+)
 from .language_formation import build_semantic_frame, realize_semantic_frame
 from .language_teaching_shelf import language_teaching_status, select_language_guidance
+from .knowledge_language_growth import (
+    build_knowledge_language_growth,
+    knowledge_language_growth_status,
+)
+from .living_lexicon import (
+    enrich_semantic_units_from_living_lexicon,
+    living_lexicon_status,
+)
 from .pragmatic_planner import build_pragmatic_plan
 from .pragmatic_continuity import build_pragmatic_continuity_plan
 from .registry import truncate
@@ -79,12 +104,18 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "native_language_organ_ready",
             "organ_name": "Native Language Organ",
             "short_name": "NLO",
-            "version": "v24_contextual_composition_and_modulation",
+            "version": "v31_generative_thought_expression",
             "capabilities": [
                 "meaning_packet_construction",
                 "discourse_move_selection",
                 "semantic_sentence_realization",
                 "structured_semantic_frames",
+                "inspectable_meaning_preserving_construction_lattice",
+                "bounded_response_wide_candidate_garden",
+                "supported_role_aware_discourse_loom",
+                "invariant_gated_context_and_expression_selection",
+                "approved_teaching_to_language_growth_handoff",
+                "attributable_idea_hypothesis_analogy_question_and_attempt_expression",
                 "supported_semantic_answer_handoff",
                 "selective_current_obligation_formation_braid_handoff",
                 "bounded_organ_coalition_manifest_handoff",
@@ -142,6 +173,13 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             ),
             "responsive_current_turn_initiative_is_automatic_speech": False,
             "language_teaching_shelf": language_teaching_status(conn),
+            "living_lexicon": living_lexicon_status(conn),
+            "construction_lattice": construction_lattice_status(),
+            "candidate_garden": candidate_garden_status(),
+            "discourse_loom": discourse_loom_status(),
+            "context_expression_selector": context_expression_selector_status(),
+            "knowledge_language_growth": knowledge_language_growth_status(conn),
+            "generative_thought_expression": generative_thought_expression_status(),
             "law": "Meaning comes from Selene's organs; NLO gives it language; Voice makes the language hers.",
             "review_destination": "Status",
             "review_status": "status_only",
@@ -187,7 +225,7 @@ def realize_native_language(
             },
         ),
     }
-    result = _build_language_result(prompt, payload, mode="responsive")
+    result = _build_language_result(conn, prompt, payload, mode="responsive")
     if record_run:
         result["run_id"] = _store_run(conn, result)
     return _with_guards(result)
@@ -235,7 +273,7 @@ def preview_native_language_initiative(conn: sqlite3.Connection, payload: dict[s
             "source_refs": [*_json_list(payload.get("source_refs")), *_json_list(selected.get("source_refs"))],
             "language_teaching_guidance": language_guidance,
         }
-        result = _build_language_result(summary, initiative_payload, mode="initiative_preview")
+        result = _build_language_result(conn, summary, initiative_payload, mode="initiative_preview")
         result.update(
             {
                 "status": "native_language_initiative_draft_ready",
@@ -248,9 +286,116 @@ def preview_native_language_initiative(conn: sqlite3.Connection, payload: dict[s
     return _with_guards(result)
 
 
-def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -> dict[str, Any]:
-    meaning = _meaning_packet(prompt, payload, mode)
+def _build_language_result(
+    conn: sqlite3.Connection,
+    prompt: str,
+    payload: dict[str, Any],
+    *,
+    mode: str,
+) -> dict[str, Any]:
+    meaning = _meaning_packet(conn, prompt, payload, mode)
     plan = _discourse_plan(prompt, meaning, payload, mode)
+    candidate_garden = cultivate_candidate_garden(
+        meaning.get("semantic_frame") if isinstance(meaning.get("semantic_frame"), dict) else {},
+        meaning.get("construction_lattice") if isinstance(meaning.get("construction_lattice"), dict) else {},
+        variation_key=str(
+            meaning.get("formation_variation_key")
+            or (meaning.get("variation_context") or {}).get("variation_key")
+            or prompt
+        ),
+        recent_texts=[str(item) for item in meaning.get("recent_assistant_texts") or []],
+        contextual_plan=(
+            plan.get("contextual_composition_plan")
+            if isinstance(plan.get("contextual_composition_plan"), dict)
+            else {}
+        ),
+        supported_discourse=(
+            plan.get("supported_discourse")
+            if isinstance(plan.get("supported_discourse"), dict)
+            else {}
+        ),
+        max_candidates=int(payload.get("candidate_limit") or 8),
+    )
+    expression_selection_context = build_expression_selection_context(
+        {
+            "contextual_composition_plan": plan.get("contextual_composition_plan") or {},
+            "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+            "pragmatic_continuity": plan.get("pragmatic_continuity") or {},
+            "recent_assistant_texts": meaning.get("recent_assistant_texts") or [],
+            "voice_category": meaning.get("voice_category") or "",
+            "response_depth": plan.get("response_depth") or meaning.get("response_depth") or "standard",
+            "expression_profile": meaning.get("expression_profile") or "direct",
+            "answer_domain": meaning.get("answer_domain") or "ordinary_conversation",
+        }
+    )
+    candidate_garden = select_candidate_garden(
+        candidate_garden,
+        expression_selection_context,
+    )
+    selected_formation = (
+        candidate_garden.get("selected_formation")
+        if isinstance(candidate_garden.get("selected_formation"), dict)
+        else {}
+    )
+    if selected_formation:
+        meaning["formation"] = selected_formation
+        meaning["formation_text"] = str(selected_formation.get("candidate_text") or "")
+    meaning["candidate_garden"] = candidate_garden
+    discourse_loom = weave_supported_discourse(
+        plan.get("supported_discourse")
+        if isinstance(plan.get("supported_discourse"), dict)
+        else {},
+        selected_formation=selected_formation,
+        response_depth=str(plan.get("response_depth") or meaning.get("response_depth") or "standard"),
+        contextual_plan=(
+            plan.get("contextual_composition_plan")
+            if isinstance(plan.get("contextual_composition_plan"), dict)
+            else {}
+        ),
+        recent_texts=[str(item) for item in meaning.get("recent_assistant_texts") or []],
+    )
+    discourse_loom = select_discourse_loom(
+        discourse_loom,
+        expression_selection_context,
+    )
+    loom_text = str(discourse_loom.get("selected_candidate_text") or "").strip()
+    language_policy = (
+        meaning.get("language_realization_policy")
+        if isinstance(meaning.get("language_realization_policy"), dict)
+        else {}
+    )
+    compositional_language_owner_active = (
+        language_policy.get("compositional_surface") is True
+        or language_policy.get("clause_composition") is True
+    )
+    discourse_visible_speech_applied = bool(
+        loom_text and not compositional_language_owner_active
+    )
+    discourse_loom["visible_speech_applied"] = discourse_visible_speech_applied
+    discourse_loom["held_by_compositional_language_guidance"] = (
+        bool(loom_text) and compositional_language_owner_active
+    )
+    if discourse_visible_speech_applied:
+        meaning["formation_text"] = loom_text
+    meaning["discourse_loom"] = discourse_loom
+    expression_selection = {
+        "status": "context_expression_selection_complete",
+        "version": "v1_invariant_gated_context_expression_selection",
+        "context": expression_selection_context,
+        "formation_selection": candidate_garden.get("context_expression_selection") or {},
+        "discourse_selection": discourse_loom.get("context_expression_selection") or {},
+        "selection_pass_count": int(candidate_garden.get("context_selection_pass_count") or 0)
+        + int(discourse_loom.get("context_selection_pass_count") or 0),
+        "invalid_candidate_rescue_used": False,
+        "meaning_change_allowed": False,
+        "memory_write_active": False,
+        "identity_change_allowed": False,
+        "personality_change_allowed": False,
+        "governance_change_allowed": False,
+        "authority_change_allowed": False,
+        "voice_owns_expression_style": True,
+    }
+    meaning["context_expression_selection"] = expression_selection
     draft = _realize_sentences(prompt, meaning, plan)
     contextual_composition = apply_contextual_composition(
         draft,
@@ -267,6 +412,12 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     )
     plan["conversational_micro_move_realization"] = micro_move_realization
     draft = compose_conversational_micro_moves(draft, micro_move_realization)
+    generative_thought_realization = realize_generative_thought_expression(
+        draft,
+        meaning.get("generative_thought_expression"),
+    )
+    plan["generative_thought_realization"] = generative_thought_realization
+    draft = str(generative_thought_realization.get("candidate_text") or draft)
     conversational_energy_realization = realize_conversational_energy(
         draft,
         plan.get("conversational_energy"),
@@ -280,12 +431,18 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
         "organ_name": "Native Language Organ",
-        "version": "v24_contextual_composition_and_modulation",
+        "version": "v31_generative_thought_expression",
         "mode": mode,
         "prompt": prompt,
         "meaning_packet": meaning,
         "semantic_frame": meaning.get("semantic_frame") or {},
         "formation": meaning.get("formation") or {},
+        "construction_lattice": meaning.get("construction_lattice") or {},
+        "candidate_garden": candidate_garden,
+        "discourse_loom": discourse_loom,
+        "context_expression_selection": expression_selection,
+        "knowledge_language_growth": meaning.get("knowledge_language_growth") or {},
+        "generative_thought_expression": meaning.get("generative_thought_expression") or {},
         "pragmatic_plan": meaning.get("pragmatic_plan") or {},
         "turn_flow_plan": meaning.get("turn_flow_plan") or {},
         "language_teaching_guidance": meaning.get("language_teaching_guidance") or {},
@@ -298,6 +455,16 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
             "ready": bool(candidate),
             "voice_owns_expression_style": True,
             "meaning_must_be_preserved": True,
+            "selected_construction_id": candidate_garden.get("selected_construction_id") or "",
+            "candidate_selection_pass_count": int(candidate_garden.get("selection_pass_count") or 0),
+            "selected_discourse_candidate_id": discourse_loom.get("selected_discourse_candidate_id") or "",
+            "discourse_selection_pass_count": int(discourse_loom.get("selection_pass_count") or 0),
+            "context_expression_selection": expression_selection,
+            "knowledge_language_growth": meaning.get("knowledge_language_growth") or {},
+            "generative_thought_expression": meaning.get("generative_thought_expression") or {},
+            "generative_thought_realization": plan.get("generative_thought_realization") or {},
+            "voice_may_change_thought_kind": False,
+            "voice_may_upgrade_thought_confidence": False,
             "claim_evidence_packet": meaning.get("claim_evidence_packet") or {},
             "claim_types_and_confidence_must_be_preserved": True,
             "structural_discovery": meaning.get("structural_discovery") or {},
@@ -330,7 +497,12 @@ def _build_language_result(prompt: str, payload: dict[str, Any], *, mode: str) -
     }
 
 
-def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str, Any]:
+def _meaning_packet(
+    conn: sqlite3.Connection,
+    prompt: str,
+    payload: dict[str, Any],
+    mode: str,
+) -> dict[str, Any]:
     route = str(payload.get("selected_route") or payload.get("route") or "answer_now")
     content_seed = _truncate_preserving_paragraphs(
         _normalize_paragraphs(str(payload.get("content_seed") or "")),
@@ -373,6 +545,15 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
     )
     content_source_class = str(
         visible_speech_seed.get("selected_source_class") or "conversation"
+    )
+    knowledge_language_growth = build_knowledge_language_growth(
+        conn,
+        {
+            "comprehension_context": comprehension,
+            "content_seed": content_seed,
+            "content_source_class": content_source_class,
+            "approved_knowledge_selected": content_source_class == "approved_knowledge",
+        },
     )
     formation_braid = (
         payload.get("formation_braid")
@@ -484,6 +665,11 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         if isinstance(payload.get("conversational_energy_input"), dict)
         else {}
     )
+    generative_thought_input = (
+        payload.get("generative_thought_input")
+        if isinstance(payload.get("generative_thought_input"), dict)
+        else {}
+    )
     structural_discovery = (
         payload.get("structural_discovery")
         if isinstance(payload.get("structural_discovery"), dict)
@@ -559,10 +745,31 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         else {}
     )
     language_realization_policy = _language_realization_policy(language_guidance)
+    expression_profile = str(
+        payload.get("expression_profile")
+        or _expression_profile(prompt, intent_decision, intent)
+    )
+    supplied_propositions = payload.get("semantic_propositions")
+    formation_units = (
+        [item for item in supplied_propositions if isinstance(item, dict)]
+        if isinstance(supplied_propositions, list)
+        else propositions
+    )
+    living_lexicon = enrich_semantic_units_from_living_lexicon(
+        conn,
+        formation_units,
+        {
+            "prompt_grounded_entries": payload.get("prompt_grounded_lexical_entries") or [],
+            "expression_profile": expression_profile,
+        },
+    )
+    formation_units = [
+        item for item in living_lexicon.get("units") or [] if isinstance(item, dict)
+    ]
     semantic_frame = build_semantic_frame(
         {
             "semantic_frame": payload.get("semantic_frame") or {},
-            "propositions": payload.get("semantic_propositions") or propositions,
+            "propositions": formation_units,
             "content_seed": content_seed,
             "intent_decision": intent_decision,
             "answer_shape": payload.get("answer_shape") or intent_decision.get("answer_shape"),
@@ -578,17 +785,26 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
             "expression_directives": language_realization_policy,
         }
     )
+    construction_lattice = build_construction_lattice(semantic_frame)
+    default_construction = next(
+        (
+            item
+            for item in construction_lattice.get("constructions") or []
+            if isinstance(item, dict)
+            and item.get("construction_id")
+            == construction_lattice.get("default_construction_id")
+        ),
+        {},
+    )
+    formation_variation_key = (
+        f"{prompt}|{intent}|turn:{int(conversation.get('turn_count') or 0)}|"
+        f"previous:{truncate(str(previous_turn.get('preview') or ''), 120)}"
+    )
     formation = realize_semantic_frame(
         semantic_frame,
-        variation_key=(
-            f"{prompt}|{intent}|turn:{int(conversation.get('turn_count') or 0)}|"
-            f"previous:{truncate(str(previous_turn.get('preview') or ''), 120)}"
-        ),
+        variation_key=formation_variation_key,
         recent_texts=recent_assistant_texts,
-    )
-    expression_profile = str(
-        payload.get("expression_profile")
-        or _expression_profile(prompt, intent_decision, intent)
+        construction_specification=default_construction,
     )
     variation_context = _variation_context(expression_profile, conversation, recent_assistant_texts)
     return {
@@ -624,6 +840,7 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence,
         "conversational_energy_input": conversational_energy_input,
+        "generative_thought_input": generative_thought_input,
         "structural_discovery": structural_discovery,
         "formation_braid": {
             "used": formation_braid_used,
@@ -722,6 +939,20 @@ def _meaning_packet(prompt: str, payload: dict[str, Any], mode: str) -> dict[str
         },
         "formation": formation,
         "formation_text": str(formation.get("candidate_text") or ""),
+        "formation_variation_key": formation_variation_key,
+        "construction_lattice": construction_lattice,
+        "living_lexicon": {
+            "status": str(living_lexicon.get("status") or "living_lexicon_unavailable"),
+            "selected_entry_keys": living_lexicon.get("selected_entry_keys") or [],
+            "selected_entry_count": int(living_lexicon.get("selected_entry_count") or 0),
+            "prompt_grounded_entry_count": int(living_lexicon.get("prompt_grounded_entry_count") or 0),
+            "prompt_grounded_entries_persisted": False,
+            "exactness_locks_respected": living_lexicon.get("exactness_locks_respected") is True,
+            "meaning_change_allowed": False,
+            "database_write_performed": False,
+            "provenance_boundary": living_lexicon.get("provenance_boundary") or "",
+        },
+        "knowledge_language_growth": knowledge_language_growth,
         "pragmatic_plan": pragmatic_plan,
         "turn_flow_plan": turn_flow_plan,
         "language_teaching_guidance": language_guidance,
@@ -940,6 +1171,11 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             moves.append(str(move))
     supported_discourse = build_supported_discourse_plan(
         {
+            "supported_content_units": (
+                (meaning.get("knowledge_language_growth") or {}).get("content_units")
+                if isinstance(meaning.get("knowledge_language_growth"), dict)
+                else []
+            ),
             "content_seed": meaning.get("content_seed") or "",
             "response_depth": response_depth,
             "expression_profile": meaning.get("expression_profile") or "direct",
@@ -953,7 +1189,17 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "next_steps": _visible_support_items([reasoning_support.get("selected_next_step")]),
             "answer_support": meaning.get("answer_support") or {},
             "correction_refinement": dialogue.get("correction_refinement") or {},
-            "source_refs": meaning.get("source_refs") or [],
+            "source_refs": [
+                *[str(item) for item in meaning.get("source_refs") or []],
+                *[
+                    str(item)
+                    for item in (
+                        (meaning.get("knowledge_language_growth") or {}).get("source_refs")
+                        if isinstance(meaning.get("knowledge_language_growth"), dict)
+                        else []
+                    )
+                ],
+            ],
             "thread_braid": pragmatic_plan.get("thread_braid") or dialogue.get("thread_braid") or {},
         }
     )
@@ -1002,6 +1248,41 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     }
     if energy_act in energy_moves:
         moves.append(energy_moves[energy_act])
+    generative_input = (
+        meaning.get("generative_thought_input")
+        if isinstance(meaning.get("generative_thought_input"), dict)
+        else {}
+    )
+    thought_ending_mode = str(
+        (pragmatic_continuity.get("ending_decision") or {}).get("mode") or ""
+    )
+    thought_expression_requested = generative_input.get("expression_requested") is True
+    if thought_ending_mode in {"natural_close", "close_naturally"}:
+        thought_expression_requested = False
+    generative_thought = build_generative_thought_expression(
+        {
+            **generative_input,
+            "expression_requested": thought_expression_requested,
+            "claim_evidence_packet": claim_evidence,
+            "structural_discovery": structural_discovery,
+            "conversational_energy": conversational_energy,
+            "variation_key": (
+                generative_input.get("variation_key")
+                or f"{prompt}|thought|turn:{int((meaning.get('conversation_context') or {}).get('turn_count') or 0)}"
+            ),
+        }
+    )
+    meaning["generative_thought_expression"] = generative_thought
+    thought_kind = str(generative_thought.get("selected_kind") or "")
+    thought_moves = {
+        "idea": "express_one_attributable_idea_as_a_possibility",
+        "hypothesis": "express_hypothesis_as_provisional_and_revisable",
+        "analogy": "express_analogy_without_promoting_it_to_proof",
+        "collaborative_question": "ask_one_material_collaborative_question",
+        "revisable_attempt": "offer_a_revisable_attempt_without_failure_framing",
+    }
+    if thought_kind in thought_moves:
+        moves.append(thought_moves[thought_kind])
     transition_kind = str((pragmatic_continuity.get("topic_transition") or {}).get("kind") or "")
     if transition_kind == "explicit_return":
         moves.insert(0, "resume_named_session_topic")
@@ -1021,7 +1302,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         moves.append("resume_prior_thread_without_restarting_it")
     if "land" in braid_actions:
         moves.append("land_on_final_named_thread")
-    ending_mode = str((pragmatic_continuity.get("ending_decision") or {}).get("mode") or "")
+    ending_mode = thought_ending_mode
     if ending_mode in {
         "answer_and_stop_when_complete",
         "natural_close",
@@ -1094,7 +1375,10 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     return {
         "moves": moves,
         "answer_first": intent in {"reasoned_answer", "direct_answer", "recall_supported_memory", "self_state_report"},
-        "question_allowed": bool((pragmatic_continuity.get("ending_decision") or {}).get("question_allowed")),
+        "question_allowed": (
+            bool((pragmatic_continuity.get("ending_decision") or {}).get("question_allowed"))
+            or thought_kind == "collaborative_question"
+        ),
         "response_depth": response_depth,
         "target_paragraph_count": (
             len(supported_discourse.get("paragraph_plan") or [])
@@ -1124,6 +1408,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "content_generation_for_gaps_allowed": False,
         "pragmatic_continuity": pragmatic_continuity,
         "conversational_energy": conversational_energy,
+        "generative_thought_expression": generative_thought,
         "thread_braid": thread_braid,
         "thread_traversal": thread_braid.get("turn_traversal") or [],
         "braided_discourse_used": thread_braid.get("braided") is True,
@@ -1143,8 +1428,20 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
 def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any]) -> str:
     formation = meaning.get("formation") if isinstance(meaning.get("formation"), dict) else {}
     formation_text = str(meaning.get("formation_text") or "")
+    discourse_loom = (
+        meaning.get("discourse_loom")
+        if isinstance(meaning.get("discourse_loom"), dict)
+        else {}
+    )
     use_formation = formation.get("formation_mode") == "structured"
-    seed = _clean_seed(formation_text if use_formation else str(meaning.get("content_seed") or ""))
+    use_discourse_loom = discourse_loom.get("visible_speech_applied") is True and bool(
+        formation_text.strip()
+    )
+    seed = _clean_seed(
+        formation_text
+        if use_formation or use_discourse_loom
+        else str(meaning.get("content_seed") or "")
+    )
     intent = str(meaning["intent"])
     topic = str(meaning["topic"])
     certainty = str(meaning["certainty"])
@@ -1228,6 +1525,14 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
         return str(uncertainty_result.get("candidate_text") or "I cannot support an exact memory claim here.")
     if intent == "reasoned_answer" and seed:
         if contextual.get("kind") in {"session_summary_request", "rephrase_request"}:
+            return seed
+        if (
+            discourse_loom.get("visible_speech_applied") is True
+            and (
+                discourse_loom.get("selection_active") is True
+                or len(discourse_loom.get("selected_paragraphs") or []) > 1
+            )
+        ):
             return seed
         seed = _obligation_ordered_seed(seed, meaning, plan)
         if plan.get("response_depth") == "developed":
@@ -1323,6 +1628,36 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         if isinstance(meaning.get("language_realization_policy"), dict)
         else {}
     )
+    discourse_loom = (
+        meaning.get("discourse_loom")
+        if isinstance(meaning.get("discourse_loom"), dict)
+        else {}
+    )
+    selected_discourse_candidate = next(
+        (
+            item
+            for item in discourse_loom.get("candidates") or []
+            if isinstance(item, dict)
+            and item.get("discourse_candidate_id")
+            == discourse_loom.get("selected_discourse_candidate_id")
+        ),
+        {},
+    )
+    context_selection = (
+        meaning.get("context_expression_selection")
+        if isinstance(meaning.get("context_expression_selection"), dict)
+        else {}
+    )
+    knowledge_growth = (
+        meaning.get("knowledge_language_growth")
+        if isinstance(meaning.get("knowledge_language_growth"), dict)
+        else {}
+    )
+    generative_thought = (
+        meaning.get("generative_thought_expression")
+        if isinstance(meaning.get("generative_thought_expression"), dict)
+        else {}
+    )
     return text, {
         "passed": not any(flag == "authority_overclaim_removed" for flag in flags),
         "flags": list(dict.fromkeys(flags)),
@@ -1343,6 +1678,35 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         "discourse_grounded": supported_discourse.get("status") == "supported_discourse_plan_ready",
         "all_obligations_grounded_before_expression": supported_discourse.get("all_obligations_grounded") is True,
         "uncovered_obligation_ids_before_expression": supported_discourse.get("uncovered_obligation_ids") or [],
+        "discourse_loom_checked": bool(discourse_loom),
+        "selected_discourse_invariants_passed": (
+            (selected_discourse_candidate.get("invariant_check") or {}).get("passed")
+            is True
+        ) if selected_discourse_candidate else True,
+        "discourse_required_content_unit_ids": discourse_loom.get("required_content_unit_ids") or [],
+        "discourse_selection_pass_count": int(discourse_loom.get("selection_pass_count") or 0),
+        "context_expression_selection_checked": bool(context_selection),
+        "context_expression_selection_pass_count": int(
+            context_selection.get("selection_pass_count") or 0
+        ),
+        "invalid_candidate_rescue_used": (
+            context_selection.get("invalid_candidate_rescue_used") is True
+        ),
+        "affect_changed_supported_meaning": False,
+        "knowledge_language_growth_checked": bool(knowledge_growth),
+        "knowledge_language_growth_active": knowledge_growth.get("active") is True,
+        "knowledge_language_growth_content_added": (
+            knowledge_growth.get("content_added") is True
+        ),
+        "teaching_answers_used_as_templates": (
+            knowledge_growth.get("teaching_answers_used_as_templates") is True
+        ),
+        "generative_thought_expression_checked": bool(generative_thought),
+        "generative_thought_expression_active": generative_thought.get("active") is True,
+        "generative_thought_content_added": generative_thought.get("content_added") is True,
+        "generative_thought_kind_preserved": True,
+        "generative_thought_confidence_preserved": True,
+        "forced_closure_added": discourse_loom.get("forced_closure_added") is True,
         "unsupported_content_generated": False,
     }
 
@@ -1617,6 +1981,78 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
             "prefer_plain_precise_word_over_novel_mismatch",
         },
     )
+    communicative_mood = enable(
+        "communicative_mood",
+        {
+            "select_sentence_mood_from_supported_purpose",
+            "preserve_proposition_while_changing_dialogue_act",
+            "keep_request_distinct_from_claim",
+        },
+    )
+    participant_reference = enable(
+        "participant_reference",
+        {
+            "align_pronoun_with_intended_participant",
+            "repeat_noun_when_reference_is_materially_ambiguous",
+            "preserve_person_number_and_local_context",
+        },
+    )
+    question_role = enable(
+        "question_role",
+        {
+            "map_question_word_to_missing_meaning_role",
+            "ask_only_for_material_missing_information",
+            "preserve_known_parts_of_the_scene",
+        },
+    )
+    determiner_fit = enable(
+        "determiner_fit",
+        {
+            "choose_determiner_from_reference_status",
+            "align_determiner_with_number_and_quantity",
+            "avoid_inventing_unstated_totality",
+        },
+    )
+    event_shape = enable(
+        "event_shape",
+        {
+            "separate_event_time_from_event_shape",
+            "select_aspect_from_supported_state",
+            "preserve_completion_and_continuation_boundaries",
+        },
+    )
+    modality_fit = enable(
+        "modality_fit",
+        {
+            "select_modal_from_supported_status",
+            "keep_possibility_distinct_from_fact",
+            "keep_recommendation_distinct_from_requirement",
+        },
+    )
+    world_relation_attachment = enable(
+        "world_relation_attachment",
+        {
+            "map_relational_phrase_to_supported_dimension",
+            "attach_phrase_to_intended_participant_or_event",
+            "separate_ambiguous_relations",
+        },
+    )
+    clause_dependency = enable(
+        "clause_dependency",
+        {
+            "select_subordinator_from_supported_dependency",
+            "keep_main_claim_and_condition_distinct",
+            "split_clause_when_dependency_is_uncertain",
+        },
+    )
+    voice_focus = enable(
+        "voice_focus",
+        {
+            "choose_voice_from_information_focus",
+            "preserve_known_agent_when_material",
+            "do_not_invent_or_hide_responsibility",
+        },
+    )
     return {
         "status": "approved_language_realization_ready" if features else "no_operational_language_guidance",
         "used": bool(features),
@@ -1635,6 +2071,15 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
         "modifier_attachment": modifier_attachment,
         "relation_fit": relation_fit,
         "lexical_sense_fit": lexical_sense_fit,
+        "communicative_mood": communicative_mood,
+        "participant_reference": participant_reference,
+        "question_role": question_role,
+        "determiner_fit": determiner_fit,
+        "event_shape": event_shape,
+        "modality_fit": modality_fit,
+        "world_relation_attachment": world_relation_attachment,
+        "clause_dependency": clause_dependency,
+        "voice_focus": voice_focus,
         "meaning_change_allowed": False,
         "content_generation_allowed": False,
         "personality_change_allowed": False,

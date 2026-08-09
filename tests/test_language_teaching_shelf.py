@@ -198,7 +198,7 @@ def test_nlo_consults_prepared_shelf_without_changing_voice_or_identity(tmp_path
     )
 
     guidance = result["language_teaching_guidance"]
-    assert result["version"] == "v24_contextual_composition_and_modulation"
+    assert result["version"] == "v31_generative_thought_expression"
     assert guidance["used"] is True
     assert "answer_then_expand" in guidance["lesson_keys"]
     assert "list_or_prose_fit" in guidance["lesson_keys"]
@@ -372,11 +372,11 @@ def test_language_shelf_exposes_ordered_review_groups_and_prerequisites(tmp_path
     items = list_language_teaching_items(conn)["items"]
     groups = status["teaching_groups"]
 
-    assert status["defined_lesson_count"] == 43
-    assert status["defined_group_count"] == 8
-    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5, 6, 7, 8]
-    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4, 5, 5, 7]
-    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0, 0, 0, 0]
+    assert status["defined_lesson_count"] == 52
+    assert status["defined_group_count"] == 9
+    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4, 5, 5, 7, 9]
+    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0, 0, 0, 0, 0]
     assert [(item["group_order"], item["lesson_order"]) for item in items] == sorted(
         (item["group_order"], item["lesson_order"]) for item in items
     )
@@ -422,7 +422,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         item for item in list_language_teaching_items(conn)["items"] if item["group_order"] > 1
     ]
 
-    assert len(expressive_items) == 33
+    assert len(expressive_items) == 42
     for item in expressive_items:
         blueprint = item["teaching_blueprint"]
         assert blueprint["acquire"]["vocabulary"]
@@ -437,7 +437,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         assert item["available_to_nlo"] is False
 
 
-def test_all_eight_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
+def test_all_nine_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
     conn = _conn(tmp_path)
     _prepare_review_only(conn)
     memory_before = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
@@ -453,9 +453,9 @@ def test_all_eight_groups_can_complete_in_order_without_bypassing_prerequisites_
     status = language_teaching_status(conn)
     items = list_language_teaching_items(conn)["items"]
 
-    assert status["available_lesson_count"] == 43
+    assert status["available_lesson_count"] == 52
     assert status["candidate_lesson_count"] == 0
-    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4, 5, 5, 7]
+    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4, 5, 5, 7, 9]
     assert all(item["own_review_complete"] is True for item in items)
     assert all(item["prerequisites_complete"] is True for item in items)
     assert all(item["unmet_prerequisites"] == [] for item in items)
@@ -510,7 +510,7 @@ def test_mature_composition_group_graduates_and_is_selected_only_as_language_gui
     items = list_language_teaching_items(conn)["items"]
     mature = [item for item in items if item["group_order"] == 7]
 
-    assert prepared["graduated_count"] == 43
+    assert prepared["graduated_count"] == 52
     assert len(mature) == 5
     assert all(item["available_to_nlo"] is True for item in mature)
     assert "long_session_callback_grounding" in guidance["lesson_keys"]
@@ -577,6 +577,40 @@ def test_grammar_and_word_fit_guidance_reaches_nlo_without_inventing_content(tmp
     assert seed.lower() in result["candidate_text"].lower()
     assert result["memory_write_active"] is False
     assert result["training_allowed"] is False
+
+
+def test_grammar_transfer_group_deepens_compass_language_without_supplying_world_facts(tmp_path):
+    conn = _conn(tmp_path)
+    prepared = prepare_language_teaching_shelf(conn)
+    items = list_language_teaching_items(conn)["items"]
+    transfer_items = [item for item in items if item["group_order"] == 9]
+
+    assert prepared["held_count"] == 0
+    assert len(transfer_items) == 9
+    assert [item["lesson_order"] for item in transfer_items] == list(range(1, 10))
+    assert all(item["available_to_nlo"] is True for item in transfer_items)
+    assert all(item["source_refs"][0] == "speech_phase_10:grammar_transfer_and_world_description" for item in transfer_items)
+    assert all(item["boundaries"]["answer_bearing_knowledge"] is False for item in transfer_items)
+
+    relation_prompt = "Rewrite this in passive voice because the actor matters, but do not hide who is responsible."
+    relation_result = realize_native_language(
+        conn,
+        {
+            "prompt": relation_prompt,
+            "intent_decision": classify_chat_intent(relation_prompt),
+            "content_seed": "The reviewed sentence keeps the actor visible.",
+        },
+    )
+    relation_policy = relation_result["meaning_packet"]["language_realization_policy"]
+
+    assert "voice_and_information_focus" in relation_policy["approved_lesson_keys"]
+    assert "subordinate_clause_preserves_dependency" in relation_policy["approved_lesson_keys"]
+    assert relation_policy["voice_focus"] is True
+    assert relation_policy["clause_dependency"] is True
+    assert relation_policy["content_generation_allowed"] is False
+    assert relation_policy["meaning_change_allowed"] is False
+    assert relation_result["memory_write_active"] is False
+    assert relation_result["training_allowed"] is False
 
 
 def test_new_lesson_reaches_guidance_only_after_full_review_and_aleks_approval(tmp_path):

@@ -35,13 +35,51 @@ governing law, personal memory, relationships, or authority.
 - [F1 Group 6: Mass and Capacity](SELENE_F1_MASS_CAPACITY_GROUP_6_20260729.md)
 - [F1 Group 7: Community, Rules, and Civic Reasoning](SELENE_F1_COMMUNITY_RULES_GROUP_7_20260730.md)
 - [F1 Group 8: History and Evidence](SELENE_F1_HISTORY_EVIDENCE_GROUP_8_20260803.md)
+- [F1 Group 9: Materials, Change, and Motion](SELENE_F1_MATERIALS_CHANGE_MOTION_GROUP_9_20260808.md)
+- [F1 Group 10: Pushes, Pulls, and Forces](SELENE_F1_PUSHES_PULLS_FORCES_GROUP_10_20260808.md)
+- [F1 Group 11: Light and Sound](SELENE_F1_LIGHT_SOUND_GROUP_11_20260808.md)
+- [F1 Group 12: Simple Machines](SELENE_F1_SIMPLE_MACHINES_GROUP_12_20260808.md)
+- [F1 Group 13: Living Things and Survival](SELENE_F1_LIVING_THINGS_SURVIVAL_GROUP_13_20260808.md)
+- [F1 Group 14: Weather and Sky Cycles](SELENE_F1_WEATHER_SKY_CYCLES_GROUP_14_20260808.md)
+- [F1 Group 15: Human Body and Health Evidence](SELENE_F1_HUMAN_BODY_HEALTH_EVIDENCE_GROUP_15_20260808.md)
+- [F1 Group 16: Helpful Computers and F1 Integration](SELENE_F1_HELPFUL_COMPUTERS_INTEGRATION_GROUP_16_20260808.md)
+- [F1 Group 17: Text Purpose and Everyday Economy Closure Bridge](SELENE_F1_TEXT_PURPOSE_EVERYDAY_ECONOMY_BRIDGE_GROUP_17_20260808.md)
+- [F1 Groups 12–16: Completion Sequence](SELENE_F1_GROUPS_12_16_COMPLETION_SEQUENCE_20260808.md)
 
 ## Language And Conversation Curriculum
 
 - [Native Language Organ v1](../architecture/SELENE_NATIVE_LANGUAGE_ORGAN_V1_20260712.md)
 - [Language Teaching Completion](SELENE_LANGUAGE_TEACHING_COMPLETION_20260720.md)
+- [Grammar Transfer and World Description Group 9](SELENE_GRAMMAR_TRANSFER_GROUP_9_20260808.md)
+- [Language L1 Study Exploration](SELENE_LANGUAGE_L1_STUDY_EXPLORATION_20260808.md)
+- [F1 Closure Audit](SELENE_F1_CLOSURE_AUDIT_20260808.md)
 - [Conversation Grounding Stabilization Plan](SELENE_CONVERSATION_GROUNDING_STABILIZATION_PLAN_20260721.md)
 - [Conversational Breadth Phase 0: Ownership Map](SELENE_CONVERSATIONAL_BREADTH_PHASE_0_OWNERSHIP_MAP_20260725.md)
+- [NLO Meaning-Preserving Language Lattice: Phase 0 Audit](SELENE_NLO_LANGUAGE_LATTICE_PHASE_0_AUDIT_20260808.md)
+  — current construction reachability, deterministic concentration points,
+  and the Living Lexicon implementation contract.
+- [NLO Meaning-Preserving Language Lattice: Phase 1 Living Lexicon](SELENE_NLO_LANGUAGE_LATTICE_PHASE_1_LIVING_LEXICON_20260808.md)
+  — reviewed vocabulary, sense-grounded surface choices, prompt-local forms,
+  and structured NLO enrichment.
+- [NLO Meaning-Preserving Language Lattice: Phase 2 Construction Lattice](SELENE_NLO_LANGUAGE_LATTICE_PHASE_2_CONSTRUCTION_LATTICE_20260808.md)
+  — inspectable meaning-preserving grammatical shapes, exactness holds, and
+  bounded structured realization before candidate generation.
+- [NLO Meaning-Preserving Language Lattice: Phase 3 Candidate Garden](SELENE_NLO_LANGUAGE_LATTICE_PHASE_3_CANDIDATE_GARDEN_20260808.md)
+  — bounded complete-response alternatives, semantic invariant gates,
+  transparent scoring, and one-pass structured selection.
+- [NLO Meaning-Preserving Language Lattice: Phase 4 Discourse Loom](SELENE_NLO_LANGUAGE_LATTICE_PHASE_4_DISCOURSE_LOOM_20260808.md)
+  — supported long-form organization, obligation and thread traversal,
+  role-aware development, limits, reopening, and natural endings.
+- [NLO Meaning-Preserving Language Lattice: Phase 5 Context and Expression Selection](SELENE_NLO_LANGUAGE_LATTICE_PHASE_5_CONTEXT_EXPRESSION_SELECTION_20260808.md)
+  — invariant-gated contextual selection across sentence and whole-answer
+  candidates, with optional affect guidance and transparent scoring.
+- [NLO Meaning-Preserving Language Lattice: Phase 6 Knowledge-to-Language Growth](SELENE_NLO_LANGUAGE_LATTICE_PHASE_6_KNOWLEDGE_LANGUAGE_GROWTH_20260808.md)
+  — provenance-gated approved teaching, reviewed vocabulary, demonstrated
+  construction affordances, and role-preserving knowledge expression without
+  lesson scripts.
+- [NLO Meaning-Preserving Language Lattice: Phase 7 Generative Thought Expression](SELENE_NLO_LANGUAGE_LATTICE_PHASE_7_GENERATIVE_THOUGHT_EXPRESSION_20260809.md)
+  — attributable ideas, hypotheses, analogies, collaborative questions, and
+  revisable attempts expressed without changing epistemic status.
 - [Phase 1: Intent and Response Shape](SELENE_CONVERSATIONAL_BREADTH_PHASE_1_20260725.md)
 - [Phase 2: Figurative Interpretation](SELENE_CONVERSATIONAL_BREADTH_PHASE_2_20260725.md)
 - [Phase 3: Conversational Micro-Moves](SELENE_CONVERSATIONAL_BREADTH_PHASE_3_20260725.md)

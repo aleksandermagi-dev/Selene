@@ -528,7 +528,7 @@ def build_comprehension_packet(
     knowledge = retrieve_approved_knowledge(
         conn,
         knowledge_query,
-        limit=int(payload.get("knowledge_limit") or 3),
+        limit=int(payload.get("knowledge_limit") or 10),
         include_language_guidance=False,
     )
     answer_eligible_items = _answer_eligible_knowledge_items(
@@ -740,7 +740,7 @@ def retrieve_approved_knowledge(
     limit: int = 3,
     include_language_guidance: bool = True,
 ) -> dict[str, Any]:
-    query_terms = set(_terms(query))
+    query_terms = _semantic_query_terms(query)
     rows = conn.execute(
         """
         SELECT * FROM selene_comprehension_concepts
@@ -763,13 +763,52 @@ def retrieve_approved_knowledge(
                 item["central_claim"],
                 *item["principles"],
                 *item["relationships"],
+                *item["examples"],
+                *item["counterexamples"],
+                *item["limits"],
             ]
         )
         overlap = query_terms & set(_terms(haystack))
         if overlap:
+            subject_text = " ".join(
+                [
+                    item["title"],
+                    item["domain"],
+                    str(item.get("concept_key") or "").replace("_", " "),
+                ]
+            )
+            core_text = " ".join(
+                [
+                    item["central_claim"],
+                    *item["principles"],
+                    *item["relationships"],
+                ]
+            )
+            application_text = " ".join(
+                [
+                    *item["examples"],
+                    *item["counterexamples"],
+                    *item["limits"],
+                ]
+            )
+            subject_overlap = query_terms & set(_terms(subject_text))
+            core_overlap = query_terms & set(_terms(core_text))
+            application_overlap = query_terms & set(_terms(application_text))
             item["matched_terms"] = sorted(overlap)
+            item["retrieval_subject_terms"] = sorted(subject_overlap)
+            item["retrieval_core_terms"] = sorted(core_overlap)
+            item["retrieval_application_terms"] = sorted(application_overlap)
             item["guidance_only"] = guidance_only
-            ranked.append((len(overlap), int(item["id"]), item))
+            # A reviewed distinct example is first-class evidence that a
+            # concept applies to a new case, not decorative text.  Subject
+            # names still receive the strongest single-term weight, while
+            # several application matches can surface a transfer concept.
+            score = (
+                (5 * len(subject_overlap))
+                + (2 * len(core_overlap))
+                + (3 * len(application_overlap))
+            )
+            ranked.append((score, int(item["id"]), item))
     items = [item for _, _, item in sorted(ranked, key=lambda value: (-value[0], -value[1]))[: max(1, min(limit, 10))]]
     return {
         "available": bool(items),
@@ -789,6 +828,9 @@ def retrieve_approved_knowledge(
                 "confidence": item["confidence"],
                 "source_refs": item["source_refs"],
                 "matched_terms": item.get("matched_terms") or [],
+                "retrieval_subject_terms": item.get("retrieval_subject_terms") or [],
+                "retrieval_core_terms": item.get("retrieval_core_terms") or [],
+                "retrieval_application_terms": item.get("retrieval_application_terms") or [],
                 "guidance_only": item.get("guidance_only") is True,
             }
             for item in items
@@ -969,7 +1011,7 @@ def _answer_eligible_knowledge_items(
         subject_query,
         flags=re.IGNORECASE,
     )
-    query_terms = set(_terms(subject_query))
+    query_terms = _semantic_query_terms(subject_query)
     generic = {
         "answer", "another", "apply", "back", "but", "cannot", "change", "changed", "check",
         "compare", "conversation", "different", "do", "example", "explain", "first", "give",
@@ -1030,6 +1072,14 @@ def _answer_eligible_knowledge_items(
         # enough to redirect an otherwise ordinary question.
         strong_subject_overlap = subject_overlap - weak_subject_terms
         subject_query_terms = query_terms - generic - weak_subject_terms
+        application_overlap = (
+            set(item.get("retrieval_application_terms") or [])
+            & subject_query_terms
+        )
+        application_alignment = bool(
+            len(application_overlap) >= 3
+            and len(distinctive_overlap - weak_subject_terms) >= 3
+        )
         explicit_single_focus = bool(
             len(strong_subject_overlap) == 1
             and any(
@@ -1052,6 +1102,7 @@ def _answer_eligible_knowledge_items(
                     or len(distinctive_overlap - weak_subject_terms) >= 2
                 )
             )
+            or application_alignment
         )
         if not sufficiently_specific:
             continue
@@ -1062,6 +1113,8 @@ def _answer_eligible_knowledge_items(
             "prompt_subject_term_count": len(subject_query_terms),
             "explicit_single_focus": explicit_single_focus,
             "peripheral_terms_ignored": sorted(subject_overlap & weak_subject_terms),
+            "application_alignment": application_alignment,
+            "application_terms": sorted(application_overlap),
         }
         eligible.append(item)
     return eligible
@@ -1085,10 +1138,10 @@ def _knowledge_response_seed(
         fragments: list[str] = []
         support: list[dict[str, Any]] = []
         for obligation in obligations[:12]:
-            obligation_query = " ".join(
+            obligation_text = str(obligation.get("source_text") or prompt)
+            obligation_context = " ".join(
                 part
                 for part in (
-                    str(obligation.get("source_text") or prompt),
                     str(obligation.get("parent_source_text") or ""),
                     str(obligation.get("topic") or ""),
                 )
@@ -1097,7 +1150,11 @@ def _knowledge_response_seed(
             selected = (
                 items[0]
                 if _generic_answer_development_request(str(obligation.get("source_text") or ""))
-                else _best_knowledge_item_for_text(obligation_query, items)
+                else _best_knowledge_item_for_text(
+                    obligation_text,
+                    items,
+                    context_text=obligation_context,
+                )
             )
             if not selected:
                 continue
@@ -1166,8 +1223,11 @@ def _knowledge_response_seed(
 def _best_knowledge_item_for_text(
     text: str,
     items: list[dict[str, Any]],
+    *,
+    context_text: str = "",
 ) -> dict[str, Any] | None:
-    terms = set(_terms(text))
+    terms = _semantic_query_terms(text)
+    context_terms = _semantic_query_terms(context_text)
     ranked: list[tuple[int, int, dict[str, Any]]] = []
     for index, item in enumerate(items):
         haystack = " ".join(
@@ -1181,12 +1241,21 @@ def _best_knowledge_item_for_text(
                 *[str(value) for value in item.get("limits") or []],
             ]
         )
-        overlap = terms & set(_terms(haystack))
+        haystack_terms = set(_terms(haystack))
+        overlap = terms & haystack_terms
+        context_overlap = context_terms & haystack_terms
         anchored = terms & set(item.get("answer_alignment_terms") or [])
         subject = terms & set(item.get("answer_subject_terms") or [])
-        if not anchored and not subject:
+        application = terms & set(item.get("retrieval_application_terms") or [])
+        if not anchored and not subject and not application:
             continue
-        score = len(overlap) + (2 * len(anchored)) + (3 * len(subject))
+        score = (
+            (4 * len(overlap))
+            + len(context_overlap)
+            + (3 * len(anchored))
+            + (5 * len(subject))
+            + (2 * len(application))
+        )
         ranked.append((score, -index, item))
     ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
     return ranked[0][2] if ranked else None
@@ -1217,6 +1286,7 @@ def _knowledge_fragment_for_obligation(
         ]
     ).lower()
     central = truncate(str(item.get("central_claim") or ""), 1200)
+    concept_key = str(item.get("concept_key") or "")
     if "observation" in source and "interpretation" in source and "separate" in source:
         application = _prompt_observation_interpretation(prompt_context)
         if application:
@@ -1231,6 +1301,54 @@ def _knowledge_fragment_for_obligation(
             "keeping other relevant conditions as similar as practical, and recording the same measurable "
             "observation for each.",
             "bounded_application",
+        )
+    if kind == "method" and any(
+        marker in source for marker in ("organize", "record", "table", "chart")
+    ) and concept_key in {
+        "curriculum_f1_cross_domain_problem_solving_closure_v1",
+        "curriculum_f1_graph_interpretation_answerability_v1",
+        "curriculum_f1_weather_measurement_records_v1",
+    }:
+        return (
+            "Organize the observations in a table with one row for each recorded date and a separate "
+            "labeled column for each measured or observed feature, preserving missing entries instead "
+            "of inventing values.",
+            "bounded_application",
+        )
+    if (
+        "computer" in source
+        and any(marker in source for marker in ("help", "use", "organize", "record"))
+        and concept_key in {
+            "curriculum_f1_computers_tools_task_fit_limits_v1",
+            "curriculum_f1_hardware_software_data_io_storage_v1",
+            "curriculum_f1_cross_domain_problem_solving_closure_v1",
+        }
+    ):
+        return (
+            "A computer could store the records, arrange them consistently, calculate or display "
+            "changes, and make comparisons easier to inspect; that assistance would not make the "
+            "input complete or the resulting interpretation automatically correct.",
+            "bounded_application",
+        )
+    if (
+        any(marker in source for marker in ("not prove", "cannot prove", "could not prove"))
+        and concept_key in {
+            "curriculum_f1_cross_domain_problem_solving_closure_v1",
+            "curriculum_f1_graph_interpretation_answerability_v1",
+            "curriculum_f1_weather_measurement_records_v1",
+        }
+    ):
+        if "plant" in prompt_context.lower() and "light" in prompt_context.lower():
+            return (
+                "Those few observations could show a pattern in the recorded cases, but they could "
+                "not by themselves prove that light caused a change in plant height; other changing "
+                "conditions and additional evidence would still need to be examined.",
+                "bounded_application_limit",
+            )
+        return (
+            "The observations can support only the pattern represented in those records; they cannot "
+            "by themselves prove a cause or establish that the same result always occurs elsewhere.",
+            "bounded_application_limit",
         )
     if kind == "analogy" or "analogy" in source or "example" in source:
         values = item.get("examples") or []
@@ -1358,11 +1476,35 @@ def _concept_key(domain: str, title: str) -> str:
     return f"concept_{digest}"
 
 
+def _semantic_query_terms(value: str) -> set[str]:
+    """Return lexical terms plus a few inspectable meaning cues.
+
+    The cues bridge ordinary wording to reviewed concept vocabulary.  They do
+    not supply answer content: a cue can only help select an already-approved
+    knowledge resource whose own title, claims, or examples support it.
+    """
+
+    terms = set(_terms(value))
+    lower = " ".join(str(value or "").lower().split())
+    if re.search(r"\b(?:in (?:your|my|their) own words|retell|reconstruct|paraphrase)\b", lower):
+        terms.update({"reconstruction", "retell"})
+    if re.search(r"\b(?:pronoun|antecedent|refer(?:s|red|ring)? to)\b", lower) or re.search(
+        r"['\"](?:it|they|this|that|he|she)['\"]", lower
+    ):
+        terms.update({"reference", "pronoun", "antecedent"})
+    if re.search(r"\b(?:fold(?:ed|ing)? .* middle|matching halves|mirror line|line of symmetry)\b", lower):
+        terms.add("symmetry")
+    if re.search(r"\b(?:table|chart|rows?|columns?|organize .* (?:records?|evidence|data))\b", lower):
+        terms.update({"table", "record", "data"})
+    return terms
+
+
 def _terms(value: str) -> list[str]:
     stop = {
         "about", "after", "again", "also", "and", "are", "because", "before", "being", "can", "could",
         "been", "does", "doing", "for", "from", "has", "have", "how", "into", "its", "just", "mean", "means", "more", "not", "part", "parts", "short", "that", "the", "their",
         "them", "then", "there", "this", "too", "two", "what", "whats", "when", "where", "which", "with", "would", "you", "your",
+        "most", "own",
     }
     normalized: list[str] = []
     for raw in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", value):
@@ -1375,6 +1517,7 @@ def _terms(value: str) -> list[str]:
 def _term_key(word: str) -> str:
     return {
         "answers": "answer",
+        "computers": "computer",
         "differences": "difference",
         "effects": "effect",
         "fairly": "fair",
@@ -1389,10 +1532,21 @@ def _term_key(word: str) -> str:
         "revisable": "revise",
         "revision": "revise",
         "questions": "question",
+        "recorded": "record",
+        "recording": "record",
+        "records": "record",
+        "reconstructing": "reconstruction",
+        "reconstructed": "reconstruction",
+        "references": "reference",
+        "referred": "reference",
+        "referring": "reference",
+        "refers": "reference",
         "reasons": "reason",
         "reflections": "reflection",
         "rules": "rule",
         "situations": "situation",
+        "stories": "story",
+        "tools": "tool",
         "treated": "treat",
         "treating": "treat",
         "treatment": "treat",

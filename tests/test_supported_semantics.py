@@ -236,7 +236,7 @@ def test_prompt_grounded_semantics_reach_nlo_and_vary_surface_without_losing_req
 
     expected_signature = reasoning["answer_substance"]["semantic_packet"]["meaning_signature"]
     for result in (first, second):
-        assert result["version"] == "v24_contextual_composition_and_modulation"
+        assert result["version"] == "v31_generative_thought_expression"
         assert result["meaning_packet"]["supported_semantics"]["used"] is True
         assert result["meaning_packet"]["supported_semantics"]["formation_mode"] == "structured"
         assert result["semantic_frame"]["formation_mode"] == "structured"

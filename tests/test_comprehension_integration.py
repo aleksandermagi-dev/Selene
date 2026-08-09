@@ -237,6 +237,83 @@ def test_science_multi_part_synthesis_keeps_topic_continuity_and_builds_bounded_
     assert "Insulting" not in response["content_seed"]
 
 
+def test_f1_mixed_obligations_apply_separate_approved_concepts_instead_of_reusing_one_claim():
+    shared = {
+        "title": "F1 transfer support",
+        "domain": "curriculum.f1",
+        "central_claim": "Approved F1 knowledge supports a bounded application.",
+        "principles": [],
+        "relationships": [],
+        "examples": [],
+        "counterexamples": [],
+        "limits": [],
+        "source_refs": ["test:f1-transfer"],
+    }
+    closure = {
+        **shared,
+        "id": 201,
+        "concept_key": "curriculum_f1_cross_domain_problem_solving_closure_v1",
+        "answer_alignment_terms": ["organize", "evidence", "record", "table"],
+        "answer_subject_terms": [],
+        "retrieval_application_terms": ["organize", "evidence", "record", "table"],
+    }
+    computer = {
+        **shared,
+        "id": 196,
+        "concept_key": "curriculum_f1_computers_tools_task_fit_limits_v1",
+        "answer_alignment_terms": ["computer", "help"],
+        "answer_subject_terms": ["computer"],
+        "retrieval_application_terms": ["computer"],
+    }
+    records = {
+        **shared,
+        "id": 185,
+        "concept_key": "curriculum_f1_weather_measurement_records_v1",
+        "answer_alignment_terms": ["observation", "prove", "record"],
+        "answer_subject_terms": ["observation", "record"],
+        "retrieval_application_terms": ["observation", "prove", "record"],
+    }
+    prompt = (
+        "For four days, someone records the date, whether a plant received window light, and its height. "
+        "How would you organize that evidence, what could a computer help with, and what could those "
+        "observations not prove?"
+    )
+    response = _knowledge_response_seed(
+        prompt,
+        [closure, computer, records],
+        response_obligations=[
+            {
+                "id": "organize",
+                "kind": "method",
+                "source_text": "How would you organize that evidence?",
+                "topic": "plant records computer observations",
+            },
+            {
+                "id": "computer",
+                "kind": "direct_question",
+                "source_text": "What could a computer help with?",
+                "topic": "plant records computer observations",
+            },
+            {
+                "id": "limit",
+                "kind": "direct_question",
+                "source_text": "What could those observations not prove?",
+                "topic": "plant records computer observations",
+            },
+        ],
+    )
+
+    assert response["concept_ids"] == [201, 196, 185]
+    assert [item["support_field"] for item in response["obligation_support"]] == [
+        "bounded_application",
+        "bounded_application",
+        "bounded_application_limit",
+    ]
+    assert "one row for each recorded date" in response["content_seed"]
+    assert "A computer could store the records" in response["content_seed"]
+    assert "could not by themselves prove that light caused" in response["content_seed"]
+
+
 def _propose(conn):
     return route_request(
         conn,
