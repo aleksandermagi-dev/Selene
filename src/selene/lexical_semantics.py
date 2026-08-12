@@ -60,7 +60,7 @@ def build_lexical_semantic_set(payload: dict[str, Any] | None = None) -> dict[st
         ),
         "dictionary_memorization_used": False,
         "meaning_change_allowed": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "provenance_boundary": LEXICAL_SEMANTICS_BOUNDARY,
         **GUARDS,
     }

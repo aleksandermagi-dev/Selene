@@ -59,6 +59,10 @@ def test_mobile_pairing_is_disabled_by_default_and_desktop_gated(tmp_path, monke
     assert enabled["pairing_code"]
     assert len(enabled["pairing_code"]) >= 40
     assert mobile_pairing_code_valid(enabled["pairing_code"]) is True
+    assert enabled["transport_encrypted"] is False
+    assert enabled["trust_boundary"] == "trusted_private_lan_only"
+    assert enabled["untrusted_network_use_allowed"] is False
+    assert enabled["broader_network_use_allowed"] is False
     redacted = mobile_pairing_state(include_secret=False)
     assert redacted["pairing_code"] == ""
     assert redacted["phone_urls"] == []
@@ -109,6 +113,10 @@ def test_mobile_chat_send_uses_supervised_selene_chat_when_active(tmp_path):
     assert result["mobile_chat_engine"] == "selene_chat_active_supervised"
     assert result["mobile"]["source_class"] == "local_supervised_chat_history"
     assert result["mobile"]["guard_flags"] == mobile_guard_flags()
+    assert result["speaker_envelope"]["claimed_speaker"] == "Aleks"
+    assert result["speaker_envelope"]["channel"] == "private_lan_mobile_pairing"
+    assert result["speaker_envelope"]["cryptographic_authorship_verified"] is False
+    assert result["speaker_envelope"]["transport_may_approve_memory"] is False
     assert result["memory_write_active"] is False
     assert result["runtime_memory_recall"] is False
     assert result["raw_a_import_allowed"] is False

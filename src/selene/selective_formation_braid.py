@@ -496,7 +496,7 @@ def build_selective_formation_braid(
             "core_mind_authority_unchanged": True,
             "answer_engine_ownership_unchanged": True,
             "nlo_owns_expression": True,
-            "voice_owns_expression_style": True,
+            "coordinated_expression_contract_active": True,
             "visible_summary_only": True,
             "hidden_chain_of_thought_exposed": False,
             "provenance_boundary": FORMATION_BRAID_BOUNDARY,

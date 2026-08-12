@@ -156,4 +156,6 @@ def test_law_is_available_through_status_only_routes(tmp_path):
 
     assert status["status"] == "test_impact_law_active"
     assert review["authorized"] is True
+    assert review["receipt_persisted"] is True
+    assert review["receipt_id"].startswith("test-impact-")
     assert review["identity_change"] is False

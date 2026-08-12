@@ -212,6 +212,7 @@ def test_unsupported_part_is_named_instead_of_invented():
     assert result["attempted"] is True
     assert result["unsupported_resolution_count"] == 1
     assert result["resolutions"][0]["resolution"] == "explicit_unsupported_part"
+    assert result["resolutions"][0]["visible_fragment"] in result["content_seed"]
     assert "do not have a grounded factual answer" in result["content_seed"]
     assert "without guessing" in result["content_seed"]
     assert result["provider_call_allowed"] is False

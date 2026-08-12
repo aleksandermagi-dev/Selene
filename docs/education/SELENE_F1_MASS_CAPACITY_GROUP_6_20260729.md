@@ -99,7 +99,7 @@ queries. Memory, identity, and governance source flags remained false.
 
 A SQLite-safe pre-teaching backup was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_mass_capacity_group6_20260729.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_mass_capacity_group6_20260729.sqlite3`
 
 No live conversation, adversarial prompt, stress test, model training,
 fine-tuning, LoRA, personal-memory write, identity change, personality change,

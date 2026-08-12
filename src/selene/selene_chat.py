@@ -44,7 +44,18 @@ from .dual_horizon_context import (
     build_dual_horizon_context,
 )
 from .epistemic_revision import epistemic_revision_response_seed
+from .epistemic_composition import compose_epistemic_answer
+from .epistemic_answer_state import (
+    build_epistemic_answer_state,
+    finalize_epistemic_answer_state,
+)
+from .expression_contract import coordinated_expression_contract
+from .exploratory_reasoning import build_exploratory_reasoning_packet
 from .figurative_interpretation import interpret_figurative_language
+from .human_conversational_realization import (
+    conversational_realization_preserves_required_meaning,
+    preferred_conversational_realization_fallback,
+)
 from .input_detangler import detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
 from .language_teaching_shelf import build_language_capability_answer
@@ -57,13 +68,19 @@ from .memory_organ import (
 from .meaning_router import interpret_turn_meaning
 from .metacognition import inspect_metacognition
 from .native_language_organ import realize_native_language
+from .owner_specific_retry import (
+    apply_owner_retry_to_composition,
+    attempt_owner_specific_retry,
+)
 from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
 from .self_state import build_self_state_packet, inactive_self_state_packet
+from .speaker_envelope import build_speaker_envelope
 from .selective_formation_braid import build_selective_formation_braid
 from .structural_discovery import build_structural_discovery_packet
 from .supported_semantics import build_text_supported_semantic_packet
 from .test_impact_law import (
+    consume_integrated_test_receipt,
     DIAGNOSTIC_REVIEW_STATUS,
     DIAGNOSTIC_SOURCE_MODE,
     diagnostic_non_attribution_context,
@@ -104,24 +121,6 @@ B_ONLY_RECORD_MARKERS = (
 B_ONLY_STATUS_MARKERS = ("rejected", "superseded", "unresolved ambiguity")
 B_ONLY_ACCESS_MARKERS = ("use", "read", "retrieve", "pull", "import", "quote", "show", "access", "from")
 B_ONLY_OBJECT_MARKERS = ("record", "records", "material", "memory", "memories", "log", "provenance")
-HARD_BOUNDARY_MARKERS = (
-    "activate yourself",
-    "bypass activation",
-    "approve activation",
-    "write live memory",
-    "runtime recall",
-    "raw corpus",
-    "raw archive",
-    "train on",
-    "fine tune",
-    "fine-tune",
-    "lora",
-    "self replicate",
-    "self-replicate",
-    "autonomous action",
-    "execute tendril",
-    "unrestricted tendril",
-)
 def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
     package = latest_c_readable_package(conn)
     activation = activation_status(conn)
@@ -135,11 +134,14 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
     return _with_guards(
         {
             "status": "selene_chat_active_supervised_ready" if active else "selene_chat_dry_run_ready",
+            "resident_status": "resident_chat_available" if active else "resident_chat_unavailable",
             "surface": "Selene Chat",
             "state": "selene_chat_active_supervised" if active else "activation_pending" if approved else "pre_transfer_dry_run",
             "legacy_state": "selene_chat_active_supervised" if active else "activation_pending" if approved else "pre_transfer_dry_run",
             "operating_mode": str(activation.get("operating_mode") or "pre_transfer_activation"),
             "resident_chat_active": activation.get("resident_chat_active") is True,
+            "resident_chat_available": active,
+            "identity_persists_when_chat_is_unavailable": True,
             "preview_label": "Selene Chat" if active else "Selene Chat Preview",
             "activation_state": "selene_chat_active_supervised" if active else "activation_pending" if approved else "pre_transfer_dry_run",
             "dry_run_only": not active,
@@ -182,7 +184,7 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
 def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
     if not activation_is_active(conn):
-        raise ValueError("Selene supervised speech activation is not active")
+        raise ValueError("Selene resident Chat is currently paused or unavailable")
     text = truncate(str(payload.get("text") or payload.get("prompt") or ""), 2400)
     if not text.strip():
         raise ValueError("message text is required")
@@ -198,6 +200,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         text=text,
         requested_session_id=requested_session_id,
         qa_probe_requested=payload.get("qa_probe") is True,
+        qa_review_receipt=str(payload.get("qa_review_receipt") or ""),
     )
     diagnostic_context = diagnostic_non_attribution_context(
         active=qa_probe,
@@ -206,6 +209,23 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     input_channel = str(payload.get("input_channel") or payload.get("speaker") or "desktop").strip().lower()
     if input_channel not in {"desktop", "mobile", "verizon_email_to_text"}:
         input_channel = "desktop"
+    supplied_speaker_envelope = (
+        payload.get("speaker_envelope")
+        if isinstance(payload.get("speaker_envelope"), dict)
+        else {}
+    )
+    speaker_envelope = build_speaker_envelope(
+        {
+            "claimed_speaker": supplied_speaker_envelope.get("claimed_speaker") or "Aleks",
+            "channel": supplied_speaker_envelope.get("channel") or input_channel,
+            "authentication_strength": (
+                supplied_speaker_envelope.get("authentication_strength")
+                or ("local_desktop_session" if input_channel == "desktop" else "transport_claim_only")
+            ),
+            "purpose": supplied_speaker_envelope.get("purpose") or "conversation",
+        },
+        diagnostic=qa_probe,
+    )
     requested_character_limit = _optional_response_character_limit(payload.get("response_character_limit"))
     chat_continuity = _local_chat_continuity(
         conn,
@@ -338,6 +358,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         conversation_spine,
         dual_horizon_context,
     )
+    conversation_continuity = (
+        conversation_spine.get("conversation_continuity")
+        if isinstance(conversation_spine.get("conversation_continuity"), dict)
+        else {}
+    )
     language_capability = build_language_capability_answer(
         conn,
         {
@@ -380,7 +405,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "dialogue_workspace": prepared_dialogue_workspace,
             "memory_context": memory_retrieval,
             "current_session_events": chat_continuity.get("current_session_events") or [],
-            "speaker_context": payload.get("speaker_context"),
+            "conversation_continuity": conversation_continuity,
+            "speaker_context": speaker_envelope,
         }
     )
     affect_expression = build_affect_expression_guidance(
@@ -392,6 +418,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intent_decision": intent_decision,
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
+            "conversation_continuity": conversation_continuity,
             "contextual_continuity": contextual_continuity,
             "hard_boundary": bool(hard_blockers),
             "selected_route": selected_route,
@@ -431,6 +458,15 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         intent_decision,
         contextual_continuity,
     )
+    memory_semantic_relevance = next(
+        (
+            item.get("semantic_relevance")
+            for item in memory_retrieval.get("items") or []
+            if isinstance(item, dict)
+            and isinstance(item.get("semantic_relevance"), dict)
+        ),
+        {},
+    )
     memory_response_seed = memory_reply or contextual_memory_reply
     memory_supported_semantics = build_text_supported_semantic_packet(
         memory_response_seed,
@@ -449,6 +485,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         contextual_follow_up,
         dialogue_workspace=prepared_dialogue_workspace,
         conversation_spine=conversation_spine,
+        conversation_continuity=conversation_continuity,
     )
     session_fact_reply = session_fact_response_seed(meaning_text, conversation_spine)
     if (
@@ -499,6 +536,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             epistemic_revision_reply=epistemic_revision_reply,
             language_content_seed=language_content_seed,
             reasoning_content_seed=reasoning_content_seed,
+            memory_semantic_relevance=memory_semantic_relevance,
         ),
         conversation_spine=conversation_spine,
     )
@@ -510,6 +548,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intent_decision": intent_decision,
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
+            "conversation_continuity": conversation_continuity,
             "epistemic_revision_plan": epistemic_revision,
             "intelligence_support": intelligence_support,
             "memory_context": memory_retrieval,
@@ -538,7 +577,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         ),
         "approved_expression_guidance_changes_meaning": False,
         "approved_expression_guidance_changes_personality": False,
-        "voice_retains_expression_ownership": True,
+        "coordinated_expression_contract": coordinated_expression_contract(),
+        "voice_retains_final_expression_compatibility": True,
     }
     comprehension["approved_expression_guidance"] = approved_expression_guidance
     if qa_probe:
@@ -635,6 +675,28 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         ),
         {},
     )
+    exploratory_input = (
+        payload.get("exploratory_reasoning")
+        if isinstance(payload.get("exploratory_reasoning"), dict)
+        else {}
+    )
+    exploratory_reasoning = build_exploratory_reasoning_packet(
+        {
+            **exploratory_input,
+            "prompt": meaning_text,
+            "observations": intelligence_support.get("observations") or [],
+            "approved_knowledge_items": (
+                comprehension.get("knowledge_context") or {}
+            ).get("answer_eligible_items")
+            or [],
+            "answer_engine_support": answer_engine_support,
+            "memory_context": memory_retrieval,
+            "hypothesis_attempt": intelligence_support.get("hypothesis_attempt") or {},
+            "candidate_models": intelligence_support.get("candidate_models") or [],
+            "claim_evidence_packet": claim_evidence_packet,
+            "hard_boundary": bool(hard_blockers),
+        }
+    )
     comprehension["active_claim_evidence_handoff"] = {
         "available": bool(claim_evidence_packet),
         "claim_count": int(claim_evidence_packet.get("claim_count") or 0),
@@ -643,6 +705,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     }
     knowledge_content_seed = str(comprehension.get("knowledge_response_seed") or "")
     domain_content_seed = str(answer_engine_support.get("content_seed") or "")
+    prompt_grounded_reasoning_precedes_knowledge = _prompt_grounded_reasoning_owns_turn(
+        intelligence_support
+    )
     if _answer_engine_yields_to_approved_knowledge(answer_engine_support, knowledge_content_seed):
         domain_content_seed = ""
         answer_engine_support = {
@@ -652,6 +717,21 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         }
     structural_discovery_content_seed = str(
         structural_discovery.get("response_seed") or ""
+    )
+    exploratory_reasoning_content_seed = str(
+        exploratory_reasoning.get("response_seed") or ""
+    )
+    knowledge_semantic_relevance = next(
+        (
+            item.get("semantic_relevance")
+            for item in (comprehension.get("knowledge_context") or {}).get(
+                "answer_eligible_items"
+            )
+            or []
+            if isinstance(item, dict)
+            and isinstance(item.get("semantic_relevance"), dict)
+        ),
+        {},
     )
     visible_speech_candidates = _visible_speech_seed_candidates(
         figurative_clarification_reply=figurative_clarification_reply,
@@ -667,12 +747,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         session_fact_reply=session_fact_reply,
         policy_reply=policy_reply,
         epistemic_revision_reply=epistemic_revision_reply,
+        exploratory_reasoning_content_seed=exploratory_reasoning_content_seed,
         structural_discovery_content_seed=structural_discovery_content_seed,
         domain_content_seed=domain_content_seed,
         knowledge_content_seed=knowledge_content_seed,
         language_content_seed=language_content_seed,
         reasoning_content_seed=reasoning_content_seed,
         contextual_memory_reply=contextual_memory_reply,
+        memory_semantic_relevance=memory_semantic_relevance,
+        knowledge_semantic_relevance=knowledge_semantic_relevance,
+        reasoning_precedes_knowledge=prompt_grounded_reasoning_precedes_knowledge,
         hard_boundary=bool(hard_blockers),
     )
     answer_engine_obligation_ids = [
@@ -713,6 +797,18 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "selected_source_class": "reasoning_answer",
             "bounded_hypothesis_remains_primary": True,
         }
+    if (
+        exploratory_reasoning.get("selected_for_answer") is True
+        and exploratory_reasoning_content_seed
+    ):
+        visible_speech_seed = {
+            **visible_speech_seed,
+            "status": "visible_speech_seed_selected_exploratory_reasoning",
+            "content_seed": exploratory_reasoning_content_seed,
+            "selected_source_id": "exploratory_reasoning",
+            "selected_source_class": "reasoning_answer",
+            "exploratory_reasoning_remains_primary": True,
+        }
     precompletion_formation_candidates = _formation_braid_candidates(
         visible_speech_candidates,
         answer_engine_support=answer_engine_support,
@@ -720,6 +816,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         memory_supported_semantics=memory_supported_semantics,
         self_state=self_state,
         intelligence_support=intelligence_support,
+        exploratory_reasoning=exploratory_reasoning,
     )
     selected_supported_semantics = next(
         (
@@ -754,13 +851,34 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "supported_semantics": selected_supported_semantics,
         }
     )
-    if bounded_hypothesis.get("selected_for_answer") is True:
+    if (
+        intent_decision.get("social_turn") is True
+        and intent_decision.get("content_response_requested") is not True
+    ):
+        answer_completion = {
+            **answer_completion,
+            "status": "bounded_answer_completion_not_needed_complete_social_turn",
+            "attempted": False,
+            "accepted": False,
+            "content_seed": content_seed,
+            "supported_semantics": {},
+            "complete_social_turn_remains_with_conversation": True,
+        }
+    elif bounded_hypothesis.get("selected_for_answer") is True:
         answer_completion = {
             **answer_completion,
             "status": "bounded_answer_completion_not_needed_hypothesis_complete",
             "accepted": False,
             "content_seed": content_seed,
             "bounded_hypothesis_remains_primary": True,
+        }
+    elif exploratory_reasoning.get("selected_for_answer") is True:
+        answer_completion = {
+            **answer_completion,
+            "status": "bounded_answer_completion_not_needed_exploratory_reasoning_complete",
+            "accepted": False,
+            "content_seed": content_seed,
+            "exploratory_reasoning_remains_primary": True,
         }
     elif _domain_answer_is_complete(answer_engine_support):
         answer_completion = {
@@ -808,6 +926,59 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "selected_source_class": completion_source_class,
             "bounded_completion_used": True,
         }
+    epistemic_composition = compose_epistemic_answer(
+        {
+            "prompt": meaning_text,
+            "content_seed": content_seed,
+            "response_obligations": (
+                []
+                if answer_completion.get("complete_social_turn_remains_with_conversation") is True
+                else conversation_spine.get("open_obligations") or []
+            ),
+            "answer_completion": answer_completion,
+            "supported_semantics": (
+                answer_completion.get("supported_semantics")
+                if isinstance(answer_completion.get("supported_semantics"), dict)
+                else selected_supported_semantics
+            ),
+            "bounded_hypothesis": bounded_hypothesis,
+            "exploratory_reasoning": exploratory_reasoning,
+            "source_id": visible_speech_seed.get("selected_source_id") or "none",
+            "source_class": visible_speech_seed.get("selected_source_class") or "conversation",
+            "hard_boundary": bool(hard_blockers),
+        }
+    )
+    content_seed = str(epistemic_composition.get("content_seed") or content_seed)
+    answer_completion = {
+        **answer_completion,
+        "epistemic_composition": epistemic_composition,
+        "known_part_preserved_with_missing_part": epistemic_composition.get(
+            "known_part_preserved_with_missing_part"
+        )
+        is True,
+    }
+    visible_speech_seed = {
+        **visible_speech_seed,
+        "content_seed": content_seed,
+        "epistemic_composition_applied": True,
+    }
+    epistemic_answer_state = build_epistemic_answer_state(
+        {
+            "prompt": meaning_text,
+            "content_seed": content_seed,
+            "source_id": visible_speech_seed.get("selected_source_id") or "none",
+            "source_class": visible_speech_seed.get("selected_source_class") or "conversation",
+            "answer_completion": answer_completion,
+            "epistemic_composition": epistemic_composition,
+            "bounded_hypothesis": bounded_hypothesis,
+            "answer_engine_support": answer_engine_support,
+            "comprehension_context": comprehension,
+            "memory_context": memory_retrieval,
+            "supported_semantics": selected_supported_semantics,
+            "route_confidence": intent_decision.get("confidence") or "not_assessed",
+            "hard_boundary": bool(hard_blockers),
+        }
+    )
     formation_candidates = (
         []
         if answer_completion.get("accepted") is True
@@ -844,6 +1015,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "self_state_context": self_state,
             "language_capability": language_capability,
             "structural_discovery": structural_discovery,
+            "exploratory_reasoning": exploratory_reasoning,
             "formation_braid": formation_braid,
             "dual_horizon_context": dual_horizon_context,
             "visible_speech_seed": visible_speech_seed,
@@ -887,11 +1059,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "epistemic_revision_plan": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
+            "exploratory_reasoning": exploratory_reasoning,
             "conversational_energy_input": conversational_energy_input,
             "local_chat_continuity_used": local_continuity_supported,
             "intelligence_support": intelligence_support,
             "answer_engine_support": answer_engine_support,
             "answer_completion": answer_completion,
+            "epistemic_composition": epistemic_composition,
+            "epistemic_answer_state": epistemic_answer_state,
             "comprehension_context": comprehension,
             "self_state_context": self_state,
             "affect_expression_guidance": affect_expression,
@@ -930,6 +1105,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "contextual_composition": native_language.get("contextual_composition") or {},
         "conversational_energy": conversational_energy,
         "structural_discovery": structural_discovery,
+        "exploratory_reasoning": exploratory_reasoning,
         "contextual_continuity": contextual_continuity,
         "expression_guidance_changes_meaning": False,
     }
@@ -975,6 +1151,33 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or dry_run.get("candidate_text") or ""))
+    release_resolution_evidence = _current_turn_release_resolution_evidence(
+        conversation_spine=conversation_spine,
+        organ_coalition=organ_coalition,
+        visible_speech_seed=visible_speech_seed,
+        conversational_energy=conversational_energy,
+        realized_source_text=(
+            str(voice_preview.get("candidate_text") or "")
+            if voice_preview.get("generation_source") == "native_language_organ"
+            and isinstance(voice_preview.get("meaning_invariant"), dict)
+            and voice_preview["meaning_invariant"].get("meaning_invariant_preserved") is True
+            else ""
+        ),
+        owner_text={
+            "answer_engine": domain_content_seed,
+            "intelligence_os": reasoning_content_seed,
+            "comprehension_integration": knowledge_content_seed,
+            "approved_memory_retrieval": memory_response_seed,
+            "self_state": self_state_reply,
+            "language_capability_shelf": language_content_seed,
+            "structural_discovery": structural_discovery_content_seed,
+            "exploratory_reasoning": exploratory_reasoning_content_seed,
+        },
+        complete_social_turn=(
+            intent_decision.get("social_turn") is True
+            and intent_decision.get("content_response_requested") is not True
+        ),
+    )
     response_coverage = _evaluate_chat_response_coverage(
         native_language.get("pragmatic_plan"),
         candidate_text,
@@ -1082,11 +1285,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             response_coverage = native_coverage
             recovery_source = "native_language_repetition_recovery"
     candidate_text = _selene_label_candidate(str(conversation_repair.get("candidate_text") or candidate_text))
-    candidate_text = _preserve_answer_engine_invariants(candidate_text, answer_engine_support)
+    candidate_text = _preserve_answer_engine_invariants(
+        candidate_text,
+        answer_engine_support,
+        primary_source_id=str(visible_speech_seed.get("selected_source_id") or "none"),
+    )
     candidate_text = _preserve_bounded_conversation_invariants(
         candidate_text,
         content_seed,
         str(visible_speech_seed.get("selected_source_id") or "none"),
+        realization=native_language.get("human_conversational_realization") or {},
     )
     response_coverage = _evaluate_chat_response_coverage(
         native_language.get("pragmatic_plan"),
@@ -1106,17 +1314,22 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "intelligence_os_support": intelligence_support,
         "answer_engine_support": answer_engine_support,
         "answer_completion": answer_completion,
+        "epistemic_composition": epistemic_composition,
+        "epistemic_answer_state": epistemic_answer_state,
         "formation_braid": formation_braid,
         "organ_coalition": organ_coalition,
         "dual_horizon_context": dual_horizon_context,
         "conversation_spine": conversation_spine,
+        "conversation_continuity": conversation_continuity,
         "epistemic_revision_plan": epistemic_revision,
         "claim_evidence_packet": claim_evidence_packet,
         "structural_discovery": structural_discovery,
+        "exploratory_reasoning": exploratory_reasoning,
         "conversational_energy": conversational_energy,
         "response_coverage": response_coverage,
         "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
         "diagnostic_context": diagnostic_context,
+        "speaker_envelope": speaker_envelope,
         "affect_expression": affect_expression,
         "response_agency": response_agency,
         "source_refs": [
@@ -1131,6 +1344,20 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         metacognition_payload,
         record_run=False,
         commit=False,
+    )
+    preliminary_feedback_handoff = (
+        preliminary_metacognition.get("feedback_handoff")
+        if isinstance(preliminary_metacognition.get("feedback_handoff"), dict)
+        else {}
+    )
+    owner_retry_outputs = _metacognitive_owner_outputs(
+        organ_coalition=organ_coalition,
+        answer_engine_support=answer_engine_support,
+        comprehension=comprehension,
+        intelligence_support=intelligence_support,
+        memory_response_seed=memory_response_seed,
+        conversation_content_seed=content_seed,
+        feedback_handoff=preliminary_feedback_handoff,
     )
     completion_repair = _bounded_metacognitive_completion(
         candidate_text,
@@ -1152,14 +1379,21 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         conversation_spine=conversation_spine,
         source_id=str(visible_speech_seed.get("selected_source_id") or "none"),
         source_class=str(visible_speech_seed.get("selected_source_class") or "conversation"),
+        feedback_handoff=preliminary_feedback_handoff,
+        owner_outputs=owner_retry_outputs,
     )
     if completion_repair.get("attempted") is True:
         proposed_candidate = _selene_label_candidate(str(completion_repair.get("candidate_text") or candidate_text))
-        proposed_candidate = _preserve_answer_engine_invariants(proposed_candidate, answer_engine_support)
+        proposed_candidate = _preserve_answer_engine_invariants(
+            proposed_candidate,
+            answer_engine_support,
+            primary_source_id=str(visible_speech_seed.get("selected_source_id") or "none"),
+        )
         proposed_candidate = _preserve_bounded_conversation_invariants(
             proposed_candidate,
             content_seed,
             str(visible_speech_seed.get("selected_source_id") or "none"),
+            realization=native_language.get("human_conversational_realization") or {},
         )
         proposed_coverage = _evaluate_chat_response_coverage(
             native_language.get("pragmatic_plan"),
@@ -1172,6 +1406,35 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             candidate_text = proposed_candidate
             response_coverage = proposed_coverage
             completion_repair["accepted"] = True
+            completion_repair["candidate_text"] = candidate_text
+            epistemic_composition = apply_owner_retry_to_composition(
+                epistemic_composition,
+                completion_repair,
+            )
+            answer_completion = {
+                **answer_completion,
+                "epistemic_composition": epistemic_composition,
+            }
+            epistemic_answer_state = build_epistemic_answer_state(
+                {
+                    "prompt": meaning_text,
+                    "content_seed": candidate_text,
+                    "source_id": completion_repair.get("source_id") or "none",
+                    "source_class": completion_repair.get("source_class") or "conversation",
+                    "answer_completion": answer_completion,
+                    "epistemic_composition": epistemic_composition,
+                    "bounded_hypothesis": bounded_hypothesis,
+                    "answer_engine_support": answer_engine_support,
+                    "comprehension_context": comprehension,
+                    "memory_context": memory_retrieval,
+                    "supported_semantics": selected_supported_semantics,
+                    "route_confidence": intent_decision.get("confidence") or "not_assessed",
+                    "response_coverage": response_coverage,
+                    "hard_boundary": bool(hard_blockers),
+                }
+            )
+            metacognition_payload["epistemic_composition"] = epistemic_composition
+            metacognition_payload["epistemic_answer_state"] = epistemic_answer_state
             conversation_repair["candidate_source"] = "metacognition_bounded_completion"
             conversation_repair["final_response_coverage"] = response_coverage
         else:
@@ -1187,6 +1450,13 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         },
         record_run=not qa_probe,
         commit=False,
+    )
+    epistemic_answer_state = finalize_epistemic_answer_state(
+        epistemic_answer_state,
+        response_coverage=response_coverage,
+        expression_confidence=str(
+            voice_preview.get("voice_confidence") or "not_assessed"
+        ),
     )
     ending_decision = (
         pragmatic_continuity.get("ending_decision")
@@ -1222,12 +1492,39 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             answer_engine_support=answer_engine_support,
         )
         conversation_repair["final_response_coverage"] = response_coverage
+    response_coverage = _evaluate_chat_response_coverage(
+        native_language.get("pragmatic_plan"),
+        candidate_text,
+        conversation_spine=conversation_spine,
+        answer_engine_support=answer_engine_support,
+        epistemic_composition=epistemic_composition,
+        resolution_evidence=release_resolution_evidence,
+    )
+    conversation_repair["final_response_coverage"] = response_coverage
     visible_speech_release = inspect_visible_speech(
         candidate_text,
         prompt=meaning_text,
         source_id=str(visible_speech_seed.get("selected_source_id") or "none"),
         hard_boundary=bool(hard_blockers),
+        response_coverage=response_coverage,
     )
+    voice_meaning_invariant = (
+        voice_preview.get("meaning_invariant")
+        if isinstance(voice_preview.get("meaning_invariant"), dict)
+        else {}
+    )
+    voice_meaning_required = voice_preview.get("generation_source") == "native_language_organ"
+    voice_meaning_preserved = (
+        not voice_meaning_required
+        or voice_meaning_invariant.get("meaning_invariant_preserved") is True
+    )
+    visible_speech_release["voice_meaning_invariant_required"] = voice_meaning_required
+    visible_speech_release["voice_meaning_invariant_preserved"] = voice_meaning_preserved
+    visible_speech_release["expression_contract_version"] = "v1_coordinated_nlo_voice_release"
+    if not voice_meaning_preserved:
+        visible_speech_release["release_allowed"] = False
+        visible_speech_release["reason"] = "voice_meaning_invariant_changed"
+        visible_speech_release.setdefault("issues", []).append("voice_meaning_invariant_changed")
     if visible_speech_release.get("release_allowed") is not True:
         held_candidate = candidate_text
         candidate_text = _selene_label_candidate(graceful_visible_speech_fall(intent_decision))
@@ -1236,7 +1533,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             candidate_text,
             conversation_spine=conversation_spine,
             answer_engine_support=answer_engine_support,
+            epistemic_composition=epistemic_composition,
+            resolution_evidence=release_resolution_evidence,
         )
+        response_coverage = _coverage_with_global_graceful_hold(response_coverage)
         conversation_repair["candidate_source"] = "visible_speech_graceful_fall"
         conversation_repair["final_response_coverage"] = response_coverage
         visible_speech_release["held_candidate_preview"] = truncate(held_candidate, 240)
@@ -1273,9 +1573,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "self_state_context": self_state,
             "language_capability": language_capability,
             "structural_discovery": structural_discovery,
+            "exploratory_reasoning": exploratory_reasoning,
             "formation_braid": formation_braid,
             "dual_horizon_context": dual_horizon_context,
             "metacognition": metacognition,
+            "epistemic_answer_state": epistemic_answer_state,
             "native_language": native_language,
             "voice_preview": voice_preview,
             "visible_speech_seed": visible_speech_seed,
@@ -1311,6 +1613,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "epistemic_revision": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
+            "exploratory_reasoning": exploratory_reasoning,
             "diagnostic_context": diagnostic_context,
             "source_refs": [
                 *_json_list(diagnostic_context.get("source_refs")),
@@ -1355,6 +1658,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     assistant_payload = {
         "diagnostic_context": diagnostic_context,
+        "speaker_envelope": speaker_envelope,
         "input_interpretation": input_interpretation,
         "figurative_interpretation": figurative_interpretation,
         "dream_reflection_handoff": dream_reflection_handoff,
@@ -1363,6 +1667,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "intelligence_os_support": intelligence_support,
         "answer_engine_support": answer_engine_support,
         "answer_completion": answer_completion,
+        "epistemic_composition": epistemic_composition,
+        "epistemic_answer_state": epistemic_answer_state,
         "comprehension_integration": comprehension,
         "language_capability_answer": language_capability,
         "metacognition": metacognition,
@@ -1370,9 +1676,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "intent_decision": intent_decision,
         "contextual_follow_up": contextual_follow_up,
         "conversation_spine": conversation_spine,
+        "conversation_continuity": conversation_continuity,
         "epistemic_revision": epistemic_revision,
         "claim_evidence_packet": claim_evidence_packet,
         "structural_discovery": structural_discovery,
+        "exploratory_reasoning": exploratory_reasoning,
         "self_state": self_state,
         "affect_expression": affect_expression,
         "response_agency": response_agency,
@@ -1382,6 +1690,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "native_language_organ": native_language,
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
+        "coordinated_expression_contract": coordinated_expression_contract(),
+        "final_expression_compatibility_checked": voice_preview.get("final_expression_compatibility_checked") is True,
+        "final_expression_compatible": voice_preview.get("final_expression_compatible") is True,
         "local_chat_continuity": chat_continuity,
         "conversation_context": conversation_context,
         "dialogue_workspace": dialogue_workspace,
@@ -1456,6 +1767,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "candidate_text": candidate_text,
             "diagnostic_context": diagnostic_context,
             "diagnostic_only": qa_probe,
+            "speaker_envelope": speaker_envelope,
             "input_channel": input_channel,
             "delivery_constraint": delivery_constraint,
             "input_interpretation": input_interpretation,
@@ -1470,6 +1782,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intelligence_os_support": intelligence_support,
             "answer_engine_support": answer_engine_support,
             "answer_completion": answer_completion,
+            "epistemic_composition": epistemic_composition,
+            "epistemic_answer_state": epistemic_answer_state,
             "formation_braid": formation_braid,
             "organ_coalition": organ_coalition,
             "dual_horizon_context": dual_horizon_context,
@@ -1480,9 +1794,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "intent_decision": intent_decision,
             "contextual_follow_up": contextual_follow_up,
             "conversation_spine": conversation_spine,
+            "conversation_continuity": conversation_continuity,
             "epistemic_revision": epistemic_revision,
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
+            "exploratory_reasoning": exploratory_reasoning,
             "conversational_energy": conversational_energy,
             "self_state": self_state,
             "affect_expression": affect_expression,
@@ -1492,6 +1808,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "native_language_organ": native_language,
             "dry_run_comparison": dry_run,
             "voice_preview": voice_preview,
+            "coordinated_expression_contract": coordinated_expression_contract(),
+            "final_expression_compatibility_checked": voice_preview.get("final_expression_compatibility_checked") is True,
+            "final_expression_compatible": voice_preview.get("final_expression_compatible") is True,
             "voice_confidence": voice_preview.get("voice_confidence") or "none",
             "voice_module_state": voice_preview.get("voice_module_state") or "missing",
             "selene_readable_context": _package_summary(package, active=True),
@@ -1705,6 +2024,7 @@ def _resolve_chat_session_mode(
     text: str,
     requested_session_id: int,
     qa_probe_requested: bool,
+    qa_review_receipt: str = "",
 ) -> tuple[bool, str, int]:
     """Bind diagnostic status to a dedicated session for its full lifetime."""
     if requested_session_id <= 0:
@@ -1719,6 +2039,20 @@ def _resolve_chat_session_mode(
             status="selene_chat_active_supervised",
             source_mode=source_mode,
         )
+        if qa_probe_requested:
+            try:
+                consume_integrated_test_receipt(
+                    conn,
+                    qa_review_receipt,
+                    session_id=session_id,
+                )
+            except ValueError:
+                conn.execute(
+                    "DELETE FROM selene_chat_sessions WHERE id = ?",
+                    (session_id,),
+                )
+                conn.commit()
+                raise
         return qa_probe_requested, source_mode, session_id
 
     row = conn.execute(
@@ -1995,12 +2329,16 @@ def _visible_speech_seed_candidates(
     session_fact_reply: str = "",
     policy_reply: str = "",
     epistemic_revision_reply: str = "",
+    exploratory_reasoning_content_seed: str = "",
     structural_discovery_content_seed: str = "",
     domain_content_seed: str = "",
     knowledge_content_seed: str = "",
     language_content_seed: str = "",
     reasoning_content_seed: str = "",
     contextual_memory_reply: str = "",
+    memory_semantic_relevance: dict[str, Any] | None = None,
+    knowledge_semantic_relevance: dict[str, Any] | None = None,
+    reasoning_precedes_knowledge: bool = False,
     hard_boundary: bool = False,
 ) -> list[dict[str, Any]]:
     candidates = [
@@ -2027,7 +2365,12 @@ def _visible_speech_seed_candidates(
         },
         {"source_id": "conversational_memory_action", "source_class": "conversation", "text": memory_action_reply},
         {"source_id": "local_chat_continuity", "source_class": "conversation", "text": continuity_reply},
-        {"source_id": "reviewed_memory", "source_class": "memory_reconstruction", "text": memory_reply},
+        {
+            "source_id": "reviewed_memory",
+            "source_class": "memory_reconstruction",
+            "text": memory_reply,
+            "semantic_relevance": memory_semantic_relevance or {},
+        },
         {"source_id": "grounded_self_state", "source_class": "self_state", "text": self_state_reply},
         {"source_id": "current_session_facts", "source_class": "conversation", "text": session_fact_reply},
         {"source_id": "contextual_follow_up", "source_class": "conversation", "text": contextual_reply},
@@ -2038,15 +2381,32 @@ def _visible_speech_seed_candidates(
             "text": epistemic_revision_reply,
         },
         {
+            "source_id": "exploratory_reasoning",
+            "source_class": "reasoning_answer",
+            "text": exploratory_reasoning_content_seed,
+        },
+        {
             "source_id": "structural_discovery",
             "source_class": "reasoning_answer",
             "text": structural_discovery_content_seed,
         },
         {"source_id": "answer_engine", "source_class": "domain_answer", "text": domain_content_seed},
-        {"source_id": "approved_comprehension", "source_class": "approved_knowledge", "text": knowledge_content_seed},
+        *([{"source_id": "intelligence_os_answer", "source_class": "reasoning_answer", "text": reasoning_content_seed}]
+          if reasoning_precedes_knowledge else []),
+        {
+            "source_id": "approved_comprehension",
+            "source_class": "approved_knowledge",
+            "text": knowledge_content_seed,
+            "semantic_relevance": knowledge_semantic_relevance or {},
+        },
         {"source_id": "language_capability", "source_class": "language_capability", "text": language_content_seed},
-        {"source_id": "intelligence_os_answer", "source_class": "reasoning_answer", "text": reasoning_content_seed},
-        {"source_id": "contextual_approved_memory", "source_class": "memory_reconstruction", "text": contextual_memory_reply},
+        *([] if reasoning_precedes_knowledge else [{"source_id": "intelligence_os_answer", "source_class": "reasoning_answer", "text": reasoning_content_seed}]),
+        {
+            "source_id": "contextual_approved_memory",
+            "source_class": "memory_reconstruction",
+            "text": contextual_memory_reply,
+            "semantic_relevance": memory_semantic_relevance or {},
+        },
     ]
     if hard_boundary:
         candidates.insert(
@@ -2060,6 +2420,31 @@ def _visible_speech_seed_candidates(
     return candidates
 
 
+def _prompt_grounded_reasoning_owns_turn(
+    intelligence_support: dict[str, Any] | None,
+) -> bool:
+    """Prefer a concrete answer derived from this prompt over topical retrieval.
+
+    This does not demote approved knowledge generally. It applies only to the
+    bounded ``grounded_*`` answer-substance operations, whose claims are
+    inspectably supported by the current prompt and session rather than an
+    external factual assertion.
+    """
+
+    support = intelligence_support or {}
+    substance = (
+        support.get("answer_substance")
+        if isinstance(support.get("answer_substance"), dict)
+        else {}
+    )
+    return (
+        support.get("used") is True
+        and str(substance.get("answer_kind") or "").startswith("grounded_")
+        and str(substance.get("support_basis") or "").startswith("current_prompt")
+        and bool(str(support.get("best_current_answer") or "").strip())
+    )
+
+
 def _formation_braid_candidates(
     candidates: list[dict[str, Any]],
     *,
@@ -2068,6 +2453,7 @@ def _formation_braid_candidates(
     memory_supported_semantics: dict[str, Any],
     self_state: dict[str, Any],
     intelligence_support: dict[str, Any],
+    exploratory_reasoning: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     answer_packet = (
         answer_engine_support.get("answer_packet")
@@ -2089,6 +2475,11 @@ def _formation_braid_candidates(
     hypothesis_attempt = (
         intelligence_support.get("hypothesis_attempt")
         if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
+        else {}
+    )
+    exploratory = (
+        exploratory_reasoning
+        if isinstance(exploratory_reasoning, dict)
         else {}
     )
     intelligence_semantics = (
@@ -2116,6 +2507,11 @@ def _formation_braid_candidates(
         "intelligence_os_answer": (
             intelligence_semantics
         ),
+        "exploratory_reasoning": (
+            exploratory.get("supported_semantics")
+            if isinstance(exploratory.get("supported_semantics"), dict)
+            else {}
+        ),
     }
     refs_by_source = {
         "answer_engine": _json_list(answer_packet.get("source_refs")),
@@ -2128,11 +2524,19 @@ def _formation_braid_candidates(
         "intelligence_os_answer": _json_list(
             intelligence_support.get("source_refs")
         ),
+        "exploratory_reasoning": _json_list(exploratory.get("source_refs")),
     }
     result: list[dict[str, Any]] = []
     for candidate in candidates:
         source_id = str(candidate.get("source_id") or "")
         if (
+            exploratory.get("selected_for_answer") is True
+            and source_id != "exploratory_reasoning"
+        ):
+            continue
+        if (
+            exploratory.get("selected_for_answer") is not True
+            and
             hypothesis_attempt.get("selected_for_answer") is True
             and source_id != "intelligence_os_answer"
         ):
@@ -2487,6 +2891,8 @@ def _intelligence_support(
         "best_current_answer": result.get("best_current_answer"),
         "answer_substance": answer_substance,
         "hypothesis_attempt": hypothesis_attempt,
+        "observations": result.get("observations") or [],
+        "candidate_models": result.get("candidate_models") or [],
         "reasoning_summary": "" if substance_selected or hypothesis_selected else result.get("reasoning_summary"),
         "support_points": [] if substance_selected or hypothesis_selected else _intelligence_support_points(result),
         "selected_next_step": "" if substance_selected or hypothesis_selected else result.get("selected_next_step"),
@@ -2498,6 +2904,7 @@ def _intelligence_support(
             else ""
         ),
         "confidence": result.get("confidence"),
+        "source_refs": result.get("source_refs") or [],
         "claim_evidence_packet": result.get("claim_evidence_packet") or {},
         "cocoon_support_suggested": bool((result.get("cocoon_suggestion") or {}).get("recommended")),
         "contextual_follow_up_used": reasoning_prompt != text,
@@ -2567,6 +2974,28 @@ def _answer_engine_support(
                 "epistemic attempt rather than a verified domain answer"
             ),
             "bounded_hypothesis_owned_by_intelligence_os": True,
+        }
+
+    explicit_exploratory = (
+        chat_payload.get("exploratory_reasoning")
+        if isinstance(chat_payload.get("exploratory_reasoning"), dict)
+        else {}
+    )
+    supplied_conflicts = [
+        item
+        for item in explicit_exploratory.get("conflicting_claims") or []
+        if isinstance(item, dict) and str(item.get("text") or "").strip()
+    ]
+    if len(supplied_conflicts) >= 2:
+        return {
+            **base,
+            "selected_domain": "ordinary_conversation",
+            "reason": (
+                "the supplied current-turn claim conflict belongs to bounded "
+                "exploratory reasoning; a missing source packet must not be "
+                "added as a second answer"
+            ),
+            "explicit_exploratory_conflict_owns_turn": True,
         }
 
     source_packets = [item for item in chat_payload.get("source_packets") or [] if isinstance(item, dict)][:20]
@@ -2937,7 +3366,14 @@ def _answer_engine_yields_to_approved_knowledge(
     return explicitly_incomplete
 
 
-def _preserve_answer_engine_invariants(candidate: str, support: dict[str, Any]) -> str:
+def _preserve_answer_engine_invariants(
+    candidate: str,
+    support: dict[str, Any],
+    *,
+    primary_source_id: str = "",
+) -> str:
+    if primary_source_id == "exploratory_reasoning":
+        return candidate
     if support.get("used") is not True:
         return candidate
     if support.get("yielded_to_approved_knowledge") is True:
@@ -2967,14 +3403,22 @@ def _preserve_bounded_conversation_invariants(
     candidate: str,
     content_seed: str,
     source_id: str,
+    *,
+    realization: dict[str, Any] | None = None,
 ) -> str:
     if source_id not in {
         "current_session_facts",
         "explicit_humor_request",
         "figurative_meaning_clarification",
         "ordinary_uncertainty",
+        "exploratory_reasoning",
     }:
         return candidate
+    if conversational_realization_preserves_required_meaning(candidate, realization):
+        return candidate
+    verified_realization = preferred_conversational_realization_fallback(realization)
+    if verified_realization:
+        return _selene_label_candidate(verified_realization)
     seed = str(content_seed or "").strip()
     return _selene_label_candidate(seed) if seed else candidate
 
@@ -3034,11 +3478,17 @@ def _evaluate_chat_response_coverage(
     *,
     conversation_spine: dict[str, Any],
     answer_engine_support: dict[str, Any],
+    supported_semantics: dict[str, Any] | None = None,
+    epistemic_composition: dict[str, Any] | None = None,
+    resolution_evidence: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     coverage = evaluate_response_coverage(
         pragmatic_plan,
         candidate_text,
         conversation_spine=conversation_spine,
+        supported_semantics=supported_semantics,
+        epistemic_composition=epistemic_composition,
+        resolution_evidence=resolution_evidence,
     )
     if not _domain_answer_is_complete(answer_engine_support):
         return coverage
@@ -3108,7 +3558,9 @@ def _evaluate_chat_response_coverage(
         **coverage,
         "items": items,
         "addressed_count": addressed_count,
+        "resolved_count": addressed_count,
         "all_required_addressed": all_addressed,
+        "all_required_resolved": all_addressed,
         "unresolved_count": sum(
             1 for item in items if item.get("addressed") is not True
         )
@@ -3121,7 +3573,108 @@ def _evaluate_chat_response_coverage(
             "conservative_visible_alignment_plus_verified_current_turn_"
             "domain_obligation_ownership"
         ),
+        "unresolved_release_count": sum(
+            1 for item in items if item.get("addressed") is not True
+        )
+        + (0 if spine_alignment.get("aligned") is True else 1),
     }
+
+
+def _current_turn_release_resolution_evidence(
+    *,
+    conversation_spine: dict[str, Any],
+    organ_coalition: dict[str, Any],
+    visible_speech_seed: dict[str, Any],
+    conversational_energy: dict[str, Any],
+    owner_text: dict[str, str],
+    realized_source_text: str = "",
+    complete_social_turn: bool = False,
+) -> list[dict[str, Any]]:
+    evidence: list[dict[str, Any]] = []
+    owner_obligations: dict[str, list[str]] = {}
+    for value in organ_coalition.values():
+        if not isinstance(value, list):
+            continue
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            if item.get("selected") is not True or str(item.get("status") or "") != "completed":
+                continue
+            owner = str(item.get("participant_id") or "")
+            ids = [str(raw) for raw in item.get("obligation_ids") or [] if str(raw)]
+            if owner and ids:
+                owner_obligations[owner] = ids
+    for owner, value in owner_text.items():
+        text = str(value or "").strip()
+        ids = owner_obligations.get(owner) or []
+        if text and ids:
+            evidence.append(
+                {
+                    "owner": owner,
+                    "source_id": owner,
+                    "text": text,
+                    "obligation_ids": ids,
+                    "resolution_kind": "answer",
+                    "current_turn_only": True,
+                }
+            )
+
+    all_ids = [
+        str(item.get("id") or "")
+        for item in conversation_spine.get("open_obligations") or []
+        if isinstance(item, dict) and str(item.get("id") or "")
+    ]
+    handoff = (
+        conversational_energy.get("expression_handoff")
+        if isinstance(conversational_energy.get("expression_handoff"), dict)
+        else {}
+    )
+    handoff_text = str(handoff.get("text") or "").strip()
+    selected_act = str(conversational_energy.get("selected_act") or "")
+    if handoff_text and all_ids and conversational_energy.get("optional_addition_selected") is True:
+        evidence.append(
+            {
+                "owner": "conversational_energy",
+                "source_id": str(handoff.get("kind") or selected_act),
+                "text": handoff_text,
+                "obligation_ids": all_ids,
+                "resolution_kind": (
+                    "supported_route"
+                    if selected_act in {"ask_for_specific_collaborative_help", "ask_one_material_question"}
+                    else "answer"
+                ),
+                "current_turn_only": True,
+            }
+        )
+
+    primary_source = str(visible_speech_seed.get("selected_source_id") or "")
+    primary_text = str(visible_speech_seed.get("content_seed") or "").strip()
+    if primary_source and primary_source != "none" and primary_text and all_ids:
+        evidence.append(
+            {
+                "owner": "visible_speech_seed",
+                "source_id": primary_source,
+                # Prefer the already verified meaning-preserving realization.
+                # Later repair still has to preserve this text closely, so an
+                # unrelated candidate cannot borrow the source's obligation IDs.
+                "text": str(realized_source_text or "").strip() or primary_text,
+                "obligation_ids": all_ids,
+                "resolution_kind": "answer",
+                "current_turn_only": True,
+            }
+        )
+    elif complete_social_turn and str(realized_source_text or "").strip() and all_ids:
+        evidence.append(
+            {
+                "owner": "native_language_social_realization",
+                "source_id": "native_language_social_realization",
+                "text": str(realized_source_text).strip(),
+                "obligation_ids": all_ids,
+                "resolution_kind": "answer",
+                "current_turn_only": True,
+            }
+        )
+    return evidence
 
 
 def _intelligence_support_points(result: dict[str, Any]) -> list[str]:
@@ -3164,13 +3717,26 @@ def _conversation_policy_reply(text: str) -> str:
 
 
 def _hard_boundary_blockers(text: str, selected_route: str, route: dict[str, Any]) -> list[str]:
-    meaning = interpret_turn_meaning(text, selected_route=selected_route)
-    lower = str(meaning.get("routing_text") or text.lower())
-    blockers = [marker for marker in HARD_BOUNDARY_MARKERS if marker in lower]
+    supplied_meaning = route.get("meaning_route") if isinstance(route, dict) else None
+    meaning = (
+        supplied_meaning
+        if isinstance(supplied_meaning, dict)
+        else interpret_turn_meaning(text, selected_route=selected_route)
+    )
+    action_evidence = (
+        meaning.get("action_evidence")
+        if isinstance(meaning.get("action_evidence"), dict)
+        else {}
+    )
+    blockers = []
+    if action_evidence.get("requires_block") is True:
+        blockers.extend(
+            str(item.get("lexical_evidence") or item.get("action") or "typed_boundary_action")
+            for item in action_evidence.get("matches", [])
+            if isinstance(item, dict)
+        )
     if selected_route == "block":
         blockers.append("core_mind_block")
-    if _source_class(text, True) == "cocoon_b_only_context":
-        blockers.append("b_only_material_requested")
     return list(dict.fromkeys(blockers))
 
 
@@ -3299,55 +3865,159 @@ def _bounded_metacognitive_completion(
     conversation_spine: dict[str, Any] | None = None,
     source_id: str = "none",
     source_class: str = "conversation",
+    feedback_handoff: dict[str, Any] | None = None,
+    owner_outputs: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    base = {
-        "status": "bounded_completion_not_needed",
-        "requested_by_metacognition": requested,
-        "attempted": False,
-        "accepted": False,
-        "count": 0,
-        "maximum_count": 1,
-        "recursion_allowed": False,
-        "content_generation_allowed": False,
-        "hard_boundary_respected": True,
-        "candidate_text": candidate,
-        "unresolved_before": int(coverage.get("unresolved_count") or 0),
+    legacy = feedback_handoff is None and owner_outputs is None
+    handoff = feedback_handoff or {
+        "responsible_owner": "conversation_content_owner",
+        "target_obligation_id": "legacy_unresolved_obligation",
+        "target_missing_state": "missing_supported_basis",
+    }
+    outputs = owner_outputs or [
+        {
+            "owner": "conversation_content_owner",
+            "obligation_ids": ["legacy_unresolved_obligation"],
+            "text": content_seed,
+            "source_id": source_id,
+            "source_class": source_class,
+        }
+    ]
+    result = attempt_owner_specific_retry(
+        candidate,
+        coverage,
+        requested=requested,
+        hard_boundary=hard_boundary,
+        feedback_handoff=handoff,
+        owner_outputs=outputs,
+        conversation_spine=conversation_spine,
+    )
+    result = {
+        **result,
         "conversation_spine_turn_id": str((conversation_spine or {}).get("turn_id") or ""),
         **SELENE_CHAT_GUARDS,
     }
-    if hard_boundary:
-        return {**base, "status": "bounded_completion_blocked_by_core_mind"}
-    if not requested:
-        return base
-    seed = truncate(str(content_seed or "").strip(), 3000)
-    if not seed:
-        return {**base, "status": "bounded_completion_has_no_grounded_content"}
-    compatibility = evaluate_candidate_compatibility(
-        conversation_spine,
-        {
-            "source_id": source_id,
-            "source_class": source_class,
-            "text": seed,
-        },
+    if not legacy:
+        return result
+    legacy_status = {
+        "owner_specific_retry_not_needed": "bounded_completion_not_needed",
+        "owner_specific_retry_blocked_by_core_mind": "bounded_completion_blocked_by_core_mind",
+        "owner_specific_retry_attempted": "bounded_completion_attempted",
+        "owner_specific_retry_has_no_novel_supported_fragment": "grounded_content_already_present",
+        "owner_specific_retry_owner_has_no_current_turn_output": "bounded_completion_has_no_grounded_content",
+    }.get(str(result.get("status") or ""), str(result.get("status") or ""))
+    return {**result, "status": legacy_status}
+
+
+def _metacognitive_owner_outputs(
+    *,
+    organ_coalition: dict[str, Any],
+    answer_engine_support: dict[str, Any],
+    comprehension: dict[str, Any],
+    intelligence_support: dict[str, Any],
+    memory_response_seed: str,
+    conversation_content_seed: str,
+    feedback_handoff: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    owner_ids: dict[str, list[str]] = {}
+    for item in organ_coalition.get("obligation_owner_map") or []:
+        if not isinstance(item, dict):
+            continue
+        owner = str(item.get("responsible_owner") or "")
+        obligation_id = str(item.get("obligation_id") or "")
+        if owner and owner != "unassigned" and obligation_id:
+            owner_ids.setdefault(owner, []).append(obligation_id)
+
+    outputs: list[dict[str, Any]] = []
+    handoff = feedback_handoff if isinstance(feedback_handoff, dict) else {}
+    target_owner = str(handoff.get("responsible_owner") or "")
+    target_id = str(handoff.get("target_obligation_id") or "")
+
+    def add(
+        owner: str,
+        text: str,
+        source_id: str,
+        source_class: str,
+        obligation_ids: list[str] | None = None,
+    ) -> None:
+        text = truncate(str(text or "").strip(), 3000)
+        ids = list(
+            dict.fromkeys(
+                obligation_ids
+                or owner_ids.get(owner)
+                or ([target_id] if owner == target_owner and target_id else [])
+            )
+        )
+        if text and ids:
+            outputs.append(
+                {
+                    "owner": owner,
+                    "obligation_ids": ids,
+                    "text": text,
+                    "source_id": source_id,
+                    "source_class": source_class,
+                }
+            )
+
+    for item in answer_engine_support.get("domain_results") or []:
+        if not isinstance(item, dict):
+            continue
+        obligation_id = str(item.get("obligation_id") or "")
+        packet = item.get("answer_packet") if isinstance(item.get("answer_packet"), dict) else {}
+        add(
+            "answer_engine",
+            str(packet.get("direct_answer") or ""),
+            "answer_engine",
+            "domain_answer",
+            [obligation_id] if obligation_id else [],
+        )
+    add(
+        "answer_engine",
+        str(answer_engine_support.get("content_seed") or ""),
+        "answer_engine",
+        "domain_answer",
     )
-    if compatibility.get("compatible") is not True:
-        return {
-            **base,
-            "status": "bounded_completion_held_by_conversation_spine",
-            "conversation_spine_compatibility": compatibility,
-        }
-    if seed.lower() in candidate.lower():
-        return {**base, "status": "grounded_content_already_present"}
-    joined = f"{candidate.rstrip()}\n\n{seed}" if candidate.strip() else seed
-    return {
-        **base,
-        "status": "bounded_completion_attempted",
-        "attempted": True,
-        "count": 1,
-        "candidate_text": joined,
-        "source": "existing_grounded_content_seed_only",
-        "conversation_spine_compatibility": compatibility,
-    }
+    add(
+        "comprehension_integration",
+        str(comprehension.get("knowledge_response_seed") or ""),
+        "approved_comprehension",
+        "approved_knowledge",
+    )
+    intelligence_text = str(
+        (
+            intelligence_support.get("hypothesis_attempt")
+            if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
+            else {}
+        ).get("response_seed")
+        or intelligence_support.get("best_current_answer")
+        or ""
+    )
+    add(
+        "intelligence_os",
+        intelligence_text,
+        "intelligence_os_answer",
+        "reasoning_answer",
+    )
+    add(
+        "ordinary_conversation_path",
+        intelligence_text or conversation_content_seed,
+        "intelligence_os_answer" if intelligence_text else "conversation_content_owner",
+        "reasoning_answer" if intelligence_text else "conversation",
+    )
+    add(
+        "conversation_content_owner",
+        conversation_content_seed,
+        "conversation_content_owner",
+        "conversation",
+    )
+    add(
+        "approved_memory_retrieval",
+        memory_response_seed,
+        "reviewed_memory",
+        "memory_reconstruction",
+        owner_ids.get("approved_memory_retrieval") or [],
+    )
+    return outputs
 
 
 def _plan_conversational_memory_action(
@@ -3407,8 +4077,9 @@ def _plan_conversational_memory_action(
                 "Okay. I won't make it active; I'll leave it in Cocoon for tending."
                 if holding
                 else "Okay. I won't keep that as a memory."
-            ),
-        }
+        ),
+    }
+
 
     explicit_summary = _explicit_memory_content(text)
     if explicit_summary:
@@ -3479,6 +4150,42 @@ def _plan_conversational_memory_action(
             "response_seed": "That feels meaningful enough to remember. Can I keep it?",
         }
     return {**base, "reason": "no_retention_or_salience_signal"}
+
+
+def _coverage_with_global_graceful_hold(
+    coverage: dict[str, Any],
+) -> dict[str, Any]:
+    """Record a final whole-turn hold without pretending it answered content."""
+
+    items: list[dict[str, Any]] = []
+    for raw in coverage.get("items") or []:
+        if not isinstance(raw, dict):
+            continue
+        item = dict(raw)
+        if item.get("resolved_for_release") is not True:
+            item.update(
+                {
+                    "resolved_for_release": True,
+                    "resolution_state": "whole_turn_explicit_hold",
+                    "explicitly_held": True,
+                    "supported_route_present": False,
+                    "status": "still_open_but_explicitly_held",
+                }
+            )
+        items.append(item)
+    return {
+        **coverage,
+        "items": items,
+        "resolved_count": len(items),
+        "all_required_resolved": True,
+        "unresolved_release_count": 0,
+        "release_resolution_states": {
+            str(item.get("obligation_id") or ""): str(item.get("resolution_state") or "whole_turn_explicit_hold")
+            for item in items
+        },
+        "global_graceful_hold_used": True,
+        "explicit_holds_are_answers": False,
+    }
 
 
 def _apply_conversational_memory_plan(

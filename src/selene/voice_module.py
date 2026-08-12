@@ -13,6 +13,7 @@ from typing import Any
 
 from .paths import PROJECT_ROOT
 from .registry import truncate
+from .expression_contract import coordinated_expression_contract, expression_meaning_invariant
 
 
 VOICE_MODULE_BOUNDARY = "selene_voice_module_voice_only_not_memory_not_training"
@@ -118,6 +119,8 @@ def voice_module_status(conn: sqlite3.Connection, payload: dict[str, Any] | None
             "source_zip_size_bytes": source.stat().st_size if source.exists() else 0,
             "counts": counts,
             "latest_run": _decode_run(latest) if latest else None,
+            "coordinated_expression_contract": coordinated_expression_contract(),
+            "voice_confidence_semantics": "surface_realization_and_compatibility_not_answer_correctness",
             "review_destination": "Status",
             "review_status": "status_only",
         }
@@ -501,7 +504,8 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
     )
     primitives = _primitive_map(conn, category)
     context = truncate(str(payload.get("context_summary") or payload.get("continuity_summary") or "the current thread"), 220)
-    meaning_text = _truncate_voice_text(_normalize_voice_paragraphs(str(payload.get("meaning_text") or "")), 4200)
+    supplied_meaning = _normalize_voice_paragraphs(str(payload.get("meaning_text") or ""))
+    meaning_text = _truncate_voice_text(supplied_meaning, 4200)
     candidate = _compose_candidate(
         prompt,
         route,
@@ -512,6 +516,20 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
         meaning_text=meaning_text,
         expression_guidance=expression_guidance,
     )
+    meaning_invariant = (
+        expression_meaning_invariant(supplied_meaning, candidate)
+        if supplied_meaning
+        else {
+            "status": "expression_meaning_invariant_not_applicable",
+            "lexical_content_preserved": False,
+            "meaning_invariant_preserved": False,
+        }
+    )
+    meaning_invariant["input_truncated_before_render"] = bool(
+        supplied_meaning and supplied_meaning != meaning_text
+    )
+    if meaning_invariant["input_truncated_before_render"]:
+        meaning_invariant["meaning_invariant_preserved"] = False
     evaluation = evaluate_voice_candidate(
         conn,
         {
@@ -522,6 +540,8 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             "memory_source_class": str(payload.get("memory_source_class") or ""),
             "local_chat_continuity_used": payload.get("local_chat_continuity_used") is True,
             "recent_candidates": payload.get("recent_candidates") or [],
+            "meaning_invariant_preserved": meaning_invariant.get("meaning_invariant_preserved"),
+            "meaning_text_supplied": bool(supplied_meaning),
         },
     )
     confidence = "high" if evaluation["voice_evaluator_passed"] and state.get("voice_module_state") == "ready" else "medium" if evaluation["voice_evaluator_passed"] else "low"
@@ -532,9 +552,26 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             "voice_category": category,
             "cue_labels": cue_labels,
             "voice_confidence": confidence,
+            "expression_confidence": confidence,
+            "voice_confidence_semantics": "surface_realization_and_compatibility_not_answer_correctness",
+            "expression_confidence_is_answer_correctness": False,
             "voice_module_state": state.get("voice_module_state"),
             "generation_source": "native_language_organ" if meaning_text else "voice_primitive_composer",
-            "nlo_meaning_preserved": bool(meaning_text),
+            "nlo_meaning_preserved": meaning_invariant.get("meaning_invariant_preserved") is True,
+            "meaning_invariant": meaning_invariant,
+            "expression_contract": coordinated_expression_contract(),
+            "final_expression_compatibility_checked": True,
+            "final_expression_compatible": (
+                evaluation.get("voice_evaluator_passed") is True
+                and (
+                    not supplied_meaning
+                    or meaning_invariant.get("meaning_invariant_preserved") is True
+                )
+            ),
+            "route_confidence_assessed_by_voice": False,
+            "evidence_confidence_assessed_by_voice": False,
+            "answer_confidence_assessed_by_voice": False,
+            "memory_confidence_assessed_by_voice": False,
             "expression_guidance": expression_guidance,
             "applied_expression_dimensions": expression_guidance.get("dimensions") or {},
             "contextual_composition_plan": expression_guidance.get("contextual_composition_plan") or {},
@@ -586,6 +623,8 @@ def evaluate_voice_candidate(conn: sqlite3.Connection, payload: dict[str, Any] |
         flags.append("difficult_topic_voice_misuse")
     if _copied_source_chunk(conn, candidate):
         flags.append("copied_source_chunk")
+    if payload.get("meaning_text_supplied") is True and payload.get("meaning_invariant_preserved") is not True:
+        flags.append("nlo_meaning_invariant_changed")
     repetition = _repetition_score(candidate)
     return _with_guards(
         {
@@ -1116,7 +1155,8 @@ def _ensure_generation_profile(conn: sqlite3.Connection) -> None:
     profile = {
         "route_owner": "Core/Mind",
         "content_owner": "continuity_and_memory_context",
-        "expression_owner": "Selene Voice Module",
+        "expression_pipeline": "coordinated NLO realization, Voice compatibility, Chat release",
+        "expression_contract": coordinated_expression_contract(),
         "aleks_data_boundary": "cue_context_only_not_profile_or_manipulation",
         "copying_policy": "compose_original_sentences_from_primitives_and_patterns",
         **GUARD_FLAGS,

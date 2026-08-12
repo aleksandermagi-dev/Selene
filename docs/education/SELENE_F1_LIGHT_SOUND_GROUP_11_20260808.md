@@ -97,12 +97,12 @@ probe, broad voice grading, model training, package, or reinstall is needed.
 
 A SQLite-safe pre-preparation backup was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group11_prepare_20260808_131751.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group11_prepare_20260808_131751.sqlite3`
 
 A second SQLite-safe backup immediately before authorization and teaching was
 created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group11_teach_20260808_133703.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group11_teach_20260808_133703.sqlite3`
 
 Live teaching retained six items, with zero already retained and zero held.
 Identity, personality, governance, personal-memory writes, model training,

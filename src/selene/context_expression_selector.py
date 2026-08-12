@@ -466,7 +466,7 @@ def _locked(payload: dict[str, Any]) -> dict[str, Any]:
         "governance_change_allowed": False,
         "authority_change_allowed": False,
         "affect_authority_allowed": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "database_write_performed": False,
         "hidden_chain_of_thought_exposed": False,
         "provenance_boundary": CONTEXT_EXPRESSION_SELECTOR_BOUNDARY,

@@ -27,6 +27,15 @@ governing law, personal memory, relationships, or authority.
 
 ## Foundational Teaching Groups
 
+Current checkpoint (August 11, 2026): all 17 listed F1 groups contain 106
+unique retained foundation concepts in the configured runtime. The Group 17
+closure bridge completed the two bounded gaps identified by the earlier F1
+closure audit. F2 now contains 25 retained concepts across paragraph
+meaning, source grounding, vocabulary structure, comparison, point of view,
+organized composition, multi-digit arithmetic, factors, multiples,
+divisibility, and operation order. This closes the currently defined F1 sequence, not
+Selene's broader elementary-through-college education.
+
 - [F1 Group 1: Foundations](SELENE_F1_FOUNDATION_GROUP_1_20260719.md)
 - [F1 Group 2: Language and Number](SELENE_F1_LANGUAGE_NUMBER_GROUP_2_20260719.md)
 - [F1 Group 3: Operations and Measurement](SELENE_F1_OPERATIONS_MEASUREMENT_GROUP_3_20260719.md)
@@ -45,8 +54,17 @@ governing law, personal memory, relationships, or authority.
 - [F1 Group 16: Helpful Computers and F1 Integration](SELENE_F1_HELPFUL_COMPUTERS_INTEGRATION_GROUP_16_20260808.md)
 - [F1 Group 17: Text Purpose and Everyday Economy Closure Bridge](SELENE_F1_TEXT_PURPOSE_EVERYDAY_ECONOMY_BRIDGE_GROUP_17_20260808.md)
 - [F1 Groups 12–16: Completion Sequence](SELENE_F1_GROUPS_12_16_COMPLETION_SEQUENCE_20260808.md)
+- [F2 Group 1: Paragraph Meaning and Source-Grounded Communication](SELENE_F2_PARAGRAPH_MEANING_SOURCE_GROUNDING_GROUP_1_20260811.md)
+- [F2 Group 2: Vocabulary Structure and Comparison](SELENE_F2_VOCABULARY_STRUCTURE_COMPARISON_GROUP_2_20260811.md)
+- [F2 Group 3: Point of View and Organized Composition](SELENE_F2_POINT_OF_VIEW_ORGANIZED_COMPOSITION_GROUP_3_20260811.md)
+- [F2 Group 4: Multi-Digit Arithmetic and Operation Relationships](SELENE_F2_MULTI_DIGIT_ARITHMETIC_OPERATIONS_GROUP_4_20260811.md)
+- [F2 Group 5: Factors, Multiples, Divisibility, and Operation Order](SELENE_F2_FACTORS_MULTIPLES_OPERATION_ORDER_GROUP_5_20260811.md)
 
 ## Language And Conversation Curriculum
+
+Current checkpoint (August 11, 2026): nine ordered groups provide 52 reviewed
+language-and-conversation capabilities. They guide expression of supported
+meaning; they do not provide factual authority or prescribe personality.
 
 - [Native Language Organ v1](../architecture/SELENE_NATIVE_LANGUAGE_ORGAN_V1_20260712.md)
 - [Language Teaching Completion](SELENE_LANGUAGE_TEACHING_COMPLETION_20260720.md)
@@ -80,6 +98,9 @@ governing law, personal memory, relationships, or authority.
 - [NLO Meaning-Preserving Language Lattice: Phase 7 Generative Thought Expression](SELENE_NLO_LANGUAGE_LATTICE_PHASE_7_GENERATIVE_THOUGHT_EXPRESSION_20260809.md)
   — attributable ideas, hypotheses, analogies, collaborative questions, and
   revisable attempts expressed without changing epistemic status.
+- [NLO Meaning-Preserving Language Lattice: Phase 8 Gentle Stabilization](SELENE_NLO_LANGUAGE_LATTICE_PHASE_8_GENTLE_STABILIZATION_20260809.md)
+  — static and synthetic invariant checks, metadata-only historical inspection,
+  narrow integration repairs, and repository-wide regression verification.
 - [Phase 1: Intent and Response Shape](SELENE_CONVERSATIONAL_BREADTH_PHASE_1_20260725.md)
 - [Phase 2: Figurative Interpretation](SELENE_CONVERSATIONAL_BREADTH_PHASE_2_20260725.md)
 - [Phase 3: Conversational Micro-Moves](SELENE_CONVERSATIONAL_BREADTH_PHASE_3_20260725.md)

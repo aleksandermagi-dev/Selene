@@ -28,12 +28,16 @@ GUARDS: dict[str, Any] = {
 
 _RETURN_RE = re.compile(
     r"\b(?:back|return|going back)\s+to\s+(.+?)"
-    r"(?=\s+(?:because of|using|use|with that|in light of|which (?:changes|affects|means))\b|[:;,!?]|\.|$)",
+    r"(?=\s+(?:because of|using|use|with that|in light of|which (?:changes|affects|means))\b|[:;,!?]|\.|$)|"
+    r"\b(?:the point about|what you said about|we discussed)\s+(.+?)"
+    r"(?=\s+(?:because|and|which|that)\b|[:;,!?]|\.|$)",
     re.IGNORECASE,
 )
 _BRANCH_RE = re.compile(
     r"\b(?:move|jump|turn|switch)\s+to\s+(.+?)(?=[:;,!?]|\.|$)|"
-    r"\b(?:separately|as an aside|on another point|another thing)\s*[:,]?\s*(.+?)(?=[:;,!?]|\.|$)",
+    r"\b(?:separately|as an aside|on another point|another thing)\s*[:,]?\s*(.+?)(?=[:;,!?]|\.|$)|"
+    r"\b(?:separate|different|new)\s+(?:topic|question)\s*[:,]?\s*(.+?)(?=[:;,!?]|\.|$)|"
+    r"\bon another topic\s*[:,]?\s*(.+?)(?=[:;,!?]|\.|$)",
     re.IGNORECASE,
 )
 _LAND_RE = re.compile(
@@ -57,7 +61,7 @@ _DEPENDENCY_CUES = (
 _TOPIC_STOP = {
     "about", "after", "again", "also", "and", "another", "back", "because", "before", "being",
     "can", "close", "does", "end", "finally", "finish", "first", "for", "from", "going", "have",
-    "into", "jump", "lastly", "move", "next", "now", "on", "out", "plan", "return", "separately",
+    "into", "jump", "lastly", "move", "next", "now", "on", "out", "return", "separately",
     "start", "switch", "that", "the", "then", "this", "to", "turn", "using", "what", "which", "with",
     "work", "would", "you", "your",
 }
@@ -213,7 +217,9 @@ def _segments(prompt: str, units: list[dict[str, Any]], hints: list[dict[str, An
         # separate visits; ordinary conjunctions do not.
         parts = re.split(
             r"(?=\b(?:then\s+)?(?:move|jump|turn|switch)\s+to\b|"
-            r"\b(?:then\s+)?(?:back\s+to|return\s+to|going\s+back\s+to|finally\b|lastly\b|finish\s+(?:with|on)))",
+            r"\b(?:then\s+)?(?:back\s+to|return\s+to|going\s+back\s+to|finally\b|lastly\b|finish\s+(?:with|on))|"
+            r"\b(?:separate|different|new)\s+(?:topic|question)\b|"
+            r"\bon another topic\b|\b(?:the point about|what you said about|we discussed)\b)",
             raw,
             flags=re.IGNORECASE,
         )
@@ -243,7 +249,7 @@ def _segment_action(text: str, hinted_action: str, hinted_topic: str) -> tuple[s
         return hinted_action, hinted_topic
     match = _RETURN_RE.search(text)
     if match:
-        return "resume", _clean_topic(match.group(1))
+        return "resume", _clean_topic(next(group for group in match.groups() if group is not None))
     match = _LAND_RE.search(text)
     if match:
         return "land", _clean_topic(next(group for group in match.groups() if group is not None))

@@ -64,6 +64,7 @@ def conversational_energy_status() -> dict[str, Any]:
                 "name the exact missing contribution and why it matters",
                 "incorporate help and resume the shared task",
                 "completion and silence remain valid conversational choices",
+                "a social turn never requires a question, but genuine reciprocal curiosity remains available",
             ],
             "writes_records": False,
             "direct_expression_authority": False,
@@ -331,6 +332,8 @@ def _normalize_curiosity(value: Any) -> dict[str, Any]:
         "relevant": item.get("relevant") is True,
         "answer_matters_to_understanding": item.get("answer_matters_to_understanding") is True,
         "already_answered": item.get("already_answered") is True,
+        "genuine_interest": item.get("genuine_interest") is True,
+        "engagement_maintenance": item.get("engagement_maintenance") is True,
     }
 
 
@@ -381,12 +384,14 @@ def _optional_signal_ready(item: dict[str, Any], *, invited: bool) -> tuple[bool
 def _curiosity_ready(item: dict[str, Any], *, social_turn: bool) -> tuple[bool, str]:
     if not item:
         return False, "no curiosity signal supplied"
-    if social_turn:
-        return False, "a complete social turn does not need an added question"
     if not item["relevant"] or not item["answer_matters_to_understanding"]:
         return False, "the question does not materially improve understanding"
     if item["already_answered"]:
         return False, "the question was already answered"
+    if social_turn and item["engagement_maintenance"]:
+        return False, "a question used only to maintain engagement is not genuine curiosity"
+    if social_turn and not item["genuine_interest"]:
+        return False, "a social question needs an attributable genuine-curiosity signal"
     return True, ""
 
 

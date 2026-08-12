@@ -128,6 +128,22 @@ def test_bare_reason_follow_up_uses_only_the_explicit_reason_in_the_previous_ans
         assert follow_up["memory_write_active"] is False
 
 
+def test_bare_reason_follow_up_keeps_visible_support_after_a_change_condition():
+    previous = (
+        "I prefer the shared-schedule pilot first because it keeps the limited rooms and volunteers flexible. "
+        "I would switch designs if transitions caused too much disruption. "
+        "It also gives us visible evidence about attendance and staffing strain."
+    )
+    follow_up = inspect_contextual_follow_up("Why?", _context(previous))
+    response = contextual_response_seed(follow_up)
+
+    assert response.startswith(
+        "Because it keeps the limited rooms and volunteers flexible."
+    )
+    assert "visible evidence about attendance and staffing strain" in response
+    assert "switch designs" not in response
+
+
 def test_bare_reason_follow_up_does_not_invent_a_reason_when_the_previous_answer_has_none():
     previous = "I would start with the shared-schedule pilot."
     follow_up = inspect_contextual_follow_up("Why?", _context(previous))

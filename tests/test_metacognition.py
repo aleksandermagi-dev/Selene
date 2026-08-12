@@ -337,6 +337,86 @@ def test_open_ended_reasoning_can_answer_without_preexisting_source_packet():
     assert result["sufficiency_state"] == "sufficient_for_current_turn"
 
 
+def test_incomplete_answer_handoff_names_the_exact_obligation_and_coalition_owner():
+    result = evaluate_metacognition(
+        {
+            "prompt": "Answer both parts.",
+            "candidate_text": "The first part is supported.",
+            "response_coverage": {
+                "addressed_count": 1,
+                "unresolved_count": 1,
+                "items": [
+                    {"obligation_id": "part-1", "kind": "direct_question", "addressed": True},
+                    {"obligation_id": "part-2", "kind": "reason", "addressed": False},
+                ],
+            },
+            "epistemic_answer_state": {
+                "missing_parts": [
+                    {
+                        "obligation_id": "part-2",
+                        "requested_kind": "reason",
+                        "state": "missing_mechanism",
+                        "missing_ground": "a supported explanatory relationship",
+                    }
+                ]
+            },
+            "organ_coalition": {
+                "obligation_owner_map": [
+                    {
+                        "obligation_id": "part-2",
+                        "responsible_owner": "comprehension_integration",
+                    }
+                ]
+            },
+            "answer_engine_support": {"used": False},
+            "intelligence_os_support": {"used": True},
+        }
+    )
+
+    handoff = result["feedback_handoff"]
+    assert result["recommended_action"] == "complete_missing_obligation"
+    assert handoff["target_obligation_id"] == "part-2"
+    assert handoff["target_missing_state"] == "missing_mechanism"
+    assert handoff["responsible_owner"] == "comprehension_integration"
+    assert handoff["owner_selected_from_coalition_map"] is True
+    assert handoff["single_cycle_requested"] is True
+    assert handoff["exact_obligation_required"] is True
+    _assert_bounded(result)
+
+
+def test_unused_answer_engine_packet_does_not_capture_missing_mechanism_retry():
+    result = evaluate_metacognition(
+        {
+            "prompt": "Why might that pattern happen?",
+            "candidate_text": "The observed pattern is real, but the reason is still open.",
+            "response_coverage": {
+                "addressed_count": 1,
+                "unresolved_count": 1,
+                "items": [
+                    {"obligation_id": "reason-1", "kind": "reason", "addressed": False}
+                ],
+            },
+            "epistemic_answer_state": {
+                "missing_parts": [
+                    {
+                        "obligation_id": "reason-1",
+                        "requested_kind": "reason",
+                        "state": "missing_mechanism",
+                        "missing_ground": "a supported mechanism",
+                    }
+                ]
+            },
+            "answer_engine_support": {"used": False, "selected_domain": "ordinary_conversation"},
+            "intelligence_os_support": {"used": True},
+        }
+    )
+
+    assert result["feedback_handoff"]["responsible_owner"] == "intelligence_os"
+    assert result["feedback_handoff"]["responsible_owner"] != "answer_engine"
+    assert result["feedback_handoff"]["single_cycle_requested"] is True
+    _assert_bounded(result)
+
+
 def test_core_mind_boundary_cannot_be_reopened_or_overridden():
     result = evaluate_metacognition(
         {

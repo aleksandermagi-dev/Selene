@@ -215,7 +215,10 @@ def prepare_dialogue_turn(
         figurative_interpretation=figurative_interpretation,
         contextual_follow_up=contextual_follow_up,
     )
-    utterance_units = _utterance_units(interpreted_text)
+    utterance_units = _utterance_units(
+        interpreted_text,
+        contextual_follow_up=contextual_follow_up,
+    )
     thread_braid = build_thread_braid(
         {
             "session_id": session_id,
@@ -226,6 +229,40 @@ def prepare_dialogue_turn(
             "thread_hints": payload.get("thread_hints") or [],
         }
     )
+    active_thread = next(
+        (
+            item
+            for item in thread_braid.get("threads") or []
+            if isinstance(item, dict)
+            and str(item.get("id") or "")
+            == str(thread_braid.get("active_thread_id") or "")
+        ),
+        {},
+    )
+    returned_to_prior_thread = bool(
+        str(thread_braid.get("active_thread_id") or "")
+        and str(thread_braid.get("prior_active_thread_id") or "")
+        and str(thread_braid.get("active_thread_id") or "")
+        != str(thread_braid.get("prior_active_thread_id") or "")
+        and any(
+            str(item.get("relation") or "") == "returns_to"
+            and str(item.get("target_thread_id") or "")
+            == str(thread_braid.get("active_thread_id") or "")
+            for item in thread_braid.get("edges") or []
+            if isinstance(item, dict)
+        )
+    )
+    if (
+        str(contextual_follow_up.get("kind") or "") in {"named_callback", "topic_shift"}
+        or returned_to_prior_thread
+        or any(
+            str(item.get("action") or "")
+            in {"branch", "land", "revise_with_dependency"}
+            for item in thread_braid.get("turn_traversal") or []
+            if isinstance(item, dict)
+        )
+    ) and str(active_thread.get("topic") or "").strip():
+        active_topic = truncate(str(active_thread.get("topic") or ""), 500)
     braided_side_topics = [
         str(item.get("topic") or "")
         for item in thread_braid.get("threads") or []
@@ -700,8 +737,14 @@ def _correction_refinement(
     }
 
 
-def _utterance_units(text: str) -> list[dict[str, Any]]:
+def _utterance_units(
+    text: str,
+    *,
+    contextual_follow_up: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     units: list[dict[str, Any]] = []
+    contextual_kind = str((contextual_follow_up or {}).get("kind") or "")
+    explicit_topic_shift = contextual_kind == "topic_shift"
     raw_units: list[str] = []
     for sentence in re.split(r"(?<=[.!?])[\"”']?\s+|\n+", text.strip()):
         sentence = sentence.strip()
@@ -726,8 +769,9 @@ def _utterance_units(text: str) -> list[dict[str, Any]]:
         lower = value.lower()
         if value.endswith("?"):
             kind = "question"
-        elif re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", lower) or (
-            "when i say" in lower and "i mean" in lower
+        elif not explicit_topic_shift and (
+            re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", lower)
+            or ("when i say" in lower and "i mean" in lower)
         ):
             kind = "correction"
         elif re.match(

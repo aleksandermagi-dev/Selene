@@ -93,7 +93,7 @@ Aleks's live authorization was applied.
 
 A SQLite-safe pre-teaching backup was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group10_20260808_130214.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group10_20260808_130214.sqlite3`
 
 No live conversation, adversarial prompt, distress probe, model training,
 package, reinstall, or broad voice grading is required.

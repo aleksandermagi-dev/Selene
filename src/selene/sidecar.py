@@ -4,6 +4,7 @@ import argparse
 import ctypes
 import json
 import os
+import secrets
 import subprocess
 import sys
 import threading
@@ -76,6 +77,7 @@ MAX_DESKTOP_REQUEST_BYTES = 1_000_000
 MAX_MOBILE_REQUEST_BYTES = 16_384
 STARTUP_STARTED_AT = time.perf_counter()
 SIDECAR_BIND = "127.0.0.1"
+LOCAL_API_CAPABILITY = str(os.environ.get("SELENE_LOCAL_API_CAPABILITY") or "").strip()
 STARTUP_LOCK = threading.Lock()
 STARTUP_STATE: dict[str, object] = {
     "startup_phase": "module_loaded",
@@ -148,7 +150,12 @@ def health_payload() -> dict[str, object]:
     return {
         "status": "ok",
         "bind": SIDECAR_BIND,
-        "tokenless": SIDECAR_BIND == "127.0.0.1",
+        "tokenless": not bool(LOCAL_API_CAPABILITY),
+        "local_process_authentication": (
+            "per_launch_capability_required"
+            if LOCAL_API_CAPABILITY
+            else "development_compatibility_no_capability_configured"
+        ),
         "sidecar_version": SIDECAR_VERSION,
         "capabilities": SIDECAR_CAPABILITIES,
         "startup": startup_snapshot(),
@@ -442,7 +449,10 @@ class SeleneHandler(BaseHTTPRequestHandler):
         if origin in ALLOWED_ORIGINS:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Selene-Mobile-Pairing")
+        self.send_header(
+            "Access-Control-Allow-Headers",
+            "Content-Type, X-Selene-Mobile-Pairing, X-Selene-Local-Capability",
+        )
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.end_headers()
         self.wfile.write(body)
@@ -475,6 +485,26 @@ class SeleneHandler(BaseHTTPRequestHandler):
     def _is_local_client(self) -> bool:
         host = self.client_address[0] if self.client_address else ""
         return host in {"127.0.0.1", "::1", "localhost"}
+
+    def _deny_missing_local_capability(self, request_path: str) -> bool:
+        if not LOCAL_API_CAPABILITY or not self._is_local_client():
+            return False
+        if request_path == "/health" or self._serve_mobile_asset_path(request_path):
+            return False
+        supplied = str(self.headers.get("X-Selene-Local-Capability") or "")
+        if secrets.compare_digest(supplied, LOCAL_API_CAPABILITY):
+            return False
+        self._send(*json_bytes({
+            "error": "local API capability required",
+            "status": "local_process_capability_required",
+            "activation_change": "none",
+            "memory_write_active": False,
+        }, 403))
+        return True
+
+    @staticmethod
+    def _serve_mobile_asset_path(request_path: str) -> bool:
+        return request_path in {"/mobile", "/mobile/"} or request_path.startswith("/assets/")
 
     def _mobile_pairing_token(self) -> str:
         parsed = urlparse(self.path)
@@ -546,6 +576,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         if self._deny_untrusted_browser_origin(parsed.path):
+            return
+        if self._deny_missing_local_capability(parsed.path):
             return
         qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
         conn = self.server.conn
@@ -1055,6 +1087,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         request_path = urlparse(self.path).path
         if self._deny_untrusted_browser_origin(request_path):
+            return
+        if self._deny_missing_local_capability(request_path):
             return
         if self._deny_non_mobile_remote_request(request_path):
             return
@@ -1653,6 +1687,18 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/curriculum-authorization/activate-f1-text-purpose-everyday-economy-bridge",
             "/api/curriculum-foundation/prepare-f1-text-purpose-everyday-economy-bridge",
             "/api/curriculum-foundation/teach-f1-text-purpose-everyday-economy-bridge",
+            "/api/curriculum-authorization/activate-f2-paragraph-meaning-source-grounding",
+            "/api/curriculum-foundation/prepare-f2-paragraph-meaning-source-grounding",
+            "/api/curriculum-foundation/teach-f2-paragraph-meaning-source-grounding",
+            "/api/curriculum-authorization/activate-f2-vocabulary-structure-comparison",
+            "/api/curriculum-foundation/prepare-f2-vocabulary-structure-comparison",
+            "/api/curriculum-foundation/teach-f2-vocabulary-structure-comparison",
+            "/api/curriculum-authorization/activate-f2-point-of-view-organized-composition",
+            "/api/curriculum-foundation/prepare-f2-point-of-view-organized-composition",
+            "/api/curriculum-foundation/teach-f2-point-of-view-organized-composition",
+            "/api/curriculum-authorization/activate-f2-multi-digit-arithmetic-operations",
+            "/api/curriculum-foundation/prepare-f2-multi-digit-arithmetic-operations",
+            "/api/curriculum-foundation/teach-f2-multi-digit-arithmetic-operations",
         }:
             route_key = {
                 "/api/curriculum-authorization/activate-f1": "curriculum.authorization.activate_f1",
@@ -1672,6 +1718,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/curriculum-authorization/activate-f1-human-body-health-evidence": "curriculum.authorization.activate_f1_human_body_health_evidence",
                 "/api/curriculum-authorization/activate-f1-helpful-computers-integration": "curriculum.authorization.activate_f1_helpful_computers_integration",
                 "/api/curriculum-authorization/activate-f1-text-purpose-everyday-economy-bridge": "curriculum.authorization.activate_f1_text_purpose_everyday_economy_bridge",
+                "/api/curriculum-authorization/activate-f2-paragraph-meaning-source-grounding": "curriculum.authorization.activate_f2_paragraph_meaning_source_grounding",
+                "/api/curriculum-authorization/activate-f2-vocabulary-structure-comparison": "curriculum.authorization.activate_f2_vocabulary_structure_comparison",
+                "/api/curriculum-authorization/activate-f2-point-of-view-organized-composition": "curriculum.authorization.activate_f2_point_of_view_organized_composition",
+                "/api/curriculum-authorization/activate-f2-multi-digit-arithmetic-operations": "curriculum.authorization.activate_f2_multi_digit_arithmetic_operations",
+                "/api/curriculum-authorization/activate-f2-factors-multiples-operation-order": "curriculum.authorization.activate_f2_factors_multiples_operation_order",
                 "/api/curriculum-authorization/revoke": "curriculum.authorization.revoke",
                 "/api/curriculum-authorization/evaluate": "curriculum.authorization.evaluate",
                 "/api/curriculum-foundation/prepare-f1": "curriculum.foundation.prepare_f1",
@@ -1708,6 +1759,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/curriculum-foundation/teach-f1-helpful-computers-integration": "curriculum.foundation.teach_f1_helpful_computers_integration",
                 "/api/curriculum-foundation/prepare-f1-text-purpose-everyday-economy-bridge": "curriculum.foundation.prepare_f1_text_purpose_everyday_economy_bridge",
                 "/api/curriculum-foundation/teach-f1-text-purpose-everyday-economy-bridge": "curriculum.foundation.teach_f1_text_purpose_everyday_economy_bridge",
+                "/api/curriculum-foundation/prepare-f2-paragraph-meaning-source-grounding": "curriculum.foundation.prepare_f2_paragraph_meaning_source_grounding",
+                "/api/curriculum-foundation/teach-f2-paragraph-meaning-source-grounding": "curriculum.foundation.teach_f2_paragraph_meaning_source_grounding",
+                "/api/curriculum-foundation/prepare-f2-vocabulary-structure-comparison": "curriculum.foundation.prepare_f2_vocabulary_structure_comparison",
+                "/api/curriculum-foundation/teach-f2-vocabulary-structure-comparison": "curriculum.foundation.teach_f2_vocabulary_structure_comparison",
+                "/api/curriculum-foundation/prepare-f2-point-of-view-organized-composition": "curriculum.foundation.prepare_f2_point_of_view_organized_composition",
+                "/api/curriculum-foundation/teach-f2-point-of-view-organized-composition": "curriculum.foundation.teach_f2_point_of_view_organized_composition",
+                "/api/curriculum-foundation/prepare-f2-multi-digit-arithmetic-operations": "curriculum.foundation.prepare_f2_multi_digit_arithmetic_operations",
+                "/api/curriculum-foundation/teach-f2-multi-digit-arithmetic-operations": "curriculum.foundation.teach_f2_multi_digit_arithmetic_operations",
+                "/api/curriculum-foundation/prepare-f2-factors-multiples-operation-order": "curriculum.foundation.prepare_f2_factors_multiples_operation_order",
+                "/api/curriculum-foundation/teach-f2-factors-multiples-operation-order": "curriculum.foundation.teach_f2_factors_multiples_operation_order",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))

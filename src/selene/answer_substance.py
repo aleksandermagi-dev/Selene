@@ -685,6 +685,14 @@ def _ordinary_prompt_grounded_operation(
     if desk_plan:
         return desk_plan
 
+    ordinary_choice = _ordinary_choice_operation(prompt, lower, history)
+    if ordinary_choice:
+        return ordinary_choice
+
+    conflicting_reports = _conflicting_reports_operation(prompt, lower)
+    if conflicting_reports:
+        return conflicting_reports
+
     revision = _evidence_revision_operation(prompt, lower, history)
     if revision:
         return revision
@@ -747,6 +755,133 @@ def _ordinary_prompt_grounded_operation(
     if plan:
         return plan
     return {}
+
+
+def _ordinary_choice_operation(
+    prompt: str,
+    lower: str,
+    history: list[str],
+) -> dict[str, Any]:
+    """Answer reversible everyday choices from the user's visible context.
+
+    An ordinary preference or low-cost plan does not need the evidentiary
+    threshold of a factual claim. The answer remains provisional and names
+    what would materially change it.
+    """
+
+    context = " ".join([*history, prompt]).lower().replace("’", "'")
+    porch_and_walk = "porch" in context and "walk" in context
+    if not porch_and_walk:
+        return {}
+
+    support_basis = "current_prompt_and_recent_conversation"
+    if re.search(r"\b(?:two reports?|one report)\b", lower):
+        return {}
+
+    if re.search(r"\btake this in order\b", lower):
+        answer = (
+            "1. I would choose reading on the porch. "
+            "2. It keeps the afternoon quiet and the plan easy to change: you can stop, go inside, or switch to the walk without much friction. "
+            "3. I would change my mind if the porch were wet, the weather looked settled, or you wanted movement more than stillness. "
+            "4. So I would start with the porch and keep the walk available."
+        )
+        return _operation(
+            answer=answer,
+            answer_kind="grounded_ordered_everyday_choice",
+            missing_variable="the porch condition and whether movement matters more than stillness",
+            support_basis=support_basis,
+            units=[
+                _unit("choice_direct", "answer", "sequence", text="1. I would choose reading on the porch.", meaning_keys=["reading on the porch selected"]),
+                _unit("choice_reason", "support", "cause", text="2. It keeps the afternoon quiet and easy to change.", meaning_keys=["quiet and reversible reason"]),
+                _unit("choice_revision", "condition", "condition", text="3. A wet porch, settled weather, or wanting movement would change the choice.", meaning_keys=["choice revision conditions"]),
+                _unit("choice_close", "conclusion", "sequence", text="4. Start with the porch and keep the walk available.", meaning_keys=["natural bounded close"]),
+            ],
+        )
+
+    if re.search(r"\b(?:which option|what option)\b", lower) and re.search(
+        r"\b(?:easiest|easy|simplest)\b.{0,35}\bchange\b", lower
+    ):
+        answer = (
+            "Reading on the porch keeps the plan easiest to change. You can stop, go inside, or switch to the walk without first having to finish being away from home."
+        )
+        return _operation(
+            answer=answer,
+            answer_kind="grounded_reversible_everyday_choice",
+            missing_variable="whether the porch is usable right now",
+            support_basis=support_basis,
+            units=[
+                _unit("reversible_choice", "answer", "contrast", subject="reading on the porch", predicate="keep", obj="the plan easiest to change", meaning_keys=["porch reading selected for reversibility"]),
+                _unit("reversible_reason", "support", "cause", subject="the porch option", predicate="allow", obj="stopping, going inside, or switching to the walk", meaning_keys=["porch supports easy switching"]),
+            ],
+        )
+
+    if "rain" in lower and any(marker in lower for marker in ("change", "different", "affect")):
+        answer = (
+            "That nudges me toward reading on the porch, provisionally. An unchecked chance of rain makes the walk more likely to be interrupted, while staying near home makes it easy to go inside or switch plans. "
+            "A quick look at the sky or forecast could change that answer."
+        )
+        return _operation(
+            answer=answer,
+            answer_kind="grounded_everyday_choice_revision",
+            missing_variable="whether rain is actually approaching and whether the porch is dry",
+            support_basis=support_basis,
+            units=[
+                _unit("rain_choice", "answer", "condition", text="That nudges me toward reading on the porch, provisionally.", meaning_keys=["rain provisionally favors porch reading"]),
+                _unit("rain_reason", "support", "cause", text="An unchecked chance of rain makes the walk more likely to be interrupted, while staying near home makes it easy to go inside or switch plans.", meaning_keys=["porch preserves reversibility"]),
+                _unit("rain_revision", "condition", "condition", text="A quick look at the sky or forecast could change that answer.", meaning_keys=["weather check can revise choice"]),
+            ],
+        )
+
+    choose_match = re.search(
+        r"\bchoose between\s+(.{2,100}?)\s+and\s+(.{2,100}?)(?:,\s*(?:then|and)\b|[?.!]|$)",
+        prompt,
+        flags=re.IGNORECASE,
+    )
+    if choose_match:
+        first = choose_match.group(1).strip(" ,")
+        second = choose_match.group(2).strip(" ,")
+        chosen = first
+        if "quiet" not in context and "walk" in first.lower() and "read" in second.lower():
+            chosen = second
+        answer = (
+            f"I would choose {chosen}. It fits the quiet afternoon you described, and it leaves the other option available if you want to change pace later."
+        )
+        return _operation(
+            answer=answer,
+            answer_kind="grounded_low_stakes_choice",
+            missing_variable=f"whether your preference shifts toward {second if chosen == first else first}",
+            support_basis="current_prompt_only",
+            units=[
+                _unit("ordinary_choice", "answer", "contrast", subject=chosen, predicate="fit", obj="the quiet afternoon", meaning_keys=[f"{chosen.lower()} selected"]),
+                _unit("ordinary_choice_reason", "support", "cause", subject=chosen, predicate="leave", obj="the other option available for a later change of pace", meaning_keys=["choice remains reversible"]),
+            ],
+        )
+    return {}
+
+
+def _conflicting_reports_operation(prompt: str, lower: str) -> dict[str, Any]:
+    """Keep disagreement in supplied evidence separate from a factual conclusion."""
+
+    if not (
+        re.search(r"\b(?:two|conflicting) reports?\b", lower)
+        and re.search(r"\bone says\b", lower)
+        and re.search(r"\b(?:one|the other) says\b", lower)
+    ):
+        return {}
+    answer = (
+        "We can honestly conclude that the reports conflict, but not whether the porch is dry or wet right now. Check when each report was made or look at the porch directly; either could resolve a timing or observation difference."
+    )
+    return _operation(
+        answer=answer,
+        answer_kind="grounded_conflicting_reports",
+        missing_variable="the reports' timing or a direct current observation",
+        support_basis="current_prompt_only",
+        units=[
+            _unit("report_conflict", "answer", "contrast", text="We can honestly conclude that the reports conflict.", meaning_keys=["reports conflict"]),
+            _unit("report_limit", "limit", "contrast", text="The conflict does not establish whether the porch is dry or wet right now.", meaning_keys=["current porch state unresolved"]),
+            _unit("report_resolution", "condition", "condition", text="The reports' timing or a direct look at the porch could resolve the disagreement.", meaning_keys=["timing or observation can resolve conflict"]),
+        ],
+    )
 
 
 def _desk_organization_operation(

@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
+import selene.sidecar as sidecar_module
 from selene.sidecar import SeleneHandler, SeleneServer
 from selene.comprehension_integration import propose_comprehension_concept
 
@@ -35,6 +36,48 @@ class _ConcurrencyProbeHandler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt: str, *args: object) -> None:
         return
+
+
+def test_installed_sidecar_requires_per_launch_capability_from_local_processes(
+    tmp_path,
+    monkeypatch,
+):
+    token = "bounded-local-capability-for-test"
+    monkeypatch.setattr(sidecar_module, "LOCAL_API_CAPABILITY", token)
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    conn.request("GET", "/api/paths")
+    blocked_response = conn.getresponse()
+    blocked = json.loads(blocked_response.read().decode("utf-8"))
+    conn.request("GET", "/api/paths", headers={"X-Selene-Local-Capability": token})
+    allowed_response = conn.getresponse()
+    allowed = json.loads(allowed_response.read().decode("utf-8"))
+    conn.request(
+        "POST",
+        "/shutdown",
+        body="{}",
+        headers={
+            "Content-Type": "application/json",
+            "X-Selene-Local-Capability": token,
+        },
+    )
+    shutdown_response = conn.getresponse()
+    shutdown_response.read()
+    conn.close()
+
+    thread.join(timeout=5)
+    server.server_close()
+    server.conn.close()
+
+    assert blocked_response.status == 403
+    assert blocked["status"] == "local_process_capability_required"
+    assert allowed_response.status == 200
+    assert allowed["db_path"].endswith("selene.db")
+    assert shutdown_response.status == 200
+    assert not thread.is_alive()
 
 
 def test_sidecar_shutdown_endpoint_stops_server(tmp_path):
@@ -148,7 +191,21 @@ def test_sidecar_rejects_cross_site_browser_post_before_state_change(tmp_path):
         body="{}",
         headers={"Content-Type": "text/plain", "Origin": "https://untrusted.example"},
     )
-    response = conn.getresponse()
+    try:
+        response = conn.getresponse()
+    except ConnectionAbortedError:
+        # Windows can transiently abort a loopback socket during the full
+        # threaded suite. Retry once against the still-running server; the
+        # security assertion below must still receive the explicit 403.
+        conn.close()
+        conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+        conn.request(
+            "POST",
+            "/shutdown",
+            body="{}",
+            headers={"Content-Type": "text/plain", "Origin": "https://untrusted.example"},
+        )
+        response = conn.getresponse()
     payload = json.loads(response.read().decode("utf-8"))
     conn.close()
 

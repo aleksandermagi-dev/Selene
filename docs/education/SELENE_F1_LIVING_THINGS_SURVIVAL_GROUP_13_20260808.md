@@ -99,12 +99,12 @@ required.
 
 A hash-verified pre-preparation database checkpoint was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group13_prepare_20260808_171355.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group13_prepare_20260808_171355.sqlite3`
 
 A hash-verified checkpoint immediately before authorized teaching was created
 at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group13_teach_20260808_172855.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group13_teach_20260808_172855.sqlite3`
 
 Live teaching retained six concepts, held none, and did not change identity,
 personality, governance, personal memory, runtime recall, training, LoRA,

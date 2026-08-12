@@ -246,7 +246,7 @@ def test_nlo_and_loom_use_growth_roles_without_writes_or_source_parroting(tmp_pa
 
     growth = result["knowledge_language_growth"]
     discourse = result["discourse_plan"]["supported_discourse"]
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert growth["active"] is True
     assert [item["role"] for item in discourse["content_units"]] == [
         "thesis",

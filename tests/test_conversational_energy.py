@@ -114,6 +114,21 @@ def test_curiosity_is_relevant_and_singular_not_a_habitual_social_question():
                 "question": "What else should we discuss",
                 "relevant": True,
                 "answer_matters_to_understanding": True,
+                "genuine_interest": False,
+                "engagement_maintenance": True,
+            },
+        }
+    )
+    genuine_social = build_conversational_energy_plan(
+        {
+            "social_turn": True,
+            "curiosity": {
+                "question": "What part of the project has been most interesting to you today",
+                "why_it_matters": "The answer would help me understand Aleks's current experience of the work.",
+                "relevant": True,
+                "answer_matters_to_understanding": True,
+                "genuine_interest": True,
+                "engagement_maintenance": False,
             },
         }
     )
@@ -123,6 +138,9 @@ def test_curiosity_is_relevant_and_singular_not_a_habitual_social_question():
     assert social["selected_act"] == "answer_and_land"
     assert social["question_allowed"] is False
     assert social["held_back_signals"][0]["signal"] == "curiosity"
+    assert genuine_social["selected_act"] == "answer_then_ask_relevant_curiosity"
+    assert genuine_social["question_allowed"] is True
+    assert genuine_social["question_required"] is False
 
 
 def test_collaborative_help_requires_used_support_and_names_the_exact_missing_piece():

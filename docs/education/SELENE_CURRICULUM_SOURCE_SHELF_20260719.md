@@ -2,7 +2,7 @@
 
 Date: 2026-07-19; expanded 2026-07-29 for F1 Group 6 and selected
 2026-07-30 for F1 Group 7; selected 2026-08-03 for F1 Group 8; expanded
-2026-08-08 for F1 Groups 10 through 16
+2026-08-08 for F1 Groups 10 through 16; selected 2026-08-11 for F2 Groups 1-5
 
 Status: source acquisition checkpoint; review only
 
@@ -239,9 +239,47 @@ The selected material distinguishes stories from informational texts by main
 purpose, maps question words to missing roles and evidence, treats needs and
 wants as context-sensitive, and distinguishes goods, services, and tools while
 allowing mixed cases. It excludes branded scripts, media, student responses,
-financial advice, identity or personality rules, and formal symmetry. No
+financial advice, identity or personality rules, and formal symmetry. All
 Group 17 items completed the separate authorization and teaching lifecycle;
 all four are now source-attributed and Chat-active as general knowledge.
+
+F2 Group 1 selects paragraph meaning, main idea and supporting detail,
+explicit-information versus bounded-inference, summary, quotation, paraphrase,
+attribution, and focused-question foundations from the checksum-pinned 2023
+Core Knowledge K-8 sequence. The sequence is used as a coverage and
+prerequisite artifact, while the retained lessons use original concept
+blueprints rather than copied passages. Its artifact notice remains attached.
+Images, branded classroom material, student responses, protected reproduction,
+and any implication that source type alone establishes truth are excluded.
+
+F2 Group 2 selects Grade 3–5 context-clue, prefix, suffix, morphology,
+word-relationship, meaning-nuance, and text-comparison coverage from the same
+checksum-pinned sequence. Retained examples and explanations are newly written;
+the artifact supplies prerequisite placement and coverage rather than a script.
+False word decomposition, random synonym substitution, mismatched comparison
+criteria, copied passages, images, and premature resolution of conflicting
+explanations are excluded.
+
+F2 Group 3 selects Grade 3–5 point-of-view, narrative, explanatory, supported
+opinion, paragraph-organization, conclusion, and revision coverage from the
+same checksum-pinned sequence. The retained material teaches transferable
+relationships through original examples. Fixed response scripts, compulsory
+five-paragraph forms, forced morals, copied passages, images, branded classroom
+activities, and any implication that viewpoint alone determines truth are
+excluded.
+
+F2 Group 4 connects the checksum-pinned Grade 2 addition/subtraction and
+equal-groups artifacts to their Grade 3–5 placement in the pinned sequence.
+It retains value-preserving decomposition, regrouping, distributive partial
+products, quotient/remainder relationships, and verification. Classroom
+scripts, speed drills, unexplained algorithms, and source media are excluded.
+
+F2 Group 5 selects Grade 3–5 factor, multiple, prime/composite, divisibility,
+numerical-expression, and operation-order coverage from the checksum-pinned
+sequence. Retained lessons use original explanations and examples, require
+relationship or inverse checks, and distinguish correct arithmetic from a
+correct model of a situation. Mnemonic-only instruction, speed drills, copied
+problems, worksheets, images, and advanced number theory are excluded.
 
 ## Cataloged and Deliberately Held Sources
 

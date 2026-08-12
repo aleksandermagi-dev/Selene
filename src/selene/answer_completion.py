@@ -166,6 +166,7 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
                     "source_refs": _texts((knowledge or {}).get("source_refs")),
                     "unsupported": support_kind == "explicit_unsupported_part",
                     "missing_ground": _missing_ground(obligation),
+                    "visible_fragment": fragment,
                     "added_to_answer": False,
                 }
             )
@@ -201,6 +202,7 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
                 "source_refs": _texts((knowledge or {}).get("source_refs")),
                 "unsupported": support_kind == "explicit_unsupported_part",
                 "missing_ground": missing_ground,
+                "visible_fragment": fragment,
                 "added_to_answer": fragment_is_new,
             }
         )

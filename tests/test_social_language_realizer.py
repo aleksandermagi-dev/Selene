@@ -35,7 +35,7 @@ def test_social_plan_exposes_semantic_acts_without_claiming_voice_or_internal_st
     assert plan["relationship_term_invention_allowed"] is False
     assert plan["internal_state_invention_allowed"] is False
     assert plan["content_generation_allowed"] is False
-    assert plan["voice_owns_expression_style"] is True
+    assert plan["coordinated_expression_contract_active"] is True
     realized = realize_social_act_plan(plan, prompt="Good morning Selene!", variation_key="spacious-greeting")
     assert "\n\n" in realized["candidate_text"]
     assert realized["meaning_preserved"] is True
@@ -139,7 +139,7 @@ def test_nlo_routes_social_intent_through_compositional_act_realization(tmp_path
 
     social_plan = result["discourse_plan"]["social_act_plan"]
     social_realization = result["discourse_plan"]["social_act_realization"]
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert social_plan["intent"] == "greet_presently"
     assert social_realization["status"] == "social_act_realized"
     assert social_realization["whole_response_template_selected"] is False

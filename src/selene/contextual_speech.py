@@ -86,7 +86,8 @@ def inspect_contextual_follow_up(
     ):
         kind, marker = "session_summary_request", "summarize_active_session"
     elif re.search(
-        r"\b(?:earlier when|back to what|return to what|the point about|what you said about|we discussed)\b",
+        r"\b(?:earlier when|back to what|return to what|the point about|what you said about|we discussed)\b|"
+        r"\b(?:back|return|going back)\s+to\s+[^,;:.!?]+",
         normalized,
     ):
         kind, marker = "named_callback", "named_visible_session_point"
@@ -239,6 +240,7 @@ def contextual_response_seed(
     *,
     dialogue_workspace: dict[str, Any] | None = None,
     conversation_spine: dict[str, Any] | None = None,
+    conversation_continuity: dict[str, Any] | None = None,
 ) -> str:
     contextual = contextual_follow_up if isinstance(contextual_follow_up, dict) else {}
     if contextual.get("detected") is not True:
@@ -272,6 +274,19 @@ def contextual_response_seed(
     matched_landmarks = [
         item for item in contextual.get("matched_session_landmarks") or [] if isinstance(item, dict)
     ] or _matching_landmarks(str(contextual.get("prompt") or ""), landmarks)
+    continuity = (
+        conversation_continuity
+        if isinstance(conversation_continuity, dict)
+        else {}
+    )
+    if str(continuity.get("mode") or "") == "named_thread_return":
+        selected = [
+            item
+            for item in continuity.get("selected_landmarks") or []
+            if isinstance(item, dict)
+        ]
+        if selected:
+            matched_landmarks = selected
 
     if kind == "confidence_check":
         answer_confidence = str(
@@ -291,7 +306,11 @@ def contextual_response_seed(
 
     if kind == "named_callback" and matched_landmarks:
         callback_prompt = str(contextual.get("prompt") or "").lower()
-        if re.search(r"\b(?:what did|what was|remind me|which point)\b", callback_prompt):
+        if re.search(
+            r"\b(?:what did|what was|remind me|which point|which one|what one|"
+            r"who|where|when)\b",
+            callback_prompt,
+        ):
             return " ".join(str(item.get("summary") or "") for item in matched_landmarks[:3])
         # A why/how callback needs fresh reasoning over the grounded landmark;
         # the Conversation Spine supplies it instead of this layer inventing it.
@@ -436,10 +455,6 @@ def contextual_response_seed(
             f"I prefer {choice} first because it makes the comparison observable without committing the whole system, and it remains easy to revise. "
             "I would change that recommendation if the measured result showed it was not helping both stated goals, if its cost outweighed the improvement, or if the alternative did better under the same conditions."
         )
-    if kind == "reason_follow_up" and any(marker in previous.lower() for marker in ("same dimensions", "same standard")):
-        return (
-            "Because using the same standard keeps the comparison fair. Changing the criteria between options would make the conclusion reflect the test rather than the options themselves."
-        )
     if kind == "reason_follow_up" and marker == "why":
         explicit_reason = _bounded_explicit_reason(previous)
         if explicit_reason:
@@ -447,6 +462,10 @@ def contextual_response_seed(
         return (
             "I did not state the reason clearly enough in that answer. "
             "I can explain it, but I need the deciding constraint or evidence rather than inventing one."
+        )
+    if kind == "reason_follow_up" and any(marker in previous.lower() for marker in ("same dimensions", "same standard")):
+        return (
+            "Because using the same standard keeps the comparison fair. Changing the criteria between options would make the conclusion reflect the test rather than the options themselves."
         )
     if kind == "continuation" and any(marker in previous.lower() for marker in insufficient_markers):
         return (
@@ -654,12 +673,25 @@ def _bounded_explicit_reason(previous: str) -> str:
         if reason[-1:] not in ".!?":
             reason += "."
         response = f"Because {reason}"
-        if index + 1 < len(sentences) and re.match(
-            r"^(?:it|this|that)\s+(?:also\s+)?",
-            sentences[index + 1],
-            flags=re.IGNORECASE,
-        ):
-            response = f"{response} {sentences[index + 1]}"
+        # Preserve one explicitly linked support sentence even when a separate
+        # change-condition sentence was woven between the reason and its
+        # supporting evidence. This reconstructs visible text only; it does not
+        # infer a new reason.
+        for offset, follow_on in enumerate(sentences[index + 1 : index + 4]):
+            immediately_adjacent = offset == 0
+            explicit_addition = bool(
+                re.match(
+                    r"^(?:it|this|that)\s+(?:also|further)\b|^additionally\b",
+                    follow_on,
+                    flags=re.IGNORECASE,
+                )
+            )
+            if explicit_addition or (
+                immediately_adjacent
+                and re.match(r"^(?:it|this|that)\s+", follow_on, flags=re.IGNORECASE)
+            ):
+                response = f"{response} {follow_on}"
+                break
         return truncate(response, 900)
     return ""
 

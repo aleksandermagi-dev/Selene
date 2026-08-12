@@ -28,7 +28,7 @@ def _assert_locked(payload):
     assert payload["identity_change_allowed"] is False
     assert payload["governance_change_allowed"] is False
     assert payload["authority_change_allowed"] is False
-    assert payload["voice_owns_expression_style"] is True
+    assert payload["coordinated_expression_contract_active"] is True
     assert payload["database_write_performed"] is False
     assert payload["hidden_chain_of_thought_exposed"] is False
 
@@ -255,7 +255,7 @@ def test_nlo_uses_selected_candidate_once_without_writing_or_changing_authority(
     )
 
     garden = result["candidate_garden"]
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert garden["generated_candidate_count"] >= 2
     assert garden["selection_pass_count"] == 1
     assert result["formation"]["construction_id"] == garden["selected_construction_id"]

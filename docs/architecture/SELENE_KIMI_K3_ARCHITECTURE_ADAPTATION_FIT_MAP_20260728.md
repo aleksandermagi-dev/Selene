@@ -200,7 +200,8 @@ specialization rather than running every possible capability equally.
 - Verified math, comparison/planning, sourced research, and approved local-code
   inspection are separate adapters.
 - Metacognition observes fit and may request one bounded completion cycle.
-- NLO owns language structure; Voice owns expression.
+- NLO owns language structure and contextual realization; Voice performs final
+  expression compatibility; Conversation Spine and Chat govern visible release.
 - The Organ Bus carries telemetry, proposals, requests, status, and feedback,
   never organ-to-organ command authority.
 - Fluency diagnostics already name an organ activation budget.
@@ -547,7 +548,7 @@ should be extended in place:
 - claim/evidence packets;
 - metacognitive observation and bounded recheck;
 - NLO meaning-preserving formation;
-- Voice expression ownership;
+- coordinated NLO/Voice expression and visible-release ownership;
 - Organ Bus support-only communication;
 - memory review and retention law;
 - comprehension approval lifecycle;

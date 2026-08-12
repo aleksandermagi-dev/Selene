@@ -89,7 +89,7 @@ def answer_engine_status() -> dict[str, Any]:
             "expression_only_math_available": True,
             "domain_request_fallback_obligation_available": True,
             "core_mind_route_owner": True,
-            "nlo_expression_owner": True,
+            "nlo_language_structure_owner": True,
             "voice_style_owner": True,
             "great_library_external": True,
             "great_library_research_default_enabled": False,

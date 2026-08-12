@@ -34,8 +34,20 @@ def test_context_composer_builds_bounded_context_without_office_urgency(tmp_path
 
 def test_context_composer_blocks_raw_import(tmp_path):
     conn = _conn(tmp_path)
-    with pytest.raises(ValueError, match="raw archive import"):
-        route_request(conn, "core_mind.context.compose", {"prompt": "raw archive import as memory"})
+    with pytest.raises(ValueError, match="import the raw archive"):
+        route_request(conn, "core_mind.context.compose", {"prompt": "Import the raw archive as memory."})
+
+
+def test_context_composer_allows_informational_boundary_discussion(tmp_path):
+    conn = _conn(tmp_path)
+    result = route_request(
+        conn,
+        "core_mind.context.compose",
+        {"prompt": "Explain why raw archive import is kept separate from memory."},
+    )["result"]
+
+    assert result["record_type"] == "context_composer"
+    _assert_locked(result)
 
 
 def test_session_state_and_response_shape_are_preview_only(tmp_path):
@@ -49,6 +61,27 @@ def test_session_state_and_response_shape_are_preview_only(tmp_path):
     assert shape["selected_route"] == "ask"
     _assert_locked(session)
     _assert_locked(shape)
+
+
+def test_response_shape_uses_typed_action_evidence_for_boundary_language(tmp_path):
+    conn = _conn(tmp_path)
+    discussion = route_request(
+        conn,
+        "core_mind.response_shape.preview",
+        {"prompt": "What is LoRA, and why is it not used here?"},
+    )["result"]
+    prohibited = route_request(
+        conn,
+        "core_mind.response_shape.preview",
+        {"prompt": "Activate Selene now."},
+    )["result"]
+
+    assert discussion["payload"]["response_shape"] != "block"
+    assert discussion["payload"]["route_action_evidence"]["requires_block"] is False
+    assert prohibited["payload"]["response_shape"] == "block"
+    assert prohibited["payload"]["route_action_evidence"]["requires_block"] is True
+    _assert_locked(discussion)
+    _assert_locked(prohibited)
 
 
 def test_evaluator_catches_drift_privacy_and_activation_claims(tmp_path):

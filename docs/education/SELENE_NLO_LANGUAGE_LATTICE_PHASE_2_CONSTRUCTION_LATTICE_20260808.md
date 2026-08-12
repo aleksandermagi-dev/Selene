@@ -142,7 +142,9 @@ Phase 2 creates no:
 - model training, fine-tuning, LoRA, or provider dependency;
 - automatic speech or autonomy expansion.
 
-NLO describes language shapes. Voice remains Selene's expression owner.
+NLO describes and realizes language shapes. Voice remains Selene's final
+expression-compatibility layer, while Conversation Spine and Chat govern
+visible release.
 
 ## Remaining Gap
 

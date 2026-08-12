@@ -7,6 +7,7 @@ from typing import Any
 
 from .chat_intent import classify_chat_intent
 from .registry import truncate
+from .semantic_relevance import evaluate_semantic_relevance
 from .transfer_state import transfer_completion_is_approved
 
 
@@ -53,8 +54,17 @@ TRANSFER_CLASSES = {
 MEMORY_GUARDS: dict[str, Any] = {
     "activation_change": "none",
     "memory_write_active": False,
+    "memory_write_active_semantics": "legacy_hidden_or_unreviewed_active_memory_guard",
     "runtime_memory_recall": False,
+    "hidden_memory_write_active": False,
     "unreviewed_memory_write_active": False,
+    "reviewed_memory_decision_performed": False,
+    "review_record_write_performed": False,
+    "approved_memory_promotion_performed": False,
+    "durable_approved_promotion_performed": False,
+    "memory_lifecycle_operation": "none",
+    "memory_lifecycle_record_mutated": False,
+    "memory_lifecycle_transaction_status": "not_applicable",
     "broad_raw_recall_active": False,
     "raw_a_import_allowed": False,
     "training_allowed": False,
@@ -152,8 +162,12 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 ),
                 "silent_promotion": False,
                 "raw_corpus_recall": False,
+                "legacy_memory_write_flag": (
+                    "memory_write_active means hidden or unreviewed active-memory retention only; "
+                    "typed lifecycle telemetry reports review-record and approved-promotion writes"
+                ),
             },
-            "resident_memory_contract_version": "v2_dream_review_bridge",
+            "resident_memory_contract_version": "v3_typed_lifecycle_telemetry",
             "dream_state_may_propose_not_promote": True,
             "raw_corpus_loaded": False,
             "raw_archive_recall_active": False,
@@ -255,6 +269,15 @@ def propose_memory_candidate(
     if commit:
         conn.commit()
     item = _candidate_row(conn, int(cur.lastrowid))
+    lifecycle = _memory_lifecycle_telemetry(
+        operation="candidate_proposed",
+        review_record_write_performed=True,
+        record_mutated=True,
+        commit=commit,
+        previous_state=None,
+        current_state=str(item.get("state") or "proposed"),
+        active_memory_eligibility_changed=False,
+    )
     return _with_guards(
         {
             "status": "memory_candidate_proposed",
@@ -264,7 +287,8 @@ def propose_memory_candidate(
             "active_after_approval_only": True,
             "review_destination": "Cocoon Memory Candidates",
             "review_status": "pending_review",
-        }
+        },
+        lifecycle=lifecycle,
     )
 
 
@@ -306,6 +330,8 @@ def decide_memory_candidate(
     if not row:
         raise ValueError("memory candidate not found")
     current = _decode_candidate(row)
+    previous_state = str(current.get("state") or "proposed")
+    previously_retrieval_eligible = current.get("retrieval_eligible") is True
     next_state = str(current.get("state") or "proposed")
     review_status = "review_only"
     chat_use = str(current.get("chat_use_permission") or "not_active_until_approved")
@@ -365,6 +391,27 @@ def decide_memory_candidate(
     if commit:
         conn.commit()
     item = _candidate_row(conn, candidate_id)
+    approved_promotion_performed = (
+        action == "approve_memory"
+        and previous_state != "approved_active_memory"
+        and item.get("state") == "approved_active_memory"
+    )
+    lifecycle = _memory_lifecycle_telemetry(
+        operation=(
+            "reviewed_approval_reaffirmed"
+            if action == "approve_memory" and not approved_promotion_performed
+            else f"reviewed_{action}"
+        ),
+        reviewed_decision_performed=True,
+        approved_promotion_performed=approved_promotion_performed,
+        record_mutated=True,
+        commit=commit,
+        previous_state=previous_state,
+        current_state=str(item.get("state") or next_state),
+        active_memory_eligibility_changed=(
+            previously_retrieval_eligible != (item.get("retrieval_eligible") is True)
+        ),
+    )
     return _with_guards(
         {
             "status": "memory_candidate_decision_recorded",
@@ -372,7 +419,8 @@ def decide_memory_candidate(
             "item": item,
             "review_destination": "Cocoon Memory Tending",
             "review_status": review_status,
-        }
+        },
+        lifecycle=lifecycle,
     )
 
 
@@ -422,6 +470,25 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
         )
     items = _approved_memory_items(conn, limit=100)
     matches = _rank_matches(query, items)[:limit]
+    semantic_matches: list[dict[str, Any]] = []
+    held_matches: list[dict[str, Any]] = []
+    for item in matches:
+        relevance = evaluate_semantic_relevance(
+            {
+                "prompt": query,
+                "candidate": {**item, "source_class": "memory_reconstruction"},
+                "source_id": "reviewed_memory" if explicit_recall else "contextual_approved_memory",
+                "source_class": "memory_reconstruction",
+                "intent_decision": intent_decision,
+                "explicit_recall": explicit_recall,
+            }
+        )
+        annotated = {**item, "semantic_relevance": relevance}
+        if relevance.get("accepted") is True:
+            semantic_matches.append(annotated)
+        else:
+            held_matches.append(annotated)
+    matches = semantic_matches
     if contextual_relevance and not explicit_recall:
         matches = [item for item in matches if _contextual_match_is_strong(query, item)][:limit]
     if not matches:
@@ -436,6 +503,7 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "memory_transfer_class": "",
                 "graceful_fall_used": True,
                 "items": [],
+                "semantic_relevance_held_count": len(held_matches),
                 "intent_decision": intent_decision,
                 "answer_guidance": "Selene can say she does not know or ask Aleks directly.",
                 "review_destination": "Status",
@@ -456,6 +524,8 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             "memory_transfer_class": transfer_class,
             "graceful_fall_used": confidence != "clear",
             "items": matches,
+            "semantic_relevance_held_count": len(held_matches),
+            "semantic_source_gate_applied": True,
             "intent_decision": intent_decision,
             "source_refs": [ref for item in matches for ref in _json_list(item.get("source_refs"))],
             "answer_guidance": (
@@ -995,5 +1065,39 @@ def _loads_dict(value: Any) -> dict[str, Any]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def _with_guards(payload: dict[str, Any]) -> dict[str, Any]:
-    return {**payload, **MEMORY_GUARDS}
+def _memory_lifecycle_telemetry(
+    *,
+    operation: str,
+    reviewed_decision_performed: bool = False,
+    review_record_write_performed: bool = False,
+    approved_promotion_performed: bool = False,
+    record_mutated: bool = False,
+    commit: bool = False,
+    previous_state: str | None = None,
+    current_state: str | None = None,
+    active_memory_eligibility_changed: bool = False,
+) -> dict[str, Any]:
+    return {
+        "memory_lifecycle_operation": operation,
+        "memory_lifecycle_record_mutated": record_mutated,
+        "memory_lifecycle_transaction_status": (
+            "committed" if record_mutated and commit else "pending_caller_commit" if record_mutated else "not_applicable"
+        ),
+        "reviewed_memory_decision_performed": reviewed_decision_performed,
+        "review_record_write_performed": review_record_write_performed,
+        "approved_memory_promotion_performed": approved_promotion_performed,
+        "durable_approved_promotion_performed": approved_promotion_performed and commit,
+        "memory_lifecycle_transition": {
+            "previous_state": previous_state,
+            "current_state": current_state,
+            "state_changed": previous_state != current_state,
+            "active_memory_eligibility_changed": active_memory_eligibility_changed,
+        },
+    }
+
+
+def _with_guards(payload: dict[str, Any], *, lifecycle: dict[str, Any] | None = None) -> dict[str, Any]:
+    result = {**payload, **MEMORY_GUARDS}
+    if lifecycle:
+        result.update(lifecycle)
+    return result

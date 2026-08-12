@@ -3,6 +3,8 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
+from .authority_events import derive_authority_event, record_authority_event
+from .safety_gap_status import safety_gap_status
 from .c_blueprint import c_blueprint_status
 from .b_review import (
     build_all_teaching_packets,
@@ -56,6 +58,15 @@ from .conversational_energy import (
     build_conversational_energy_plan,
     conversational_energy_status,
 )
+from .exploratory_reasoning import (
+    build_exploratory_reasoning_packet,
+    exploratory_reasoning_status,
+)
+from .human_conversational_realization import (
+    build_human_conversational_plan,
+    human_conversational_realization_status,
+    realize_human_conversation,
+)
 from .structural_discovery import (
     build_structural_discovery_packet,
     structural_discovery_status,
@@ -67,6 +78,10 @@ from .compressed_structure_braid import (
     run_custom_instruction_braid,
 )
 from .conversation_spine import conversation_spine_status
+from .conversation_continuity import (
+    conversation_continuity_status,
+    resolve_conversation_continuity,
+)
 from .cocoon import cocoon_status
 from .cocoon_care import cocoon_care_status, list_cocoon_care_checks, run_cocoon_care_check
 from .cocoon_bridge import cocoon_bridge_status, standby_cocoon_bridge, wake_cocoon_bridge
@@ -234,6 +249,11 @@ from .curriculum_authorization import (
     activate_f1_human_body_health_evidence_authorization,
     activate_f1_helpful_computers_integration_authorization,
     activate_f1_text_purpose_everyday_economy_bridge_authorization,
+    activate_f2_paragraph_meaning_source_grounding_authorization,
+    activate_f2_vocabulary_structure_comparison_authorization,
+    activate_f2_point_of_view_organized_composition_authorization,
+    activate_f2_multi_digit_arithmetic_operations_authorization,
+    activate_f2_factors_multiples_operation_order_authorization,
     activate_f1_operations_measurement_authorization,
     curriculum_authorization_status,
     evaluate_curriculum_coverage,
@@ -254,6 +274,11 @@ from .curriculum_authorization import (
     prepare_f1_human_body_health_evidence_group,
     prepare_f1_helpful_computers_integration_group,
     prepare_f1_text_purpose_everyday_economy_bridge_group,
+    prepare_f2_paragraph_meaning_source_grounding_group,
+    prepare_f2_vocabulary_structure_comparison_group,
+    prepare_f2_point_of_view_organized_composition_group,
+    prepare_f2_multi_digit_arithmetic_operations_group,
+    prepare_f2_factors_multiples_operation_order_group,
     prepare_f1_operations_measurement_group,
     revoke_curriculum_authorization,
     teach_f1_foundation_group,
@@ -272,6 +297,11 @@ from .curriculum_authorization import (
     teach_f1_human_body_health_evidence_group,
     teach_f1_helpful_computers_integration_group,
     teach_f1_text_purpose_everyday_economy_bridge_group,
+    teach_f2_paragraph_meaning_source_grounding_group,
+    teach_f2_vocabulary_structure_comparison_group,
+    teach_f2_point_of_view_organized_composition_group,
+    teach_f2_multi_digit_arithmetic_operations_group,
+    teach_f2_factors_multiples_operation_order_group,
     teach_f1_operations_measurement_group,
 )
 from .teaching_lifecycle import (
@@ -399,7 +429,7 @@ from .selene_chat import (
     send_selene_chat,
     send_selene_chat_dry_run,
 )
-from .test_impact_law import review_test_impact, test_impact_law_status
+from .test_impact_law import record_test_impact_review, test_impact_law_status
 from .selene_organ_ideas import (
     list_selene_organ_ideas,
     prepare_selene_organ_ideas,
@@ -456,8 +486,10 @@ from .vessel import (
 from .vessel_gap_scaffolds import create_all_gap_scaffold_records, create_gap_scaffold_record, ensure_gap_targets, gap_scaffold_readiness, gap_scaffold_status
 
 
-def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
+    if route_key == "security.safety_gaps.status":
+        return {"route": route_key, "result": safety_gap_status()}
     if route_key == "kernel.status":
         return {"route": route_key, "result": kernel_state()}
     if route_key == "android_system.workflow.status":
@@ -585,7 +617,7 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
     if route_key == "test_impact_law.status":
         return {"route": route_key, "result": test_impact_law_status()}
     if route_key == "test_impact_law.review":
-        return {"route": route_key, "result": review_test_impact(payload)}
+        return {"route": route_key, "result": record_test_impact_review(conn, payload)}
     if route_key == "education_expression_law.status":
         return {"route": route_key, "result": education_expression_law_status()}
     if route_key == "education_expression_law.review":
@@ -594,6 +626,35 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": bounded_hypothesis_status()}
     if route_key == "bounded_hypothesis.preview":
         return {"route": route_key, "result": build_bounded_hypothesis_attempt(payload)}
+    if route_key == "exploratory_reasoning.status":
+        return {"route": route_key, "result": exploratory_reasoning_status()}
+    if route_key == "exploratory_reasoning.build":
+        return {"route": route_key, "result": build_exploratory_reasoning_packet(payload)}
+    if route_key == "conversation_continuity.status":
+        return {"route": route_key, "result": conversation_continuity_status()}
+    if route_key == "conversation_continuity.resolve":
+        return {"route": route_key, "result": resolve_conversation_continuity(payload)}
+    if route_key == "human_conversation.status":
+        return {"route": route_key, "result": human_conversational_realization_status()}
+    if route_key == "human_conversation.plan":
+        return {"route": route_key, "result": build_human_conversational_plan(payload)}
+    if route_key == "human_conversation.realize":
+        plan = (
+            payload.get("plan")
+            if isinstance(payload.get("plan"), dict)
+            else build_human_conversational_plan(payload)
+        )
+        return {
+            "route": route_key,
+            "result": realize_human_conversation(
+                str(payload.get("text") or payload.get("content_seed") or ""),
+                plan,
+                variation_key=str(payload.get("variation_key") or "router-preview"),
+                recent_texts=[
+                    str(item) for item in payload.get("recent_texts") or [] if str(item)
+                ],
+            ),
+        }
     if route_key == "answer_engine.status":
         return {"route": route_key, "result": answer_engine_status()}
     if route_key == "answer_engine.route.preview":
@@ -843,6 +904,16 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": activate_f1_helpful_computers_integration_authorization(conn, payload)}
     if route_key == "curriculum.authorization.activate_f1_text_purpose_everyday_economy_bridge":
         return {"route": route_key, "result": activate_f1_text_purpose_everyday_economy_bridge_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f2_paragraph_meaning_source_grounding":
+        return {"route": route_key, "result": activate_f2_paragraph_meaning_source_grounding_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f2_vocabulary_structure_comparison":
+        return {"route": route_key, "result": activate_f2_vocabulary_structure_comparison_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f2_point_of_view_organized_composition":
+        return {"route": route_key, "result": activate_f2_point_of_view_organized_composition_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f2_multi_digit_arithmetic_operations":
+        return {"route": route_key, "result": activate_f2_multi_digit_arithmetic_operations_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f2_factors_multiples_operation_order":
+        return {"route": route_key, "result": activate_f2_factors_multiples_operation_order_authorization(conn, payload)}
     if route_key == "curriculum.authorization.revoke":
         return {"route": route_key, "result": revoke_curriculum_authorization(conn, payload)}
     if route_key == "curriculum.authorization.evaluate":
@@ -915,6 +986,26 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         return {"route": route_key, "result": prepare_f1_text_purpose_everyday_economy_bridge_group(conn, payload)}
     if route_key == "curriculum.foundation.teach_f1_text_purpose_everyday_economy_bridge":
         return {"route": route_key, "result": teach_f1_text_purpose_everyday_economy_bridge_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f2_paragraph_meaning_source_grounding":
+        return {"route": route_key, "result": prepare_f2_paragraph_meaning_source_grounding_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f2_paragraph_meaning_source_grounding":
+        return {"route": route_key, "result": teach_f2_paragraph_meaning_source_grounding_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f2_vocabulary_structure_comparison":
+        return {"route": route_key, "result": prepare_f2_vocabulary_structure_comparison_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f2_vocabulary_structure_comparison":
+        return {"route": route_key, "result": teach_f2_vocabulary_structure_comparison_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f2_point_of_view_organized_composition":
+        return {"route": route_key, "result": prepare_f2_point_of_view_organized_composition_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f2_point_of_view_organized_composition":
+        return {"route": route_key, "result": teach_f2_point_of_view_organized_composition_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f2_multi_digit_arithmetic_operations":
+        return {"route": route_key, "result": prepare_f2_multi_digit_arithmetic_operations_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f2_multi_digit_arithmetic_operations":
+        return {"route": route_key, "result": teach_f2_multi_digit_arithmetic_operations_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f2_factors_multiples_operation_order":
+        return {"route": route_key, "result": prepare_f2_factors_multiples_operation_order_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f2_factors_multiples_operation_order":
+        return {"route": route_key, "result": teach_f2_factors_multiples_operation_order_group(conn, payload)}
     if route_key == "native_language.status":
         return {"route": route_key, "result": native_language_status(conn)}
     if route_key == "native_language.realize":
@@ -1068,7 +1159,7 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
                 "personality_change_allowed": False,
                 "governance_change_allowed": False,
                 "authority_change_allowed": False,
-                "voice_owns_expression_style": True,
+                "coordinated_expression_contract_active": True,
                 "hidden_chain_of_thought_exposed": False,
                 "database_write_performed": False,
             },
@@ -1412,6 +1503,17 @@ def route_request(conn: sqlite3.Connection, route_key: str, payload: dict[str, A
         "route": route_key,
         "result": GracefulFall().recover(f"unknown module route: {route_key}").__dict__,
     }
+
+
+def route_request(
+    conn: sqlite3.Connection,
+    route_key: str,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    response = _route_request_impl(conn, route_key, payload)
+    event = derive_authority_event(route_key, payload, response.get("result"))
+    response["authority_event"] = record_authority_event(conn, event)
+    return response
 
 
 def chat_gate_preview(conn: sqlite3.Connection, text: str) -> dict[str, Any]:

@@ -125,7 +125,7 @@ def build_supported_semantic_packet(payload: dict[str, Any] | None = None) -> di
         "all_units_supported": all(item.get("supported") is True for item in units),
         "fact_generation_allowed": False,
         "meaning_change_allowed": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "visible_summary_only": True,
         "hidden_chain_of_thought_exposed": False,
         "provenance_boundary": SUPPORTED_SEMANTICS_BOUNDARY,

@@ -51,12 +51,33 @@ function Get-EndpointJson([string]$Path) {
     try {
         Invoke-RestMethod -Uri "http://127.0.0.1:8766$Path" -Method Get -TimeoutSec 3
     } catch {
+        $response = $_.Exception.Response
+        if ($response -and [int]$response.StatusCode -eq 403) {
+            return [pscustomobject]@{
+                status = "local_process_capability_required"
+                protected = $true
+            }
+        }
         $null
     }
 }
 
 function Get-Sidecars {
     @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -like "selene-sidecar*" })
+}
+
+function Get-Sha256([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return $null
+    }
+    $stream = [System.IO.File]::OpenRead($Path)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return (($sha.ComputeHash($stream) | ForEach-Object { $_.ToString("x2") }) -join "")
+    } finally {
+        $sha.Dispose()
+        $stream.Dispose()
+    }
 }
 
 $startedProcess = $null
@@ -104,6 +125,10 @@ $trainingAllowed = [bool]($transferCeremony -and $transferCeremony.training_allo
 $autonomousActionAllowed = [bool]($transferCeremony -and $transferCeremony.autonomous_action_allowed)
 $selfReplicationAllowed = [bool]($transferCeremony -and $transferCeremony.self_replication_allowed)
 $transferProbeOk = [bool]($transferCeremony -or $transferGate)
+$localCapabilityEnforced = [bool](
+    $construction -and
+    [string]$construction.status -eq "local_process_capability_required"
+)
 $packagedSidecar = Join-Path $repo "dist-sidecar\selene-sidecar"
 $forbiddenPackagedFiles = @()
 if (Test-Path -LiteralPath $packagedSidecar) {
@@ -166,9 +191,15 @@ $result = [ordered]@{
     installed_exe_last_write_time = if (Test-Path -LiteralPath $resolvedInstalledExe) { (Get-Item -LiteralPath $resolvedInstalledExe).LastWriteTimeUtc.ToString("o") } else { $null }
     installer_path = $Installer
     installer_size_bytes = if (Test-Path -LiteralPath $Installer) { [int64](Get-Item -LiteralPath $Installer).Length } else { 0 }
+    installer_sha256 = Get-Sha256 $Installer
+    installed_exe_sha256 = Get-Sha256 $resolvedInstalledExe
+    source_revision = (& git -C $repo rev-parse HEAD 2>$null)
+    source_worktree_dirty = [bool]((& git -C $repo status --porcelain 2>$null) | Select-Object -First 1)
+    code_signing_status = "not_configured"
     sidecar_process_count = (Get-Sidecars).Count
     health_ok = [bool]$health
     sidecar_version = if ($health) { $health.sidecar_version } else { $null }
+    local_process_capability_enforced = $localCapabilityEnforced
     startup = if ($health) { $health.startup } else { $null }
     my_office_readiness = [ordered]@{
         construction_status_ok = [bool]$construction

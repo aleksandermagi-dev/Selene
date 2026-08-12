@@ -96,12 +96,12 @@ claim that currency details are universal or timeless.
 
 A SQLite-safe pre-preparation backup was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_equal_groups_data_money_group5_20260720.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_equal_groups_data_money_group5_20260720.sqlite3`
 
 A second SQLite-safe checkpoint immediately before authorization and teaching
 was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group5_teaching_20260720.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group5_teaching_20260720.sqlite3`
 
 ## Next Ordered Step
 

@@ -205,6 +205,40 @@ CREATE TABLE IF NOT EXISTS selene_chat_messages (
 
 CREATE INDEX IF NOT EXISTS idx_selene_chat_messages_session ON selene_chat_messages(session_id, id);
 
+CREATE TABLE IF NOT EXISTS selene_test_impact_reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  receipt_id TEXT NOT NULL UNIQUE,
+  decision TEXT NOT NULL,
+  authorized INTEGER NOT NULL DEFAULT 0,
+  proposed_level TEXT NOT NULL,
+  selected_level TEXT NOT NULL,
+  purpose TEXT NOT NULL DEFAULT '',
+  review_json TEXT NOT NULL DEFAULT '{}',
+  qa_session_id INTEGER,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  used_at TEXT,
+  FOREIGN KEY (qa_session_id) REFERENCES selene_chat_sessions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_test_impact_receipt
+ON selene_test_impact_reviews(receipt_id, authorized);
+
+CREATE TABLE IF NOT EXISTS selene_authority_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  route_key TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  scope TEXT NOT NULL,
+  recipient TEXT NOT NULL DEFAULT '',
+  consent_record TEXT NOT NULL DEFAULT '',
+  mutation_class TEXT NOT NULL,
+  performed_mutation INTEGER NOT NULL DEFAULT 0,
+  event_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_authority_events_route
+ON selene_authority_events(route_key, created_at);
+
 CREATE TABLE IF NOT EXISTS selene_dialogue_workspaces (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   session_id INTEGER NOT NULL UNIQUE,

@@ -94,7 +94,7 @@ NLO v31 carries:
 - kind and confidence invariants into revision; and
 - the packet and realization into Voice handoff.
 
-Voice owns expression style but may not change thought kind, confidence,
+NLO and Voice coordinate expression, but Voice may not change thought kind, confidence,
 evidence, source, or scope.
 
 Inspectable routes:

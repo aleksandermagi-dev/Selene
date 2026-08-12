@@ -93,12 +93,12 @@ voice grading, model training, package, or reinstall is required.
 
 A SQLite-safe pre-preparation backup was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group12_prepare_20260808_135043.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group12_prepare_20260808_135043.sqlite3`
 
 A hash-verified checkpoint immediately before authorized teaching was created
 at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group12_teach_20260808_165104.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group12_teach_20260808_165104.sqlite3`
 
 Live teaching retained six concepts, held none, and did not change identity,
 personality, governance, personal memory, runtime recall, training, LoRA,

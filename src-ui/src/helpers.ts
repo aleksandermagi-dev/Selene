@@ -11,6 +11,12 @@ export function title(value: string) {
 
 export function tabDisplayName(value: string) {
   const labels: Record<string, string> = {
+    selene_chat_active_supervised: "resident Chat available",
+    selene_chat_supervised_paused: "resident Chat paused",
+    selene_chat_active_supervised_ready: "resident Chat available",
+    selene_supervised_speech_activation_approved: "resident Chat availability approved",
+    selene_supervised_speech_activation_already_active: "resident Chat already available",
+    selene_supervised_speech_activation_paused: "resident Chat paused",
     dashboard: "Evidence Dashboard",
     chat: "Chat",
     "selene-office": "Selene's Office",

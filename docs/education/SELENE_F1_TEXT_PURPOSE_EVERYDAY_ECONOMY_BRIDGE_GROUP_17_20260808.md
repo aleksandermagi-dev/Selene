@@ -71,7 +71,7 @@ identity, personality, governance, training, or autonomy change.
 
 The pre-teaching backup is:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group17_teach_20260808_203119.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group17_teach_20260808_203119.sqlite3`
 
 SHA-256:
 

@@ -83,6 +83,8 @@ def test_status_exposes_expression_only_contract():
     }
     assert status["creates_reasoning"] is False
     assert status["creates_facts"] is False
+    assert status["selects_attributable_upstream_thought"] is True
+    assert status["upstream_selection_is_new_reasoning"] is False
     _assert_bounded(status)
 
 
@@ -204,6 +206,64 @@ def test_structural_analogy_is_attributable_and_never_upgraded_to_proof():
     assert result["voice_may_change_thought_kind"] is False
 
 
+def test_attributable_structural_connection_can_be_selected_without_external_expression_flag():
+    result = build_generative_thought_expression(
+        {
+            "endogenous_expression_allowed": True,
+            "requested_kind": "analogy",
+            "structural_discovery": _discovery(),
+        }
+    )
+
+    assert result["active"] is True
+    assert result["explicit_expression_requested"] is False
+    assert result["endogenous_expression_allowed"] is True
+    assert result["expression_request_source"] == "attributable_upstream_organ"
+    assert result["selected_thought"]["origin"] == "structural_discovery"
+    assert result["thought_meaning_created_by_bridge"] is False
+
+
+def test_endogenous_warrant_cannot_activate_an_explicit_payload_candidate():
+    result = build_generative_thought_expression(
+        {
+            "endogenous_expression_allowed": True,
+            "thought_candidates": [
+                {
+                    "kind": "idea",
+                    "text": "A caller-supplied idea must not inherit an upstream organ warrant.",
+                    "why_it_matters": "Its ownership is different.",
+                    "current_context_supported": True,
+                }
+            ],
+        }
+    )
+
+    assert result["active"] is False
+    assert result["available_candidate_count"] == 1
+    assert result["selected_thought"] == {}
+
+
+def test_nlo_connects_a_distinct_structural_discovery_without_caller_expression_flag(tmp_path):
+    conn = _conn(tmp_path)
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": "What follows from the current comparison?",
+            "content_seed": "The current answer establishes the two local constraints.",
+            "structural_discovery": _discovery(),
+        },
+        record_run=False,
+    )
+
+    thought = result["generative_thought_expression"]
+    assert thought["active"] is True
+    assert thought["expression_request_source"] == "attributable_upstream_organ"
+    assert thought["selected_thought"]["origin"] == "structural_discovery"
+    assert thought["thought_meaning_created_by_bridge"] is False
+    assert result["revision"]["generative_thought_content_added"] is False
+    assert result["revision"]["generative_thought_surface_added"] is True
+
+
 def test_revisable_attempt_is_useful_without_failure_or_conclusion_framing():
     result = build_generative_thought_expression(
         {
@@ -251,7 +311,7 @@ def test_nlo_unifies_conversational_idea_without_duplicate_or_pressure(tmp_path)
     )
 
     thought = result["generative_thought_expression"]
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert thought["selected_kind"] == "idea"
     assert result["candidate_text"].count("reversible token-boundary change") == 1
     assert "express_one_attributable_idea_as_a_possibility" in result["discourse_plan"]["moves"]

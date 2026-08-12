@@ -11,6 +11,16 @@ that support its explanations.
 | [Education](education/README.md) | How does Selene acquire, integrate, express, study, and revisit knowledge? | Curriculum, teaching law, language development, Study, Learning Compass, and LEAs |
 | [Architecture](architecture/README.md) | How are Selene's organs, boundaries, routes, and interfaces constructed? | Core/Mind, intelligenceOS, organs, memory, conversation, transfer, and Tendril |
 
+The [Work Journal](journal/README.md) records how these shelves and systems
+developed over time, why major decisions were made, what changed our
+understanding, and where work currently resumes.
+
+The journal shelf also contains the
+[Contradiction and Safety-Guard Map](journal/SELENE_CONTRADICTION_AND_SAFETY_GUARD_MAP_20260811.md),
+which distinguishes legacy restrictions, incomplete connections,
+state-reporting conflicts, intentional boundaries, and real
+deployment-security gaps.
+
 For project vocabulary, see the [Terminology Ledger](TERMINOLOGY_LEDGER.md).
 For a short description of the whole project, return to the
 [Quick Overview](../QUICK_README.md).
@@ -46,11 +56,16 @@ Documentation should keep these claims distinct:
 
 The current plain-language capability baseline is
 [What Selene Can Currently Do](evidence/SELENE_CURRENT_CAPABILITIES_20260717.md).
+For date-sensitive curriculum, language, and Dream counts, use the
+[Current-State Index](evidence/SELENE_CURRENT_STATE_INDEX_20260811.md) rather
+than an older milestone record.
 
 ## Other Documentation Areas
 
 - [Archive](archive/README.md) contains superseded or historical material kept
   for provenance.
+- [Work Journal](journal/README.md) provides a chronological, evidence-linked
+  development history and a template for future checkpoints.
 
 ## Repository Boundaries
 

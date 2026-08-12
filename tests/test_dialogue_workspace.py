@@ -358,6 +358,33 @@ def test_dialogue_workspace_extracts_structured_correction_and_direct_requests(t
     ]
 
 
+def test_explicit_topic_shift_with_actually_is_not_a_correction_unit(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "Actually, separate question: how should uncertainty sound?"
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "contextual_follow_up": {
+                "detected": True,
+                "kind": "topic_shift",
+                "preserve_active_topic": False,
+            },
+            "conversation_events": [
+                {"role": "selene", "preview": "We were discussing memory sequencing."}
+            ],
+        },
+    )
+
+    assert result["pragmatics"]["correction_refinement"]["detected"] is False
+    assert all(
+        unit["kind"] != "correction"
+        for unit in result["pragmatics"]["utterance_units"]
+    )
+
+
 def test_dialogue_workspace_keeps_then_return_and_explain_as_a_direct_request(tmp_path):
     conn, session_id = _conn(tmp_path)
     text = (

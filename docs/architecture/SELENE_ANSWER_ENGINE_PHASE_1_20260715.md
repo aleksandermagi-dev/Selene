@@ -11,7 +11,9 @@ The Answer Engine coordinates answer-producing organs without becoming an
 identity, governance, memory, language, voice, or authority layer.
 
 Core/Mind retains route and law authority. Domain organs may later return
-bounded answer material. NLO structures language, and Voice owns expression.
+bounded answer material. NLO structures and contextually realizes language,
+Voice performs final expression-compatibility checks, and the Conversation
+Spine/Chat gate owns visible release under the coordinated expression contract.
 
 ## Answer Request Contract
 

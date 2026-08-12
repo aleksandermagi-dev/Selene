@@ -269,7 +269,7 @@ def test_nlo_uses_living_lexicon_on_structured_meaning_without_adding_content(tm
         record_run=False,
     )
 
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert result["meaning_packet"]["living_lexicon"]["selected_entry_count"] == 1
     assert result["semantic_frame"]["propositions"][0]["lexical_choices"]["predicate"] == [
         "preserve",

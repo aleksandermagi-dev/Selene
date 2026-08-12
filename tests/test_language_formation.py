@@ -120,7 +120,7 @@ def test_native_language_uses_structured_formation_when_supplied(tmp_path):
         },
     )
 
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert result["semantic_frame"]["formation_mode"] == "structured"
     assert "Uncertainty remains honest." in result["candidate_text"]
     assert "Selene can ask for the missing piece." in result["candidate_text"]

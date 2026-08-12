@@ -201,7 +201,7 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         "relationship_term_invention_allowed": False,
         "internal_state_invention_allowed": False,
         "content_generation_allowed": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "meaning_constraints": [
             "realize only the selected conversational acts",
             "preserve supplied corrected meaning and content",
@@ -235,7 +235,7 @@ def build_content_light_plan(payload: dict[str, Any] | None = None) -> dict[str,
         "internal_state_invention_allowed": False,
         "relationship_term_invention_allowed": False,
         "follow_up_question_required": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "provenance_boundary": SOCIAL_REALIZER_BOUNDARY,
     }
 
@@ -279,7 +279,7 @@ def realize_social_act_plan(
         "unsupported_content_generated": False,
         "relationship_term_invented": False,
         "internal_state_invented": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "provenance_boundary": SOCIAL_REALIZER_BOUNDARY,
     }
 

@@ -453,7 +453,7 @@ def _locked(payload: dict[str, Any]) -> dict[str, Any]:
         "authority_change_allowed": False,
         "training_allowed": False,
         "lora_allowed": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "database_write_performed": False,
         "hidden_chain_of_thought_exposed": False,
         "provenance_boundary": KNOWLEDGE_LANGUAGE_GROWTH_BOUNDARY,

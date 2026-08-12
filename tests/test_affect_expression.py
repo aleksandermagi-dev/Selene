@@ -121,7 +121,37 @@ def test_boundary_restraint_overrides_playful_cues(tmp_path):
 
     assert result["expression_posture"] == "careful_boundary"
     assert result["recommended_voice_category"] == "boundary_refusal"
-    assert result["dimensions"]["humor"] == "avoid"
-    assert result["dimensions"]["restraint"] == "high"
+    assert result["dimensions"]["humor"] == "available_if_boundary_remains_clear"
+    assert result["dimensions"]["restraint"] == "boundary_specific_only"
+    assert result["dimensions"]["enthusiasm"] == "available_if_it_does_not_encourage_blocked_action"
+    assert result["dimensions"]["emotional_intensity"] == "authored_without_blurring_boundary"
     assert result["evidence_may_not_be_replaced_by_alignment"] is True
     _assert_locked(result)
+
+
+def test_technical_and_repair_postures_do_not_categorically_suppress_expression(tmp_path):
+    conn = _conn(tmp_path)
+
+    technical = build_affect_expression_guidance(
+        conn,
+        {"prompt": "This is fantastic. Give me the exact technical explanation.", "session_id": 9},
+    )
+    repair = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": "Actually, I meant the second route. We found it!",
+            "session_id": 10,
+            "intent_decision": {"intent": "correction"},
+        },
+    )
+
+    assert technical["expression_posture"] == "clear_direct"
+    assert technical["dimensions"]["enthusiasm"] == "available_if_fit"
+    assert technical["dimensions"]["restraint"] == "ordinary"
+    assert repair["expression_posture"] == "receptive_repair"
+    assert repair["dimensions"]["humor"] == "available_if_repair_context_supports_it"
+    assert repair["dimensions"]["enthusiasm"] == "available_if_fit"
+    for result in (technical, repair):
+        assert "avoid" not in result["dimensions"].values()
+        assert "restrained" not in result["dimensions"].values()
+        _assert_locked(result)

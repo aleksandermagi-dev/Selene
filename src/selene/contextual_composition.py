@@ -219,7 +219,7 @@ def build_contextual_composition_plan(
         "filler_generation_allowed": False,
         "unsupported_example_generation_allowed": False,
         "follow_up_question_added": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "session_scoped_only": True,
         "visible_summary_only": True,
         "hidden_chain_of_thought_exposed": False,
@@ -315,7 +315,7 @@ def _result(
         "facts_added": False,
         "filler_added": False,
         "follow_up_question_added": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "provenance_boundary": CONTEXTUAL_COMPOSITION_BOUNDARY,
         **GUARDS,
     }
@@ -443,8 +443,6 @@ def _enthusiasm(prompt: str, dimensions: dict[str, Any]) -> str:
         return "bright_available"
     if humor == "available_not_required":
         return "lively_available"
-    if str(dimensions.get("restraint") or "") == "high":
-        return "restrained"
     return "ordinary"
 
 
@@ -452,8 +450,6 @@ def _emotional_intensity(prompt: str, dimensions: dict[str, Any]) -> str:
     lower = prompt.lower()
     if any(cue in lower for cue in ("grief", "died", "death", "scared", "crisis")):
         return "gentle_contained"
-    if str(dimensions.get("restraint") or "") == "high":
-        return "contained"
     if str(dimensions.get("pacing") or "") == "lively":
         return "lively"
     return "ordinary"

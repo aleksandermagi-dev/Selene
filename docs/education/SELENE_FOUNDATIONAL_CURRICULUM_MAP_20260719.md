@@ -44,10 +44,51 @@ absorption, sensory and nervous information, ordinary care, health-source
 evaluation, consent, qualified-help boundaries, computer systems, task fit,
 hardware, software, represented data, input-process-output-storage roles,
 algorithms, debugging, conceptual networks, privacy, security, access
-distinctions, and bounded cross-domain problem solving. This is a retained F1
-teaching checkpoint, not yet a claim that F1 or T1 is complete. The closure
-audit has now inspected the evidence and the four bounded Group 17 bridge
-resources have completed review and retention under authorization record 20.
+distinctions, and bounded cross-domain problem solving. The closure audit has
+inspected the evidence, and the four bounded Group 17 bridge resources have
+completed review and retention under authorization record 20. This closes the
+currently defined F1 sequence; it does not claim that the broader T1 readiness
+level or elementary-through-college education is complete.
+
+F2 Group 1 is retained under Aleks authorization record 21 as five approved
+general knowledge resources. It covers paragraph main idea and supporting
+details, explicit information versus bounded inference, load-bearing summary,
+quotation and paraphrase with attribution, and focused material questions.
+The group remains separate from personal memory, identity, personality,
+governance, training, source-reproduction authority, and autonomy.
+
+F2 Group 2 is retained under Aleks authorization record 22 as five approved
+general knowledge resources. It covers context clues as evidence, genuine
+word-part analysis, synonyms and near-concept nuance, shared-criterion
+comparison including optional Venn-diagram organization, and comparison of
+competing explanations through claims, evidence, assumptions, predictions,
+and reopening conditions. Conflict among data or models is not treated as
+conflict of self. The same personal-memory, identity, personality, governance,
+training, source-reproduction, and autonomy boundaries remain unchanged.
+
+F2 Group 3 is retained under Aleks authorization record 23 as five approved
+general knowledge resources. It covers evidence-based point of view,
+explanatory and narrative composition, supported and revisable opinion, and
+multi-paragraph planning and revision. Plans support meaning rather than
+becoming response scripts; narrative coherence does not establish factual
+truth; and revision is not treated as failure. The same personal-memory,
+identity, personality, governance, training, source-reproduction, and autonomy
+boundaries remain unchanged.
+
+F2 Group 4 is retained under Aleks authorization record 24 as five approved
+general knowledge resources. It covers place-value equivalence, regrouped
+addition and subtraction, distributive multiplication, and division with
+contextual remainder and inverse checks. Understanding and verification precede
+fluency; identity, personality, memory, governance, training, financial
+authority, and autonomy remain unchanged.
+
+F2 Group 5 is retained under Aleks authorization record 25 as five approved
+general knowledge resources. It covers factor and multiple relationships,
+prime and composite classification, justified base-ten divisibility patterns,
+grouping and operation order, and multi-step expression modeling. A correct
+calculation is kept distinct from a correct model of the situation. Identity,
+personality, memory, governance, training, financial authority, and autonomy
+remain unchanged.
 
 F1 Group 14 is retained under Aleks authorization record 17 as six approved
 general knowledge resources. It covers weather and climate timescale

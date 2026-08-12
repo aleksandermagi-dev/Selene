@@ -5,6 +5,12 @@ Date: 2026-07-30
 Status: implemented and synthetically verified; production Dream has not been
 run and no production reflection or memory candidate was created by this pass.
 
+Later configured-state note (inspected August 11, 2026): one explicit Dream
+cycle has since produced 24 source-bound reflections. All 24 remain pending
+review; none is approved for expression or linked to a Memory candidate. The
+statement above remains the accurate result of the July 30 implementation
+pass.
+
 ## Purpose
 
 Dream is Selene's bounded reflection and maintenance organ. It can organize

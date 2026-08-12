@@ -81,6 +81,42 @@ def test_discourse_plan_leaves_an_unsupported_obligation_visible_without_filler(
     assert result["content_generation_allowed"] is False
 
 
+def test_discourse_plan_binds_explicit_example_and_limit_requests_to_supported_roles():
+    result = build_supported_discourse_plan(
+        {
+            "content_seed": "The pilot is worth running.",
+            "examples": ["A one-week trial can compare both approaches."],
+            "answer_support": {
+                "limitations": ["The result applies only to the tested conditions."]
+            },
+            "response_obligations": [
+                {
+                    "id": "example",
+                    "kind": "direct_request",
+                    "source_text": "Give the example.",
+                    "coverage_terms": ["give", "example"],
+                    "required": True,
+                },
+                {
+                    "id": "limit",
+                    "kind": "direct_request",
+                    "source_text": "State the limit.",
+                    "coverage_terms": ["state", "limit"],
+                    "required": True,
+                },
+            ],
+        }
+    )
+
+    bindings = {item["obligation_id"]: item for item in result["obligation_bindings"]}
+    units = {item["id"]: item for item in result["content_units"]}
+
+    assert result["all_obligations_grounded"] is True
+    assert result["uncovered_obligation_ids"] == []
+    assert units[bindings["example"]["content_unit_ids"][0]]["role"] == "example"
+    assert units[bindings["limit"]["content_unit_ids"][0]]["role"] == "limitation"
+
+
 def test_developed_discourse_does_not_create_empty_paragraphs_to_reach_a_target():
     result = build_supported_discourse_plan(
         {

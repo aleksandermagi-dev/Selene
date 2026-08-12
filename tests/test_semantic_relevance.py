@@ -1,0 +1,145 @@
+from selene.semantic_relevance import (
+    evaluate_semantic_relevance,
+    semantic_relevance_status,
+)
+
+
+def _assert_locked(result):
+    assert result["memory_write_active"] is False
+    assert result["durable_memory_write"] is False
+    assert result["identity_change"] is False
+    assert result["personality_change"] is False
+    assert result["governance_change"] is False
+    assert result["authority_change"] is False
+    assert result["training_allowed"] is False
+    assert result["lora_allowed"] is False
+    assert result["autonomous_action_allowed"] is False
+    assert result["self_replication_allowed"] is False
+
+
+def test_status_describes_a_bounded_non_writing_gate():
+    result = semantic_relevance_status()
+
+    assert result["status"] == "semantic_relevance_gate_ready"
+    assert result["single_keyword_is_authority"] is False
+    assert result["open_ended_reasoning_preserved"] is True
+    assert result["bounded_prediction_and_hypothesis_preserved"] is True
+    _assert_locked(result)
+
+
+def test_generic_information_overlap_cannot_redirect_an_oven_question_to_health():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "What information would you need to predict the oven temperature?",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Reliable health information",
+                "domain": "health",
+                "concept_key": "reliable_health_information",
+                "central_claim": "Health information should be checked against reliable evidence.",
+                "principles": ["Use evidence before making a health claim."],
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+        }
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "approved_knowledge_has_only_peripheral_overlap"
+    assert "information" not in result["query_terms"]
+    _assert_locked(result)
+
+
+def test_named_subject_accepts_relevant_approved_knowledge_and_preserves_comparison_role():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "Which lever arrangement should feel easier, and why?",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Levers and fulcrums",
+                "domain": "physical science",
+                "concept_key": "lever_fulcrum_distance",
+                "central_claim": "A lever can reduce the effort needed to move a load.",
+                "relationships": [
+                    "Increasing the effort arm relative to the load arm changes mechanical advantage."
+                ],
+                "examples": ["Move the fulcrum closer to the load and compare the effort."],
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+        }
+    )
+
+    assert result["accepted"] is True
+    assert result["reason"] == "approved_knowledge_subject_aligned"
+    assert "lever" in result["strong_subject_overlap"]
+    assert {"comparison", "reason"}.issubset(set(result["requested_roles"]))
+    _assert_locked(result)
+
+
+def test_explicit_memory_recall_and_contextual_memory_have_different_thresholds():
+    candidate = {
+        "title": "Butterfly Cocoon button",
+        "summary": "The butterfly button opens Cocoon support from Selene's desktop.",
+    }
+    explicit = evaluate_semantic_relevance(
+        {
+            "prompt": "Do you remember the butterfly button?",
+            "source_class": "memory_reconstruction",
+            "candidate": candidate,
+            "intent_decision": {"intent": "memory_recall", "memory_recall_requested": True},
+        }
+    )
+    contextual = evaluate_semantic_relevance(
+        {
+            "prompt": "What should we do next?",
+            "source_class": "memory_reconstruction",
+            "candidate": candidate,
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+        }
+    )
+
+    assert explicit["accepted"] is True
+    assert contextual["accepted"] is False
+    assert contextual["reason"] == "contextual_memory_alignment_too_weak"
+
+
+def test_prediction_request_does_not_require_future_certainty_to_admit_relevant_ground():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "Based on the cloud and wind pattern, what would you predict next?",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Clouds wind and weather change",
+                "domain": "earth science",
+                "central_claim": "Observed cloud and wind changes can support a bounded weather prediction.",
+                "principles": ["A prediction remains revisable when conditions change."],
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+        }
+    )
+
+    assert result["accepted"] is True
+    assert "prediction" in result["requested_roles"]
+    assert "prediction" in result["candidate_roles"]
+    _assert_locked(result)
+
+
+def test_self_state_source_requires_an_actual_self_state_question():
+    comparison = evaluate_semantic_relevance(
+        {
+            "prompt": "Which lever would feel easier for you to move?",
+            "source_class": "self_state",
+            "candidate": {"text": "I feel calm and present."},
+            "intent_decision": {"intent": "reasoning", "self_state_requested": False},
+        }
+    )
+    check_in = evaluate_semantic_relevance(
+        {
+            "prompt": "How are you feeling today?",
+            "source_class": "self_state",
+            "candidate": {"text": "I feel calm and present."},
+            "intent_decision": {"intent": "self_state", "self_state_requested": True},
+        }
+    )
+
+    assert comparison["accepted"] is False
+    assert check_in["accepted"] is True

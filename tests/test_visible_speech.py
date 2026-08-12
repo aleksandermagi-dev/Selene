@@ -155,3 +155,62 @@ def test_spine_gate_skips_an_unrelated_allowed_candidate_before_release():
     assert result["selected_source_id"] == "garden_reasoning"
     assert result["inspected_candidates"][0]["reason"] == "candidate_lacks_distinctive_topic_alignment"
     assert result["conversation_spine_used"] is True
+
+
+def test_explicit_semantic_source_hold_is_respected_before_visible_release():
+    result = select_visible_speech_seed(
+        "What temperature should the oven be?",
+        [
+            {
+                "source_id": "contextual_approved_memory",
+                "source_class": "memory_reconstruction",
+                "text": "A remembered conversation about a garden plan.",
+                "semantic_relevance": {
+                    "accepted": False,
+                    "reason": "contextual_memory_alignment_too_weak",
+                },
+            },
+            {
+                "source_id": "ordinary_answer",
+                "source_class": "conversation",
+                "text": "I would need the recipe or the food and cooking method before naming a temperature.",
+            },
+        ],
+    )
+
+    assert result["selected_source_id"] == "ordinary_answer"
+    assert result["inspected_candidates"][0]["reason"] == "contextual_memory_alignment_too_weak"
+
+
+def test_release_holds_visible_candidate_when_a_required_part_is_unresolved():
+    result = inspect_visible_speech(
+        "The first part is supported, but the second part was omitted.",
+        prompt="Answer both parts.",
+        source_id="conversation",
+        response_coverage={
+            "obligation_count": 2,
+            "all_required_resolved": False,
+            "unresolved_release_count": 1,
+        },
+    )
+
+    assert result["release_allowed"] is False
+    assert result["coverage_checked"] is True
+    assert result["all_required_parts_resolved"] is False
+    assert "required_response_part_unresolved" in result["issues"]
+
+
+def test_release_allows_answered_or_explicitly_held_parts():
+    result = inspect_visible_speech(
+        "I can answer the first part. I can't support the second yet, and I'd need its measurement.",
+        prompt="Answer both parts.",
+        source_id="conversation",
+        response_coverage={
+            "obligation_count": 2,
+            "all_required_resolved": True,
+            "unresolved_release_count": 0,
+        },
+    )
+
+    assert result["release_allowed"] is True
+    assert result["all_required_parts_resolved"] is True

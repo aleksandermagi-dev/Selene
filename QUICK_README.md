@@ -81,9 +81,11 @@ Selene is not:
 
 Selene's architecture is substantial, but her education is still in progress.
 Her world knowledge and language breadth are smaller than those of a mature
-general language model. Long-form conversation, academic coverage, Dream, and
-future audible speech still need further teaching or development. External
-actions remain deliberately bounded.
+general language model. Long-form conversation, broader academic coverage,
+and future audible speech still need further teaching or development. Dream's
+source-bound lifecycle is implemented, although its reflections remain
+review-governed and its ordinary usefulness should be assessed proportionally
+over time. External actions remain deliberately bounded.
 
 ## The Short Version
 

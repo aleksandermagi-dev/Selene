@@ -112,6 +112,11 @@ def build_contextual_continuity_plan(
         if isinstance(payload.get("affect_expression_guidance"), dict)
         else {}
     )
+    conversation_continuity = (
+        payload.get("conversation_continuity")
+        if isinstance(payload.get("conversation_continuity"), dict)
+        else {}
+    )
 
     speaker = _speaker_scope(prompt, payload.get("speaker_context"))
     preferences = _transient_preferences(dialogue)
@@ -155,11 +160,13 @@ def build_contextual_continuity_plan(
         "speaker_scope": speaker,
         "transient_preferences": preferences,
         "callback_decision": callback,
+        "conversation_continuity": conversation_continuity,
         "shared_joke_context": shared_joke,
         "humor_decision": humor,
         "expression_handoff": {
             **preferences.get("directives", {}),
             "callback_mode": callback.get("mode"),
+            "continuity_mode": str(conversation_continuity.get("mode") or ""),
             "humor_posture": humor.get("posture"),
             "optional_guidance_only": True,
             "meaning_change_allowed": False,
@@ -367,9 +374,9 @@ def _humor_decision(
     if tender and not user_opened_play:
         posture = "hold"
         reason = "Tender content is present and the user did not open humor."
-    elif affect_humor in {"avoid", "avoid_unless_context_reopens"} and not user_opened_play:
+    elif affect_humor == "contextually_held_this_turn" and not user_opened_play:
         posture = "hold"
-        reason = "Current-session affect guidance calls for restraint."
+        reason = "The current conversation context holds humor for this turn without making it generally unavailable."
     elif explicit_humor_request:
         posture = "requested_once"
         reason = "The user explicitly requested one bounded humorous aside."

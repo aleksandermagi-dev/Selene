@@ -107,11 +107,11 @@ to verify this infrastructure.
 
 The configured database was snapshotted before preparation to:
 
-`C:\Users\aleks\AppData\Local\Selene\data\db-inspection-snapshots\selene_inspection_20260730_131834.sqlite3`
+`%LOCALAPPDATA%\Selene\data\db-inspection-snapshots\selene_inspection_20260730_131834.sqlite3`
 
 It was snapshotted again immediately before authorization and teaching to:
 
-`C:\Users\aleks\AppData\Local\Selene\data\db-inspection-snapshots\selene_pre_f1_group7_teaching_20260730_133150.sqlite3`
+`%LOCALAPPDATA%\Selene\data\db-inspection-snapshots\selene_pre_f1_group7_teaching_20260730_133150.sqlite3`
 
 Aleks then explicitly authorized and requested teaching of F1 Group 7.
 Authorization record 8 covers only

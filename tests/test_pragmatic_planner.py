@@ -202,6 +202,28 @@ def test_pragmatic_plan_treats_help_and_correction_as_bounded_not_factual_infere
     assert supported_correction["implicit_meaning"]["goal"] == "invite_correction_or_recheck"
 
 
+def test_yes_or_no_coverage_survives_one_bounded_acknowledgement():
+    plan = {
+        "response_obligations": [
+            {
+                "id": "labels-known",
+                "kind": "yes_or_no",
+                "source_text": "Do we actually know?",
+                "parent_source_text": "Do we actually know whether the labels are in the drawer?",
+                "coverage_terms": ["actually", "know"],
+                "required": True,
+            }
+        ]
+    }
+
+    coverage = evaluate_response_coverage(
+        plan,
+        "Got it. Not yet. We don't know whether the labels are in the drawer.",
+    )
+
+    assert coverage["all_required_addressed"] is True
+
+
 def test_collaborative_preface_does_not_become_a_second_content_obligation():
     prompt = (
         "Let's think through a practical idea together. "
@@ -690,3 +712,77 @@ def test_coverage_does_not_accept_unrelated_yes_correction_or_summary_scaffolds(
         summary_plan,
         "I can help with that.",
     )["all_required_addressed"] is False
+
+
+def test_release_resolution_distinguishes_supported_hold_from_answer():
+    plan = {
+        "response_obligations": [
+            {
+                "id": "orbit-reason",
+                "kind": "reason",
+                "source_text": "Why does the orbit remain stable?",
+                "coverage_terms": ["orbit", "stable"],
+                "required": True,
+            }
+        ]
+    }
+    candidate = (
+        "I can't support that reason reliably yet. "
+        "I would need a supported mechanism that explains the stable orbit."
+    )
+    composition = {
+        "parts": [
+            {
+                "obligation_id": "orbit-reason",
+                "epistemic_state": "missing_ground",
+                "text": candidate,
+                "missing_ground": "a supported mechanism or explanatory relationship",
+            }
+        ]
+    }
+
+    coverage = evaluate_response_coverage(
+        plan,
+        candidate,
+        epistemic_composition=composition,
+    )
+
+    assert coverage["all_required_addressed"] is False
+    assert coverage["all_required_resolved"] is True
+    assert coverage["resolved_count"] == 1
+    assert coverage["unresolved_release_count"] == 0
+    assert coverage["items"][0]["resolution_state"] == "supported_route"
+    assert coverage["items"][0]["explicitly_held"] is True
+    assert coverage["items"][0]["supported_route_present"] is True
+    assert coverage["explicit_holds_are_answers"] is False
+
+
+def test_release_resolution_does_not_let_unrelated_text_borrow_a_missing_ground_part():
+    plan = {
+        "response_obligations": [
+            {
+                "id": "orbit-reason",
+                "kind": "reason",
+                "source_text": "Why does the orbit remain stable?",
+                "coverage_terms": ["orbit", "stable"],
+                "required": True,
+            }
+        ]
+    }
+    coverage = evaluate_response_coverage(
+        plan,
+        "The library has several history shelves.",
+        epistemic_composition={
+            "parts": [
+                {
+                    "obligation_id": "orbit-reason",
+                    "epistemic_state": "missing_ground",
+                    "missing_ground": "a supported mechanism",
+                }
+            ]
+        },
+    )
+
+    assert coverage["all_required_addressed"] is False
+    assert coverage["all_required_resolved"] is False
+    assert coverage["items"][0]["resolution_state"] == "unresolved"

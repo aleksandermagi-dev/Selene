@@ -564,6 +564,12 @@ def poll_email(
                     "text": text,
                     "session_id": session_id,
                     "input_channel": "verizon_email_to_text",
+                    "speaker_envelope": {
+                        "claimed_speaker": "Aleks",
+                        "channel": "paired_email_gateway",
+                        "authentication_strength": "transport_filtered_not_cryptographic_authorship",
+                        "purpose": "conversation",
+                    },
                     "response_depth": "short",
                     "response_character_limit": MAX_GATEWAY_BODY_CHARS,
                 },

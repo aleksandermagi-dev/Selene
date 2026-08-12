@@ -135,7 +135,7 @@ retained checkpoint is now sixteen groups and 102 approved F1 foundations.
 
 The pre-preparation backup is:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group16_prepare_20260808_193500.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group16_prepare_20260808_193500.sqlite3`
 
 Its SHA-256 matched the live database at copy time:
 
@@ -143,7 +143,7 @@ Its SHA-256 matched the live database at copy time:
 
 The pre-teaching backup is:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group16_teach_20260808_194029.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group16_teach_20260808_194029.sqlite3`
 
 Its SHA-256 matched the live database immediately before authorization and
 teaching:

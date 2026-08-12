@@ -21,23 +21,15 @@ if (-not (Test-Path -LiteralPath $sourceDb)) {
 }
 
 New-Item -ItemType Directory -Force -Path $snapshotDir | Out-Null
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$target = Join-Path $snapshotDir "selene_inspection_$timestamp.sqlite3"
-
-Copy-Item -LiteralPath $sourceDb -Destination $target -Force
-
-$result = [ordered]@{
-    status = "db_snapshot_created"
-    source_db = (Resolve-Path -LiteralPath $sourceDb).Path
-    snapshot_path = (Resolve-Path -LiteralPath $target).Path
-    snapshot_size_bytes = [int64](Get-Item -LiteralPath $target).Length
-    created_at = (Get-Date).ToUniversalTime().ToString("o")
-    safety_note = "Open this copy in DB Browser. Do not casually edit the live Selene database."
-    repo_root = $repo
+$json = & python -m selene.continuity_backup create --db $sourceDb --out $snapshotDir
+if ($LASTEXITCODE -ne 0) {
+    throw "Continuity backup creation failed."
 }
+$result = $json | ConvertFrom-Json
+$target = [string]$result.snapshot_path
 
 if ($OpenFolder) {
     Start-Process -FilePath explorer.exe -ArgumentList "/select,`"$target`""
 }
 
-$result | ConvertTo-Json -Depth 4
+$result | ConvertTo-Json -Depth 8

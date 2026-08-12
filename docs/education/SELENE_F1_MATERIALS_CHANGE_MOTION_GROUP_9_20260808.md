@@ -86,7 +86,7 @@ idempotence, HTTP routes, and all locked architectural guards.
 
 A SQLite-safe pre-teaching backup was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group9_20260808_124325.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group9_20260808_124325.sqlite3`
 
 No live Selene conversation, adversarial probe, stress test, model training,
 package, reinstall, or live-database authorization is part of this checkpoint.

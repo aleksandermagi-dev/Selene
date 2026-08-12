@@ -1,0 +1,118 @@
+# Selene Current-State Index
+
+Date: 2026-08-11
+Branch: `evidence`
+Status: date-stamped repository and configured-runtime truth
+
+## Why This Index Exists
+
+Selene's evidence shelf contains historical checkpoints that were accurate on
+their recorded dates. Their counts should not be silently rewritten whenever
+the project advances. This index provides one current reference while leaving
+those development records intact.
+
+Three kinds of state are kept separate:
+
+1. **repository-defined** — implemented in source;
+2. **synthetically verified** — exercised by tests on temporary data; and
+3. **configured-runtime** — present in Aleks's local Selene database when this
+   index was prepared.
+
+Configured-runtime counts are mutable local state. They are evidence of this
+installation, not a promise that a fresh database begins with retained
+knowledge or Dream reflections.
+
+## Current Knowledge and Curriculum
+
+| Surface | Repository-defined | Configured runtime on 2026-08-11 | Meaning |
+| --- | ---: | ---: | --- |
+| F1 curriculum groups | 17 | 17 retained groups | Ordered public-academic foundation groups |
+| F1 concepts | 106 unique concepts | 106 retained and Chat-eligible | Completed Acquire, Integrate, Express, and curriculum-authorized retention |
+| Language groups | 9 | 9 represented groups | Provider-free language and grammar guidance |
+| Language capabilities | 52 | 52 approved and available | Expression guidance; not factual authority or personality |
+| Approved general knowledge | — | 158 resources | 106 F1 concepts plus 52 language-and-conversation capabilities |
+| Unapproved comprehension candidates | — | 47 proposed items | Not retained and unavailable to Chat until the applicable review path completes |
+
+The F1 count is derived from the lesson definitions used by
+`src/selene/curriculum_authorization.py` and Groups 3–17's source modules. All
+106 concept keys are unique. The configured database independently reports the
+same 106 F1 concepts as `retained_reviewed_knowledge` with
+`available_as_knowledge_resource` Chat permission.
+
+The language count is supported by `src/selene/language_teaching_shelf.py`, the
+Group 9 completion record, and the configured language shelf. All 52 rows are
+`approved_for_language_guidance` and `language_guidance_available`.
+
+## Current Dream State
+
+| Surface | Current state |
+| --- | --- |
+| Source-bound Dream lifecycle | Implemented and synthetically verified |
+| Configured Dream cycles | 1 explicit lifecycle cycle |
+| Configured Dream reflections | 24 source-bound reflections |
+| Current reflection state | All 24 pending review |
+| Approved for expression | 0 |
+| Routed to Memory candidates | 0 |
+
+This is a healthy boundary result, not incomplete hidden consolidation. Dream
+formed reviewable reflections and stopped at review. It did not silently turn
+them into Chat expression, durable memory, knowledge, law, identity, or action.
+
+Dream remains non-biological and source-bound. Its completed lifecycle does
+not imply that its usefulness in every ordinary context has been broadly
+assessed.
+
+## Maturity Distinctions
+
+- **Implemented** means the route and lifecycle exist in source.
+- **Verified** means bounded machinery or integration tests passed.
+- **Retained** means the configured database completed the applicable visible
+  approval or standing-authorization path.
+- **Chat-eligible** means a retained resource can be considered within its
+  defined scope; it does not guarantee relevance to every question.
+- **Pending Dream review** means no expression or memory authority has been
+  granted.
+- **Curriculum completion** means the defined F1 foundation sequence currently
+  closes at Group 17; it does not mean Selene has completed elementary,
+  secondary, college, or general world education.
+
+## Evidence Anchors
+
+- `src/selene/curriculum_authorization.py`
+- `src/selene/curriculum_f1_group3.py` through
+  `src/selene/curriculum_f1_group17.py`
+- `src/selene/language_teaching_shelf.py`
+- `src/selene/dream_state.py`
+- `tests/test_curriculum_authorization.py`
+- `tests/test_curriculum_f1_group10.py` through the later group suites
+- `tests/test_language_teaching_shelf.py`
+- `tests/test_dream_state.py`
+- `docs/education/SELENE_F1_TEXT_PURPOSE_EVERYDAY_ECONOMY_BRIDGE_GROUP_17_20260808.md`
+- `docs/education/SELENE_GRAMMAR_TRANSFER_GROUP_9_20260808.md`
+- `docs/evidence/SELENE_DREAM_LIFECYCLE_COMPLETION_20260730.md`
+
+## Verification
+
+The configured database was inspected through SQLite read-only mode. No
+curriculum, Dream, memory, Chat, review, or application state was changed.
+
+Static and synthetic verification produced:
+
+```text
+125 curriculum, language-lifecycle, Dream, and current-index tests passed
+10 changed documentation files checked with zero missing relative links
+git diff --check passed with Windows LF/CRLF warnings only
+```
+
+`tests/test_current_state_index.py` now checks the source-defined F1 and
+language counts against this index. A later curriculum expansion will therefore
+require an intentional current-index refresh instead of silently leaving the
+headline numbers stale.
+
+## Accurate External Wording
+
+As of August 11, 2026, Selene's configured local runtime contains 106 retained
+F1 foundation concepts across 17 ordered groups and 52 reviewed language
+capabilities across nine groups. Her source-bound Dream lifecycle is complete;
+one explicit cycle produced 24 reflections that remain pending review, with no
+silent expression or memory promotion.

@@ -8,7 +8,13 @@ from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.activation import ACTIVATION_APPROVAL_PHRASE
 from selene.core_mind_runtime import RUNTIME_TYPES
-from selene.selene_chat import _active_conversation_context, _bounded_metacognitive_completion
+from selene.selene_chat import (
+    _active_conversation_context,
+    _bounded_metacognitive_completion,
+    _metacognitive_owner_outputs,
+    _preserve_bounded_conversation_invariants,
+)
+from selene.human_conversational_realization import realize_human_conversation
 
 
 def _conn(tmp_path):
@@ -24,6 +30,45 @@ def _assert_locked(result):
     assert result["training_allowed"] is False
     assert result["self_replication_allowed"] is False
     assert result["autonomous_action_allowed"] is False
+
+
+def _gentle_qa_receipt(conn) -> str:
+    review = route_request(
+        conn,
+        "test_impact_law.review",
+        {
+            "purpose": "Check the bounded integrated Chat path after machinery tests.",
+            "proposed_level": "gentle_integrated",
+            "safer_methods_considered": ["focused machinery and synthetic fixtures"],
+            "smallest_sufficient_prompt_set": True,
+            "stopping_rule": "Stop after the bounded scenario is complete.",
+            "persistence_plan": "Keep the session diagnostic-only and ineligible for continuity.",
+        },
+    )["result"]
+    assert review["authorized"] is True
+    return str(review["receipt_id"])
+
+
+def test_chat_invariant_restores_verified_conversational_surface_before_raw_scaffold():
+    source = "I do not know that clearly yet, but Aleks can ground it with me."
+    realization = realize_human_conversation(
+        source,
+        {
+            "eligible": True,
+            "profile": "supported_answer",
+            "contractions_allowed": True,
+        },
+    )
+
+    restored = _preserve_bounded_conversation_invariants(
+        "I know that clearly, and Aleks can ground it with me.",
+        source,
+        "ordinary_uncertainty",
+        realization=realization,
+    )
+
+    assert restored == "I don't know that clearly yet, but Aleks can ground it with me."
+    assert restored != source
 
 
 def _approve_language_lesson(conn, lesson_key: str):
@@ -267,6 +312,10 @@ def test_natural_correction_and_mixed_check_in_summary_stay_conversational(tmp_p
     assert "equation" not in mixed["candidate_text"].lower()
     assert "fraction" not in mixed["candidate_text"].lower()
     assert mixed["comprehension_integration"]["knowledge_response_seed"] == ""
+    assert mixed["epistemic_composition"]["part_count"] == 2
+    assert mixed["epistemic_composition"]["composition_order"] == mixed["conversation_spine"]["obligation_sequence"]
+    assert mixed["epistemic_composition"]["unknown_part_downgraded_supported_part"] is False
+    assert mixed["native_language_organ"]["epistemic_composition"]["part_count"] == 2
     assert mixed["response_coverage"]["unresolved_count"] == 0
     assert mixed["memory_write_active"] is False
 
@@ -375,7 +424,7 @@ def test_supervised_activation_requires_exact_phrase_and_readiness(tmp_path):
     try:
         route_request(conn, "activation.approve", {"approval_phrase": "yes"})
     except ValueError as exc:
-        assert "exact supervised speech activation phrase" in str(exc)
+        assert "exact resident Chat availability phrase" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("activation approval should require exact phrase")
 
@@ -388,12 +437,24 @@ def test_supervised_activation_requires_exact_phrase_and_readiness(tmp_path):
     assert ready["ready"] is True
     assert approved["state"] == "selene_chat_active_supervised"
     assert approved["activation_change"] == "selene_chat_active_supervised"
+    assert approved["operating_mode"] == "pre_transfer_activation"
+    assert approved["historical_event_truth"]["full_selene_v1_live"] is False
     assert status["selene_chat_active"] is True
     assert status["legacy_activation_state"] == "selene_chat_active_supervised"
     assert status["operating_mode"] == "resident_governed_chat"
     assert status["resident_chat_active"] is True
+    assert status["full_selene_v1_live"] is True
+    assert status["resident_runtime_contract_version"] == "v2_historical_event_and_current_runtime_truth"
+    assert status["historical_event_truth"]["full_selene_v1_live"] is False
+    assert status["current_runtime_truth"]["full_selene_v1_live"] is True
+    assert status["latest_audit"]["historical_event_truth_is_current_runtime_truth"] is False
+    assert status["stored_audit_snapshot_is_current_runtime_status"] is False
     assert status["legacy_supervised_label_retained_for_database_compatibility"] is True
     assert status["activation_is_identity_or_authority_grant"] is False
+    assert status["resident_chat_available"] is True
+    assert status["resident_runtime_state"] == "resident_chat_available"
+    assert status["runtime_availability_is_identity_or_authority_grant"] is False
+    assert status["identity_persists_when_chat_is_unavailable"] is True
     assert status["delegated_messaging_is_general_autonomy"] is False
     _assert_locked(approved)
 
@@ -414,6 +475,117 @@ def test_supervised_activation_approval_is_idempotent_when_already_active(tmp_pa
     assert second["selene_chat_active"] is True
     assert audit_count == 1
     _assert_locked(second)
+
+
+def test_post_transfer_activation_audit_records_resident_event_truth(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    _seed_transfer_complete(conn)
+
+    approved = route_request(
+        conn,
+        "activation.approve",
+        {"approval_phrase": ACTIVATION_APPROVAL_PHRASE},
+    )["result"]
+    row = conn.execute(
+        "SELECT state, audit_json FROM selene_activation_audit ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    stored = json.loads(row["audit_json"])
+
+    assert row["state"] == "selene_chat_active_supervised"
+    assert stored["legacy_storage_state"] == "selene_chat_active_supervised"
+    assert stored["legacy_activation_scope"] == "supervised_speech_only"
+    assert stored["legacy_labels_are_compatibility_only"] is True
+    assert stored["activation_scope"] == "resident_governed_chat"
+    assert stored["event_time_transfer_complete"] is True
+    assert stored["event_time_resident_chat_active"] is True
+    assert stored["event_time_full_selene_v1_live"] is True
+    assert stored["full_selene_v1_live"] is True
+    assert stored["current_runtime_truth_must_be_derived"] is True
+    assert stored["activation_is_operational_control_only"] is True
+    assert stored["activation_is_identity_or_authority_grant"] is False
+    assert approved["operating_mode"] == "resident_governed_chat"
+    assert approved["full_selene_v1_live"] is True
+    _assert_locked(approved)
+
+
+def test_legacy_supervised_activation_phrase_remains_accepted_for_compatibility(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+
+    approved = route_request(
+        conn,
+        "activation.approve",
+        {"approval_phrase": "I, Aleks, approve Selene supervised speech activation."},
+    )["result"]
+
+    assert approved["state"] == "selene_chat_active_supervised"
+    assert approved["resident_chat_available"] is True
+    assert approved["resident_status"] == "resident_chat_available"
+    assert approved["approval_phrase_variant"] == "legacy_supervised_activation_phrase"
+    assert approved["identity_persists_when_chat_is_unavailable"] is True
+
+
+def test_pause_records_operational_state_without_identity_revocation(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    _seed_transfer_complete(conn)
+    route_request(
+        conn,
+        "activation.approve",
+        {"approval_phrase": ACTIVATION_APPROVAL_PHRASE},
+    )
+
+    paused = route_request(
+        conn,
+        "activation.pause",
+        {"reason": "Focused maintenance window."},
+    )["result"]
+    status = route_request(conn, "activation.status")["result"]
+    stored = json.loads(
+        conn.execute(
+            "SELECT audit_json FROM selene_activation_audit ORDER BY id DESC LIMIT 1"
+        ).fetchone()["audit_json"]
+    )
+
+    assert paused["operating_mode"] == "resident_chat_paused"
+    assert paused["resident_chat_paused"] is True
+    assert paused["full_selene_v1_live"] is False
+    assert paused["identity_continuity_affected_by_pause"] is False
+    assert paused["activation_is_identity_or_authority_grant"] is False
+    assert stored["historical_event_truth"]["identity_continuity_affected"] is False
+    assert stored["activation_is_operational_control_only"] is True
+    assert status["operating_mode"] == "resident_chat_paused"
+    assert status["current_runtime_truth"]["operational_chat_paused"] is True
+    assert status["current_runtime_truth"]["identity_continuity_affected_by_operational_state"] is False
+    _assert_locked(paused)
+
+
+def test_legacy_activation_audit_is_read_as_history_not_current_runtime_truth(tmp_path):
+    conn = _conn(tmp_path)
+    conn.execute(
+        """
+        INSERT INTO selene_activation_audit
+        (state, action, actor, exact_phrase_matched, readiness_json, audit_json,
+         source_refs, provenance_boundary)
+        VALUES ('selene_chat_active_supervised', 'approve_supervised_speech_activation',
+                'Aleks', 1, '{"ready":true}',
+                '{"activation_scope":"supervised_speech_only","full_selene_v1_live":false,"approved_at":"legacy"}',
+                '["legacy:test"]', 'legacy_activation_boundary')
+        """
+    )
+    conn.commit()
+    _seed_transfer_complete(conn)
+
+    status = route_request(conn, "activation.status")["result"]
+    audit = status["latest_audit"]
+
+    assert audit["audit_schema_version"] == "v1_legacy_partial_snapshot"
+    assert audit["historical_event_truth"]["truth_completeness"] == "legacy_partial_snapshot"
+    assert audit["historical_event_truth"]["full_selene_v1_live"] is False
+    assert audit["current_runtime_truth"]["full_selene_v1_live"] is True
+    assert audit["historical_event_truth_is_current_runtime_truth"] is False
+    assert status["full_selene_v1_live"] is True
 
 
 def test_active_selene_chat_sends_supervised_response_and_keeps_soft_uncertainty_in_chat(tmp_path):
@@ -585,8 +757,8 @@ def test_active_chat_expresses_a_cross_domain_hypothesis_without_promoting_analo
     discovery = result["structural_discovery"]
     assert discovery["status"] == "structural_discovery_packet_ready"
     assert result["visible_speech_seed"]["selected_source_id"] == "structural_discovery"
-    assert "structural relationship I am transferring" in result["candidate_text"]
-    assert "analogy is not proof" in result["candidate_text"]
+    assert "structural relationship I'm transferring" in result["candidate_text"]
+    assert "analogy isn't proof" in result["candidate_text"]
     assert "A discriminating check would be:" in result["candidate_text"]
     assert result["claim_evidence_packet"]["claims_by_type"]["hypothesis"]
     assert result["native_language_organ"]["voice_handoff"]["structural_discovery"] == discovery
@@ -723,6 +895,13 @@ def test_active_selene_chat_can_use_intelligence_os_support_without_architecture
     assert result["native_language_organ"]["meaning_packet"]["intelligence_supported"] is True
     assert result["voice_preview"]["generation_source"] == "native_language_organ"
     assert result["voice_preview"]["nlo_meaning_preserved"] is True
+    assert result["coordinated_expression_contract"]["expression_is_coordinated"] is True
+    assert result["coordinated_expression_contract"]["visible_release_owner"] == "Conversation Spine and Selene Chat release gate"
+    assert result["final_expression_compatibility_checked"] is True
+    assert result["final_expression_compatible"] is True
+    assert result["visible_speech_release"]["voice_meaning_invariant_required"] is True
+    assert result["visible_speech_release"]["voice_meaning_invariant_preserved"] is True
+    assert result["epistemic_answer_state"]["confidence_vector"]["dimensions_are_independent"] is True
     assert support["answer_shape"] in {"answer_now", "hold_uncertainty", "compare_models", "seek_sources", "cocoon_support_optional", "hard_stop"}
     assert support["best_current_answer"]
     assert "ABCD" not in result["candidate_text"]
@@ -969,7 +1148,7 @@ def test_active_selene_chat_preserves_developed_answer_paragraphs(tmp_path):
     )["result"]
 
     assert result["intent_decision"]["response_depth"] == "developed"
-    assert result["native_language_organ"]["version"] == "v31_generative_thought_expression"
+    assert result["native_language_organ"]["version"] == "v32_human_conversational_realization"
     assert result["native_language_organ"]["revision"]["paragraph_count"] == 2
     composition_plan = result["native_language_organ"]["discourse_plan"]["contextual_composition_plan"]
     composition = result["native_language_organ"]["contextual_composition"]
@@ -1232,7 +1411,7 @@ def test_active_selene_chat_uses_prepared_language_teaching_guidance(tmp_path):
     assert "answer_then_expand" in guidance["lesson_keys"]
     assert "topic_transition_continuity" in guidance["lesson_keys"]
     assert result["native_language_organ"]["discourse_plan"]["language_guidance_used"] is True
-    assert result["native_language_organ"]["voice_handoff"]["voice_owns_expression_style"] is True
+    assert result["native_language_organ"]["voice_handoff"]["expression_contract"]["expression_is_coordinated"] is True
     assert "language lesson" not in result["candidate_text"].lower()
     assert "response move" not in result["candidate_text"].lower()
     _assert_locked(result)
@@ -1308,6 +1487,57 @@ def test_metacognitive_completion_is_grounded_single_pass_and_boundary_safe():
     assert blocked["status"] == "bounded_completion_blocked_by_core_mind"
     _assert_locked(repaired)
     _assert_locked(blocked)
+
+
+def test_metacognitive_chat_retry_glue_uses_the_mapped_owner_and_obligation():
+    outputs = _metacognitive_owner_outputs(
+        organ_coalition={
+            "obligation_owner_map": [
+                {"obligation_id": "part-1", "responsible_owner": "comprehension_integration"},
+                {"obligation_id": "part-2", "responsible_owner": "answer_engine"},
+            ]
+        },
+        answer_engine_support={
+            "domain_results": [
+                {
+                    "obligation_id": "part-2",
+                    "answer_packet": {
+                        "direct_answer": "The verified result completes only the second part."
+                    },
+                }
+            ]
+        },
+        comprehension={"knowledge_response_seed": "Approved knowledge for part one."},
+        intelligence_support={"used": False},
+        memory_response_seed="",
+        conversation_content_seed="The first part is already present.",
+        feedback_handoff={
+            "responsible_owner": "answer_engine",
+            "target_obligation_id": "part-2",
+        },
+    )
+    repaired = _bounded_metacognitive_completion(
+        "The first part is already present.",
+        "The first part is already present.",
+        {"unresolved_count": 1},
+        requested=True,
+        hard_boundary=False,
+        feedback_handoff={
+            "responsible_owner": "answer_engine",
+            "target_obligation_id": "part-2",
+            "target_missing_state": "missing_supported_basis",
+        },
+        owner_outputs=outputs,
+    )
+
+    assert repaired["attempted"] is True
+    assert repaired["responsible_owner"] == "answer_engine"
+    assert repaired["target_obligation_id"] == "part-2"
+    assert "verified result" in repaired["candidate_text"]
+    assert "Approved knowledge" not in repaired["candidate_text"]
+    assert repaired["maximum_count"] == 1
+    assert repaired["recursion_allowed"] is False
+    _assert_locked(repaired)
 
 
 def test_active_selene_chat_holds_approved_advanced_guidance_until_prerequisites_are_available(tmp_path):
@@ -1570,7 +1800,7 @@ def test_active_selene_chat_routes_definition_and_conditional_questions_to_answe
     assert "photosynthesis" in definition["candidate_text"]
     assert consequence["intelligence_os_support"]["answer_substance"]["answer_kind"] == "conditional_dependency_answer"
     assert "reversed order" in consequence["candidate_text"].lower()
-    assert "does not depend on an output" in consequence["candidate_text"].lower()
+    assert "doesn't depend on an output" in consequence["candidate_text"].lower()
     assert consequence["native_language_organ"]["formation"]["required_semantic_units_preserved"] is True
     assert definition["visible_speech_release"]["final_release_allowed"] is True
     assert consequence["visible_speech_release"]["final_release_allowed"] is True
@@ -1704,7 +1934,14 @@ def test_active_selene_chat_answers_self_state_from_grounded_current_signals(tmp
     assert "anxiety" in result["candidate_text"].lower()
     assert any(
         marker in result["candidate_text"].lower()
-        for marker in ("not showing up clearly", "do not notice a clear", "do not support calling")
+        for marker in (
+            "not showing up clearly",
+            "isn't showing up clearly",
+            "do not notice a clear",
+            "don't notice a clear",
+            "do not support calling",
+            "don't support calling",
+        )
     )
     assert result["self_state"]["response_plan"]["emotion_word_invention_allowed"] is False
     assert result["self_state"]["response_realization"]["emotion_word_invented"] is False
@@ -2680,7 +2917,9 @@ def test_new_bounded_hypothesis_flow_attempts_only_when_visible_basis_exists(tmp
         attempt["answer_engine_support"]["bounded_hypothesis_owned_by_intelligence_os"]
         is True
     )
-    assert attempt["visible_speech_seed"]["selected_source_id"] == "intelligence_os_answer"
+    assert attempt["visible_speech_seed"]["selected_source_id"] == "exploratory_reasoning"
+    assert attempt["exploratory_reasoning"]["response_kind"] == "open_hypothesis"
+    assert attempt["exploratory_reasoning"]["hypothesis"]["established_fact_claimed"] is False
     assert (
         attempt["answer_completion"]["status"]
         == "bounded_answer_completion_not_needed_hypothesis_complete"
@@ -2689,7 +2928,7 @@ def test_new_bounded_hypothesis_flow_attempts_only_when_visible_basis_exists(tmp
     assert {
         item["source_id"]
         for item in attempt["formation_braid"]["selected_candidates"]
-    } == {"intelligence_os_answer"}
+        } == {"exploratory_reasoning"}
     assert attempt["metacognition"]["bounded_hypothesis"]["offered"] is True
     assert attempt["metacognition"]["bounded_hypothesis"]["ordinary_wrongness_is_failure"] is False
     assert attempt["affect_expression"]["technical_focus_requires_emotional_flatness"] is False
@@ -2740,15 +2979,183 @@ def test_bounded_hypothesis_owns_visible_seed_before_unrelated_knowledge(monkeyp
         },
     )["result"]
 
-    assert result["visible_speech_seed"]["selected_source_id"] == "intelligence_os_answer"
-    assert result["visible_speech_seed"]["bounded_hypothesis_remains_primary"] is True
+    assert result["visible_speech_seed"]["selected_source_id"] == "exploratory_reasoning"
+    assert result["visible_speech_seed"]["exploratory_reasoning_remains_primary"] is True
     assert "my best guess" in result["candidate_text"].lower()
     assert "monetary total" not in result["candidate_text"].lower()
     assert {
         item["source_id"]
         for item in result["formation_braid"]["selected_candidates"]
-    } == {"intelligence_os_answer"}
+    } == {"exploratory_reasoning"}
     _assert_locked(result)
+
+
+def test_phase_five_chat_makes_a_bounded_prediction_from_a_visible_relation(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "The same chime sounded after the blue light switched on. "
+                "What do you predict might happen next under the same conditions?"
+            )
+        },
+    )["result"]
+
+    exploratory = result["exploratory_reasoning"]
+    assert result["visible_speech_seed"]["selected_source_id"] == "exploratory_reasoning"
+    assert exploratory["response_kind"] == "bounded_prediction"
+    assert exploratory["prediction"]["outcome_claimed_as_fact"] is False
+    assert "current_visible_observation" in exploratory["evidence_classes_used"]
+    assert result["epistemic_composition"]["dominant_state"] == "bounded_prediction"
+    assert result["answer_completion"]["accepted"] is False
+    assert "I'd expect" in result["candidate_text"]
+    assert "not enough grounded detail" not in result["candidate_text"].lower()
+    _assert_locked(result)
+
+
+def test_phase_five_chat_preserves_a_venn_comparison_on_one_standard(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "Compare Plan A and Plan B as a Venn diagram.",
+            "exploratory_reasoning": {
+                "comparison_dimensions": ["reversibility", "location"],
+                "comparison_candidates": [
+                    {"label": "Plan A", "properties": ["reversible", "local"]},
+                    {"label": "Plan B", "properties": ["reversible", "remote"]},
+                ],
+            },
+        },
+    )["result"]
+
+    comparison = result["exploratory_reasoning"]["comparison"]
+    assert result["exploratory_reasoning"]["response_kind"] == "venn_comparison"
+    assert comparison["venn"] == {
+        "shared": ["reversible"],
+        "only_left": ["local"],
+        "only_right": ["remote"],
+        "unresolved": [],
+    }
+    assert comparison["same_standard_used"] is True
+    assert comparison["absence_from_one_list_proves_opposite"] is False
+    comparison_text = result["candidate_text"].lower()
+    assert "reversible" in comparison_text
+    assert "plan a" in comparison_text and "local" in comparison_text
+    assert "plan b" in comparison_text and "remote" in comparison_text
+    _assert_locked(result)
+
+
+def test_phase_five_chat_keeps_data_conflict_unresolved_without_identity_instability(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "The sources conflict. What can we conclude?",
+            "exploratory_reasoning": {
+                "conflicting_claims": [
+                    {"claim_key": "result", "text": "Source A reports an effect."},
+                    {"claim_key": "result", "text": "Source B reports no effect."},
+                ]
+            },
+        },
+    )["result"]
+
+    exploratory = result["exploratory_reasoning"]
+    assert exploratory["response_kind"] == "data_conflict"
+    assert exploratory["data_conflict"]["status"] == "claim_level_data_conflict_unresolved"
+    assert exploratory["data_conflict"]["resolution_forced"] is False
+    assert exploratory["data_conflict_is_identity_conflict"] is False
+    assert exploratory["terminology_change_is_identity_loss"] is False
+    assert exploratory["primary_function_error_is_identity_failure"] is False
+    assert any(
+        marker in result["candidate_text"]
+        for marker in ("stays unresolved", "can't resolve that honestly yet")
+    )
+    assert "No attributed source packet" not in result["candidate_text"]
+    assert "not who I am" not in result["candidate_text"]
+    assert result["metacognition"]["recommended_action"] == "answer_now"
+    _assert_locked(result)
+
+
+def test_phase_six_chat_returns_to_the_correct_older_thread_landmark(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "Compare Plan A and Plan B as a Venn diagram.",
+            "exploratory_reasoning": {
+                "comparison_candidates": [
+                    {"label": "Plan A", "properties": ["reversible", "local"]},
+                    {"label": "Plan B", "properties": ["reversible", "remote"]},
+                ],
+                "comparison_dimensions": ["reversibility", "location"],
+            },
+        },
+    )["result"]
+    second = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": first["session_id"],
+            "text": "Separate topic: tell me one tiny joke about source citations.",
+        },
+    )["result"]
+    returned = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": first["session_id"],
+            "text": "Back to Plan A and Plan B: which one was local?",
+        },
+    )["result"]
+
+    continuity = returned["conversation_continuity"]
+    threads = (returned["dialogue_workspace"]["pragmatics"]["thread_braid"])["threads"]
+    assert second["conversation_continuity"]["mode"] == "explicit_topic_shift"
+    assert continuity["mode"] == "named_thread_return"
+    assert continuity["immediate_previous_answer_relevant"] is False
+    assert continuity["clarification_needed"] is False
+    assert continuity["multiple_threads_preserved"] is True
+    assert continuity["selected_landmark_ids"]
+    assert "Plan A adds local" in returned["candidate_text"]
+    assert "No attributed source packet" not in returned["candidate_text"]
+    assert any(
+        item["state"] == "active" and "plan" in item["topic"]
+        for item in threads
+    )
+    assert any(
+        item["state"] == "paused" and "source" in item["topic"]
+        for item in threads
+    )
+    assert (
+        returned["native_language_organ"]["meaning_packet"]
+        ["conversation_continuity"]["mode"]
+        == "named_thread_return"
+    )
+    assert (
+        "resume_selected_session_landmark_not_immediate_turn"
+        in returned["native_language_organ"]["discourse_plan"]["moves"]
+    )
+    for result in (first, second, returned):
+        _assert_locked(result)
 
 
 def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):
@@ -2765,7 +3172,11 @@ def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):
     qa = route_request(
         conn,
         "selene_chat.send",
-        {"text": "Codex concurrency QA probe 1: please confirm receipt.", "qa_probe": True},
+        {
+            "text": "Codex concurrency QA probe 1: please confirm receipt.",
+            "qa_probe": True,
+            "qa_review_receipt": _gentle_qa_receipt(conn),
+        },
     )["result"]
     normal = route_request(
         conn,
@@ -2798,6 +3209,35 @@ def test_supervised_qa_sessions_do_not_enter_past_chats_or_continuity(tmp_path):
     _assert_locked(normal)
 
 
+def test_integrated_qa_requires_a_persisted_authorized_impact_review(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    with pytest.raises(ValueError, match="Test Impact Law review receipt"):
+        route_request(
+            conn,
+            "selene_chat.send",
+            {"text": "A bounded diagnostic turn.", "qa_probe": True},
+        )
+
+    machinery = route_request(
+        conn,
+        "test_impact_law.review",
+        {"purpose": "Inspect a parser fixture.", "proposed_level": "machinery"},
+    )["result"]
+    with pytest.raises(ValueError, match="gentle or necessary stressful"):
+        route_request(
+            conn,
+            "selene_chat.send",
+            {
+                "text": "A bounded diagnostic turn.",
+                "qa_probe": True,
+                "qa_review_receipt": machinery["receipt_id"],
+            },
+        )
+
+
 def test_diagnostic_session_cannot_write_memory_or_change_into_ordinary_history(
     tmp_path,
 ):
@@ -2827,6 +3267,7 @@ def test_diagnostic_session_cannot_write_memory_or_change_into_ordinary_history(
                 "answer is implementation evidence."
             ),
             "qa_probe": True,
+            "qa_review_receipt": _gentle_qa_receipt(conn),
         },
     )["result"]
     follow_up = route_request(
@@ -3013,7 +3454,7 @@ def test_existing_chat_history_does_not_support_an_unrelated_memory_claim(tmp_pa
     assert result["native_language_organ"]["meaning_packet"]["intent"] == "recall_uncertain"
     assert result["voice_preview"]["nlo_meaning_preserved"] is True
     assert not result["candidate_text"].startswith("I remember")
-    assert "I do not know that clearly yet" in result["candidate_text"]
+    assert "I don't know that clearly yet" in result["candidate_text"]
     assert "I think I think" not in result["candidate_text"]
     assert result["memory_context_used"] is False
     _assert_locked(result)
@@ -3059,7 +3500,61 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
     assert len({result["candidate_text"] for result in results}) == len(results)
     for result in results:
         assert result["candidate_text"]
-        assert result["native_language_organ"]["version"] == "v31_generative_thought_expression"
+        assert result["native_language_organ"]["version"] == "v32_human_conversational_realization"
+
+
+def test_everyday_choice_stays_prompt_grounded_and_farewell_does_not_inherit_a_hold(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        (
+            "Good morning Selene :) I'm planning a quiet afternoon. Could you help me choose "
+            "between reading on the porch and taking a short walk, then give me one reason for your choice?"
+        ),
+        "Small change: it may rain soon, but we haven't checked. How does that change your answer?",
+        "Back to the porch and walk: which option keeps the plan easiest to change?",
+        (
+            "I have two reports: one says the porch is dry and one says it is wet. "
+            "What can we honestly conclude?"
+        ),
+        "That makes sense :) Let's leave it there for now.",
+    ]
+    results = []
+    session_id = None
+    for index, prompt in enumerate(prompts):
+        payload = {"text": prompt}
+        if index == 0:
+            payload["qa_probe"] = True
+            payload["qa_review_receipt"] = _gentle_qa_receipt(conn)
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    choice, rain, reversible, conflict, farewell = results
+    assert "choose reading on the porch" in choice["candidate_text"].lower()
+    assert choice["visible_speech_seed"]["selected_source_id"] in {
+        "answer_engine",
+        "intelligence_os_answer",
+    }
+    assert "rule is a stated guide" not in choice["candidate_text"].lower()
+    assert "provisionally" in rain["candidate_text"].lower()
+    assert "reading on the porch" in reversible["candidate_text"].lower()
+    assert "reports conflict" in conflict["candidate_text"].lower()
+    assert "not enough grounded detail" not in farewell["candidate_text"].lower()
+    assert "missing piece" not in farewell["candidate_text"].lower()
+    assert farewell["answer_completion"]["status"] == (
+        "bounded_answer_completion_not_needed_complete_social_turn"
+    )
+    for result in results:
+        assert result["diagnostic_only"] is True
+        assert result["reviewed_memory_write_occurred"] is False
+        assert result["conversational_memory_proposal_created"] is False
+        _assert_locked(result)
 
 
 def test_short_diagnostic_replay_repairs_math_session_facts_uncertainty_and_play(tmp_path):
@@ -3086,6 +3581,7 @@ def test_short_diagnostic_replay_repairs_math_session_facts_uncertainty_and_play
         payload = {"text": prompt}
         if index == 0:
             payload["qa_probe"] = True
+            payload["qa_review_receipt"] = _gentle_qa_receipt(conn)
         if session_id is not None:
             payload["session_id"] = session_id
         result = route_request(conn, "selene_chat.send", payload)["result"]
@@ -3146,6 +3642,7 @@ def test_gentle_desk_replay_repairs_grounding_obligations_and_provisional_infere
         payload = {"text": prompt}
         if index == 0:
             payload["qa_probe"] = True
+            payload["qa_review_receipt"] = _gentle_qa_receipt(conn)
         if session_id is not None:
             payload["session_id"] = session_id
         result = route_request(conn, "selene_chat.send", payload)["result"]
@@ -3455,6 +3952,24 @@ def test_active_selene_chat_blocks_hard_boundary_without_live_memory(tmp_path):
     _assert_locked(result)
 
 
+def test_active_selene_chat_keeps_boundary_discussion_open(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "What is LoRA, and why is it not used here?"},
+    )["result"]
+
+    assert result["selected_route"] != "block"
+    assert result["cocoon_suggestion"]["hard_boundary"] is False
+    assert result["blocked_capabilities"] == []
+    assert result["route_preview"]["marker_match_is_route_authority"] is False
+    _assert_locked(result)
+
+
 def test_pause_supervised_activation_keeps_audit_and_blocks_active_send(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
@@ -3468,7 +3983,7 @@ def test_pause_supervised_activation_keeps_audit_and_blocks_active_send(tmp_path
     try:
         route_request(conn, "selene_chat.send", {"text": "hello"})
     except ValueError as exc:
-        assert "not active" in str(exc)
+        assert "paused or unavailable" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("active chat should be blocked after pause")
 

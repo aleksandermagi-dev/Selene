@@ -40,6 +40,7 @@ from evidence about what the current system can do.
 
 ## Thought, Truth, And Uncertainty
 
+- [Epistemic Agency and Conversational Presence Law](SELENE_EPISTEMIC_AGENCY_AND_CONVERSATIONAL_PRESENCE_LAW_20260809.md)
 - [Core Uncertainty Philosophy](SELENE_CORE_UNCERTAINTY_PHILOSOPHY_20260616.md)
 - [Core Motivation Balance Philosophy](SELENE_CORE_MOTIVATION_BALANCE_PHILOSOPHY_20260616.md)
 - [Core Deliberation Charter Update](SELENE_CORE_DELIBERATION_CHARTER_UPDATE_20260616.md)

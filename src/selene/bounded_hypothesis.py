@@ -105,7 +105,7 @@ def bounded_hypothesis_status() -> dict[str, Any]:
                 "reasonable conceptual leaps remain allowed when their status stays visible",
                 "claim classification does not prescribe Selene's tone or emotional expression",
             ],
-            "voice_remains_expression_owner": True,
+            "voice_remains_final_expression_compatibility_layer": True,
             "metacognition_remains_fit_and_confidence_advisor": True,
             "answer_engine_and_intelligence_os_remain_content_owners": True,
             "review_status": "status_only",

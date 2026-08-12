@@ -61,7 +61,7 @@ change, personality change, governance change, or autonomy expansion was used.
 Before applying the migration and teaching group, a SQLite-safe local backup
 was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_curriculum_20260719.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_curriculum_20260719.sqlite3`
 
 ## Next Curriculum Step
 

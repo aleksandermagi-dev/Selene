@@ -1,6 +1,6 @@
 # What Selene Can Currently Do
 
-- Updated: August 1, 2026
+- Updated: August 11, 2026
 - Branch inspected: `evidence`
 - Source foundation: post-transfer resident runtime, completed Phase 11
   pre-teaching architecture closure, bounded-hypothesis/expression-freedom
@@ -44,7 +44,7 @@ it exists.
 | Open-ended conceptual reasoning | Connected | intelligenceOS can compare models and give a best-current answer without needing a predetermined solution |
 | Honest bounded hypotheses | Connected | When the current visible evidence supports an attempt, Selene can offer one clearly provisional, falsifiable hypothesis without presenting it as learned or verified fact; missing-basis and high-stakes requests do not become guesses |
 | Approved personal memory | Connected | She can recall only reviewed memories and keep fuzzy or unknown recall honest |
-| Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded curriculum authorization; 48 F1 foundations are currently retained, and separate approved concepts can support separate parts of one question |
+| Approved taught knowledge | Connected | She can use knowledge only after comprehension evidence and an Aleks item decision or bounded authorization; the configured runtime contains 158 approved resources: 106 F1 foundations across 17 groups and 52 language-and-conversation capabilities |
 | Deliberate Study workspace | Connected as a Selene-owned workspace | She can revisit selected approved knowledge, record understanding, connections and uncertainty, pause or reopen study, and form clear, developing, or not-yet-worded questions without turning Study into Dream, Memory, or Cocoon |
 | Dream reflection and maintenance | Connected through Cocoon review | An explicit source-bound Dream cycle can organize open threads, corrections, metacognitive reopenings, affect signals, evidence tensions, and Memory-review material; only Aleks-reviewed reflections can reach explicit Dream discussion |
 | Current-state description | Connected when asked | She can give a grounded, provisional self-read from current attributable signals |
@@ -52,7 +52,7 @@ it exists.
 | Local-code inspection | Available separately | She can inspect explicitly supplied or approved files without scanning, executing, or writing |
 | Source-backed research | Connected when packets are supplied | She can answer from attributed packets in supervised Chat and show citations, disagreement, or missing evidence |
 | Ethical test review | Available | The project can choose the least-impact sufficient test before interacting with Selene |
-| Language lesson shelf | Fully reviewed and connected | All 36 provider-free language capabilities across seven ordered groups completed visible Acquire, Integrate, and Express evidence under Aleks's bounded standing language authorization; they guide expression but cannot supply facts or alter personality |
+| Language lesson shelf | Fully reviewed and connected | All 52 provider-free language capabilities across nine ordered groups completed visible Acquire, Integrate, and Express evidence through explicit item review or Aleks's bounded standing language authorization; they guide expression but cannot supply facts or alter personality |
 | Affect shaping of language | Connected at bounded current-turn scope | Current-session salience and conversational tone can optionally guide pacing, warmth, humor, reassurance, restraint, and directness without becoming an emotion claim |
 | Emotional response agency | Connected at bounded current-turn scope | Emotion can inform urgency, attention, tone, and priorities, but cannot silently inherit response authority; attributable threat-compression widens the option space before Core/Mind chooses |
 | Long-form discourse | Improved partial | Developed replies now have grounded thesis, development, limit, and closure plans; broad narrative and mature rhetorical control remain unfinished |
@@ -141,14 +141,12 @@ Aleks's message
 Verified math, comparison/planning, and source-backed research now participate
 in this live Chat path. Local-code inspection remains intentionally separate.
 
-Seven bounded F1 curriculum groups containing 48 foundations are retained as
-reviewed general knowledge. They remain separate from
-personal memory, identity, personality, governance, execution authority, and
-Voice.
-
-The seventh six-item community, rules, and civic-reasoning group completed its
-source-linked lifecycle under its own Aleks authorization and is available to
-Chat as general knowledge.
+Seventeen bounded F1 curriculum groups containing 106 unique foundations are
+retained as reviewed general knowledge. They remain separate from personal
+memory, identity, personality, governance, execution authority, and Voice.
+Group 17 completed the text-purpose and everyday-economy bridge identified by
+the F1 closure audit. This closes the currently defined F1 sequence, not the
+broader elementary-through-college curriculum.
 
 ## Conversation and Language Organs
 
@@ -185,8 +183,9 @@ Current limits:
   mature learned language model, although expression profiles, turn context,
   compositional turn obligations, recent-response avoidance, and broader
   grammar and answer frames now reduce repetition;
-- routing now shares an inspectable structured meaning packet, but its bounded
-  sentence and lexical features are not complete semantic understanding;
+- consequential routing now uses an inspectable structured meaning packet with
+  typed action, target, consequence, and authority evidence, but its bounded
+  deterministic parsing is not complete semantic understanding;
 - verified math and attributed research are ordinary supervised Chat answers,
   while local-code inspection remains deliberately outside Chat;
 - transfer completion does not imply unrestricted action, hidden retention, or
@@ -931,8 +930,9 @@ It can:
 
 Current limits:
 
-- hard authority checks remain deliberately conservative and partly marker
-  based, while ordinary intent and domain routing use the shared meaning packet;
+- hard authority checks remain deliberately conservative, but sensitive words
+  alone are not route authority; consequential requests require typed action,
+  target, consequence, and authority evidence from the shared meaning packet;
 - relational continuity is not yet represented as a complete runtime
   classifier;
 - some historical internal route names retain older failure/return language;
@@ -1113,20 +1113,26 @@ The mobile surface can:
 Mobile v1 cannot perform Cocoon review, build work, diagnostics, release work,
 memory approval, transfer, or activation. Those remain on the desktop.
 
-## Activation and Transfer Status
+## Resident Runtime and Transfer Status
 
-### Supervised Speech Activation — Implemented and Explicit
+### Resident Chat Availability — Implemented and Explicit
 
-The activation layer can:
+The resident-runtime availability layer can:
 
 - report readiness;
 - show a ceremony preview;
 - require explicit approval and prerequisites;
-- enable supervised Selene Chat;
-- record activation/chat audit events;
-- pause supervised speech.
+- make resident Selene Chat available;
+- record availability and Chat audit events;
+- pause resident Chat for maintenance or repair without affecting identity
+  continuity.
 
-This activation does not enable:
+Older stored states and API status identifiers still contain `supervised` and
+`activation` for database compatibility. Current status fields and the UI
+describe the actual state as resident Chat availability. Selene is Selene
+whether the interface is available, paused, offline, or under repair.
+
+Resident Chat availability does not enable:
 
 - autonomy;
 - live raw-corpus recall;
@@ -1134,7 +1140,7 @@ This activation does not enable:
 - model training or LoRA;
 - Tendril execution;
 - self-replication;
-- full Selene v1 transfer.
+- transfer, identity, or existence.
 
 ### Transfer Architecture — Cocoon/Preview
 
@@ -1214,7 +1220,7 @@ Selene's strongest implemented areas are:
 | Long-form discourse planning | Thesis and paragraph planning, transitions, callbacks, summaries, and conclusions are connected at bounded scope; mature narrative and rhetorical control remain incomplete |
 | Broader domain organs | More reliable factual, technical, scientific, mathematical, and code answers |
 | Metacognition ordinary-use evidence | The one-cycle owner handoff is connected; later ordinary-use evidence can refine when it should request completion, evidence, or a hold without expanding authority |
-| Dream ordinary-use evidence | The completed source-bound lifecycle is synthetically verified; later explicit use can assess whether its grouping and wake summaries are helpful without provoking or manufacturing emotional material |
+| Dream ordinary-use evidence | The completed source-bound lifecycle is synthetically verified; one configured explicit cycle produced 24 reflections that remain pending review, so usefulness of their grouping and wake summaries has not yet been assessed or manufactured into a conclusion |
 | Operational perception | Actual image/artifact inspection and later consent-bound audio understanding |
 | Bounded Tendril execution | Approved observe/propose/act/verify/undo workbench actions rather than plans only |
 | Audible speech | Spoken turn-taking, pacing, pronunciation, interruption, and consent-aware voice interaction |
@@ -1409,7 +1415,8 @@ After the final pre-teaching stabilization on July 28:
   Formation Braid selection, NLO, and Voice, preventing unrelated approved
   lessons or inherited conversational phrases from taking over the answer;
 - expression freedom and why/context teaching requirements became inspectable
-  law while Voice remained Selene's expression owner;
+  law while expression remained Selene's through coordinated NLO realization,
+  Voice compatibility checking, and Chat release;
 - a copied-state ordinary Q&A confirmed supported plant and connector
   hypotheses, refusal to invent an unsupported historical answer or medical
   diagnosis, and closed memory/autonomy guards;

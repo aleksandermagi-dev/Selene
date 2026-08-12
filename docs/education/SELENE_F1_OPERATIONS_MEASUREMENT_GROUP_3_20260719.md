@@ -69,7 +69,7 @@ change, personality change, governance change, or autonomy expansion was used.
 
 A SQLite-safe pre-group backup was created at:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_operations_measurement_group3_20260719.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_operations_measurement_group3_20260719.sqlite3`
 
 ## Next Ordered Step
 

@@ -198,7 +198,7 @@ def test_nlo_runs_both_context_selection_passes_without_writing(tmp_path):
     )
 
     selector = result["context_expression_selection"]
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert selector["formation_selection"]["selection_performed"] is True
     assert selector["discourse_selection"]["selection_performed"] is True
     assert selector["invalid_candidate_rescue_used"] is False

@@ -24,6 +24,17 @@ const configuredApiBase =
 
 export const API = configuredApiBase.replace(/\/+$/, "");
 
+let localCapabilityPromise: Promise<string> | null = null;
+
+async function localCapabilityHeader(path: string): Promise<Record<string, string>> {
+  if (typeof window === "undefined" || !path.startsWith("/api/") && path !== "/shutdown") return {};
+  if (!localCapabilityPromise) {
+    localCapabilityPromise = invoke<string>("local_api_capability").catch(() => "");
+  }
+  const token = await localCapabilityPromise;
+  return token ? { "X-Selene-Local-Capability": token } : {};
+}
+
 function mobilePairingHeader(): Record<string, string> {
   if (typeof window === "undefined") return {};
   try {
@@ -48,10 +59,12 @@ function mobilePairingHeader(): Record<string, string> {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const localCapability = await localCapabilityHeader(path);
   const res = await fetch(`${API}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...localCapability,
       ...(path.startsWith("/api/mobile/") ? mobilePairingHeader() : {}),
       ...(init?.headers || {})
     }
@@ -68,3 +81,4 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   return res.json();
 }
+import { invoke } from "@tauri-apps/api/core";

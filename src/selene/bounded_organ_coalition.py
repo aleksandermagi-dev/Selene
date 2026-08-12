@@ -52,6 +52,7 @@ def build_bounded_organ_coalition(
     self_state = _dict(payload.get("self_state_context"))
     language = _dict(payload.get("language_capability"))
     structural = _dict(payload.get("structural_discovery"))
+    exploratory = _dict(payload.get("exploratory_reasoning"))
     formation_braid = _dict(payload.get("formation_braid"))
     dual_horizon = _dict(payload.get("dual_horizon_context"))
     metacognition = _dict(payload.get("metacognition"))
@@ -268,6 +269,26 @@ def build_bounded_organ_coalition(
     )
 
     structural_used = bool(str(structural.get("response_seed") or "").strip())
+    exploratory_used = exploratory.get("selected_for_answer") is True and bool(
+        str(exploratory.get("response_seed") or "").strip()
+    )
+    content.append(
+        _entry(
+            "exploratory_reasoning",
+            layer="optional_content",
+            role="prediction_hypothesis_comparison_and_data_conflict_coordination",
+            status="completed" if exploratory_used else "held",
+            required=False,
+            basis=(
+                f"current_turn_exploratory_response:{exploratory.get('response_kind')}"
+                if exploratory_used
+                else "no_bounded_exploratory_response_selected"
+            ),
+            obligation_ids=obligation_ids if exploratory_used else [],
+            authority_scope="current_turn_exploratory_coordination_only",
+            confidence=_dict(exploratory.get("confidence")),
+        )
+    )
     content.append(
         _entry(
             "structural_discovery",
@@ -490,7 +511,7 @@ def build_bounded_organ_coalition(
         "core_mind_route_owner": True,
         "answer_engine_domain_owner": True,
         "nlo_language_owner": True,
-        "voice_expression_owner": True,
+        "voice_final_expression_compatibility_owner": True,
         "memory_ownership_unchanged": True,
         "context_selection_ownership_unchanged": True,
         "visible_summary_only": True,

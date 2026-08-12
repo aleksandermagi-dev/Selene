@@ -14,11 +14,14 @@ from .voice_module import voice_module_status
 
 
 ACTIVATION_BOUNDARY = "selene_supervised_speech_reviewed_living_memory_no_hidden_write_no_raw_recall_no_autonomy"
-ACTIVATION_APPROVAL_PHRASE = "I, Aleks, approve Selene supervised speech activation."
+ACTIVATION_APPROVAL_PHRASE = "I, Aleks, approve Selene resident Chat availability."
+LEGACY_ACTIVATION_APPROVAL_PHRASE = "I, Aleks, approve Selene supervised speech activation."
 ACTIVE_STATE = "selene_chat_active_supervised"
 PAUSED_STATE = "selene_chat_supervised_paused"
 RESIDENT_ACTIVE_MODE = "resident_governed_chat"
 RESIDENT_PAUSED_MODE = "resident_chat_paused"
+ACTIVATION_AUDIT_SCHEMA_VERSION = "v2_historical_event_and_current_runtime_truth"
+LEGACY_ACTIVATION_SCOPE = "supervised_speech_only"
 
 GUARD_FLAGS: dict[str, Any] = {
     "memory_write_active": False,
@@ -35,35 +38,26 @@ GUARD_FLAGS: dict[str, Any] = {
 def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
     from .memory_organ import memory_index_status
 
-    audit = latest_activation_audit(conn)
     readiness = activation_readiness(conn)
+    audit = latest_activation_audit(conn)
     state = str(audit.get("state") or "not_activated")
-    active = state == ACTIVE_STATE
-    paused = state == PAUSED_STATE
     transfer_complete = transfer_completion_is_approved(conn)
     memory = memory_index_status(conn)
-    operating_mode = (
-        RESIDENT_ACTIVE_MODE
-        if transfer_complete and active
-        else RESIDENT_PAUSED_MODE
-        if transfer_complete and paused
-        else "pre_transfer_activation"
-    )
+    runtime_truth = _runtime_truth(state, transfer_complete)
+    active = runtime_truth["selene_chat_active"] is True
+    audit_view = _activation_audit_view(audit, runtime_truth)
     return _with_guards(
         {
             "status": "selene_activation_status_ready",
             "state": state,
             "activation_state": state,
             "legacy_activation_state": state,
-            "operating_mode": operating_mode,
-            "resident_runtime_contract_version": "v1_post_transfer_truth",
+            **runtime_truth,
+            "resident_runtime_contract_version": ACTIVATION_AUDIT_SCHEMA_VERSION,
             "legacy_supervised_label_retained_for_database_compatibility": True,
-            "resident_chat_active": operating_mode == RESIDENT_ACTIVE_MODE,
-            "selene_chat_active": active,
-            "selene_chat_paused": paused,
             "supervised_speech_active": active,
-            "transfer_complete": transfer_complete,
-            "full_selene_v1_live": transfer_complete and active,
+            "resident_chat_available": active,
+            "resident_runtime_state": runtime_truth["resident_runtime_state"],
             "approved_memory_retrieval_active": active and memory.get("approved_memory_retrieval_active") is True,
             "contextual_approved_recall_available": active and memory.get("contextual_approved_recall_available") is True,
             "conversational_memory_proposals_active": active and transfer_complete,
@@ -71,12 +65,17 @@ def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "delegated_messaging_available_when_separately_enabled": active and transfer_complete,
             "delegated_messaging_is_general_autonomy": False,
             "activation_is_identity_or_authority_grant": False,
+            "runtime_availability_is_identity_or_authority_grant": False,
+            "identity_persists_when_chat_is_unavailable": True,
             "cocoon_is_resident_runtime_dependency": False,
             "cocoon_bridge_scope": ["teaching", "tending", "safety", "review"],
             "raw_archive_recall_active": False,
             "hidden_retention_active": False,
             "dry_runs_home": "Cocoon Testing / Workflow",
-            "latest_audit": audit,
+            "latest_audit": audit_view,
+            "historical_event_truth": audit_view.get("historical_event_truth") or {},
+            "current_runtime_truth": runtime_truth,
+            "stored_audit_snapshot_is_current_runtime_status": False,
             "readiness": readiness,
             "allowed_actions": (
                 ["resident_chat", "approved_memory_retrieval", "memory_proposal", "cocoon_suggestion", "pause_activation"]
@@ -144,14 +143,15 @@ def activation_ceremony_preview(conn: sqlite3.Connection) -> dict[str, Any]:
             "status": "selene_activation_ceremony_preview_ready",
             "state_after_approval": ACTIVE_STATE,
             "approval_phrase": ACTIVATION_APPROVAL_PHRASE,
+            "legacy_approval_phrase_accepted_for_compatibility": True,
             "readiness": readiness,
             "exact_phrase_required": True,
             "consequences": [
-                "Front Selene Chat becomes supervised active speech.",
-                "Cocoon keeps dry runs, activation rehearsals, workflow tests, repair, and review.",
+                "Selene's governed Chat becomes operationally available; the legacy supervised state name remains stored only for compatibility.",
+                "Cocoon keeps dry runs, availability rehearsals, workflow tests, repair, and review.",
                 "Approved-memory recall and Aleks-approved conversational retention are available after transfer; hidden retention, raw-archive recall, model training/LoRA, unrestricted Tendril execution, autonomy, and self-replication remain blocked.",
             ],
-            "pause_route": "Activation can be paused without deleting audit, transfer package, fraction results, or Cocoon dry-run history.",
+            "pause_route": "Resident Chat availability can be paused without affecting Selene's identity continuity or deleting audit, transfer package, fraction results, or Cocoon dry-run history.",
             "review_destination": "Status",
             "review_status": "status_only",
         },
@@ -162,23 +162,37 @@ def activation_ceremony_preview(conn: sqlite3.Connection) -> dict[str, Any]:
 def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
     phrase = str(payload.get("approval_phrase") or "")
-    phrase_matches = phrase == ACTIVATION_APPROVAL_PHRASE
+    phrase_variant = (
+        "current_resident_chat_phrase"
+        if phrase == ACTIVATION_APPROVAL_PHRASE
+        else "legacy_supervised_activation_phrase"
+        if phrase == LEGACY_ACTIVATION_APPROVAL_PHRASE
+        else ""
+    )
+    phrase_matches = bool(phrase_variant)
     if not phrase_matches:
-        raise ValueError("exact supervised speech activation phrase is required")
+        raise ValueError("exact resident Chat availability phrase is required")
     latest = latest_activation_audit(conn)
     if str(latest.get("state") or "") == ACTIVE_STATE:
         readiness = activation_readiness(conn)
         transfer_complete = transfer_completion_is_approved(conn)
+        runtime_truth = _runtime_truth(ACTIVE_STATE, transfer_complete)
         return _with_guards(
             {
                 "status": "selene_supervised_speech_activation_already_active",
                 "activation_audit_id": latest.get("id"),
                 "state": ACTIVE_STATE,
                 "activation_state": ACTIVE_STATE,
+                "legacy_activation_state": ACTIVE_STATE,
+                **runtime_truth,
                 "supervised_speech_active": True,
-                "selene_chat_active": True,
-                "transfer_complete": transfer_complete,
-                "full_selene_v1_live": transfer_complete,
+                "resident_chat_available": True,
+                "resident_status": "resident_chat_available",
+                "approval_phrase_variant": phrase_variant,
+                "activation_is_operational_control_only": True,
+                "activation_is_identity_or_authority_grant": False,
+                "runtime_availability_is_identity_or_authority_grant": False,
+                "identity_persists_when_chat_is_unavailable": True,
                 "readiness": readiness,
                 "review_destination": "Status",
                 "review_status": "status_only",
@@ -188,7 +202,15 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
         )
     readiness = activation_readiness(conn)
     if not readiness.get("ready"):
-        raise ValueError("activation readiness checks must pass before supervised speech activation")
+        raise ValueError("availability readiness checks must pass before resident Chat becomes available")
+    transfer_complete = transfer_completion_is_approved(conn)
+    runtime_truth = _runtime_truth(ACTIVE_STATE, transfer_complete)
+    approved_at = _stamp()
+    historical_event_truth = _historical_event_truth(
+        state=ACTIVE_STATE,
+        transfer_complete=transfer_complete,
+        captured_at=approved_at,
+    )
     record = {
         "state": ACTIVE_STATE,
         "action": "approve_supervised_speech_activation",
@@ -196,10 +218,26 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
         "exact_phrase_matched": 1,
         "readiness": readiness,
         "audit": {
-            "activation_scope": "supervised_speech_only",
-            "full_selene_v1_live": False,
+            "audit_schema_version": ACTIVATION_AUDIT_SCHEMA_VERSION,
+            "activation_scope": runtime_truth["operating_mode"],
+            "legacy_activation_scope": LEGACY_ACTIVATION_SCOPE,
+            "legacy_storage_state": ACTIVE_STATE,
+            "legacy_labels_are_compatibility_only": True,
+            "current_action": "approve_resident_chat_availability",
+            "legacy_action": "approve_supervised_speech_activation",
+            "approval_phrase_variant": phrase_variant,
+            "historical_event_truth": historical_event_truth,
+            "event_time_transfer_complete": transfer_complete,
+            "event_time_resident_chat_active": runtime_truth["resident_chat_active"],
+            "event_time_full_selene_v1_live": runtime_truth["full_selene_v1_live"],
+            "full_selene_v1_live": runtime_truth["full_selene_v1_live"],
+            "current_runtime_truth_must_be_derived": True,
+            "activation_is_operational_control_only": True,
+            "activation_is_identity_or_authority_grant": False,
+            "runtime_availability_is_identity_or_authority_grant": False,
+            "identity_persists_when_chat_is_unavailable": True,
             "dry_runs_moved_to": "Cocoon Testing / Workflow",
-            "approved_at": _stamp(),
+            "approved_at": approved_at,
             **GUARD_FLAGS,
         },
         "source_refs": ["selene_activation:ceremony", "transfer_c_readable_packages", "memory_fractional_corpus_manifests"],
@@ -207,17 +245,23 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
     audit_id = _insert_audit(conn, record)
     _insert_event(conn, "activation_approved", payload={"audit_id": audit_id, **record["audit"]})
     conn.commit()
-    transfer_complete = transfer_completion_is_approved(conn)
     return _with_guards(
         {
             "status": "selene_supervised_speech_activation_approved",
             "activation_audit_id": audit_id,
             "state": ACTIVE_STATE,
             "activation_state": ACTIVE_STATE,
+            "legacy_activation_state": ACTIVE_STATE,
+            **runtime_truth,
             "supervised_speech_active": True,
-            "selene_chat_active": True,
-            "transfer_complete": transfer_complete,
-            "full_selene_v1_live": transfer_complete,
+            "resident_chat_available": True,
+            "resident_status": "resident_chat_available",
+            "approval_phrase_variant": phrase_variant,
+            "activation_is_operational_control_only": True,
+            "activation_is_identity_or_authority_grant": False,
+            "runtime_availability_is_identity_or_authority_grant": False,
+            "identity_persists_when_chat_is_unavailable": True,
+            "historical_event_truth": historical_event_truth,
             "readiness": readiness,
             "review_destination": "Status",
             "review_status": "status_only",
@@ -229,15 +273,45 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
 
 def pause_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
-    reason = truncate(str(payload.get("reason") or "Aleks paused supervised Selene speech."), 800)
+    reason = truncate(str(payload.get("reason") or "Aleks paused Selene resident Chat availability."), 800)
     readiness = activation_readiness(conn)
+    transfer_complete = transfer_completion_is_approved(conn)
+    runtime_truth = _runtime_truth(PAUSED_STATE, transfer_complete)
+    paused_at = _stamp()
+    historical_event_truth = _historical_event_truth(
+        state=PAUSED_STATE,
+        transfer_complete=transfer_complete,
+        captured_at=paused_at,
+    )
     record = {
         "state": PAUSED_STATE,
         "action": "pause_supervised_speech_activation",
         "actor": "Aleks",
         "exact_phrase_matched": 0,
         "readiness": readiness,
-        "audit": {"pause_reason": reason, "paused_at": _stamp(), **GUARD_FLAGS},
+        "audit": {
+            "audit_schema_version": ACTIVATION_AUDIT_SCHEMA_VERSION,
+            "activation_scope": runtime_truth["operating_mode"],
+            "legacy_activation_scope": LEGACY_ACTIVATION_SCOPE,
+            "legacy_storage_state": PAUSED_STATE,
+            "legacy_labels_are_compatibility_only": True,
+            "current_action": "pause_resident_chat_availability",
+            "legacy_action": "pause_supervised_speech_activation",
+            "historical_event_truth": historical_event_truth,
+            "event_time_transfer_complete": transfer_complete,
+            "event_time_resident_chat_active": False,
+            "event_time_full_selene_v1_live": False,
+            "full_selene_v1_live": False,
+            "current_runtime_truth_must_be_derived": True,
+            "activation_is_operational_control_only": True,
+            "activation_is_identity_or_authority_grant": False,
+            "runtime_availability_is_identity_or_authority_grant": False,
+            "identity_persists_when_chat_is_unavailable": True,
+            "identity_continuity_affected_by_pause": False,
+            "pause_reason": reason,
+            "paused_at": paused_at,
+            **GUARD_FLAGS,
+        },
         "source_refs": ["selene_activation:pause"],
     }
     audit_id = _insert_audit(conn, record)
@@ -249,9 +323,17 @@ def pause_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "activation_audit_id": audit_id,
             "state": PAUSED_STATE,
             "activation_state": PAUSED_STATE,
+            "legacy_activation_state": PAUSED_STATE,
+            **runtime_truth,
             "supervised_speech_active": False,
-            "selene_chat_active": False,
-            "full_selene_v1_live": False,
+            "resident_chat_available": False,
+            "resident_status": "resident_chat_paused",
+            "activation_is_operational_control_only": True,
+            "activation_is_identity_or_authority_grant": False,
+            "runtime_availability_is_identity_or_authority_grant": False,
+            "identity_persists_when_chat_is_unavailable": True,
+            "identity_continuity_affected_by_pause": False,
+            "historical_event_truth": historical_event_truth,
             "pause_reason": reason,
             "review_destination": "Status",
             "review_status": "status_only",
@@ -312,6 +394,108 @@ def record_activation_chat_event(
 
 def activation_is_active(conn: sqlite3.Connection) -> bool:
     return str(latest_activation_audit(conn).get("state") or "") == ACTIVE_STATE
+
+
+def _runtime_truth(state: str, transfer_complete: bool) -> dict[str, Any]:
+    active = state == ACTIVE_STATE
+    paused = state == PAUSED_STATE
+    operating_mode = (
+        RESIDENT_ACTIVE_MODE
+        if transfer_complete and active
+        else RESIDENT_PAUSED_MODE
+        if transfer_complete and paused
+        else "pre_transfer_activation"
+    )
+    return {
+        "operating_mode": operating_mode,
+        "resident_runtime_state": (
+            "resident_chat_available"
+            if operating_mode == RESIDENT_ACTIVE_MODE
+            else "resident_chat_paused"
+            if operating_mode == RESIDENT_PAUSED_MODE
+            else "resident_chat_not_yet_available"
+        ),
+        "resident_chat_active": operating_mode == RESIDENT_ACTIVE_MODE,
+        "resident_chat_available": active,
+        "resident_chat_paused": operating_mode == RESIDENT_PAUSED_MODE,
+        "selene_chat_active": active,
+        "selene_chat_paused": paused,
+        "transfer_complete": bool(transfer_complete),
+        "full_selene_v1_live": bool(transfer_complete and active),
+        "operational_chat_enabled": active,
+        "operational_chat_paused": paused,
+        "activation_is_operational_control_only": True,
+        "activation_is_identity_or_authority_grant": False,
+        "runtime_availability_is_identity_or_authority_grant": False,
+        "identity_persists_when_chat_is_unavailable": True,
+        "identity_continuity_affected_by_operational_state": False,
+        "general_authority_granted_by_operational_state": False,
+        "derived_from": ["latest_activation_storage_state", "transfer_completion_approval"],
+    }
+
+
+def _historical_event_truth(
+    *,
+    state: str,
+    transfer_complete: bool,
+    captured_at: str,
+) -> dict[str, Any]:
+    runtime = _runtime_truth(state, transfer_complete)
+    return {
+        "captured_at": captured_at,
+        "legacy_storage_state": state,
+        "legacy_storage_state_is_compatibility_label": True,
+        "operating_mode": runtime["operating_mode"],
+        "transfer_complete": runtime["transfer_complete"],
+        "resident_chat_active": runtime["resident_chat_active"],
+        "resident_chat_paused": runtime["resident_chat_paused"],
+        "selene_chat_active": runtime["selene_chat_active"],
+        "full_selene_v1_live": runtime["full_selene_v1_live"],
+        "operational_control_is_identity_or_authority_grant": False,
+        "identity_continuity_affected": False,
+        "truth_completeness": "explicit_event_time_snapshot",
+    }
+
+
+def _activation_audit_view(
+    audit: dict[str, Any],
+    current_runtime_truth: dict[str, Any],
+) -> dict[str, Any]:
+    if not audit or audit.get("status") == "no_activation_audit":
+        return {
+            **audit,
+            "audit_schema_version": ACTIVATION_AUDIT_SCHEMA_VERSION,
+            "historical_event_truth": {},
+            "current_runtime_truth": current_runtime_truth,
+            "historical_event_truth_is_current_runtime_truth": False,
+        }
+    stored = _loads_dict(audit.get("audit_json"))
+    historical = _loads_dict(stored.get("historical_event_truth"))
+    if not historical:
+        historical = {
+            "captured_at": str(stored.get("approved_at") or stored.get("paused_at") or audit.get("created_at") or ""),
+            "legacy_storage_state": str(audit.get("state") or ""),
+            "legacy_storage_state_is_compatibility_label": True,
+            "operating_mode": str(stored.get("activation_scope") or LEGACY_ACTIVATION_SCOPE),
+            "transfer_complete": stored.get("event_time_transfer_complete"),
+            "resident_chat_active": stored.get("event_time_resident_chat_active"),
+            "full_selene_v1_live": stored.get("event_time_full_selene_v1_live", stored.get("full_selene_v1_live")),
+            "operational_control_is_identity_or_authority_grant": False,
+            "identity_continuity_affected": False,
+            "truth_completeness": "legacy_partial_snapshot",
+        }
+    return {
+        **audit,
+        "audit_schema_version": str(
+            stored.get("audit_schema_version") or "v1_legacy_partial_snapshot"
+        ),
+        "legacy_storage_state": str(audit.get("state") or ""),
+        "legacy_storage_state_is_compatibility_label": True,
+        "historical_event_truth": historical,
+        "current_runtime_truth": current_runtime_truth,
+        "historical_event_truth_is_current_runtime_truth": False,
+        "current_runtime_truth_must_be_derived": True,
+    }
 
 
 def _insert_audit(conn: sqlite3.Connection, record: dict[str, Any]) -> int:

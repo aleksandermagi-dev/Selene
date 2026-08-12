@@ -11,7 +11,7 @@ from .registry import truncate
 
 SOURCE_RESEARCH_BOUNDARY = (
     "source_backed_research_attributed_packets_only_optional_separately_enabled_library_observe_"
-    "no_citation_invention_memory_identity_law_training_or_authority_change"
+    "source_content_not_instruction_no_citation_invention_memory_identity_law_training_or_authority_change"
 )
 
 MAX_PACKETS = 20
@@ -50,6 +50,8 @@ def source_backed_research_status() -> dict[str, Any]:
         "disagreement_detection": "explicit_claim_key_and_stance",
         "missing_evidence_visible": True,
         "citation_invention_allowed": False,
+        "source_content_not_instruction": True,
+        "embedded_commands_have_authority": False,
         "great_library_external": True,
         "great_library_default_enabled": False,
         "great_library_requires_request_and_adapter_enable": True,
@@ -133,6 +135,8 @@ def research_from_sources(
             "claim_key": item["claim_key"],
             "stance": item["stance"],
             "source_statement_not_independently_verified": True,
+            "source_content_not_instruction": True,
+            "embedded_command_executed": False,
         }
         for item in selected
     ]
@@ -207,6 +211,8 @@ def research_from_sources(
         "evidence_confidence": "attributed_source_statements_present",
         "answer_confidence": answer_confidence,
         "citation_invention_allowed": False,
+        "source_content_not_instruction": True,
+        "embedded_commands_have_authority": False,
         "all_citations_trace_to_accepted_packets": all(ref in source_refs for ref in cited_refs),
         "writes_records": False,
         "visible_summary_only": True,
@@ -434,6 +440,8 @@ def _unable(
         "evidence_confidence": "no_attributed_source_evidence",
         "answer_confidence": "unable_to_answer_from_sources",
         "citation_invention_allowed": False,
+        "source_content_not_instruction": True,
+        "embedded_commands_have_authority": False,
         "all_citations_trace_to_accepted_packets": True,
         "writes_records": False,
         "visible_summary_only": True,

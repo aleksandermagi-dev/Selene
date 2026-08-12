@@ -29,7 +29,7 @@ def _assert_locked(payload):
     assert payload["identity_change_allowed"] is False
     assert payload["governance_change_allowed"] is False
     assert payload["authority_change_allowed"] is False
-    assert payload["voice_owns_expression_style"] is True
+    assert payload["coordinated_expression_contract_active"] is True
     assert payload["database_write_performed"] is False
     assert payload["hidden_chain_of_thought_exposed"] is False
 
@@ -116,6 +116,43 @@ def test_structured_candidate_becomes_thesis_without_repeating_the_old_seed():
     assert "The original supported answer" not in loom["selected_candidate_text"]
     assert loom["selected_candidate_text"].count("remains provisional") == 1
     assert "A later observation could revise" in loom["selected_candidate_text"]
+
+
+def test_structured_formation_retains_coverage_ancestry_for_a_subsumed_obligated_example():
+    discourse = build_supported_discourse_plan(
+        {
+            "content_seed": "The pilot is worth running.",
+            "examples": ["A one-week trial can compare both approaches."],
+            "response_obligations": [
+                {
+                    "id": "example",
+                    "kind": "direct_request",
+                    "source_text": "Give the example.",
+                    "coverage_terms": ["give", "example"],
+                    "required": True,
+                }
+            ],
+        }
+    )
+    formation = {
+        "candidate_text": "The pilot is worth running. A one-week trial can compare both approaches.",
+        "formation_mode": "structured",
+        "meaning_preserved": True,
+    }
+
+    loom = weave_supported_discourse(
+        discourse,
+        selected_formation=formation,
+        response_depth="developed",
+    )
+
+    assert loom["collapsed_seed_content_unit_ids"] == ["content_1", "content_2"]
+    assert loom["obligation_bound_content_unit_ids"] == ["structured_formation"]
+    assert loom["selectable_candidate_count"] >= 1
+    assert all(
+        item["invariant_check"]["obligation_bound_content_unit_ids"] == ["structured_formation"]
+        for item in loom["candidates"]
+    )
 
 
 def test_structured_candidate_can_supply_the_thesis_when_no_text_seed_exists():
@@ -321,7 +358,7 @@ def test_nlo_uses_discourse_loom_for_supported_long_form_without_writing(tmp_pat
     )
 
     loom = result["discourse_loom"]
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert loom["selection_performed"] is True
     assert loom["structured_formation_used_as_thesis"] is True
     assert "for example" in result["candidate_text"].lower()

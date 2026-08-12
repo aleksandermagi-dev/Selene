@@ -238,7 +238,7 @@ The standing authorization applies only when all of the following are true:
 - it is guidance-only and cannot become answer-bearing subject knowledge;
 - Acquire, Integrate, and Express evidence is complete;
 - the material preserves supported meaning and uncertainty;
-- Voice remains Selene's expression owner;
+- expression remains Selene's through the coordinated NLO/Voice pipeline;
 - the lesson does not prescribe personality, identity, affect, permanent
   register, stock phrasing, memory, governance, authority, or autonomy;
 - the lesson does not imitate Aleks, a source author, or a provider persona;

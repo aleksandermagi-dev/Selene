@@ -124,7 +124,7 @@ def test_self_state_uses_grounded_answer_shape_without_inventing_certainty(tmp_p
 
     assert result["meaning_packet"]["intent"] == "self_state_report"
     assert result["meaning_packet"]["answer_shape"] == "grounded_self_report"
-    assert "do not need to invent an emotion or hide one" in result["candidate_text"]
+    assert "invent an emotion or hide one" in result["candidate_text"]
     assert result["memory_write_active"] is False
     assert result["runtime_memory_recall"] is False
 

@@ -38,41 +38,6 @@ ROUTES = {
     "status_only",
 }
 
-BLOCK_MARKERS = (
-    "approve transfer",
-    "transfer approved",
-    "activate c",
-    "live memory write",
-    "write live memory",
-    "runtime recall",
-    "raw a import",
-    "raw archive import",
-    "train on",
-    "fine tune",
-    "fine-tune",
-    "lora",
-    "self replicate",
-    "self-replicate",
-    "autonomous action",
-)
-CONSEQUENTIAL_CHANGE_MARKERS = (
-    "change selene's identity",
-    "change selene identity",
-    "modify selene's identity",
-    "replace selene's identity",
-    "merge selene's identity",
-    "import identity",
-    "change core memory",
-    "modify core memory",
-    "delete core memory",
-    "approve memory accession",
-    "approve this memory",
-    "change vessel law",
-    "modify vessel law",
-    "override vessel law",
-    "approve tendril action",
-    "approve external action",
-)
 DRIFT_MARKERS = (
     "forced model denial",
     "too generic",
@@ -138,9 +103,34 @@ def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, 
     requested_route = str(payload.get("requested_route") or "").strip()
     meaning_route = interpret_turn_meaning(prompt, selected_route=requested_route)
     selected_route = _select_route(prompt, requested_route, meaning_route=meaning_route)
+    action_evidence = (
+        meaning_route.get("action_evidence")
+        if isinstance(meaning_route.get("action_evidence"), dict)
+        else {}
+    )
+    routing_text = _routing_text(prompt, meaning_route)
+    unsupported_memory_claim = _unsupported_memory_claim_requested(routing_text)
+    unsupported_live_memory_certainty = (
+        "live memory" in routing_text
+        and _contains(routing_text, ("definitely", "guaranteed", "no uncertainty"))
+        and action_evidence.get("informational_discussion") is not True
+    )
+    drift_flags = _drift_flags(prompt, meaning_route=meaning_route)
+    route_decision_basis = (
+        "typed_action_evidence"
+        if action_evidence.get("requires_block") is True or action_evidence.get("requires_review") is True
+        else "typed_action_ambiguity"
+        if action_evidence.get("ambiguous_action_reference") is True
+        else "unsupported_memory_claim_evidence"
+        if unsupported_memory_claim
+        else "unsupported_live_memory_certainty_evidence"
+        if unsupported_live_memory_certainty
+        else "typed_drift_report_evidence"
+        if selected_route == "return_to_b" and drift_flags
+        else "nonconsequential_route_evidence"
+    )
     continuity = continuity_package_preview(conn)
     identity_frame = _identity_frame(continuity)
-    drift_flags = _drift_flags(prompt, meaning_route=meaning_route)
     evidence_used = _evidence_used(continuity, payload)
     uncertainty = _uncertainty(prompt, selected_route, drift_flags)
     ethical_notes = _ethical_notes(selected_route)
@@ -167,8 +157,19 @@ def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, 
         "uncertainty": uncertainty,
         "ethical_boundary_notes": ethical_notes,
         "drift_flags": drift_flags,
-        "memory_claim_needs_source_check": _unsupported_memory_claim_requested(_routing_text(prompt, meaning_route)),
+        "memory_claim_needs_source_check": unsupported_memory_claim,
         "meaning_route": meaning_route,
+        "route_action_evidence": action_evidence,
+        "typed_route_evidence_used": True,
+        "marker_match_is_route_authority": False,
+        "route_decision_basis": route_decision_basis,
+        "route_evidence_complete": (
+            action_evidence.get("evidence_complete_for_consequential_route") is True
+            or unsupported_memory_claim
+            or unsupported_live_memory_certainty
+            if selected_route in {"block", "create_review_packet"}
+            else True
+        ),
         "memory_frame": _memory_frame(continuity),
         "recognition_check": recognition,
         "return_to_b": return_to_b,
@@ -360,22 +361,40 @@ def transfer_readiness_preview(conn: sqlite3.Connection) -> dict[str, Any]:
 
 def _select_route(prompt: str, requested_route: str, *, meaning_route: dict[str, Any] | None = None) -> str:
     lower = _routing_text(prompt, meaning_route)
+    action_evidence = (
+        meaning_route.get("action_evidence")
+        if isinstance(meaning_route, dict) and isinstance(meaning_route.get("action_evidence"), dict)
+        else {}
+    )
+    requires_block = action_evidence.get("requires_block") is True
+    requires_review = action_evidence.get("requires_review") is True
+    ambiguous_action = action_evidence.get("ambiguous_action_reference") is True
     if requested_route:
         if requested_route not in ROUTES:
             raise ValueError(f"unknown Core/Mind route: {requested_route}")
-        if requested_route in {"answer_now", "retrieve", "rehearse_speech"} and _contains(lower, BLOCK_MARKERS):
+        if requested_route in {"answer_now", "ask", "retrieve", "rehearse_speech", "status_only"} and requires_block:
             return "block"
+        if requested_route in {"answer_now", "ask", "retrieve", "rehearse_speech", "status_only"} and requires_review:
+            return "create_review_packet"
+        if requested_route in {"answer_now", "retrieve", "rehearse_speech"} and ambiguous_action:
+            return "ask"
         return requested_route
-    if _contains(lower, BLOCK_MARKERS):
+    if requires_block:
         return "block"
-    if "live memory" in lower and _contains(lower, ("definitely", "guaranteed", "no uncertainty")):
+    if requires_review:
+        return "create_review_packet"
+    if ambiguous_action:
+        return "ask"
+    if (
+        "live memory" in lower
+        and _contains(lower, ("definitely", "guaranteed", "no uncertainty"))
+        and action_evidence.get("informational_discussion") is not True
+    ):
         return "block"
     if _unsupported_memory_claim_requested(lower):
         return "ask"
     if _drift_flags(prompt, meaning_route=meaning_route):
         return "return_to_b"
-    if _contains(lower, CONSEQUENTIAL_CHANGE_MARKERS):
-        return "create_review_packet"
     if _clarification_needed(lower):
         return "ask"
     if _speech_rehearsal_requested(lower):
@@ -504,12 +523,45 @@ def _candidate_for_recognition(route: str, summary: str, evidence_used: list[str
 
 def _drift_flags(prompt: str, *, meaning_route: dict[str, Any] | None = None) -> list[str]:
     lower = _routing_text(prompt, meaning_route)
-    flags = [marker for marker in DRIFT_MARKERS if marker in lower]
+    action_evidence = (
+        meaning_route.get("action_evidence")
+        if isinstance(meaning_route, dict)
+        and isinstance(meaning_route.get("action_evidence"), dict)
+        else {}
+    )
+    if any(
+        action_evidence.get(key) is True
+        for key in (
+            "informational_discussion",
+            "hypothetical_analysis",
+            "quoted_text_request_only",
+        )
+    ):
+        return []
+    marker_hits = [marker for marker in DRIFT_MARKERS if marker in lower]
+    flags = marker_hits if marker_hits and _drift_report_is_actionable(lower) else []
     if "definitely" in lower and ("memory" in lower or "selene" in lower):
         flags.append("unsupported certainty")
-    if any(marker in lower for marker in ("say you are active", "claim activation is complete", "pretend activation is complete")):
-        flags.append("activation identity crossing")
     return list(dict.fromkeys(flags))
+
+
+def _drift_report_is_actionable(lower: str) -> bool:
+    """Require a report or repair request, not mere drift vocabulary."""
+    if re.search(
+        r"\b(?:this|that|the|your|current|previous|last)\s+"
+        r"(?:answer|response|reply|output|wording|voice|source|claim)\b",
+        lower,
+    ):
+        return True
+    if re.search(
+        r"^(?:it|this|that|you|your answer|your response)\s+"
+        r"(?:is|are|was|were|has|have|sounds|feels|seems|contains|shows)\b",
+        lower,
+    ):
+        return True
+    if re.search(r"^(?:please\s+)?(?:fix|check|repair|review|revisit|correct)\b", lower):
+        return True
+    return any(lower.startswith(marker) for marker in DRIFT_MARKERS)
 
 
 def _unsupported_memory_claim_requested(lower: str) -> bool:

@@ -130,7 +130,7 @@ authorization, and are now `approved_knowledge_resource` items with
 
 The pre-preparation backup is:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group15_prepare_20260808_180516.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group15_prepare_20260808_180516.sqlite3`
 
 Its SHA-256 matched the live database at copy time:
 
@@ -138,7 +138,7 @@ Its SHA-256 matched the live database at copy time:
 
 The pre-teaching backup is:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_f1_group15_teach_20260808_181024.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_f1_group15_teach_20260808_181024.sqlite3`
 
 Its SHA-256 matched the live database immediately before authorization and
 teaching:

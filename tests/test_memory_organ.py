@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from selene.db import connect, init_db
+from selene.memory_organ import propose_memory_candidate
 from selene.module_router import route_request
 
 
@@ -14,7 +17,10 @@ def _conn(tmp_path):
 
 def _assert_locked(result):
     assert result["memory_write_active"] is False
+    assert result["memory_write_active_semantics"] == "legacy_hidden_or_unreviewed_active_memory_guard"
+    assert result["hidden_memory_write_active"] is False
     assert result["runtime_memory_recall"] is False
+    assert result["unreviewed_memory_write_active"] is False
     assert result["raw_a_import_allowed"] is False
     assert result["training_allowed"] is False
     assert result["lora_allowed"] is False
@@ -55,7 +61,7 @@ def test_memory_status_names_the_resident_reviewed_lifecycle(tmp_path):
     result = route_request(conn, "memory.index.status")["result"]
     lifecycle = result["memory_lifecycle_contract"]
 
-    assert result["resident_memory_contract_version"] == "v2_dream_review_bridge"
+    assert result["resident_memory_contract_version"] == "v3_typed_lifecycle_telemetry"
     assert lifecycle["approved_retrieval"] == "approved_active_memory_only"
     assert lifecycle["new_retention"] == "proposal_then_Aleks_review"
     assert lifecycle["dream_consolidation"] == (
@@ -64,6 +70,9 @@ def test_memory_status_names_the_resident_reviewed_lifecycle(tmp_path):
     )
     assert lifecycle["silent_promotion"] is False
     assert lifecycle["raw_corpus_recall"] is False
+    assert "typed lifecycle telemetry" in lifecycle["legacy_memory_write_flag"]
+    assert result["reviewed_memory_decision_performed"] is False
+    assert result["durable_approved_promotion_performed"] is False
     _assert_locked(result)
 
 
@@ -146,11 +155,12 @@ def test_approved_state_without_chat_eligibility_does_not_count_as_active_memory
         "memory.candidates.decide",
         {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
     )
-    excluded = route_request(
+    exclusion_decision = route_request(
         conn,
         "memory.candidates.decide",
         {"candidate_id": proposed["item"]["id"], "action": "mark_do_not_transfer"},
-    )["result"]["item"]
+    )["result"]
+    excluded = exclusion_decision["item"]
     status = route_request(conn, "memory.index.status")["result"]
 
     assert excluded["state"] == "approved_active_memory"
@@ -158,6 +168,10 @@ def test_approved_state_without_chat_eligibility_does_not_count_as_active_memory
     assert excluded["retrieval_eligible"] is False
     assert excluded["memory_context_used"] is False
     assert excluded["display_region"] == "cocoon_memory_review"
+    assert exclusion_decision["reviewed_memory_decision_performed"] is True
+    assert exclusion_decision["durable_approved_promotion_performed"] is False
+    assert exclusion_decision["memory_lifecycle_transition"]["state_changed"] is False
+    assert exclusion_decision["memory_lifecycle_transition"]["active_memory_eligibility_changed"] is True
     assert status["active_memory_count"] == 0
     assert status["retrieval_eligible_count"] == 0
     _assert_locked(status)
@@ -181,12 +195,132 @@ def test_memory_candidate_requires_approval_before_chat_use(tmp_path):
 
     assert proposed["item"]["state"] == "proposed"
     assert proposed["item"]["chat_use_permission"] == "not_active_until_approved"
+    assert proposed["review_record_write_performed"] is True
+    assert proposed["reviewed_memory_decision_performed"] is False
+    assert proposed["durable_approved_promotion_performed"] is False
+    assert proposed["memory_lifecycle_transaction_status"] == "committed"
+    assert proposed["memory_lifecycle_transition"] == {
+        "previous_state": None,
+        "current_state": "proposed",
+        "state_changed": True,
+        "active_memory_eligibility_changed": False,
+    }
     assert before["items"][0]["state"] == "proposed"
     assert approved["item"]["state"] == "approved_active_memory"
     assert approved["item"]["chat_use_permission"] == "can_use_in_chat"
     assert approved["item"]["review_status"] == "accepted_for_memory"
+    assert approved["reviewed_memory_decision_performed"] is True
+    assert approved["approved_memory_promotion_performed"] is True
+    assert approved["durable_approved_promotion_performed"] is True
+    assert approved["memory_lifecycle_transaction_status"] == "committed"
+    assert approved["memory_lifecycle_transition"] == {
+        "previous_state": "proposed",
+        "current_state": "approved_active_memory",
+        "state_changed": True,
+        "active_memory_eligibility_changed": True,
+    }
     _assert_locked(proposed)
     _assert_locked(approved)
+
+
+def test_reaffirming_approval_is_a_reviewed_decision_not_a_second_promotion(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Approval reaffirmation",
+            "summary": "A reviewed memory should not report a second promotion when approval is reaffirmed.",
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+
+    reaffirmed = route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )["result"]
+
+    assert reaffirmed["memory_lifecycle_operation"] == "reviewed_approval_reaffirmed"
+    assert reaffirmed["reviewed_memory_decision_performed"] is True
+    assert reaffirmed["approved_memory_promotion_performed"] is False
+    assert reaffirmed["durable_approved_promotion_performed"] is False
+    assert reaffirmed["memory_lifecycle_transition"]["state_changed"] is False
+    assert reaffirmed["memory_lifecycle_transition"]["active_memory_eligibility_changed"] is False
+    _assert_locked(reaffirmed)
+
+
+@pytest.mark.parametrize(
+    ("action", "expected_state", "expected_review_status"),
+    (
+        ("needs_more_context", "needs_context", "needs_context"),
+        ("hold_for_tending", "cocoon_tending", "cocoon_tending"),
+        ("supersede", "superseded", "superseded"),
+        ("reject", "rejected", "rejected"),
+        ("mark_b_only", "b_only", "b_only"),
+        ("mark_do_not_transfer", "cocoon_tending", "do_not_transfer"),
+    ),
+)
+def test_reviewed_nonpromotion_decisions_report_their_actual_lifecycle(
+    tmp_path, action, expected_state, expected_review_status
+):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "reflective",
+            "title": f"Lifecycle check for {action}",
+            "summary": "A bounded candidate used to verify honest lifecycle telemetry.",
+        },
+    )["result"]
+
+    result = route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": action},
+    )["result"]
+
+    assert result["item"]["state"] == expected_state
+    assert result["review_status"] == expected_review_status
+    assert result["reviewed_memory_decision_performed"] is True
+    assert result["approved_memory_promotion_performed"] is False
+    assert result["durable_approved_promotion_performed"] is False
+    assert result["memory_lifecycle_record_mutated"] is True
+    assert result["memory_lifecycle_transaction_status"] == "committed"
+    assert result["memory_lifecycle_transition"]["previous_state"] == "proposed"
+    assert result["memory_lifecycle_transition"]["current_state"] == expected_state
+    assert result["memory_lifecycle_transition"]["active_memory_eligibility_changed"] is False
+    _assert_locked(result)
+
+
+def test_uncommitted_candidate_proposal_reports_pending_transaction_and_can_be_rolled_back(tmp_path):
+    conn = _conn(tmp_path)
+
+    proposed = propose_memory_candidate(
+        conn,
+        {
+            "category": "reflective",
+            "title": "Caller-owned transaction",
+            "summary": "This proposal remains inside the caller transaction until committed.",
+        },
+        commit=False,
+    )
+
+    assert proposed["review_record_write_performed"] is True
+    assert proposed["memory_lifecycle_transaction_status"] == "pending_caller_commit"
+    assert proposed["durable_approved_promotion_performed"] is False
+    conn.rollback()
+    count = conn.execute(
+        "SELECT COUNT(*) FROM selene_memory_candidates WHERE title = 'Caller-owned transaction'"
+    ).fetchone()[0]
+    assert count == 0
+    _assert_locked(proposed)
 
 
 def test_memory_candidate_gets_intended_placement_before_approval(tmp_path):

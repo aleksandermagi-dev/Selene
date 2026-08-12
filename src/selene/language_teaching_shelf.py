@@ -1688,7 +1688,7 @@ def language_teaching_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "standing_authorization_key": LANGUAGE_RANGE_AUTHORIZATION_KEY,
             "standing_authorization_active": standing_authorization_active,
             "teaching_location": "Cocoon Teaching / Lessons",
-            "voice_owns_expression_style": True,
+            "coordinated_expression_contract_active": True,
             "identity_changed": False,
             "provenance_boundary": LANGUAGE_TEACHING_BOUNDARY,
         }
@@ -1830,7 +1830,7 @@ def build_language_capability_answer(
             "source_refs": ["language_teaching_shelf:approved_lifecycle_status"],
             "answer_is_shelf_status_summary": True,
             "lesson_central_claim_used_as_answer": False,
-            "voice_owns_expression_style": True,
+            "coordinated_expression_contract_active": True,
             "identity_changed": False,
             "personality_changed": False,
             "review_status": "status_only",
@@ -1886,7 +1886,7 @@ def select_language_guidance(conn: sqlite3.Connection, payload: dict[str, Any] |
             ],
             "response_moves": response_moves,
             "selection_basis": "current turn mechanics and approved Cocoon language guidance only",
-            "voice_owns_expression_style": True,
+            "coordinated_expression_contract_active": True,
             "automatic_content_generation": False,
             "provenance_boundary": LANGUAGE_TEACHING_BOUNDARY,
         }

@@ -198,13 +198,13 @@ def test_nlo_consults_prepared_shelf_without_changing_voice_or_identity(tmp_path
     )
 
     guidance = result["language_teaching_guidance"]
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert guidance["used"] is True
     assert "answer_then_expand" in guidance["lesson_keys"]
     assert "list_or_prose_fit" in guidance["lesson_keys"]
     assert result["discourse_plan"]["language_guidance_used"] is True
     assert result["revision"]["language_guidance_checked"] is True
-    assert result["voice_handoff"]["voice_owns_expression_style"] is True
+    assert result["voice_handoff"]["expression_contract"]["expression_is_coordinated"] is True
     assert result["memory_write_active"] is False
     assert result["training_allowed"] is False
 

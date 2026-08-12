@@ -236,7 +236,7 @@ def test_nlo_exposes_contextual_composition_and_preserves_supported_tokens(tmp_p
 
     plan = result["discourse_plan"]["contextual_composition_plan"]
     composition = result["contextual_composition"]
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert plan["response_depth"] == "developed"
     assert plan["decisions"]["thesis"] == "preserve_supported_thesis_first"
     assert composition["meaning_preserved"] is True

@@ -64,7 +64,7 @@ def test_supported_semantic_packet_keeps_meaning_scope_certainty_and_sources_ins
     assert packet["source_refs"] == ["test:current_prompt"]
     assert semantic_units_for_formation(packet)[0]["kind"] == "supported_semantic_unit"
     assert packet["meaning_change_allowed"] is False
-    assert packet["voice_owns_expression_style"] is True
+    assert packet["coordinated_expression_contract_active"] is True
     _assert_locked(packet)
 
 
@@ -236,7 +236,7 @@ def test_prompt_grounded_semantics_reach_nlo_and_vary_surface_without_losing_req
 
     expected_signature = reasoning["answer_substance"]["semantic_packet"]["meaning_signature"]
     for result in (first, second):
-        assert result["version"] == "v31_generative_thought_expression"
+        assert result["version"] == "v32_human_conversational_realization"
         assert result["meaning_packet"]["supported_semantics"]["used"] is True
         assert result["meaning_packet"]["supported_semantics"]["formation_mode"] == "structured"
         assert result["semantic_frame"]["formation_mode"] == "structured"

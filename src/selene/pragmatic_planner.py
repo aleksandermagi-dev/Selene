@@ -208,6 +208,8 @@ def evaluate_response_coverage(
     *,
     conversation_spine: dict[str, Any] | None = None,
     supported_semantics: dict[str, Any] | None = None,
+    epistemic_composition: dict[str, Any] | None = None,
+    resolution_evidence: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     plan = plan if isinstance(plan, dict) else {}
     candidate = truncate(str(candidate_text or ""), 3000)
@@ -225,6 +227,11 @@ def evaluate_response_coverage(
         obligations,
     )
     semantic_matches = semantic_coverage.get("matched_unit_ids") or {}
+    composition_parts = {
+        str(item.get("obligation_id") or ""): item
+        for item in (epistemic_composition or {}).get("parts") or []
+        if isinstance(item, dict) and str(item.get("obligation_id") or "")
+    }
     items: list[dict[str, Any]] = []
     answered_loop_ids: list[str] = []
     for obligation in obligations:
@@ -328,7 +335,47 @@ def evaluate_response_coverage(
         if quantitative_required and not quantitative_answer_present:
             visible_text_addressed = False
             semantic_addressed = False
+        composition_part = composition_parts.get(obligation_id, {})
+        missing_resolution_visible = _visible_missing_ground_resolution(
+            obligation_candidate,
+            obligation,
+            composition_part,
+        )
+        owner_resolution = _matching_owner_resolution(
+            obligation_id,
+            # Owner evidence is already bound to this current-turn obligation.
+            # Compare it with the full visible candidate so a legitimate answer
+            # may repeat the subject of the user's question; request-echo
+            # stripping remains in force for ordinary lexical coverage above.
+            candidate,
+            resolution_evidence,
+        )
+        if owner_resolution.get("resolution_kind") == "answer":
+            semantic_addressed = True
+        if (
+            str(composition_part.get("epistemic_state") or "") == "missing_ground"
+            and missing_resolution_visible
+            and owner_resolution.get("resolution_kind") != "answer"
+        ):
+            visible_text_addressed = False
+            semantic_addressed = False
         addressed = visible_text_addressed or semantic_addressed
+        explicit_hold = bool(not addressed and missing_resolution_visible)
+        supported_route = bool(
+            owner_resolution.get("resolution_kind") == "supported_route"
+            or explicit_hold
+            and _visible_supported_route(obligation_candidate, composition_part)
+        )
+        resolved_for_release = bool(addressed or explicit_hold or supported_route)
+        resolution_state = (
+            "answered"
+            if addressed
+            else "supported_route"
+            if supported_route
+            else "explicitly_held"
+            if explicit_hold
+            else "unresolved"
+        )
         loop_id = str(obligation.get("loop_id") or "")
         if addressed and loop_id:
             answered_loop_ids.append(loop_id)
@@ -338,6 +385,11 @@ def evaluate_response_coverage(
                 "loop_id": loop_id,
                 "kind": kind,
                 "addressed": addressed,
+                "resolved_for_release": resolved_for_release,
+                "resolution_state": resolution_state,
+                "explicitly_held": explicit_hold,
+                "supported_route_present": supported_route,
+                "owner_resolution_evidence": owner_resolution,
                 "visible_text_addressed": visible_text_addressed,
                 "semantic_addressed": semantic_addressed,
                 "matched_semantic_unit_ids": matched_semantic_unit_ids,
@@ -366,6 +418,8 @@ def evaluate_response_coverage(
     required = [item for item in items if item.get("status")]
     addressed_count = sum(1 for item in required if item["addressed"])
     obligation_coverage_complete = addressed_count == len(required)
+    resolved_count = sum(1 for item in required if item["resolved_for_release"])
+    obligation_resolution_complete = resolved_count == len(required)
     if conversation_spine:
         # Imported at evaluation time to keep the spine free to construct its
         # initial pragmatic plan without a module-import cycle.
@@ -390,14 +444,29 @@ def evaluate_response_coverage(
         and spine_alignment.get("aligned") is not True
         and not semantic_grounding_override
     )
+    release_grounding_unresolved = int(
+        spine_alignment.get("required") is True
+        and spine_alignment.get("aligned") is not True
+        and not semantic_grounding_override
+        and not obligation_resolution_complete
+    )
     return _with_guards(
         {
             "status": "response_coverage_checked",
             "candidate_present": bool(candidate.strip()),
             "obligation_count": len(required),
             "addressed_count": addressed_count,
+            "resolved_count": resolved_count,
             "all_required_addressed": obligation_coverage_complete and grounding_unresolved == 0,
             "unresolved_count": len(required) - addressed_count + grounding_unresolved,
+            "all_required_resolved": obligation_resolution_complete and release_grounding_unresolved == 0,
+            "unresolved_release_count": len(required) - resolved_count + release_grounding_unresolved,
+            "release_resolution_states": {
+                str(item.get("obligation_id") or ""): str(item.get("resolution_state") or "unresolved")
+                for item in items
+            },
+            "explicit_holds_are_answers": False,
+            "supported_routes_are_answers": False,
             "answered_loop_ids": answered_loop_ids,
             "items": items,
             "conversation_spine_alignment": spine_alignment,
@@ -414,6 +483,111 @@ def evaluate_response_coverage(
             "provenance_boundary": PRAGMATIC_BOUNDARY,
         }
     )
+
+
+def _visible_missing_ground_resolution(
+    candidate: str,
+    obligation: dict[str, Any],
+    part: dict[str, Any],
+) -> bool:
+    if str(part.get("epistemic_state") or "") != "missing_ground":
+        return False
+    lower = " ".join(candidate.lower().replace("’", "'").split())
+    if not lower:
+        return False
+    hold_markers = (
+        "i cannot",
+        "i can't",
+        "i do not know",
+        "i don't know",
+        "i do not have enough",
+        "i don't have enough",
+        "i'm missing",
+        "i am missing",
+        "still can't support",
+        "still cannot support",
+        "remains open",
+        "not established",
+    )
+    if not any(marker in lower for marker in hold_markers):
+        return False
+    part_text = " ".join(str(part.get("text") or "").lower().split())
+    if part_text and part_text in lower:
+        return True
+    missing_terms = set(_content_terms(str(part.get("missing_ground") or ""), limit=20))
+    candidate_terms = set(_content_terms(lower, limit=100))
+    if missing_terms and missing_terms & candidate_terms:
+        return True
+    kind = str(obligation.get("kind") or "")
+    kind_markers = {
+        "yes_or_no": ("yes or no", "distinguishes yes from no"),
+        "analogy": ("analogy", "relationship"),
+        "choice_or_priority": ("choose", "deciding outcome", "constraints"),
+        "reason": ("reason", "mechanism", "explains"),
+        "limitation": ("limit", "boundary", "exception", "counterexample"),
+        "method": ("steps", "method", "inputs", "constraints"),
+        "requested_output": ("requested part", "supported content"),
+        "requested_section": ("requested section", "supported content"),
+    }
+    return any(marker in lower for marker in kind_markers.get(kind, ()))
+
+
+def _visible_supported_route(candidate: str, part: dict[str, Any]) -> bool:
+    lower = " ".join(candidate.lower().replace("’", "'").split())
+    route_markers = (
+        "i would need",
+        "i'd need",
+        "what would help",
+        "what i need",
+        "if you give me",
+        "if you can give me",
+        "the smallest useful check",
+        "the next useful check",
+    )
+    if not any(marker in lower for marker in route_markers):
+        return False
+    missing_terms = set(_content_terms(str(part.get("missing_ground") or ""), limit=20))
+    return not missing_terms or bool(missing_terms & set(_content_terms(lower, limit=100)))
+
+
+def _matching_owner_resolution(
+    obligation_id: str,
+    candidate: str,
+    evidence_items: list[dict[str, Any]] | None,
+) -> dict[str, Any]:
+    for raw in evidence_items or []:
+        if not isinstance(raw, dict):
+            continue
+        ids = {str(item) for item in raw.get("obligation_ids") or [] if str(item)}
+        if obligation_id not in ids:
+            continue
+        fragment = str(raw.get("text") or "").strip()
+        if not fragment or not _candidate_preserves_owner_fragment(candidate, fragment):
+            continue
+        kind = str(raw.get("resolution_kind") or "answer")
+        if kind not in {"answer", "supported_route"}:
+            continue
+        return {
+            "matched": True,
+            "owner": str(raw.get("owner") or "current_turn_owner"),
+            "resolution_kind": kind,
+            "source_id": str(raw.get("source_id") or ""),
+            "current_turn_only": True,
+        }
+    return {"matched": False, "resolution_kind": ""}
+
+
+def _candidate_preserves_owner_fragment(candidate: str, fragment: str) -> bool:
+    candidate_normalized = " ".join(candidate.lower().replace("’", "'").split())
+    fragment_normalized = " ".join(fragment.lower().replace("’", "'").split())
+    if fragment_normalized in candidate_normalized:
+        return True
+    fragment_terms = set(_content_terms(fragment_normalized, limit=60))
+    if not fragment_terms:
+        return False
+    candidate_terms = set(_content_terms(candidate_normalized, limit=160))
+    minimum = max(1, (len(fragment_terms) * 2 + 2) // 3)
+    return len(fragment_terms & candidate_terms) >= minimum
 
 
 def _question_obligations(questions: list[str], loops: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1057,7 +1231,8 @@ def _special_semantic_gate(
         )
         return bool(
             re.search(
-                r"^(?:yes|no|not yet)\b|\b(?:i agree|i disagree|that is correct|that is not correct|"
+                r"^(?:(?:got it|understood|all right|okay|fair)[.!,:;]?\s+)?"
+                r"(?:yes|no|not yet)\b|\b(?:i agree|i disagree|that is correct|that is not correct|"
                 r"not completely|not always|not necessarily|i would|i would not|i do|i do not|"
                 r"(?:the\s+)?(?:aim|plan|idea|recommendation)\s+still\s+holds?|"
                 r"(?:the\s+)?(?:aim|plan|idea|recommendation)\s+still\s+applies|"

@@ -186,7 +186,8 @@ def test_ordinary_turn_selects_the_conversation_path_and_holds_unused_specialist
     assert _participant(result, "metacognition")["status"] == "selected"
     assert _participant(result, "native_language_organ")["status"] == "selected"
     assert result["selected_optional_count"] == 1
-    assert result["held_optional_count"] == 7
+    assert result["held_optional_count"] == 8
+    assert _participant(result, "exploratory_reasoning")["status"] == "held"
     assert result["obligation_ids"] == []
 
 

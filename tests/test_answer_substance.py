@@ -152,6 +152,59 @@ def test_useful_guess_remains_distinct_from_verified_knowledge():
     assert "separate from something verified" in result["answer"]
 
 
+def test_low_stakes_choice_answers_directly_from_the_visible_preference():
+    result = build_answer_substance(
+        "I'm planning a quiet afternoon. Could you help me choose between reading on the porch "
+        "and taking a short walk, then give me one reason for your choice?"
+    )
+
+    assert result["answer_kind"] == "grounded_low_stakes_choice"
+    assert result["answer"].startswith("I would choose reading on the porch.")
+    assert "quiet afternoon" in result["answer"]
+    assert result["source_required_for_factual_claim"] is False
+
+
+def test_visible_rain_uncertainty_revises_the_everyday_choice_provisionally():
+    result = build_answer_substance(
+        "Small change: it may rain soon, but we haven't checked. How does that change your answer?",
+        [
+            {
+                "observation": (
+                    "Could you help me choose between reading on the porch and taking a short walk?"
+                )
+            }
+        ],
+    )
+
+    assert result["answer_kind"] == "grounded_everyday_choice_revision"
+    assert "toward reading on the porch, provisionally" in result["answer"]
+    assert "sky or forecast could change" in result["answer"]
+    assert result["support_basis"] == "current_prompt_and_recent_conversation"
+
+
+def test_reversible_everyday_choice_uses_recent_visible_options():
+    result = build_answer_substance(
+        "Back to the porch and walk: which option keeps the plan easiest to change?",
+        [{"observation": "We were choosing between reading on the porch and taking a short walk."}],
+    )
+
+    assert result["answer_kind"] == "grounded_reversible_everyday_choice"
+    assert result["answer"].startswith("Reading on the porch")
+    assert "switch to the walk" in result["answer"]
+
+
+def test_conflicting_reports_do_not_become_a_false_current_fact():
+    result = build_answer_substance(
+        "I have two reports: one says the porch is dry and one says it is wet. "
+        "What can we honestly conclude?"
+    )
+
+    assert result["answer_kind"] == "grounded_conflicting_reports"
+    assert "reports conflict" in result["answer"]
+    assert "not whether the porch is dry or wet right now" in result["answer"]
+    assert "look at the porch directly" in result["answer"]
+
+
 def test_new_evidence_reopens_only_the_prior_conclusion():
     result = build_answer_substance(
         "Now I notice the drawer still catches after the runner is tightened. "

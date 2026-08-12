@@ -10,6 +10,7 @@ from typing import Any
 from .claim_evidence import build_claim_evidence_packet
 from .conversation_spine import evaluate_candidate_compatibility
 from .registry import truncate
+from .semantic_relevance import evaluate_semantic_relevance
 from .supported_semantics import build_text_supported_semantic_packet
 
 
@@ -927,7 +928,7 @@ def retrieve_approved_expression_guidance(
             "changes_identity": False,
             "creates_emotion_claim": False,
             "profiles_user": False,
-            "voice_retains_expression_ownership": True,
+            "voice_retains_final_expression_compatibility": True,
             "review_status": "status_only",
             "provenance_boundary": COMPREHENSION_BOUNDARY,
         }
@@ -1052,6 +1053,19 @@ def _answer_eligible_knowledge_items(
             # refers to even if an approved lesson shares a few words.
             continue
         if item.get("guidance_only") is True or _is_language_guidance_concept(item):
+            continue
+        semantic_relevance = evaluate_semantic_relevance(
+            {
+                "prompt": subject_query,
+                "candidate": {**item, "source_class": "approved_knowledge"},
+                "source_id": "approved_comprehension",
+                "source_class": "approved_knowledge",
+                "intent_decision": intent,
+                "conversation_spine": conversation_spine or {},
+            }
+        )
+        item["semantic_relevance"] = semantic_relevance
+        if semantic_relevance.get("accepted") is not True:
             continue
         overlap = set(item.get("matched_terms") or []) & query_terms
         distinctive_overlap = {term for term in overlap if term not in generic}

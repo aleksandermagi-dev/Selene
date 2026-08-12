@@ -27,6 +27,7 @@ individually defined as Selene.
 
 ## Reasoning, Answers, And Metacognition
 
+- [Integrated Epistemic Speech Repair Plan](SELENE_INTEGRATED_EPISTEMIC_SPEECH_REPAIR_PLAN_20260809.md)
 - [Answer Engine Phase 1](SELENE_ANSWER_ENGINE_PHASE_1_20260715.md)
 - [Answer Engine Phase 2](SELENE_ANSWER_ENGINE_PHASE_2_20260715.md)
 - [Answer Engine Phase 3](SELENE_ANSWER_ENGINE_PHASE_3_20260715.md)

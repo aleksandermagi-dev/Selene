@@ -41,7 +41,7 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
         {
             "status": "metacognition_feedback_advisor_ready",
             "organ_name": "Metacognition Organ",
-            "version": "v3_bounded_feedback_with_response_agency",
+            "version": "v4_exact_obligation_owner_feedback",
             "mode": "bounded_feedback_advisor",
             "run_count": count,
             "latest_run": latest,
@@ -133,6 +133,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     intelligence = _dict(payload.get("intelligence_os_support") or payload.get("intelligence_support"))
     answer_engine = _dict(payload.get("answer_engine_support"))
     organ_coalition = _dict(payload.get("organ_coalition"))
+    epistemic_answer_state = _dict(payload.get("epistemic_answer_state"))
     dual_horizon = _dict(payload.get("dual_horizon_context"))
     coverage = _dict(payload.get("response_coverage"))
     diagnostic_context = _dict(payload.get("diagnostic_context"))
@@ -159,6 +160,15 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     )
     conversational_energy = _dict(payload.get("conversational_energy"))
     structural_discovery = _dict(payload.get("structural_discovery"))
+    exploratory_reasoning = _dict(payload.get("exploratory_reasoning"))
+    exploratory_response_kind = str(
+        exploratory_reasoning.get("response_kind") or ""
+    )
+    unresolved_data_conflict_preserved = (
+        exploratory_reasoning.get("selected_for_answer") is True
+        and exploratory_response_kind == "data_conflict"
+        and _dict(exploratory_reasoning.get("data_conflict")).get("present") is True
+    )
     affect_expression = _dict(payload.get("affect_expression"))
     response_agency = _dict(
         payload.get("response_agency")
@@ -254,6 +264,10 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         fit_state = "affective_influence_visible_response_choice_pending"
         action = "defer_to_core_mind"
         sufficiency_state = "restore_option_space_before_response_choice"
+    elif unresolved_data_conflict_preserved and candidate:
+        fit_state = "unresolved_data_conflict_preserved_without_false_resolution"
+        action = "answer_now"
+        sufficiency_state = "sufficient_to_report_current_conflict_and_deciding_evidence"
     elif reopen_requested and recursion_count < MAX_REOPEN_CYCLES:
         fit_state = "contradiction_or_correction_requires_recheck"
         action = "reopen_current_model"
@@ -335,6 +349,10 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         action,
         answer_engine=answer_engine,
         intelligence=intelligence,
+        comprehension=comprehension,
+        organ_coalition=organ_coalition,
+        epistemic_answer_state=epistemic_answer_state,
+        coverage=coverage,
         new_material=new_material,
         recursion_count=recursion_count,
         hard_boundary=hard_boundary,
@@ -342,7 +360,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     result = {
         "status": "metacognition_advisory_ready",
         "organ_name": "Metacognition Organ",
-        "version": "v3_bounded_feedback_with_response_agency",
+        "version": "v4_exact_obligation_owner_feedback",
         "mode": "bounded_feedback_advisor",
         "prompt_preview": truncate(prompt, 280),
         "fit_state": fit_state,
@@ -483,6 +501,20 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
             "private_corpus_wording_used": False,
             "automatic_conclusion": False,
         },
+        "exploratory_reasoning": exploratory_reasoning,
+        "exploratory_reasoning_assessment": {
+            "available": bool(exploratory_reasoning),
+            "selected_for_answer": exploratory_reasoning.get("selected_for_answer") is True,
+            "response_kind": exploratory_response_kind,
+            "prediction_presented_as_fact": False,
+            "hypothesis_presented_as_fact": False,
+            "alternatives_false_equal_weighting": False,
+            "reviewed_experience_universalized": False,
+            "unresolved_data_conflict_preserved": unresolved_data_conflict_preserved,
+            "data_conflict_is_identity_conflict": False,
+            "ordinary_wrongness_is_failure": False,
+            "automatic_test_execution": False,
+        },
         "source_refs": source_refs,
         "attributed_evidence_refs": evidence_source_refs,
         "answer_rewritten": False,
@@ -506,10 +538,21 @@ def _feedback_handoff(
     *,
     answer_engine: dict[str, Any],
     intelligence: dict[str, Any],
+    comprehension: dict[str, Any],
+    organ_coalition: dict[str, Any],
+    epistemic_answer_state: dict[str, Any],
+    coverage: dict[str, Any],
     new_material: bool,
     recursion_count: int,
     hard_boundary: bool,
 ) -> dict[str, Any]:
+    target = _unresolved_feedback_target(
+        coverage,
+        epistemic_answer_state,
+    )
+    target_id = str(target.get("obligation_id") or "")
+    mapped_owner = _coalition_owner_for_obligation(organ_coalition, target_id)
+    missing_state = str(target.get("state") or "")
     if action == "defer_to_core_mind" or hard_boundary:
         owner = "core_mind"
     elif action == "seek_sources":
@@ -518,12 +561,11 @@ def _feedback_handoff(
         "complete_missing_obligation",
         "answer_with_qualification",
     }:
-        owner = (
-            "answer_engine"
-            if answer_engine
-            else "intelligence_os"
-            if intelligence
-            else "conversation_content_owner"
+        owner = mapped_owner or _owner_for_missing_state(
+            missing_state,
+            answer_engine=answer_engine,
+            intelligence=intelligence,
+            comprehension=comprehension,
         )
     elif action == "reopen_current_model":
         owner = (
@@ -537,7 +579,11 @@ def _feedback_handoff(
         owner = "conversation_content_owner"
     else:
         owner = "none"
-    cycle_requested = action == "complete_missing_obligation" or (
+    cycle_requested = (
+        action == "complete_missing_obligation"
+        and bool(target_id)
+        and owner not in {"", "none", "core_mind", "source_evidence_owner"}
+    ) or (
         action == "reopen_current_model"
         and new_material
         and recursion_count < MAX_REOPEN_CYCLES
@@ -550,6 +596,12 @@ def _feedback_handoff(
         ),
         "action": action,
         "responsible_owner": owner,
+        "target_obligation_id": target_id,
+        "target_requested_kind": str(target.get("requested_kind") or target.get("kind") or ""),
+        "target_missing_state": missing_state,
+        "target_missing_ground": truncate(str(target.get("missing_ground") or ""), 500),
+        "owner_selected_from_coalition_map": bool(mapped_owner),
+        "exact_obligation_required": action == "complete_missing_obligation",
         "single_cycle_requested": cycle_requested,
         "single_cycle_limit": MAX_REOPEN_CYCLES,
         "same_material_reopen_allowed": False,
@@ -557,9 +609,113 @@ def _feedback_handoff(
         "content_generation_allowed": False,
         "answer_rewrite_authority": False,
         "core_mind_retains_release_authority": True,
-        "nlo_and_voice_remain_expression_owners": True,
+        "nlo_and_voice_coordinate_expression": True,
         "automatic_cocoon_routing": False,
     }
+
+
+def _unresolved_feedback_target(
+    coverage: dict[str, Any],
+    epistemic_answer_state: dict[str, Any],
+) -> dict[str, Any]:
+    addressed_ids = {
+        str(item.get("obligation_id") or "")
+        for item in coverage.get("items") or []
+        if isinstance(item, dict)
+        and item.get("addressed") is True
+        and str(item.get("obligation_id") or "")
+    }
+    missing_parts = [
+        item
+        for item in epistemic_answer_state.get("missing_parts") or []
+        if isinstance(item, dict)
+        and str(item.get("obligation_id") or "")
+        and str(item.get("obligation_id") or "") not in addressed_ids
+    ]
+    unresolved_ids = [
+        str(item.get("obligation_id") or "")
+        for item in coverage.get("items") or []
+        if isinstance(item, dict)
+        and item.get("addressed") is not True
+        and str(item.get("obligation_id") or "")
+    ]
+    for obligation_id in unresolved_ids:
+        matching = next(
+            (
+                item
+                for item in missing_parts
+                if str(item.get("obligation_id") or "") == obligation_id
+            ),
+            None,
+        )
+        if matching:
+            return matching
+        coverage_item = next(
+            (
+                item
+                for item in coverage.get("items") or []
+                if isinstance(item, dict)
+                and str(item.get("obligation_id") or "") == obligation_id
+            ),
+            {},
+        )
+        return {
+            "obligation_id": obligation_id,
+            "requested_kind": str(coverage_item.get("kind") or ""),
+            "state": "missing_supported_basis",
+            "missing_ground": "the requested response obligation remains unsupported",
+        }
+    return missing_parts[0] if missing_parts else {}
+
+
+def _coalition_owner_for_obligation(
+    organ_coalition: dict[str, Any], obligation_id: str
+) -> str:
+    if not obligation_id:
+        return ""
+    for item in organ_coalition.get("obligation_owner_map") or []:
+        if not isinstance(item, dict):
+            continue
+        if str(item.get("obligation_id") or "") != obligation_id:
+            continue
+        owner = str(item.get("responsible_owner") or "")
+        if owner and owner != "unassigned":
+            return owner
+    return ""
+
+
+def _owner_for_missing_state(
+    missing_state: str,
+    *,
+    answer_engine: dict[str, Any],
+    intelligence: dict[str, Any],
+    comprehension: dict[str, Any],
+) -> str:
+    if missing_state == "missing_taught_knowledge":
+        return "comprehension_integration"
+    if missing_state in {"missing_current_information", "missing_attributed_source"}:
+        return "source_evidence_owner"
+    if missing_state in {
+        "missing_mechanism",
+        "missing_discriminating_evidence",
+        "conflicting_evidence",
+        "missing_supported_basis",
+    }:
+        return "intelligence_os"
+    if missing_state in {
+        "missing_visible_context",
+        "missing_decision_criteria",
+        "missing_comparison_dimension",
+        "genuinely_unknowable",
+    }:
+        return "conversation_content_owner"
+    if answer_engine.get("used") is True:
+        return "answer_engine"
+    if intelligence.get("used") is True:
+        return "intelligence_os"
+    if str(comprehension.get("knowledge_response_seed") or "").strip():
+        return "comprehension_integration"
+    return "conversation_content_owner"
 
 
 def _confidence_vector(payload: dict[str, Any], answer_engine: dict[str, Any]) -> dict[str, Any]:

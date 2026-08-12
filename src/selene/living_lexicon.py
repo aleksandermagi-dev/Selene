@@ -151,7 +151,7 @@ def living_lexicon_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "database_write_performed": False,
             "dictionary_memorization_used": False,
             "reviewed_terms_are_automatic_synonyms": False,
-            "voice_owns_expression_style": True,
+            "coordinated_expression_contract_active": True,
             "provenance_boundary": LIVING_LEXICON_BOUNDARY,
         }
     )

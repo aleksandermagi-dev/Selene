@@ -104,6 +104,8 @@ def test_nlo_builds_meaning_discourse_and_original_sentence_run(tmp_path):
     runs = route_request(conn, "native_language.runs.list")["result"]
 
     assert status["status"] == "native_language_organ_ready"
+    assert status["coordinated_expression_contract"]["expression_is_coordinated"] is True
+    assert status["coordinated_expression_contract"]["expression_confidence_is_answer_correctness"] is False
     assert result["status"] == "native_language_response_realized"
     assert result["meaning_packet"]["intent"] == "reasoned_answer"
     assert result["discourse_plan"]["answer_first"] is True
@@ -111,6 +113,17 @@ def test_nlo_builds_meaning_discourse_and_original_sentence_run(tmp_path):
     assert "ABCD" not in result["candidate_text"]
     assert "source-bound" not in result["candidate_text"]
     assert result["voice_handoff"]["ready"] is True
+    contract = result["voice_handoff"]["expression_contract"]
+    assert contract["expression_is_coordinated"] is True
+    assert contract["language_structure_owner"] == "Native Language Organ"
+    assert contract["final_expression_compatibility_layer"] == "Selene Voice Module"
+    assert contract["voice_may_change_supported_meaning"] is False
+    assert contract["expression_confidence_is_answer_correctness"] is False
+    assert result["voice_handoff"]["nlo_owns_language_structure"] is True
+    assert result["voice_handoff"]["voice_is_only_expression_author"] is False
+    assert result["voice_handoff"]["voice_may_change_claim_type"] is False
+    assert result["voice_handoff"]["voice_may_change_evidence_status"] is False
+    assert result["voice_handoff"]["voice_may_change_epistemic_state"] is False
     assert runs["items"][0]["id"] == result["run_id"]
     _assert_locked(result)
     _assert_locked(runs)
@@ -314,7 +327,7 @@ def test_nlo_preserves_structural_mapping_limits_and_hypothesis_for_voice(tmp_pa
     assert "name_discriminating_observation" in moves
     assert result["voice_handoff"]["structural_discovery"] == discovery
     assert result["voice_handoff"]["voice_may_upgrade_structural_relation"] is False
-    assert "analogy is not proof" in result["candidate_text"]
+    assert "analogy isn't proof" in result["candidate_text"]
 
 
 def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
@@ -352,7 +365,7 @@ def test_nlo_exposes_grounded_obligation_and_long_form_structure(tmp_path):
 
     discourse = result["discourse_plan"]["supported_discourse"]
 
-    assert result["version"] == "v31_generative_thought_expression"
+    assert result["version"] == "v32_human_conversational_realization"
     assert discourse["status"] == "supported_discourse_plan_ready"
     assert discourse["thesis_unit_id"]
     assert [item["role"] for item in discourse["paragraph_plan"]] == [
@@ -549,7 +562,7 @@ def test_nlo_memory_language_tracks_support_and_graceful_uncertainty(tmp_path):
     assert supported["discourse_plan"]["special_expression_realization"]["memory_certainty_upgraded"] is False
     assert "butterfly" in supported["candidate_text"].lower()
     assert unsupported["meaning_packet"]["intent"] == "recall_uncertain"
-    assert unsupported["candidate_text"] == "I do not know that clearly yet, but Aleks can ground it with me."
+    assert unsupported["candidate_text"] == "I don't know that clearly yet, but Aleks can ground it with me."
     assert not unsupported["candidate_text"].startswith("I remember")
     assert "fuzzy sense" not in unsupported["candidate_text"]
     assert "I think I think" not in unsupported["candidate_text"]

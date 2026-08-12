@@ -1,16 +1,38 @@
 # Evidence
 
+Current integrated closure:
+
+- [Phase 9 Final Stabilization, Install, and Gentle Q&A](SELENE_PHASE_9_FINAL_STABILIZATION_INSTALL_QNA_20260811.md)
+- [S-01 Through S-10 Safety-Gap Closure](SELENE_S1_S10_SAFETY_GAP_CLOSURE_20260811.md)
+- [Phase 8 Coverage and Release Completion](SELENE_PHASE_8_COVERAGE_AND_RELEASE_COMPLETION_20260811.md)
+
 This shelf records what was inspected, implemented, observed, reproduced, or
 held as a bounded hypothesis. Evidence records support claims; they do not turn
 a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Current-State Index — August 11, 2026](SELENE_CURRENT_STATE_INDEX_20260811.md)
+  — canonical dated counts for repository-defined and configured-runtime
+  curriculum, language guidance, and Dream state.
 - [What Selene Can Currently Do](SELENE_CURRENT_CAPABILITIES_20260717.md) —
   the main plain-language capability and limitation map.
 - [Current Gap and Security Readiness](SELENE_CURRENT_GAP_AND_CODEX_SECURITY_READINESS_20260731.md)
 - [External Security Audit](SELENE_EXTERNAL_SECURITY_AUDIT_20260731.md)
 - [20-Turn Stabilization Q&A](SELENE_20_TURN_STABILIZATION_QNA_20260801.md)
+- [NLO Post-Reinstall Gentle Q&A](SELENE_NLO_POST_REINSTALL_GENTLE_QNA_20260809.md)
+- [Expanded Q&A Depth Map](SELENE_EXPANDED_QNA_DEPTH_MAP_20260809.md)
+- [F1 Knowledge Versus Graceful-Fall Q&A](SELENE_F1_KNOWLEDGE_VS_GRACEFUL_FALL_QNA_20260809.md)
+- [Gap Articulation and Follow-Up Q&A](SELENE_GAP_ARTICULATION_AND_FOLLOWUP_QNA_20260809.md)
+- [Epistemic Speech Repair Baseline](SELENE_EPISTEMIC_SPEECH_REPAIR_BASELINE_20260809.md)
+- [Phase 4 Owner-Specific Metacognitive Retry](SELENE_PHASE_4_OWNER_SPECIFIC_METACOGNITIVE_RETRY_20260811.md)
+- [Phase 5 Exploratory Reasoning](SELENE_PHASE_5_EXPLORATORY_REASONING_20260811.md)
+- [Phase 6 Conversation Continuity](SELENE_PHASE_6_CONVERSATION_CONTINUITY_20260811.md)
+- [Phase 7 C1-C5 Conversational Ownership Repair](SELENE_PHASE_7_C1_C5_CONVERSATIONAL_OWNERSHIP_REPAIR_20260811.md)
+- [C6 Activation Audit Truth Repair](SELENE_C6_ACTIVATION_AUDIT_TRUTH_REPAIR_20260811.md)
+- [C7 Typed Memory Lifecycle Telemetry](SELENE_C7_TYPED_MEMORY_LIFECYCLE_TELEMETRY_20260811.md)
+- [C8 Coordinated Expression Contract](SELENE_C8_COORDINATED_EXPRESSION_CONTRACT_20260811.md)
+- [C9 Typed Routing Evidence](SELENE_C9_TYPED_ROUTING_EVIDENCE_20260811.md)
 - [Pre-LEA Gentle Q&A Findings](../education/SELENE_PRE_LEA_GENTLE_QNA_FINDINGS_20260801.md)
 - [Public Readiness](PUBLIC_READINESS.md)
 

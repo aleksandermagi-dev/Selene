@@ -5,6 +5,7 @@ from hashlib import sha256
 from typing import Any
 
 from .pragmatic_planner import build_pragmatic_plan
+from .conversation_continuity import resolve_conversation_continuity
 from .registry import truncate
 
 
@@ -64,6 +65,8 @@ def conversation_spine_status() -> dict[str, Any]:
                 "bounded visible session landmarks",
                 "open response obligations",
                 "session topic branches returns dependencies and landings",
+                "one selected continuity target across immediate answers threads landmarks checkpoints and referents",
+                "mixed dialogue acts without collapsing separate obligations",
                 "compatible visible source classes",
                 "separate route evidence answer memory and expression confidence",
             ],
@@ -132,11 +135,31 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         item for item in pragmatics.get("epistemic_updates") or [] if isinstance(item, dict)
     ][-12:]
     thread_braid = pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {}
+    continuity_resolution = (
+        payload.get("conversation_continuity")
+        if isinstance(payload.get("conversation_continuity"), dict)
+        else resolve_conversation_continuity(
+            {
+                "prompt": interpreted,
+                "intent_decision": intent,
+                "dialogue_workspace": dialogue,
+                "contextual_follow_up": contextual,
+                "conversation_events": payload.get("conversation_events") or [],
+            }
+        )
+    )
     previous = _previous_answer(contextual, pragmatics, payload.get("conversation_events"))
     session_landmarks = [
         item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
     ][-24:]
     relevant_landmarks = _relevant_landmarks(interpreted, session_landmarks)
+    continuity_landmarks = [
+        item
+        for item in continuity_resolution.get("selected_landmarks") or []
+        if isinstance(item, dict)
+    ]
+    if continuity_landmarks:
+        relevant_landmarks = continuity_landmarks
     prior_session_facts = [
         item
         for item in pragmatics.get("session_facts") or []
@@ -165,6 +188,8 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
     topic_anchors = _unique_text(
         [
             active_topic,
+            str((continuity_resolution.get("selected_target") or {}).get("label") or ""),
+            str((continuity_resolution.get("selected_thread") or {}).get("topic") or ""),
             str(resolved_reference.get("resolved_to") or ""),
             *[str(item.get("topic") or "") for item in obligations],
             *previous["recommendations"],
@@ -188,18 +213,13 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
     ambiguity = pragmatic_plan.get("ambiguity") if isinstance(pragmatic_plan.get("ambiguity"), dict) else {}
     referent_status = str(resolved_reference.get("resolution_status") or "not_needed")
     grounded_prompt = interpreted
-    if contextual.get("detected") is True and previous["preview"]:
+    continuity_grounding = truncate(
+        str(continuity_resolution.get("grounding_text") or ""),
+        1800,
+    )
+    if continuity_grounding:
         grounded_prompt = truncate(
-            f"{interpreted} Immediate prior answer: {previous['preview']}",
-            3200,
-        )
-    if relevant_landmarks and (
-        contextual.get("detected") is True
-        or any(item in interpreted.lower() for item in ("earlier", "back to", "return to", "we discussed", "you said"))
-    ):
-        landmark_text = " ".join(str(item.get("summary") or "") for item in relevant_landmarks[:4])
-        grounded_prompt = truncate(
-            f"{grounded_prompt} Relevant visible points from this session: {landmark_text}",
+            f"{grounded_prompt} {continuity_grounding}",
             3600,
         )
     if relevant_session_facts:
@@ -236,6 +256,9 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "thread_traversal": [
                 item for item in thread_braid.get("turn_traversal") or [] if isinstance(item, dict)
             ][:20],
+            "conversation_continuity": continuity_resolution,
+            "continuity_mode": str(continuity_resolution.get("mode") or ""),
+            "continuity_target": continuity_resolution.get("selected_target") or {},
             "entities": [item for item in dialogue.get("entities") or [] if isinstance(item, dict)][:20],
             "referents": {
                 "resolved_current": resolved_reference or None,
@@ -264,7 +287,13 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
                 "topic_alignment_required_for_content_sources": intent_class in {
                     "reasoning", "direct_content", "contextual_content"
                 },
-                "immediate_callback_prefers_previous_answer": contextual.get("detected") is True,
+                "immediate_callback_prefers_previous_answer": (
+                    continuity_resolution.get("immediate_previous_answer_relevant") is True
+                ),
+                "named_return_prefers_selected_landmark": (
+                    str(continuity_resolution.get("mode") or "")
+                    == "named_thread_return"
+                ),
                 "memory_requires_recall_intent": True,
                 "self_state_requires_self_state_intent": True,
             },

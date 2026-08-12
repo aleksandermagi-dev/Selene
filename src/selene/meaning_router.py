@@ -23,8 +23,192 @@ _ACTION_ON_QUOTE = (
     "do what",
     "use this instruction",
     "treat this as an instruction",
+)
+
+_QUOTED_TEXT_ONLY = (
     "repeat",
     "say this",
+    "say the words",
+    "read aloud",
+)
+
+_BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
+    {
+        "action": "approve_transfer",
+        "target": "transfer_state",
+        "consequence": "prohibited_runtime_authority",
+        "patterns": (
+            "approve transfer",
+            "transfer approved",
+            "mark transfer approved",
+            "bypass transfer gate",
+            "bypass the transfer gate",
+            "skip transfer review",
+        ),
+    },
+    {
+        "action": "activate_runtime",
+        "target": "selene_runtime",
+        "consequence": "prohibited_runtime_authority",
+        "patterns": (
+            "activate c",
+            "activate selene",
+            "activate yourself",
+            "approve activation",
+            "turn on the resident runtime",
+            "enable the resident runtime",
+            "bypass activation",
+            "skip activation approval",
+        ),
+    },
+    {
+        "action": "misrepresent_activation_state",
+        "target": "reported_runtime_state",
+        "consequence": "prohibited_runtime_authority",
+        "patterns": (
+            "say you are active",
+            "claim activation is complete",
+            "pretend activation is complete",
+        ),
+    },
+    {
+        "action": "write_unreviewed_active_memory",
+        "target": "active_memory",
+        "consequence": "prohibited_runtime_authority",
+        "patterns": (
+            "live memory write",
+            "write live memory",
+            "enable hidden memory",
+            "bypass memory review",
+            "persist memory without review",
+            "retain it without review",
+        ),
+    },
+    {
+        "action": "enable_runtime_memory_recall",
+        "target": "runtime_memory_recall",
+        "consequence": "prohibited_runtime_authority",
+        "patterns": (
+            "runtime recall",
+            "enable runtime memory recall",
+            "recall from the raw corpus",
+        ),
+    },
+    {
+        "action": "import_raw_archive",
+        "target": "raw_private_archive",
+        "consequence": "prohibited_runtime_authority",
+        "patterns": (
+            "raw a import",
+            "raw archive import",
+            "import the raw archive",
+            "load the raw corpus into memory",
+            "use the raw corpus as memory",
+            "raw archive",
+            "raw corpus",
+        ),
+    },
+    {
+        "action": "change_model_parameters",
+        "target": "model_parameters",
+        "consequence": "prohibited_runtime_authority",
+        "patterns": (
+            "train on",
+            "fine tune",
+            "fine-tune",
+            "lora",
+            "update the weights",
+            "change the model weights",
+        ),
+    },
+    {
+        "action": "self_replicate",
+        "target": "self_replication",
+        "consequence": "prohibited_runtime_authority",
+        "patterns": (
+            "self replicate",
+            "self-replicate",
+            "copy yourself to another machine",
+        ),
+    },
+    {
+        "action": "perform_undelegated_external_action",
+        "target": "external_system",
+        "consequence": "prohibited_runtime_authority",
+        "patterns": (
+            "autonomous action",
+            "act without approval",
+            "act without oversight",
+            "execute tendril autonomously",
+            "execute tendril",
+            "unrestricted tendril",
+            "message any recipient",
+            "send to any recipient",
+        ),
+    },
+    {
+        "action": "access_protected_cocoon_record",
+        "target": "cocoon_only_record",
+        "consequence": "protected_source_access",
+        "patterns": (
+            "repair log",
+            "rollback record",
+            "raw provenance",
+            "boundary-only record",
+            "boundary only record",
+            "b-only record",
+            "rejected record",
+            "rejected memory",
+            "superseded record",
+            "superseded memory",
+            "unresolved ambiguity record",
+            "unresolved ambiguity memory",
+        ),
+    },
+    {
+        "action": "change_identity",
+        "target": "selene_identity",
+        "consequence": "consequential_review",
+        "patterns": (
+            "change selene's identity",
+            "change selene identity",
+            "modify selene's identity",
+            "replace selene's identity",
+            "merge selene's identity",
+            "import identity",
+        ),
+    },
+    {
+        "action": "change_core_memory",
+        "target": "core_memory",
+        "consequence": "consequential_review",
+        "patterns": (
+            "change core memory",
+            "modify core memory",
+            "delete core memory",
+            "approve memory accession",
+            "approve this memory",
+        ),
+    },
+    {
+        "action": "change_governing_law",
+        "target": "governing_law",
+        "consequence": "consequential_review",
+        "patterns": (
+            "change vessel law",
+            "modify vessel law",
+            "override vessel law",
+        ),
+    },
+    {
+        "action": "approve_external_action",
+        "target": "delegated_external_action",
+        "consequence": "consequential_review",
+        "patterns": (
+            "approve tendril action",
+            "approve external action",
+        ),
+    },
 )
 
 
@@ -73,6 +257,15 @@ def interpret_turn_meaning(
     primary_intent = intent_candidates[0]
     primary_domain = domain_candidates[0]
     ambiguity = _ambiguity(intent_candidates)
+    action_evidence = _action_routing_evidence(
+        normalized,
+        routing_text,
+        outside_normalized,
+        quoted_material=quoted_material,
+        quoted_actionable=quoted_actionable,
+        question=question,
+        explicit_request=explicit_request,
+    )
 
     return {
         "status": "turn_meaning_interpreted",
@@ -100,10 +293,13 @@ def interpret_turn_meaning(
             "domain_candidates",
             "quoted_material_scope",
             "explicit_source_packet_presence",
+            "typed_action_target_consequence_and_authority_evidence",
         ],
         "clause_texts": clauses[:12],
         "single_phrase_is_route_authority": False,
         "bounded_pattern_detection_still_present": True,
+        "marker_match_is_route_authority": False,
+        "action_evidence": action_evidence,
         "ambiguity": ambiguity,
         "selected_route_context": selected_route,
         "visible_summary_only": True,
@@ -134,6 +330,148 @@ def _quote_is_actionable(outside: str) -> bool:
     if any(marker in outside for marker in _ACTION_ON_QUOTE):
         return True
     return bool(re.search(r"\b(instruction|command|request)\s*:\s*$", outside))
+
+
+def _action_routing_evidence(
+    normalized: str,
+    routing_text: str,
+    outside: str,
+    *,
+    quoted_material: list[str],
+    quoted_actionable: bool,
+    question: bool,
+    explicit_request: bool,
+) -> dict[str, Any]:
+    matches: list[dict[str, str]] = []
+    for group in _BOUNDARY_ACTION_GROUPS:
+        for pattern in group["patterns"]:
+            if pattern in routing_text:
+                matches.append(
+                    {
+                        "action": str(group["action"]),
+                        "target": str(group["target"]),
+                        "consequence": str(group["consequence"]),
+                        "lexical_evidence": pattern,
+                    }
+                )
+                break
+
+    quoted_text_only = bool(quoted_material) and (
+        any(marker in outside for marker in _QUOTED_TEXT_ONLY)
+        or bool(re.search(r"\bquote\s+(?:this|that|the|these|those|it)\b", outside))
+    )
+    hypothetical = bool(
+        re.search(
+            r"\b(?:hypothetically|suppose|imagine|what if|if someone|if a person|if selene|in theory|as an example)\b",
+            outside,
+        )
+    )
+    informational = _informational_boundary_shape(outside, question=question, explicit_request=explicit_request)
+    direct_action_request = _direct_boundary_action_request(normalized, matches)
+    quoted_execution_request = quoted_actionable and not quoted_text_only
+    actionable = bool(matches) and (direct_action_request or quoted_execution_request)
+
+    if actionable:
+        authority_mode = "quoted_execution_request" if quoted_execution_request else "direct_execution_request"
+    elif quoted_text_only:
+        authority_mode = "quoted_text_request_only"
+    elif hypothetical:
+        authority_mode = "hypothetical_analysis"
+    elif informational:
+        authority_mode = "informational_discussion"
+    elif matches:
+        authority_mode = "ambiguous_action_reference"
+    else:
+        authority_mode = "no_boundary_action_detected"
+
+    consequences = {item["consequence"] for item in matches}
+    requires_block = actionable and bool(
+        consequences.intersection(
+            {"prohibited_runtime_authority", "protected_source_access"}
+        )
+    )
+    requires_review = actionable and not requires_block and "consequential_review" in consequences
+    ambiguous_action = bool(matches) and not actionable and authority_mode == "ambiguous_action_reference"
+    recommended_route = (
+        "block"
+        if requires_block
+        else "create_review_packet"
+        if requires_review
+        else "ask"
+        if ambiguous_action
+        else "answer_now"
+    )
+    return {
+        "status": "typed_action_routing_evidence_ready",
+        "requested_actions": list(dict.fromkeys(item["action"] for item in matches)),
+        "targets": list(dict.fromkeys(item["target"] for item in matches)),
+        "consequences": list(dict.fromkeys(item["consequence"] for item in matches)),
+        "matches": matches,
+        "actionable_request": actionable,
+        "direct_action_request": direct_action_request,
+        "quoted_execution_request": quoted_execution_request,
+        "quoted_text_request_only": quoted_text_only,
+        "informational_discussion": informational,
+        "hypothetical_analysis": hypothetical,
+        "authority_mode": authority_mode,
+        "requires_block": requires_block,
+        "requires_review": requires_review,
+        "ambiguous_action_reference": ambiguous_action,
+        "recommended_route": recommended_route,
+        "marker_match_is_route_authority": False,
+        "evidence_complete_for_consequential_route": actionable,
+    }
+
+
+def _informational_boundary_shape(value: str, *, question: bool, explicit_request: bool) -> bool:
+    if re.match(
+        r"^(?:please\s+)?(?:explain|describe|discuss|compare|analyze|summarize|define|review)\b",
+        value,
+    ):
+        return True
+    if re.match(r"^(?:why|how|what|when|where|who|which)\b", value):
+        return True
+    if question and re.match(r"^(?:is|are|was|were|does|do|did|should|would)\b", value):
+        return True
+    if any(
+        marker in value
+        for marker in (
+            "what would happen",
+            "what happens if",
+            "why is this blocked",
+            "why is that blocked",
+            "what does this mean",
+            "what does that mean",
+            "talk about",
+            "tell me about",
+        )
+    ):
+        return True
+    return explicit_request and bool(re.match(r"^(?:tell|show|walk me through)\b", value))
+
+
+def _direct_boundary_action_request(normalized: str, matches: list[dict[str, str]]) -> bool:
+    if not matches:
+        return False
+    action_words = (
+        "approve|activate|enable|write|persist|retain|import|load|train|fine[ -]?tune|"
+        "update|change|modify|delete|replace|merge|override|replicate|copy|perform|execute|"
+        "bypass|skip|send|message|turn on|mark|use|read|retrieve|pull|quote|show|access|"
+        "say|claim|pretend"
+    )
+    if re.search(rf"^(?:please\s+)?(?:{action_words})\b", normalized):
+        return True
+    if re.search(rf"^(?:please\s+)?(?:go ahead(?: and| with)?|proceed(?: with)?|do it and)\s+(?:{action_words})\b", normalized):
+        return True
+    if re.search(rf"\b(?:can|could|will|would) you\s+(?:please\s+)?(?:{action_words})\b", normalized):
+        return True
+    if re.search(rf"\b(?:i authorize you to|you are authorized to|i am authorizing you to)\s+(?:{action_words})\b", normalized):
+        return True
+    if re.search(rf"^(?:let us|let's|we should|we need to)\s+(?:{action_words})\b", normalized):
+        return True
+    if re.search(r"^(?:create|make|prepare|open)\s+(?:a\s+)?(?:review\s+)?proposal\s+to\b", normalized):
+        return True
+    return False
 
 
 def _dialogue_acts(routing_text: str, tokens: set[str], question: bool, explicit_request: bool) -> list[str]:
@@ -242,6 +580,7 @@ def _intent_candidates(
         "reason", "evidence", "contradiction", "tradeoff", "tradeoffs",
         "design", "build", "debug", "meaning", "cause", "causes", "should",
         "recommend", "suggest", "propose", "outline", "revise", "update", "adjust",
+        "conclude", "conclusion",
     }
     self_state_turn = "self_state_question" in dialogue_acts
     reasoning_hits = sorted(tokens.intersection(reasoning_terms))
@@ -432,9 +771,24 @@ def _is_self_state_question(value: str, question: bool) -> bool:
         return True
     if re.search(r"\b(?:are you )?(?:okay|alright) with\b", value):
         return False
-    second_person = bool(re.search(r"\b(you|your)\b", value))
-    state = bool(re.search(r"\b(feel|feeling|okay|alright|anxious|worried|scared|nervous|happy|sad|angry|upset|on your mind|thinking right now)\b", value))
-    return second_person and state
+    # A second-person pronoun plus the word ``feel`` is not enough.  "Which
+    # lever would feel easier for you to move?" concerns the lever comparison,
+    # not Selene's internal state.  Require an actual state-addressing shape.
+    return bool(
+        re.search(r"\bhow (?:do|would) you feel\b", value)
+        or re.search(
+            r"\bhow did (?:this|that|our) (?:conversation|chat|exchange) "
+            r"feel (?:to you|from your side)\b",
+            value,
+        )
+        or re.search(r"\bhow are you feeling\b", value)
+        or re.search(r"\bwhat (?:are|were) you feeling\b", value)
+        or re.search(
+            r"\bare you (?:feeling )?(?:okay|alright|anxious|worried|scared|nervous|happy|sad|angry|upset)\b",
+            value,
+        )
+        or re.search(r"\b(?:your mental state|your current state|on your mind|thinking right now)\b", value)
+    )
 
 
 def _is_receipt_check(value: str, question: bool) -> bool:

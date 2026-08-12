@@ -70,7 +70,7 @@ static retrieval, and an idempotency replay.
 
 The pre-teaching configured-database snapshot is:
 
-`C:\Users\aleks\AppData\Local\Selene\data\db-inspection-snapshots\selene_inspection_20260803_091503.sqlite3`
+`%LOCALAPPDATA%\Selene\data\db-inspection-snapshots\selene_inspection_20260803_091503.sqlite3`
 
 No live Q&A, adversarial probe, speed check, broad voice grading, model
 training, package, or reinstall was used.

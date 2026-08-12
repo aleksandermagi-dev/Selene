@@ -229,22 +229,28 @@ def _active_units(
         if item.get("source") == "supplied_content_seed"
     ]
     remaining = [item for item in original if item.get("source") != "supplied_content_seed"]
+    formation_key = _normalize_surface(formation_text)
+    subsumed_ids = [
+        str(item.get("id") or "")
+        for item in remaining
+        if _normalize_surface(str(item.get("text") or ""))
+        and _normalize_surface(str(item.get("text") or "")) in formation_key
+    ]
+    covered_ids = list(dict.fromkeys([*seed_ids, *subsumed_ids]))
     structured_unit = {
         "id": "structured_formation",
         "text": formation_text,
         "role": "thesis",
         "source": "candidate_garden_selected_formation",
         "supported": True,
-        "covers_content_unit_ids": seed_ids,
+        "covers_content_unit_ids": covered_ids,
     }
-    formation_key = _normalize_surface(formation_text)
     deduped = [
         item
         for item in remaining
-        if _normalize_surface(str(item.get("text") or ""))
-        and _normalize_surface(str(item.get("text") or "")) not in formation_key
+        if str(item.get("id") or "") not in subsumed_ids
     ]
-    return [structured_unit, *deduped], seed_ids
+    return [structured_unit, *deduped], covered_ids
 
 
 def _required_unit_ids(
@@ -742,7 +748,7 @@ def _locked(payload: dict[str, Any]) -> dict[str, Any]:
         "identity_change_allowed": False,
         "governance_change_allowed": False,
         "authority_change_allowed": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "database_write_performed": False,
         "hidden_chain_of_thought_exposed": False,
         "provenance_boundary": DISCOURSE_LOOM_BOUNDARY,

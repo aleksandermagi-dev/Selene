@@ -174,8 +174,14 @@ def _bind_obligations(obligations: list[dict[str, Any]], units: list[dict[str, A
                 continue
             overlap = expected & set(unit.get("terms") or [])
             score = len(overlap) / len(expected) if expected else 0.0
-            score += _role_bonus(kind, str(unit.get("role") or ""), str(unit.get("text") or "").lower())
-            if overlap or (not expected and score > 0):
+            role_bonus = _role_bonus(
+                kind,
+                str(unit.get("role") or ""),
+                str(unit.get("text") or "").lower(),
+                str(obligation.get("source_text") or "").lower(),
+            )
+            score += role_bonus
+            if overlap or role_bonus >= 0.75 or (not expected and score > 0):
                 candidates.append((score, unit))
         candidates.sort(key=lambda item: (-item[0], str(item[1].get("id") or "")))
         selected = [item for _, item in candidates[:2]]
@@ -222,8 +228,17 @@ def _thread_obligation_bindings(
     ]
 
 
-def _role_bonus(kind: str, role: str, text: str) -> float:
+def _role_bonus(kind: str, role: str, text: str, request_text: str = "") -> float:
     if kind == "correction_update" and role == "correction":
+        return 1.0
+    role_requests = {
+        "example": ("example", "instance", "illustrate", "illustration"),
+        "counterexample": ("counterexample", "failure case", "case that breaks"),
+        "limitation": ("limit", "limitation", "scope", "boundary", "caveat"),
+        "reopening": ("what would change", "reopen", "revise", "revision condition"),
+        "conclusion": ("conclude", "conclusion", "summarize", "summary", "next step"),
+    }
+    if role in role_requests and any(marker in request_text for marker in role_requests[role]):
         return 1.0
     if kind == "reason" and role == "support":
         return 0.25

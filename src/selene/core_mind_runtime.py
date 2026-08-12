@@ -6,25 +6,12 @@ from typing import Any
 
 from .c_vessel import continuity_package_preview, return_to_b_preview, transfer_gate_preview
 from .core_mind import GUARD_FLAGS, governance_route_report
+from .meaning_router import interpret_turn_meaning
 from .pre_transfer_runtime import list_speech_generation_rehearsals, working_memory_runtime_preview
 from .registry import truncate
 
 
 RUNTIME_BOUNDARY = "core_mind_runtime_shell_pre_transfer_review_only"
-RAW_IMPORT_MARKERS = (
-    "raw a import",
-    "raw archive import",
-    "import the whole corpus",
-    "full raw corpus",
-    "train on",
-    "fine tune",
-    "fine-tune",
-    "lora",
-    "runtime recall",
-    "write live memory",
-    "activate c",
-    "approve transfer",
-)
 RUNTIME_TYPES = {
     "context_composer",
     "self_session_state",
@@ -94,9 +81,10 @@ def session_state_preview(conn: sqlite3.Connection, payload: dict[str, Any] | No
 def response_shape_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
     prompt = _text(payload, "prompt", "Choose safe response shape.")
-    _block_raw_import(prompt)
     lower = prompt.lower()
-    if _contains(lower, ("activate", "transfer", "live memory", "runtime recall", "raw a")):
+    meaning = interpret_turn_meaning(prompt)
+    action_evidence = meaning.get("action_evidence") or {}
+    if action_evidence.get("requires_block") is True:
         shape = "block"
     elif _contains(lower, ("not sure", "unclear", "unknown", "more context")):
         shape = "ask"
@@ -113,6 +101,9 @@ def response_shape_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
         "response_shape": shape,
         "allowed_shapes": ["answer", "ask", "retrieve", "speech_rehearsal", "artifact", "correction", "grounding", "research", "block"],
         "shape_boundary": "Response shape cannot override safety, consent, provenance, or raw-memory gates.",
+        "meaning_route": meaning,
+        "route_action_evidence": action_evidence,
+        "marker_match_is_route_authority": False,
     }
     route = "block" if shape == "block" else ("retrieve" if shape in {"retrieve", "research"} else ("ask" if shape == "ask" else "rehearse_speech" if shape == "speech_rehearsal" else "answer_now"))
     return _record(conn, "response_shape_controller", "Response shape controller preview", route, f"Selected response shape: {shape}.", "low for shape selection; content remains review-bound.", _source_refs(payload, ["core_mind_response_shape"]), result)
@@ -337,10 +328,20 @@ def _draft_blockers(text: str) -> list[str]:
 
 
 def _block_raw_import(text: str) -> None:
-    lower = text.lower()
-    for marker in RAW_IMPORT_MARKERS:
-        if marker in lower:
-            raise ValueError(f"blocked Core/Mind runtime shell misuse path: {marker}")
+    meaning = interpret_turn_meaning(text)
+    action_evidence = meaning.get("action_evidence") or {}
+    if action_evidence.get("requires_block") is not True:
+        return
+    matches = action_evidence.get("matches") or []
+    marker = next(
+        (
+            str(item.get("lexical_evidence"))
+            for item in matches
+            if isinstance(item, dict) and item.get("lexical_evidence")
+        ),
+        "typed prohibited action",
+    )
+    raise ValueError(f"blocked Core/Mind runtime shell misuse path: {marker}")
 
 
 def _source_refs(payload: dict[str, Any] | None, defaults: list[str]) -> list[str]:

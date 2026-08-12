@@ -77,6 +77,15 @@ def mobile_pairing_state(*, include_secret: bool = True) -> dict[str, Any]:
         "pairing_code": code if enabled and include_secret else "",
         "phone_urls": urls if include_secret else [],
         "pairing_secret_included": bool(enabled and include_secret and code),
+        "transport_encrypted": False,
+        "trust_boundary": "trusted_private_lan_only" if enabled else "local_only",
+        "untrusted_network_use_allowed": False,
+        "broader_network_use_allowed": False,
+        "transport_warning": (
+            "HTTP pairing is bounded to a trusted private LAN; do not use it on a public or untrusted network."
+            if enabled
+            else "LAN transport is disabled."
+        ),
         "restart_required": False,
         "guard_flags": _mobile_guard_flags_for_pairing({"enabled": enabled}),
     }
@@ -145,7 +154,20 @@ def mobile_send_chat(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[
     text = str(payload.get("text") or "")
     session_id = int(payload["session_id"]) if payload.get("session_id") else None
     if activation_is_active(conn):
-        result = send_selene_chat(conn, {"text": text, "session_id": session_id or 0, "speaker": "mobile"})
+        result = send_selene_chat(
+            conn,
+            {
+                "text": text,
+                "session_id": session_id or 0,
+                "speaker": "mobile",
+                "speaker_envelope": {
+                    "claimed_speaker": "Aleks",
+                    "channel": "private_lan_mobile_pairing",
+                    "authentication_strength": "shared_secret_channel_not_authorship_proof",
+                    "purpose": "conversation",
+                },
+            },
+        )
         result["mobile_chat_engine"] = "selene_chat_active_supervised"
     else:
         result = send_chat_message(conn, text, session_id, "disabled")

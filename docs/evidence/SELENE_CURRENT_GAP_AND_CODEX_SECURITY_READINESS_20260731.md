@@ -10,6 +10,10 @@ public repository passed an independent network-clone history scan. No live
 conversation, retention change, provider call, package build, reinstall, or
 adversarial interaction was used.
 
+Historical snapshot note: the runtime counts below are accurate to this
+July 31 audit. They are superseded for current-state use by
+[Selene Current-State Index — August 11, 2026](SELENE_CURRENT_STATE_INDEX_20260811.md).
+
 ## Decision
 
 There is no remaining cognition, conversation, comprehension, memory, Dream,

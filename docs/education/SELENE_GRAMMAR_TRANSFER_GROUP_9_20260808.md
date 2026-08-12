@@ -97,4 +97,4 @@ Checkpoint result:
 
 SQLite-safe pre-teaching backup:
 
-`C:\Users\aleks\AppData\Local\Selene\data\selene.pre_language_g9_20260808_141253.sqlite3`
+`%LOCALAPPDATA%\Selene\data\selene.pre_language_g9_20260808_141253.sqlite3`

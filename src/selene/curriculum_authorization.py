@@ -95,6 +95,36 @@ from .curriculum_f1_group17 import (
     LESSONS as F1_GROUP17_LESSONS,
     SCOPE as F1_GROUP17_SCOPE,
 )
+from .curriculum_f2_group1 import (
+    AUTHORIZATION_KEY as F2_GROUP1_AUTHORIZATION_KEY,
+    GROUP_KEY as F2_GROUP1_KEY,
+    LESSONS as F2_GROUP1_LESSONS,
+    SCOPE as F2_GROUP1_SCOPE,
+)
+from .curriculum_f2_group2 import (
+    AUTHORIZATION_KEY as F2_GROUP2_AUTHORIZATION_KEY,
+    GROUP_KEY as F2_GROUP2_KEY,
+    LESSONS as F2_GROUP2_LESSONS,
+    SCOPE as F2_GROUP2_SCOPE,
+)
+from .curriculum_f2_group3 import (
+    AUTHORIZATION_KEY as F2_GROUP3_AUTHORIZATION_KEY,
+    GROUP_KEY as F2_GROUP3_KEY,
+    LESSONS as F2_GROUP3_LESSONS,
+    SCOPE as F2_GROUP3_SCOPE,
+)
+from .curriculum_f2_group4 import (
+    AUTHORIZATION_KEY as F2_GROUP4_AUTHORIZATION_KEY,
+    GROUP_KEY as F2_GROUP4_KEY,
+    LESSONS as F2_GROUP4_LESSONS,
+    SCOPE as F2_GROUP4_SCOPE,
+)
+from .curriculum_f2_group5 import (
+    AUTHORIZATION_KEY as F2_GROUP5_AUTHORIZATION_KEY,
+    GROUP_KEY as F2_GROUP5_KEY,
+    LESSONS as F2_GROUP5_LESSONS,
+    SCOPE as F2_GROUP5_SCOPE,
+)
 from .teaching_lifecycle import (
     acquire_teaching_item,
     approve_teaching_lifecycle_under_authorization,
@@ -732,6 +762,29 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
         "F1 text purpose and everyday economy closure bridge — group 17",
         F1_GROUP17_SCOPE["source_ids"],
     )
+    f2_first_group = _group_progress(
+        conn,
+        F2_GROUP1_LESSONS,
+        F2_GROUP1_KEY,
+        "F2 paragraph meaning and source-grounded communication — group 1",
+        F2_GROUP1_SCOPE["source_ids"],
+    )
+    f2_second_group = _group_progress(
+        conn,
+        F2_GROUP2_LESSONS,
+        F2_GROUP2_KEY,
+        "F2 vocabulary structure and comparison — group 2",
+        F2_GROUP2_SCOPE["source_ids"],
+    )
+    f2_third_group = _group_progress(
+        conn,
+        F2_GROUP3_LESSONS,
+        F2_GROUP3_KEY,
+        "F2 point of view and organized composition — group 3",
+        F2_GROUP3_SCOPE["source_ids"],
+    )
+    f2_fourth_group = _group_progress(conn, F2_GROUP4_LESSONS, F2_GROUP4_KEY, "F2 multi-digit arithmetic and operation relationships — group 4", F2_GROUP4_SCOPE["source_ids"])
+    f2_fifth_group = _group_progress(conn, F2_GROUP5_LESSONS, F2_GROUP5_KEY, "F2 factors, multiples, divisibility, and operation order — group 5", F2_GROUP5_SCOPE["source_ids"])
     return _with_guards(
         {
             "status": "curriculum_authorization_ready",
@@ -757,6 +810,12 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "fifteenth_group": fifteenth_group,
             "sixteenth_group": sixteenth_group,
             "seventeenth_group": seventeenth_group,
+            "f2_first_group": f2_first_group,
+            "f2_second_group": f2_second_group,
+            "f2_third_group": f2_third_group,
+            "f2_fourth_group": f2_fourth_group,
+            "f2_fifth_group": f2_fifth_group,
+            "f2_groups": [f2_first_group, f2_second_group, f2_third_group, f2_fourth_group, f2_fifth_group],
             "groups": [first_group, second_group, third_group, fourth_group, fifth_group, sixth_group, seventh_group, eighth_group, ninth_group, tenth_group, eleventh_group, twelfth_group, thirteenth_group, fourteenth_group, fifteenth_group, sixteenth_group, seventeenth_group],
             "exception_classes": list(EXCEPTION_CLASSES),
             "review_destination": "Cocoon Teaching / Lessons",
@@ -996,6 +1055,53 @@ def activate_f1_text_purpose_everyday_economy_bridge_authorization(
         title="F1 text purpose and everyday economy closure bridge — group 17",
         scope=F1_GROUP17_SCOPE,
     )
+
+
+def activate_f2_paragraph_meaning_source_grounding_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F2_GROUP1_AUTHORIZATION_KEY,
+        title="F2 paragraph meaning and source-grounded communication — group 1",
+        scope=F2_GROUP1_SCOPE,
+    )
+
+
+def activate_f2_vocabulary_structure_comparison_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F2_GROUP2_AUTHORIZATION_KEY,
+        title="F2 vocabulary structure and comparison — group 2",
+        scope=F2_GROUP2_SCOPE,
+    )
+
+
+def activate_f2_point_of_view_organized_composition_authorization(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _activate_authorization_record(
+        conn,
+        payload or {},
+        authorization_key=F2_GROUP3_AUTHORIZATION_KEY,
+        title="F2 point of view and organized composition — group 3",
+        scope=F2_GROUP3_SCOPE,
+    )
+
+
+def activate_f2_multi_digit_arithmetic_operations_authorization(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _activate_authorization_record(conn, payload or {}, authorization_key=F2_GROUP4_AUTHORIZATION_KEY, title="F2 multi-digit arithmetic and operation relationships — group 4", scope=F2_GROUP4_SCOPE)
+
+
+def activate_f2_factors_multiples_operation_order_authorization(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _activate_authorization_record(conn, payload or {}, authorization_key=F2_GROUP5_AUTHORIZATION_KEY, title="F2 factors, multiples, divisibility, and operation order — group 5", scope=F2_GROUP5_SCOPE)
 
 
 def revoke_curriculum_authorization(
@@ -1606,6 +1712,103 @@ def teach_f1_text_purpose_everyday_economy_bridge_group(
     )
 
 
+def prepare_f2_paragraph_meaning_source_grounding_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F2_GROUP1_LESSONS,
+        group_key=F2_GROUP1_KEY,
+        curriculum_band="F2",
+    )
+
+
+def teach_f2_paragraph_meaning_source_grounding_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F2_GROUP1_LESSONS,
+        group_key=F2_GROUP1_KEY,
+        authorization_key=F2_GROUP1_AUTHORIZATION_KEY,
+        curriculum_band="F2",
+    )
+
+
+def prepare_f2_vocabulary_structure_comparison_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F2_GROUP2_LESSONS,
+        group_key=F2_GROUP2_KEY,
+        curriculum_band="F2",
+    )
+
+
+def teach_f2_vocabulary_structure_comparison_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F2_GROUP2_LESSONS,
+        group_key=F2_GROUP2_KEY,
+        authorization_key=F2_GROUP2_AUTHORIZATION_KEY,
+        curriculum_band="F2",
+    )
+
+
+def prepare_f2_point_of_view_organized_composition_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=F2_GROUP3_LESSONS,
+        group_key=F2_GROUP3_KEY,
+        curriculum_band="F2",
+    )
+
+
+def teach_f2_point_of_view_organized_composition_group(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=F2_GROUP3_LESSONS,
+        group_key=F2_GROUP3_KEY,
+        authorization_key=F2_GROUP3_AUTHORIZATION_KEY,
+        curriculum_band="F2",
+    )
+
+
+def prepare_f2_multi_digit_arithmetic_operations_group(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _prepare_defined_group(conn, payload or {}, lessons=F2_GROUP4_LESSONS, group_key=F2_GROUP4_KEY, curriculum_band="F2")
+
+
+def teach_f2_multi_digit_arithmetic_operations_group(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _teach_defined_group(conn, payload or {}, lessons=F2_GROUP4_LESSONS, group_key=F2_GROUP4_KEY, authorization_key=F2_GROUP4_AUTHORIZATION_KEY, curriculum_band="F2")
+
+
+def prepare_f2_factors_multiples_operation_order_group(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _prepare_defined_group(conn, payload or {}, lessons=F2_GROUP5_LESSONS, group_key=F2_GROUP5_KEY, curriculum_band="F2")
+
+
+def teach_f2_factors_multiples_operation_order_group(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _teach_defined_group(conn, payload or {}, lessons=F2_GROUP5_LESSONS, group_key=F2_GROUP5_KEY, authorization_key=F2_GROUP5_AUTHORIZATION_KEY, curriculum_band="F2")
+
+
 def evaluate_curriculum_coverage(
     conn: sqlite3.Connection,
     payload: dict[str, Any] | None = None,
@@ -1737,6 +1940,7 @@ def _prepare_defined_group(
     *,
     lessons: tuple[dict[str, Any], ...],
     group_key: str,
+    curriculum_band: str = "F1",
 ) -> dict[str, Any]:
     _reject_authority_change(payload)
     created: list[dict[str, Any]] = []
@@ -1758,7 +1962,7 @@ def _prepare_defined_group(
                 "confidence": "developing",
                 "teaching_source_type": "bounded_public_academic_curriculum",
                 "source_metadata": {
-                    "curriculum_band": "F1",
+                    "curriculum_band": curriculum_band,
                     "curriculum_families": lesson["families"],
                     "curriculum_group_key": group_key,
                     "curriculum_order": order,
@@ -1800,12 +2004,21 @@ def _teach_defined_group(
     lessons: tuple[dict[str, Any], ...],
     group_key: str,
     authorization_key: str,
+    curriculum_band: str = "F1",
 ) -> dict[str, Any]:
     _reject_authority_change(payload)
     authorization = _authorization_by_key(conn, authorization_key)
     if not authorization or authorization["status"] != "active":
-        raise ValueError("activate this bounded F1 curriculum authorization before teaching the group")
-    prepared = _prepare_defined_group(conn, payload, lessons=lessons, group_key=group_key)
+        raise ValueError(
+            f"activate this bounded {curriculum_band} curriculum authorization before teaching the group"
+        )
+    prepared = _prepare_defined_group(
+        conn,
+        payload,
+        lessons=lessons,
+        group_key=group_key,
+        curriculum_band=curriculum_band,
+    )
     retained: list[dict[str, Any]] = []
     already_retained: list[dict[str, Any]] = []
     held: list[dict[str, Any]] = []

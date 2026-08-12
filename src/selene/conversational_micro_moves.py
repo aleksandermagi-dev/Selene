@@ -279,8 +279,8 @@ def build_conversational_micro_move_plan(
         moves.append(
             _move(
                 "mark_topic_return",
-                "prefix",
-                "the user explicitly returned to a named session topic",
+                "silent",
+                "the user's own words already mark the return, so repeating it would narrate the transition twice",
                 source="pragmatic_continuity",
                 target=str(transition.get("resume_target") or transition.get("to_topic") or ""),
             )
@@ -314,7 +314,7 @@ def build_conversational_micro_move_plan(
         else {}
     )
     if playful and (not tender or _user_opened_dark_humor(lower)):
-        if humor_posture not in {"avoid", "avoid_unless_context_reopens"}:
+        if humor_posture != "contextually_held_this_turn":
             moves.append(
                 _move(
                     "one_playful_turn",
@@ -328,7 +328,7 @@ def build_conversational_micro_move_plan(
             held.append(
                 {
                     "move": "one_playful_turn",
-                    "reason": "current affect guidance asks for restraint",
+                    "reason": "the current conversation context holds humor for this turn",
                 }
             )
 
@@ -404,7 +404,7 @@ def realize_conversational_micro_moves(
         "unsupported_answer_content_generated": False,
         "dream_content_invented": False,
         "follow_up_question_added": False,
-        "voice_owns_expression_style": True,
+        "coordinated_expression_contract_active": True,
         "provenance_boundary": MICRO_MOVE_BOUNDARY,
         **GUARDS,
     }

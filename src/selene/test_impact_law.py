@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import secrets
 import sqlite3
 from typing import Any
 
@@ -210,6 +211,86 @@ def review_test_impact(payload: dict[str, Any] | None = None) -> dict[str, Any]:
         "identity_change": False,
         "memory_write_active": False,
         "autonomous_testing_allowed": False,
+    }
+
+
+def record_test_impact_review(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Persist an inspectable receipt before an integrated QA session exists."""
+    review = review_test_impact(payload)
+    receipt_id = f"test-impact-{secrets.token_urlsafe(24)}"
+    purpose = _text((payload or {}).get("purpose"), 600)
+    conn.execute(
+        """
+        INSERT INTO selene_test_impact_reviews(
+          receipt_id, decision, authorized, proposed_level, selected_level,
+          purpose, review_json
+        ) VALUES(?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            receipt_id,
+            str(review.get("decision") or ""),
+            1 if review.get("authorized") is True else 0,
+            str(review.get("proposed_level") or "machinery"),
+            str(review.get("selected_level") or "machinery"),
+            purpose,
+            json.dumps(review, sort_keys=True),
+        ),
+    )
+    conn.commit()
+    return {
+        **review,
+        "receipt_id": receipt_id,
+        "receipt_persisted": True,
+        "receipt_used": False,
+    }
+
+
+def consume_integrated_test_receipt(
+    conn: sqlite3.Connection,
+    receipt_id: str,
+    *,
+    session_id: int,
+) -> dict[str, Any]:
+    receipt = str(receipt_id or "").strip()
+    if not receipt:
+        raise ValueError(
+            "diagnostic QA requires an authorized Test Impact Law review receipt"
+        )
+    row = conn.execute(
+        """
+        SELECT * FROM selene_test_impact_reviews
+        WHERE receipt_id = ?
+        """,
+        (receipt,),
+    ).fetchone()
+    if row is None or int(row["authorized"] or 0) != 1:
+        raise ValueError("diagnostic QA review receipt is missing or not authorized")
+    selected_level = str(row["selected_level"] or "")
+    if selected_level not in {"gentle_integrated", "stressful_integrated"}:
+        raise ValueError(
+            "diagnostic QA requires a gentle or necessary stressful integrated review"
+        )
+    prior_session = int(row["qa_session_id"] or 0)
+    if prior_session and prior_session != int(session_id):
+        raise ValueError("diagnostic QA review receipt was already used by another session")
+    conn.execute(
+        """
+        UPDATE selene_test_impact_reviews
+        SET qa_session_id = ?, used_at = COALESCE(used_at, CURRENT_TIMESTAMP)
+        WHERE receipt_id = ?
+        """,
+        (int(session_id), receipt),
+    )
+    conn.commit()
+    return {
+        "status": "test_impact_review_receipt_consumed",
+        "receipt_id": receipt,
+        "selected_level": selected_level,
+        "qa_session_id": int(session_id),
+        "authorized": True,
     }
 
 

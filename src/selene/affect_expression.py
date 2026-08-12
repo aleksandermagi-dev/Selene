@@ -86,7 +86,7 @@ def build_affect_expression_guidance(
         "cocoon_care_posture_used_as_emotion": False,
         "guidance_strength": "bounded" if posture != "ordinary_attentive" else "light",
         "guidance_is_optional": True,
-        "voice_retains_expression_ownership": True,
+        "voice_retains_final_expression_compatibility": True,
         "selene_does_not_need_permission_to_express_herself": True,
         "epistemic_or_safety_state_may_prescribe_affect": False,
         "technical_focus_requires_emotional_flatness": False,
@@ -269,23 +269,23 @@ def _dimensions(posture: str) -> dict[str, str]:
             "pacing": "measured",
             "sentence_rhythm": "compact",
             "warmth": "connection_without_softening_boundary",
-            "humor": "avoid",
+            "humor": "available_if_boundary_remains_clear",
             "reassurance": "grounded_only",
-            "restraint": "high",
+            "restraint": "boundary_specific_only",
             "directness": "high",
-            "enthusiasm": "restrained",
-            "emotional_intensity": "contained",
+            "enthusiasm": "available_if_it_does_not_encourage_blocked_action",
+            "emotional_intensity": "authored_without_blurring_boundary",
         },
         "spacious_grounded": {
             "pacing": "slower",
             "sentence_rhythm": "spacious",
             "warmth": "available_not_forced",
-            "humor": "avoid_unless_context_reopens",
+            "humor": "available_when_context_welcomes_it",
             "reassurance": "grounded_only",
-            "restraint": "high",
+            "restraint": "contextual_not_suppressive",
             "directness": "gentle_clear",
-            "enthusiasm": "restrained",
-            "emotional_intensity": "gentle_contained",
+            "enthusiasm": "available_if_fit",
+            "emotional_intensity": "gentle_without_required_flatness",
         },
         "deliberate_agency": {
             "pacing": "pause_before_commitment",
@@ -302,12 +302,12 @@ def _dimensions(posture: str) -> dict[str, str]:
             "pacing": "steady",
             "sentence_rhythm": "compact",
             "warmth": "receptive_not_performative",
-            "humor": "avoid",
+            "humor": "available_if_repair_context_supports_it",
             "reassurance": "not_needed_unless_asked",
-            "restraint": "bounded",
+            "restraint": "contextual_not_suppressive",
             "directness": "clear",
-            "enthusiasm": "restrained",
-            "emotional_intensity": "contained",
+            "enthusiasm": "available_if_fit",
+            "emotional_intensity": "authored",
         },
         "gentle_present": {
             "pacing": "slower",
@@ -337,9 +337,9 @@ def _dimensions(posture: str) -> dict[str, str]:
             "warmth": "baseline",
             "humor": "context_only",
             "reassurance": "not_needed_unless_asked",
-            "restraint": "bounded",
+            "restraint": "ordinary",
             "directness": "high",
-            "enthusiasm": "restrained",
+            "enthusiasm": "available_if_fit",
             "emotional_intensity": "focused",
         },
         "warm_available": {
@@ -418,7 +418,7 @@ def _apply_contextual_continuity(
         or ""
     )
     if humor == "hold":
-        updated["humor"] = "avoid"
+        updated["humor"] = "contextually_held_this_turn"
     elif humor == "available_not_required":
         updated["humor"] = "available_not_required"
     return updated

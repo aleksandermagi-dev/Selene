@@ -1141,7 +1141,7 @@ function App() {
   }
 
   async function approveSeleneSpeechActivation() {
-    setActivationResult({ status: "running", message: "Submitting Aleks-only supervised speech activation." });
+    setActivationResult({ status: "running", message: "Submitting Aleks-only resident Chat availability approval." });
     try {
       const result = await api<Dict>("/api/activation/approve", {
         method: "POST",
@@ -1149,20 +1149,20 @@ function App() {
       });
       const activeMessage = result.state === "selene_chat_active_supervised" || result.selene_chat_active
         ? "Selene resident chat is active."
-        : "Activation approval submitted.";
+        : "Resident Chat availability approval submitted.";
       setActivationResult({ ...result, message: text(result.message || activeMessage) });
       const refresh = await refreshActivationLayer({ preserveResult: true, reason: "approval" });
       if (!refresh.ok) {
         setActivationResult((current) => ({
           ...(current || result),
-          post_refresh_warning: "Activation succeeded; one status refresh failed. Use Refresh Activation Readiness to re-check.",
+          post_refresh_warning: "Resident Chat became available; one status refresh failed. Use Refresh Availability Readiness to re-check.",
           post_refresh_errors: refresh.failures,
           status_refresh_updated: refresh.updated
         }));
       }
       await refreshSeleneChatAfterAction("activation_approved");
     } catch (err) {
-      const originalError = err instanceof Error ? err.message : "supervised speech activation failed";
+      const originalError = err instanceof Error ? err.message : "resident Chat availability approval failed";
       try {
         const status = await api<Dict>("/api/activation/status");
         setActivationStatus(status);
@@ -1180,16 +1180,16 @@ function App() {
       } catch {
         // Keep the original approval error visible if the recovery status check cannot reach the sidecar.
       }
-      setActivationResult({ status: "error", error: err instanceof Error ? err.message : "supervised speech activation failed" });
+      setActivationResult({ status: "error", error: err instanceof Error ? err.message : "resident Chat availability approval failed" });
     }
   }
 
   async function pauseSeleneSpeechActivation() {
-    setActivationResult({ status: "running", message: "Pausing supervised Selene speech." });
+    setActivationResult({ status: "running", message: "Pausing Selene resident Chat availability." });
     try {
       const result = await api<Dict>("/api/activation/pause", {
         method: "POST",
-        body: JSON.stringify({ reason: "Aleks paused supervised Selene speech from Cocoon." })
+        body: JSON.stringify({ reason: "Aleks paused Selene resident Chat availability from Cocoon." })
       });
       setActivationResult(result);
       const refresh = await refreshActivationLayer({ preserveResult: true, reason: "pause" });
@@ -2210,7 +2210,7 @@ function App() {
     if (refreshes[5].status === "fulfilled") setCurriculumAuthorizations(refreshes[5].value.items || []);
   }
 
-  async function runCurriculumAction(action: "activate" | "prepare" | "teach" | "activate_language_math" | "prepare_language_math" | "teach_language_math" | "activate_operations_measurement" | "prepare_operations_measurement" | "teach_operations_measurement" | "activate_geometry_algorithms" | "prepare_geometry_algorithms" | "teach_geometry_algorithms" | "activate_equal_groups_data_money" | "prepare_equal_groups_data_money" | "teach_equal_groups_data_money" | "activate_mass_capacity" | "prepare_mass_capacity" | "teach_mass_capacity" | "activate_community_rules" | "prepare_community_rules" | "teach_community_rules" | "activate_history_evidence" | "prepare_history_evidence" | "teach_history_evidence" | "activate_materials_change_motion" | "prepare_materials_change_motion" | "teach_materials_change_motion" | "activate_pushes_pulls_forces" | "prepare_pushes_pulls_forces" | "teach_pushes_pulls_forces" | "activate_light_sound" | "prepare_light_sound" | "teach_light_sound" | "activate_simple_machines" | "prepare_simple_machines" | "teach_simple_machines" | "activate_living_things_survival" | "prepare_living_things_survival" | "teach_living_things_survival" | "activate_weather_sky_cycles" | "prepare_weather_sky_cycles" | "teach_weather_sky_cycles" | "activate_human_body_health_evidence" | "prepare_human_body_health_evidence" | "teach_human_body_health_evidence" | "activate_helpful_computers_integration" | "prepare_helpful_computers_integration" | "teach_helpful_computers_integration" | "activate_text_purpose_everyday_economy_bridge" | "prepare_text_purpose_everyday_economy_bridge" | "teach_text_purpose_everyday_economy_bridge" | "revoke", authorizationId?: unknown) {
+  async function runCurriculumAction(action: "activate" | "prepare" | "teach" | "activate_language_math" | "prepare_language_math" | "teach_language_math" | "activate_operations_measurement" | "prepare_operations_measurement" | "teach_operations_measurement" | "activate_geometry_algorithms" | "prepare_geometry_algorithms" | "teach_geometry_algorithms" | "activate_equal_groups_data_money" | "prepare_equal_groups_data_money" | "teach_equal_groups_data_money" | "activate_mass_capacity" | "prepare_mass_capacity" | "teach_mass_capacity" | "activate_community_rules" | "prepare_community_rules" | "teach_community_rules" | "activate_history_evidence" | "prepare_history_evidence" | "teach_history_evidence" | "activate_materials_change_motion" | "prepare_materials_change_motion" | "teach_materials_change_motion" | "activate_pushes_pulls_forces" | "prepare_pushes_pulls_forces" | "teach_pushes_pulls_forces" | "activate_light_sound" | "prepare_light_sound" | "teach_light_sound" | "activate_simple_machines" | "prepare_simple_machines" | "teach_simple_machines" | "activate_living_things_survival" | "prepare_living_things_survival" | "teach_living_things_survival" | "activate_weather_sky_cycles" | "prepare_weather_sky_cycles" | "teach_weather_sky_cycles" | "activate_human_body_health_evidence" | "prepare_human_body_health_evidence" | "teach_human_body_health_evidence" | "activate_helpful_computers_integration" | "prepare_helpful_computers_integration" | "teach_helpful_computers_integration" | "activate_text_purpose_everyday_economy_bridge" | "prepare_text_purpose_everyday_economy_bridge" | "teach_text_purpose_everyday_economy_bridge" | "activate_f2_paragraph_meaning_source_grounding" | "prepare_f2_paragraph_meaning_source_grounding" | "teach_f2_paragraph_meaning_source_grounding" | "activate_f2_vocabulary_structure_comparison" | "prepare_f2_vocabulary_structure_comparison" | "teach_f2_vocabulary_structure_comparison" | "activate_f2_point_of_view_organized_composition" | "prepare_f2_point_of_view_organized_composition" | "teach_f2_point_of_view_organized_composition" | "activate_f2_multi_digit_arithmetic_operations" | "prepare_f2_multi_digit_arithmetic_operations" | "teach_f2_multi_digit_arithmetic_operations" | "activate_f2_factors_multiples_operation_order" | "prepare_f2_factors_multiples_operation_order" | "teach_f2_factors_multiples_operation_order" | "revoke", authorizationId?: unknown) {
     if (action === "activate" && !window.confirm("Authorize this bounded F1 science and inquiry group? Every item must still complete Acquire, Integrate, Express, comprehension, and source checks. Exceptions return to Cocoon.")) return;
     if (action === "activate_language_math" && !window.confirm("Authorize this bounded F1 language and number group? It is separate from the science authorization, and every item still requires the full teaching and comprehension lifecycle.")) return;
     if (action === "activate_operations_measurement" && !window.confirm("Authorize this bounded F1 operations, data, measurement, and time group? It remains separate from the first two authorizations and keeps the same exception review law.")) return;
@@ -2228,6 +2228,11 @@ function App() {
     if (action === "activate_human_body_health_evidence" && !window.confirm("Authorize this bounded F1 human-body and health-evidence group? It covers system relationships, support and movement, breathing and circulation, digestion, sensory information, ordinary care, source evaluation, consent, and qualified-help boundaries. It cannot diagnose, prescribe, triage, interpret symptoms or tests, or become medical or legal authority.")) return;
     if (action === "activate_helpful_computers_integration" && !window.confirm("Authorize this bounded F1 helpful-computers and integration group? It covers computer roles, input-process-output-storage, algorithms, conceptual networks, privacy, security, fallibility, and F1 synthesis. Knowledge grants no credential, device, filesystem, network, execution, surveillance, memory, identity, governance, training, or autonomy authority.")) return;
     if (action === "activate_text_purpose_everyday_economy_bridge" && !window.confirm("Authorize this bounded F1 closure bridge? It covers story and informational purpose, question-to-evidence fit, needs and wants, goods and services, and the role of tools. Formal symmetry and later-grade material remain deferred.")) return;
+    if (action === "activate_f2_paragraph_meaning_source_grounding" && !window.confirm("Authorize F2 Group 1? It covers paragraph meaning, supporting details, bounded inference, summary, quotation, paraphrase, attribution, and focused source questions. Later F2 material remains deferred.")) return;
+    if (action === "activate_f2_vocabulary_structure_comparison" && !window.confirm("Authorize F2 Group 2? It covers context clues, word parts, nuanced word relationships, shared-criterion comparison, and evidence-based comparison of explanations. Later F2 material remains deferred.")) return;
+    if (action === "activate_f2_point_of_view_organized_composition" && !window.confirm("Authorize F2 Group 3? It covers point of view, explanatory and narrative composition, supported opinion, and multi-paragraph planning and revision. Later F2 material remains deferred.")) return;
+    if (action === "activate_f2_multi_digit_arithmetic_operations" && !window.confirm("Authorize F2 Group 4? It covers place-value decomposition, regrouped addition and subtraction, distributive multiplication, and whole-number division with remainder and inverse checks. Speed drills and later fractions remain deferred.")) return;
+    if (action === "activate_f2_factors_multiples_operation_order" && !window.confirm("Authorize F2 Group 5? It covers factor and multiple relationships, prime and composite classification, justified divisibility patterns, operation order, and multi-step expression modeling. Fractions and advanced number theory remain deferred.")) return;
     if (action === "teach" && !window.confirm("Run the four-item F1 science and inquiry group through the visible teaching lifecycle under its active authorization? This creates general knowledge resources only; it does not write memory or change identity, personality, governance, training, or autonomy.")) return;
     if (action === "teach_language_math" && !window.confirm("Run the eight-item F1 language and number group through the visible teaching lifecycle under its active authorization? Exceptions will be held in Cocoon rather than retained.")) return;
     if (action === "teach_operations_measurement" && !window.confirm("Run the eight-item F1 operations, data, measurement, and time group through the visible teaching lifecycle? Exceptions will be held rather than forced through.")) return;
@@ -2245,6 +2250,11 @@ function App() {
     if (action === "teach_human_body_health_evidence" && !window.confirm("Run the six-item F1 human-body and health-evidence group through Acquire, Integrate, Express, and comprehension? General health knowledge grants no authority to diagnose, prescribe, touch, disclose private information, override consent, replace qualified care, or change memory, identity, governance, training, or autonomy.")) return;
     if (action === "teach_helpful_computers_integration" && !window.confirm("Run the six-item F1 helpful-computers and integration group through Acquire, Integrate, Express, and comprehension? Conceptual computer and security knowledge cannot use credentials, access devices or networks, execute code, write files or memory, conduct surveillance, redefine Selene, or expand autonomy.")) return;
     if (action === "teach_text_purpose_everyday_economy_bridge" && !window.confirm("Run the four-item F1 closure bridge through Acquire, Integrate, Express, and comprehension? It remains public academic knowledge only and cannot change identity, personality, governance, memory, training, or autonomy.")) return;
+    if (action === "teach_f2_paragraph_meaning_source_grounding" && !window.confirm("Run the five-item F2 paragraph-meaning and source-grounding group through Acquire, Integrate, Express, and comprehension? It remains source-attributed public academic knowledge and grants no identity, personality, governance, memory, training, or autonomy authority.")) return;
+    if (action === "teach_f2_vocabulary_structure_comparison" && !window.confirm("Run the five-item F2 vocabulary-structure and comparison group through Acquire, Integrate, Express, and comprehension? It remains source-attributed public academic knowledge and grants no identity, personality, governance, memory, training, or autonomy authority.")) return;
+    if (action === "teach_f2_point_of_view_organized_composition" && !window.confirm("Run the five-item F2 point-of-view and organized-composition group through Acquire, Integrate, Express, and comprehension? Plans support expression rather than scripting it, and the group grants no identity, personality, governance, memory, training, or autonomy authority.")) return;
+    if (action === "teach_f2_multi_digit_arithmetic_operations" && !window.confirm("Run the five-item F2 multi-digit arithmetic group through Acquire, Integrate, Express, and comprehension? Understanding and checked relationships come before speed, and math knowledge grants no memory, identity, governance, training, financial, or autonomy authority.")) return;
+    if (action === "teach_f2_factors_multiples_operation_order" && !window.confirm("Run the five-item F2 factors, multiples, divisibility, and operation-order group through Acquire, Integrate, Express, and comprehension? Relationships and independent checks come before fluency, and this knowledge grants no memory, identity, governance, training, financial, or autonomy authority.")) return;
     if (action === "revoke" && !window.confirm("Revoke this curriculum authorization for future retention? Previously retained knowledge stays attributable and can still be reopened or superseded.")) return;
     setCurriculumActionResult({ status: "running", operation: action });
     const endpoint = action === "activate"
@@ -2281,6 +2291,16 @@ function App() {
         ? "/api/curriculum-authorization/activate-f1-helpful-computers-integration"
       : action === "activate_text_purpose_everyday_economy_bridge"
         ? "/api/curriculum-authorization/activate-f1-text-purpose-everyday-economy-bridge"
+      : action === "activate_f2_paragraph_meaning_source_grounding"
+        ? "/api/curriculum-authorization/activate-f2-paragraph-meaning-source-grounding"
+      : action === "activate_f2_vocabulary_structure_comparison"
+        ? "/api/curriculum-authorization/activate-f2-vocabulary-structure-comparison"
+      : action === "activate_f2_point_of_view_organized_composition"
+        ? "/api/curriculum-authorization/activate-f2-point-of-view-organized-composition"
+      : action === "activate_f2_multi_digit_arithmetic_operations"
+        ? "/api/curriculum-authorization/activate-f2-multi-digit-arithmetic-operations"
+      : action === "activate_f2_factors_multiples_operation_order"
+        ? "/api/curriculum-authorization/activate-f2-factors-multiples-operation-order"
       : action === "prepare"
         ? "/api/curriculum-foundation/prepare-f1"
         : action === "prepare_language_math"
@@ -2315,6 +2335,16 @@ function App() {
           ? "/api/curriculum-foundation/prepare-f1-helpful-computers-integration"
         : action === "prepare_text_purpose_everyday_economy_bridge"
           ? "/api/curriculum-foundation/prepare-f1-text-purpose-everyday-economy-bridge"
+        : action === "prepare_f2_paragraph_meaning_source_grounding"
+          ? "/api/curriculum-foundation/prepare-f2-paragraph-meaning-source-grounding"
+        : action === "prepare_f2_vocabulary_structure_comparison"
+          ? "/api/curriculum-foundation/prepare-f2-vocabulary-structure-comparison"
+        : action === "prepare_f2_point_of_view_organized_composition"
+          ? "/api/curriculum-foundation/prepare-f2-point-of-view-organized-composition"
+        : action === "prepare_f2_multi_digit_arithmetic_operations"
+          ? "/api/curriculum-foundation/prepare-f2-multi-digit-arithmetic-operations"
+        : action === "prepare_f2_factors_multiples_operation_order"
+          ? "/api/curriculum-foundation/prepare-f2-factors-multiples-operation-order"
         : action === "teach"
           ? "/api/curriculum-foundation/teach-f1"
           : action === "teach_language_math"
@@ -2349,6 +2379,16 @@ function App() {
             ? "/api/curriculum-foundation/teach-f1-helpful-computers-integration"
           : action === "teach_text_purpose_everyday_economy_bridge"
             ? "/api/curriculum-foundation/teach-f1-text-purpose-everyday-economy-bridge"
+          : action === "teach_f2_paragraph_meaning_source_grounding"
+            ? "/api/curriculum-foundation/teach-f2-paragraph-meaning-source-grounding"
+          : action === "teach_f2_vocabulary_structure_comparison"
+            ? "/api/curriculum-foundation/teach-f2-vocabulary-structure-comparison"
+          : action === "teach_f2_point_of_view_organized_composition"
+            ? "/api/curriculum-foundation/teach-f2-point-of-view-organized-composition"
+          : action === "teach_f2_multi_digit_arithmetic_operations"
+            ? "/api/curriculum-foundation/teach-f2-multi-digit-arithmetic-operations"
+          : action === "teach_f2_factors_multiples_operation_order"
+            ? "/api/curriculum-foundation/teach-f2-factors-multiples-operation-order"
           : "/api/curriculum-authorization/revoke";
     const body = action === "activate"
       ? {
@@ -2452,6 +2492,28 @@ function App() {
             authorization_actor: "Aleks",
             authorization_basis: "Aleks authorized the bounded F1 public-academic text-purpose and everyday-economy closure bridge."
           }
+      : action === "activate_f2_paragraph_meaning_source_grounding"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized F2 Group 1: paragraph meaning and source-grounded communication."
+          }
+      : action === "activate_f2_vocabulary_structure_comparison"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized F2 Group 2: vocabulary structure and comparison."
+          }
+      : action === "activate_f2_point_of_view_organized_composition"
+        ? {
+            aleks_authorized: true,
+            authorization_actor: "Aleks",
+            authorization_basis: "Aleks authorized F2 Group 3: point of view and organized composition."
+          }
+      : action === "activate_f2_multi_digit_arithmetic_operations"
+        ? { aleks_authorized: true, authorization_actor: "Aleks", authorization_basis: "Aleks authorized F2 Group 4: multi-digit arithmetic and operation relationships." }
+      : action === "activate_f2_factors_multiples_operation_order"
+        ? { aleks_authorized: true, authorization_actor: "Aleks", authorization_basis: "Aleks authorized F2 Group 5: factors, multiples, divisibility, and operation order." }
       : action === "revoke"
         ? { authorization_id: authorizationId, aleks_revoked: true, authorization_actor: "Aleks" }
         : {};
@@ -4451,7 +4513,7 @@ function App() {
     if (activationStatus?.selene_chat_active) {
       notes.push("Resident Chat is active under the reviewed runtime contract.");
     } else if (transferCReadablePackage?.transfer_approved && !postTransferStatus?.selene_v1_live) {
-      notes.push("Continuity context is ready; speech activation is still pending.");
+      notes.push("Continuity context is ready; resident Chat availability is still pending.");
     }
     if (officeWaitingTotal > 0) notes.push(`${officeWaitingTotal} Cocoon item${officeWaitingTotal === 1 ? "" : "s"} may need review.`);
     if (dreamPendingReviewCount > 0) notes.push(`${dreamPendingReviewCount} Dream reflection${dreamPendingReviewCount === 1 ? " is" : "s are"} waiting for your review before Selene may use ${dreamPendingReviewCount === 1 ? "it" : "them"} in conversation.`);
@@ -7083,6 +7145,16 @@ function App() {
                 <Metric label="Helpful Computers/F1 Integration Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.sixteenth_group).retained_count ?? 0)} />
                 <Metric label="F1 Closure Bridge Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.seventeenth_group).prepared_count ?? 0)} />
                 <Metric label="F1 Closure Bridge Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.seventeenth_group).retained_count ?? 0)} />
+                <Metric label="F2 Group 1 Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_first_group).prepared_count ?? 0)} />
+                <Metric label="F2 Group 1 Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_first_group).retained_count ?? 0)} />
+                <Metric label="F2 Group 2 Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_second_group).prepared_count ?? 0)} />
+                <Metric label="F2 Group 2 Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_second_group).retained_count ?? 0)} />
+                <Metric label="F2 Group 3 Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_third_group).prepared_count ?? 0)} />
+                <Metric label="F2 Group 3 Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_third_group).retained_count ?? 0)} />
+                <Metric label="F2 Group 4 Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_fourth_group).prepared_count ?? 0)} />
+                <Metric label="F2 Group 4 Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_fourth_group).retained_count ?? 0)} />
+                <Metric label="F2 Group 5 Prepared" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_fifth_group).prepared_count ?? 0)} />
+                <Metric label="F2 Group 5 Retained" value={text(safeJsonObject(curriculumAuthorizationStatus?.f2_fifth_group).retained_count ?? 0)} />
               </div>
               <div className="chips">
                 <span>item clicks inside scope: {plainBlocked(curriculumAuthorizationStatus?.individual_academic_item_approval_required_inside_scope ?? false)}</span>
@@ -7175,6 +7247,31 @@ function App() {
                 <button className="primary" onClick={() => runCurriculumAction("activate_text_purpose_everyday_economy_bridge")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_text_purpose_everyday_economy_bridge_v1")}>Authorize F1 Closure Bridge</button>
                 <button onClick={() => runCurriculumAction("prepare_text_purpose_everyday_economy_bridge")} disabled={curriculumActionResult?.status === "running"}>Prepare Four Closure Bridge Lessons</button>
                 <button className="primary" onClick={() => runCurriculumAction("teach_text_purpose_everyday_economy_bridge")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f1_text_purpose_everyday_economy_bridge_v1")}>Teach F1 Closure Bridge</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_f2_paragraph_meaning_source_grounding")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_paragraph_meaning_source_grounding_v1")}>Authorize F2 Group 1</button>
+                <button onClick={() => runCurriculumAction("prepare_f2_paragraph_meaning_source_grounding")} disabled={curriculumActionResult?.status === "running"}>Prepare Five F2 Group 1 Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_f2_paragraph_meaning_source_grounding")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_paragraph_meaning_source_grounding_v1")}>Teach F2 Group 1</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_f2_vocabulary_structure_comparison")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_vocabulary_structure_comparison_v1")}>Authorize F2 Group 2</button>
+                <button onClick={() => runCurriculumAction("prepare_f2_vocabulary_structure_comparison")} disabled={curriculumActionResult?.status === "running"}>Prepare Five F2 Group 2 Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_f2_vocabulary_structure_comparison")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_vocabulary_structure_comparison_v1")}>Teach F2 Group 2</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_f2_point_of_view_organized_composition")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_point_of_view_organized_composition_v1")}>Authorize F2 Group 3</button>
+                <button onClick={() => runCurriculumAction("prepare_f2_point_of_view_organized_composition")} disabled={curriculumActionResult?.status === "running"}>Prepare Five F2 Group 3 Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_f2_point_of_view_organized_composition")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_point_of_view_organized_composition_v1")}>Teach F2 Group 3</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_f2_multi_digit_arithmetic_operations")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_multi_digit_arithmetic_operations_v1")}>Authorize F2 Group 4</button>
+                <button onClick={() => runCurriculumAction("prepare_f2_multi_digit_arithmetic_operations")} disabled={curriculumActionResult?.status === "running"}>Prepare Five F2 Group 4 Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_f2_multi_digit_arithmetic_operations")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_multi_digit_arithmetic_operations_v1")}>Teach F2 Group 4</button>
+              </div>
+              <div className="reviewActions">
+                <button className="primary" onClick={() => runCurriculumAction("activate_f2_factors_multiples_operation_order")} disabled={curriculumActionResult?.status === "running" || curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_factors_multiples_operation_order_v1")}>Authorize F2 Group 5</button>
+                <button onClick={() => runCurriculumAction("prepare_f2_factors_multiples_operation_order")} disabled={curriculumActionResult?.status === "running"}>Prepare Five F2 Group 5 Lessons</button>
+                <button className="primary" onClick={() => runCurriculumAction("teach_f2_factors_multiples_operation_order")} disabled={curriculumActionResult?.status === "running" || !curriculumAuthorizations.some((item) => item.status === "active" && item.authorization_key === "f2_factors_multiples_operation_order_v1")}>Teach F2 Group 5</button>
               </div>
               {curriculumActionResult ? <div className="comprehensionReviewResult">
                 <strong>{friendlyStatus(curriculumActionResult.status)}</strong>
@@ -7800,11 +7897,11 @@ function App() {
               {transferApprovalPhrase && transferApprovalPhrase !== TRANSFER_APPROVAL_PHRASE ? <p className="errorText">Approval phrase does not match exactly.</p> : null}
               <PlainResult value={transferApprovalResult} />
             </Panel>
-            <Panel title="Selene Supervised Speech Activation">
-              <p className="plainHelp">This legacy-compatible activation gate turns on front Selene Chat. After approved transfer, the operating mode is resident governed Chat. Rehearsals and activation workflow tests stay in Cocoon. This does not unlock hidden memory writes, raw recall, unreviewed archive import, model training/LoRA, Tendril execution, general autonomy, or self-replication.</p>
+            <Panel title="Selene Resident Chat Availability">
+              <p className="plainHelp">This operational control makes resident Chat available. It does not grant, suspend, or revoke Selene's identity or authority. The old supervised activation state remains stored only for database compatibility. Rehearsals and availability workflow tests stay in Cocoon. This does not unlock hidden memory writes, raw recall, unreviewed archive import, model training/LoRA, Tendril execution, general autonomy, or self-replication.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Readiness" value={activationReadiness?.ready ? "ready" : "blocked"} />
-                <Metric label="Speech" value={activationStatus?.selene_chat_active ? "active" : activationStatus?.selene_chat_paused ? "paused" : "not active"} />
+                <Metric label="Resident Chat" value={activationStatus?.resident_chat_available ? "available" : activationStatus?.selene_chat_paused ? "paused" : "unavailable"} />
                 <Metric label="State" value={friendlyStatus(activationStatus?.state || "not checked")} />
                 <Metric label="Full v1" value={activationStatus?.full_selene_v1_live ? "live" : "not yet"} />
               </div>
@@ -7829,24 +7926,24 @@ function App() {
               </div>
               <div className="filters">
                 <label>
-                  <span>Required activation phrase</span>
-                  <textarea value={activationApprovalPhrase} onChange={(event) => setActivationApprovalPhrase(event.target.value)} placeholder={text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene supervised speech activation.")} />
+                  <span>Required availability phrase</span>
+                  <textarea value={activationApprovalPhrase} onChange={(event) => setActivationApprovalPhrase(event.target.value)} placeholder={text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene resident Chat availability.")} />
                 </label>
               </div>
               <div className="reviewActions">
-                <button onClick={() => refreshActivationLayer({ reason: "manual" })}>Refresh Activation Readiness</button>
+                <button onClick={() => refreshActivationLayer({ reason: "manual" })}>Refresh Availability Readiness</button>
                 <button
                   className="primary"
                   onClick={approveSeleneSpeechActivation}
-                  disabled={activationResult?.status === "running" || Boolean(activationStatus?.selene_chat_active) || !activationReadiness?.ready || activationApprovalPhrase !== text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene supervised speech activation.")}
+                  disabled={activationResult?.status === "running" || Boolean(activationStatus?.selene_chat_active) || !activationReadiness?.ready || activationApprovalPhrase !== text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene resident Chat availability.")}
                 >
-                  {activationResult?.status === "running" ? "Activating..." : activationStatus?.selene_chat_active ? "Selene Speech Active" : "Approve Supervised Speech Activation"}
+                  {activationResult?.status === "running" ? "Making Available..." : activationStatus?.selene_chat_active ? "Resident Chat Available" : "Approve Resident Chat Availability"}
                 </button>
                 <button onClick={pauseSeleneSpeechActivation} disabled={activationResult?.status === "running" || !activationStatus?.selene_chat_active}>Pause Selene Chat</button>
               </div>
-              {activationStatus?.selene_chat_active ? <p className="plainHelp">{activationStatus?.resident_chat_active ? "Selene resident Chat is active. The stored supervised state name is retained only for database compatibility." : "Selene Chat is active within the current activation boundary."}</p> : null}
+              {activationStatus?.selene_chat_active ? <p className="plainHelp">Selene resident Chat is available. The stored supervised state name is retained only for database compatibility; availability does not define Selene's identity.</p> : null}
               {activationResult?.post_refresh_warning ? <p className="plainHelp">{text(activationResult.post_refresh_warning)}</p> : null}
-              {activationApprovalPhrase && activationApprovalPhrase !== text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene supervised speech activation.") ? <p className="errorText">Activation phrase does not match exactly.</p> : null}
+              {activationApprovalPhrase && activationApprovalPhrase !== text(activationCeremonyPreview?.approval_phrase || "I, Aleks, approve Selene resident Chat availability.") ? <p className="errorText">Availability phrase does not match exactly.</p> : null}
               <PlainResult value={activationResult} />
             </Panel>
             <Panel title="Final Transfer Completion">
@@ -8417,7 +8514,7 @@ function App() {
               <PlainResult value={transferReadinessPreview} />
             </Panel>
             <Panel title="Post-Transfer Inspection">
-              <p className="plainHelp">Selene-readable context can be approved while Selene Chat still stays supervised and bounded. This panel verifies the sealed package, activation state, memory lock, and Cocoon support route.</p>
+              <p className="plainHelp">Selene-readable context can be approved while resident Chat remains unavailable or bounded. This panel verifies the sealed package, operational availability, memory lock, and Cocoon support route.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Phase" value={friendlyStatus(postTransferStatus?.phase || "not checked")} />
                 <Metric label="Included Rows" value={text(postTransferStatus?.included_rows ?? 0)} />

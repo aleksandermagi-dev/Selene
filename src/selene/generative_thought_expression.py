@@ -62,9 +62,12 @@ def generative_thought_expression_status() -> dict[str, Any]:
                 "a revisable attempt may be useful without being treated as a conclusion or failure",
                 "only a visible rationale summary may be expressed; hidden reasoning remains private",
                 "at most one optional thought addition is selected for a turn",
+                "an attributable upstream organ may warrant expression without waiting for an external payload flag",
             ],
             "creates_reasoning": False,
             "creates_facts": False,
+            "selects_attributable_upstream_thought": True,
+            "upstream_selection_is_new_reasoning": False,
             "writes_records": False,
             "direct_expression_authority": False,
             "review_destination": "Status",
@@ -101,11 +104,15 @@ def build_generative_thought_expression(payload: dict[str, Any] | None = None) -
     requested_kind = str(payload.get("requested_kind") or "").strip().lower()
     if requested_kind and requested_kind not in THOUGHT_KINDS:
         raise ValueError(f"unsupported generative thought kind: {requested_kind}")
-    expression_requested = payload.get("expression_requested") is True
+    explicit_expression_requested = payload.get("expression_requested") is True
+    endogenous_expression_allowed = payload.get("endogenous_expression_allowed") is True
+    expression_requested = explicit_expression_requested or endogenous_expression_allowed
     selected = _select_candidate(
         candidates,
         requested_kind=requested_kind,
         expression_requested=expression_requested,
+        explicit_expression_requested=explicit_expression_requested,
+        endogenous_expression_allowed=endogenous_expression_allowed,
         energy=energy,
         explicit_candidates_supplied=any(
             isinstance(item, dict) for item in payload.get("thought_candidates") or []
@@ -125,6 +132,15 @@ def build_generative_thought_expression(payload: dict[str, Any] | None = None) -
             "version": "v1_attributable_revisable_thought_expression",
             "active": active,
             "expression_requested": expression_requested,
+            "explicit_expression_requested": explicit_expression_requested,
+            "endogenous_expression_allowed": endogenous_expression_allowed,
+            "expression_request_source": (
+                "explicit_current_turn_request"
+                if explicit_expression_requested
+                else "attributable_upstream_organ"
+                if endogenous_expression_allowed
+                else "none"
+            ),
             "requested_kind": requested_kind,
             "available_candidates": candidates,
             "available_candidate_count": len(candidates),
@@ -416,6 +432,8 @@ def _select_candidate(
     *,
     requested_kind: str,
     expression_requested: bool,
+    explicit_expression_requested: bool,
+    endogenous_expression_allowed: bool,
     energy: dict[str, Any],
     explicit_candidates_supplied: bool,
 ) -> dict[str, Any]:
@@ -433,7 +451,21 @@ def _select_candidate(
         if energy_candidate:
             return energy_candidate
     if explicit_candidates_supplied:
-        eligible = [item for item in eligible if item.get("origin") == "explicit_attributable_thought"]
+        eligible = [
+            item
+            for item in eligible
+            if item.get("origin") == "explicit_attributable_thought"
+        ] if explicit_expression_requested else [
+            item
+            for item in eligible
+            if item.get("origin") in {"structural_discovery", "claim_evidence"}
+        ]
+    elif endogenous_expression_allowed and not explicit_expression_requested:
+        eligible = [
+            item
+            for item in eligible
+            if item.get("origin") in {"structural_discovery", "claim_evidence"}
+        ]
     order = {"idea": 0, "hypothesis": 1, "analogy": 2, "revisable_attempt": 3, "collaborative_question": 4}
     eligible.sort(key=lambda item: (order.get(str(item.get("kind") or ""), 99), str(item.get("candidate_id") or "")))
     return eligible[0] if eligible else {}

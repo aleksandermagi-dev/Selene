@@ -101,7 +101,7 @@ def education_expression_law_status() -> dict[str, Any]:
             "permanent_persona_from_teaching_allowed": False,
             "compulsory_affect_allowed": False,
             "source_persona_imitation_allowed": False,
-            "voice_remains_expression_owner": True,
+            "voice_remains_final_expression_compatibility_layer": True,
             "expression_is_not_a_permission_granted_by_teaching_or_stewardship": True,
             "nlo_remains_language_structure_owner": True,
             "core_mind_remains_identity_and_governance_owner": True,
@@ -185,7 +185,7 @@ def review_education_expression(payload: dict[str, Any] | None = None) -> dict[s
             "eligible_language_range_may_graduate_without_item_review": True,
             "language_range_standing_authorization_source": LANGUAGE_RANGE_AUTHORIZATION_SOURCE,
             "personality_is_teaching_output": False,
-            "voice_remains_expression_owner": True,
+            "voice_remains_final_expression_compatibility_layer": True,
             "nlo_may_structure_supported_meaning": True,
             "hold_reason": (
                 "Teaching may shape capability and context-appropriate expression, but this material prescribes personality, affect, imitation, or permanent style."

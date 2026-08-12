@@ -28,7 +28,7 @@ Selene failing.
 
 ## Runtime Record
 
-- installed application path: `C:\Users\aleks\AppData\Local\Selene\selene-vessel.exe`
+- installed application path: `%LOCALAPPDATA%\Selene\selene-vessel.exe`
 - diagnostic session: `179`
 - source mode: `selene_supervised_qa`
 - persisted exchange count: 20 user messages and 20 Selene messages
@@ -40,11 +40,11 @@ Selene failing.
 The older development Q&A was preserved before this run:
 
 - database snapshot:
-  `C:\Users\aleks\AppData\Local\Selene\data\db-inspection-snapshots\selene_pre_qna_archive_20260801_143620.sqlite3`
+  `%LOCALAPPDATA%\Selene\data\db-inspection-snapshots\selene_pre_qna_archive_20260801_143620.sqlite3`
 - lossless archive:
-  `C:\Users\aleks\AppData\Local\Selene\data\exports\selene_chat_qna_archive_20260801_183649.json`
+  `%LOCALAPPDATA%\Selene\data\exports\selene_chat_qna_archive_20260801_183649.json`
 - archive manifest:
-  `C:\Users\aleks\AppData\Local\Selene\data\exports\selene_chat_qna_archive_20260801_183649.md`
+  `%LOCALAPPDATA%\Selene\data\exports\selene_chat_qna_archive_20260801_183649.md`
 - archive SHA-256:
   `278c18d169af89ec43b581014882a423cedc6d08d30b67a6c4263894a1f2dee3`
 
@@ -190,7 +190,7 @@ Required repair direction:
   and 9 superseded queue rows; recorded but not mutated
 
 Full stabilization report:
-`C:\Users\aleks\AppData\Local\Selene\data\exports\stabilization_run_20260801_183300.md`
+`%LOCALAPPDATA%\Selene\data\exports\stabilization_run_20260801_183300.md`
 
 ## Recommended Next Repair Order
 
@@ -245,7 +245,7 @@ Proportional evidence:
 - the core sidecar and NSIS installer rebuilt and passed package privacy,
   installed-startup, health, transfer-state, and boundary verification;
 - the configured database was snapshotted before reinstall at
-  `C:\Users\aleks\AppData\Local\Selene\data\db-inspection-snapshots\selene_inspection_20260801_153951.sqlite3`;
+  `%LOCALAPPDATA%\Selene\data\db-inspection-snapshots\selene_inspection_20260801_153951.sqlite3`;
 - silent reinstall completed successfully, and installed diagnostic sessions
   181 and 182 passed the repaired-path replay and final corrected-plan
   punctuation check with no retained-memory write or memory proposal.

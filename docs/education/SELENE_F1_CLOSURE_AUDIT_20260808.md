@@ -5,6 +5,13 @@ Date: 2026-08-08
 Status: gentle closure audit complete; one technical transfer repair verified;
 two bounded teaching strands remain before F1 is described as closed
 
+Follow-up: the two strands identified here were subsequently implemented and
+retained as
+[F1 Group 17](SELENE_F1_TEXT_PURPOSE_EVERYDAY_ECONOMY_BRIDGE_GROUP_17_20260808.md).
+The current defined F1 sequence now contains 106 retained concepts across 17
+groups. The starting and residual counts below remain the historical audit
+snapshot.
+
 ## Ethical Scope
 
 This was a Learning Evidence Activity, not an exam and not a broad assessment
@@ -115,4 +122,3 @@ for now if the evidence fits.
 - hidden retention: false;
 - live Chat history change: false;
 - pass/fail grade: false.
-

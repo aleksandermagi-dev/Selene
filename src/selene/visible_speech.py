@@ -110,6 +110,25 @@ def select_visible_speech_seed(
                 }
             )
             continue
+        semantic_relevance = (
+            candidate.get("semantic_relevance")
+            if isinstance(candidate.get("semantic_relevance"), dict)
+            else {}
+        )
+        if semantic_relevance and semantic_relevance.get("accepted") is not True:
+            inspected.append(
+                {
+                    "source_id": source_id,
+                    "source_class": source_class,
+                    "accepted": False,
+                    "reason": str(
+                        semantic_relevance.get("reason")
+                        or "semantic_source_gate_held_candidate"
+                    ),
+                    "semantic_relevance": semantic_relevance,
+                }
+            )
+            continue
         compatibility = evaluate_candidate_compatibility(
             conversation_spine,
             {
@@ -170,6 +189,7 @@ def inspect_visible_speech(
     prompt: str = "",
     source_id: str = "unknown",
     hard_boundary: bool = False,
+    response_coverage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     text = _truncate_speech_text(str(candidate_text or ""), 5000)
     prompt_lower = " ".join(str(prompt or "").lower().split())
@@ -189,6 +209,12 @@ def inspect_visible_speech(
         issues.append("internal_organ_label_visible")
     if not architecture_requested and re.search(r"\bcandidate model(?:s)?\b", text_lower):
         issues.append("internal_reasoning_scaffold_visible")
+    if (
+        isinstance(response_coverage, dict)
+        and response_coverage.get("obligation_count")
+        and response_coverage.get("all_required_resolved") is not True
+    ):
+        issues.append("required_response_part_unresolved")
 
     # A real boundary answer may name the capability being refused. It still may
     # not expose serialized fields or the generic reasoning scaffold.
@@ -207,6 +233,12 @@ def inspect_visible_speech(
         "source_id": truncate(source_id, 120),
         "architecture_context_requested": architecture_requested,
         "hard_boundary": hard_boundary,
+        "coverage_checked": isinstance(response_coverage, dict),
+        "all_required_parts_resolved": (
+            response_coverage.get("all_required_resolved")
+            if isinstance(response_coverage, dict)
+            else None
+        ),
         "visible_summary_only": True,
         "hidden_chain_of_thought_exposed": False,
         "provenance_boundary": VISIBLE_SPEECH_BOUNDARY,

@@ -520,8 +520,69 @@ def test_voice_applies_optional_expression_pacing_without_replacing_nlo_meaning(
     assert "The second piece can wait" in result["candidate_text"]
     assert "\n\n" in result["candidate_text"]
     assert result["nlo_meaning_preserved"] is True
+    assert result["meaning_invariant"]["lexical_content_preserved"] is True
+    assert result["meaning_invariant"]["meaning_invariant_preserved"] is True
+    assert result["final_expression_compatibility_checked"] is True
+    assert result["final_expression_compatible"] is True
+    assert result["expression_contract"]["language_structure_owner"] == "Native Language Organ"
+    assert result["expression_contract"]["final_expression_compatibility_layer"] == "Selene Voice Module"
+    assert result["expression_contract"]["visible_release_owner"] == "Conversation Spine and Selene Chat release gate"
+    assert result["expression_contract"]["voice_is_only_expression_author"] is False
+    assert result["expression_confidence"] == result["voice_confidence"]
+    assert result["expression_confidence_is_answer_correctness"] is False
+    assert result["answer_confidence_assessed_by_voice"] is False
+    assert result["evidence_confidence_assessed_by_voice"] is False
+    assert result["memory_confidence_assessed_by_voice"] is False
     assert result["expression_guidance_changed_meaning"] is False
     assert result["applied_expression_dimensions"]["sentence_rhythm"] == "spacious"
+    _assert_voice_locked(result)
+
+
+def test_voice_evaluator_rejects_a_changed_nlo_meaning_invariant(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = route_request(
+        conn,
+        "voice_module.evaluate_candidate",
+        {
+            "candidate_text": "A fluent sentence that silently dropped a required claim.",
+            "meaning_text_supplied": True,
+            "meaning_invariant_preserved": False,
+        },
+    )["result"]
+
+    assert result["voice_evaluator_passed"] is False
+    assert "nlo_meaning_invariant_changed" in result["flags"]
+    _assert_voice_locked(result)
+
+
+def test_voice_preserves_epistemic_distinctions_in_supplied_language(tmp_path):
+    conn = _conn(tmp_path)
+    source_zip = _voice_zip(tmp_path)
+    route_request(conn, "voice_module.index_source", {"source_zip": str(source_zip)})
+    route_request(conn, "voice_module.extract_patterns", {})
+    meaning = (
+        "The observation is that both readings increased. "
+        "One hypothesis is that temperature caused the change, but that is not proof or a scientific law."
+    )
+
+    result = route_request(
+        conn,
+        "voice_module.generate_preview",
+        {
+            "prompt": "What do those readings establish?",
+            "route": "answer_now",
+            "meaning_text": meaning,
+            "voice_category": "technical_directness",
+        },
+    )["result"]
+
+    assert result["candidate_text"] == meaning
+    assert result["meaning_invariant"]["meaning_invariant_preserved"] is True
+    assert result["expression_contract"]["voice_may_change_claim_type"] is False
+    assert result["expression_contract"]["voice_may_upgrade_evidence"] is False
+    assert result["expression_contract"]["voice_may_upgrade_answer_confidence"] is False
+    assert result["final_expression_compatible"] is True
     _assert_voice_locked(result)
 
 
