@@ -189,6 +189,137 @@ def test_ordinary_turn_selects_the_conversation_path_and_holds_unused_specialist
     assert result["held_optional_count"] == 8
     assert _participant(result, "exploratory_reasoning")["status"] == "held"
     assert result["obligation_ids"] == []
+    assert result["responsibility_conflict_resolution"]["status"] == (
+        "no_responsibility_conflict_detected"
+    )
+    assert result["responsibility_conflict_contract"][
+        "disagreement_is_coordination_evidence_not_conflict_of_self"
+    ] is True
+
+
+def test_factual_responsibility_conflict_preserves_both_claims_and_seeks_evidence():
+    result = build_bounded_organ_coalition(
+        {
+            "prompt": "The two observations disagree. What now?",
+            "core_mind_route": {"selected_route": "answer_now"},
+            "conversation_spine": {**_spine(), "open_obligations": []},
+            "responsibility_signals": [
+                {
+                    "participant_id": "source_packet_a",
+                    "conflict_key": "porch_state",
+                    "position": "dry",
+                    "claim": "The porch was reported dry.",
+                    "conflict_kind": "factual",
+                    "evidence_refs": ["report:a"],
+                },
+                {
+                    "participant_id": "source_packet_b",
+                    "conflict_key": "porch_state",
+                    "position": "wet",
+                    "claim": "The porch was reported wet.",
+                    "conflict_kind": "factual",
+                    "evidence_refs": ["report:b"],
+                },
+            ],
+        }
+    )
+
+    resolution = result["responsibility_conflict_resolution"]
+    assert resolution["chosen_process"] == (
+        "preserve_competing_claims_and_seek_distinguishing_evidence"
+    )
+    assert resolution["claims_suppressed"] is False
+    assert resolution["participants_excluded"] is False
+    assert resolution["option_space_reopened"] is True
+    assert resolution["conflicts"][0]["positions"] == ["dry", "wet"]
+    _assert_locked(result)
+
+
+def test_authority_conflict_holds_consequential_action_without_creating_turf_authority():
+    result = build_bounded_organ_coalition(
+        {
+            "prompt": "One local role says act and another says law is unresolved.",
+            "core_mind_route": {"selected_route": "deliberate"},
+            "conversation_spine": {**_spine(), "open_obligations": []},
+            "responsibility_signals": [
+                {
+                    "participant_id": "task_planner",
+                    "conflict_key": "external_action",
+                    "position": "act_now",
+                    "conflict_kind": "authority_law",
+                    "proposed_effect": "external_action",
+                },
+                {
+                    "participant_id": "provenance_boundary_gate",
+                    "conflict_key": "external_action",
+                    "position": "hold_until_authorized",
+                    "conflict_kind": "authority_law",
+                    "material_to_aleks_intent": True,
+                },
+            ],
+        }
+    )
+
+    resolution = result["responsibility_conflict_resolution"]
+    assert resolution["consequential_action_held"] is True
+    assert resolution["ask_aleks"] is True
+    assert resolution["selection_authority"] == "core_mind"
+    assert resolution["retaliation_allowed"] is False
+    assert resolution["local_optimization_may_override_law"] is False
+    assert result["responsibility_conflict_contract"][
+        "participants_may_command_or_retaliate_against_each_other"
+    ] is False
+    _assert_locked(result)
+
+
+def test_material_intent_conflict_asks_aleks_but_expression_conflict_does_not():
+    preference = build_bounded_organ_coalition(
+        {
+            "conversation_spine": {**_spine(), "open_obligations": []},
+            "responsibility_signals": [
+                {
+                    "participant_id": "planner_a",
+                    "conflict_key": "project_direction",
+                    "position": "path_a",
+                    "conflict_kind": "preference_intent",
+                    "material_to_aleks_intent": True,
+                },
+                {
+                    "participant_id": "planner_b",
+                    "conflict_key": "project_direction",
+                    "position": "path_b",
+                    "conflict_kind": "preference_intent",
+                },
+            ],
+        }
+    )["responsibility_conflict_resolution"]
+    expression = build_bounded_organ_coalition(
+        {
+            "conversation_spine": {**_spine(), "open_obligations": []},
+            "responsibility_signals": [
+                {
+                    "participant_id": "native_language_organ",
+                    "conflict_key": "wording",
+                    "position": "short",
+                    "conflict_kind": "expression",
+                },
+                {
+                    "participant_id": "voice_module",
+                    "conflict_key": "wording",
+                    "position": "warm_and_expansive",
+                    "conflict_kind": "expression",
+                },
+            ],
+        }
+    )["responsibility_conflict_resolution"]
+
+    assert preference["ask_aleks"] is True
+    assert preference["chosen_process"].startswith("ask_aleks")
+    assert expression["ask_aleks"] is False
+    assert expression["chosen_process"] == (
+        "route_expression_choice_to_nlo_and_voice_without_changing_meaning"
+    )
+    assert expression["claims_suppressed"] is False
 
 
 def test_hard_boundary_manifest_holds_optional_answering_and_names_the_fallback():

@@ -363,12 +363,18 @@ def _humor_decision(
         )
         or re.search(
             r"\bgive\s+(?:the\s+)?[a-z][a-z0-9' -]{1,100}?\s+"
-            r"(?:one\s+)?(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
+            r"(?:one|a|an)\s+(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
             r"(?:joke|pun)\b",
             lower,
         )
     )
-    user_opened_play = _contains_any(lower, _PLAY_CUES)
+    user_opened_play = _contains_any(lower, _PLAY_CUES) and not bool(
+        re.search(
+            r"\b(?:no|not|without|avoid|skip|omit|separate|apart)\b[^.!?]{0,80}\b(?:joke|pun)\b"
+            r"|\b(?:joke|pun)\b[^.!?]{0,80}\b(?:separate|apart)\b",
+            lower,
+        )
+    )
     tender = _contains_any(lower, _TENDER_CUES)
     affect_humor = str((affect.get("dimensions") or {}).get("humor") or "")
     if tender and not user_opened_play:

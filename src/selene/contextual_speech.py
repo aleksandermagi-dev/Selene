@@ -36,7 +36,7 @@ def inspect_contextual_follow_up(
     )
     session_landmarks = [
         item for item in context.get("session_landmarks") or [] if isinstance(item, dict)
-    ][-24:]
+    ][-64:]
 
     kind = "none"
     marker = ""
@@ -71,11 +71,21 @@ def inspect_contextual_follow_up(
         )
     ):
         kind, marker = "answer_development", "develop_previous_answer"
+    elif previous_assistant_preview and (
+        re.search(
+            r"\b(?:make|rewrite|revise)\b.*\b(?:sentence|paragraph|scene)\b.*"
+            r"\b(?:slower|softer|faster|sharper|warmer|quieter|pacing|tone)\b",
+            normalized,
+        )
+        or re.search(r"\bwhat did you change\b.*\b(?:pacing|tone|wording|rhythm)\b", normalized)
+    ):
+        kind, marker = "answer_development", "creative_revision_follow_up"
     elif re.match(r"^(?:one\s+)?(?:refinement|constraint|adjustment|revision)\s*:", normalized):
         kind, marker = "constraint_refinement", "explicit_session_refinement"
     elif re.search(
         r"\b(?:(?:please\s+)?(?:summarize|sum up|recap)\b|"
-        r"(?:give|tell|show)\s+(?:me|us)\s+(?:a\s+)?(?:short\s+|brief\s+)?(?:summary|recap)\b)",
+        r"(?:give|tell|show)\s+(?:me|us)\s+(?:a\s+)?(?:short\s+|brief\s+)?(?:summary|recap)\b|"
+        r"what\s+(?:one|two|three|four|five|\d+)\s+facts?.*\bsettled\b)",
         normalized,
     ):
         kind, marker = "session_summary_request", "summarize_active_session"
@@ -270,7 +280,7 @@ def contextual_response_seed(
             *list((conversation_spine or {}).get("session_landmarks") or []),
         ]
         if isinstance(item, dict)
-    ][-24:]
+    ][-64:]
     matched_landmarks = [
         item for item in contextual.get("matched_session_landmarks") or [] if isinstance(item, dict)
     ] or _matching_landmarks(str(contextual.get("prompt") or ""), landmarks)

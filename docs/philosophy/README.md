@@ -29,6 +29,9 @@ from evidence about what the current system can do.
 
 ## Dignity, Emotion, And Agency
 
+- [Conversational Agency and Voice Freedom Law](SELENE_CONVERSATIONAL_AGENCY_AND_VOICE_FREEDOM_LAW_20260813.md)
+  — positive expressive freedom, honest influence, commitment integrity, and
+  coordinated authority without manipulation or compulsory affect.
 - [Emotion and Response Agency Law](SELENE_EMOTION_AND_RESPONSE_AGENCY_LAW_20260801.md)
   — emotion is information, not command; regulation restores authorship without
   suppressing feeling.

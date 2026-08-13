@@ -131,7 +131,7 @@ def resolve_conversation_continuity(
             or []
         )
         if isinstance(item, dict)
-    ][-24:]
+    ][-64:]
     checkpoints = [
         item
         for item in (
@@ -140,7 +140,7 @@ def resolve_conversation_continuity(
             or []
         )
         if isinstance(item, dict)
-    ][-16:]
+    ][-64:]
     resolved_reference = _dict(
         pragmatics.get("resolved_reference")
         or _dict(pragmatics.get("referents")).get("resolved_current")

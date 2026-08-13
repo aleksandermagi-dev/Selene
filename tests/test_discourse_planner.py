@@ -117,6 +117,51 @@ def test_discourse_plan_binds_explicit_example_and_limit_requests_to_supported_r
     assert units[bindings["limit"]["content_unit_ids"][0]]["role"] == "limitation"
 
 
+def test_discourse_plan_binds_a_supported_next_step_and_preserves_answer_order():
+    result = build_supported_discourse_plan(
+        {
+            "content_seed": (
+                "Both plans are reversible. "
+                "Plan A is local while Plan B is remote. "
+                "Location is the deciding difference. "
+                "Test the local plan first."
+            ),
+            "response_obligations": [
+                {
+                    "id": "compare",
+                    "kind": "comparison",
+                    "source_text": "Compare the two plans.",
+                    "coverage_terms": ["compare", "plan"],
+                    "required": True,
+                },
+                {
+                    "id": "difference",
+                    "kind": "comparison",
+                    "source_text": "Explain the deciding difference.",
+                    "coverage_terms": ["deciding", "difference"],
+                    "required": True,
+                },
+                {
+                    "id": "next",
+                    "kind": "direct_request",
+                    "source_text": "Give the next step.",
+                    "coverage_terms": ["next", "step"],
+                    "required": True,
+                },
+            ],
+        }
+    )
+
+    bindings = {item["obligation_id"]: item for item in result["obligation_bindings"]}
+    paragraph_ids = result["paragraph_plan"][0]["content_unit_ids"]
+
+    assert result["all_obligations_grounded"] is True
+    assert result["uncovered_obligation_ids"] == []
+    assert "content_3" in bindings["difference"]["content_unit_ids"]
+    assert bindings["next"]["content_unit_ids"] == ["content_4"]
+    assert paragraph_ids == ["content_1", "content_2", "content_3", "content_4"]
+
+
 def test_developed_discourse_does_not_create_empty_paragraphs_to_reach_a_target():
     result = build_supported_discourse_plan(
         {

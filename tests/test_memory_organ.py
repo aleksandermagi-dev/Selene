@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 
 import pytest
 
@@ -53,6 +54,92 @@ def test_memory_index_includes_approved_reference_with_vys_metadata(tmp_path):
     assert result["items"][0]["transfer_class"] == "portable_vys_core"
     assert "tender" in result["items"][0]["emotional_texture"]
     _assert_locked(result)
+
+
+def test_memory_display_title_is_presentation_only_and_preserves_history(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Approved memory",
+            "summary": "Aleks told Selene that the butterfly button opens Cocoon gently.",
+            "source_refs": ["chat:butterfly"],
+            "confidence": "clear",
+        },
+    )["result"]
+    memory_id = proposed["item"]["id"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": memory_id, "action": "approve_memory"},
+    )
+    original_row = dict(conn.execute("SELECT * FROM selene_memory_candidates WHERE id = ?", (memory_id,)).fetchone())
+    original_fingerprint = sha256(json.dumps(original_row, sort_keys=True).encode("utf-8")).hexdigest()
+
+    preview = route_request(conn, "memory.index.items")["result"]["items"][0]
+    assert preview["display_title"] == "The butterfly button opens Cocoon gently"
+    assert preview["display_title_persisted"] is False
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_presentation_annotations").fetchone()[0] == 0
+
+    renamed = route_request(
+        conn,
+        "memory.presentation.title.set",
+        {
+            "source_table": "selene_memory_candidates",
+            "source_id": memory_id,
+            "action": "rename",
+            "display_title": "The butterfly doorway",
+        },
+    )["result"]
+    assert renamed["item"]["display_title"] == "The butterfly doorway"
+    assert renamed["item"]["title"] == "Approved memory"
+    assert renamed["memory_content_mutated"] is False
+    assert renamed["memory_candidate_created"] is False
+    assert renamed["retrieval_eligibility_changed"] is False
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_presentation_annotations").fetchone()[0] == 1
+
+    restored = route_request(
+        conn,
+        "memory.presentation.title.set",
+        {
+            "source_table": "selene_memory_candidates",
+            "source_id": memory_id,
+            "action": "use_selene_title",
+        },
+    )["result"]
+    assert restored["item"]["display_title"] == "The butterfly button opens Cocoon gently"
+    history = restored["item"]["presentation_annotation"]["title_history"]
+    assert history[-1]["display_title"] == "The butterfly doorway"
+    assert history[-1]["superseded"] is True
+    assert conn.execute("SELECT title FROM selene_memory_candidates WHERE id = ?", (memory_id,)).fetchone()[0] == "Approved memory"
+    final_row = dict(conn.execute("SELECT * FROM selene_memory_candidates WHERE id = ?", (memory_id,)).fetchone())
+    final_fingerprint = sha256(json.dumps(final_row, sort_keys=True).encode("utf-8")).hexdigest()
+    assert final_fingerprint == original_fingerprint
+    _assert_locked(restored)
+
+
+def test_memory_display_title_rejects_unapproved_records(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {"category": "semantic", "title": "Still reviewing", "summary": "This remains a candidate."},
+    )["result"]
+
+    with pytest.raises(ValueError, match="only for approved memories"):
+        route_request(
+            conn,
+            "memory.presentation.title.set",
+            {
+                "source_table": "selene_memory_candidates",
+                "source_id": proposed["item"]["id"],
+                "action": "rename",
+                "display_title": "Too early",
+            },
+        )
 
 
 def test_memory_status_names_the_resident_reviewed_lifecycle(tmp_path):
@@ -221,6 +308,33 @@ def test_memory_candidate_requires_approval_before_chat_use(tmp_path):
     }
     _assert_locked(proposed)
     _assert_locked(approved)
+
+
+def test_opening_memory_index_is_read_only_and_does_not_duplicate_memory(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "A private memory card",
+            "summary": "Opening this approved memory should reveal the existing record without retaining another copy.",
+            "source_refs": ["selene_chat:privacy_test"],
+        },
+    )["result"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": proposed["item"]["id"], "action": "approve_memory"})
+    before = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
+
+    first_read = route_request(conn, "memory.index.items")["result"]
+    second_read = route_request(conn, "memory.index.items")["result"]
+    after = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
+
+    assert first_read["items"] == second_read["items"]
+    assert before == after == 1
+    assert first_read["items"][0]["title"] == "A private memory card"
+    assert first_read["items"][0]["summary"].startswith("Opening this approved memory")
+    _assert_locked(first_read)
+    _assert_locked(second_read)
 
 
 def test_reaffirming_approval_is_a_reviewed_decision_not_a_second_promotion(tmp_path):

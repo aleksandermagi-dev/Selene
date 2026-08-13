@@ -436,8 +436,8 @@ def _inside_spans(position: int, spans: list[tuple[int, int]]) -> bool:
 def _alias_assertions(text: str, speaker: str) -> list[dict[str, Any]]:
     assertions: list[dict[str, Any]] = []
     same_person = re.search(
-        r"(?P<names>[A-Z][A-Za-z'-]{1,40}(?:\s*,\s*[A-Z][A-Za-z'-]{1,40})+"
-        r"(?:\s*,?\s*(?:and|or)\s+[A-Z][A-Za-z'-]{1,40})?)"
+        r"(?P<names>[A-Z][A-Za-z'-]{1,40}(?:\s*,\s*[A-Z][A-Za-z'-]{1,40})*"
+        r"\s*(?:,?\s*(?:and|or)\s+[A-Z][A-Za-z'-]{1,40}))"
         r"\s+(?:all\s+)?(?:refer to|identify|mean|are)\s+(?:all\s+)?"
         r"(?:the same (?:person|individual)|me)\b",
         text,

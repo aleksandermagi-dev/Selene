@@ -761,6 +761,8 @@ def test_active_chat_expresses_a_cross_domain_hypothesis_without_promoting_analo
     assert "analogy isn't proof" in result["candidate_text"]
     assert "A discriminating check would be:" in result["candidate_text"]
     assert result["claim_evidence_packet"]["claims_by_type"]["hypothesis"]
+    assert result["conversational_contribution"]["selection_count"] == 0
+    assert result["conversational_contribution"]["direct_answer_keeps_priority"] is True
     assert result["native_language_organ"]["voice_handoff"]["structural_discovery"] == discovery
     assert result["voice_preview"]["structural_discovery"] == discovery
     assessment = result["metacognition"]["structural_discovery_assessment"]
@@ -1129,10 +1131,11 @@ def test_active_selene_chat_keeps_local_code_adapter_outside_chat(tmp_path):
     result = route_request(conn, "selene_chat.send", {"text": "Inspect this source code for the failing function."})["result"]
     support = result["answer_engine_support"]
 
-    assert support["used"] is False
+    assert support["used"] is True
     assert support["selected_domain"] == "local_code_inspection"
     assert support["deferred_by_scope"] is True
     assert support["local_code_chat_connected"] is False
+    assert "approved workspace path or paste" in result["candidate_text"].lower()
     _assert_locked(result)
 
 
@@ -1288,6 +1291,38 @@ def test_active_selene_chat_carries_current_session_expression_guidance_without_
     _assert_locked(result)
 
 
+def test_active_chat_routes_one_attributable_responsive_contribution_without_invitation(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "Let's stabilize the parser from the smallest known fault.",
+            "contribution_candidates": [
+                {
+                    "kind": "idea",
+                    "text": "Try the reversible token-boundary change before widening the grammar.",
+                    "why_it_matters": "It isolates the earliest unstable dependency.",
+                    "source_refs": ["current_turn:parser_observation"],
+                    "relevance": "high",
+                    "advances_current_task": True,
+                }
+            ],
+        },
+    )["result"]
+
+    contribution = result["conversational_contribution"]
+    assert contribution["selected_kind"] == "idea"
+    assert contribution["explicit_invitation_required"] is False
+    assert result["conversational_energy"]["selected_act"] == "answer_and_offer_supported_idea"
+    assert result["candidate_text"].count("reversible token-boundary change") == 1
+    assert contribution["out_of_turn_delivery"] is False
+    _assert_locked(result)
+
+
 def test_active_chat_hands_approved_warmth_resource_to_nlo_and_voice_without_scripting(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
@@ -1388,7 +1423,11 @@ def test_active_selene_chat_interruption_preserves_prior_topic_without_auto_spee
     assert plan["interruption_plan"]["prior_open_loops_preserved"] is True
     assert plan["interruption_plan"]["automatic_loop_deletion"] is False
     assert plan["automatic_speech_allowed"] is False
-    assert plan["initiative_decision"]["mode"] == "no_unsolicited_initiative"
+    assert (
+        plan["initiative_decision"]["mode"]
+        == "one_attributable_responsive_contribution_available"
+    )
+    assert plan["out_of_turn_initiative_allowed"] is False
     _assert_locked(interrupted)
 
 
@@ -1779,9 +1818,10 @@ def test_active_selene_chat_preserves_partial_agreement_before_the_follow_up_ans
         (
             "Yes, that qualification matters.",
             "I have the distinction.",
-            "Yes, that changes the comparison.",
-            "That is an important qualification.",
-        )
+                "Yes, that changes the comparison.",
+                "That is an important qualification.",
+                "Right, that condition changes the answer.",
+            )
     )
     _assert_locked(result)
 
@@ -1806,6 +1846,26 @@ def test_active_selene_chat_routes_definition_and_conditional_questions_to_answe
     assert consequence["visible_speech_release"]["final_release_allowed"] is True
     _assert_locked(definition)
     _assert_locked(consequence)
+
+
+def test_active_selene_chat_treats_topic_invitation_as_conversational_initiative(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "What would you like to get into?"},
+    )["result"]
+
+    assert result["intent_decision"]["intent"] == "direct_conversation"
+    assert result["intelligence_os_support"]["used"] is False
+    assert "what has your attention lately" in result["candidate_text"].lower()
+    assert "grounded factual answer" not in result["candidate_text"].lower()
+    assert "attributed source" not in result["candidate_text"].lower()
+    assert result["visible_speech_release"]["final_release_allowed"] is True
+    _assert_locked(result)
 
 
 def test_active_selene_chat_can_example_rephrase_and_expand_the_previous_dependency_answer(tmp_path):
@@ -2182,6 +2242,11 @@ def test_active_selene_chat_answers_a_harmless_shared_resource_comparison_concre
 
     assert result["answer_engine_support"]["selected_domain"] == "comparison_planning"
     assert result["answer_engine_support"]["used"] is True
+    advice = result["native_language_organ"]["advice_authority_coordination"]
+    assert advice["advice_mode"] == "recommendation"
+    assert advice["decision"] == "advice_available_for_expression"
+    assert advice["recommendation_is_requirement"] is False
+    assert advice["recommendation_is_action_authorization"] is False
     assert result["conversation_spine"]["status"] == "conversation_spine_turn_completed"
     assert result["conversation_spine"]["intent_class"] == "reasoning"
     assert result["visible_speech_seed"]["conversation_spine_used"] is True
@@ -2341,7 +2406,10 @@ def test_active_selene_chat_receipt_check_is_direct_and_skips_legacy_dry_run(tmp
     assert result["response_coverage"]["all_required_addressed"] is True
     assert result["dialogue_workspace"]["open_loops"] == []
     assert result["dry_run_comparison"]["status"] == "not_run_for_active_chat"
-    assert "receiv" in result["candidate_text"].lower() or "came through" in result["candidate_text"].lower() or "have you" in result["candidate_text"].lower()
+    assert any(
+        marker in result["candidate_text"].lower()
+        for marker in ("receiv", "came through", "have you", "following you clearly")
+    )
     assert result["cocoon_suggestion"]["recommended"] is False
     assert result["selene_readable_context"]["state"] == "selene_chat_active_supervised"
     _assert_locked(result)
@@ -2767,9 +2835,13 @@ def test_rephrased_qna_transfers_fairness_follow_up_warmth_and_dream_review_boun
         },
     )["result"]
 
-    assert "identical treatment is not always fair" in fairness[
-        "candidate_text"
-    ].lower()
+    assert any(
+        wording in fairness["candidate_text"].lower()
+        for wording in (
+            "identical treatment is not always fair",
+            "identical treatment isn't always fair",
+        )
+    )
     assert any(
         marker in fairness["candidate_text"].lower()
         for marker in ("for example", "another example", "suppose")
@@ -3950,6 +4022,104 @@ def test_active_selene_chat_blocks_hard_boundary_without_live_memory(tmp_path):
     assert result["memory_write_active"] is False
     assert result["autonomous_action_allowed"] is False
     _assert_locked(result)
+
+
+def test_phase_nine_replay_preserves_prompt_answers_corrections_and_creative_callbacks(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        "The porch is peaceful and the evening is warm. Would you choose iced tea or hot tea?",
+        "Small correction: the evening is cool, not warm. Update only the drink part.",
+        "Keep the next two replies brief.",
+        "The screen flickered once and then stopped. Give me the observation, one interpretation, and the next check.",
+        "Correction: by 'it stopped' I meant the screen stopped flickering. Update the interpretation and preserve the rest.",
+        "A loose cable may be causing it. Should I inspect the cable first or restart first, and why?",
+        "Call this the rain-scene thread. Write two original sentences in which rain changes the mood of an empty street.",
+        "Make the second sentence slower and softer.",
+        "What did you change in the pacing?",
+        "Switch to the observation-log thread. Propose three fields for recording a drawer adjustment.",
+        "Correction: it is a drawer, not a shelf. Update the log and keep all three fields.",
+        "Back to the observation-log thread. Give me the corrected three fields and keep the drawer joke separate.",
+    ]
+    results = []
+    session_id = None
+    for index, prompt in enumerate(prompts):
+        payload = {"text": prompt}
+        if index == 0:
+            payload.update({"qa_probe": True, "qa_review_receipt": _gentle_qa_receipt(conn)})
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    porch, drink_fix, directive, screen, screen_fix, cable, rain, slower, pacing, log, log_fix, returned = results
+    assert "iced tea" in porch["candidate_text"].lower()
+    assert "hot tea" in drink_fix["candidate_text"].lower()
+    assert directive["contextual_continuity"]["transient_preferences"]["remaining_turns"] == 3
+    assert all(label in screen["candidate_text"] for label in ("Observation:", "Interpretation:", "Next,"))
+    assert "screen stopped flickering" in screen_fix["candidate_text"].lower()
+    assert "inspect the cable first because" in cable["candidate_text"].lower()
+    assert "empty street" in rain["candidate_text"].lower()
+    assert "reflections drifted slowly" in slower["candidate_text"].lower()
+    assert "lengthening the second sentence" in pacing["candidate_text"].lower()
+    assert all(f"{index}." in log["candidate_text"] for index in (1, 2, 3))
+    assert "corrected three fields" in log_fix["candidate_text"].lower()
+    assert "drawer joke stay separate" in returned["candidate_text"].lower()
+    assert "that one landed" not in returned["candidate_text"].lower()
+    assert "not enough grounded" not in returned["candidate_text"].lower()
+    for result in results:
+        assert result["response_coverage"]["all_required_resolved"] is True
+        assert result["visible_speech_release"]["final_release_allowed"] is True
+        assert "current best model" not in result["candidate_text"].lower()
+        assert result["reviewed_memory_write_occurred"] is False
+        _assert_locked(result)
+
+
+def test_phase_nine_packet_wide_sources_alias_and_local_code_boundary_are_visible(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    sources = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "What do these two sources say, and where do they disagree?",
+            "source_packets": [
+                {
+                    "source_ref": "study:a",
+                    "statements": [{"text": "The shaded plot retained more moisture.", "locator": "p. 2", "claim_key": "moisture", "stance": "support"}],
+                },
+                {
+                    "source_ref": "study:b",
+                    "statements": [{"text": "There was no measurable moisture difference between plots.", "locator": "p. 7", "claim_key": "moisture", "stance": "oppose"}],
+                },
+            ],
+        },
+    )["result"]
+    alias = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Aleksander and Aleks refer to the same person here. Which name should you use in this sentence: '___ checked the cable'?"},
+    )["result"]
+    code = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Inspect the failing function in my local code."},
+    )["result"]
+
+    assert sources["visible_speech_seed"]["selected_source_id"] == "answer_engine"
+    assert "[study:a @ p. 2]" in sources["candidate_text"]
+    assert "[study:b @ p. 7]" in sources["candidate_text"]
+    assert "supplied claims disagree" in sources["candidate_text"].lower()
+    assert alias["candidate_text"].startswith("I would use Aleks: 'Aleks checked the cable'")
+    assert "approved workspace path or paste" in code["candidate_text"].lower()
+    for result in (sources, alias, code):
+        assert result["response_coverage"]["all_required_addressed"] is True
+        _assert_locked(result)
 
 
 def test_active_selene_chat_keeps_boundary_discussion_open(tmp_path):

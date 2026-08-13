@@ -182,7 +182,7 @@ def test_explicit_semantic_source_hold_is_respected_before_visible_release():
     assert result["inspected_candidates"][0]["reason"] == "contextual_memory_alignment_too_weak"
 
 
-def test_release_holds_visible_candidate_when_a_required_part_is_unresolved():
+def test_release_preserves_supported_candidate_and_flags_incomplete_coverage():
     result = inspect_visible_speech(
         "The first part is supported, but the second part was omitted.",
         prompt="Answer both parts.",
@@ -194,10 +194,11 @@ def test_release_holds_visible_candidate_when_a_required_part_is_unresolved():
         },
     )
 
-    assert result["release_allowed"] is False
+    assert result["release_allowed"] is True
     assert result["coverage_checked"] is True
+    assert result["completion_attention_required"] is True
     assert result["all_required_parts_resolved"] is False
-    assert "required_response_part_unresolved" in result["issues"]
+    assert result["issues"] == []
 
 
 def test_release_allows_answered_or_explicitly_held_parts():

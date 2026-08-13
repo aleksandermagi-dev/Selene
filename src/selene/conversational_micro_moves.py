@@ -73,7 +73,10 @@ _EFFORT_CUES = (
     "made progress",
     "kept going",
     "figured out",
-    "learning",
+    "i'm learning",
+    "i am learning",
+    "we're learning",
+    "we are learning",
     "practicing",
 )
 _CONFUSION_CUES = (
@@ -305,7 +308,7 @@ def build_conversational_micro_move_plan(
             )
         )
 
-    playful = any(cue.lower() in lower for cue in _PLAY_CUES)
+    playful = _user_opened_play(lower)
     humor_posture = str(dimensions.get("humor") or "")
     tender = any(cue in lower for cue in _TENDER_CUES)
     shared_joke = (
@@ -313,8 +316,20 @@ def build_conversational_micro_move_plan(
         if isinstance(payload.get("shared_joke"), dict)
         else {}
     )
+    quotation_echo = (
+        payload.get("quotation_echo_plan")
+        if isinstance(payload.get("quotation_echo_plan"), dict)
+        else {}
+    )
     if playful and (not tender or _user_opened_dark_humor(lower)):
-        if humor_posture != "contextually_held_this_turn":
+        if quotation_echo.get("suppress_generic_playful_move") is True:
+            held.append(
+                {
+                    "move": "one_playful_turn",
+                    "reason": "a source-visible playful echo owns this turn's single playful beat",
+                }
+            )
+        elif humor_posture != "contextually_held_this_turn":
             moves.append(
                 _move(
                     "one_playful_turn",
@@ -408,6 +423,22 @@ def realize_conversational_micro_moves(
         "provenance_boundary": MICRO_MOVE_BOUNDARY,
         **GUARDS,
     }
+
+
+def _user_opened_play(lower: str) -> bool:
+    """Separate actual play from administrative references to humor."""
+
+    if any(cue in lower for cue in ("haha", "lol", "lmao", "xd", "kidding", "funny")):
+        return True
+    if not re.search(r"\b(?:joke|pun)\b", lower):
+        return False
+    if re.search(
+        r"\b(?:no|not|without|avoid|skip|omit|separate|apart)\b[^.!?]{0,80}\b(?:joke|pun)\b"
+        r"|\b(?:joke|pun)\b[^.!?]{0,80}\b(?:separate|apart)\b",
+        lower,
+    ):
+        return False
+    return True
 
 
 def compose_conversational_micro_moves(
@@ -539,6 +570,9 @@ def _realize_move(
             "That is a real milestone.",
             "That deserves a moment.",
             "Nice—we got that piece working.",
+            "Oh, that is good.",
+            "Yes—that worked.",
+            "I love seeing that come together.",
         ),
         "encourage_visible_effort": (
             "That is worth continuing.",
@@ -554,6 +588,9 @@ def _realize_move(
             "Okay, that one landed.",
             "Fair—that earned one clean laugh.",
             "The sideways logic works, annoyingly enough.",
+            "All right, you got me with that one.",
+            "Fair. The timing did its job.",
+            "Okay, dramatic framing accepted.",
         ),
         "invite_story_continuation": (
             "Go ahead—I'm listening.",

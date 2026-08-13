@@ -66,6 +66,7 @@ def conversation_spine_status() -> dict[str, Any]:
                 "open response obligations",
                 "session topic branches returns dependencies and landings",
                 "one selected continuity target across immediate answers threads landmarks checkpoints and referents",
+                "bounded long-thread structural index and saturation handoff",
                 "mixed dialogue acts without collapsing separate obligations",
                 "compatible visible source classes",
                 "separate route evidence answer memory and expression confidence",
@@ -151,7 +152,7 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
     previous = _previous_answer(contextual, pragmatics, payload.get("conversation_events"))
     session_landmarks = [
         item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
-    ][-24:]
+    ][-64:]
     relevant_landmarks = _relevant_landmarks(interpreted, session_landmarks)
     continuity_landmarks = [
         item

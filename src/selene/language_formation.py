@@ -68,6 +68,21 @@ IRREGULAR_PARTICIPLES = {
     "understand": "understood",
 }
 
+MODAL_PREDICATE_PREFIXES = {
+    "can",
+    "cannot",
+    "can't",
+    "could",
+    "may",
+    "might",
+    "must",
+    "shall",
+    "should",
+    "will",
+    "won't",
+    "would",
+}
+
 SOCIAL_INTENTS = {
     "greeting",
     "farewell",
@@ -149,6 +164,9 @@ def realize_semantic_frame(
     clauses = [clause for _, _, clause in realized]
     relations = [str(item.get("relation") or "") for _, item, _ in realized]
     moods = [str(item.get("mood") or "declarative") for _, item, _ in realized]
+    preserve_initial_case = [
+        item.get("preserve_subject_case") for _, item, _ in realized
+    ]
     relation = str(frame.get("discourse_relation") or "sequence")
     text = _compose_clauses(
         clauses,
@@ -157,6 +175,7 @@ def realize_semantic_frame(
         variation_key,
         relations=relations,
         moods=moods,
+        preserve_initial_case=preserve_initial_case,
         clause_linking=str((frame.get("construction_style") or {}).get("clause_linking") or "as_supplied"),
     )
     recent_texts = recent_texts or []
@@ -168,6 +187,7 @@ def realize_semantic_frame(
             variation_key + ":alternate",
             relations=list(reversed(relations)),
             moods=list(reversed(moods)),
+            preserve_initial_case=list(reversed(preserve_initial_case)),
             clause_linking=str((frame.get("construction_style") or {}).get("clause_linking") or "as_supplied"),
         )
     required = [str(item.get("text") or item.get("object") or "").strip() for item in propositions if item.get("required", True)]
@@ -360,6 +380,7 @@ def _compose_clauses(
     *,
     relations: list[str] | None = None,
     moods: list[str] | None = None,
+    preserve_initial_case: list[bool] | None = None,
     clause_linking: str = "as_supplied",
 ) -> str:
     if not clauses:
@@ -371,7 +392,13 @@ def _compose_clauses(
         "contrast": ("However", "At the same time", "Still", "By contrast", "The difference is that"),
         "cause": ("Because of that", "So", "That means", "For that reason", "The mechanism is that"),
         "condition": ("From there", "In that case", "With that in place", "Under that condition", "If that changes"),
-        "support": ("More importantly", "Alongside that", "A second point is that", "Supporting that", "Another useful piece is that"),
+        "support": (
+            "Also",
+            "Alongside that",
+            "Relatedly",
+            "In addition",
+            "Beyond that",
+        ),
         "example": ("For example", "In a different case", "One concrete example is this"),
         "return": ("Returning to the earlier point", "That changes the earlier point", "Back on that thread"),
         "conclusion": ("Taken together", "The practical landing is this", "Overall"),
@@ -388,11 +415,25 @@ def _compose_clauses(
         continuation = (
             clause[0].lower() + clause[1:]
             if mood == "imperative" and clause
-            else _continuation_case(clause)
+            else _continuation_case(
+                clause,
+                force_lower=bool(
+                    preserve_initial_case
+                    and len(preserve_initial_case) > index + 1
+                    and preserve_initial_case[index + 1] is False
+                ),
+            )
         )
         if _starts_with_transition(clause):
             sentences.append(_sentence(clause))
-        elif connector.lower().endswith(" that"):
+        elif connector.lower() in {
+            "a second point is that",
+            "another useful piece is that",
+            "the difference is that",
+            "the mechanism is that",
+        }:
+            if continuation.lower().startswith("that "):
+                continuation = continuation[5:]
             sentences.append(_sentence(f"{connector} {continuation}"))
         else:
             sentences.append(_sentence(f"{connector}, {continuation}"))
@@ -434,6 +475,13 @@ def _verb_phrase(
     suffix = f" {tail}" if tail else ""
     if tense == "future" and not modality:
         modality = "will"
+    # A supplied predicate can already contain its modal (for example,
+    # ``cannot reliably use``).  Such auxiliaries do not inflect for person;
+    # treating ``cannot`` as an ordinary lexical verb produced ``cannots``.
+    if not modality and base in MODAL_PREDICATE_PREFIXES:
+        if negative and base not in {"cannot", "can't", "won't"}:
+            return f"{base} not{suffix}"
+        return predicate
     if modality:
         if voice == "passive":
             core = f"be {_past_participle(base)}{suffix}"
@@ -637,7 +685,7 @@ def _matches_recent(candidate: str, recent: list[str]) -> bool:
     return any(normalized and normalized == " ".join(str(item).lower().split()) for item in recent)
 
 
-def _continuation_case(value: str) -> str:
+def _continuation_case(value: str, *, force_lower: bool = False) -> str:
     if not value:
         return value
     first_word = value.split(maxsplit=1)[0].rstrip(",")
@@ -660,8 +708,9 @@ def _continuation_case(value: str) -> str:
         "When",
         "While",
         "You",
+        "Later",
     }
-    return value[0].lower() + value[1:] if first_word in lowerable else value
+    return value[0].lower() + value[1:] if force_lower or first_word in lowerable else value
 
 
 def _string_list(value: Any) -> list[str]:

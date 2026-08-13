@@ -331,11 +331,12 @@ def merge_session_topic_checkpoints(
     existing: list[dict[str, Any]],
     checkpoint: dict[str, Any],
     *,
-    limit: int = 16,
+    limit: int = 64,
 ) -> list[dict[str, Any]]:
-    items = [item for item in existing if isinstance(item, dict)][-limit:]
+    bounded_limit = max(1, min(limit, 64))
+    items = [item for item in existing if isinstance(item, dict)][-64:]
     if checkpoint.get("status") != "session_topic_checkpoint_ready":
-        return items
+        return _retain_checkpoint_threads(items, bounded_limit)
     checkpoint_id = str(checkpoint.get("checkpoint_id") or "")
     merged = [
         item
@@ -343,7 +344,28 @@ def merge_session_topic_checkpoints(
         if str(item.get("checkpoint_id") or "") != checkpoint_id
     ]
     merged.append(checkpoint)
-    return merged[-max(1, min(limit, 24)) :]
+    return _retain_checkpoint_threads(merged, bounded_limit)
+
+
+def _retain_checkpoint_threads(
+    items: list[dict[str, Any]], limit: int
+) -> list[dict[str, Any]]:
+    if len(items) <= limit:
+        return items
+    latest_by_thread: dict[str, int] = {}
+    for index, item in enumerate(items):
+        thread_id = str(item.get("thread_id") or "")
+        if thread_id:
+            latest_by_thread[thread_id] = index
+    selected = set(latest_by_thread.values())
+    for index in range(len(items) - 1, -1, -1):
+        if len(selected) >= limit:
+            break
+        selected.add(index)
+    if len(selected) > limit:
+        protected = set(latest_by_thread.values())
+        selected = set(sorted(protected, reverse=True)[:limit])
+    return [item for index, item in enumerate(items) if index in selected]
 
 
 def build_dual_horizon_context(
@@ -805,7 +827,7 @@ def _approved_horizon_items(
                 source_refs=_text_list(knowledge_item.get("source_refs")),
             )
         )
-    for checkpoint in checkpoints[-16:]:
+    for checkpoint in checkpoints[-64:]:
         if checkpoint.get("status") != "session_topic_checkpoint_ready":
             continue
         items.append(

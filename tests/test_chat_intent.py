@@ -58,6 +58,27 @@ def test_social_or_corrective_opening_does_not_hide_a_content_request():
         assert decision["answer_shape"] == "acknowledge_then_answer"
 
 
+def test_discussing_correction_as_a_concept_does_not_seize_the_correction_route():
+    decision = classify_chat_intent(
+        "Explain why a correction can preserve the useful parts of an idea."
+    )
+
+    assert decision["intent"] == "reasoning"
+    assert "correction" not in decision["dialogue_acts"]
+    assert decision["reasoning_requested"] is True
+
+
+def test_explicit_correction_still_routes_as_a_correction():
+    for prompt in (
+        "Correction: use the second route.",
+        "One small correction, the second route comes first.",
+        "I meant the second route, not the first.",
+    ):
+        decision = classify_chat_intent(prompt)
+        assert decision["intent"] == "correction"
+        assert "correction" in decision["dialogue_acts"]
+
+
 def test_ordinary_suggestion_request_routes_as_bounded_planning_reasoning():
     decision = classify_chat_intent(
         "I have juice, a notebook, and ten minutes. Suggest one modest way to use the time."
@@ -190,9 +211,9 @@ def test_correction_separates_refinement_from_trailing_confirmation_question(tmp
 
     result = realize_native_language(conn, {"prompt": prompt, "intent_decision": classify_chat_intent(prompt)})
 
-    assert result["candidate_text"].startswith(
-        ("Yes, I see the correction.", "Got it.", "I have the changed meaning.", "Yes, that adjustment is clear.")
-    )
+    social = result["discourse_plan"]["social_act_realization"]
+    acknowledgement = social["selected_realizations"][0]["text"]
+    assert result["candidate_text"].startswith(acknowledgement)
     assert "the answer should reopen only when evidence changes the fit." in result["candidate_text"]
     assert "Can you keep" not in result["candidate_text"]
 

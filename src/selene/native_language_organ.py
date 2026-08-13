@@ -7,7 +7,16 @@ from hashlib import sha256
 from typing import Any
 
 from .chat_intent import classify_chat_intent
+from .advice_authority_coordination import (
+    advice_authority_coordination_status,
+    build_advice_authority_coordination,
+)
 from .candidate_garden import candidate_garden_status, cultivate_candidate_garden
+from .commitment_anomaly_coordination import (
+    build_commitment_anomaly_coordination,
+    commitment_anomaly_coordination_status,
+    realize_commitment_anomaly_voice,
+)
 from .conversational_micro_moves import (
     build_conversational_micro_move_plan,
     compose_conversational_micro_moves,
@@ -51,8 +60,18 @@ from .living_lexicon import (
     enrich_semantic_units_from_living_lexicon,
     living_lexicon_status,
 )
+from .long_thread_endurance import long_thread_endurance_status
 from .pragmatic_planner import build_pragmatic_plan
 from .pragmatic_continuity import build_pragmatic_continuity_plan
+from .quotation_echo import (
+    build_quotation_echo_plan,
+    quotation_echo_status,
+    realize_quotation_echo,
+)
+from .relational_expression_range import (
+    build_relational_expression_range,
+    relational_expression_range_status,
+)
 from .registry import truncate
 from .social_language_realizer import (
     SOCIAL_INTENT_ACTS,
@@ -133,6 +152,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "attributable_dream_reflection_handoff",
                 "contextual_composition_profile",
                 "meaning_preserving_depth_pacing_register_and_structure_modulation",
+                "context_selected_relational_and_expressive_range",
                 "grammar_and_morphology_realization",
                 "bounded_pragmatic_planning",
                 "response_obligation_planning",
@@ -153,6 +173,9 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "content_light_conversational_act_realization",
                 "compositional_epistemic_uncertainty_realization",
                 "typed_epistemic_human_conversational_realization",
+                "attributed_quotation_echo_callback_and_playful_mimicry",
+                "advice_risk_disagreement_and_authority_coordination",
+                "real_commitment_and_observation_first_anomaly_coordination",
                 "compositional_boundary_memory_and_initiative_realization",
                 "response_depth_selection",
                 "multi_paragraph_answer_structure",
@@ -163,6 +186,7 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "pacing_warmth_humor_reassurance_restraint_and_directness_handoff",
                 "session_topic_returns_interruptions_and_natural_stopping",
                 "single_message_and_multi_turn_thread_braiding",
+                "structurally_prioritized_long_thread_saturation_handoff",
                 "dependency_aware_topic_resumption",
                 "multi_obligation_supported_completion_handoff",
                 "sentence_level_supported_recomposition",
@@ -187,6 +211,11 @@ def native_language_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "discourse_loom": discourse_loom_status(),
             "context_expression_selector": context_expression_selector_status(),
             "knowledge_language_growth": knowledge_language_growth_status(conn),
+            "long_thread_endurance": long_thread_endurance_status(),
+            "advice_authority_coordination": advice_authority_coordination_status(),
+            "commitment_anomaly_coordination": commitment_anomaly_coordination_status(),
+            "quotation_echo": quotation_echo_status(),
+            "relational_expression_range": relational_expression_range_status(),
             "generative_thought_expression": generative_thought_expression_status(),
             "law": (
                 "Meaning comes from Selene's supported organs; NLO structures and contextually realizes language; "
@@ -426,6 +455,16 @@ def _build_language_result(
     )
     plan["contextual_composition"] = contextual_composition
     draft = str(contextual_composition.get("candidate_text") or draft)
+    quotation_echo_realization = realize_quotation_echo(
+        draft,
+        plan.get("quotation_echo_plan"),
+        variation_key=(
+            f"{prompt}|quotation-echo|turn:"
+            f"{int((meaning.get('conversation_context') or {}).get('turn_count') or 0)}"
+        ),
+    )
+    plan["quotation_echo_realization"] = quotation_echo_realization
+    draft = str(quotation_echo_realization.get("candidate_text") or draft)
     micro_move_realization = realize_conversational_micro_moves(
         plan.get("conversational_micro_move_plan"),
         variation_key=(
@@ -450,6 +489,12 @@ def _build_language_result(
     )
     plan["conversational_energy_realization"] = conversational_energy_realization
     draft = str(conversational_energy_realization.get("candidate_text") or draft)
+    commitment_anomaly_realization = realize_commitment_anomaly_voice(
+        draft,
+        meaning.get("commitment_anomaly_coordination"),
+    )
+    plan["commitment_anomaly_realization"] = commitment_anomaly_realization
+    draft = str(commitment_anomaly_realization.get("candidate_text") or draft)
     candidate, revision = _revise_candidate(draft, meaning, plan)
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
@@ -465,6 +510,11 @@ def _build_language_result(
         "discourse_loom": discourse_loom,
         "context_expression_selection": expression_selection,
         "knowledge_language_growth": meaning.get("knowledge_language_growth") or {},
+        "advice_authority_coordination": meaning.get("advice_authority_coordination") or {},
+        "commitment_anomaly_coordination": meaning.get("commitment_anomaly_coordination") or {},
+        "long_thread_endurance": meaning.get("long_thread_endurance") or {},
+        "quotation_echo": plan.get("quotation_echo_plan") or {},
+        "relational_expression_range": plan.get("relational_expression_range") or {},
         "epistemic_composition": meaning.get("epistemic_composition") or {},
         "generative_thought_expression": meaning.get("generative_thought_expression") or {},
         "pragmatic_plan": meaning.get("pragmatic_plan") or {},
@@ -490,6 +540,13 @@ def _build_language_result(
             "discourse_selection_pass_count": int(discourse_loom.get("selection_pass_count") or 0),
             "context_expression_selection": expression_selection,
             "knowledge_language_growth": meaning.get("knowledge_language_growth") or {},
+            "advice_authority_coordination": meaning.get("advice_authority_coordination") or {},
+            "commitment_anomaly_coordination": meaning.get("commitment_anomaly_coordination") or {},
+            "commitment_anomaly_realization": plan.get("commitment_anomaly_realization") or {},
+            "long_thread_endurance": meaning.get("long_thread_endurance") or {},
+            "quotation_echo_plan": plan.get("quotation_echo_plan") or {},
+            "quotation_echo_realization": plan.get("quotation_echo_realization") or {},
+            "relational_expression_range": plan.get("relational_expression_range") or {},
             "generative_thought_expression": meaning.get("generative_thought_expression") or {},
             "generative_thought_realization": plan.get("generative_thought_realization") or {},
             "voice_may_change_thought_kind": False,
@@ -577,6 +634,11 @@ def _meaning_packet(
         else {}
     )
     comprehension = payload.get("comprehension_context") if isinstance(payload.get("comprehension_context"), dict) else {}
+    knowledge_expression_handoff = (
+        comprehension.get("knowledge_expression_handoff")
+        if isinstance(comprehension.get("knowledge_expression_handoff"), dict)
+        else {}
+    )
     if not content_seed and intelligence.get("used"):
         content_seed = _truncate_preserving_paragraphs(
             _normalize_paragraphs(str(intelligence.get("best_current_answer") or "")),
@@ -682,6 +744,11 @@ def _meaning_packet(
         if isinstance(payload.get("conversation_continuity"), dict)
         else conversation_spine.get("conversation_continuity")
         if isinstance(conversation_spine.get("conversation_continuity"), dict)
+        else {}
+    )
+    long_thread_endurance = (
+        payload.get("long_thread_endurance")
+        if isinstance(payload.get("long_thread_endurance"), dict)
         else {}
     )
     dialogue = payload.get("dialogue_workspace") if isinstance(payload.get("dialogue_workspace"), dict) else {}
@@ -863,6 +930,26 @@ def _meaning_packet(
         construction_specification=default_construction,
     )
     variation_context = _variation_context(expression_profile, conversation, recent_assistant_texts)
+    advice_authority_coordination = build_advice_authority_coordination(
+        {
+            "advice_input": payload.get("advice_input") or {},
+            "authority_input": payload.get("authority_input") or {},
+            "response_agency": payload.get("response_agency") or {},
+            "answer_kind": _dict(answer_packet.get("supported_semantics")).get(
+                "answer_kind"
+            )
+            or str(answer_engine.get("selected_domain") or ""),
+            "supported_semantics": supported_semantics,
+            "organ_coalition": organ_coalition,
+        }
+    )
+    commitment_anomaly_coordination = build_commitment_anomaly_coordination(
+        {
+            "commitment_input": payload.get("commitment_input") or {},
+            "action_handoff": payload.get("action_handoff") or {},
+            "anomaly_input": payload.get("anomaly_input") or {},
+        }
+    )
     return {
         "intent": intent,
         "diagnostic_context": diagnostic_context,
@@ -975,6 +1062,27 @@ def _meaning_packet(
             "changes_supported_meaning": False,
             "hidden_chain_of_thought_exposed": False,
         },
+        "long_thread_endurance": {
+            "observed": bool(long_thread_endurance),
+            "status": str(
+                long_thread_endurance.get("status") or "not_available"
+            ),
+            "version": str(long_thread_endurance.get("version") or ""),
+            "saturation_state": str(
+                long_thread_endurance.get("saturation_state") or "not_assessed"
+            ),
+            "protected_thread_ids": (
+                long_thread_endurance.get("protected_thread_ids") or []
+            ),
+            "continuation_handoff": (
+                long_thread_endurance.get("continuation_handoff") or {}
+            ),
+            "session_scoped_only": True,
+            "checkpoint_is_memory": False,
+            "selection_authority": False,
+            "changes_supported_meaning": False,
+            "hidden_chain_of_thought_exposed": False,
+        },
         "semantic_frame": semantic_frame,
         "supported_semantics": {
             "used": supported_semantics_used and bool(semantic_units_for_formation(supported_semantics)),
@@ -993,6 +1101,57 @@ def _meaning_packet(
             "certainty": str(supported_semantics.get("certainty") or ""),
             "scope": str(supported_semantics.get("scope") or ""),
             "source_refs": supported_semantics.get("source_refs") or [],
+            "expression_mode": str(
+                supported_semantics.get("expression_mode") or ""
+            ),
+            "source_wording_is_surface_requirement": (
+                supported_semantics.get("source_wording_is_surface_requirement")
+                is True
+            ),
+            "original_expression_required": (
+                supported_semantics.get("original_expression_required") is True
+            ),
+            "meaning_change_allowed": False,
+        },
+        "knowledge_expression_handoff": {
+            "active": knowledge_expression_handoff.get("active") is True,
+            "status": str(
+                knowledge_expression_handoff.get("status") or "not_available"
+            ),
+            "version": str(knowledge_expression_handoff.get("version") or ""),
+            "unit_count": int(knowledge_expression_handoff.get("unit_count") or 0),
+            "structured_unit_count": int(
+                knowledge_expression_handoff.get("structured_unit_count") or 0
+            ),
+            "text_grounded_unit_count": int(
+                knowledge_expression_handoff.get("text_grounded_unit_count") or 0
+            ),
+            "exactness_lock_count": int(
+                knowledge_expression_handoff.get("exactness_lock_count") or 0
+            ),
+            "source_refs": knowledge_expression_handoff.get("source_refs") or [],
+            "source_wording_is_surface_requirement": (
+                knowledge_expression_handoff.get(
+                    "source_wording_is_surface_requirement"
+                )
+                is True
+            ),
+            "original_expression_required": (
+                knowledge_expression_handoff.get("original_expression_required")
+                is True
+            ),
+            "source_wording_is_default_visible_script": (
+                knowledge_expression_handoff.get(
+                    "source_wording_is_default_visible_script"
+                )
+                is True
+            ),
+            "compatibility_seed_is_expression_authority": (
+                knowledge_expression_handoff.get(
+                    "compatibility_seed_is_expression_authority"
+                )
+                is True
+            ),
             "meaning_change_allowed": False,
         },
         "formation": formation,
@@ -1011,6 +1170,8 @@ def _meaning_packet(
             "provenance_boundary": living_lexicon.get("provenance_boundary") or "",
         },
         "knowledge_language_growth": knowledge_language_growth,
+        "advice_authority_coordination": advice_authority_coordination,
+        "commitment_anomaly_coordination": commitment_anomaly_coordination,
         "pragmatic_plan": pragmatic_plan,
         "turn_flow_plan": turn_flow_plan,
         "language_teaching_guidance": language_guidance,
@@ -1478,6 +1639,17 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
         }
     )
+    quotation_echo_plan = build_quotation_echo_plan(
+        {
+            "prompt": prompt,
+            "intent": intent,
+            "answer_domain": meaning.get("answer_domain") or "ordinary_conversation",
+            "source_refs": meaning.get("source_refs") or [],
+            "knowledge_expression_handoff": meaning.get("knowledge_expression_handoff") or {},
+            "contextual_continuity": contextual_continuity,
+            "referent_address": meaning.get("referent_address") or {},
+        }
+    )
     conversational_micro_move_plan = build_conversational_micro_move_plan(
         {
             "prompt": prompt,
@@ -1489,6 +1661,29 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "dream_reflection": meaning.get("dream_reflection") or {},
             "shared_joke": contextual_continuity.get("shared_joke_context") or {},
             "contextual_continuity": contextual_continuity,
+            "quotation_echo_plan": quotation_echo_plan,
+        }
+    )
+    relational_expression_range = build_relational_expression_range(
+        {
+            "prompt": prompt,
+            "intent": intent,
+            "content_seed": meaning.get("content_seed") or "",
+            "hard_boundary": intent == "hold_boundary",
+            "exact_structure_locked": (
+                str(meaning.get("answer_domain") or "")
+                in {"verified_math", "source_backed_research"}
+            ),
+            "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+            "pragmatic_continuity": pragmatic_continuity,
+            "contextual_follow_up": meaning.get("contextual_follow_up") or {},
+            "conversation_context": meaning.get("conversation_context") or {},
+            "conversational_micro_move_plan": conversational_micro_move_plan,
+            "quotation_echo_plan": quotation_echo_plan,
+            "generative_thought_expression": generative_thought,
+            "epistemic_composition": meaning.get("epistemic_composition") or {},
+            "epistemic_answer_state": meaning.get("epistemic_answer_state") or {},
+            "exploratory_reasoning": exploratory_reasoning,
         }
     )
     contextual_composition_plan = build_contextual_composition_plan(
@@ -1504,6 +1699,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "conversation_context": meaning.get("conversation_context") or {},
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
             "conversational_micro_move_plan": conversational_micro_move_plan,
+            "relational_expression_range": relational_expression_range,
         }
     )
     human_conversational_plan = build_human_conversational_plan(
@@ -1516,6 +1712,13 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "exploratory_reasoning": exploratory_reasoning,
             "contextual_composition_plan": contextual_composition_plan,
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+            "relational_expression_range": relational_expression_range,
+            # Formation can fall back to the user's prompt when no answer
+            # content exists.  Only an actual supplied/owned content seed may
+            # authorize general supported-answer surface variation.
+            "supported_surface_available": bool(
+                str(meaning.get("content_seed") or "").strip()
+            ),
         }
     )
     content_light_plan = (
@@ -1580,7 +1783,12 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "braided_discourse_used": thread_braid.get("braided") is True,
         "follow_up_question_by_default": False,
         "social_act_plan": social_act_plan,
+        "advice_authority_coordination": meaning.get("advice_authority_coordination") or {},
+        "commitment_anomaly_coordination": meaning.get("commitment_anomaly_coordination") or {},
+        "long_thread_endurance": meaning.get("long_thread_endurance") or {},
+        "quotation_echo_plan": quotation_echo_plan,
         "conversational_micro_move_plan": conversational_micro_move_plan,
+        "relational_expression_range": relational_expression_range,
         "contextual_composition_plan": contextual_composition_plan,
         "human_conversational_plan": human_conversational_plan,
         "content_light_plan": content_light_plan,
@@ -2030,32 +2238,32 @@ def _reasoned_answer_frames(
         "comparison": [
             seed,
             f"The useful comparison is this: {seed}",
-            f"Putting the options against the same standard, {lowered}",
-            f"My read after weighing the tradeoff is {lowered}",
+            f"Against the same standard, here is what stands out: {seed}",
+            f"After weighing the tradeoff, my read is this: {seed}",
         ],
         "procedure": [
             seed,
             f"Start here: {seed}",
-            f"The practical sequence is {lowered}",
-            f"The cleanest next move is {lowered}",
+            f"The practical sequence is this: {seed}",
+            f"The cleanest next move is this: {seed}",
         ],
         "reflection": [
             seed,
-            f"My read is {lowered}",
+            f"My read is this: {seed}",
             f"What stands out to me is this: {seed}",
-            f"The shape I see is {lowered}",
+            f"The shape I see is this: {seed}",
         ],
         "synthesis": [
             seed,
-            f"Taken together, {lowered}",
-            f"The source-bounded answer is {lowered}",
-            f"The clearest synthesis I can support is {lowered}",
+            f"Taken together, the answer is this: {seed}",
+            f"The source-bounded answer is this: {seed}",
+            f"The clearest synthesis I can support is this: {seed}",
         ],
         "explanation": [
             seed,
-            f"The core of it is {lowered}",
+            f"The core of it is this: {seed}",
             f"The strongest current answer is this: {seed}",
-            f"What makes the pieces fit is {lowered}",
+            f"Here is what makes the pieces fit: {seed}",
         ],
         "direct": [
             seed,
@@ -2229,6 +2437,88 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
             "do_not_invent_or_hide_responsibility",
         },
     )
+    expressive_rhythm = enable(
+        "expressive_rhythm",
+        {
+            "map_rhythm_to_intended_effect",
+            "vary_sentence_length_by_narrative_function",
+            "place_pause_and_repetition_deliberately",
+            "preserve_selene_voice_choice",
+        },
+    )
+    concrete_imagery = enable(
+        "concrete_imagery",
+        {
+            "select_load_bearing_concrete_detail",
+            "build_scene_from_declared_or_supported_detail",
+            "mark_imagined_scene_when_fact_status_matters",
+            "avoid_decorative_detail_overload",
+        },
+    )
+    figurative_mapping = enable(
+        "figurative_mapping",
+        {
+            "identify_target_relationship_before_image",
+            "map_only_fitting_features",
+            "name_or_respect_mapping_limit",
+            "prefer_fresh_context_fit_image_over_source_imitation",
+        },
+    )
+    dialogue_subtext = enable(
+        "dialogue_subtext",
+        {
+            "track_each_speaker_and_local_goal",
+            "separate_spoken_line_from_implied_meaning",
+            "use_action_or_silence_when_it_advances_scene",
+            "keep_real_person_motives_evidence_bounded",
+        },
+    )
+    viewpoint_continuity = enable(
+        "viewpoint_continuity",
+        {
+            "establish_viewpoint_and_access",
+            "track_scene_state_across_change",
+            "keep_character_knowledge_bounded",
+            "signal_deliberate_perspective_shift",
+        },
+    )
+    purpose_led_revision = enable(
+        "purpose_led_revision",
+        {
+            "name_intended_effect_before_revision",
+            "identify_which_technique_carries_effect",
+            "revise_only_load_bearing_choices",
+            "express_originally_as_selene",
+            "explain_why_revision_fits",
+        },
+    )
+    source_observation_interpretation = enable(
+        "source_observation_interpretation",
+        {
+            "separate_source_observation_from_interpretation",
+            "separate_spoken_claim_from_dramatic_function",
+            "preserve_source_and_invention_boundary",
+        },
+    )
+    literary_mechanism_analysis = enable(
+        "literary_mechanism_analysis",
+        {
+            "trace_repetition_and_question_motion",
+            "track_turn_by_turn_change",
+            "trace_attention_and_scene_state",
+            "identify_escalation_steps",
+        },
+    )
+    original_creative_transfer = enable(
+        "original_creative_transfer",
+        {
+            "transfer_poetic_mechanism_into_original_material",
+            "transfer_scene_mechanism_into_original_conflict",
+            "transfer_narrative_mechanism_into_original_scene",
+            "avoid_quotation_recall_and_author_imitation",
+            "avoid_archaic_surface_imitation",
+        },
+    )
     return {
         "status": "approved_language_realization_ready" if features else "no_operational_language_guidance",
         "used": bool(features),
@@ -2256,6 +2546,15 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
         "world_relation_attachment": world_relation_attachment,
         "clause_dependency": clause_dependency,
         "voice_focus": voice_focus,
+        "expressive_rhythm": expressive_rhythm,
+        "concrete_imagery": concrete_imagery,
+        "figurative_mapping": figurative_mapping,
+        "dialogue_subtext": dialogue_subtext,
+        "viewpoint_continuity": viewpoint_continuity,
+        "purpose_led_revision": purpose_led_revision,
+        "source_observation_interpretation": source_observation_interpretation,
+        "literary_mechanism_analysis": literary_mechanism_analysis,
+        "original_creative_transfer": original_creative_transfer,
         "meaning_change_allowed": False,
         "content_generation_allowed": False,
         "personality_change_allowed": False,

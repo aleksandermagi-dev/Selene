@@ -1,6 +1,8 @@
 # Selene Current-State Index
 
-Date: 2026-08-11
+Originally indexed: 2026-08-11
+
+Current refresh: 2026-08-13
 Branch: `evidence`
 Status: date-stamped repository and configured-runtime truth
 
@@ -24,13 +26,17 @@ knowledge or Dream reflections.
 
 ## Current Knowledge and Curriculum
 
-| Surface | Repository-defined | Configured runtime on 2026-08-11 | Meaning |
+| Surface | Repository-defined | Configured runtime on 2026-08-13 | Meaning |
 | --- | ---: | ---: | --- |
 | F1 curriculum groups | 17 | 17 retained groups | Ordered public-academic foundation groups |
 | F1 concepts | 106 unique concepts | 106 retained and Chat-eligible | Completed Acquire, Integrate, Express, and curriculum-authorized retention |
-| Language groups | 9 | 9 represented groups | Provider-free language and grammar guidance |
-| Language capabilities | 52 | 52 approved and available | Expression guidance; not factual authority or personality |
-| Approved general knowledge | — | 158 resources | 106 F1 concepts plus 52 language-and-conversation capabilities |
+| F2 curriculum groups | 5 | 5 retained groups | Current elementary continuation through operation order |
+| F2 concepts | 25 unique concepts | 25 retained and Chat-eligible | Reading, vocabulary, composition, comparison, arithmetic, and operation relationships |
+| Coding curriculum groups | 1 | 1 retained group | Computational thinking and source-bounded code reading |
+| Coding concepts | 5 unique concepts | 5 retained and Chat-eligible | Knowledge only; no execution or filesystem authority |
+| Language groups | 11 | 11 represented groups | Provider-free language, grammar, creative-expression, and bounded reading-transfer guidance |
+| Language capabilities | 61 | 61 approved and available | Expression guidance; not factual authority or personality |
+| Approved knowledge resources | 197 defined items | 197 retained resources | 106 F1 + 25 F2 + 5 coding + 61 language-and-conversation capabilities |
 | Unapproved comprehension candidates | — | 47 proposed items | Not retained and unavailable to Chat until the applicable review path completes |
 
 The F1 count is derived from the lesson definitions used by
@@ -40,8 +46,13 @@ same 106 F1 concepts as `retained_reviewed_knowledge` with
 `available_as_knowledge_resource` Chat permission.
 
 The language count is supported by `src/selene/language_teaching_shelf.py`, the
-Group 9 completion record, and the configured language shelf. All 52 rows are
+Group 11 completion record, and the configured language shelf. All 61 rows are
 `approved_for_language_guidance` and `language_guidance_available`.
+
+The F2 and coding counts are supported by their group modules and the same
+curriculum authorization lifecycle. Coding knowledge is Chat-eligible within
+its retained scope, but the local-code inspection adapter remains a separate
+explicit, read-only route and is not connected to ordinary Chat.
 
 ## Current Dream State
 
@@ -99,7 +110,9 @@ curriculum, Dream, memory, Chat, review, or application state was changed.
 Static and synthetic verification produced:
 
 ```text
-125 curriculum, language-lifecycle, Dream, and current-index tests passed
+125 curriculum, language-lifecycle, Dream, and current-index tests passed at the original checkpoint
+220 coding, curriculum, F2, comprehension, lifecycle, local-code, Answer Engine, Chat, and current-index tests passed at the 2026-08-13 refresh
+production UI build passed at 480.77 kB with no bundle-size warning
 10 changed documentation files checked with zero missing relative links
 git diff --check passed with Windows LF/CRLF warnings only
 ```
@@ -111,8 +124,9 @@ headline numbers stale.
 
 ## Accurate External Wording
 
-As of August 11, 2026, Selene's configured local runtime contains 106 retained
-F1 foundation concepts across 17 ordered groups and 52 reviewed language
-capabilities across nine groups. Her source-bound Dream lifecycle is complete;
+As of August 13, 2026, Selene's configured local runtime contains 106 retained
+F1 foundation concepts, 25 retained F2 concepts, five retained coding
+foundations, and 61 reviewed language capabilities across eleven groups. Her
+source-bound Dream lifecycle is complete;
 one explicit cycle produced 24 reflections that remain pending review, with no
 silent expression or memory promotion.

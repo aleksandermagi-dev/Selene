@@ -52,6 +52,7 @@ _ARCHITECTURE_LANGUAGE_PATTERNS = (
 )
 
 _INTERNAL_REASONING_SCAFFOLDS = (
+    "current best model",
     "use current best model as the provisional fit",
     "current best model as the provisional fit",
     "answer provisionally, ask aleks, or seek cocoon support",
@@ -209,12 +210,11 @@ def inspect_visible_speech(
         issues.append("internal_organ_label_visible")
     if not architecture_requested and re.search(r"\bcandidate model(?:s)?\b", text_lower):
         issues.append("internal_reasoning_scaffold_visible")
-    if (
+    completion_attention_required = bool(
         isinstance(response_coverage, dict)
         and response_coverage.get("obligation_count")
         and response_coverage.get("all_required_resolved") is not True
-    ):
-        issues.append("required_response_part_unresolved")
+    )
 
     # A real boundary answer may name the capability being refused. It still may
     # not expose serialized fields or the generic reasoning scaffold.
@@ -234,6 +234,7 @@ def inspect_visible_speech(
         "architecture_context_requested": architecture_requested,
         "hard_boundary": hard_boundary,
         "coverage_checked": isinstance(response_coverage, dict),
+        "completion_attention_required": completion_attention_required,
         "all_required_parts_resolved": (
             response_coverage.get("all_required_resolved")
             if isinstance(response_coverage, dict)

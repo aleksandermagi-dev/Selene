@@ -106,14 +106,18 @@ def test_complete_answer_and_social_turn_do_not_create_habitual_follow_up_questi
     assert social["ending_decision"]["habitual_follow_up_allowed"] is False
 
 
-def test_initiative_requires_current_turn_invitation_and_never_auto_delivers():
+def test_responsive_contribution_does_not_require_invitation_and_never_speaks_out_of_turn():
     invited = build_pragmatic_continuity_plan({"prompt": "What do you think—any ideas?"})
     not_invited = build_pragmatic_continuity_plan({"prompt": "That completes the checkpoint."})
 
     assert invited["initiative_decision"]["mode"] == "offer_one_relevant_thought"
     assert invited["initiative_decision"]["automatic_delivery"] is False
-    assert not_invited["initiative_decision"]["mode"] == "no_unsolicited_initiative"
-    assert not_invited["initiative_expansion_allowed"] is False
+    assert (
+        not_invited["initiative_decision"]["mode"]
+        == "one_attributable_responsive_contribution_available"
+    )
+    assert not_invited["responsive_contribution_allowed"] is True
+    assert not_invited["out_of_turn_initiative_allowed"] is False
 
 
 def test_current_turn_energy_can_offer_supported_idea_but_never_auto_speak():
@@ -137,7 +141,8 @@ def test_current_turn_energy_can_offer_supported_idea_but_never_auto_speak():
     assert energy["selected_act"] == "answer_and_offer_supported_idea"
     assert energy["automatic_speech_allowed"] is False
     assert energy["automatic_delivery"] is False
-    assert result["initiative_expansion_allowed"] is False
+    assert result["responsive_contribution_allowed"] is True
+    assert result["out_of_turn_initiative_allowed"] is False
 
 
 def test_correction_and_response_preference_remain_session_refinements_not_profile():

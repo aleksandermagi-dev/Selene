@@ -17,9 +17,11 @@ GUARDS: dict[str, Any] = {
     "memory_write_active": False,
     "runtime_memory_recall": False,
     "durable_memory_write": False,
+    "raw_a_import_allowed": False,
     "training_allowed": False,
     "lora_allowed": False,
     "autonomous_action_allowed": False,
+    "self_replication_allowed": False,
     "identity_change": False,
     "personality_change": False,
     "governance_change": False,
@@ -82,11 +84,20 @@ def build_thread_braid(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     units = [item for item in payload.get("utterance_units") or [] if isinstance(item, dict)]
     segments = _segments(prompt, units, hints)
 
-    threads = [_normalize_thread(item) for item in prior.get("threads") or [] if isinstance(item, dict)][-16:]
-    edges = [_normalize_edge(item) for item in prior.get("edges") or [] if isinstance(item, dict)][-30:]
+    prior_thread_values = [
+        *[item for item in prior.get("thread_index") or [] if isinstance(item, dict)],
+        *[item for item in prior.get("threads") or [] if isinstance(item, dict)],
+    ]
+    threads = _merge_threads(prior_thread_values)[-64:]
+    edges = [_normalize_edge(item) for item in prior.get("edges") or [] if isinstance(item, dict)][-96:]
     traversal: list[dict[str, Any]] = []
     unresolved: list[dict[str, Any]] = []
     active_id = str(prior.get("active_thread_id") or "")
+    protected_thread_ids = {
+        str(item)
+        for item in payload.get("protected_thread_ids") or []
+        if str(item)
+    }
     if not active_id and threads:
         active_id = str(next((item["id"] for item in reversed(threads) if item["state"] == "active"), threads[-1]["id"]))
     prior_active_id = active_id
@@ -173,13 +184,39 @@ def build_thread_braid(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     braided = len({item.get("thread_id") for item in traversal if item.get("thread_id")}) > 1 or any(
         str(item.get("relation") or "") in {"returns_to", "depends_on", "updates"} for item in edges
     )
+    thread_index = _retain_thread_index(
+        threads,
+        active_id=active_id,
+        protected_thread_ids=protected_thread_ids,
+        edges=edges,
+        limit=64,
+    )
+    working_threads = _retain_thread_index(
+        thread_index,
+        active_id=active_id,
+        protected_thread_ids=protected_thread_ids,
+        edges=edges,
+        limit=16,
+    )
+    retained_ids = {str(item.get("id") or "") for item in thread_index}
+    retained_edges = [
+        edge
+        for edge in _dedupe_edges(edges)
+        if str(edge.get("source_thread_id") or "") in retained_ids
+        and str(edge.get("target_thread_id") or "") in retained_ids
+    ][-64:]
     return _with_guards(
         {
             "status": "conversation_thread_braid_ready",
             "version": "v1_session_braided_discourse",
             "session_id": session_id,
-            "threads": threads[-16:],
-            "edges": _dedupe_edges(edges)[-30:],
+            "threads": working_threads,
+            "thread_index": thread_index,
+            "thread_index_count": len(thread_index),
+            "working_thread_limit": 16,
+            "thread_index_limit": 64,
+            "protected_thread_ids": sorted(protected_thread_ids),
+            "edges": retained_edges,
             "turn_traversal": traversal,
             "active_thread_id": active_id,
             "prior_active_thread_id": prior_active_id,
@@ -187,6 +224,19 @@ def build_thread_braid(payload: dict[str, Any] | None = None) -> dict[str, Any]:
             "braided": braided,
             "single_message_supported": True,
             "multi_turn_supported": True,
+            "saturation_compaction": {
+                "active": len(threads) > len(working_threads),
+                "candidate_thread_count": len(threads),
+                "working_thread_count": len(working_threads),
+                "indexed_thread_count": len(thread_index),
+                "discarded_thread_count": max(0, len(threads) - len(thread_index)),
+                "active_thread_preserved": any(
+                    str(item.get("id") or "") == active_id
+                    for item in working_threads
+                ) if active_id else True,
+                "protected_threads_preserved": protected_thread_ids.issubset(retained_ids),
+                "raw_turn_text_archived": False,
+            },
             "ambiguous_relationships_are_not_invented": True,
             "session_scoped_only": True,
             "visible_summary_only": True,
@@ -247,6 +297,12 @@ def _segments(prompt: str, units: list[dict[str, Any]], hints: list[dict[str, An
 def _segment_action(text: str, hinted_action: str, hinted_topic: str) -> tuple[str, str]:
     if hinted_action in {"start", "continue", "branch", "resume", "land"}:
         return hinted_action, hinted_topic
+    if re.match(
+        r"^\s*(?:please\s+)?(?:call|name|label)\s+(?:this|it)\s+(?:the\s+)?",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        return "branch", _explicit_thread_label(text)
     match = _RETURN_RE.search(text)
     if match:
         return "resume", _clean_topic(next(group for group in match.groups() if group is not None))
@@ -255,10 +311,34 @@ def _segment_action(text: str, hinted_action: str, hinted_topic: str) -> tuple[s
         return "land", _clean_topic(next(group for group in match.groups() if group is not None))
     match = _BRANCH_RE.search(text)
     if match:
-        return "branch", _clean_topic(next(group for group in match.groups() if group is not None))
+        return "branch", _explicit_thread_label(
+            _clean_topic(next(group for group in match.groups() if group is not None))
+        )
     if re.match(r"^\s*(?:then|next)\b", text, re.IGNORECASE):
         return "branch", _topic(text)
     return hinted_action or "continue", hinted_topic
+
+
+def _explicit_thread_label(value: str) -> str:
+    """Remove visible naming boilerplate before matching a thread identity.
+
+    ``Call this the rain-scene thread`` names ``rain-scene``.  Treating words
+    such as ``call``, ``this``, and ``thread`` as the topic caused otherwise
+    distinct explicit labels to collapse into one session thread.
+    """
+
+    cleaned = " ".join(str(value or "").strip(" —–-,:;.!?").split())
+    match = re.match(
+        r"^(?:please\s+)?(?:call|name|label)\s+(?:this|it)\s+(?:the\s+)?"
+        r"(.+?)(?:\s+thread)?$",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    if match:
+        cleaned = match.group(1).strip(" —–-,:;.!?")
+    cleaned = re.sub(r"^(?:the\s+)?", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+thread$", "", cleaned, flags=re.IGNORECASE)
+    return _clean_topic(cleaned)
 
 
 def _resolve_thread(target: str, threads: list[dict[str, Any]], *, exclude_id: str) -> tuple[dict[str, Any] | None, bool]:
@@ -360,6 +440,60 @@ def _normalize_edge(item: dict[str, Any]) -> dict[str, Any]:
         "source_span": str(item.get("source_span") or "prior_turn"),
         "confidence": str(item.get("confidence") or "bounded_visible_cue"),
     }
+
+
+def _merge_threads(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for item in values:
+        normalized = _normalize_thread(item)
+        thread_id = str(normalized.get("id") or "")
+        if not thread_id:
+            continue
+        if thread_id not in merged:
+            order.append(thread_id)
+        merged[thread_id] = normalized
+    return [merged[thread_id] for thread_id in order]
+
+
+def _retain_thread_index(
+    threads: list[dict[str, Any]],
+    *,
+    active_id: str,
+    protected_thread_ids: set[str],
+    edges: list[dict[str, Any]],
+    limit: int,
+) -> list[dict[str, Any]]:
+    relationship_ids = {
+        str(edge.get(field) or "")
+        for edge in edges
+        if str(edge.get("relation") or "") in {
+            "returns_to",
+            "depends_on",
+            "updates",
+            "branches_from",
+        }
+        for field in ("source_thread_id", "target_thread_id")
+        if str(edge.get(field) or "")
+    }
+    ranked: list[tuple[int, int, dict[str, Any]]] = []
+    for index, item in enumerate(threads):
+        thread_id = str(item.get("id") or "")
+        state = str(item.get("state") or "paused")
+        score = (
+            (1000 if thread_id == active_id else 0)
+            + (700 if thread_id in protected_thread_ids else 0)
+            + (300 if thread_id in relationship_ids else 0)
+            + (180 if state in {"active", "resumed"} else 0)
+            + (100 if state == "paused" else 0)
+            + index
+        )
+        ranked.append((score, index, item))
+    ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
+    selected_ids = {
+        str(item.get("id") or "") for _, _, item in ranked[: max(1, limit)]
+    }
+    return [item for item in threads if str(item.get("id") or "") in selected_ids]
 
 
 def _dedupe_edges(edges: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -118,6 +118,32 @@ def test_structured_candidate_becomes_thesis_without_repeating_the_old_seed():
     assert "A later observation could revise" in loom["selected_candidate_text"]
 
 
+def test_multiple_collapsed_seed_units_render_one_structured_formation_only():
+    discourse = build_supported_discourse_plan(
+        {
+            "content_seed": "The first condition holds. The second condition also holds.",
+            "response_depth": "standard",
+        }
+    )
+    formation = {
+        "candidate_text": "Both supplied conditions hold.",
+        "formation_mode": "structured",
+        "meaning_preserved": True,
+    }
+
+    loom = weave_supported_discourse(
+        discourse,
+        selected_formation=formation,
+        response_depth="standard",
+    )
+
+    assert loom["collapsed_seed_content_unit_ids"] == ["content_1", "content_2"]
+    assert loom["selected_candidate_text"] == "Both supplied conditions hold."
+    assert loom["selected_paragraphs"][0]["content_unit_ids"] == [
+        "structured_formation"
+    ]
+
+
 def test_structured_formation_retains_coverage_ancestry_for_a_subsumed_obligated_example():
     discourse = build_supported_discourse_plan(
         {
@@ -221,8 +247,8 @@ def test_attributed_thread_return_uses_traversal_order_without_inventing_callbac
         "paragraph_plan": [{"index": 1, "role": "answer", "content_unit_ids": ["thesis", "branch", "return"]}],
         "obligation_bindings": [],
         "thread_obligation_bindings": [
-            {"thread_id": "branch", "thread_traversal_index": 1, "grounded": True, "content_unit_ids": ["branch"]},
-            {"thread_id": "original", "thread_traversal_index": 2, "grounded": True, "content_unit_ids": ["return"]},
+            {"thread_id": "branch", "thread_action": "branch", "thread_traversal_index": 1, "grounded": True, "content_unit_ids": ["branch"]},
+            {"thread_id": "original", "thread_action": "revise_with_dependency", "thread_traversal_index": 2, "grounded": True, "content_unit_ids": ["return"]},
         ],
         "closure_plan": {"mode": "supported_next_step", "content_unit_id": "return", "text": "The original recommendation still holds."},
         "uncovered_obligation_ids": [],
@@ -242,9 +268,10 @@ def test_attributed_thread_return_uses_traversal_order_without_inventing_callbac
 
     assert threaded["selectable"] is True
     assert threaded["included_content_unit_ids"] == ["thesis", "branch", "return"]
-    assert threaded["candidate_text"].count("Returning to that thread:") == 2
+    assert "On the related point:" in threaded["candidate_text"]
+    assert "Bringing that back with the new piece:" in threaded["candidate_text"]
     assert threaded["candidate_text"].index("side condition") < threaded["candidate_text"].index("original recommendation")
-    assert "Returning to that thread" not in " ".join(
+    assert "On the related point" not in " ".join(
         item["text"] for item in discourse["content_units"]
     )
 

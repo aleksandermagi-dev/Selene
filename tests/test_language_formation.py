@@ -65,6 +65,36 @@ def test_formation_handles_tense_polarity_and_modality_without_model_generation(
     assert "we may revisit the answer." in text
 
 
+def test_supplied_modal_predicate_is_not_inflected_as_an_ordinary_verb():
+    frame = build_semantic_frame(
+        {
+            "semantic_frame": {
+                "propositions": [
+                    {
+                        "subject": "later steps",
+                        "subject_number": "plural",
+                        "predicate": "cannot reliably use",
+                        "object": "a foundation that is absent",
+                    },
+                    {
+                        "subject": "the current answer",
+                        "predicate": "might remain",
+                        "object": "provisional",
+                    },
+                ]
+            }
+        }
+    )
+
+    text = realize_semantic_frame(frame, variation_key="modal-predicate")[
+        "candidate_text"
+    ]
+
+    assert "Later steps cannot reliably use a foundation that is absent." in text
+    assert "the current answer might remain provisional." in text
+    assert "cannots" not in text
+
+
 def test_formation_uses_explicit_noun_number_and_future_time_without_guessing_content():
     frame = build_semantic_frame(
         {
@@ -174,6 +204,34 @@ def test_nlo_uses_contextual_not_random_variation_while_preserving_meaning(tmp_p
     assert seed.lower() in second["candidate_text"].lower()
     assert second["candidate_text"] != first["candidate_text"]
     assert second["memory_write_active"] is False
+
+
+def test_support_connectors_do_not_duplicate_that_or_claim_extra_importance():
+    frame = build_semantic_frame(
+        {
+            "semantic_frame": {
+                "discourse_relation": "support",
+                "propositions": [
+                    {"text": "Observation preserves the input."},
+                    {"text": "That ordering makes correction easier.", "relation": "support"},
+                ],
+            }
+        }
+    )
+
+    candidates = {
+        realize_semantic_frame(frame, variation_key=f"support-{index}")[
+            "candidate_text"
+        ]
+        for index in range(20)
+    }
+
+    assert candidates
+    assert all("that that" not in text.lower() for text in candidates)
+    assert all("more importantly" not in text.lower() for text in candidates)
+    assert all("alongside that that" not in text.lower() for text in candidates)
+    assert all("alongside that," in text.lower() for text in candidates if "alongside that" in text.lower())
+    assert all("beyond that," in text.lower() for text in candidates if "beyond that" in text.lower())
 
 
 def test_formation_handles_aspect_voice_mood_and_clause_relations_without_provider_generation():

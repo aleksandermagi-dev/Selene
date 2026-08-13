@@ -382,7 +382,7 @@ def _specifications(
                 "meaning_change_allowed": False,
             }
         )
-    thread_paragraphs, thread_transition_indexes = _thread_paragraphs(
+    thread_paragraphs, thread_transition_indexes, thread_transition_actions = _thread_paragraphs(
         discourse,
         units,
     )
@@ -395,6 +395,7 @@ def _specifications(
                 "required_content_unit_ids": required_ids,
                 "transition_mode": "thread_attributed",
                 "thread_transition_paragraph_indexes": thread_transition_indexes,
+                "thread_transition_actions": thread_transition_actions,
                 "thread_grounded": True,
                 "meaning_change_allowed": False,
             }
@@ -423,7 +424,11 @@ def _mapped_plan_paragraphs(
             "structured_formation" if structured and str(unit_id) in seed_ids else str(unit_id)
             for unit_id in paragraph.get("content_unit_ids") or []
         ]
-        mapped = [item for item in mapped if item in active and item not in used]
+        # Several seed units can collapse into one structured formation.  Do
+        # not render that shared replacement once for every covered seed.
+        mapped = list(
+            dict.fromkeys(item for item in mapped if item in active and item not in used)
+        )
         if mapped:
             paragraphs.append(mapped)
             used.update(mapped)
@@ -475,7 +480,7 @@ def _obligation_order(
 def _thread_paragraphs(
     discourse: dict[str, Any],
     units: list[dict[str, Any]],
-) -> tuple[list[list[str]], list[int]]:
+) -> tuple[list[list[str]], list[int], dict[int, str]]:
     bindings = [
         item
         for item in discourse.get("thread_obligation_bindings") or []
@@ -484,7 +489,7 @@ def _thread_paragraphs(
         and str(item.get("thread_id") or "")
     ]
     if not bindings:
-        return [], []
+        return [], [], {}
     active_ids = [str(item.get("id") or "") for item in units]
     active = set(active_ids)
     structured = next(
@@ -498,6 +503,7 @@ def _thread_paragraphs(
     paragraphs: list[list[str]] = [thesis] if thesis else []
     used = set(thesis)
     transition_indexes: list[int] = []
+    transition_actions: dict[int, str] = {}
     ordered_bindings = sorted(
         bindings,
         key=lambda item: (
@@ -514,13 +520,15 @@ def _thread_paragraphs(
                 used.add(unit_id)
         if group:
             paragraphs.append(group)
-            transition_indexes.append(len(paragraphs) - 1)
+            paragraph_index = len(paragraphs) - 1
+            transition_indexes.append(paragraph_index)
+            transition_actions[paragraph_index] = str(binding.get("thread_action") or "")
     remaining = [item for item in active_ids if item not in used]
     if remaining:
         paragraphs.extend(_role_groups([item for item in units if str(item.get("id") or "") in remaining]))
     if len(paragraphs) < 2 or not transition_indexes:
-        return [], []
-    return paragraphs, transition_indexes
+        return [], [], {}
+    return paragraphs, transition_indexes, transition_actions
 
 
 def _paragraphize(unit_ids: list[str], depth: str) -> list[list[str]]:
@@ -557,6 +565,10 @@ def _realize_specification(
         int(item)
         for item in specification.get("thread_transition_paragraph_indexes") or []
     }
+    thread_transition_actions = {
+        int(index): str(action or "")
+        for index, action in (specification.get("thread_transition_actions") or {}).items()
+    }
     for paragraph_index, group in enumerate(specification.get("paragraph_unit_ids") or []):
         pieces: list[str] = []
         group_ids: list[str] = []
@@ -576,7 +588,11 @@ def _realize_specification(
         if pieces:
             paragraph_text = " ".join(pieces)
             if thread_attributed and paragraph_index in thread_transition_indexes:
-                paragraph_text = f"Returning to that thread: {paragraph_text}"
+                prefix = _thread_transition_prefix(
+                    thread_transition_actions.get(paragraph_index, ""),
+                    paragraph_index,
+                )
+                paragraph_text = f"{prefix} {paragraph_text}"
             paragraphs.append(
                 {
                     "index": len(paragraphs) + 1,
@@ -589,6 +605,20 @@ def _realize_specification(
         "paragraphs": paragraphs,
         "included_content_unit_ids": list(dict.fromkeys(included)),
     }
+
+
+def _thread_transition_prefix(action: str, paragraph_index: int) -> str:
+    by_action = {
+        "branch": "On the related point:",
+        "resume": "Back to that thread:",
+        "revise_with_dependency": "Bringing that back with the new piece:",
+        "land": "For the final point:",
+        "continue": "Continuing that thread:",
+        "start": "On that thread:",
+    }
+    if action in by_action:
+        return by_action[action]
+    return "On the related thread:" if paragraph_index == 1 else "Returning to the earlier thread:"
 
 
 def _render_unit(

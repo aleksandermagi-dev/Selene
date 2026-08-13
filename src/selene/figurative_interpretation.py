@@ -183,6 +183,11 @@ def interpret_figurative_language(payload: dict[str, Any] | None = None) -> dict
             str(quoted_figure.get("meaning") or ""),
         )
 
+    personification = _personification_request(text)
+    if personification:
+        matches.append(personification)
+        interpreted = str(personification.get("meaning") or interpreted)
+
     explicit = _explicit_nonliteral(text)
     if explicit:
         matches.append(explicit)
@@ -344,6 +349,44 @@ def _analogy(text: str) -> dict[str, Any]:
         "mapped_relationship": "similarity is proposed for the relevant relationship or structure",
         "mapping_limit": "unmapped properties are not carried across",
         "equivalence_claimed": False,
+    }
+
+
+def _personification_request(text: str) -> dict[str, Any]:
+    """Interpret a clearly invited inanimate/human-action mapping conservatively."""
+
+    lower = " ".join(str(text or "").lower().split())
+    invited = bool(
+        re.search(
+            r"\b(?:when i say|what do you think i mean|what does (?:that|this) mean|"
+            r"how do you (?:read|interpret|understand))\b",
+            lower,
+        )
+    )
+    mapping = re.search(
+        r"\b(?P<subject>room|house|workshop|city|sky|storm|wind|silence|night|day)\b"
+        r".{0,45}\b(?P<action>exhaled|breathed|sighed|woke|slept|whispered|roared)\b",
+        lower,
+    )
+    if not invited or not mapping:
+        return {}
+    subject = mapping.group("subject")
+    action = mapping.group("action")
+    meanings = {
+        "exhaled": f"the {subject} felt released, calmer, or less tense",
+        "breathed": f"the {subject} felt alive, open, or gently in motion",
+        "sighed": f"the {subject} seemed to release tension or settle",
+        "woke": f"the {subject} became active, vivid, or newly noticeable",
+        "slept": f"the {subject} became quiet, still, or inactive",
+        "whispered": f"the {subject} carried a quiet, subtle sound or mood",
+        "roared": f"the {subject} felt loud, forceful, or overwhelming",
+    }
+    return {
+        "form": "personification",
+        "surface": truncate(mapping.group(0), 300),
+        "meaning": meanings[action],
+        "confidence": "bounded",
+        "cues": ["inanimate_subject_with_human_action", "explicit_interpretation_request"],
     }
 
 

@@ -1675,6 +1675,75 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   align-self: end;
 }
 
+.memoryPrivacyCover {
+  align-content: center;
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.11), transparent 40%),
+    linear-gradient(145deg, rgba(73, 40, 116, 0.9), rgba(29, 18, 58, 0.94));
+  border: 1px solid color-mix(in srgb, var(--accent-2) 42%, var(--soft-border));
+  border-radius: 24px 34px 26px 30px;
+  color: var(--text-strong);
+  display: grid;
+  gap: 10px;
+  min-height: 118px;
+  padding: 18px;
+}
+
+.memoryPrivacyCover > span {
+  color: var(--accent-2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.memoryPrivacyCover p {
+  color: color-mix(in srgb, var(--text-strong) 76%, transparent);
+  margin: 0;
+}
+
+.memoryPrivacyButton {
+  justify-self: start;
+  padding: 7px 11px;
+}
+
+.memoryRevealed .memoryPrivacyButton {
+  align-self: end;
+}
+
+.memoryTitleEditor {
+  background: color-mix(in srgb, var(--panel-bg) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-2) 24%, var(--soft-border));
+  border-radius: 18px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.memoryTitleEditor > span {
+  color: var(--accent-2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.memoryTitleEditor input {
+  width: 100%;
+}
+
+.memoryTitleEditor .reviewActions {
+  margin-top: 0;
+}
+
+:root[data-theme="selene-light"] .memoryPrivacyCover {
+  background:
+    radial-gradient(circle at 28% 18%, rgba(80, 109, 232, 0.08), transparent 40%),
+    rgba(255, 255, 255, 0.94);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--soft-border));
+  box-shadow: inset 0 0 22px rgba(57, 70, 118, 0.07);
+}
+
 .thoughtIndex {
   color: var(--accent-2);
   font-size: 26px;

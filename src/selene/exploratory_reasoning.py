@@ -735,8 +735,17 @@ def _alternative_names(value: Any) -> list[str]:
     result = []
     for item in value or []:
         text = str(item.get("name") or item.get("statement") or "") if isinstance(item, dict) else str(item)
-        if text.strip():
-            result.append(truncate(text.strip(), 500))
+        clean = text.strip()
+        if clean.lower() in {
+            "current best model",
+            "current best provisional model",
+            "mechanism-first model",
+            "model a",
+            "model b",
+        }:
+            continue
+        if clean:
+            result.append(truncate(clean, 500))
     return list(dict.fromkeys(result))[:8]
 
 

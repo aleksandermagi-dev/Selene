@@ -58,6 +58,10 @@ from .conversational_energy import (
     build_conversational_energy_plan,
     conversational_energy_status,
 )
+from .conversational_contribution import (
+    build_conversational_contribution_packet,
+    conversational_contribution_status,
+)
 from .exploratory_reasoning import (
     build_exploratory_reasoning_packet,
     exploratory_reasoning_status,
@@ -156,13 +160,36 @@ from .core_mind_runtime import (
     session_state_preview,
 )
 from .conversation_repair import plan_conversation_turn, repair_conversation_candidate
+from .advice_authority_coordination import (
+    advice_authority_coordination_status,
+    build_advice_authority_coordination,
+)
+from .commitment_anomaly_coordination import (
+    build_commitment_anomaly_coordination,
+    commitment_anomaly_coordination_status,
+    inspect_visible_commitment_claim,
+)
+from .long_thread_endurance import (
+    build_long_thread_endurance_plan,
+    long_thread_endurance_status,
+)
 from .detached_corpus import detached_corpus_audit
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn
 from .emotional_agency import (
     build_response_agency_packet,
     emotional_agency_status,
 )
+from .conversational_agency import (
+    build_anomaly_report,
+    conversational_agency_status,
+    review_conversational_agency,
+)
 from .referent_address import referent_address_status, resolve_referent_address
+from .quotation_echo import build_quotation_echo_plan, quotation_echo_status
+from .relational_expression_range import (
+    build_relational_expression_range,
+    relational_expression_range_status,
+)
 from .epistemic_revision import build_epistemic_revision_plan, epistemic_revision_status
 from .input_detangler import detangle_user_input
 from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
@@ -175,6 +202,7 @@ from .memory_organ import (
     portable_vys_manifest,
     propose_memory_candidate,
     retrieve_memory,
+    set_memory_display_title,
 )
 from .intelligence_os import (
     get_intelligence_os_run,
@@ -225,6 +253,10 @@ from .knowledge_language_growth import (
     knowledge_language_growth_status,
     list_knowledge_language_resources,
 )
+from .knowledge_expression_reconstruction import (
+    build_knowledge_expression_handoff,
+    knowledge_expression_reconstruction_status,
+)
 from .generative_thought_expression import (
     build_generative_thought_expression,
     generative_thought_expression_status,
@@ -254,6 +286,7 @@ from .curriculum_authorization import (
     activate_f2_point_of_view_organized_composition_authorization,
     activate_f2_multi_digit_arithmetic_operations_authorization,
     activate_f2_factors_multiples_operation_order_authorization,
+    activate_coding_computational_thinking_code_reading_authorization,
     activate_f1_operations_measurement_authorization,
     curriculum_authorization_status,
     evaluate_curriculum_coverage,
@@ -279,6 +312,7 @@ from .curriculum_authorization import (
     prepare_f2_point_of_view_organized_composition_group,
     prepare_f2_multi_digit_arithmetic_operations_group,
     prepare_f2_factors_multiples_operation_order_group,
+    prepare_coding_computational_thinking_code_reading_group,
     prepare_f1_operations_measurement_group,
     revoke_curriculum_authorization,
     teach_f1_foundation_group,
@@ -302,6 +336,7 @@ from .curriculum_authorization import (
     teach_f2_point_of_view_organized_composition_group,
     teach_f2_multi_digit_arithmetic_operations_group,
     teach_f2_factors_multiples_operation_order_group,
+    teach_coding_computational_thinking_code_reading_group,
     teach_f1_operations_measurement_group,
 )
 from .teaching_lifecycle import (
@@ -750,6 +785,8 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": memory_index_status(conn)}
     if route_key == "memory.index.items":
         return {"route": route_key, "result": memory_index_items(conn, payload)}
+    if route_key == "memory.presentation.title.set":
+        return {"route": route_key, "result": set_memory_display_title(conn, payload)}
     if route_key == "memory.candidates.propose":
         return {"route": route_key, "result": propose_memory_candidate(conn, payload)}
     if route_key == "memory.candidates.list":
@@ -782,6 +819,12 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": emotional_agency_status()}
     if route_key == "emotional_agency.preview":
         return {"route": route_key, "result": build_response_agency_packet(payload)}
+    if route_key == "conversational_agency.status":
+        return {"route": route_key, "result": conversational_agency_status()}
+    if route_key == "conversational_agency.inspect":
+        return {"route": route_key, "result": review_conversational_agency(payload)}
+    if route_key == "conversational_agency.anomaly":
+        return {"route": route_key, "result": build_anomaly_report(payload)}
     if route_key == "epistemic_revision.status":
         return {"route": route_key, "result": epistemic_revision_status()}
     if route_key == "epistemic_revision.plan":
@@ -794,6 +837,13 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": conversational_energy_status()}
     if route_key == "conversational_energy.plan":
         return {"route": route_key, "result": build_conversational_energy_plan(payload)}
+    if route_key == "conversational_contribution.status":
+        return {"route": route_key, "result": conversational_contribution_status()}
+    if route_key == "conversational_contribution.preview":
+        return {
+            "route": route_key,
+            "result": build_conversational_contribution_packet(payload),
+        }
     if route_key == "structural_discovery.status":
         return {"route": route_key, "result": structural_discovery_status()}
     if route_key == "structural_discovery.build":
@@ -914,6 +964,8 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": activate_f2_multi_digit_arithmetic_operations_authorization(conn, payload)}
     if route_key == "curriculum.authorization.activate_f2_factors_multiples_operation_order":
         return {"route": route_key, "result": activate_f2_factors_multiples_operation_order_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_coding_computational_thinking_code_reading":
+        return {"route": route_key, "result": activate_coding_computational_thinking_code_reading_authorization(conn, payload)}
     if route_key == "curriculum.authorization.revoke":
         return {"route": route_key, "result": revoke_curriculum_authorization(conn, payload)}
     if route_key == "curriculum.authorization.evaluate":
@@ -1006,6 +1058,10 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": prepare_f2_factors_multiples_operation_order_group(conn, payload)}
     if route_key == "curriculum.foundation.teach_f2_factors_multiples_operation_order":
         return {"route": route_key, "result": teach_f2_factors_multiples_operation_order_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_coding_computational_thinking_code_reading":
+        return {"route": route_key, "result": prepare_coding_computational_thinking_code_reading_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_coding_computational_thinking_code_reading":
+        return {"route": route_key, "result": teach_coding_computational_thinking_code_reading_group(conn, payload)}
     if route_key == "native_language.status":
         return {"route": route_key, "result": native_language_status(conn)}
     if route_key == "native_language.realize":
@@ -1175,6 +1231,76 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {
             "route": route_key,
             "result": build_knowledge_language_growth(conn, payload),
+        }
+    if route_key == "native_language.knowledge_expression.status":
+        return {
+            "route": route_key,
+            "result": knowledge_expression_reconstruction_status(),
+        }
+    if route_key == "native_language.knowledge_expression.preview":
+        return {
+            "route": route_key,
+            "result": build_knowledge_expression_handoff(payload),
+        }
+    if route_key == "native_language.relational_expression.status":
+        return {
+            "route": route_key,
+            "result": relational_expression_range_status(),
+        }
+    if route_key == "native_language.relational_expression.preview":
+        return {
+            "route": route_key,
+            "result": build_relational_expression_range(payload),
+        }
+    if route_key == "native_language.quotation_echo.status":
+        return {
+            "route": route_key,
+            "result": quotation_echo_status(),
+        }
+    if route_key == "native_language.quotation_echo.preview":
+        return {
+            "route": route_key,
+            "result": build_quotation_echo_plan(payload),
+        }
+    if route_key == "native_language.advice_authority.status":
+        return {
+            "route": route_key,
+            "result": advice_authority_coordination_status(),
+        }
+    if route_key == "native_language.advice_authority.preview":
+        return {
+            "route": route_key,
+            "result": build_advice_authority_coordination(payload),
+        }
+    if route_key == "native_language.commitment_anomaly.status":
+        return {
+            "route": route_key,
+            "result": commitment_anomaly_coordination_status(),
+        }
+    if route_key == "native_language.commitment_anomaly.preview":
+        return {
+            "route": route_key,
+            "result": build_commitment_anomaly_coordination(payload),
+        }
+    if route_key == "native_language.commitment_anomaly.inspect-visible":
+        return {
+            "route": route_key,
+            "result": inspect_visible_commitment_claim(
+                str(payload.get("candidate_text") or payload.get("text") or ""),
+                payload.get("coordination")
+                if isinstance(payload.get("coordination"), dict)
+                else payload,
+            ),
+        }
+    if route_key == "conversation.long_thread_endurance.status":
+        return {
+            "route": route_key,
+            "result": long_thread_endurance_status(),
+        }
+    if route_key == "conversation.long_thread_endurance.preview":
+        return {
+            "route": route_key,
+            "result": build_long_thread_endurance_plan(payload),
         }
     if route_key == "native_language.generative_thought.status":
         return {

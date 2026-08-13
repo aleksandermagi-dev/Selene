@@ -30,6 +30,33 @@ GUARDS: dict[str, Any] = {
 
 _EXACT_DOMAINS = {"verified_math", "source_backed_research"}
 
+_SUPPORTED_PROFILES = {
+    "supported_answer",
+    "clear",
+    "clear_enough",
+    "clear_enough_to_continue",
+}
+
+_NEUTRAL_ENTRY_PREFIXES = (
+    "The useful comparison is this:",
+    "Against the same standard, here is what stands out:",
+    "After weighing the tradeoff, my read is this:",
+    "Start here:",
+    "The practical sequence is this:",
+    "The cleanest next move is this:",
+    "My read is this:",
+    "What stands out to me is this:",
+    "The shape I see is this:",
+    "Taken together, the answer is this:",
+    "The source-bounded answer is this:",
+    "The clearest synthesis I can support is this:",
+    "The core of it is this:",
+    "The strongest current answer is this:",
+    "Here is what makes the pieces fit:",
+    "My current answer is this:",
+    "The direct answer is this:",
+)
+
 _SEMANTIC_STOPWORDS = {
     "a", "an", "and", "as", "at", "be", "because", "by", "for", "from",
     "has", "have", "i", "if", "in", "is", "it", "of", "on", "or", "that",
@@ -118,6 +145,7 @@ def build_human_conversational_plan(
     exploratory = _dict(payload.get("exploratory_reasoning"))
     contextual = _dict(payload.get("contextual_composition_plan"))
     affect = _dict(payload.get("affect_expression_guidance"))
+    expression_range = _dict(payload.get("relational_expression_range"))
     dimensions = _dict(affect.get("dimensions"))
     parts = [item for item in composition.get("parts") or [] if isinstance(item, dict)]
     supported = [item for item in parts if item.get("epistemic_state") != "missing_ground"]
@@ -133,7 +161,9 @@ def build_human_conversational_plan(
         answer_domain in _EXACT_DOMAINS
         or contextual.get("exact_domain_structure_locked") is True
     )
+    social_owned = contextual.get("social_act_structure_owned_elsewhere") is True
     hard_boundary = payload.get("hard_boundary") is True
+    supported_surface_available = payload.get("supported_surface_available") is True
     response_kind = str(exploratory.get("response_kind") or "")
     profile = (
         response_kind
@@ -144,7 +174,7 @@ def build_human_conversational_plan(
         if missing and not supported
         else str(composition.get("dominant_state") or answer_state.get("epistemic_state") or "supported_answer")
     )
-    eligible = bool(not exact_locked and not hard_boundary)
+    eligible = bool(not exact_locked and not hard_boundary and not social_owned)
     missing_details = [
         {
             "obligation_id": str(item.get("obligation_id") or ""),
@@ -182,8 +212,28 @@ def build_human_conversational_plan(
             "source_id": source_id,
             "answer_domain": answer_domain,
             "register": register,
+            "expression_profile": str(contextual.get("expression_profile") or "direct"),
+            "response_depth": str(contextual.get("response_depth") or "standard"),
+            "affect_expression_posture": str(
+                affect.get("expression_posture") or "ordinary_attentive"
+            ),
+            "affect_current_turn_cues": [
+                str(item)
+                for item in affect.get("current_turn_cues") or []
+                if str(item)
+            ],
+            "relational_expression_range": {
+                "status": str(expression_range.get("status") or "not_available"),
+                "selected_channel_names": expression_range.get("selected_channel_names") or [],
+                "selected_optional_visible_count": int(
+                    expression_range.get("selected_optional_visible_count") or 0
+                ),
+                "none_selected_is_valid": expression_range.get("none_selected_is_valid") is True,
+            },
             "exact_structure_locked": exact_locked,
             "hard_boundary": hard_boundary,
+            "social_structure_owned_elsewhere": social_owned,
+            "supported_surface_available": supported_surface_available,
             "capability_first": bool(supported and missing),
             "supported_parts": supported,
             "missing_parts": missing_details,
@@ -274,6 +324,14 @@ def realize_human_conversation(
     elif profile == "partial_answer" and plan.get("capability_first") is True:
         candidate, fragments = _realize_partial(plan, variation_key, recent)
         operations.append("lead_with_supported_part_before_local_limit")
+    elif profile in _SUPPORTED_PROFILES and plan.get("supported_surface_available") is True:
+        candidate, fragments, surface_operations = _realize_supported_answer(
+            source,
+            plan,
+            variation_key,
+            recent,
+        )
+        operations.extend(surface_operations)
 
     if not candidate:
         candidate = source
@@ -501,6 +559,168 @@ def _realize_partial(
                 fragments.append(why)
         paragraphs.append(_sentence(clause))
     return "\n\n".join(paragraphs), fragments
+
+
+def _realize_supported_answer(
+    source: str,
+    plan: dict[str, Any],
+    key: str,
+    recent: list[str],
+) -> tuple[str, list[str], list[str]]:
+    """Vary entry and cadence while leaving supported clauses untouched."""
+
+    base, stripped = _strip_neutral_entry(source)
+    if not base:
+        return source, [source] if source else [], []
+    expression_profile = str(plan.get("expression_profile") or "direct")
+    response_depth = str(plan.get("response_depth") or "standard")
+    rhythm = str(plan.get("sentence_rhythm") or "natural")
+    affect_posture = str(plan.get("affect_expression_posture") or "ordinary_attentive")
+    if _already_carries_uncertainty_surface(base):
+        return base, [base], ["preserve_supported_uncertainty_surface"]
+    sentences = [item.strip() for item in re.split(r"(?<=[.!?])\s+", base) if item.strip()]
+    if response_depth == "developed" and ("\n\n" in base or len(sentences) <= 1):
+        return base, [base], ["preserve_supported_developed_discourse"]
+    entries = _supported_entry_moves(
+        expression_profile,
+        response_depth,
+        affect_posture=affect_posture,
+    )
+    surfaces = [base]
+    surfaces.extend(f"{entry} {base}" for entry in entries)
+    surfaces.extend(_cadence_surfaces(base, response_depth, rhythm))
+    surfaces = list(dict.fromkeys(_paragraphs(item) for item in surfaces if item.strip()))
+    candidate = _pick_fresh(f"{key}|supported-surface", tuple(surfaces), recent)
+    operations = ["select_contextual_supported_surface"]
+    if stripped:
+        operations.append("replace_neutral_stock_entry")
+    if "\n\n" in candidate and "\n\n" not in base:
+        operations.append("vary_supported_cadence")
+    return candidate, [base], operations
+
+
+def _already_carries_uncertainty_surface(value: str) -> bool:
+    lower = _normalize(value)
+    return any(
+        marker in lower
+        for marker in (
+            "i do not know",
+            "i don't know",
+            "i cannot support",
+            "i can't support",
+            "i do not have enough",
+            "i don't have enough",
+            "i am missing",
+            "i'm missing",
+            "remains open",
+            "not established",
+        )
+    )
+
+
+def _strip_neutral_entry(value: str) -> tuple[str, bool]:
+    text = _paragraphs(value)
+    lower = text.lower()
+    for prefix in _NEUTRAL_ENTRY_PREFIXES:
+        if lower.startswith(prefix.lower()):
+            return text[len(prefix):].lstrip(), True
+    return text, False
+
+
+def _supported_entry_moves(
+    profile: str,
+    depth: str,
+    *,
+    affect_posture: str = "ordinary_attentive",
+) -> tuple[str, ...]:
+    common = (
+        "Here is the clearest way I can put it:",
+        "In plain terms:",
+    )
+    by_profile = {
+        "comparison": (
+            "Here is the comparison:",
+            "Against the same standard:",
+            "After weighing both sides, my read is this:",
+        ),
+        "procedure": (
+            "I would start here:",
+            "The practical sequence is this:",
+            "For the next move:",
+        ),
+        "reflection": (
+            "My read is this:",
+            "What stands out to me is this:",
+            "The shape I see is this:",
+        ),
+        "synthesis": (
+            "Taken together:",
+            "The synthesis I can support is this:",
+            "Across those pieces:",
+        ),
+        "explanation": (
+            "Here is the mechanism:",
+            "The core of it is this:",
+            "What makes the pieces fit is this:",
+        ),
+        "direct": (
+            "The key point is:",
+            "In this case:",
+            "The answer comes down to this:",
+        ),
+    }
+    choices = by_profile.get(profile, by_profile["direct"])
+    contextual = {
+        "warm_focused": (
+            "Absolutely—here is the useful part:",
+            "Yeah—here is where I would start:",
+        ),
+        "warm_available": (
+            "I'm with you—here is how I see it:",
+            "Of course. Here is the answer:",
+        ),
+        "play_available": (
+            "Okay, here is the fun part:",
+            "All right, here is the twist:",
+        ),
+        "gentle_present": (
+            "We can take this one piece at a time:",
+            "I'm with you. The clearest answer is:",
+        ),
+        "spacious_grounded": (
+            "Let's take this one piece at a time:",
+            "Here is the grounded part:",
+        ),
+        "clear_direct": (
+            "Directly:",
+            "The short version:",
+        ),
+        "receptive_repair": (
+            "With that correction in place:",
+            "Taking the corrected point:",
+        ),
+        "deliberate_agency": (
+            "With the options reopened:",
+            "The deliberate answer is:",
+        ),
+    }.get(affect_posture, ())
+    if depth == "brief":
+        return tuple(dict.fromkeys(("In short:", *contextual[:1], *choices[:2])))
+    return tuple(dict.fromkeys((*contextual, *choices, *common)))
+
+
+def _cadence_surfaces(base: str, depth: str, rhythm: str) -> list[str]:
+    sentences = re.split(r"(?<=[.!?])\s+", base.strip())
+    sentences = [item.strip() for item in sentences if item.strip()]
+    if len(sentences) < 2 or depth == "brief":
+        return []
+    variants = [f"{sentences[0]}\n\n{' '.join(sentences[1:])}"]
+    if len(sentences) >= 4 and (depth == "developed" or rhythm in {"spacious", "varied"}):
+        midpoint = max(2, len(sentences) // 2)
+        variants.append(
+            f"{' '.join(sentences[:midpoint])}\n\n{' '.join(sentences[midpoint:])}"
+        )
+    return variants
 
 
 def _result(

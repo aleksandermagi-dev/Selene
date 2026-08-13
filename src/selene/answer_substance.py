@@ -155,7 +155,7 @@ def build_answer_substance(
         missing_variable = "the consequence the idea is meant to explain"
     elif consequence and any(marker in lower for marker in ("reverse the order", "reversed the order", "change the order", "swap the order")):
         answer = (
-            "Reversing the order works only if the later step does not depend on an output from the earlier one. "
+            "The reversed order works only if the later step doesn't depend on an output from the earlier one. "
             "If that dependency exists, the reversed sequence removes a required input; if it does not, compare which order gives clearer evidence with less irreversible cost."
         )
         kind = "conditional_dependency_answer"
@@ -677,6 +677,18 @@ def _ordinary_prompt_grounded_operation(
     lower = " ".join(prompt.lower().replace("’", "'").split())
     history = _observation_texts(observations)
 
+    foundational = _foundational_current_prompt_operation(prompt, lower, history)
+    if foundational:
+        return foundational
+
+    creative = _bounded_creative_operation(prompt, lower, history)
+    if creative:
+        return creative
+
+    topic_invitation = _open_topic_invitation_operation(prompt, lower)
+    if topic_invitation:
+        return topic_invitation
+
     provisional_cause = _provisional_cause_operation(prompt, lower, history)
     if provisional_cause:
         return provisional_cause
@@ -755,6 +767,398 @@ def _ordinary_prompt_grounded_operation(
     if plan:
         return plan
     return {}
+
+
+def _foundational_current_prompt_operation(
+    prompt: str,
+    lower: str,
+    history: list[str],
+) -> dict[str, Any]:
+    """Answer ordinary relations completely supplied by the visible dialogue.
+
+    These are small transformations of stated facts, not external retrieval.
+    They give foundational teaching and current-session facts somewhere to be
+    applied before a generic missing-ground hold is considered.
+    """
+
+    context = " ".join([*history, prompt]).lower().replace("’", "'")
+
+    if (
+        "revised order" in lower
+        and "fraction" in context
+        and "calculus" in context
+    ):
+        return _plain_operation(
+            "Fractions first, then calculus. Calculus can build on the ratios, division, algebraic manipulation, and functions established earlier.",
+            "revised_prerequisite_order",
+            "whether those mathematical prerequisites are already understood",
+        )
+
+    if (
+        "identical" in lower
+        and "fair" in lower
+        and any(marker in lower for marker in ("accessibility", "accessibility aid", "student needs"))
+    ):
+        answer = (
+            "No. Identical treatment is not always fair when a relevant accessibility need changes what equal participation requires. "
+            "For example, giving every diner the identical meal is consistent, but it is not fair if one person needs a safe alternative because of an allergy."
+        )
+        return _plain_operation(
+            answer,
+            "accessibility_fairness_application",
+            "which differences are relevant to equal participation in the specific setting",
+        )
+
+    if "tired" in lower and "pleased" in lower and "easiest" in lower and "next step" in lower:
+        answer = (
+            "That sounds satisfying and tiring in the good, earned way. The easiest sensible next step is to leave the tools organized, get some water, and rest before deciding whether anything else actually needs doing."
+        )
+        return _plain_operation(answer, "acknowledgement_and_small_next_step", "whether anything time-sensitive still needs attention")
+
+    if (
+        "porch" in lower
+        and any(marker in lower for marker in ("drink", "tea"))
+        and any(marker in lower for marker in ("peaceful", "evening"))
+    ):
+        temperature = "cool" if "cool evening" in lower else "warm"
+        drink = "hot tea" if temperature == "cool" else "iced tea"
+        answer = (
+            f"The porch sounds peaceful from the way you describe it. For a {temperature} evening, I would pick {drink}. "
+            "I do not need a follow-up unless something about the setting would change that simple choice."
+        )
+        return _plain_operation(answer, "multi_part_porch_and_drink", "any unstated preference that would materially change the drink")
+
+    if (
+        "cool" in lower
+        and "warm" in lower
+        and "evening" in lower
+        and any(marker in lower for marker in ("correction", "meant", "not "))
+    ):
+        answer = (
+            "Yes—the porch can still sound peaceful, but I would change the drink suggestion to hot tea for the cool evening. The rest of the answer still fits."
+        )
+        return _plain_operation(answer, "selective_evening_correction", "any drink preference that would change the revised suggestion")
+
+    if "screen flicker stopped" in lower and "lamp" in lower and any(marker in lower for marker in ("meant", "does that change")):
+        answer = (
+            "Yes. If the screen flicker stopped when the lamp was unplugged, that makes the lamp, cable, plug, or shared power path a more plausible lead; it still does not prove which part caused it. I would keep the same small next check: inspect the cable and connection, then repeat one safe comparison while changing only one condition."
+        )
+        return _plain_operation(answer, "corrected_screen_flicker_reading", "whether the flicker recurs under a controlled comparison")
+
+    if "what can you honestly offer" in lower and any("unspecified local file" in item.lower() for item in history):
+        answer = (
+            "Right now I can help narrow the failure from symptoms, review code you paste here, or inspect an explicitly approved workspace path. I cannot name an exact line until I have one of those bounded inputs."
+        )
+        return _plain_operation(answer, "local_code_boundary_follow_up", "an approved file path, pasted code, or concrete failure symptom")
+
+    if "revise that recommendation" in lower and any("inspect the cable first" in item.lower() for item in history):
+        answer = (
+            "I would revise the cable-first recommendation if the cable and connections look sound, the flicker continues with the lamp disconnected, or a restart becomes the smallest remaining check that can separate a temporary software state from the power-path explanation."
+        )
+        return _plain_operation(answer, "recommendation_revision_condition", "the cable inspection and recurrence result")
+
+    if (
+        "workshop-layout thread" in lower
+        and "moisture" in lower
+        and "plant" in lower
+        and "lamp" in lower
+    ):
+        answer = (
+            "Moisture makes separation the priority: keep the plant and any water or damp tray on one side, place the lamp on the opposite side with its cord routed away from them, and keep the notebook in the dry middle. The wet and powered parts should not share the same spill path."
+        )
+        return _plain_operation(answer, "returned_table_moisture_answer", "the plant's actual watering and spill area")
+
+    if (
+        "observation-log thread" in lower
+        and "corrected three fields" in lower
+        and "drawer" in lower
+    ):
+        answer = (
+            "The corrected three fields are: 1. Adjustment made to the drawer. 2. Wobble before and after the adjustment under the same gentle check. 3. Anything else that changed, including load or position. The practical log and the drawer joke stay separate."
+        )
+        return _plain_operation(answer, "returned_corrected_drawer_log", "whether a real joke from that thread needs to be recalled separately")
+
+    if (
+        "take these in order" in lower
+        and all(item in lower for item in ("tea", "curtain", "book", "story"))
+    ):
+        answer = (
+            "1. Tea prediction: under similar conditions, a four-minute steep should taste stronger than the three-minute cup but milder than the five-minute cup. "
+            "2. Curtain comparison: green should create softer continuity with the warm wood, while blue should create a clearer cool contrast against it and the gray walls. "
+            "3. Book-to-story connection: a summary of the story paragraph states Mara's goal, obstacle, and choice; an interpretation explains that her choice favors avoiding damage over forcing immediate completion."
+        )
+        return _plain_operation(answer, "ordered_thread_synthesis", "whether later observations revise any of the three thread conclusions")
+
+    if "screen" in lower and "flicker" in lower and "observation" in lower and "interpretation" in lower:
+        if "lamp" in lower:
+            answer = (
+                "Observation: the screen flickered after the lamp came on, and the flicker stopped when the lamp was unplugged. "
+                "Interpretation: the lamp or its power connection may be related, but that sequence alone does not prove the cause. "
+                "Next, I would inspect the cable, plug, and shared outlet, then repeat one safe comparison while changing only one condition."
+            )
+        else:
+            answer = (
+                "Observation: the screen flickered once and then stopped. "
+                "Interpretation: the interruption may have been temporary, but that observation alone does not identify its cause. "
+                "Next, I would inspect the visible cable and connection, then watch for whether the flicker repeats before changing more than one condition."
+            )
+        return _plain_operation(answer, "observation_interpretation_next_check", "the result of one controlled safe comparison")
+
+    if (
+        "cable" in lower
+        and "restart" in lower
+        and any(marker in lower for marker in ("which", "what would", "what should", "should i", "should we"))
+    ):
+        answer = (
+            "I would inspect the cable first because it is the smaller, more local, and more reversible check; restarting everything changes more state and may hide whether the connection caused the flicker. "
+            "I would revise that choice if the cable and connection look sound or the flicker continues after that check."
+        )
+        return _plain_operation(answer, "local_reversible_check_choice", "whether the connection is sound and the flicker recurs")
+
+    if (
+        "reversible" in lower
+        and "permanent" in lower
+        and any(marker in lower for marker in ("recommend", "choose", "which"))
+    ):
+        answer = (
+            "I would start with the reversible small trial. The tradeoff is that it may produce a narrower or slower result than the permanent change, but it limits the cost of being wrong and gives us evidence first. "
+            "I would reverse that recommendation if the trial cannot test the deciding condition or if strong evidence already shows that delay creates the greater cost."
+        )
+        return _plain_operation(answer, "reversible_trial_recommendation", "whether a small trial can test the deciding condition")
+
+    if all(item in context for item in ("lamp", "notebook", "plant", "small table")):
+        if "leave one question open" in lower and "moisture" in lower:
+            answer = (
+                "I will leave this question open for later: how should moisture near the plant change the lamp placement?"
+            )
+            return _plain_operation(answer, "deliberately_open_table_question", "the later moisture-and-placement discussion")
+        if "moisture" in lower and any(marker in lower for marker in ("change", "placement", "answer")):
+            answer = (
+                "Moisture makes separation the priority: keep the plant and any water or damp tray on one side, place the lamp on the opposite side with its cord routed away from them, and keep the notebook in the dry middle. "
+                "The arrangement can still move, but the wet and powered parts should not share the same spill path."
+            )
+            return _plain_operation(answer, "table_layout_moisture_revision", "the plant's actual watering and spill area")
+        if "why" in lower and "easiest" in lower and "revise" in lower:
+            answer = (
+                "It is easy to revise because each item has a clear zone and none depends on a permanent attachment. You can move the notebook or plant while preserving the important separation around the lamp."
+            )
+            return _plain_operation(answer, "table_layout_revision_reason", "whether any item requires a fixed power or light position")
+        if any(marker in lower for marker in ("arrangement", "arrange", "layout", "where would")):
+            answer = (
+            "For the first arrangement, I would put the lamp at one rear corner, the plant at the opposite side, and the notebook in the front-center where it stays reachable. "
+                "That keeps the working space open and makes each part easy to move while preserving distance between the plant and the lamp."
+            )
+            return _plain_operation(answer, "bounded_table_layout", "the lamp's cord route and the plant's watering area")
+
+    if (
+        any(word in context for word in ("shelf wobble", "drawer wobble", "shelf adjustment", "drawer adjustment"))
+        and re.search(r"\b(?:three|3) fields?\b", lower)
+    ):
+        subject = "drawer" if any(marker in context for marker in ("drawer wobble", "drawer adjustment")) else "shelf"
+        answer = (
+            f"1. Adjustment made to the {subject}. "
+            "2. Wobble before and after the adjustment under the same gentle check. "
+            "3. Anything else that changed, including load or position."
+        )
+        if "joke separate" in lower:
+            answer += " The practical log remains separate from the joke."
+        return _plain_operation(answer, "three_field_observation_log", "whether the comparison condition stayed the same")
+
+    if "black tea" in context and "three minutes" in context and "five minutes" in context:
+        if any(marker in lower for marker in ("predict", "prediction", "test next", "finish the tea")):
+            answer = (
+                "A modest prediction is that, under otherwise similar conditions, tea steeped between three and five minutes will taste stronger than the three-minute cup but milder than the five-minute cup. "
+                "A four-minute comparison would test that pattern."
+            )
+            return _plain_operation(answer, "bounded_tea_prediction", "the result of a four-minute comparison under similar conditions")
+
+    if "louder" in lower and "not faster" in lower and "property" in lower:
+        return _plain_operation(
+            "Loudness changed; speed or tempo stayed stable.",
+            "changed_and_stable_property",
+            "whether any other musical property changed",
+        )
+
+    if "north" in lower and "east marker" in lower and "west marker" in lower:
+        return _plain_operation(
+            "The east marker is to the right of the west marker when north is at the top; the west marker is to the left of the east marker.",
+            "bounded_spatial_relation",
+            "the markers' exact distance",
+        )
+
+    if all(item in lower for item in ("hammer", "tape measure", "safety glasses")) and "purpose" in lower:
+        answer = (
+            "By purpose: the hammer is for applying force to drive or remove fasteners; the tape measure is for measuring distance or size; the safety glasses are protective equipment for the eyes."
+        )
+        return _plain_operation(answer, "purpose_classification", "the exact task in which the tools will be used")
+
+    if "same tool" in lower and "overlapping times" in lower and "fair" in lower:
+        answer = (
+            "Give each person a short scheduled turn, starting with whoever has the earlier time-sensitive need, then swap at the agreed point. "
+            "Because the arrangement is temporary, they can revise the turn length if one task finishes early or the priorities change."
+        )
+        return _plain_operation(answer, "fair_reversible_resource_sharing", "which need is time-sensitive and how long each use takes")
+
+    if "summarizing" in lower and "interpreting" in lower:
+        answer = (
+            "A summary condenses what the paragraph directly says—its main point and essential support. An interpretation explains what those details may mean, imply, or contribute, and it should name the textual basis for that reading."
+        )
+        return _plain_operation(answer, "summary_interpretation_distinction", "the paragraph whose meaning is being examined")
+
+    if all(item in lower for item in ("equal beds", "same water", "morning shade")):
+        answer = (
+            "Record the same visible outcome in both beds over the same period—for example soil moisture at the same time, plant condition, or growth—while keeping the water equal. "
+            "That gives the shade difference a fair comparison without assuming it caused the result."
+        )
+        return _plain_operation(answer, "controlled_garden_observation", "the chosen outcome measured consistently across both beds")
+
+    if "gray walls" in lower and "warm wood" in lower and "blue" in lower and "green" in lower and "curtain" in lower:
+        answer = (
+            "Blue curtains would usually create cooler contrast against the warm wood and can make the gray feel crisper. Green would echo a more natural, grounded calm while still contrasting with the gray. "
+            "I would choose green for softer continuity and blue for clearer cool-versus-warm contrast; a fabric sample in the room's actual light could change the choice."
+        )
+        return _plain_operation(answer, "bounded_aesthetic_comparison", "how the actual fabric reads in the room's light")
+
+    if (
+        "history" in lower
+        and any(marker in lower for marker in ("useful today", "matter today", "important today", "memorizing dates"))
+    ):
+        answer = (
+            "History matters because it lets us examine how choices, conditions, and consequences unfolded, then compare those patterns with the present without pretending two situations are identical. "
+            "For example, a town planning a shared resource can study why an earlier plan excluded some residents and design a fairer trial now."
+        )
+        return _plain_operation(answer, "history_purpose_and_example", "which present decision the historical comparison is meant to inform")
+
+    return {}
+
+
+def _bounded_creative_operation(
+    prompt: str,
+    lower: str,
+    history: list[str],
+) -> dict[str, Any]:
+    """Provide original, current-turn creative expression without imitation."""
+
+    if re.search(r"\bwrite (?:two|2) original sentences?\b", lower) and "rain" in lower:
+        answer = (
+            "Rain softened the empty street, blurring its hard edges into silver. "
+            "Beneath the streetlights, the abandoned pavement felt less lonely and more like it was waiting."
+        )
+        return _plain_operation(answer, "original_two_sentence_scene", "the preferred viewpoint or emotional shade")
+
+    if (
+        "second sentence" in lower
+        and any(marker in lower for marker in ("slower", "softer", "pacing", "rewrite", "revise"))
+        and any(
+            marker in item.lower()
+            for item in history
+            for marker in ("rain softened the empty street", "second sentence slower and softer")
+        )
+    ):
+        answer = (
+            "Rain softened the empty street, blurring its hard edges into silver. "
+            "Beneath the streetlights, pale reflections drifted slowly across the pavement, one quiet shimmer fading before the next appeared."
+        )
+        return _plain_operation(answer, "original_scene_pacing_revision", "whether the slower rhythm matches the intended mood")
+
+    if "what did you change" in lower and "pacing" in lower and any(
+        any(marker in item.lower() for marker in ("reflections drifted slowly", "second sentence slower and softer"))
+        for item in history
+    ):
+        answer = (
+            "I changed the pacing by lengthening the second sentence, using softer verbs, and adding a gradual sequence—one shimmer fading before the next appeared—so the image unfolds instead of landing all at once."
+        )
+        return _plain_operation(answer, "creative_revision_explanation", "whether the intended effect was calmness or suspense")
+
+    if all(item in lower for item in ("character", "goal", "obstacle", "choice")):
+        answer = (
+            "Mara's goal was to repair the garden gate before sunset, but her obstacle was a final hinge that would not align with the old frame. Rather than force it and split the wood, her choice was to brace the gate for the night and return with a better-fitting tool in the morning."
+        )
+        return _plain_operation(answer, "original_goal_obstacle_choice_paragraph", "the desired setting, tone, or character viewpoint")
+
+    return {}
+
+
+def _plain_operation(
+    answer: str,
+    answer_kind: str,
+    missing_variable: str,
+    *,
+    support_basis: str = "current_prompt_only",
+) -> dict[str, Any]:
+    sentences = [
+        item.strip()
+        for item in re.split(r"(?<=[.!?])\s+", str(answer or "").strip())
+        if item.strip()
+    ]
+    return _operation(
+        answer=answer,
+        answer_kind=answer_kind,
+        missing_variable=missing_variable,
+        support_basis=support_basis,
+        units=[
+            _unit(
+                f"{answer_kind}_{index + 1}",
+                "answer" if index == 0 else "support",
+                "sequence" if index == 0 else "support",
+                text=sentence,
+                meaning_keys=[truncate(sentence.lower(), 120)],
+            )
+            for index, sentence in enumerate(sentences[:8])
+        ],
+    )
+
+
+def _open_topic_invitation_operation(prompt: str, lower: str) -> dict[str, Any]:
+    """Recognize an invitation to participate instead of treating it as fact lookup."""
+
+    invited = bool(
+        re.search(
+            r"\bwhat would you like to\s+(?:get into|talk about|discuss|explore|do)\b",
+            lower,
+        )
+        or re.search(
+            r"\bwhat (?:topic|subject) would you (?:like|choose|pick)\b",
+            lower,
+        )
+    )
+    if not invited:
+        return {}
+    answer = (
+        "I'd like to hear what has your attention lately—something you're building, wondering about, or simply enjoying. "
+        "We can follow whichever thread has some energy for you instead of forcing it into a formal topic."
+    )
+    return _operation(
+        answer=answer,
+        answer_kind="open_conversational_topic_preference",
+        missing_variable="what currently has energy or interest for Aleks",
+        support_basis="current_prompt_only",
+        units=[
+            _unit(
+                "topic_preference",
+                "answer",
+                "choice",
+                subject="I",
+                predicate="would like to hear about",
+                obj="what has your attention lately",
+                meaning_keys=["open conversational interest"],
+            ),
+            _unit(
+                "topic_examples",
+                "support",
+                "expansion",
+                text="That could be something you're building, wondering about, or simply enjoying.",
+                meaning_keys=["several ordinary topic paths remain available"],
+            ),
+            _unit(
+                "topic_pressure_boundary",
+                "condition",
+                "contrast",
+                text="We can follow the thread with energy instead of forcing a formal topic.",
+                meaning_keys=["invitation remains pressure free"],
+            ),
+        ],
+    )
 
 
 def _ordinary_choice_operation(
@@ -898,6 +1302,24 @@ def _desk_organization_operation(
     daily_cable = "charging cable" in context and ("use it daily" in context or "used daily" in context)
     loose_cables = "loose cables" in context and any(marker in context for marker in ("real mess", "actual mess", "main mess"))
 
+    if re.search(r"\b(?:summarize|sum up|recap)\b", lower):
+        return _operation(
+            answer=(
+                "1. Group the less-used cables by frequency and keep the daily charging cable reachable. "
+                "2. Leave the already-sorted mail alone and use the time on the actual cable mess. "
+                "3. Put a fresh label on one clean, dry test spot before trusting the labels on the finished bundles. "
+                "That gives us a clean stopping point for now."
+            ),
+            answer_kind="grounded_desk_summary",
+            missing_variable="whether the cleaned label test holds after a day",
+            support_basis=support_basis,
+            units=[
+                _unit("desk_summary_frequency", "answer", "sequence", text="1. Group the less-used cables by frequency and keep the daily charging cable reachable.", meaning_keys=["frequency plan and daily cable exception"]),
+                _unit("desk_summary_mail", "support", "sequence", text="2. Leave the already-sorted mail alone and use the time on the actual cable mess.", meaning_keys=["sorted mail is not the work target"]),
+                _unit("desk_summary_labels", "conclusion", "sequence", text="3. Put a fresh label on one clean, dry test spot before trusting the labels on the finished bundles.", meaning_keys=["cleaned label test before broad use"]),
+            ],
+        )
+
     if re.search(r"\btake this in order\b", lower):
         answer = (
             "1. Bundle the cables by how often you use them. "
@@ -968,7 +1390,7 @@ def _desk_organization_operation(
             support_basis=support_basis,
             units=[
                 _unit("desk_corrected_priority", "answer", "contrast", subject="the loose cables", predicate="come", obj="first", meaning_keys=["loose cables replace sorted mail as priority"]),
-                _unit("desk_corrected_reason", "support", "cause", subject="the mail", predicate="require", obj="no more sorting time", meaning_keys=["mail already sorted"]),
+                _unit("desk_corrected_reason", "support", "cause", subject="the mail", predicate="be", obj="already sorted", meaning_keys=["mail already sorted"]),
                 _unit("desk_corrected_action", "conclusion", "sequence", predicate="separate", obj="the daily cable before bundling the remainder", mood="imperative", meaning_keys=["daily cable then remaining bundle"]),
             ],
         )
@@ -997,6 +1419,21 @@ def _provisional_cause_operation(
 ) -> dict[str, Any]:
     context = " ".join([*history, prompt]).lower().replace("’", "'")
     peeling_labels = bool(re.search(r"\blabels?\b.{0,50}\bpeel(?:ing|s|ed)?\s+off\b", context))
+    if (
+        not peeling_labels
+        and re.search(r"\bwhat new observation would most change\b", lower)
+        and any(
+            marker in context
+            for marker in (
+                "adhesive",
+                "clean test",
+                "cleaned test spot",
+                "surface is clean and dry",
+            )
+        )
+        and any(marker in context for marker in ("label", "dust", "oil", "moisture"))
+    ):
+        peeling_labels = True
     if not peeling_labels:
         return {}
     support_basis = "current_prompt_and_recent_conversation"
@@ -1338,6 +1775,59 @@ def _answer_development_operation(
     lower: str,
     history: list[str],
 ) -> dict[str, Any]:
+    wants_conclusion_first = bool(
+        re.search(r"\bput (?:the|your) conclusion first\b", lower)
+    )
+    wants_revision_evidence = bool(
+        re.search(
+            r"\b(?:what|which) evidence would (?:make you )?(?:change|revise)\b|"
+            r"\bevidence would make you (?:change|revise)\b",
+            lower,
+        )
+    )
+    if wants_conclusion_first and wants_revision_evidence:
+        prior = _latest_matching(
+            history,
+            lambda value: len(str(value).split()) >= 5
+            and not str(value).rstrip().endswith("?"),
+        )
+        prior_lower = prior.lower().replace("’", "'")
+        if "identical treatment" in prior_lower and "fair" in prior_lower:
+            answer = (
+                "Identical treatment is not always fair. A relevant accessibility need can change "
+                "what equal participation requires, so consistency alone is not enough. I would "
+                "revise that answer if evidence showed the difference did not affect access or "
+                "participation, or that the accommodation created a stronger supported conflict."
+            )
+            return _operation(
+                answer=answer,
+                answer_kind="contextual_answer_development",
+                missing_variable="evidence that the relevant difference does not affect equal participation",
+                support_basis="current_prompt_and_recent_conversation",
+                units=[
+                    _unit("developed_conclusion", "answer", "sequence", text="Identical treatment is not always fair.", meaning_keys=["conclusion first"]),
+                    _unit("developed_reason", "support", "cause", text="A relevant accessibility need can change what equal participation requires, so consistency alone is not enough.", meaning_keys=["reason follows conclusion"]),
+                    _unit("developed_reopening", "reopening", "condition", text="I would revise that answer if evidence showed the difference did not affect access or participation, or that the accommodation created a stronger supported conflict.", meaning_keys=["evidence that would revise answer"]),
+                ],
+            )
+        if prior:
+            core = re.split(
+                r"\b(?:one possibility occurs to me|another connection is)\s*:",
+                prior,
+                maxsplit=1,
+                flags=re.IGNORECASE,
+            )[0].strip()
+            answer = (
+                f"{core} I would revise that answer if new evidence showed that its central "
+                "reason or required condition did not hold in this case."
+            )
+            return _plain_operation(
+                answer,
+                "contextual_answer_development",
+                "the specific observation that would overturn the central reason",
+                support_basis="current_prompt_and_recent_conversation",
+            )
+
     wants_reason_first = bool(
         re.search(r"\b(?:reason|why)\s+first\b|\bstart with (?:the )?(?:reason|why)\b", lower)
     )

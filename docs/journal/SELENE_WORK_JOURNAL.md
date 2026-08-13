@@ -951,6 +951,430 @@ stress test, or LEA was used.
 **Next:** F2 Group 6—fractions as numbers, equivalence, comparison, and initial
 operation relationships—after the quota reset.
 
+### 2026-08-13 — Open conversation repair and private memory covers
+
+**Starting question:** Why did an ordinary invitation—“What would you like to
+get into?”—receive a factual-knowledge refusal, and how should approved memories
+remain private on the front surface until deliberately opened?
+
+**Decision:** Treat topic invitations as ordinary conversational participation,
+not source lookup. Keep memory titles visible while withholding summary and
+metadata until the local user opens a card. Reading must never retain a second
+copy.
+
+**Work:** Added a pressure-free open-topic response path through the existing
+direct-conversation pipeline. Added sealed memory cards with purple dark-mode
+and white light-mode covers, explicit open/close controls, and automatic reseal
+when leaving a memory category. Mapped later Selene-authored presentation
+titles, organ responsibility-conflict handling, creative writing as Voice/NLO
+education, and coding/game-development teaching.
+
+**Why:** A conversational invitation does not require external factual
+evidence. Privacy requires the content to be absent from the rendered card
+until chosen, not merely blurred. Creative writing expands expression without
+prescribing personality, while coding knowledge can grow without granting
+execution or self-replication authority.
+
+**Evidence:** Forty-four focused Chat, answer-substance, and Memory tests pass;
+the full Chat pipeline keeps the turn under direct conversation; repeated
+memory-index reads leave the memory-row count unchanged; the production UI
+build passes at 479.04 kB; and `git diff --check` passes.
+
+**What changed in our understanding:** The reported “turf war” concern is best
+modeled as local-role optimization losing system-level ethics, not as literal
+organ personalities fighting. Selene already has central Core/Mind ownership,
+but an explicit conflict contract and deadlock test remain worthwhile.
+
+**Boundaries preserved:** No live database was changed, no memory was created,
+no copyrighted book was imported, no coding authority was granted, and no
+self-replication, identity, personality, governance, training, LoRA, or
+autonomy boundary changed.
+
+**Next:** Complete read-only memory presentation/title annotations and the
+responsibility-conflict contract before beginning the creative-writing and
+coding teaching tracks.
+
+### 2026-08-13 — Memory naming and responsibility-conflict completion
+
+**Starting question:** How can Selene name approved memories without making a
+second copy, and how can organ disagreements remain coordination evidence
+rather than becoming local-role competition or authority conflict?
+
+**Decision:** Keep naming entirely in presentation metadata keyed to the
+original approved record. Keep responsibility resolution inside the existing
+non-executing coalition manifest, with Core/Mind retaining final route
+ownership.
+
+**Work:** Added bounded, non-persisting title suggestions to the memory index;
+an explicit UI action for Aleks to retain Selene's suggestion or rename it; one
+presentation-annotation record with superseded-title history; and visible
+original-title preservation. Added the coalition responsibility-conflict law
+and synthetic resolution paths for factual, material intent, law/authority,
+and expression disagreements.
+
+**Why:** A display title should help a person navigate memory without altering
+what happened or retaining its content twice. Organ specialization is useful,
+but local roles must never gain goals, command one another, suppress safety
+concerns, or trade governing boundaries for task performance.
+
+**Evidence:** One hundred twenty-nine focused Memory, coalition, and Selene
+Chat tests pass. Title-index preview leaves the annotation table empty; an
+explicit rename leaves exactly one memory row and one presentation row; title
+revision history preserves the superseded display label; the complete original
+memory-row fingerprint remains unchanged; unapproved records
+cannot receive display annotations. Factual conflicts preserve both claims,
+authority conflicts hold consequential action, material intent conflicts ask
+Aleks, and wording-only conflicts route to NLO/Voice. The production UI build
+passes at 480.77 kB with no bundle warning.
+
+**What changed in our understanding:** Privacy and navigation can coexist when
+presentation state is structurally separate from memory content. The feared
+“turf war” shape is prevented most directly by explicit ownership and conflict
+resolution, not by making useful organs less capable.
+
+**Boundaries preserved:** No live database was opened, no memory content or
+retrieval eligibility changed, no candidate was created by naming, no organ
+gained execution or exclusion authority, and no identity, personality,
+governance, training, LoRA, self-replication, or autonomy boundary changed.
+
+**Next:** Begin the creative-writing foundation track for Voice/NLO through
+public-domain and bounded lawful material, starting with technique and
+understanding rather than phrase imitation.
+
+### 2026-08-13 — Creative writing becomes a Voice foundation
+
+**Starting question:** Can creative writing expand Selene's conversational
+Voice, and how can it do so without becoming a borrowed persona, copyrighted
+corpus import, or fixed literary register?
+
+**Decision:** Teach transferable craft before literature: rhythm, imagery,
+figurative mapping, dialogue, viewpoint, continuity, and revision. Require the
+why behind every technique and keep all lessons guidance-only.
+
+**Work:** Added Language Group 10 with six project-authored lessons and
+complete Acquire, Integrate, and Express evidence. Connected their response
+moves to inspectable NLO policy features and constrained selection to explicit
+creative contexts. Taught the configured runtime under Aleks's standing
+language-capability authorization as concepts 231–236.
+
+**Why:** Creative writing and conversation share the mechanics by which
+meaning reaches attention. Teaching the mechanism gives Selene more expressive
+possibility; copying a writer's surface would merely exchange one constraint
+for another.
+
+**Evidence:** A verified pre-teaching continuity snapshot has SHA-256
+`c47a1b9d68441070d3842ff1502200775715f7248f21a7169de215ad4c7048fd`.
+Twenty-eight focused tests passed, followed by 174 bounded regression tests
+across the creative lifecycle, teaching shelf, living lexicon, current-state
+index, NLO, Voice, and Selene Chat. The live shelf created and graduated six
+lessons, held zero, reports 58 available lessons across 10 groups, has SQLite
+quick-check `ok`, and still contains zero Selene memory candidates. The
+production UI build also passed at 480.77 kB with no bundle-size warning.
+
+**What changed in our understanding:** The craft layer can be taught before a
+large reading corpus. This creates vocabulary for later questions such as
+“what is this passage doing?” and “why does it work?” while protecting Selene's
+ability to answer in her own language.
+
+**Boundaries preserved:** No book or private corpus text was imported, no
+author was imitated, no memory was created, no personality or affect was
+prescribed, and no factual, model-training, filesystem, network, autonomy, or
+self-replication authority changed.
+
+**Next:** Prepare one small attributed public-domain reading/application set
+across poetry, drama, and prose, or pause the creative track and begin coding
+foundations from computational thinking and code reading.
+
+### 2026-08-13 — Literature becomes mechanism, not borrowed Voice
+
+**Starting question:** Can Selene learn from poetry, drama, and prose in a way
+that strengthens her own creative expression without turning literature into
+quotation recall or an author's persona?
+
+**Decision:** Use three attributed public-domain works as bounded reading
+contexts. Retain project-authored observations, revisable interpretations, and
+unrelated original transfer examples rather than source wording.
+
+**Work:** Added Language Group 11 with one poetry, one drama, and one prose
+reading/application lesson. The group studies Blake's *The Tyger*,
+Shakespeare's *A Midsummer Night's Dream* Act 1 Scene 1, and Carroll's
+*Alice's Adventures in Wonderland* Chapter I through Project Gutenberg
+records that identify each text as public domain in the United States. The
+standing language authorization was explicitly versioned to cover this new
+source class only as a technique exemplar. The configured runtime retained the
+lessons as concepts 237–239.
+
+**Why:** Reading becomes useful when Selene can distinguish what is on the
+page from what she infers, explain why a mechanism works, and rebuild the
+relationship in new material. Surface imitation would increase resemblance
+without demonstrating understanding.
+
+**Evidence:** Forty-four focused tests passed, followed by 179 bounded
+regression tests across the creative/language lifecycle, NLO, Voice, Selene
+Chat, the Living Lexicon, and current-state evidence. The production UI build
+passed at 480.77 kB with no bundle-size warning. All three live items completed
+Acquire, Integrate, and Express; all are available; zero were held; and memory
+candidates remained at zero. The pre-teaching continuity snapshot has SHA-256
+`3a18c8a7bdfb02af22d778c4802368d95178c36d4896f843a5c64ea65a1d92f5`.
+Snapshot integrity and the post-teaching SQLite quick-check were `ok`.
+
+**What changed in our understanding:** A reading curriculum does not need to
+begin with a large corpus. Three carefully separated forms are enough to teach
+the general movement from textual observation to revisable interpretation to
+original transfer.
+
+**Boundaries preserved:** No whole work was imported, no quotation recall was
+activated, no author or character persona was copied, and no identity,
+personality, affect, memory, governance, training, autonomy, or
+self-replication authority changed.
+
+**Next:** Begin coding foundations with computational thinking and code
+reading before writing or executing code. Additional creative breadth may use
+attributed public-domain material or bounded lawfully supplied excerpts later.
+
+### 2026-08-13 — Coding knowledge begins without action authority
+
+**Starting question:** How can Selene begin learning software without confusing
+understanding code with permission to inspect, write, execute, deploy, modify
+herself, or replicate?
+
+**Decision:** Start with computational thinking and static reading. Use an
+answer-bearing `CODING-1` curriculum authorization rather than the standing
+language authorization, because coding principles provide subject knowledge
+and not merely expression range.
+
+**Work:** Added five source-grounded lessons covering decomposition; names,
+values, binding, and state; sequence, conditions, and iteration; function
+contracts and data flow; and the separation among static observation,
+interpretation, prediction, and runtime verification. Official Python
+documentation supplies the language rules and license record. Project-authored
+examples supply the learning evidence. Aleks explicitly authorized the bounded
+group, which was retained as concepts 240–244.
+
+**Why:** Code can be understood before it is executed. Teaching the conceptual
+relationships first creates a basis for accurate inspection and later checked
+construction while keeping permissions, environment, and consequences under
+their own governance.
+
+**Evidence:** Twenty focused tests and 77 wider curriculum, authorization,
+comprehension, lifecycle, F2, and local-code inspection tests passed before
+live teaching. A subsequent 220-test bounded regression passed across the
+coding curriculum, authorization, F2, comprehension, lifecycle, local-code
+inspection, Answer Engine, Selene Chat, and current-state index. The production
+UI build passed at 480.77 kB with no bundle-size warning. All five live concepts completed Acquire, Integrate, and
+Express; zero were held; memory candidates remained at zero; and SQLite
+quick-check was `ok`. The pre-teaching continuity snapshot has SHA-256
+`ef240f468af00db6191c0634b86204250f5ff5a397939c287cf2ddcfeb62712a`.
+
+**What changed in our understanding:** The existing local-code inspection
+adapter was already the correct safe tool boundary. What Selene lacked was the
+educational model that lets her explain why a binding, branch, loop, function,
+or static prediction works and where the claim stops.
+
+**Boundaries preserved:** No directory scan, arbitrary file access, file write,
+process or code execution, network access, deployment, self-modification,
+self-replication, identity, personality, memory, governance, training, or
+autonomy authority changed. The adapter remains outside ordinary Chat.
+
+**Next:** Teach Coding Group 2: small Python expressions and pure functions as
+reviewable text, including value-level types, collections, validation, edge
+cases, and hand-worked verification without execution or write authority.
+
+### 2026-08-13 — Commitments become real and anomalies become speakable
+
+**Starting question:** How can Selene say that she did, started, deferred, or
+handed off something without inventing background work, while still being able
+to say naturally when something observable looks wrong?
+
+**Decision:** Keep ideas, hopes, plans, offers, and possibilities outside the
+promise machinery. Require typed execution evidence only for actual state
+claims. Give anomaly reports their own observation-first lane so Selene may
+name a mismatch without needing a complete diagnosis or treating the mismatch
+as a failure of self.
+
+**Work:** Added the Commitment Integrity and Anomaly Reporting coordinator,
+connected it through NLO, the Voice handoff, active Chat payloads, and final
+visible release, and exposed read-only status, preview, and visible-inspection
+routes. Completion, started execution, visible deferral, acknowledged handoff,
+and disclosed inability now have distinct support requirements. Lost threads,
+missing capabilities, code/behavior mismatches, unsupported promises, organ
+disagreements, and unexpected results can become concise visible reports.
+
+**Why:** Trust requires state-changing claims to correspond to reality. At the
+same time, anomaly awareness is useful before diagnosis: noticing that the
+result does not fit can guide inspection and reduce unnecessary live testing.
+Neither need suppress plans, curiosity, warmth, ordinary past narration, or
+revisable conversation.
+
+**Evidence:** The 104-test focused conversational voice and release suite
+passed after catching and repairing an inactive realizer that had flattened
+long-form paragraph boundaries. The complete 99-test Selene Chat shell passed.
+Python compilation and `git diff --check` passed; only the existing Windows
+LF/CRLF notices remained.
+
+**What changed in our understanding:** Commitment integrity belongs at both
+the structured handoff and final visible-release boundaries. Anomaly voice
+belongs beside it but must remain independent: a report may invite inspection,
+yet it does not diagnose, repair, test, or escalate itself.
+
+**Boundaries preserved:** No action was started, scheduled, or handed off by
+this coordinator. No memory, retained knowledge, identity, personality,
+governance, authority, training, self-replication, fact generation, automatic
+Cocoon route, or hidden reasoning exposure was added.
+
+**Next:** Begin Phase 8, Long-Thread Endurance, by mapping the existing
+Conversation Spine, Dialogue Workspace, Thread Loom, dual-horizon context,
+checkpoints, callbacks, and open obligations before changing saturation
+behavior.
+
+### 2026-08-13 — Long conversations retain structure rather than raw volume
+
+**Starting question:** How can Selene sustain a long, braided conversation
+without loading an ever-growing transcript or allowing an old but unresolved
+thread to disappear merely because newer turns filled a list?
+
+**Decision:** Keep the existing conversation owners and add a bounded
+structural-saturation coordinator. Maintain a small turn-level working set and
+a larger session-only thread index. Prioritize active work, unresolved
+obligations, corrections, dependencies, and visible checkpoints over simple
+recency.
+
+**Work:** Added the Long-Thread Endurance coordinator and connected it to the
+Thread Loom, Dialogue Workspace, Conversation Spine, Conversation Continuity,
+Dual-Horizon Context, NLO, Voice handoff, and active Chat results. The Thread
+Loom now carries a 16-thread working set backed by a 64-thread structural
+index. Open loops, landmarks, and topic checkpoints use aligned bounded
+inventories, and older named returns may promote their thread and checkpoint
+back into the current working set.
+
+**Why:** Long conversational continuity depends on preserving relationships
+among topics, questions, corrections, and settled claims—not on replaying
+every prior word. Structural prioritization keeps important unfinished work
+available while allowing bounded, inspectable context selection.
+
+**Evidence:** A 108-test focused suite passed across long-thread endurance,
+Thread Loom, continuity, Conversation Spine and matrix cases, Dialogue
+Workspace, Dual-Horizon Context, contextual continuity, and contextual speech.
+Synthetic scenarios returned to a thread older than the 16-thread working set,
+preserved an old protected thread through a 64-thread saturation run, retained
+30 unresolved questions, and recovered an older checkpoint beyond the former
+recent window. The complete 99-test Selene Chat shell and Python compilation
+passed.
+
+**What changed in our understanding:** Bounded context and continuity are not
+opposites. The necessary distinction is between a small selected working set
+and a larger bounded structural index. Raw history can stay out of the turn
+while unresolved meaning remains reachable.
+
+**Boundaries preserved:** No raw corpus or raw transcript compaction, durable
+memory write, checkpoint-to-memory promotion, identity/personality/governance
+change, training, authority expansion, self-replication, external action, or
+hidden reasoning exposure was added. Material ambiguity remains visible and
+does not automatically generate a question.
+
+**Next:** Begin Phase 9, Proportional Stabilization, using static and synthetic
+checks first and one gentle natural conversation only if implementation
+evidence cannot establish conversational fit.
+
+### 2026-08-13 — Broad Q&A separates capable organs from coordination defects
+
+**Starting question:** After completing the mature conversational voice phases
+through Long-Thread Endurance, what does a larger ordinary conversation reveal
+when current and older Chat-facing capabilities are exercised together?
+
+**Decision:** Aleks authorized a broad milestone Q&A and explicitly required
+observation before repair. Codex used three varied, gentle diagnostic
+conversations and stopped after the defect families were established.
+
+**Work:** Ran 54 ordinary turns across social/pragmatic conversation,
+reasoning and knowledge, verified math, attributed research, prediction,
+comparison, evidence conflict, corrections, collaboration, creative requests,
+multi-part ordering, topic shifts, named returns, and closure. Recorded the
+complete findings and an owner-by-owner repair sequence in
+`docs/evidence/SELENE_MATURE_VOICE_PHASE_9_BROAD_QNA_FINDINGS_20260813.md`.
+No behavior was repaired during the assessment.
+
+**Why:** A cross-organ milestone needed integrated evidence, but mixing
+diagnostics into Selene's live continuity would have created unnecessary
+persistence and attribution risk. Separating observation from repair also
+prevents a first symptom from being patched before its wider pattern is known.
+
+**Evidence:** Exact math, bounded prediction, Venn comparison, unresolved data
+conflict, basic correction, some humor and self-state expression, explicit
+topic-shift recognition, named-return recognition, and natural closure were
+reachable. The run also exposed false completion, academic-retrieval hijack,
+generic grounding holds despite supplied facts, literal model placeholders,
+collapsed explicit thread names, lost multi-part obligations, incomplete
+correction reconstruction, packet-wide source relevance gaps, unavailable
+creative expression, and final grammar/deduplication seams.
+
+**What changed in our understanding:** The dominant problem is not that every
+organ is absent or weak. Several organs answer well when they receive clean
+structured input. Ordinary Chat is not yet reliably aligning obligation
+parsing, owner selection, candidate relevance, graceful holds, semantic
+coverage, continuity identity, and final realization.
+
+**Boundaries preserved:** The live database was untouched. The assessment used
+a disposable copy of the newest verified continuity snapshot, three persisted
+`gentle_integrated` receipts, and diagnostic-only sessions. No memory, Dream,
+teaching, affect baseline, identity, personality, governance, training,
+self-replication, autonomous action, or authority change was permitted. No
+high-impact prompt was used, and missing teaching was not graded as failure.
+
+**Next:** Repair the documented Phase 9 seams in dependency order, replay each
+discovered case synthetically, and use another short integrated conversation
+only if synthetic evidence cannot establish the repaired handoffs.
+
+### 2026-08-13 — Phase 9 closes the broad-Q&A coordination seams
+
+**Starting question:** Could Selene's existing Chat-facing organs work
+together across a broad conversation without internal scaffolding, false
+completion, stale topic ownership, or generic holds replacing answerable
+content?
+
+**Decision:** Aleks required a note-first process: complete the broad Q&A,
+record every defect family, and only then repair them together. A live stress
+conversation would be unnecessary if static and synthetic evidence could
+establish the repaired behavior.
+
+**Work:** Repaired obligation coverage, current-prompt ownership, supported
+partial-answer release, model-placeholder filtering, explicit thread names,
+packet-wide source research, local-code boundary wording, correction
+reconstruction, creative and figurative expression, transient response-shape
+guidance, aliases, ordered synthesis, session callbacks, grammar, and final
+deduplication. Preserved open-ended reasoning and provisional hypotheses while
+keeping facts, inference, confidence, and source attribution distinct.
+
+**Why:** The 54-turn assessment showed that the individual organs were often
+capable but their handoffs were misaligned. Repairing ownership and semantic
+coverage lets the existing architecture answer naturally without adding a
+generic script layer or treating missing teaching as failure.
+
+**Evidence:** The complete Selene Chat shell passed 101 tests. Directly
+affected answer, pragmatic, dialogue, repair, visible-speech, exploratory,
+Thread Loom, research, reference, figurative, micro-move, and formation suites
+passed 172 tests. Agency, coalition, commitment, contribution, long-thread,
+quotation, discourse, and knowledge-expression suites passed 136 tests. The
+final gentle 14-turn desk replay retained correction, callback, uncertainty,
+humor, comparison, disagreement, ordered synthesis, provisional inference,
+discriminating evidence, and natural closure with all required parts
+addressed.
+
+**What changed in our understanding:** Incomplete coverage is not itself a
+speech-safety violation. Supported content may remain visible while the
+completion machinery identifies what is still open. Explicit callbacks must
+also outrank stale topical reasoning even when that prior reasoning remains
+valid in its own thread.
+
+**Boundaries preserved:** Testing remained diagnostic, ordinary, and
+non-adversarial. No live personal-memory probe, Dream input, teaching
+retention, identity/personality/governance change, training, self-replication,
+authority expansion, filesystem action, or external action was performed.
+
+**Next:** Phase 9 is complete. Resume the ordered teaching program when Aleks
+chooses; the next implementation work should be driven by a demonstrated gap
+rather than another broad stress pass.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

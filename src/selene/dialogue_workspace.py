@@ -7,6 +7,11 @@ from hashlib import sha256
 from typing import Any
 
 from .input_detangler import detangle_user_input
+from .long_thread_endurance import (
+    build_long_thread_endurance_plan,
+    protected_thread_ids_for_workspace,
+    retain_structural_records,
+)
 from .conversation_thread_loom import build_thread_braid
 from .epistemic_revision import (
     build_epistemic_revision_plan,
@@ -227,8 +232,28 @@ def prepare_dialogue_turn(
             "prior_braid": prior_pragmatics.get("thread_braid") or {},
             "active_topic": active_topic,
             "thread_hints": payload.get("thread_hints") or [],
+            "protected_thread_ids": sorted(
+                protected_thread_ids_for_workspace(prior)
+            ),
         }
     )
+    active_thread_id = str(thread_braid.get("active_thread_id") or "")
+    new_loop_ids = {str(item.get("id") or "") for item in new_loops}
+    loops = [
+        {
+            **item,
+            **(
+                {"thread_id": active_thread_id}
+                if isinstance(item, dict)
+                and str(item.get("id") or "") in new_loop_ids
+                and active_thread_id
+                else {}
+            ),
+        }
+        if isinstance(item, dict)
+        else item
+        for item in loops
+    ]
     active_thread = next(
         (
             item
@@ -287,7 +312,11 @@ def prepare_dialogue_turn(
         "reference_candidates": (reference or {}).get("candidates") or [],
         "correction_refinement": correction,
         "epistemic_update_plan": epistemic_update_plan,
-        "epistemic_updates": epistemic_updates[-12:],
+        "epistemic_updates": retain_structural_records(
+            epistemic_updates,
+            limit=24,
+            unresolved_first=True,
+        ),
         "utterance_units": utterance_units,
         "question_units": questions,
         "multi_part_prompt": len(questions) > 1,
@@ -305,14 +334,16 @@ def prepare_dialogue_turn(
             for item in prior_pragmatics.get("session_facts") or []
             if isinstance(item, dict)
         ][-20:],
-        "session_landmarks": [
-            item for item in prior_pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
-        ][-24:],
-        "topic_checkpoints": [
-            item
-            for item in prior_pragmatics.get("topic_checkpoints") or []
-            if isinstance(item, dict)
-        ][-16:],
+        "session_landmarks": retain_structural_records(
+            [item for item in prior_pragmatics.get("session_landmarks") or [] if isinstance(item, dict)],
+            limit=64,
+            protected_thread_ids=protected_thread_ids_for_workspace(prior),
+        ),
+        "topic_checkpoints": retain_structural_records(
+            [item for item in prior_pragmatics.get("topic_checkpoints") or [] if isinstance(item, dict)],
+            limit=64,
+            protected_thread_ids=protected_thread_ids_for_workspace(prior),
+        ),
     }
     state = {
         "status": "dialogue_workspace_turn_prepared",
@@ -321,10 +352,24 @@ def prepare_dialogue_turn(
         "side_topics": side_topics,
         "entities": entities,
         "referents": referents,
-        "open_loops": loops[-20:],
+        "open_loops": retain_structural_records(
+            [item for item in loops if isinstance(item, dict)],
+            limit=64,
+            protected_thread_ids=protected_thread_ids_for_workspace(prior),
+            unresolved_first=True,
+        ),
         "completed_loops": list(prior.get("completed_loops") or [])[-30:],
-        "corrections": corrections[-20:],
-        "epistemic_updates": epistemic_updates[-12:],
+        "corrections": retain_structural_records(
+            [item for item in corrections if isinstance(item, dict)],
+            limit=32,
+            protected_thread_ids=protected_thread_ids_for_workspace(prior),
+            unresolved_first=True,
+        ),
+        "epistemic_updates": retain_structural_records(
+            epistemic_updates,
+            limit=24,
+            unresolved_first=True,
+        ),
         "preferences": preferences,
         "last_dialogue_act": pragmatics["dialogue_act"],
         "last_user_preview": truncate(text, 360),
@@ -335,6 +380,11 @@ def prepare_dialogue_turn(
         "review_status": "status_only",
         "provenance_boundary": DIALOGUE_BOUNDARY,
     }
+    endurance = build_long_thread_endurance_plan(
+        {"dialogue_workspace": state}
+    )
+    state["long_thread_endurance"] = endurance
+    state["pragmatics"]["long_thread_endurance"] = endurance
     _upsert(conn, state)
     if commit:
         conn.commit()
@@ -406,7 +456,12 @@ def record_dialogue_response(
     updated = {
         **state,
         "status": "dialogue_workspace_response_recorded",
-        "open_loops": open_loops[-20:],
+        "open_loops": retain_structural_records(
+            [item for item in open_loops if isinstance(item, dict)],
+            limit=64,
+            protected_thread_ids=protected_thread_ids_for_workspace(state),
+            unresolved_first=True,
+        ),
         "completed_loops": completed[-30:],
         "last_selene_preview": truncate(candidate, 360),
         "pragmatics": {
@@ -432,6 +487,15 @@ def record_dialogue_response(
         "review_status": "status_only",
         "provenance_boundary": DIALOGUE_BOUNDARY,
     }
+    endurance = build_long_thread_endurance_plan(
+        {
+            "dialogue_workspace": updated,
+            "conversation_spine": conversation_spine,
+            "dual_horizon_context": payload.get("dual_horizon_context") or {},
+        }
+    )
+    updated["long_thread_endurance"] = endurance
+    updated["pragmatics"]["long_thread_endurance"] = endurance
     _upsert(conn, updated)
     if commit:
         conn.commit()
@@ -496,24 +560,37 @@ def _decode(row: sqlite3.Row) -> dict[str, Any]:
             "open_loops": _loads(item.get("open_loops_json"), []),
             "completed_loops": _loads(item.get("completed_loops_json"), []),
             "corrections": _loads(item.get("corrections_json"), []),
-            "epistemic_updates": [
-                value
-                for value in pragmatics.get("epistemic_updates") or []
-                if isinstance(value, dict)
-            ][-12:],
+            "epistemic_updates": retain_structural_records(
+                [
+                    value
+                    for value in pragmatics.get("epistemic_updates") or []
+                    if isinstance(value, dict)
+                ],
+                limit=24,
+                unresolved_first=True,
+            ),
             "preferences": _loads(item.get("preferences_json"), {}),
             "last_dialogue_act": item.get("last_dialogue_act"),
             "last_user_preview": item.get("last_user_preview"),
             "last_selene_preview": item.get("last_selene_preview"),
             "pragmatics": pragmatics,
-            "session_landmarks": [
-                value for value in pragmatics.get("session_landmarks") or [] if isinstance(value, dict)
-            ][-24:],
-            "topic_checkpoints": [
-                value
-                for value in pragmatics.get("topic_checkpoints") or []
-                if isinstance(value, dict)
-            ][-16:],
+            "session_landmarks": retain_structural_records(
+                [value for value in pragmatics.get("session_landmarks") or [] if isinstance(value, dict)],
+                limit=64,
+            ),
+            "topic_checkpoints": retain_structural_records(
+                [
+                    value
+                    for value in pragmatics.get("topic_checkpoints") or []
+                    if isinstance(value, dict)
+                ],
+                limit=64,
+            ),
+            "long_thread_endurance": (
+                pragmatics.get("long_thread_endurance")
+                if isinstance(pragmatics.get("long_thread_endurance"), dict)
+                else {}
+            ),
             "latest_topic_checkpoint": (
                 pragmatics.get("latest_topic_checkpoint")
                 if isinstance(pragmatics.get("latest_topic_checkpoint"), dict)
@@ -755,7 +832,7 @@ def _utterance_units(
             for part in re.split(
                 r"(?i)(?:;\s*|,\s*(?:and\s+)?)(?=(?:can|could|would|will|what|which|how|why|"
                 r"compare|explain|give|tell|show|list|summarize|recap|recommend|choose|"
-                r"use|add|include|name|say|put|describe|identify|state|separate|"
+                r"suggest|propose|ask|write|sort|arrange|use|add|include|name|say|put|describe|identify|state|separate|"
                 r"distinguish|calculate|count)\b)",
                 sentence,
             )
@@ -777,8 +854,14 @@ def _utterance_units(
         elif re.match(
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
             r"(?:compare|explain|show|tell|help|give|list|summarize|check|walk|"
-            r"use|add|include|name|say|put|describe|identify|state|separate|"
+            r"recommend|suggest|propose|ask|acknowledge|write|sort|arrange|use|add|include|name|say|put|describe|identify|state|separate|"
             r"distinguish|calculate|count|revise|update|adjust|return\b.*\b(?:explain|answer|summarize))\b",
+            lower,
+        ):
+            kind = "direct_request"
+        elif re.match(
+            r"^(?:if|when|given)\b.+,\s*(?:compare|explain|give|tell|show|list|"
+            r"recommend|suggest|write|sort|arrange|describe|identify|state)\b",
             lower,
         ):
             kind = "direct_request"
@@ -919,6 +1002,10 @@ def _session_preference_directives(
     if any(
         item in original_lower
         for item in ("keep it short", "short answer", "briefly", "be brief")
+    ) or re.search(
+        r"\bkeep\s+(?:the\s+)?(?:next\s+)?(?:one|two|three|four|five|six|\d+)?\s*"
+        r"(?:replies|answers|turns|exchanges)?\s*brief\b",
+        original_lower,
     ):
         directives["response_depth"] = "brief"
     if any(
@@ -953,13 +1040,14 @@ def _session_preference_directives(
 def _preference_duration(lower: str) -> int:
     numbered = re.search(r"\b(?:for|next)\s+(\d+)\s+(?:turns?|exchanges?|replies|answers?)\b", lower)
     if numbered:
-        return max(1, min(int(numbered.group(1)), 6))
+        count = int(numbered.group(1))
+        return max(1, min(count + (1 if numbered.group(0).startswith("next") else 0), 7))
     worded = re.search(
         r"\b(?:for|next)\s+(one|two|three|four|five|six)\s+(?:turns?|exchanges?|replies|answers?)\b",
         lower,
     )
     if worded:
-        return {
+        count = {
             "one": 1,
             "two": 2,
             "three": 3,
@@ -967,6 +1055,7 @@ def _preference_duration(lower: str) -> int:
             "five": 5,
             "six": 6,
         }[worded.group(1)]
+        return min(count + (1 if worded.group(0).startswith("next") else 0), 7)
     if any(marker in lower for marker in ("this answer", "this reply", "this one")):
         return 1
     return 3
@@ -1060,7 +1149,7 @@ def _merge_landmarks(existing: list[dict[str, Any]], new: list[dict[str, Any]]) 
             continue
         seen.add(key)
         merged.append(item)
-    return merged[-24:]
+    return retain_structural_records(merged, limit=64)
 
 
 def _loop_id(session_id: int, question: str, index: int) -> str:

@@ -399,7 +399,28 @@ def _relevance_score(terms: set[str], text: str) -> float:
 
 def _broad_source_request(prompt: str) -> bool:
     lower = prompt.lower()
-    return any(marker in lower for marker in ("what do the sources say", "summarize the sources", "source-backed summary"))
+    return bool(
+        any(
+            marker in lower
+            for marker in (
+                "what do the sources say",
+                "summarize the sources",
+                "source-backed summary",
+                "compare the sources",
+                "where do the sources disagree",
+            )
+        )
+        or re.search(
+            r"\bwhat do (?:these|those|the|both|all|the two|these two|those two) "
+            r"sources say\b",
+            lower,
+        )
+        or re.search(
+            r"\b(?:compare|summarize) (?:these|those|the|both|all|the two|these two|those two) "
+            r"(?:sources|source packets)\b",
+            lower,
+        )
+    )
 
 
 def _sentences(content: str) -> list[str]:

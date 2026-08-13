@@ -231,6 +231,19 @@ def test_humor_does_not_enter_tender_context_unless_the_user_opens_it():
     assert "one_playful_turn" in _move_names(user_opened)
 
 
+def test_administrative_joke_reference_does_not_create_a_playful_turn():
+    plan = build_conversational_micro_move_plan(
+        {
+            "prompt": "Return to the observation log and keep the drawer joke separate.",
+            "intent": "direct_answer",
+            "content_seed": "The practical observation log keeps its three fields.",
+            "affect_expression_guidance": {"dimensions": {"humor": "available_not_required"}},
+        }
+    )
+
+    assert "one_playful_turn" not in _move_names(plan)
+
+
 def test_nlo_exposes_micro_move_and_dream_reflection_plans(tmp_path):
     conn = _conn(tmp_path)
     result = realize_native_language(

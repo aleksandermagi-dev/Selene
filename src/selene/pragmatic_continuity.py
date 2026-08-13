@@ -8,7 +8,8 @@ from .registry import truncate
 
 
 CONTINUITY_BOUNDARY = (
-    "current_session_pragmatic_continuity_only_no_relationship_profile_memory_identity_authority_or_automatic_initiative"
+    "current_session_pragmatic_continuity_and_responsive_contribution_only_no_"
+    "relationship_profile_memory_identity_authority_or_out_of_turn_automatic_speech"
 )
 
 GUARDS: dict[str, Any] = {
@@ -20,7 +21,8 @@ GUARDS: dict[str, Any] = {
     "autonomous_action_allowed": False,
     "automatic_speech_allowed": False,
     "relationship_profile_write_allowed": False,
-    "initiative_expansion_allowed": False,
+    "responsive_contribution_allowed": True,
+    "out_of_turn_initiative_allowed": False,
 }
 
 
@@ -331,8 +333,14 @@ def _initiative_decision(prompt: str, ending: dict[str, Any]) -> dict[str, Any]:
     )
     return {
         "explicitly_invited": invited,
-        "mode": "offer_one_relevant_thought" if invited else "no_unsolicited_initiative",
+        "mode": (
+            "offer_one_relevant_thought"
+            if invited
+            else "one_attributable_responsive_contribution_available"
+        ),
         "automatic_delivery": False,
+        "responsive_turn_only": True,
+        "explicit_invitation_required": False,
         "question_pressure_allowed": False,
         "respect_ending": str(ending.get("mode") or "") == "natural_close",
     }

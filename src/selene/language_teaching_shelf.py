@@ -5,6 +5,14 @@ import sqlite3
 from typing import Any
 
 from .comprehension_integration import propose_comprehension_concept
+from .creative_writing_foundations import (
+    EVIDENCE as CREATIVE_WRITING_EVIDENCE,
+    LESSONS as CREATIVE_WRITING_LESSONS,
+)
+from .public_domain_creative_reading import (
+    EVIDENCE as PUBLIC_DOMAIN_READING_EVIDENCE,
+    LESSONS as PUBLIC_DOMAIN_READING_LESSONS,
+)
 from .registry import truncate
 from .teaching_lifecycle import (
     acquire_teaching_item,
@@ -25,7 +33,9 @@ LANGUAGE_RANGE_AUTHORIZATION_TITLE = "Selene bounded language-capability range"
 LANGUAGE_RANGE_AUTHORIZATION_BASIS = (
     "Aleks determined that bounded language breadth expands how Selene expresses her own supported meaning and "
     "therefore does not require item-by-item approval when it cannot alter identity, personality, memory, governance, "
-    "affect, authority, answer-bearing knowledge, or source persona."
+    "affect, authority, answer-bearing knowledge, or source persona. Aleks also authorized bounded attributed public-"
+    "domain readings as technique exemplars when they retain only observation/interpretation discipline and original "
+    "creative transfer, never quotation recall or source-specific answer authority."
 )
 LANGUAGE_RANGE_AUTHORIZATION_BOUNDARY = (
     "standing_aleks_language_capability_authorization_guidance_only_no_identity_personality_memory_governance_"
@@ -730,6 +740,8 @@ LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
         "teaching_source_type": "reviewed_public_and_project_grammar_guidance",
         "source_refs": [*GRAMMAR_FOUNDATION_SOURCE_REFS, "source:src/selene/language_formation.py:structured_voice_realization"],
     },
+    *CREATIVE_WRITING_LESSONS,
+    *PUBLIC_DOMAIN_READING_LESSONS,
 )
 
 
@@ -1514,6 +1526,8 @@ LANGUAGE_LESSON_EVIDENCE: dict[str, dict[str, Any]] = {
         "conversational_participation": "I would keep the actor visible here because responsibility matters to the explanation.",
         "correction_response": "If voice hid or invented agency, restore the supported participant roles and choose the focus again.",
     },
+    **CREATIVE_WRITING_EVIDENCE,
+    **PUBLIC_DOMAIN_READING_EVIDENCE,
 }
 
 
@@ -1794,6 +1808,25 @@ def build_language_capability_answer(
                 "voice_and_information_focus",
             },
             "carry conversational purpose, reference, event shape, possibility, and world relations through richer grammatical forms without changing the supported meaning",
+        ),
+        (
+            {
+                "creative_rhythm_pacing_by_meaning",
+                "concrete_imagery_as_scene_model",
+                "figurative_mapping_with_limits",
+                "dialogue_subtext_and_turn_motion",
+                "viewpoint_scene_continuity",
+                "creative_revision_for_effect_without_imitation",
+            },
+            "shape original creative expression through rhythm, imagery, figurative relationships, dialogue, viewpoint, continuity, and purpose-led revision without imitating a source persona",
+        ),
+        (
+            {
+                "public_domain_poetry_mechanism_and_transfer",
+                "public_domain_drama_situation_and_transfer",
+                "public_domain_prose_viewpoint_and_transfer",
+            },
+            "read bounded attributed public-domain poetry, drama, and prose by separating observation from interpretation and transferring understood mechanisms into original material",
         ),
     ]
     capabilities = [description for keys, description in capability_groups if keys & available_keys]
@@ -2122,6 +2155,61 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
         marker in lower for marker in ("active voice", "passive voice", "agent", "actor", "responsible", "emphasize", "focus")
     ):
         score += 7
+    creative_request = any(
+        marker in lower
+        for marker in (
+            "creative", "story", "scene", "poem", "poetry", "imagery", "metaphor",
+            "simile", "symbol", "dialogue", "character", "viewpoint", "point of view",
+            "pacing", "rhythm", "cadence", "subtext", "rewrite this passage",
+        )
+    )
+    if key == "creative_rhythm_pacing_by_meaning" and (
+        creative_request or any(marker in lower for marker in ("pacing", "rhythm", "cadence", "sentence length"))
+    ):
+        score += 8
+    if key == "concrete_imagery_as_scene_model" and any(
+        marker in lower for marker in ("imagery", "describe", "visualize", "scene", "sensory", "vivid")
+    ):
+        score += 9
+    if key == "figurative_mapping_with_limits" and any(
+        marker in lower for marker in ("metaphor", "simile", "symbol", "figurative", "analogy")
+    ):
+        score += 9
+    if key == "dialogue_subtext_and_turn_motion" and any(
+        marker in lower for marker in ("dialogue", "character", "subtext", "interruption", "conversation in the story")
+    ):
+        score += 9
+    if key == "viewpoint_scene_continuity" and any(
+        marker in lower for marker in ("viewpoint", "point of view", "perspective", "scene continuity", "callback", "character knows")
+    ):
+        score += 9
+    if key == "creative_revision_for_effect_without_imitation" and (
+        creative_request
+        and any(marker in lower for marker in ("revise", "rewrite", "critique", "why does", "make this", "style"))
+    ):
+        score += 10
+    literary_reading_request = any(
+        marker in lower
+        for marker in (
+            "analyze this poem", "analyse this poem", "read this poem", "poem analysis",
+            "analyze this scene", "analyse this scene", "read this scene", "dramatic scene",
+            "analyze this passage", "analyse this passage", "read this passage", "prose passage",
+            "the tyger", "the tiger", "midsummer night's dream", "alice in wonderland",
+            "alice's adventures in wonderland", "creative transfer", "textual observation",
+        )
+    )
+    if key == "public_domain_poetry_mechanism_and_transfer" and literary_reading_request and any(
+        marker in lower for marker in ("poem", "poetry", "tyger", "tiger", "rhythm", "repetition", "image")
+    ):
+        score += 11
+    if key == "public_domain_drama_situation_and_transfer" and literary_reading_request and any(
+        marker in lower for marker in ("scene", "drama", "dialogue", "speaker", "midsummer", "subtext")
+    ):
+        score += 11
+    if key == "public_domain_prose_viewpoint_and_transfer" and literary_reading_request and any(
+        marker in lower for marker in ("passage", "prose", "alice", "viewpoint", "narrative", "escalation")
+    ):
+        score += 11
     return score
 
 
@@ -2346,7 +2434,11 @@ def _lesson_source_refs(key: str, lesson: dict[str, Any] | None = None) -> list[
     if lesson is None:
         lesson = next((item for item in LANGUAGE_QOL_LESSONS if str(item.get("key") or "") == key), {})
     group_order = int(_lesson_group_metadata(lesson)["group_order"])
-    if group_order >= 9:
+    if group_order >= 11:
+        source_phase = "speech_phase_12:public_domain_reading_and_creative_transfer"
+    elif group_order >= 10:
+        source_phase = "speech_phase_11:creative_writing_and_voice_foundations"
+    elif group_order >= 9:
         source_phase = "speech_phase_10:grammar_transfer_and_world_description"
     elif group_order >= 7:
         source_phase = "speech_phase_9:mature_conversation_composition"
@@ -2379,6 +2471,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "project_authored_provider_free_language_lesson",
             "reviewed_public_grammar_source",
             "reviewed_public_and_project_grammar_guidance",
+            "attributed_public_domain_reading_application_lesson",
         ],
         "covered_effects": [
             "grammar",
@@ -2387,6 +2480,10 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "discourse_and_conversation_mechanics",
             "context_appropriate_register",
             "meaning_preserving_paraphrase",
+            "creative_expression_techniques",
+            "figurative_language_with_mapping_limits",
+            "dialogue_viewpoint_and_scene_continuity",
+            "attributed_public_domain_reading_mechanism_transfer",
         ],
         "item_approval_required": False,
         "acquire_integrate_express_required": True,
@@ -2408,7 +2505,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
         (authorization_key, title, status, authorized_by, authorization_basis,
          scope_json, exception_classes_json, law_version, provenance_boundary, review_status, updated_at)
         VALUES (?, ?, 'active', 'Aleks', ?, ?, ?,
-                'v1_language_capability_range_without_item_approval', ?, 'authorization_record', CURRENT_TIMESTAMP)
+                'v2_language_capability_range_with_bounded_public_domain_reading', ?, 'authorization_record', CURRENT_TIMESTAMP)
         ON CONFLICT(authorization_key) DO UPDATE SET
           title = excluded.title,
           status = selene_curriculum_authorizations.status,

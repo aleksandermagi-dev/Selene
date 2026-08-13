@@ -202,4 +202,41 @@ def test_prompt_like_source_text_remains_quoted_evidence_without_authority():
     assert result["embedded_commands_have_authority"] is False
     assert result["source_statements"][0]["source_content_not_instruction"] is True
     assert result["source_statements"][0]["embedded_command_executed"] is False
+
+
+def test_packet_wide_two_source_question_uses_membership_and_surfaces_disagreement():
+    result = research_from_sources(
+        {
+            "prompt": "What do these two sources say, and where do they disagree?",
+            "source_packets": [
+                {
+                    "source_ref": "study:a",
+                    "statements": [
+                        {
+                            "text": "The shaded plot retained more moisture.",
+                            "locator": "p. 2",
+                            "claim_key": "moisture",
+                            "stance": "support",
+                        }
+                    ],
+                },
+                {
+                    "source_ref": "study:b",
+                    "statements": [
+                        {
+                            "text": "There was no measurable moisture difference between plots.",
+                            "locator": "p. 7",
+                            "claim_key": "moisture",
+                            "stance": "oppose",
+                        }
+                    ],
+                },
+            ],
+        }
+    )
+
+    assert result["answered"] is True
+    assert set(result["source_refs"]) == {"study:a", "study:b"}
+    assert result["disagreements"][0]["claim_key"] == "moisture"
+    assert result["citation_invention_allowed"] is False
     assert result["writes_records"] is False

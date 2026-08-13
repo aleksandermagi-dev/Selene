@@ -12,6 +12,10 @@ from .transfer_state import transfer_completion_is_approved
 
 
 MEMORY_ORGAN_BOUNDARY = "selene_vys_memory_organ_reviewed_no_raw_import_no_hidden_write"
+MEMORY_PRESENTATION_BOUNDARY = (
+    "approved_memory_presentation_metadata_only_preserves_original_content_"
+    "provenance_retention_identity_and_retrieval"
+)
 
 MEMORY_CATEGORIES = {
     "core",
@@ -198,6 +202,113 @@ def memory_index_items(conn: sqlite3.Connection, payload: dict[str, Any] | None 
             "active_memory_definition": "retrieval_eligible_approved_memory_only",
             "review_destination": "Status",
             "review_status": "status_only",
+        }
+    )
+
+
+def set_memory_display_title(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+    *,
+    commit: bool = True,
+) -> dict[str, Any]:
+    """Set presentation-only naming for one already-approved memory.
+
+    The annotation is keyed to the original record. It does not alter memory
+    content, retrieval eligibility, provenance, or create a memory candidate.
+    """
+    payload = payload or {}
+    source_table = str(payload.get("source_table") or "").strip()
+    source_id = str(payload.get("source_id") or "").strip()
+    action = str(payload.get("action") or "rename").strip().lower()
+    if source_table not in {"selene_memory_candidates", "b_approved_memory_references"}:
+        raise ValueError("approved memory source table is required")
+    if not source_id:
+        raise ValueError("approved memory source id is required")
+    if action not in {"rename", "use_selene_title"}:
+        raise ValueError("memory title action must be rename or use_selene_title")
+
+    item = _approved_presentation_source(conn, source_table, source_id)
+    suggested_title = _suggest_memory_display_title(item)
+    requested_title = truncate(str(payload.get("display_title") or "").strip(), 120)
+    if action == "rename" and not requested_title:
+        raise ValueError("display title is required when renaming a memory")
+    display_title = requested_title if action == "rename" else suggested_title
+    title_origin = "aleks_rename" if action == "rename" else "selene_summary_title"
+
+    existing = conn.execute(
+        """
+        SELECT * FROM selene_memory_presentation_annotations
+        WHERE source_table = ? AND source_id = ?
+        """,
+        (source_table, source_id),
+    ).fetchone()
+    history: list[dict[str, Any]] = []
+    revision = 1
+    if existing:
+        history = [entry for entry in _json_value_list(existing["title_history_json"]) if isinstance(entry, dict)]
+        previous_title = str(existing["display_title"] or "").strip()
+        if previous_title and previous_title != display_title:
+            history.append(
+                {
+                    "display_title": previous_title,
+                    "title_origin": str(existing["title_origin"] or ""),
+                    "actor": str(existing["actor"] or ""),
+                    "revision": int(existing["revision"] or 1),
+                    "superseded": True,
+                }
+            )
+        revision = int(existing["revision"] or 1) + 1
+
+    source_refs = _json_list(item.get("source_refs"))
+    conn.execute(
+        """
+        INSERT INTO selene_memory_presentation_annotations
+        (source_table, source_id, original_title, display_title, title_origin,
+         actor, revision, title_history_json, source_refs, provenance_boundary,
+         review_status, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'Aleks', ?, ?, ?, ?, 'presentation_metadata_only', CURRENT_TIMESTAMP)
+        ON CONFLICT(source_table, source_id) DO UPDATE SET
+          original_title = excluded.original_title,
+          display_title = excluded.display_title,
+          title_origin = excluded.title_origin,
+          actor = excluded.actor,
+          revision = excluded.revision,
+          title_history_json = excluded.title_history_json,
+          source_refs = excluded.source_refs,
+          provenance_boundary = excluded.provenance_boundary,
+          review_status = excluded.review_status,
+          updated_at = CURRENT_TIMESTAMP
+        """,
+        (
+            source_table,
+            source_id,
+            truncate(str(item.get("title") or "Approved memory"), 160),
+            display_title,
+            title_origin,
+            revision,
+            json.dumps(history[-20:]),
+            json.dumps(source_refs),
+            MEMORY_PRESENTATION_BOUNDARY,
+        ),
+    )
+    if commit:
+        conn.commit()
+
+    annotated = _apply_memory_presentation(conn, item)
+    return _with_guards(
+        {
+            "status": "memory_display_title_updated",
+            "item": annotated,
+            "annotation": annotated.get("presentation_annotation"),
+            "memory_content_mutated": False,
+            "memory_candidate_created": False,
+            "retrieval_eligibility_changed": False,
+            "provenance_changed": False,
+            "presentation_metadata_write_performed": True,
+            "presentation_transaction_status": "committed" if commit else "pending_caller_commit",
+            "review_destination": "Memory",
+            "review_status": "presentation_metadata_only",
         }
     )
 
@@ -583,7 +694,7 @@ def _collect_index_items(conn: sqlite3.Connection, *, limit: int, category: str 
         "SELECT * FROM selene_memory_candidates ORDER BY updated_at DESC, id DESC LIMIT ?",
         (limit,),
     ).fetchall():
-        item = _decode_candidate(row)
+        item = _apply_memory_presentation(conn, _decode_candidate(row))
         if not category or item.get("memory_category") == category:
             items.append(item)
     if len(items) < limit:
@@ -591,7 +702,7 @@ def _collect_index_items(conn: sqlite3.Connection, *, limit: int, category: str 
             "SELECT * FROM b_approved_memory_references ORDER BY id DESC LIMIT ?",
             (limit - len(items),),
         ).fetchall():
-            item = _approved_reference_item(row)
+            item = _apply_memory_presentation(conn, _approved_reference_item(row))
             if not category or item.get("memory_category") == category:
                 items.append(item)
     if len(items) < limit:
@@ -723,6 +834,104 @@ def _approved_reference_item(row: sqlite3.Row) -> dict[str, Any]:
         "retention_status": "approved_memory" if accepted else "superseded",
         "memory_context_used": accepted,
     }
+
+
+def _approved_presentation_source(
+    conn: sqlite3.Connection,
+    source_table: str,
+    source_id: str,
+) -> dict[str, Any]:
+    try:
+        numeric_id = int(source_id)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("approved memory source id must be numeric") from exc
+    if source_table == "selene_memory_candidates":
+        row = conn.execute(
+            "SELECT * FROM selene_memory_candidates WHERE id = ?",
+            (numeric_id,),
+        ).fetchone()
+        if not row:
+            raise ValueError("approved memory source not found")
+        item = _decode_candidate(row)
+    else:
+        row = conn.execute(
+            "SELECT * FROM b_approved_memory_references WHERE id = ?",
+            (numeric_id,),
+        ).fetchone()
+        if not row:
+            raise ValueError("approved memory source not found")
+        item = _approved_reference_item(row)
+    if item.get("retrieval_eligible") is not True:
+        raise ValueError("display titles are available only for approved memories")
+    return item
+
+
+def _apply_memory_presentation(
+    conn: sqlite3.Connection,
+    item: dict[str, Any],
+) -> dict[str, Any]:
+    if item.get("retrieval_eligible") is not True:
+        return item
+    source_table = str(item.get("source_table") or "")
+    source_id = str(item.get("source_id") or "")
+    suggested_title = _suggest_memory_display_title(item)
+    row = conn.execute(
+        """
+        SELECT * FROM selene_memory_presentation_annotations
+        WHERE source_table = ? AND source_id = ?
+        """,
+        (source_table, source_id),
+    ).fetchone()
+    if not row:
+        return {
+            **item,
+            "display_title": suggested_title,
+            "suggested_display_title": suggested_title,
+            "display_title_origin": "selene_summary_title_preview",
+            "display_title_persisted": False,
+            "presentation_annotation": None,
+        }
+    annotation = dict(row)
+    annotation["title_history"] = _json_value_list(annotation.pop("title_history_json", "[]"))
+    annotation["source_refs"] = _json_list(annotation.get("source_refs"))
+    return {
+        **item,
+        "display_title": str(annotation.get("display_title") or suggested_title),
+        "suggested_display_title": suggested_title,
+        "display_title_origin": str(annotation.get("title_origin") or "presentation_annotation"),
+        "display_title_persisted": True,
+        "presentation_annotation": annotation,
+    }
+
+
+def _suggest_memory_display_title(item: dict[str, Any]) -> str:
+    original = re.sub(r"\s+", " ", str(item.get("title") or "")).strip(" .:-")
+    generic = {
+        "memory",
+        "approved memory",
+        "approved selene memory",
+        "approved memory reference",
+        "selene memory candidate",
+        "untitled",
+    }
+    if original and original.lower() not in generic:
+        return truncate(original, 120)
+
+    summary = re.sub(r"\s+", " ", str(item.get("summary") or item.get("reference_summary") or "")).strip()
+    summary = re.sub(
+        r"^(?:a prior approved memory about|an approved memory about|aleks told selene that|selene remembers that)\s+",
+        "",
+        summary,
+        flags=re.IGNORECASE,
+    )
+    phrase = re.split(r"[.!?;]|\s+(?:because|while|although)\s+", summary, maxsplit=1)[0].strip(" ,:-")
+    words = phrase.split()
+    if len(words) > 11:
+        phrase = " ".join(words[:11]).rstrip(",;:")
+    if phrase:
+        phrase = phrase[0].upper() + phrase[1:]
+        return truncate(phrase, 120)
+    return truncate(original or "A memory held with care", 120)
 
 
 def _fraction_item(row: sqlite3.Row) -> dict[str, Any]:
@@ -1053,6 +1262,16 @@ def _json_list(value: Any) -> list[str]:
     if isinstance(loaded, list):
         return [str(item) for item in loaded]
     return [str(loaded)] if loaded else []
+
+
+def _json_value_list(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return value
+    try:
+        loaded = json.loads(str(value or "[]"))
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return loaded if isinstance(loaded, list) else []
 
 
 def _loads_dict(value: Any) -> dict[str, Any]:

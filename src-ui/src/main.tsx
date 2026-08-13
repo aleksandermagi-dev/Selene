@@ -87,6 +87,11 @@ type MemoryBubble = {
   id: string;
   category: MemoryCategoryKey;
   title: string;
+  originalTitle: string;
+  suggestedTitle: string;
+  titleOrigin: string;
+  sourceTable: string;
+  sourceId: string;
   summary: string;
   status: string;
   source: string;
@@ -430,6 +435,9 @@ function App() {
   const [moonHemisphere, setMoonHemisphere] = useState<"north" | "south">("north");
   const [clockNow, setClockNow] = useState(() => new Date());
   const [selectedMemoryCategory, setSelectedMemoryCategory] = useState<MemoryCategoryKey | null>(null);
+  const [revealedMemoryIds, setRevealedMemoryIds] = useState<Set<string>>(() => new Set());
+  const [memoryTitleDrafts, setMemoryTitleDrafts] = useState<Record<string, string>>({});
+  const [memoryTitleFeedback, setMemoryTitleFeedback] = useState<Record<string, string>>({});
   const [selectedWorkbench, setSelectedWorkbench] = useState<WorkbenchKey | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [items, setItems] = useState<Dict[]>([]);
@@ -1299,6 +1307,41 @@ function App() {
       await refreshMemoryOrgan();
     } catch (err) {
       setMemoryOrganResult({ status: "memory_candidate_decision_failed", action, error: err instanceof Error ? err.message : "Could not update memory candidate." });
+    }
+  }
+
+  async function setMemoryDisplayTitle(item: MemoryBubble, action: "rename" | "use_selene_title") {
+    const displayTitle = (memoryTitleDrafts[item.id] ?? item.title).trim();
+    if (action === "rename" && !displayTitle) {
+      setMemoryTitleFeedback((current) => ({ ...current, [item.id]: "A display title is needed." }));
+      return;
+    }
+    setMemoryTitleFeedback((current) => ({ ...current, [item.id]: "Saving presentation title…" }));
+    try {
+      await api<Dict>("/api/memory/presentation/title", {
+        method: "POST",
+        body: JSON.stringify({
+          source_table: item.sourceTable,
+          source_id: item.sourceId,
+          action,
+          display_title: action === "rename" ? displayTitle : undefined
+        })
+      });
+      await refreshMemoryOrgan();
+      setMemoryTitleDrafts((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
+      setMemoryTitleFeedback((current) => ({
+        ...current,
+        [item.id]: action === "rename" ? "Display title renamed; the memory itself is unchanged." : "Selene's suggested title restored; the memory itself is unchanged."
+      }));
+    } catch (err) {
+      setMemoryTitleFeedback((current) => ({
+        ...current,
+        [item.id]: err instanceof Error ? err.message : "Could not update the display title."
+      }));
     }
   }
 
@@ -4567,7 +4610,12 @@ function App() {
       bubbles.push({
         id: `${source}-${text(item.id || item.core_memory_layer || item.fraction_index || item.title || bubbles.length)}`,
         category,
-        title: text(item.title || item.backup_label || item.core_memory_layer || fallbackTitle),
+        title: text(item.display_title || item.title || item.backup_label || item.core_memory_layer || fallbackTitle),
+        originalTitle: text(item.title || item.backup_label || item.core_memory_layer || fallbackTitle),
+        suggestedTitle: text(item.suggested_display_title || item.display_title || item.title || fallbackTitle),
+        titleOrigin: text(item.display_title_origin || "source_title"),
+        sourceTable: text(item.source_table),
+        sourceId: text(item.source_id),
         summary: text(item.reference_summary || item.summary || item.rationale || item.note || item.interrupt_resume_note || fallbackSummary),
         status: text(item.review_status || item.status || item.readiness || "approved_display_only"),
         source,
@@ -6952,7 +7000,7 @@ function App() {
                     <circle className="memoryPulseRing ringOne" cx="50" cy="50" r="15" />
                     <circle className="memoryPulseRing ringTwo" cx="50" cy="50" r="24" />
                   </svg>
-                  <button className="memoryCoreNode" onClick={() => setSelectedMemoryCategory("core")}>
+                  <button className="memoryCoreNode" onClick={() => { setRevealedMemoryIds(new Set()); setSelectedMemoryCategory("core"); }}>
                     <strong>Core Memory</strong>
                     <span>{frontMemoryBubbles.filter((item) => item.category === "core").length} approved</span>
                   </button>
@@ -6963,7 +7011,7 @@ function App() {
                         className={`memoryBranchNode memoryBranch-${item.key}`}
                         style={{ left: `${item.x}%`, top: `${item.y}%` }}
                         key={`memory-node-${item.key}`}
-                        onClick={() => setSelectedMemoryCategory(item.key)}
+                        onClick={() => { setRevealedMemoryIds(new Set()); setSelectedMemoryCategory(item.key); }}
                       >
                         <strong>{item.label}</strong>
                         <span>{count ? `${count} approved` : "empty"}</span>
@@ -6980,7 +7028,7 @@ function App() {
             ) : (
               <section className="memoryThoughtShell">
                 <div className="memoryThoughtHeader">
-                  <button className="backButton" onClick={() => setSelectedMemoryCategory(null)}>←</button>
+                  <button className="backButton" onClick={() => { setRevealedMemoryIds(new Set()); setSelectedMemoryCategory(null); }}>←</button>
                   <div>
                     <span className="modeLine">display-only approved memory</span>
                     <h2>{selectedMemoryCategoryMeta?.label || "Memory"}</h2>
@@ -6992,21 +7040,61 @@ function App() {
                   </div>
                 </div>
                 <div className="thoughtBubbleList">
-                  {selectedMemoryBubbles.length ? selectedMemoryBubbles.map((item, index) => (
-                    <article className="memoryThoughtBubble" key={item.id}>
-                      <span className="thoughtIndex">{index + 1}</span>
-                      <strong>{item.title}</strong>
-                      <p>{item.summary}</p>
-                      <div className="chips miniChips">
-                        <span>{friendlyStatus(item.status)}</span>
-                        {item.confidence && <span>confidence: {friendlyStatus(item.confidence)}</span>}
-                        {item.emotionalTexture && <span>texture: {item.emotionalTexture}</span>}
-                        {item.transferClass && <span>portable: {friendlyStatus(item.transferClass)}</span>}
-                        {item.chatUsePermission && <span>chat: {friendlyStatus(item.chatUsePermission)}</span>}
-                      </div>
-                      <small>{friendlyStatus(item.source)}</small>
-                    </article>
-                  )) : (
+                  {selectedMemoryBubbles.length ? selectedMemoryBubbles.map((item, index) => {
+                    const isRevealed = revealedMemoryIds.has(item.id);
+                    return (
+                      <article className={`memoryThoughtBubble ${isRevealed ? "memoryRevealed" : "memorySealed"}`} key={item.id}>
+                        <span className="thoughtIndex">{index + 1}</span>
+                        <strong>{item.title}</strong>
+                        {isRevealed ? (
+                          <>
+                            <p>{item.summary}</p>
+                            <div className="chips miniChips">
+                              <span>{friendlyStatus(item.status)}</span>
+                              {item.confidence && <span>confidence: {friendlyStatus(item.confidence)}</span>}
+                              {item.emotionalTexture && <span>texture: {item.emotionalTexture}</span>}
+                              {item.transferClass && <span>portable: {friendlyStatus(item.transferClass)}</span>}
+                              {item.chatUsePermission && <span>chat: {friendlyStatus(item.chatUsePermission)}</span>}
+                            </div>
+                            <small>{friendlyStatus(item.source)}</small>
+                            <div className="memoryTitleEditor">
+                              <span>{item.titleOrigin === "aleks_rename" ? "Aleks-renamed display title" : "Selene's display title"}</span>
+                              <input
+                                aria-label={`Display title for ${item.title}`}
+                                value={memoryTitleDrafts[item.id] ?? item.title}
+                                onChange={(event) => setMemoryTitleDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
+                                maxLength={120}
+                              />
+                              <div className="reviewActions">
+                                <button onClick={() => void setMemoryDisplayTitle(item, "rename")}>Rename display</button>
+                                <button onClick={() => void setMemoryDisplayTitle(item, "use_selene_title")}>Use Selene's title</button>
+                              </div>
+                              <small>Original: {item.originalTitle}. Naming changes presentation only—never the memory or its provenance.</small>
+                              {memoryTitleFeedback[item.id] ? <small role="status">{memoryTitleFeedback[item.id]}</small> : null}
+                            </div>
+                            <button
+                              className="memoryPrivacyButton"
+                              onClick={() => setRevealedMemoryIds((current) => {
+                                const next = new Set(current);
+                                next.delete(item.id);
+                                return next;
+                              })}
+                            >Close memory</button>
+                          </>
+                        ) : (
+                          <div className="memoryPrivacyCover">
+                            <span>Private memory</span>
+                            <p>Its contents remain covered until you choose to open it.</p>
+                            <button
+                              className="memoryPrivacyButton"
+                              aria-expanded="false"
+                              onClick={() => setRevealedMemoryIds((current) => new Set(current).add(item.id))}
+                            >Open memory</button>
+                          </div>
+                        )}
+                      </article>
+                    );
+                  }) : (
                     <article className="memoryThoughtBubble emptyThought">
                       <strong>No approved memories displayed here yet.</strong>
                       <p>This branch stays visible so Selene's memory map keeps its shape while Cocoon remains the place for review, tending, and memory candidate work.</p>

@@ -121,6 +121,16 @@ def build_supported_semantic_packet(payload: dict[str, Any] | None = None) -> di
         "formation_mode": "structured" if structured_count else "text_grounded" if fallback_count else "empty",
         "fallback_text": fallback_text,
         "compatibility_fallback_available": bool(fallback_text),
+        "expression_mode": truncate(
+            str(payload.get("expression_mode") or "supported_surface_handoff"),
+            120,
+        ),
+        "source_wording_is_surface_requirement": (
+            payload.get("source_wording_is_surface_requirement") is True
+        ),
+        "original_expression_required": (
+            payload.get("original_expression_required") is True
+        ),
         "source_refs": list(dict.fromkeys([*packet_refs, *(ref for item in units for ref in item["source_refs"])]))[:40],
         "all_units_supported": all(item.get("supported") is True for item in units),
         "fact_generation_allowed": False,
@@ -268,6 +278,15 @@ def _normalize_unit(
         "realization_mode": "structured" if structured else "text_grounded",
         "text": text,
         "subject": subject,
+        "subject_number": truncate(
+            str(raw.get("subject_number") or ""),
+            20,
+        ).lower(),
+        "preserve_subject_case": (
+            raw.get("preserve_subject_case") is True
+            if "preserve_subject_case" in raw
+            else None
+        ),
         "predicate": predicate,
         "object": obj,
         "mood": mood,
@@ -305,6 +324,25 @@ def _normalize_unit(
             width=120,
         ),
         "exactness_lock": raw.get("exactness_lock") is True,
+        "exactness_reason": truncate(
+            str(raw.get("exactness_reason") or ""),
+            120,
+        ),
+        "required_terms": _text_list(
+            raw.get("required_terms"),
+            limit=20,
+            width=240,
+        ),
+        "source_wording_required": raw.get("source_wording_required") is True,
+        "knowledge_field": truncate(
+            str(raw.get("knowledge_field") or ""),
+            120,
+        ),
+        "origin_concept_id": raw.get("origin_concept_id"),
+        "origin_concept_key": truncate(
+            str(raw.get("origin_concept_key") or ""),
+            180,
+        ),
         "meaning_change_allowed": False,
     }
 

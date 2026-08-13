@@ -114,3 +114,29 @@ def test_ambiguous_return_is_held_instead_of_guessed():
     assert result["turn_traversal"][0]["action"] == "hold_unresolved_return"
     assert result["unresolved_returns"][0]["ask_only_if_material"] is True
     assert result["ambiguous_relationships_are_not_invented"] is True
+
+
+def test_explicit_thread_names_remain_distinct_despite_shared_naming_words():
+    first = build_thread_braid(
+        {"session_id": 12, "prompt": "Call this the rain-scene thread."}
+    )
+    second = build_thread_braid(
+        {
+            "session_id": 12,
+            "prompt": "Call this the observation-log thread.",
+            "prior_braid": first,
+        }
+    )
+    returned = build_thread_braid(
+        {
+            "session_id": 12,
+            "prompt": "Back to the rain-scene thread.",
+            "prior_braid": second,
+        }
+    )
+
+    topics = {item["topic"] for item in second["threads"]}
+    assert {"rain-scene", "observation-log"} <= topics
+    rain_id = next(item["id"] for item in second["threads"] if item["topic"] == "rain-scene")
+    assert returned["turn_traversal"][0]["thread_id"] == rain_id
+    assert returned["turn_traversal"][0]["action"] == "continue"

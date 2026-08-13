@@ -83,6 +83,11 @@ def build_contextual_composition_plan(
         if isinstance(payload.get("conversational_micro_move_plan"), dict)
         else {}
     )
+    expression_range = (
+        payload.get("relational_expression_range")
+        if isinstance(payload.get("relational_expression_range"), dict)
+        else {}
+    )
     units = [item for item in discourse.get("content_units") or [] if isinstance(item, dict)]
     roles = [str(item.get("role") or "") for item in units]
     register = _register(prompt, profile, domain)
@@ -186,6 +191,20 @@ def build_contextual_composition_plan(
         "sentence_rhythm": rhythm,
         "enthusiasm": enthusiasm,
         "emotional_intensity": emotional_intensity,
+        "relational_expression_range": {
+            "status": str(expression_range.get("status") or "not_available"),
+            "selected_channel_names": expression_range.get("selected_channel_names") or [],
+            "selected_optional_visible_count": int(
+                expression_range.get("selected_optional_visible_count") or 0
+            ),
+            "none_selected_is_valid": expression_range.get("none_selected_is_valid") is True,
+            "expression_is_available_not_compulsory_or_suppressed": (
+                expression_range.get(
+                    "expression_is_available_not_compulsory_or_suppressed"
+                )
+                is True
+            ),
+        },
         "directness": str(dimensions.get("directness") or "ordinary"),
         "restraint": str(dimensions.get("restraint") or "ordinary"),
         "sentence_distribution": sentence_distribution,

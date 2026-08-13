@@ -26,6 +26,10 @@ def _f1_groups():
     return groups
 
 
+def _f2_groups():
+    return [getattr(curriculum, f"F2_GROUP{number}_LESSONS") for number in range(1, 6)]
+
+
 def test_current_state_index_matches_repository_defined_curriculum_counts():
     groups = _f1_groups()
     concept_keys = {
@@ -49,10 +53,25 @@ def test_current_state_index_matches_repository_defined_language_counts():
     }
     index = CURRENT_INDEX.read_text(encoding="utf-8")
 
-    assert len(LANGUAGE_QOL_LESSONS) == 52
-    assert len(group_orders) == 9
-    assert "| Language groups | 9 |" in index
-    assert "| Language capabilities | 52 |" in index
+    assert len(LANGUAGE_QOL_LESSONS) == 61
+    assert len(group_orders) == 11
+    assert "| Language groups | 11 |" in index
+    assert "| Language capabilities | 61 |" in index
+
+
+def test_current_state_index_matches_f2_coding_and_total_knowledge_counts():
+    f2_groups = _f2_groups()
+    coding = curriculum.CODING_GROUP1_LESSONS
+    index = CURRENT_INDEX.read_text(encoding="utf-8")
+
+    assert len(f2_groups) == 5
+    assert sum(len(group) for group in f2_groups) == 25
+    assert len(coding) == 5
+    assert "| F2 curriculum groups | 5 |" in index
+    assert "| F2 concepts | 25 unique concepts |" in index
+    assert "| Coding curriculum groups | 1 |" in index
+    assert "| Coding concepts | 5 unique concepts |" in index
+    assert "| Approved knowledge resources | 197 defined items | 197 retained resources |" in index
 
 
 def test_current_facing_docs_do_not_describe_dream_as_unfinished():

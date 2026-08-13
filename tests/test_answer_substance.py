@@ -164,6 +164,16 @@ def test_low_stakes_choice_answers_directly_from_the_visible_preference():
     assert result["source_required_for_factual_claim"] is False
 
 
+def test_open_topic_invitation_is_conversational_initiative_not_fact_lookup():
+    result = build_answer_substance("What would you like to get into?")
+
+    assert result["answer_kind"] == "open_conversational_topic_preference"
+    assert result["answer"].startswith("I'd like to hear")
+    assert "building, wondering about, or simply enjoying" in result["answer"]
+    assert result["source_required_for_factual_claim"] is False
+    assert result["external_fact_claimed"] is False
+
+
 def test_visible_rain_uncertainty_revises_the_everyday_choice_provisionally():
     result = build_answer_substance(
         "Small change: it may rain soon, but we haven't checked. How does that change your answer?",

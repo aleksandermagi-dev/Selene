@@ -180,8 +180,13 @@ def _bind_obligations(obligations: list[dict[str, Any]], units: list[dict[str, A
                 str(unit.get("text") or "").lower(),
                 str(obligation.get("source_text") or "").lower(),
             )
-            score += role_bonus
-            if overlap or role_bonus >= 0.75 or (not expected and score > 0):
+            semantic_bonus = _semantic_binding_bonus(
+                kind,
+                str(unit.get("text") or "").lower(),
+                str(obligation.get("source_text") or "").lower(),
+            )
+            score += role_bonus + semantic_bonus
+            if overlap or role_bonus >= 0.75 or semantic_bonus >= 0.75 or (not expected and score > 0):
                 candidates.append((score, unit))
         candidates.sort(key=lambda item: (-item[0], str(item[1].get("id") or "")))
         selected = [item for _, item in candidates[:2]]
@@ -251,20 +256,45 @@ def _role_bonus(kind: str, role: str, text: str, request_text: str = "") -> floa
     return 0.0
 
 
+def _semantic_binding_bonus(kind: str, text: str, request_text: str) -> float:
+    """Bind request language to visible supported answer language without inventing content."""
+    comparison_markers = ("both", "while", "whereas", "difference", "compared", "than", "versus")
+    action_markers = (
+        "first", "next", "then", "start", "begin", "test", "try", "check", "use", "choose",
+        "recommend", "step", "move", "follow up", "follow-up",
+    )
+    reason_markers = ("because", "since", "reason", "explains", "therefore", "so that")
+
+    if kind == "comparison" and any(marker in text for marker in comparison_markers):
+        return 0.75
+    if kind == "reason" and any(marker in text for marker in reason_markers):
+        return 0.75
+    if kind in {"method", "choice_or_priority"} and any(marker in text for marker in action_markers):
+        return 0.75
+    if (
+        kind in {"direct_question", "direct_request", "requested_output", "requested_section"}
+        and any(marker in request_text for marker in ("next step", "next move", "what should", "what do we do"))
+        and any(marker in text for marker in action_markers)
+    ):
+        return 1.0
+    return 0.0
+
+
 def _paragraph_plan(
     depth: str,
     units: list[dict[str, Any]],
     bindings: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     thesis = [str(item["id"]) for item in units if item.get("role") == "thesis"][:1]
-    bound = list(
-        dict.fromkeys(
-            unit_id
-            for binding in bindings
-            for unit_id in binding.get("content_unit_ids") or []
-            if unit_id not in thesis
-        )
-    )
+    bound_ids = {
+        unit_id
+        for binding in bindings
+        for unit_id in binding.get("content_unit_ids") or []
+        if unit_id not in thesis
+    }
+    # The supported answer already carries an intentional source order. Coverage
+    # bindings may overlap or score in a different order; they must not scramble it.
+    bound = [str(item["id"]) for item in units if str(item["id"]) in bound_ids]
     support = [
         str(item["id"])
         for item in units

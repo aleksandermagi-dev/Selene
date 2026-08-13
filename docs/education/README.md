@@ -9,6 +9,9 @@ governing law, personal memory, relationships, or authority.
 
 - [Foundational Curriculum Map](SELENE_FOUNDATIONAL_CURRICULUM_MAP_20260719.md)
   — ordered learning from elementary foundations upward.
+- [Ordered Source-Gap Map and Teaching Queue](SELENE_ORDERED_SOURCE_GAP_AND_TEACHING_QUEUE_20260813.md)
+  — verified current coverage, genuine source gaps, the proposed F2 continuation,
+  and the route through middle school, high school, college, and interdisciplinary work.
 - [Curriculum Source Shelf](SELENE_CURRICULUM_SOURCE_SHELF_20260719.md) —
   reviewed source candidates, provenance, fit, and exclusions.
 - [Teaching Lifecycle Phase 4](SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md)
@@ -60,15 +63,28 @@ Selene's broader elementary-through-college education.
 - [F2 Group 4: Multi-Digit Arithmetic and Operation Relationships](SELENE_F2_MULTI_DIGIT_ARITHMETIC_OPERATIONS_GROUP_4_20260811.md)
 - [F2 Group 5: Factors, Multiples, Divisibility, and Operation Order](SELENE_F2_FACTORS_MULTIPLES_OPERATION_ORDER_GROUP_5_20260811.md)
 
+## Coding Curriculum
+
+Coding knowledge grows independently from workbench authority. Understanding,
+static reading, and reviewable code proposals do not grant filesystem, process,
+network, deployment, self-modification, or self-replication permission.
+
+- [Coding Group 1: Computational Thinking and Code Reading](SELENE_CODING_COMPUTATIONAL_THINKING_CODE_READING_GROUP_1_20260813.md)
+
 ## Language And Conversation Curriculum
 
-Current checkpoint (August 11, 2026): nine ordered groups provide 52 reviewed
-language-and-conversation capabilities. They guide expression of supported
-meaning; they do not provide factual authority or prescribe personality.
+Current checkpoint (August 13, 2026): eleven ordered groups provide 61 reviewed
+language-and-conversation capabilities. Group 10 adds creative-writing and
+Voice foundations. Group 11 adds bounded attributed public-domain reading and
+original creative transfer. Both remain guidance-only. The groups guide
+expression of supported meaning; they do not provide factual authority or
+prescribe personality.
 
 - [Native Language Organ v1](../architecture/SELENE_NATIVE_LANGUAGE_ORGAN_V1_20260712.md)
 - [Language Teaching Completion](SELENE_LANGUAGE_TEACHING_COMPLETION_20260720.md)
 - [Grammar Transfer and World Description Group 9](SELENE_GRAMMAR_TRANSFER_GROUP_9_20260808.md)
+- [Creative Writing and Voice Foundations Group 10](SELENE_CREATIVE_WRITING_VOICE_FOUNDATIONS_GROUP_10_20260813.md)
+- [Public-Domain Reading and Creative Transfer Group 11](SELENE_PUBLIC_DOMAIN_READING_CREATIVE_TRANSFER_GROUP_11_20260813.md)
 - [Language L1 Study Exploration](SELENE_LANGUAGE_L1_STUDY_EXPLORATION_20260808.md)
 - [F1 Closure Audit](SELENE_F1_CLOSURE_AUDIT_20260808.md)
 - [Conversation Grounding Stabilization Plan](SELENE_CONVERSATION_GROUNDING_STABILIZATION_PLAN_20260721.md)

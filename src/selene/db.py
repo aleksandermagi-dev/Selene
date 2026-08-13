@@ -1630,6 +1630,27 @@ CREATE TABLE IF NOT EXISTS selene_memory_candidates (
 CREATE INDEX IF NOT EXISTS idx_selene_memory_candidates_category ON selene_memory_candidates(memory_category, state, review_status);
 CREATE INDEX IF NOT EXISTS idx_selene_memory_candidates_transfer ON selene_memory_candidates(transfer_class, state);
 
+CREATE TABLE IF NOT EXISTS selene_memory_presentation_annotations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_table TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  original_title TEXT NOT NULL,
+  display_title TEXT NOT NULL,
+  title_origin TEXT NOT NULL DEFAULT 'selene_summary_title',
+  actor TEXT NOT NULL DEFAULT 'Aleks',
+  revision INTEGER NOT NULL DEFAULT 1,
+  title_history_json TEXT NOT NULL DEFAULT '[]',
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'presentation_metadata_only',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(source_table, source_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_memory_presentation_source
+ON selene_memory_presentation_annotations(source_table, source_id);
+
 CREATE TABLE IF NOT EXISTS selene_transfer_completion_audit (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   state TEXT NOT NULL,

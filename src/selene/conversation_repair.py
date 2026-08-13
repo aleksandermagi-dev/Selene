@@ -95,6 +95,10 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
     if deduped != repaired:
         repaired = deduped
         repairs.append("adjacent_duplicate_sentence_removed")
+    paragraph_deduped = _dedupe_near_duplicate_paragraphs(repaired)
+    if paragraph_deduped != repaired:
+        repaired = paragraph_deduped
+        repairs.append("near_duplicate_paragraph_removed")
     punctuated = _finish_punctuation(repaired)
     if punctuated != repaired:
         repaired = punctuated
@@ -109,7 +113,8 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
         )
         prefix = str(acknowledgement_result.get("candidate_text") or "")
         if prefix:
-            repaired = f"{prefix} {repaired}".strip()
+            separator = "\n\n" if acknowledgement == "correction" else " "
+            repaired = f"{prefix}{separator}{repaired}".strip()
             repairs.append(f"{acknowledgement}_acknowledgement_added")
 
     if not repaired:
@@ -291,6 +296,11 @@ def _normalize(value: str) -> str:
     for paragraph in re.split(r"\n+", value.replace("\r\n", "\n").strip()):
         text = " ".join(paragraph.split())
         if text:
+            text = re.sub(
+                r"(^|[.!?;:]\s+)i\b",
+                lambda match: f"{match.group(1)}I",
+                text,
+            )
             paragraphs.append(text)
     return re.sub(r"([.!?])\s+([\"'])", r"\1\2", "\n\n".join(paragraphs))
 
@@ -316,6 +326,29 @@ def _dedupe_adjacent_sentences(value: str) -> str:
         paragraphs.append(" ".join(kept))
     text = "\n\n".join(item for item in paragraphs if item)
     return re.sub(r"([.!?])\s+([\"'])", r"\1\2", text)
+
+
+def _dedupe_near_duplicate_paragraphs(value: str) -> str:
+    """Remove repeated paraphrases without merging distinct sourced claims."""
+
+    kept: list[str] = []
+    term_sets: list[set[str]] = []
+    for paragraph in [item.strip() for item in value.split("\n\n") if item.strip()]:
+        terms = set(re.findall(r"[a-z0-9']+", paragraph.lower()))
+        duplicate = False
+        if len(terms) >= 10 and "[" not in paragraph and "http" not in paragraph.lower():
+            for prior in term_sets:
+                if len(prior) < 10:
+                    continue
+                containment = len(terms & prior) / min(len(terms), len(prior))
+                if containment >= 0.85:
+                    duplicate = True
+                    break
+        if duplicate:
+            continue
+        kept.append(paragraph)
+        term_sets.append(terms)
+    return "\n\n".join(kept)
 
 
 def _finish_punctuation(value: str) -> str:

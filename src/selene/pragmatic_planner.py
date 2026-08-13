@@ -342,7 +342,7 @@ def evaluate_response_coverage(
             composition_part,
         )
         owner_resolution = _matching_owner_resolution(
-            obligation_id,
+            obligation,
             # Owner evidence is already bound to this current-turn obligation.
             # Compare it with the full visible candidate so a legitimate answer
             # may repeat the subject of the user's question; request-echo
@@ -350,7 +350,15 @@ def evaluate_response_coverage(
             candidate,
             resolution_evidence,
         )
-        if owner_resolution.get("resolution_kind") == "answer":
+        owner_semantic_alignment = _owner_resolution_semantically_addresses(
+            obligation,
+            owner_resolution,
+            candidate,
+        )
+        if (
+            owner_resolution.get("resolution_kind") == "answer"
+            and owner_semantic_alignment
+        ):
             semantic_addressed = True
         if (
             str(composition_part.get("epistemic_state") or "") == "missing_ground"
@@ -390,6 +398,7 @@ def evaluate_response_coverage(
                 "explicitly_held": explicit_hold,
                 "supported_route_present": supported_route,
                 "owner_resolution_evidence": owner_resolution,
+                "owner_resolution_semantic_alignment": owner_semantic_alignment,
                 "visible_text_addressed": visible_text_addressed,
                 "semantic_addressed": semantic_addressed,
                 "matched_semantic_unit_ids": matched_semantic_unit_ids,
@@ -551,10 +560,12 @@ def _visible_supported_route(candidate: str, part: dict[str, Any]) -> bool:
 
 
 def _matching_owner_resolution(
-    obligation_id: str,
+    obligation: dict[str, Any],
     candidate: str,
     evidence_items: list[dict[str, Any]] | None,
 ) -> dict[str, Any]:
+    obligation_id = str(obligation.get("id") or "")
+    matches: list[dict[str, Any]] = []
     for raw in evidence_items or []:
         if not isinstance(raw, dict):
             continue
@@ -567,14 +578,71 @@ def _matching_owner_resolution(
         kind = str(raw.get("resolution_kind") or "answer")
         if kind not in {"answer", "supported_route"}:
             continue
-        return {
+        matches.append({
             "matched": True,
             "owner": str(raw.get("owner") or "current_turn_owner"),
             "resolution_kind": kind,
             "source_id": str(raw.get("source_id") or ""),
+            "text": fragment,
             "current_turn_only": True,
-        }
+        })
+    for match in matches:
+        if _owner_resolution_semantically_addresses(obligation, match, candidate):
+            return match
+    if matches:
+        return matches[0]
     return {"matched": False, "resolution_kind": ""}
+
+
+def _owner_resolution_semantically_addresses(
+    obligation: dict[str, Any],
+    resolution: dict[str, Any],
+    candidate: str,
+) -> bool:
+    """Require owner evidence to fit this obligation, not merely the turn.
+
+    A selected source can appear verbatim in the final candidate and still be
+    unrelated to one of several requested parts.  Current-turn ownership is
+    therefore necessary but not sufficient for semantic completion.
+    """
+
+    if resolution.get("matched") is not True:
+        return False
+    if (
+        str(resolution.get("owner") or "") == "conversational_energy"
+        and str(resolution.get("source_id") or "") in {"idea", "supported_idea"}
+    ):
+        # Conversational Energy only emits this handoff after the supplied
+        # idea has been marked supported, relevant, and advancing the current
+        # task. Preserve that explicit current-turn relationship even when the
+        # idea uses narrower technical vocabulary than the user's question.
+        return True
+    obligation_terms = set(
+        _content_terms(
+            " ".join(
+                str(obligation.get(key) or "")
+                for key in ("source_text", "parent_source_text", "topic")
+            ),
+            limit=60,
+        )
+    ) - GENERIC_ALIGNMENT_TERMS
+    if not obligation_terms:
+        return True
+    fragment_terms = set(
+        _content_terms(str(resolution.get("text") or candidate), limit=100)
+    ) - GENERIC_ALIGNMENT_TERMS
+    overlap = obligation_terms & fragment_terms
+    kind = str(obligation.get("kind") or "")
+    minimum = 2 if len(obligation_terms) >= 4 else 1
+    if kind in {"closure", "humor", "self_state_check_in"}:
+        return _special_semantic_gate(
+            kind,
+            candidate.lower(),
+            distinctive_alignment=bool(overlap),
+            expected_terms=obligation_terms,
+            request_text=str(obligation.get("source_text") or "").lower(),
+        )
+    return len(overlap) >= minimum
 
 
 def _candidate_preserves_owner_fragment(candidate: str, fragment: str) -> bool:
@@ -600,15 +668,16 @@ def _question_obligations(questions: list[str], loops: list[dict[str, Any]]) -> 
         for part in _compound_question_parts(question):
             if _is_response_format_directive(part):
                 continue
+            answer_part = _strip_thread_navigation_prefix(part)
             obligations.append(
                 {
-                    "id": _obligation_id(part, len(obligations)),
+                    "id": _obligation_id(answer_part, len(obligations)),
                     "loop_id": str((loop or {}).get("id") or ""),
                     "kind": _question_kind(part),
-                    "source_text": part,
+                    "source_text": answer_part,
                     "parent_source_text": question,
                     "topic": str((loop or {}).get("topic") or ""),
-                    "coverage_terms": _content_terms(part),
+                    "coverage_terms": _content_terms(answer_part),
                     "required": True,
                     "inference_level": "literal",
                     "goal": "answer_question",
@@ -647,6 +716,8 @@ def _unit_obligations(
             continue
         if _is_response_format_directive(text):
             continue
+        if _is_thread_routing_directive(text):
+            continue
         if (
             correction.get("detected") is True
             and kind in {"direct_request", "indirect_request"}
@@ -675,6 +746,7 @@ def _unit_obligations(
             and re.search(
                 r"(?:^|[):.!?]\s*)(?:summarize|recap|take\s+(?:this|these)\s+in\s+order|"
                 r"give|tell|show|compare|explain|name|revise|update|adjust|return|"
+                r"recommend|suggest|propose|ask|write|sort|arrange|describe|identify|state|"
                 r"let\s+the\s+(?:conversation|chat)\s+end)\b",
                 text,
                 flags=re.IGNORECASE,
@@ -687,23 +759,24 @@ def _unit_obligations(
                 else _structured_request_parts(text)
             )
             for part in request_parts:
+                answer_part = _strip_thread_navigation_prefix(part)
                 obligation_kind = (
-                    _question_kind(part)
+                    _question_kind(answer_part)
                     if kind == "question"
                     else "requested_section"
                     if len(request_parts) > 1 and ":" in text and re.search(r"\b(?:parts|sections|items)\b", text, flags=re.IGNORECASE)
-                    else _request_kind(part)
+                    else _request_kind(answer_part)
                 )
                 obligations.append(
                     {
-                        "id": _obligation_id(part, len(existing) + len(obligations) + index),
+                        "id": _obligation_id(answer_part, len(existing) + len(obligations) + index),
                         "loop_id": "",
                         "kind": obligation_kind,
                         "dialogue_act": "direct_request" if request_like_statement else kind,
-                        "source_text": part,
+                        "source_text": answer_part,
                         "parent_source_text": text,
                         "topic": active_topic,
-                        "coverage_terms": _content_terms(part),
+                        "coverage_terms": _content_terms(answer_part),
                         "required": True,
                         "priority": "content",
                         "inference_level": "literal" if kind == "question" else "literal_request",
@@ -732,7 +805,7 @@ def _unit_obligations(
 
 def _request_kind(text: str) -> str:
     lower = text.lower()
-    if re.search(r"\b(?:joke|pun)\b", lower):
+    if _explicit_humor_request(lower):
         return "humor"
     if re.search(r"\b(?:let|allow)\b.*\b(?:conversation|chat)\b.*\bend\b|\bend\b.*\bnaturally\b", lower):
         return "closure"
@@ -763,6 +836,22 @@ def _request_kind(text: str) -> str:
     if re.match(r"^(?:then\s+|next\s+|finally\s+)?return\s+to\b", lower):
         return "callback"
     return "direct_request"
+
+
+def _explicit_humor_request(lower: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:give|tell|make|write|share)\s+(?:me\s+)?(?:one\s+|a\s+|an\s+)?"
+            r"(?:little\s+|small\s+|quick\s+|short\s+)?(?:joke|pun)\b",
+            lower,
+        )
+        or re.search(
+            r"\bgive\s+(?:the\s+)?[a-z][a-z0-9' -]{1,100}?\s+"
+            r"(?:one|a|an)\s+(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
+            r"(?:joke|pun)\b",
+            lower,
+        )
+    )
 
 
 def _bind_obligations_to_threads(
@@ -858,6 +947,32 @@ def _is_response_format_directive(value: str) -> bool:
             text,
         )
     )
+
+
+def _is_thread_routing_directive(value: str) -> bool:
+    """Treat explicit thread naming as routing, not visible answer content."""
+
+    text = " ".join(value.lower().strip(" .,:;!?").split())
+    return bool(
+        re.fullmatch(
+            r"(?:(?:pause|leave)\s+that(?:\s+for\s+now)?\s+)?"
+            r"(?:separate|new)\s+topic(?:\s*[—-]\s*|\s*:\s*|\s+)?"
+            r"(?:call|name|label)\s+this\s+(?:the\s+)?[a-z0-9_-]+(?:\s+thread)?"
+            r"|(?:start|open)\s+(?:a\s+|the\s+)?[a-z0-9_-]+\s+thread",
+            text,
+        )
+    )
+
+
+def _strip_thread_navigation_prefix(value: str) -> str:
+    stripped = re.sub(
+        r"^(?:back|return|going back)\s+to\s+(?:the\s+)?"
+        r"[a-z0-9_-]+(?:\s+[a-z0-9_-]+){0,3}\s+thread\s*:\s*",
+        "",
+        value.strip(),
+        flags=re.IGNORECASE,
+    ).strip()
+    return stripped or value.strip()
 
 
 def _contains_self_state_check_in(value: str) -> bool:
@@ -1293,7 +1408,12 @@ def _term_key(word: str) -> str:
         "holds": "hold",
         "opportunities": "opportunity",
         "observations": "observation",
-        "interpretations": "interpretation",
+        "interpretations": "interpret",
+        "interpretation": "interpret",
+        "interpreting": "interpret",
+        "summaries": "summarize",
+        "summarizing": "summarize",
+        "summary": "summarize",
         "conclusions": "conclusion",
         "investigations": "investigation",
         "revised": "revise",
@@ -1302,6 +1422,10 @@ def _term_key(word: str) -> str:
         "plans": "plan",
         "questions": "question",
         "reasons": "reason",
+        "slower": "slow",
+        "slowly": "slow",
+        "softer": "soft",
+        "softly": "soft",
         "reflections": "reflection",
         "rules": "rule",
         "situations": "situation",
@@ -1326,8 +1450,14 @@ def _utterance_units(value: str) -> list[dict[str, Any]]:
         elif re.match(
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
             r"(?:compare|explain|show|tell|help|give|list|summarize|check|"
-            r"recommend|suggest|propose|outline|walk|describe|identify|state|revise|update|adjust|"
+            r"recommend|suggest|propose|ask|acknowledge|write|sort|arrange|outline|walk|describe|identify|state|revise|update|adjust|"
             r"separate|distinguish|calculate|count|return\b.*\b(?:explain|answer|summarize))\b",
+            lower,
+        ):
+            kind = "direct_request"
+        elif re.match(
+            r"^(?:if|when|given)\b.+,\s*(?:compare|explain|give|tell|show|list|"
+            r"recommend|suggest|write|sort|arrange|describe|identify|state)\b",
             lower,
         ):
             kind = "direct_request"

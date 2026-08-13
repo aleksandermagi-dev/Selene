@@ -180,3 +180,106 @@ def test_exact_domain_and_hard_boundary_remain_preserved():
     assert boundary_result["candidate_text"] == "I can't perform that action."
     _assert_bounded(exact_result)
     _assert_bounded(boundary_result)
+
+
+def test_supported_answer_uses_contextual_entry_and_cadence_without_changing_clauses():
+    source = (
+        "The pilot should begin with the smaller reversible step. "
+        "That step produces evidence before the larger commitment. "
+        "A known prerequisite would change the order."
+    )
+    plan = build_human_conversational_plan(
+        {
+            "epistemic_composition": {
+                "dominant_state": "supported_answer",
+                "parts": [],
+            },
+            "epistemic_answer_state": {"epistemic_state": "supported_answer"},
+            "contextual_composition_plan": {
+                "expression_profile": "procedure",
+                "response_depth": "standard",
+                "sentence_rhythm": "natural",
+            },
+            "supported_surface_available": True,
+        }
+    )
+
+    results = [
+        realize_human_conversation(
+            source,
+            plan,
+            variation_key=f"supported-{index}",
+        )
+        for index in range(16)
+    ]
+
+    surfaces = {item["candidate_text"] for item in results}
+    assert len(surfaces) >= 4
+    assert all(item["release_safe"] is True for item in results)
+    assert all(item["meaning_preserved"] is True for item in results)
+    assert all("The pilot should begin" in item["candidate_text"] for item in results)
+    assert all("That step produces evidence" in item["candidate_text"] for item in results)
+    assert all("A known prerequisite" in item["candidate_text"] for item in results)
+    assert any("\n\n" in item for item in surfaces)
+
+
+def test_supported_answer_replaces_a_neutral_stock_entry_without_losing_content():
+    source = "The direct answer is this: The supported result remains provisional."
+    plan = {
+        "eligible": True,
+        "profile": "supported_answer",
+        "expression_profile": "direct",
+        "response_depth": "standard",
+        "sentence_rhythm": "natural",
+        "contractions_allowed": True,
+        "supported_surface_available": True,
+    }
+
+    results = [
+        realize_human_conversation(source, plan, variation_key=f"entry-{index}")
+        for index in range(12)
+    ]
+
+    assert all("The supported result remains provisional." in item["candidate_text"] for item in results)
+    assert all(item["release_safe"] is True for item in results)
+    assert any(item["candidate_text"] == "The supported result remains provisional." for item in results)
+    assert any("replace_neutral_stock_entry" in item["operations"] for item in results)
+
+
+def test_supported_answer_can_use_context_shaped_warmth_without_forcing_it():
+    source = "The local pilot is reversible. It also gives us evidence before expansion."
+    plan = build_human_conversational_plan(
+        {
+            "epistemic_composition": {"dominant_state": "supported_answer", "parts": []},
+            "epistemic_answer_state": {"epistemic_state": "supported_answer"},
+            "contextual_composition_plan": {
+                "expression_profile": "procedure",
+                "response_depth": "standard",
+            },
+            "affect_expression_guidance": {
+                "expression_posture": "warm_focused",
+                "current_turn_cues": ["shared_progress"],
+                "dimensions": {
+                    "warmth": "available_not_forced",
+                    "enthusiasm": "quietly_available",
+                },
+            },
+            "supported_surface_available": True,
+        }
+    )
+
+    results = [
+        realize_human_conversation(source, plan, variation_key=f"warm-focus-{index}")
+        for index in range(32)
+    ]
+    surfaces = {item["candidate_text"] for item in results}
+
+    assert plan["affect_expression_posture"] == "warm_focused"
+    assert all("The local pilot is reversible." in item for item in surfaces)
+    assert all("It also gives us evidence before expansion." in item for item in surfaces)
+    assert source in surfaces
+    assert any(
+        item.startswith(("Absolutely—", "Yeah—"))
+        for item in surfaces
+    )
+    assert all(item["release_safe"] is True for item in results)

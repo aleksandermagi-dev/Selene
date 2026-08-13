@@ -1994,6 +1994,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "memory.candidates.decide", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/memory/presentation/title":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "memory.presentation.title.set", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/memory/retrieve":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "memory.retrieve", body)["result"]))

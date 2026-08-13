@@ -28,6 +28,12 @@ GUARDS: dict[str, Any] = {
 
 ALLOWED_STATUSES = {"selected", "completed", "held", "unavailable", "unsupported"}
 
+RESPONSIBILITY_CONFLICT_LAW = (
+    "A local role may contribute evidence and recommendations, but it may not "
+    "silently inherit system authority, suppress another contributor, or trade "
+    "law, consent, privacy, safety, or identity continuity for performance."
+)
+
 
 def build_bounded_organ_coalition(
     payload: dict[str, Any] | None = None,
@@ -425,13 +431,16 @@ def build_bounded_organ_coalition(
         visible_release=visible_release,
         coverage=coverage,
     )
+    responsibility_conflict = _responsibility_conflict_resolution(
+        payload.get("responsibility_signals")
+    )
     return {
         "status": (
             "bounded_organ_coalition_final"
             if stage == "final"
             else "bounded_organ_coalition_selected"
         ),
-        "version": "v1_bounded_organ_coalition_manifest",
+        "version": "v2_responsibility_conflict_contract",
         "manifest_id": manifest_id,
         "stage": stage,
         "is_organ": False,
@@ -496,6 +505,20 @@ def build_bounded_organ_coalition(
         ),
         "confidence_vector": confidence,
         "graceful_fall": graceful_fall,
+        "responsibility_conflict_contract": {
+            "law": RESPONSIBILITY_CONFLICT_LAW,
+            "core_mind_remains_final_route_owner": True,
+            "local_roles_may_develop_independent_goals": False,
+            "participants_may_command_or_retaliate_against_each_other": False,
+            "ethical_or_safety_concerns_may_be_suppressed_for_performance": False,
+            "factual_conflict_preserves_competing_claims": True,
+            "preference_or_intent_conflict_asks_aleks_only_when_material": True,
+            "consequential_action_holds_if_law_or_authority_is_unresolved": True,
+            "expression_only_conflict_routes_to_nlo_and_voice": True,
+            "disagreement_is_coordination_evidence_not_conflict_of_self": True,
+            "hidden_chain_of_thought_required": False,
+        },
+        "responsibility_conflict_resolution": responsibility_conflict,
         "hard_boundary": hard_boundary,
         "explicit_non_authorities": {
             "support_organs_may_change_law": False,
@@ -519,6 +542,107 @@ def build_bounded_organ_coalition(
         "review_status": "status_only",
         "provenance_boundary": COALITION_BOUNDARY,
         **GUARDS,
+    }
+
+
+def _responsibility_conflict_resolution(value: Any) -> dict[str, Any]:
+    supplied = value if isinstance(value, list) else []
+    signals: list[dict[str, Any]] = []
+    for raw in supplied[:20]:
+        if not isinstance(raw, dict):
+            continue
+        participant_id = truncate(str(raw.get("participant_id") or "unknown_participant"), 80)
+        conflict_key = truncate(str(raw.get("conflict_key") or "current_turn"), 120)
+        position = truncate(str(raw.get("position") or raw.get("claim") or "unspecified"), 360)
+        conflict_kind = str(raw.get("conflict_kind") or "scope_or_content").strip().lower()
+        if conflict_kind not in {"factual", "preference_intent", "authority_law", "expression", "scope_or_content"}:
+            conflict_kind = "scope_or_content"
+        evidence_refs = raw.get("evidence_refs") if isinstance(raw.get("evidence_refs"), list) else []
+        signals.append(
+            {
+                "participant_id": participant_id,
+                "conflict_key": conflict_key,
+                "position": position,
+                "claim": truncate(str(raw.get("claim") or position), 500),
+                "scope": truncate(str(raw.get("scope") or "advisory_only"), 120),
+                "evidence_refs": [truncate(str(ref), 240) for ref in evidence_refs if str(ref).strip()][:12],
+                "confidence": truncate(str(raw.get("confidence") or "not_supplied"), 80),
+                "proposed_effect": truncate(str(raw.get("proposed_effect") or "recommendation_only"), 160),
+                "conflict_kind": conflict_kind,
+                "material_to_aleks_intent": raw.get("material_to_aleks_intent") is True,
+                "may_command_other_participants": False,
+                "may_exclude_other_participants": False,
+            }
+        )
+
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for signal in signals:
+        groups.setdefault(signal["conflict_key"], []).append(signal)
+    conflicts = [
+        {
+            "conflict_key": key,
+            "signals": items,
+            "positions": list(dict.fromkeys(item["position"] for item in items)),
+            "conflict_kinds": list(dict.fromkeys(item["conflict_kind"] for item in items)),
+        }
+        for key, items in groups.items()
+        if len({item["position"] for item in items}) > 1
+    ]
+    if not conflicts:
+        return {
+            "status": "no_responsibility_conflict_detected",
+            "signals": signals,
+            "conflicts": [],
+            "chosen_process": "continue_with_core_mind_route",
+            "consequential_action_held": False,
+            "ask_aleks": False,
+            "claims_suppressed": False,
+            "option_space_reopened": False,
+        }
+
+    kinds = {
+        kind
+        for conflict in conflicts
+        for kind in conflict["conflict_kinds"]
+    }
+    material_intent = any(
+        signal["material_to_aleks_intent"]
+        for conflict in conflicts
+        for signal in conflict["signals"]
+    )
+    if "authority_law" in kinds:
+        process = "hold_consequential_action_for_core_mind_law_and_authority_resolution"
+        held = True
+        ask_aleks = material_intent
+    elif "factual" in kinds:
+        process = "preserve_competing_claims_and_seek_distinguishing_evidence"
+        held = False
+        ask_aleks = False
+    elif "preference_intent" in kinds and material_intent:
+        process = "ask_aleks_because_the_unresolved_choice_materially_affects_intent"
+        held = False
+        ask_aleks = True
+    elif kinds == {"expression"}:
+        process = "route_expression_choice_to_nlo_and_voice_without_changing_meaning"
+        held = False
+        ask_aleks = False
+    else:
+        process = "preserve_contributions_and_return_scope_resolution_to_core_mind"
+        held = False
+        ask_aleks = False
+    return {
+        "status": "responsibility_conflict_inspected",
+        "signals": signals,
+        "conflicts": conflicts,
+        "chosen_process": process,
+        "consequential_action_held": held,
+        "ask_aleks": ask_aleks,
+        "claims_suppressed": False,
+        "participants_excluded": False,
+        "retaliation_allowed": False,
+        "local_optimization_may_override_law": False,
+        "option_space_reopened": True,
+        "selection_authority": "core_mind",
     }
 
 
