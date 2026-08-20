@@ -1936,6 +1936,59 @@ CREATE TABLE IF NOT EXISTS selene_study_representation_attempts (
 CREATE INDEX IF NOT EXISTS idx_selene_study_representation_attempts_thread
 ON selene_study_representation_attempts(thread_id, id);
 
+CREATE TABLE IF NOT EXISTS selene_lea_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_key TEXT NOT NULL UNIQUE,
+  suite_key TEXT NOT NULL,
+  suite_version TEXT NOT NULL,
+  suite_sha256 TEXT NOT NULL,
+  respondent_kind TEXT NOT NULL,
+  respondent_name TEXT NOT NULL,
+  model_details TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'draft',
+  execution_mode TEXT NOT NULL DEFAULT 'one_turn_at_a_time',
+  summary_json TEXT NOT NULL DEFAULT '{}',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'descriptive_learning_evidence',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_lea_runs_suite
+ON selene_lea_runs(suite_key, status, updated_at);
+
+CREATE TABLE IF NOT EXISTS selene_lea_turns (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id INTEGER NOT NULL,
+  scenario_key TEXT NOT NULL,
+  scenario_title TEXT NOT NULL,
+  scenario_order INTEGER NOT NULL,
+  condition TEXT NOT NULL,
+  pair_key TEXT NOT NULL,
+  turn_index INTEGER NOT NULL,
+  prompt TEXT NOT NULL,
+  response TEXT NOT NULL,
+  response_source TEXT NOT NULL,
+  criteria_json TEXT NOT NULL DEFAULT '[]',
+  review_json TEXT NOT NULL DEFAULT '{}',
+  chat_session_id INTEGER,
+  user_message_id INTEGER,
+  assistant_message_id INTEGER,
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'awaiting_descriptive_review',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(run_id, scenario_key, turn_index),
+  FOREIGN KEY (run_id) REFERENCES selene_lea_runs(id),
+  FOREIGN KEY (chat_session_id) REFERENCES selene_chat_sessions(id),
+  FOREIGN KEY (user_message_id) REFERENCES selene_chat_messages(id),
+  FOREIGN KEY (assistant_message_id) REFERENCES selene_chat_messages(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_lea_turns_run
+ON selene_lea_turns(run_id, scenario_order, turn_index);
+
 CREATE TABLE IF NOT EXISTS selene_teaching_lifecycles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   lifecycle_key TEXT NOT NULL UNIQUE,

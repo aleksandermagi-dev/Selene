@@ -1853,6 +1853,110 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 .studyRecentSessions > summary { padding: 4px; }
 .studyRecentSessions[open] > summary { margin-bottom: 8px; }
 .activeStudySession { display: grid; gap: 14px; scroll-margin-top: 18px; }
+.studyLeaDesk { border-color: color-mix(in srgb, var(--accent-3) 50%, var(--border)); }
+.studyLeaPrinciples,
+.studyLeaDimensionGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.studyLeaPrinciples p,
+.studyLeaDimensionGrid p { color: var(--text-muted); line-height: 1.5; margin-bottom: 0; }
+.studyLeaNewRun,
+.studyLeaReview,
+.studyLeaProfile {
+  background: color-mix(in srgb, var(--accent-3) 5%, var(--row-bg));
+  border: 1px solid var(--soft-border);
+  border-radius: 9px;
+  padding: 12px;
+}
+.studyLeaNewRun > summary,
+.studyLeaReview > summary,
+.studyLeaProfile > summary { font-weight: 850; }
+.studyLeaNewRun[open] > summary,
+.studyLeaReview[open] > summary,
+.studyLeaProfile[open] > summary { margin-bottom: 12px; }
+.studyLeaCreateGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(180px, 0.35fr) minmax(220px, 0.65fr);
+  margin-bottom: 10px;
+}
+.studyLeaCreateGrid .wideEvidenceField { grid-column: 1 / -1; }
+.studyLeaRunLayout {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(190px, 0.32fr) minmax(0, 1fr);
+}
+.studyLeaRunList,
+.studyLeaActiveRun { display: grid; gap: 9px; }
+.studyLeaRunList > button {
+  align-items: start;
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  color: var(--text);
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  padding: 10px;
+  text-align: left;
+  width: 100%;
+}
+.studyLeaRunList > button.active { border-color: var(--accent-3); }
+.studyLeaRunList small { color: var(--text-muted); }
+.studyLeaActiveRun {
+  background: var(--row-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 9px;
+  min-width: 0;
+  padding: 14px;
+}
+.studyLeaNextTurn,
+.studyLeaCompletePrompt { display: grid; gap: 12px; }
+.studyLeaNextTurn blockquote {
+  background: var(--front-control-bg);
+  border-left: 3px solid var(--accent-3);
+  line-height: 1.55;
+  margin: 0;
+  padding: 13px 15px;
+}
+.studyLeaConfirm {
+  align-items: start;
+  background: color-mix(in srgb, var(--accent-3) 9%, var(--panel-bg));
+  border: 1px solid color-mix(in srgb, var(--accent-3) 32%, var(--soft-border));
+  border-radius: 8px;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 11px;
+}
+.studyLeaConfirm input { margin-top: 3px; }
+.studyLeaTurnReview > summary { font-weight: 800; }
+.studyLeaTurnReview p { line-height: 1.55; }
+.studyLeaTurnReview p b { display: block; margin-bottom: 4px; }
+.studyLeaCriteria { display: grid; gap: 8px; }
+.studyLeaCriteria label {
+  align-items: center;
+  background: var(--front-control-bg);
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 0.28fr);
+  padding: 10px;
+}
+.studyLeaCriteria small { color: var(--accent-3); display: block; margin-top: 3px; }
+.studyLeaDimensionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.studyLeaDimensionGrid .chips { margin-top: 8px; }
+@media (max-width: 900px) {
+  .studyLeaPrinciples,
+  .studyLeaDimensionGrid,
+  .studyLeaRunLayout,
+  .studyLeaCreateGrid { grid-template-columns: 1fr; }
+  .studyLeaCreateGrid .wideEvidenceField { grid-column: auto; }
+  .studyLeaCriteria label { grid-template-columns: 1fr; }
+}
 .studyNotepadGrid {
   align-items: start;
   display: grid;

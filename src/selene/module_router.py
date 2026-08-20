@@ -374,6 +374,17 @@ from .study_workspace import (
     update_study_note_clarification,
     update_study_session,
 )
+from .learning_evidence_activity import (
+    advance_selene_lea,
+    complete_lea_run,
+    create_lea_run,
+    get_lea_run,
+    lea_status,
+    lea_suite,
+    list_lea_runs,
+    record_lea_response,
+    review_lea_turn,
+)
 from .my_office_cleanup import clean_up_my_office_residue
 from .native_generation import compose_native_response
 from .native_language_organ import (
@@ -913,6 +924,24 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": try_study_representation(conn, payload)}
     if route_key == "study.representation.reflect":
         return {"route": route_key, "result": form_study_representation_reflection(conn, payload)}
+    if route_key == "study.lea.status":
+        return {"route": route_key, "result": lea_status(conn)}
+    if route_key == "study.lea.suite":
+        return {"route": route_key, "result": lea_suite()}
+    if route_key == "study.lea.runs.list":
+        return {"route": route_key, "result": list_lea_runs(conn, payload)}
+    if route_key == "study.lea.run.detail":
+        return {"route": route_key, "result": get_lea_run(conn, payload)}
+    if route_key == "study.lea.run.create":
+        return {"route": route_key, "result": create_lea_run(conn, payload)}
+    if route_key == "study.lea.response.record":
+        return {"route": route_key, "result": record_lea_response(conn, payload)}
+    if route_key == "study.lea.selene.advance":
+        return {"route": route_key, "result": advance_selene_lea(conn, payload)}
+    if route_key == "study.lea.turn.review":
+        return {"route": route_key, "result": review_lea_turn(conn, payload)}
+    if route_key == "study.lea.run.complete":
+        return {"route": route_key, "result": complete_lea_run(conn, payload)}
     if route_key == "teaching.lifecycle.status":
         return {"route": route_key, "result": teaching_lifecycle_status(conn)}
     if route_key == "teaching.lifecycle.list":

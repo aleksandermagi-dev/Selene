@@ -142,6 +142,7 @@ prescribe personality.
 
 - [Study Workspace Contract](SELENE_STUDY_WORKSPACE_CONTRACT_20260801.md)
 - [Pre-LEA Gentle Q&A Findings](SELENE_PRE_LEA_GENTLE_QNA_FINDINGS_20260801.md)
+- [Conversation, Context, and Deliberate Response LEA v1](SELENE_CONVERSATION_LEA_V1_20260820.md)
 - [20-Turn Stabilization Q&A](../evidence/SELENE_20_TURN_STABILIZATION_QNA_20260801.md)
 
 Learning Evidence Activities are descriptive and revisable. They locate what

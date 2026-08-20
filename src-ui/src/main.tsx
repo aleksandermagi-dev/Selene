@@ -53,6 +53,7 @@ const SIDECAR_RECONNECT_MESSAGE = "Local sidecar is not reachable. Close and reo
 const CocoonSubjectClassrooms = lazy(() => import("./CocoonSubjectClassrooms"));
 const StudyLibrary = lazy(() => import("./StudyLibrary"));
 const StudyLearningCompass = lazy(() => import("./StudyLearningCompass"));
+const StudyLeaDesk = lazy(() => import("./StudyLeaDesk"));
 const StudyPonderingLab = lazy(() => import("./StudyPonderingLab"));
 const StudyNotepad = lazy(() => import("./StudyNotepad"));
 const StudyOpenAttention = lazy(() => import("./StudyOpenAttention"));
@@ -6673,6 +6674,10 @@ function App() {
                 <span className="plainHelp">Creates three guided directions from already reviewed language lessons. It does not run a test or assume understanding.</span>
               </div>
             </section>
+
+            <Suspense fallback={<Panel title="Conversation LEA Desk"><p className="plainHelp">Opening the reproducible learning-evidence workspace...</p></Panel>}>
+              <StudyLeaDesk />
+            </Suspense>
 
             <Suspense fallback={<Panel title="Learning Compass"><p className="plainHelp">Opening the next learning directions...</p></Panel>}>
               <StudyLearningCompass

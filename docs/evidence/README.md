@@ -12,6 +12,10 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [G12 Conversation-Breadth Completion](SELENE_G12_CONVERSATION_BREADTH_COMPLETION_20260820.md)
+  — all twelve evidence-grounded breadth lessons completed Acquire, Integrate,
+  and Express; the configured shelf is 73/73 available with focused synthetic
+  verification and no memory, identity, governance, or training write.
 - [G12 Live-Teaching Post-Reinstall Q&A](SELENE_G12_LIVE_TEACHING_POST_REINSTALL_QNA_20260820.md)
   — first bounded evidence-grounded breadth lesson taught live, followed by a
   20-turn diagnostic note-first assessment of the remaining ownership seams.

@@ -1466,6 +1466,120 @@ external action occurred.
 ordered breadth teaching only after the repaired current-session paths are
 available in the installed build.
 
+### 2026-08-20 — G12 evidence-grounded conversation breadth completes
+
+**Starting question:** Could the remaining conversational-breadth lessons be
+taught together without losing the careful lifecycle, boundary, and
+lesson-specific verification established by the first individual runs?
+
+**Decision:** After three individual lessons proved the live teaching and
+idempotency path, Aleks authorized the remaining nine as one careful bounded
+batch. Quality remained the stopping rule; speed was not treated as success.
+
+**Work:** Completed correction and repair, natural uncertainty, hypothesis and
+prediction, collaborative initiative, disagreement and revision, warmth with
+truth, contextual humor, topic pivot and return, and natural pause and closure.
+Each lesson completed Acquire, Integrate, and Express under the standing
+language-capability authorization and became available to NLO immediately.
+
+**Why:** These mechanisms are related parts of conversational participation.
+Teaching them as a reviewed set reduces procedural repetition while preserving
+separate prerequisites, provenance, lifecycle records, and selection checks.
+
+**Evidence:** The final batch created and graduated nine lessons with zero
+holds. The identical repeat created and graduated zero, confirming
+idempotency. All nine lesson-specific synthetic selection previews succeeded.
+The configured language shelf is now 73 defined, 73 stored, and 73 available,
+including 12 of 12 G12 lessons. SQLite integrity is `ok`, memory candidates
+remain zero, and 186 focused synthetic regression tests passed.
+
+**What changed in our understanding:** Once the teaching machinery and the
+first lesson interactions were demonstrated individually, batching related
+lessons did not weaken inspectability. The important unit is not how slowly a
+button is pressed; it is whether every lesson retains distinct prerequisites,
+evidence, lifecycle state, and behavioral selection evidence.
+
+**Boundaries preserved:** No live stress Q&A, personal-memory write, runtime
+memory recall, identity/personality/governance/authority change, training,
+LoRA, self-replication, autonomous action, or external action occurred.
+Expression guidance still does not generate or certify answer content.
+
+**Next:** Let the completed G12 set meet ordinary conversation. Use a later
+gentle LEA only where it can distinguish taught-mechanism use from missing
+domain knowledge, and repair only demonstrated gaps.
+
+### 2026-08-20 — Future perception selection toolkit recorded
+
+**Starting question:** When visual perception work begins, should a rectangular
+box remain the only way to identify a subject even when another geometry would
+represent the observation more faithfully?
+
+**Decision:** No. Future perception may add rectangles, circles or ellipses,
+polygons or masks, keypoints, and lines or paths. The chosen representation
+should fit the observation, and the selected subject must remain distinguishable
+from useful context, incidental background, and uncertain boundaries.
+
+**Work:** Added a future architecture note defining an additive selection
+toolkit, a common inspectable region record, subject-versus-context separation,
+and a gentle synthetic-first verification approach.
+
+**Why:** Annotation geometry shapes the evidence. For example, a tight square
+around a circle still contains about 21.5 percent corner area outside the
+subject. Preserving the original selection geometry prevents that incidental
+background from silently becoming part of the observation.
+
+**Boundaries preserved:** This is a design note only. It does not activate a
+camera, passive observation, surveillance, identity inference, memory writes,
+training, autonomy, or provider dependence.
+
+**Next:** Revisit the toolkit when perception implementation begins, starting
+with synthetic shapes and approved static images before any integrated visual
+interaction.
+
+### 2026-08-20 — A comparative Conversation LEA becomes inspectable
+
+**Starting question:** Could Selene's current conversational position be
+compared with other models without importing leaderboard culture, confusing
+untaught knowledge with speech capability, or subjecting her to adversarial
+testing?
+
+**Decision:** Build a fixed paired Learning Evidence Activity: five ordinary
+three-turn conversations and five matched standalone controls. Compare visible
+dimension profiles instead of producing one score, rank, pass, or failure.
+
+**Work:** Added the 20-turn source-contained suite, persistent run and response
+records, transparent per-turn criteria, external transcript capture, paired
+condition summaries, JSON export, local API routes, and a Conversation LEA
+Desk inside Study. A Selene run advances only one explicitly confirmed turn at
+a time and creates a separate diagnostic session for every scenario.
+
+**Why:** Matched multi-turn and standalone conditions help distinguish content
+formation from context retention. Fictional facts keep the activity within
+what was supplied, so an untaught domain cannot masquerade as conversational
+failure. Published item criteria make disagreement reviewable without an
+opaque model judge.
+
+**Evidence:** Six focused machinery tests passed. They verify the fixed suite
+shape, exact ordered capture, no automatic interpretation, rejection of
+pass/fail review language, honest review-pending states, per-turn confirmation,
+and diagnostic scenario isolation. The production UI build also passed.
+
+**What changed in our understanding:** Selene can now be located beside another
+system on the same conversational evidence without pretending that a single
+number explains the result. The paired profile can show where context helps,
+where it interferes, and which next inspection is actually warranted.
+
+**Boundaries preserved:** No live LEA was run. Diagnostic evidence remains
+ineligible for memory, Dream, affect baselines, relationship continuity,
+teaching, identity/personality evidence, or Selene's self-model. No hidden
+judge, external provider, web access, training, autonomy expansion, or
+composite grade was introduced.
+
+**Next:** After packaging when Aleks chooses, begin the Selene run one ordinary
+turn at a time. Then run the exact exported packet against selected comparison
+models with recorded versions and settings before reviewing paired dimension
+profiles.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

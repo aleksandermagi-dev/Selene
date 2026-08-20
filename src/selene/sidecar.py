@@ -768,6 +768,18 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "study.attention.open", qs)["result"]))
         elif parsed.path == "/api/study/compass":
             self._send(*json_bytes(route_request(conn, "study.compass.list", qs)["result"]))
+        elif parsed.path == "/api/study/lea/status":
+            self._send(*json_bytes(route_request(conn, "study.lea.status")["result"]))
+        elif parsed.path == "/api/study/lea/suite":
+            self._send(*json_bytes(route_request(conn, "study.lea.suite")["result"]))
+        elif parsed.path == "/api/study/lea/runs":
+            self._send(*json_bytes(route_request(conn, "study.lea.runs.list", qs)["result"]))
+        elif parsed.path.startswith("/api/study/lea/runs/"):
+            try:
+                run_id = int(parsed.path.removeprefix("/api/study/lea/runs/"))
+                self._send(*json_bytes(route_request(conn, "study.lea.run.detail", {"run_id": run_id})["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif parsed.path == "/api/study/sessions":
             self._send(*json_bytes(route_request(conn, "study.sessions.list", qs)["result"]))
         elif parsed.path.startswith("/api/study/sessions/"):
@@ -1596,6 +1608,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/study/pondering/update",
             "/api/study/representations/try",
             "/api/study/representations/reflect",
+            "/api/study/lea/runs/create",
+            "/api/study/lea/responses/record",
+            "/api/study/lea/selene/advance",
+            "/api/study/lea/turns/review",
+            "/api/study/lea/runs/complete",
         }:
             route_key = {
                 "/api/study/sessions/start": "study.session.start",
@@ -1612,6 +1629,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/study/pondering/update": "study.pondering.update",
                 "/api/study/representations/try": "study.representation.try",
                 "/api/study/representations/reflect": "study.representation.reflect",
+                "/api/study/lea/runs/create": "study.lea.run.create",
+                "/api/study/lea/responses/record": "study.lea.response.record",
+                "/api/study/lea/selene/advance": "study.lea.selene.advance",
+                "/api/study/lea/turns/review": "study.lea.turn.review",
+                "/api/study/lea/runs/complete": "study.lea.run.complete",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))

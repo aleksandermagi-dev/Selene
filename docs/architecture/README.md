@@ -70,6 +70,9 @@ evidence, and teaching practice.
 
 ## External Resources And Bounded Interfaces
 
+- [Future Perception Selection Toolkit](SELENE_FUTURE_PERCEPTION_SELECTION_TOOLKIT_20260820.md)
+  — additive rectangles, circles, masks, polygons, keypoints, and paths with
+  explicit subject-versus-context separation; design note only.
 - [Great Library Tendril Adapter](GREAT_LIBRARY_TENDRIL_ADAPTER.md)
 - [iOS Chat Companion](SELENE_IOS_CHAT_COMPANION_20260620.md)
 - [Mobile Network Security Boundary](SELENE_MOBILE_NETWORK_SECURITY_BOUNDARY_20260728.md)
