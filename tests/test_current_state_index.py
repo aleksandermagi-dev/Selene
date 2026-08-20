@@ -53,10 +53,10 @@ def test_current_state_index_matches_repository_defined_language_counts():
     }
     index = CURRENT_INDEX.read_text(encoding="utf-8")
 
-    assert len(LANGUAGE_QOL_LESSONS) == 61
-    assert len(group_orders) == 11
-    assert "| Language groups | 11 |" in index
-    assert "| Language capabilities | 61 |" in index
+    assert len(LANGUAGE_QOL_LESSONS) == 73
+    assert len(group_orders) == 12
+    assert "| Language groups | 12 |" in index
+    assert "| Language capabilities | 73 |" in index
 
 
 def test_current_state_index_matches_f2_coding_and_total_knowledge_counts():

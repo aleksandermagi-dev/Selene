@@ -5,6 +5,10 @@ import sqlite3
 from typing import Any
 
 from .comprehension_integration import propose_comprehension_concept
+from .conversation_breadth_lessons import (
+    EVIDENCE as CONVERSATION_BREADTH_EVIDENCE,
+    LESSONS as CONVERSATION_BREADTH_LESSONS,
+)
 from .creative_writing_foundations import (
     EVIDENCE as CREATIVE_WRITING_EVIDENCE,
     LESSONS as CREATIVE_WRITING_LESSONS,
@@ -742,6 +746,7 @@ LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
     },
     *CREATIVE_WRITING_LESSONS,
     *PUBLIC_DOMAIN_READING_LESSONS,
+    *CONVERSATION_BREADTH_LESSONS,
 )
 
 
@@ -1528,13 +1533,33 @@ LANGUAGE_LESSON_EVIDENCE: dict[str, dict[str, Any]] = {
     },
     **CREATIVE_WRITING_EVIDENCE,
     **PUBLIC_DOMAIN_READING_EVIDENCE,
+    **CONVERSATION_BREADTH_EVIDENCE,
 }
+
+
+def _requested_language_lessons(payload: dict[str, Any]) -> tuple[dict[str, Any], ...]:
+    requested = payload.get("lesson_keys")
+    if requested is None:
+        return LANGUAGE_QOL_LESSONS
+    if not isinstance(requested, list) or not requested:
+        raise ValueError("lesson_keys must be a non-empty list when supplied")
+    normalized = [str(value).strip() for value in requested if str(value).strip()]
+    if len(normalized) != len(requested):
+        raise ValueError("lesson_keys may not contain empty values")
+    if len(normalized) != len(set(normalized)):
+        raise ValueError("lesson_keys may not contain duplicates")
+    by_key = {str(lesson["key"]): lesson for lesson in LANGUAGE_QOL_LESSONS}
+    unknown = [key for key in normalized if key not in by_key]
+    if unknown:
+        raise ValueError(f"unknown language lesson keys: {', '.join(unknown)}")
+    return tuple(by_key[key] for key in normalized)
 
 
 def prepare_language_teaching_shelf(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
     _reject_authority_payload(payload)
     defer_standing_authorization = payload.get("defer_standing_authorization") is True
+    requested_lessons = _requested_language_lessons(payload)
     existing_rows = {
         str(row["lesson_key"]): dict(row)
         for row in conn.execute("SELECT * FROM selene_language_teaching_shelf").fetchall()
@@ -1544,7 +1569,7 @@ def prepare_language_teaching_shelf(conn: sqlite3.Connection, payload: dict[str,
     concept_created: list[int] = []
     concept_existing: list[int] = []
     legacy_reset: list[str] = []
-    for lesson in LANGUAGE_QOL_LESSONS:
+    for lesson in requested_lessons:
         key = str(lesson["key"])
         evidence = LANGUAGE_LESSON_EVIDENCE[key]
         concept_result = _ensure_language_concept(conn, lesson, evidence)
@@ -1604,7 +1629,7 @@ def prepare_language_teaching_shelf(conn: sqlite3.Connection, payload: dict[str,
     graduated: list[str] = []
     held: list[dict[str, Any]] = []
     if not defer_standing_authorization:
-        for lesson in LANGUAGE_QOL_LESSONS:
+        for lesson in requested_lessons:
             result = _graduate_language_lesson_under_standing_authorization(conn, lesson, authorization)
             if result["status"] == "language_capability_graduated":
                 graduated.append(str(lesson["key"]))
@@ -1619,7 +1644,9 @@ def prepare_language_teaching_shelf(conn: sqlite3.Connection, payload: dict[str,
             ),
             "created_count": len(created),
             "refreshed_count": len(refreshed),
-            "lesson_count": len(LANGUAGE_QOL_LESSONS),
+            "lesson_count": len(requested_lessons),
+            "defined_lesson_count": len(LANGUAGE_QOL_LESSONS),
+            "requested_lesson_keys": [str(lesson["key"]) for lesson in requested_lessons],
             "created": created,
             "refreshed": refreshed,
             "concept_created_count": len(concept_created),
@@ -2066,6 +2093,67 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
         and any(marker in lower for marker in ("earlier", "back to", "return to", "we discussed", "you said"))
     ):
         score += 9
+    if key == "evidence_grounded_content_light_presence" and (
+        intent_name in {"greeting", "warm_connection", "playful_connection", "gratitude", "reassurance_received"}
+        and not obligations
+    ):
+        score += 10
+    if key == "evidence_grounded_reference_and_callback" and (
+        bool(pragmatics.get("resolved_reference"))
+        or bool(pragmatics.get("session_landmarks"))
+        or any(marker in lower for marker in ("that one", "the other one", "earlier", "back to", "you said", "we discussed"))
+    ):
+        score += 11
+    if key == "evidence_grounded_mixed_intent_threading" and (
+        thread_braid.get("braided") is True or len(utterance_units) > 2 or len(obligations) > 1
+    ):
+        score += 11
+    if key == "evidence_grounded_correction_and_repair" and (
+        intent_name == "correction"
+        or bool((pragmatics.get("correction_refinement") or {}).get("detected"))
+        or any(marker in lower for marker in ("actually", "i meant", "correction", "not what i meant"))
+    ):
+        score += 11
+    if key == "evidence_grounded_uncertainty_and_missing_ground" and (
+        intent.get("memory_recall_requested") is True
+        or any(marker in lower for marker in ("not sure", "uncertain", "fuzzy", "missing", "best guess", "do you know"))
+    ):
+        score += 10
+    if key == "evidence_grounded_hypothesis_prediction_and_leap" and any(
+        marker in lower
+        for marker in ("hypothesis", "predict", "prediction", "best guess", "might happen", "could explain", "i have an idea", "what if")
+    ):
+        score += 11
+    if key == "evidence_grounded_collaborative_initiative" and (
+        any(marker in lower for marker in ("what should we do", "next step", "any ideas", "help me", "can you help", "what do you suggest"))
+        or intent_name in {"collaborative_task", "help_request"}
+    ):
+        score += 8
+    if key == "evidence_grounded_disagreement_and_revision" and (
+        intent_name == "correction"
+        or any(marker in lower for marker in ("disagree", "not convinced", "conflict", "contradict", "revised", "new evidence"))
+    ):
+        score += 11
+    if key == "evidence_grounded_warmth_affection_and_truth" and (
+        intent_name in {"warm_connection", "reassurance_received", "gratitude"}
+        or any(marker in lower for marker in ("love", "proud", "thank you", "<3", "good news", "hard truth"))
+    ):
+        score += 10
+    if key == "evidence_grounded_humor_play_and_mimicry" and (
+        intent_name == "playful_connection"
+        or any(marker in lower for marker in ("haha", "lol", " xD", "joke", "funny"))
+    ):
+        score += 11
+    if key == "evidence_grounded_topic_pivot_and_return" and (
+        bool(pragmatics.get("session_landmarks"))
+        and any(marker in lower for marker in ("anyway", "back to", "return to", "another thing", "after that"))
+    ):
+        score += 11
+    if key == "evidence_grounded_natural_pause_and_closure" and (
+        intent_name == "farewell"
+        or any(marker in lower for marker in ("pause here", "stop here", "good stopping point", "be back later", "call it a day"))
+    ):
+        score += 11
     if key == "flexible_supported_recomposition" and (
         str(intent.get("response_depth") or "") == "developed"
         or len(utterance_units) > 1
@@ -2434,7 +2522,9 @@ def _lesson_source_refs(key: str, lesson: dict[str, Any] | None = None) -> list[
     if lesson is None:
         lesson = next((item for item in LANGUAGE_QOL_LESSONS if str(item.get("key") or "") == key), {})
     group_order = int(_lesson_group_metadata(lesson)["group_order"])
-    if group_order >= 11:
+    if group_order >= 12:
+        source_phase = "speech_phase_13:evidence_grounded_conversation_breadth"
+    elif group_order >= 11:
         source_phase = "speech_phase_12:public_domain_reading_and_creative_transfer"
     elif group_order >= 10:
         source_phase = "speech_phase_11:creative_writing_and_voice_foundations"
@@ -2472,6 +2562,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "reviewed_public_grammar_source",
             "reviewed_public_and_project_grammar_guidance",
             "attributed_public_domain_reading_application_lesson",
+            "project_authored_evidence_grounded_conversation_breadth_lesson",
         ],
         "covered_effects": [
             "grammar",
@@ -2484,6 +2575,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "figurative_language_with_mapping_limits",
             "dialogue_viewpoint_and_scene_continuity",
             "attributed_public_domain_reading_mechanism_transfer",
+            "evidence_grounded_conversation_breadth",
         ],
         "item_approval_required": False,
         "acquire_integrate_express_required": True,

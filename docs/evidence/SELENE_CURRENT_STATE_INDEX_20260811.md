@@ -34,8 +34,8 @@ knowledge or Dream reflections.
 | F2 concepts | 25 unique concepts | 25 retained and Chat-eligible | Reading, vocabulary, composition, comparison, arithmetic, and operation relationships |
 | Coding curriculum groups | 1 | 1 retained group | Computational thinking and source-bounded code reading |
 | Coding concepts | 5 unique concepts | 5 retained and Chat-eligible | Knowledge only; no execution or filesystem authority |
-| Language groups | 11 | 11 represented groups | Provider-free language, grammar, creative-expression, and bounded reading-transfer guidance |
-| Language capabilities | 61 | 61 approved and available | Expression guidance; not factual authority or personality |
+| Language groups | 12 | 11 represented groups on the indexed runtime | Provider-free language, grammar, creative-expression, bounded reading transfer, and evidence-grounded conversational breadth |
+| Language capabilities | 73 | 61 approved and available on the indexed runtime | Expression guidance; not factual authority or personality |
 | Approved knowledge resources | 197 defined items | 197 retained resources | 106 F1 + 25 F2 + 5 coding + 61 language-and-conversation capabilities |
 | Unapproved comprehension candidates | — | 47 proposed items | Not retained and unavailable to Chat until the applicable review path completes |
 
@@ -46,8 +46,10 @@ same 106 F1 concepts as `retained_reviewed_knowledge` with
 `available_as_knowledge_resource` Chat permission.
 
 The language count is supported by `src/selene/language_teaching_shelf.py`, the
-Group 11 completion record, and the configured language shelf. All 61 rows are
-`approved_for_language_guidance` and `language_guidance_available`.
+Group 11 completion record, and the configured language shelf. At the indexed
+runtime date, all 61 stored rows were `approved_for_language_guidance` and
+`language_guidance_available`; Group 12 adds 12 repository-defined, bounded
+lessons for later one-at-a-time live teaching.
 
 The F2 and coding counts are supported by their group modules and the same
 curriculum authorization lifecycle. Coding knowledge is Chat-eligible within

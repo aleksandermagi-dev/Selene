@@ -372,11 +372,11 @@ def test_language_shelf_exposes_ordered_review_groups_and_prerequisites(tmp_path
     items = list_language_teaching_items(conn)["items"]
     groups = status["teaching_groups"]
 
-    assert status["defined_lesson_count"] == 61
-    assert status["defined_group_count"] == 11
-    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4, 5, 5, 7, 9, 6, 3]
-    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    assert status["defined_lesson_count"] == 73
+    assert status["defined_group_count"] == 12
+    assert [group["group_order"] for group in groups] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    assert [group["defined_lesson_count"] for group in groups] == [10, 4, 4, 4, 4, 5, 5, 7, 9, 6, 3, 12]
+    assert [group["available_lesson_count"] for group in groups] == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     assert [(item["group_order"], item["lesson_order"]) for item in items] == sorted(
         (item["group_order"], item["lesson_order"]) for item in items
     )
@@ -422,7 +422,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         item for item in list_language_teaching_items(conn)["items"] if item["group_order"] > 1
     ]
 
-    assert len(expressive_items) == 51
+    assert len(expressive_items) == 63
     for item in expressive_items:
         blueprint = item["teaching_blueprint"]
         assert blueprint["acquire"]["vocabulary"]
@@ -437,7 +437,7 @@ def test_every_expressive_breadth_lesson_has_complete_review_evidence(tmp_path):
         assert item["available_to_nlo"] is False
 
 
-def test_all_eleven_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
+def test_all_twelve_groups_can_complete_in_order_without_bypassing_prerequisites_or_writing_memory(tmp_path):
     conn = _conn(tmp_path)
     _prepare_review_only(conn)
     memory_before = conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0]
@@ -453,9 +453,9 @@ def test_all_eleven_groups_can_complete_in_order_without_bypassing_prerequisites
     status = language_teaching_status(conn)
     items = list_language_teaching_items(conn)["items"]
 
-    assert status["available_lesson_count"] == 61
+    assert status["available_lesson_count"] == 73
     assert status["candidate_lesson_count"] == 0
-    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4, 5, 5, 7, 9, 6, 3]
+    assert [group["available_lesson_count"] for group in status["teaching_groups"]] == [10, 4, 4, 4, 4, 5, 5, 7, 9, 6, 3, 12]
     assert all(item["own_review_complete"] is True for item in items)
     assert all(item["prerequisites_complete"] is True for item in items)
     assert all(item["unmet_prerequisites"] == [] for item in items)
@@ -510,11 +510,12 @@ def test_mature_composition_group_graduates_and_is_selected_only_as_language_gui
     items = list_language_teaching_items(conn)["items"]
     mature = [item for item in items if item["group_order"] == 7]
 
-    assert prepared["graduated_count"] == 61
+    assert prepared["graduated_count"] == len(LANGUAGE_QOL_LESSONS)
     assert len(mature) == 5
     assert all(item["available_to_nlo"] is True for item in mature)
     assert "long_session_callback_grounding" in guidance["lesson_keys"]
-    assert "threaded_series_and_return" in guidance["lesson_keys"]
+    assert "evidence_grounded_mixed_intent_threading" in guidance["lesson_keys"]
+    assert "evidence_grounded_reference_and_callback" in guidance["lesson_keys"]
     assert guidance["automatic_content_generation"] is False
     assert guidance["memory_write_active"] is False
     assert guidance["identity_change"] is False

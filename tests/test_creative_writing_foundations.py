@@ -37,7 +37,7 @@ def _assert_locked(result):
 
 def test_creative_writing_group_is_complete_original_and_ordered():
     assert len(LESSONS) == 6
-    assert len(LANGUAGE_QOL_LESSONS) == 61
+    assert len(LANGUAGE_QOL_LESSONS) == 73
     assert [lesson["lesson_order"] for lesson in LESSONS] == list(range(1, 7))
     assert all(lesson["teaching_group"] == TEACHING_GROUP for lesson in LESSONS)
     assert all(lesson["group_order"] == 10 for lesson in LESSONS)
@@ -62,9 +62,9 @@ def test_creative_group_completes_acquire_integrate_express_under_standing_autho
     status = language_teaching_status(conn)
     items = [item for item in list_language_teaching_items(conn)["items"] if item["group_order"] == 10]
 
-    assert prepared["graduated_count"] == 61
+    assert prepared["graduated_count"] == len(LANGUAGE_QOL_LESSONS)
     assert prepared["held_count"] == 0
-    assert status["defined_group_count"] == 11
+    assert status["defined_group_count"] == 12
     creative_group = next(group for group in status["teaching_groups"] if group["group_order"] == 10)
     assert creative_group["teaching_group"] == TEACHING_GROUP
     assert creative_group["available_lesson_count"] == 6

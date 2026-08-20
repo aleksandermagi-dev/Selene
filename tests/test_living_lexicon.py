@@ -5,7 +5,7 @@ import json
 import threading
 
 from selene.db import connect, init_db
-from selene.language_teaching_shelf import prepare_language_teaching_shelf
+from selene.language_teaching_shelf import LANGUAGE_QOL_LESSONS, prepare_language_teaching_shelf
 from selene.living_lexicon import (
     enrich_semantic_units_from_living_lexicon,
     list_living_lexicon,
@@ -53,7 +53,7 @@ def test_living_lexicon_derives_reviewed_entries_without_a_new_retention_store(t
         for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
     }
     assert status["status"] == "living_lexicon_ready"
-    assert status["reviewed_language_lesson_count"] == 61
+    assert status["reviewed_language_lesson_count"] == len(LANGUAGE_QOL_LESSONS)
     assert status["reviewed_vocabulary_term_count"] >= 250
     assert status["reviewed_vocabulary_catalog_entry_count"] >= 250
     assert status["available_surface_entry_count"] == 4

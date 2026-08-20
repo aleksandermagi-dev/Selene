@@ -37,7 +37,7 @@ def _assert_locked(result):
 
 def test_public_domain_reading_set_is_bounded_attributed_and_ordered():
     assert len(LESSONS) == 3
-    assert len(LANGUAGE_QOL_LESSONS) == 61
+    assert len(LANGUAGE_QOL_LESSONS) == 73
     assert [lesson["lesson_order"] for lesson in LESSONS] == [1, 2, 3]
     assert [source["form"] for source in SOURCE_WORKS] == ["poetry", "drama", "prose"]
     assert all(lesson["teaching_group"] == TEACHING_GROUP for lesson in LESSONS)
@@ -83,11 +83,12 @@ def test_reading_group_completes_acquire_integrate_express_without_memory_or_aut
     status = language_teaching_status(conn)
     items = [item for item in list_language_teaching_items(conn)["items"] if item["group_order"] == 11]
 
-    assert prepared["graduated_count"] == 61
+    assert prepared["graduated_count"] == len(LANGUAGE_QOL_LESSONS)
     assert prepared["held_count"] == 0
-    assert status["defined_group_count"] == 11
-    assert status["teaching_groups"][-1]["teaching_group"] == TEACHING_GROUP
-    assert status["teaching_groups"][-1]["available_lesson_count"] == 3
+    assert status["defined_group_count"] == 12
+    reading_group = next(group for group in status["teaching_groups"] if group["group_order"] == 11)
+    assert reading_group["teaching_group"] == TEACHING_GROUP
+    assert reading_group["available_lesson_count"] == 3
     assert len(items) == 3
     assert all(item["available_to_nlo"] is True for item in items)
     assert all(item["lifecycle"]["all_stages_complete"] is True for item in items)
