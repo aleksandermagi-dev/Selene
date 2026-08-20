@@ -12,6 +12,9 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [G12 Live-Teaching Post-Reinstall Q&A](SELENE_G12_LIVE_TEACHING_POST_REINSTALL_QNA_20260820.md)
+  — first bounded evidence-grounded breadth lesson taught live, followed by a
+  20-turn diagnostic note-first assessment of the remaining ownership seams.
 - [Current-State Index — August 11, 2026](SELENE_CURRENT_STATE_INDEX_20260811.md)
   — canonical dated counts for repository-defined and configured-runtime
   curriculum, language guidance, and Dream state.
