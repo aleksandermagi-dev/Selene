@@ -119,14 +119,33 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
 
     if not repaired:
         issues.append("empty_candidate")
-    # ``unresolved_count`` also includes lexical conversation-spine alignment.
-    # That is not, by itself, evidence that a visible question remains open.
-    # Only a turn that actually carried a question/request obligation may use
-    # the question-specific repair signal.
+    # A required response obligation remains a content concern even when the
+    # turn was phrased as a request rather than a question. A graceful hold may
+    # resolve release safety, but it still must not be reported as a completed
+    # answer.
+    obligation_count = int(coverage.get("obligation_count") or 0)
+    unresolved_items = [
+        item
+        for item in coverage.get("items") or []
+        if isinstance(item, dict) and item.get("addressed") is not True
+    ]
     if (
-        plan.get("must_answer_visible_question") is True
-        and int(coverage.get("unresolved_count") or 0) > 0
+        (
+            obligation_count > 0
+            and (
+                coverage.get("all_required_addressed") is not True
+                or bool(unresolved_items)
+                or int(coverage.get("unresolved_count") or 0) > 0
+            )
+        )
+        or (
+            obligation_count == 0
+            and plan.get("must_answer_visible_question") is True
+            and int(coverage.get("unresolved_count") or 0) > 0
+        )
     ):
+        # Keep the established public note key for compatibility; it now
+        # covers any visible required content, including imperative requests.
         attention_notes.append("visible_question_still_open")
     if _matches_recent(repaired, recent):
         issues.append("recent_response_repetition")
@@ -300,7 +319,8 @@ def _has_uncertainty(value: str) -> bool:
 
 def _normalize(value: str) -> str:
     paragraphs = []
-    for paragraph in re.split(r"\n+", value.replace("\r\n", "\n").strip()):
+    encoding_safe = value.replace("\ufffd", " - ")
+    for paragraph in re.split(r"\n+", encoding_safe.replace("\r\n", "\n").strip()):
         text = " ".join(paragraph.split())
         if text:
             text = re.sub(

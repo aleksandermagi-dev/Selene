@@ -167,6 +167,11 @@ def select_visible_speech_seed(
                 "content_seed": text,
                 "selected_source_id": source_id,
                 "selected_source_class": source_class,
+                "obligation_ids": [
+                    str(item)
+                    for item in candidate.get("obligation_ids") or []
+                    if str(item)
+                ],
                 "inspected_candidates": inspected,
                 "conversation_spine_used": bool(conversation_spine),
                 "release_allowed": True,

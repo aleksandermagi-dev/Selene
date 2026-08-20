@@ -868,6 +868,30 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     for candidate in visible_speech_candidates:
         if str(candidate.get("source_id") or "") == "answer_engine":
             candidate["obligation_ids"] = answer_engine_obligation_ids
+        elif (
+            correction_reconstruction_reply
+            and str(candidate.get("source_id") or "") == "current_session_facts"
+        ):
+            candidate["obligation_ids"] = [
+                str(item.get("id") or "")
+                for item in conversation_spine.get("open_obligations") or []
+                if isinstance(item, dict) and str(item.get("id") or "")
+            ]
+        elif (
+            len(conversation_spine.get("open_obligations") or []) == 1
+            and str(candidate.get("source_id") or "") in {
+                "contextual_follow_up",
+                "current_session_facts",
+                "explicit_humor_request",
+                "figurative_meaning_clarification",
+                "ordinary_uncertainty",
+                "explicit_session_alias",
+                "epistemic_revision",
+            }
+        ):
+            candidate["obligation_ids"] = [
+                str((conversation_spine.get("open_obligations") or [])[0].get("id") or "")
+            ]
     visible_speech_seed = select_visible_speech_seed(
         meaning_text,
         visible_speech_candidates,
@@ -3177,8 +3201,11 @@ def _intelligence_support(
     )
     prompt_grounded_available = bool(
         str(prompt_grounded_preview.get("answer") or "").strip()
-        and str(prompt_grounded_preview.get("answer_kind") or "")
-        in PHASE_NINE_PROMPT_GROUNDED_ANSWER_KINDS
+        and (
+            str(prompt_grounded_preview.get("answer_kind") or "").startswith("grounded_")
+            or str(prompt_grounded_preview.get("answer_kind") or "")
+            in PHASE_NINE_PROMPT_GROUNDED_ANSWER_KINDS
+        )
     )
     should_use = (
         not hard
@@ -3304,14 +3331,6 @@ def _answer_engine_support(
             **base,
             "reason": "a complete social turn remains with conversation, NLO, and Voice instead of inheriting domain content",
         }
-    if str(contextual_content_seed or "").strip():
-        return {
-            **base,
-            "selected_domain": "ordinary_conversation",
-            "reason": "the Conversation Spine already supplied a grounded immediate-session answer",
-            "conversation_spine_turn_id": str(conversation_spine.get("turn_id") or ""),
-            "contextual_content_owned_by_spine": True,
-        }
     hypothesis_attempt = (
         intelligence_support.get("hypothesis_attempt")
         if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
@@ -3381,6 +3400,19 @@ def _answer_engine_support(
     executable_units = [
         item for item in units if item.get("executable_in_chat") is True
     ][:4]
+    contextual_kind = str(
+        ((conversation_spine.get("contextual_follow_up") or {}).get("kind") or "")
+    )
+    if str(contextual_content_seed or "").strip() and not (
+        contextual_kind == "named_callback" and executable_units
+    ):
+        return {
+            **base,
+            "selected_domain": "ordinary_conversation",
+            "reason": "the Conversation Spine already supplied a grounded immediate-session answer",
+            "conversation_spine_turn_id": str(conversation_spine.get("turn_id") or ""),
+            "contextual_content_owned_by_spine": True,
+        }
     prompt_grounded_units = [
         item
         for item in units
@@ -4091,7 +4123,15 @@ def _current_turn_release_resolution_evidence(
 
     primary_source = str(visible_speech_seed.get("selected_source_id") or "")
     primary_text = str(visible_speech_seed.get("content_seed") or "").strip()
-    if primary_source and primary_source != "none" and primary_text and all_ids:
+    primary_obligation_ids = [
+        str(item)
+        for item in visible_speech_seed.get("obligation_ids") or []
+        if str(item) in set(all_ids)
+    ]
+    # Selection establishes which source may speak; it does not prove that the
+    # source answered every obligation in a mixed turn. Only explicitly bound
+    # ownership evidence may bypass ordinary visible/semantic coverage.
+    if primary_source and primary_source != "none" and primary_text and primary_obligation_ids:
         evidence.append(
             {
                 "owner": "visible_speech_seed",
@@ -4100,7 +4140,7 @@ def _current_turn_release_resolution_evidence(
                 # Later repair still has to preserve this text closely, so an
                 # unrelated candidate cannot borrow the source's obligation IDs.
                 "text": str(realized_source_text or "").strip() or primary_text,
-                "obligation_ids": all_ids,
+                "obligation_ids": primary_obligation_ids,
                 "resolution_kind": "answer",
                 "current_turn_only": True,
             }

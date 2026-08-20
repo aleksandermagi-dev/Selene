@@ -29,6 +29,7 @@ def inspect_contextual_follow_up(
         for item in context.get("recent_user_texts") or []
         if str(item).strip()
     ]
+    previous_user_preview = recent_user[-1] if recent_user else ""
     previous_assistant_preview = (
         str(previous.get("preview") or "").strip()
         if str(previous.get("role") or "") == "selene"
@@ -101,6 +102,16 @@ def inspect_contextual_follow_up(
         normalized,
     ):
         kind, marker = "named_callback", "named_visible_session_point"
+    elif (
+        previous_user_preview
+        and not re.search(r"\b(?:protect|preserve|keep|prioritize)\b", normalized)
+        and re.search(
+        r"\b(?:what|which)\s+(?:part|piece|aspect|result|thing)\s+of\s+"
+        r"(?:that|this|it)\b|\bwhat\s+am\s+i\s+(?:celebrating|referring\s+to)\b",
+        normalized,
+        )
+    ):
+        kind, marker = "immediate_user_callback", "immediately_preceding_user_statement"
     elif "analogy" in normalized and re.search(r"\b(?:explain|describe|rephrase|put)\b", normalized):
         kind, marker = "analogy_transfer_request", "analogy_of_active_session"
     elif re.search(
@@ -143,7 +154,7 @@ def inspect_contextual_follow_up(
     elif any(item in lower for item in ("separate question", "different question", "new question", "separate topic", "different topic", "on another topic")):
         kind, marker = "topic_shift", "explicit_topic_shift"
 
-    previous_available = bool(previous_assistant_preview or session_landmarks)
+    previous_available = bool(previous_assistant_preview or previous_user_preview or session_landmarks)
     contextual = kind != "none" and (previous_available or kind == "topic_shift")
     return {
         "status": "contextual_follow_up_detected" if contextual else "contextual_follow_up_not_detected",
@@ -152,6 +163,7 @@ def inspect_contextual_follow_up(
         "marker": marker if contextual else "",
         "previous_turn_available": previous_available,
         "previous_assistant_preview": truncate(previous_assistant_preview, 900),
+        "previous_user_preview": truncate(previous_user_preview, 900),
         "recent_assistant_texts": [truncate(item, 360) for item in recent_assistant[-4:]],
         "recent_user_texts": [truncate(item, 360) for item in recent_user[-8:]],
         "session_landmarks": session_landmarks,
@@ -163,6 +175,7 @@ def inspect_contextual_follow_up(
             "rephrase_request", "viewpoint_follow_up", "alternative_reference",
             "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request",
             "named_callback", "meaning_correction", "answer_development",
+            "immediate_user_callback",
         },
         "session_scoped_only": True,
         "memory_write_active": False,
@@ -227,7 +240,7 @@ def apply_contextual_intent(
                 "confidence": "high",
             }
         )
-    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback", "answer_development"}:
+    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback", "immediate_user_callback", "answer_development"}:
         result.update(
             {
                 "intent": "reasoning",
@@ -258,6 +271,7 @@ def contextual_response_seed(
     kind = str(contextual.get("kind") or "")
     marker = str(contextual.get("marker") or "")
     previous = str(contextual.get("previous_assistant_preview") or "")
+    previous_user = str(contextual.get("previous_user_preview") or "").strip()
     recent = " ".join(
         str(item).strip()
         for item in contextual.get("recent_assistant_texts") or []
@@ -314,11 +328,14 @@ def contextual_response_seed(
             )
         return "I am reasonably confident, but not absolute; I would change the answer if stronger evidence no longer fit it."
 
+    if kind == "immediate_user_callback" and previous_user:
+        callback_subject = _bounded_user_callback_subject(previous_user)
+        return f"You're celebrating this result: {callback_subject}."
+
     if kind == "named_callback" and matched_landmarks:
         callback_prompt = str(contextual.get("prompt") or "").lower()
         if re.search(
-            r"\b(?:what did|what was|remind me|which point|which one|what one|"
-            r"who|where|when)\b",
+            r"\b(?:what|which|who|where|when|remind me)\b",
             callback_prompt,
         ):
             return " ".join(str(item.get("summary") or "") for item in matched_landmarks[:3])
@@ -570,6 +587,33 @@ def session_fact_response_seed(
             )
         return " ".join(str(item.get("text") or "") for item in facts[:requested_count])
     return ""
+
+
+def _bounded_user_callback_subject(previous_user: str) -> str:
+    """Turn one visible user statement into a bounded callback noun phrase.
+
+    This deliberately preserves the user's own supplied content instead of
+    asking a knowledge organ to reconstruct an immediately visible fact.
+    """
+    value = " ".join(str(previous_user or "").split()).strip(" .!?")
+    value = re.sub(
+        r"^(?:i(?:'m| am)\s+)?(?:really\s+)?(?:happy|excited|proud|glad)\s+"
+        r"(?:that|about)\s+",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    )
+    value = re.sub(
+        r"^(?:the\s+)?(?:result|good news)\s+(?:is|was)\s+",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    )
+    if not value:
+        return "the result you just described"
+    if value[0].isupper():
+        value = value[0].lower() + value[1:]
+    return truncate(value, 620)
 
 
 def _grounded_task_summary_clauses(

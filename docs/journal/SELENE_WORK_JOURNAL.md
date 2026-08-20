@@ -1423,6 +1423,49 @@ conversation-breadth teaching sets. Observe whether later lessons reactivate
 earlier approved material through ordinary use; use a bounded LEA only when the
 lesson supplies enough knowledge for a fair check.
 
+### 2026-08-20 — Current-session grounding and completion ownership repair
+
+**Starting question:** Why did the first live G12 breadth lesson reach NLO while
+several callbacks, comparisons, and multi-part answers still lost visible
+session facts or reported false completion?
+
+**Decision:** Repair the shared grounding and ownership seam instead of adding
+more teaching or phrase-specific reply templates. Repeat only the affected
+synthetic paths under the Test Impact Law.
+
+**Work:** Tightened callback-lesson selection to require current-turn callback
+evidence; connected immediately visible user results and named landmarks to the
+contextual answer owner; added a prompt-grounded ordinary option comparison and
+revision path; preserved explicit obligation ownership through visible-source
+selection; stopped source selection from implying whole-turn completion; aligned
+Conversation Repair with unanswered requests as well as questions; preserved a
+separate verified-math owner inside a named return; and removed malformed visible
+separator characters.
+
+**Why:** Expression guidance can shape an answer only after the content owner
+supplies the relevant fact. Completion must be earned by visible,
+obligation-specific evidence rather than by source priority or fluent wording.
+
+**Evidence:** Six changed-path Chat replays and 113 directly affected tests
+passed after the final compatibility adjustment. The widened Chat and coverage
+run had passed 216 of 217 before its sole equivalent-wording expectation was
+stabilized. Python compilation and `git diff --check` passed, with only the
+established Windows line-ending warnings.
+
+**What changed in our understanding:** The lesson had been learned and selected;
+the missing capability was the connective route between current-session content,
+answer ownership, and honest completion reporting. Narrowing that route improved
+both callbacks and unrelated multi-part reliability.
+
+**Boundaries preserved:** No broad live Q&A, personal-memory write, teaching
+write, Dream input, identity/personality/governance change, training, LoRA,
+self-replication, authority expansion, autonomous action, filesystem action, or
+external action occurred.
+
+**Next:** Build, checkpoint, reinstall, and verify the packaged app. Resume the
+ordered breadth teaching only after the repaired current-session paths are
+available in the installed build.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

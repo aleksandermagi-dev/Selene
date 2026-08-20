@@ -215,3 +215,20 @@ def test_release_allows_answered_or_explicitly_held_parts():
 
     assert result["release_allowed"] is True
     assert result["all_required_parts_resolved"] is True
+
+
+def test_selected_seed_preserves_only_explicit_obligation_ownership():
+    result = select_visible_speech_seed(
+        "Compare both shelves and choose one.",
+        [
+            {
+                "source_id": "answer_engine",
+                "source_class": "domain_answer",
+                "text": "Shelf B is steadier under the stated load.",
+                "obligation_ids": ["compare_shelves"],
+            }
+        ],
+    )
+
+    assert result["selected_source_id"] == "answer_engine"
+    assert result["obligation_ids"] == ["compare_shelves"]

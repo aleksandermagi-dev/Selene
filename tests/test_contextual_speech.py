@@ -382,3 +382,23 @@ def test_summary_request_can_have_an_ordinary_preface():
 
     assert result["kind"] == "session_summary_request"
     assert result["preserve_active_topic"] is True
+
+
+def test_immediate_user_result_callback_uses_the_visible_statement():
+    context = _context("That sounds like a real milestone.")
+    context["recent_user_texts"] = [
+        "I'm happy that the first live lesson completed Acquire, Integrate, and Express."
+    ]
+
+    result = inspect_contextual_follow_up(
+        "What part of that result am I celebrating?",
+        context,
+    )
+    response = contextual_response_seed(result)
+    decision = apply_contextual_intent(classify_chat_intent(result["prompt"]), result)
+
+    assert result["kind"] == "immediate_user_callback"
+    assert result["previous_user_preview"].startswith("I'm happy")
+    assert "first live lesson completed Acquire, Integrate, and Express" in response
+    assert decision["intent"] == "reasoning"
+    assert result["memory_write_active"] is False

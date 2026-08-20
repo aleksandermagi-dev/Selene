@@ -117,3 +117,46 @@ def test_status_exposes_breadth_group_without_requiring_it_to_be_taught(tmp_path
     assert group["defined_lesson_count"] == 12
     assert group["stored_lesson_count"] == 0
     assert group["available_lesson_count"] == 0
+
+
+def test_callback_lesson_requires_current_turn_callback_evidence(tmp_path):
+    conn = _conn(tmp_path)
+    target = "evidence_grounded_reference_and_callback"
+    prerequisites = [
+        str(lesson["key"])
+        for lesson in LANGUAGE_QOL_LESSONS
+        if int(lesson.get("group_order") or 1) < 12
+    ]
+    prepare_language_teaching_shelf(conn, {"lesson_keys": prerequisites})
+    prepare_language_teaching_shelf(conn, {"lesson_keys": [target]})
+
+    unrelated = select_language_guidance(
+        conn,
+        {
+            "prompt": "Give me your best provisional hypothesis about the vibration.",
+            "intent_decision": {"intent": "reasoning"},
+            "dialogue_workspace": {
+                "pragmatics": {
+                    "session_landmarks": [{"summary": "We earlier discussed two shelves."}],
+                }
+            },
+        },
+    )
+    callback = select_language_guidance(
+        conn,
+        {
+            "prompt": "What part of that result am I celebrating?",
+            "intent_decision": {
+                "intent": "reasoning",
+                "contextual_follow_up": {"kind": "immediate_user_callback"},
+            },
+            "dialogue_workspace": {
+                "pragmatics": {
+                    "session_landmarks": [{"summary": "The first live lesson completed."}],
+                }
+            },
+        },
+    )
+
+    assert target not in unrelated["lesson_keys"]
+    assert target in callback["lesson_keys"]

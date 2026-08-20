@@ -201,3 +201,41 @@ def test_turn_flow_uses_structured_units_to_preserve_request_order_and_correctio
     assert result["obligation_sequence"] == ["correction", "comparison"]
     assert result["correction_refinement"]["corrected_meaning"] == "memory"
     assert result["must_preserve_correction"] is True
+
+
+def test_unanswered_imperative_obligation_requests_content_revision():
+    result = repair_conversation_candidate(
+        {
+            "candidate_text": "The first part is visible.",
+            "turn_flow_plan": {
+                "must_answer_visible_question": False,
+                "obligation_sequence": ["acknowledge", "compare", "place"],
+            },
+            "response_coverage": {
+                "obligation_count": 3,
+                "all_required_addressed": False,
+                "unresolved_count": 2,
+                "items": [
+                    {"obligation_id": "acknowledge", "addressed": True},
+                    {"obligation_id": "compare", "addressed": False},
+                    {"obligation_id": "place", "addressed": False},
+                ],
+            },
+        }
+    )
+
+    assert result["needs_content_revision"] is True
+    assert "visible_question_still_open" in result["attention_notes"]
+
+
+def test_repair_removes_malformed_visible_separator():
+    result = repair_conversation_candidate(
+        {
+            "candidate_text": "The sequence changed�one step now lands later�so the pacing is softer.",
+            "turn_flow_plan": {},
+            "response_coverage": {"unresolved_count": 0},
+        }
+    )
+
+    assert "�" not in result["candidate_text"]
+    assert " - one step now lands later - " in result["candidate_text"]

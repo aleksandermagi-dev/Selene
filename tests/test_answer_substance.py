@@ -275,3 +275,31 @@ def test_follow_up_can_request_reason_then_a_bounded_number_of_steps():
     assert "Step 2:" in result["answer"]
     assert "Step 3:" not in result["answer"]
     assert result["structured_semantic_handoff"] is True
+
+
+def test_visible_shelf_properties_own_the_comparison_before_generic_method():
+    result = build_answer_substance(
+        "The bins are sorted. Shelf A is wide but wobbly. Shelf B is narrower but sturdy. "
+        "Acknowledge the bins, compare the shelves, and tell me where to place the heavy tools."
+    )
+
+    assert result["answer_kind"] == "grounded_visible_option_comparison"
+    assert result["answer"].startswith("The bins are already sorted.")
+    assert "Shelf B is the better place for the heavier items" in result["answer"]
+    assert "shelf a is wide but wobbly" in result["answer"].lower()
+    assert result["support_basis"] == "current_prompt_and_recent_conversation"
+    assert result["source_required_for_factual_claim"] is False
+
+
+def test_visible_option_revision_uses_latest_session_description():
+    result = build_answer_substance(
+        "Back to the shelves: what changed and what stayed the same?",
+        [
+            {"observation": "Shelf A is wide but wobbly. Shelf B is narrow but sturdy."},
+            {"observation": "Correction: shelf A is wide and steady now."},
+        ],
+    )
+
+    assert result["answer_kind"] == "grounded_visible_option_revision"
+    assert "changed from wide but wobbly to wide and steady now" in result["answer"].lower()
+    assert "other option's last supplied description stayed unchanged" in result["answer"].lower()

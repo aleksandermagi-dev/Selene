@@ -182,7 +182,7 @@ def build_bounded_hypothesis_attempt(
     condition = str(relation.get("condition") or "the condition changed").strip()
     outcome = str(relation.get("outcome") or "the result changed").strip()
     response = (
-        f"{label} the condition you described—{link} {condition}—is connected to the change you observed. "
+        f"{label} the condition you described ({link} {condition}) is connected to the change you observed. "
         "That is a hypothesis from the pattern you gave me, not a fact I already know. "
         "It assumes no other important condition changed; repeating the comparison while changing only that condition would test it."
     )

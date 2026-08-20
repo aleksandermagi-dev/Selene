@@ -2303,6 +2303,37 @@ def test_active_selene_chat_carries_a_recommendation_into_the_immediate_callback
     _assert_locked(callback)
 
 
+def test_active_chat_answers_callback_to_immediately_visible_user_result(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "I'm happy that the first live lesson completed Acquire, Integrate, and Express."
+            )
+        },
+    )["result"]
+    callback = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": first["session_id"],
+            "text": "What part of that result am I celebrating?",
+        },
+    )["result"]
+
+    assert callback["contextual_follow_up"]["kind"] == "immediate_user_callback"
+    assert "first live lesson completed Acquire, Integrate, and Express" in callback["candidate_text"]
+    assert callback["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert callback["response_coverage"]["all_required_addressed"] is True
+    assert callback["conversation_repair"]["needs_content_revision"] is False
+    _assert_locked(callback)
+
+
 def test_active_selene_chat_answers_bare_why_from_the_immediately_visible_reason(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

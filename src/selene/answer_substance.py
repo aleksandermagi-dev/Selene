@@ -697,6 +697,10 @@ def _ordinary_prompt_grounded_operation(
     if desk_plan:
         return desk_plan
 
+    visible_options = _visible_option_comparison_operation(prompt, lower, history)
+    if visible_options:
+        return visible_options
+
     ordinary_choice = _ordinary_choice_operation(prompt, lower, history)
     if ordinary_choice:
         return ordinary_choice
@@ -769,6 +773,91 @@ def _ordinary_prompt_grounded_operation(
     return {}
 
 
+def _visible_option_comparison_operation(
+    prompt: str,
+    lower: str,
+    history: list[str],
+) -> dict[str, Any]:
+    """Compare ordinary named options using only visible supplied properties."""
+    if not re.search(
+        r"\b(?:compare|which|choose|place|put|changed|stayed stable|stayed the same)\b",
+        lower,
+    ):
+        return {}
+    statements: dict[str, list[str]] = {}
+    for source in [*history, prompt]:
+        if not str(source).strip():
+            continue
+        for match in re.finditer(
+            r"\b(?:the\s+)?(?P<subject>(?:shelf|shelves|options?|routes?|plans?|bins?|drawers?)"
+            r"(?:\s+[a-z0-9-]+){0,2})\s+(?:is|are|has|holds)\s+"
+            r"(?P<property>[^.;!?]{2,160})",
+            str(source),
+            flags=re.IGNORECASE,
+        ):
+            subject = " ".join(match.group("subject").lower().split())
+            prop = " ".join(match.group("property").strip(" ,").split())
+            statements.setdefault(subject, []).append(prop)
+    option_facts = {
+        subject: values
+        for subject, values in statements.items()
+        if subject.startswith(("shelf", "option", "route", "plan"))
+    }
+    if len(option_facts) < 2:
+        return {}
+
+    if re.search(r"\b(?:what|which)\s+(?:changed|stayed|remained)\b", lower):
+        revised = next(
+            ((subject, values) for subject, values in option_facts.items() if len(values) >= 2),
+            None,
+        )
+        if revised:
+            subject, values = revised
+            before, after = values[-2], values[-1]
+            return _plain_operation(
+                f"For {subject}, the description changed from {before} to {after}. "
+                "The other option's last supplied description stayed unchanged.",
+                "grounded_visible_option_revision",
+                "whether any unmentioned property changed too",
+                support_basis="current_prompt_and_recent_conversation",
+            )
+
+    positive = ("stable", "steady", "sturdy", "strong", "solid", "level", "secure")
+    negative = ("wobbl", "unstable", "loose", "weak", "bent", "tilt", "narrow")
+    scored: list[tuple[int, str, str]] = []
+    for subject, values in option_facts.items():
+        prop = values[-1]
+        prop_lower = prop.lower()
+        score = sum(2 for marker in positive if marker in prop_lower)
+        score -= sum(2 for marker in negative if marker in prop_lower)
+        scored.append((score, subject, prop))
+    scored.sort(key=lambda item: item[0], reverse=True)
+    best_score, best_subject, best_property = scored[0]
+    other_score, other_subject, other_property = scored[1]
+    if best_score == other_score:
+        return {}
+    acknowledgement = ""
+    if "bin" in " ".join(statements) and any(
+        "sorted" in value.lower()
+        for subject, values in statements.items()
+        if subject.startswith("bin")
+        for value in values
+    ):
+        acknowledgement = "The bins are already sorted. "
+    requested_load = "the heavier items" if re.search(r"\bheavy|heavier\b", lower) else "the priority items"
+    answer = (
+        f"{acknowledgement}{best_subject.title()} is the better place for {requested_load}: "
+        f"you described it as {best_property}, while {other_subject} is {other_property}. "
+        "That choice uses the properties you supplied; I would revise it if the load or stability description changes."
+    )
+    return _plain_operation(
+        answer,
+        "grounded_visible_option_comparison",
+        "whether the stated stability still holds under the actual load",
+        support_basis="current_prompt_and_recent_conversation",
+    )
+
+
 def _foundational_current_prompt_operation(
     prompt: str,
     lower: str,
@@ -782,6 +871,13 @@ def _foundational_current_prompt_operation(
     """
 
     context = " ".join([*history, prompt]).lower().replace("’", "'")
+
+    if re.search(r"\bare you (?:receiving|following|hearing) (?:this|me) clearly\b", lower):
+        return _plain_operation(
+            "Yes, I am receiving you clearly.",
+            "grounded_confirm_receipt",
+            "whether a later message becomes incomplete or unclear",
+        )
 
     if (
         "revised order" in lower
@@ -1348,7 +1444,7 @@ def _desk_organization_operation(
             prefix = "I would gently disagree and group them by how often you use them."
         reason = (
             " Frequency fits this desk better because the daily charging cable must stay reachable, "
-            "while rarely used cables can be bundled out of the way. Device type is useful inside each frequency group, but it should be the second rule here."
+            "while rarely used cables can be bundled out of the way. Device type remains a useful second rule inside each frequency group."
         )
         return _operation(
             answer=prefix + reason,

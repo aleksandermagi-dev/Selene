@@ -2023,6 +2023,16 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
     pragmatics = dialogue.get("pragmatics") if isinstance(dialogue.get("pragmatics"), dict) else {}
     thread_braid = pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {}
     obligations = pragmatics.get("response_obligations") or dialogue.get("response_obligations") or []
+    contextual = (
+        intent.get("contextual_follow_up")
+        if isinstance(intent.get("contextual_follow_up"), dict)
+        else {}
+    )
+    resolved_reference = (
+        pragmatics.get("resolved_reference")
+        if isinstance(pragmatics.get("resolved_reference"), dict)
+        else {}
+    )
     if key == "mixed_intent_balance" and (len(utterance_units) > 1 or intent.get("mixed_intent") is True):
         score += 5
     if key == "syntactic_rhythm_and_emphasis" and (
@@ -2099,8 +2109,18 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
     ):
         score += 10
     if key == "evidence_grounded_reference_and_callback" and (
-        bool(pragmatics.get("resolved_reference"))
-        or bool(pragmatics.get("session_landmarks"))
+        str(contextual.get("kind") or "") in {
+            "immediate_user_callback",
+            "named_callback",
+            "alternative_reference",
+            "reason_follow_up",
+            "continuation",
+        }
+        or str(resolved_reference.get("resolution_status") or "") in {
+            "resolved",
+            "resolved_to_previous_turn",
+            "explicit_session_alias",
+        }
         or any(marker in lower for marker in ("that one", "the other one", "earlier", "back to", "you said", "we discussed"))
     ):
         score += 11

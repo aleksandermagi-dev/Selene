@@ -212,3 +212,18 @@ def test_selected_hypothesis_excludes_unrelated_approved_knowledge_from_braid():
 
     assert [item["source_id"] for item in result] == ["intelligence_os_answer"]
     assert result[0]["supported_semantics"]["answer_kind"] == "bounded_hypothesis"
+
+
+def test_hypothesis_visible_separator_is_encoding_safe():
+    result = build_bounded_hypothesis_attempt(
+        {
+            "prompt": (
+                "The vibration stopped after I tightened the bracket. "
+                "What is your best guess why?"
+            )
+        }
+    )
+
+    assert result["offered"] is True
+    assert "�" not in result["response_seed"]
+    assert "(" in result["response_seed"]

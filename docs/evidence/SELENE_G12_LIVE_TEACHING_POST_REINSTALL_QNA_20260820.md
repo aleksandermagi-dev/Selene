@@ -243,3 +243,32 @@ No repair was made in this assessment. The bounded next repair pass should:
 After focused synthetic verification, repeat only the changed paths. Do not
 rerun the full 20-turn Q&A unless the combined long-thread coordination itself
 changes.
+
+## Bounded repair checkpoint
+
+Status: implemented and focused verification complete on 2026-08-20
+
+The follow-up repair addressed the recorded seam without repeating the broad
+Q&A. Current-turn callback evidence is now required for strong G12 callback
+guidance; an old landmark by itself is insufficient. An immediately preceding
+user result can reach the contextual answer owner, and named callbacks can use
+matched visible landmarks. Prompt-grounded option properties now support a
+bounded comparison and revision answer before generic comparison scaffolds or
+loosely related approved knowledge.
+
+Visible-source selection no longer grants one selected source credit for every
+response obligation. Explicit obligation ownership is preserved through
+selection, correction reconstruction receives only its actual current-turn
+obligations, and Conversation Repair now flags unresolved imperative content
+as well as unanswered questions. A named callback can no longer suppress a
+separate verified-math obligation in the same turn. Malformed replacement
+characters are removed at final surface repair, and the hypothesis separator
+uses encoding-safe punctuation.
+
+Focused verification after the final compatibility adjustment passed 119
+tests: 6 changed-path Selene Chat replays and 113 directly affected unit and
+integration tests. An earlier widened run passed 216 of 217 tests; its sole
+failure was a semantically equivalent wording change in an existing desk replay,
+which was stabilized and included in the final changed-path pass. No live Q&A,
+memory write, teaching write, identity/personality/governance change, training,
+LoRA, authority expansion, autonomous action, or external action was used.
