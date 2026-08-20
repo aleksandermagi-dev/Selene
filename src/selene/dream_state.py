@@ -25,6 +25,7 @@ DREAM_KINDS = {
     "affect_tending",
     "evidence_tension",
     "maintenance",
+    "study_pondering",
     "cross_source_pattern",
 }
 
@@ -682,6 +683,7 @@ def _collect_source_candidates(
     candidates.extend(_dialogue_candidates(conn))
     candidates.extend(_metacognition_candidates(conn))
     candidates.extend(_memory_candidates(conn))
+    candidates.extend(_study_candidates(conn))
     candidates.extend(_affect_candidates(conn))
     candidates.extend(_evidence_tension_candidates(conn))
     candidates.extend(_chest_candidates(conn))
@@ -837,6 +839,92 @@ def _memory_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
                 ],
                 row["updated_at"],
                 salt=f"{row['state']}:{row['summary']}",
+            )
+        )
+    return items
+
+
+def _study_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    """Offer visible Selene-owned study connections to Dream without retaining them."""
+    items: list[dict[str, Any]] = []
+    note_rows = conn.execute(
+        """
+        SELECT id, session_id, note_kind, meaning_summary, note_text,
+               clarification_state, source_refs, updated_at
+        FROM selene_study_notes
+        WHERE note_kind IN ('connection', 'idea', 'revisit')
+          AND review_status = 'selene_owned_working_study_note'
+        ORDER BY updated_at DESC, id DESC
+        LIMIT 8
+        """
+    ).fetchall()
+    for row in note_rows:
+        summary = truncate(
+            str(row["meaning_summary"] or row["note_text"] or ""),
+            620,
+        ).strip()
+        if not summary:
+            continue
+        items.append(
+            _candidate(
+                "study_pondering",
+                "A Study connection may be ready to revisit",
+                f"Study is holding this {row['note_kind']}: {summary}",
+                "A later source or experience may make the relationship easier to articulate or test.",
+                (
+                    "This remains a Selene-owned working Study note; Dream does not turn it into fact, retained knowledge, or memory."
+                ),
+                [
+                    f"selene_study_note:{row['id']}",
+                    f"selene_study_session:{row['session_id']}",
+                    *_json_list(row["source_refs"]),
+                ],
+                row["updated_at"],
+                salt=f"{row['note_kind']}:{row['clarification_state']}:{summary}",
+            )
+        )
+    thread_rows = conn.execute(
+        """
+        SELECT id, session_id, title, state, current_fit, missing_bridge,
+               prerequisite_needed, revisit_cue, source_refs, updated_at
+        FROM selene_study_pondering_threads
+        WHERE state != 'integrated_for_now'
+          AND review_status = 'visible_open_learning_thread'
+        ORDER BY updated_at DESC, id DESC
+        LIMIT 8
+        """
+    ).fetchall()
+    for row in thread_rows:
+        visible = truncate(
+            " ".join(
+                str(row[key] or "")
+                for key in (
+                    "current_fit",
+                    "missing_bridge",
+                    "prerequisite_needed",
+                    "revisit_cue",
+                )
+            ),
+            760,
+        ).strip()
+        if not visible:
+            visible = truncate(str(row["title"] or ""), 420).strip()
+        if not visible:
+            continue
+        items.append(
+            _candidate(
+                "study_pondering",
+                f"Open Study thread: {row['title']}",
+                visible,
+                "The missing bridge may become visible when a later cue supplies a better representation, prerequisite, or comparison.",
+                "The thread is deliberately unfinished and does not require an answer during this Dream cycle.",
+                [
+                    f"selene_study_pondering_thread:{row['id']}",
+                    f"selene_study_session:{row['session_id']}",
+                    *_json_list(row["source_refs"]),
+                ],
+                row["updated_at"],
+                salt=f"{row['state']}:{row['title']}:{visible}",
             )
         )
     return items

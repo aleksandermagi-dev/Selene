@@ -46,6 +46,25 @@ def test_pragmatic_plan_turns_multi_part_prompt_into_visible_obligations():
     assert plan["memory_write_active"] is False
 
 
+def test_content_light_turn_does_not_create_an_unresolved_answer_from_spine_wording():
+    coverage = evaluate_response_coverage(
+        {"response_obligations": []},
+        "That is good to hear.",
+        conversation_spine={
+            "intent_class": "direct_content",
+            "distinctive_terms": ["awesome"],
+            "contextual_follow_up": {},
+        },
+        supported_semantics={},
+    )
+
+    assert coverage["conversation_spine_alignment"]["required"] is True
+    assert coverage["conversation_spine_alignment"]["aligned"] is False
+    assert coverage["answer_bearing_alignment_required"] is False
+    assert coverage["unresolved_count"] == 0
+    assert coverage["all_required_addressed"] is True
+
+
 def test_compound_question_keeps_choice_limitation_and_report_as_separate_obligations():
     question = "Which is more useful, what is its limitation, and what would you report?"
     plan = build_pragmatic_plan(

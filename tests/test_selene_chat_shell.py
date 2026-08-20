@@ -3575,6 +3575,94 @@ def test_gentle_ordinary_conversation_uses_expression_layers_without_scaffolding
         assert result["native_language_organ"]["version"] == "v32_human_conversational_realization"
 
 
+def test_content_light_qna_sequence_keeps_distinct_conversational_moves(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        "Hello Selene!",
+        "whats up?",
+        "awesome :)",
+        "so close",
+        "good point hon",
+        "we seem to have a bug",
+        "ill figure it out :)",
+    ]
+    results = []
+    session_id = None
+    for prompt in prompts:
+        payload = {"text": prompt}
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    content_light = results[2:]
+    assert [
+        item["native_language_organ"]["discourse_plan"]["content_light_plan"]["move_kind"]
+        for item in content_light
+    ] == [
+        "positive_reaction",
+        "near_result",
+        "positive_evaluation",
+        "problem_observation",
+        "self_resolution",
+    ]
+    conclusion_scaffolding = (
+        "larger conclusion",
+        "forcing a conclusion",
+        "turn every turn into a conclusion",
+        "larger answer attached",
+        "next part arrive naturally",
+    )
+    assert not any(
+        phrase in item["candidate_text"].lower()
+        for item in content_light
+        for phrase in conclusion_scaffolding
+    )
+    assert "?" in content_light[3]["candidate_text"]
+    assert len({item["candidate_text"] for item in content_light}) == 5
+    for item in content_light:
+        assert item["response_coverage"]["unresolved_count"] == 0
+        assert item["conversation_repair"]["open_question_preserved"] is False
+        assert item["conversation_repair"]["needs_content_revision"] is False
+        _assert_locked(item)
+
+
+def test_content_light_paraphrases_keep_the_same_supported_move_families(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts_and_moves = [
+        ("Hello Selene :)", ""),
+        ("that was fantastic", "positive_reaction"),
+        ("you nearly nailed it", "near_result"),
+        ("good eye hon", "positive_evaluation"),
+        ("these replies are looping", "problem_observation"),
+        ("i can take it from here", "self_resolution"),
+    ]
+    session_id = None
+    for prompt, expected_move in prompts_and_moves:
+        payload = {"text": prompt}
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        if not expected_move:
+            continue
+        plan = result["native_language_organ"]["discourse_plan"]["content_light_plan"]
+        assert plan["move_kind"] == expected_move
+        assert plan["move_basis"] != "ordinary_statement_fallback"
+        assert result["response_coverage"]["unresolved_count"] == 0
+        assert result["conversation_repair"]["needs_content_revision"] is False
+        _assert_locked(result)
+
+
 def test_everyday_choice_stays_prompt_grounded_and_farewell_does_not_inherit_a_hold(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

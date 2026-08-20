@@ -125,6 +125,125 @@ def test_content_light_conversation_is_composed_without_paraphrasing_or_inventin
     assert all(item["unsupported_content_generated"] is False for item in results)
 
 
+def test_content_light_conversation_distinguishes_supported_social_moves():
+    cases = {
+        "awesome :)": "positive_reaction",
+        "so close": "near_result",
+        "good point hon": "positive_evaluation",
+        "we seem to have a bug": "problem_observation",
+        "ill figure it out :)": "self_resolution",
+    }
+    realized = {}
+    recent = [
+        "Hi there. I am listening.",
+        "I feel present and attentive right now.",
+    ]
+
+    for index, (prompt, expected_move) in enumerate(cases.items()):
+        plan = build_content_light_plan(
+            {"prompt": prompt, "recent_assistant_texts": recent}
+        )
+        result = realize_social_act_plan(
+            plan,
+            prompt=prompt,
+            variation_key=f"observed-qna-{index}",
+            recent_texts=recent,
+        )
+        assert plan["move_kind"] == expected_move
+        assert plan["recent_visible_context_available"] is True
+        assert plan["recent_visible_context_used_for_move"] is (
+            expected_move == "near_result"
+        )
+        assert plan["follow_up_question_required"] is (
+            expected_move == "problem_observation"
+        )
+        assert result["status"] == "social_act_realized"
+        assert result["unsupported_content_generated"] is False
+        realized[prompt] = result["candidate_text"]
+        recent.insert(0, result["candidate_text"])
+
+    conclusion_scaffolding = (
+        "larger conclusion",
+        "forcing a conclusion",
+        "turn every turn into a conclusion",
+        "larger answer attached",
+        "next part arrive naturally",
+    )
+    assert not any(
+        phrase in text.lower()
+        for text in realized.values()
+        for phrase in conclusion_scaffolding
+    )
+    assert "?" in realized["we seem to have a bug"]
+    assert len(set(realized.values())) == len(realized)
+
+
+def test_content_light_move_generalizes_across_paraphrase_families():
+    recent = ["I have the current thread and I am listening."]
+    families = {
+        "positive_reaction": [
+            "that was fantastic",
+            "this is sick",
+            "love it",
+            "hell yeah",
+        ],
+        "near_result": [
+            "you nearly nailed it",
+            "not quite there",
+            "one step away",
+            "that was almost right",
+        ],
+        "positive_evaluation": [
+            "that was a sharp catch",
+            "you nailed that",
+            "good eye hon",
+            "what a brilliant read",
+        ],
+        "problem_observation": [
+            "something feels off",
+            "these replies are looping",
+            "it keeps giving the same answer",
+            "the chat is acting weird",
+            "we hit a glitch",
+        ],
+        "self_resolution": [
+            "i can take it from here",
+            "let me untangle this",
+            "i know how to fix it",
+            "leave this one with me",
+            "i got this",
+        ],
+    }
+
+    for expected_move, prompts in families.items():
+        for prompt in prompts:
+            plan = build_content_light_plan(
+                {"prompt": prompt, "recent_assistant_texts": recent}
+            )
+            assert plan["move_kind"] == expected_move, prompt
+            assert plan["move_basis"] != "ordinary_statement_fallback"
+
+
+def test_content_light_move_keeps_unrelated_lexical_overlap_in_the_safe_fallback():
+    prompts = [
+        "the great library of alexandria held many works",
+        "we were almost late",
+        "this is a weird movie",
+        "i can work tomorrow",
+        "close the window",
+    ]
+
+    for prompt in prompts:
+        plan = build_content_light_plan(
+            {
+                "prompt": prompt,
+                "recent_assistant_texts": ["I am following the conversation."],
+            }
+        )
+        assert plan["move_kind"] == "open_share", prompt
+        assert plan["move_basis"] == "ordinary_statement_fallback"
+
+
 def test_nlo_routes_social_intent_through_compositional_act_realization(tmp_path):
     conn = _conn(tmp_path)
     prompt = "Greetings hon!"

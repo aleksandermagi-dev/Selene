@@ -41,7 +41,7 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
         {
             "status": "metacognition_feedback_advisor_ready",
             "organ_name": "Metacognition Organ",
-            "version": "v4_exact_obligation_owner_feedback",
+            "version": "v5_associative_fit_observer",
             "mode": "bounded_feedback_advisor",
             "run_count": count,
             "latest_run": latest,
@@ -53,6 +53,7 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "inspect whether affective influence and response authority remain separate",
                 "notice a threat-compressed option space and return an unmade choice to Core/Mind",
                 "recommend when to answer, qualify, ask, seek sources, hold, or stop",
+                "inspect a surfaced association without treating it as evidence or proof",
             ],
             "project_neutral_blueprint_ancestry": [
                 "Evidence and Correction Ledger",
@@ -160,6 +161,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     )
     conversational_energy = _dict(payload.get("conversational_energy"))
     structural_discovery = _dict(payload.get("structural_discovery"))
+    associative_intuition = _dict(payload.get("associative_intuition"))
     exploratory_reasoning = _dict(payload.get("exploratory_reasoning"))
     exploratory_response_kind = str(
         exploratory_reasoning.get("response_kind") or ""
@@ -360,7 +362,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     result = {
         "status": "metacognition_advisory_ready",
         "organ_name": "Metacognition Organ",
-        "version": "v4_exact_obligation_owner_feedback",
+        "version": "v5_associative_fit_observer",
         "mode": "bounded_feedback_advisor",
         "prompt_preview": truncate(prompt, 280),
         "fit_state": fit_state,
@@ -500,6 +502,27 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
             is True,
             "private_corpus_wording_used": False,
             "automatic_conclusion": False,
+        },
+        "associative_intuition": associative_intuition,
+        "associative_intuition_assessment": {
+            "observed": bool(associative_intuition),
+            "is_organ": False,
+            "connective_tissue_only": True,
+            "selected_state": str(
+                associative_intuition.get("selected_state")
+                or "no_connection_noticed"
+            ),
+            "candidate_available": bool(
+                associative_intuition.get("selected_candidate")
+            ),
+            "contribution_ready": (
+                associative_intuition.get("contribution_ready") is True
+            ),
+            "association_used_as_evidence": False,
+            "association_used_as_proof": False,
+            "fit_check_remains_downstream": True,
+            "automatic_retention": False,
+            "automatic_dream_routing": False,
         },
         "exploratory_reasoning": exploratory_reasoning,
         "exploratory_reasoning_assessment": {
@@ -861,10 +884,12 @@ def _reopen_target(comprehension: dict[str, Any], answer_engine: dict[str, Any])
 
 
 def _source_refs(payload: dict[str, Any], comprehension: dict[str, Any], answer_packet: dict[str, Any]) -> list[str]:
+    associative_intuition = _dict(payload.get("associative_intuition"))
     refs = [
         *_text_list(payload.get("source_refs")),
         *_text_list(comprehension.get("source_refs")),
         *_text_list(answer_packet.get("source_refs")),
+        *_text_list(associative_intuition.get("source_refs")),
     ]
     return list(dict.fromkeys(refs))[:50]
 

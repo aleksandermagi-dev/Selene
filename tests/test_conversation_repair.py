@@ -94,7 +94,10 @@ def test_open_question_requests_content_revision_without_inventing_answer():
     result = repair_conversation_candidate(
         {
             "candidate_text": "I am not certain yet.",
-            "turn_flow_plan": {"must_preserve_uncertainty": True},
+            "turn_flow_plan": {
+                "must_preserve_uncertainty": True,
+                "must_answer_visible_question": True,
+            },
             "response_coverage": {"unresolved_count": 1},
         }
     )
@@ -105,6 +108,30 @@ def test_open_question_requests_content_revision_without_inventing_answer():
     assert "visible_question_still_open" in result["attention_notes"]
     assert result["automatic_content_generation"] is False
     assert result["passed"] is True
+
+
+def test_spine_alignment_gap_does_not_masquerade_as_an_open_question():
+    result = repair_conversation_candidate(
+        {
+            "candidate_text": "I hear you.",
+            "turn_flow_plan": {
+                "primary_intent": "direct_conversation",
+                "must_answer_visible_question": False,
+            },
+            "response_coverage": {
+                "obligation_count": 0,
+                "unresolved_count": 1,
+                "conversation_spine_alignment": {
+                    "required": True,
+                    "aligned": False,
+                },
+            },
+        }
+    )
+
+    assert result["needs_content_revision"] is False
+    assert result["open_question_preserved"] is False
+    assert "visible_question_still_open" not in result["attention_notes"]
 
 
 def test_hard_boundary_does_not_add_social_preface():

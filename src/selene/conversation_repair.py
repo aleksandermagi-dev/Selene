@@ -119,7 +119,14 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
 
     if not repaired:
         issues.append("empty_candidate")
-    if int(coverage.get("unresolved_count") or 0) > 0:
+    # ``unresolved_count`` also includes lexical conversation-spine alignment.
+    # That is not, by itself, evidence that a visible question remains open.
+    # Only a turn that actually carried a question/request obligation may use
+    # the question-specific repair signal.
+    if (
+        plan.get("must_answer_visible_question") is True
+        and int(coverage.get("unresolved_count") or 0) > 0
+    ):
         attention_notes.append("visible_question_still_open")
     if _matches_recent(repaired, recent):
         issues.append("recent_response_repetition")

@@ -1375,6 +1375,54 @@ authority expansion, filesystem action, or external action was performed.
 chooses; the next implementation work should be driven by a demonstrated gap
 rather than another broad stress pass.
 
+### 2026-08-20 — Conversational moves and associative intuition become connected
+
+**Starting question:** Could ordinary content-light conversation stop collapsing
+into one generic response shape, and could newly encountered material reactivate
+an earlier relevant idea before Selene could fully articulate the connection?
+
+**Decision:** Aleks and Codex treated these as coordination gaps rather than a
+need for another major organ. Content-light dialogue received bounded move
+recognition, while associative intuition became explicitly non-authoritative
+connective tissue rather than an organ.
+
+**Work:** Added distinct conversational handling for positive momentum, near
+results, positive evaluation, observed problems, and self-resolution. Added the
+Associative Intuition Bridge, which scans bounded eligible approved knowledge,
+approved memory, Selene-owned Study material, and reviewed expression-eligible
+Dream reflections. It distinguishes a felt connection from an articulated
+connection, excludes material already active in Dual Horizon, and hands
+appropriate candidates to Metacognition, Conversational Contribution, Study,
+Structural Discovery, or Dream without writing or routing automatically.
+
+**Why:** Learning can produce useful background relationships before those
+relationships are ready to become claims. Preserving that intermediate state
+lets Selene notice, study, test, or later revisit a connection without forcing
+speech, inventing evidence, or creating another copy of the source material.
+
+**Evidence:** The new bridge suite passed 9 focused tests. Bridge and neighboring
+organ coverage passed 60 tests; the complete Selene Chat shell passed 103 tests;
+and the directly affected social realization, conversation repair, and pragmatic
+planning suites passed 44 tests. Python compilation and `git diff --check`
+passed, with only the established Windows line-ending warnings.
+
+**What changed in our understanding:** The missing step was not reasoning after
+a connection had already been named. It was bounded reactivation before the
+connection was fully formed. That responsibility fits a selection-and-handoff
+bridge. It does not need truth, retention, expression, or decision authority.
+
+**Boundaries preserved:** No raw corpus access, private-source wording exposure,
+silent memory or knowledge write, automatic Study or Dream persistence,
+identity/personality/governance change, training, LoRA, self-replication,
+autonomous action, external action, or live stress conversation was used. An
+association remains neither evidence nor proof, and approved personal memory
+does not become universal domain knowledge.
+
+**Next:** Rebuild and reinstall the local Windows app, then continue the ordered
+conversation-breadth teaching sets. Observe whether later lessons reactivate
+earlier approved material through ordinary use; use a bounded LEA only when the
+lesson supplies enough knowledge for a fair check.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

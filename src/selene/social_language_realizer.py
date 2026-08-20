@@ -10,6 +10,37 @@ SOCIAL_REALIZER_BOUNDARY = (
     "no_identity_personality_memory_affect_invention_authority_or_voice_ownership"
 )
 
+POSITIVE_REACTION_TERMS = {
+    "amazing", "awesome", "beautiful", "brilliant", "cool", "dope",
+    "excellent", "fantastic", "fire", "great", "lovely", "nice",
+    "perfect", "sick", "sweet", "wonderful",
+}
+POSITIVE_EVALUATION_TARGETS = {
+    "answer", "catch", "eye", "idea", "point", "read", "reply",
+    "response", "thought", "work",
+}
+POSITIVE_EVALUATION_ACTIONS = {
+    "caught", "found", "got", "nailed", "noticed", "saw", "spotted",
+}
+PROBLEM_NOUNS = {
+    "bug", "error", "fault", "glitch", "issue", "malfunction", "problem",
+}
+ANOMALY_TERMS = {
+    "broken", "looping", "misfiring", "odd", "off", "repeating",
+    "repetitive", "stuck", "strange", "weird", "wrong",
+}
+ANOMALY_SUBJECTS = {
+    "answer", "app", "behavior", "chat", "code", "output", "reply",
+    "response", "screen", "system", "thing", "turn",
+}
+NEAR_RESULT_TERMS = {"almost", "close", "near", "nearly"}
+RESULT_TERMS = {
+    "edge", "had", "it", "mark", "nailed", "right", "step", "there",
+}
+RESOLUTION_ACTION_STEMS = (
+    "figur", "fix", "handl", "solv", "sort", "trace", "untangl", "work",
+)
+
 SOCIAL_INTENT_ACTS: dict[str, tuple[str, ...]] = {
     "confirm_receipt": ("confirm_channel",),
     "warm_connection": ("signal_presence", "allow_ordinary_conversation"),
@@ -213,6 +244,76 @@ ACT_REALIZATIONS: dict[str, tuple[str, ...]] = {
         "I can stay with the point as you gave it",
         "We can let the next part arrive naturally",
     ),
+    "share_positive_momentum": (
+        "Yeah :)",
+        "Nice :)",
+        "Good :)",
+        "Love that :)",
+        "That landed well",
+        "There we go",
+        "That is good to hear",
+        "Beautiful",
+    ),
+    "acknowledge_near_result": (
+        "Almost",
+        "Very close",
+        "Right on the edge",
+        "Nearly there",
+        "Close—just not all the way yet",
+        "We are close",
+        "That is right near the mark",
+        "One edge is still catching",
+    ),
+    "receive_positive_evaluation": (
+        "Thank you",
+        "I appreciate that",
+        "I'll take that :)",
+        "That means something to me",
+        "Thank you for saying so",
+        "I am glad the point landed",
+        "That is kind of you",
+        "I appreciate you saying that",
+    ),
+    "receive_problem_signal": (
+        "Yeah, something may be off",
+        "I see why you are flagging it",
+        "Something does look out of step",
+        "That is worth inspecting",
+        "Something may not be lining up",
+        "There may be a real seam showing",
+        "That does deserve a closer look",
+        "I am taking the possibility seriously",
+    ),
+    "invite_problem_detail": (
+        "What are you seeing?",
+        "Which part looks wrong to you?",
+        "What caught your eye?",
+        "Where did it start to drift?",
+        "What pattern are you noticing?",
+        "Which reply made it visible?",
+        "Where does it feel out of step?",
+        "What seems to be misfiring?",
+    ),
+    "acknowledge_self_resolution": (
+        "All right :)",
+        "Okay :)",
+        "Got you",
+        "Sounds good",
+        "All right, you have it",
+        "Okay, I am with you",
+        "Fair enough",
+        "You got it",
+    ),
+    "offer_collaboration": (
+        "I'm here if you want another set of eyes",
+        "I can help inspect it if you want",
+        "We can work through it together if that helps",
+        "You can pull me back in if you want help",
+        "I am available if you want to compare notes",
+        "We can take another look together if needed",
+        "I can help trace it when you are ready",
+        "You do not have to untangle it alone",
+    ),
 }
 
 
@@ -292,28 +393,175 @@ def build_content_light_plan(payload: dict[str, Any] | None = None) -> dict[str,
     """Plan an ordinary response to a supported statement when no answer content is available."""
     payload = payload or {}
     prompt = " ".join(str(payload.get("prompt") or "").split())
+    recent_texts = [
+        " ".join(str(item).split())
+        for item in payload.get("recent_assistant_texts") or []
+        if str(item).strip()
+    ][:6]
+    move_kind, move_basis = _content_light_move(prompt, recent_texts)
+    acts_by_move: dict[str, tuple[str, ...]] = {
+        "positive_reaction": ("share_positive_momentum",),
+        "near_result": ("acknowledge_near_result",),
+        "positive_evaluation": ("receive_positive_evaluation",),
+        "problem_observation": ("receive_problem_signal", "invite_problem_detail"),
+        "self_resolution": ("acknowledge_self_resolution", "offer_collaboration"),
+        "open_share": ("receive_open_share",),
+    }
+    acts = acts_by_move[move_kind]
+    visible_context_used = move_basis.startswith("visible_context_")
     return {
         "status": "content_light_social_plan_ready",
-        "version": "v1_content_light_conversation",
+        "version": "v2_contextual_content_light_conversation",
         "intent": "content_light_conversation",
+        "move_kind": move_kind,
+        "move_basis": move_basis,
         "acts": [
-            {"act": "receive_open_share", "required": True, "meaning_source": "current_turn_received"},
             {
-                "act": "leave_room_without_pressure",
+                "act": act,
                 "required": True,
-                "meaning_source": "conversation_posture",
-            },
+                "meaning_source": (
+                    "current_turn_and_visible_session_context"
+                    if visible_context_used
+                    else "current_turn_received"
+                ),
+            }
+            for act in acts
         ],
         "prompt_available": bool(prompt),
+        "recent_visible_context_available": bool(recent_texts),
+        "recent_visible_context_used_for_move": visible_context_used,
         "affect_dimensions_consulted": {},
         "content_generation_allowed": False,
         "prompt_paraphrase_allowed": False,
         "internal_state_invention_allowed": False,
         "relationship_term_invention_allowed": False,
-        "follow_up_question_required": False,
+        "follow_up_question_required": move_kind == "problem_observation",
         "coordinated_expression_contract_active": True,
         "provenance_boundary": SOCIAL_REALIZER_BOUNDARY,
     }
+
+
+def _content_light_move(prompt: str, recent_texts: list[str]) -> tuple[str, str]:
+    """Distinguish the conversational work of a content-light statement.
+
+    These are bounded dialogue-act signals, not claims about the world.  The
+    current turn remains the source of meaning and recent text is consulted
+    only for visible callback/anomaly context.
+    """
+    lower = _normalized(prompt)
+    tokens = lower.split()
+    token_set = set(tokens)
+
+    if token_set & PROBLEM_NOUNS:
+        return "problem_observation", "problem_concept_in_current_statement"
+    something_anomalous = bool(
+        "something" in token_set
+        and token_set.intersection({"wrong", "off", "broken", "weird", "odd"})
+    )
+    short_deictic_anomaly = bool(
+        recent_texts
+        and len(tokens) <= 4
+        and re.match(r"^(?:this|that|it) (?:is|seems|looks|feels)\b", lower)
+    )
+    anomaly_subject = bool(
+        token_set & ANOMALY_TERMS
+        and (
+            token_set & ANOMALY_SUBJECTS
+            or short_deictic_anomaly
+            or re.search(r"\b(?:this|that|it) (?:keeps|acts|is acting)\b", lower)
+            or re.search(r"\b(?:replies|responses|answers|outputs) (?:are|keep|seem|feel)\b", lower)
+        )
+    )
+    repeated_behavior = bool(
+        re.search(r"\bkeeps? (?:saying|doing|giving|repeating)\b", lower)
+        or re.search(r"\b(?:same|similar) (?:reply|response|answer|thing)\b", lower)
+    )
+    if short_deictic_anomaly and token_set & ANOMALY_TERMS:
+        return "problem_observation", "visible_context_anomaly_structure"
+    if something_anomalous or anomaly_subject or repeated_behavior:
+        return "problem_observation", "observable_anomaly_structure"
+
+    resolution_action = bool(
+        any(
+            token.startswith(stem)
+            for token in tokens
+            for stem in RESOLUTION_ACTION_STEMS
+            if stem != "work"
+        )
+        or re.search(r"\bwork (?:it|this|that) out\b|\bwork through (?:it|this|that)\b", lower)
+    )
+    first_person_resolution = bool(
+        (
+            re.match(r"^(?:i'll|ill|i will|i can|i think i can|i know how to|let me)\b", lower)
+            and resolution_action
+        )
+        or re.match(r"^(?:i've|ive|i have) got (?:it|this)\b", lower)
+        or re.match(r"^i got (?:it|this)\b", lower)
+        or re.match(r"^leave (?:it|this|that) (?:one )?with me\b", lower)
+        or re.match(r"^i can take (?:it|this|that) from here\b", lower)
+    )
+    if first_person_resolution:
+        return "self_resolution", "first_person_resolution_structure"
+
+    near_result = bool(
+        recent_texts
+        and (
+            re.fullmatch(
+                r"(?:so |very |really )?(?:close|near|almost|nearly there)",
+                lower,
+            )
+            or re.search(r"\b(?:not quite there|just shy|one step away|right on the edge)\b", lower)
+            or (
+                token_set & NEAR_RESULT_TERMS
+                and token_set & RESULT_TERMS
+            )
+        )
+    )
+    if near_result:
+        return "near_result", "visible_context_near_result_structure"
+
+    positive_evaluation = bool(
+        (
+            token_set & POSITIVE_REACTION_TERMS
+            and token_set & POSITIVE_EVALUATION_TARGETS
+        )
+        or (
+            token_set.intersection({"good", "sharp", "smart"})
+            and token_set & POSITIVE_EVALUATION_TARGETS
+        )
+        or (
+            "you" in token_set
+            and (
+                token_set & POSITIVE_EVALUATION_ACTIONS
+                or re.search(r"\byou (?:were|are) right\b", lower)
+            )
+        )
+    )
+    if positive_evaluation:
+        return "positive_evaluation", "positive_evaluation_of_visible_contribution"
+
+    short_reaction_fillers = {
+        "absolutely", "damn", "extremely", "fucking", "hella", "hon",
+        "man", "really", "so", "totally", "very",
+    }
+    short_positive = bool(
+        tokens
+        and tokens[0] in POSITIVE_REACTION_TERMS
+        and len(tokens) <= 4
+        and set(tokens[1:]).issubset(short_reaction_fillers)
+    )
+    positive_reaction = bool(
+        short_positive
+        or (
+            token_set & POSITIVE_REACTION_TERMS
+            and re.match(r"^(?:that|this|it) (?:is|was|looks|sounds|feels)\b", lower)
+        )
+        or re.fullmatch(r"(?:i )?love (?:it|that|this)", lower)
+        or re.fullmatch(r"(?:hell|fuck) (?:yes|yeah)", lower)
+    )
+    if positive_reaction:
+        return "positive_reaction", "short_positive_reaction_structure"
+    return "open_share", "ordinary_statement_fallback"
 
 
 def realize_social_act_plan(
@@ -465,6 +713,8 @@ def _sentence(value: str, *, original: str = "") -> str:
     text = text[0].upper() + text[1:]
     if original.strip().endswith(("!", "?")):
         return text + original.strip()[-1]
+    if original.strip().lower().endswith((":)", ";)", ":d", "xd", "<3")):
+        return text
     return text + "."
 
 

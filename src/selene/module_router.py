@@ -62,6 +62,10 @@ from .conversational_contribution import (
     build_conversational_contribution_packet,
     conversational_contribution_status,
 )
+from .associative_intuition import (
+    associative_intuition_status,
+    build_associative_intuition_bridge,
+)
 from .exploratory_reasoning import (
     build_exploratory_reasoning_packet,
     exploratory_reasoning_status,
@@ -843,6 +847,13 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {
             "route": route_key,
             "result": build_conversational_contribution_packet(payload),
+        }
+    if route_key == "associative_intuition.status":
+        return {"route": route_key, "result": associative_intuition_status(conn)}
+    if route_key == "associative_intuition.preview":
+        return {
+            "route": route_key,
+            "result": build_associative_intuition_bridge(conn, payload),
         }
     if route_key == "structural_discovery.status":
         return {"route": route_key, "result": structural_discovery_status()}

@@ -448,15 +448,18 @@ def evaluate_response_coverage(
         and semantic_coverage.get("all_required_covered") is True
         and obligation_coverage_complete
     )
+    answer_bearing_alignment = bool(required) or semantic_coverage.get("packet_supported") is True
     grounding_unresolved = int(
         spine_alignment.get("required") is True
         and spine_alignment.get("aligned") is not True
         and not semantic_grounding_override
+        and answer_bearing_alignment
     )
     release_grounding_unresolved = int(
         spine_alignment.get("required") is True
         and spine_alignment.get("aligned") is not True
         and not semantic_grounding_override
+        and answer_bearing_alignment
         and not obligation_resolution_complete
     )
     return _with_guards(
@@ -482,6 +485,7 @@ def evaluate_response_coverage(
             "conversation_spine_used": bool(conversation_spine),
             "supported_semantic_coverage": semantic_coverage,
             "semantic_grounding_override": semantic_grounding_override,
+            "answer_bearing_alignment_required": answer_bearing_alignment,
             "method": (
                 "conservative_visible_and_supported_semantic_obligation_and_spine_alignment"
                 if conversation_spine

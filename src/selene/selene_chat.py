@@ -27,6 +27,7 @@ from .core_mind import create_core_mind_route_preview
 from .conversation_repair import repair_conversation_candidate
 from .commitment_anomaly_coordination import inspect_visible_commitment_claim
 from .conversational_contribution import build_conversational_contribution_packet
+from .associative_intuition import build_associative_intuition_bridge
 from .long_thread_endurance import build_long_thread_endurance_plan
 from .conversation_spine import (
     build_conversation_spine,
@@ -660,6 +661,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         conversation_spine,
         dual_horizon_context,
     )
+    associative_intuition = build_associative_intuition_bridge(
+        conn,
+        {
+            "trigger_text": meaning_text,
+            "dual_horizon_context": dual_horizon_context,
+            "source_packets": payload.get("source_packets") or [],
+            "hard_boundary": bool(hard_blockers),
+            "diagnostic_only": qa_probe,
+        },
+    )
     long_thread_endurance = build_long_thread_endurance_plan(
         {
             "dialogue_workspace": prepared_dialogue_workspace,
@@ -1122,7 +1133,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_context": conversation_context,
             "recent_assistant_texts": conversation_context.get("recent_assistant_texts")
             or [],
-            "upstream_candidates": payload.get("contribution_candidates") or [],
+            "upstream_candidates": [
+                *(payload.get("contribution_candidates") or []),
+                *(associative_intuition.get("contribution_candidates") or []),
+            ],
             "requested_posture": (
                 (payload.get("conversational_energy") or {}).get("requested_posture")
                 if isinstance(payload.get("conversational_energy"), dict)
@@ -1461,6 +1475,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "formation_braid": formation_braid,
         "organ_coalition": organ_coalition,
         "dual_horizon_context": dual_horizon_context,
+        "associative_intuition": associative_intuition,
         "long_thread_endurance": long_thread_endurance,
         "conversation_spine": conversation_spine,
         "conversation_continuity": conversation_continuity,
@@ -1481,6 +1496,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             *_json_list(diagnostic_context.get("source_refs")),
             *_json_list(route.get("source_refs")),
             *_json_list(comprehension.get("source_refs")),
+            *_json_list(associative_intuition.get("source_refs")),
         ],
     }
     preliminary_metacognition = inspect_metacognition(
@@ -1752,6 +1768,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "exploratory_reasoning": exploratory_reasoning,
             "formation_braid": formation_braid,
             "dual_horizon_context": dual_horizon_context,
+            "associative_intuition": associative_intuition,
             "long_thread_endurance": long_thread_endurance,
             "metacognition": metacognition,
             "epistemic_answer_state": epistemic_answer_state,
@@ -1891,6 +1908,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "formation_braid": formation_braid,
         "organ_coalition": organ_coalition,
         "dual_horizon_context": dual_horizon_context,
+        "associative_intuition": associative_intuition,
         "long_thread_endurance": long_thread_endurance,
         "visible_speech_release": visible_speech_release,
         "input_channel": input_channel,
@@ -1977,6 +1995,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "formation_braid": formation_braid,
             "organ_coalition": organ_coalition,
             "dual_horizon_context": dual_horizon_context,
+            "associative_intuition": associative_intuition,
             "long_thread_endurance": long_thread_endurance,
             "comprehension_integration": comprehension,
             "language_capability_answer": language_capability,

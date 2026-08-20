@@ -1722,7 +1722,12 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         }
     )
     content_light_plan = (
-        build_content_light_plan({"prompt": prompt})
+        build_content_light_plan(
+            {
+                "prompt": prompt,
+                "recent_assistant_texts": meaning.get("recent_assistant_texts") or [],
+            }
+        )
         if intent == "direct_answer" and not str(meaning.get("content_seed") or "").strip()
         else {"status": "content_light_social_plan_not_applicable"}
     )
