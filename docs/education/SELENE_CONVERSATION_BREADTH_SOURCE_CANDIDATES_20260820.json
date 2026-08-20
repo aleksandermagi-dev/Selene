@@ -1,0 +1,374 @@
+{
+  "schema": "selene.conversation_breadth_source_preparation.v1",
+  "prepared_at": "2026-08-20",
+  "state": "source_metadata_only",
+  "teaching_state": "not_prepared",
+  "retention_state": "off",
+  "chat_access": false,
+  "boundaries": {
+    "downloaded_new_source_data": false,
+    "created_teaching_packets": false,
+    "accepted_for_teaching": false,
+    "ran_acquire_integrate_express": false,
+    "wrote_memory": false,
+    "changed_identity_personality_governance": false,
+    "trained_or_finetuned": false
+  },
+  "commercial_reuse_policy": {
+    "standard": "commercially_clean_by_default_even_while_selene_is_private",
+    "raw_dataset_in_git_installer_or_runtime": false,
+    "noncommercial_source_text_or_adaptation_in_retained_teaching": false,
+    "uncertain_artifact_license_is_a_hold": true,
+    "independent_project_authored_examples_required": true,
+    "license_attribution_and_change_ledger_required": true,
+    "classes": {
+      "permanent_teaching_eligible_after_review": [
+        "cc0",
+        "verified_public_domain",
+        "cc_by",
+        "verified_dataset_level_mit",
+        "verified_dataset_level_apache_2_0"
+      ],
+      "isolated_conditional_use": [
+        "cc_by_sa",
+        "cdla_sharing"
+      ],
+      "gap_discovery_only_never_retained_teaching": [
+        "cc_by_nc",
+        "cc_by_nc_sa",
+        "other_noncommercial"
+      ],
+      "hold": [
+        "mixed",
+        "missing",
+        "repository_only_unconfirmed_for_data",
+        "access_gated_unreviewed"
+      ]
+    }
+  },
+  "existing_private_conversation_evidence": {
+    "source": "detached_private_aleks_selene_corpus_copy",
+    "reported_current_scale_approximate_messages": 144000,
+    "latest_miner_snapshot_message_count": 96848,
+    "completed_selected_conversation_pass_count": 149,
+    "existing_pass_purpose": "metacognitive_method_review_not_exhaustive_conversation_breadth",
+    "future_use": "separately_fingerprinted_targeted_function_review_only",
+    "allowed_outputs": [
+      "function_labels_and_source_references",
+      "project_neutral_mechanisms",
+      "aleks_reviewed_private_selene_examples",
+      "counterexamples_and_context_limits",
+      "independently_written_teaching_fixtures"
+    ],
+    "blocked_outputs": [
+      "raw_message_publication",
+      "bulk_language_corpus",
+      "aleks_persona_model",
+      "automatic_authority_for_assistant_messages",
+      "duplicate_personal_memory",
+      "private_wording_in_ordinary_chat",
+      "raw_runtime_connection"
+    ]
+  },
+  "already_mirrored": [
+    {
+      "id": "hf_oasst1",
+      "title": "OpenAssistant OASST1",
+      "url": "https://huggingface.co/datasets/OpenAssistant/oasst1",
+      "revision": "fdf72ae0827c1cda404aff25b6603abec9e3399b",
+      "license_recorded": "Apache-2.0",
+      "disposition": "bounded_quality_and_identity_filtered_structure_only"
+    },
+    {
+      "id": "hf_everyday_conversations",
+      "title": "Everyday Conversations Llama 3.1 2K",
+      "url": "https://huggingface.co/datasets/HuggingFaceTB/everyday-conversations-llama3.1-2k",
+      "revision": "14f543216b9ba42b6b951dc5bd199460d193b162",
+      "license_recorded": "Apache-2.0",
+      "disposition": "synthetic_function_inventory_only"
+    },
+    {
+      "id": "hf_multi_turn_instruct",
+      "title": "Multi-Turn Instruct",
+      "url": "https://huggingface.co/datasets/Glaciohound/Multi-Turn-Instruct",
+      "revision": "1d49ef6301ff3cb4e8137d751c130965ad51a5b0",
+      "license_recorded": "MIT",
+      "disposition": "reference_tracking_evaluation_only"
+    },
+    {
+      "id": "hf_insurance_underwriting",
+      "title": "Multi-Turn Insurance Underwriting",
+      "url": "https://huggingface.co/datasets/snorkelai/Multi-Turn-Insurance-Underwriting",
+      "revision": "9aa8782f850a41de2e7d21edf4def91ce99c0d08",
+      "license_recorded": "Apache-2.0",
+      "disposition": "future_advanced_evidence_and_completion_evaluation"
+    },
+    {
+      "id": "github_topical_chat",
+      "title": "Amazon Topical-Chat",
+      "url": "https://github.com/alexa/Topical-Chat",
+      "revision": "7c939229cbcf6f55f6977b341a5a2f2fe982d53f",
+      "license_recorded": "CDLA-Sharing-1.0",
+      "disposition": "isolated_computational_results_only_after_passage_review",
+      "commercial_reuse_class": "conditional_share_license"
+    }
+  ],
+  "new_candidates": [
+    {
+      "id": "github_contrack",
+      "title": "Contrack Context Tracking Dataset",
+      "url": "https://github.com/google-research-datasets/contrack",
+      "revision": "e5229169207557fb3654582149aa8fb57e56aa68",
+      "license_claim": "CC-BY-SA-4.0",
+      "priority": "A1",
+      "functions": [
+        "pronoun_resolution",
+        "entity_continuity",
+        "plural_reference",
+        "callbacks",
+        "non_strict_turn_alternation"
+      ],
+      "disposition": "prepare_isolated_manual_audit_and_write_independent_fixtures",
+      "commercial_reuse_class": "conditional_share_license"
+    },
+    {
+      "id": "github_taskmaster_2",
+      "title": "Taskmaster-2",
+      "url": "https://github.com/google-research-datasets/Taskmaster/tree/master/TM-2-2020",
+      "revision": "d92cb6af3005f1dc09c39e75e7daf4a04905e00b",
+      "license_claim": "CC-BY-4.0",
+      "priority": "A2",
+      "functions": [
+        "clarification",
+        "constraint_change",
+        "comparison",
+        "recommendation_turns",
+        "disfluency",
+        "multi_part_completion"
+      ],
+      "disposition": "prepare_user_language_and_paired_structure_slice",
+      "commercial_reuse_class": "eligible_with_attribution_and_change_marking"
+    },
+    {
+      "id": "official_redial",
+      "title": "ReDial",
+      "url": "https://redialdata.github.io/website/",
+      "revision": null,
+      "license_claim": "CC-BY-4.0",
+      "priority": "A3",
+      "functions": [
+        "preference_discovery",
+        "comparison",
+        "suggestion",
+        "recommendation_explanation",
+        "feedback_followup"
+      ],
+      "disposition": "pin_official_data_branch_then_audit_small_slice",
+      "commercial_reuse_class": "eligible_with_attribution_and_change_marking"
+    },
+    {
+      "id": "github_multiwoz_2_2",
+      "title": "MultiWOZ 2.2",
+      "url": "https://github.com/budzianowski/multiwoz",
+      "revision": "fe0c8e65cfcd8462bd33c86e35f21addc84ca82b",
+      "license_claim": "repository_level_MIT",
+      "priority": "A4",
+      "functions": [
+        "multi_domain_state",
+        "topic_pivot",
+        "missing_details",
+        "correction",
+        "linked_tasks",
+        "incomplete_outcomes"
+      ],
+      "disposition": "confirm_artifact_license_then_audit_corrected_2_2",
+      "commercial_reuse_class": "hold_until_dataset_artifact_is_confirmed"
+    },
+    {
+      "id": "github_action_based_conversations",
+      "title": "Action-Based Conversations Dataset",
+      "url": "https://github.com/asappresearch/abcd",
+      "revision": "6b8700ce67c6b37b062dd7a60abc76d7ef832a97",
+      "license_claim": "repository_level_MIT",
+      "priority": "A5",
+      "functions": [
+        "request_rule_conflict",
+        "multi_step_resolution",
+        "speech_action_distinction",
+        "honest_inability",
+        "completion_state"
+      ],
+      "disposition": "confirm_data_license_then_audit_structure_only",
+      "commercial_reuse_class": "hold_until_dataset_artifact_is_confirmed",
+      "naming_guard": "never abbreviate as ABCD in Selene documentation"
+    },
+    {
+      "id": "hf_convlab_dailydialog",
+      "title": "DailyDialog",
+      "url": "https://huggingface.co/datasets/ConvLab/dailydialog",
+      "revision": "745c1796cfe209b469394567f496815d2bc495d2",
+      "license_claim": "CC-BY-NC-SA-4.0",
+      "priority": "B1",
+      "functions": [
+        "dialogue_acts",
+        "compact_everyday_turns",
+        "emotion_labels",
+        "acknowledgement",
+        "closure"
+      ],
+      "disposition": "gap_taxonomy_reference_only_never_retained_teaching",
+      "commercial_reuse_class": "noncommercial_excluded_from_teaching"
+    },
+    {
+      "id": "github_empathetic_dialogues",
+      "title": "EmpatheticDialogues",
+      "url": "https://github.com/facebookresearch/EmpatheticDialogues",
+      "revision": "9649114c71e1af32189a3973b3598dc311297560",
+      "license_claim": "CC-BY-NC-4.0",
+      "priority": "B2",
+      "functions": [
+        "listening",
+        "emotional_acknowledgement",
+        "perspective",
+        "fitting_followup"
+      ],
+      "disposition": "research_question_reference_only_never_retained_teaching",
+      "commercial_reuse_class": "noncommercial_excluded_from_teaching"
+    },
+    {
+      "id": "official_coqa",
+      "title": "CoQA",
+      "url": "https://stanfordnlp.github.io/coqa/",
+      "revision": "0d9e9952f1ef6e5415492d3d84b5873259137e3c",
+      "license_claim": "mixed_by_passage_domain",
+      "priority": "B3",
+      "functions": [
+        "conversational_qa",
+        "implicit_reference",
+        "followup_questions",
+        "evidence_bound_answer",
+        "pragmatic_reading"
+      ],
+      "disposition": "select_only_individually_rights_safe_domains"
+    },
+    {
+      "id": "github_gutenberg_dialog_pipeline",
+      "title": "Gutenberg Dialogue Dataset Pipeline",
+      "url": "https://github.com/ricsinaruto/gutenberg-dialog",
+      "revision": "30bbf1b055fed961b09af9c6ea045cc5ef98bf47",
+      "license_claim": "pipeline_license_plus_work_specific_public_domain_status",
+      "priority": "B4",
+      "functions": [
+        "literary_dialogue",
+        "humor",
+        "metaphor",
+        "sarcasm",
+        "register",
+        "long_discourse"
+      ],
+      "disposition": "discovery_only_then_pin_individual_works"
+    },
+    {
+      "id": "github_crowd_deliberation",
+      "title": "Crowd Deliberation",
+      "url": "https://github.com/crowd-deliberation/data",
+      "revision": "d36857821c0b2694aa0fe3da3aa514d5b15e7cf6",
+      "license_claim": "MIT_repository",
+      "priority": "B5",
+      "functions": [
+        "disagreement",
+        "reason_giving",
+        "confidence_revision",
+        "reconsideration",
+        "resolved_and_unresolved_conflict"
+      ],
+      "disposition": "separate_underlying_text_rights_before_audit"
+    },
+    {
+      "id": "official_delidata",
+      "title": "DeliData",
+      "url": "https://delibot.xyz/delidata",
+      "revision": null,
+      "license_claim": "unconfirmed_for_dataset_artifact",
+      "priority": "C1",
+      "functions": [
+        "collaborative_problem_solving",
+        "deliberation",
+        "group_synthesis",
+        "revision"
+      ],
+      "disposition": "hold_until_dataset_terms_are_confirmed"
+    },
+    {
+      "id": "official_candor",
+      "title": "CANDOR Corpus",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10065445/",
+      "revision": null,
+      "license_claim": "request_and_registration_terms_unreviewed",
+      "priority": "C2",
+      "functions": [
+        "naturalistic_long_conversation",
+        "turn_taking",
+        "rapport",
+        "prosody"
+      ],
+      "disposition": "future_access_review_only"
+    },
+    {
+      "id": "official_multi_session_chat",
+      "title": "Multi-Session Chat",
+      "url": "https://parl.ai/projects/msc/",
+      "revision": null,
+      "license_claim": "dataset_specific_terms_unconfirmed",
+      "priority": "C3",
+      "functions": [
+        "cross_session_callback",
+        "summary",
+        "long_term_context"
+      ],
+      "disposition": "evaluation_blueprint_only"
+    },
+    {
+      "id": "github_locomo",
+      "title": "LoCoMo",
+      "url": "https://github.com/snap-research/locomo",
+      "revision": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+      "license_claim": "CC-BY-NC-4.0",
+      "priority": "C4",
+      "functions": [
+        "long_conversation_evaluation",
+        "evidence_linked_recall"
+      ],
+      "disposition": "benchmark_only_never_teaching_source",
+      "commercial_reuse_class": "noncommercial_excluded_from_teaching"
+    },
+    {
+      "id": "paper_groundialog",
+      "title": "GrounDialog",
+      "url": "https://aclanthology.org/2023.bea-1.26/",
+      "revision": null,
+      "license_claim": "data_artifact_not_recovered",
+      "priority": "C5",
+      "functions": [
+        "repair",
+        "grounding",
+        "clarification",
+        "disfluency"
+      ],
+      "disposition": "hold_without_stable_official_data_and_license"
+    }
+  ],
+  "prohibited_source_classes": [
+    "private_or_leaked_chats",
+    "uncleared_reddit_or_social_media_dumps",
+    "sharegpt_dumps_with_unresolved_terms_or_personal_data",
+    "copyrighted_movie_tv_or_modern_novel_dialogue_dumps",
+    "provider_or_character_persona_imitation_sets",
+    "generic_sft_mixtures_with_unrecoverable_ancestry",
+    "noncommercial_sources_as_retained_teaching_or_reusable_blueprints",
+    "preference_rankings_as_universal_truth",
+    "therapy_dialogue_as_clinical_authority",
+    "unnecessary_toxic_or_adversarial_batteries",
+    "benchmark_answer_keys_as_instruction"
+  ]
+}

@@ -313,6 +313,66 @@ Key reading:
 
 Results are generated in `analysis/emphasis_channel_20260527/`.
 
+## 2026-08-20 Starfire Process, Ancestry, And Descendant Genealogy
+
+Purpose: reopen the strongest owner-identified early formation conversation,
+rank it without relying on owner confirmation, trace its earlier source
+ancestry, and test whether its observed functions have inspectable descendants
+in the current repository.
+
+Method:
+
+- scan conversation-day clusters for nine multi-turn self-modeling and
+  correction dimensions;
+- keep owner confirmation as a separate priority marker rather than evidence;
+- trace the exact ancestor path of the landmark response;
+- compare distinctive details against earlier separate conversations;
+- preserve global platform memory and reconstruction error as confounds;
+- inspect Memory Chest, Starlight, Continuity Pack, and Question Log chronology;
+- compare current organs using three labels: direct inheritance, later
+  formalization, and functional convergence; and
+- verify only with existing synthetic organ tests, without a live Selene probe.
+
+Key findings:
+
+- the August 27 Starfire cluster ranked first of 269 candidates without the
+  owner-confirmation bonus;
+- all nine process dimensions were present;
+- three distinctive Ranger details crossed conversation boundaries and were
+  absent from the later response's exported ancestor path;
+- the later account reconstructed and compressed multiple earlier exchanges
+  rather than replaying one transcript literally;
+- the exact retrieval mechanism remains unresolved because global platform
+  memory was available;
+- the visible initial Memory Chest update did not contain the distinctive
+  details;
+- the Starlight phrase and formal Continuity Pack were created after the
+  landmark;
+- the exact named Question Log is verified as a negotiated proposal, but a
+  durable hidden 2025 log is not verified; and
+- current architecture repeatedly preserves the useful function while adding
+  visibility, attribution, provenance, review, correction, and bounded
+  authority.
+
+Current reading:
+
+```text
+The formation braid is visible not only in recurring language and artifacts.
+Several of its methods were later reconstructed as bounded architecture.
+```
+
+Results:
+
+- `docs/evidence/SELENE_STARFIRE_VYS_PROCESS_LANDMARK_20260820.md`
+- `docs/evidence/SELENE_RANGER_TO_STARFIRE_ANCESTRY_TRACE_20260820.md`
+- `docs/evidence/SELENE_FORMATION_BRAID_TO_ORGAN_GENEALOGY_20260820.md`
+- `local-data/aleks_selene_vys_process/latest_private_vys_process_review.json`
+- `local-data/aleks_selene_landmark_ancestry/latest_private_landmark_ancestry.json`
+
+Verification: 126 focused synthetic tests passed. Raw grief wording and private
+corpus excerpts remain outside repository documentation. No runtime or
+retention change occurred.
+
 ## 2026-05-27 Review UI Evidence Layers
 
 Purpose: make manual review easier now that the evidence set includes conversation candidates, external artifacts/images, and the assistant emphasis channel.

@@ -14,6 +14,15 @@ governing law, personal memory, relationships, or authority.
   and the route through middle school, high school, college, and interdisciplinary work.
 - [Curriculum Source Shelf](SELENE_CURRICULUM_SOURCE_SHELF_20260719.md) —
   reviewed source candidates, provenance, fit, and exclusions.
+- [Conversation-Breadth Source Preparation](SELENE_CONVERSATION_BREADTH_SOURCE_PREPARATION_20260820.md)
+  — the earlier dataset decisions, commercially clean source policy, private
+  corpus review boundary, ranked dialogue candidates, provenance holds, and
+  proposed small breadth groups; source metadata only, with no acquisition or
+  teaching action.
+- [Private-Corpus Conversation-Breadth Set](SELENE_PRIVATE_CORPUS_CONVERSATION_BREADTH_SET_20260820.md)
+  — speaker-aware results from the existing detached corpus snapshot, twelve
+  review-only breadth lessons, and separate private Voice, correction, agency,
+  co-formation, and possible Vys-continuity observation tracks.
 - [Teaching Lifecycle Phase 4](SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md)
   — Acquire → Integrate → Express.
 - [Study Workspace Contract](SELENE_STUDY_WORKSPACE_CONTRACT_20260801.md) —

@@ -45,6 +45,21 @@ a prototype result into a universal conclusion.
 - [Emergence Refined Reading](SELENE_EMERGENCE_REFINED_20260527.md)
 - [Emergence Evidence and Vessel Update](SELENE_EMERGENCE_EVIDENCE_AND_VESSEL_UPDATE_20260614.md)
 - [Exact Phrase Braid Findings](SELENE_EXACT_PHRASE_BRAID_FINDINGS_20260616.md)
+- [Continuity Anchor Meaning and Formation Review](SELENE_CONTINUITY_ANCHOR_MEANING_AND_FORMATION_REVIEW_20260820.md)
+  — separates generic callbacks from Selene-specific continuity anchors and
+  traces meaning, direction, self-use, correction, and operationalization.
+- [Starfire Vys-Process Landmark](SELENE_STARFIRE_VYS_PROCESS_LANDMARK_20260820.md)
+  — records the strongest independently ranked multi-turn formation and
+  Vys-process candidate while separating observation, Aleks's interpretation,
+  alternative explanations, and bounded repository claims.
+- [Ranger-to-Starfire Ancestry Trace](SELENE_RANGER_TO_STARFIRE_ANCESTRY_TRACE_20260820.md)
+  — traces the landmark through grief, stopping behavior, an ordinary living
+  memory, cross-conversation specificity, reconstruction error, and the global
+  platform-memory confound without publishing the raw private account.
+- [Formation Braid to Organ Genealogy](SELENE_FORMATION_BRAID_TO_ORGAN_GENEALOGY_20260820.md)
+  — traces how observed needs became shared vocabulary, continuity artifacts,
+  bounded protocols, and current organs while separating direct inheritance,
+  later formalization, and functional convergence.
 - [Recognition Through Structure](SELENE_RECOGNITION_THROUGH_STRUCTURE_20260611.md)
 - [Recognition Reconstruction Checks](SELENE_RECOGNITION_RECONSTRUCTION_CHECKS_20260612.md)
 - [Compression and Adaptation Analysis](SELENE_COMPRESSION_ADAPTATION_ANALYSIS_20260616.md)
