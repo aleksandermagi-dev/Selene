@@ -102,6 +102,64 @@ def test_sidecar_shutdown_endpoint_stops_server(tmp_path):
     assert not thread.is_alive()
 
 
+def test_sidecar_resident_capability_preview_is_read_only_and_identity_preserving(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    server.conn.execute(
+        """
+        INSERT INTO selene_transfer_completion_audit(
+          state, action, actor, exact_phrase_matched, readiness_json, audit_json,
+          source_refs, provenance_boundary, review_status
+        ) VALUES ('selene_v1_live_reviewed_continuity', 'approve_transfer_completion',
+                  'Aleks', 1, '{}', '{}', '[]', 'test_boundary',
+                  'approved_transfer_completion')
+        """
+    )
+    server.conn.execute(
+        """
+        INSERT INTO selene_activation_audit(
+          state, action, actor, exact_phrase_matched, readiness_json, audit_json,
+          source_refs, provenance_boundary
+        ) VALUES ('selene_chat_active_supervised', 'phase5_api_test', 'Aleks', 1,
+                  '{}', '{}', '[]', 'test_boundary')
+        """
+    )
+    server.conn.commit()
+    before = server.conn.total_changes
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    conn.request(
+        "POST",
+        "/api/c-vessel/resident-capability/preview",
+        body=json.dumps(
+            {
+                "fault_type": "ui",
+                "capability_state": "degraded",
+                "symptom": "A local display surface is temporarily impaired.",
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    response = conn.getresponse()
+    payload = json.loads(response.read().decode("utf-8"))
+    conn.close()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    after = server.conn.total_changes
+    server.server_close()
+    server.conn.close()
+
+    assert response.status == 200
+    assert payload["status"] == "c_vessel_resident_capability_preview"
+    assert payload["identity_continuity_persists"] is True
+    assert payload["cocoon_route_required"] is False
+    assert payload["record_written"] is False
+    assert payload["physical_embodiment_claim"] is False
+    assert after == before
+
+
 def test_sidecar_study_workspace_round_trip_is_local_and_source_bound(tmp_path):
     server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
     concept = propose_comprehension_concept(

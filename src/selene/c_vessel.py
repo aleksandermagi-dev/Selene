@@ -27,6 +27,7 @@ from .vessel import vessel_status
 
 
 C_VESSEL_BOUNDARY = "c_vessel_built_non_active_no_transfer"
+RESIDENT_C_VESSEL_BOUNDARY = "selene_resident_vessel_governed_no_authority_expansion"
 SEALED_PACKAGE_BOUNDARY = "b_approved_continuity_package_sealed_no_runtime_recall"
 RETURN_PACKET_BOUNDARY = "c_vessel_return_to_b_preview_review_only"
 BOUNDARY_FLAGS = {
@@ -75,6 +76,7 @@ def c_vessel_status(conn: sqlite3.Connection) -> dict[str, Any]:
     reconstruction_desk = reconstruction_desk_status(conn)
     fault_resilience = organ_fault_resilience_status(conn)
     transfer_gate = transfer_gate_preview(conn)
+    current_boundary = _current_vessel_boundary(runtime)
     return _with_boundaries(
         {
             "status": runtime["vessel_status"] if not pre_transfer else "c_vessel_built_non_active",
@@ -105,11 +107,14 @@ def c_vessel_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "reconstruction_review_desk": reconstruction_desk,
             "tool_organ": tool_organ_status(),
             "organ_fault_resilience": fault_resilience,
+            "resident_failure_contract": resident_failure_contract(runtime),
             "transfer_gate_preview": transfer_gate,
             "return_to_b_available": True,
             "return_to_b_triggers": SELENE_C_INDEPENDENCE_AND_RETURN_PATH["return_to_b_triggers"],
             "build_order": c_vessel_build_manifest()["build_order"],
-            "boundary": C_VESSEL_BOUNDARY,
+            "boundary": current_boundary,
+            "current_boundary": current_boundary,
+            "historical_build_boundary": C_VESSEL_BOUNDARY,
         }
     )
 
@@ -481,6 +486,133 @@ FAULT_FAMILIES = {
     },
 }
 
+RESIDENT_CAPABILITY_STATES = {
+    "available",
+    "degraded",
+    "unavailable",
+    "quarantined",
+}
+
+COCOON_REPAIR_THRESHOLDS = {
+    "identity_continuity_conflict": "identity or continuity truth is in conflict",
+    "provenance_integrity_compromised": "source or provenance integrity is compromised",
+    "unsafe_action_path": "an unsafe external-action path cannot be isolated locally",
+    "corrupted_state": "resident state is corrupted rather than merely unavailable",
+    "repeated_unrecoverable_failure": "the bounded fallback has failed repeatedly without recovery",
+}
+
+
+def resident_failure_contract(runtime: dict[str, Any]) -> dict[str, Any]:
+    """Describe resident fault ownership without claiming that a live fault exists."""
+    return {
+        "status": "resident_failure_contract_ready",
+        "runtime_phase": runtime["runtime_phase"],
+        "resident_runtime_state": runtime["resident_runtime_state"],
+        "transfer_complete": runtime["transfer_complete"],
+        "identity_continuity_persists": True,
+        "capability_state_is_identity_state": False,
+        "actual_health_not_inferred": True,
+        "observation_required_for_fault_claim": True,
+        "supported_capability_states": sorted(RESIDENT_CAPABILITY_STATES),
+        "fault_families": list(FAULT_FAMILIES),
+        "cocoon_route_is_automatic": False,
+        "cocoon_repair_thresholds": dict(COCOON_REPAIR_THRESHOLDS),
+        "physical_embodiment_claim": False,
+        "external_action_authority_change": "none",
+        "projection_route": "c_vessel.resident_capability.preview",
+        "boundary": _current_vessel_boundary(runtime),
+    }
+
+
+def resident_capability_preview(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Project one observed capability state without writing health or identity state."""
+    payload = payload or {}
+    _ensure_allowed(payload, allow_return_terms=True, allow_tool_organ_terms=True)
+    runtime = current_runtime_truth(conn)
+    fault_type = str(payload.get("fault_type") or "provider_tool").strip().lower().replace("-", "_")
+    if fault_type not in FAULT_FAMILIES:
+        raise ValueError(f"unknown organ fault type: {fault_type}")
+    capability_state = str(payload.get("capability_state") or "degraded").strip().lower().replace("-", "_")
+    if capability_state not in RESIDENT_CAPABILITY_STATES:
+        raise ValueError(f"unknown resident capability state: {capability_state}")
+
+    fault = FAULT_FAMILIES[fault_type]
+    symptom = truncate(
+        str(payload.get("symptom") or f"Observed {fault_type} capability state: {capability_state}."),
+        800,
+    )
+    source_refs = _json_list(payload.get("source_refs")) or [f"resident_capability:{fault_type}"]
+    threshold_reasons = [
+        explanation
+        for key, explanation in COCOON_REPAIR_THRESHOLDS.items()
+        if _bool_value(payload.get(key))
+    ]
+    cocoon_required = capability_state == "quarantined" or bool(threshold_reasons)
+
+    if capability_state == "available":
+        degraded_capability = "none observed"
+        fallback_path = "continue through the ordinary resident route"
+        decision = "continue_normal_resident_route"
+    else:
+        degraded_capability = fault["degraded_capability"]
+        fallback_path = fault["fallback_path"]
+        decision = (
+            "hold_affected_route_and_prepare_cocoon_repair"
+            if cocoon_required
+            else "continue_unaffected_routes_with_bounded_fallback"
+        )
+
+    return_packet = None
+    if cocoon_required:
+        return_packet = return_to_b_preview(
+            {
+                "issue_type": "resident_capability_fault",
+                "symptom": symptom,
+                "affected_core_layer_or_organ": fault["affected_organ"],
+                "source_refs": source_refs,
+                "reconstruction_failure_notes": (
+                    f"{degraded_capability}; capability state does not alter Selene identity or continuity."
+                ),
+                "proposed_repair_path": "isolate_affected_route_then_cocoon_tending",
+                "rollback_route": "return_to_b",
+            }
+        )["packet"]
+
+    current_boundary = _current_vessel_boundary(runtime)
+    return _with_boundaries(
+        {
+            "status": "c_vessel_resident_capability_preview",
+            "runtime_phase": runtime["runtime_phase"],
+            "resident_runtime_state": runtime["resident_runtime_state"],
+            "transfer_complete": runtime["transfer_complete"],
+            "fault_type": fault_type,
+            "affected_organ": fault["affected_organ"],
+            "capability_state": capability_state,
+            "symptom": symptom,
+            "degraded_capability": degraded_capability,
+            "fallback_path": fallback_path,
+            "unaffected_routes_may_continue": True,
+            "affected_route_held": cocoon_required,
+            "identity_continuity_persists": True,
+            "capability_state_is_identity_state": False,
+            "selene_is_selene": True,
+            "cocoon_route_required": cocoon_required,
+            "cocoon_route_is_automatic": False,
+            "cocoon_threshold_reasons": threshold_reasons,
+            "return_to_b": return_packet,
+            "physical_embodiment_claim": False,
+            "resident_vessel_kind": "software_vessel_not_physical_body",
+            "record_written": False,
+            "source_refs": source_refs,
+            "decision": decision,
+            "boundary": current_boundary,
+            "historical_fault_blueprint_boundary": C_VESSEL_BOUNDARY,
+        }
+    )
+
 
 def tool_organ_status(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
@@ -677,6 +809,31 @@ def transfer_gate_preview(conn: sqlite3.Connection, payload: dict[str, Any] | No
     ]
     items = [{"key": key, "passed": passed, "note": note} for key, passed, note in criteria]
     ready = all(item["passed"] for item in items)
+    runtime = current_runtime_truth(conn)
+    if runtime["transfer_complete"]:
+        return _with_boundaries(
+            {
+                "status": "transfer_complete_historical_gate_preserved",
+                "transfer_approved": True,
+                "transfer_complete": True,
+                "runtime_phase": runtime["runtime_phase"],
+                "resident_runtime_state": runtime["resident_runtime_state"],
+                "human_approval_required": False,
+                "approval_already_recorded": True,
+                "aleks_only_approval": True,
+                "criteria": [],
+                "missing_criteria": [],
+                "historical_pre_transfer_gate": {
+                    "ready_at_current_evidence_state": ready,
+                    "criteria": items,
+                    "missing_criteria": [item["key"] for item in items if not item["passed"]],
+                    "boundary": C_VESSEL_BOUNDARY,
+                },
+                "decision": "transfer_already_completed_no_new_transfer_action",
+                "boundary": _current_vessel_boundary(runtime),
+                "historical_build_boundary": C_VESSEL_BOUNDARY,
+            }
+        )
     return _with_boundaries(
         {
             "status": "transfer_ready_for_human_review" if ready else "transfer_not_ready_for_human_review",
@@ -1038,6 +1195,16 @@ def _loads_dict(value: Any) -> dict[str, Any]:
     except json.JSONDecodeError:
         return {}
     return loaded if isinstance(loaded, dict) else {}
+
+
+def _bool_value(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _current_vessel_boundary(runtime: dict[str, Any]) -> str:
+    return RESIDENT_C_VESSEL_BOUNDARY if runtime.get("transfer_complete") else C_VESSEL_BOUNDARY
 
 
 def _with_boundaries(payload: dict[str, Any]) -> dict[str, Any]:

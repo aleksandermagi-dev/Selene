@@ -99,6 +99,7 @@ from .c_vessel import (
     organ_registry_status,
     organ_fault_preview,
     organ_fault_resilience_check,
+    resident_capability_preview,
     reconstruction_desk_cases,
     reconstruction_desk_run,
     reconstruction_desk_status,
@@ -598,6 +599,8 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": organ_fault_preview(payload)}
     if route_key == "c_vessel.organ_fault.resilience_check":
         return {"route": route_key, "result": organ_fault_resilience_check(conn, payload)}
+    if route_key == "c_vessel.resident_capability.preview":
+        return {"route": route_key, "result": resident_capability_preview(conn, payload)}
     if route_key == "c_vessel.transfer_gate.preview":
         return {"route": route_key, "result": transfer_gate_preview(conn, payload)}
     if route_key == "c_vessel.reconstruction_suite.run":

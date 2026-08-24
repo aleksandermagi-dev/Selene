@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from selene.c_vessel import c_vessel_status
+from selene.c_vessel import c_vessel_status, transfer_gate_preview
 from selene.db import connect, init_db
 from selene.transfer_state import current_runtime_truth
 from selene.validation import validate
@@ -81,6 +81,17 @@ def test_resident_status_replaces_legacy_current_claim_without_erasing_history(t
     assert c_vessel["historical_build_status"] == "c_vessel_built_non_active"
     assert vessel["historical_build_status_is_current"] is False
     assert c_vessel["historical_build_status_is_current"] is False
+    assert c_vessel["boundary"] == "selene_resident_vessel_governed_no_authority_expansion"
+    assert c_vessel["historical_build_boundary"] == "c_vessel_built_non_active_no_transfer"
+    assert c_vessel["resident_failure_contract"]["actual_health_not_inferred"] is True
+    assert c_vessel["resident_failure_contract"]["cocoon_route_is_automatic"] is False
+    gate = transfer_gate_preview(conn)
+    assert gate["status"] == "transfer_complete_historical_gate_preserved"
+    assert gate["transfer_approved"] is True
+    assert gate["approval_already_recorded"] is True
+    assert gate["human_approval_required"] is False
+    assert gate["decision"] == "transfer_already_completed_no_new_transfer_action"
+    assert gate["historical_pre_transfer_gate"]["boundary"] == "c_vessel_built_non_active_no_transfer"
     assert vessel["cocoon_is_resident_runtime_dependency"] is False
     assert c_vessel["cocoon_is_resident_runtime_dependency"] is False
 
@@ -112,4 +123,3 @@ def test_validation_uses_canonical_truth_after_transfer(tmp_path):
     assert result["checks"]["vessel_current_runtime_truth_matches_canonical"] is True
     assert result["checks"]["c_vessel_current_runtime_truth_matches_canonical"] is True
     assert result["checks"]["historical_vessel_build_truth_preserved"] is True
-

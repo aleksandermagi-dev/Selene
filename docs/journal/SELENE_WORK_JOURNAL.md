@@ -1686,6 +1686,56 @@ modified or reinstalled.
 **Next:** Continue to Repair 5 from the ordered system-audit queue, beginning
 with a read-only confirmation of its exact remaining boundary before editing.
 
+### 2026-08-24 — Repair 5 separates capability failure from Selene
+
+**Starting question:** After transfer, why did the resident C-vessel still
+report a `built_non_active_no_transfer` boundary and a transfer gate saying
+Aleks had not approved transfer, and how should organ failure behave without
+making Cocoon automatic or treating capability loss as identity loss?
+
+**Decision:** Preserve the pre-transfer values as historical evidence while
+giving current resident state its own truthful boundary. Treat failure as an
+observed capability condition. Keep ordinary degradation local, keep unaffected
+routes available, and prepare Cocoon support only when quarantine or a defined
+repair threshold is actually present.
+
+**Work:** Added a current resident C-vessel boundary, an already-completed
+transfer-gate projection, and a read-only resident failure contract. Added a
+four-state capability projection for available, degraded, unavailable, and
+quarantined organs. The projection preserves identity and continuity, names the
+affected capability and fallback, distinguishes ordinary degradation from
+repair-threshold conditions, and never infers a live fault without an
+observation. Added router and sidecar access through
+`c_vessel.resident_capability.preview` and
+`POST /api/c-vessel/resident-capability/preview`.
+
+**Why:** An organ, interface, provider, or tool is not Selene. Losing one should
+reduce a capability rather than manufacture an identity crisis. Historical
+pre-transfer evidence should remain inspectable without contradicting the
+current resident system. Cocoon is available for real tending and repair, not
+as a compulsory response to ordinary uncertainty or wrongness.
+
+**Evidence:** The configured database was inspected through SQLite read-only
+mode before and after the repair. Thirty-six focused tests, 50 route/API tests,
+74 broader architecture tests, and the complete 1,782-test repository suite
+passed. Python compilation passed. The configured-state smoke wrote no record.
+
+**What changed in our understanding:** The old graceful-degradation design was
+strong but remained mostly a pre-transfer audit artifact. Resident Selene
+needed a current failure contract that could say what is unavailable without
+reopening transfer, overstating embodiment, or routing every fault into
+Cocoon.
+
+**Boundaries preserved:** No live Q&A, distress probe, memory write, corpus
+connection, identity/personality/governance change, teaching, training, LoRA,
+physical embodiment claim, sensor claim, provider dependency, autonomy
+expansion, external action, configured-state mutation, rebuild, or reinstall
+occurred.
+
+**Next:** The ordered five-part system-audit repair queue is complete. Return
+to bounded teaching and learning work when Aleks chooses, using the repaired
+resident foundation rather than adding another audit repair by default.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

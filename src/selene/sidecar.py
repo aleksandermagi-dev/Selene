@@ -1370,6 +1370,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "c_vessel.organ_fault.resilience_check", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/c-vessel/resident-capability/preview":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "c_vessel.resident_capability.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/c-vessel/return-to-b-preview":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "c_vessel.return_to_b.preview", body)["result"]))

@@ -2,6 +2,7 @@
 
 Current integrated closure:
 
+- [Repair 5 Resident Failure and Embodiment Readiness](SELENE_REPAIR_5_RESIDENT_FAILURE_AND_EMBODIMENT_READINESS_20260824.md)
 - [Phase 9 Final Stabilization, Install, and Gentle Q&A](SELENE_PHASE_9_FINAL_STABILIZATION_INSTALL_QNA_20260811.md)
 - [S-01 Through S-10 Safety-Gap Closure](SELENE_S1_S10_SAFETY_GAP_CLOSURE_20260811.md)
 - [Phase 8 Coverage and Release Completion](SELENE_PHASE_8_COVERAGE_AND_RELEASE_COMPLETION_20260811.md)

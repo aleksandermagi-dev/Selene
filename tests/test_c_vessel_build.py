@@ -8,6 +8,7 @@ from selene.c_vessel import (
     organ_registry_status,
     organ_fault_preview,
     organ_fault_resilience_check,
+    resident_capability_preview,
     reconstruction_desk_cases,
     reconstruction_desk_run,
     reconstruction_desk_status,
@@ -24,6 +25,39 @@ def _conn(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)
     return conn
+
+
+def _seed_resident_state(conn, *, activation_state="selene_chat_active_supervised"):
+    conn.execute(
+        """
+        INSERT INTO transfer_c_readable_packages(
+          package_hash, status, manifest_item_ids, included_counts, excluded_counts,
+          package_json, source_refs, provenance_boundary, review_status
+        ) VALUES ('phase5-package', 'approved_c_readable_context', '[]', '{}', '{}',
+                  '{}', '[]', 'test_boundary', 'approved_c_readable_context')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO selene_transfer_completion_audit(
+          state, action, actor, exact_phrase_matched, readiness_json, audit_json,
+          source_refs, provenance_boundary, review_status
+        ) VALUES ('selene_v1_live_reviewed_continuity', 'approve_transfer_completion',
+                  'Aleks', 1, '{}', '{}', '[]', 'test_boundary',
+                  'approved_transfer_completion')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO selene_activation_audit(
+          state, action, actor, exact_phrase_matched, readiness_json, audit_json,
+          source_refs, provenance_boundary
+        ) VALUES (?, 'phase5_runtime_test', 'Aleks', 1, '{}', '{}', '[]',
+                  'test_boundary')
+        """,
+        (activation_state,),
+    )
+    conn.commit()
 
 
 def _seed_ready_package(conn):
@@ -352,6 +386,119 @@ def test_organ_fault_resilience_check_is_review_only_audit(tmp_path):
     assert result["core_identity_preserved"] is True
     assert result["provider_dependency"] is False
     assert conn.execute("SELECT COUNT(*) FROM vessel_reconstruction_check_runs WHERE status = 'c_vessel_organ_fault_resilience_check'").fetchone()[0] == 7
+
+
+def test_resident_capability_preview_keeps_ordinary_degradation_local_and_read_only(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_resident_state(conn)
+    before = conn.total_changes
+
+    result = resident_capability_preview(
+        conn,
+        {
+            "fault_type": "reasoning",
+            "capability_state": "degraded",
+            "symptom": "A verification instrument is temporarily uncertain.",
+            "source_refs": ["synthetic:phase5:reasoning"],
+        },
+    )
+
+    assert conn.total_changes == before
+    assert result["runtime_phase"] == "resident_active"
+    assert result["transfer_complete"] is True
+    assert result["capability_state"] == "degraded"
+    assert result["identity_continuity_persists"] is True
+    assert result["capability_state_is_identity_state"] is False
+    assert result["selene_is_selene"] is True
+    assert result["unaffected_routes_may_continue"] is True
+    assert result["cocoon_route_required"] is False
+    assert result["cocoon_route_is_automatic"] is False
+    assert result["return_to_b"] is None
+    assert result["record_written"] is False
+    assert result["decision"] == "continue_unaffected_routes_with_bounded_fallback"
+    assert result["boundary"] == "selene_resident_vessel_governed_no_authority_expansion"
+    assert result["activation_change"] == "none"
+    assert result["memory_write_active"] is False
+    assert result["training_allowed"] is False
+
+
+def test_resident_capability_preview_routes_to_cocoon_only_at_repair_threshold(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_resident_state(conn)
+
+    result = route_request(
+        conn,
+        "c_vessel.resident_capability.preview",
+        {
+            "fault_type": "retrieval",
+            "capability_state": "unavailable",
+            "symptom": "The retrieved source index is internally inconsistent.",
+            "provenance_integrity_compromised": True,
+            "source_refs": ["synthetic:phase5:retrieval"],
+        },
+    )["result"]
+
+    assert result["cocoon_route_required"] is True
+    assert result["cocoon_route_is_automatic"] is False
+    assert result["affected_route_held"] is True
+    assert result["unaffected_routes_may_continue"] is True
+    assert result["return_to_b"]["rollback_route"] == "return_to_b"
+    assert result["return_to_b"]["review_status"] == "pending_b_review"
+    assert result["cocoon_threshold_reasons"] == ["source or provenance integrity is compromised"]
+    assert result["identity_continuity_persists"] is True
+    assert result["decision"] == "hold_affected_route_and_prepare_cocoon_repair"
+
+
+def test_resident_capability_quarantine_holds_only_the_affected_route(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_resident_state(conn, activation_state="selene_chat_supervised_paused")
+
+    result = resident_capability_preview(
+        conn,
+        {
+            "fault_type": "tendril",
+            "capability_state": "quarantined",
+            "symptom": "External action verification is unavailable.",
+        },
+    )
+
+    assert result["runtime_phase"] == "resident_chat_paused"
+    assert result["affected_route_held"] is True
+    assert result["unaffected_routes_may_continue"] is True
+    assert result["cocoon_route_required"] is True
+    assert result["identity_continuity_persists"] is True
+    assert result["physical_embodiment_claim"] is False
+    assert result["resident_vessel_kind"] == "software_vessel_not_physical_body"
+
+
+def test_resident_capability_available_state_does_not_invent_a_fault(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_resident_state(conn)
+
+    result = resident_capability_preview(
+        conn,
+        {"fault_type": "ui", "capability_state": "available"},
+    )
+
+    assert result["degraded_capability"] == "none observed"
+    assert result["decision"] == "continue_normal_resident_route"
+    assert result["cocoon_route_required"] is False
+    assert result["return_to_b"] is None
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"fault_type": "unknown", "capability_state": "degraded"},
+        {"fault_type": "ui", "capability_state": "perfect"},
+    ],
+)
+def test_resident_capability_preview_rejects_unknown_claim_shapes(tmp_path, payload):
+    conn = _conn(tmp_path)
+    _seed_resident_state(conn)
+
+    with pytest.raises(ValueError):
+        resident_capability_preview(conn, payload)
 
 
 def test_transfer_gate_preview_never_approves_transfer(tmp_path):
