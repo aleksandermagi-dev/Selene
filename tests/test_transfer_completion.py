@@ -43,7 +43,11 @@ def _ready_dependencies(monkeypatch):
         lambda conn: {"available_lesson_count": 22, "defined_lesson_count": 22},
     )
     monkeypatch.setattr(completion, "metacognition_status", lambda conn: {"status": "metacognition_observer_ready"})
-    monkeypatch.setattr(completion, "rollback_preview", lambda conn, payload: {"return_to_b_packet": {"ready": True}})
+    monkeypatch.setattr(
+        completion,
+        "rollback_preview_assessment",
+        lambda conn, payload: {"return_to_b_packet": {"ready": True}},
+    )
 
 
 def _assert_completion_guards(result):

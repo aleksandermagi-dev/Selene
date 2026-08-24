@@ -531,7 +531,10 @@ def latest_c_readable_package(conn: sqlite3.Connection) -> dict[str, Any]:
     return _with_c_readable_state(_decode_package(row), transfer_approved=True)
 
 
-def rollback_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def rollback_preview_assessment(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     payload = payload or {}
     package = latest_c_readable_package(conn)
     packet = return_to_b_preview(
@@ -542,6 +545,29 @@ def rollback_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "source_refs": ["transfer_rollback_preview", f"transfer_c_readable_packages:{package.get('id', 'none')}"],
         }
     )
+    return _with_c_readable_state(
+        {
+            "status": "transfer_return_to_b_rollback_preview_available",
+            "state": "return_to_b_assessment",
+            "audit_id": None,
+            "audit_recorded": False,
+            "inspection_only": True,
+            "return_to_b_packet": packet,
+            "package": package,
+            "deletes_transfer_audit": False,
+            "review_destination": "Status",
+            "review_status": "status_only",
+            "decision": "rollback_preview_available_no_audit_written",
+        },
+        transfer_approved=bool(package.get("id")),
+    )
+
+
+def rollback_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    assessment = rollback_preview_assessment(conn, payload)
+    package = assessment["package"]
+    packet = assessment["return_to_b_packet"]
     audit_id = _insert_ceremony_audit(
         conn,
         {
@@ -558,14 +584,12 @@ def rollback_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     conn.commit()
     return _with_c_readable_state(
         {
+            **assessment,
             "status": "transfer_return_to_b_rollback_preview_ready",
             "state": "return_to_b_preview",
             "audit_id": audit_id,
-            "return_to_b_packet": packet,
-            "package": package,
-            "deletes_transfer_audit": False,
-            "review_destination": "Status",
-            "review_status": "status_only",
+            "audit_recorded": True,
+            "inspection_only": False,
             "decision": "rollback_preview_only_b_remains_active",
         },
         transfer_approved=bool(package.get("id")),

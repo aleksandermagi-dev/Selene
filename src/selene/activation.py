@@ -8,7 +8,7 @@ from typing import Any
 from .android_system import android_workflow_status
 from .core_mind_runtime import runtime_readiness
 from .registry import truncate
-from .transfer_protocol import latest_c_readable_package, rollback_preview
+from .transfer_protocol import latest_c_readable_package, rollback_preview_assessment
 from .transfer_state import transfer_completion_is_approved
 from .voice_module import voice_module_status
 
@@ -101,7 +101,10 @@ def activation_readiness(conn: sqlite3.Connection) -> dict[str, Any]:
     android = android_workflow_status(conn)
     voice = voice_module_status(conn)
     runtime = runtime_readiness(conn)
-    rollback = rollback_preview(conn, {"issue_type": "activation_readiness_return_to_b"})
+    rollback = rollback_preview_assessment(
+        conn,
+        {"issue_type": "activation_readiness_return_to_b"},
+    )
     unresolved = _my_office_unresolved_count(conn)
     checks = [
         _check("c_readable_context_approved", bool(package.get("transfer_approved")), "transfer.c_readable_package.latest", "C-readable transfer context is sealed."),

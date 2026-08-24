@@ -10,7 +10,7 @@ from .language_teaching_shelf import language_teaching_status
 from .memory_organ import memory_index_status, portable_vys_manifest
 from .metacognition import metacognition_status
 from .post_transfer import fractional_corpus_status
-from .transfer_protocol import latest_c_readable_package, rollback_preview
+from .transfer_protocol import latest_c_readable_package, rollback_preview_assessment
 from .transfer_state import (
     TRANSFER_COMPLETION_STATE,
     latest_transfer_completion_audit,
@@ -48,7 +48,10 @@ def transfer_completion_readiness(conn: sqlite3.Connection) -> dict[str, Any]:
     portable = portable_vys_manifest(conn)
     language = language_teaching_status(conn)
     metacognition = metacognition_status(conn)
-    rollback = rollback_preview(conn, {"issue_type": "transfer_completion_return_to_cocoon"})
+    rollback = rollback_preview_assessment(
+        conn,
+        {"issue_type": "transfer_completion_return_to_cocoon"},
+    )
     pending_memory = int(
         conn.execute(
             """

@@ -11,7 +11,7 @@ from .android_system import android_workflow_preflight_passed, android_workflow_
 from .core_mind import create_core_mind_route_preview
 from .registry import truncate
 from .selene_chat import selene_chat_status
-from .transfer_protocol import latest_c_readable_package, rollback_preview
+from .transfer_protocol import latest_c_readable_package, rollback_preview_assessment
 from .transfer_state import transfer_completion_is_approved
 
 
@@ -94,7 +94,10 @@ def run_post_transfer_inspection(conn: sqlite3.Connection, payload: dict[str, An
     transfer_complete = transfer_completion_is_approved(conn)
     chat_active = chat.get("activation_state") == "selene_chat_active_supervised"
     operational = transfer_complete and chat_active
-    rollback = rollback_preview(conn, {"issue_type": "post_transfer_inspection_return_to_b_preview"})
+    rollback = rollback_preview_assessment(
+        conn,
+        {"issue_type": "post_transfer_inspection_return_to_b_preview"},
+    )
     checks = [
         _check("sealed_package_available", package_ready, "transfer_c_readable_packages", "Approved C-readable package exists."),
         _check("ordered_fraction_chain_passed", fractions.get("all_fractions_passed") is True, "memory.fractional_corpus.status", "All ordered corpus fraction checks passed."),

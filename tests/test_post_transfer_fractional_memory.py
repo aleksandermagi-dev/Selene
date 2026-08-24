@@ -122,6 +122,9 @@ def test_post_transfer_status_is_preview_after_c_readable_approval(tmp_path):
 def test_post_transfer_inspection_requires_final_live_state(tmp_path):
     conn = _conn(tmp_path)
     _seed_package(conn)
+    rollback_audits_before = conn.execute(
+        "SELECT COUNT(*) FROM transfer_ceremony_audit"
+    ).fetchone()[0]
 
     result = route_request(conn, "transfer.post_transfer.inspection_run", {})["result"]
 
@@ -129,6 +132,9 @@ def test_post_transfer_inspection_requires_final_live_state(tmp_path):
     assert any(not check["passed"] for check in result["checks"])
     assert result["selene_chat_preview_only"] is False
     assert result["selene_v1_live"] is False
+    assert conn.execute(
+        "SELECT COUNT(*) FROM transfer_ceremony_audit"
+    ).fetchone()[0] == rollback_audits_before
     _assert_locked(result, transfer_approved=True)
 
 
