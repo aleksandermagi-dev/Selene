@@ -531,6 +531,11 @@ def build_comprehension_packet(
         knowledge_query,
         limit=int(payload.get("knowledge_limit") or 10),
         include_language_guidance=False,
+        meaning_frame=(
+            (intent.get("meaning_route") or {}).get("canonical_meaning_frame")
+            if isinstance(intent.get("meaning_route"), dict)
+            else None
+        ),
     )
     answer_eligible_items = _answer_eligible_knowledge_items(
         knowledge_query,
@@ -747,8 +752,16 @@ def retrieve_approved_knowledge(
     *,
     limit: int = 3,
     include_language_guidance: bool = True,
+    meaning_frame: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     query_terms = _semantic_query_terms(query)
+    frame = meaning_frame if isinstance(meaning_frame, dict) else {}
+    protected_terms = {
+        _term_key(str(term).lower())
+        for term in frame.get("protected_knowledge_terms") or []
+        if str(term).strip()
+    }
+    query_terms -= protected_terms
     rows = conn.execute(
         """
         SELECT * FROM selene_comprehension_concepts
@@ -847,6 +860,8 @@ def retrieve_approved_knowledge(
         "memory_source": False,
         "governance_source": False,
         "identity_source": False,
+        "canonical_meaning_frame_applied": bool(frame),
+        "protected_query_terms": sorted(protected_terms),
     }
 
 
@@ -990,6 +1005,19 @@ def _answer_eligible_knowledge_items(
     *,
     conversation_spine: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
+    meaning_route = intent.get("meaning_route") if isinstance(intent.get("meaning_route"), dict) else {}
+    meaning_frame = (
+        meaning_route.get("canonical_meaning_frame")
+        if isinstance(meaning_route.get("canonical_meaning_frame"), dict)
+        else {}
+    )
+    if meaning_frame.get("academic_knowledge_posture") == "hold_for_social_or_conversation_management":
+        return []
+    protected_terms = {
+        _term_key(str(term).lower())
+        for term in meaning_frame.get("protected_knowledge_terms") or []
+        if str(term).strip()
+    }
     contextual = intent.get("contextual_follow_up") if isinstance(intent.get("contextual_follow_up"), dict) else {}
     dialogue_acts = {str(item) for item in intent.get("dialogue_acts") or []}
     intent_name = str(intent.get("intent") or "")
@@ -1019,7 +1047,7 @@ def _answer_eligible_knowledge_items(
         subject_query,
         flags=re.IGNORECASE,
     )
-    query_terms = _semantic_query_terms(subject_query)
+    query_terms = _semantic_query_terms(subject_query) - protected_terms
     generic = {
         "answer", "another", "apply", "back", "but", "cannot", "change", "changed", "check",
         "compare", "conversation", "different", "do", "example", "explain", "first", "give",
@@ -1054,6 +1082,7 @@ def _answer_eligible_knowledge_items(
             continue
         if (
             contextual.get("detected") is True
+            and contextual.get("preserve_active_topic") is True
             and str(contextual.get("kind") or "") != "answer_development"
         ):
             # The spine keeps an immediate callback grounded in the answer it
@@ -1069,6 +1098,7 @@ def _answer_eligible_knowledge_items(
                 "source_class": "approved_knowledge",
                 "intent_decision": intent,
                 "conversation_spine": conversation_spine or {},
+                "canonical_meaning_frame": meaning_frame,
             }
         )
         item["semantic_relevance"] = semantic_relevance

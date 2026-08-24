@@ -175,6 +175,18 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         for index, item in enumerate(models)
     ]
     conclusion_basis = [*observation_ids, *[item["claim_id"] for item in model_claims]]
+    current_context_inference_selected = bool(
+        answer_substance.get("selected_for_answer") is True
+        and str(answer_substance.get("answer_kind") or "")
+        == "grounded_current_context_inference"
+    )
+    if current_context_inference_selected:
+        premise_observation_ids = [
+            item["claim_id"]
+            for item, observation in zip(observation_claims, observations, strict=False)
+            if observation.get("premise_eligible") is True
+        ]
+        conclusion_basis = premise_observation_ids or observation_ids
     claim_evidence = build_claim_evidence_packet(
         {
             "claims": [
@@ -185,6 +197,8 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
                     "claim_type": (
                         "hypothesis"
                         if hypothesis_attempt.get("selected_for_answer") is True
+                        else "inference"
+                        if current_context_inference_selected
                         else "conclusion"
                     ),
                     "text": best_current_answer,
@@ -192,6 +206,8 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
                     "validity": (
                         "open_hypothesis"
                         if hypothesis_attempt.get("selected_for_answer") is True
+                        else "bounded_inference"
+                        if current_context_inference_selected
                         else "provisional_conclusion"
                     ),
                     "confidence": evaluation["confidence"],
@@ -283,17 +299,33 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
 
 
 def _acquire(prompt: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
-    supplied = _json_list(payload.get("observations"))
+    raw_supplied = payload.get("observations")
+    supplied = raw_supplied if isinstance(raw_supplied, list) else _json_list(raw_supplied)
+    from_prompt = not supplied
     observations = supplied or _sentences(prompt)
-    return [
-        {
-            "stage": "A",
-            "label": f"observation_{index + 1}",
-            "observation": truncate(item, 420),
-            "interpretation_attached": False,
-        }
-        for index, item in enumerate(observations[:8])
-    ] or [{"stage": "A", "label": "observation_1", "observation": truncate(prompt, 420), "interpretation_attached": False}]
+    result: list[dict[str, Any]] = []
+    for index, item in enumerate(observations[:8]):
+        metadata = item if isinstance(item, dict) else {}
+        value = str(
+            metadata.get("observation")
+            or metadata.get("preview")
+            or metadata.get("text")
+            or item
+        ).strip()
+        if not value:
+            continue
+        result.append(
+            {
+                "stage": "A",
+                "label": f"observation_{index + 1}",
+                "observation": truncate(value, 900),
+                "interpretation_attached": False,
+                "source_role": str(metadata.get("source_role") or metadata.get("role") or ("user" if from_prompt else "unspecified")),
+                "source_kind": str(metadata.get("source_kind") or ("current_prompt" if from_prompt else "supplied_current_context")),
+                "premise_eligible": metadata.get("premise_eligible") is True or from_prompt,
+            }
+        )
+    return result or [{"stage": "A", "label": "observation_1", "observation": truncate(prompt, 420), "interpretation_attached": False, "source_role": "user", "source_kind": "current_prompt", "premise_eligible": True}]
 
 
 def _build_models(prompt: str, payload: dict[str, Any]) -> list[dict[str, Any]]:

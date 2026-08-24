@@ -3294,13 +3294,18 @@ def _intelligence_support(
     meaning = intent_decision.get("meaning_route") if isinstance(intent_decision.get("meaning_route"), dict) else {}
     specialized_domain = str(meaning.get("selected_domain") or "")
     recent_observations = [
-        str(item.get("preview") or "")
+        {
+            "observation": str(item.get("preview") or ""),
+            "source_role": str(item.get("role") or "unspecified"),
+            "source_kind": "current_session_message",
+            "premise_eligible": str(item.get("role") or "") == "user",
+        }
         for item in (chat_continuity.get("current_session_events") or [])[-8:]
         if isinstance(item, dict) and str(item.get("preview") or "").strip()
     ]
     prompt_grounded_preview = build_answer_substance(
         text,
-        [{"observation": item} for item in recent_observations],
+        recent_observations,
     )
     prompt_grounded_available = bool(
         str(prompt_grounded_preview.get("answer") or "").strip()
@@ -3331,7 +3336,14 @@ def _intelligence_support(
     contextual = contextual_follow_up if isinstance(contextual_follow_up, dict) else {}
     spine = conversation_spine if isinstance(conversation_spine, dict) else {}
     selected_session_context = [
-        str(item.get("summary") or item.get("text") or "").strip()
+        {
+            "observation": str(item.get("summary") or item.get("text") or "").strip(),
+            "source_role": "session_record",
+            "source_kind": "verified_session_fact_or_landmark",
+            "premise_eligible": (
+                item.get("coverage_complete_at_recording") is not False
+            ),
+        }
         for item in [
             *(spine.get("relevant_session_landmarks") or []),
             *(spine.get("relevant_session_facts") or []),
@@ -3340,9 +3352,15 @@ def _intelligence_support(
         if isinstance(item, dict)
         and str(item.get("summary") or item.get("text") or "").strip()
     ]
-    recent_observations = list(
-        dict.fromkeys([*selected_session_context, *recent_observations])
-    )[-16:]
+    deduplicated_observations: list[dict[str, Any]] = []
+    seen_observations: set[str] = set()
+    for observation in [*selected_session_context, *recent_observations]:
+        value = " ".join(str(observation.get("observation") or "").lower().split())
+        if not value or value in seen_observations:
+            continue
+        seen_observations.add(value)
+        deduplicated_observations.append(observation)
+    recent_observations = deduplicated_observations[-16:]
     reasoning_prompt = truncate(
         text
         if prompt_grounded_available

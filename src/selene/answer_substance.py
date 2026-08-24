@@ -5,6 +5,7 @@ from typing import Any
 
 from .registry import truncate
 from .supported_semantics import build_supported_semantic_packet
+from .current_context_inference import build_current_context_inference
 
 
 ANSWER_SUBSTANCE_BOUNDARY = (
@@ -32,6 +33,7 @@ def build_answer_substance(
     missing_variable = "the specific claim or observation the answer must fit"
     support_basis = "current_prompt_only"
     semantic_context: dict[str, Any] = {}
+    current_context_inference_packet: dict[str, Any] = {}
     ordinary_operation = _ordinary_prompt_grounded_operation(text, observations or [])
 
     comparison = any(marker in lower for marker in ("compare", "difference", "versus", " vs ", "tradeoff", "trade-off", "which option"))
@@ -138,6 +140,11 @@ def build_answer_substance(
         semantic_context = {
             "units": ordinary_operation.get("semantic_units") or [],
         }
+        current_context_inference_packet = (
+            ordinary_operation.get("current_context_inference")
+            if isinstance(ordinary_operation.get("current_context_inference"), dict)
+            else {}
+        )
     elif viewpoint and any(marker in lower for marker in ("reversible step", "reversible first", "smallest reversible")):
         answer = (
             "I think that is a sound default when uncertainty is high: a small reversible step limits the cost of being wrong and produces evidence for the next choice. "
@@ -308,6 +315,7 @@ def build_answer_substance(
         "support_basis": support_basis,
         "semantic_packet": semantic_packet,
         "semantic_units": semantic_packet["units"],
+        "current_context_inference": current_context_inference_packet,
         "structured_semantic_handoff": semantic_packet["structured_unit_count"] > 0,
         "compatibility_fallback_available": semantic_packet["compatibility_fallback_available"],
         "external_fact_claimed": False,
@@ -680,6 +688,17 @@ def _ordinary_prompt_grounded_operation(
     foundational = _foundational_current_prompt_operation(prompt, lower, history)
     if foundational:
         return foundational
+
+    current_context_inference = build_current_context_inference(prompt, observations)
+    if current_context_inference.get("eligible") is True:
+        return {
+            "answer": str(current_context_inference.get("answer") or ""),
+            "answer_kind": str(current_context_inference.get("answer_kind") or "grounded_current_context_inference"),
+            "missing_variable": str(current_context_inference.get("missing_variable") or "what observation would change the inference"),
+            "support_basis": str(current_context_inference.get("support_basis") or "current_prompt_and_recent_conversation"),
+            "semantic_units": current_context_inference.get("semantic_units") or [],
+            "current_context_inference": current_context_inference,
+        }
 
     creative = _bounded_creative_operation(prompt, lower, history)
     if creative:

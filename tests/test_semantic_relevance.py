@@ -2,6 +2,7 @@ from selene.semantic_relevance import (
     evaluate_semantic_relevance,
     semantic_relevance_status,
 )
+from selene.chat_intent import classify_chat_intent
 
 
 def _assert_locked(result):
@@ -143,3 +144,46 @@ def test_self_state_source_requires_an_actual_self_state_question():
 
     assert comparison["accepted"] is False
     assert check_in["accepted"] is True
+
+
+def test_canonical_pragmatic_sense_cannot_be_laundered_into_academic_relevance():
+    prompt = "How does a quieter workspace sound?"
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": prompt,
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Vibrating matter can make sound",
+                "domain": "physical science acoustics",
+                "concept_key": "sound_vibration",
+                "central_claim": "Vibrating matter can produce sound.",
+            },
+            "intent_decision": classify_chat_intent(prompt),
+        }
+    )
+
+    assert result["accepted"] is False
+    assert "sound" in result["protected_query_terms"]
+    assert "sound" not in result["query_terms"]
+    assert result["canonical_meaning_frame_applied"] is True
+
+
+def test_canonical_literal_control_still_admits_the_named_academic_subject():
+    prompt = "How does a bell produce sound?"
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": prompt,
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Vibrating matter can make sound",
+                "domain": "physical science acoustics",
+                "concept_key": "sound_vibration",
+                "central_claim": "A vibrating bell can produce sound.",
+            },
+            "intent_decision": classify_chat_intent(prompt),
+        }
+    )
+
+    assert result["accepted"] is True
+    assert result["reason"] == "approved_knowledge_subject_aligned"
+    assert result["protected_query_terms"] == []

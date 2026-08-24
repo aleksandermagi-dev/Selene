@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from .relational_context import interpret_relational_context
+from .semantic_arbitration import build_canonical_meaning_frame
 
 
 MEANING_ROUTER_BOUNDARY = (
@@ -275,6 +276,13 @@ def interpret_turn_meaning(
         question=question,
         explicit_request=explicit_request,
     )
+    canonical_meaning_frame = build_canonical_meaning_frame(
+        raw,
+        routing_text=routing_text,
+        dialogue_acts=dialogue_acts,
+        primary_intent=str(primary_intent.get("intent") or ""),
+        selected_domain=str(primary_domain.get("domain") or ""),
+    )
 
     return {
         "status": "turn_meaning_interpreted",
@@ -311,6 +319,7 @@ def interpret_turn_meaning(
         "bounded_pattern_detection_still_present": True,
         "marker_match_is_route_authority": False,
         "action_evidence": action_evidence,
+        "canonical_meaning_frame": canonical_meaning_frame,
         "ambiguity": ambiguity,
         "selected_route_context": selected_route,
         "visible_summary_only": True,
@@ -755,6 +764,8 @@ def _is_memory_candidate(value: str) -> bool:
     if _has_any(value, ("where we", "when we", "what we", "our last", "our previous", "our past")):
         return False
     if re.match(r"^(?:please\s+)?remember\s+to\b", value):
+        return False
+    if re.search(r"\bhold (?:that|this) thought\b", value):
         return False
     retention_request = bool(
         re.search(r"^(please\s+)?(remember|save|keep|hold)|\b(can|could|would) you (save|keep|hold)", value)

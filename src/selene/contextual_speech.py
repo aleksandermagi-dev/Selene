@@ -38,6 +38,7 @@ def inspect_contextual_follow_up(
     session_landmarks = [
         item for item in context.get("session_landmarks") or [] if isinstance(item, dict)
     ][-64:]
+    deferred_return = _is_deferred_return_closure(normalized)
 
     kind = "none"
     marker = ""
@@ -96,7 +97,7 @@ def inspect_contextual_follow_up(
         normalized,
     ):
         kind, marker = "session_summary_request", "summarize_active_session"
-    elif re.search(
+    elif not deferred_return and re.search(
         r"\b(?:earlier when|back to what|return to what|the point about|what you said about|we discussed)\b|"
         r"\b(?:back|return|going back)\s+to\s+[^,;:.!?]+",
         normalized,
@@ -195,6 +196,19 @@ def apply_contextual_intent(
         return decision
     result = {**decision, "contextual_follow_up": contextual}
     kind = str(contextual.get("kind") or "")
+    meaning_route = decision.get("meaning_route") if isinstance(decision.get("meaning_route"), dict) else {}
+    meaning_frame = (
+        meaning_route.get("canonical_meaning_frame")
+        if isinstance(meaning_route.get("canonical_meaning_frame"), dict)
+        else {}
+    )
+    if (
+        str(decision.get("intent") or "") == "farewell"
+        and meaning_frame.get("academic_knowledge_posture") == "hold_for_social_or_conversation_management"
+    ):
+        result["contextual_override_held"] = True
+        result["contextual_override_reason"] = "primary_social_closure_has_no_current_substantive_request"
+        return result
     if kind == "confidence_check":
         result.update(
             {
@@ -684,7 +698,7 @@ def _summary_fact_clauses(facts: list[dict[str, Any]], requested_count: int) -> 
 
 def _matching_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     stop = {
-        "about", "back", "earlier", "from", "point", "return", "said", "that", "the", "this", "what", "when", "with", "you",
+        "about", "back", "earlier", "from", "get", "leave", "later", "point", "return", "said", "that", "the", "there", "this", "today", "tomorrow", "what", "when", "with", "you",
     }
     query = {
         word
@@ -706,6 +720,19 @@ def _matching_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[di
             ranked.append((len(overlap), index, item))
     ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
     return [item for _, _, item in ranked[:6]]
+
+
+def _is_deferred_return_closure(value: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:get|come|go|return|going) back to\b.{0,100}\b(?:later|tomorrow|next time|another time)\b",
+            value,
+        )
+        or re.search(
+            r"\b(?:later|tomorrow|next time|another time)\b.{0,100}\b(?:get|come|go|return) back to\b",
+            value,
+        )
+    )
 
 
 def _bounded_explicit_reason(previous: str) -> str:

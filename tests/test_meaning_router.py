@@ -294,3 +294,49 @@ def test_social_opening_cannot_displace_a_later_multi_part_direct_request():
     assert "greeting" in result["dialogue_acts"]
     assert "request" in result["dialogue_acts"]
     assert result["selected_domain"] == "comparison_planning"
+
+
+def test_canonical_meaning_frame_separates_pragmatic_sound_from_literal_acoustics():
+    evaluation = interpret_turn_meaning("How does a quieter workspace sound?")
+    acoustics = interpret_turn_meaning("How does a bell produce sound?")
+
+    evaluation_frame = evaluation["canonical_meaning_frame"]
+    acoustics_frame = acoustics["canonical_meaning_frame"]
+    assert evaluation_frame["selected_reading"] == "pragmatic_or_figurative"
+    assert evaluation_frame["protected_knowledge_terms"] == ["sound"]
+    assert evaluation_frame["academic_knowledge_posture"] == "require_independent_subject_alignment"
+    assert acoustics_frame["selected_reading"] == "literal_domain"
+    assert acoustics_frame["protected_knowledge_terms"] == []
+    assert "bell" in acoustics_frame["literal_domain_evidence"]["sound"]
+
+
+@pytest.mark.parametrize(
+    ("pragmatic", "literal", "protected_term"),
+    (
+        ("How much weight should we give that clue?", "Why does an object have gravitational weight?", "weight"),
+        ("Does this evidence matter?", "How can matter be solid or liquid?", "matter"),
+        ("Can that example shed light on the problem?", "Why does a lamp produce light?", "light"),
+        ("What is the current state of this plan?", "How does electric current move through a circuit?", "current"),
+        ("What is the function of this step?", "What does this function return in Python code?", "function"),
+        ("What field does this idea belong to?", "How does a magnetic field exert force?", "field"),
+        ("What is the point of this discussion?", "Where is the point on this coordinate plane?", "point"),
+    ),
+)
+def test_canonical_meaning_frame_protects_ordinary_senses_without_blocking_literal_controls(
+    pragmatic, literal, protected_term
+):
+    pragmatic_frame = interpret_turn_meaning(pragmatic)["canonical_meaning_frame"]
+    literal_frame = interpret_turn_meaning(literal)["canonical_meaning_frame"]
+
+    assert protected_term in pragmatic_frame["protected_knowledge_terms"]
+    assert protected_term not in literal_frame["protected_knowledge_terms"]
+    assert literal_frame["selected_reading"] in {"literal_domain", "ordinary_literal"}
+
+
+def test_hold_that_thought_is_conversation_management_not_a_memory_candidate():
+    result = interpret_turn_meaning("Can you hold that thought?")
+
+    assert result["primary_intent"] == "direct_conversation"
+    assert "memory_candidate" not in result["dialogue_acts"]
+    assert "hold" in result["canonical_meaning_frame"]["protected_knowledge_terms"]
+    assert result["canonical_meaning_frame"]["memory_write_active"] is False

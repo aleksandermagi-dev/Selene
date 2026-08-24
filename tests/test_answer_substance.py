@@ -192,6 +192,28 @@ def test_visible_rain_uncertainty_revises_the_everyday_choice_provisionally():
     assert result["support_basis"] == "current_prompt_and_recent_conversation"
 
 
+def test_current_context_premises_support_a_modest_practical_inference():
+    result = build_answer_substance(
+        "What is one practical benefit of that?",
+        [
+            {
+                "observation": "The important records are safe, and the workspace is less cluttered.",
+                "source_role": "user",
+                "premise_eligible": True,
+            }
+        ],
+    )
+
+    assert result["answer_kind"] == "grounded_current_context_inference"
+    assert "easier to find and work with" in result["answer"].lower()
+    assert "without sacrificing access" in result["answer"].lower()
+    assert result["support_basis"] == "current_prompt_and_recent_conversation"
+    assert result["structured_semantic_handoff"] is True
+    assert result["source_required_for_factual_claim"] is False
+    assert result["current_context_inference"]["inference_claim"]["claim_type"] == "inference"
+    assert result["current_context_inference"]["inference_is_source_statement"] is False
+
+
 def test_reversible_everyday_choice_uses_recent_visible_options():
     result = build_answer_substance(
         "Back to the porch and walk: which option keeps the plan easiest to change?",

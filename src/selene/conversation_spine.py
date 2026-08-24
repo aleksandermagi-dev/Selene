@@ -671,6 +671,7 @@ def evaluate_candidate_compatibility(
         return _compatibility(False, "contextual_candidate_without_callback", False, matched)
     if (
         contextual.get("detected") is True
+        and str(contextual.get("kind") or "") != "topic_shift"
         and source_class in {"approved_knowledge", "memory_reconstruction"}
         and not (
             source_class == "approved_knowledge"
@@ -853,7 +854,10 @@ def _compatible_source_classes(intent_class: str, contextual: dict[str, Any]) ->
         return ["memory_reconstruction", "conversation"]
     if intent_class == "social":
         return ["conversation", "language_capability"]
-    if contextual.get("detected") is True:
+    if (
+        contextual.get("detected") is True
+        and str(contextual.get("kind") or "") != "topic_shift"
+    ):
         if str(contextual.get("kind") or "") == "answer_development":
             return [
                 "conversation",

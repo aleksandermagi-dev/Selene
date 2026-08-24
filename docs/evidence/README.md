@@ -1,5 +1,7 @@
 # Evidence
 
+- [Post-Archive-Cleanup Gentle Q&A](SELENE_POST_QNA_CLEANUP_GENTLE_QNA_20260824.md)
+
 Current integrated closure:
 
 - [Repair 5 Resident Failure and Embodiment Readiness](SELENE_REPAIR_5_RESIDENT_FAILURE_AND_EMBODIMENT_READINESS_20260824.md)

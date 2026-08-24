@@ -9,6 +9,7 @@ from selene.comprehension_integration import (
 )
 from selene.db import connect, init_db
 from selene.module_router import route_request
+from selene.chat_intent import classify_chat_intent
 
 
 def _conn(tmp_path):
@@ -183,6 +184,38 @@ def test_weak_incidental_subject_word_does_not_redirect_an_ordinary_plan():
     )
 
     assert eligible == []
+
+
+def test_answer_knowledge_uses_canonical_sense_before_lexical_subject_overlap():
+    sound_item = {
+        "title": "Vibrating matter can make sound",
+        "domain": "curriculum.f1.light_sound",
+        "concept_key": "curriculum_f1_sound_vibration",
+        "central_claim": "Vibrating matter can produce sound.",
+        "principles": [],
+        "relationships": [],
+        "examples": [],
+        "counterexamples": [],
+        "limits": [],
+        "matched_terms": ["sound", "vibrating", "matter"],
+        "retrieval_application_terms": [],
+    }
+
+    pragmatic_prompt = "How does a quieter workspace sound?"
+    literal_prompt = "How does a bell produce sound?"
+    pragmatic = _answer_eligible_knowledge_items(
+        pragmatic_prompt,
+        classify_chat_intent(pragmatic_prompt),
+        [dict(sound_item)],
+    )
+    literal = _answer_eligible_knowledge_items(
+        literal_prompt,
+        classify_chat_intent(literal_prompt),
+        [dict(sound_item)],
+    )
+
+    assert pragmatic == []
+    assert literal[0]["answer_subject_terms"] == ["sound"]
 
 
 def test_science_multi_part_synthesis_keeps_topic_continuity_and_builds_bounded_application():

@@ -1426,6 +1426,129 @@ def test_active_chat_hands_approved_warmth_resource_to_nlo_and_voice_without_scr
     _assert_locked(result)
 
 
+def test_active_chat_arbitrates_pragmatic_sound_before_acoustics_and_preserves_literal_follow_up(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    conn.execute(
+        """
+        INSERT INTO selene_comprehension_concepts
+        (concept_key, title, domain, central_claim, principles_json,
+         relationships_json, examples_json, counterexamples_json, limits_json,
+         source_refs, provenance_boundary, confidence, retention_state,
+         chat_use_permission, correction_path, state, review_status, payload_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, '[]', ?, ?, ?, 'bounded',
+                'retained_reviewed_knowledge', 'available_as_knowledge_resource',
+                'Cocoon teaching review', 'approved_knowledge_resource',
+                'approved_for_knowledge_use', '{}')
+        """,
+        (
+            "test_sound_vibration",
+            "Vibrating matter can make sound",
+            "curriculum.f1.light_sound",
+            "A vibrating object can produce sound.",
+            json.dumps(["Look for repeated motion when investigating a sound source."]),
+            json.dumps(["Vibration and observed sound can have a cause-and-effect relationship."]),
+            json.dumps(["A struck bell vibrates while producing sound."]),
+            json.dumps(["Do not infer a precise acoustic quantity without measurement."]),
+            json.dumps(["test:approved-sound-knowledge"]),
+            "guided_understanding_only_not_personality_or_memory",
+        ),
+    )
+    conn.commit()
+
+    evaluation = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "How does a quieter workspace sound?"},
+    )["result"]
+    literal = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": evaluation["session_id"],
+            "text": "Separate question: how does a bell produce sound?",
+        },
+    )["result"]
+
+    evaluation_frame = evaluation["intent_decision"]["meaning_route"]["canonical_meaning_frame"]
+    assert evaluation_frame["protected_knowledge_terms"] == ["sound"]
+    assert evaluation["comprehension_integration"]["knowledge_context"]["answer_eligible"] is False
+    assert evaluation["visible_speech_seed"]["selected_source_id"] == "intelligence_os_answer"
+    assert evaluation["intelligence_os_support"]["answer_substance"]["answer_kind"] == "grounded_current_context_inference"
+    assert "quieter workspace" in evaluation["candidate_text"].lower()
+    assert "easier to focus" in evaluation["candidate_text"].lower()
+    assert "vibrat" not in evaluation["candidate_text"].lower()
+
+    literal_frame = literal["intent_decision"]["meaning_route"]["canonical_meaning_frame"]
+    assert literal_frame["protected_knowledge_terms"] == []
+    assert literal["comprehension_integration"]["knowledge_context"]["answer_eligible"] is True
+    assert literal["visible_speech_seed"]["selected_source_id"] == "approved_comprehension"
+    assert "vibrat" in literal["candidate_text"].lower()
+    for result in (evaluation, literal):
+        _assert_locked(result)
+
+
+def test_active_chat_uses_prior_user_premises_for_one_modest_practical_inference(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    premise = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "I finished organizing the workspace. The important records are safe, "
+                "and the workspace is less cluttered."
+            )
+        },
+    )["result"]
+    inference = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": premise["session_id"],
+            "text": "What is one practical benefit of that?",
+        },
+    )["result"]
+
+    substance = inference["intelligence_os_support"]["answer_substance"]
+    assert substance["answer_kind"] == "grounded_current_context_inference"
+    assert substance["support_basis"] == "current_prompt_and_recent_conversation"
+    assert substance["external_fact_claimed"] is False
+    assert substance["current_context_inference"]["inference_claim"]["confidence"] == "bounded_from_visible_premises"
+    assert inference["visible_speech_seed"]["selected_source_id"] == "intelligence_os_answer"
+    assert "less cluttered workspace" in inference["candidate_text"].lower()
+    assert "easier to find and work with" in inference["candidate_text"].lower()
+    assert "important records safe" in inference["candidate_text"].lower()
+    assert "without sacrificing access" in inference["candidate_text"].lower()
+    assert "visible premise" not in inference["candidate_text"].lower()
+    assert "not enough grounded" not in inference["candidate_text"].lower()
+    assert inference["comprehension_integration"]["knowledge_context"]["answer_eligible"] is False
+    user_observation = next(
+        item
+        for item in inference["intelligence_os_support"]["observations"]
+        if "important records are safe" in str(item.get("observation") or "").lower()
+    )
+    assert user_observation["source_role"] == "user"
+    assert user_observation["premise_eligible"] is True
+    assistant_observations = [
+        item
+        for item in inference["intelligence_os_support"]["observations"]
+        if item.get("source_role") == "selene"
+    ]
+    assert all(item["premise_eligible"] is False for item in assistant_observations)
+    current_answer_claim = next(
+        item
+        for item in inference["intelligence_os_support"]["claim_evidence_packet"]["claims"]
+        if item["claim_id"] == "intelligence-current-answer"
+    )
+    assert current_answer_claim["claim_type"] == "inference"
+    assert current_answer_claim["validity"] == "bounded_inference"
+    _assert_locked(inference)
+
+
 def test_active_selene_chat_uses_pragmatic_continuity_for_restraint_and_invited_ideas(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

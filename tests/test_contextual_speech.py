@@ -402,3 +402,38 @@ def test_immediate_user_result_callback_uses_the_visible_statement():
     assert "first live lesson completed Acquire, Integrate, and Express" in response
     assert decision["intent"] == "reasoning"
     assert result["memory_write_active"] is False
+
+
+def test_deferred_return_remains_a_closure_instead_of_becoming_a_current_callback():
+    prompt = "Exactly. Let's leave it there and get back to teaching later."
+    context = _context("We identified the next teaching prerequisite.")
+    follow_up = inspect_contextual_follow_up(prompt, context)
+    decision = apply_contextual_intent(classify_chat_intent(prompt), follow_up)
+
+    assert follow_up["kind"] == "none"
+    assert decision["intent"] == "farewell"
+    frame = decision["meaning_route"]["canonical_meaning_frame"]
+    assert frame["deferred_return"] is True
+    assert frame["academic_knowledge_posture"] == "hold_for_social_or_conversation_management"
+
+
+def test_current_named_return_still_preserves_the_visible_session_topic():
+    prompt = "Back to teaching: explain why vibration can produce sound."
+    context = _context("We paused the sound lesson before its explanation.")
+    follow_up = inspect_contextual_follow_up(prompt, context)
+    decision = apply_contextual_intent(classify_chat_intent(prompt), follow_up)
+
+    assert follow_up["kind"] == "named_callback"
+    assert decision["intent"] == "reasoning"
+    assert decision["answer_shape"] == "continue_previous_answer"
+
+
+def test_generic_closure_words_do_not_match_unrelated_session_landmarks():
+    landmark = {
+        "kind": "conclusion",
+        "topic": "greeting",
+        "summary": "There you are; the greeting landed.",
+        "coverage_complete_at_recording": True,
+    }
+
+    assert _matching_landmarks("Let's leave it there for today.", [landmark]) == []

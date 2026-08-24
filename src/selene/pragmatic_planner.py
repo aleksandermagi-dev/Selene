@@ -811,7 +811,12 @@ def _request_kind(text: str) -> str:
     lower = text.lower()
     if _explicit_humor_request(lower):
         return "humor"
-    if re.search(r"\b(?:let|allow)\b.*\b(?:conversation|chat)\b.*\bend\b|\bend\b.*\bnaturally\b", lower):
+    if re.search(
+        r"\b(?:let|allow)\b.*\b(?:conversation|chat)\b.*\bend\b|\bend\b.*\bnaturally\b|"
+        r"\b(?:leave|stop|pause) it (?:here|there)\b|"
+        r"\b(?:get|come|go|return) back to\b.{0,100}\b(?:later|tomorrow|next time|another time)\b",
+        lower,
+    ):
         return "closure"
     if re.search(
         r"(?:^|[):.!?]\s*)(?:summarize|recap)\b|\bsummary\b",
@@ -929,6 +934,8 @@ def _question_kind(question: str) -> str:
         return "provisional_inference"
     if lower.startswith("why") or " why " in lower:
         return "reason"
+    if re.search(r"\bhow (?:does|would|did)\b.{0,180}\b(?:sound|feel|look|seem)\b", lower):
+        return "direct_question"
     if lower.startswith("how") or " how " in lower:
         return "method"
     if "limitation" in lower or lower.startswith("what is its limit"):

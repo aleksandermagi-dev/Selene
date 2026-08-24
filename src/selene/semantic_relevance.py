@@ -83,6 +83,14 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
     candidate = payload.get("candidate") if isinstance(payload.get("candidate"), dict) else {}
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
+    meaning_route = intent.get("meaning_route") if isinstance(intent.get("meaning_route"), dict) else {}
+    meaning_frame = (
+        payload.get("canonical_meaning_frame")
+        if isinstance(payload.get("canonical_meaning_frame"), dict)
+        else meaning_route.get("canonical_meaning_frame")
+        if isinstance(meaning_route.get("canonical_meaning_frame"), dict)
+        else {}
+    )
     source_class = str(
         payload.get("source_class")
         or candidate.get("source_class")
@@ -117,7 +125,12 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
         ]
     )
 
-    query_terms = _semantic_terms(prompt)
+    protected_terms = {
+        _singular(str(term).lower())
+        for term in meaning_frame.get("protected_knowledge_terms") or []
+        if str(term).strip()
+    }
+    query_terms = _semantic_terms(prompt) - protected_terms
     subject_terms = _semantic_terms(subject_text)
     core_terms = _semantic_terms(core_text)
     application_terms = _semantic_terms(application_text)
@@ -164,28 +177,32 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
             )
             reason = "contextual_memory_strongly_aligned" if accepted else "contextual_memory_alignment_too_weak"
     elif source_class in {"approved_knowledge", "reviewed_teaching_knowledge_resource"}:
-        direct_subject = bool(
-            strong_subject_overlap
-            and (
-                explicit_focus
-                or len(strong_subject_overlap) >= 2
-                or len(all_overlap) >= 2
-                or len(query_terms) <= 2
+        if meaning_frame.get("academic_knowledge_posture") == "hold_for_social_or_conversation_management":
+            accepted = False
+            reason = "canonical_meaning_frame_holds_academic_retrieval"
+        else:
+            direct_subject = bool(
+                strong_subject_overlap
+                and (
+                    explicit_focus
+                    or len(strong_subject_overlap) >= 2
+                    or len(all_overlap) >= 2
+                    or len(query_terms) <= 2
+                )
             )
-        )
-        transfer_application = bool(
-            len(application_overlap) >= 3
-            and len(all_overlap) >= 3
-            and (not requested_roles or bool(role_overlap) or "application" in candidate_roles)
-        )
-        accepted = direct_subject or transfer_application
-        reason = (
-            "approved_knowledge_subject_aligned"
-            if direct_subject
-            else "approved_knowledge_application_aligned"
-            if transfer_application
-            else "approved_knowledge_has_only_peripheral_overlap"
-        )
+            transfer_application = bool(
+                len(application_overlap) >= 3
+                and len(all_overlap) >= 3
+                and (not requested_roles or bool(role_overlap) or "application" in candidate_roles)
+            )
+            accepted = direct_subject or transfer_application
+            reason = (
+                "approved_knowledge_subject_aligned"
+                if direct_subject
+                else "approved_knowledge_application_aligned"
+                if transfer_application
+                else "approved_knowledge_has_only_peripheral_overlap"
+            )
     else:
         accepted = bool(all_overlap or not query_terms)
         reason = "candidate_topic_aligned" if accepted else "candidate_lacks_semantic_alignment"
@@ -198,6 +215,8 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
             "source_id": source_id,
             "source_class": source_class,
             "query_terms": sorted(query_terms),
+            "protected_query_terms": sorted(protected_terms),
+            "canonical_meaning_frame_applied": bool(meaning_frame),
             "subject_overlap": sorted(subject_overlap),
             "strong_subject_overlap": sorted(strong_subject_overlap),
             "core_overlap": sorted(core_overlap),
