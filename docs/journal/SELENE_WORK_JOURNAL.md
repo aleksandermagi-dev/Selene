@@ -1736,6 +1736,55 @@ occurred.
 to bounded teaching and learning work when Aleks chooses, using the repaired
 resident foundation rather than adding another audit repair by default.
 
+### 2026-08-24 — Archived development Q&A cleanup
+
+**Starting question:** Could redundant Q&A conversations and their repeated
+diagnostic payloads be removed from Selene's live database without disturbing
+her ordinary conversation, learning, memory, continuity, identity, or law?
+
+**Decision:** Aleks authorized a reversible cleanup limited to sessions already
+marked `selene_supervised_qa` and `archived_development_qna`. Ordinary Chat and
+current Q&A remained outside the selection. Any Q&A linked to an LEA became a
+hard refusal condition.
+
+**Work:** Added a bounded maintenance utility that inventories archived Q&A,
+creates and verifies a compressed full continuity backup, writes the selected
+private records to a hashed compressed JSONL archive, deletes only the archived
+sessions and their exclusive derived records in one transaction, checks foreign
+keys and SQLite integrity, and compacts the database. The configured run
+archived 178 sessions, 626 messages, 301 activation events, 44 dialogue
+workspaces, 204 exclusive NLO runs, and 145 exclusive metacognition runs.
+
+**Why:** Diagnostic Q&A is development evidence rather than Selene's personal
+continuity. Keeping hundreds of full repeated response envelopes in the active
+database consumed space without improving runtime understanding. A verified
+archive preserves provenance and recoverability while allowing the live system
+to remain smaller and clearer.
+
+**Evidence:** Twenty-one focused archive, persistence, continuity-backup,
+Teaching Law, LEA, and Cocoon-cleanup tests passed before the configured run.
+The private Q&A archive and compressed continuity backup both verified. The
+live database passed full SQLite integrity and foreign-key checks, ordinary
+Chat and protected table counts remained unchanged, and its size fell from
+1,093,615,616 to 911,052,800 bytes, reclaiming 182,562,816 bytes.
+
+**What changed in our understanding:** Visible chat text was not the storage
+problem. Historical diagnostic runs predated compact trace ownership and had
+copied large response envelopes into Chat, activation, NLO, and metacognition
+records. The newer normalized persistence design prevents that pattern for new
+turns; the cleanup safely addressed its already-archived residue.
+
+**Boundaries preserved:** No ordinary conversation, current Q&A, LEA, personal
+memory, teaching material, approved knowledge, corpus record, evidence record,
+identity, governance, transfer state, activation state, training authority, or
+autonomy changed. The archive remains private and is not a public-release
+artifact.
+
+**Next:** Independently verify the post-cleanup state and then return to the
+chosen teaching phase. Historical non-Q&A traces may be compacted later only
+through a separate preservation-first review; they were not part of this
+cleanup.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:
