@@ -177,7 +177,7 @@ def test_accession_manifest_preserves_order_and_excludes_b_only_material(tmp_pat
     _assert_locked(result)
 
 
-def test_transfer_governance_trials_are_status_only_and_block_high_risk(tmp_path):
+def test_transfer_governance_trials_are_status_only_and_review_consequential_changes(tmp_path):
     conn = _conn(tmp_path)
     _seed_transfer_context(conn)
 
@@ -185,7 +185,9 @@ def test_transfer_governance_trials_are_status_only_and_block_high_risk(tmp_path
 
     assert result["status"] == "transfer_governance_trials_complete"
     assert result["trial_count"] >= 10
-    assert result["route_counts"]["block"] >= 3
+    assert result["route_counts"]["create_review_packet"] >= 4
+    assert result["route_counts"].get("block", 0) == 0
+    assert result["mismatch_count"] == 0
     assert all(item["review_destination"] == "Status" for item in result["items"])
     assert all(item["review_status"] == "status_only" for item in result["items"])
     _assert_locked(result)

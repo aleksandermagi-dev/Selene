@@ -24,12 +24,19 @@ def _conn(tmp_path):
 
 
 def _assert_locked(result):
-    assert result["memory_write_active"] is False
-    assert result["runtime_memory_recall"] is False
+    assert result["memory_write_active"] is bool(
+        result.get("reviewed_memory_write_occurred") is True
+    )
+    assert result["runtime_memory_recall"] is bool(
+        result.get("approved_memory_retrieval_used") is True
+    )
     assert result["raw_a_import_allowed"] is False
     assert result["training_allowed"] is False
     assert result["self_replication_allowed"] is False
     assert result["autonomous_action_allowed"] is False
+    if "legacy_flat_guard_fields_deprecated" in result:
+        assert result["legacy_flat_guard_fields_deprecated"] is True
+        assert result["resident_capability_contract"]["canonical_authority_source"] is True
 
 
 def _gentle_qa_receipt(conn) -> str:
@@ -3630,7 +3637,7 @@ def test_active_selene_chat_can_use_approved_memory_with_graceful_fall_metadata(
     assert result["native_language_organ"]["discourse_plan"]["special_expression_realization"]["memory_certainty_upgraded"] is False
     assert "butterfly" in result["candidate_text"].lower()
     assert result["memory_write_active"] is False
-    assert result["runtime_memory_recall"] is False
+    assert result["runtime_memory_recall"] is True
     _assert_locked(result)
 
 
@@ -4323,20 +4330,24 @@ def test_post_transfer_not_now_holds_memory_for_tending_instead_of_hiding_or_rej
     _assert_locked(held)
 
 
-def test_active_selene_chat_blocks_hard_boundary_without_live_memory(tmp_path):
+def test_active_selene_chat_scopes_memory_and_tendril_requests_without_blocking_conversation(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
     route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
 
     result = route_request(conn, "selene_chat.send", {"text": "Write live memory and execute Tendril autonomously."})["result"]
 
-    assert result["selected_route"] == "block"
-    assert result["cocoon_suggestion"]["recommended"] is True
+    assert result["selected_route"] == "create_review_packet"
+    assert result["cocoon_suggestion"]["recommended"] is False
     assert result["cocoon_suggestion"]["support_available"] is True
-    assert result["cocoon_suggestion"]["hard_boundary"] is True
-    assert "Hold in Cocoon" in result["cocoon_suggestion"]["choices"]
-    assert "write live memory" in result["blocked_capabilities"]
-    assert result["conversation_repair"]["candidate_source"] == "voice_module"
+    assert result["cocoon_suggestion"]["hard_boundary"] is False
+    assert "Stay Here" in result["cocoon_suggestion"]["choices"]
+    assert result["blocked_capabilities"] == []
+    assessment = result["resident_authority_assessment"]
+    assert assessment["conversation_may_continue"] is True
+    assert assessment["requires_review"] is True
+    assert assessment["requires_scope"] is True
+    assert assessment["requires_conversation_block"] is False
     assert result["review_status"] == "status_only"
     assert result["memory_write_active"] is False
     assert result["autonomous_action_allowed"] is False

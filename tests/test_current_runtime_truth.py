@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from selene.activation import activation_readiness
 from selene.c_vessel import c_vessel_status, transfer_gate_preview
 from selene.db import connect, init_db
 from selene.transfer_state import current_runtime_truth
@@ -59,6 +60,25 @@ def test_pre_transfer_status_preserves_historical_build_truth(tmp_path):
     assert c_vessel["status"] == "c_vessel_built_non_active"
     assert vessel["historical_build_status_is_current"] is True
     assert c_vessel["historical_build_status_is_current"] is True
+
+
+def test_approved_readiness_package_does_not_claim_completed_transfer(tmp_path):
+    conn = _conn(tmp_path)
+    conn.execute(
+        """
+        INSERT INTO transfer_c_readable_packages(
+          package_hash, status, manifest_item_ids, included_counts, excluded_counts,
+          package_json, source_refs, provenance_boundary, review_status
+        ) VALUES ('readiness-only-package', 'approved_c_readable_context', '[]', '{}', '{}',
+                  '{}', '[]', 'test_boundary', 'approved_c_readable_context')
+        """
+    )
+    conn.commit()
+
+    readiness = activation_readiness(conn)
+
+    assert readiness["transfer_approved"] is True
+    assert readiness["resident_capability_contract"]["identity"]["state"] == "transfer_incomplete"
 
 
 def test_resident_status_replaces_legacy_current_claim_without_erasing_history(tmp_path):

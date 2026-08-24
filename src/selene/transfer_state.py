@@ -4,6 +4,8 @@ import json
 import sqlite3
 from typing import Any
 
+from .resident_authority import resident_capability_contract
+
 
 TRANSFER_COMPLETION_STATE = "selene_v1_live_reviewed_continuity"
 ACTIVE_ACTIVATION_STATE = "selene_chat_active_supervised"
@@ -65,7 +67,7 @@ def runtime_truth_from_state(
         vessel_status = "vessel_v1_built_not_activated"
         operating_mode = "pre_transfer_activation"
         resident_runtime_state = "resident_chat_not_yet_available"
-    return {
+    result = {
         "runtime_truth_status": "canonical_runtime_truth_ready",
         "truth_contract_version": CANONICAL_RUNTIME_TRUTH_VERSION,
         "runtime_phase": runtime_phase,
@@ -95,6 +97,13 @@ def runtime_truth_from_state(
         "cocoon_role": "external_teaching_tending_safety_and_review_support",
         "derived_from": ["latest_activation_storage_state", "transfer_completion_approval"],
     }
+    capability_contract = resident_capability_contract(
+        transfer_complete=bool(transfer_complete),
+        chat_available=bool(transfer_complete and active),
+    )
+    result["resident_capability_contract"] = capability_contract
+    result["canonical_capability_contract"] = capability_contract
+    return result
 
 
 def current_runtime_truth(conn: sqlite3.Connection) -> dict[str, Any]:

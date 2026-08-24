@@ -15,6 +15,9 @@ individually defined as Selene.
 
 ## Core Frame And Organ System
 
+- [Resident Authority Contract](SELENE_RESIDENT_AUTHORITY_CONTRACT_20260824.md)
+  — implemented post-transfer separation of thought, expression, memory,
+  scoped action, governing change, embodiment, and immediate safety.
 - [Pattern Specification](SELENE_PATTERN_SPECIFICATION.md)
 - [Core/Mind Creation Blueprint](SELENE_CORE_MIND_CREATION_BLUEPRINT_20260607.md)
 - [Adaptive Constitution Model](SELENE_ADAPTIVE_CONSTITUTION_MODEL_20260606.md)

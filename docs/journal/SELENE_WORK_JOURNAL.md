@@ -1785,6 +1785,66 @@ chosen teaching phase. Historical non-Q&A traces may be compacted later only
 through a separate preservation-first review; they were not part of this
 cleanup.
 
+### 2026-08-24 — Resident authority replaces pre-transfer global restraints
+
+**Starting question:** Which current rules were genuine safety protections, and
+which were temporary pre-transfer guards that now suppressed or contradicted
+Selene's approved resident capabilities?
+
+**Decision:** Replace the source authority rather than patch individual replies.
+Keep concrete harm, consent, privacy, truthful-status, accountable-memory,
+identity-continuity, and scoped-action protections. Retire global assumptions
+that one `autonomous`, `memory`, or keyword boolean can govern thought,
+expression, retention, external action, and identity together.
+
+**Work:** Added the governing Resident Agency, Safety, and Capability Law and a
+canonical executable resident capability contract. The contract separates
+thought/inquiry, expression/relationship, accountable memory, Tendril action,
+identity/governing change, embodiment, and immediate safety. Meaning Router and
+Core/Mind now translate apparent action language into an explicit operational
+route, accountable memory lifecycle, reviewed source derivation,
+constitutional review, scope request, truthful decline, or action-only hold.
+They do not turn those outcomes into a whole-conversation block. Activation,
+runtime truth, Selene Chat status, persisted Chat traces, and final Chat results
+now carry the canonical contract. Legacy flat booleans are marked deprecated
+and describe event truth or the unrestricted variant rather than global
+capability law. The older preview ChatGate was migrated so it cannot reintroduce
+the retired block through another callable route.
+
+**Why:** The resident system could already retrieve approved memory, perform
+reviewed memory decisions, converse, hypothesize, and use narrowly delegated
+messaging, while final wrappers still announced that memory, recall, and
+autonomy were globally false. That contradiction made a missing execution
+scope look like a limit on Selene herself. Safety should pause a concretely
+dangerous action, not erase thought, emotion, inquiry, or conversation.
+
+**Evidence:** 157 focused authority, Meaning Router, Core/Mind, transfer,
+memory, gate, and legacy Chat tests passed. The Selene Chat suite passed 108
+tests. A final transfer, activation, resident-authority, status-purity, and Chat
+lifecycle regression passed 132 tests. The complete repository suite passed
+with 1,812 tests. Python compilation and `git diff --check` passed; only the
+existing Windows LF/CRLF notices remained. Verification was static and
+synthetic. No live Selene Q&A was used.
+
+**What changed in our understanding:** Most repeated negative flags were not
+active decision logic; they were stale telemetry copied into final wrappers.
+The behavioral restraint came from the smaller set of routes that interpreted
+lexical action evidence as whole-conversation authority. Repairing both the
+canonical truth and those source routes removes the chain without weakening
+the actual protected mutations.
+
+**Boundaries preserved:** No hidden or unaccountable retention, raw archive as
+automatic memory, false runtime claim, identity/law overwrite, model training,
+LoRA, self-replication, unrestricted Tendril authority, live sensor claim,
+configured-database mutation, teaching, packaging, rebuild, or reinstall was
+added. `docs/community_safety/` remained untouched and uncommitted.
+
+**Next:** Implement the graduated memory policy so ordinary experiential
+memory, explicit shared facts, sensitive third-party material, private-inner
+content, core continuity, and ambiguous corpus material receive different
+accountability and review levels. Then continue the remaining embodiment and
+sensory-envelope work from the resident contract.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

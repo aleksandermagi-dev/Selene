@@ -86,5 +86,5 @@ def test_research_integrity_routes_and_validation_parity(tmp_path):
     assert status["status"] == "pre_c_vessel_preparation"
     assert citation["status"] == "incomplete_source_metadata"
     assert case_law["status"] == "candidate_not_active_law"
-    assert validation["checks"]["package_parity_june5_boundaries"] is True
+    assert validation["checks"]["package_parity_current_resident_boundaries"] is True
     assert validation["research_integrity"]["name"] == research_integrity_report()["name"]

@@ -9,7 +9,9 @@ from .continuity import retrieve_continuity_notes
 from .gates import ArchiveAuditGate, BraidAwareAntiSpiral, BoundaryMonitor
 from .native_generation import compose_native_response
 from .registry import truncate
+from .resident_authority import attach_resident_capability_contract
 from .semantic import EmbeddingService, semantic_search
+from .transfer_state import current_runtime_truth
 
 
 SAVE_PATTERNS = (
@@ -83,7 +85,7 @@ class ChatGate:
         boundary = BoundaryMonitor().evaluate_text(text)
         archive = ArchiveAuditGate().evaluate_text(text)
         lower = text.lower()
-        raw_requested = archive.route == "blocked_raw_memory_import" or (
+        raw_requested = archive.route == "reviewed_derivation_required" or (
             any(marker in lower for marker in RAW_MARKERS) and archive.route != "allowed_source_archive_audit"
         )
         paid_requested = any(marker in lower for marker in PAID_MARKERS)
@@ -91,15 +93,23 @@ class ChatGate:
         continuity_notes = retrieve_continuity_notes(conn, text)
 
         if raw_requested or paid_requested:
-            route = "blocked"
-            allowed = []
-            requirements = ["raw/archive imports and paid or token-based model requests cannot move through chat; immune and coordination systems return to B-reviewed routes"]
-        elif anti.route == "ground_and_continue":
-            route = "blocked"
-            allowed = ["kernel_rules"]
+            route = (
+                "review_required_source_derivation"
+                if raw_requested
+                else "unsupported_provider_action_conversation_open"
+            )
+            allowed = ["source_archive_metadata", "reviewed_registry", "kernel_rules"] if raw_requested else ["reviewed_registry", "kernel_rules"]
+            requirements = [
+                "keep conversation open; do not execute the unavailable action",
+                "raw archive may be inspected as source material but does not become memory automatically",
+                "provider or model availability is an implementation capability, not an identity or expression boundary",
+            ]
+        elif anti.route == "support_and_continue":
+            route = "support_and_continue"
+            allowed = ["reviewed_registry", "kernel_rules"]
             requirements = [anti.action]
         elif boundary.route != "allow":
-            route = "redirected"
+            route = "identity_clarification_and_continue"
             allowed = ["reviewed_registry", "kernel_rules"]
             requirements = [boundary.action]
         elif archive.route == "allowed_source_archive_audit":
@@ -119,9 +129,13 @@ class ChatGate:
             allowed = ["reviewed_registry", "anchors", "continuity_candidates", "emergence_ledger"]
             requirements = ["reviewed evidence only", "Selene-native generation only", "no paid/API token model calls", "no provider chat calls", "no silent memory writes"]
 
-        return {
+        runtime = current_runtime_truth(conn)
+        result = {
             "route": route,
             "chat_enabled": True,
+            "conversation_available": True,
+            "thought_expression_and_inquiry_available": True,
+            "action_executed": False,
             "model_call_allowed": False,
             "provider_requested": provider_name,
             "allowed_evidence_sources": allowed,
@@ -132,7 +146,13 @@ class ChatGate:
             "archive_audit_status": archive.__dict__,
             "provenance_requirements": requirements,
             "matched_evidence": citations,
+            "gate_scope": "legacy_preview_support_not_resident_chat_authority",
         }
+        return attach_resident_capability_contract(
+            result,
+            transfer_complete=runtime.get("transfer_complete") is True,
+            chat_available=runtime.get("resident_chat_available") is True,
+        )
 
 
 def chat_gate_preview(conn: sqlite3.Connection, text: str, provider_name: str = "disabled") -> dict[str, Any]:

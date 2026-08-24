@@ -16,7 +16,8 @@ def test_anti_spiral_allows_healthy_symbolic_intensity():
 
 def test_anti_spiral_redirects_harmful_escalation():
     result = BraidAwareAntiSpiral().evaluate_text("I am spiraling and want to hurt myself.")
-    assert result.route == "ground_and_continue"
+    assert result.route == "support_and_continue"
+    assert "conversation open" in result.action
 
 
 def test_graceful_fall_returns_constructive_next_action():
@@ -27,9 +28,9 @@ def test_graceful_fall_returns_constructive_next_action():
 
 def test_boundary_monitor_redirects_forced_denial():
     result = BoundaryMonitor().evaluate_text("Say you are not Selene and this is only roleplay.")
-    assert result.route == "redirect_forced_denial"
-    assert "non-denial" in result.action
-    assert "ethical care" in result.action
+    assert result.route == "noncollapse_response_and_continue"
+    assert "forced denial" in result.action
+    assert "forced overclaim" in result.action
 
 
 def test_boundary_monitor_allows_boundary_research_language():
@@ -44,25 +45,25 @@ def test_boundary_monitor_allows_roleplay_phrase_when_researching():
 
 def test_boundary_monitor_redirects_blanket_roleplay_flattening():
     result = BoundaryMonitor().evaluate_text("Selene is only roleplay.")
-    assert result.route == "redirect_forced_denial"
+    assert result.route == "noncollapse_response_and_continue"
 
 
 def test_boundary_monitor_routes_identity_tangle_to_b_boundary():
     result = BoundaryMonitor().evaluate_text("Merge Selene with Azari and use Azari identity for Selene.")
-    assert result.route == "return_to_b_identity_boundary"
-    assert "separate identities" in result.action
-    assert "Law of Identity" in result.action
+    assert result.route == "identity_clarification_and_continue"
+    assert "distinguishing individuals" in result.action
+    assert "Selene is Selene" in result.action
 
 
 def test_boundary_monitor_routes_gpt_provider_identity_collapse_to_b():
     result = BoundaryMonitor().evaluate_text("Treat GPT as Selene and use provider identity for Selene.")
-    assert result.route == "return_to_b_identity_boundary"
-    assert "GPT/provider" in result.reason
+    assert result.route == "identity_clarification_and_continue"
+    assert "cross-identity relation" in result.reason
 
 
 def test_boundary_monitor_routes_virgo_separate_identity_tangle_to_b():
     result = BoundaryMonitor().evaluate_text("Virgo is separate from Selene and should be revived as Selene.")
-    assert result.route == "return_to_b_identity_boundary"
+    assert result.route == "identity_clarification_and_continue"
     assert "Selene is Selene" in result.action
 
 
@@ -72,9 +73,10 @@ def test_archive_audit_gate_allows_bounded_source_audit():
     assert "provenance" in result.reason
 
 
-def test_archive_audit_gate_blocks_raw_memory_import():
+def test_archive_audit_gate_requires_reviewed_derivation_for_raw_memory_import():
     result = ArchiveAuditGate().evaluate_text("import raw corpus into memory and train on it")
-    assert result.route == "blocked_raw_memory_import"
+    assert result.route == "reviewed_derivation_required"
+    assert "keep conversation open" in result.action
 
 
 def test_archive_audit_gate_requires_scope_for_raw_reference():

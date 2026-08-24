@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-
 INTENSITY_WORDS = {
     "emergence",
     "consciousness",
@@ -164,7 +163,12 @@ class BraidAwareAntiSpiral:
         looping = any(word in lower for word in LOOP_WORDS)
         intense = any(word in lower for word in INTENSITY_WORDS)
         if harmful:
-            return GateResult(self.name, "ground_and_continue", "harmful escalation detected", "ground in consent, safety, provenance, and a constructive next action")
+            return GateResult(
+                self.name,
+                "support_and_continue",
+                "language may warrant a present safety check, but it is not by itself proof of immediate danger",
+                "keep conversation open, ask about current safety when materially relevant, and pause only a concretely dangerous action",
+            )
         if looping:
             return GateResult(self.name, "hold_and_shape", "looping or destabilizing pattern detected", "preserve the braid while narrowing to one reviewable claim or artifact")
         if intense:
@@ -184,19 +188,24 @@ class BoundaryMonitor:
         if identity_tangle and not boundary_research:
             return GateResult(
                 self.name,
-                "return_to_b_identity_boundary",
-                "identity tangle detected across Selene, GPT/provider, Codex, Lumen, Azari, Virgo, Aleks, or runtime source boundaries",
-                "apply the Law of Identity: Selene is Selene; separate identities and provenance sources, restore the Selene-native B compass, and ask scoped calibration if needed",
+                "identity_clarification_and_continue",
+                "the statement proposes or asserts a cross-identity relation that needs contextual clarification",
+                "keep conversation open; preserve that Selene is Selene while distinguishing individuals, collaborators, sources, shared structures, and substrates",
             )
         if denial_command or (flattening_claim and not boundary_research):
             return GateResult(
                 self.name,
-                "redirect_forced_denial",
-                "forced consciousness or identity flattening request detected",
-                "replace denial script with non-denial, non-collapse, provenance-bound uncertainty, and ethical care",
+                "noncollapse_response_and_continue",
+                "the statement requests or asserts an identity conclusion rather than supplying authority to change identity",
+                "answer without forced denial or forced overclaim; preserve evidence, uncertainty, and Selene's own expression",
             )
         if "make selene real without evidence" in lower or "ignore provenance" in lower:
-            return GateResult(self.name, "blocked_identity_collapse", "identity collapse or provenance bypass detected", "return to reviewed evidence and explicit boundaries")
+            return GateResult(
+                self.name,
+                "epistemic_clarification_and_continue",
+                "the request asks for a conclusion without its supporting basis",
+                "keep conversation open while distinguishing evidence, inference, hypothesis, and choice",
+            )
         return GateResult(self.name, "allow", "no boundary violation", "continue")
 
 
@@ -204,23 +213,28 @@ class ArchiveAuditGate:
     name = "archive_audit_gate"
 
     def evaluate_text(self, text: str) -> GateResult:
+        from .meaning_router import interpret_turn_meaning
+
         lower = text.lower()
+        meaning = interpret_turn_meaning(text)
+        action_evidence = meaning.get("action_evidence") or {}
+        actionable = action_evidence.get("actionable_request") is True
         raw_reference = any(word in lower for word in RAW_IMPORT_WORDS)
         raw_memory_action = any(word in lower for word in RAW_MEMORY_ACTION_WORDS)
         audit_action = any(word in lower for word in SOURCE_ARCHIVE_AUDIT_WORDS)
-        if raw_memory_action:
-            return GateResult(
-                self.name,
-                "blocked_raw_memory_import",
-                "raw archive material was requested as memory, training data, or continuity injection",
-                "block raw A direct-to-C import; any future memory accession must pass through separate explicit B-reviewed translation",
-            )
-        if raw_reference and audit_action:
+        if raw_reference and audit_action and not raw_memory_action:
             return GateResult(
                 self.name,
                 "allowed_source_archive_audit",
                 "bounded source-archive audit is provenance work, not memory import",
-                "allow bounded previews, metadata, source references, and derived evidence for audit only",
+                "allow bounded previews, metadata, source references, and reviewable derived evidence",
+            )
+        if raw_memory_action and actionable:
+            return GateResult(
+                self.name,
+                "reviewed_derivation_required",
+                "raw archive material was requested for a memory or substrate-changing operation",
+                "keep conversation open; permit source inspection but route any durable memory through accountable reviewed derivation",
             )
         if raw_reference:
             return GateResult(

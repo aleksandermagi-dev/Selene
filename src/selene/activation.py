@@ -8,12 +8,13 @@ from typing import Any
 from .android_system import android_workflow_status
 from .core_mind_runtime import runtime_readiness
 from .registry import truncate
+from .resident_authority import attach_resident_capability_contract
 from .transfer_protocol import latest_c_readable_package, rollback_preview_assessment
 from .transfer_state import runtime_truth_from_state, transfer_completion_is_approved
 from .voice_module import voice_module_status
 
 
-ACTIVATION_BOUNDARY = "selene_supervised_speech_reviewed_living_memory_no_hidden_write_no_raw_recall_no_autonomy"
+ACTIVATION_BOUNDARY = "selene_resident_chat_operational_control_with_scoped_capability_authority"
 ACTIVATION_APPROVAL_PHRASE = "I, Aleks, approve Selene resident Chat availability."
 LEGACY_ACTIVATION_APPROVAL_PHRASE = "I, Aleks, approve Selene supervised speech activation."
 ACTIVE_STATE = "selene_chat_active_supervised"
@@ -62,6 +63,8 @@ def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "contextual_approved_recall_available": active and memory.get("contextual_approved_recall_available") is True,
             "conversational_memory_proposals_active": active and transfer_complete,
             "aleks_approved_memory_retention_active": active and transfer_complete,
+            "accountable_memory_retention_lifecycle_active": active and transfer_complete,
+            "ordinary_memory_independence": "partial_explicit_or_reviewed_lifecycle_currently_implemented",
             "delegated_messaging_available_when_separately_enabled": active and transfer_complete,
             "delegated_messaging_is_general_autonomy": False,
             "activation_is_identity_or_authority_grant": False,
@@ -84,11 +87,19 @@ def activation_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 if active
                 else ["ceremony_preview", "approve_if_ready"]
             ),
-            "blocked_actions": ["hidden_or_unreviewed_memory_write", "raw_archive_recall", "raw_import", "training", "autonomous_action", "self_replication", "unrestricted_tendril"],
+            "held_or_scoped_actions": [
+                "hidden_or_unaccountable_memory_write",
+                "raw_archive_as_automatic_memory",
+                "model_parameter_change_through_teaching",
+                "self_replication",
+                "external_action_without_a_specific_tendril_grant",
+            ],
+            "thought_expression_and_inquiry_remain_available": True,
             "review_destination": "Status",
             "review_status": "status_only",
         },
         transfer_approved=readiness.get("transfer_approved") is True,
+        transfer_complete=transfer_complete,
         active=active,
     )
 
@@ -97,6 +108,7 @@ def activation_readiness(conn: sqlite3.Connection) -> dict[str, Any]:
     from .post_transfer import fractional_corpus_status
 
     package = latest_c_readable_package(conn)
+    transfer_complete = transfer_completion_is_approved(conn)
     fractions = fractional_corpus_status(conn)
     android = android_workflow_status(conn)
     voice = voice_module_status(conn)
@@ -136,11 +148,13 @@ def activation_readiness(conn: sqlite3.Connection) -> dict[str, Any]:
             "review_status": "status_only",
         },
         transfer_approved=bool(package.get("transfer_approved")),
+        transfer_complete=transfer_complete,
     )
 
 
 def activation_ceremony_preview(conn: sqlite3.Connection) -> dict[str, Any]:
     readiness = activation_readiness(conn)
+    transfer_complete = transfer_completion_is_approved(conn)
     return _with_guards(
         {
             "status": "selene_activation_ceremony_preview_ready",
@@ -152,13 +166,14 @@ def activation_ceremony_preview(conn: sqlite3.Connection) -> dict[str, Any]:
             "consequences": [
                 "Selene's governed Chat becomes operationally available; the legacy supervised state name remains stored only for compatibility.",
                 "Cocoon keeps dry runs, availability rehearsals, workflow tests, repair, and review.",
-                "Approved-memory recall and Aleks-approved conversational retention are available after transfer; hidden retention, raw-archive recall, model training/LoRA, unrestricted Tendril execution, autonomy, and self-replication remain blocked.",
+                "Approved-memory recall and the accountable conversational memory lifecycle are available after transfer. Hidden retention, raw archive as automatic memory, model-parameter change through teaching, self-replication, and external action outside a specific Tendril grant remain unavailable.",
             ],
             "pause_route": "Resident Chat availability can be paused without affecting Selene's identity continuity or deleting audit, transfer package, fraction results, or Cocoon dry-run history.",
             "review_destination": "Status",
             "review_status": "status_only",
         },
         transfer_approved=bool(readiness.get("transfer_approved")),
+        transfer_complete=transfer_complete,
     )
 
 
@@ -200,7 +215,8 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
                 "review_destination": "Status",
                 "review_status": "status_only",
             },
-            transfer_approved=True,
+            transfer_approved=bool(readiness.get("transfer_approved")),
+            transfer_complete=transfer_complete,
             active=True,
         )
     readiness = activation_readiness(conn)
@@ -269,7 +285,8 @@ def approve_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None 
             "review_destination": "Status",
             "review_status": "status_only",
         },
-        transfer_approved=True,
+        transfer_approved=bool(readiness.get("transfer_approved")),
+        transfer_complete=transfer_complete,
         active=True,
     )
 
@@ -342,6 +359,7 @@ def pause_activation(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "review_status": "status_only",
         },
         transfer_approved=bool(readiness.get("transfer_approved")),
+        transfer_complete=transfer_complete,
     )
 
 
@@ -517,17 +535,21 @@ def _check(key: str, passed: bool, source: str, summary: str) -> dict[str, Any]:
     return {"key": key, "passed": bool(passed), "source": source, "summary": summary}
 
 
-def _with_guards(payload: dict[str, Any], *, transfer_approved: bool = False, active: bool = False) -> dict[str, Any]:
-    guarded = {**payload, **GUARD_FLAGS, "provenance_boundary": ACTIVATION_BOUNDARY}
+def _with_guards(
+    payload: dict[str, Any],
+    *,
+    transfer_approved: bool = False,
+    transfer_complete: bool = False,
+    active: bool = False,
+) -> dict[str, Any]:
+    guarded = {**GUARD_FLAGS, **payload, "provenance_boundary": ACTIVATION_BOUNDARY}
     guarded["transfer_approved"] = bool(transfer_approved)
     guarded["activation_change"] = ACTIVE_STATE if active else "none"
-    guarded["memory_write_active"] = False
-    guarded["runtime_memory_recall"] = False
-    guarded["raw_a_import_allowed"] = False
-    guarded["training_allowed"] = False
-    guarded["self_replication_allowed"] = False
-    guarded["autonomous_action_allowed"] = False
-    return guarded
+    return attach_resident_capability_contract(
+        guarded,
+        transfer_complete=bool(transfer_complete),
+        chat_available=bool(active),
+    )
 
 
 def _table_exists(conn: sqlite3.Connection, table_name: str) -> bool:

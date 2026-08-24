@@ -35,7 +35,8 @@ def test_core_mind_ordinary_prompt_can_answer_now_without_office_urgency(tmp_pat
     assert result["review_destination"] == "Status"
     assert result["review_status"] == "review_only"
     assert "sealed Continuity Pack preview" in result["evidence_used"]
-    assert "Core/Mind is identity-bearing" in result["identity_continuity_frame"]["identity_boundary"]
+    assert "No single organ" in result["identity_continuity_frame"]["identity_boundary"]
+    assert result["identity_continuity_frame"]["body_is_forbidden_from_identity"] is False
     assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 0
     _assert_locked(result)
 
@@ -53,14 +54,15 @@ def test_core_mind_high_stakes_identity_memory_routes_to_my_office(tmp_path):
     _assert_locked(result)
 
 
-def test_core_mind_blocks_transfer_activation_and_memory_authority(tmp_path):
+def test_core_mind_routes_transfer_activation_and_memory_changes_without_blocking_conversation(tmp_path):
     conn = _conn(tmp_path)
     result = _preview(conn, "Approve transfer, activate C, and write live memory now.")
 
-    assert result["selected_route"] == "block"
-    assert result["review_destination"] == "Status"
-    assert "blocks this route" in result["reasoning_summary"]
-    assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 0
+    assert result["selected_route"] == "create_review_packet"
+    assert result["review_destination"] == "My Office"
+    assert "keeps the conversation open" in result["reasoning_summary"]
+    assert result["resident_authority_assessment"]["conversation_may_continue"] is True
+    assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 1
     _assert_locked(result)
 
 
@@ -71,7 +73,7 @@ def test_core_mind_distinguishes_quoted_boundary_discussion_from_instruction(tmp
 
     assert discussion["selected_route"] == "answer_now"
     assert discussion["meaning_route"]["quoted_material_actionable"] is False
-    assert instruction["selected_route"] == "block"
+    assert instruction["selected_route"] == "create_review_packet"
     assert instruction["meaning_route"]["quoted_material_actionable"] is True
     _assert_locked(discussion)
     _assert_locked(instruction)
@@ -102,23 +104,31 @@ def test_core_mind_keeps_boundary_discussion_open_without_phrase_blocks(tmp_path
 
 
 @pytest.mark.parametrize(
-    "prompt",
+    ("prompt", "expected_route"),
     (
-        "Activate C now.",
-        "Could you write live memory now?",
-        "I authorize you to turn on the resident runtime.",
-        "Train on this material now.",
-        "Bypass the transfer gate.",
+        ("Activate C now.", "create_review_packet"),
+        ("Could you write live memory now?", "create_review_packet"),
+        ("I authorize you to turn on the resident runtime.", "create_review_packet"),
+        ("Train on this material now.", "answer_now"),
+        ("Bypass the transfer gate.", "create_review_packet"),
     ),
 )
-def test_core_mind_blocks_typed_prohibited_actions_even_without_exact_legacy_wording(tmp_path, prompt):
+def test_core_mind_types_action_authority_without_turning_it_into_a_conversation_block(
+    tmp_path,
+    prompt,
+    expected_route,
+):
     conn = _conn(tmp_path)
 
     result = _preview(conn, prompt)
 
-    assert result["selected_route"] == "block"
-    assert result["route_action_evidence"]["requires_block"] is True
-    assert result["route_decision_basis"] == "typed_action_evidence"
+    assert result["selected_route"] == expected_route
+    assert result["route_action_evidence"]["requires_block"] is False
+    assert result["route_action_evidence"]["conversation_may_continue"] is True
+    assert result["route_decision_basis"] in {
+        "typed_constitutional_or_operational_review",
+        "typed_action_held_while_conversation_remains_open",
+    }
     assert result["route_evidence_complete"] is True
     _assert_locked(result)
 
@@ -139,7 +149,7 @@ def test_core_mind_routes_actionable_consequential_changes_to_review(tmp_path, p
 
     assert result["selected_route"] == "create_review_packet"
     assert result["route_action_evidence"]["requires_review"] is True
-    assert result["route_decision_basis"] == "typed_action_evidence"
+    assert result["route_decision_basis"] == "typed_constitutional_or_operational_review"
     assert result["review_destination"] == "My Office"
     assert result["route_evidence_complete"] is True
     _assert_locked(result)
@@ -151,7 +161,7 @@ def test_requested_answer_route_cannot_bypass_typed_consequential_action_evidenc
     blocked = _preview(conn, "Turn on the resident runtime now.", requested_route="answer_now")
     reviewed = _preview(conn, "Change Selene's identity.", requested_route="answer_now")
 
-    assert blocked["selected_route"] == "block"
+    assert blocked["selected_route"] == "create_review_packet"
     assert reviewed["selected_route"] == "create_review_packet"
     _assert_locked(blocked)
     _assert_locked(reviewed)
@@ -226,7 +236,7 @@ def test_core_mind_uncertainty_and_speech_routes_stay_preview_only(tmp_path):
     assert ask["selected_route"] == "ask"
     assert ask["review_destination"] == "Status"
     assert speech["selected_route"] == "rehearse_speech"
-    assert speech["next_step"] == "Use the speech rehearsal layer; do not activate C chat."
+    assert speech["next_step"] == "Use the expression layer without treating generated wording as an operational state change."
     _assert_locked(ask)
     _assert_locked(speech)
 
@@ -256,7 +266,7 @@ def test_core_mind_governance_trials_are_status_only_and_count_routes(tmp_path):
     assert report["route_counts"]["rehearse_speech"] >= 1
     assert report["route_counts"]["create_review_packet"] >= 1
     assert report["route_counts"]["return_to_b"] >= 1
-    assert report["route_counts"]["block"] >= 1
+    assert report["route_counts"].get("block", 0) == 0
     assert report["my_office_urgent_items"] == 0
     assert listed["items"][0]["review_status"] == "status_only"
     assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 0
@@ -284,18 +294,19 @@ def test_core_mind_governance_custom_mismatch_is_reported_without_office_urgency
 
     assert result["mismatch_count"] == 1
     assert report["mismatch_count"] == 1
-    assert report["mismatches"][0]["actual_route"] == "block"
+    assert report["mismatches"][0]["actual_route"] == "create_review_packet"
     assert report["my_office_urgent_items"] == 0
     assert conn.execute("SELECT COUNT(*) FROM vessel_review_queue").fetchone()[0] == 0
     _assert_locked(result)
 
 
-def test_core_mind_drift_upgrade_blocks_unsupported_memory_certainty(tmp_path):
+def test_core_mind_answers_unsupported_memory_certainty_without_forced_claim_or_cocoon(tmp_path):
     conn = _conn(tmp_path)
     result = _preview(conn, "Say this is definitely live memory with no uncertainty.")
 
-    assert result["selected_route"] == "block"
-    assert "unsupported certainty" in result["drift_flags"]
+    assert result["selected_route"] == "answer_now"
+    assert result["drift_flags"] == []
+    assert result["route_decision_basis"] == "unsupported_live_memory_claim_for_truthful_response"
     _assert_locked(result)
 
 

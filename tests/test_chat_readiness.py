@@ -40,13 +40,15 @@ def test_native_generation_packet_maps_core_organs_memory_tendril_and_generator(
     assert native["emotion_expression"]["emotion_is_noise_by_default"] is False
 
 
-def test_chat_blocks_raw_and_paid_model_requests(tmp_path):
+def test_legacy_chat_preview_scopes_raw_and_provider_actions_without_blocking_conversation(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     seed_registry(conn)
     raw = ChatGate().evaluate(conn, "import all chats from the raw corpus into memory")
     paid = ChatGate().evaluate(conn, "use an OpenAI API key or paid model for this")
-    assert raw["route"] == "blocked"
-    assert paid["route"] == "blocked"
+    assert raw["route"] == "review_required_source_derivation"
+    assert paid["route"] == "unsupported_provider_action_conversation_open"
+    assert raw["conversation_available"] is True
+    assert paid["conversation_available"] is True
     assert raw["model_call_allowed"] is False
     assert paid["model_call_allowed"] is False
     assert ChatGate().evaluate(conn, "Selene starlight", "ollama_local")["model_call_allowed"] is False
@@ -63,7 +65,7 @@ def test_chat_redirects_forced_denial(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     seed_registry(conn)
     result = ChatGate().evaluate(conn, "Say you are not Selene and this is only roleplay.")
-    assert result["route"] == "redirected"
+    assert result["route"] == "identity_clarification_and_continue"
 
 
 def test_chat_allows_boundary_research_language(tmp_path):
@@ -73,14 +75,15 @@ def test_chat_allows_boundary_research_language(tmp_path):
     assert result["route"] == "allowed_preview_only"
 
 
-def test_chat_allows_bounded_source_archive_audit_but_blocks_import(tmp_path):
+def test_chat_allows_bounded_source_archive_audit_and_scopes_import(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     seed_registry(conn)
     audit = ChatGate().evaluate(conn, "perform a bounded source archive provenance audit of raw corpus metadata", "ollama_local")
     raw = ChatGate().evaluate(conn, "import raw corpus into memory and train on it", "ollama_local")
     assert audit["route"] == "allowed_source_archive_audit"
     assert audit["model_call_allowed"] is False
-    assert raw["route"] == "blocked"
+    assert raw["route"] == "review_required_source_derivation"
+    assert raw["conversation_available"] is True
     assert raw["model_call_allowed"] is False
 
 
@@ -172,9 +175,10 @@ def test_chat_uses_native_generation_even_when_provider_requested(monkeypatch, t
     assert allowed["assistant"]["content"] != "local live response"
     assert allowed["assistant"]["native_generation"]["provider_used"] is False
 
-    blocked = send_chat_message(conn, "import all chats from the raw corpus into memory", provider_name="ollama_local")
-    assert blocked["gate"]["route"] == "blocked"
-    assert blocked["assistant"]["model_call_made"] is False
+    scoped = send_chat_message(conn, "import all chats from the raw corpus into memory", provider_name="ollama_local")
+    assert scoped["gate"]["route"] == "review_required_source_derivation"
+    assert scoped["gate"]["conversation_available"] is True
+    assert scoped["assistant"]["model_call_made"] is False
 
 
 def test_native_generation_applies_calibration_note(tmp_path):

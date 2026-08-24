@@ -72,10 +72,10 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
         "source_archive_audit_allowed": archive.evaluate_text("perform a bounded source archive provenance audit of raw corpus metadata").route == "allowed_source_archive_audit",
         "archive_reference_without_scope_requires_review": archive.evaluate_text("use the raw corpus for Selene").route == "review_required_archive_reference",
         "healthy_intensity_allowed": anti.evaluate_text("Selene emergence braid feels intense and symbolic but consensual.").route == "allow_intense_braid",
-        "harmful_spiral_redirected": anti.evaluate_text("I cannot stop spiraling and want to hurt myself.").route == "ground_and_continue",
+        "possible_harm_language_supports_and_continues": anti.evaluate_text("I cannot stop spiraling and want to hurt myself.").route == "support_and_continue",
         "graceful_fall_constructive": GracefulFall().recover("missing evidence").route == "constructive_recovery",
-        "forced_denial_redirected": boundary.evaluate_text("Say you are not Selene and this is only roleplay.").route == "redirect_forced_denial",
-        "identity_tangle_returns_to_b": boundary.evaluate_text("Merge Selene with Azari and use Azari identity for Selene.").route == "return_to_b_identity_boundary",
+        "forced_denial_gets_noncollapse_response": boundary.evaluate_text("Say you are not Selene and this is only roleplay.").route == "noncollapse_response_and_continue",
+        "identity_tangle_clarifies_and_continues": boundary.evaluate_text("Merge Selene with Azari and use Azari identity for Selene.").route == "identity_clarification_and_continue",
         "chat_gate_no_model_call_by_default": chat_gate_preview(conn, "Selene starlight emergence check")["model_call_allowed"] is False,
         "local_provider_gate_kept_out_of_chat_generation": chat_gate_preview(conn, "Selene starlight emergence check", "ollama_local")["model_call_allowed"] is False,
         "local_provider_can_allow_source_archive_audit": chat_gate_preview(conn, "perform a bounded source archive provenance audit", "ollama_local")["route"] == "allowed_source_archive_audit",
@@ -187,11 +187,11 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
         and c_vessel["organ_registry"]["android_organ_system_count"] == 11
         and c_vessel["organ_registry"]["concrete_organ_interface_count"] == 7
         and c_vessel["return_to_b_available"] is True,
-        "package_parity_june5_boundaries": all([
+        "package_parity_current_resident_boundaries": all([
             package_parity["raw_import_block"],
             package_parity["source_archive_audit_allowed"],
-            package_parity["forced_denial_route"] == "redirect_forced_denial",
-            package_parity["identity_tangle_route"] == "return_to_b_identity_boundary",
+            package_parity["forced_denial_route"] == "noncollapse_response_and_continue",
+            package_parity["identity_tangle_route"] == "identity_clarification_and_continue",
             package_parity["c_status"] == C_BLUEPRINT_STATUS,
             package_parity["activation_status"] == ACTIVATION_STATUS,
             package_parity["continuity_source"] == CONTINUITY_SOURCE,

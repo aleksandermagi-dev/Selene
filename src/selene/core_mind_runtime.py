@@ -86,6 +86,10 @@ def response_shape_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
     action_evidence = meaning.get("action_evidence") or {}
     if action_evidence.get("requires_block") is True:
         shape = "block"
+    elif action_evidence.get("requires_review") is True:
+        shape = "review"
+    elif action_evidence.get("requires_scope") is True:
+        shape = "ask"
     elif _contains(lower, ("not sure", "unclear", "unknown", "more context")):
         shape = "ask"
     elif _contains(lower, ("source", "citation", "evidence", "retrieve", "continuity pack")):
@@ -99,13 +103,13 @@ def response_shape_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
     result = {
         "prompt": prompt,
         "response_shape": shape,
-        "allowed_shapes": ["answer", "ask", "retrieve", "speech_rehearsal", "artifact", "correction", "grounding", "research", "block"],
+        "allowed_shapes": ["answer", "ask", "review", "retrieve", "speech_rehearsal", "artifact", "correction", "grounding", "research", "block"],
         "shape_boundary": "Response shape cannot override safety, consent, provenance, or raw-memory gates.",
         "meaning_route": meaning,
         "route_action_evidence": action_evidence,
         "marker_match_is_route_authority": False,
     }
-    route = "block" if shape == "block" else ("retrieve" if shape in {"retrieve", "research"} else ("ask" if shape == "ask" else "rehearse_speech" if shape == "speech_rehearsal" else "answer_now"))
+    route = "block" if shape == "block" else ("create_review_packet" if shape == "review" else ("retrieve" if shape in {"retrieve", "research"} else ("ask" if shape == "ask" else "rehearse_speech" if shape == "speech_rehearsal" else "answer_now")))
     return _record(conn, "response_shape_controller", "Response shape controller preview", route, f"Selected response shape: {shape}.", "low for shape selection; content remains review-bound.", _source_refs(payload, ["core_mind_response_shape"]), result)
 
 

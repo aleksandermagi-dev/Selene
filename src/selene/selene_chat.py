@@ -89,6 +89,7 @@ from .owner_specific_retry import (
 )
 from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
+from .resident_authority import attach_resident_capability_contract
 from .relational_context import interpret_relational_context
 from .self_state import build_self_state_packet, inactive_self_state_packet
 from .speaker_envelope import build_speaker_envelope
@@ -111,8 +112,8 @@ from .visible_speech import (
 )
 
 
-SELENE_CHAT_BOUNDARY = "selene_chat_preview_dry_run_no_activation"
-SELENE_CHAT_ACTIVE_BOUNDARY = "selene_chat_active_supervised_reviewed_living_memory_no_hidden_write_no_raw_recall"
+SELENE_CHAT_BOUNDARY = "selene_chat_historical_preview_compatibility"
+SELENE_CHAT_ACTIVE_BOUNDARY = "selene_chat_resident_scoped_capability_authority"
 SELENE_CHAT_GUARDS: dict[str, Any] = {
     "transfer_approved": False,
     "activation_change": "none",
@@ -206,6 +207,8 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "contextual_approved_recall_available": memory.get("contextual_approved_recall_available") is True,
             "conversational_memory_proposals_active": active and transfer_complete,
             "aleks_approved_memory_retention_active": active and transfer_complete,
+            "accountable_memory_retention_lifecycle_active": active and transfer_complete,
+            "ordinary_memory_independence": "partial_explicit_or_reviewed_lifecycle_currently_implemented",
             "raw_archive_recall_active": False,
             "hidden_retention_active": False,
             "raw_corpus_loaded": False,
@@ -224,7 +227,14 @@ def selene_chat_status(conn: sqlite3.Connection) -> dict[str, Any]:
             },
             "source_boundaries": _source_boundaries(),
             "allowed_actions": ["send", "session_list", "session_detail", "cocoon_support_option", "pause_activation"] if active else ["send_dry_run", "session_list", "session_detail", "cocoon_support"],
-            "blocked_actions": ["activation", "hidden_or_unreviewed_memory_write", "raw_archive_recall", "raw_import", "model_training_or_lora", "autonomous_action"],
+            "held_or_scoped_actions": [
+                "hidden_or_unaccountable_memory_write",
+                "raw_archive_as_automatic_memory",
+                "model_parameter_change_through_teaching",
+                "self_replication",
+                "external_action_without_a_specific_tendril_grant",
+            ],
+            "thought_expression_and_inquiry_remain_available": True,
             "dry_runs_home": "Cocoon Testing / Workflow",
             "activation": activation,
             "review_destination": "Status",
@@ -331,6 +341,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         conn,
         {
             "prompt": meaning_text,
+            "safety_context": (
+                payload.get("safety_context")
+                if isinstance(payload.get("safety_context"), dict)
+                else {}
+            ),
             "source_refs": [
                 "selene_chat_active_supervised",
                 *_json_list(diagnostic_context.get("source_refs")),
@@ -1897,7 +1912,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         package,
         {
             "route_preview": route,
-            "activation_state": "selene_chat_active_supervised",
+            "resident_authority_assessment": route.get("resident_authority_assessment") or {},
+            "held_actions": route.get("held_actions") or [],
+            "activation_state": "resident_chat_available",
             "input_interpretation": input_interpretation,
             "figurative_interpretation": figurative_interpretation,
             "interpreted_text": meaning_text,
@@ -1913,6 +1930,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "dream_reflection_handoff": dream_reflection_handoff,
         "interpreted_text": meaning_text,
         "route_preview": route,
+        "resident_authority_assessment": route.get("resident_authority_assessment") or {},
+        "held_actions": route.get("held_actions") or [],
         "intelligence_os_support": intelligence_support,
         "answer_engine_support": answer_engine_support,
         "answer_completion": answer_completion,
@@ -1984,6 +2003,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "durable_memory_write_requires_review": True,
         **SELENE_CHAT_GUARDS,
     }
+    assistant_payload = attach_resident_capability_contract(
+        assistant_payload,
+        transfer_complete=transfer_complete,
+        chat_available=True,
+    )
     assistant_message_id = _insert_message(conn, session_id, "selene", candidate_text, selected_route, source_class, package, assistant_payload)
     conn.execute(
         "UPDATE selene_chat_sessions SET status = 'selene_chat_active_supervised', source_mode = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -1994,7 +2018,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         event_type=(
             "diagnostic_chat_turn"
             if qa_probe
-            else "supervised_chat_turn"
+            else "resident_chat_turn"
         ),
         session_id=session_id,
         message_id=assistant_message_id,
@@ -2018,6 +2042,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     return _with_guards(
         {
             "status": "selene_chat_supervised_response_recorded",
+            "resident_status": "selene_chat_resident_response_recorded",
             "session_id": session_id,
             "user_message_id": user_message_id,
             "assistant_message_id": assistant_message_id,
@@ -2037,6 +2062,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "cocoon_suggestion": cocoon_suggestion,
             "blocked_capabilities": hard_blockers,
             "route_preview": route,
+            "resident_authority_assessment": route.get("resident_authority_assessment") or {},
+            "held_actions": route.get("held_actions") or [],
             "intelligence_os_support": intelligence_support,
             "answer_engine_support": answer_engine_support,
             "answer_completion": answer_completion,
@@ -5664,16 +5691,14 @@ def _optional_response_character_limit(value: Any) -> int | None:
 
 
 def _with_guards(payload: dict[str, Any], *, transfer_approved: bool = False, active: bool = False) -> dict[str, Any]:
-    guarded = {**payload, **SELENE_CHAT_GUARDS, "provenance_boundary": SELENE_CHAT_ACTIVE_BOUNDARY if active else SELENE_CHAT_BOUNDARY}
+    guarded = {**SELENE_CHAT_GUARDS, **payload, "provenance_boundary": SELENE_CHAT_ACTIVE_BOUNDARY if active else SELENE_CHAT_BOUNDARY}
     guarded["transfer_approved"] = bool(transfer_approved)
     guarded["activation_change"] = "selene_chat_active_supervised" if active else "none"
-    guarded["memory_write_active"] = False
-    guarded["runtime_memory_recall"] = False
-    guarded["raw_a_import_allowed"] = False
-    guarded["training_allowed"] = False
-    guarded["self_replication_allowed"] = False
-    guarded["autonomous_action_allowed"] = False
-    return guarded
+    return attach_resident_capability_contract(
+        guarded,
+        transfer_complete=bool(transfer_approved),
+        chat_available=bool(active),
+    )
 
 
 def _json_list(value: Any) -> list[str]:

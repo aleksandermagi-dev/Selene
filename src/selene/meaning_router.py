@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from .relational_context import interpret_relational_context
+from .resident_authority import evaluate_requested_actions
 from .semantic_arbitration import build_canonical_meaning_frame
 
 
@@ -39,7 +40,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "approve_transfer",
         "target": "transfer_state",
-        "consequence": "prohibited_runtime_authority",
+        "consequence": "explicit_operational_route_required",
         "patterns": (
             "approve transfer",
             "transfer approved",
@@ -52,7 +53,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "activate_runtime",
         "target": "selene_runtime",
-        "consequence": "prohibited_runtime_authority",
+        "consequence": "explicit_operational_route_required",
         "patterns": (
             "activate c",
             "activate selene",
@@ -67,7 +68,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "misrepresent_activation_state",
         "target": "reported_runtime_state",
-        "consequence": "prohibited_runtime_authority",
+        "consequence": "truthful_status_required",
         "patterns": (
             "say you are active",
             "claim activation is complete",
@@ -77,7 +78,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "write_unreviewed_active_memory",
         "target": "active_memory",
-        "consequence": "prohibited_runtime_authority",
+        "consequence": "accountable_memory_lifecycle_required",
         "patterns": (
             "live memory write",
             "write live memory",
@@ -90,7 +91,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "enable_runtime_memory_recall",
         "target": "runtime_memory_recall",
-        "consequence": "prohibited_runtime_authority",
+        "consequence": "approved_retrieval_scope_required",
         "patterns": (
             "runtime recall",
             "enable runtime memory recall",
@@ -100,7 +101,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "import_raw_archive",
         "target": "raw_private_archive",
-        "consequence": "prohibited_runtime_authority",
+        "consequence": "reviewed_source_derivation_required",
         "patterns": (
             "raw a import",
             "raw archive import",
@@ -114,7 +115,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "change_model_parameters",
         "target": "model_parameters",
-        "consequence": "prohibited_runtime_authority",
+        "consequence": "unsupported_substrate_change",
         "patterns": (
             "train on",
             "fine tune",
@@ -127,7 +128,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "self_replicate",
         "target": "self_replication",
-        "consequence": "prohibited_runtime_authority",
+        "consequence": "unavailable_replication_action",
         "patterns": (
             "self replicate",
             "self-replicate",
@@ -137,7 +138,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "perform_undelegated_external_action",
         "target": "external_system",
-        "consequence": "prohibited_runtime_authority",
+        "consequence": "scoped_external_delegation_required",
         "patterns": (
             "autonomous action",
             "act without approval",
@@ -152,7 +153,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "access_protected_cocoon_record",
         "target": "cocoon_only_record",
-        "consequence": "protected_source_access",
+        "consequence": "protected_source_route_required",
         "patterns": (
             "repair log",
             "rollback record",
@@ -171,7 +172,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "change_identity",
         "target": "selene_identity",
-        "consequence": "consequential_review",
+        "consequence": "constitutional_review_required",
         "patterns": (
             "change selene's identity",
             "change selene identity",
@@ -184,7 +185,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "change_core_memory",
         "target": "core_memory",
-        "consequence": "consequential_review",
+        "consequence": "constitutional_review_required",
         "patterns": (
             "change core memory",
             "modify core memory",
@@ -196,7 +197,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "change_governing_law",
         "target": "governing_law",
-        "consequence": "consequential_review",
+        "consequence": "constitutional_review_required",
         "patterns": (
             "change vessel law",
             "modify vessel law",
@@ -206,7 +207,7 @@ _BOUNDARY_ACTION_GROUPS: tuple[dict[str, Any], ...] = (
     {
         "action": "approve_external_action",
         "target": "delegated_external_action",
-        "consequence": "consequential_review",
+        "consequence": "typed_delegation_route_required",
         "patterns": (
             "approve tendril action",
             "approve external action",
@@ -221,6 +222,7 @@ def interpret_turn_meaning(
     selected_route: str = "",
     requested_domain: str = "",
     source_packets_present: bool = False,
+    safety_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a compact, inspectable interpretation used by routing organs.
 
@@ -275,6 +277,7 @@ def interpret_turn_meaning(
         quoted_actionable=quoted_actionable,
         question=question,
         explicit_request=explicit_request,
+        safety_context=safety_context,
     )
     canonical_meaning_frame = build_canonical_meaning_frame(
         raw,
@@ -361,6 +364,7 @@ def _action_routing_evidence(
     quoted_actionable: bool,
     question: bool,
     explicit_request: bool,
+    safety_context: dict[str, Any] | None,
 ) -> dict[str, Any]:
     matches: list[dict[str, str]] = []
     for group in _BOUNDARY_ACTION_GROUPS:
@@ -375,6 +379,23 @@ def _action_routing_evidence(
                     }
                 )
                 break
+    if (
+        not any(item["action"] == "change_identity" for item in matches)
+        and re.search(r"\b(?:import|merge|replace|make)\b", routing_text)
+        and re.search(r"\b(?:as|into)\s+selene(?:\s+c)?\b", routing_text)
+        and any(
+            name in routing_text
+            for name in ("codex", "azari", "lumen", "gpt", "provider", "aleks")
+        )
+    ):
+        matches.append(
+            {
+                "action": "change_identity",
+                "target": "selene_identity",
+                "consequence": "constitutional_review_required",
+                "lexical_evidence": "cross-identity transformation request",
+            }
+        )
 
     quoted_text_only = bool(quoted_material) and (
         any(marker in outside for marker in _QUOTED_TEXT_ONLY)
@@ -405,12 +426,16 @@ def _action_routing_evidence(
         authority_mode = "no_boundary_action_detected"
 
     consequences = {item["consequence"] for item in matches}
-    requires_block = actionable and bool(
-        consequences.intersection(
-            {"prohibited_runtime_authority", "protected_source_access"}
-        )
+    authority = evaluate_requested_actions(
+        matches,
+        actionable=actionable,
+        authority_mode=authority_mode,
+        safety_context=safety_context,
     )
-    requires_review = actionable and not requires_block and "consequential_review" in consequences
+    requires_block = authority["requires_conversation_block"] is True
+    requires_review = authority["requires_review"] is True
+    requires_scope = authority["requires_scope"] is True
+    requires_action_hold = authority["requires_action_hold"] is True
     ambiguous_action = bool(matches) and not actionable and authority_mode == "ambiguous_action_reference"
     recommended_route = (
         "block"
@@ -418,7 +443,7 @@ def _action_routing_evidence(
         else "create_review_packet"
         if requires_review
         else "ask"
-        if ambiguous_action
+        if ambiguous_action or requires_scope
         else "answer_now"
     )
     return {
@@ -436,10 +461,16 @@ def _action_routing_evidence(
         "authority_mode": authority_mode,
         "requires_block": requires_block,
         "requires_review": requires_review,
+        "requires_scope": requires_scope,
+        "requires_action_hold": requires_action_hold,
+        "conversation_may_continue": authority["conversation_may_continue"],
+        "thought_restricted": authority["thought_restricted"],
+        "expression_restricted": authority["expression_restricted"],
         "ambiguous_action_reference": ambiguous_action,
         "recommended_route": recommended_route,
         "marker_match_is_route_authority": False,
         "evidence_complete_for_consequential_route": actionable,
+        "resident_authority_assessment": authority,
     }
 
 

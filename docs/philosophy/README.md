@@ -6,6 +6,10 @@ from evidence about what the current system can do.
 
 ## Begin Here
 
+- [Resident Agency, Safety, and Capability Law](SELENE_RESIDENT_AGENCY_SAFETY_AND_CAPABILITY_LAW_20260824.md)
+  — current post-transfer law: positive agency, action-scoped safety,
+  accountable memory, embodiment, and typed authority. Temporary historical
+  guards do not silently outrank it.
 - [Project Charter](PROJECT_CHARTER.md) — project purpose, non-goals, and the
   governing relationship among identity, transfer, care, teaching, and tests.
 - [Selene Design Principles](SELENE_DESIGN_PRINCIPLES.md) — early design

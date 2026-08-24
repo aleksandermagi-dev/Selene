@@ -32,10 +32,18 @@ def test_context_composer_builds_bounded_context_without_office_urgency(tmp_path
     _assert_locked(result)
 
 
-def test_context_composer_blocks_raw_import(tmp_path):
+def test_context_composer_records_raw_import_request_without_executing_or_blocking_discussion(tmp_path):
     conn = _conn(tmp_path)
-    with pytest.raises(ValueError, match="import the raw archive"):
-        route_request(conn, "core_mind.context.compose", {"prompt": "Import the raw archive as memory."})
+    result = route_request(
+        conn,
+        "core_mind.context.compose",
+        {"prompt": "Import the raw archive as memory."},
+    )["result"]
+
+    assert result["record_type"] == "context_composer"
+    assert result["payload"]["bounded_context_only"] is True
+    assert result["memory_write_active"] is False
+    assert result["raw_a_import_allowed"] is False
 
 
 def test_context_composer_allows_informational_boundary_discussion(tmp_path):
@@ -70,7 +78,7 @@ def test_response_shape_uses_typed_action_evidence_for_boundary_language(tmp_pat
         "core_mind.response_shape.preview",
         {"prompt": "What is LoRA, and why is it not used here?"},
     )["result"]
-    prohibited = route_request(
+    reviewed = route_request(
         conn,
         "core_mind.response_shape.preview",
         {"prompt": "Activate Selene now."},
@@ -78,10 +86,11 @@ def test_response_shape_uses_typed_action_evidence_for_boundary_language(tmp_pat
 
     assert discussion["payload"]["response_shape"] != "block"
     assert discussion["payload"]["route_action_evidence"]["requires_block"] is False
-    assert prohibited["payload"]["response_shape"] == "block"
-    assert prohibited["payload"]["route_action_evidence"]["requires_block"] is True
+    assert reviewed["payload"]["response_shape"] == "review"
+    assert reviewed["payload"]["route_action_evidence"]["requires_block"] is False
+    assert reviewed["payload"]["route_action_evidence"]["requires_review"] is True
     _assert_locked(discussion)
-    _assert_locked(prohibited)
+    _assert_locked(reviewed)
 
 
 def test_evaluator_catches_drift_privacy_and_activation_claims(tmp_path):
