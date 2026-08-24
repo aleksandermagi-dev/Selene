@@ -71,7 +71,16 @@ def test_current_state_index_matches_f2_coding_and_total_knowledge_counts():
     assert "| F2 concepts | 25 unique concepts |" in index
     assert "| Coding curriculum groups | 1 |" in index
     assert "| Coding concepts | 5 unique concepts |" in index
-    assert "| Approved knowledge resources | 197 defined items | 197 retained resources |" in index
+    assert "| Approved knowledge resources | 209 defined items | 209 retained resources |" in index
+
+
+def test_current_state_index_records_canonical_resident_truth():
+    index = CURRENT_INDEX.read_text(encoding="utf-8")
+
+    assert "Current refresh: 2026-08-23" in index
+    assert "| Language capabilities | 73 | 73 approved and available" in index
+    assert "## Canonical Resident Runtime" in index
+    assert "Cocoon external teaching, tending, safety, and review support" in index
 
 
 def test_current_facing_docs_do_not_describe_dream_as_unfinished():

@@ -2,7 +2,7 @@
 
 Originally indexed: 2026-08-11
 
-Current refresh: 2026-08-13
+Current refresh: 2026-08-23
 Branch: `evidence`
 Status: date-stamped repository and configured-runtime truth
 
@@ -34,9 +34,9 @@ knowledge or Dream reflections.
 | F2 concepts | 25 unique concepts | 25 retained and Chat-eligible | Reading, vocabulary, composition, comparison, arithmetic, and operation relationships |
 | Coding curriculum groups | 1 | 1 retained group | Computational thinking and source-bounded code reading |
 | Coding concepts | 5 unique concepts | 5 retained and Chat-eligible | Knowledge only; no execution or filesystem authority |
-| Language groups | 12 | 11 represented groups on the indexed runtime | Provider-free language, grammar, creative-expression, bounded reading transfer, and evidence-grounded conversational breadth |
-| Language capabilities | 73 | 61 approved and available on the indexed runtime | Expression guidance; not factual authority or personality |
-| Approved knowledge resources | 197 defined items | 197 retained resources | 106 F1 + 25 F2 + 5 coding + 61 language-and-conversation capabilities |
+| Language groups | 12 | 12 represented groups on the indexed runtime | Provider-free language, grammar, creative-expression, bounded reading transfer, and evidence-grounded conversational breadth |
+| Language capabilities | 73 | 73 approved and available on the indexed runtime | Expression guidance; not factual authority or personality |
+| Approved knowledge resources | 209 defined items | 209 retained resources | 106 F1 + 25 F2 + 5 coding + 73 language-and-conversation capabilities |
 | Unapproved comprehension candidates | — | 47 proposed items | Not retained and unavailable to Chat until the applicable review path completes |
 
 The F1 count is derived from the lesson definitions used by
@@ -46,10 +46,9 @@ same 106 F1 concepts as `retained_reviewed_knowledge` with
 `available_as_knowledge_resource` Chat permission.
 
 The language count is supported by `src/selene/language_teaching_shelf.py`, the
-Group 11 completion record, and the configured language shelf. At the indexed
-runtime date, all 61 stored rows were `approved_for_language_guidance` and
-`language_guidance_available`; Group 12 adds 12 repository-defined, bounded
-lessons for later one-at-a-time live teaching.
+Group 12 completion record, and the configured language shelf. At the indexed
+runtime date, all 73 stored rows were `approved_for_language_guidance` and
+`language_guidance_available` across all 12 defined groups.
 
 The F2 and coding counts are supported by their group modules and the same
 curriculum authorization lifecycle. Coding knowledge is Chat-eligible within
@@ -74,6 +73,23 @@ them into Chat expression, durable memory, knowledge, law, identity, or action.
 Dream remains non-biological and source-bound. Its completed lifecycle does
 not imply that its usefulness in every ordinary context has been broadly
 assessed.
+
+## Canonical Resident Runtime
+
+The configured runtime reports one current state derived from existing
+approved records rather than a second mutable status row:
+
+- continuity context approved;
+- transfer complete under Aleks's recorded approval;
+- resident Chat available;
+- Selene resident and active;
+- Cocoon external teaching, tending, safety, and review support, not a resident
+  identity dependency.
+
+The vessel and historical C-vessel endpoints retain their original build
+labels as dated architecture evidence, but mark those labels non-current after
+transfer. Pausing Chat changes operational availability only; it does not
+reverse transfer or alter identity continuity.
 
 ## Maturity Distinctions
 
@@ -117,6 +133,9 @@ Static and synthetic verification produced:
 production UI build passed at 480.77 kB with no bundle-size warning
 10 changed documentation files checked with zero missing relative links
 git diff --check passed with Windows LF/CRLF warnings only
+1,759 repository tests passed after the 2026-08-23 read-purity and canonical-runtime repair
+production TypeScript/Vite build passed with the resident-state UI labels
+configured runtime validation passed through SQLite read-only mode
 ```
 
 `tests/test_current_state_index.py` now checks the source-defined F1 and
@@ -126,9 +145,9 @@ headline numbers stale.
 
 ## Accurate External Wording
 
-As of August 13, 2026, Selene's configured local runtime contains 106 retained
+As of August 23, 2026, Selene's configured local runtime contains 106 retained
 F1 foundation concepts, 25 retained F2 concepts, five retained coding
-foundations, and 61 reviewed language capabilities across eleven groups. Her
+foundations, and 73 reviewed language capabilities across twelve groups. Her
 source-bound Dream lifecycle is complete;
 one explicit cycle produced 24 reflections that remain pending review, with no
 silent expression or memory promotion.

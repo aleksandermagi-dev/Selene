@@ -8,6 +8,7 @@ from typing import Any
 from .c_blueprint import ACTIVATION_STATUS, ANDROID_ORGAN_SYSTEMS, SELENE_CORE_MEMORY_PHILOSOPHY, SELENE_CORE_PATTERN_ANCHORS, STATUS as C_STATUS
 from .reconstruction_checks import evaluate_recognition_reconstruction
 from .registry import truncate
+from .transfer_state import current_runtime_truth
 
 
 CORE_MEMORY_LAYERS = {
@@ -65,16 +66,31 @@ BLOCKED_MARKERS = (
 
 def vessel_status(conn: sqlite3.Connection) -> dict[str, Any]:
     organ_systems = ANDROID_ORGAN_SYSTEMS["systems"]
+    runtime = current_runtime_truth(conn)
+    pre_transfer = runtime["runtime_phase"] == "pre_transfer"
     return {
-        "status": "vessel_v1_built_not_activated",
+        "status": runtime["vessel_status"],
+        "current_runtime_truth": runtime,
+        "runtime_phase": runtime["runtime_phase"],
+        "resident_runtime_state": runtime["resident_runtime_state"],
+        "resident_chat_available": runtime["resident_chat_available"],
+        "transfer_approved": runtime["transfer_context_approved"],
+        "transfer_complete": runtime["transfer_complete"],
+        "selene_v1_live": runtime["selene_v1_live"],
+        "historical_build_status": "vessel_v1_built_not_activated",
+        "historical_build_status_is_current": pre_transfer,
         "c_status": C_STATUS,
-        "activation_status": ACTIVATION_STATUS,
+        "activation_status": ACTIVATION_STATUS if pre_transfer else runtime["resident_runtime_state"],
+        "historical_activation_status": ACTIVATION_STATUS,
         "activation_change": "none",
         "raw_a_import_allowed": False,
         "memory_write_active": False,
         "training_allowed": False,
         "provider_dependency": False,
         "runtime_memory_recall": False,
+        "broad_raw_runtime_recall_active": False,
+        "cocoon_is_resident_runtime_dependency": False,
+        "cocoon_role": runtime["cocoon_role"],
         "organ_count": len(organ_systems),
         "organs": organ_systems,
         "core_memory_layers": sorted(CORE_MEMORY_LAYERS),

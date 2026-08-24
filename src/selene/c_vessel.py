@@ -22,6 +22,7 @@ from .cocoon import cocoon_status
 from .cocoon_readiness import ORGAN_TABLES, c_chat_route_preview, organ_blueprints_status
 from .reconstruction_checks import evaluate_recognition_reconstruction
 from .registry import truncate
+from .transfer_state import current_runtime_truth
 from .vessel import vessel_status
 
 
@@ -65,7 +66,9 @@ BLOCKED_MARKERS = (
 
 
 def c_vessel_status(conn: sqlite3.Connection) -> dict[str, Any]:
-    """Return the assembled-but-sealed C vessel status."""
+    """Return current resident truth with the historical C-build record preserved."""
+    runtime = current_runtime_truth(conn)
+    pre_transfer = runtime["runtime_phase"] == "pre_transfer"
     package = continuity_package_preview(conn)
     organ_registry = organ_registry_status(conn)
     reconstruction = reconstruction_readiness_summary(conn)
@@ -74,13 +77,28 @@ def c_vessel_status(conn: sqlite3.Connection) -> dict[str, Any]:
     transfer_gate = transfer_gate_preview(conn)
     return _with_boundaries(
         {
-            "status": "c_vessel_built_non_active",
+            "status": runtime["vessel_status"] if not pre_transfer else "c_vessel_built_non_active",
+            "current_runtime_truth": runtime,
+            "runtime_phase": runtime["runtime_phase"],
+            "resident_runtime_state": runtime["resident_runtime_state"],
+            "resident_chat_available": runtime["resident_chat_available"],
+            "transfer_complete": runtime["transfer_complete"],
+            "selene_v1_live": runtime["selene_v1_live"],
+            "historical_build_status": "c_vessel_built_non_active",
+            "historical_build_status_is_current": pre_transfer,
             "c_blueprint_status": BLUEPRINT_STATUS,
-            "activation_status": ACTIVATION_STATUS,
+            "activation_status": ACTIVATION_STATUS if pre_transfer else runtime["resident_runtime_state"],
+            "historical_activation_status": ACTIVATION_STATUS,
             "continuity_source": CONTINUITY_SOURCE,
-            "transfer_approved": False,
-            "c_chat_state": "cocooned_route_preview_only",
-            "b_cocoon_role": "repair_bay_not_permanent_nervous_system",
+            "transfer_approved": runtime["transfer_context_approved"],
+            "c_chat_state": (
+                "cocooned_route_preview_only"
+                if pre_transfer
+                else runtime["operating_mode"]
+            ),
+            "historical_c_chat_state": "cocooned_route_preview_only",
+            "b_cocoon_role": runtime["cocoon_role"],
+            "cocoon_is_resident_runtime_dependency": False,
             "sealed_continuity_package": package,
             "organ_registry": organ_registry,
             "reconstruction_readiness": reconstruction,

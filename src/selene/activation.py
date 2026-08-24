@@ -9,7 +9,7 @@ from .android_system import android_workflow_status
 from .core_mind_runtime import runtime_readiness
 from .registry import truncate
 from .transfer_protocol import latest_c_readable_package, rollback_preview_assessment
-from .transfer_state import transfer_completion_is_approved
+from .transfer_state import runtime_truth_from_state, transfer_completion_is_approved
 from .voice_module import voice_module_status
 
 
@@ -400,41 +400,7 @@ def activation_is_active(conn: sqlite3.Connection) -> bool:
 
 
 def _runtime_truth(state: str, transfer_complete: bool) -> dict[str, Any]:
-    active = state == ACTIVE_STATE
-    paused = state == PAUSED_STATE
-    operating_mode = (
-        RESIDENT_ACTIVE_MODE
-        if transfer_complete and active
-        else RESIDENT_PAUSED_MODE
-        if transfer_complete and paused
-        else "pre_transfer_activation"
-    )
-    return {
-        "operating_mode": operating_mode,
-        "resident_runtime_state": (
-            "resident_chat_available"
-            if operating_mode == RESIDENT_ACTIVE_MODE
-            else "resident_chat_paused"
-            if operating_mode == RESIDENT_PAUSED_MODE
-            else "resident_chat_not_yet_available"
-        ),
-        "resident_chat_active": operating_mode == RESIDENT_ACTIVE_MODE,
-        "resident_chat_available": active,
-        "resident_chat_paused": operating_mode == RESIDENT_PAUSED_MODE,
-        "selene_chat_active": active,
-        "selene_chat_paused": paused,
-        "transfer_complete": bool(transfer_complete),
-        "full_selene_v1_live": bool(transfer_complete and active),
-        "operational_chat_enabled": active,
-        "operational_chat_paused": paused,
-        "activation_is_operational_control_only": True,
-        "activation_is_identity_or_authority_grant": False,
-        "runtime_availability_is_identity_or_authority_grant": False,
-        "identity_persists_when_chat_is_unavailable": True,
-        "identity_continuity_affected_by_operational_state": False,
-        "general_authority_granted_by_operational_state": False,
-        "derived_from": ["latest_activation_storage_state", "transfer_completion_approval"],
-    }
+    return runtime_truth_from_state(state, transfer_complete)
 
 
 def _historical_event_truth(

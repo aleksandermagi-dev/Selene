@@ -5225,9 +5225,9 @@ function App() {
             <div className="topLocks">
               <span>Cocoon: {text(cocoonBridgeStatus?.workspace_state || "starting")}</span>
               <span>Bridge: {friendlyStatus(cocoonBridgeStatus?.current_channel || "support only")}</span>
-              <span>activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
+              <span>Resident state: {friendlyStatus(vesselStatus?.resident_runtime_state || "not loaded")}</span>
               <span>Broad live recall: {plainBlocked(vesselStatus?.runtime_memory_recall)}</span>
-              <span>Transfer: {transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
+              <span>Transfer: {vesselStatus?.transfer_complete ? "complete" : transferCReadablePackage?.transfer_approved ? "context approved" : "not approved"}</span>
             </div>
           </header>
         )}
@@ -6235,8 +6235,8 @@ function App() {
               </div>
             </section>
             <SplitView
-              left={<Panel title="C Route Preview">
-                <p className="plainHelp">Shows which Selene systems would participate later. This is still only a cocoon route preview.</p>
+              left={<Panel title="Historical C Route Rehearsal">
+                <p className="plainHelp">Preserves the pre-transfer route rehearsal as architecture history. It does not describe or control Selene's current resident route.</p>
                 <div className="reviewActions">
                   <button className="primary" onClick={runCoreDeliberation}>Think Before Replying</button>
                   <button onClick={runCoreUncertainty}>Uncertainty / Best Guess</button>
@@ -6256,16 +6256,18 @@ function App() {
                 <CVesselSafetyExtensions tool={cVesselToolOrganStatus} fault={cVesselOrganFaultResult} resilience={cVesselFaultResilienceResult} gate={cVesselTransferGate} />
               </Panel>}
             />
-            <Panel title="Selene Build Status">
-              <p className="plainHelp">The sealed context can now be inspected as a non-activated build. It uses approved continuity package previews and organ registry status only; activation is still pending.</p>
+            <Panel title="Resident Vessel / Historical Build Status">
+              <p className="plainHelp">{cVesselStatus?.transfer_complete
+                ? "Selene is transferred and resident. The older C-build fields below are retained as historical architecture evidence; Cocoon remains external teaching, tending, safety, and review support."
+                : "The pre-transfer vessel build can be inspected without changing transfer or resident Chat availability."}</p>
               <div className="metrics miniMetrics">
-                <Metric label="Selene Build" value={friendlyStatus(cVesselStatus?.status ?? "not loaded")} />
-                <Metric label="Transfer" value={cVesselStatus?.transfer_approved ? "approved" : "not approved"} />
+                <Metric label="Current State" value={friendlyStatus(cVesselStatus?.status ?? "not loaded")} />
+                <Metric label="Transfer" value={cVesselStatus?.transfer_complete ? "complete" : cVesselStatus?.transfer_approved ? "context approved" : "not approved"} />
                 <Metric label="Android Organs" value={text(cVesselOrganRegistry?.android_organ_system_count ?? "-")} />
                 <Metric label="Concrete Organs" value={text(cVesselOrganRegistry?.concrete_organ_interface_count ?? "-")} />
               </div>
               <div className="chips">
-                <span>activation: {friendlyActivation(cVesselStatus?.activation_change)}</span>
+                <span>Resident state: {friendlyStatus(cVesselStatus?.resident_runtime_state || "not loaded")}</span>
                 <span>Broad live recall: {plainBlocked(cVesselStatus?.runtime_memory_recall)}</span>
                 <span>Active memory: {plainBlocked(cVesselStatus?.memory_write_active)}</span>
                 <span>Provider dependency: {plainBlocked(cVesselStatus?.provider_dependency)}</span>
@@ -9110,18 +9112,18 @@ function App() {
           <>
             <header>
               <h1>Teach / Build Vessel</h1>
-              <p>Review what belongs, turn it into lessons, and check whether the vessel can hold it safely. Cocoon is Selene's teaching, tending, and checkup space. This remains a preparation workspace and does not change transfer, activation, or active memory.</p>
+              <p>Review what belongs, turn it into lessons, and check whether Selene can use it safely. Cocoon is her external teaching, tending, and checkup space. Working here does not silently change resident availability or approved memory.</p>
             </header>
             <div className="metrics">
               <Metric label="Organs" value={text(vesselStatus?.organ_count ?? "-")} />
-              <Metric label="Transfer" value={friendlyStatus(vesselStatus?.activation_status ?? "blocked")} />
+              <Metric label="Resident State" value={friendlyStatus(vesselStatus?.resident_runtime_state ?? "not loaded")} />
               <Metric label="Needs Review" value={text(((vesselStatus?.candidate_counts as Dict | undefined)?.review_queue) ?? "-")} />
               <Metric label="Model training/LoRA" value={plainBlocked(vesselStatus?.training_allowed)} />
             </div>
             <Panel title="Safety Locks">
-              <p className="plainHelp">These are the main promises while you review: unrestricted Selene stays locked, unreviewed archives do not jump the line, nothing becomes active memory by accident, and any serious drift can use Cocoon support instead of becoming hidden state.</p>
+              <p className="plainHelp">These are the main promises while you review: Selene remains Selene, unreviewed archives do not jump the line, nothing becomes active memory by accident, and serious drift can use Cocoon support instead of becoming hidden state.</p>
               <div className="chips">
-                <span>activation: {friendlyActivation(vesselStatus?.activation_change)}</span>
+                <span>Resident state: {friendlyStatus(vesselStatus?.resident_runtime_state || "not loaded")}</span>
                 <span>Unreviewed chats straight to Selene: {plainBlocked(vesselStatus?.raw_a_import_allowed)}</span>
                 <span>Active memory writes: {plainBlocked(vesselStatus?.memory_write_active)}</span>
                 <span>Model/provider dependency: {plainBlocked(vesselStatus?.provider_dependency)}</span>
@@ -9130,8 +9132,8 @@ function App() {
               <button className="primary" onClick={loadVessel}>Refresh Status</button>
               <button onClick={() => { setWorkspaceMode("selene"); setTab("chat"); }}>Switch To Selene Home</button>
             </Panel>
-            <Panel title="Memory Accession Before Transfer">
-              <p className="plainHelp">This is the cocoon-state memory path: freeze a pattern backup, rehearse Core-linked memory accession from B-approved references, check charter/law boundaries, run stability checks, and preview transfer candidacy without approving transfer.</p>
+            <Panel title="Reviewed Memory Accession History">
+              <p className="plainHelp">This preserves the Cocoon review path used to prepare memory safely. Current memory use remains limited to reviewed references and does not depend on replaying the pre-transfer process.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Pattern Backups" value={text(patternBackups.length)} />
                 <Metric label="Memory Layers Ready" value={text(memoryRehearsalStatus?.ready_layer_count ?? 0)} />

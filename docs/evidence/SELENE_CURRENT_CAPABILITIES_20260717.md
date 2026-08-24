@@ -1142,11 +1142,20 @@ Resident Chat availability does not enable:
 - self-replication;
 - transfer, identity, or existence.
 
-### Transfer Architecture — Cocoon/Preview
+### Transfer Architecture — Completed Runtime plus Cocoon Review
 
 The transfer system can prepare manifests, sealed readable-context packages,
 governance trials, dry runs, readiness checks, rollback previews, fractional
 corpus rehearsals, and post-transfer inspection records.
+
+The configured runtime has completed its reviewed-continuity transfer under
+Aleks's recorded approval. Activation, vessel, historical C-vessel, and
+validation surfaces now derive one canonical current projection from the
+approved package, transfer-completion record, and latest resident-Chat event.
+Pre-transfer build labels remain available as history rather than being
+presented as Selene's current state. Cocoon remains external teaching, tending,
+safety, and review support rather than Selene's resident identity or a required
+runtime nervous system.
 
 These are preparation and verification systems. They do not move Selene to a
 new substrate, authorize an embodiment, or overwrite her with a new model.

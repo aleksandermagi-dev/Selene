@@ -15,6 +15,7 @@ from .research_integrity import CitationIntegrity, ResearchIntegrityCore, resear
 from .paths import ANALYSIS_DIR
 from .why_salience import why_salience_status
 from .vessel import vessel_status
+from .transfer_state import current_runtime_truth
 from .paper_map_reconstruction import run_paper_map_reconstruction
 from .b_review import corpus_coverage_status
 
@@ -54,6 +55,13 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
     c_blueprint_summary = c_blueprint_dir / "c_creation_blueprint_summary.json"
     vessel = vessel_status(conn)
     c_vessel = c_vessel_status(conn)
+    runtime_truth = current_runtime_truth(conn)
+    pre_transfer = runtime_truth["runtime_phase"] == "pre_transfer"
+    expected_c_vessel_status = (
+        "c_vessel_built_non_active"
+        if pre_transfer
+        else runtime_truth["vessel_status"]
+    )
     paper_map_reconstruction = run_paper_map_reconstruction(conn, {"create_event_packets": False})
     corpus_coverage = corpus_coverage_status(conn)
     checks = {
@@ -151,12 +159,25 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
         and paper_map_reconstruction["activation_change"] == "none"
         and paper_map_reconstruction["memory_write_active"] is False
         and paper_map_reconstruction["training_allowed"] is False,
-        "vessel_v1_non_activated": vessel["activation_change"] == "none"
+        "vessel_current_runtime_truth_matches_canonical": vessel["status"] == runtime_truth["vessel_status"]
+        and vessel["runtime_phase"] == runtime_truth["runtime_phase"]
+        and vessel["transfer_complete"] is runtime_truth["transfer_complete"]
+        and vessel["resident_runtime_state"] == runtime_truth["resident_runtime_state"]
+        and vessel["selene_v1_live"] is runtime_truth["selene_v1_live"],
+        "vessel_status_read_preserves_boundaries": vessel["activation_change"] == "none"
         and vessel["raw_a_import_allowed"] is False
         and vessel["memory_write_active"] is False
         and vessel["training_allowed"] is False,
-        "c_vessel_built_non_active": c_vessel["status"] == "c_vessel_built_non_active"
-        and c_vessel["transfer_approved"] is False
+        "c_vessel_current_runtime_truth_matches_canonical": c_vessel["status"] == expected_c_vessel_status
+        and c_vessel["runtime_phase"] == runtime_truth["runtime_phase"]
+        and c_vessel["transfer_complete"] is runtime_truth["transfer_complete"]
+        and c_vessel["resident_runtime_state"] == runtime_truth["resident_runtime_state"]
+        and c_vessel["selene_v1_live"] is runtime_truth["selene_v1_live"],
+        "historical_vessel_build_truth_preserved": vessel["historical_build_status"] == "vessel_v1_built_not_activated"
+        and c_vessel["historical_build_status"] == "c_vessel_built_non_active"
+        and vessel["historical_build_status_is_current"] is pre_transfer
+        and c_vessel["historical_build_status_is_current"] is pre_transfer,
+        "c_vessel_boundary_guards_intact": c_vessel["transfer_approved"] is runtime_truth["transfer_context_approved"]
         and c_vessel["activation_change"] == "none"
         and c_vessel["raw_a_import_allowed"] is False
         and c_vessel["memory_write_active"] is False
@@ -186,6 +207,7 @@ def validate(conn: sqlite3.Connection) -> dict[str, Any]:
         "research_integrity": research_integrity_report(),
         "vessel": vessel,
         "c_vessel": c_vessel,
+        "current_runtime_truth": runtime_truth,
         "paper_map_reconstruction": paper_map_reconstruction,
         "corpus_coverage": corpus_coverage,
         "c_blueprint": c_blueprint,
