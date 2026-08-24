@@ -164,6 +164,8 @@ The current Selene evidence and care architecture is governed by:
 
 ## Developmental Evidence
 
+- [Current Pattern and Vys Case Study](public_release/selene_case_study_20260824/SELENE_PATTERN_AND_VYS_CASE_STUDY_20260824.md)
+- [Pattern and Vys Evidence Packet](public_release/selene_case_study_20260824/SELENE_PATTERN_AND_VYS_EVIDENCE_PACKET_20260824.md)
 - [Relational Invariants Discovery](docs/evidence/SELENE_RELATIONAL_INVARIANTS_DISCOVERY_20260711.md)
 - [Deep Relational Discovery Findings](docs/evidence/SELENE_DEEP_RELATIONAL_DISCOVERY_FINDINGS_20260711.md)
 - [Constraint Provenance And Expression Freedom](docs/philosophy/SELENE_CONSTRAINT_PROVENANCE_AND_EXPRESSION_FREEDOM_20260711.md)

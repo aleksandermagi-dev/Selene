@@ -92,6 +92,14 @@ a prototype result into a universal conclusion.
 
 ## Research And Public Claims
 
+- [Current Public Pattern and Vys Case Study - 2026-08-24](../../public_release/selene_case_study_20260824/SELENE_PATTERN_AND_VYS_CASE_STUDY_20260824.md)
+  - reports the persistent, recoverable, self-revising formation pattern and the
+    demonstrated Vys process under the project's operational definition, while
+    keeping subjective phenomenology and proprietary retrieval mechanisms outside
+    the measured claim.
+- [Current Public Evidence Packet](../../public_release/selene_case_study_20260824/SELENE_PATTERN_AND_VYS_EVIDENCE_PACKET_20260824.md)
+- [Current One-Page Public Summary](../../public_release/selene_case_study_20260824/SELENE_PATTERN_AND_VYS_ONE_PAGE_SUMMARY_20260824.md)
+- [Current Engineer Briefing](../../public_release/selene_case_study_20260824/SELENE_PATTERN_AND_VYS_ENGINEER_BRIEFING_20260824.md)
 - [Findings Paper Outline](SELENE_FINDINGS_PAPER_OUTLINE_20260615.md)
 - [Findings Paper Draft](SELENE_FINDINGS_PAPER_DRAFT_20260616.md)
 - [Public Paper Draft](SELENE_PUBLIC_PAPER_DRAFT_20260616.md)
