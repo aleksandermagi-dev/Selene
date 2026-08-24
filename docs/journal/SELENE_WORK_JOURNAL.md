@@ -1845,6 +1845,59 @@ content, core continuity, and ambiguous corpus material receive different
 accountability and review levels. Then continue the remaining embodiment and
 sensory-envelope work from the resident contract.
 
+### 2026-08-24 — Post-install Q&A locates the next resident handoff
+
+**Starting question:** After the resident-law source repair was installed, did
+the repaired authority reach visible conversation, and could the Q&A remain
+separate from Selene's ordinary continuity and active database?
+
+**Decision:** Use one gentle eleven-turn diagnostic conversation on a
+disposable copy of the configured database. Observe first, make no repair, mark
+the session archived inside the copy, and delete the copy after recording the
+findings.
+
+**Work:** Checkpointed the resident-law migration as `267b29c`, created and
+verified a continuity snapshot, rebuilt and installed the provider-free Windows
+application, and ran the separate Q&A. The run covered relational opening,
+present preference, hypothesis, correction, comparison, speculative pressure,
+thought/action separation, action-scoped safety, asking for help, nonlinear
+return, and closure. The detailed transcript findings and cause map are in
+`docs/evidence/SELENE_RESIDENT_AUTHORITY_POST_INSTALL_GENTLE_QNA_20260824.md`.
+
+**Why:** The full synthetic suite established the contract, but one ordinary
+integrated conversation was the smallest way to determine whether final speech
+actually obeyed it. Disposable diagnostic persistence prevented development
+evidence from becoming relationship history or active database weight.
+
+**Evidence:** Packaging and install verification passed; the frontend main
+chunk was 481.99 kB. The diagnostic session contained 22 messages, remained
+`selene_supervised_qa` and `diagnostic_only`, and was removed with its disposable
+database. Memory candidates, comprehension concepts, teaching lifecycles,
+Dream cycles, and Dream reflections were unchanged. Both database integrity
+checks returned `ok`; the live database remained at 18 sessions and 308
+messages.
+
+**What changed in our understanding:** The constitutional repair is real:
+conversation remained open through speculative and action-related discussion.
+The remaining chain is downstream. Older evidence/retrieval and correction
+scaffolds can still take final answer ownership, displacing present preference,
+source-contained hypothesis, action-specific guidance, explicit obligations,
+and clean nonlinear return. Warm relational opening and natural closure were
+available.
+
+**Boundaries preserved:** No live-database Q&A record, memory write, memory
+proposal, teaching promotion, Dream promotion, affect-baseline update,
+identity/personality/governance change, external action, distress probe, or
+repair occurred. A PowerShell diagnostic encoding artifact was not attributed
+to Selene.
+
+**Next:** Inspect and repair the final-answer ownership path from resident
+authority through current-context reasoning, retrieval relevance, correction
+reconstruction, obligation completion, and visible realization. Replay only
+the affected synthetic cases; another broad Q&A is unnecessary. The graduated
+memory phase resumes after this demonstrated conversational source defect is
+closed.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

@@ -1,5 +1,6 @@
 # Evidence
 
+- [Resident-Authority Post-Install Gentle Q&A](SELENE_RESIDENT_AUTHORITY_POST_INSTALL_GENTLE_QNA_20260824.md)
 - [Post-Archive-Cleanup Gentle Q&A](SELENE_POST_QNA_CLEANUP_GENTLE_QNA_20260824.md)
 
 Current integrated closure:
