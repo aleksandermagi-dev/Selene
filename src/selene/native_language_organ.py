@@ -747,6 +747,13 @@ def _meaning_packet(
         if isinstance(conversation_spine.get("conversation_continuity"), dict)
         else {}
     )
+    relational_context = (
+        payload.get("relational_context")
+        if isinstance(payload.get("relational_context"), dict)
+        else _dict(payload.get("intent_decision")).get("relational_context")
+        if isinstance(_dict(payload.get("intent_decision")).get("relational_context"), dict)
+        else {}
+    )
     long_thread_endurance = (
         payload.get("long_thread_endurance")
         if isinstance(payload.get("long_thread_endurance"), dict)
@@ -1182,6 +1189,8 @@ def _meaning_packet(
         "affect": affect,
         "affect_expression_guidance": affect_expression,
         "affect_expression_is_emotion_claim": False,
+        "relational_context": relational_context,
+        "relational_context_supplies_response_script": False,
         "contextual_continuity": contextual_continuity,
         "remembered_wording_may_be_used_as_script": False,
         "relationship_posture": "warm_honest_adult_to_adult",
@@ -1638,6 +1647,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "corrected_meaning": corrected_meaning,
             "turn_count": (meaning.get("conversation_context") or {}).get("turn_count") or 0,
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+            "relational_context": meaning.get("relational_context") or {},
         }
     )
     quotation_echo_plan = build_quotation_echo_plan(
@@ -1676,6 +1686,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
                 in {"verified_math", "source_backed_research"}
             ),
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+            "relational_context": meaning.get("relational_context") or {},
             "pragmatic_continuity": pragmatic_continuity,
             "contextual_follow_up": meaning.get("contextual_follow_up") or {},
             "conversation_context": meaning.get("conversation_context") or {},
@@ -1795,6 +1806,8 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
         "quotation_echo_plan": quotation_echo_plan,
         "conversational_micro_move_plan": conversational_micro_move_plan,
         "relational_expression_range": relational_expression_range,
+        "relational_context": meaning.get("relational_context") or {},
+        "relational_context_supplies_response_script": False,
         "contextual_composition_plan": contextual_composition_plan,
         "human_conversational_plan": human_conversational_plan,
         "content_light_plan": content_light_plan,

@@ -303,6 +303,7 @@ def _decision(
         result["memory_recall_requested"] = result["memory_recall_requested"] or "memory_recall" in dialogue_acts
         result["dialogue_acts"] = meaning_route.get("dialogue_acts") or []
         result["domain_candidates"] = meaning_route.get("domain_candidates") or []
+        result["relational_context"] = meaning_route.get("relational_context") or {}
         result["routing_confidence"] = meaning_route.get("routing_confidence") or result["confidence"]
         result["routing_ambiguity"] = meaning_route.get("ambiguity") or {}
     return result

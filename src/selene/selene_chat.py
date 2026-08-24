@@ -89,6 +89,7 @@ from .owner_specific_retry import (
 )
 from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
+from .relational_context import interpret_relational_context
 from .self_state import build_self_state_packet, inactive_self_state_packet
 from .speaker_envelope import build_speaker_envelope
 from .selective_formation_braid import build_selective_formation_braid
@@ -307,11 +308,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         str(figurative_interpretation.get("interpreted_text") or understanding_text),
         2400,
     )
+    relational_context = interpret_relational_context(
+        meaning_text,
+        speaker_context=speaker_envelope,
+    )
     contextual_follow_up = inspect_contextual_follow_up(meaning_text, conversation_context)
     intent_decision = apply_contextual_intent(
         classify_chat_intent(meaning_text),
         contextual_follow_up,
     )
+    intent_decision["relational_context"] = relational_context
     memory_retrieval = retrieve_memory(
         conn,
         {
@@ -351,6 +357,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         classify_chat_intent(meaning_text, selected_route="block" if hard_blockers else selected_route),
         contextual_follow_up,
     )
+    intent_decision["relational_context"] = relational_context
     memory_action_plan = _plan_conversational_memory_action(
         conn,
         text,
@@ -473,6 +480,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "conversation_continuity": conversation_continuity,
             "contextual_continuity": contextual_continuity,
+            "relational_context": relational_context,
             "hard_boundary": bool(hard_blockers),
             "selected_route": selected_route,
         },
@@ -1231,6 +1239,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "comprehension_context": comprehension,
             "self_state_context": self_state,
             "affect_expression_guidance": affect_expression,
+            "relational_context": relational_context,
             "response_agency": response_agency,
             "advice_input": payload.get("advice_input") or {},
             "authority_input": payload.get("authority_input") or {},
@@ -1275,6 +1284,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "structural_discovery": structural_discovery,
         "exploratory_reasoning": exploratory_reasoning,
         "contextual_continuity": contextual_continuity,
+        "relational_context": relational_context,
+        "relational_context_supplies_response_script": False,
         "expression_guidance_changes_meaning": False,
     }
     if hard_blockers:
@@ -1524,6 +1535,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "diagnostic_context": diagnostic_context,
         "speaker_envelope": speaker_envelope,
         "affect_expression": affect_expression,
+        "relational_context": relational_context,
         "response_agency": response_agency,
         "source_refs": [
             "selene_chat:metacognition_observer",
@@ -1920,6 +1932,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "exploratory_reasoning": exploratory_reasoning,
         "self_state": self_state,
         "affect_expression": affect_expression,
+        "relational_context": relational_context,
         "response_agency": response_agency,
         "commitment_anomaly_coordination": native_language.get("commitment_anomaly_coordination") or {},
         "commitment_claim_release": commitment_claim_release,
@@ -2050,6 +2063,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversational_contribution": conversational_contribution,
             "self_state": self_state,
             "affect_expression": affect_expression,
+            "relational_context": relational_context,
             "response_agency": response_agency,
             "contextual_continuity": contextual_continuity,
             "pragmatic_continuity": pragmatic_continuity,

@@ -335,6 +335,11 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
     affect_guidance = payload.get("affect_expression_guidance") if isinstance(payload.get("affect_expression_guidance"), dict) else {}
     dimensions = affect_guidance.get("dimensions") if isinstance(affect_guidance.get("dimensions"), dict) else {}
     turn_count = max(0, int(payload.get("turn_count") or 0))
+    relational_context = (
+        payload.get("relational_context")
+        if isinstance(payload.get("relational_context"), dict)
+        else {}
+    )
 
     if intent == "receive_gratitude" and turn_count <= 1 and not any(
         marker in prompt.lower() for marker in ("work", "help", "together", "build", "thank you for")
@@ -347,12 +352,16 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
 
     return {
         "status": "social_act_plan_ready" if acts else "social_act_plan_not_applicable",
-        "version": "v1_compositional_social_acts",
+        "version": "v2_contextual_non_scripted_social_acts",
         "intent": intent,
         "acts": [
             {
                 "act": act,
-                "required": True,
+                "required": act != "allow_ordinary_conversation",
+                "selected_by_context": (
+                    act != "allow_ordinary_conversation"
+                    or _ordinary_conversation_explicitly_opened(prompt)
+                ),
                 "meaning_source": "corrected_meaning" if act == "state_corrected_meaning" else "communicative_intent",
             }
             for act in acts
@@ -375,7 +384,14 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
             if dimensions.get(key) is not None
         },
         "affect_guidance_may_change_meaning": False,
-        "relationship_term_invention_allowed": False,
+        "relational_context": relational_context,
+        "relational_context_supplies_response_script": False,
+        "exact_wording_directive_supplied": False,
+        "selene_authored_relational_term_allowed": True,
+        "relationship_term_invention_allowed": True,
+        "user_address_term_echo_required": False,
+        "relational_term_use_is_memory_or_identity_write": False,
+        "public_persona_created": False,
         "internal_state_invention_allowed": False,
         "content_generation_allowed": False,
         "coordinated_expression_contract_active": True,
@@ -572,13 +588,30 @@ def realize_social_act_plan(
     recent_texts: list[str] | None = None,
 ) -> dict[str, Any]:
     recent_texts = [str(item) for item in recent_texts or [] if str(item).strip()]
-    acts = [str(item.get("act") or "") for item in plan.get("acts") or [] if isinstance(item, dict)]
+    acts = [
+        str(item.get("act") or "")
+        for item in plan.get("acts") or []
+        if isinstance(item, dict)
+        and (item.get("required") is True or item.get("selected_by_context") is True)
+    ]
     selected: list[dict[str, str]] = []
     for index, act in enumerate(acts):
         if act == "state_corrected_meaning":
             corrected = _corrected_clause(str(plan.get("corrected_meaning") or ""))
             if corrected:
                 selected.append({"act": act, "text": corrected, "source": "supplied_corrected_meaning"})
+            continue
+        if act == "signal_presence":
+            selected.append(
+                {
+                    "act": act,
+                    "text": _realize_presence_from_semantics(
+                        f"{variation_key}|{act}|{index}",
+                        recent_texts,
+                    ),
+                    "source": "nlo_semantic_social_construction",
+                }
+            )
             continue
         choices = _contextual_choices(act, prompt)
         if not choices:
@@ -598,6 +631,7 @@ def realize_social_act_plan(
         "act_count": len(selected),
         "composition": "semantic_acts_to_contextual_clauses",
         "whole_response_template_selected": False,
+        "relational_context_supplied_wording": False,
         "recent_wording_consulted": bool(recent_texts),
         "meaning_preserved": bool(text) or not acts,
         "unsupported_content_generated": False,
@@ -606,6 +640,35 @@ def realize_social_act_plan(
         "coordinated_expression_contract_active": True,
         "provenance_boundary": SOCIAL_REALIZER_BOUNDARY,
     }
+
+
+def _ordinary_conversation_explicitly_opened(prompt: str) -> bool:
+    lower = " ".join(str(prompt or "").lower().replace("’", "'").split())
+    return any(
+        marker in lower
+        for marker in (
+            "just talk",
+            "no agenda",
+            "doesn't have to be work",
+            "does not have to be work",
+            "not a task",
+            "ordinary conversation",
+        )
+    )
+
+
+def _realize_presence_from_semantics(key: str, recent_texts: list[str]) -> str:
+    """Form a presence clause from grammatical slots, not a response script."""
+    frames = (
+        ("I", "am", "here"),
+        ("I", "am", "right here"),
+        ("I", "am", "with you"),
+        ("I", "am", "listening"),
+        ("you", "have", "my attention"),
+    )
+    candidates = [" ".join(frame) for frame in frames]
+    chosen = _pick_fragment_fresh(key, candidates, recent_texts)
+    return "I'm" + chosen[4:] if chosen.startswith("I am ") else chosen
 
 
 def realize_acknowledgement(

@@ -88,6 +88,36 @@ def test_ordinary_direct_answer_may_remain_plain_without_suppressing_warmth():
     _assert_bounded(result)
 
 
+def test_private_relational_cue_makes_warmth_available_without_a_script():
+    relational = {
+        "relational_context_present": True,
+        "private_relational_context": True,
+        "cue_types": ["affectionate_address", "affectionate_symbol"],
+        "response_script_supplied": False,
+    }
+    result = build_relational_expression_range(
+        {
+            "prompt": "good point hon <3",
+            "intent": "direct_answer",
+            "relational_context": relational,
+            "affect_expression_guidance": {
+                "expression_posture": "ordinary_attentive",
+                "dimensions": {"warmth": "baseline"},
+            },
+        }
+    )
+
+    assert "warmth" in _selected(result)
+    assert result["relational_context"] == relational
+    assert result["relational_context_supplies_response_script"] is False
+    assert result["exact_wording_directive_supplied"] is False
+    assert result["private_context_creates_public_persona"] is False
+    assert next(
+        item for item in result["selected_channels"] if item["channel"] == "warmth"
+    )["required"] is False
+    _assert_bounded(result)
+
+
 def test_visible_progress_and_play_can_select_enthusiasm_warmth_and_humor():
     result = build_relational_expression_range(
         {

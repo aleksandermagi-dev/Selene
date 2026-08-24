@@ -152,6 +152,7 @@ def build_relational_expression_range(
     quotation_echo = _dict(payload.get("quotation_echo_plan"))
     epistemic = _dict(payload.get("epistemic_composition"))
     exploratory = _dict(payload.get("exploratory_reasoning"))
+    relational = _dict(payload.get("relational_context"))
     ending = _dict(continuity.get("ending_decision"))
     transition = _dict(continuity.get("topic_transition"))
     previous_visible = bool(
@@ -194,7 +195,14 @@ def build_relational_expression_range(
     )
 
     warmth_guidance = str(dimensions.get("warmth") or "baseline")
-    if warmth_guidance not in {
+    if relational.get("relational_context_present") is True:
+        _select(
+            selected,
+            "warmth",
+            warmth_guidance if warmth_guidance not in {"", "none", "held", "baseline"} else "available_from_relational_context",
+            "the current turn carries relational meaning; Selene may author a fitting expression",
+        )
+    elif warmth_guidance not in {
         "",
         "none",
         "held",
@@ -431,6 +439,10 @@ def build_relational_expression_range(
             "enthusiasm_may_be_selene_initiated": True,
             "selection_is_contextual_not_random": True,
             "expression_is_available_not_compulsory_or_suppressed": True,
+            "relational_context": relational,
+            "relational_context_supplies_response_script": False,
+            "exact_wording_directive_supplied": False,
+            "private_context_creates_public_persona": False,
             "selected_expression_is_internal_emotion_claim": False,
             "follow_up_question_added_by_range": False,
             "premature_closure_added_by_range": False,

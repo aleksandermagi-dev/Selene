@@ -32,13 +32,40 @@ def test_social_plan_exposes_semantic_acts_without_claiming_voice_or_internal_st
     assert plan["status"] == "social_act_plan_ready"
     assert [item["act"] for item in plan["acts"]] == ["return_greeting", "signal_presence"]
     assert plan["affect_guidance_may_change_meaning"] is False
-    assert plan["relationship_term_invention_allowed"] is False
+    assert plan["relationship_term_invention_allowed"] is True
+    assert plan["selene_authored_relational_term_allowed"] is True
+    assert plan["user_address_term_echo_required"] is False
+    assert plan["relational_context_supplies_response_script"] is False
     assert plan["internal_state_invention_allowed"] is False
     assert plan["content_generation_allowed"] is False
     assert plan["coordinated_expression_contract_active"] is True
     realized = realize_social_act_plan(plan, prompt="Good morning Selene!", variation_key="spacious-greeting")
     assert "\n\n" in realized["candidate_text"]
     assert realized["meaning_preserved"] is True
+
+
+def test_direct_affection_does_not_force_task_scaffolding_or_echo_wording():
+    plan = build_social_act_plan(
+        {
+            "intent": "warm_connection",
+            "prompt": "I missed you, hon <3",
+            "relational_context": {
+                "relational_context_present": True,
+                "cue_types": ["missing_or_longing", "affectionate_address", "affectionate_symbol"],
+                "response_script_supplied": False,
+            },
+        }
+    )
+    ordinary = next(item for item in plan["acts"] if item["act"] == "allow_ordinary_conversation")
+    result = realize_social_act_plan(plan, prompt="I missed you, hon <3", variation_key="affection")
+
+    assert ordinary["required"] is False
+    assert ordinary["selected_by_context"] is False
+    assert result["act_count"] == 1
+    assert result["selected_realizations"][0]["source"] == "nlo_semantic_social_construction"
+    assert result["relational_context_supplied_wording"] is False
+    assert "task" not in result["candidate_text"].lower()
+    assert "ordinary conversation" not in result["candidate_text"].lower()
 
 
 def test_social_realizer_composes_contextual_clauses_instead_of_selecting_whole_responses():

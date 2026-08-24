@@ -79,6 +79,25 @@ def test_chat_intent_preserves_social_opening_as_secondary_to_substantive_reques
     assert decision["meaning_route"]["selected_domain"] == "comparison_planning"
 
 
+def test_relational_variants_are_preserved_without_seizing_substantive_requests():
+    affection = classify_chat_intent("I miss you, hon <3")
+    return_turn = classify_chat_intent("im back <3")
+    substantive = classify_chat_intent(
+        "I missed you, hon <3. Could you compare the two designs?"
+    )
+    content_light = classify_chat_intent("good point hon")
+
+    assert affection["intent"] == "warm_connection"
+    assert return_turn["intent"] == "warm_connection"
+    assert substantive["intent"] == "reasoning"
+    assert "warm_connection" in substantive["dialogue_acts"]
+    assert content_light["intent"] == "direct_conversation"
+    for decision in (affection, return_turn, substantive, content_light):
+        context = decision["relational_context"]
+        assert context["response_script_supplied"] is False
+        assert context["memory_write_active"] is False
+
+
 def test_recall_and_retention_are_distinguished_by_turn_meaning():
     recall = classify_chat_intent("Can you remember where we left off?")
     retention = classify_chat_intent("Remember this: uncertainty is allowed.")

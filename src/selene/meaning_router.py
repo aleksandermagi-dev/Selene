@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .relational_context import interpret_relational_context
+
 
 MEANING_ROUTER_BOUNDARY = (
     "meaning_router_structured_interpretation_only_"
@@ -246,7 +248,14 @@ def interpret_turn_meaning(
         )
     )
 
-    dialogue_acts = _dialogue_acts(routing_text, tokens, question, explicit_request)
+    relational_context = interpret_relational_context(routing_text)
+    dialogue_acts = _dialogue_acts(
+        routing_text,
+        tokens,
+        question,
+        explicit_request,
+        relational_context,
+    )
     intent_candidates = _intent_candidates(routing_text, tokens, dialogue_acts, question)
     domain_candidates = _domain_candidates(
         raw,
@@ -280,6 +289,7 @@ def interpret_turn_meaning(
             "mixed_intent_possible": len(dialogue_acts) > 1,
         },
         "dialogue_acts": dialogue_acts,
+        "relational_context": relational_context,
         "intent_candidates": intent_candidates,
         "primary_intent": primary_intent["intent"],
         "domain_candidates": domain_candidates,
@@ -294,6 +304,7 @@ def interpret_turn_meaning(
             "quoted_material_scope",
             "explicit_source_packet_presence",
             "typed_action_target_consequence_and_authority_evidence",
+            "current_turn_relational_context_without_response_scripting",
         ],
         "clause_texts": clauses[:12],
         "single_phrase_is_route_authority": False,
@@ -474,7 +485,13 @@ def _direct_boundary_action_request(normalized: str, matches: list[dict[str, str
     return False
 
 
-def _dialogue_acts(routing_text: str, tokens: set[str], question: bool, explicit_request: bool) -> list[str]:
+def _dialogue_acts(
+    routing_text: str,
+    tokens: set[str],
+    question: bool,
+    explicit_request: bool,
+    relational_context: dict[str, Any] | None = None,
+) -> list[str]:
     acts: list[str] = []
     topic_shift = _has_any(
         routing_text,
@@ -511,9 +528,21 @@ def _dialogue_acts(routing_text: str, tokens: set[str], question: bool, explicit
         acts.append("greeting")
     if _social_match(routing_text, "affirmation"):
         acts.append("affirmation")
-    if _social_match(routing_text, "warm"):
+    relational_context = (
+        relational_context if isinstance(relational_context, dict) else {}
+    )
+    relational_cue_types = {
+        str(item) for item in relational_context.get("cue_types") or []
+    }
+    if (
+        _social_match(routing_text, "warm")
+        or relational_context.get("direct_affection_present") is True
+        or "reunion" in relational_cue_types
+    ):
         acts.append("warm_connection")
-    if tokens.intersection({"haha", "lol", "xd", "joking", "kidding"}):
+    if (
+        tokens.intersection({"haha", "lol", "lmao", "xd", "joking", "kidding"})
+    ):
         acts.append("playful_connection")
     if not acts:
         acts.append("statement")

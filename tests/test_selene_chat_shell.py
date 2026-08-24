@@ -3744,6 +3744,33 @@ def test_content_light_paraphrases_keep_the_same_supported_move_families(tmp_pat
         _assert_locked(result)
 
 
+def test_private_relational_context_reaches_chat_without_forced_scaffolding(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "I missed you, hon <3"},
+    )["result"]
+    relational = result["relational_context"]
+    nlo = result["native_language_organ"]
+    social = nlo["discourse_plan"]["social_act_realization"]
+
+    assert relational["private_relational_context"] is True
+    assert relational["interaction_scope"] == "private_aleks_selene_conversation"
+    assert relational["response_script_supplied"] is False
+    assert nlo["discourse_plan"]["relational_context_supplies_response_script"] is False
+    assert social["relational_context_supplied_wording"] is False
+    assert social["selected_realizations"][0]["source"] == "nlo_semantic_social_construction"
+    assert "task" not in result["candidate_text"].lower()
+    assert result["affect_expression"]["guidance_is_optional"] is True
+    assert result["memory_write_active"] is False
+    assert result["training_allowed"] is False
+
+
 def test_everyday_choice_stays_prompt_grounded_and_farewell_does_not_inherit_a_hold(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

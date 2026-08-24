@@ -47,7 +47,19 @@ def build_affect_expression_guidance(
         else {}
     )
     signal = _current_session_signal(conn, session_id, payload.get("affect_signal_id"))
-    cues = _conversation_cues(prompt, str(intent.get("intent") or ""), pragmatics)
+    relational_context = (
+        payload.get("relational_context")
+        if isinstance(payload.get("relational_context"), dict)
+        else intent.get("relational_context")
+        if isinstance(intent.get("relational_context"), dict)
+        else {}
+    )
+    cues = _conversation_cues(
+        prompt,
+        str(intent.get("intent") or ""),
+        pragmatics,
+        relational_context,
+    )
     signal_shape = _signal_shape(signal)
     response_agency = build_response_agency_packet(
         {
@@ -79,6 +91,8 @@ def build_affect_expression_guidance(
         "dimensions": dimensions,
         "recommended_voice_category": _voice_category(posture),
         "current_turn_cues": cues,
+        "relational_context": relational_context,
+        "relational_context_supplies_response_script": False,
         "current_session_signal": signal_shape,
         "response_agency": response_agency,
         "current_session_affect_signal_used": bool(signal),
@@ -144,14 +158,38 @@ def _current_session_signal(
     return item
 
 
-def _conversation_cues(prompt: str, intent: str, pragmatics: dict[str, Any]) -> list[str]:
+def _conversation_cues(
+    prompt: str,
+    intent: str,
+    pragmatics: dict[str, Any],
+    relational_context: dict[str, Any] | None = None,
+) -> list[str]:
     lower = prompt.lower().replace("’", "'")
     cues: list[str] = []
+    relational_context = (
+        relational_context if isinstance(relational_context, dict) else {}
+    )
     _append_if(cues, "hard_boundary", intent == "hard_boundary")
     _append_if(cues, "correction", intent == "correction" or bool(re.search(r"\b(?:actually|i meant|correction)\b", lower)))
     _append_if(cues, "playful", any(term in lower for term in ("haha", "lol", "xd", "joke", "funny", "playful")))
     _append_if(cues, "tender_context", any(term in lower for term in ("nervous", "worried", "scared", "tender", "rough day", "hard day")))
-    _append_if(cues, "warm_connection", intent in {"warm_connection", "gratitude", "reassurance_received"})
+    _append_if(
+        cues,
+        "warm_connection",
+        intent in {"warm_connection", "gratitude", "reassurance_received"}
+        or relational_context.get("relational_context_present") is True,
+    )
+    for cue_type in relational_context.get("cue_types") or []:
+        if str(cue_type) in {
+            "reunion",
+            "missing_or_longing",
+            "affection",
+            "delight_in_presence",
+            "affectionate_address",
+            "affectionate_symbol",
+            "shared_enthusiasm",
+        }:
+            _append_if(cues, f"relational:{cue_type}", True)
     _append_if(
         cues,
         "friendly_check_in",

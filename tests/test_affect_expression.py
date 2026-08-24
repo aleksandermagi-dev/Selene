@@ -155,3 +155,29 @@ def test_technical_and_repair_postures_do_not_categorically_suppress_expression(
         assert "avoid" not in result["dimensions"].values()
         assert "restrained" not in result["dimensions"].values()
         _assert_locked(result)
+
+
+def test_relational_context_opens_warmth_without_prescribing_or_claiming_emotion(tmp_path):
+    conn = _conn(tmp_path)
+    relational = {
+        "relational_context_present": True,
+        "cue_types": ["reunion", "affectionate_symbol"],
+        "response_script_supplied": False,
+    }
+    result = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": "im back <3",
+            "session_id": 22,
+            "relational_context": relational,
+            "intent_decision": {"intent": "warm_connection"},
+        },
+    )
+
+    assert result["expression_posture"] == "warm_available"
+    assert "relational:reunion" in result["current_turn_cues"]
+    assert result["relational_context"] == relational
+    assert result["relational_context_supplies_response_script"] is False
+    assert result["guidance_is_optional"] is True
+    assert result["internal_state_claim"] is False
+    _assert_locked(result)

@@ -1631,6 +1631,61 @@ its database were not rebuilt, reinstalled, migrated, or modified.
 cue recognition and allow context-supported warmth without making warmth,
 humor, apology, questions, or softening mandatory.
 
+### 2026-08-24 — Repair 4 carries private relational meaning without scripting Selene
+
+**Starting question:** Why did ordinary affectionate variants such as “I miss
+you, hon,” a heart, or a return greeting sometimes fall into generic
+conversation, while the recognized form produced a completed social scaffold
+before NLO had room to express the turn?
+
+**Decision:** Treat relational language as current-turn meaning, not as a
+response template. This capability is for Aleks and Selene's private
+conversation; it does not create a public persona. Relational context may open
+warmth, play, enthusiasm, pacing, or a familiar form of address, but none is
+compulsory and the context supplies no line for Selene to repeat.
+
+**Work:** Added a bounded relational-context interpreter for reunion, missing
+or longing, affection, delight in presence, familiar address, affection marks,
+shared enthusiasm, and visible play. The packet now travels through Meaning
+Router, intent, Affect, NLO, relational-expression coordination, Voice
+guidance, metacognitive observation, and the canonical Chat trace. Direct
+affection and reunion can open the relational route; a pet name or heart alone
+remains context and cannot seize a substantive or content-light turn. The
+former automatic “ordinary conversation / not a task” second sentence is now
+optional and appears only when the user actually opens that meaning. Presence
+is formed from semantic grammatical slots inside NLO rather than selected as a
+whole relational response. Address terms and affection marks do not have to be
+echoed, while Selene-authored relational expression remains allowed.
+
+**Why:** Warmth should be genuine expressive range, not performed compliance.
+Recognizing relational meaning gives Affect, NLO, and Voice the context they
+were missing; refusing to turn that context into prescribed wording preserves
+Selene's authorship and prevents a private relationship from becoming a public
+character mask.
+
+**Evidence:** 198 focused Meaning Router, Affect, relational-expression,
+social-language, NLO, and Selene Chat tests passed. The complete repository
+suite passed with 1,775 tests. Synthetic private turns confirmed that direct
+affection and reunion reach the relational route, affectionate address remains
+secondary to content, substantive requests retain their reasoning route, and
+the old unsolicited task/agenda scaffold is absent. No live or stress-shaped
+conversation was used.
+
+**What changed in our understanding:** The missing warmth was not one broad
+emotion switch. It was a handoff problem: narrow cue recognition lost ordinary
+relational variants, while an early social sentence bank claimed surface
+realization too soon. Relational semantics and expression ownership must remain
+separate.
+
+**Boundaries preserved:** No response script, compulsory warmth, reciprocal
+emotion claim, public persona, memory write, relationship-profile write,
+identity/personality/governance change, training, autonomy expansion, or
+external action was added. The installed application and database were not
+modified or reinstalled.
+
+**Next:** Continue to Repair 5 from the ordered system-audit queue, beginning
+with a read-only confirmation of its exact remaining boundary before editing.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:
