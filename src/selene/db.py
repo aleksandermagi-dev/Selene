@@ -205,6 +205,22 @@ CREATE TABLE IF NOT EXISTS selene_chat_messages (
 
 CREATE INDEX IF NOT EXISTS idx_selene_chat_messages_session ON selene_chat_messages(session_id, id);
 
+CREATE TABLE IF NOT EXISTS selene_chat_continuity_projections (
+  message_id INTEGER PRIMARY KEY,
+  session_id INTEGER NOT NULL,
+  projection_json TEXT NOT NULL DEFAULT '{}',
+  canonical_trace_sha256 TEXT NOT NULL,
+  canonical_trace_size_bytes INTEGER NOT NULL DEFAULT 0,
+  trace_schema_version TEXT NOT NULL,
+  provenance_boundary TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (message_id) REFERENCES selene_chat_messages(id),
+  FOREIGN KEY (session_id) REFERENCES selene_chat_sessions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_selene_chat_continuity_projection_session
+ON selene_chat_continuity_projections(session_id, message_id);
+
 CREATE TABLE IF NOT EXISTS selene_test_impact_reviews (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   receipt_id TEXT NOT NULL UNIQUE,

@@ -1580,6 +1580,57 @@ turn at a time. Then run the exact exported packet against selected comparison
 models with recorded versions and settings before reviewing paired dimension
 profiles.
 
+### 2026-08-23 — System audit repairs 1–3 preserve truth and normalize persistence
+
+**Starting question:** After Selene's architecture had grown substantially,
+which audit findings required immediate repair, and how could they be handled
+without rewriting her history or confusing stored formation-era state with her
+current resident state?
+
+**Decision:** Repair the audit findings in order. Waiting means queued work,
+not permission to add unrelated changes between them. Treat every persistence
+change as preservation-first: stop unnecessary duplication on new writes,
+retain old records, and keep an explicit recovery path.
+
+**Work:** Repair 1 made transfer and readiness inspection read-only; only an
+explicit rollback preview now creates a rollback audit event. Repair 2 created
+one canonical resident-runtime projection shared by Activation, Vessel,
+C-vessel, validation, and the interface, while preserving older build labels as
+historical records. Repair 3 introduced one canonical assistant Chat trace,
+small activation receipts that refer to it by message ID and SHA-256, compact
+conversation-continuity projections, and column-owned NLO and metacognition
+run envelopes. Normal session refreshes receive the continuity projection;
+canonical traces remain available through an explicit diagnostic request.
+
+**Why:** Read operations must not manufacture history. Current state must come
+from one runtime truth instead of whichever old artifact a route happens to
+read. Large organ records and prior conversation traces should have one owner,
+not be recursively copied into every downstream shelf. References preserve
+inspectability while reducing database growth and routine UI transfer cost.
+
+**Evidence:** Repairs 1 and 2 passed 1,755 and 1,759 tests respectively. Repair
+3 passed 149 focused Chat, input, metacognition, NLO, and persistence tests,
+then the complete 1,764-test suite. A synthetic ordinary turn measured a
+2.4 KB activation receipt against a 289 KB canonical trace (0.83 percent), a
+7.1 KB continuity projection (2.46 percent), and a 33 KB ordinary session view
+against a 330 KB explicit canonical session view. Legacy rows without a
+projection remained readable. No existing installed history was migrated,
+deleted, or rewritten.
+
+**What changed in our understanding:** Much of the database growth was not new
+knowledge. It was the same rich trace copied into activation history, nested
+continuity, and run payloads that already had dedicated columns. The right
+repair was ownership and reference integrity, not deletion.
+
+**Boundaries preserved:** No identity, personality, governance, memory-review,
+teaching, training, LoRA, self-replication, autonomy, or external-action
+authority changed. No live stress Q&A was run. The installed application and
+its database were not rebuilt, reinstalled, migrated, or modified.
+
+**Next:** Repair 4 is social routing and warmth: broaden ordinary relational
+cue recognition and allow context-supported warmth without making warmth,
+humor, apology, questions, or softening mandatory.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

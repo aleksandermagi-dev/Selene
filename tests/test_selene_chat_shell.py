@@ -1291,6 +1291,56 @@ def test_active_selene_chat_carries_current_session_expression_guidance_without_
     _assert_locked(result)
 
 
+def test_active_chat_persists_one_trace_with_compact_activation_and_session_views(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Could you explain the smallest reversible next step?"},
+    )["result"]
+    message_row = conn.execute(
+        "SELECT payload_json FROM selene_chat_messages WHERE id = ?",
+        (result["assistant_message_id"],),
+    ).fetchone()
+    event_row = conn.execute(
+        "SELECT payload_json FROM selene_activation_events WHERE id = ?",
+        (result["activation_event_id"],),
+    ).fetchone()
+    projection_row = conn.execute(
+        "SELECT projection_json FROM selene_chat_continuity_projections WHERE message_id = ?",
+        (result["assistant_message_id"],),
+    ).fetchone()
+    trace = json.loads(str(message_row["payload_json"]))
+    event = json.loads(str(event_row["payload_json"]))
+    projection = json.loads(str(projection_row["projection_json"]))
+
+    assert trace["native_language_organ"]["shelf"] == "native_language_runs"
+    assert trace["metacognition"]["shelf"] == "metacognition_runs"
+    assert event["canonical_trace"]["message_id"] == result["assistant_message_id"]
+    assert projection["canonical_trace"]["message_id"] == result["assistant_message_id"]
+    assert len(str(event_row["payload_json"])) < len(str(message_row["payload_json"]))
+    assert len(str(projection_row["projection_json"])) < len(str(message_row["payload_json"]))
+
+    compact = route_request(
+        conn,
+        "selene_chat.session.detail",
+        {"session_id": result["session_id"]},
+    )["result"]
+    canonical = route_request(
+        conn,
+        "selene_chat.session.detail",
+        {"session_id": result["session_id"], "include_trace": True},
+    )["result"]
+    assert compact["trace_detail"] == "continuity_projection"
+    assert canonical["trace_detail"] == "canonical"
+    assert compact["messages"][0]["payload_json"]["input_interpretation"]["raw_text"]
+    assert "trace_storage_contract" in canonical["messages"][1]["payload_json"]
+    _assert_locked(result)
+
+
 def test_active_chat_routes_one_attributable_responsive_contribution_without_invitation(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

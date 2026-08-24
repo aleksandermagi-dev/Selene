@@ -728,7 +728,12 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
     if route_key == "selene_chat.sessions.list":
         return {"route": route_key, "result": list_selene_chat_sessions(conn, int(payload.get("limit") or 25))}
     if route_key == "selene_chat.session.detail":
-        session = get_selene_chat_session(conn, int(payload.get("id") or payload.get("session_id") or 0))
+        include_trace = str(payload.get("include_trace") or "").lower() in {"1", "true", "yes"}
+        session = get_selene_chat_session(
+            conn,
+            int(payload.get("id") or payload.get("session_id") or 0),
+            include_trace=include_trace,
+        )
         return {"route": route_key, "result": session or {"error": "not found"}}
     if route_key == "selene_chat.route_to_b":
         return {"route": route_key, "result": route_selene_chat_to_b(conn, payload)}

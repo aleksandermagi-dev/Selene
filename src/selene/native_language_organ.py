@@ -6,6 +6,7 @@ import sqlite3
 from hashlib import sha256
 from typing import Any
 
+from .chat_persistence import compact_run_payload
 from .chat_intent import classify_chat_intent
 from .advice_authority_coordination import (
     advice_authority_coordination_status,
@@ -3071,6 +3072,24 @@ def _dict(value: Any) -> dict[str, Any]:
 
 
 def _store_run(conn: sqlite3.Connection, result: dict[str, Any]) -> int:
+    column_owned_keys = {
+        "mode",
+        "status",
+        "prompt",
+        "candidate_text",
+        "meaning_packet",
+        "discourse_plan",
+        "revision",
+        "source_refs",
+        "provenance_boundary",
+        "review_destination",
+        "review_status",
+    }
+    payload_remainder = compact_run_payload(
+        result,
+        schema_version="native_language_run_v2_column_owned",
+        column_owned_keys=column_owned_keys,
+    )
     cur = conn.execute(
         """
         INSERT INTO native_language_runs
@@ -3092,7 +3111,7 @@ def _store_run(conn: sqlite3.Connection, result: dict[str, Any]) -> int:
             NLO_BOUNDARY,
             str(result.get("review_destination") or "Status"),
             str(result.get("review_status") or "status_only"),
-            json.dumps(result),
+            json.dumps(payload_remainder),
         ),
     )
     conn.commit()
@@ -3101,7 +3120,11 @@ def _store_run(conn: sqlite3.Connection, result: dict[str, Any]) -> int:
 
 def _decode_run(row: sqlite3.Row) -> dict[str, Any]:
     item = dict(row)
+    payload = _loads(item.get("payload_json"), {})
+    payload = payload if isinstance(payload, dict) else {}
+    payload.pop("storage_contract", None)
     return {
+        **payload,
         "id": item.get("id"),
         "mode": item.get("mode"),
         "status": item.get("status"),

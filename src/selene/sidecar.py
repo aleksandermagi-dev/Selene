@@ -856,7 +856,12 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path.startswith("/api/selene-chat/sessions/"):
             try:
                 session_id = int(parsed.path.removeprefix("/api/selene-chat/sessions/"))
-                session = route_request(conn, "selene_chat.session.detail", {"session_id": session_id})["result"]
+                qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+                session = route_request(
+                    conn,
+                    "selene_chat.session.detail",
+                    {"session_id": session_id, "include_trace": qs.get("include_trace", "0")},
+                )["result"]
                 self._send(*json_bytes(session, 404 if session.get("error") else 200))
             except ValueError:
                 self._send(*json_bytes({"error": "invalid session id"}, 400))

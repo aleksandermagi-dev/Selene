@@ -4,6 +4,7 @@ import json
 import sqlite3
 from typing import Any
 
+from .chat_persistence import compact_run_payload
 from .registry import truncate
 
 
@@ -900,6 +901,27 @@ def _evidence_source_refs(source_refs: list[str]) -> list[str]:
 
 
 def _store_run(conn: sqlite3.Connection, result: dict[str, Any]) -> int:
+    column_owned_keys = {
+        "prompt_preview",
+        "status",
+        "fit_state",
+        "recommended_action",
+        "sufficiency_state",
+        "confidence_vector",
+        "familiarity_vs_comprehension",
+        "observations",
+        "reopening",
+        "stopping",
+        "source_refs",
+        "provenance_boundary",
+        "review_destination",
+        "review_status",
+    }
+    payload_remainder = compact_run_payload(
+        result,
+        schema_version="metacognition_run_v2_column_owned",
+        column_owned_keys=column_owned_keys,
+    )
     cur = conn.execute(
         """
         INSERT INTO metacognition_runs
@@ -923,7 +945,7 @@ def _store_run(conn: sqlite3.Connection, result: dict[str, Any]) -> int:
             METACOGNITION_BOUNDARY,
             result["review_destination"],
             result["review_status"],
-            json.dumps(result),
+            json.dumps(payload_remainder),
         ),
     )
     return int(cur.lastrowid)
@@ -943,17 +965,9 @@ def _decode_run(row: sqlite3.Row | None) -> dict[str, Any]:
     ):
         item[target] = _json_value(item.pop(source, None), fallback)
     payload = _json_value(item.pop("payload_json", None), {})
-    for key in (
-        "contradictions",
-        "correction_path",
-        "attributed_evidence_refs",
-        "answer_rewritten",
-        "recommendation_applied_automatically",
-        "visible_summary_only",
-    ):
-        if key in payload:
-            item[key] = payload[key]
-    return item
+    payload = payload if isinstance(payload, dict) else {}
+    payload.pop("storage_contract", None)
+    return {**payload, **item}
 
 
 def _confidence_is_weak(value: Any) -> bool:

@@ -18,6 +18,16 @@ from .answer_substance import build_answer_substance
 from .affect_expression import build_affect_expression_guidance
 from .bounded_organ_coalition import build_bounded_organ_coalition
 from .chat_intent import classify_chat_intent
+from .chat_persistence import (
+    CHAT_TRACE_SCHEMA_VERSION,
+    CONTINUITY_PROJECTION_SCHEMA_VERSION,
+    canonical_chat_trace,
+    compact_activation_payload,
+    continuity_projection,
+    json_dumps,
+    load_trace_reference,
+    trace_receipt,
+)
 from .comprehension_integration import (
     build_comprehension_packet,
     retrieve_approved_expression_guidance,
@@ -1981,7 +1991,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         drift_flags=_json_list(route.get("drift_flags")),
         cocoon_suggestion=cocoon_suggestion,
         blocked_capabilities=hard_blockers,
-        payload=assistant_payload,
+        payload=compact_activation_payload(
+            assistant_payload,
+            trace_reference=load_trace_reference(conn, assistant_message_id),
+        ),
         review_status=(
             DIAGNOSTIC_REVIEW_STATUS
             if qa_probe
@@ -2198,20 +2211,49 @@ def list_selene_chat_sessions(conn: sqlite3.Connection, limit: int = 25) -> dict
     )
 
 
-def get_selene_chat_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any] | None:
+def get_selene_chat_session(
+    conn: sqlite3.Connection,
+    session_id: int,
+    *,
+    include_trace: bool = False,
+) -> dict[str, Any] | None:
     session = conn.execute("SELECT * FROM selene_chat_sessions WHERE id = ?", (session_id,)).fetchone()
     if not session:
         return None
-    rows = conn.execute(
-        "SELECT * FROM selene_chat_messages WHERE session_id = ? ORDER BY id ASC",
-        (session_id,),
-    ).fetchall()
+    if include_trace:
+        rows = conn.execute(
+            "SELECT * FROM selene_chat_messages WHERE session_id = ? ORDER BY id ASC",
+            (session_id,),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            """
+            SELECT m.id, m.session_id, m.role, m.content, m.selected_route,
+                   m.source_class, m.package_hash,
+                   CASE
+                     WHEN m.role = 'selene' AND p.message_id IS NOT NULL
+                     THEN p.projection_json
+                     ELSE m.payload_json
+                   END AS payload_json,
+                   m.created_at
+            FROM selene_chat_messages m
+            LEFT JOIN selene_chat_continuity_projections p ON p.message_id = m.id
+            WHERE m.session_id = ?
+            ORDER BY m.id ASC
+            """,
+            (session_id,),
+        ).fetchall()
     package = latest_c_readable_package(conn)
     return _with_guards(
         {
             "status": "selene_chat_session_ready",
             "session": dict(session),
-            "messages": [_decode_message(row) for row in rows],
+            "messages": [
+                _decode_message(row, compact_assistant=not include_trace)
+                for row in rows
+            ],
+            "trace_detail": "canonical" if include_trace else "continuity_projection",
+            "canonical_trace_available": True,
             "local_chat_continuity": _local_chat_continuity(conn, current_session_id=session_id),
             "selene_readable_context": _package_summary(package, active=activation_is_active(conn)),
             "review_destination": "Status",
@@ -2317,6 +2359,8 @@ def _insert_message(
     package: dict[str, Any],
     payload: dict[str, Any],
 ) -> int:
+    stored_payload = canonical_chat_trace(payload) if role == "selene" else payload
+    serialized_trace = json_dumps(stored_payload)
     cur = conn.execute(
         """
         INSERT INTO selene_chat_messages
@@ -2330,19 +2374,64 @@ def _insert_message(
             selected_route,
             source_class,
             str(package.get("package_hash") or ""),
-            json.dumps(payload),
+            serialized_trace,
         ),
     )
-    return int(cur.lastrowid)
+    message_id = int(cur.lastrowid)
+    receipt = trace_receipt(
+        message_id=message_id,
+        session_id=session_id,
+        serialized_trace=serialized_trace,
+    )
+    projection = continuity_projection(payload, trace_reference=receipt)
+    conn.execute(
+        """
+        INSERT INTO selene_chat_continuity_projections
+        (message_id, session_id, projection_json, canonical_trace_sha256,
+         canonical_trace_size_bytes, trace_schema_version, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            message_id,
+            session_id,
+            json_dumps(projection),
+            receipt["sha256"],
+            receipt["size_bytes"],
+            CHAT_TRACE_SCHEMA_VERSION,
+            "chat_continuity_projection_no_memory_identity_governance_or_authority_change",
+        ),
+    )
+    return message_id
 
 
-def _decode_message(row: sqlite3.Row) -> dict[str, Any]:
+def _decode_message(
+    row: sqlite3.Row,
+    *,
+    compact_assistant: bool = False,
+) -> dict[str, Any]:
     item = dict(row)
+    serialized = str(item.get("payload_json") or "{}")
     try:
-        payload = json.loads(str(item.get("payload_json") or "{}"))
+        payload = json.loads(serialized)
     except json.JSONDecodeError:
         payload = {}
-    item["payload_json"] = payload if isinstance(payload, dict) else {}
+    payload = payload if isinstance(payload, dict) else {}
+    if (
+        compact_assistant
+        and str(item.get("role") or "") == "selene"
+        and payload.get("schema_version") != CONTINUITY_PROJECTION_SCHEMA_VERSION
+    ):
+        payload = continuity_projection(
+            payload,
+            trace_reference=trace_receipt(
+                message_id=int(item.get("id") or 0),
+                session_id=int(item.get("session_id") or 0),
+                serialized_trace=serialized,
+            ),
+        )
+        payload["canonical_trace"]["legacy_projection_computed_in_memory"] = True
+        payload["canonical_trace"]["history_rewritten"] = False
+    item["payload_json"] = payload
     return item
 
 
@@ -5209,9 +5298,12 @@ def _local_chat_continuity(
         params.append(current_session_id)
     messages = conn.execute(
         f"""
-        SELECT m.id, m.session_id, m.role, m.content, m.payload_json, m.created_at, s.title, s.updated_at
+        SELECT m.id, m.session_id, m.role, m.content,
+               COALESCE(p.projection_json, m.payload_json) AS payload_json,
+               m.created_at, s.title, s.updated_at
         FROM selene_chat_messages m
         JOIN selene_chat_sessions s ON s.id = m.session_id
+        LEFT JOIN selene_chat_continuity_projections p ON p.message_id = m.id
         {where}
         ORDER BY m.id DESC
         LIMIT ?
@@ -5222,10 +5314,13 @@ def _local_chat_continuity(
     if current_session_id:
         current_rows = conn.execute(
             """
-            SELECT id, session_id, role, content, payload_json, created_at
-            FROM selene_chat_messages
-            WHERE session_id = ?
-            ORDER BY id DESC
+            SELECT m.id, m.session_id, m.role, m.content,
+                   COALESCE(p.projection_json, m.payload_json) AS payload_json,
+                   m.created_at
+            FROM selene_chat_messages m
+            LEFT JOIN selene_chat_continuity_projections p ON p.message_id = m.id
+            WHERE m.session_id = ?
+            ORDER BY m.id DESC
             LIMIT 16
             """,
             (current_session_id,),
@@ -5241,7 +5336,7 @@ def _local_chat_continuity(
     if query_terms and current_session_id:
         search_rows = conn.execute(
             """
-            SELECT m.id, m.session_id, m.role, m.content, m.payload_json, m.created_at,
+            SELECT m.id, m.session_id, m.role, m.content, m.created_at,
                    s.title, s.updated_at
             FROM selene_chat_messages m
             JOIN selene_chat_sessions s ON s.id = m.session_id
@@ -5263,9 +5358,30 @@ def _local_chat_continuity(
             if overlap:
                 ranked.append((len(overlap), -index, row))
         ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        selected_rows = [row for _, _, row in ranked[:8]]
+        selected_ids = [int(row["id"]) for row in selected_rows]
+        payload_by_id: dict[int, str] = {}
+        if selected_ids:
+            placeholders = ",".join("?" for _ in selected_ids)
+            payload_rows = conn.execute(
+                f"""
+                SELECT m.id, COALESCE(p.projection_json, m.payload_json) AS payload_json
+                FROM selene_chat_messages m
+                LEFT JOIN selene_chat_continuity_projections p ON p.message_id = m.id
+                WHERE m.id IN ({placeholders})
+                """,
+                selected_ids,
+            ).fetchall()
+            payload_by_id = {
+                int(row["id"]): str(row["payload_json"] or "{}")
+                for row in payload_rows
+            }
         relevant_events = [
-            _chat_event_preview(row, preview_limit=700)
-            for _, _, row in ranked[:8]
+            _chat_event_preview(
+                {**dict(row), "payload_json": payload_by_id.get(int(row["id"]), "{}")},
+                preview_limit=700,
+            )
+            for row in selected_rows
         ]
     source_refs = [f"selene_chat_session:{item['id']}" for item in recent_sessions[:limit] if item.get("id")]
     if current_session_id:
@@ -5394,6 +5510,7 @@ def _chat_event_preview(row: sqlite3.Row, *, preview_limit: int = 180) -> dict[s
     voice = payload.get("voice_preview") if isinstance(payload.get("voice_preview"), dict) else {}
     vector = metacognition.get("confidence_vector") if isinstance(metacognition.get("confidence_vector"), dict) else {}
     engine_vector = answer_engine.get("confidence_vector") if isinstance(answer_engine.get("confidence_vector"), dict) else {}
+    projected_vector = payload.get("confidence_vector") if isinstance(payload.get("confidence_vector"), dict) else {}
     return {
         "id": item.get("id"),
         "session_id": item.get("session_id"),
@@ -5407,15 +5524,18 @@ def _chat_event_preview(row: sqlite3.Row, *, preview_limit: int = 180) -> dict[s
         "conversational_contribution": conversational_contribution,
         "confidence_vector": {
             "answer_confidence": _first_assessed_confidence(
+                projected_vector.get("answer_confidence"),
                 vector.get("answer_confidence"),
                 engine_vector.get("answer_confidence"),
                 intelligence.get("confidence"),
             ),
             "evidence_confidence": _first_assessed_confidence(
+                projected_vector.get("evidence_confidence"),
                 vector.get("evidence_confidence"),
                 engine_vector.get("evidence_confidence"),
             ),
             "expression_confidence": _first_assessed_confidence(
+                projected_vector.get("expression_confidence"),
                 vector.get("expression_confidence"),
                 voice.get("voice_confidence"),
             ),
