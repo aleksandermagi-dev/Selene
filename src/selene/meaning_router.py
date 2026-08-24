@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .answer_ownership import research_domain_requested
 from .relational_context import interpret_relational_context
 from .resident_authority import evaluate_requested_actions
 from .semantic_arbitration import build_canonical_meaning_frame
@@ -743,7 +744,7 @@ def _domain_candidates(
         add("verified_math", 88, "bounded_expression_and_computation_shape")
     if source_packets_present:
         add("source_backed_research", 84, "attributed_source_packets_supplied")
-    elif _has_any(routing_text, ("cite", "citation", "sources", "source-backed", "research", "paper", "study", "literature")):
+    elif research_domain_requested(routing_text):
         add("source_backed_research", 62, "research_request_without_supplied_packet")
     if _has_any(
         routing_text,

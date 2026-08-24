@@ -7,6 +7,7 @@ from selene.visible_speech import (
     inspect_visible_speech,
     select_visible_speech_seed,
 )
+from selene.supported_semantics import build_supported_semantic_packet
 
 
 def test_seed_selection_rejects_internal_source_classes_and_scaffolding():
@@ -232,3 +233,90 @@ def test_selected_seed_preserves_only_explicit_obligation_ownership():
 
     assert result["selected_source_id"] == "answer_engine"
     assert result["obligation_ids"] == ["compare_shelves"]
+
+
+def test_fulfillment_arbitration_prefers_the_candidate_that_owns_and_performs_the_act():
+    obligation = {
+        "id": "prediction",
+        "kind": "provisional_inference",
+        "source_text": "What do you predict happens next?",
+        "coverage_terms": ["predict", "happens", "next"],
+        "required": True,
+        "answer_act": "prompt_grounded_prediction",
+        "responsible_owner": "intelligence_os",
+        "requested_response_functions": ["prediction"],
+        "role_fit_required": True,
+    }
+    definition = build_supported_semantic_packet(
+        {
+            "units": [
+                {
+                    "id": "definition",
+                    "text": "A prediction is a revisable expectation.",
+                    "obligation_ids": ["prediction"],
+                    "source_kind": "approved_knowledge",
+                }
+            ]
+        }
+    )
+    performed = build_supported_semantic_packet(
+        {
+            "units": [
+                {
+                    "id": "performed-prediction",
+                    "text": "I would expect the chime to sound again under the same conditions.",
+                    "obligation_ids": ["prediction"],
+                    "response_functions": ["prediction"],
+                    "ownership_validated": True,
+                    "source_kind": "prompt_grounded_method",
+                }
+            ]
+        }
+    )
+    spine = build_conversation_spine(
+        {
+            "session_id": 42,
+            "prompt": obligation["source_text"],
+            "intent_decision": classify_chat_intent(obligation["source_text"]),
+            "dialogue_workspace": {
+                "active_topic": "prediction next event",
+                "open_loops": [],
+                "new_loop_ids": [],
+                "pragmatics": {
+                    "question_units": [obligation["source_text"]],
+                    "utterance_units": [{"kind": "question", "text": obligation["source_text"]}],
+                    "previous_turn_available": False,
+                },
+            },
+        }
+    )
+    spine["open_obligations"] = [obligation]
+    result = select_visible_speech_seed(
+        obligation["source_text"],
+        [
+            {
+                "source_id": "approved_comprehension",
+                "source_class": "approved_knowledge",
+                "text": "A prediction is a revisable expectation.",
+                "obligation_ids": ["prediction"],
+                "supported_semantics": definition,
+            },
+            {
+                "source_id": "intelligence_os_answer",
+                "source_class": "reasoning_answer",
+                "text": "I would expect the chime to sound again under the same conditions.",
+                "obligation_ids": ["prediction"],
+                "supported_semantics": performed,
+            },
+        ],
+        conversation_spine=spine,
+    )
+
+    assert result["selected_source_id"] == "intelligence_os_answer"
+    assert result["candidate_arbitration"]["first_accepted_is_automatic_winner"] is False
+    selected = next(
+        item
+        for item in result["inspected_candidates"]
+        if item["source_id"] == "intelligence_os_answer"
+    )
+    assert selected["fulfillment_arbitration"]["owner_fit_ids"] == ["prediction"]

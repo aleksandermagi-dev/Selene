@@ -217,3 +217,55 @@ def test_unsupported_part_is_named_instead_of_invented():
     assert "without guessing" in result["content_seed"]
     assert result["provider_call_allowed"] is False
     assert result["memory_write_active"] is False
+
+
+def test_self_state_owner_is_preserved_without_an_external_evidence_refusal():
+    result = build_bounded_answer_completion(
+        {
+            "prompt": "How are you feeling about the repair?",
+            "content_seed": "",
+            "response_obligations": [
+                {
+                    "id": "state",
+                    "kind": "self_state_check_in",
+                    "source_text": "How are you feeling about the repair?",
+                    "required": True,
+                    "responsible_owner": "self_state",
+                    "completion_policy": "preserve_current_owner",
+                    "external_evidence_required": False,
+                    "answer_ownership_classified": True,
+                }
+            ],
+        }
+    )
+
+    assert result["accepted"] is False
+    assert result["content_seed"] == ""
+    assert result["resolutions"][0]["resolution"] == "preserved_for_current_answer_owner"
+    assert result["resolutions"][0]["visible_fragment"] == ""
+
+
+def test_prompt_grounded_prediction_is_not_recast_as_an_external_fact_gap():
+    result = build_bounded_answer_completion(
+        {
+            "prompt": "What do you predict happens next?",
+            "content_seed": "",
+            "response_obligations": [
+                {
+                    "id": "prediction",
+                    "kind": "provisional_inference",
+                    "source_text": "What do you predict happens next?",
+                    "required": True,
+                    "responsible_owner": "intelligence_os",
+                    "completion_policy": "owner_must_perform_requested_operation",
+                    "external_evidence_required": False,
+                    "answer_ownership_classified": True,
+                }
+            ],
+        }
+    )
+
+    assert result["accepted"] is False
+    assert result["content_seed"] == ""
+    assert result["resolutions"][0]["resolution"] == "held_for_typed_answer_owner"
+    assert "grounded factual answer" not in result["content_seed"]

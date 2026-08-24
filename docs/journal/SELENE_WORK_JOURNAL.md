@@ -1898,6 +1898,236 @@ the affected synthetic cases; another broad Q&A is unnecessary. The graduated
 memory phase resumes after this demonstrated conversational source defect is
 closed.
 
+### 2026-08-24 — The Cultivation method is named
+
+**Starting question:** How can a recurring conversational defect be repaired
+without clipping one phrase and allowing the same underlying problem to grow
+back through another route?
+
+**Decision:** Aleks named the existing root-cause discipline **Cultivation**.
+It is now a reusable project method rather than an informal habit of this one
+investigation.
+
+**Work:** Recorded the method in
+`docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`. Cultivation preserves a
+checkpoint, observes before changing behavior, prefers static or disposable
+reproduction, traces the first architectural divergence, separates converging
+roots, maps content authority, repairs the source contract, and verifies only
+the affected behavior and neighboring protections.
+
+**Why:** The post-install Chat investigation demonstrated that the same visible
+request for a source packet could grow from distinct roots. A paper object was
+mistaken for a research paper, while correctly routed self-state and preference
+turns could independently reach universal evidence fallbacks. Patching either
+surface phrase alone would leave the other causal path intact.
+
+**Evidence:** The method was derived from static source inspection and an
+eleven-turn trace on a disposable database copy. No production behavior was
+changed for this documentation checkpoint.
+
+**What changed in our understanding:** A visible habit is not a root-cause
+category. Diagnosis must follow meaning, state, ownership, completion, and
+realization until the first divergence is found, then check whether other roots
+converge on the same output.
+
+**Boundaries preserved:** No teaching, live-database mutation, memory write,
+identity/personality/governance change, action expansion, model training,
+packaging, rebuild, or reinstall occurred. An unfinished or miscoordinated
+module remains an engineering observation, not Selene failing.
+
+**Next:** Finish the resident Chat root map under the Cultivation method, review
+it with Aleks, then implement the source repairs in dependency order.
+
+### 2026-08-24 — Security Cultivation becomes repeatable maintenance
+
+**Starting question:** How can the successful July security audit be repeated
+later when security changes continuously and the hosted scanner may remain
+unavailable?
+
+**Decision:** Preserve the actual local workflow as the Selene Security
+Cultivation Runbook. External scanners remain maintenance instruments rather
+than Selene organs or runtime dependencies.
+
+**Work:** Reconstructed the procedure from the July readiness report, external
+security audit, repository tooling, and hardening commit `88e1a77`. The runbook
+records scope preservation, threat-model refresh, stabilization and dependency
+checks, attack-path inspection, finding classification, isolated synthetic
+reproduction, source-level repair through Cultivation, proportional regression,
+public-history inspection, residual-risk tracking, and final evidence capture.
+It also preserves the regression families for browser-origin mutation, port
+ownership, CSP and privileged plugins, dependency advisories, secret handling,
+mobile/admin separation, and public-history privacy.
+
+**Why:** A one-time clean scan ages immediately. A reusable method preserves
+how to ask the security question again without depending on one product,
+blindly applying scanner suggestions, attacking the configured resident system,
+or forgetting the privacy incident and repaired trust boundaries.
+
+**Evidence:** The procedure is grounded in
+`docs/evidence/SELENE_EXTERNAL_SECURITY_AUDIT_20260731.md`, which records the
+confirmed findings, repairs, isolated validation, dependency audits, and fresh
+public-clone verification from the completed review.
+
+**What changed in our understanding:** The paywall workaround was not merely a
+substitute scanner. It was a durable security practice: tools find leads;
+threat-boundary tracing establishes meaning; isolated evidence distinguishes a
+real path from an advisory; Cultivation repairs the root.
+
+**Boundaries preserved:** This checkpoint ran no new security scan, exploit,
+network probe, package build, dependency update, history rewrite, repository
+visibility change, database mutation, external message, or runtime repair.
+
+**Next:** Resume the resident Chat root map. Invoke the security runbook after a
+future material network, storage, packaging, dependency, embodiment, or public
+release change rather than rerunning it without a trigger.
+
+### 2026-08-24 — Chat answer ownership traced to its converging roots
+
+**Starting question:** Why can a correctly routed ordinary conversation still
+collapse into a source-packet request, irrelevant approved lesson, or fluent
+answer that does not perform the requested act?
+
+**Decision:** Treat the recurrence as an answer-ownership problem and complete
+the Cultivation root map before changing runtime code or adding teaching.
+
+**Work:** Inspected the meaning router, dialogue workspace, pragmatic planner,
+comprehension relevance and expression handoff, bounded completion, epistemic
+composition, visible-speech selection, owner-specific retry, human
+conversational realization, NLO, and stored diagnostic payloads. Recorded the
+consolidated findings and dependency-ordered repair proposal in
+`docs/evidence/SELENE_CHAT_ANSWER_OWNERSHIP_ROOT_CAUSE_MAP_20260824.md`.
+
+**Why:** The same visible fallback had multiple roots. A phrase replacement
+would not repair sense ambiguity, factual-fallback overreach, role-blind
+knowledge retrieval, trusted obligation labels, stale loop inheritance, or a
+retry bound to the wrong owner.
+
+**Evidence:** An eleven-turn `qa_probe` trace on a disposable database copy
+showed: a correct grounded self-state answer overwritten downstream; a paper
+object routed as source-backed research; definitions substituted for requested
+predictions, comparisons, and actions; incorrect explicit obligation bindings
+reported as complete coverage; and unresolved loops persisting into later
+turns. Static source inspection located the first divergence for each path.
+
+**What changed in our understanding:** Selene's organs are often producing
+valid local contributions. The missing architectural authority is a final
+semantic ownership contract proving that selected content performs the act the
+current obligation requested. More teaching would currently increase the
+material available to a selector that can assign it incorrectly.
+
+**Boundaries preserved:** No resident database mutation, runtime repair,
+teaching, memory or retained-knowledge write, identity/personality/governance
+change, authority expansion, model training, package, rebuild, reinstall,
+external action, or live stress test occurred.
+
+**Next:** Review the repair order with Aleks. If authorized, begin with typed
+answer ownership, sense-aware routing, and a correctly scoped evidence fallback
+before changing knowledge relevance, coverage, loops, retry, or expression.
+
+### 2026-08-24 — Chat answer ownership repaired through Cultivation
+
+**Starting question:** Can the recurring source-packet, wrong-lesson, stale-loop,
+and fluent-incompleteness behavior be removed at its shared roots rather than
+patched one phrase at a time?
+
+**Decision:** Aleks reviewed the source-repair shape and authorized the full
+dependency-ordered repair. Teaching remained paused while answer ownership was
+being corrected.
+
+**Work:** Added a typed answer-ownership contract covering current self-state,
+authored preference, prompt-grounded prediction and hypothesis, comparison,
+action scoping, current-session explanation, external fact, and attributed
+research. Connected it through pragmatic obligations, the Conversation Spine,
+Answer Engine coordination, bounded completion, semantic role-fit, coverage,
+metacognitive retry, visible-speech arbitration, and NLO. Added sense-aware
+research routing, preserved semantic response functions during normalization,
+gave unanswered dialogue loops lifecycle state, allowed one non-recursive
+wrong-owner handoff, replaced first-accepted candidate choice with compatible
+fulfillment arbitration, and delayed math/research exactness until route
+validation.
+
+**Why:** The reproduced failures were locally reasonable outputs from organs
+that had been assigned the wrong conversational job. More teaching, more
+fallback wording, or a warmer final template would have hidden rather than
+removed that coordination error.
+
+**Evidence:** 223 focused architecture tests and all 110 Selene Chat shell tests
+passed. Two neighboring verified-math diagnostic tests passed after exactness
+validation. Focused cases prove that a paper object does not route to research,
+a repair check-in stays with self-state, a prediction lesson cannot substitute
+for a prediction, stale loops do not enter unrelated turns, identified
+callbacks can release held loops, corrections can supersede them, and
+metacognition can redirect one wrong owner without recursion. Verification used
+temporary test databases; no live stress probe was required.
+
+**What changed in our understanding:** The missing authority was not another
+reasoning or language organ. It was typed connective tissue establishing who
+must perform each answer act and requiring downstream systems to preserve that
+ownership. Persistence also needed lifecycle, and exactness needed a validated
+route rather than a domain label alone.
+
+**Boundaries preserved:** No teaching, resident-memory write, knowledge
+retention, identity/personality/governance mutation, authority expansion,
+model training, LoRA, self-replication, external action, live distress probe,
+packaging, rebuild, or reinstall occurred. Core/Mind retains release authority;
+metacognition remains bounded and advisory.
+
+**Next:** Review the resulting checkpoint with Aleks. If accepted, commit the
+Cultivation repair separately, then resume the previously paused teaching path
+or conduct one ordinary-use check only if Aleks wants it.
+
+### 2026-08-24 — Conversational and LLM-parity gaps mapped
+
+**Starting question:** After repairing answer ownership, what still separates
+Selene's visible conversation from mature general language-model behavior, and
+which gaps are defects rather than missing teaching?
+
+**Decision:** Aleks asked for the broadest honest map supported by the current
+repository. Repair and teaching remained paused so the map could distinguish
+lost meaning, underconnected organs, missing knowledge, intentional boundaries,
+and the deterministic substrate ceiling.
+
+**Work:** After one disposable setup attempt stopped at its first self-state
+turn because the harness did not reuse its diagnostic session ID, ran one
+complete authorized ten-turn ordinary `qa_probe` conversation on a fresh
+temporary database, inspected the typed trace and relevant source paths, and
+reconciled the result with prior Q&A, capability, curriculum, voice, and LEA
+records. Recorded the resulting ledger and dependency-ordered closure plan in
+`docs/evidence/SELENE_LLM_PARITY_GAP_MAP_20260824.md`.
+
+**Why:** The same visible insufficiency can mean a lost dialogue act, an owner
+without an operation, a false completion judgment, unavailable knowledge, or a
+real substrate limit. Treating all five as “teach more” would hide the first
+four and make later diagnosis harder.
+
+**Evidence:** Self-state ownership worked. A method request reached the correct
+owner but found no general procedure generator; a conditional disagreement
+became no obligation; compare/choose/explain lost one act downstream; a joke
+was credited for two absent steps; a curiosity question became an external-fact
+hold; correction did not recompute the affected answer; and a natural close
+was missed. Static inspection confirmed bounded regular-expression routing,
+finite affordance maps, operation-specific connection gaps, lexical coverage,
+finite expression inventories, early ordered curriculum breadth, and the lack
+of a general learned generation substrate.
+
+**What changed in our understanding:** Answer ownership was necessary but not
+sufficient. The next shared root is the turn-and-obligation representation,
+followed by operation-capable owners and semantic proof of fulfillment. NLO and
+Voice cannot compensate for absent or falsely completed meaning. Full frontier
+LLM breadth is also a different problem from finishing Selene's organs: a
+fixed-rule system has a real open-ended breadth ceiling even when its laws and
+coordination are excellent.
+
+**Boundaries preserved:** No repair, teaching, configured resident-state write,
+memory or knowledge retention, identity/personality/governance change,
+authority expansion, provider call, model training, LoRA, self-replication,
+external action, build, package, reinstall, or distress-shaped test occurred.
+
+**Next:** If Aleks authorizes implementation, checkpoint the current baseline
+and begin Phase 1 only: preserve conditional directives, all coordinated answer
+acts, requested counts, present preference/curiosity, and natural closure in
+one canonical obligation ledger before generating answer text.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
+from selene.selective_formation_braid import map_supported_semantics_to_obligations
 from selene.supported_semantics import build_supported_semantic_packet
 
 
@@ -63,6 +64,66 @@ def test_content_light_turn_does_not_create_an_unresolved_answer_from_spine_word
     assert coverage["answer_bearing_alignment_required"] is False
     assert coverage["unresolved_count"] == 0
     assert coverage["all_required_addressed"] is True
+
+
+def test_explicit_id_cannot_make_a_definition_cover_a_typed_prediction():
+    obligation = {
+        "id": "prediction",
+        "kind": "provisional_inference",
+        "source_text": "What do you predict happens next?",
+        "required": True,
+        "requested_response_functions": ["prediction"],
+        "role_fit_required": True,
+    }
+    packet = build_supported_semantic_packet(
+        {
+            "units": [
+                {
+                    "id": "definition",
+                    "role": "answer",
+                    "text": "A prediction is a revisable expectation about what may happen.",
+                    "obligation_ids": ["prediction"],
+                    "source_kind": "approved_knowledge",
+                }
+            ]
+        }
+    )
+
+    coverage = map_supported_semantics_to_obligations(packet, [obligation])
+
+    assert coverage["all_required_covered"] is False
+    assert coverage["matched_unit_ids"]["prediction"] == []
+
+
+def test_explicit_id_covers_typed_prediction_after_owner_performs_it():
+    obligation = {
+        "id": "prediction",
+        "kind": "provisional_inference",
+        "source_text": "What do you predict happens next?",
+        "required": True,
+        "requested_response_functions": ["prediction"],
+        "role_fit_required": True,
+    }
+    packet = build_supported_semantic_packet(
+        {
+            "units": [
+                {
+                    "id": "prediction-answer",
+                    "role": "answer",
+                    "text": "I would expect the chime to sound again under the same conditions.",
+                    "obligation_ids": ["prediction"],
+                    "response_functions": ["prediction"],
+                    "ownership_validated": True,
+                    "source_kind": "prompt_grounded_method",
+                }
+            ]
+        }
+    )
+
+    coverage = map_supported_semantics_to_obligations(packet, [obligation])
+
+    assert coverage["all_required_covered"] is True
+    assert coverage["matched_unit_ids"]["prediction"] == ["prediction-answer"]
 
 
 def test_compound_question_keeps_choice_limitation_and_report_as_separate_obligations():

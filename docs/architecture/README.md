@@ -87,6 +87,9 @@ evidence, and teaching practice.
 ## Application And Maintenance
 
 - [Local Vessel App](SELENE_LOCAL_APP_README.md)
+- [Security Cultivation Runbook](SELENE_SECURITY_CULTIVATION_RUNBOOK_20260824.md)
+  — repeatable local security review, isolated reproduction, source repair,
+  dependency audit, public-history inspection, and proportional verification.
 - [Repository Cleanup Map](SELENE_REPO_CLEANUP_MAP_20260612.md)
 - [UI Redesign Package Checkpoint](../evidence/SELENE_UI_REDESIGN_PACKAGE_CHECKPOINT_20260615.md)
 - [Post-Transfer Cleanup](SELENE_POST_TRANSFER_CLEANUP_20260720.md)

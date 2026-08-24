@@ -144,6 +144,20 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
     requested_roles = _requested_roles(prompt, spine)
     candidate_roles = _candidate_roles(core_text, application_text, candidate)
     role_overlap = requested_roles & candidate_roles
+    requested_functions = _requested_response_functions(spine)
+    performed_functions = {
+        str(item).strip().lower()
+        for item in candidate.get("performed_response_functions") or []
+        if str(item).strip()
+    }
+    owner_only_functions = requested_functions & {
+        "action_scope", "comparison", "correction", "hypothesis",
+        "prediction", "preference", "reopening",
+    }
+    requested_operation_performed = bool(
+        not owner_only_functions
+        or owner_only_functions & performed_functions
+    )
     explicit_focus = _explicit_subject_focus(prompt, strong_subject_overlap)
     phrase_overlap = _phrase_overlap(prompt, " ".join((subject_text, core_text, application_text)))
     contextual = spine.get("contextual_follow_up") if isinstance(spine.get("contextual_follow_up"), dict) else {}
@@ -195,9 +209,14 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
                 and len(all_overlap) >= 3
                 and (not requested_roles or bool(role_overlap) or "application" in candidate_roles)
             )
-            accepted = direct_subject or transfer_application
+            accepted = bool(
+                requested_operation_performed
+                and (direct_subject or transfer_application)
+            )
             reason = (
-                "approved_knowledge_subject_aligned"
+                "approved_knowledge_describes_but_does_not_perform_requested_operation"
+                if not requested_operation_performed
+                else "approved_knowledge_subject_aligned"
                 if direct_subject
                 else "approved_knowledge_application_aligned"
                 if transfer_application
@@ -224,6 +243,10 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
             "requested_roles": sorted(requested_roles),
             "candidate_roles": sorted(candidate_roles),
             "matched_roles": sorted(role_overlap),
+            "requested_response_functions": sorted(requested_functions),
+            "performed_response_functions": sorted(performed_functions),
+            "owner_only_response_functions": sorted(owner_only_functions),
+            "requested_operation_performed": requested_operation_performed,
             "explicit_subject_focus": explicit_focus,
             "phrase_overlap": phrase_overlap,
             "explicit_memory_recall": explicit_recall,
@@ -262,6 +285,16 @@ def _requested_roles(prompt: str, spine: dict[str, Any]) -> set[str]:
         elif kind in {"method", "plan", "direct_request"}:
             roles.add("method")
     return roles
+
+
+def _requested_response_functions(spine: dict[str, Any]) -> set[str]:
+    return {
+        str(function).strip().lower()
+        for obligation in spine.get("open_obligations") or []
+        if isinstance(obligation, dict)
+        for function in obligation.get("requested_response_functions") or []
+        if str(function).strip()
+    }
 
 
 def _candidate_roles(core_text: str, application_text: str, candidate: dict[str, Any]) -> set[str]:

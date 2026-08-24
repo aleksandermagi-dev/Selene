@@ -131,6 +131,10 @@ def prepare_dialogue_turn(
             "question": question,
             "status": "open",
             "topic": _topic(question) or active_topic,
+            "age_turns": 0,
+            "lifecycle_state": "active_current_turn",
+            "eligible_current_turn": True,
+            "hold_reason": "",
         }
         for index, question in enumerate(questions)
     ]
@@ -288,6 +292,17 @@ def prepare_dialogue_turn(
         )
     ) and str(active_thread.get("topic") or "").strip():
         active_topic = truncate(str(active_thread.get("topic") or ""), 500)
+    loops, retired_loops = _advance_loop_lifecycle(
+        loops,
+        new_loop_ids=new_loop_ids,
+        active_thread_id=active_thread_id,
+        active_topic=active_topic,
+        current_text=interpreted_text,
+        contextual_follow_up=contextual_follow_up,
+        correction=correction,
+        intent=str(intent.get("intent") or ""),
+        returned_to_prior_thread=returned_to_prior_thread,
+    )
     braided_side_topics = [
         str(item.get("topic") or "")
         for item in thread_braid.get("threads") or []
@@ -358,7 +373,10 @@ def prepare_dialogue_turn(
             protected_thread_ids=protected_thread_ids_for_workspace(prior),
             unresolved_first=True,
         ),
-        "completed_loops": list(prior.get("completed_loops") or [])[-30:],
+        "completed_loops": [
+            *list(prior.get("completed_loops") or []),
+            *retired_loops,
+        ][-30:],
         "corrections": retain_structural_records(
             [item for item in corrections if isinstance(item, dict)],
             limit=32,
@@ -406,13 +424,48 @@ def record_dialogue_response(
     coverage = payload.get("coverage_evaluation") if isinstance(payload.get("coverage_evaluation"), dict) else {}
     answered_source = coverage.get("answered_loop_ids") if coverage else payload.get("answered_loop_ids")
     answered_ids = {str(item) for item in answered_source or [] if str(item)}
+    coverage_by_loop = {
+        str(item.get("loop_id") or ""): item
+        for item in coverage.get("items") or []
+        if isinstance(item, dict) and str(item.get("loop_id") or "")
+    }
     open_loops = []
     completed = list(state.get("completed_loops") or [])
     for item in state.get("open_loops") or []:
         if isinstance(item, dict) and str(item.get("id") or "") in answered_ids:
-            completed.append({**item, "status": "answered_in_current_turn"})
+            completed.append(
+                {
+                    **item,
+                    "status": "answered_in_current_turn",
+                    "lifecycle_state": "completed",
+                    "eligible_current_turn": False,
+                    "hold_reason": "",
+                }
+            )
         else:
-            open_loops.append(item)
+            loop_id = str(item.get("id") or "") if isinstance(item, dict) else ""
+            loop_coverage = coverage_by_loop.get(loop_id, {})
+            resolution_state = str(loop_coverage.get("resolution_state") or "")
+            if isinstance(item, dict):
+                open_loops.append(
+                    {
+                        **item,
+                        "status": (
+                            "supported_hold"
+                            if resolution_state in {"explicitly_held", "supported_route"}
+                            else "open"
+                        ),
+                        "lifecycle_state": "held_for_supported_return",
+                        "eligible_current_turn": False,
+                        "hold_reason": (
+                            resolution_state
+                            if resolution_state in {"explicitly_held", "supported_route"}
+                            else "unanswered_current_turn"
+                        ),
+                    }
+                )
+            else:
+                open_loops.append(item)
     pragmatics = state.get("pragmatics") if isinstance(state.get("pragmatics"), dict) else {}
     conversation_spine = (
         payload.get("conversation_spine")
@@ -621,6 +674,101 @@ def _active_topic(text: str, prior: str, intent: str, *, preserve_prior: bool = 
     if intent in {"greeting", "farewell", "gratitude", "affirmation", "reassurance_received", "warm_connection"}:
         return prior
     return _topic(text) or prior
+
+
+def _advance_loop_lifecycle(
+    loops: list[Any],
+    *,
+    new_loop_ids: set[str],
+    active_thread_id: str,
+    active_topic: str,
+    current_text: str,
+    contextual_follow_up: dict[str, Any],
+    correction: dict[str, Any],
+    intent: str,
+    returned_to_prior_thread: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Preserve unanswered questions without making them perpetual authority."""
+
+    active: list[dict[str, Any]] = []
+    retired: list[dict[str, Any]] = []
+    callback_kind = str(contextual_follow_up.get("kind") or "")
+    explicit_return = bool(
+        returned_to_prior_thread
+        or contextual_follow_up.get("preserve_active_topic") is True
+        or callback_kind in {
+            "named_callback",
+            "reason_follow_up",
+            "alternative_reference",
+            "session_summary_request",
+        }
+    )
+    current_terms = set(_topic(current_text).split())
+    correction_active = correction.get("detected") is True or intent == "correction"
+
+    for raw in loops:
+        if not isinstance(raw, dict):
+            continue
+        item = dict(raw)
+        loop_id = str(item.get("id") or "")
+        if loop_id in new_loop_ids:
+            active.append(
+                {
+                    **item,
+                    "thread_id": str(item.get("thread_id") or active_thread_id),
+                    "age_turns": 0,
+                    "lifecycle_state": "active_current_turn",
+                    "eligible_current_turn": True,
+                    "hold_reason": "",
+                }
+            )
+            continue
+
+        age = int(item.get("age_turns") or 0) + 1
+        loop_thread = str(item.get("thread_id") or "")
+        same_thread = bool(active_thread_id and loop_thread == active_thread_id)
+        loop_terms = set(_topic(str(item.get("question") or item.get("topic") or "")).split())
+        topic_overlap = len(current_terms & loop_terms)
+
+        if intent == "farewell":
+            retired.append(
+                {
+                    **item,
+                    "age_turns": age,
+                    "status": "closed_on_conversation_end",
+                    "lifecycle_state": "closed",
+                    "eligible_current_turn": False,
+                    "hold_reason": "conversation_closed",
+                }
+            )
+            continue
+        if correction_active and (same_thread or topic_overlap >= 1):
+            retired.append(
+                {
+                    **item,
+                    "age_turns": age,
+                    "status": "superseded_by_correction",
+                    "lifecycle_state": "superseded",
+                    "eligible_current_turn": False,
+                    "hold_reason": "current_correction_replaced_prior_obligation",
+                }
+            )
+            continue
+
+        # Returning to a thread does not reopen every unanswered question on
+        # that thread. The current wording must also identify the old subject.
+        released = bool(explicit_return and topic_overlap >= 2)
+        active.append(
+            {
+                **item,
+                "age_turns": age,
+                "status": "open" if released else "held_for_relevance",
+                "lifecycle_state": "released_for_callback" if released else "held_for_supported_return",
+                "eligible_current_turn": released,
+                "hold_reason": "" if released else "not_selected_by_current_topic_or_thread",
+            }
+        )
+    return active, retired
 
 
 def _topic(text: str) -> str:

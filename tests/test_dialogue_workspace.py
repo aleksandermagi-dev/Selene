@@ -106,6 +106,96 @@ def test_dialogue_workspace_closes_only_questions_covered_by_visible_response(tm
     assert recorded["pragmatics"]["last_response_coverage"]["all_required_addressed"] is False
 
 
+def test_unanswered_loop_is_preserved_but_does_not_silently_enter_a_new_topic(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    first_text = "How can I make a paper pinwheel spin?"
+    first = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": first_text,
+            "intent_decision": classify_chat_intent(first_text),
+        },
+    )
+    record_dialogue_response(
+        conn,
+        {
+            "session_id": session_id,
+            "candidate_text": "I need to work that through more carefully.",
+            "coverage_evaluation": {"answered_loop_ids": [], "items": []},
+        },
+    )
+
+    second_text = "Tell me something playful about the garden."
+    second = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": second_text,
+            "intent_decision": classify_chat_intent(second_text),
+        },
+    )
+    plan = build_pragmatic_plan({"prompt": second_text, "dialogue_workspace": second})
+
+    prior_loop = next(item for item in second["open_loops"] if item["id"] in first["new_loop_ids"])
+    assert prior_loop["lifecycle_state"] == "held_for_supported_return"
+    assert prior_loop["eligible_current_turn"] is False
+    assert all(item.get("loop_id") != prior_loop["id"] for item in plan["response_obligations"])
+
+
+def test_named_callback_releases_a_preserved_loop_and_correction_supersedes_it(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    first_text = "Which pinwheel material should we use?"
+    first = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": first_text,
+            "intent_decision": classify_chat_intent(first_text),
+        },
+    )
+    record_dialogue_response(
+        conn,
+        {
+            "session_id": session_id,
+            "candidate_text": "I am holding that question for a supported return.",
+            "coverage_evaluation": {"answered_loop_ids": [], "items": []},
+        },
+    )
+
+    callback_text = "Back to the pinwheel material question."
+    callback = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": callback_text,
+            "intent_decision": classify_chat_intent(callback_text),
+            "contextual_follow_up": {
+                "detected": True,
+                "kind": "named_callback",
+                "preserve_active_topic": True,
+            },
+        },
+    )
+    released = next(item for item in callback["open_loops"] if item["id"] in first["new_loop_ids"])
+    assert released["lifecycle_state"] == "released_for_callback"
+    assert released["eligible_current_turn"] is True
+
+    correction_text = "Actually, I meant the paper shape, not the material."
+    corrected = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": correction_text,
+            "intent_decision": classify_chat_intent(correction_text),
+            "conversation_events": [{"role": "selene", "preview": "We were comparing pinwheel materials."}],
+        },
+    )
+    retired = next(item for item in corrected["completed_loops"] if item["id"] in first["new_loop_ids"])
+    assert retired["status"] == "superseded_by_correction"
+    assert retired["lifecycle_state"] == "superseded"
+
+
 def test_dialogue_workspace_resolves_immediate_reference_and_session_preference(tmp_path):
     conn, session_id = _conn(tmp_path)
     prepare_dialogue_turn(

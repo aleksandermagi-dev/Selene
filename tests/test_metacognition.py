@@ -384,6 +384,58 @@ def test_incomplete_answer_handoff_names_the_exact_obligation_and_coalition_owne
     _assert_bounded(result)
 
 
+def test_typed_answer_owner_can_reclassify_one_wrong_coalition_assignment():
+    result = evaluate_metacognition(
+        {
+            "prompt": "What do you predict happens next?",
+            "candidate_text": "A prediction is a revisable expectation.",
+            "response_coverage": {
+                "addressed_count": 0,
+                "unresolved_count": 1,
+                "items": [
+                    {
+                        "obligation_id": "prediction-1",
+                        "kind": "provisional_inference",
+                        "answer_act": "prompt_grounded_prediction",
+                        "responsible_owner": "intelligence_os",
+                        "requested_response_functions": ["prediction"],
+                        "addressed": False,
+                    }
+                ],
+            },
+            "epistemic_answer_state": {
+                "missing_parts": [
+                    {
+                        "obligation_id": "prediction-1",
+                        "state": "missing_supported_basis",
+                        "missing_ground": "the requested prediction was not performed",
+                    }
+                ]
+            },
+            "organ_coalition": {
+                "obligation_owner_map": [
+                    {
+                        "obligation_id": "prediction-1",
+                        "responsible_owner": "comprehension_integration",
+                    }
+                ]
+            },
+            "answer_engine_support": {"used": False},
+            "intelligence_os_support": {"used": True},
+        }
+    )
+
+    handoff = result["feedback_handoff"]
+    assert handoff["responsible_owner"] == "intelligence_os"
+    assert handoff["owner_reclassification_required"] is True
+    assert handoff["owner_reclassified_from"] == "comprehension_integration"
+    assert handoff["owner_reclassified_to"] == "intelligence_os"
+    assert handoff["owner_reclassification_count"] == 1
+    assert handoff["owner_reclassification_limit"] == 1
+    assert handoff["owner_reclassification_recursive"] is False
+    _assert_bounded(result)
+
+
 def test_unused_answer_engine_packet_does_not_capture_missing_mechanism_retry():
     result = evaluate_metacognition(
         {

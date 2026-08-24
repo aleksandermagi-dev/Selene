@@ -925,9 +925,19 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             candidate["obligation_ids"] = [
                 str((conversation_spine.get("open_obligations") or [])[0].get("id") or "")
             ]
+    visible_arbitration_candidates = _formation_braid_candidates(
+        visible_speech_candidates,
+        answer_engine_support=answer_engine_support,
+        comprehension=comprehension,
+        memory_supported_semantics=memory_supported_semantics,
+        self_state=self_state,
+        intelligence_support=intelligence_support,
+        exploratory_reasoning=exploratory_reasoning,
+        apply_primary_filter=False,
+    )
     visible_speech_seed = select_visible_speech_seed(
         meaning_text,
-        visible_speech_candidates,
+        visible_arbitration_candidates,
         conversation_spine=conversation_spine,
     )
     bounded_hypothesis = (
@@ -971,13 +981,18 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     selected_supported_semantics = next(
         (
             item.get("supported_semantics")
-            for item in precompletion_formation_candidates
+            for item in visible_arbitration_candidates
             if str(item.get("source_id") or "")
             == str(visible_speech_seed.get("selected_source_id") or "")
             and isinstance(item.get("supported_semantics"), dict)
             and item.get("supported_semantics")
         ),
         {},
+    )
+    selected_supported_semantics = _bind_current_owner_semantics(
+        selected_supported_semantics,
+        source_id=str(visible_speech_seed.get("selected_source_id") or ""),
+        obligations=conversation_spine.get("open_obligations") or [],
     )
     content_seed = str(visible_speech_seed.get("content_seed") or "")
     answer_completion = build_bounded_answer_completion(
@@ -2876,6 +2891,7 @@ def _formation_braid_candidates(
     self_state: dict[str, Any],
     intelligence_support: dict[str, Any],
     exploratory_reasoning: dict[str, Any] | None = None,
+    apply_primary_filter: bool = True,
 ) -> list[dict[str, Any]]:
     answer_packet = (
         answer_engine_support.get("answer_packet")
@@ -2952,11 +2968,15 @@ def _formation_braid_candidates(
     for candidate in candidates:
         source_id = str(candidate.get("source_id") or "")
         if (
+            apply_primary_filter
+            and
             exploratory.get("selected_for_answer") is True
             and source_id != "exploratory_reasoning"
         ):
             continue
         if (
+            apply_primary_filter
+            and
             exploratory.get("selected_for_answer") is not True
             and
             hypothesis_attempt.get("selected_for_answer") is True
@@ -2973,10 +2993,59 @@ def _formation_braid_candidates(
                     source_id == "answer_engine"
                     and str(answer_packet.get("domain") or "")
                     in {"verified_math", "source_backed_research"}
+                    and answer_engine_support.get("route_validated_for_exactness") is True
                 ),
             }
         )
     return result
+
+
+def _bind_current_owner_semantics(
+    packet: dict[str, Any] | None,
+    *,
+    source_id: str,
+    obligations: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Bind only a source's intrinsically owned current-turn answer act.
+
+    This is intentionally narrow. It lets a grounded self-state packet retain
+    the self-state obligation it already owns; it does not allow generic
+    knowledge or an arbitrary producer to certify its own relevance.
+    """
+
+    if not isinstance(packet, dict) or not packet:
+        return packet or {}
+    if source_id != "grounded_self_state":
+        return packet
+    owner_ids = [
+        str(item.get("id") or "")
+        for item in obligations
+        if isinstance(item, dict)
+        and str(item.get("responsible_owner") or "") == "self_state"
+        and str(item.get("answer_act") or "") == "current_self_state_report"
+        and str(item.get("id") or "")
+    ]
+    if not owner_ids:
+        return packet
+    units = []
+    for raw in packet.get("units") or []:
+        if not isinstance(raw, dict):
+            continue
+        units.append(
+            {
+                **raw,
+                "obligation_ids": list(dict.fromkeys([
+                    *[str(item) for item in raw.get("obligation_ids") or [] if str(item)],
+                    *owner_ids,
+                ])),
+                "response_functions": list(dict.fromkeys([
+                    *[str(item) for item in raw.get("response_functions") or [] if str(item)],
+                    "self_state",
+                ])),
+                "ownership_validated": True,
+            }
+        )
+    return {**packet, "units": units}
 
 
 def _figurative_response_seed(packet: dict[str, Any]) -> str:
@@ -3463,6 +3532,7 @@ def _answer_engine_support(
         "claim_evidence_packet": {},
         "adapter_executed": False,
         "answer_generated": False,
+        "route_validated_for_exactness": False,
         "local_code_chat_connected": False,
         "source_packets_retained_as_knowledge": False,
         "memory_write_active": False,
@@ -3811,6 +3881,15 @@ def _answer_engine_support(
         "completion_retry": result.get("completion_retry") or {},
         "adapter_executed": result.get("adapter_executed") is True,
         "answer_generated": result.get("answer_generated") is True,
+        "route_validated_for_exactness": bool(
+            domain in {"verified_math", "source_backed_research"}
+            and any(
+                str(item.get("selected_domain") or "") == domain
+                and str(item.get("responsible_owner") or "") == "answer_engine"
+                and item.get("executable_in_chat") is True
+                for item in executable_units
+            )
+        ),
         "source_research": result.get("source_research") or {},
         "math_verification": result.get("math_verification") or {},
         "status": result.get("status") or "answer_engine_result_ready",

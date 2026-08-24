@@ -4,6 +4,7 @@ import re
 from hashlib import sha256
 from typing import Any
 
+from .answer_ownership import enrich_obligation_ownership
 from .registry import truncate
 
 
@@ -51,7 +52,13 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
         for item in pragmatics.get("question_units") or []
         if str(item).strip() and not _is_response_format_directive(str(item))
     ]
-    open_loops = [item for item in dialogue.get("open_loops") or [] if isinstance(item, dict)]
+    open_loops = [
+        item
+        for item in dialogue.get("open_loops") or []
+        if isinstance(item, dict)
+        and item.get("eligible_current_turn") is not False
+        and str(item.get("lifecycle_state") or "") not in {"closed", "completed", "superseded"}
+    ]
     new_ids = {str(item) for item in dialogue.get("new_loop_ids") or [] if str(item)}
     relevant_loops = [item for item in open_loops if not new_ids or str(item.get("id") or "") in new_ids]
     reference = pragmatics.get("resolved_reference") if isinstance(pragmatics.get("resolved_reference"), dict) else None
@@ -148,6 +155,10 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
         else {}
     )
     obligations = _bind_obligations_to_threads(obligations, thread_braid)
+    obligations = [
+        enrich_obligation_ownership(item, intent_decision=intent)
+        for item in obligations
+    ]
     content_seed = truncate(str(payload.get("content_seed") or ""), 1800)
     response_units = [
         {
@@ -392,6 +403,15 @@ def evaluate_response_coverage(
                 "obligation_id": obligation_id,
                 "loop_id": loop_id,
                 "kind": kind,
+                "answer_act": str(obligation.get("answer_act") or ""),
+                "responsible_owner": str(obligation.get("responsible_owner") or ""),
+                "answer_domain": str(obligation.get("answer_domain") or ""),
+                "requested_response_functions": [
+                    str(item)
+                    for item in obligation.get("requested_response_functions") or []
+                    if str(item)
+                ],
+                "answer_ownership_classified": obligation.get("answer_ownership_classified") is True,
                 "addressed": addressed,
                 "resolved_for_release": resolved_for_release,
                 "resolution_state": resolution_state,

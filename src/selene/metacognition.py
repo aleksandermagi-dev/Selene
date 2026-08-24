@@ -576,6 +576,12 @@ def _feedback_handoff(
     )
     target_id = str(target.get("obligation_id") or "")
     mapped_owner = _coalition_owner_for_obligation(organ_coalition, target_id)
+    typed_owner = str(target.get("responsible_owner") or "")
+    owner_mismatch = bool(
+        typed_owner
+        and mapped_owner
+        and typed_owner != mapped_owner
+    )
     missing_state = str(target.get("state") or "")
     if action == "defer_to_core_mind" or hard_boundary:
         owner = "core_mind"
@@ -585,7 +591,7 @@ def _feedback_handoff(
         "complete_missing_obligation",
         "answer_with_qualification",
     }:
-        owner = mapped_owner or _owner_for_missing_state(
+        owner = typed_owner or mapped_owner or _owner_for_missing_state(
             missing_state,
             answer_engine=answer_engine,
             intelligence=intelligence,
@@ -625,6 +631,13 @@ def _feedback_handoff(
         "target_missing_state": missing_state,
         "target_missing_ground": truncate(str(target.get("missing_ground") or ""), 500),
         "owner_selected_from_coalition_map": bool(mapped_owner),
+        "typed_answer_owner": typed_owner,
+        "owner_reclassification_required": owner_mismatch,
+        "owner_reclassified_from": mapped_owner if owner_mismatch else "",
+        "owner_reclassified_to": typed_owner if owner_mismatch else "",
+        "owner_reclassification_count": 1 if owner_mismatch and cycle_requested else 0,
+        "owner_reclassification_limit": 1,
+        "owner_reclassification_recursive": False,
         "exact_obligation_required": action == "complete_missing_obligation",
         "single_cycle_requested": cycle_requested,
         "single_cycle_limit": MAX_REOPEN_CYCLES,
@@ -673,7 +686,24 @@ def _unresolved_feedback_target(
             None,
         )
         if matching:
-            return matching
+            coverage_item = next(
+                (
+                    item
+                    for item in coverage.get("items") or []
+                    if isinstance(item, dict)
+                    and str(item.get("obligation_id") or "") == obligation_id
+                ),
+                {},
+            )
+            return {
+                **coverage_item,
+                **matching,
+                "responsible_owner": str(
+                    coverage_item.get("responsible_owner")
+                    or matching.get("responsible_owner")
+                    or ""
+                ),
+            }
         coverage_item = next(
             (
                 item
@@ -686,6 +716,10 @@ def _unresolved_feedback_target(
         return {
             "obligation_id": obligation_id,
             "requested_kind": str(coverage_item.get("kind") or ""),
+            "answer_act": str(coverage_item.get("answer_act") or ""),
+            "responsible_owner": str(coverage_item.get("responsible_owner") or ""),
+            "answer_domain": str(coverage_item.get("answer_domain") or ""),
+            "requested_response_functions": coverage_item.get("requested_response_functions") or [],
             "state": "missing_supported_basis",
             "missing_ground": "the requested response obligation remains unsupported",
         }

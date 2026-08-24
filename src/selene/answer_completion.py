@@ -96,6 +96,23 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
         if obligation_id not in missing_ids or obligation.get("required") is False:
             continue
         kind = str(obligation.get("kind") or "direct_question")
+        completion_policy = str(obligation.get("completion_policy") or "")
+        if completion_policy == "preserve_current_owner":
+            resolutions.append(
+                {
+                    "obligation_id": obligation_id,
+                    "kind": kind,
+                    "resolution": "preserved_for_current_answer_owner",
+                    "source_class": "conversation",
+                    "concept_id": None,
+                    "source_refs": [],
+                    "unsupported": False,
+                    "missing_ground": "",
+                    "visible_fragment": "",
+                    "added_to_answer": False,
+                }
+            )
+            continue
         source_text = truncate(str(obligation.get("source_text") or prompt), 700)
         reasoning_text = truncate(
             source_text
@@ -141,6 +158,29 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
                 source_class = "conversation"
             else:
                 source_class = "reasoning_answer"
+        if (
+            not fragment
+            and obligation.get("answer_ownership_classified") is True
+            and obligation.get("external_evidence_required") is not True
+        ):
+            # A current preference, hypothesis, prediction, comparison, or
+            # action-scoping act must be performed by its typed owner. It must
+            # not be converted into an external-fact refusal by completion.
+            resolutions.append(
+                {
+                    "obligation_id": obligation_id,
+                    "kind": kind,
+                    "resolution": "held_for_typed_answer_owner",
+                    "source_class": "conversation",
+                    "concept_id": None,
+                    "source_refs": [],
+                    "unsupported": False,
+                    "missing_ground": "",
+                    "visible_fragment": "",
+                    "added_to_answer": False,
+                }
+            )
+            continue
         if not fragment:
             fragment, missing_ground = _unsupported_fragment(obligation)
             support_kind = "explicit_unsupported_part"
@@ -337,6 +377,12 @@ def _completion_semantic_unit(
         "certainty": "missing_ground_explicit" if unsupported else "bounded_supported_completion",
         "scope": "current_dialogue_obligation_only",
         "obligation_ids": [str(obligation.get("id") or "")],
+        "response_functions": [
+            str(item)
+            for item in obligation.get("requested_response_functions") or []
+            if str(item)
+        ],
+        "ownership_validated": not unsupported,
         "meaning_keys": _terms(
             " ".join(
                 [

@@ -5,6 +5,7 @@ from typing import Any
 
 from .conversation_spine import evaluate_candidate_compatibility
 from .registry import truncate
+from .selective_formation_braid import map_supported_semantics_to_obligations
 
 
 VISIBLE_SPEECH_BOUNDARY = (
@@ -87,7 +88,13 @@ def select_visible_speech_seed(
     conversation_spine: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     inspected: list[dict[str, Any]] = []
-    for candidate in candidates:
+    accepted_candidates: list[dict[str, Any]] = []
+    obligations = [
+        item
+        for item in (conversation_spine or {}).get("open_obligations") or []
+        if isinstance(item, dict) and item.get("required") is not False
+    ]
+    for index, candidate in enumerate(candidates):
         source_id = truncate(str(candidate.get("source_id") or "unknown"), 120)
         source_class = truncate(str(candidate.get("source_class") or "diagnostic_metadata"), 80)
         text = _truncate_speech_text(str(candidate.get("text") or ""), 5000)
@@ -151,32 +158,60 @@ def select_visible_speech_seed(
             )
             continue
         inspection = inspect_visible_speech(text, prompt=prompt, source_id=source_id)
-        inspected.append(
-            {
-                "source_id": source_id,
-                "source_class": source_class,
-                "accepted": inspection["release_allowed"],
-                "reason": "visible_supported_meaning" if inspection["release_allowed"] else "internal_scaffolding_detected",
-                "issues": inspection["issues"],
-                "conversation_spine_compatibility": compatibility,
-            }
+        arbitration = _candidate_fulfillment(
+            candidate,
+            source_id=source_id,
+            source_class=source_class,
+            obligations=obligations,
+            index=index,
         )
+        inspection_record = {
+            "source_id": source_id,
+            "source_class": source_class,
+            "accepted": inspection["release_allowed"],
+            "reason": "visible_supported_meaning" if inspection["release_allowed"] else "internal_scaffolding_detected",
+            "issues": inspection["issues"],
+            "conversation_spine_compatibility": compatibility,
+            "fulfillment_arbitration": arbitration,
+        }
+        inspected.append(inspection_record)
         if inspection["release_allowed"]:
-            return {
-                "status": "visible_speech_seed_selected",
-                "content_seed": text,
-                "selected_source_id": source_id,
-                "selected_source_class": source_class,
-                "obligation_ids": [
-                    str(item)
-                    for item in candidate.get("obligation_ids") or []
-                    if str(item)
-                ],
-                "inspected_candidates": inspected,
-                "conversation_spine_used": bool(conversation_spine),
-                "release_allowed": True,
-                "provenance_boundary": VISIBLE_SPEECH_BOUNDARY,
-            }
+            accepted_candidates.append(
+                {
+                    "candidate": candidate,
+                    "text": text,
+                    "source_id": source_id,
+                    "source_class": source_class,
+                    "arbitration": arbitration,
+                }
+            )
+    if accepted_candidates:
+        selected = max(
+            accepted_candidates,
+            key=lambda item: tuple(item["arbitration"]["rank"]),
+        )
+        candidate = selected["candidate"]
+        return {
+            "status": "visible_speech_seed_selected",
+            "content_seed": selected["text"],
+            "selected_source_id": selected["source_id"],
+            "selected_source_class": selected["source_class"],
+            "obligation_ids": [
+                str(item)
+                for item in candidate.get("obligation_ids") or []
+                if str(item)
+            ],
+            "inspected_candidates": inspected,
+            "candidate_arbitration": {
+                "mode": "compatible_obligation_fulfillment",
+                "selected_rank": selected["arbitration"]["rank"],
+                "accepted_candidate_count": len(accepted_candidates),
+                "first_accepted_is_automatic_winner": False,
+            },
+            "conversation_spine_used": bool(conversation_spine),
+            "release_allowed": True,
+            "provenance_boundary": VISIBLE_SPEECH_BOUNDARY,
+        }
     return {
         "status": "visible_speech_seed_unavailable",
         "content_seed": "",
@@ -187,6 +222,95 @@ def select_visible_speech_seed(
         "release_allowed": False,
         "provenance_boundary": VISIBLE_SPEECH_BOUNDARY,
     }
+
+
+def _candidate_fulfillment(
+    candidate: dict[str, Any],
+    *,
+    source_id: str,
+    source_class: str,
+    obligations: list[dict[str, Any]],
+    index: int,
+) -> dict[str, Any]:
+    packet = (
+        candidate.get("supported_semantics")
+        if isinstance(candidate.get("supported_semantics"), dict)
+        else {}
+    )
+    semantic = map_supported_semantics_to_obligations(packet, obligations)
+    semantic_ids = set(semantic.get("covered_ids") or [])
+    explicit_ids = {
+        str(item)
+        for item in candidate.get("obligation_ids") or []
+        if str(item)
+    }
+    candidate_owner = _candidate_owner(source_id, source_class)
+    relevant_ids = semantic_ids | explicit_ids
+    if not relevant_ids and len(obligations) == 1:
+        relevant_ids = {str(obligations[0].get("id") or "")}
+    owner_fit_ids = [
+        str(item.get("id") or "")
+        for item in obligations
+        if str(item.get("id") or "") in relevant_ids
+        and _owner_matches(candidate_owner, str(item.get("responsible_owner") or ""))
+    ]
+    obligation_by_id = {
+        str(item.get("id") or ""): item
+        for item in obligations
+        if str(item.get("id") or "")
+    }
+    owner_valid_semantic_ids = {
+        obligation_id
+        for obligation_id in semantic_ids
+        if obligation_by_id.get(obligation_id, {}).get("role_fit_required") is not True
+        or _owner_matches(
+            candidate_owner,
+            str(obligation_by_id.get(obligation_id, {}).get("responsible_owner") or ""),
+        )
+    }
+    validated_ids = owner_valid_semantic_ids | set(owner_fit_ids)
+    exactness_eligible = bool(candidate.get("exactness_lock") is True and owner_fit_ids)
+    rank = [
+        len(validated_ids),
+        len(owner_fit_ids),
+        1 if exactness_eligible else 0,
+        -index,
+    ]
+    return {
+        "rank": rank,
+        "candidate_owner": candidate_owner,
+        "semantic_fulfillment_ids": sorted(semantic_ids),
+        "owner_fit_ids": owner_fit_ids,
+        "validated_fulfillment_ids": sorted(validated_ids),
+        "exactness_eligible_after_owner_fit": exactness_eligible,
+    }
+
+
+def _candidate_owner(source_id: str, source_class: str) -> str:
+    if source_class == "boundary_response" or source_id == "core_mind_boundary":
+        return "core_mind"
+    if source_id == "grounded_self_state" or source_class == "self_state":
+        return "self_state"
+    if source_id == "answer_engine" or source_class == "domain_answer":
+        return "answer_engine"
+    if source_id == "approved_comprehension" or source_class == "approved_knowledge":
+        return "comprehension_integration"
+    if source_id in {"intelligence_os_answer", "exploratory_reasoning", "structural_discovery"}:
+        return "intelligence_os"
+    if source_class == "memory_reconstruction":
+        return "approved_memory_retrieval"
+    return "ordinary_conversation_path"
+
+
+def _owner_matches(candidate_owner: str, required_owner: str) -> bool:
+    if not required_owner:
+        return False
+    if candidate_owner == required_owner:
+        return True
+    return {
+        candidate_owner,
+        required_owner,
+    } <= {"ordinary_conversation_path", "conversation_content_owner"}
 
 
 def inspect_visible_speech(

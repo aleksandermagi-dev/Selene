@@ -899,6 +899,20 @@ def _normalize_obligation(item: dict[str, Any]) -> dict[str, Any]:
         "thread_action": str(item.get("thread_action") or ""),
         "thread_traversal_index": int(item.get("thread_traversal_index") or 0),
         "dependency_thread_id": str(item.get("dependency_thread_id") or ""),
+        "answer_act": str(item.get("answer_act") or "direct_conversation_answer"),
+        "epistemic_basis": str(item.get("epistemic_basis") or "current_turn_conversation"),
+        "responsible_owner": str(item.get("responsible_owner") or "ordinary_conversation_path"),
+        "answer_domain": str(item.get("answer_domain") or "ordinary_conversation"),
+        "external_evidence_required": item.get("external_evidence_required") is True,
+        "completion_policy": str(
+            item.get("completion_policy")
+            or "owner_may_complete_from_current_turn_support"
+        ),
+        "requested_response_functions": _text_list(
+            item.get("requested_response_functions"), limit=8
+        ),
+        "role_fit_required": item.get("role_fit_required") is True,
+        "answer_ownership_classified": item.get("answer_ownership_classified") is True,
     }
 
 

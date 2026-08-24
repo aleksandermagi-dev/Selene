@@ -85,6 +85,7 @@ def map_supported_semantics_to_obligations(
         obligation_map = {
             str(item.get("id") or f"obligation_{index + 1}"): {
                 "functions": _obligation_functions(item),
+                "role_fit_required": item.get("role_fit_required") is True,
                 "terms": _terms(
                     " ".join(
                         [
@@ -107,8 +108,27 @@ def map_supported_semantics_to_obligations(
                 if str(item) in obligation_map
             }
             for obligation_id in explicit_ids:
-                matches[obligation_id].append(unit_id)
-                match_basis[obligation_id].append("explicit_obligation_id")
+                obligation = obligation_map[obligation_id]
+                requested_functions = obligation["functions"]
+                specialized = requested_functions - {"answer"}
+                unit_functions = _unit_response_functions(unit)
+                function_match = bool(
+                    unit_functions & (specialized or requested_functions)
+                )
+                meaning_match = _meaningful_overlap(
+                    _unit_terms(unit), obligation["terms"]
+                )
+                ownership_validated = unit.get("ownership_validated") is True
+                if (
+                    not obligation["role_fit_required"]
+                    or function_match and (meaning_match or ownership_validated)
+                ):
+                    matches[obligation_id].append(unit_id)
+                    match_basis[obligation_id].append(
+                        "validated_explicit_obligation_id"
+                        if obligation["role_fit_required"]
+                        else "explicit_obligation_id"
+                    )
             if explicit_ids:
                 continue
 
@@ -670,7 +690,14 @@ def _obligation_functions(obligation: dict[str, Any]) -> set[str]:
             str(obligation.get("goal") or ""),
         ]
     ).lower()
-    functions = {"answer"}
+    functions = {
+        "answer",
+        *{
+            str(item).strip().lower()
+            for item in obligation.get("requested_response_functions") or []
+            if str(item).strip()
+        },
+    }
     if kind == "reason" or re.search(r"\b(?:why|reason|cause|mechanism|explain)\b", source_text):
         functions.add("reason")
     if kind == "method" or re.search(
@@ -723,6 +750,11 @@ def _unit_obligation_ids(
 
 
 def _unit_response_functions(unit: dict[str, Any]) -> set[str]:
+    declared = {
+        str(item).strip().lower()
+        for item in unit.get("response_functions") or []
+        if str(item).strip()
+    }
     role = str(unit.get("role") or "answer").lower()
     relation = str(unit.get("relation") or "").lower()
     if role == "support":
@@ -734,21 +766,21 @@ def _unit_response_functions(unit: dict[str, Any]) -> set[str]:
             ]
         ).lower()
         if re.search(r"\b(?:step|first|then|through|method|process|by)\b", text):
-            return {"reason", "method"}
-        return {"reason"}
+            return declared | {"reason", "method"}
+        return declared | {"reason"}
     if role == "example" or relation == "example":
-        return {"example"}
+        return declared | {"example"}
     if role in {"limit", "condition"} or relation == "condition":
-        return {"limit", "method"} if role == "condition" else {"limit"}
+        return declared | ({"limit", "method"} if role == "condition" else {"limit"})
     if role == "contrast" or relation == "contrast":
-        return {"contrast"}
+        return declared | {"contrast"}
     if role == "reopening" or relation == "return":
-        return {"reopening"}
+        return declared | {"reopening"}
     if role == "conclusion" and relation == "conclusion":
-        return {"answer"}
+        return declared | {"answer"}
     if role == "request":
-        return {"answer"}
-    return {"answer"}
+        return declared | {"answer"}
+    return declared | {"answer"}
 
 
 def _unit_fingerprint(unit: dict[str, Any]) -> str:

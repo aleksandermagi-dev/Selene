@@ -103,7 +103,7 @@ def test_explicit_memory_recall_and_contextual_memory_have_different_thresholds(
     assert contextual["reason"] == "contextual_memory_alignment_too_weak"
 
 
-def test_prediction_request_does_not_require_future_certainty_to_admit_relevant_ground():
+def test_prediction_lesson_can_supply_ground_but_cannot_substitute_for_the_prediction():
     result = evaluate_semantic_relevance(
         {
             "prompt": "Based on the cloud and wind pattern, what would you predict next?",
@@ -115,12 +115,50 @@ def test_prediction_request_does_not_require_future_certainty_to_admit_relevant_
                 "principles": ["A prediction remains revisable when conditions change."],
             },
             "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": {
+                "open_obligations": [
+                    {
+                        "id": "prediction",
+                        "requested_response_functions": ["prediction"],
+                    }
+                ]
+            },
+        }
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "approved_knowledge_describes_but_does_not_perform_requested_operation"
+    assert "prediction" in result["requested_roles"]
+    assert "prediction" in result["candidate_roles"]
+    assert result["requested_operation_performed"] is False
+    _assert_locked(result)
+
+
+def test_a_candidate_that_performed_the_requested_prediction_can_be_admitted():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "Based on the cloud and wind pattern, what would you predict next?",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Clouds wind and weather change",
+                "domain": "earth science",
+                "central_claim": "Given these visible clouds and winds, rain is the bounded prediction.",
+                "performed_response_functions": ["prediction"],
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": {
+                "open_obligations": [
+                    {
+                        "id": "prediction",
+                        "requested_response_functions": ["prediction"],
+                    }
+                ]
+            },
         }
     )
 
     assert result["accepted"] is True
-    assert "prediction" in result["requested_roles"]
-    assert "prediction" in result["candidate_roles"]
+    assert result["requested_operation_performed"] is True
     _assert_locked(result)
 
 

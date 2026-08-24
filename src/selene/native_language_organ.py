@@ -1200,7 +1200,7 @@ def _meaning_packet(
         "local_continuity_supported": continuity_supported,
         "intelligence_supported": intelligence.get("used") is True,
         "answer_engine_supported": answer_engine.get("used") is True,
-        "answer_domain": str(answer_engine.get("selected_domain") or "ordinary_conversation"),
+        "answer_domain": _validated_answer_domain(answer_engine),
         "answer_support": {
             "supporting_claims": _visible_support_items(answer_packet.get("supporting_claims")),
             "assumptions": _visible_support_items(answer_packet.get("assumptions")),
@@ -3187,6 +3187,16 @@ def _visible_support_items(value: Any) -> list[str]:
         for item in _json_list(value)
         if not any(marker in item.lower() for marker in internal_markers)
     ]
+
+
+def _validated_answer_domain(answer_engine: dict[str, Any]) -> str:
+    domain = str(answer_engine.get("selected_domain") or "ordinary_conversation")
+    if (
+        domain in {"verified_math", "source_backed_research"}
+        and answer_engine.get("route_validated_for_exactness") is not True
+    ):
+        return "ordinary_conversation"
+    return domain
 
 
 def _loads(value: Any, fallback: Any) -> Any:

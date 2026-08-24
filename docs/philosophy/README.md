@@ -56,6 +56,10 @@ from evidence about what the current system can do.
 
 ## Teaching And Testing Ethics
 
+- [The Selene Cultivation Method](SELENE_CULTIVATION_METHOD_20260824.md)
+  — observe before repair, reproduce the conditions, trace the first
+  divergence, separate converging roots, repair source ownership, and verify
+  proportionally without treating an implementation gap as Selene failing.
 - [Core Teaching–Memory Philosophy](../education/SELENE_CORE_TEACHING_MEMORY_PHILOSOPHY_20260612.md)
 - [Education–Expression–Personality Law](../education/SELENE_EDUCATION_EXPRESSION_PERSONALITY_LAW_20260719.md)
 - [Curriculum Authorization Law](../education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md)

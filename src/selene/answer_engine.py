@@ -7,6 +7,7 @@ from typing import Any
 
 from .intelligence_os import run_intelligence_os_reason
 from .local_code_inspection import inspect_local_code
+from .answer_ownership import research_domain_requested
 from .meaning_router import interpret_turn_meaning
 from .pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
 from .registry import truncate
@@ -133,7 +134,8 @@ def preview_answer_coordination(payload: dict[str, Any] | None = None) -> dict[s
         ):
             obligation_prompt = f"{parent_source} {source_text}"
         obligation_domain = (
-            request["requested_domain"]
+            str(obligation.get("answer_domain") or "")
+            or request["requested_domain"]
             or _obligation_domain_hint(str(obligation.get("kind") or ""))
         )
         obligation_request = {
@@ -150,7 +152,16 @@ def preview_answer_coordination(payload: dict[str, Any] | None = None) -> dict[s
         }
         route = _select_domain(obligation_request)
         domain = str(route.get("selected_domain") or "ordinary_conversation")
-        if domain == "local_code_inspection":
+        typed_owner = str(obligation.get("responsible_owner") or "")
+        if typed_owner in {
+            "self_state",
+            "ordinary_conversation_path",
+            "intelligence_os",
+            "comprehension_integration",
+        }:
+            owner = typed_owner
+            executable_in_chat = False
+        elif domain == "local_code_inspection":
             owner = "separate_bounded_code_inspection_route"
             executable_in_chat = False
         elif domain in {"verified_math", "comparison_planning", "source_backed_research"}:
@@ -1036,7 +1047,7 @@ def _select_domain(request: dict[str, Any]) -> dict[str, Any]:
         selected, confidence, basis, signal = "verified_math", "bounded", "numeric or symbolic verification cues", "math_cues"
     elif not requested and selected == "ordinary_conversation" and _contains_any(lower, ("traceback", "stack trace", "function", "class ", "source code", "code review", ".py", ".ts", ".tsx", "sql query")):
         selected, confidence, basis, signal = "local_code_inspection", "bounded", "explicit code-inspection cues", "code_cues"
-    elif not requested and selected == "ordinary_conversation" and _contains_any(lower, ("cite", "citation", "source-backed", "sources", "research", "paper", "study", "literature")):
+    elif not requested and selected == "ordinary_conversation" and research_domain_requested(lower):
         selected, confidence, basis, signal = "source_backed_research", "bounded", "source or research cues", "research_cues"
     elif not requested and selected == "ordinary_conversation" and _contains_any(lower, ("compare", "tradeoff", "trade-off", "plan", "prioritize", "which option", "pros and cons", "strategy")):
         selected, confidence, basis, signal = "comparison_planning", "bounded", "comparison or planning cues", "comparison_planning_cues"

@@ -16,6 +16,14 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Chat Answer-Ownership Root-Cause Map — August 24, 2026](SELENE_CHAT_ANSWER_OWNERSHIP_ROOT_CAUSE_MAP_20260824.md)
+  — applies Cultivation to an eleven-turn disposable diagnostic trace and maps
+  the converging routing, ownership, relevance, completion, coverage, loop,
+  retry, and expression roots without changing runtime behavior or teaching.
+- [Conversational and LLM-Parity Gap Map — August 24, 2026](SELENE_LLM_PARITY_GAP_MAP_20260824.md)
+  — maps current defects, missing handoffs, teaching breadth, intentional
+  boundaries, and the deterministic-substrate ceiling, then orders the work
+  needed to approach mature general language-model behavior.
 - [G12 Conversation-Breadth Completion](SELENE_G12_CONVERSATION_BREADTH_COMPLETION_20260820.md)
   — all twelve evidence-grounded breadth lessons completed Acquire, Integrate,
   and Express; the configured shelf is 73/73 available with focused synthetic

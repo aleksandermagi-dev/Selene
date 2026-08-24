@@ -318,6 +318,12 @@ def _normalize_unit(
             limit=20,
             width=120,
         ),
+        "response_functions": _text_list(
+            raw.get("response_functions"),
+            limit=12,
+            width=80,
+        ),
+        "ownership_validated": raw.get("ownership_validated") is True,
         "selection_reasons": _text_list(
             raw.get("selection_reasons"),
             limit=12,

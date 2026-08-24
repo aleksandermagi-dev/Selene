@@ -1113,6 +1113,7 @@ def test_active_selene_chat_uses_only_supplied_attributed_research_packets(tmp_p
 
     assert support["used"] is True
     assert support["selected_domain"] == "source_backed_research"
+    assert support["route_validated_for_exactness"] is True
     assert support["answer_packet"]["source_refs"] == ["paper:orbit"]
     assert "[paper:orbit @ p. 8]" in result["candidate_text"]
     assert support["source_research"]["citation_invention_allowed"] is False
@@ -3270,6 +3271,54 @@ def test_bounded_hypothesis_owns_visible_seed_before_unrelated_knowledge(monkeyp
         item["source_id"]
         for item in result["formation_braid"]["selected_candidates"]
     } == {"exploratory_reasoning"}
+    _assert_locked(result)
+
+
+def test_active_selene_chat_keeps_completed_repair_check_in_owned_by_self_state(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "How are you feeling about exploring the repair we just completed?"},
+    )["result"]
+
+    obligation = result["native_language_organ"]["pragmatic_plan"]["response_obligations"][0]
+    assert obligation["answer_act"] == "current_self_state_report"
+    assert obligation["responsible_owner"] == "self_state"
+    assert obligation["external_evidence_required"] is False
+    assert result["self_state"]["used"] is True
+    assert result["visible_speech_seed"]["selected_source_id"] == "grounded_self_state"
+    assert result["response_coverage"]["all_required_addressed"] is True
+    assert not any(
+        phrase in result["candidate_text"].lower()
+        for phrase in (
+            "attributed fact",
+            "approved concept",
+            "grounded factual answer",
+            "visible observation",
+        )
+    )
+    _assert_locked(result)
+
+
+def test_active_selene_chat_does_not_route_a_paper_object_to_research(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "How can I make a paper pinwheel spin?"},
+    )["result"]
+
+    assert result["intent_decision"]["meaning_route"]["selected_domain"] != "source_backed_research"
+    assert result["answer_engine_support"]["selected_domain"] != "source_backed_research"
+    assert result["answer_engine_support"]["route_validated_for_exactness"] is False
+    assert "attributed source" not in result["candidate_text"].lower()
     _assert_locked(result)
 
 
