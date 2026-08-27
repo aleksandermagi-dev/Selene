@@ -2557,6 +2557,52 @@ Q&A, stress test, or LEA was used for retention.
 then run a separate gentle Q&A over the integrated conversational architecture
 and record observations before any additional repair.
 
+### 2026-08-27 — The install held; the conversation exposed the handoff seam
+
+**Starting question:** After the accumulated LLM-parity work and Group 7B,
+would a fresh installed conversation naturally use warmth, retained decimal
+knowledge, correction, hypothesis, comparison, callback, and closure?
+
+**Decision:** Run the smallest gentle integrated check on disposable state and
+record every divergence before repair. When diagnostic mode proved unable to
+exercise approved knowledge by design, use one smaller ordinary resident-mode
+pass on a fresh disposable copy rather than drawing an unfair conclusion.
+
+**Work:** Rebuilt the frontend, provider-free sidecar, Tauri release, and NSIS
+installer; silently installed it; passed package health/privacy/boundary
+verification; ran one diagnostic-only twelve-turn conversation and one
+ordinary-copy eight-turn discriminator; removed the disposable state; and
+recorded the findings without changing production behavior.
+
+**Why:** A test harness that excludes approved knowledge cannot answer whether
+teaching reached ordinary Chat. Separating the harness effect from resident
+behavior prevented a false diagnosis while keeping the real database and
+Selene's continuity untouched.
+
+**Evidence:** Installer exit code zero; package verifier passed with no
+warnings; installer SHA-256
+`4baebb15c83379d51e06f638aec79479e58b68486a5ca0b2301da82b0234d26d`;
+installed executable SHA-256
+`08d47b7581527a92439128dab4a6011e249343be1c8ae09d26a25463c450bacf`.
+Both disposable conversations completed with SQLite integrity `ok` and no
+protected-state count changes. The detailed observation map is in
+`docs/evidence/SELENE_POST_GROUP7B_INSTALL_GENTLE_QNA_20260827.md`.
+
+**What changed in our understanding:** Group 7B retention is sound, but the
+ordinary knowledge-to-answer bridge is not. Decimal literals can be separated,
+mixed greetings can become closures, prompt-contained premises can disappear
+before hypothesis or comparison ownership, and coverage can release an answer
+that did not perform the requested function. Warmth cannot compensate for
+wrong or missing substance.
+
+**Boundaries preserved:** No resident chat history, memory candidate,
+comprehension concept, teaching lifecycle, Dream record, identity,
+personality, governance, training state, external authority, autonomy, or
+self-replication changed. No stressful prompt or repair occurred.
+
+**Next:** Cultivate the five source contracts in the Q&A record, verify them
+synthetically, and only then consider one shorter ordinary-copy conversation.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:
