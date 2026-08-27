@@ -314,6 +314,7 @@ from .curriculum_authorization import (
     activate_f2_factors_multiples_operation_order_authorization,
     activate_f2_fractions_numbers_equivalence_authorization,
     activate_f2_fraction_operation_relationships_authorization,
+    activate_f2_decimal_place_value_operations_authorization,
     activate_coding_computational_thinking_code_reading_authorization,
     activate_f1_operations_measurement_authorization,
     curriculum_authorization_status,
@@ -342,6 +343,7 @@ from .curriculum_authorization import (
     prepare_f2_factors_multiples_operation_order_group,
     prepare_f2_fractions_numbers_equivalence_group,
     prepare_f2_fraction_operation_relationships_group,
+    prepare_f2_decimal_place_value_operations_group,
     prepare_coding_computational_thinking_code_reading_group,
     prepare_f1_operations_measurement_group,
     revoke_curriculum_authorization,
@@ -368,6 +370,7 @@ from .curriculum_authorization import (
     teach_f2_factors_multiples_operation_order_group,
     teach_f2_fractions_numbers_equivalence_group,
     teach_f2_fraction_operation_relationships_group,
+    teach_f2_decimal_place_value_operations_group,
     teach_coding_computational_thinking_code_reading_group,
     teach_f1_operations_measurement_group,
 )
@@ -1065,6 +1068,8 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": activate_f2_fractions_numbers_equivalence_authorization(conn, payload)}
     if route_key == "curriculum.authorization.activate_f2_fraction_operation_relationships":
         return {"route": route_key, "result": activate_f2_fraction_operation_relationships_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f2_decimal_place_value_operations":
+        return {"route": route_key, "result": activate_f2_decimal_place_value_operations_authorization(conn, payload)}
     if route_key == "curriculum.authorization.activate_coding_computational_thinking_code_reading":
         return {"route": route_key, "result": activate_coding_computational_thinking_code_reading_authorization(conn, payload)}
     if route_key == "curriculum.authorization.revoke":
@@ -1167,6 +1172,10 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": prepare_f2_fraction_operation_relationships_group(conn, payload)}
     if route_key == "curriculum.foundation.teach_f2_fraction_operation_relationships":
         return {"route": route_key, "result": teach_f2_fraction_operation_relationships_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f2_decimal_place_value_operations":
+        return {"route": route_key, "result": prepare_f2_decimal_place_value_operations_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f2_decimal_place_value_operations":
+        return {"route": route_key, "result": teach_f2_decimal_place_value_operations_group(conn, payload)}
     if route_key == "curriculum.foundation.prepare_coding_computational_thinking_code_reading":
         return {"route": route_key, "result": prepare_coding_computational_thinking_code_reading_group(conn, payload)}
     if route_key == "curriculum.foundation.teach_coding_computational_thinking_code_reading":

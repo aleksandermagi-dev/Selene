@@ -113,7 +113,7 @@ def test_group6_lifecycle_retains_and_is_idempotent(tmp_path):
     assert result["retained_count"] == 5 and result["held_count"] == 0
     assert status["f2_sixth_group"]["retained_count"] == 5
     assert status["f2_seventh_a_group"]["retained_count"] == 0
-    assert len(status["f2_groups"]) == 7 and len(status["groups"]) == 17
+    assert len(status["f2_groups"]) == 8 and len(status["groups"]) == 17
     assert all(
         row["state"] == "approved_knowledge_resource" and row["chat_use_permission"] == "available_as_knowledge_resource"
         for row in rows

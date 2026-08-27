@@ -148,7 +148,7 @@ def test_f2_group2_completes_lifecycle_retains_and_is_idempotent(tmp_path):
     assert status["f2_fifth_group"]["retained_count"] == 0
     assert status["f2_sixth_group"]["retained_count"] == 0
     assert status["f2_seventh_a_group"]["retained_count"] == 0
-    assert len(status["f2_groups"]) == 7
+    assert len(status["f2_groups"]) == 8
     assert len(status["groups"]) == 17
     assert len(rows) == 5
     assert all(row["approval_mode"] == "curriculum_authorization" for row in rows)

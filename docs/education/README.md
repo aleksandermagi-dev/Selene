@@ -75,6 +75,7 @@ Selene's broader elementary-through-college education.
 - [F2 Group 5: Factors, Multiples, Divisibility, and Operation Order](SELENE_F2_FACTORS_MULTIPLES_OPERATION_ORDER_GROUP_5_20260811.md)
 - [F2 Group 6: Fractions as Numbers, Equivalence, Comparison, and Composition](SELENE_F2_FRACTIONS_NUMBERS_EQUIVALENCE_GROUP_6_20260827.md)
 - [F2 Group 7A: Fraction-Operation Relationships](SELENE_F2_FRACTION_OPERATION_RELATIONSHIPS_GROUP_7A_20260827.md)
+- [F2 Group 7B: Decimal Place Value, Operations, and Reasonableness](SELENE_F2_DECIMAL_PLACE_VALUE_OPERATIONS_GROUP_7B_20260827.md)
 
 ## Coding Curriculum
 

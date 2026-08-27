@@ -137,6 +137,12 @@ from .curriculum_f2_group7a import (
     LESSONS as F2_GROUP7A_LESSONS,
     SCOPE as F2_GROUP7A_SCOPE,
 )
+from .curriculum_f2_group7b import (
+    AUTHORIZATION_KEY as F2_GROUP7B_AUTHORIZATION_KEY,
+    GROUP_KEY as F2_GROUP7B_KEY,
+    LESSONS as F2_GROUP7B_LESSONS,
+    SCOPE as F2_GROUP7B_SCOPE,
+)
 from .curriculum_coding_group1 import (
     AUTHORIZATION_KEY as CODING_GROUP1_AUTHORIZATION_KEY,
     GROUP_KEY as CODING_GROUP1_KEY,
@@ -805,6 +811,7 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
     f2_fifth_group = _group_progress(conn, F2_GROUP5_LESSONS, F2_GROUP5_KEY, "F2 factors, multiples, divisibility, and operation order — group 5", F2_GROUP5_SCOPE["source_ids"])
     f2_sixth_group = _group_progress(conn, F2_GROUP6_LESSONS, F2_GROUP6_KEY, "F2 fractions as numbers, equivalence, comparison, and composition — group 6", F2_GROUP6_SCOPE["source_ids"])
     f2_seventh_a_group = _group_progress(conn, F2_GROUP7A_LESSONS, F2_GROUP7A_KEY, "F2 fraction-operation relationships — group 7A", F2_GROUP7A_SCOPE["source_ids"])
+    f2_seventh_b_group = _group_progress(conn, F2_GROUP7B_LESSONS, F2_GROUP7B_KEY, "F2 decimals, place value, operations, and reasonableness — group 7B", F2_GROUP7B_SCOPE["source_ids"])
     coding_first_group = _group_progress(
         conn,
         CODING_GROUP1_LESSONS,
@@ -844,7 +851,8 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "f2_fifth_group": f2_fifth_group,
             "f2_sixth_group": f2_sixth_group,
             "f2_seventh_a_group": f2_seventh_a_group,
-            "f2_groups": [f2_first_group, f2_second_group, f2_third_group, f2_fourth_group, f2_fifth_group, f2_sixth_group, f2_seventh_a_group],
+            "f2_seventh_b_group": f2_seventh_b_group,
+            "f2_groups": [f2_first_group, f2_second_group, f2_third_group, f2_fourth_group, f2_fifth_group, f2_sixth_group, f2_seventh_a_group, f2_seventh_b_group],
             "coding_first_group": coding_first_group,
             "coding_groups": [coding_first_group],
             "groups": [first_group, second_group, third_group, fourth_group, fifth_group, sixth_group, seventh_group, eighth_group, ninth_group, tenth_group, eleventh_group, twelfth_group, thirteenth_group, fourteenth_group, fifteenth_group, sixteenth_group, seventeenth_group],
@@ -1141,6 +1149,10 @@ def activate_f2_fractions_numbers_equivalence_authorization(conn: sqlite3.Connec
 
 def activate_f2_fraction_operation_relationships_authorization(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     return _activate_authorization_record(conn, payload or {}, authorization_key=F2_GROUP7A_AUTHORIZATION_KEY, title="F2 fraction-operation relationships — group 7A", scope=F2_GROUP7A_SCOPE)
+
+
+def activate_f2_decimal_place_value_operations_authorization(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _activate_authorization_record(conn, payload or {}, authorization_key=F2_GROUP7B_AUTHORIZATION_KEY, title="F2 decimals, place value, operations, and reasonableness — group 7B", scope=F2_GROUP7B_SCOPE)
 
 
 def activate_coding_computational_thinking_code_reading_authorization(
@@ -1875,6 +1887,14 @@ def prepare_f2_fraction_operation_relationships_group(conn: sqlite3.Connection, 
 
 def teach_f2_fraction_operation_relationships_group(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     return _teach_defined_group(conn, payload or {}, lessons=F2_GROUP7A_LESSONS, group_key=F2_GROUP7A_KEY, authorization_key=F2_GROUP7A_AUTHORIZATION_KEY, curriculum_band="F2")
+
+
+def prepare_f2_decimal_place_value_operations_group(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _prepare_defined_group(conn, payload or {}, lessons=F2_GROUP7B_LESSONS, group_key=F2_GROUP7B_KEY, curriculum_band="F2")
+
+
+def teach_f2_decimal_place_value_operations_group(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _teach_defined_group(conn, payload or {}, lessons=F2_GROUP7B_LESSONS, group_key=F2_GROUP7B_KEY, authorization_key=F2_GROUP7B_AUTHORIZATION_KEY, curriculum_band="F2")
 
 
 def prepare_coding_computational_thinking_code_reading_group(

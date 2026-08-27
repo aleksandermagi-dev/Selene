@@ -109,6 +109,16 @@ procedures. Decimal structure and operations remain in Group 7B. Identity,
 personality, memory, governance, training, source-reproduction authority,
 financial authority, and autonomy remain unchanged.
 
+F2 Group 7B is retained under Aleks authorization record 39 as six approved
+general knowledge resources. It covers decimal-fraction notation, place-value
+relationships through thousandths, decimal equivalence, comparison and
+rounding, place-value-grounded addition and subtraction, scaling and
+equal-group meanings for multiplication and division, and independent
+reasonableness checks. Decimal-point movement is not taught as an unexplained
+procedure, and Grade 6 algorithm fluency is not claimed. Identity,
+personality, memory, governance, training, source-reproduction authority,
+financial authority, and autonomy remain unchanged.
+
 F1 Group 14 is retained under Aleks authorization record 17 as six approved
 general knowledge resources. It covers weather and climate timescale
 distinctions, contextual weather records, regional and hemispheric seasonal

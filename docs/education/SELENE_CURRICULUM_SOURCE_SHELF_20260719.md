@@ -303,6 +303,17 @@ reserved for Group 7B. Classroom scripts, worksheets, source diagrams,
 branded activities, assessment items, student responses, copied passages, and
 unsupported general fraction-division claims are excluded.
 
+F2 Group 7B selects the checksum-pinned CKMath Grade 4 Unit 4 and Grade 5
+Unit 5 teacher guides, plus the already pinned Grade 5 Unit 6 place-value
+extension. Their embedded CC BY-NC-SA 4.0 notices and third-party exclusions
+remain attached. The selected scope connects tenths, hundredths, and
+thousandths to fraction magnitude; extends base-ten place value; distinguishes
+equivalence from rounding; grounds all four decimal operations in place value,
+scaling, and equal groups; and requires estimation or an independent check.
+Grade 6 algorithm fluency is not claimed. Classroom scripts, worksheets,
+source diagrams, branded activities, assessment items, student responses, and
+copied passages are excluded.
+
 ## Cataloged and Deliberately Held Sources
 
 These catalogs are useful and authoritative enough to retain in the map, but a

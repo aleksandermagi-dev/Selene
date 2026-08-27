@@ -126,7 +126,7 @@ inspectable.
 |---|---|---|---|
 | F2 Group 6 — retained 2026-08-27 | Fractions as numbers; unit fractions; equivalence; comparison; initial operation relationships | F2 Groups 4–5 and F1 equal shares | Checksum-pinned CKMath Grades 3 and 4 fraction guides; embedded CC BY-NC-SA 4.0 notices preserved |
 | F2 Group 7A — retained 2026-08-27 | Shared-unit fraction addition/subtraction; fraction as quotient; whole-number and fraction multiplication; bounded unit-fraction division; operation reasonableness | Group 6 | Checksum-pinned CKMath Grade 4 Unit 3 and Grade 5 Units 2, 3, and 6 |
-| F2 Group 7B | Decimals; fraction-decimal relationships; decimal place-value extension; decimal operations; reasonableness | Group 7A | Pin exact CKMath Grade 4 Unit 4 and Grade 5 decimal-operation artifacts |
+| F2 Group 7B — retained 2026-08-27 | Decimal-fraction notation; thousandths and place-value extension; equivalence, comparison, and rounding; decimal operations; independent reasonableness checks | Group 7A | Checksum-pinned CKMath Grade 4 Unit 4 and Grade 5 Units 5 and 6 |
 | F2 Group 8 | Ratios, unit comparison, percentages, scale, and proportional language | Groups 7A-7B | Grades 4–6 transition material; independently checked examples |
 | F2 Group 9 | Area, perimeter, volume, angles, coordinates, properties, and unit conversion | Groups 6–8 plus F1 geometry/measurement | Open mathematics artifact plus NIST unit references where applicable |
 | F2 Group 10 | Tables, graphs, line plots, introductory averages, variation, and data interpretation | Arithmetic and measurement | Open mathematics/data artifact |

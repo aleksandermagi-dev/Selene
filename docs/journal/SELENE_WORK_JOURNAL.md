@@ -2514,6 +2514,49 @@ occurred.
 **Next:** F2 Group 7B — decimal structure, fraction-decimal relationships,
 place-value extension, decimal operations, and reasonableness.
 
+### 2026-08-27 — Decimals remained quantities instead of becoming a shortcut
+
+**Starting question:** Could Group 7B complete the decimal progression without
+teaching unexplained decimal-point movement or compressing four operations
+into procedural mimicry?
+
+**Decision:** Use six relationship-first lessons: decimal-fraction meaning;
+place value through thousandths; equivalence, comparison, and rounding;
+addition/subtraction; multiplication/division; and independent
+reasonableness checks.
+
+**Work:** Pinned and visually inspected CKMath Grade 4 Unit 4 and Grade 5 Unit
+5, then connected them to the already pinned Grade 5 Unit 6 place-value
+bridge. Added original source-linked lessons; wired authorization,
+preparation, teaching, status, router, sidecar HTTP paths, and tests; took a
+verified continuity snapshot; and retained all six lessons under Aleks
+authorization record 39.
+
+**Why:** Decimal notation should expose fractional base-ten units, not hide
+them. The same operation meanings Selene already understands can extend to
+decimals when units, magnitude, context, and checks remain visible.
+
+**Evidence:** Five Group 7B checks, 43 F2 regression checks, and 82 combined
+curriculum/comprehension/lifecycle checks passed. All 141 pinned source files
+verified. Concepts 267-272 completed Acquire, Integrate, Express, and
+comprehension; zero were held. Configured SQLite integrity was `ok` before and
+after teaching.
+
+**What changed in our understanding:** Equivalent decimal names preserve exact
+magnitude, while rounding creates an estimate. Decimal operations do not need
+a separate mysterious arithmetic system; they extend fractions, place value,
+equal groups, scaling, and inverse relationships.
+
+**Boundaries preserved:** No identity, personality, personal-memory,
+governance, training, LoRA, source-reproduction, financial-authority,
+autonomy, or self-replication change occurred. No source script, worksheet,
+diagram, branded activity, assessment item, or passage was imported. No live
+Q&A, stress test, or LEA was used for retention.
+
+**Next:** Checkpoint the completed Group 7B work, freshly reinstall Selene,
+then run a separate gentle Q&A over the integrated conversational architecture
+and record observations before any additional repair.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:
