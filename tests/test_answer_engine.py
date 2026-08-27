@@ -443,6 +443,35 @@ def test_one_completion_retry_fills_a_missing_dialogue_obligation(tmp_path, monk
     assert result["confidence_vector"]["voice_confidence_is_answer_correctness"] is False
 
 
+def test_completion_retry_carries_failed_attempt_information_into_a_changed_approach(tmp_path, monkeypatch):
+    conn = _conn(tmp_path)
+    payloads = []
+    answers = iter(
+        [
+            _fake_reason_result(1, "Memory and voice serve different roles."),
+            _fake_reason_result(2, "Work on memory first."),
+        ]
+    )
+
+    def fake_reason(_conn, payload):
+        payloads.append(payload)
+        return next(answers)
+
+    monkeypatch.setattr("selene.answer_engine.run_intelligence_os_reason", fake_reason)
+
+    result = run_comparison_planning_answer(conn, _multi_part_payload())
+
+    assert len(payloads) == 2
+    retry_payload = payloads[1]
+    assert retry_payload["failure_class"] == "verification_failure"
+    assert retry_payload["prior_attempts"][0]["status"] == "verification_failed"
+    assert retry_payload["candidate_strategies"][0] != retry_payload["prior_attempts"][0]["approach"]
+    assert "Changed approach:" in retry_payload["prompt"]
+    assert result["completion_retry"]["failure_information_incorporated"] is True
+    assert result["completion_retry"]["updated_approach"]
+    assert result["completion_retry"]["blind_regeneration_allowed"] is False
+
+
 def test_completion_retry_stops_after_one_when_obligations_remain_open(tmp_path, monkeypatch):
     conn = _conn(tmp_path)
     calls = []

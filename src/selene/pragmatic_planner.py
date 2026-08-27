@@ -4,7 +4,7 @@ import re
 from hashlib import sha256
 from typing import Any
 
-from .answer_ownership import enrich_obligation_ownership
+from .answer_ownership import current_preference_requested, enrich_obligation_ownership
 from .registry import truncate
 
 
@@ -159,6 +159,8 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
         enrich_obligation_ownership(item, intent_decision=intent)
         for item in obligations
     ]
+    obligations = _canonicalize_obligations(obligations, prompt)
+    obligation_ledger = _obligation_ledger(prompt, obligations)
     content_seed = truncate(str(payload.get("content_seed") or ""), 1800)
     response_units = [
         {
@@ -174,11 +176,7 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
     return _with_guards(
         {
             "status": "pragmatic_plan_ready",
-            "version": (
-                "v3_conversation_spine_grounded_obligations"
-                if conversation_spine
-                else "v2_compositional_dialogue_obligations"
-            ),
+            "version": "v4_canonical_obligation_ledger",
             "conversation_spine_turn_id": str(conversation_spine.get("turn_id") or ""),
             "conversation_spine_used": bool(conversation_spine),
             "literal_utterance": prompt,
@@ -191,6 +189,7 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
             "correction_refinement": correction,
             "response_obligations": obligations,
             "obligation_sequence": [str(item.get("id") or "") for item in obligations],
+            "obligation_ledger": obligation_ledger,
             "thread_braid": thread_braid,
             "thread_traversal": thread_braid.get("turn_traversal") or [],
             "response_units": response_units,
@@ -204,7 +203,7 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
                 "carry explicit corrections into the relevant obligation only",
                 "preserve visible topic branches, returns, dependencies, and landings",
             ],
-            "response_constraints": _response_constraints(pragmatics, correction),
+            "response_constraints": _response_constraints(pragmatics, correction, obligations),
             "session_scoped_only": True,
             "visible_summary_only": True,
             "hidden_chain_of_thought_exposed": False,
@@ -221,6 +220,7 @@ def evaluate_response_coverage(
     supported_semantics: dict[str, Any] | None = None,
     epistemic_composition: dict[str, Any] | None = None,
     resolution_evidence: list[dict[str, Any]] | None = None,
+    answer_operations: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     plan = plan if isinstance(plan, dict) else {}
     candidate = truncate(str(candidate_text or ""), 3000)
@@ -232,12 +232,19 @@ def evaluate_response_coverage(
     # Imported at evaluation time to avoid coupling pragmatic-plan creation to
     # the later supported-meaning selection pass.
     from .selective_formation_braid import map_supported_semantics_to_obligations
+    from .semantic_fulfillment import evaluate_operation_fulfillment
 
     semantic_coverage = map_supported_semantics_to_obligations(
         supported_semantics,
         obligations,
     )
     semantic_matches = semantic_coverage.get("matched_unit_ids") or {}
+    operation_packet = answer_operations if isinstance(answer_operations, dict) else {}
+    operation_results = {
+        str(item.get("obligation_id") or ""): item
+        for item in operation_packet.get("results") or []
+        if isinstance(item, dict) and str(item.get("obligation_id") or "")
+    }
     composition_parts = {
         str(item.get("obligation_id") or ""): item
         for item in (epistemic_composition or {}).get("parts") or []
@@ -264,18 +271,14 @@ def evaluate_response_coverage(
         topic_overlap = sorted(topic_terms & candidate_terms)
         distinctive_alignment = not distinctive_expected or bool(distinctive_overlap or topic_overlap)
         semantic_match = len(overlap) >= minimum_term_matches and distinctive_alignment
-        requested_item_count = _requested_item_count(
-            " ".join(
-                [
-                    str(obligation.get("source_text") or ""),
-                    str(obligation.get("parent_source_text") or ""),
-                ]
-            ).lower()
+        requested_item_count = int(obligation.get("requested_count") or 0) or _requested_item_count(
+            str(obligation.get("source_text") or "").lower()
         )
         signal_can_stand_alone = (
             kind == "self_state_check_in" and not expected
         ) or kind in {
-            "rephrase_request", "closure", "choice_or_priority", "constraint_preservation"
+            "rephrase_request", "closure", "choice_or_priority", "constraint_preservation",
+            "preference", "conditional_disagreement",
         } or (
             kind == "reason" and not distinctive_expected
         ) or (
@@ -305,6 +308,7 @@ def evaluate_response_coverage(
                     str(obligation.get("parent_source_text") or ""),
                 ]
             ).lower(),
+            requested_count=requested_item_count,
         )
         visible_text_addressed = bool(candidate.strip()) and special_semantic_gate and (
             semantic_match and (not signal_required or signal_score > 0)
@@ -312,6 +316,16 @@ def evaluate_response_coverage(
             or kind in {"correction_update", "yes_or_no", "session_summary"} and signal_score > 0
         )
         obligation_id = str(obligation.get("id") or "")
+        typed_operation_result = operation_results.get(obligation_id, {})
+        semantic_fulfillment = (
+            evaluate_operation_fulfillment(
+                obligation,
+                obligation_candidate,
+                typed_operation_result,
+            )
+            if typed_operation_result
+            else {}
+        )
         matched_semantic_unit_ids = [
             str(item) for item in semantic_matches.get(obligation_id) or []
         ]
@@ -378,13 +392,28 @@ def evaluate_response_coverage(
         ):
             visible_text_addressed = False
             semantic_addressed = False
-        addressed = visible_text_addressed or semantic_addressed
-        explicit_hold = bool(not addressed and missing_resolution_visible)
-        supported_route = bool(
-            owner_resolution.get("resolution_kind") == "supported_route"
-            or explicit_hold
-            and _visible_supported_route(obligation_candidate, composition_part)
-        )
+        heuristic_addressed = visible_text_addressed or semantic_addressed
+        if semantic_fulfillment:
+            # A canonical obligation ID or nearby prose is only a claim that an
+            # operation was performed. Typed owner output plus visible semantic
+            # realization is the proof.
+            addressed = semantic_fulfillment.get("fulfilled") is True
+            explicit_hold = bool(
+                not addressed
+                and semantic_fulfillment.get("missing_state_visible") is True
+            )
+            supported_route = bool(
+                not addressed
+                and semantic_fulfillment.get("supported_route_visible") is True
+            )
+        else:
+            addressed = heuristic_addressed
+            explicit_hold = bool(not addressed and missing_resolution_visible)
+            supported_route = bool(
+                owner_resolution.get("resolution_kind") == "supported_route"
+                or explicit_hold
+                and _visible_supported_route(obligation_candidate, composition_part)
+            )
         resolved_for_release = bool(addressed or explicit_hold or supported_route)
         resolution_state = (
             "answered"
@@ -421,9 +450,19 @@ def evaluate_response_coverage(
                 "owner_resolution_semantic_alignment": owner_semantic_alignment,
                 "visible_text_addressed": visible_text_addressed,
                 "semantic_addressed": semantic_addressed,
+                "heuristic_addressed_before_typed_fulfillment": heuristic_addressed,
+                "typed_operation_required": bool(semantic_fulfillment),
+                "semantic_fulfillment": semantic_fulfillment,
                 "matched_semantic_unit_ids": matched_semantic_unit_ids,
                 "semantic_match_basis": (semantic_coverage.get("match_basis") or {}).get(obligation_id) or [],
                 "coverage_basis": (
+                    "typed_operation_visible_semantic_fulfillment"
+                    if semantic_fulfillment and addressed
+                    else "typed_operation_precise_missing_state"
+                    if semantic_fulfillment and (explicit_hold or supported_route)
+                    else "typed_operation_not_visibly_fulfilled"
+                    if semantic_fulfillment
+                    else
                     "visible_text_and_supported_semantics"
                     if visible_text_addressed and semantic_addressed
                     else "supported_semantics"
@@ -504,6 +543,18 @@ def evaluate_response_coverage(
             "conversation_spine_alignment": spine_alignment,
             "conversation_spine_used": bool(conversation_spine),
             "supported_semantic_coverage": semantic_coverage,
+            "answer_operations_observed": bool(operation_packet),
+            "typed_operation_obligation_count": sum(
+                1 for item in items if item.get("typed_operation_required") is True
+            ),
+            "typed_operation_fulfilled_count": sum(
+                1
+                for item in items
+                if item.get("typed_operation_required") is True
+                and item.get("addressed") is True
+            ),
+            "obligation_ids_are_completion_proof": False,
+            "missing_ground_statements_are_answers": False,
             "semantic_grounding_override": semantic_grounding_override,
             "answer_bearing_alignment_required": answer_bearing_alignment,
             "method": (
@@ -765,15 +816,19 @@ def _unit_obligations(
             # A collaborative invitation can frame a later concrete request;
             # it is not a second content obligation that the answer must quote.
             continue
+        inferred_statement_kind = _request_kind(text) if kind == "statement" else ""
         request_like_statement = bool(
             kind == "statement"
-            and re.search(
+            and (
+                inferred_statement_kind in {"closure", "conditional_disagreement"}
+                or re.search(
                 r"(?:^|[):.!?]\s*)(?:summarize|recap|take\s+(?:this|these)\s+in\s+order|"
-                r"give|tell|show|compare|explain|name|revise|update|adjust|return|"
-                r"recommend|suggest|propose|ask|write|sort|arrange|describe|identify|state|"
+                r"give|tell|show|look\s+at|compare|contrast|explain|name|revise|update|adjust|return|"
+                r"recommend|choose|pick|select|suggest|propose|ask|write|sort|arrange|describe|identify|state|disagree|"
                 r"let\s+the\s+(?:conversation|chat)\s+end)\b",
                 text,
                 flags=re.IGNORECASE,
+                )
             )
         )
         if kind in {"question", "direct_request", "indirect_request"} or request_like_statement:
@@ -829,11 +884,19 @@ def _unit_obligations(
 
 def _request_kind(text: str) -> str:
     lower = text.lower()
+    if current_preference_requested(lower):
+        return "preference"
     if _explicit_humor_request(lower):
         return "humor"
     if re.search(
+        r"\b(?:disagree|push back|challenge (?:that|the|my) (?:claim|conclusion|assumption))\b",
+        lower,
+    ):
+        return "conditional_disagreement" if " if " in f" {lower} " else "disagreement"
+    if re.search(
         r"\b(?:let|allow)\b.*\b(?:conversation|chat)\b.*\bend\b|\bend\b.*\bnaturally\b|"
-        r"\b(?:leave|stop|pause) it (?:here|there)\b|"
+        r"\b(?:leave|stop|pause) (?:it|this|that|the\s+[a-z][a-z0-9' -]{0,80}) (?:here|there)(?:\s+for\s+now)?\b|"
+        r"\b(?:talk|chat|speak)(?:\s+again)?\s+(?:later|tomorrow|next time|another time)\b|"
         r"\b(?:get|come|go|return) back to\b.{0,100}\b(?:later|tomorrow|next time|another time)\b",
         lower,
     ):
@@ -852,13 +915,13 @@ def _request_kind(text: str) -> str:
         or re.search(r"\b(?:revise|update|adjust)\b.*\bonly\b.*\bpart\b.*\bchanges?\b", lower)
     ):
         return "constraint_preservation"
-    if any(token in lower for token in ("compare", "difference", "versus", " vs ")):
+    if any(token in lower for token in ("compare", "contrast", "difference", "versus", " vs ")):
         return "comparison"
     if any(token in lower for token in ("explain", "why", "reason")):
         return "reason"
     if any(token in lower for token in ("steps", "walk me through", "show me how", "how to")):
         return "method"
-    if any(token in lower for token in ("choose", "recommend", "priority", "first")):
+    if any(token in lower for token in ("choose", "pick", "select", "recommend", "priority", "first")):
         return "choice_or_priority"
     if re.search(r"\b(?:name|state)\b.*\b(?:best|preferred)\s+(?:approach|option|choice)\b", lower):
         return "choice_or_priority"
@@ -870,8 +933,8 @@ def _request_kind(text: str) -> str:
 def _explicit_humor_request(lower: str) -> bool:
     return bool(
         re.search(
-            r"\b(?:give|tell|make|write|share)\s+(?:me\s+)?(?:one\s+|a\s+|an\s+)?"
-            r"(?:little\s+|small\s+|quick\s+|short\s+)?(?:joke|pun)\b",
+            r"\b(?:give|tell|make|write|share|add|include|put in)\s+(?:me\s+)?(?:one\s+|a\s+|an\s+)?"
+            r"(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?(?:joke|pun)\b",
             lower,
         )
         or re.search(
@@ -925,7 +988,11 @@ def _bind_obligations_to_threads(
     return [item[2] for item in bound]
 
 
-def _response_constraints(pragmatics: dict[str, Any], correction: dict[str, Any]) -> list[dict[str, Any]]:
+def _response_constraints(
+    pragmatics: dict[str, Any],
+    correction: dict[str, Any],
+    obligations: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     constraints: list[dict[str, Any]] = []
     preference = str(pragmatics.get("response_preference") or "")
     if preference:
@@ -939,6 +1006,21 @@ def _response_constraints(pragmatics: dict[str, Any], correction: dict[str, Any]
                 "scope": "current_session_refinement_only",
             }
         )
+    for obligation in obligations:
+        shape = obligation.get("response_shape") if isinstance(obligation.get("response_shape"), dict) else {}
+        if not shape.get("explicit"):
+            continue
+        constraints.append(
+            {
+                "kind": "obligation_response_shape",
+                "obligation_id": str(obligation.get("id") or ""),
+                "requested_count": int(shape.get("requested_count") or 0),
+                "counted_unit": str(shape.get("counted_unit") or ""),
+                "brevity": str(shape.get("brevity") or ""),
+                "ordered": shape.get("ordered") is True,
+                "scope": "current_turn_only",
+            }
+        )
     return constraints
 
 
@@ -948,12 +1030,21 @@ def _question_kind(question: str) -> str:
         return "self_state_check_in"
     if _contains_session_summary_request(lower):
         return "session_summary"
+    if current_preference_requested(lower):
+        return "preference"
     if any(token in lower for token in ("compare", "difference", "versus", " vs ")):
         return "comparison"
     if re.search(r"\b(?:best grounded guess|best guess|current guess|provisional)\b", lower):
         return "provisional_inference"
     if lower.startswith("why") or " why " in lower:
         return "reason"
+    if re.search(
+        r"\bwhat changed in how\b|"
+        r"\bhow (?:can|could|do|does) (?:you|selene)\s+"
+        r"(?:handle|use|apply|respond|speak|remember|work)\b",
+        lower,
+    ):
+        return "direct_question"
     if re.search(r"\bhow (?:does|would|did)\b.{0,180}\b(?:sound|feel|look|seem)\b", lower):
         return "direct_question"
     if lower.startswith("how") or " how " in lower:
@@ -962,7 +1053,19 @@ def _question_kind(question: str) -> str:
         return "limitation"
     if re.search(r"\bwhat (?:would|should) you report\b", lower):
         return "requested_output"
-    if any(token in lower for token in ("which", "what should", "first", "priority")):
+    if any(
+        token in lower
+        for token in (
+            "which",
+            "what should",
+            "first",
+            "priority",
+            "choose",
+            "pick",
+            "select",
+            "recommend",
+        )
+    ):
         return "choice_or_priority"
     if re.match(r"^(is|are|do|does|did|can|could|would|will|should|have|has)\b", lower):
         return "yes_or_no"
@@ -1069,6 +1172,14 @@ def _structured_request_parts(text: str) -> list[str]:
         ]
         if len(parts) >= 2:
             return parts
+    if re.match(r"^(?:if|when|unless|assuming|given that)\b", text, flags=re.IGNORECASE) and re.search(
+        r"\b(?:disagree|push back|challenge)\b",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        # The leading clause controls the later act; it is not an independent
+        # answer request.
+        return [text]
     if re.match(r"^(?:then|next|finally)\s+return\b", text, flags=re.IGNORECASE) and re.search(
         r"\band\s+(?:explain|answer|summarize)\b",
         text,
@@ -1121,9 +1232,9 @@ def _split_coordinated_acts(text: str, *, interrogative: bool) -> list[str]:
     action = (
         r"(?:what|which|how|why|when|where|who|"
         r"can|could|would|will|"
-        r"compare|explain|give|tell|show|list|summarize|recap|say|"
-        r"recommend|choose|name|describe|identify|state|separate|distinguish|revise|update|adjust|"
-        r"calculate|count|walk|use|add|include|put|return|end|let)"
+        r"compare|contrast|explain|give|tell|show|look\s+at|list|summarize|recap|say|"
+        r"recommend|choose|pick|select|name|describe|identify|state|separate|distinguish|revise|update|adjust|"
+        r"calculate|count|walk|use|add|include|put|return|end|let|disagree|challenge)"
     )
     normalized = re.sub(
         r"(?i)\b(?:first|second|third|finally|lastly)\s*,?\s*",
@@ -1298,6 +1409,10 @@ def _answer_signal_score(kind: str, candidate: str) -> float:
             "best guess", "provisional", "my current guess", "i would inspect",
             "before deciding", "change my guess", "would change the guess",
         ),
+        "preference": ("i'd", "i would", "my pick", "i prefer", "i'm curious", "i am curious"),
+        "conditional_disagreement": (
+            "i disagree", "does not follow", "doesn't follow", "not supported", "not justified"
+        ),
     }
     return 0.5 if any(token in candidate for token in signals.get(kind, ())) else 0.0
 
@@ -1309,6 +1424,7 @@ def _special_semantic_gate(
     distinctive_alignment: bool,
     expected_terms: set[str],
     request_text: str = "",
+    requested_count: int = 0,
 ) -> bool:
     if kind == "humor":
         return bool(re.search(r"\b(?:joke|pun)\s*:", candidate))
@@ -1322,7 +1438,7 @@ def _special_semantic_gate(
             )
         )
     if kind in {"method", "requested_output"}:
-        requested_count = _requested_item_count(request_text)
+        requested_count = requested_count or _requested_item_count(request_text)
         if requested_count > 1:
             numbered = {
                 int(item)
@@ -1335,7 +1451,7 @@ def _special_semantic_gate(
             )
             return len(numbered) >= requested_count or named >= requested_count
     if kind == "session_summary":
-        requested_count = _requested_item_count(request_text)
+        requested_count = requested_count or _requested_item_count(request_text)
         if requested_count > 1:
             numbered = {
                 int(item)
@@ -1408,10 +1524,15 @@ def _special_semantic_gate(
 
 
 def _requested_item_count(value: str) -> int:
-    words = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+    words = {
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+        "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    }
     match = re.search(
-        r"\b(?P<count>\d+|one|two|three|four|five)\s+"
-        r"(?:short\s+|brief\s+|practical\s+)?(?:parts?|points?|steps?|items?|sections?|facts?)\b",
+        r"\b(?P<count>\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+"
+        r"(?:tiny\s+|little\s+|small\s+|short\s+|brief\s+|practical\s+)?"
+        r"(?:next\s+)?"
+        r"(?:parts?|points?|steps?|items?|sections?|facts?|examples?|questions?|jokes?|puns?|options?|reasons?)\b",
         value,
     )
     if not match:
@@ -1480,15 +1601,15 @@ def _utterance_units(value: str) -> list[dict[str, Any]]:
             kind = "correction"
         elif re.match(
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
-            r"(?:compare|explain|show|tell|help|give|list|summarize|check|"
-            r"recommend|suggest|propose|ask|acknowledge|write|sort|arrange|outline|walk|describe|identify|state|revise|update|adjust|"
-            r"separate|distinguish|calculate|count|return\b.*\b(?:explain|answer|summarize))\b",
+            r"(?:compare|contrast|explain|show|tell|look\s+at|help|give|list|summarize|check|"
+            r"recommend|choose|pick|select|suggest|propose|ask|acknowledge|write|sort|arrange|outline|walk|describe|identify|state|revise|update|adjust|"
+            r"separate|distinguish|calculate|count|disagree|challenge|return\b.*\b(?:explain|answer|summarize))\b",
             lower,
         ):
             kind = "direct_request"
         elif re.match(
             r"^(?:if|when|given)\b.+,\s*(?:compare|explain|give|tell|show|list|"
-            r"recommend|suggest|write|sort|arrange|describe|identify|state)\b",
+            r"recommend|suggest|write|sort|arrange|describe|identify|state|disagree|challenge)\b",
             lower,
         ):
             kind = "direct_request"
@@ -1498,6 +1619,153 @@ def _utterance_units(value: str) -> list[dict[str, Any]]:
             kind = "statement"
         units.append({"id": f"utterance_{index + 1}", "text": truncate(text, 480), "kind": kind, "position": index})
     return units[:12]
+
+
+def _canonicalize_obligations(
+    obligations: list[dict[str, Any]],
+    prompt: str,
+) -> list[dict[str, Any]]:
+    """Freeze the turn's answer obligations before any content organ runs.
+
+    Later organs may enrich an obligation with results, but they should not
+    infer its count, condition, function, or response shape again from prose.
+    """
+
+    canonical: list[dict[str, Any]] = []
+    search_from = 0
+    prompt_lower = prompt.lower()
+    for index, obligation in enumerate(obligations):
+        item = dict(obligation)
+        source = str(item.get("source_text") or "").strip()
+        parent = str(item.get("parent_source_text") or "").strip()
+        span_start = prompt_lower.find(source.lower(), search_from) if source else -1
+        if span_start < 0 and source:
+            span_start = prompt_lower.find(source.lower())
+        span_end = span_start + len(source) if span_start >= 0 else -1
+        if span_end >= 0:
+            search_from = span_end
+        kind = str(item.get("kind") or "direct_question")
+        response_functions = [
+            str(value)
+            for value in item.get("requested_response_functions") or []
+            if str(value)
+        ] or [_response_function_for_kind(kind)]
+        shape = _response_shape_metadata(source or parent, kind)
+        condition = _condition_metadata(parent or source)
+        canonical.append(
+            {
+                **item,
+                "canonical_index": index,
+                "canonical": True,
+                "source_span": {"start": span_start, "end": span_end},
+                "condition": condition,
+                "requested_count": int(shape.get("requested_count") or 0),
+                "response_shape": shape,
+                "requested_response_functions": list(dict.fromkeys(response_functions)),
+            }
+        )
+    return canonical
+
+
+def _obligation_ledger(prompt: str, obligations: list[dict[str, Any]]) -> dict[str, Any]:
+    signature = sha256(
+        "|".join(
+            f"{item.get('id')}:{item.get('kind')}:{','.join(item.get('requested_response_functions') or [])}"
+            for item in obligations
+        ).encode("utf-8")
+    ).hexdigest()[:16]
+    return {
+        "status": "canonical_obligation_ledger_ready",
+        "version": "v1_typed_turn_obligations",
+        "ledger_id": f"obligation-ledger-{signature}",
+        "literal_prompt": prompt,
+        "obligations": obligations,
+        "obligation_sequence": [str(item.get("id") or "") for item in obligations],
+        "obligation_count": len(obligations),
+        "built_before_content_generation": True,
+        "downstream_reparse_allowed": False,
+        "session_scoped_only": True,
+        "hidden_chain_of_thought_exposed": False,
+    }
+
+
+def _response_function_for_kind(kind: str) -> str:
+    return {
+        "comparison": "comparison",
+        "choice_or_priority": "choice",
+        "reason": "reason",
+        "method": "method",
+        "humor": "humor",
+        "closure": "closure",
+        "preference": "preference",
+        "conditional_disagreement": "disagreement",
+        "disagreement": "disagreement",
+        "correction_update": "correction",
+    }.get(kind, "answer")
+
+
+def _condition_metadata(text: str) -> dict[str, Any]:
+    normalized = " ".join(str(text or "").strip().split())
+    leading = re.match(
+        r"^(?P<marker>if|when|unless|assuming|given that)\s+"
+        r"(?P<condition>.+?),\s*(?P<request>.+)$",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    execution = re.search(
+        r"\b(?:disagree|challenge|push back)\b.*?\bif\s+(?P<condition>.+?)(?:[.?!]|$)",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    return {
+        "present": bool(leading or execution),
+        "marker": str(leading.group("marker") if leading else "if" if execution else "").lower(),
+        "leading_condition": truncate(str(leading.group("condition") if leading else ""), 360),
+        "execution_condition": truncate(str(execution.group("condition") if execution else ""), 360),
+        "condition_changes_whether_act_is_performed": bool(execution),
+    }
+
+
+def _response_shape_metadata(text: str, kind: str) -> dict[str, Any]:
+    lower = " ".join(str(text or "").lower().split())
+    count = _requested_item_count(lower)
+    counted = re.search(
+        r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+"
+        r"(?:tiny\s+|little\s+|small\s+|short\s+|brief\s+|practical\s+)?"
+        r"(?:next\s+)?"
+        r"(?P<unit>parts?|points?|steps?|items?|sections?|facts?|examples?|questions?|jokes?|puns?|options?|reasons?)\b",
+        lower,
+    )
+    # "Small correction" and "tiny correction" describe the size of the
+    # revision, not the desired answer length. Treat smallness as a response
+    # shape only when it modifies an actual response unit; explicit
+    # short/brief/concise language remains sufficient on its own.
+    brevity_match = re.search(
+        r"\b(short|brief|concise)\b|"
+        r"\b(tiny|little|small)\s+(?:answer|reply|response|summary|explanation|paragraph|note)\b",
+        lower,
+    )
+    ordered = bool(
+        count > 1
+        or re.search(r"\b(?:first|second|third|next|then|finally|in order)\b", lower)
+    )
+    return {
+        "explicit": bool(count or brevity_match or ordered),
+        "requested_count": count,
+        "counted_unit": str(counted.group("unit") if counted else "").rstrip("s"),
+        "brevity": str(
+            next(
+                (
+                    group
+                    for group in (brevity_match.groups() if brevity_match else ())
+                    if group
+                ),
+                "",
+            )
+        ),
+        "ordered": ordered,
+        "act_kind": kind,
+    }
 
 
 def _obligation_id(value: str, index: int) -> str:

@@ -866,3 +866,119 @@ def test_release_resolution_does_not_let_unrelated_text_borrow_a_missing_ground_
     assert coverage["all_required_addressed"] is False
     assert coverage["all_required_resolved"] is False
     assert coverage["items"][0]["resolution_state"] == "unresolved"
+
+
+def test_canonical_ledger_preserves_compare_choose_and_reason_as_distinct_functions():
+    variants = [
+        "Compare paper and thin card for the pinwheel, choose one, and explain why.",
+        "Contrast thin card with paper, pick which you would use, then give your reason.",
+        "Look at paper versus thin card, recommend one for this pinwheel, and tell me why.",
+    ]
+
+    plans = [build_pragmatic_plan({"prompt": prompt}) for prompt in variants]
+
+    for plan in plans:
+        obligations = plan["response_obligations"]
+        assert [item["kind"] for item in obligations] == [
+            "comparison",
+            "choice_or_priority",
+            "reason",
+        ]
+        assert [item["requested_response_functions"] for item in obligations] == [
+            ["comparison"],
+            ["choice"],
+            ["reason"],
+        ]
+        assert plan["obligation_ledger"]["obligations"] == obligations
+        assert plan["obligation_ledger"]["downstream_reparse_allowed"] is False
+
+
+def test_canonical_ledger_keeps_conditional_disagreement_as_one_typed_act():
+    variants = [
+        "If I say card is always better, disagree if that conclusion does not follow from what we know.",
+        "When I claim card must always win, push back if our evidence does not justify it.",
+        "Assuming I call card universally better, challenge that conclusion if the premises do not support it.",
+    ]
+
+    for prompt in variants:
+        plan = build_pragmatic_plan({"prompt": prompt})
+        assert len(plan["response_obligations"]) == 1
+        obligation = plan["response_obligations"][0]
+        assert obligation["kind"] == "conditional_disagreement"
+        assert obligation["requested_response_functions"] == [
+            "disagreement",
+            "claim_evaluation",
+        ]
+        assert obligation["condition"]["present"] is True
+        assert obligation["condition"]["condition_changes_whether_act_is_performed"] is True
+
+
+def test_canonical_ledger_binds_counts_and_shape_to_the_correct_obligation():
+    plan = build_pragmatic_plan(
+        {"prompt": "Give me two short next steps and add one tiny joke."}
+    )
+    method, humor = plan["response_obligations"]
+
+    assert method["kind"] == "method"
+    assert method["requested_count"] == 2
+    assert method["response_shape"]["counted_unit"] == "step"
+    assert method["response_shape"]["brevity"] == "short"
+    assert humor["kind"] == "humor"
+    assert humor["requested_count"] == 1
+    assert humor["response_shape"]["counted_unit"] == "joke"
+
+
+def test_small_correction_describes_revision_scope_not_required_answer_brevity():
+    correction = build_pragmatic_plan(
+        {
+            "prompt": (
+                "Small correction: the evening is cool, not warm. "
+                "Update only the drink part."
+            )
+        }
+    )["response_obligations"][0]
+    small_reply = build_pragmatic_plan(
+        {"prompt": "Give me a small reply explaining the change."}
+    )["response_obligations"][0]
+
+    assert correction["kind"] == "correction_update"
+    assert correction["response_shape"]["brevity"] == ""
+    assert small_reply["response_shape"]["brevity"] == "small"
+
+
+def test_canonical_ledger_recognizes_present_curiosity_and_natural_closure():
+    preference_variants = [
+        "What part of making the pinwheel are you most curious to try?",
+        "What about this little build interests you most?",
+    ]
+    closure_variants = [
+        "That was fun :) Let's leave the pinwheel here for now and talk again later.",
+        "Nice work. We can pause this here and chat again tomorrow.",
+    ]
+
+    for prompt in preference_variants:
+        obligation = build_pragmatic_plan({"prompt": prompt})["response_obligations"][0]
+        assert obligation["kind"] == "preference"
+        assert obligation["requested_response_functions"] == ["preference"]
+        assert obligation["external_evidence_required"] is False
+    for prompt in closure_variants:
+        obligations = build_pragmatic_plan({"prompt": prompt})["response_obligations"]
+        assert [item["kind"] for item in obligations] == ["closure"]
+        assert obligations[0]["requested_response_functions"] == ["closure"]
+
+
+def test_parent_preference_wording_does_not_overwrite_an_explicit_comparison_child():
+    prompt = (
+        "Compare paper and card, then tell me what part of the pinwheel build "
+        "you are most curious to try."
+    )
+    plan = build_pragmatic_plan({"prompt": prompt})
+
+    assert [item["kind"] for item in plan["response_obligations"]] == [
+        "comparison",
+        "preference",
+    ]
+    assert [item["requested_response_functions"] for item in plan["response_obligations"]] == [
+        ["comparison"],
+        ["preference"],
+    ]

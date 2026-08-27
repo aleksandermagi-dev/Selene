@@ -59,6 +59,7 @@ def build_bounded_organ_coalition(
     language = _dict(payload.get("language_capability"))
     structural = _dict(payload.get("structural_discovery"))
     exploratory = _dict(payload.get("exploratory_reasoning"))
+    answer_operations = _dict(payload.get("answer_operations"))
     formation_braid = _dict(payload.get("formation_braid"))
     dual_horizon = _dict(payload.get("dual_horizon_context"))
     metacognition = _dict(payload.get("metacognition"))
@@ -125,6 +126,28 @@ def build_bounded_organ_coalition(
             ),
             obligation_ids=obligation_ids,
             authority_scope="current_session_grounding_only",
+        ),
+        _entry(
+            "answer_operation_coordinator",
+            layer="shared_coordination",
+            role="typed_obligation_result_verification",
+            status=(
+                "completed"
+                if answer_operations.get("all_supported_operations_complete") is True
+                else "held"
+                if int(answer_operations.get("operation_count") or 0) > 0
+                else "unavailable"
+            ),
+            required=bool(int(answer_operations.get("operation_count") or 0)),
+            basis=(
+                str(answer_operations.get("status") or "answer_operations_not_supplied")
+            ),
+            obligation_ids=[
+                str(item.get("obligation_id") or "")
+                for item in answer_operations.get("results") or []
+                if isinstance(item, dict) and str(item.get("obligation_id") or "")
+            ],
+            authority_scope="current_turn_operation_result_verification_only",
         ),
     ]
 
@@ -502,7 +525,18 @@ def build_bounded_organ_coalition(
         "obligation_owner_map": _obligation_owner_map(
             coordination_units,
             answer_engine=answer_engine,
+            spine=spine,
         ),
+        "answer_operation_summary": {
+            "status": str(answer_operations.get("status") or "not_supplied"),
+            "operation_count": int(answer_operations.get("operation_count") or 0),
+            "completed_count": int(answer_operations.get("completed_count") or 0),
+            "missing_input_count": int(
+                answer_operations.get("missing_input_count") or 0
+            ),
+            "generic_prose_accepted_as_completion": False,
+            "is_answer_authority": False,
+        },
         "confidence_vector": confidence,
         "graceful_fall": graceful_fall,
         "responsibility_conflict_contract": {
@@ -705,8 +739,9 @@ def _obligation_owner_map(
     coordination_units: list[dict[str, Any]],
     *,
     answer_engine: dict[str, Any],
+    spine: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    return [
+    mapped = [
         {
             "obligation_id": str(_dict(item.get("obligation")).get("id") or ""),
             "responsible_owner": str(
@@ -729,6 +764,31 @@ def _obligation_owner_map(
         for item in coordination_units
         if str(_dict(item.get("obligation")).get("id") or "")
     ][:20]
+    mapped_ids = {str(item.get("obligation_id") or "") for item in mapped}
+    for obligation in spine.get("open_obligations") or []:
+        if not isinstance(obligation, dict):
+            continue
+        obligation_id = str(obligation.get("id") or "")
+        if not obligation_id or obligation_id in mapped_ids:
+            continue
+        mapped.append(
+            {
+                "obligation_id": obligation_id,
+                "responsible_owner": str(
+                    obligation.get("responsible_owner") or "ordinary_conversation_path"
+                ),
+                "selected_domain": str(
+                    obligation.get("answer_domain") or "ordinary_conversation"
+                ),
+                "executable_in_chat": False,
+                "adapter_executed": False,
+                "canonical_spine_fallback": True,
+            }
+        )
+        mapped_ids.add(obligation_id)
+        if len(mapped) >= 20:
+            break
+    return mapped
 
 
 def _confidence_vector(

@@ -14,6 +14,7 @@ from .answer_engine import (
     run_verified_math_answer,
 )
 from .answer_completion import build_bounded_answer_completion
+from .answer_operations import build_answer_operation_packet
 from .answer_substance import build_answer_substance
 from .affect_expression import build_affect_expression_guidance
 from .bounded_organ_coalition import build_bounded_organ_coalition
@@ -453,6 +454,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         intent_decision,
         contextual_follow_up=contextual_follow_up,
         conversation_spine=conversation_spine,
+        problem_context=(
+            payload.get("problem_context")
+            if isinstance(payload.get("problem_context"), dict)
+            else {}
+        ),
         hard=bool(hard_blockers),
     )
     cocoon_suggestion = _cocoon_suggestion(meaning_text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
@@ -802,6 +808,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "hypothesis_attempt": intelligence_support.get("hypothesis_attempt") or {},
             "candidate_models": intelligence_support.get("candidate_models") or [],
             "claim_evidence_packet": claim_evidence_packet,
+            "requested_modes": _canonical_exploratory_modes(conversation_spine),
             "hard_boundary": bool(hard_blockers),
         }
     )
@@ -846,6 +853,85 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         # Attributed packets own source claims and disagreement wording. A
         # parallel exploratory paraphrase may not precede or duplicate them.
         exploratory_reasoning_content_seed = ""
+    answer_operations = build_answer_operation_packet(
+        {
+            "conversation_spine": conversation_spine,
+            "answer_engine_support": answer_engine_support,
+            "intelligence_os_support": intelligence_support,
+            "exploratory_reasoning": exploratory_reasoning,
+            "epistemic_revision_plan": epistemic_revision,
+            "epistemic_revision_reply": epistemic_revision_reply,
+            "correction_reconstruction_reply": correction_reconstruction_reply,
+            "current_session_summary": {
+                "points": [
+                    str(item.get("summary") or item.get("text") or "")
+                    for item in [
+                        *(conversation_spine.get("relevant_session_landmarks") or []),
+                        *(conversation_spine.get("relevant_session_facts") or []),
+                    ]
+                    if isinstance(item, dict)
+                    and str(item.get("summary") or item.get("text") or "").strip()
+                ],
+                "response_seed": session_fact_reply or contextual_reply,
+                "source_refs": ["conversation_spine:current_session_summary"],
+            },
+            "visible_conversation_owners": [
+                *(
+                    [
+                        {
+                            "owner_id": "contextual_follow_up",
+                            "kind": str(contextual_follow_up.get("kind") or ""),
+                            "text": contextual_reply,
+                            "supported_operations": [
+                                "causal_explanation",
+                                "comparison",
+                                "choice",
+                                "method",
+                                "summary",
+                            ],
+                            "source_refs": [
+                                "conversation_spine:contextual_follow_up"
+                            ],
+                        }
+                    ]
+                    if contextual_follow_up.get("detected") is True
+                    and contextual_reply
+                    else []
+                ),
+                *(
+                    [
+                        {
+                            "owner_id": "explicit_session_alias",
+                            "kind": "explicit_alias_resolution",
+                            "text": alias_reply,
+                            "supported_operations": ["choice"],
+                            "source_refs": ["dialogue_workspace:session_alias"],
+                        }
+                    ]
+                    if alias_reply
+                    else []
+                ),
+                *(
+                    [
+                        {
+                            "owner_id": "language_capability",
+                            "kind": "reviewed_language_capability_correction",
+                            "text": language_content_seed,
+                            "supported_operations": ["correction"],
+                            "source_refs": [
+                                "language_capability_shelf:reviewed_current_answer"
+                            ],
+                        }
+                    ]
+                    if language_capability.get("used") is True
+                    and language_content_seed
+                    and epistemic_revision.get("detected") is True
+                    else []
+                ),
+            ],
+            "hard_boundary": bool(hard_blockers),
+        }
+    )
     knowledge_semantic_relevance = next(
         (
             item.get("semantic_relevance")
@@ -899,8 +985,47 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         and str((item.get("obligation") or {}).get("id") or "")
     ]
     for candidate in visible_speech_candidates:
+        operation_ids = [
+            str(item.get("obligation_id") or "")
+            for item in answer_operations.get("results") or []
+            if isinstance(item, dict)
+            and item.get("status") == "completed"
+            and str(item.get("expression_source_id") or "")
+            == str(candidate.get("source_id") or "")
+            and str(item.get("obligation_id") or "")
+        ]
+        if operation_ids:
+            candidate["obligation_ids"] = list(
+                dict.fromkeys(
+                    [
+                        *[
+                            str(item)
+                            for item in candidate.get("obligation_ids") or []
+                            if str(item)
+                        ],
+                        *operation_ids,
+                    ]
+                )
+            )
+            candidate["typed_operation_results"] = [
+                item
+                for item in answer_operations.get("results") or []
+                if isinstance(item, dict)
+                and str(item.get("obligation_id") or "") in operation_ids
+            ]
         if str(candidate.get("source_id") or "") == "answer_engine":
-            candidate["obligation_ids"] = answer_engine_obligation_ids
+            candidate["obligation_ids"] = list(
+                dict.fromkeys(
+                    [
+                        *[
+                            str(item)
+                            for item in candidate.get("obligation_ids") or []
+                            if str(item)
+                        ],
+                        *answer_engine_obligation_ids,
+                    ]
+                )
+            )
         elif (
             correction_reconstruction_reply
             and str(candidate.get("source_id") or "") == "current_session_facts"
@@ -1014,6 +1139,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
             "supported_semantics": selected_supported_semantics,
+            "answer_operations": answer_operations,
         }
     )
     if (
@@ -1108,6 +1234,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             ),
             "bounded_hypothesis": bounded_hypothesis,
             "exploratory_reasoning": exploratory_reasoning,
+            "answer_operations": answer_operations,
             "source_id": visible_speech_seed.get("selected_source_id") or "none",
             "source_class": visible_speech_seed.get("selected_source_class") or "conversation",
             "hard_boundary": bool(hard_blockers),
@@ -1181,6 +1308,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "language_capability": language_capability,
             "structural_discovery": structural_discovery,
             "exploratory_reasoning": exploratory_reasoning,
+            "answer_operations": answer_operations,
             "formation_braid": formation_braid,
             "dual_horizon_context": dual_horizon_context,
             "visible_speech_seed": visible_speech_seed,
@@ -1256,6 +1384,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
             "exploratory_reasoning": exploratory_reasoning,
+            "answer_operations": answer_operations,
             "conversational_energy_input": conversational_energy_input,
             "generative_thought_input": (
                 conversational_contribution.get("generative_thought_handoff") or {}
@@ -1313,6 +1442,13 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "conversational_contribution": conversational_contribution,
         "structural_discovery": structural_discovery,
         "exploratory_reasoning": exploratory_reasoning,
+        "answer_operations": answer_operations,
+        "whole_answer_composition": (
+            epistemic_composition.get("whole_answer_composition") or {}
+        ),
+        "whole_answer_meaning_must_be_preserved": (
+            epistemic_composition.get("whole_answer_composition_applied") is True
+        ),
         "contextual_continuity": contextual_continuity,
         "relational_context": relational_context,
         "relational_context_supplies_response_script": False,
@@ -1408,6 +1544,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         answer_engine_support=answer_engine_support,
         supported_semantics=selected_supported_semantics,
         resolution_evidence=release_resolution_evidence,
+        answer_operations=answer_operations,
     )
     native_candidate = _selene_label_candidate(str(native_language.get("candidate_text") or ""))
     native_coverage = _evaluate_chat_response_coverage(
@@ -1417,6 +1554,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         answer_engine_support=answer_engine_support,
         supported_semantics=selected_supported_semantics,
         resolution_evidence=release_resolution_evidence,
+        answer_operations=answer_operations,
     )
     recovery_source = "voice_module"
     if not hard_blockers and _coverage_rank(native_coverage) > _coverage_rank(response_coverage):
@@ -1431,6 +1569,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         answer_engine_support=answer_engine_support,
         supported_semantics=selected_supported_semantics,
         resolution_evidence=release_resolution_evidence,
+        answer_operations=answer_operations,
     )
     grounded_source_id = str(visible_speech_seed.get("selected_source_id") or "none")
     grounded_source_class = str(
@@ -1518,6 +1657,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         candidate_text,
         answer_engine_support,
         primary_source_id=str(visible_speech_seed.get("selected_source_id") or "none"),
+        semantic_recomposition_verified=(
+            (
+                epistemic_composition.get("whole_answer_composition_applied") is True
+                or epistemic_composition.get("single_typed_operation_expression_used")
+                is True
+            )
+            and voice_preview.get("nlo_meaning_preserved") is True
+        ),
     )
     candidate_text = _preserve_bounded_conversation_invariants(
         candidate_text,
@@ -1532,6 +1679,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         answer_engine_support=answer_engine_support,
         supported_semantics=selected_supported_semantics,
         resolution_evidence=release_resolution_evidence,
+        answer_operations=answer_operations,
     )
     conversation_repair["candidate_source"] = recovery_source
     conversation_repair["final_response_coverage"] = response_coverage
@@ -1558,6 +1706,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "claim_evidence_packet": claim_evidence_packet,
         "structural_discovery": structural_discovery,
         "exploratory_reasoning": exploratory_reasoning,
+        "answer_operations": answer_operations,
         "conversational_energy": conversational_energy,
         "conversational_contribution": conversational_contribution,
         "response_coverage": response_coverage,
@@ -1588,6 +1737,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     owner_retry_outputs = _metacognitive_owner_outputs(
         organ_coalition=organ_coalition,
+        answer_operations=answer_operations,
         answer_engine_support=answer_engine_support,
         comprehension=comprehension,
         intelligence_support=intelligence_support,
@@ -1624,6 +1774,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             proposed_candidate,
             answer_engine_support,
             primary_source_id=str(visible_speech_seed.get("selected_source_id") or "none"),
+            semantic_recomposition_verified=(
+                (
+                    epistemic_composition.get("whole_answer_composition_applied") is True
+                    or epistemic_composition.get(
+                        "single_typed_operation_expression_used"
+                    )
+                    is True
+                )
+                and voice_preview.get("nlo_meaning_preserved") is True
+            ),
         )
         proposed_candidate = _preserve_bounded_conversation_invariants(
             proposed_candidate,
@@ -1638,6 +1798,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             answer_engine_support=answer_engine_support,
             supported_semantics=selected_supported_semantics,
             resolution_evidence=release_resolution_evidence,
+            answer_operations=answer_operations,
         )
         completion_repair["resulting_coverage"] = proposed_coverage
         if _coverage_rank(proposed_coverage) > _coverage_rank(response_coverage):
@@ -1729,6 +1890,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             conversation_spine=conversation_spine,
             answer_engine_support=answer_engine_support,
             supported_semantics=selected_supported_semantics,
+            answer_operations=answer_operations,
         )
         conversation_repair["final_response_coverage"] = response_coverage
     candidate_text = _preserve_bounded_conversation_invariants(
@@ -1745,6 +1907,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         supported_semantics=selected_supported_semantics,
         epistemic_composition=epistemic_composition,
         resolution_evidence=release_resolution_evidence,
+        answer_operations=answer_operations,
     )
     conversation_repair["final_response_coverage"] = response_coverage
     commitment_claim_release = inspect_visible_commitment_claim(
@@ -1763,6 +1926,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             supported_semantics=selected_supported_semantics,
             epistemic_composition=epistemic_composition,
             resolution_evidence=release_resolution_evidence,
+            answer_operations=answer_operations,
         )
         response_coverage = _coverage_with_global_graceful_hold(response_coverage)
         conversation_repair["candidate_source"] = "commitment_integrity_truthful_fall"
@@ -1803,6 +1967,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             supported_semantics=selected_supported_semantics,
             epistemic_composition=epistemic_composition,
             resolution_evidence=release_resolution_evidence,
+            answer_operations=answer_operations,
         )
         response_coverage = _coverage_with_global_graceful_hold(response_coverage)
         conversation_repair["candidate_source"] = "visible_speech_graceful_fall"
@@ -1842,6 +2007,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "language_capability": language_capability,
             "structural_discovery": structural_discovery,
             "exploratory_reasoning": exploratory_reasoning,
+            "answer_operations": answer_operations,
             "formation_braid": formation_braid,
             "dual_horizon_context": dual_horizon_context,
             "associative_intuition": associative_intuition,
@@ -1885,6 +2051,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
             "exploratory_reasoning": exploratory_reasoning,
+            "answer_operations": answer_operations,
             "diagnostic_context": diagnostic_context,
             "source_refs": [
                 *_json_list(diagnostic_context.get("source_refs")),
@@ -1964,6 +2131,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "claim_evidence_packet": claim_evidence_packet,
         "structural_discovery": structural_discovery,
         "exploratory_reasoning": exploratory_reasoning,
+        "answer_operations": answer_operations,
         "self_state": self_state,
         "affect_expression": affect_expression,
         "relational_context": relational_context,
@@ -1983,6 +2151,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "local_chat_continuity": chat_continuity,
         "conversation_context": conversation_context,
         "dialogue_workspace": dialogue_workspace,
+        "session_proposition_ledger": dialogue_workspace.get("session_proposition_ledger") or {},
         "response_coverage": response_coverage,
         "conversation_repair": conversation_repair,
         "visible_speech_seed": visible_speech_seed,
@@ -2101,6 +2270,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
             "exploratory_reasoning": exploratory_reasoning,
+            "answer_operations": answer_operations,
             "conversational_energy": conversational_energy,
             "conversational_contribution": conversational_contribution,
             "self_state": self_state,
@@ -2121,6 +2291,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "local_chat_continuity": chat_continuity,
             "conversation_context": conversation_context,
             "dialogue_workspace": dialogue_workspace,
+            "session_proposition_ledger": dialogue_workspace.get("session_proposition_ledger") or {},
             "response_coverage": response_coverage,
             "conversation_repair": conversation_repair,
             "visible_speech_seed": visible_speech_seed,
@@ -3186,7 +3357,11 @@ def _explicit_humor_response_seed(
             text,
             flags=re.IGNORECASE,
         )
-    subject = truncate(subject_match.group(1).strip(), 140) if subject_match else "this"
+    subject = truncate(subject_match.group(1).strip(), 140) if subject_match else ""
+    if subject and _humor_subject_is_command_fragment(subject):
+        subject = ""
+    if not subject:
+        subject = "the plan" if re.search(r"\b(?:plan|steps?|next)\b", text, re.IGNORECASE) else "this"
     if "republic" in subject.lower():
         joke = "One little joke: the cable republic tied up every motion before it reached the floor."
     elif "committee" in subject.lower():
@@ -3220,6 +3395,19 @@ def _explicit_humor_response_seed(
     if grounded_return:
         return f"{joke}\n\nBack to the {return_topic}: {grounded_return}"
     return f"{joke}\n\nBack to the {return_topic}."
+
+
+def _humor_subject_is_command_fragment(subject: str) -> bool:
+    lower = " ".join(subject.lower().split())
+    if lower.startswith(("me ", "us ", "him ", "her ", "them ")):
+        return True
+    return bool(
+        re.search(
+            r"\b(?:steps?|points?|items?|answers?|replies|questions?)\b|"
+            r"\b(?:and|then)\s+(?:add|give|show|tell|list|name|return)\b",
+            lower,
+        )
+    )
 
 
 def _mixed_conversation_reply(
@@ -3385,6 +3573,7 @@ def _intelligence_support(
     *,
     contextual_follow_up: dict[str, Any] | None = None,
     conversation_spine: dict[str, Any] | None = None,
+    problem_context: dict[str, Any] | None = None,
     hard: bool,
 ) -> dict[str, Any]:
     meaning = intent_decision.get("meaning_route") if isinstance(intent_decision.get("meaning_route"), dict) else {}
@@ -3427,6 +3616,7 @@ def _intelligence_support(
                 if specialized_domain in {"verified_math", "source_backed_research", "comparison_planning", "local_code_inspection"}
                 else "ordinary chat did not need intelligenceOS support"
             ),
+            "prompt_grounded_preview": prompt_grounded_preview,
             "review_status": "status_only",
         }
     contextual = contextual_follow_up if isinstance(contextual_follow_up, dict) else {}
@@ -3466,6 +3656,7 @@ def _intelligence_support(
     result = run_intelligence_os_reason(
         conn,
         {
+            **(problem_context if isinstance(problem_context, dict) else {}),
             "prompt": reasoning_prompt,
             "observations": recent_observations,
             "source_refs": ["selene_chat:intelligence_os_support", *_json_list(route.get("source_refs"))],
@@ -3486,6 +3677,7 @@ def _intelligence_support(
         "best_current_answer": result.get("best_current_answer"),
         "answer_substance": answer_substance,
         "hypothesis_attempt": hypothesis_attempt,
+        "problem_resolution": result.get("problem_resolution") or {},
         "observations": result.get("observations") or [],
         "candidate_models": result.get("candidate_models") or [],
         "reasoning_summary": "" if substance_selected or hypothesis_selected else result.get("reasoning_summary"),
@@ -3988,6 +4180,7 @@ def _preserve_answer_engine_invariants(
     support: dict[str, Any],
     *,
     primary_source_id: str = "",
+    semantic_recomposition_verified: bool = False,
 ) -> str:
     if primary_source_id == "exploratory_reasoning":
         return candidate
@@ -3998,6 +4191,12 @@ def _preserve_answer_engine_invariants(
     content_seed = str(support.get("content_seed") or "").strip()
     if _domain_answer_should_be_direct_only(support) and content_seed:
         return _selene_label_candidate(content_seed)
+    if semantic_recomposition_verified:
+        # Whole-answer composition has already preserved the typed semantic
+        # units, and Voice verified the NLO meaning invariant. Requiring every
+        # original surface fragment here would append the pre-NLO wording and
+        # duplicate the same supported answer.
+        return candidate
     required = [str(item).strip() for item in support.get("required_answer_fragments") or [] if str(item).strip()]
     candidate_surface = " ".join(candidate.lower().split())
     missing = [
@@ -4182,6 +4381,7 @@ def _evaluate_chat_response_coverage(
     supported_semantics: dict[str, Any] | None = None,
     epistemic_composition: dict[str, Any] | None = None,
     resolution_evidence: list[dict[str, Any]] | None = None,
+    answer_operations: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     coverage = evaluate_response_coverage(
         pragmatic_plan,
@@ -4190,6 +4390,7 @@ def _evaluate_chat_response_coverage(
         supported_semantics=supported_semantics,
         epistemic_composition=epistemic_composition,
         resolution_evidence=resolution_evidence,
+        answer_operations=answer_operations,
     )
     if not _domain_answer_is_complete(answer_engine_support):
         return coverage
@@ -4229,10 +4430,24 @@ def _evaluate_chat_response_coverage(
         if not isinstance(raw, dict):
             continue
         item = dict(raw)
-        if str(item.get("obligation_id") or "") in owner_ids:
+        typed_receipt = (
+            item.get("semantic_fulfillment")
+            if isinstance(item.get("semantic_fulfillment"), dict)
+            else {}
+        )
+        typed_operation_allows_domain_credit = bool(
+            item.get("typed_operation_required") is not True
+            or typed_receipt.get("fulfilled") is True
+        )
+        if (
+            str(item.get("obligation_id") or "") in owner_ids
+            and typed_operation_allows_domain_credit
+        ):
             item.update(
                 {
                     "addressed": True,
+                    "resolved_for_release": True,
+                    "resolution_state": "answered",
                     "coverage_score": 1.0,
                     "status": "addressed_by_verified_current_turn_domain_owner",
                     "domain_owner_alignment": True,
@@ -4243,7 +4458,9 @@ def _evaluate_chat_response_coverage(
                 answered_loop_ids.add(str(item["loop_id"]))
         items.append(item)
     addressed_count = sum(1 for item in items if item.get("addressed") is True)
+    resolved_count = sum(1 for item in items if item.get("resolved_for_release") is True)
     all_addressed = bool(items) and addressed_count == len(items)
+    all_resolved = bool(items) and resolved_count == len(items)
     spine_alignment = dict(coverage.get("conversation_spine_alignment") or {})
     if all_addressed:
         spine_alignment.update(
@@ -4259,9 +4476,9 @@ def _evaluate_chat_response_coverage(
         **coverage,
         "items": items,
         "addressed_count": addressed_count,
-        "resolved_count": addressed_count,
+        "resolved_count": resolved_count,
         "all_required_addressed": all_addressed,
-        "all_required_resolved": all_addressed,
+        "all_required_resolved": all_resolved,
         "unresolved_count": sum(
             1 for item in items if item.get("addressed") is not True
         )
@@ -4275,7 +4492,7 @@ def _evaluate_chat_response_coverage(
             "domain_obligation_ownership"
         ),
         "unresolved_release_count": sum(
-            1 for item in items if item.get("addressed") is not True
+            1 for item in items if item.get("resolved_for_release") is not True
         )
         + (0 if spine_alignment.get("aligned") is True else 1),
     }
@@ -4621,6 +4838,7 @@ def _bounded_metacognitive_completion(
 def _metacognitive_owner_outputs(
     *,
     organ_coalition: dict[str, Any],
+    answer_operations: dict[str, Any] | None = None,
     answer_engine_support: dict[str, Any],
     comprehension: dict[str, Any],
     intelligence_support: dict[str, Any],
@@ -4628,6 +4846,7 @@ def _metacognitive_owner_outputs(
     conversation_content_seed: str,
     feedback_handoff: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
+    answer_operations = answer_operations if isinstance(answer_operations, dict) else {}
     owner_ids: dict[str, list[str]] = {}
     for item in organ_coalition.get("obligation_owner_map") or []:
         if not isinstance(item, dict):
@@ -4667,6 +4886,18 @@ def _metacognitive_owner_outputs(
                     "source_class": source_class,
                 }
             )
+
+    for item in answer_operations.get("results") or []:
+        if not isinstance(item, dict) or item.get("status") != "completed":
+            continue
+        obligation_id = str(item.get("obligation_id") or "")
+        add(
+            str(item.get("responsible_owner") or ""),
+            str(item.get("expression_seed") or ""),
+            str(item.get("expression_source_id") or "typed_answer_owner"),
+            "typed_operation_result",
+            [obligation_id] if obligation_id else [],
+        )
 
     for item in answer_engine_support.get("domain_results") or []:
         if not isinstance(item, dict):
@@ -5767,6 +5998,26 @@ def _optional_response_character_limit(value: Any) -> int | None:
     except (TypeError, ValueError):
         return None
     return max(80, min(limit, 2400))
+
+
+def _canonical_exploratory_modes(conversation_spine: dict[str, Any]) -> list[str]:
+    """Carry typed exploratory requests without rediscovering them from prose."""
+    mode_by_function = {
+        "prediction": "prediction",
+        "hypothesis": "hypothesis",
+        "comparison": "comparison",
+        "disagreement": "data_conflict",
+        "claim_evaluation": "data_conflict",
+    }
+    return list(
+        dict.fromkeys(
+            mode_by_function[str(response_function)]
+            for obligation in conversation_spine.get("open_obligations") or []
+            if isinstance(obligation, dict)
+            for response_function in obligation.get("requested_response_functions") or []
+            if str(response_function) in mode_by_function
+        )
+    )
 
 
 def _with_guards(payload: dict[str, Any], *, transfer_approved: bool = False, active: bool = False) -> dict[str, Any]:

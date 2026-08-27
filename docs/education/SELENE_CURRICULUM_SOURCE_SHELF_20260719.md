@@ -2,7 +2,8 @@
 
 Date: 2026-07-19; expanded 2026-07-29 for F1 Group 6 and selected
 2026-07-30 for F1 Group 7; selected 2026-08-03 for F1 Group 8; expanded
-2026-08-08 for F1 Groups 10 through 16; selected 2026-08-11 for F2 Groups 1-5
+2026-08-08 for F1 Groups 10 through 16; selected 2026-08-11 for F2 Groups 1-5;
+expanded 2026-08-27 for F2 Group 6
 
 Status: source acquisition checkpoint; review only
 
@@ -280,6 +281,16 @@ sequence. Retained lessons use original explanations and examples, require
 relationship or inverse checks, and distinguish correct arithmetic from a
 correct model of a situation. Mnemonic-only instruction, speed drills, copied
 problems, worksheets, images, and advanced number theory are excluded.
+
+F2 Group 6 selects the checksum-pinned CKMath Grade 3 Unit 5 *Fractions as
+Numbers* and Grade 4 Unit 2 *Fraction Equivalence and Comparison* teacher
+guides. Their embedded CC BY-NC-SA 4.0 notices and third-party exclusions are
+preserved. The sources establish a coherent progression from equal partitions
+and unit fractions through number-line magnitude, equivalence, comparison,
+and composition. Retained lessons use independently written explanations and
+examples. Classroom scripts, worksheets, images, branded activities,
+assessment items, student responses, copied passages, and full fraction-
+operation algorithms are excluded.
 
 ## Cataloged and Deliberately Held Sources
 

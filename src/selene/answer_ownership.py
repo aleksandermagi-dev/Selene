@@ -95,6 +95,7 @@ def enrich_obligation_ownership(
     external_evidence_required = False
     completion_policy = "owner_may_complete_from_current_turn_support"
     response_functions = ["answer"]
+    generic_kind = kind in {"direct_question", "direct_request", "implied_request"}
 
     if kind == "self_state_check_in" or intent.get("self_state_requested") is True:
         answer_act = "current_self_state_report"
@@ -102,32 +103,56 @@ def enrich_obligation_ownership(
         owner = "self_state"
         completion_policy = "preserve_current_owner"
         response_functions = ["self_state"]
-    elif _current_preference_requested(lower):
+    elif kind == "preference" or (current_preference_requested(lower) and generic_kind):
         answer_act = "current_authored_preference"
         epistemic_basis = "current_authored_preference"
         owner = "ordinary_conversation_path"
         completion_policy = "owner_must_author_answer"
         response_functions = ["preference"]
-    elif _prediction_requested(lower):
+    elif kind == "choice_or_priority":
+        answer_act = "prompt_grounded_operation"
+        epistemic_basis = "visible_premises_constraints_and_supported_content"
+        owner = "ordinary_conversation_path"
+        completion_policy = "owner_must_perform_requested_operation"
+        response_functions = ["choice"]
+    elif kind == "reason" and _immediate_session_reason_requested(lower):
+        answer_act = "current_session_explanation"
+        epistemic_basis = "immediately_preceding_conversation"
+        owner = "ordinary_conversation_path"
+        completion_policy = "preserve_current_owner"
+        response_functions = ["reason", "callback"]
+    elif kind == "reason":
+        answer_act = "explanation_from_available_basis"
+        epistemic_basis = "visible_premises_or_approved_knowledge"
+        owner = "intelligence_os"
+        completion_policy = "owner_must_perform_requested_operation"
+        response_functions = ["reason"]
+    elif kind == "method":
+        answer_act = "prompt_grounded_operation"
+        epistemic_basis = "visible_premises_constraints_and_supported_content"
+        owner = "ordinary_conversation_path"
+        completion_policy = "owner_must_perform_requested_operation"
+        response_functions = ["method"]
+    elif _prediction_requested(lower) and generic_kind:
         answer_act = "prompt_grounded_prediction"
         epistemic_basis = "visible_premises_and_bounded_model"
         owner = "intelligence_os"
         completion_policy = "owner_must_perform_requested_operation"
         response_functions = ["prediction"]
-    elif kind == "provisional_inference" or _hypothesis_requested(lower):
+    elif kind == "provisional_inference" or (_hypothesis_requested(lower) and generic_kind):
         answer_act = "prompt_grounded_hypothesis"
         epistemic_basis = "visible_premises_and_bounded_model"
         owner = "intelligence_os"
         completion_policy = "owner_must_perform_requested_operation"
         response_functions = ["hypothesis"]
-    elif kind == "comparison" or _comparison_requested(lower):
+    elif kind == "comparison" or (_comparison_requested(lower) and generic_kind):
         answer_act = "prompt_grounded_comparison"
         epistemic_basis = "visible_premises_and_shared_dimensions"
         owner = "answer_engine"
         answer_domain = "comparison_planning"
         completion_policy = "owner_must_perform_requested_operation"
         response_functions = ["comparison"]
-    elif _action_scope_requested(lower):
+    elif _action_scope_requested(lower) and generic_kind:
         answer_act = "prompt_grounded_action_scope"
         epistemic_basis = "visible_constraints_and_current_capability"
         owner = "answer_engine"
@@ -140,6 +165,16 @@ def enrich_obligation_ownership(
         owner = "ordinary_conversation_path"
         completion_policy = "preserve_current_owner"
         response_functions = ["correction", "reopening"]
+    elif kind in {"conditional_disagreement", "disagreement"}:
+        answer_act = (
+            "conditional_claim_evaluation"
+            if kind == "conditional_disagreement"
+            else "requested_claim_evaluation"
+        )
+        epistemic_basis = "visible_claim_premises_and_entailment"
+        owner = "intelligence_os"
+        completion_policy = "owner_must_perform_requested_operation"
+        response_functions = ["disagreement", "claim_evaluation"]
     elif kind in {"session_summary", "callback", "rephrase_request", "closure", "humor"}:
         answer_act = {
             "session_summary": "current_session_summary",
@@ -168,28 +203,12 @@ def enrich_obligation_ownership(
         external_evidence_required = True
         completion_policy = "evidence_fallback_allowed"
         response_functions = ["definition" if _definition_requested(lower) else "fact"]
-    elif kind == "reason" and _immediate_session_reason_requested(lower):
-        answer_act = "current_session_explanation"
-        epistemic_basis = "immediately_preceding_conversation"
-        owner = "ordinary_conversation_path"
-        completion_policy = "preserve_current_owner"
-        response_functions = ["reason", "callback"]
-    elif kind == "reason":
-        answer_act = "explanation_from_available_basis"
-        epistemic_basis = "visible_premises_or_approved_knowledge"
-        owner = "intelligence_os"
-        completion_policy = "owner_must_perform_requested_operation"
-        response_functions = ["reason"]
-    elif kind in {"method", "choice_or_priority", "requested_output", "requested_section"}:
+    elif kind in {"requested_output", "requested_section"}:
         answer_act = "prompt_grounded_operation"
         epistemic_basis = "visible_premises_constraints_and_supported_content"
         owner = "ordinary_conversation_path"
         completion_policy = "owner_must_perform_requested_operation"
-        response_functions = [
-            "method" if kind == "method" else
-            "choice" if kind == "choice_or_priority" else
-            "requested_output"
-        ]
+        response_functions = ["requested_output"]
 
     return {
         **item,
@@ -211,13 +230,16 @@ def enrich_obligation_ownership(
     }
 
 
-def _current_preference_requested(lower: str) -> bool:
+def current_preference_requested(lower: str) -> bool:
     return bool(
         re.search(
             r"\bwhat(?:\s+part|\s+topic|\s+subject|\s+option)?\s+would you\s+"
             r"(?:like|prefer|choose|pick|want)\b|"
             r"\bwhat would you like to\s+(?:do|explore|discuss|talk about|get into)\b|"
-            r"\bwhich do you prefer\b",
+            r"\bwhich do you prefer\b|"
+            r"\bwhat\b.{0,100}\b(?:are you|you're|you are)\s+"
+            r"(?:(?:the\s+)?most\s+)?(?:curious|interested|excited)\b|"
+            r"\bwhat\b.{0,100}\b(?:appeals? to you|interests? you)\b",
             lower,
         )
     )

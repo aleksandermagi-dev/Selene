@@ -6,6 +6,7 @@ from hashlib import sha256
 from typing import Any
 
 from .intelligence_os import run_intelligence_os_reason
+from .problem_resolution import build_problem_resolution
 from .local_code_inspection import inspect_local_code
 from .answer_ownership import research_domain_requested
 from .meaning_router import interpret_turn_meaning
@@ -765,23 +766,78 @@ def run_comparison_planning_answer(
     runs = [initial_run]
     retry_enabled = payload.get("completion_retry_enabled") is not False
     retry_attempted = False
+    retry_resolution: dict[str, Any] = {}
 
     if retry_enabled and not initial_coverage["all_required_addressed"]:
-        retry_attempted = True
         missing = _unresolved_obligations(request["dialogue_obligations"], initial_coverage)
-        retry_prompt = _completion_retry_prompt(request["prompt"], initial_answer, missing)
-        retry_run = run_intelligence_os_reason(
-            conn,
-            _intelligence_os_payload(retry_prompt, source_refs, payload),
+        missing_text = "; ".join(
+            str(item.get("source_text") or item.get("id") or "missing part")
+            for item in missing
         )
-        runs.append(retry_run)
-        supplement = truncate(str(retry_run.get("best_current_answer") or ""), 5000).strip()
-        final_answer = _combine_answer_parts(initial_answer, supplement)
-        final_coverage = evaluate_response_coverage(
-            coverage_plan,
-            final_answer,
-            conversation_spine=conversation_spine,
+        updated_strategy = (
+            "complete only the unresolved obligations from current supported context "
+            f"without restarting the answer: {missing_text}"
         )
+        retry_resolution = build_problem_resolution(
+            {
+                "prompt": request["prompt"],
+                "failure_class": "verification_failure",
+                "verification": {
+                    "status": "verification_failed",
+                    "reason": "the first visible answer did not cover every required obligation",
+                },
+                "prior_attempts": [
+                    {
+                        "attempt_id": "comparison-planning-initial",
+                        "approach": "answer the full request in one initial bounded pass",
+                        "conclusion": initial_answer,
+                        "status": "verification_failed",
+                        "failure_class": "verification_failure",
+                        "failed_causal_path": "initial answer left required obligations unresolved",
+                        "useful_mechanics": [
+                            str(item.get("text") or item.get("source_text") or "")
+                            for item in initial_coverage.get("items") or []
+                            if isinstance(item, dict) and item.get("addressed") is True
+                        ],
+                    }
+                ],
+                "candidate_strategies": [updated_strategy],
+                "premises": payload.get("premises") or [],
+                "objectives": payload.get("objectives") or [],
+                "policies": payload.get("policies") or [],
+                "constraints": payload.get("constraints") or [],
+            }
+        )
+        if retry_resolution.get("retry", {}).get("allowed") is True:
+            retry_attempted = True
+            selected_strategy = str(
+                retry_resolution.get("retry", {}).get("updated_approach")
+                or updated_strategy
+            )
+            retry_prompt = _completion_retry_prompt(
+                request["prompt"],
+                initial_answer,
+                missing,
+                updated_approach=selected_strategy,
+            )
+            retry_payload = _intelligence_os_payload(retry_prompt, source_refs, payload)
+            retry_payload.update(
+                {
+                    "failure_class": "verification_failure",
+                    "verification": {"status": "verification_failed"},
+                    "prior_attempts": retry_resolution.get("candidate_lifecycle", {}).get("attempts") or [],
+                    "candidate_strategies": [selected_strategy],
+                }
+            )
+            retry_run = run_intelligence_os_reason(conn, retry_payload)
+            runs.append(retry_run)
+            supplement = truncate(str(retry_run.get("best_current_answer") or ""), 5000).strip()
+            final_answer = _combine_answer_parts(initial_answer, supplement)
+            final_coverage = evaluate_response_coverage(
+                coverage_plan,
+                final_answer,
+                conversation_spine=conversation_spine,
+            )
 
     unresolved = _unresolved_obligations(request["dialogue_obligations"], final_coverage)
     evidence_confidence = _comparison_evidence_confidence(request)
@@ -848,6 +904,7 @@ def run_comparison_planning_answer(
                 1 if retry_attempted else 0,
                 unresolved,
                 enabled=retry_enabled,
+                problem_resolution=retry_resolution,
             ),
             "intelligence_os_runs": [_run_summary(run) for run in runs],
             "adapter_executed": True,
@@ -862,7 +919,21 @@ def run_comparison_planning_answer(
 
 def _intelligence_os_payload(prompt: str, source_refs: list[str], payload: dict[str, Any]) -> dict[str, Any]:
     result: dict[str, Any] = {"prompt": prompt, "source_refs": source_refs}
-    for key in ("observations", "candidate_models"):
+    for key in (
+        "observations",
+        "candidate_models",
+        "situation",
+        "required_dimensions",
+        "premises",
+        "objectives",
+        "policies",
+        "constraints",
+        "evidence",
+        "verification",
+        "prior_attempts",
+        "candidate_strategies",
+        "failure_class",
+    ):
         if payload.get(key) is not None:
             result[key] = payload[key]
     return result
@@ -895,6 +966,8 @@ def _completion_retry_prompt(
     original_prompt: str,
     initial_answer: str,
     missing: list[dict[str, Any]],
+    *,
+    updated_approach: str = "",
 ) -> str:
     missing_text = "; ".join(
         str(item.get("source_text") or item.get("id") or "missing part") for item in missing
@@ -902,6 +975,7 @@ def _completion_retry_prompt(
     return truncate(
         f"{original_prompt}\n\nThe first bounded answer was: {initial_answer}\n\n"
         f"Complete only these still-open parts: {missing_text}. "
+        f"Changed approach: {updated_approach}. "
         "If the available context cannot support one, leave it explicitly open. Do not restart the whole answer.",
         2400,
     )
@@ -959,7 +1033,14 @@ def _completion_retry_result(
     unresolved: list[dict[str, Any]],
     *,
     enabled: bool,
+    problem_resolution: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    problem_resolution = problem_resolution or {}
+    retry = (
+        problem_resolution.get("retry")
+        if isinstance(problem_resolution.get("retry"), dict)
+        else {}
+    )
     return {
         "allowed": enabled,
         "limit": 1,
@@ -968,6 +1049,10 @@ def _completion_retry_result(
         "stopped": True,
         "remaining_obligation_count": len(unresolved),
         "recursion_allowed": False,
+        "failure_information_incorporated": bool(retry.get("information_incorporated")),
+        "updated_approach": str(retry.get("updated_approach") or ""),
+        "avoids_failed_paths": retry.get("avoids_failed_paths") or [],
+        "blind_regeneration_allowed": False,
     }
 
 

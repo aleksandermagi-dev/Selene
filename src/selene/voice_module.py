@@ -576,6 +576,16 @@ def generate_voice_preview(conn: sqlite3.Connection, payload: dict[str, Any] | N
             "applied_expression_dimensions": expression_guidance.get("dimensions") or {},
             "contextual_composition_plan": expression_guidance.get("contextual_composition_plan") or {},
             "contextual_composition": expression_guidance.get("contextual_composition") or {},
+            "whole_answer_composition": expression_guidance.get(
+                "whole_answer_composition"
+            )
+            or {},
+            "whole_answer_meaning_preserved": (
+                expression_guidance.get("whole_answer_meaning_must_be_preserved")
+                is not True
+                or meaning_invariant.get("meaning_invariant_preserved") is True
+            ),
+            "whole_answer_composition_is_expression_authority": False,
             "conversational_energy": expression_guidance.get("conversational_energy") or {},
             "conversational_energy_changed_meaning": False,
             "structural_discovery": expression_guidance.get("structural_discovery") or {},

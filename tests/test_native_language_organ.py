@@ -7,6 +7,8 @@ from selene.epistemic_revision import build_epistemic_revision_plan
 from selene.module_router import route_request
 from selene.native_language_organ import _reasoned_answer_frames, realize_native_language
 from selene.conversation_thread_loom import build_thread_braid
+from selene.conversation_spine import build_conversation_spine
+from selene.pragmatic_planner import build_pragmatic_plan
 from selene.structural_discovery import build_structural_discovery_packet
 from selene.supported_semantics import build_supported_semantic_packet
 
@@ -80,6 +82,57 @@ def test_nlo_uses_typed_bounded_completion_semantics(tmp_path):
     assert semantics["used"] is True
     assert semantics["answer_kind"] == "bounded_answer_completion"
     assert semantics["required_unit_ids"] == ["completion_yes_no"]
+
+
+def test_nlo_consumes_the_spines_canonical_obligation_ledger(tmp_path):
+    conn = _conn(tmp_path)
+    prompt = "Compare paper and thin card, choose one, and explain why."
+    dialogue = {
+        "active_topic": "paper pinwheel",
+        "pragmatics": {
+            "utterance_units": [
+                {"id": "utterance_1", "kind": "direct_request", "text": prompt}
+            ],
+            "previous_turn_available": False,
+        },
+    }
+    plan = build_pragmatic_plan(
+        {"prompt": prompt, "dialogue_workspace": dialogue}
+    )
+    spine = build_conversation_spine(
+        {
+            "session_id": 81,
+            "prompt": prompt,
+            "intent_decision": classify_chat_intent(prompt),
+            "dialogue_workspace": dialogue,
+            "pragmatic_plan": plan,
+        }
+    )
+
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "content_seed": "Paper and thin card can be compared on mass and stiffness.",
+            "intent_decision": classify_chat_intent(prompt),
+            "dialogue_workspace": dialogue,
+            "conversation_spine": spine,
+        },
+        record_run=False,
+    )
+    nlo_plan = result["meaning_packet"]["pragmatic_plan"]
+
+    assert nlo_plan["obligation_sequence"] == spine["obligation_sequence"]
+    assert [item["kind"] for item in nlo_plan["response_obligations"]] == [
+        "comparison",
+        "choice_or_priority",
+        "reason",
+    ]
+    assert [
+        item["requested_response_functions"]
+        for item in nlo_plan["response_obligations"]
+    ] == [["comparison"], ["choice"], ["reason"]]
+    assert nlo_plan["obligation_ledger"]["downstream_reparse_allowed"] is False
 
 
 def test_nlo_builds_meaning_discourse_and_original_sentence_run(tmp_path):

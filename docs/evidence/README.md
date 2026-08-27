@@ -16,6 +16,32 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [LLM-Parity Phase 5.5 — Problem Resolution and Informed Retry — August 27, 2026](SELENE_LLM_PARITY_PHASE_5_5_PROBLEM_RESOLUTION_20260827.md)
+  — reconstructs who/what/why/when/where/how/context, checks typed premise and
+  constraint satisfiability, preserves explicit problem-solving epistemic
+  states, and permits only retries that use failure information and change the
+  failed approach.
+- [LLM-Parity Phase 5 — Whole-Answer Composition and Mature Voice — August 27, 2026](SELENE_LLM_PARITY_PHASE_5_WHOLE_ANSWER_COMPOSITION_20260827.md)
+  — assembles several completed typed operations once before NLO/Voice,
+  preserves ordered supported meaning, removes semantic and surface
+  duplication, and holds scaffold, prompt fragments, and damaged encoding
+  behind Selene's expression boundary.
+- [LLM-Parity Phase 4 — Context and Dependency Revision — August 26, 2026](SELENE_LLM_PARITY_PHASE_4_CONTEXT_DEPENDENCY_REVISION_20260826.md)
+  — gives the current session a bounded proposition-and-dependency ledger so a
+  corrected premise invalidates only dependent results, preserves unrelated
+  context, and cannot be mistaken for completed recomputation.
+- [LLM-Parity Phase 3 — Semantic Fulfillment and Completion Truth — August 25, 2026](SELENE_LLM_PARITY_PHASE_3_SEMANTIC_FULFILLMENT_20260825.md)
+  — makes visible-answer completion prove typed operation meaning, count,
+  condition, response shape, topic, and owner role; precise missing-input
+  language remains releasable without being mislabeled as the answer.
+- [LLM-Parity Phase 2 — Operation-Capable Answer Owners — August 25, 2026](SELENE_LLM_PARITY_PHASE_2_OPERATION_CAPABLE_OWNERS_20260825.md)
+  — verifies eleven typed answer operations through completed, missing-input,
+  or unsupported results without allowing generic prose, expression, or a
+  declared obligation ID to impersonate performed work.
+- [LLM-Parity Phase 1 — Canonical Obligation Ledger — August 24, 2026](SELENE_LLM_PARITY_PHASE_1_CANONICAL_OBLIGATION_LEDGER_20260824.md)
+  — preserves conditions, coordinated answer acts, counts, preference,
+  disagreement, and closure through one input-to-coverage ledger without
+  changing identity, expression, memory, teaching, or authority.
 - [Chat Answer-Ownership Root-Cause Map — August 24, 2026](SELENE_CHAT_ANSWER_OWNERSHIP_ROOT_CAUSE_MAP_20260824.md)
   — applies Cultivation to an eleven-turn disposable diagnostic trace and maps
   the converging routing, ownership, relevance, completion, coverage, loop,

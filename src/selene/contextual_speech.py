@@ -82,6 +82,12 @@ def inspect_contextual_follow_up(
         or re.search(r"\bwhat did you change\b.*\b(?:pacing|tone|wording|rhythm)\b", normalized)
     ):
         kind, marker = "answer_development", "creative_revision_follow_up"
+    elif previous_assistant_preview and re.search(
+        r"\bwhat (?:difference|distinction) between .+? and .+?\b"
+        r".*\b(?:preserv(?:e|ed|ing)|keep|kept|distinguish(?:ed|ing)?)\b",
+        normalized,
+    ):
+        kind, marker = "comparison_follow_up", "difference_in_previous_answer"
     elif re.match(r"^(?:one\s+)?(?:refinement|constraint|adjustment|revision)\s*:", normalized):
         kind, marker = "constraint_refinement", "explicit_session_refinement"
     elif re.search(
@@ -176,7 +182,7 @@ def inspect_contextual_follow_up(
             "rephrase_request", "viewpoint_follow_up", "alternative_reference",
             "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request",
             "named_callback", "meaning_correction", "answer_development",
-            "immediate_user_callback",
+            "immediate_user_callback", "comparison_follow_up",
         },
         "session_scoped_only": True,
         "memory_write_active": False,
@@ -254,7 +260,7 @@ def apply_contextual_intent(
                 "confidence": "high",
             }
         )
-    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback", "immediate_user_callback", "answer_development"}:
+    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback", "immediate_user_callback", "answer_development", "comparison_follow_up"}:
         result.update(
             {
                 "intent": "reasoning",

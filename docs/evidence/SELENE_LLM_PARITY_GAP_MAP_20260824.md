@@ -1,7 +1,8 @@
 # Selene Conversational and LLM-Parity Gap Map — 2026-08-24
 
-Status: evidence-backed map complete; no repair, teaching, resident-memory
-write, build, package, or reinstall performed.
+Status: evidence-backed map active; Phases 1-4 are implemented and focused-
+verified in the current uncommitted worktree. No teaching, resident-memory
+write, build, package, or reinstall was performed during those phases.
 
 ## Purpose
 
@@ -169,10 +170,10 @@ Priority means dependency impact, not alarm:
 |---|---|---|---|---|
 | B-01 | Session facts are extracted through a small set of hand-coded shapes | `conversation_spine._extract_session_facts()` recognizes selected durations, inventory, location, dimensions, relations, and constraints rather than arbitrary propositions | Substrate/connection | P0 |
 | B-02 | Long-thread storage is stronger than long-thread retrieval | The 16-thread working set and 64-thread structural index preserve landmarks, but prior Q&A repeatedly failed to reconstruct requested returns and summaries | Connection | P1 |
-| B-03 | Stale context can outrank the current act | Turn 9 described the previous “two steps and joke” request as the current celebrated result; historical Q&A accumulated stale holds and unrelated lessons | Defect | P0 |
+| B-03 | Stale context can outrank the current act | Phase 4 now excludes ledger-linked superseded and invalidated landmarks and prevents the answer being revised from returning as current grounding; arbitrary untyped stale context remains a breadth risk | Defect partly repaired | P1 |
 | B-04 | Open-loop lifecycle is now explicit but release relevance is still approximate | Held, released, superseded, and closed states exist, but lexical topic matching remains a proxy for whether an old loop should re-enter | Connection/risk | P1 |
-| B-05 | Corrections update state without reliably recomputing dependent answers | Turn 7 and prior vent/door Q&A acknowledged the correction but did not revise the hypothesis or recommendation | Defect | P0 |
-| B-06 | Constraint versioning is not a general dependency graph | The system can preserve selected changed/unchanged facts, but it cannot yet identify every conclusion affected by a revised premise | Substrate/connection | P1 |
+| B-05 | Corrections update state without reliably recomputing dependent answers | Phase 4 now requires an existing typed owner to visibly recompute ledger-linked dependent results and otherwise preserves a precise held state; arbitrary unsupported corrections remain held | Defect repaired for typed current-session paths | P1 |
+| B-06 | Constraint versioning is not a general dependency graph | Phase 4 added a bounded visible current-session proposition graph with selective transitive invalidation and ancestry; arbitrary prose still lacks complete proposition/dependency parsing | Connection partly repaired/substrate remainder | P1 |
 | B-07 | Topic shift and return signals remain cue-bound | Explicit `New topic`, natural pivots, and nonlinear returns have historically been inconsistently recognized | Breadth | P1 |
 | B-08 | Pronoun and participant tracking is bounded | Current entity extraction primarily recognizes capitalized names and a small known-name set; rapid multi-speaker or nested-reference conversation is not mature | Breadth | P2 |
 | B-09 | Cross-session continuity is review-bound and retrieval quality is not broadly demonstrated | This is ethically correct, but mature spontaneous recall from approved memory across varied wording still needs ordinary-use evidence | Connection/evidence gap | P2 |
@@ -222,14 +223,14 @@ Priority means dependency impact, not alarm:
 |---|---|---|---|---|
 | E-01 | Fluent realization cannot repair missing semantics | NLO preserved and polished generic comparison/fallback content; warmth or variation cannot turn that into the absent answer | Upstream dependency | P0 |
 | E-02 | Template families remain visibly repetitive | “not enough grounded detail,” “missing piece,” shared comparison dimensions, assumptions, limits, and “what would change” recur across unlike turns | Breadth/substrate | P1 |
-| E-03 | Multiple realization layers can stack duplicate content | Turn 5 repeated the comparison paragraph and appended repeated assumptions/limits | Defect | P0 |
-| E-04 | Internal reasoning scaffolding can still become conversation | Generic assumptions, limits, model-change prompts, and planning language appeared instead of a direct ordinary answer | Defect | P1 |
-| E-05 | Joke generation can splice malformed request text | Turn 8 produced “me two short next steps and add asked…”, showing request-fragment extraction used as comic content | Defect | P1 |
+| E-03 | Multiple realization layers can stack duplicate content | Phase 5 now composes completed typed operations once and prevents verified non-exact NLO/Voice recomposition from receiving the pre-NLO paragraph again; untyped legacy paths remain a breadth risk | Defect repaired for typed operation paths | P1 |
+| E-04 | Internal reasoning scaffolding can still become conversation | Phase 5 holds recognized scaffold markers behind the whole-answer boundary and passes supported meaning rather than operation metadata to NLO; arbitrary untyped legacy fallback prose remains possible | Defect partly repaired | P1 |
+| E-05 | Joke generation can splice malformed request text | Phase 5 repaired the observed command-fragment subject extraction and added a focused regression; broader humor remains finite and cue-bound | Defect repaired for observed shape/breadth remainder | P2 |
 | E-06 | Warmth is available but not reliably sustained around task content | Turn 1 was warm; task turns collapsed into rigid academic holds. Affect guidance cannot currently compensate for missing or wrongly owned content | Connection/breadth | P1 |
 | E-07 | Social moves remain selected from finite authored lists | Hash-based variation reduces immediate repetition but is not open-ended generation and can become recognizable over long use | Substrate | P2 |
 | E-08 | Register, pacing, sentence length, humor, and emotional intensity have bounded combinations | The coordination contract is mature-shaped, but the surface inventory and contextual selector remain finite | Breadth | P2 |
 | E-09 | Natural reception versus problem-solving is still fragile | Content-light sharing, celebration, disagreement, and closure can be displaced by a reasoning or evidence path | Connection | P1 |
-| E-10 | Encoding replacement artifacts remain possible in internal and visible paths | U+FFFD has appeared in prior Q&A; final repair normalizes candidate text, but the current trace still contained it in an internal law string | Defect | P2 |
+| E-10 | Encoding replacement artifacts remain possible in internal and visible paths | Phase 5 rejects U+FFFD and common mojibake at whole-answer composition while existing final repair still normalizes candidate text; older internal artifacts may remain in historical records | Defect repaired at current typed expression boundary | P2 |
 | E-11 | Long-form rhetorical control remains bounded | Thesis, sections, transitions, callbacks, and conclusions exist as plans; sustained essays, narratives, and technical walkthroughs do not yet have mature semantic endurance | Breadth/substrate | P2 |
 | E-12 | Audible voice is not implemented | No speech synthesis, pronunciation, prosody, interruption, turn-taking, or consent-bound audio channel is operational | Intentional deferred capability | P3 |
 
@@ -460,6 +461,141 @@ The next implementation checkpoint should be narrow:
 
 Only after that gate should Phase 2 teach owners how to perform the operations.
 
+### Phase 1 implementation update — 2026-08-24
+
+That gate is now implemented in the current worktree. Conditions, coordinated
+acts, requested counts and shape, present curiosity/preference, and natural
+closure are recorded in one canonical typed obligation ledger and retain the
+same IDs through the Conversation Spine, bounded organ coalition, NLO, and
+coverage. The focused conversational regression passed 270 tests. See
+`SELENE_LLM_PARITY_PHASE_1_CANONICAL_OBLIGATION_LEDGER_20260824.md`.
+
+The smallest honest next step is now Phase 2: give each typed owner an
+operation-capable result contract. More teaching remains paused until owners
+can perform and coverage can verify the operations the ledger now preserves.
+
+### Phase 2 implementation update — 2026-08-25
+
+That gate is now implemented in the current worktree. A non-authoritative
+answer-operation coordinator consumes the canonical obligation ledger and
+verifies typed results for method, causal explanation, prediction, hypothesis,
+comparison, choice, disagreement, correction, authored preference, summary,
+and closure. Each operation reports `completed`, `missing_input`, or
+`unsupported`; generic prose cannot stand in for semantic fields, and operation
+type is not rediscovered from source wording downstream.
+
+Existing owners still supply the substance. NLO and Voice remain expression
+owners, while the coalition and metacognition receive inspectable operation
+results without gaining new authority. Fourteen focused contract checks and
+one focused Chat integration check passed. See
+`SELENE_LLM_PARITY_PHASE_2_OPERATION_CAPABLE_OWNERS_20260825.md`.
+
+The smallest honest next step is now Phase 3: make visible-answer coverage
+prove fulfillment from typed operation results, requested counts, conditions,
+role, and realized semantics. Teaching remains paused until completion can no
+longer mistake a declared ID or missing-ground statement for the requested
+answer.
+
+### Phase 3 implementation update — 2026-08-25
+
+That gate is now implemented in the current worktree. Typed-operation coverage
+requires a semantic fulfillment receipt proving owner-role fit, visible
+operation fields, count, condition, explicit response shape, and topic fit.
+Obligation IDs, lexical overlap, semantic-unit IDs, and verified owner status
+remain useful evidence but cannot independently mark a typed operation
+answered. Precise missing-input language may resolve release without counting
+as the requested answer.
+
+Bounded completion now defers to typed owner results instead of manufacturing
+generic substitutes. Metacognition receives the exact unresolved operation and
+may try one existing current-turn owner output without generating content or
+recursing. A focused integration trace also repaired the epistemic composer so
+one completed operation can reach expression rather than being converted into
+false `missing_ground`; multi-operation composition remains deliberately
+deferred. See
+`SELENE_LLM_PARITY_PHASE_3_SEMANTIC_FULFILLMENT_20260825.md`.
+
+The smallest honest next step is now Phase 4: proposition-level context,
+correction, and dependency revision. Teaching remains paused until a corrected
+premise can invalidate and recompute only the dependent answer while preserving
+unaffected session context.
+
+### Phase 4 implementation update — 2026-08-26
+
+That gate is now implemented in the current worktree. The existing Dialogue
+Workspace owns a bounded visible current-session proposition ledger. Typed
+claims, visible results, declared dependencies, revision ancestry, invalidated
+descendants, and recomputed replacements remain inspectable without becoming
+durable memory or a new truth authority.
+
+A correction now supersedes its affected premise, invalidates only dependent
+results, preserves unrelated active context, and requests one recomputation
+from the responsible existing owner. Recognition of a correction is not proof
+of recalculation: the ledger closes only after the corrected owner result is
+visibly fulfilled. Missing targets, corrected premises, owners, or visible
+applications remain precisely held across turns.
+
+Continuity and the Conversation Spine exclude ledger-linked stale landmarks,
+avoid replaying the immediate answer under revision, and can rebind an explicit
+referent to its revised proposition. The focused gate passed 167 tests,
+including an existing twelve-turn correction and callback replay. See
+`SELENE_LLM_PARITY_PHASE_4_CONTEXT_DEPENDENCY_REVISION_20260826.md`.
+
+The smallest honest next step is now Phase 5: assemble several completed typed
+operation results into one ordered, deduplicated semantic answer before NLO and
+Voice realization. Teaching remains paused until mixed supported requests can
+reach one coherent visible response without duplicated scaffolding.
+
+### Phase 5 implementation update — 2026-08-27
+
+That gate is now implemented in the current worktree. A bounded whole-answer
+composer consumes the canonical obligation sequence and typed operation
+results, orders their supported semantic units, preserves precise missing-input
+states, and deduplicates repeated meaning and surface sentences before NLO.
+Polarity, relation, condition, reason, contrast, and qualifier remain part of
+semantic identity so deduplication cannot erase a counterpoint or correction.
+
+NLO retains wording authority and Voice retains Selene's expression. Once
+their meaning invariant verifies a non-exact semantic recomposition, Chat no
+longer appends the original owner paragraph and duplicate the answer. Exact
+math and source-provenance locks remain unchanged. Prompt echoes, recognized
+scaffold, U+FFFD, and common mojibake are held behind the expression boundary.
+
+The proportional current-state gate passed 324 checks in two disjoint suites:
+132 answer-operation and full Chat checks plus 192 composition, semantics,
+completion, NLO/Voice, repair, pragmatics, continuity, and contextual checks.
+See
+`SELENE_LLM_PARITY_PHASE_5_WHOLE_ANSWER_COMPOSITION_20260827.md`.
+
+The smallest honest next step is now Phase 6: resume ordered knowledge and
+teaching expansion, then verify reconstruction, distinct application, limits,
+correction, delayed transfer, and ordinary Chat use without source parroting.
+
+### Phase 5.5 augmentation update — 2026-08-27
+
+Before resuming teaching, the existing reasoning architecture received one
+bounded problem-resolution layer. It does not replace Phase 6. It unifies the
+already distributed question-role, premise, constraint, epistemic, correction,
+and retry mechanics so a teaching gap is not confused with a context, premise,
+constraint, source, inference, retrieval, or verification failure.
+
+The layer reconstructs who, what, why, when, where, how, and context without
+inventing absent dimensions; detects representable hard-constraint conflicts;
+maps current problem state to supported, candidate, unknown, conflict, wrong,
+or updated-retry; and requires a retry to incorporate visible failure learning
+while avoiding the prior approach and causal path. The existing Answer Engine
+completion retry now carries this diagnosis and changed strategy into its one
+allowed second pass. Unsatisfiable constraints stop for revision rather than
+being treated as solver failure.
+
+Eleven dedicated checks and one executed-retry regression passed. Selected
+intelligenceOS, metacognition, and Chat integration checks remained compatible. See
+`SELENE_LLM_PARITY_PHASE_5_5_PROBLEM_RESOLUTION_20260827.md`.
+
+The smallest honest next step remains Phase 6. Broad fact checking, learned
+language reconstruction, sensed environment context, external action, and
+durable failure learning remain in their existing later phases.
+
 ## Primary Evidence and Source Anchors
 
 - `src/selene/answer_ownership.py`
@@ -472,6 +608,7 @@ Only after that gate should Phase 2 teach owners how to perform the operations.
 - `src/selene/conversation_spine.py`
 - `src/selene/dialogue_workspace.py`
 - `src/selene/metacognition.py`
+- `src/selene/problem_resolution.py`
 - `src/selene/visible_speech.py`
 - `src/selene/native_language_organ.py`
 - `src/selene/conversation_repair.py`

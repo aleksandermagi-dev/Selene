@@ -42,7 +42,7 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
         {
             "status": "metacognition_feedback_advisor_ready",
             "organ_name": "Metacognition Organ",
-            "version": "v5_associative_fit_observer",
+            "version": "v6_problem_resolution_observer",
             "mode": "bounded_feedback_advisor",
             "run_count": count,
             "latest_run": latest,
@@ -55,6 +55,7 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "notice a threat-compressed option space and return an unmade choice to Core/Mind",
                 "recommend when to answer, qualify, ask, seek sources, hold, or stop",
                 "inspect a surfaced association without treating it as evidence or proof",
+                "inspect seven-point reconstruction, constraint satisfiability, and informed retry state",
             ],
             "project_neutral_blueprint_ancestry": [
                 "Evidence and Correction Ledger",
@@ -133,11 +134,24 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
 
     comprehension = _dict(payload.get("comprehension_context") or payload.get("comprehension"))
     intelligence = _dict(payload.get("intelligence_os_support") or payload.get("intelligence_support"))
+    problem_resolution = _dict(
+        payload.get("problem_resolution")
+        or intelligence.get("problem_resolution")
+    )
+    problem_epistemic_state = str(problem_resolution.get("epistemic_state") or "")
+    problem_retry = _dict(problem_resolution.get("retry"))
+    constraint_conflict = problem_epistemic_state == "CONFLICT_UNSATISFIABLE"
+    informed_retry_ready = (
+        problem_epistemic_state == "RETRY_UPDATED_APPROACH"
+        and problem_retry.get("allowed") is True
+        and problem_retry.get("repeats_known_failed_path") is not True
+    )
     answer_engine = _dict(payload.get("answer_engine_support"))
     organ_coalition = _dict(payload.get("organ_coalition"))
     epistemic_answer_state = _dict(payload.get("epistemic_answer_state"))
     dual_horizon = _dict(payload.get("dual_horizon_context"))
     coverage = _dict(payload.get("response_coverage"))
+    answer_operations = _dict(payload.get("answer_operations"))
     diagnostic_context = _dict(payload.get("diagnostic_context"))
     diagnostic_only = diagnostic_context.get("active") is True
     core_route = _dict(payload.get("core_mind_route") or payload.get("route_preview"))
@@ -267,6 +281,10 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         fit_state = "affective_influence_visible_response_choice_pending"
         action = "defer_to_core_mind"
         sufficiency_state = "restore_option_space_before_response_choice"
+    elif constraint_conflict:
+        fit_state = "active_constraints_are_unsatisfiable"
+        action = "hold_constraint_conflict"
+        sufficiency_state = "constraint_revision_or_priority_required_before_retry"
     elif unresolved_data_conflict_preserved and candidate:
         fit_state = "unresolved_data_conflict_preserved_without_false_resolution"
         action = "answer_now"
@@ -279,6 +297,10 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         fit_state = "recheck_has_no_new_material"
         action = "hold_for_new_evidence"
         sufficiency_state = "bounded_reopening_exhausted"
+    elif informed_retry_ready:
+        fit_state = "failed_attempt_diagnosed_with_updated_approach"
+        action = "retry_updated_approach"
+        sufficiency_state = "one_materially_changed_attempt_is_available"
     elif material_ambiguity:
         fit_state = "material_context_missing"
         action = "ask_one_material_question"
@@ -356,6 +378,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         organ_coalition=organ_coalition,
         epistemic_answer_state=epistemic_answer_state,
         coverage=coverage,
+        answer_operations=answer_operations,
         new_material=new_material,
         recursion_count=recursion_count,
         hard_boundary=hard_boundary,
@@ -363,7 +386,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     result = {
         "status": "metacognition_advisory_ready",
         "organ_name": "Metacognition Organ",
-        "version": "v5_associative_fit_observer",
+        "version": "v6_problem_resolution_observer",
         "mode": "bounded_feedback_advisor",
         "prompt_preview": truncate(prompt, 280),
         "fit_state": fit_state,
@@ -395,6 +418,15 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
             "memory_eligible": False if diagnostic_only else None,
         },
         "contradictions": contradictions,
+        "problem_resolution": problem_resolution,
+        "problem_resolution_assessment": {
+            "observed": bool(problem_resolution),
+            "epistemic_state": problem_epistemic_state or "not_available",
+            "constraint_conflict_detected": constraint_conflict,
+            "informed_retry_ready": informed_retry_ready,
+            "blind_regeneration_recommended": False,
+            "unknown_is_failure": False,
+        },
         "reopening": reopening,
         "stopping": stopping,
         "correction_path": correction_path,
@@ -566,6 +598,7 @@ def _feedback_handoff(
     organ_coalition: dict[str, Any],
     epistemic_answer_state: dict[str, Any],
     coverage: dict[str, Any],
+    answer_operations: dict[str, Any],
     new_material: bool,
     recursion_count: int,
     hard_boundary: bool,
@@ -605,6 +638,8 @@ def _feedback_handoff(
             if intelligence.get("used") is True
             else "comprehension_integration"
         )
+    elif action == "retry_updated_approach":
+        owner = "intelligence_os"
     elif action == "ask_one_material_question":
         owner = "conversation_content_owner"
     else:
@@ -617,6 +652,9 @@ def _feedback_handoff(
         action == "reopen_current_model"
         and new_material
         and recursion_count < MAX_REOPEN_CYCLES
+    ) or (
+        action == "retry_updated_approach"
+        and recursion_count < MAX_REOPEN_CYCLES
     )
     return {
         "status": (
@@ -628,8 +666,12 @@ def _feedback_handoff(
         "responsible_owner": owner,
         "target_obligation_id": target_id,
         "target_requested_kind": str(target.get("requested_kind") or target.get("kind") or ""),
+        "target_operation": str(target.get("operation") or ""),
         "target_missing_state": missing_state,
         "target_missing_ground": truncate(str(target.get("missing_ground") or ""), 500),
+        "target_required_visible_fields": target.get("required_visible_fields") or [],
+        "productive_alternate_path": target.get("productive_alternate_path") or {},
+        "answer_operations_observed": bool(answer_operations),
         "owner_selected_from_coalition_map": bool(mapped_owner),
         "typed_answer_owner": typed_owner,
         "owner_reclassification_required": owner_mismatch,
@@ -695,6 +737,8 @@ def _unresolved_feedback_target(
                 ),
                 {},
             )
+            fulfillment = _dict(coverage_item.get("semantic_fulfillment"))
+            alternate = _dict(fulfillment.get("productive_alternate_path"))
             return {
                 **coverage_item,
                 **matching,
@@ -703,6 +747,22 @@ def _unresolved_feedback_target(
                     or matching.get("responsible_owner")
                     or ""
                 ),
+                "operation": str(fulfillment.get("operation") or ""),
+                "state": (
+                    "typed_operation_not_visibly_fulfilled"
+                    if str(fulfillment.get("operation_result_state") or "") == "completed"
+                    else "typed_operation_missing_input"
+                    if str(fulfillment.get("operation_result_state") or "") == "missing_input"
+                    else str(matching.get("state") or "missing_supported_basis")
+                ),
+                "missing_ground": str(
+                    fulfillment.get("unresolved_reason")
+                    or fulfillment.get("missing_input")
+                    or matching.get("missing_ground")
+                    or ""
+                ),
+                "required_visible_fields": alternate.get("required_visible_fields") or [],
+                "productive_alternate_path": alternate,
             }
         coverage_item = next(
             (
@@ -713,6 +773,37 @@ def _unresolved_feedback_target(
             ),
             {},
         )
+        fulfillment = _dict(coverage_item.get("semantic_fulfillment"))
+        alternate = _dict(fulfillment.get("productive_alternate_path"))
+        if fulfillment:
+            operation_state = str(fulfillment.get("operation_result_state") or "")
+            return {
+                "obligation_id": obligation_id,
+                "requested_kind": str(coverage_item.get("kind") or ""),
+                "answer_act": str(coverage_item.get("answer_act") or ""),
+                "responsible_owner": str(
+                    alternate.get("responsible_owner")
+                    or coverage_item.get("responsible_owner")
+                    or ""
+                ),
+                "answer_domain": str(coverage_item.get("answer_domain") or ""),
+                "requested_response_functions": coverage_item.get("requested_response_functions") or [],
+                "operation": str(fulfillment.get("operation") or ""),
+                "state": (
+                    "typed_operation_not_visibly_fulfilled"
+                    if operation_state == "completed"
+                    else "typed_operation_missing_input"
+                    if operation_state == "missing_input"
+                    else "typed_operation_unsupported"
+                ),
+                "missing_ground": str(
+                    fulfillment.get("unresolved_reason")
+                    or fulfillment.get("missing_input")
+                    or "the typed operation has not been visibly fulfilled"
+                ),
+                "required_visible_fields": alternate.get("required_visible_fields") or [],
+                "productive_alternate_path": alternate,
+            }
         return {
             "obligation_id": obligation_id,
             "requested_kind": str(coverage_item.get("kind") or ""),
@@ -889,9 +980,21 @@ def _stopping_assessment(
     elif recursion_count >= MAX_REOPEN_CYCLES and not new_material:
         stop = True
         reason = "The bounded recheck limit was reached without new material. More recursion would not improve the answer."
-    elif action in {"ask_one_material_question", "seek_sources", "hold_for_new_evidence"}:
+    elif action in {
+        "ask_one_material_question",
+        "seek_sources",
+        "hold_for_new_evidence",
+        "hold_constraint_conflict",
+    }:
         stop = True
-        reason = "Pause reasoning until the identified missing material is available."
+        reason = (
+            "Pause solving until the conflicting hard premise, objective, policy, or constraint is revised or prioritized."
+            if action == "hold_constraint_conflict"
+            else "Pause reasoning until the identified missing material is available."
+        )
+    elif action == "retry_updated_approach":
+        stop = False
+        reason = "One materially changed attempt is available and incorporates the prior failure information."
     elif unresolved_count > 0:
         stop = False
         reason = "A known response obligation remains unresolved; complete only that bounded obligation."

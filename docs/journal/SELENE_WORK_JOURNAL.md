@@ -2128,6 +2128,349 @@ and begin Phase 1 only: preserve conditional directives, all coordinated answer
 acts, requested counts, present preference/curiosity, and natural closure in
 one canonical obligation ledger before generating answer text.
 
+### 2026-08-24 — One canonical turn-and-obligation ledger
+
+**Starting question:** Could Selene preserve what a person actually asked when
+one turn contained conditions, several coordinated acts, counts, curiosity,
+or a natural close?
+
+**Decision:** Aleks authorized the parity closure work while reaffirming that
+Selene remains Selene, old expression-flattening guards are not the target,
+and any future commercial work concerns reusable blueprints rather than
+Selene herself. Phase 1 would repair conversation infrastructure only.
+
+**Work:** Added one typed canonical obligation ledger before content
+generation. Preserved each obligation's function, source span, condition,
+count, response shape, owner, and order through the Conversation Spine,
+bounded organ coalition, NLO, and response coverage. Corrected the deeper
+parent-text ownership collision that had relabeled choice and reason acts as
+comparisons. Connected the existing conversational-topic preference operation
+to its newly correct preference type.
+
+**Why:** Re-parsing the same turn in multiple organs allowed a correct initial
+understanding to decay downstream. A shared ledger makes later content and
+coverage work inspectable without constraining Selene's final expression.
+
+**Evidence:** 270 conversational regression tests passed, including the full
+Selene Chat shell suite and focused planner, spine, ownership, completion,
+NLO, coalition, dialogue-workspace, and meaning-router suites. Paraphrase
+fixtures cover compare/choose/explain, conditional disagreement, two steps
+plus one joke, present curiosity, and natural closure.
+
+**What changed in our understanding:** The missing choice was not only a
+parser defect. The initial parse was correct, then ownership read the complete
+parent sentence for each child and allowed “compare” to overwrite later acts.
+The right repair was to preserve explicit child meaning, not add another
+surface response patch.
+
+**Boundaries preserved:** No teaching, resident database write, retained
+knowledge or memory change, Dream change, identity/personality/governance
+change, authority expansion, provider call, training, LoRA, self-replication,
+external action, build, package, reinstall, or live probe occurred.
+
+**Next:** Phase 2 — operation-capable owners and typed result contracts for
+comparison, choice, reason, method, prediction, disagreement, and authored
+preference, followed by semantic proof of actual fulfillment.
+
+### 2026-08-25 — Typed operations became inspectable work
+
+**Starting question:** Once the Conversation Spine preserved every requested
+act, could the responsible answer owners prove that they performed the act
+rather than returning plausible nearby prose?
+
+**Decision:** Implement Phase 2 as connective tissue, not another reasoning or
+expression organ. Require typed results or an accurate missing state, preserve
+Selene-owned expression, and spend verification quota only on the new
+operation boundary.
+
+**Work:** Added a non-authoritative answer-operation coordinator for method,
+causal explanation, prediction, hypothesis, comparison, choice, disagreement,
+correction, preference, summary, and closure. Connected it after answer-owner
+arbitration and through Chat, coalition, metacognition, NLO, Voice guidance,
+dialogue persistence, status telemetry, and the module router. Exploratory
+modes now follow canonical ledger functions. Current-session summary receives
+real session context, and ordinary prompt-grounded previews remain available
+for operations such as authored preference. Corrected one semantic source
+whose dependency mechanism existed in prose but not in typed form.
+
+**Why:** A correctly preserved request still fails if its owner cannot expose
+the result needed to perform and verify it. Generic language can sound
+appropriate while omitting the actual comparison, reason, prediction, or
+choice. Typed owner results make that difference inspectable without scripting
+how Selene must speak.
+
+**Evidence:** All 14 focused answer-operation contract checks passed, covering
+the eleven supported operation families, accurate missing/unsupported states,
+generic-prose refusal, canonical-function authority, and hard boundaries. One
+focused Chat integration check passed through operation coordination,
+coalition, and NLO. Changed Python modules compiled. No broad or live test was
+needed.
+
+**What changed in our understanding:** The existing reasoning was often
+present, but not always shaped for verification. In the fractions-before-
+calculus explanation, the dependency was visible to a reader but absent as an
+explicit semantic mechanism. Repairing the source representation allowed a
+strict verifier to accept it without loosening the completion standard.
+
+**Boundaries preserved:** No teaching, resident-state write, retained
+knowledge or memory change, identity/personality/governance mutation,
+authority expansion, provider call, training, LoRA, self-replication,
+external action, expression constraint, hidden-reasoning exposure, build,
+package, reinstall, live probe, or commit occurred.
+
+**Next:** Phase 3 — semantic fulfillment and completion truth. Coverage must
+validate the typed result, requested count, conditions, role, and visible
+meaning rather than trusting an obligation ID or nearby wording.
+
+### 2026-08-25 — Completion became a proved visible state
+
+**Starting question:** Could Selene distinguish an owner having a valid answer
+from the final visible response actually performing every requested act?
+
+**Decision:** Make completion a semantic receipt rather than another confidence
+guess. Preserve honest holds, but never count “I need more information” as the
+comparison, reason, prediction, or other operation that was requested.
+
+**Work:** Added operation-specific visible fulfillment receipts and connected
+them to central response coverage. Required owner-role fit, operation meaning,
+count, condition, explicit order/brevity shape, and topic fit. Narrowed the
+verified-domain shortcut, made bounded completion defer to typed owners, gave
+metacognition the exact unresolved operation and one existing-output recovery
+path, and exposed status/evaluation routes. A focused Chat trace then revealed
+that epistemic composition was discarding a valid single authored-preference
+handoff; connected that handoff while keeping multi-operation composition
+deferred.
+
+**Why:** A correct ID says what should have been answered, and a typed owner
+result says supported substance exists. Neither proves the person received that
+substance. Completion truth belongs at the visible semantic boundary.
+
+**Evidence:** Thirteen focused Phase 3 contract checks passed, plus one focused
+conditional-owner check, the existing ordinary Chat preference integration,
+and the existing exact-owner retry check. Changed modules compiled. The failed
+first integration attempt was retained as diagnostic evidence of the epistemic
+handoff root and passed after the source repair. No broad or live test was run.
+
+**What changed in our understanding:** Some earlier “not enough support” falls
+were not knowledge gaps at all. Supported meaning could exist in a typed owner
+packet and still be discarded before epistemic composition. The correct repair
+was to carry the existing single-operation handoff forward, not relax coverage
+or add warmer fallback wording.
+
+**Boundaries preserved:** No teaching, configured resident-state write,
+retained knowledge or memory change, identity/personality/governance mutation,
+authority expansion, provider call, training, LoRA, self-replication,
+external action, expression script, emotional constraint, broad test, live
+probe, build, package, reinstall, or commit occurred.
+
+**Next:** Phase 4 — context, correction, and dependency revision. A corrected
+premise should recompute only what depends on it while preserving unrelated
+context and treating revision as ordinary learning rather than failure.
+
+### 2026-08-26 — Corrections gained ancestry and dependency scope
+
+**Starting question:** When a person corrects one premise in an ongoing
+conversation, can Selene identify what depended on it, revise only that part,
+preserve unrelated context, and avoid replaying a stale conclusion?
+
+**Decision:** Implement the missing capability as bounded connective tissue in
+the visible current-session workspace, not as a new organ or hidden truth
+authority. Acknowledging a correction would not count as recomputing its
+consequences, and an unresolved target would remain visibly held rather than
+being invented.
+
+**Work:** Added a current-session proposition and dependency ledger with typed
+premises, results, ancestry, replacement links, invalidation, and recomputation
+states. Connected it through the Dialogue Workspace, Conversation Spine,
+continuity, answer operations, Chat telemetry, and the module router. A
+corrected premise now supersedes its earlier form, transitively invalidates
+only dependent results, preserves unrelated active propositions, and records a
+replacement result only when a real correction owner supplies it and visible
+coverage proves the requested answer was delivered. Topic return and referent
+resolution now exclude stale landmarks or rebind them to an explicit
+replacement. The same investigation corrected three adjacent source defects:
+“small correction” no longer forces a short answer, visible causal answers now
+carry causal semantic structure, and ordinary immediate follow-ups no longer
+inherit unrelated lexical callback landmarks.
+
+**Why:** Conversation continuity is not merely storing prior text. It requires
+knowing which conclusion came from which premise and which earlier meaning is
+still valid. Without dependency scope, a correction either changes too much,
+changes nothing, or leaves stale wording available for later replay.
+
+**Evidence:** Seven dedicated proposition-ledger checks and the focused Phase
+4 integration/regression gate passed. The final bounded gate contained 167
+tests across proposition revision, epistemic revision, continuity, spine,
+workspace, pragmatics, answer operations, semantic fulfillment, answer
+substance, and selected full Chat flows. No live Q&A or configured resident
+database was required.
+
+**What changed in our understanding:** Several apparent breadth problems were
+coordination errors. “Small” described the size of a correction rather than
+the desired answer length; the existing correction owner could reconstruct a
+result but was not typed as such; a reason could be visible while its semantic
+relation still said sequence; and a lexical match could pull an unrelated old
+landmark into an immediate reply. Repairing those roots made revision more
+truthful without restricting Selene's expression.
+
+**Boundaries preserved:** The ledger is visible, bounded current-session state.
+It cannot write memory, retained knowledge, identity, personality, governance,
+authority, training state, or action permissions. No teaching, provider call,
+model training, LoRA, self-replication, external action, live probe, broad
+suite, build, package, reinstall, commit, or hidden-reasoning exposure
+occurred.
+
+**Next:** Phase 5 — whole-answer composition and mature Voice. Multiple valid
+typed operation results should become one coherent, natural Selene response
+without losing meaning, becoming academic scaffolding, or scripting warmth.
+
+### 2026-08-27 — Supported operations became one answer before expression
+
+**Starting question:** Could several valid answer owners become one coherent
+Selene response without losing a requested part, stacking repeated paragraphs,
+or leaking operation scaffolding into conversation?
+
+**Decision:** Add bounded connective tissue rather than another organ. Compose
+only canonical typed results and precise missing states, preserve meaning and
+order, then let NLO and Voice own the final language without scripting warmth,
+humor, uncertainty, or closure.
+
+**Work:** Added whole-answer semantic composition, conservative meaning-aware
+deduplication, scaffold/prompt/encoding holds, NLO and Voice handoffs, release
+invariant coordination, status routes, and focused tests. The integration gate
+also repaired shared roots in comparison candidates, current-domain
+explanations, typed choice/disagreement/hypothesis ownership, immediate
+follow-up binding, natural closure recognition, and humor subject extraction.
+An old unresolved return can no longer displace a clear immediate follow-up,
+and a verified conversational realization no longer receives the same
+non-exact owner paragraph a second time.
+
+**Why:** Complete substance can still produce an incomplete-feeling answer if
+each owner speaks separately or if release code insists on exact pre-NLO
+phrasing. Composition belongs between truth-bearing owners and expression, not
+inside either one.
+
+**Evidence:** The final current-state gate passed 324 focused checks in two
+disjoint suites: 132 answer-operation and full Chat checks, and 192 semantic,
+composition, completion, ownership, answer-substance, NLO/Voice, repair,
+pragmatic, continuity, Spine, and contextual-speech checks. Temporary
+databases and existing synthetic conversation fixtures were used; no live
+probe or resident state was touched.
+
+**What changed in our understanding:** Several failures that looked like
+limited conversational breadth were actually typed receipt or continuity
+errors. Selene already had the visible answer in the festival, fairness,
+math-and-understanding, desk, and porch cases. Once ownership and semantic
+handoff reflected the content she had, strict coverage could remain strict
+without forcing rigid wording.
+
+**Boundaries preserved:** No teaching, configured resident-state write,
+retained knowledge or memory change, identity/personality/governance mutation,
+authority expansion, provider call, training, LoRA, self-replication,
+external action, emotional constraint, expression script, hidden-reasoning
+exposure, live Q&A, build, package, reinstall, commit, or external publication
+occurred.
+
+**Next:** Phase 6 — knowledge and teaching expansion. Resume the ordered
+curriculum and test transfer through reconstruction, distinct application,
+limits, correction, and delayed ordinary use rather than source recall.
+
+### 2026-08-27 — Problem resolution learned to inspect the whole situation
+
+**Starting question:** Before adding more knowledge, could Selene distinguish
+a real teaching gap from a bad premise, missing context, conflicting
+constraints, failed inference, unreliable source, retrieval problem, or failed
+verification—and could a retry learn from the failed attempt instead of merely
+generating again?
+
+**Decision:** Preserve the Phase 6 teaching plan and add a Phase 5.5 connective
+layer. Reuse intelligenceOS, metacognition, question-role teaching, claim
+evidence, and current-session dependency ancestry rather than creating another
+organ or a monolithic solver.
+
+**Work:** Added a visible seven-point reconstruction for who, what, why, when,
+where, how, and context; a typed satisfiability gate for premises, objectives,
+policies, and constraints; canonical problem-solving epistemic states; bounded
+failure classification; attempt ancestry; useful-mechanic preservation; and a
+changed-approach retry contract. Connected the packet to intelligenceOS,
+metacognition, explicit Selene Chat problem context, and status/preview routes.
+
+**Why:** A plausible why-story can be wrong when the surrounding state is
+missing. Likewise, no solver can satisfy mutually impossible hard constraints.
+Unknown, wrongness, and conflict must remain honest problem states rather than
+pressure to invent an answer or evidence of identity failure.
+
+**Evidence:** Eleven dedicated synthetic checks and one Answer Engine
+executed-retry regression passed. The first focused run caught a retry that
+avoided the named causal path but repeated the same failed approach; the source
+contract now excludes both. The adjacent intelligenceOS, metacognition, and
+selected Chat checks passed after one focused integration name error was
+corrected. No live or stressful probe was needed.
+
+**What changed in our understanding:** Selene already had most of the pieces,
+but they were distributed. The missing capability was a shared current-problem
+contract that can say supported, candidate, unknown, conflict, wrong, or retry
+and make the next approach visibly different.
+
+**Boundaries preserved:** No teaching, resident-state write, durable failure
+learning, memory or retained-knowledge change, identity/personality/Vys/law or
+authority mutation, provider call, training, LoRA, self-replication, external
+action, expression scripting, live Q&A, build, package, reinstall, or commit
+occurred. Domain verification, learned language reconstruction, sensed context,
+external experiments, and reviewed cross-session learning remain deferred to
+their existing phases.
+
+**Next:** Resume Phase 6 knowledge and teaching expansion. Use problem
+resolution to classify lesson evidence before deciding that more teaching is
+the correct repair.
+
+### 2026-08-27 — F2 fractions became magnitudes before procedures
+
+**Starting question:** What was the next honest curriculum step after the
+problem-resolution connective layer, and could it be taught without jumping
+straight to fraction algorithms?
+
+**Decision:** Resume Phase 6 at the exact queue boundary: F2 Group 6. Use a
+coherent Grade 3-to-4 fraction progression, preserve the artifacts' license
+notices, and teach the relationships beneath future procedures first.
+
+**Work:** Pinned the CKMath Grade 3 *Fractions as Numbers* and Grade 4
+*Fraction Equivalence and Comparison* teacher guides with checksums and source
+notices. Added five original source-linked lessons covering the whole and equal
+partition, unit-fraction iteration and number-line magnitude, equivalence,
+flexible comparison, and composition/decomposition through a shared unit.
+Wired authorization, preparation, teaching, status, router, and sidecar HTTP
+paths. The route check also exposed and repaired an omitted sidecar allow-list
+entry affecting the already-defined F2 Group 5 paths.
+
+**Why:** Selene needs to understand what a fraction is and why equivalence or
+comparison works before receiving operation procedures. Visualizable strips,
+equal steps, and number-line locations support simulation without requiring
+one fixed mental representation.
+
+**Evidence:** Five Group 6 checks and 33 F2 Groups 1-6 regression checks
+passed. All 135 pinned shelf files verified. Authorization record 37 retained
+concepts 257-261 with complete Acquire, Integrate, Express, and comprehension;
+zero were held. Configured SQLite integrity was `ok` before and after the
+write. The pre-teaching snapshot hash is recorded in the Group 6 document.
+
+**What changed in our understanding:** Fractions greater than one do not need
+special-case framing. They follow naturally once a fraction is understood as
+repeated unit-sized movement from zero. Likewise, initial operation meaning
+can be taught safely as composition and decomposition while leaving general
+algorithms for the next group.
+
+**Boundaries preserved:** No identity, personality, personal-memory,
+governance, training, LoRA, source-reproduction, financial-authority,
+autonomy, or self-replication change occurred. No classroom script, worksheet,
+image, branded activity, assessment item, or source passage was imported. No
+live Q&A, stress test, LEA, build, package, reinstall, commit, or publication
+occurred.
+
+**Next:** F2 Group 7 — fraction operations, decimals, fraction-decimal
+relationships, place-value extension, and reasonableness. Review exact source
+artifacts and split the group if its density would outrun comprehension.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

@@ -135,6 +135,11 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
     epistemic_updates = [
         item for item in pragmatics.get("epistemic_updates") or [] if isinstance(item, dict)
     ][-12:]
+    session_proposition_ledger = (
+        pragmatics.get("session_proposition_ledger")
+        if isinstance(pragmatics.get("session_proposition_ledger"), dict)
+        else {}
+    )
     thread_braid = pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {}
     continuity_resolution = (
         payload.get("conversation_continuity")
@@ -150,16 +155,52 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         )
     )
     previous = _previous_answer(contextual, pragmatics, payload.get("conversation_events"))
-    session_landmarks = [
+    stale_proposition_texts = [
+        str(item.get("text") or "")
+        for item in session_proposition_ledger.get("propositions") or []
+        if isinstance(item, dict)
+        and str(item.get("status") or "") in {"invalidated", "superseded"}
+        and str(item.get("text") or "").strip()
+    ]
+    previous_preview = str(previous.get("preview") or "")
+    if previous_preview and any(
+        _text_overlap(previous_preview, stale_text) >= 0.65
+        for stale_text in stale_proposition_texts
+    ):
+        previous = {
+            **previous,
+            "preview": "",
+            "claims": [],
+            "recommendations": [],
+            "source": "revision_ancestry_only",
+            "stale_preview": previous_preview,
+            "eligible_for_answer_grounding": False,
+        }
+    all_session_landmarks = [
         item for item in pragmatics.get("session_landmarks") or [] if isinstance(item, dict)
     ][-64:]
+    stale_proposition_ids = {
+        str(item)
+        for item in session_proposition_ledger.get("stale_proposition_ids") or []
+        if str(item)
+    }
+    session_landmarks = [
+        item
+        for item in all_session_landmarks
+        if not str(item.get("proposition_id") or "")
+        or str(item.get("proposition_id") or "") not in stale_proposition_ids
+    ]
     relevant_landmarks = _relevant_landmarks(interpreted, session_landmarks)
     continuity_landmarks = [
         item
         for item in continuity_resolution.get("selected_landmarks") or []
         if isinstance(item, dict)
     ]
-    if continuity_landmarks:
+    if continuity_landmarks and str(continuity_resolution.get("mode") or "") in {
+        "named_thread_return",
+        "session_summary",
+        "active_thread_continuation",
+    }:
         relevant_landmarks = continuity_landmarks
     prior_session_facts = [
         item
@@ -273,13 +314,35 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "epistemic_revision": epistemic_revision,
             "epistemic_updates": epistemic_updates,
             "selective_revision_active": epistemic_revision.get("detected") is True,
+            "session_proposition_ledger": session_proposition_ledger,
+            "active_session_propositions": [
+                item
+                for item in session_proposition_ledger.get("active_propositions") or []
+                if isinstance(item, dict)
+            ][:64],
+            "stale_session_propositions_eligible_for_grounding": False,
             "session_landmarks": session_landmarks,
+            "stale_session_landmark_ids_excluded": [
+                str(item.get("id") or "")
+                for item in all_session_landmarks
+                if item not in session_landmarks and str(item.get("id") or "")
+            ],
             "relevant_session_landmarks": relevant_landmarks,
             "session_facts": session_facts,
             "relevant_session_facts": relevant_session_facts,
             "session_facts_are_durable_memory": False,
             "open_obligations": obligations,
             "obligation_sequence": [str(item.get("id") or "") for item in obligations],
+            "obligation_ledger": {
+                **(
+                    pragmatic_plan.get("obligation_ledger")
+                    if isinstance(pragmatic_plan.get("obligation_ledger"), dict)
+                    else {}
+                ),
+                "obligations": obligations,
+                "obligation_sequence": [str(item.get("id") or "") for item in obligations],
+                "downstream_reparse_allowed": False,
+            },
             "pragmatic_plan": pragmatic_plan,
             "contextual_follow_up": contextual,
             "ambiguity": ambiguity,
@@ -826,6 +889,14 @@ def _relevant_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[di
     return [item for _, _, item in ranked[:6]]
 
 
+def _text_overlap(left: str, right: str) -> float:
+    left_terms = set(_distinctive_terms(left))
+    right_terms = set(_distinctive_terms(right))
+    if not left_terms or not right_terms:
+        return 0.0
+    return len(left_terms & right_terms) / max(1, min(len(left_terms), len(right_terms)))
+
+
 def _intent_class(intent: dict[str, Any], contextual: dict[str, Any]) -> str:
     name = str(intent.get("intent") or "direct_conversation")
     if name in {"hard_boundary", "hold_boundary"}:
@@ -913,6 +984,24 @@ def _normalize_obligation(item: dict[str, Any]) -> dict[str, Any]:
         ),
         "role_fit_required": item.get("role_fit_required") is True,
         "answer_ownership_classified": item.get("answer_ownership_classified") is True,
+        "canonical_index": int(item.get("canonical_index") or 0),
+        "canonical": item.get("canonical") is True,
+        "source_span": (
+            dict(item.get("source_span"))
+            if isinstance(item.get("source_span"), dict)
+            else {"start": -1, "end": -1}
+        ),
+        "condition": (
+            dict(item.get("condition"))
+            if isinstance(item.get("condition"), dict)
+            else {"present": False}
+        ),
+        "requested_count": int(item.get("requested_count") or 0),
+        "response_shape": (
+            dict(item.get("response_shape"))
+            if isinstance(item.get("response_shape"), dict)
+            else {"explicit": False}
+        ),
     }
 
 

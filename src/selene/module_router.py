@@ -70,6 +70,27 @@ from .exploratory_reasoning import (
     build_exploratory_reasoning_packet,
     exploratory_reasoning_status,
 )
+from .answer_operations import (
+    answer_operations_status,
+    build_answer_operation_packet,
+)
+from .semantic_fulfillment import (
+    build_semantic_fulfillment_packet,
+    semantic_fulfillment_status,
+)
+from .whole_answer_composition import (
+    compose_whole_answer,
+    whole_answer_composition_status,
+)
+from .problem_resolution import (
+    build_problem_resolution,
+    problem_resolution_status,
+)
+from .session_proposition_ledger import (
+    prepare_session_proposition_revision,
+    record_visible_session_propositions,
+    session_proposition_ledger_status,
+)
 from .human_conversational_realization import (
     build_human_conversational_plan,
     human_conversational_realization_status,
@@ -291,6 +312,7 @@ from .curriculum_authorization import (
     activate_f2_point_of_view_organized_composition_authorization,
     activate_f2_multi_digit_arithmetic_operations_authorization,
     activate_f2_factors_multiples_operation_order_authorization,
+    activate_f2_fractions_numbers_equivalence_authorization,
     activate_coding_computational_thinking_code_reading_authorization,
     activate_f1_operations_measurement_authorization,
     curriculum_authorization_status,
@@ -317,6 +339,7 @@ from .curriculum_authorization import (
     prepare_f2_point_of_view_organized_composition_group,
     prepare_f2_multi_digit_arithmetic_operations_group,
     prepare_f2_factors_multiples_operation_order_group,
+    prepare_f2_fractions_numbers_equivalence_group,
     prepare_coding_computational_thinking_code_reading_group,
     prepare_f1_operations_measurement_group,
     revoke_curriculum_authorization,
@@ -341,6 +364,7 @@ from .curriculum_authorization import (
     teach_f2_point_of_view_organized_composition_group,
     teach_f2_multi_digit_arithmetic_operations_group,
     teach_f2_factors_multiples_operation_order_group,
+    teach_f2_fractions_numbers_equivalence_group,
     teach_coding_computational_thinking_code_reading_group,
     teach_f1_operations_measurement_group,
 )
@@ -683,6 +707,28 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": exploratory_reasoning_status()}
     if route_key == "exploratory_reasoning.build":
         return {"route": route_key, "result": build_exploratory_reasoning_packet(payload)}
+    if route_key == "answer_operations.status":
+        return {"route": route_key, "result": answer_operations_status()}
+    if route_key == "answer_operations.build":
+        return {"route": route_key, "result": build_answer_operation_packet(payload)}
+    if route_key == "semantic_fulfillment.status":
+        return {"route": route_key, "result": semantic_fulfillment_status()}
+    if route_key == "semantic_fulfillment.evaluate":
+        return {"route": route_key, "result": build_semantic_fulfillment_packet(payload)}
+    if route_key == "whole_answer_composition.status":
+        return {"route": route_key, "result": whole_answer_composition_status()}
+    if route_key == "whole_answer_composition.preview":
+        return {"route": route_key, "result": compose_whole_answer(payload)}
+    if route_key == "problem_resolution.status":
+        return {"route": route_key, "result": problem_resolution_status()}
+    if route_key == "problem_resolution.preview":
+        return {"route": route_key, "result": build_problem_resolution(payload)}
+    if route_key == "session_propositions.status":
+        return {"route": route_key, "result": session_proposition_ledger_status()}
+    if route_key == "session_propositions.revision.preview":
+        return {"route": route_key, "result": prepare_session_proposition_revision(payload)}
+    if route_key == "session_propositions.response.preview":
+        return {"route": route_key, "result": record_visible_session_propositions(payload)}
     if route_key == "conversation_continuity.status":
         return {"route": route_key, "result": conversation_continuity_status()}
     if route_key == "conversation_continuity.resolve":
@@ -1012,6 +1058,8 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": activate_f2_multi_digit_arithmetic_operations_authorization(conn, payload)}
     if route_key == "curriculum.authorization.activate_f2_factors_multiples_operation_order":
         return {"route": route_key, "result": activate_f2_factors_multiples_operation_order_authorization(conn, payload)}
+    if route_key == "curriculum.authorization.activate_f2_fractions_numbers_equivalence":
+        return {"route": route_key, "result": activate_f2_fractions_numbers_equivalence_authorization(conn, payload)}
     if route_key == "curriculum.authorization.activate_coding_computational_thinking_code_reading":
         return {"route": route_key, "result": activate_coding_computational_thinking_code_reading_authorization(conn, payload)}
     if route_key == "curriculum.authorization.revoke":
@@ -1106,6 +1154,10 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": prepare_f2_factors_multiples_operation_order_group(conn, payload)}
     if route_key == "curriculum.foundation.teach_f2_factors_multiples_operation_order":
         return {"route": route_key, "result": teach_f2_factors_multiples_operation_order_group(conn, payload)}
+    if route_key == "curriculum.foundation.prepare_f2_fractions_numbers_equivalence":
+        return {"route": route_key, "result": prepare_f2_fractions_numbers_equivalence_group(conn, payload)}
+    if route_key == "curriculum.foundation.teach_f2_fractions_numbers_equivalence":
+        return {"route": route_key, "result": teach_f2_fractions_numbers_equivalence_group(conn, payload)}
     if route_key == "curriculum.foundation.prepare_coding_computational_thinking_code_reading":
         return {"route": route_key, "result": prepare_coding_computational_thinking_code_reading_group(conn, payload)}
     if route_key == "curriculum.foundation.teach_coding_computational_thinking_code_reading":

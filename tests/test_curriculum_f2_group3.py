@@ -120,7 +120,8 @@ def test_f2_group3_completes_lifecycle_and_is_idempotent(tmp_path):
     assert status["f2_third_group"]["retained_count"] == 5
     assert status["f2_fourth_group"]["retained_count"] == 0
     assert status["f2_fifth_group"]["retained_count"] == 0
-    assert len(status["f2_groups"]) == 5 and len(status["groups"]) == 17
+    assert status["f2_sixth_group"]["retained_count"] == 0
+    assert len(status["f2_groups"]) == 6 and len(status["groups"]) == 17
     assert len(rows) == 5
     assert all(row["authorization_id"] == authorization["item"]["id"] for row in rows)
     assert all(row["state"] == "approved_knowledge_resource" for row in rows)

@@ -41,6 +41,7 @@ _IMMEDIATE_FOLLOW_UP_KINDS = {
     "analogy_transfer_request",
     "meaning_correction",
     "answer_development",
+    "comparison_follow_up",
     "alternative_reference",
 }
 
@@ -112,6 +113,13 @@ def resolve_conversation_continuity(
     lower = _normalize(prompt)
     dialogue = _dict(payload.get("dialogue_workspace"))
     pragmatics = _dict(dialogue.get("pragmatics"))
+    proposition_ledger = _dict(pragmatics.get("session_proposition_ledger"))
+    stale_propositions = [
+        item
+        for item in proposition_ledger.get("propositions") or []
+        if isinstance(item, dict)
+        and str(item.get("status") or "") in {"invalidated", "superseded"}
+    ]
     contextual = _dict(payload.get("contextual_follow_up"))
     intent = _dict(payload.get("intent_decision"))
     events = [
@@ -122,7 +130,7 @@ def resolve_conversation_continuity(
     traversal = [
         item for item in braid.get("turn_traversal") or [] if isinstance(item, dict)
     ][:20]
-    landmarks = [
+    all_landmarks = [
         item
         for item in (
             contextual.get("session_landmarks")
@@ -132,6 +140,9 @@ def resolve_conversation_continuity(
         )
         if isinstance(item, dict)
     ][-64:]
+    landmarks = [
+        item for item in all_landmarks if _landmark_is_current(item, stale_propositions)
+    ]
     checkpoints = [
         item
         for item in (
@@ -145,7 +156,28 @@ def resolve_conversation_continuity(
         pragmatics.get("resolved_reference")
         or _dict(pragmatics.get("referents")).get("resolved_current")
     )
+    resolved_reference = _bind_reference_after_revision(
+        resolved_reference,
+        proposition_ledger,
+    )
     previous_answer = _previous_assistant(contextual, events)
+    recomputation = _dict(proposition_ledger.get("recomputation"))
+    revision_active = str(recomputation.get("state") or "") in {
+        "required",
+        "held_pending_owner_result",
+        "premise_revised_no_dependent_result",
+        "completed",
+    }
+    revised_proposition = next(
+        (
+            item
+            for item in proposition_ledger.get("propositions") or []
+            if isinstance(item, dict)
+            and str(item.get("id") or "")
+            == str(recomputation.get("revised_proposition_id") or "")
+        ),
+        {},
+    )
     contextual_kind = str(contextual.get("kind") or "none")
     active_thread_id = str(braid.get("active_thread_id") or "")
     active_thread = next(
@@ -172,7 +204,8 @@ def resolve_conversation_continuity(
         item for item in braid.get("unresolved_returns") or [] if isinstance(item, dict)
     ]
     material_return_ambiguity = bool(
-        unresolved_returns
+        explicit_return
+        and unresolved_returns
         and any(item.get("ask_only_if_material") is True for item in unresolved_returns)
     )
     clarification_needed = material_referent_ambiguity or material_return_ambiguity
@@ -192,11 +225,18 @@ def resolve_conversation_continuity(
         active_thread_id=active_thread_id,
         explicit_return=explicit_return,
     )
+    if immediate_follow_up and not explicit_return:
+        # An explicit immediate follow-up is grounded by the immediately
+        # preceding answer. A loosely matching older checkpoint can otherwise
+        # contaminate a well-bound local continuation with stale subject matter.
+        selected_checkpoint = {}
 
     if clarification_needed:
         mode = "material_ambiguity_hold"
     elif summary_requested:
         mode = "session_summary"
+    elif revision_active:
+        mode = "dependency_revision"
     elif topic_shift:
         mode = "explicit_topic_shift"
     elif explicit_return:
@@ -207,6 +247,7 @@ def resolve_conversation_continuity(
         "resolved",
         "resolved_to_previous_turn",
         "explicit_session_alias",
+        "resolved_to_revised_proposition",
     }:
         mode = "implied_reference"
     elif mixed_intent:
@@ -220,10 +261,11 @@ def resolve_conversation_continuity(
         previous_answer
         and mode in {"immediate_follow_up", "implied_reference"}
         and not explicit_return
+        and not revision_active
     )
     grounding_fragments = _grounding_fragments(
         mode,
-        previous_answer=previous_answer,
+        previous_answer="" if revision_active else previous_answer,
         selected_landmarks=selected_landmarks,
         selected_checkpoint=selected_checkpoint,
         resolved_reference=resolved_reference,
@@ -231,11 +273,20 @@ def resolve_conversation_continuity(
     selected_target = _selected_target(
         mode,
         active_thread=active_thread,
-        previous_answer=previous_answer,
+        previous_answer="" if revision_active else previous_answer,
         selected_landmarks=selected_landmarks,
         selected_checkpoint=selected_checkpoint,
         resolved_reference=resolved_reference,
     )
+    if revision_active and revised_proposition:
+        selected_target = {
+            "kind": "revised_session_proposition",
+            "id": str(revised_proposition.get("id") or ""),
+            "label": truncate(str(revised_proposition.get("text") or ""), 240),
+        }
+        revised_text = str(revised_proposition.get("text") or "").strip()
+        if revised_text:
+            grounding_fragments = [f"Revised visible premise: {revised_text}"]
     open_thread_ids = [
         str(item.get("id") or "")
         for item in threads
@@ -251,6 +302,7 @@ def resolve_conversation_continuity(
                 *(["session_summary"] if summary_requested else []),
                 *(["mixed_intent"] if mixed_intent else []),
                 *(["resolved_reference"] if resolved_reference else []),
+                *(["dependency_revision"] if revision_active else []),
             ]
         )
     )
@@ -280,6 +332,9 @@ def resolve_conversation_continuity(
                 "relevant_to_current_turn": immediate_relevant,
             },
             "immediate_previous_answer_relevant": immediate_relevant,
+            "immediate_previous_answer_excluded_as_stale": bool(
+                revision_active and previous_answer
+            ),
             "grounding_fragments": grounding_fragments,
             "grounding_text": truncate(" ".join(grounding_fragments), 1800),
             "dialogue_acts": dialogue_acts,
@@ -301,6 +356,14 @@ def resolve_conversation_continuity(
             "binding_invents_prior_context": False,
             "session_context_is_durable_memory": False,
             "selected_landmarks_require_visible_complete_response": True,
+            "stale_landmark_ids_excluded": [
+                str(item.get("id") or "")
+                for item in all_landmarks
+                if item not in landmarks and str(item.get("id") or "")
+            ],
+            "stale_propositions_eligible_for_grounding": False,
+            "session_proposition_ledger_observed": bool(proposition_ledger),
+            "dependency_revision": recomputation if revision_active else {},
             "visible_summary_only": True,
             "hidden_chain_of_thought_exposed": False,
             "review_status": "status_only",
@@ -327,6 +390,87 @@ def _explicit_return(lower: str, *, contextual_kind: str, braid: dict[str, Any])
     )
 
 
+def _landmark_is_current(
+    landmark: dict[str, Any],
+    stale_propositions: list[dict[str, Any]],
+) -> bool:
+    proposition_id = str(landmark.get("proposition_id") or "")
+    if proposition_id:
+        return not any(
+            str(item.get("id") or "") == proposition_id for item in stale_propositions
+        )
+    summary = _normalize(str(landmark.get("summary") or ""))
+    if not summary:
+        return True
+    return not any(
+        _text_overlap(summary, _normalize(str(item.get("text") or ""))) >= 0.8
+        for item in stale_propositions
+    )
+
+
+def _bind_reference_after_revision(
+    reference: dict[str, Any],
+    ledger: dict[str, Any],
+) -> dict[str, Any]:
+    if not reference:
+        return reference
+    resolved = _normalize(str(reference.get("resolved_to") or ""))
+    if not resolved:
+        return reference
+    propositions = [
+        item for item in ledger.get("propositions") or [] if isinstance(item, dict)
+    ]
+    stale = next(
+        (
+            item
+            for item in reversed(propositions)
+            if str(item.get("status") or "") in {"invalidated", "superseded"}
+            and _text_overlap(resolved, _normalize(str(item.get("text") or ""))) >= 0.65
+        ),
+        {},
+    )
+    if not stale:
+        return reference
+    replacement_id = str(stale.get("replaced_by_proposition_id") or "")
+    replacement = next(
+        (
+            item
+            for item in propositions
+            if str(item.get("id") or "") == replacement_id
+            and str(item.get("status") or "") in {"active", "recomputed"}
+        ),
+        {},
+    )
+    if replacement:
+        return {
+            **reference,
+            "resolved_to": str(replacement.get("text") or ""),
+            "resolution_status": "resolved_to_revised_proposition",
+            "revision_binding": {
+                "prior_proposition_id": str(stale.get("id") or ""),
+                "current_proposition_id": str(replacement.get("id") or ""),
+            },
+        }
+    return {
+        **reference,
+        "resolved_to": "",
+        "resolution_status": "materially_ambiguous",
+        "revision_binding": {
+            "prior_proposition_id": str(stale.get("id") or ""),
+            "current_proposition_id": "",
+            "reason": "the referenced proposition was revised and has no active replacement result",
+        },
+    }
+
+
+def _text_overlap(left: str, right: str) -> float:
+    left_terms = set(left.split())
+    right_terms = set(right.split())
+    if not left_terms or not right_terms:
+        return 0.0
+    return len(left_terms & right_terms) / max(1, min(len(left_terms), len(right_terms)))
+
+
 def _select_landmarks(
     prompt: str,
     landmarks: list[dict[str, Any]],
@@ -345,8 +489,15 @@ def _select_landmarks(
     matched = [
         item
         for item in contextual.get("matched_session_landmarks") or []
-        if isinstance(item, dict) and item.get("coverage_complete_at_recording") is not False
+        if isinstance(item, dict)
+        and item.get("coverage_complete_at_recording") is not False
+        and any(
+            str(candidate.get("id") or "") == str(item.get("id") or "")
+            for candidate in eligible
+        )
     ]
+    if not (explicit_return or summary_requested):
+        matched = []
     if matched and explicit_return and active_thread_id:
         matched_thread = [
             item

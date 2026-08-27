@@ -5,6 +5,7 @@ from typing import Any
 
 from .registry import truncate
 from .supported_semantics import semantic_units_for_formation
+from .whole_answer_composition import compose_whole_answer
 
 
 EPISTEMIC_COMPOSITION_BOUNDARY = (
@@ -27,6 +28,7 @@ GUARDS: dict[str, Any] = {
     "autonomous_action_allowed": False,
     "self_replication_allowed": False,
     "hidden_chain_of_thought_exposed": False,
+    "expression_authority": False,
 }
 
 _PREDICTION_CUES = (
@@ -109,10 +111,50 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
         if isinstance(payload.get("exploratory_reasoning"), dict)
         else {}
     )
+    answer_operations = (
+        payload.get("answer_operations")
+        if isinstance(payload.get("answer_operations"), dict)
+        else {}
+    )
+    operation_results = [
+        item
+        for item in answer_operations.get("results") or []
+        if isinstance(item, dict)
+        and str(item.get("obligation_id") or "")
+    ]
+    completed_operations = [
+        item for item in operation_results if item.get("status") == "completed"
+    ]
+    operation_by_id = {
+        str(item.get("obligation_id") or ""): item
+        for item in completed_operations
+    }
+    whole_answer = compose_whole_answer(
+        {
+            "prompt": prompt,
+            "content_seed": content_seed,
+            "response_obligations": obligations,
+            "answer_operations": answer_operations,
+        }
+    )
+    whole_answer_applied = whole_answer.get("applied") is True
+    if whole_answer_applied:
+        content_seed = _truncate_preserving_paragraphs(
+            str(whole_answer.get("content_seed") or content_seed),
+            5000,
+        )
+        whole_semantics = (
+            whole_answer.get("supported_semantics")
+            if isinstance(whole_answer.get("supported_semantics"), dict)
+            else {}
+        )
+        if semantic_units_for_formation(whole_semantics):
+            semantics = whole_semantics
     if (
         exploratory.get("selected_for_answer") is True
         and content_seed
         and not hard_boundary
+        and not whole_answer_applied
     ):
         return _exploratory_primary_composition(
             content_seed,
@@ -165,6 +207,7 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
         obligation_id = str(obligation.get("id") or f"part-{order + 1}")
         resolution = resolution_by_id.get(obligation_id, {})
         supplied = supplied_by_id.get(obligation_id, {})
+        operation_result = operation_by_id.get(obligation_id, {})
         units = [
             unit for unit in semantic_units
             if obligation_id in {
@@ -176,6 +219,7 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
                 supplied.get("text")
                 or resolution.get("visible_fragment")
                 or resolution.get("fragment")
+                or operation_result.get("expression_seed")
                 or _unit_text(units)
                 or ""
             ),
@@ -183,11 +227,16 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
         )
         coverage = coverage_by_id.get(obligation_id, {})
         unsupported = bool(
-            supplied.get("unsupported") is True
-            or resolution.get("unsupported") is True
-            or resolution.get("missing_ground")
+            operation_result.get("status") != "completed"
+            and (
+                supplied.get("unsupported") is True
+                or resolution.get("unsupported") is True
+                or resolution.get("missing_ground")
+            )
         )
         addressed = bool(
+            operation_result.get("status") == "completed" and visible_text
+            or
             supplied.get("addressed") is True
             or resolution.get("added_to_answer") is True
             or units
@@ -195,14 +244,19 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
         )
         part_source_class = str(
             supplied.get("source_class")
+            or ("typed_operation_result" if operation_result else "")
             or resolution.get("source_class")
             or source_class
+        )
+        part_source_id = str(
+            operation_result.get("expression_source_id")
+            or source_id
         )
         state = str(supplied.get("epistemic_state") or "") or _part_state(
             prompt=prompt,
             obligation=obligation,
             text=visible_text or content_seed,
-            source_id=source_id,
+            source_id=part_source_id,
             source_class=part_source_class,
             resolution=resolution,
             unsupported=unsupported or not addressed,
@@ -220,6 +274,7 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
             [
                 *[str(item) for item in supplied.get("source_refs") or []],
                 *[str(item) for item in resolution.get("source_refs") or []],
+                *[str(item) for item in operation_result.get("source_refs") or []],
                 *[
                     str(ref)
                     for unit in units
@@ -239,7 +294,7 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
             "addressed": addressed,
             "unsupported": state == "missing_ground",
             "missing_ground": missing_ground,
-            "source_id": source_id,
+            "source_id": part_source_id,
             "source_class": part_source_class,
             "source_refs": source_refs,
             "visible_label_required": state in {
@@ -247,9 +302,11 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
             },
             "visible_label_present": _visible_label_present(state, visible_text or content_seed),
             "unknown_neighbor_changes_this_part": False,
+            "typed_operation_result_used": bool(operation_result),
+            "typed_operation": str(operation_result.get("operation") or ""),
         }
         parts.append(part)
-        if visible_text:
+        if visible_text and not whole_answer_applied:
             composed_fragments.append(visible_text)
 
     if not parts and content_seed:
@@ -302,7 +359,11 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
         if item.get("visible_label_required") is True
         and item.get("visible_label_present") is not True
     )
-    composed_seed = _preserve_and_append(content_seed, composed_fragments)
+    composed_seed = (
+        content_seed
+        if whole_answer_applied
+        else _preserve_and_append(content_seed, composed_fragments)
+    )
     dominant_state = (
         "hard_boundary"
         if hard_boundary
@@ -327,6 +388,15 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
         "mixed_epistemic_answer": len(states) > 1,
         "known_part_preserved_with_missing_part": bool(supported_count and missing_count),
         "unknown_part_downgraded_supported_part": False,
+        "single_typed_operation_expression_used": (
+            len(completed_operations) == 1 and not whole_answer_applied
+        ),
+        "whole_answer_composition": whole_answer,
+        "whole_answer_composition_applied": whole_answer_applied,
+        "multi_operation_composition_deferred": (
+            len(operation_results) > 1 and not whole_answer_applied
+        ),
+        "supported_semantics": semantics,
         "composition_order": [str(item.get("obligation_id") or "") for item in parts],
         "unlabeled_exploratory_part_count": unlabeled_count,
         "release_ready": unlabeled_count == 0,

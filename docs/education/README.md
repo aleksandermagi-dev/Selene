@@ -39,13 +39,14 @@ governing law, personal memory, relationships, or authority.
 
 ## Foundational Teaching Groups
 
-Current checkpoint (August 11, 2026): all 17 listed F1 groups contain 106
+Current checkpoint (August 27, 2026): all 17 listed F1 groups contain 106
 unique retained foundation concepts in the configured runtime. The Group 17
 closure bridge completed the two bounded gaps identified by the earlier F1
-closure audit. F2 now contains 25 retained concepts across paragraph
+closure audit. F2 now contains 30 retained concepts across paragraph
 meaning, source grounding, vocabulary structure, comparison, point of view,
 organized composition, multi-digit arithmetic, factors, multiples,
-divisibility, and operation order. This closes the currently defined F1 sequence, not
+divisibility, operation order, fractions as numbers, fraction equivalence,
+comparison, and composition. This closes the currently defined F1 sequence, not
 Selene's broader elementary-through-college education.
 
 - [F1 Group 1: Foundations](SELENE_F1_FOUNDATION_GROUP_1_20260719.md)
@@ -71,6 +72,7 @@ Selene's broader elementary-through-college education.
 - [F2 Group 3: Point of View and Organized Composition](SELENE_F2_POINT_OF_VIEW_ORGANIZED_COMPOSITION_GROUP_3_20260811.md)
 - [F2 Group 4: Multi-Digit Arithmetic and Operation Relationships](SELENE_F2_MULTI_DIGIT_ARITHMETIC_OPERATIONS_GROUP_4_20260811.md)
 - [F2 Group 5: Factors, Multiples, Divisibility, and Operation Order](SELENE_F2_FACTORS_MULTIPLES_OPERATION_ORDER_GROUP_5_20260811.md)
+- [F2 Group 6: Fractions as Numbers, Equivalence, Comparison, and Composition](SELENE_F2_FRACTIONS_NUMBERS_EQUIVALENCE_GROUP_6_20260827.md)
 
 ## Coding Curriculum
 

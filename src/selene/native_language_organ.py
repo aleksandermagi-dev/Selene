@@ -517,6 +517,7 @@ def _build_language_result(
         "quotation_echo": plan.get("quotation_echo_plan") or {},
         "relational_expression_range": plan.get("relational_expression_range") or {},
         "epistemic_composition": meaning.get("epistemic_composition") or {},
+        "answer_operations": meaning.get("answer_operations") or {},
         "generative_thought_expression": meaning.get("generative_thought_expression") or {},
         "pragmatic_plan": meaning.get("pragmatic_plan") or {},
         "turn_flow_plan": meaning.get("turn_flow_plan") or {},
@@ -613,10 +614,36 @@ def _meaning_packet(
     intelligence = payload.get("intelligence_support") if isinstance(payload.get("intelligence_support"), dict) else {}
     answer_engine = payload.get("answer_engine_support") if isinstance(payload.get("answer_engine_support"), dict) else {}
     answer_completion = payload.get("answer_completion") if isinstance(payload.get("answer_completion"), dict) else {}
+    answer_operations = (
+        payload.get("answer_operations")
+        if isinstance(payload.get("answer_operations"), dict)
+        else {}
+    )
+    answer_operation_handoff = (
+        answer_operations.get("expression_handoff")
+        if isinstance(answer_operations.get("expression_handoff"), dict)
+        else {}
+    )
     epistemic_composition = (
         payload.get("epistemic_composition")
         if isinstance(payload.get("epistemic_composition"), dict)
         else {}
+    )
+    whole_answer_composition = (
+        epistemic_composition.get("whole_answer_composition")
+        if isinstance(epistemic_composition.get("whole_answer_composition"), dict)
+        else {}
+    )
+    composition_supported_semantics = (
+        epistemic_composition.get("supported_semantics")
+        if (
+            epistemic_composition.get("whole_answer_composition_applied") is True
+            and isinstance(epistemic_composition.get("supported_semantics"), dict)
+        )
+        else {}
+    )
+    whole_answer_semantics_used = bool(
+        semantic_units_for_formation(composition_supported_semantics)
     )
     epistemic_answer_state = (
         payload.get("epistemic_answer_state")
@@ -676,7 +703,8 @@ def _meaning_packet(
         else {}
     )
     formation_braid_used = bool(
-        semantic_units_for_formation(braid_supported_semantics)
+        not whole_answer_semantics_used
+        and semantic_units_for_formation(braid_supported_semantics)
     )
     organ_coalition = (
         payload.get("organ_coalition")
@@ -689,7 +717,9 @@ def _meaning_packet(
         else {}
     )
     supported_semantics = (
-        braid_supported_semantics
+        composition_supported_semantics
+        if whole_answer_semantics_used
+        else braid_supported_semantics
         if formation_braid_used
         else _supported_semantics_for_content(
             content_seed,
@@ -719,6 +749,16 @@ def _meaning_packet(
             certainty="bounded_supported_completion",
             scope="current_dialogue_obligations",
         )
+    operation_seed = " ".join(
+        str(answer_operation_handoff.get("expression_seed") or "").split()
+    )
+    if (
+        not supported_semantics
+        and operation_seed
+        and operation_seed == " ".join(content_seed.split())
+        and isinstance(answer_operation_handoff.get("supported_semantics"), dict)
+    ):
+        supported_semantics = answer_operation_handoff.get("supported_semantics") or {}
     supported_semantics_used = bool(
         semantic_units_for_formation(supported_semantics)
     )
@@ -995,6 +1035,49 @@ def _meaning_packet(
         "generative_thought_input": generative_thought_input,
         "structural_discovery": structural_discovery,
         "exploratory_reasoning": exploratory_reasoning,
+        "answer_operations": {
+            "observed": bool(answer_operations),
+            "status": str(answer_operations.get("status") or "not_supplied"),
+            "operation_count": int(answer_operations.get("operation_count") or 0),
+            "completed_count": int(answer_operations.get("completed_count") or 0),
+            "missing_input_count": int(
+                answer_operations.get("missing_input_count") or 0
+            ),
+            "meaning_units": answer_operation_handoff.get("meaning_units") or [],
+            "supported_semantics_used": (
+                bool(answer_operation_handoff.get("supported_semantics"))
+                and supported_semantics
+                == answer_operation_handoff.get("supported_semantics")
+            ),
+            "changes_meaning": False,
+            "is_expression_authority": False,
+        },
+        "whole_answer_composition": {
+            "observed": bool(whole_answer_composition),
+            "status": str(
+                whole_answer_composition.get("status") or "not_available"
+            ),
+            "applied": whole_answer_composition.get("applied") is True,
+            "operation_count": int(
+                whole_answer_composition.get("operation_count") or 0
+            ),
+            "semantic_unit_count": int(
+                whole_answer_composition.get("semantic_unit_count") or 0
+            ),
+            "deduplicated_semantic_unit_count": int(
+                whole_answer_composition.get(
+                    "deduplicated_semantic_unit_count"
+                )
+                or 0
+            ),
+            "composition_order": (
+                whole_answer_composition.get("composition_order") or []
+            ),
+            "supported_semantics_used": whole_answer_semantics_used,
+            "nlo_owns_final_wording": True,
+            "changes_meaning": False,
+            "is_expression_authority": False,
+        },
         "formation_braid": {
             "used": formation_braid_used,
             "status": str(formation_braid.get("status") or "not_available"),

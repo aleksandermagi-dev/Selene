@@ -428,6 +428,21 @@ def test_current_named_return_still_preserves_the_visible_session_topic():
     assert decision["answer_shape"] == "continue_previous_answer"
 
 
+def test_difference_in_the_previous_answer_is_an_immediate_comparison_follow_up():
+    prompt = "What difference between consistency and fairness were we preserving there?"
+    context = _context(
+        "A relevant accessibility need can change what equal participation requires, "
+        "so consistency alone is not enough."
+    )
+
+    follow_up = inspect_contextual_follow_up(prompt, context)
+    decision = apply_contextual_intent(classify_chat_intent(prompt), follow_up)
+
+    assert follow_up["kind"] == "comparison_follow_up"
+    assert follow_up["preserve_active_topic"] is True
+    assert decision["intent"] == "reasoning"
+
+
 def test_generic_closure_words_do_not_match_unrelated_session_landmarks():
     landmark = {
         "kind": "conclusion",

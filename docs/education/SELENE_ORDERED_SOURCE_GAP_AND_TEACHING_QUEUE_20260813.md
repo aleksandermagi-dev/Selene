@@ -124,7 +124,7 @@ inspectable.
 
 | Group | Concepts | Prerequisite | Core source need |
 |---|---|---|---|
-| F2 Group 6 | Fractions as numbers; unit fractions; equivalence; comparison; initial operation relationships | F2 Groups 4–5 and F1 equal shares | Select an exact Grades 3–5 open mathematics artifact |
+| F2 Group 6 — retained 2026-08-27 | Fractions as numbers; unit fractions; equivalence; comparison; initial operation relationships | F2 Groups 4–5 and F1 equal shares | Checksum-pinned CKMath Grades 3 and 4 fraction guides; embedded CC BY-NC-SA 4.0 notices preserved |
 | F2 Group 7 | Fraction operations; decimals; fraction-decimal relationships; place-value extension; reasonableness | Group 6 | Same coherent mathematics backbone |
 | F2 Group 8 | Ratios, unit comparison, percentages, scale, and proportional language | Group 7 | Grades 4–6 transition material; independently checked examples |
 | F2 Group 9 | Area, perimeter, volume, angles, coordinates, properties, and unit conversion | Groups 6–8 plus F1 geometry/measurement | Open mathematics artifact plus NIST unit references where applicable |

@@ -8,6 +8,7 @@ from typing import Any
 from .claim_evidence import build_claim_evidence_packet
 from .answer_substance import build_answer_substance
 from .bounded_hypothesis import build_bounded_hypothesis_attempt
+from .problem_resolution import build_problem_resolution
 from .registry import truncate
 from .structural_discovery import build_structural_discovery_packet
 
@@ -77,6 +78,7 @@ def intelligence_os_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "display_name": "intelligenceOS / Observatory",
             "method": "ABCD(E)",
             "version": "v3_bounded_hypothesis_capable",
+            "problem_resolution_version": "v1_seven_point_satisfiability_and_informed_retry",
             "stage_order": ["Acquire", "Build", "Challenge", "Demonstrate", "Evaluate"],
             "answer_shapes": sorted(ANSWER_SHAPES),
             "run_count": count,
@@ -123,6 +125,26 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
     challenge = _challenge(prompt, models)
     evidence_chain = _demonstrate(prompt, observations, models)
     evaluation = _evaluate(prompt, challenge, evidence_chain)
+    problem_resolution = build_problem_resolution(
+        {
+            **payload,
+            "prompt": prompt,
+            "observations": observations,
+            "candidate_models": models,
+        }
+    )
+    if problem_resolution.get("epistemic_state") == "CONFLICT_UNSATISFIABLE":
+        evaluation = {
+            **evaluation,
+            "selected_next_step": "hold_constraint_conflict",
+            "confidence": "conflict_unsatisfiable",
+            "answer_shape": "hold_uncertainty",
+            "stop_or_recurse": "stop_for_constraint_revision",
+            "stopping_rule": (
+                "The active hard constraints cannot share one valid state; "
+                "another solver attempt would not resolve that conflict."
+            ),
+        }
     answer_shape = _answer_shape(evaluation, challenge)
     answer_substance = build_answer_substance(prompt, observations)
     hypothesis_attempt = build_bounded_hypothesis_attempt(
@@ -142,6 +164,11 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         answer_substance,
         hypothesis_attempt,
     )
+    if problem_resolution.get("epistemic_state") == "CONFLICT_UNSATISFIABLE":
+        best_current_answer = (
+            "The active requirements conflict, so no answer can satisfy all of them as written. "
+            "The conflicting premise, objective, policy, or constraint needs to be revised or prioritized before retrying."
+        )
     answer_substance["selected_for_answer"] = best_current_answer == answer_substance.get("answer")
     hypothesis_attempt["selected_for_answer"] = (
         hypothesis_attempt.get("offered") is True
@@ -231,6 +258,7 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         "organ_name": "intelligenceOS",
         "method": "ABCD(E)",
         "version": "v3_bounded_hypothesis_capable",
+        "problem_resolution_version": "v1_seven_point_satisfiability_and_informed_retry",
         "prompt": prompt,
         "stages": {
             "A_acquire": observations,
@@ -250,6 +278,7 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         "best_current_answer": best_current_answer,
         "answer_substance": answer_substance,
         "hypothesis_attempt": hypothesis_attempt,
+        "problem_resolution": problem_resolution,
         "claim_evidence_packet": claim_evidence,
         "structural_discovery": structural_discovery,
         "confidence": evaluation["confidence"],

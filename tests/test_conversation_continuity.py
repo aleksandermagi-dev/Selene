@@ -157,6 +157,50 @@ def test_materially_ambiguous_return_holds_only_that_binding_in_a_mixed_turn():
     _assert_locked(result)
 
 
+def test_old_unresolved_return_does_not_override_an_immediate_answer_follow_up():
+    result = resolve_conversation_continuity(
+        {
+            "prompt": "That answer can be provisional. What observation would change it?",
+            "contextual_follow_up": {
+                "detected": True,
+                "kind": "answer_development",
+                "previous_assistant_preview": (
+                    "My current guess is surface contamination; a cleaned test spot "
+                    "would distinguish it from an adhesive mismatch."
+                ),
+            },
+            "dialogue_workspace": {
+                "pragmatics": {
+                    "thread_braid": {
+                        "unresolved_returns": [
+                            {
+                                "requested_topic": "an older topic",
+                                "ask_only_if_material": True,
+                            }
+                        ]
+                    },
+                    "topic_checkpoints": [
+                        {
+                            "checkpoint_id": "older-checkpoint",
+                            "topic": "an older unrelated plan",
+                            "reasoning_state_capsule": {
+                                "current_conclusion": "Keep the charging cable on the desk."
+                            },
+                        }
+                    ],
+                }
+            },
+        }
+    )
+
+    assert result["mode"] == "immediate_follow_up"
+    assert result["clarification_needed"] is False
+    assert result["immediate_previous_answer_relevant"] is True
+    assert "surface contamination" in result["grounding_text"]
+    assert "charging cable" not in result["grounding_text"]
+    _assert_locked(result)
+
+
 def test_session_summary_preserves_landmarks_from_more_than_one_open_thread():
     landmarks = [
         _landmark("garden", "thread-garden", "garden", "The garden trial remains reversible."),

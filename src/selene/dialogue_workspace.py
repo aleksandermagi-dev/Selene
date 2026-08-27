@@ -23,6 +23,10 @@ from .dual_horizon_context import (
 )
 from .referent_address import resolve_referent_address
 from .registry import truncate
+from .session_proposition_ledger import (
+    prepare_session_proposition_revision,
+    record_visible_session_propositions,
+)
 
 
 DIALOGUE_BOUNDARY = (
@@ -64,6 +68,7 @@ def dialogue_workspace_status(conn: sqlite3.Connection, session_id: int) -> dict
                 "completed_loops": [],
                 "corrections": [],
                 "epistemic_updates": [],
+                "session_proposition_ledger": {},
                 "preferences": {},
                 "session_landmarks": [],
                 "topic_checkpoints": [],
@@ -268,6 +273,16 @@ def prepare_dialogue_turn(
         ),
         {},
     )
+    session_proposition_ledger = prepare_session_proposition_revision(
+        {
+            "session_id": session_id,
+            "prior_ledger": prior_pragmatics.get("session_proposition_ledger") or {},
+            "correction_refinement": correction,
+            "epistemic_revision_plan": epistemic_update_plan,
+            "turn_id": _loop_id(session_id, interpreted_text, 0).replace("dialogue_loop", "dialogue_turn"),
+            "thread_id": active_thread_id,
+        }
+    )
     returned_to_prior_thread = bool(
         str(thread_braid.get("active_thread_id") or "")
         and str(thread_braid.get("prior_active_thread_id") or "")
@@ -332,6 +347,7 @@ def prepare_dialogue_turn(
             limit=24,
             unresolved_first=True,
         ),
+        "session_proposition_ledger": session_proposition_ledger,
         "utterance_units": utterance_units,
         "question_units": questions,
         "multi_part_prompt": len(questions) > 1,
@@ -388,6 +404,7 @@ def prepare_dialogue_turn(
             limit=24,
             unresolved_first=True,
         ),
+        "session_proposition_ledger": session_proposition_ledger,
         "preferences": preferences,
         "last_dialogue_act": pragmatics["dialogue_act"],
         "last_user_preview": truncate(text, 360),
@@ -486,6 +503,47 @@ def record_dialogue_response(
         thread_braid=pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {},
         coverage=coverage,
     )
+    session_proposition_ledger = record_visible_session_propositions(
+        {
+            "session_id": session_id,
+            "ledger": pragmatics.get("session_proposition_ledger") or {},
+            "candidate_text": candidate,
+            "turn_id": str(conversation_spine.get("turn_id") or ""),
+            "thread_id": str(
+                (
+                    pragmatics.get("thread_braid")
+                    if isinstance(pragmatics.get("thread_braid"), dict)
+                    else {}
+                ).get("active_thread_id")
+                or ""
+            ),
+            "response_landmarks": new_landmarks,
+            "coverage_evaluation": coverage,
+            "answer_operations": payload.get("answer_operations") or {},
+            "claim_evidence_packet": payload.get("claim_evidence_packet") or {},
+        }
+    )
+    landmark_propositions = {
+        str(item.get("landmark_id") or ""): str(item.get("id") or "")
+        for item in session_proposition_ledger.get("propositions") or []
+        if isinstance(item, dict) and str(item.get("landmark_id") or "")
+    }
+    recomputed_proposition_id = str(
+        (session_proposition_ledger.get("recomputation") or {}).get(
+            "recomputed_proposition_id"
+        )
+        or ""
+    )
+    new_landmarks = [
+        {
+            **item,
+            "proposition_id": (
+                landmark_propositions.get(str(item.get("id") or ""), "")
+                or recomputed_proposition_id
+            ),
+        }
+        for item in new_landmarks
+    ]
     session_landmarks = _merge_landmarks(prior_landmarks, new_landmarks)
     prior_checkpoints = [
         item
@@ -528,7 +586,9 @@ def record_dialogue_response(
                 if checkpoint.get("status") == "session_topic_checkpoint_ready"
                 else {}
             ),
+            "session_proposition_ledger": session_proposition_ledger,
         },
+        "session_proposition_ledger": session_proposition_ledger,
         "session_landmarks": session_landmarks,
         "topic_checkpoints": topic_checkpoints,
         "latest_topic_checkpoint": (
@@ -621,6 +681,11 @@ def _decode(row: sqlite3.Row) -> dict[str, Any]:
                 ],
                 limit=24,
                 unresolved_first=True,
+            ),
+            "session_proposition_ledger": (
+                pragmatics.get("session_proposition_ledger")
+                if isinstance(pragmatics.get("session_proposition_ledger"), dict)
+                else {}
             ),
             "preferences": _loads(item.get("preferences_json"), {}),
             "last_dialogue_act": item.get("last_dialogue_act"),

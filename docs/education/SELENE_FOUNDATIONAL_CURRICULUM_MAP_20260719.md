@@ -90,6 +90,15 @@ calculation is kept distinct from a correct model of the situation. Identity,
 personality, memory, governance, training, financial authority, and autonomy
 remain unchanged.
 
+F2 Group 6 is retained under Aleks authorization record 37 as five approved
+general knowledge resources. It covers the whole and equal partitions, unit
+fractions, fraction magnitude on a number line, fractions greater than one,
+equivalence, flexible magnitude comparison, and composition or decomposition
+through a shared unit. It supplies meaning beneath later procedures rather
+than teaching fraction-operation algorithms early. Identity, personality,
+memory, governance, training, source-reproduction authority, financial
+authority, and autonomy remain unchanged.
+
 F1 Group 14 is retained under Aleks authorization record 17 as six approved
 general knowledge resources. It covers weather and climate timescale
 distinctions, contextual weather records, regional and hemispheric seasonal

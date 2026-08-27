@@ -55,12 +55,23 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
         if isinstance(payload.get("supported_semantics"), dict)
         else {}
     )
+    answer_operations = (
+        payload.get("answer_operations")
+        if isinstance(payload.get("answer_operations"), dict)
+        else {}
+    )
+    operation_results = {
+        str(item.get("obligation_id") or ""): item
+        for item in answer_operations.get("results") or []
+        if isinstance(item, dict) and str(item.get("obligation_id") or "")
+    }
     coverage_plan = {"response_obligations": obligations}
     initial_coverage = evaluate_response_coverage(
         coverage_plan,
         seed,
         conversation_spine=spine,
         supported_semantics=selected_semantics,
+        answer_operations=answer_operations,
     )
     base = {
         "status": "bounded_answer_completion_not_needed",
@@ -113,6 +124,31 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
                 }
             )
             continue
+        typed_operation = operation_results.get(obligation_id, {})
+        if typed_operation:
+            # Operation-capable owners have already run. Completion may not
+            # replace their typed result with a fresh generic answer or make a
+            # missing-input statement count as the requested operation. One
+            # exact current-turn owner output may be tried later through the
+            # bounded metacognitive handoff.
+            resolutions.append(
+                {
+                    "obligation_id": obligation_id,
+                    "kind": kind,
+                    "resolution": "held_for_typed_operation_visible_fulfillment",
+                    "operation": str(typed_operation.get("operation") or ""),
+                    "operation_result_state": str(typed_operation.get("status") or ""),
+                    "source_class": "typed_answer_owner",
+                    "concept_id": None,
+                    "source_refs": _texts(typed_operation.get("source_refs")),
+                    "unsupported": typed_operation.get("status") == "unsupported",
+                    "missing_ground": str(typed_operation.get("missing_input") or ""),
+                    "visible_fragment": "",
+                    "added_to_answer": False,
+                    "generic_fallback_generated": False,
+                }
+            )
+            continue
         source_text = truncate(str(obligation.get("source_text") or prompt), 700)
         reasoning_text = truncate(
             source_text
@@ -146,7 +182,7 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
             source_class = "approved_knowledge" if fragment else ""
         if not fragment and kind in {
             "comparison", "reason", "method", "choice_or_priority", "direct_request", "direct_question",
-            "constraint_preservation", "limitation", "requested_output", "requested_section",
+            "constraint_preservation", "limitation", "requested_output", "requested_section", "preference",
         }:
             substance = build_answer_substance(reasoning_text, observations)
             fragment = truncate(str(substance.get("answer") or ""), 1200)
@@ -272,6 +308,7 @@ def build_bounded_answer_completion(payload: dict[str, Any] | None = None) -> di
         combined,
         conversation_spine=spine,
         supported_semantics=combined_semantics,
+        answer_operations=answer_operations,
     )
     initially_addressed = {
         str(item.get("obligation_id") or "")

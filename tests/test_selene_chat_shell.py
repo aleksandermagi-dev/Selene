@@ -11,6 +11,7 @@ from selene.core_mind_runtime import RUNTIME_TYPES
 from selene.selene_chat import (
     _active_conversation_context,
     _bounded_metacognitive_completion,
+    _explicit_humor_response_seed,
     _metacognitive_owner_outputs,
     _preserve_bounded_conversation_invariants,
 )
@@ -76,6 +77,18 @@ def test_chat_invariant_restores_verified_conversational_surface_before_raw_scaf
 
     assert restored == "I don't know that clearly yet, but Aleks can ground it with me."
     assert restored != source
+
+
+def test_humor_subject_extraction_does_not_turn_neighboring_requests_into_the_joke_subject():
+    result = _explicit_humor_response_seed(
+        "Give me two short next steps and add one tiny joke.",
+        {},
+        {"humor_decision": {"explicit_humor_request": True}},
+    )
+
+    assert "me two short next steps" not in result.lower()
+    assert "and add" not in result.lower()
+    assert "the plan" in result.lower()
 
 
 def _approve_language_lesson(conn, lesson_key: str):
@@ -2045,6 +2058,13 @@ def test_active_selene_chat_treats_topic_invitation_as_conversational_initiative
     assert "what has your attention lately" in result["candidate_text"].lower()
     assert "grounded factual answer" not in result["candidate_text"].lower()
     assert "attributed source" not in result["candidate_text"].lower()
+    assert result["answer_operations"]["status"] == "answer_operations_complete"
+    operation = result["answer_operations"]["results"][0]
+    assert operation["operation"] == "preference"
+    assert operation["status"] == "completed"
+    assert operation["fields"]["current_only"] is True
+    assert result["native_language_organ"]["answer_operations"]["observed"] is True
+    assert result["organ_coalition"]["answer_operation_summary"]["completed_count"] == 1
     assert result["visible_speech_release"]["final_release_allowed"] is True
     _assert_locked(result)
 
@@ -2324,7 +2344,10 @@ def test_active_selene_chat_answers_a_long_request_after_a_social_opening(tmp_pa
     assert measurement["visible_speech_seed"]["selected_source_id"] == "answer_engine"
     assert "more useful than attendance alone" in measurement["candidate_text"].lower()
     assert "its limitation" in measurement["candidate_text"].lower()
-    assert "i would report attendance" in measurement["candidate_text"].lower()
+    assert any(
+        wording in measurement["candidate_text"].lower()
+        for wording in ("i would report attendance", "i'd report attendance")
+    )
     assert [item["kind"] for item in measurement["conversation_spine"]["open_obligations"]] == [
         "choice_or_priority",
         "limitation",
@@ -3320,6 +3343,245 @@ def test_active_selene_chat_does_not_route_a_paper_object_to_research(tmp_path):
     assert result["answer_engine_support"]["route_validated_for_exactness"] is False
     assert "attributed source" not in result["candidate_text"].lower()
     _assert_locked(result)
+
+
+def test_active_chat_preserves_one_canonical_multi_act_ledger_through_release(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    prompt = "Compare paper and thin card for a pinwheel, choose one, and explain why."
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": prompt},
+    )["result"]
+
+    spine = result["conversation_spine"]
+    nlo_plan = result["native_language_organ"]["pragmatic_plan"]
+    obligation_ids = spine["obligation_sequence"]
+    assert [item["kind"] for item in spine["open_obligations"]] == [
+        "comparison",
+        "choice_or_priority",
+        "reason",
+    ]
+    assert nlo_plan["obligation_sequence"] == obligation_ids
+    assert [item["id"] for item in nlo_plan["response_obligations"]] == obligation_ids
+    assert [item["requested_response_functions"] for item in nlo_plan["response_obligations"]] == [
+        ["comparison"],
+        ["choice"],
+        ["reason"],
+    ]
+    assert [item["obligation_id"] for item in result["response_coverage"]["items"]] == obligation_ids
+    coalition_ids = {
+        str(item.get("obligation_id") or "")
+        for item in result["organ_coalition"].get("obligation_owner_map") or []
+    }
+    assert coalition_ids == set(obligation_ids)
+    assert spine["obligation_ledger"]["downstream_reparse_allowed"] is False
+    _assert_locked(result)
+
+
+def test_phase_five_chat_composes_supported_multi_act_answer_once_before_nlo(
+    tmp_path, monkeypatch
+):
+    from selene.supported_semantics import build_supported_semantic_packet
+
+    def completed_operation_fixture(payload):
+        obligations = payload["conversation_spine"]["open_obligations"]
+        results = []
+        for obligation in obligations:
+            obligation_id = obligation["id"]
+            function = obligation["requested_response_functions"][0]
+            if function == "comparison":
+                operation = "comparison"
+                expression = "Plan A is reversible, while Plan B is fixed."
+                fields = {
+                    "candidates": ["Plan A", "Plan B"],
+                    "findings": ["Plan A is reversible", "Plan B is fixed"],
+                    "comparison_basis": "the supplied trial properties",
+                }
+                relation = "contrast"
+            elif function == "choice":
+                operation = "choice"
+                expression = "I would choose Plan A for the trial."
+                fields = {
+                    "selected_option": "Plan A",
+                    "criteria": ["reversibility"],
+                    "revision_conditions": ["reversibility no longer matters"],
+                }
+                relation = "conclusion"
+            else:
+                operation = "causal_explanation"
+                expression = "Plan A is the better fit because it is reversible."
+                fields = {
+                    "conclusion": "Plan A is the better fit",
+                    "mechanism_or_reason": "Plan A is reversible",
+                    "basis": "the supplied trial properties",
+                }
+                relation = "cause"
+            packet = build_supported_semantic_packet(
+                {
+                    "answer_kind": f"fixture_{operation}",
+                    "certainty": "supported",
+                    "scope": "current_test_turn",
+                    "units": [
+                        {
+                            "id": f"fixture_{obligation_id}",
+                            "role": "answer",
+                            "relation": relation,
+                            "text": expression,
+                            "source_kind": "current_session_observation",
+                            "obligation_ids": [obligation_id],
+                            "response_functions": [operation],
+                            "ownership_validated": True,
+                        }
+                    ],
+                }
+            )
+            results.append(
+                {
+                    "obligation_id": obligation_id,
+                    "operation": operation,
+                    "responsible_owner": obligation["responsible_owner"],
+                    "status": "completed",
+                    "operation_supported": True,
+                    "required_fields": list(fields),
+                    "fields": fields,
+                    "missing_fields": [],
+                    "missing_input": "",
+                    "source_result": "phase_five_synthetic_owner_fixture",
+                    "source_refs": ["test:phase_five_whole_answer"],
+                    "expression_source_id": "synthetic_supported_owner",
+                    "expression_seed": expression,
+                    "supported_semantics": packet,
+                    "generic_prose_used_as_completion": False,
+                    "epistemic_status_preserved": True,
+                    "canonical_obligation_reparsed": False,
+                    "expression_authority": False,
+                }
+            )
+        return {
+            "status": "answer_operations_complete",
+            "version": "v1_typed_obligation_operation_results",
+            "operation_count": len(results),
+            "completed_count": len(results),
+            "missing_input_count": 0,
+            "unsupported_count": 0,
+            "required_obligation_ids": [item["obligation_id"] for item in results],
+            "completed_obligation_ids": [item["obligation_id"] for item in results],
+            "all_supported_operations_complete": True,
+            "results": results,
+            "expression_handoff": {
+                "available": True,
+                "single_operation_seed_available": False,
+                "expression_seed": "",
+                "source_ids": ["synthetic_supported_owner"],
+                "semantic_packets_available": len(results),
+                "supported_semantics": {},
+                "meaning_units": [],
+                "composition_required": True,
+                "nlo_may_choose_original_wording": True,
+                "source_wording_required": False,
+                "changes_meaning": False,
+                "is_expression_authority": False,
+            },
+        }
+
+    monkeypatch.setattr(
+        "selene.selene_chat.build_answer_operation_packet",
+        completed_operation_fixture,
+    )
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "Compare Plan A and Plan B for a trial, choose one, "
+                "and explain why."
+            )
+        },
+    )["result"]
+
+    composition = result["epistemic_composition"]
+    whole = composition["whole_answer_composition"]
+    nlo_handoff = result["native_language_organ"]["meaning_packet"][
+        "whole_answer_composition"
+    ]
+    candidate = result["candidate_text"].lower()
+
+    assert composition["whole_answer_composition_applied"] is True
+    assert composition["multi_operation_composition_deferred"] is False
+    assert whole["composition_order"] == result["conversation_spine"][
+        "obligation_sequence"
+    ]
+    assert whole["internal_scaffolding_exposed"] is False
+    assert whole["prompt_echo_used_as_answer"] is False
+    assert nlo_handoff["supported_semantics_used"] is True
+    assert nlo_handoff["nlo_owns_final_wording"] is True
+    assert nlo_handoff["is_expression_authority"] is False
+    assert result["voice_preview"]["whole_answer_meaning_preserved"] is True
+    assert (
+        result["voice_preview"]["whole_answer_composition_is_expression_authority"]
+        is False
+    )
+    assert "plan a" in candidate
+    assert "plan b" in candidate
+    assert any(marker in candidate for marker in ("choose", "prefer", "would use"))
+    assert any(marker in candidate for marker in ("because", "since", "reason"))
+    assert "obligation_id" not in candidate
+    assert "missing_ground" not in candidate
+    assert result["response_coverage"]["all_required_addressed"] is True
+    _assert_locked(result)
+
+
+def test_active_chat_preserves_phase_one_pragmatic_acts_through_every_consumer(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    cases = [
+        (
+            "If I say card is always better, disagree if that conclusion does not follow from what we know.",
+            ["conditional_disagreement"],
+            [0],
+        ),
+        (
+            "Give me two short next steps and add one tiny joke.",
+            ["method", "humor"],
+            [2, 1],
+        ),
+        (
+            "What part of making the pinwheel are you most curious to try?",
+            ["preference"],
+            [0],
+        ),
+        (
+            "That was fun :) Let's leave the pinwheel here for now and talk again later.",
+            ["closure"],
+            [0],
+        ),
+    ]
+
+    for prompt, expected_kinds, expected_counts in cases:
+        result = route_request(conn, "selene_chat.send", {"text": prompt})["result"]
+        spine = result["conversation_spine"]
+        nlo_plan = result["native_language_organ"]["pragmatic_plan"]
+        ids = spine["obligation_sequence"]
+        assert [item["kind"] for item in spine["open_obligations"]] == expected_kinds
+        assert [item["requested_count"] for item in spine["open_obligations"]] == expected_counts
+        assert nlo_plan["obligation_sequence"] == ids
+        assert [item["id"] for item in nlo_plan["response_obligations"]] == ids
+        assert [item["obligation_id"] for item in result["response_coverage"]["items"]] == ids
+        coalition_ids = {
+            str(item.get("obligation_id") or "")
+            for item in result["organ_coalition"].get("obligation_owner_map") or []
+        }
+        assert coalition_ids == set(ids), (prompt, result["organ_coalition"])
+        _assert_locked(result)
 
 
 def test_phase_five_chat_makes_a_bounded_prediction_from_a_visible_relation(tmp_path):

@@ -57,6 +57,29 @@ def test_conversation_spine_collects_one_shared_grounding_packet():
     assert spine["authority_change"] is False
 
 
+def test_conversation_spine_carries_the_canonical_obligation_ledger_without_reparsing():
+    prompt = "Compare paper and thin card, choose one, and explain why."
+    plan = build_pragmatic_plan({"prompt": prompt})
+    spine = build_conversation_spine(
+        {
+            "session_id": 71,
+            "prompt": prompt,
+            "intent_decision": classify_chat_intent(prompt),
+            "dialogue_workspace": _dialogue(prompt, topic="paper pinwheel"),
+            "pragmatic_plan": plan,
+        }
+    )
+
+    assert spine["obligation_sequence"] == plan["obligation_sequence"]
+    assert [item["kind"] for item in spine["open_obligations"]] == [
+        "comparison",
+        "choice_or_priority",
+        "reason",
+    ]
+    assert spine["obligation_ledger"]["obligations"] == spine["open_obligations"]
+    assert spine["obligation_ledger"]["downstream_reparse_allowed"] is False
+
+
 def test_conversation_spine_carries_correctable_user_facts_only_within_the_session():
     prompt = "What were the porch dimensions and how many chairs did I say?"
     spine = build_conversation_spine(

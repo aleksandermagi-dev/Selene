@@ -348,6 +348,40 @@ def _structured_semantic_units(kind: str, context: dict[str, Any]) -> list[dict[
     ]
     if supplied_units:
         return supplied_units[:12]
+    if kind == "grounded_prerequisite_disagreement":
+        return [
+            {
+                **common,
+                "id": "prerequisite_sequence_conclusion",
+                "role": "answer",
+                "relation": "sequence",
+                "subject": "fractions",
+                "predicate": "come before",
+                "object": "calculus",
+                "meaning_keys": ["fractions precede calculus"],
+            },
+            {
+                **common,
+                "id": "prerequisite_dependency_mechanism",
+                "role": "support",
+                "relation": "cause",
+                "subject": "calculus",
+                "predicate": "depend on",
+                "object": "ratios, division, algebraic manipulation, and fractional relationships",
+                "meaning_keys": ["calculus depends on fractional and algebraic prerequisites"],
+            },
+            {
+                **common,
+                "id": "prerequisite_compression_condition",
+                "role": "condition",
+                "relation": "condition",
+                "subject": "the learning sequence",
+                "predicate": "compress",
+                "modality": "may",
+                "condition": "the learner already understands the prerequisites",
+                "meaning_keys": ["prior understanding permits sequence compression"],
+            },
+        ]
     if kind == "comparison_dependency_rule":
         return [
             {
@@ -1215,7 +1249,15 @@ def _plain_operation(
             _unit(
                 f"{answer_kind}_{index + 1}",
                 "answer" if index == 0 else "support",
-                "sequence" if index == 0 else "support",
+                (
+                    "cause"
+                    if re.search(r"\b(?:because|since|therefore|so that)\b", sentence, re.IGNORECASE)
+                    else "condition"
+                    if re.search(r"\b(?:if|unless|would revise|would change)\b", sentence, re.IGNORECASE)
+                    else "sequence"
+                    if index == 0
+                    else "support"
+                ),
                 text=sentence,
                 meaning_keys=[truncate(sentence.lower(), 120)],
             )
@@ -1471,6 +1513,19 @@ def _desk_organization_operation(
             missing_variable="whether any other cable needs the same daily access",
             support_basis=support_basis,
             units=[
+                *(
+                    [
+                        _unit(
+                            "desk_disagreement_stance",
+                            "answer",
+                            "contrast",
+                            text="I disagree with grouping primarily by device type.",
+                            meaning_keys=["device type is not the primary grouping rule"],
+                        )
+                    ]
+                    if "lean toward device type" in lower
+                    else []
+                ),
                 _unit("desk_frequency_choice", "answer", "contrast", subject="grouping by frequency", predicate="fit", obj="this desk better", meaning_keys=["frequency grouping selected"]),
                 _unit("desk_frequency_reason", "support", "cause", subject="frequency", predicate="preserve", obj="daily access while moving rarely used cables away", meaning_keys=["frequency preserves daily access"]),
                 _unit("desk_device_secondary", "limit", "contrast", subject="device type", predicate="remain", obj="a useful second rule inside each frequency group", meaning_keys=["device type remains secondary"]),
