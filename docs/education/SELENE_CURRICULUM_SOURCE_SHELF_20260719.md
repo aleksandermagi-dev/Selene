@@ -3,7 +3,7 @@
 Date: 2026-07-19; expanded 2026-07-29 for F1 Group 6 and selected
 2026-07-30 for F1 Group 7; selected 2026-08-03 for F1 Group 8; expanded
 2026-08-08 for F1 Groups 10 through 16; selected 2026-08-11 for F2 Groups 1-5;
-expanded 2026-08-27 for F2 Group 6
+expanded 2026-08-27 for F2 Groups 6 and 7A
 
 Status: source acquisition checkpoint; review only
 
@@ -291,6 +291,17 @@ and composition. Retained lessons use independently written explanations and
 examples. Classroom scripts, worksheets, images, branded activities,
 assessment items, student responses, copied passages, and full fraction-
 operation algorithms are excluded.
+
+F2 Group 7A selects four checksum-pinned CKMath Grade 4-5 teacher guides for
+fraction operations: Grade 4 Unit 3 and Grade 5 Units 2, 3, and 6. The
+artifacts' embedded CC BY-NC-SA 4.0 notices and third-party exclusions remain
+attached. The selected scope covers addition and subtraction through shared
+units, fractions as equal-sharing quotients, whole-number and fraction
+multiplication, area-based fraction products, elementary unit-fraction
+division, and reasonableness. Grade 5 Unit 6 decimal/place-value content is
+reserved for Group 7B. Classroom scripts, worksheets, source diagrams,
+branded activities, assessment items, student responses, copied passages, and
+unsupported general fraction-division claims are excluded.
 
 ## Cataloged and Deliberately Held Sources
 

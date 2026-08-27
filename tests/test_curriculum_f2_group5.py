@@ -78,7 +78,8 @@ def test_group5_lifecycle_retains_and_is_idempotent(tmp_path):
     assert result["retained_count"] == 5 and result["held_count"] == 0
     assert status["f2_fifth_group"]["retained_count"] == 5
     assert status["f2_sixth_group"]["retained_count"] == 0
-    assert len(status["f2_groups"]) == 6 and len(status["groups"]) == 17
+    assert status["f2_seventh_a_group"]["retained_count"] == 0
+    assert len(status["f2_groups"]) == 7 and len(status["groups"]) == 17
     assert all(row["state"] == "approved_knowledge_resource" and row["chat_use_permission"] == "available_as_knowledge_resource" for row in rows)
     assert all(row["authorization_id"] == authorization["item"]["id"] for row in rows)
     assert all(row["acquire_status"] == row["integrate_status"] == row["express_status"] == "complete" for row in rows)

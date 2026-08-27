@@ -1737,6 +1737,9 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/curriculum-authorization/activate-f2-fractions-numbers-equivalence",
             "/api/curriculum-foundation/prepare-f2-fractions-numbers-equivalence",
             "/api/curriculum-foundation/teach-f2-fractions-numbers-equivalence",
+            "/api/curriculum-authorization/activate-f2-fraction-operation-relationships",
+            "/api/curriculum-foundation/prepare-f2-fraction-operation-relationships",
+            "/api/curriculum-foundation/teach-f2-fraction-operation-relationships",
         }:
             route_key = {
                 "/api/curriculum-authorization/activate-f1": "curriculum.authorization.activate_f1",
@@ -1762,6 +1765,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/curriculum-authorization/activate-f2-multi-digit-arithmetic-operations": "curriculum.authorization.activate_f2_multi_digit_arithmetic_operations",
                 "/api/curriculum-authorization/activate-f2-factors-multiples-operation-order": "curriculum.authorization.activate_f2_factors_multiples_operation_order",
                 "/api/curriculum-authorization/activate-f2-fractions-numbers-equivalence": "curriculum.authorization.activate_f2_fractions_numbers_equivalence",
+                "/api/curriculum-authorization/activate-f2-fraction-operation-relationships": "curriculum.authorization.activate_f2_fraction_operation_relationships",
                 "/api/curriculum-authorization/revoke": "curriculum.authorization.revoke",
                 "/api/curriculum-authorization/evaluate": "curriculum.authorization.evaluate",
                 "/api/curriculum-foundation/prepare-f1": "curriculum.foundation.prepare_f1",
@@ -1810,6 +1814,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/curriculum-foundation/teach-f2-factors-multiples-operation-order": "curriculum.foundation.teach_f2_factors_multiples_operation_order",
                 "/api/curriculum-foundation/prepare-f2-fractions-numbers-equivalence": "curriculum.foundation.prepare_f2_fractions_numbers_equivalence",
                 "/api/curriculum-foundation/teach-f2-fractions-numbers-equivalence": "curriculum.foundation.teach_f2_fractions_numbers_equivalence",
+                "/api/curriculum-foundation/prepare-f2-fraction-operation-relationships": "curriculum.foundation.prepare_f2_fraction_operation_relationships",
+                "/api/curriculum-foundation/teach-f2-fraction-operation-relationships": "curriculum.foundation.teach_f2_fraction_operation_relationships",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))

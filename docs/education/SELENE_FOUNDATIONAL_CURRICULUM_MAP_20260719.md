@@ -99,6 +99,16 @@ than teaching fraction-operation algorithms early. Identity, personality,
 memory, governance, training, source-reproduction authority, financial
 authority, and autonomy remain unchanged.
 
+F2 Group 7A is retained under Aleks authorization record 38 as five approved
+general knowledge resources. It covers shared-unit fraction addition and
+subtraction, fractions as equal-sharing quotients, whole-number-by-fraction
+multiplication, fraction-by-fraction area scaling, and the bounded cases of a
+whole divided by a unit fraction or a unit fraction divided by a nonzero whole
+number. Operation meanings, expected magnitude, and independent checks precede
+procedures. Decimal structure and operations remain in Group 7B. Identity,
+personality, memory, governance, training, source-reproduction authority,
+financial authority, and autonomy remain unchanged.
+
 F1 Group 14 is retained under Aleks authorization record 17 as six approved
 general knowledge resources. It covers weather and climate timescale
 distinctions, contextual weather records, regional and hemispheric seasonal

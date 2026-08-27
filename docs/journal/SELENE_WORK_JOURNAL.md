@@ -2471,6 +2471,49 @@ occurred.
 relationships, place-value extension, and reasonableness. Review exact source
 artifacts and split the group if its density would outrun comprehension.
 
+### 2026-08-27 — Group 7 split before density could impersonate progress
+
+**Starting question:** Could the original F2 Group 7 teach fraction
+operations, decimals, fraction-decimal relationships, place-value extension,
+and reasonableness as one bounded packet without compressing understanding?
+
+**Decision:** No. The exact source review showed several substantial Grade 4-5
+units. Use the queue's existing split clause: Group 7A for fraction-operation
+relationships and Group 7B for decimal structure and operations.
+
+**Work:** Pinned and inspected CKMath Grade 4 Unit 3 and Grade 5 Units 2, 3,
+and 6 with their checksums and embedded notices. Added five original lessons
+for shared-unit addition/subtraction, fractions as equal-sharing quotients,
+whole-number fraction multiplication, fraction-by-fraction area scaling, and
+the two elementary unit-fraction division relationships. Wired authorization,
+preparation, teaching, status, router, sidecar HTTP paths, and tests.
+
+**Why:** A shorter label does not make a dense curriculum small. Separating
+fraction operations from decimal structure lets each group preserve its own
+models, units, correction paths, and limits. It also keeps full generalized
+fraction division from being claimed before it is actually taught.
+
+**Evidence:** Five Group 7A checks and 38 F2 Groups 1-7A regression checks
+passed. All 139 pinned shelf files verified. Authorization record 38 retained
+concepts 262-266 with complete Acquire, Integrate, Express, and comprehension;
+zero were held. Configured SQLite integrity was `ok` before and after teaching.
+
+**What changed in our understanding:** The four arithmetic operations can be
+connected through units, scaling, sharing, measurement, area, and inverse
+relationships without teaching one undifferentiated rule set. Multiplication
+does not always enlarge, division does not always shrink, and the roles of
+dividend and divisor remain semantically important.
+
+**Boundaries preserved:** No identity, personality, personal-memory,
+governance, training, LoRA, source-reproduction, financial-authority,
+autonomy, or self-replication change occurred. No source script, worksheet,
+diagram, branded activity, assessment item, or passage was imported. No live
+Q&A, stress test, LEA, build, package, reinstall, commit, or publication
+occurred.
+
+**Next:** F2 Group 7B — decimal structure, fraction-decimal relationships,
+place-value extension, decimal operations, and reasonableness.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:
