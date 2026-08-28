@@ -16,6 +16,16 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Whole-System Phase 0 — Canonical Maturity Ledger — August 27, 2026](SELENE_WHOLE_SYSTEM_PHASE_0_MATURITY_LEDGER_20260827.md)
+  — generated read-only inventory of 27 organs and connective systems with
+  distinct source, route, test, UI, authority, configured-state, connection,
+  maturity, health, and gap fields; blueprint and capability state cannot be
+  mistaken for identity state or operational authority.
+- [Organ Depth and Memory-Integration Audit — August 27, 2026](SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
+  — distinguishes Selene's mature central cognitive stack from the thinner
+  working-context, Memory-relevance, affect-state, Study, Dream, intuition,
+  perception, action, and embodiment ring; identifies Memory as part of the
+  broad coordination seam without mistaking it for the whole cause.
 - [LLM-Parity Phase 5.5 — Problem Resolution and Informed Retry — August 27, 2026](SELENE_LLM_PARITY_PHASE_5_5_PROBLEM_RESOLUTION_20260827.md)
   — reconstructs who/what/why/when/where/how/context, checks typed premise and
   constraint satisfiability, preserves explicit problem-solving epistemic

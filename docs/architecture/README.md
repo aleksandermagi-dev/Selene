@@ -7,6 +7,14 @@ individually defined as Selene.
 
 ## Begin Here
 
+- [Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
+  — dependency-ordered program for bringing every organ to trustworthy
+  maturity within its own role, from canonical context and Memory through
+  education, expression, agency, perception, action, and embodiment.
+- [Phase 0 Canonical Maturity Ledger Evidence](../evidence/SELENE_WHOLE_SYSTEM_PHASE_0_MATURITY_LEDGER_20260827.md)
+  — the implemented, read-only current-status contract that prevents routes,
+  configured records, blueprints, and mature ordinary-use capability from
+  being treated as equivalent.
 - [Public Architecture and Evidence Index](PUBLIC_ARCHITECTURE_INDEX.md)
 - [Selene Architecture Index](SELENE_ARCHITECTURE_INDEX_20260620.md)
 - [What Selene Can Currently Do](../evidence/SELENE_CURRENT_CAPABILITIES_20260717.md)

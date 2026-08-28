@@ -102,6 +102,35 @@ def test_sidecar_shutdown_endpoint_stops_server(tmp_path):
     assert not thread.is_alive()
 
 
+def test_sidecar_organ_maturity_ledger_is_read_only_current_status(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    before = server.conn.total_changes
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    conn.request("GET", "/api/organ-maturity-ledger")
+    response = conn.getresponse()
+    payload = json.loads(response.read().decode("utf-8"))
+    conn.close()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    after = server.conn.total_changes
+    server.server_close()
+    server.conn.close()
+
+    assert response.status == 200
+    assert payload["status"] == "organ_maturity_ledger_ready"
+    assert payload["organ_count"] >= 20
+    assert payload["invariants"]["private_content_included"] is False
+    assert payload["writes_state"] is False
+    assert payload["identity_change"] is False
+    assert payload["authority_change"] is False
+    assert after == before
+    assert not thread.is_alive()
+
+
 def test_sidecar_resident_capability_preview_is_read_only_and_identity_preserving(tmp_path):
     server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
     server.conn.execute(

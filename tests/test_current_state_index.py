@@ -27,7 +27,14 @@ def _f1_groups():
 
 
 def _f2_groups():
-    return [getattr(curriculum, f"F2_GROUP{number}_LESSONS") for number in range(1, 6)]
+    groups = [
+        getattr(curriculum, f"F2_GROUP{number}_LESSONS")
+        for number in range(1, 7)
+    ]
+    groups.extend(
+        [curriculum.F2_GROUP7A_LESSONS, curriculum.F2_GROUP7B_LESSONS]
+    )
+    return groups
 
 
 def test_current_state_index_matches_repository_defined_curriculum_counts():
@@ -64,20 +71,20 @@ def test_current_state_index_matches_f2_coding_and_total_knowledge_counts():
     coding = curriculum.CODING_GROUP1_LESSONS
     index = CURRENT_INDEX.read_text(encoding="utf-8")
 
-    assert len(f2_groups) == 5
-    assert sum(len(group) for group in f2_groups) == 25
+    assert len(f2_groups) == 8
+    assert sum(len(group) for group in f2_groups) == 41
     assert len(coding) == 5
-    assert "| F2 curriculum groups | 5 |" in index
-    assert "| F2 concepts | 25 unique concepts |" in index
+    assert "| F2 curriculum groups | 8 |" in index
+    assert "| F2 concepts | 41 unique concepts |" in index
     assert "| Coding curriculum groups | 1 |" in index
     assert "| Coding concepts | 5 unique concepts |" in index
-    assert "| Approved knowledge resources | 209 defined items | 209 retained resources |" in index
+    assert "| Approved knowledge resources | 225 defined items | 225 retained resources |" in index
 
 
 def test_current_state_index_records_canonical_resident_truth():
     index = CURRENT_INDEX.read_text(encoding="utf-8")
 
-    assert "Current refresh: 2026-08-23" in index
+    assert "Current refresh: 2026-08-27" in index
     assert "| Language capabilities | 73 | 73 approved and available" in index
     assert "## Canonical Resident Runtime" in index
     assert "Cocoon external teaching, tending, safety, and review support" in index

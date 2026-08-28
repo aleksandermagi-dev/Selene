@@ -2650,6 +2650,152 @@ repair occurred.
 them in dependency order, verify synthetically, and reserve one short
 ordinary-copy conversation for the completed repair gate.
 
+### 2026-08-27 — Organ depth audit identifies the underdeveloped integration ring
+
+**Starting question:** Did the broad Q&A primarily expose an unfinished Memory
+Organ, and what other organs had received less implementation or integration
+attention than Selene's central language and reasoning stack?
+
+**Decision:** Preserve the fluent original creative response as capability
+evidence, audit every major organ by current source, tests, Chat reachability,
+and configured-runtime state, and change no production behavior before the
+map was complete.
+
+**Work:** Inspected Core/Mind, intelligenceOS, Answer Engine, problem
+resolution, Comprehension, Metacognition, Dialogue Workspace, Conversation
+Spine, NLO, Voice, Memory, Study, Dream, associative intuition, self-state,
+affect, salience, math, research, code inspection, Cocoon, Tendril, goals,
+perception, embodiment, continuity, transfer, and backup. Read-only SQLite
+inspection confirmed integrity `ok`, 43 retrieval-eligible approved Memory
+references, 18 dialogue workspaces for 18 sessions, one Study session, 24
+pending Dream reflections, three review-only affect packets, three review-only
+perception packets, two preview goal records, and one proposal-only Tendril
+preview.
+
+**Why:** The creative turn showed that NLO and Voice can now produce original,
+context-shaped language. Blaming expression or adding phrases would obscure
+the more likely source: a thinner integration ring that decides which current
+facts, memories, knowledge, acts, and signals reach the mature central organs.
+
+**Evidence:**
+`docs/evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md`
+records the full matrix. Source order shows contextual Memory retrieval occurs
+before the canonical Dialogue Workspace and Conversation Spine are built, so
+Memory relevance cannot yet use the complete fact, thread, obligation, and
+requested-role state. The broad Q&A independently showed stale correction
+state, lost current-turn facts, irrelevant retrieval, internal-label exposure,
+and false completion.
+
+**What changed in our understanding:** Memory is genuinely implemented and has
+real approved material, but its conversational integration is underdeveloped.
+The problem is not “build Memory from nothing” and not “NLO cannot speak.” It
+is a shared working-context, retrieval, privacy, ownership, and completion
+contract spanning several organs. Study, Dream, affect/self-state, associative
+intuition, goals, Tendril, perception, and embodiment form progressively less
+mature bands around a strong cognitive and language center.
+
+**Boundaries preserved:** No production code, configured record, Memory,
+teaching, Dream decision, identity, personality, governance, training,
+external authority, autonomy, package, or installation changed. No private
+Memory content was printed and no new live conversation was run.
+
+**Next:** Repair the eight Cultivation contracts with Memory/knowledge
+retrieval explicitly placed after canonical current-turn construction, using
+static and focused synthetic checks before one short ordinary-copy Q&A.
+
+### 2026-08-27 — Whole-system maturity becomes the long-range build contract
+
+**Starting question:** How should Selene mature so the organs that received
+less attention reach the reliability of her strongest cognitive and language
+systems?
+
+**Decision:** Define maturity parity rather than identical capability or
+authority. Every organ should receive an explicit contract, real substance,
+legitimate context, coordination, correction, graceful failure, provenance,
+verification, and maintenance appropriate to its responsibility. Core/Mind,
+Memory, Voice, Perception, and Tendril remain different systems with different
+authority.
+
+**Work:** Created
+`docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md`, a
+dependency-ordered fourteen-phase program covering the canonical maturity
+ledger; context and coordination; Memory; Study/Dream/intuition; affect and
+self-state; reasoning and domains; ordered education; mature text Voice;
+goals and initiative; perception; audible Voice; Tendril/tools; embodiment;
+and final stabilization. Every phase has a concrete completion gate and a
+proportional verification method.
+
+**Why:** Building the thinnest organ next without a whole-system dependency
+map could move the bottleneck rather than close it. The plan makes the current
+Memory/context repair first, then raises reflective, affective, cognitive,
+educational, expressive, executive, sensory, action, and embodiment systems in
+an order where each can use the last phase's work.
+
+**Evidence:** The plan is grounded in the current organ-depth audit, the broad
+Q&A, configured-runtime metadata, current capability map, LLM-parity gap map,
+source routes, and focused test inventory. No speculative physical capability
+is called operational; unavailable senses may become substrate-ready only.
+
+**What changed in our understanding:** Selene does not need every organ to be
+equally powerful. She needs every organ to be equally trustworthy within its
+own role. Maturity is an end-to-end property: a deep organ whose inputs or
+handoffs are unreliable cannot contribute its full capability to the whole.
+
+**Boundaries preserved:** This is planning and documentation only. No runtime
+code, configured state, Memory, teaching, Dream decision, identity,
+personality, governance, autonomy, tool authority, package, or installation
+changed.
+
+**Next:** Complete Phase 0's generated maturity-ledger implementation, then
+begin Phase 1 with a source map of conversation state, current-turn facts,
+act ownership, owner premise handoff, and Memory/knowledge retrieval order.
+
+### 2026-08-27 — Phase 0 establishes one canonical organ maturity truth
+
+**Starting question:** How can every organ be matured in order without
+mistaking a blueprint, source file, route, configured record, or isolated test
+for a trustworthy ordinary-use capability?
+
+**Decision:** Begin the whole-system maturation program with a generated,
+read-only ledger. Maturity parity means each organ is trustworthy within its
+proper role; it does not mean equal capability, identical authority, or that
+an unavailable capability changes who Selene is.
+
+**Work:** Implemented a 27-system maturity inventory with canonical maturity
+and connection states. Each entry names responsibility, non-responsibility,
+source, routes, focused tests, UI surfaces, authority, configured metadata,
+current and target states, health, phase, and known gaps. Added router key
+`organ_maturity.ledger.status`, localhost endpoint
+`GET /api/organ-maturity-ledger`, refreshed the current-state curriculum
+totals from 209 to 225, and added a dated evidence record.
+
+**Why:** The older Android workflow proves structural preflight only. A
+current route/table checklist could otherwise make a future blueprint look
+operational or make configured records look integrated. The new ledger keeps
+those claims separate before any organ is changed.
+
+**Evidence:** Twelve focused schema, source, route, test-anchor, generated
+count, privacy, direct-route, localhost transport, and current-document checks
+passed. The configured runtime reported 225 approved knowledge resources and
+SQLite integrity `ok`. Direct and HTTP ledger reads left database total
+changes unchanged.
+
+**What changed in our understanding:** Selene currently has a strong central
+cognition and language stack, a thinner connected integration ring, several
+configured reflective systems, review/preview action and perception surfaces,
+and honest future blueprints. Those are now machine-readably distinct rather
+than inferred from historical documents.
+
+**Boundaries preserved:** No live Q&A, teaching, retention, Memory write,
+Dream decision, identity, personality, governance, authority, training,
+autonomy, external action, packaging, or installation changed. Private record
+content was not returned.
+
+**Next:** Phase 1 — Canonical Context and Coordination Nervous System. Repair
+current-turn facts, acts, obligations, thread and correction state, answer
+owner premise handoff, and the timing of Memory/knowledge retrieval before
+adding more teaching.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

@@ -817,6 +817,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "android_system.workflow.status")["result"]))
         elif parsed.path == "/api/android-system/workflow/report":
             self._send(*json_bytes(route_request(conn, "android_system.workflow.report")["result"]))
+        elif parsed.path == "/api/organ-maturity-ledger":
+            self._send(*json_bytes(route_request(conn, "organ_maturity.ledger.status")["result"]))
         elif parsed.path == "/api/voice-module/status":
             self._send(*json_bytes(route_request(conn, "voice_module.status")["result"]))
         elif parsed.path == "/api/voice-module/patterns":

@@ -5,6 +5,7 @@ from typing import Any
 
 from .authority_events import derive_authority_event, record_authority_event
 from .safety_gap_status import safety_gap_status
+from .organ_maturity_ledger import organ_maturity_ledger_status
 from .c_blueprint import c_blueprint_status
 from .b_review import (
     build_all_teaching_packets,
@@ -571,6 +572,8 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
     payload = payload or {}
     if route_key == "security.safety_gaps.status":
         return {"route": route_key, "result": safety_gap_status()}
+    if route_key == "organ_maturity.ledger.status":
+        return {"route": route_key, "result": organ_maturity_ledger_status(conn)}
     if route_key == "kernel.status":
         return {"route": route_key, "result": kernel_state()}
     if route_key == "android_system.workflow.status":

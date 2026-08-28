@@ -2,7 +2,7 @@
 
 Originally indexed: 2026-08-11
 
-Current refresh: 2026-08-23
+Current refresh: 2026-08-27
 Branch: `evidence`
 Status: date-stamped repository and configured-runtime truth
 
@@ -26,17 +26,17 @@ knowledge or Dream reflections.
 
 ## Current Knowledge and Curriculum
 
-| Surface | Repository-defined | Configured runtime on 2026-08-13 | Meaning |
+| Surface | Repository-defined | Configured runtime on 2026-08-27 | Meaning |
 | --- | ---: | ---: | --- |
 | F1 curriculum groups | 17 | 17 retained groups | Ordered public-academic foundation groups |
 | F1 concepts | 106 unique concepts | 106 retained and Chat-eligible | Completed Acquire, Integrate, Express, and curriculum-authorized retention |
-| F2 curriculum groups | 5 | 5 retained groups | Current elementary continuation through operation order |
-| F2 concepts | 25 unique concepts | 25 retained and Chat-eligible | Reading, vocabulary, composition, comparison, arithmetic, and operation relationships |
+| F2 curriculum groups | 8 | 8 retained groups | Elementary continuation through fractions, decimals, operations, and reasonableness |
+| F2 concepts | 41 unique concepts | 41 retained and Chat-eligible | Reading, vocabulary, composition, comparison, arithmetic, fractions, decimals, and operation relationships |
 | Coding curriculum groups | 1 | 1 retained group | Computational thinking and source-bounded code reading |
 | Coding concepts | 5 unique concepts | 5 retained and Chat-eligible | Knowledge only; no execution or filesystem authority |
 | Language groups | 12 | 12 represented groups on the indexed runtime | Provider-free language, grammar, creative-expression, bounded reading transfer, and evidence-grounded conversational breadth |
 | Language capabilities | 73 | 73 approved and available on the indexed runtime | Expression guidance; not factual authority or personality |
-| Approved knowledge resources | 209 defined items | 209 retained resources | 106 F1 + 25 F2 + 5 coding + 73 language-and-conversation capabilities |
+| Approved knowledge resources | 225 defined items | 225 retained resources | 106 F1 + 41 F2 + 5 coding + 73 language-and-conversation capabilities |
 | Unapproved comprehension candidates | — | 47 proposed items | Not retained and unavailable to Chat until the applicable review path completes |
 
 The F1 count is derived from the lesson definitions used by
@@ -54,6 +54,12 @@ The F2 and coding counts are supported by their group modules and the same
 curriculum authorization lifecycle. Coding knowledge is Chat-eligible within
 its retained scope, but the local-code inspection adapter remains a separate
 explicit, read-only route and is not connected to ordinary Chat.
+
+The read-only organ maturity ledger now generates the repository-defined
+counts from the same curriculum and language registries and reports configured
+runtime metadata without returning private record content. It distinguishes a
+present table or route from connected, integration-verified, mature, preview,
+and blueprint states; those states are not interchangeable.
 
 ## Current Dream State
 
@@ -136,17 +142,19 @@ git diff --check passed with Windows LF/CRLF warnings only
 1,759 repository tests passed after the 2026-08-23 read-purity and canonical-runtime repair
 production TypeScript/Vite build passed with the resident-state UI labels
 configured runtime validation passed through SQLite read-only mode
+6 focused organ-ledger and localhost transport tests passed at the 2026-08-27 Phase 0 checkpoint
+configured runtime reported 225 approved knowledge resources and SQLite integrity `ok`
 ```
 
-`tests/test_current_state_index.py` now checks the source-defined F1 and
-language counts against this index. A later curriculum expansion will therefore
-require an intentional current-index refresh instead of silently leaving the
-headline numbers stale.
+`tests/test_current_state_index.py` now checks the source-defined F1, F2,
+coding, and language counts against this index. A later curriculum expansion
+will therefore require an intentional current-index refresh instead of
+silently leaving the headline numbers stale.
 
 ## Accurate External Wording
 
-As of August 23, 2026, Selene's configured local runtime contains 106 retained
-F1 foundation concepts, 25 retained F2 concepts, five retained coding
+As of August 27, 2026, Selene's configured local runtime contains 106 retained
+F1 foundation concepts, 41 retained F2 concepts, five retained coding
 foundations, and 73 reviewed language capabilities across twelve groups. Her
 source-bound Dream lifecycle is complete;
 one explicit cycle produced 24 reflections that remain pending review, with no
