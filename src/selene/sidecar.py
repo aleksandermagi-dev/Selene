@@ -1608,11 +1608,20 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/associative-intuition/study/accept":
+            try:
+                self._send(*json_bytes(route_request(
+                    self.server.conn, "associative_intuition.study.accept", body
+                )["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path in {
             "/api/study/sessions/start",
             "/api/study/sessions/update",
             "/api/study/questions/ask",
             "/api/study/questions/answer",
+            "/api/study/questions/reopen",
+            "/api/study/questions/integrate-for-now",
             "/api/study/notes/form",
             "/api/study/notes/clarification",
             "/api/study/compass/seed-prior-f1-lea",
@@ -1634,6 +1643,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/study/sessions/update": "study.session.update",
                 "/api/study/questions/ask": "study.question.ask",
                 "/api/study/questions/answer": "study.question.answer",
+                "/api/study/questions/reopen": "study.question.reopen",
+                "/api/study/questions/integrate-for-now": "study.question.integrate_for_now",
                 "/api/study/notes/form": "study.note.form",
                 "/api/study/notes/clarification": "study.note.clarification.update",
                 "/api/study/compass/seed-prior-f1-lea": "study.compass.seed_prior_f1_lea",

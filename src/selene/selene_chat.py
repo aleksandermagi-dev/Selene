@@ -708,6 +708,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "trigger_text": meaning_text,
             "dual_horizon_context": dual_horizon_context,
             "source_packets": payload.get("source_packets") or [],
+            "speaker_envelope": speaker_envelope,
+            "conversation_spine": conversation_spine,
             "hard_boundary": bool(hard_blockers),
             "diagnostic_only": qa_probe,
         },

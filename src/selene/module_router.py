@@ -64,6 +64,7 @@ from .conversational_contribution import (
     conversational_contribution_status,
 )
 from .associative_intuition import (
+    accept_association_for_study,
     associative_intuition_status,
     build_associative_intuition_bridge,
 )
@@ -402,6 +403,8 @@ from .study_workspace import (
     list_open_study_attention,
     list_study_materials,
     list_study_sessions,
+    integrate_study_question_for_now,
+    reopen_study_question,
     seed_language_foundation_learning_compass,
     seed_prior_f1_lea_learning_compass,
     start_learning_compass_goal,
@@ -946,6 +949,11 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
             "route": route_key,
             "result": build_associative_intuition_bridge(conn, payload),
         }
+    if route_key == "associative_intuition.study.accept":
+        return {
+            "route": route_key,
+            "result": accept_association_for_study(conn, payload),
+        }
     if route_key == "structural_discovery.status":
         return {"route": route_key, "result": structural_discovery_status()}
     if route_key == "structural_discovery.build":
@@ -992,6 +1000,10 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": ask_study_question(conn, payload)}
     if route_key == "study.question.answer":
         return {"route": route_key, "result": answer_study_question(conn, payload)}
+    if route_key == "study.question.reopen":
+        return {"route": route_key, "result": reopen_study_question(conn, payload)}
+    if route_key == "study.question.integrate_for_now":
+        return {"route": route_key, "result": integrate_study_question_for_now(conn, payload)}
     if route_key == "study.note.form":
         return {"route": route_key, "result": form_study_note(conn, payload)}
     if route_key == "study.note.clarification.update":

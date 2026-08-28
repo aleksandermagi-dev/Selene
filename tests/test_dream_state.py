@@ -6,6 +6,7 @@ import threading
 
 import pytest
 
+from selene.comprehension_integration import propose_comprehension_concept
 from selene.db import connect, init_db
 from selene.dream_state import (
     decide_dream_reflection,
@@ -19,6 +20,7 @@ from selene.memory_organ import propose_memory_candidate
 from selene.module_router import route_request
 from selene.selene_chat import _dream_reflection_handoff
 from selene.sidecar import SeleneHandler, SeleneServer
+from selene.study_workspace import create_pondering_thread, start_study_session
 
 
 def _conn(tmp_path):
@@ -133,6 +135,45 @@ def _assert_guards(result):
     assert result["lora_allowed"] is False
     assert result["autonomous_action_allowed"] is False
     assert result["self_replication_allowed"] is False
+
+
+def _approved_study_session(conn):
+    concept = propose_comprehension_concept(
+        conn,
+        {
+            "concept_key": "dream-study-attributable-concept",
+            "title": "Attributable Study concept",
+            "domain": "synthetic.phase3",
+            "material": "A provisional relationship still needs visible fit checks and revision.",
+            "source_refs": ["synthetic:phase3:dream-study"],
+        },
+    )
+    concept_id = int(concept["item"]["id"])
+    conn.execute(
+        """
+        UPDATE selene_comprehension_concepts
+        SET state = 'approved_knowledge_resource', review_status = 'approved_for_knowledge_use',
+            retention_state = 'retained_reviewed_knowledge',
+            chat_use_permission = 'available_as_knowledge_resource'
+        WHERE id = ?
+        """,
+        (concept_id,),
+    )
+    conn.commit()
+    session_id = int(
+        start_study_session(conn, {"concept_ids": [concept_id], "title": "Synthetic Dream-to-Study"})["item"]["id"]
+    )
+    create_pondering_thread(
+        conn,
+        {
+            "session_id": session_id,
+            "title": "A relationship still needs a waking fit check",
+            "state": "active",
+            "current_fit": "A bounded similarity is visible, but it remains provisional.",
+            "missing_bridge": "A distinct example and counterexample are still needed.",
+        },
+    )
+    return concept_id, session_id
 
 
 def test_dream_status_is_ready_without_blocking_ordinary_chat(tmp_path):
@@ -391,6 +432,143 @@ def test_existing_memory_review_reflection_does_not_duplicate_candidate(
         ).fetchone()[0]
         == 1
     )
+
+
+def test_selected_dream_destination_is_idempotent_and_blocks_cross_destination_loops(tmp_path):
+    conn = _conn(tmp_path)
+    _workspace(conn)
+    cycle = run_dream_cycle(conn)
+    reflection_id = int(cycle["reflections"][0]["id"])
+
+    selected = decide_dream_reflection(
+        conn,
+        {"reflection_id": reflection_id, "actor": "Aleks", "action": "approve_for_expression"},
+    )
+    repeated = decide_dream_reflection(
+        conn,
+        {"reflection_id": reflection_id, "actor": "Aleks", "action": "approve_for_expression"},
+    )
+    with pytest.raises(ValueError, match="cross-destination"):
+        decide_dream_reflection(
+            conn,
+            {"reflection_id": reflection_id, "actor": "Aleks", "action": "send_to_memory_review"},
+        )
+
+    receipt = selected["item"]["destination_receipt"]
+    assert receipt["selected_destination"] == "expression"
+    assert receipt["lineage_version"] == "v1_origin_parent_destination_stop"
+    assert receipt["destination"] == "expression"
+    assert receipt["destination_record_type"] == "selene_dream_reflection"
+    assert receipt["origin_record_id"] == reflection_id
+    assert receipt["cross_destination_allowed"] is False
+    assert repeated["status"] == "dream_reflection_destination_already_selected"
+    assert repeated["created"] is False
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_guards(selected)
+
+
+def test_aleks_selected_dream_to_study_reopening_is_attributable_idempotent_and_nonrecursive(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id, session_id = _approved_study_session(conn)
+    cycle = run_dream_cycle(conn, {"cycle_label": "Synthetic Study reopening"})
+    reflection = next(item for item in cycle["reflections"] if item["reflection_kind"] == "study_pondering")
+
+    routed = decide_dream_reflection(
+        conn,
+        {
+            "reflection_id": reflection["id"],
+            "actor": "Aleks",
+            "action": "send_to_study_reopening",
+            "usefulness_state": "useful_for_study",
+            "usefulness_note": "Worth checking while awake; not accepted as fact.",
+        },
+    )
+    study_thread_id = int(routed["item"]["study_thread_id"])
+    study_thread = conn.execute(
+        "SELECT * FROM selene_study_pondering_threads WHERE id = ?", (study_thread_id,)
+    ).fetchone()
+    repeated = decide_dream_reflection(
+        conn,
+        {"reflection_id": reflection["id"], "actor": "Aleks", "action": "send_to_study_reopening"},
+    )
+    no_loop = run_dream_cycle(conn, {"cycle_label": "After Dream-to-Study routing"})
+
+    assert routed["study_thread_created"] is True
+    assert routed["item"]["state"] == "routed_to_study_reopening"
+    assert routed["item"]["destination_receipt"]["selected_destination"] == "study_reopening"
+    assert routed["item"]["destination_receipt"]["destination_record_id"] == study_thread_id
+    assert routed["item"]["study_destination"]["selected_session_id"] == session_id
+    assert concept_id in routed["item"]["study_destination"]["approved_concept_ids"]
+    assert study_thread["state"] == "reopened"
+    assert f"selene_dream_reflection:{reflection['id']}" in json.loads(study_thread["source_refs"])
+    assert "provisional" in study_thread["current_fit"].lower()
+    assert repeated["status"] == "dream_reflection_destination_already_selected"
+    assert repeated["study_thread_created"] is False
+    assert conn.execute(
+        "SELECT COUNT(*) FROM selene_study_pondering_threads WHERE id = ?", (study_thread_id,)
+    ).fetchone()[0] == 1
+    assert no_loop["status"] == "dream_cycle_no_new_material"
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_guards(routed)
+
+
+def test_dream_usefulness_is_explicit_metadata_and_does_not_decide_pending_reflection(tmp_path):
+    conn = _conn(tmp_path)
+    _workspace(conn)
+    cycle = run_dream_cycle(conn)
+    reflection_id = int(cycle["reflections"][0]["id"])
+    before = list_dream_reflections(conn)
+
+    assessed = decide_dream_reflection(
+        conn,
+        {
+            "reflection_id": reflection_id,
+            "actor": "Aleks",
+            "action": "record_usefulness",
+            "usefulness_state": "unclear",
+            "usefulness_note": "Needs more context before choosing any destination.",
+        },
+    )
+    after = list_dream_reflections(conn)
+
+    assert before["usefulness_summary"]["counts"]["not_assessed"] == 2
+    assert before["usefulness_summary"]["automatic_assessment_performed"] is False
+    assert assessed["item"]["state"] == "pending_review"
+    assert assessed["item"]["selected_destination"] is None
+    assert assessed["item"]["usefulness"]["state"] == "unclear"
+    assert assessed["automatic_review_decision"] is False
+    assert after["usefulness_summary"]["counts"] == {"not_assessed": 1, "unclear": 1}
+    assert dream_state_status(conn)["pending_review_count"] == 2
+    _assert_guards(assessed)
+
+
+def test_supersession_preserves_the_original_terminal_destination_receipt(tmp_path):
+    conn = _conn(tmp_path)
+    _workspace(conn)
+    cycle = run_dream_cycle(conn)
+    first_id = int(cycle["reflections"][0]["id"])
+    second_id = int(cycle["reflections"][1]["id"])
+    decide_dream_reflection(
+        conn,
+        {"reflection_id": first_id, "actor": "Aleks", "action": "approve_for_expression"},
+    )
+    superseded = decide_dream_reflection(
+        conn,
+        {
+            "reflection_id": first_id,
+            "actor": "Aleks",
+            "action": "supersede",
+            "superseded_by_id": second_id,
+        },
+    )
+
+    receipt = superseded["item"]["destination_receipt"]
+    assert superseded["item"]["state"] == "superseded"
+    assert receipt["selected_destination"] == "expression"
+    assert receipt["superseded_by_reflection_id"] == second_id
+    assert receipt["terminal_destination_preserved"] is True
+    assert receipt["terminal_stop_reason"] == "superseded_terminal_destination_preserved"
+    _assert_guards(superseded)
 
 
 def test_dream_review_states_and_wake_summary_remain_non_mutating(tmp_path):

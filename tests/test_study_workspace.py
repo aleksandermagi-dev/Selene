@@ -15,12 +15,15 @@ from selene.study_workspace import (
     ask_study_question,
     create_pondering_thread,
     form_study_note,
+    get_study_session,
+    integrate_study_question_for_now,
     list_learning_compass,
     list_study_sessions,
     list_study_materials,
     list_open_study_attention,
     seed_language_foundation_learning_compass,
     seed_prior_f1_lea_learning_compass,
+    reopen_study_question,
     start_learning_compass_goal,
     start_study_session,
     study_workspace_status,
@@ -210,6 +213,201 @@ def test_aleks_answer_resolves_question_in_session_and_proposes_attributed_updat
     assert "speaker:Aleks" in candidate["source_refs"]
     assert question["teaching_candidate_id"] == candidate["id"]
     _assert_locked(answered)
+
+
+def test_question_projects_candidate_lifecycle_and_integrates_only_approved_visible_reconstruction(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _concept(conn)
+    session_id = int(start_study_session(conn, {"concept_ids": [concept_id]})["item"]["id"])
+    question_id = int(
+        ask_study_question(
+            conn,
+            {
+                "session_id": session_id,
+                "concept_id": concept_id,
+                "question_text": "Why do equal shares need the same size?",
+            },
+        )["questions"][0]["id"]
+    )
+    answered = answer_study_question(
+        conn,
+        {
+            "question_id": question_id,
+            "answer": "The fraction name counts equal shares of the same whole, so unequal pieces do not have one common share size.",
+        },
+    )
+    candidate_id = int(answered["questions"][0]["teaching_candidate_id"])
+    receipt = answered["questions"][0]["integration_receipt"]
+
+    assert receipt["state"] == "under_review"
+    assert receipt["candidate_attributable_to_question"] is True
+    assert receipt["integration_allowed"] is False
+    with pytest.raises(ValueError, match="approved, attributable"):
+        integrate_study_question_for_now(
+            conn,
+            {"question_id": question_id, "selene_reconstruction": "Equal fraction names require one consistent share size."},
+        )
+
+    conn.execute(
+        """
+        UPDATE selene_comprehension_concepts
+        SET state = 'approved_knowledge_resource', review_status = 'approved_for_knowledge_use',
+            retention_state = 'retained_reviewed_knowledge',
+            chat_use_permission = 'available_as_knowledge_resource'
+        WHERE id = ?
+        """,
+        (candidate_id,),
+    )
+    conn.commit()
+    approved_receipt = get_study_session(conn, {"session_id": session_id})["questions"][0]["integration_receipt"]
+    assert approved_receipt["state"] == "approved_knowledge"
+    assert approved_receipt["integration_allowed"] is True
+    with pytest.raises(ValueError, match="visible reconstruction"):
+        integrate_study_question_for_now(conn, {"question_id": question_id})
+
+    reconstruction = (
+        "A fourth is one of four equal-sized shares of the same whole; four uneven pieces do not support that name."
+    )
+    integrated = integrate_study_question_for_now(
+        conn,
+        {"question_id": question_id, "selene_reconstruction": reconstruction},
+    )
+    evidence_count = conn.execute(
+        "SELECT COUNT(*) FROM selene_study_evidence WHERE evidence_kind = 'study_question_integrated_for_now'"
+    ).fetchone()[0]
+    repeated = integrate_study_question_for_now(
+        conn,
+        {"question_id": question_id, "selene_reconstruction": "A duplicate attempt must not add evidence."},
+    )
+
+    integrated_question = integrated["questions"][0]
+    assert integrated_question["status"] == "integrated_for_now"
+    assert integrated_question["integration_receipt"]["state"] == "integrated_for_now"
+    assert integrated_question["integration_receipt"]["visible_selene_reconstruction"] == reconstruction
+    assert integrated_question["integration_receipt"]["automatic_memory_write"] is False
+    assert integrated_question["reflective_lineage_receipt"]["lineage_version"] == "v1_origin_parent_destination_stop"
+    assert integrated_question["reflective_lineage_receipt"]["destination"] == "teaching_integration"
+    assert repeated["created"] is False
+    assert conn.execute(
+        "SELECT COUNT(*) FROM selene_study_evidence WHERE evidence_kind = 'study_question_integrated_for_now'"
+    ).fetchone()[0] == evidence_count == 1
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_locked(integrated)
+
+
+def test_direct_question_reopening_creates_one_visible_descendant_and_preserves_ancestry(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _concept(conn)
+    session_id = int(start_study_session(conn, {"concept_ids": [concept_id]})["item"]["id"])
+    question_id = int(
+        ask_study_question(
+            conn,
+            {
+                "session_id": session_id,
+                "concept_id": concept_id,
+                "question_text": "Why does equal size matter?",
+            },
+        )["questions"][0]["id"]
+    )
+    answer_study_question(conn, {"question_id": question_id, "answer": "The name refers to equal shares."})
+
+    reopened = reopen_study_question(
+        conn,
+        {
+            "question_id": question_id,
+            "formation_state": "question_without_words",
+            "question_text": "",
+            "uncertainty_context": "The answer is present, but the connection between the whole and the share still does not fit.",
+            "learning_state": "still_unclear",
+        },
+    )
+    descendant_id = int(reopened["reopened_question_id"])
+    repeated = reopen_study_question(
+        conn,
+        {
+            "question_id": question_id,
+            "formation_state": "question_without_words",
+            "learning_state": "still_unclear",
+        },
+    )
+    parent = next(item for item in reopened["questions"] if int(item["id"]) == question_id)
+    descendant = next(item for item in reopened["questions"] if int(item["id"]) == descendant_id)
+
+    assert reopened["created"] is True
+    assert parent["status"] == "reopened_by_descendant"
+    assert parent["aleks_answer"] == "The name refers to equal shares."
+    assert parent["question_ancestry"]["descendant_question_ids"] == [descendant_id]
+    assert parent["integration_receipt"]["state"] == "reopened"
+    assert descendant["status"] == "open"
+    assert descendant["formation_state"] == "question_without_words"
+    assert descendant["question_ancestry"]["parent_question_id"] == question_id
+    assert descendant["question_ancestry"]["root_question_id"] == question_id
+    assert descendant["question_ancestry"]["ancestor_question_ids"] == [question_id]
+    assert descendant["reflective_lineage_receipt"]["parent_record_id"] == question_id
+    assert repeated["created"] is False
+    assert repeated["reopened_question_id"] == descendant_id
+    assert repeated["reopening_receipt"]["stop_reason"] == "active_descendant_already_exists"
+    assert conn.execute("SELECT COUNT(*) FROM selene_study_questions").fetchone()[0] == 2
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_locked(reopened)
+
+
+def test_return_later_holds_question_without_pinning_it_and_can_reopen_the_same_lineage(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _concept(conn)
+    session_id = int(start_study_session(conn, {"concept_ids": [concept_id]})["item"]["id"])
+    question_id = int(
+        ask_study_question(
+            conn,
+            {"session_id": session_id, "concept_id": concept_id, "question_text": "How does the whole set the share size?"},
+        )["questions"][0]["id"]
+    )
+    answer_study_question(conn, {"question_id": question_id, "answer": "The share size is relative to one named whole."})
+    held = reopen_study_question(
+        conn,
+        {
+            "question_id": question_id,
+            "formation_state": "developing",
+            "learning_state": "return_later",
+            "question_text": "How does the whole set the share size?",
+        },
+    )
+    held_id = int(held["reopened_question_id"])
+    held_question = next(item for item in held["questions"] if int(item["id"]) == held_id)
+    repeated = reopen_study_question(
+        conn,
+        {
+            "question_id": question_id,
+            "formation_state": "developing",
+            "learning_state": "return_later",
+            "question_text": "How does the whole set the share size?",
+        },
+    )
+
+    assert held_question["status"] == "return_later"
+    assert held_question["integration_receipt"]["state"] == "return_later"
+    assert held_question["integration_receipt"]["stop_reason"] == "explicit_return_later_hold"
+    assert list_open_study_attention(conn)["open_count"] == 0
+    assert repeated["created"] is False
+    assert repeated["reopened_question_id"] == held_id
+
+    resumed = reopen_study_question(
+        conn,
+        {
+            "question_id": held_id,
+            "formation_state": "developing",
+            "learning_state": "still_unclear",
+            "question_text": "Which whole is setting the unit in this example?",
+            "uncertainty_context": "The unit whole needs to be made explicit.",
+        },
+    )
+    resumed_id = int(resumed["reopened_question_id"])
+    resumed_question = next(item for item in resumed["questions"] if int(item["id"]) == resumed_id)
+    assert resumed_question["status"] == "open"
+    assert resumed_question["question_ancestry"]["ancestor_question_ids"] == [question_id, held_id]
+    assert list_open_study_attention(conn)["open_count"] == 1
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_locked(resumed)
 
 
 def test_question_without_words_is_supported_without_inventing_content(tmp_path):

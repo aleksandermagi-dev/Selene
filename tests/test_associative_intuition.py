@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from selene.associative_intuition import (
+    accept_association_for_study,
     associative_intuition_status,
     build_associative_intuition_bridge,
 )
@@ -13,6 +14,7 @@ from selene.db import connect, init_db
 from selene.dream_state import _collect_source_candidates
 from selene.metacognition import evaluate_metacognition
 from selene.module_router import route_request
+from selene.study_workspace import start_study_session
 
 
 def _conn(tmp_path):
@@ -105,6 +107,34 @@ def test_structural_cues_can_form_a_felt_connection_without_forcing_words(tmp_pa
     _assert_bounded(result)
 
 
+def test_delayed_material_cue_reactivates_once_while_weak_earlier_resemblance_stops(tmp_path):
+    conn = _conn(tmp_path)
+    _approved_concept(conn)
+    changes_before = conn.total_changes
+
+    early = build_associative_intuition_bridge(
+        conn,
+        {"trigger_text": "Something about the cart seems related."},
+    )
+    delayed = build_associative_intuition_bridge(
+        conn,
+        {"trigger_text": "Could a push change the cart's motion?"},
+    )
+    repeated = build_associative_intuition_bridge(
+        conn,
+        {"trigger_text": "Could a push change the cart's motion?"},
+    )
+
+    assert early["selected_state"] == "no_connection_noticed"
+    assert early["stopping_receipt"]["stop_reason"] == "no_useful_connection_noticed"
+    assert delayed["selected_state"] == "articulated_connection"
+    assert delayed["selected_candidate"]["fit_receipt"]["transferable_structure_articulated"] is True
+    assert delayed["selected_candidate"]["fit_receipt"]["new_evidence_supplied"] is False
+    assert repeated["selected_candidate"]["candidate_id"] == delayed["selected_candidate"]["candidate_id"]
+    assert conn.total_changes == changes_before
+    _assert_bounded(delayed)
+
+
 def test_supported_terms_and_relations_can_supply_one_provisional_connection(tmp_path):
     conn = _conn(tmp_path)
     _approved_concept(conn)
@@ -142,6 +172,94 @@ def test_one_broad_resemblance_does_not_create_a_connection(tmp_path):
     assert result["selected_state"] == "no_connection_noticed"
     assert result["candidate_count"] == 0
     assert result["study_handoff"]["available"] is False
+    assert result["stopping_receipt"]["stop_reason"] == "no_useful_connection_noticed"
+    assert result["stopping_receipt"]["recursive_reactivation_requested"] is False
+
+
+def test_personal_memory_privacy_is_reused_before_content_enters_association_text(tmp_path):
+    conn = _conn(tmp_path)
+    conn.execute(
+        """
+        INSERT INTO selene_memory_candidates
+        (memory_category, title, summary, source_refs, provenance_boundary,
+         consent_scope, chat_use_permission, state, review_status, payload_json)
+        VALUES ('relational', 'Private comet garden', 'The cobalt comet garden used a spiral gate behind the moon arch.',
+                '["memory:private:test"]', 'test_memory_boundary',
+                'private_selene_aleks_context', 'can_use_in_chat',
+                'approved_active_memory', 'approved_memory', ?)
+        """,
+        (
+            json.dumps(
+                {
+                    "eligible_channels": ["desktop"],
+                    "minimum_authentication_strength": "local_desktop_session",
+                }
+            ),
+        ),
+    )
+    conn.commit()
+
+    held = build_associative_intuition_bridge(
+        conn,
+        {
+            "trigger_text": "Could the cobalt comet garden use a spiral gate here?",
+            "speaker_envelope": {
+                "claimed_speaker": "Demo guest",
+                "channel": "mobile",
+                "authentication_strength": "transport_claim_only",
+            },
+        },
+    )
+    visible = json.dumps(held)
+    privacy_hold = next(
+        item for item in held["held_back_sources"] if item["source_class"] == "approved_personal_memory"
+    )
+
+    assert "behind the moon arch" not in visible.lower()
+    assert privacy_hold["reason"] == "memory_privacy_scope_does_not_include_current_speaker"
+    assert privacy_hold["content_entered_candidate_text"] is False
+    assert privacy_hold["candidate_created"] is False
+    assert held["memory_privacy_gate_reused"] is True
+    assert held["speaker_envelope_applied"] is True
+
+    eligible = build_associative_intuition_bridge(
+        conn,
+        {
+            "trigger_text": "Could the cobalt comet garden use a spiral gate here?",
+            "speaker_envelope": {
+                "claimed_speaker": "Aleks",
+                "channel": "desktop",
+                "authentication_strength": "local_desktop_session",
+            },
+        },
+    )
+    memory_candidates = [
+        item for item in eligible["candidates"] if item["source_class"] == "approved_personal_memory"
+    ]
+    assert len(memory_candidates) == 1
+    assert memory_candidates[0]["personal_memory_is_domain_truth"] is False
+    _assert_bounded(eligible)
+
+
+def test_private_explicit_source_is_held_with_a_stop_receipt_before_candidate_text(tmp_path):
+    conn = _conn(tmp_path)
+    result = build_associative_intuition_bridge(
+        conn,
+        {
+            "trigger_text": "Does the hidden orbital phrase connect?",
+            "source_packets": [
+                {
+                    "source_ref": "raw_corpus:private-1",
+                    "summary": "HIDDEN ORBITAL PHRASE MUST NOT ENTER A CANDIDATE",
+                }
+            ],
+        },
+    )
+
+    assert "HIDDEN ORBITAL PHRASE" not in json.dumps(result)
+    assert result["held_back_sources"][0]["reason"] == "private_source_reference_is_not_eligible_for_association_use"
+    assert result["held_back_sources"][0]["content_entered_candidate_text"] is False
+    assert result["stopping_receipt"]["stop_reason"] == "no_useful_connection_noticed"
 
 
 def test_already_active_dual_horizon_material_is_not_reactivated(tmp_path):
@@ -243,6 +361,70 @@ def test_metacognition_observes_the_bridge_without_upgrading_it(tmp_path):
     assert assessment["association_used_as_evidence"] is False
     assert assessment["association_used_as_proof"] is False
     assert assessment["automatic_retention"] is False
+
+
+def test_explicitly_accepted_association_enters_one_idempotent_study_thread(tmp_path):
+    conn = _conn(tmp_path)
+    concept_id = _approved_concept(conn)
+    session_id = int(
+        start_study_session(
+            conn,
+            {"concept_ids": [concept_id], "title": "Synthetic association Study"},
+        )["item"]["id"]
+    )
+    trigger = "Could a push change the cart's motion?"
+    bridge = build_associative_intuition_bridge(conn, {"trigger_text": trigger})
+    candidate_id = bridge["selected_candidate"]["candidate_id"]
+
+    accepted = accept_association_for_study(
+        conn,
+        {
+            "actor": "Aleks",
+            "trigger_text": trigger,
+            "candidate_id": candidate_id,
+            "study_session_id": session_id,
+        },
+    )
+    repeated = route_request(
+        conn,
+        "associative_intuition.study.accept",
+        {
+            "actor": "Aleks",
+            "trigger_text": trigger,
+            "candidate_id": candidate_id,
+            "study_session_id": session_id,
+        },
+    )["result"]
+    thread = conn.execute(
+        "SELECT * FROM selene_study_pondering_threads WHERE id = ?",
+        (accepted["study_thread_id"],),
+    ).fetchone()
+    payload = json.loads(thread["payload_json"])
+
+    assert accepted["status"] == "association_entered_study"
+    assert accepted["created"] is True
+    assert accepted["study_write_performed"] is True
+    assert accepted["association_is_evidence"] is False
+    assert accepted["association_is_proof"] is False
+    assert accepted["association_is_fact"] is False
+    assert accepted["association_is_memory"] is False
+    assert accepted["association_is_finished_answer"] is False
+    assert repeated["status"] == "association_study_lineage_already_active"
+    assert repeated["created"] is False
+    assert repeated["study_thread_id"] == accepted["study_thread_id"]
+    assert conn.execute(
+        "SELECT COUNT(*) FROM selene_study_pondering_threads WHERE session_id = ?", (session_id,)
+    ).fetchone()[0] == 1
+    assert thread["state"] == "active"
+    assert "provisional association" in thread["current_fit"].lower()
+    assert payload["origin_kind"] == "associative_intuition"
+    assert payload["automatic_memory_write"] is False
+    assert accepted["stopping_receipt"]["stop_reason"] == "explicit_acceptance_routed_once"
+    assert accepted["lineage_receipt"]["lineage_version"] == "v1_origin_parent_destination_stop"
+    assert accepted["lineage_receipt"]["destination"] == "study_pondering"
+    assert repeated["stopping_receipt"]["stop_reason"] == "duplicate_lineage_existing_thread_reused"
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    _assert_bounded(accepted)
 
 
 def test_visible_study_connections_are_available_to_dream_without_becoming_memory(tmp_path):

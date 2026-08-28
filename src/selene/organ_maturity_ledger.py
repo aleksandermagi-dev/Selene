@@ -8,7 +8,7 @@ from .curriculum_authorization import curriculum_authorization_status
 from .language_teaching_shelf import language_teaching_status
 
 
-ORGAN_MATURITY_LEDGER_VERSION = "v1_canonical_current_scope_maturity"
+ORGAN_MATURITY_LEDGER_VERSION = "v2_phase_3_reflective_growth_maturity"
 ORGAN_MATURITY_BOUNDARY = (
     "read_only_current_capability_maturity_projection_no_identity_memory_"
     "governance_teaching_dream_action_or_authority_change"
@@ -219,45 +219,56 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "name": "Study Workspace and Learning Compass",
         "responsibility": "Deliberate waking study, questions, representations, learning evidence, and revisiting.",
         "non_responsibility": "Study is not Cocoon, Dream, personal Memory, or a pass/fail grading system.",
-        "source_modules": ["study_workspace.py", "learning_evidence_activity.py"],
-        "routes": ["study.status", "study.lea.status"],
+        "source_modules": ["study_workspace.py", "learning_evidence_activity.py", "reflective_lineage.py"],
+        "routes": [
+            "study.status",
+            "study.question.reopen",
+            "study.question.integrate_for_now",
+            "study.lea.status",
+        ],
         "connection_state": "resident_workspace",
-        "maturity_state": "configured",
+        "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "lightly_exercised",
+        "health_state": "phase_3_lifecycle_and_lineage_gate_verified",
         "maturation_phase": 3,
         "metric_keys": ["study_sessions", "study_questions", "study_notes", "study_evidence", "learning_compass_goals"],
-        "known_gaps": ["Question lifecycle and later conversational use have little configured evidence."],
+        "known_gaps": [
+            "Broader ordered teaching and later ordinary conversational use remain later phases; Study does not grade readiness or force closure."
+        ],
     },
     {
         "key": "dream",
         "name": "Dream reflection and maintenance",
         "responsibility": "Source-bound reflection over open threads, correction, evidence tension, Study, affect, and maintenance.",
         "non_responsibility": "Dream does not invent content, decide truth, or silently promote durable Memory.",
-        "source_modules": ["dream_state.py"],
+        "source_modules": ["dream_state.py", "reflective_lineage.py"],
         "routes": ["memory.dream_state.status"],
         "connection_state": "cocoon_review",
-        "maturity_state": "configured",
+        "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "lifecycle_complete_usefulness_unreviewed",
+        "health_state": "phase_3_destination_lineage_and_loop_gate_verified",
         "maturation_phase": 3,
         "metric_keys": ["dream_cycles", "dream_reflections", "approved_dream_reflections"],
-        "known_gaps": ["Configured reflections remain pending, so later usefulness is not demonstrated."],
+        "known_gaps": [
+            "The 24 resident reflections remain pending for Aleks; destination and usefulness machinery is verified, but their usefulness is intentionally not pre-decided."
+        ],
     },
     {
         "key": "associative_intuition",
         "name": "Associative Intuition Bridge",
         "responsibility": "Read-only delayed cue reactivation and provisional cross-domain connection handoff.",
         "non_responsibility": "An association is not evidence, proof, fact, Memory, expression authority, or action authority.",
-        "source_modules": ["associative_intuition.py"],
-        "routes": ["associative_intuition.status"],
+        "source_modules": ["associative_intuition.py", "semantic_relevance.py", "reflective_lineage.py"],
+        "routes": ["associative_intuition.status", "associative_intuition.study.accept"],
         "connection_state": "ordinary_chat",
-        "maturity_state": "connected",
+        "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "focused_evidence_only",
+        "health_state": "phase_3_privacy_stopping_and_study_handoff_gate_verified",
         "maturation_phase": 3,
         "metric_keys": [],
-        "known_gaps": ["Precision, privacy, stopping, and ordinary helpfulness require later evidence."],
+        "known_gaps": [
+            "Current cue matching is deliberately bounded; broader semantic helpfulness may grow later without turning associations into evidence or answers."
+        ],
     },
     {
         "key": "self_state",
@@ -487,9 +498,16 @@ EVIDENCE_TESTS_BY_ORGAN: dict[str, tuple[str, ...]] = {
         "tests/test_semantic_relevance.py",
     ),
     "approved_knowledge_retrieval": ("tests/test_comprehension_integration.py",),
-    "study": ("tests/test_study_workspace.py", "tests/test_learning_evidence_activity.py"),
-    "dream": ("tests/test_dream_state.py",),
-    "associative_intuition": ("tests/test_associative_intuition.py",),
+    "study": (
+        "tests/test_study_workspace.py",
+        "tests/test_learning_evidence_activity.py",
+        "tests/test_phase3_reflective_growth.py",
+    ),
+    "dream": ("tests/test_dream_state.py", "tests/test_phase3_reflective_growth.py"),
+    "associative_intuition": (
+        "tests/test_associative_intuition.py",
+        "tests/test_phase3_reflective_growth.py",
+    ),
     "self_state": ("tests/test_self_state.py",),
     "affect_agency": ("tests/test_affect_expression.py", "tests/test_emotional_agency.py"),
     "why_salience": ("tests/test_why_salience_translation.py",),
@@ -615,8 +633,8 @@ def organ_maturity_ledger_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "blueprint_or_preview_keys": blueprint_or_preview,
             "mature_current_scope_count": maturity_counts.get("mature_current_scope", 0),
             "substrate_ready_count": maturity_counts.get("substrate_ready", 0),
-            "next_phase": 3,
-            "next_phase_name": "Study, Dream, Associative Intuition, and Reflective Growth",
+            "next_phase": 4,
+            "next_phase_name": "Affect, Self-State, Relationship, and Agency Integration",
         },
         "repository_defined_counts": repository_counts,
         "configured_runtime_metrics": configured_metrics,

@@ -68,13 +68,16 @@ def test_maturity_ledger_distinguishes_connected_preview_and_blueprint_states(tm
     assert _item(result, "memory")["health_state"] == "phase_2_completion_gate_verified"
     assert _item(result, "conversation_context")["maturity_state"] == "mature_current_scope"
     assert _item(result, "approved_knowledge_retrieval")["maturity_state"] == "integration_verified"
+    assert _item(result, "study")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "dream")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "associative_intuition")["maturity_state"] == "mature_current_scope"
     assert _item(result, "perception")["maturity_state"] == "review_preview"
     assert _item(result, "audible_voice")["maturity_state"] == "blueprint"
     assert _item(result, "audible_voice")["connection_state"] == "not_connected"
     assert _item(result, "embodiment")["health_state"] == "structural_preflight_only"
     assert "audible_voice" in result["summary"]["blueprint_or_preview_keys"]
     assert "conversation_context" not in result["summary"]["integration_gap_keys"]
-    assert result["summary"]["next_phase"] == 3
+    assert result["summary"]["next_phase"] == 4
     conn.close()
 
 

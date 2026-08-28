@@ -2,7 +2,7 @@
 
 Date: 2026-08-27
 
-Status: active implementation program; Phases 0 through 2 complete as of 2026-08-28
+Status: active implementation program; Phases 0 through 3 complete as of 2026-08-28
 
 Companion audit:
 [Selene Organ Depth and Memory-Integration Audit](../evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
@@ -259,10 +259,13 @@ ordinary recall exchange on disposable state.
 
 ## Phase 3 — Study, Dream, Associative Intuition, and Reflective Growth
 
-Status: **source-mapped; implementation paused at Aleks's request (2026-08-28)**
+Status: **complete for current scope (2026-08-28)**
 
 Implementation map:
 [Phase 3 Reflective Growth Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_3_IMPLEMENTATION_MAP_20260828.md)
+
+Evidence:
+[Phase 3 Reflective Growth Maturation](../evidence/SELENE_WHOLE_SYSTEM_PHASE_3_REFLECTIVE_GROWTH_20260828.md)
 
 ### Purpose
 
@@ -278,8 +281,8 @@ them into hidden Memory, automatic truth, or endless recursion.
 - carry Learning Compass goals forward without performance pressure;
 - let Study conclusions become source-labeled teaching updates rather than
   personal Memory;
-- review the existing 24 Dream reflections through their intended lifecycle;
-- assess Dream usefulness before expanding Dream generation;
+- expose the intended destination and usefulness-review lifecycle for the
+  existing 24 Dream reflections while leaving every decision to Aleks;
 - connect approved Dream discussion, Memory proposals, and Study reopenings
   without loops or duplicate storage;
 - mature Associative Intuition cueing, cross-domain relevance, stopping, and
@@ -829,11 +832,11 @@ These do not wait for one final cleanup phase.
 
 ## Immediate Starting Point
 
-Phases 0 through 2 are complete. The next implementation work is Phase 3:
-Study, Dream, Associative Intuition, and Reflective Growth. Begin by inspecting
-the existing Study, Learning Compass, Dream, and associative-intuition
-lifecycles for duplicate ownership and missing connective tissue. Ordered
-teaching remains paused until the reflective-growth completion gate passes.
+Phases 0 through 3 are complete. The next implementation work is Phase 4:
+Affect, Self-State, Relationship, and Agency Integration. Begin by mapping the
+current attributable affect and relationship-state supply before adding any
+new shaping behavior. Ordered teaching remains in its planned later phase; the
+reflective-growth completion gate no longer blocks it.
 
 ## Final Principle
 

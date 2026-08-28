@@ -10,6 +10,7 @@ from .language_formation import build_semantic_frame, realize_semantic_frame
 from .metacognition import inspect_metacognition
 from .native_language_organ import realize_native_language
 from .registry import truncate
+from .reflective_lineage import build_reflective_lineage_receipt
 from .voice_module import generate_voice_preview
 
 
@@ -37,6 +38,7 @@ GUARDS: dict[str, Any] = {
 
 SESSION_STATES = {"active", "paused", "completed"}
 QUESTION_STATES = {"ready", "developing", "question_without_words"}
+QUESTION_REOPENING_COMPASS_STATES = {"reopened", "still_unclear", "return_later"}
 NOTE_KINDS = {"notice", "connection", "idea", "uncertainty", "revisit"}
 CLARIFICATION_STATES = {
     "not_needed",
@@ -867,8 +869,23 @@ def create_pondering_thread(conn: sqlite3.Connection, payload: dict[str, Any] | 
         f"selene_study_session:{session_id}",
         *([f"selene_learning_compass_goal:{compass_goal_id}"] if compass_goal_id else []),
         *([f"selene_study_question:{question_id}"] if question_id else []),
+        *_text_list(payload.get("source_refs")),
     ]))[:100]
-    thread_key = "ponder-" + sha256(f"{session_id}|{compass_goal_id}|{question_id}|{title}".encode("utf-8")).hexdigest()[:20]
+    lineage_key = truncate(str(payload.get("lineage_key") or ""), 500).strip()
+    thread_seed = lineage_key or f"{session_id}|{compass_goal_id}|{question_id}|{title}"
+    thread_key = "ponder-" + sha256(thread_seed.encode("utf-8")).hexdigest()[:20]
+    existing_thread = conn.execute(
+        "SELECT id FROM selene_study_pondering_threads WHERE thread_key = ?", (thread_key,)
+    ).fetchone()
+    thread_payload = {
+        "visible_deliberation": True,
+        "origin_kind": truncate(str(payload.get("origin_kind") or "study"), 120),
+        "origin_ref": truncate(str(payload.get("origin_ref") or ""), 300),
+        "lineage_key": lineage_key,
+        "candidate_state": truncate(str(payload.get("candidate_state") or "visible_study_thread"), 120),
+        "automatic_knowledge_approval": False,
+        "automatic_memory_write": False,
+    }
     conn.execute(
         """
         INSERT INTO selene_study_pondering_threads
@@ -881,22 +898,25 @@ def create_pondering_thread(conn: sqlite3.Connection, payload: dict[str, Any] | 
           missing_bridge = excluded.missing_bridge,
           prerequisite_needed = excluded.prerequisite_needed,
           representation_preferences_json = excluded.representation_preferences_json,
-          revisit_cue = excluded.revisit_cue, updated_at = CURRENT_TIMESTAMP
+          revisit_cue = excluded.revisit_cue, source_refs = excluded.source_refs,
+          payload_json = excluded.payload_json, updated_at = CURRENT_TIMESTAMP
         """,
         (
             thread_key, session_id, compass_goal_id, question_id, title, state, current_fit,
             missing_bridge, prerequisite_needed, json.dumps(preferences), revisit_cue,
-            json.dumps(source_refs), STUDY_BOUNDARY, json.dumps({"visible_deliberation": True}),
+            json.dumps(source_refs), STUDY_BOUNDARY, json.dumps(thread_payload, sort_keys=True),
         ),
     )
     thread_id = int(conn.execute(
         "SELECT id FROM selene_study_pondering_threads WHERE thread_key = ?", (thread_key,)
     ).fetchone()[0])
-    _record_evidence(
-        conn, session_id, "pondering_thread_held",
-        "Selene kept a visible learning thread open without treating incompleteness as failure.",
-        {"thread_id": thread_id, "state": state, "missing_bridge": missing_bridge}, source_refs,
-    )
+    created = existing_thread is None
+    if created:
+        _record_evidence(
+            conn, session_id, "pondering_thread_held",
+            "Selene kept a visible learning thread open without treating incompleteness as failure.",
+            {"thread_id": thread_id, "state": state, "missing_bridge": missing_bridge}, source_refs,
+        )
     if compass_goal_id and state in {"needs_representation", "needs_prerequisite", "return_later"}:
         _update_learning_compass_row(
             conn, compass_goal_id, state=state,
@@ -906,7 +926,23 @@ def create_pondering_thread(conn: sqlite3.Connection, payload: dict[str, Any] | 
         )
     conn.commit()
     result = get_study_session(conn, {"session_id": session_id})
-    result.update({"status": "study_pondering_thread_ready", "updated_thread_id": thread_id})
+    result.update(
+        {
+            "status": "study_pondering_thread_ready",
+            "updated_thread_id": thread_id,
+            "created": created,
+            "lineage_receipt": {
+                "lineage_key": lineage_key or None,
+                "origin_kind": thread_payload["origin_kind"],
+                "origin_ref": thread_payload["origin_ref"] or None,
+                "study_thread_id": thread_id,
+                "duplicate_thread_created": False,
+                "stop_reason": None if created else "existing_lineage_reused",
+                "automatic_knowledge_approval": False,
+                "automatic_memory_write": False,
+            },
+        }
+    )
     return result
 
 
@@ -1224,7 +1260,7 @@ def get_study_session(conn: sqlite3.Connection, payload: dict[str, Any] | None =
         {
             "status": "selene_study_session_ready",
             "item": session,
-            "questions": [_decode_question(item) for item in question_rows],
+            "questions": _project_study_questions(conn, question_rows),
             "notes": [_decode_note(item) for item in note_rows],
             "pondering_threads": pondering_threads,
             "learning_evidence": [_decode_evidence(item) for item in evidence_rows],
@@ -1383,6 +1419,10 @@ def ask_study_question(conn: sqlite3.Connection, payload: dict[str, Any] | None 
         (session_id, concept_id, question, formation_state, uncertainty, STUDY_BOUNDARY, json.dumps({})),
     )
     question_id = int(cursor.lastrowid)
+    conn.execute(
+        "UPDATE selene_study_questions SET root_question_id = ? WHERE id = ?",
+        (question_id, question_id),
+    )
     _record_evidence(
         conn,
         session_id,
@@ -1495,6 +1535,292 @@ def answer_study_question(conn: sqlite3.Connection, payload: dict[str, Any] | No
         "durable_chat_use": False,
         "next_stage": "Acquire -> Integrate -> Express under the existing teaching law",
     }
+    return result
+
+
+def reopen_study_question(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    question_id = _positive_id(payload.get("question_id"), "question_id")
+    question = conn.execute("SELECT * FROM selene_study_questions WHERE id = ?", (question_id,)).fetchone()
+    if not question:
+        raise ValueError("study question not found")
+    if str(question["status"]) == "open":
+        raise ValueError("an open Study question does not need reopening")
+
+    formation_state = str(payload.get("formation_state") or "developing").strip()
+    if formation_state not in QUESTION_STATES:
+        raise ValueError("unsupported question formation state")
+    question_text = truncate(str(payload.get("question_text") or question["question_text"] or ""), 3000).strip()
+    if not question_text and formation_state != "question_without_words":
+        raise ValueError("question_text is required unless the reopened question has no words yet")
+    uncertainty = truncate(str(payload.get("uncertainty_context") or ""), 2000).strip()
+    learning_state = str(payload.get("learning_state") or "reopened").strip()
+    if learning_state not in QUESTION_REOPENING_COMPASS_STATES:
+        raise ValueError("reopened Study questions may be reopened, still unclear, or return later")
+    if learning_state == "still_unclear" and not uncertainty and formation_state != "question_without_words":
+        raise ValueError("say what remains unclear or mark that the question has no words yet")
+
+    session_id = int(question["session_id"])
+    root_question_id = int(question["root_question_id"] or question_id)
+    active_descendant = conn.execute(
+        """
+        SELECT * FROM selene_study_questions
+        WHERE session_id = ? AND id != ? AND status IN ('open', 'return_later')
+          AND (root_question_id = ? OR parent_question_id = ?)
+        ORDER BY id DESC LIMIT 1
+        """,
+        (session_id, question_id, root_question_id, question_id),
+    ).fetchone()
+    if active_descendant:
+        result = get_study_session(conn, {"session_id": session_id})
+        result.update(
+            {
+                "status": "study_question_reopening_already_active",
+                "created": False,
+                "reopened_question_id": int(active_descendant["id"]),
+                "reopening_receipt": {
+                    "origin_question_id": question_id,
+                    "root_question_id": root_question_id,
+                    "descendant_question_id": int(active_descendant["id"]),
+                    "stop_reason": "active_descendant_already_exists",
+                    "duplicate_lineage_created": False,
+                    "memory_write_active": False,
+                    "knowledge_write_active": False,
+                },
+            }
+        )
+        return result
+
+    descendant_status = "return_later" if learning_state == "return_later" else "open"
+    cursor = conn.execute(
+        """
+        INSERT INTO selene_study_questions
+        (session_id, concept_id, parent_question_id, root_question_id, question_text,
+         formation_state, status, uncertainty_context, provenance_boundary, payload_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            session_id,
+            question["concept_id"],
+            question_id,
+            root_question_id,
+            question_text,
+            formation_state,
+            descendant_status,
+            uncertainty,
+            STUDY_BOUNDARY,
+            json.dumps(
+                {
+                    "reopening_origin": f"selene_study_question:{question_id}",
+                    "root_question_ref": f"selene_study_question:{root_question_id}",
+                    "learning_state": learning_state,
+                    "automatic_teaching_activation": False,
+                    "automatic_memory_write": False,
+                },
+                sort_keys=True,
+            ),
+        ),
+    )
+    descendant_id = int(cursor.lastrowid)
+    conn.execute(
+        "UPDATE selene_study_questions SET status = 'reopened_by_descendant', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (question_id,),
+    )
+    conn.execute(
+        "UPDATE selene_study_notes SET clarification_state = 'reopened', updated_at = CURRENT_TIMESTAMP WHERE linked_question_id = ?",
+        (question_id,),
+    )
+    session = conn.execute("SELECT * FROM selene_study_sessions WHERE id = ?", (session_id,)).fetchone()
+    compass_goal_id = int(session["compass_goal_id"] or 0) if session else 0
+    if compass_goal_id:
+        remaining_unclear = uncertainty
+        if formation_state == "question_without_words" and not remaining_unclear:
+            remaining_unclear = "Something still does not fit yet, but the question does not have words yet."
+        _update_learning_compass_row(
+            conn,
+            compass_goal_id,
+            state=learning_state,
+            latest_question_id=descendant_id,
+            remaining_unclear=remaining_unclear,
+            event="learning_compass_question_reopened",
+            event_detail=(
+                "The linked Study question was reopened as a visible descendant. "
+                "Its earlier answer and teaching-candidate history remain unchanged."
+            ),
+        )
+    source_refs = [
+        f"selene_study_session:{session_id}",
+        f"selene_study_question:{question_id}",
+        f"selene_study_question:{descendant_id}",
+    ]
+    _record_evidence(
+        conn,
+        session_id,
+        "study_question_reopened",
+        question_text or "The question is present again, but it still has no words.",
+        {
+            "origin_question_id": question_id,
+            "root_question_id": root_question_id,
+            "descendant_question_id": descendant_id,
+            "formation_state": formation_state,
+            "learning_state": learning_state,
+            "performance_judgment": False,
+        },
+        source_refs,
+    )
+    conn.commit()
+    result = get_study_session(conn, {"session_id": session_id})
+    result.update(
+        {
+            "status": "study_question_reopened",
+            "created": True,
+            "reopened_question_id": descendant_id,
+            "reopening_receipt": {
+                "origin_question_id": question_id,
+                "root_question_id": root_question_id,
+                "descendant_question_id": descendant_id,
+                "learning_state": learning_state,
+                "duplicate_lineage_created": False,
+                "automatic_teaching_activation": False,
+                "memory_write_active": False,
+            },
+        }
+    )
+    return result
+
+
+def integrate_study_question_for_now(
+    conn: sqlite3.Connection, payload: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    payload = payload or {}
+    question_id = _positive_id(payload.get("question_id"), "question_id")
+    question = conn.execute("SELECT * FROM selene_study_questions WHERE id = ?", (question_id,)).fetchone()
+    if not question:
+        raise ValueError("study question not found")
+    session_id = int(question["session_id"])
+    candidate_id = int(question["teaching_candidate_id"] or 0)
+    if not candidate_id:
+        raise ValueError("integrate for now requires an answered question with a teaching candidate")
+
+    if str(question["status"]) == "integrated_for_now":
+        result = get_study_session(conn, {"session_id": session_id})
+        result.update(
+            {
+                "status": "study_question_already_integrated_for_now",
+                "created": False,
+                "integrated_question_id": question_id,
+                "integration_receipt": next(
+                    item["integration_receipt"]
+                    for item in result["questions"]
+                    if int(item["id"]) == question_id
+                ),
+            }
+        )
+        return result
+
+    if str(question["status"]) != "answered_in_session":
+        raise ValueError("only an answered Study question can be integrated for now")
+    open_descendant = conn.execute(
+        """
+        SELECT 1 FROM selene_study_questions
+        WHERE session_id = ? AND status = 'open' AND id != ?
+          AND (root_question_id = ? OR parent_question_id = ?)
+        LIMIT 1
+        """,
+        (session_id, question_id, int(question["root_question_id"] or question_id), question_id),
+    ).fetchone()
+    if open_descendant:
+        raise ValueError("answer the active reopened descendant before integrating this lineage")
+
+    candidate = conn.execute(
+        "SELECT * FROM selene_comprehension_concepts WHERE id = ?", (candidate_id,)
+    ).fetchone()
+    if not candidate:
+        raise ValueError("linked teaching candidate not found")
+    candidate_item = dict(candidate)
+    candidate_refs = _loads(candidate_item.get("source_refs"), [])
+    candidate_payload = _loads(candidate_item.get("payload_json"), {})
+    source_metadata = candidate_payload.get("source_metadata") if isinstance(candidate_payload, dict) else {}
+    attributable = (
+        f"selene_study_question:{question_id}" in candidate_refs
+        and isinstance(source_metadata, dict)
+        and int(source_metadata.get("study_question_id") or 0) == question_id
+    )
+    approved = (
+        candidate_item.get("state") == "approved_knowledge_resource"
+        and candidate_item.get("review_status") == "approved_for_knowledge_use"
+        and candidate_item.get("chat_use_permission") == "available_as_knowledge_resource"
+    )
+    if not approved or not attributable:
+        raise ValueError("integrate for now requires approved, attributable Study knowledge")
+
+    reconstruction = truncate(str(payload.get("selene_reconstruction") or ""), 6000).strip()
+    if not reconstruction:
+        raise ValueError("Selene's visible reconstruction is required before integrating for now")
+    conn.execute(
+        """
+        UPDATE selene_study_questions
+        SET status = 'integrated_for_now', integrated_candidate_id = ?,
+            integration_reconstruction = ?, integrated_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (candidate_id, reconstruction, question_id),
+    )
+    conn.execute(
+        "UPDATE selene_study_notes SET clarification_state = 'clarified_for_now', updated_at = CURRENT_TIMESTAMP WHERE linked_question_id = ?",
+        (question_id,),
+    )
+    session = conn.execute("SELECT * FROM selene_study_sessions WHERE id = ?", (session_id,)).fetchone()
+    compass_goal_id = int(session["compass_goal_id"] or 0) if session else 0
+    if compass_goal_id:
+        _update_learning_compass_row(
+            conn,
+            compass_goal_id,
+            state="connected_for_now",
+            latest_question_id=question_id,
+            selene_reflection=reconstruction,
+            remaining_unclear="",
+            event="learning_compass_question_integrated_for_now",
+            event_detail=(
+                "Selene recorded a visible reconstruction from approved, attributable knowledge. "
+                "This is a revisable connection for now, not a grade or a claim of mastery."
+            ),
+        )
+    source_refs = [
+        f"selene_study_session:{session_id}",
+        f"selene_study_question:{question_id}",
+        f"selene_comprehension_concept:{candidate_id}",
+    ]
+    _record_evidence(
+        conn,
+        session_id,
+        "study_question_integrated_for_now",
+        reconstruction,
+        {
+            "question_id": question_id,
+            "approved_candidate_id": candidate_id,
+            "visible_reconstruction": True,
+            "revisable": True,
+            "performance_judgment": False,
+            "automatic_knowledge_approval": False,
+            "automatic_memory_write": False,
+        },
+        source_refs,
+    )
+    conn.commit()
+    result = get_study_session(conn, {"session_id": session_id})
+    receipt = next(
+        item["integration_receipt"] for item in result["questions"] if int(item["id"]) == question_id
+    )
+    result.update(
+        {
+            "status": "study_question_integrated_for_now",
+            "created": True,
+            "integrated_question_id": question_id,
+            "integration_receipt": receipt,
+        }
+    )
     return result
 
 
@@ -1978,6 +2304,155 @@ def _decode_question(row: sqlite3.Row) -> dict[str, Any]:
     item["answer_source_refs"] = _loads(item.get("answer_source_refs"), [])
     item["payload"] = _loads(item.pop("payload_json", "{}"), {})
     return item
+
+
+def _project_study_questions(conn: sqlite3.Connection, rows: list[sqlite3.Row]) -> list[dict[str, Any]]:
+    items = [_decode_question(row) for row in rows]
+    if not items:
+        return []
+    by_id = {int(item["id"]): item for item in items}
+    children: dict[int, list[int]] = {}
+    for item in items:
+        parent_id = int(item.get("parent_question_id") or 0)
+        if parent_id:
+            children.setdefault(parent_id, []).append(int(item["id"]))
+
+    candidate_ids = {
+        int(item.get("teaching_candidate_id") or 0)
+        for item in items
+        if int(item.get("teaching_candidate_id") or 0)
+    }
+    candidates: dict[int, dict[str, Any]] = {}
+    if candidate_ids:
+        placeholders = ",".join("?" for _ in candidate_ids)
+        candidate_rows = conn.execute(
+            f"SELECT * FROM selene_comprehension_concepts WHERE id IN ({placeholders})",
+            tuple(sorted(candidate_ids)),
+        ).fetchall()
+        candidates = {int(row["id"]): dict(row) for row in candidate_rows}
+
+    for item in items:
+        item_id = int(item["id"])
+        root_id = int(item.get("root_question_id") or item_id)
+        parent_id = int(item.get("parent_question_id") or 0) or None
+        ancestor_ids: list[int] = []
+        cursor_id = parent_id
+        visited = {item_id}
+        while cursor_id and cursor_id not in visited:
+            visited.add(cursor_id)
+            ancestor_ids.append(cursor_id)
+            parent = by_id.get(cursor_id)
+            cursor_id = int(parent.get("parent_question_id") or 0) if parent else 0
+        ancestor_ids.reverse()
+
+        descendant_ids: list[int] = []
+        pending = list(children.get(item_id, []))
+        while pending:
+            descendant_id = pending.pop(0)
+            if descendant_id in descendant_ids:
+                continue
+            descendant_ids.append(descendant_id)
+            pending.extend(children.get(descendant_id, []))
+        active_descendant_ids = [
+            descendant_id
+            for descendant_id in descendant_ids
+            if str(by_id.get(descendant_id, {}).get("status") or "") in {"open", "return_later"}
+        ]
+        item["root_question_id"] = root_id
+        item["question_ancestry"] = {
+            "root_question_id": root_id,
+            "parent_question_id": parent_id,
+            "ancestor_question_ids": ancestor_ids,
+            "descendant_question_ids": descendant_ids,
+            "active_descendant_question_ids": active_descendant_ids,
+            "lineage_source_refs": [
+                f"selene_study_question:{lineage_id}"
+                for lineage_id in list(dict.fromkeys([root_id, *ancestor_ids, item_id, *descendant_ids]))
+            ],
+            "lineage_is_revisable": True,
+            "history_rewritten": False,
+        }
+        candidate_id = int(item.get("teaching_candidate_id") or 0)
+        candidate = candidates.get(candidate_id)
+        candidate_state = str(candidate.get("state") or "") if candidate else ""
+        candidate_review = str(candidate.get("review_status") or "") if candidate else ""
+        candidate_permission = str(candidate.get("chat_use_permission") or "") if candidate else ""
+        approved = bool(
+            candidate
+            and candidate_state == "approved_knowledge_resource"
+            and candidate_review == "approved_for_knowledge_use"
+            and candidate_permission == "available_as_knowledge_resource"
+        )
+        candidate_refs = _loads(candidate.get("source_refs"), []) if candidate else []
+        candidate_payload = _loads(candidate.get("payload_json"), {}) if candidate else {}
+        metadata = candidate_payload.get("source_metadata") if isinstance(candidate_payload, dict) else {}
+        attributable = bool(
+            candidate
+            and f"selene_study_question:{item_id}" in candidate_refs
+            and isinstance(metadata, dict)
+            and int(metadata.get("study_question_id") or 0) == item_id
+        )
+        if str(item.get("status") or "") == "integrated_for_now":
+            integration_state = "integrated_for_now"
+            stop_reason = "visible_reconstruction_recorded_for_now"
+        elif active_descendant_ids:
+            integration_state = "reopened"
+            stop_reason = "active_descendant_requires_attention"
+        elif str(item.get("status") or "") == "return_later":
+            integration_state = "return_later"
+            stop_reason = "explicit_return_later_hold"
+        elif not candidate:
+            integration_state = "awaiting_answer"
+            stop_reason = "no_teaching_candidate"
+        else:
+            integration_state = {
+                "proposed_understanding": "under_review",
+                "needs_context": "needs_context",
+                "held_for_tending": "held_for_tending",
+                "approved_knowledge_resource": "approved_knowledge",
+                "reopened_for_revision": "reopened_for_revision",
+                "rejected": "rejected",
+                "superseded": "superseded",
+            }.get(candidate_state, "candidate_state_unknown")
+            stop_reason = "ready_for_visible_reconstruction" if approved and attributable else integration_state
+        item["integration_receipt"] = {
+            "question_id": item_id,
+            "state": integration_state,
+            "teaching_candidate_id": candidate_id or None,
+            "candidate_state": candidate_state or None,
+            "candidate_review_status": candidate_review or None,
+            "candidate_chat_use_permission": candidate_permission or None,
+            "candidate_attributable_to_question": attributable,
+            "approved_knowledge": approved,
+            "integration_allowed": bool(
+                approved
+                and attributable
+                and not active_descendant_ids
+                and str(item.get("status") or "") == "answered_in_session"
+            ),
+            "visible_selene_reconstruction_required": True,
+            "visible_selene_reconstruction": str(item.get("integration_reconstruction") or ""),
+            "integrated_candidate_id": int(item.get("integrated_candidate_id") or 0) or None,
+            "integrated_at": item.get("integrated_at"),
+            "stop_reason": stop_reason,
+            "automatic_knowledge_approval": False,
+            "automatic_memory_write": False,
+            "performance_judgment": False,
+        }
+        item["reflective_lineage_receipt"] = build_reflective_lineage_receipt(
+            origin_record_type="selene_study_question",
+            origin_record_id=item_id,
+            parent_record_type="selene_study_question" if parent_id else "",
+            parent_record_id=parent_id,
+            destination="teaching_integration" if candidate_id else "study_question",
+            destination_record_type="selene_comprehension_concept" if candidate_id else "",
+            destination_record_id=candidate_id or None,
+            candidate_state=integration_state,
+            source_refs=item["question_ancestry"]["lineage_source_refs"],
+            terminal_stop_reason=stop_reason,
+            duplicate_lineage_detected=False,
+        )
+    return items
 
 
 def _simulate_representation(kind: str, payload: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:

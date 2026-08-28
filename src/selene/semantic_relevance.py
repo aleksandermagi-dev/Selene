@@ -73,6 +73,65 @@ def semantic_relevance_status() -> dict[str, Any]:
     )
 
 
+def evaluate_memory_privacy_eligibility(
+    candidate: dict[str, Any] | None,
+    speaker_envelope: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Apply the canonical speaker/channel/authentication gate for personal Memory.
+
+    This gate inspects eligibility metadata only. Callers can therefore hold an
+    ineligible Memory record before its content enters retrieval or association
+    candidate text.
+    """
+
+    candidate = candidate if isinstance(candidate, dict) else {}
+    speaker = speaker_envelope if isinstance(speaker_envelope, dict) else {}
+    if not speaker:
+        return {
+            "accepted": True,
+            "reason": "speaker_envelope_not_supplied",
+            "speaker_privacy_gate_applied": False,
+            "eligible_channels_applied": False,
+            "minimum_authentication_applied": False,
+        }
+    consent_scope = str(candidate.get("consent_scope") or "")
+    claimed_speaker = str(speaker.get("claimed_speaker") or "").strip().casefold()
+    current_channel = str(speaker.get("channel") or "").strip().casefold()
+    eligible_channels = {
+        str(item).strip().casefold()
+        for item in candidate.get("eligible_channels") or []
+        if str(item).strip()
+    }
+    minimum_authentication = str(candidate.get("minimum_authentication_strength") or "").strip()
+    authentication_strength = str(speaker.get("authentication_strength") or "").strip()
+    private_for_aleks = consent_scope in {"private_selene_aleks_context", "private_inner"}
+    accepted = True
+    reason = "memory_privacy_envelope_eligible"
+    if private_for_aleks and claimed_speaker not in {
+        "aleks",
+        "aleksander magi",
+        "aleksander rani magi",
+    }:
+        accepted = False
+        reason = "memory_privacy_scope_does_not_include_current_speaker"
+    elif eligible_channels and current_channel not in eligible_channels:
+        accepted = False
+        reason = "memory_privacy_scope_does_not_include_current_channel"
+    elif minimum_authentication and not _authentication_satisfies(
+        authentication_strength,
+        minimum_authentication,
+    ):
+        accepted = False
+        reason = "memory_authentication_strength_is_insufficient"
+    return {
+        "accepted": accepted,
+        "reason": reason,
+        "speaker_privacy_gate_applied": True,
+        "eligible_channels_applied": bool(eligible_channels),
+        "minimum_authentication_applied": bool(minimum_authentication),
+    }
+
+
 def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     """Evaluate whether a source candidate belongs in the current answer.
 
@@ -189,40 +248,10 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
         accepted = self_state_requested
         reason = "self_state_owned_by_self_state_intent" if accepted else "self_state_without_self_state_intent"
     elif source_class in {"memory_reconstruction", "approved_memory", "approved_memory_reference"}:
-        consent_scope = str(candidate.get("consent_scope") or "")
-        claimed_speaker = str(speaker.get("claimed_speaker") or "").strip().casefold()
-        current_channel = str(speaker.get("channel") or "").strip().casefold()
-        eligible_channels = {
-            str(item).strip().casefold()
-            for item in candidate.get("eligible_channels") or []
-            if str(item).strip()
-        }
-        minimum_authentication = str(
-            candidate.get("minimum_authentication_strength") or ""
-        ).strip()
-        authentication_strength = str(
-            speaker.get("authentication_strength") or ""
-        ).strip()
-        private_for_aleks = consent_scope in {
-            "private_selene_aleks_context",
-            "private_inner",
-        }
-        if private_for_aleks and claimed_speaker and claimed_speaker not in {
-            "aleks",
-            "aleksander magi",
-            "aleksander rani magi",
-        }:
+        privacy_eligibility = evaluate_memory_privacy_eligibility(candidate, speaker)
+        if privacy_eligibility["accepted"] is not True:
             accepted = False
-            reason = "memory_privacy_scope_does_not_include_current_speaker"
-        elif eligible_channels and current_channel not in eligible_channels:
-            accepted = False
-            reason = "memory_privacy_scope_does_not_include_current_channel"
-        elif minimum_authentication and not _authentication_satisfies(
-            authentication_strength,
-            minimum_authentication,
-        ):
-            accepted = False
-            reason = "memory_authentication_strength_is_insufficient"
+            reason = str(privacy_eligibility["reason"])
         elif current_memory_conflict.get("conflict") is True:
             accepted = False
             reason = "current_turn_fact_overrides_conflicting_recalled_context"

@@ -8,6 +8,8 @@ from typing import Any
 
 from .memory_organ import propose_memory_candidate
 from .registry import truncate
+from .reflective_lineage import build_reflective_lineage_receipt
+from .study_workspace import create_pondering_thread
 from .test_impact_law import source_refs_are_diagnostic
 from .transfer_protocol import latest_c_readable_package
 from .transfer_state import transfer_completion_is_approved
@@ -33,10 +35,29 @@ DREAM_STATES = {
     "pending_review",
     "approved_for_expression",
     "routed_to_memory_review",
+    "routed_to_study_reopening",
     "needs_context",
     "held_for_tending",
     "superseded",
     "rejected",
+}
+
+DREAM_DESTINATIONS = {
+    "expression",
+    "memory_review",
+    "study_reopening",
+    "rejected",
+    "superseded",
+}
+
+DREAM_USEFULNESS_STATES = {
+    "not_assessed",
+    "useful_for_expression",
+    "useful_for_memory_review",
+    "useful_for_study",
+    "needs_context",
+    "unclear",
+    "not_useful",
 }
 
 DREAM_GUARDS: dict[str, Any] = {
@@ -147,6 +168,26 @@ def dream_state_status(conn: sqlite3.Connection) -> dict[str, Any]:
             """
         ).fetchall()
     }
+    destination_counts = {
+        str(row["selected_destination"] or "not_selected"): int(row["count"])
+        for row in conn.execute(
+            """
+            SELECT selected_destination, COUNT(*) AS count
+            FROM selene_dream_reflections
+            GROUP BY selected_destination
+            """
+        ).fetchall()
+    }
+    usefulness_counts = {
+        str(row["usefulness_state"] or "not_assessed"): int(row["count"])
+        for row in conn.execute(
+            """
+            SELECT usefulness_state, COUNT(*) AS count
+            FROM selene_dream_reflections
+            GROUP BY usefulness_state
+            """
+        ).fetchall()
+    }
     pending = sum(
         counts.get(state, 0)
         for state in ("pending_review", "needs_context", "held_for_tending")
@@ -181,7 +222,7 @@ def dream_state_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 if fractional_memory_incomplete
                 else "dream_lifecycle_ready"
             ),
-            "lifecycle_version": "v1_source_bound_reflection",
+            "lifecycle_version": "v2_typed_destination_lineage",
             "dream_available": True,
             "dream_state_required_for_memory_changes": (
                 fractional_memory_incomplete
@@ -195,6 +236,8 @@ def dream_state_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "cycle_count": _count(conn, "selene_dream_cycles"),
             "reflection_count": _count(conn, "selene_dream_reflections"),
             "reflection_counts": counts,
+            "destination_counts": destination_counts,
+            "usefulness_counts": usefulness_counts,
             "pending_review_count": pending,
             "latest_cycle": _decode_cycle(latest) if latest else None,
             "allowed_preview_work": [
@@ -436,8 +479,22 @@ def list_dream_reflections(
     return _with_guards(
         {
             "status": "dream_reflections_ready",
-            "items": [_decode_reflection(row) for row in rows],
+            "items": [_project_reflection(conn, row) for row in rows],
             "count": len(rows),
+            "usefulness_summary": {
+                "counts": {
+                    str(row["usefulness_state"] or "not_assessed"): int(row["count"])
+                    for row in conn.execute(
+                        """
+                        SELECT usefulness_state, COUNT(*) AS count
+                        FROM selene_dream_reflections
+                        GROUP BY usefulness_state
+                        """
+                    ).fetchall()
+                },
+                "automatic_assessment_performed": False,
+                "pending_reflections_unchanged_by_listing": True,
+            },
             "review_destination": "Cocoon Dream",
             "review_status": "review_only",
             "boundary": DREAM_BOUNDARY,
@@ -467,18 +524,82 @@ def decide_dream_reflection(
     ).fetchone()
     if not row:
         raise ValueError("Dream reflection not found")
-    item = _decode_reflection(row)
+    item = _project_reflection(conn, row)
     state = str(item["state"])
     review_status = str(item["review_status"])
     expression_eligible = False
     memory_candidate_id = item.get("memory_candidate_id")
     memory_candidate_created = False
+    study_thread_id = item.get("study_thread_id")
+    study_thread_created = False
     superseded_by_id = item.get("superseded_by_id")
+    selected_destination = str(item.get("selected_destination") or "")
+    usefulness_state = str(payload.get("usefulness_state") or item.get("usefulness_state") or "not_assessed")
+    usefulness_note = truncate(
+        str(payload.get("usefulness_note") or item.get("usefulness_note") or ""), 1000
+    )
+    if usefulness_state not in DREAM_USEFULNESS_STATES:
+        raise ValueError("unknown Dream usefulness state")
+
+    if action == "record_usefulness":
+        if usefulness_state == "not_assessed":
+            raise ValueError("recording usefulness requires an explicit usefulness state")
+        conn.execute(
+            """
+            UPDATE selene_dream_reflections
+            SET usefulness_state = ?, usefulness_note = ?, reviewed_by = 'Aleks',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (usefulness_state, usefulness_note, reflection_id),
+        )
+        conn.commit()
+        return _with_guards(
+            {
+                "status": "dream_reflection_usefulness_recorded",
+                "action": action,
+                "item": _reflection_row(conn, reflection_id),
+                "destination_selected": False,
+                "automatic_review_decision": False,
+                "review_destination": "Cocoon Dream",
+                "review_status": review_status,
+                "boundary": DREAM_BOUNDARY,
+            }
+        )
+
+    destination_actions = {
+        "approve_for_expression": "expression",
+        "send_to_memory_review": "memory_review",
+        "send_to_study_reopening": "study_reopening",
+        "reject": "rejected",
+    }
+    requested_destination = destination_actions.get(action, "")
+    if selected_destination and requested_destination:
+        if selected_destination != requested_destination:
+            raise ValueError(
+                f"Dream reflection already selected destination '{selected_destination}'; cross-destination routing is blocked"
+            )
+        return _with_guards(
+            {
+                "status": "dream_reflection_destination_already_selected",
+                "action": action,
+                "created": False,
+                "item": item,
+                "memory_candidate_created": False,
+                "study_thread_created": False,
+                "review_destination": _dream_review_destination(selected_destination),
+                "review_status": review_status,
+                "boundary": DREAM_BOUNDARY,
+            }
+        )
+    if selected_destination and action in {"needs_more_context", "hold_for_tending", "reopen"}:
+        raise ValueError("a selected Dream destination is terminal; its reflection history remains visible")
 
     if action == "approve_for_expression":
         state = "approved_for_expression"
         review_status = "reviewed"
         expression_eligible = True
+        selected_destination = "expression"
     elif action == "send_to_memory_review":
         existing_memory_ref = next(
             (
@@ -524,6 +645,14 @@ def decide_dream_reflection(
             memory_candidate_created = True
             state = "routed_to_memory_review"
             review_status = "memory_candidate_pending_review"
+        selected_destination = "memory_review"
+    elif action == "send_to_study_reopening":
+        study_handoff = _route_dream_reflection_to_study(conn, item, payload)
+        study_thread_id = int(study_handoff["study_thread_id"])
+        study_thread_created = bool(study_handoff["created"])
+        state = "routed_to_study_reopening"
+        review_status = "study_reopening_visible"
+        selected_destination = "study_reopening"
     elif action == "needs_more_context":
         state = "needs_context"
         review_status = "needs_context"
@@ -539,9 +668,16 @@ def decide_dream_reflection(
         superseded_by_id = int(payload.get("superseded_by_id") or 0) or None
         if superseded_by_id == reflection_id:
             raise ValueError("a Dream reflection cannot supersede itself")
+        if superseded_by_id and not conn.execute(
+            "SELECT 1 FROM selene_dream_reflections WHERE id = ?", (superseded_by_id,)
+        ).fetchone():
+            raise ValueError("superseding Dream reflection not found")
+        if not selected_destination:
+            selected_destination = "superseded"
     elif action == "reject":
         state = "rejected"
         review_status = "rejected"
+        selected_destination = "rejected"
     else:
         raise ValueError("unknown Dream reflection decision action")
 
@@ -549,7 +685,13 @@ def decide_dream_reflection(
         """
         UPDATE selene_dream_reflections
         SET state = ?, review_status = ?, expression_eligible = ?,
-            memory_candidate_id = ?, superseded_by_id = ?, decision_note = ?,
+            selected_destination = ?, study_thread_id = ?,
+            destination_selected_at = CASE
+              WHEN ? != '' AND destination_selected_at IS NULL THEN CURRENT_TIMESTAMP
+              ELSE destination_selected_at
+            END,
+            usefulness_state = ?, usefulness_note = ?, memory_candidate_id = ?,
+            superseded_by_id = ?, decision_note = ?,
             reviewed_by = 'Aleks', updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
@@ -557,6 +699,11 @@ def decide_dream_reflection(
             state,
             review_status,
             int(expression_eligible),
+            selected_destination,
+            study_thread_id,
+            selected_destination,
+            usefulness_state,
+            usefulness_note,
             memory_candidate_id,
             superseded_by_id,
             note,
@@ -579,10 +726,10 @@ def decide_dream_reflection(
             "item": updated,
             "memory_candidate_created": memory_candidate_created,
             "memory_candidate_active": False,
+            "study_thread_created": study_thread_created,
+            "study_thread_active_as_knowledge": False,
             "review_destination": (
-                "Cocoon Memory Candidates"
-                if action == "send_to_memory_review"
-                else "Cocoon Dream"
+                _dream_review_destination(selected_destination)
             ),
             "review_status": review_status,
             "boundary": DREAM_BOUNDARY,
@@ -673,7 +820,189 @@ def expression_eligible_dream_reflection(
             LIMIT 1
             """
         ).fetchone()
-    return _decode_reflection(row) if row else None
+    return _project_reflection(conn, row) if row else None
+
+
+def _dream_review_destination(selected_destination: str) -> str:
+    return {
+        "expression": "Dream / Reviewed Expression",
+        "memory_review": "Cocoon Memory Candidates",
+        "study_reopening": "Study / Pondering",
+        "rejected": "Cocoon Dream",
+        "superseded": "Cocoon Dream",
+    }.get(selected_destination, "Cocoon Dream")
+
+
+def _route_dream_reflection_to_study(
+    conn: sqlite3.Connection,
+    item: dict[str, Any],
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    context = _attributable_study_context(conn, item.get("source_refs", []), payload)
+    if not context["eligible"]:
+        raise ValueError(f"Dream-to-Study reopening requires attributable approved Study material: {context['stop_reason']}")
+    reflection_id = int(item["id"])
+    title = truncate(
+        str(payload.get("study_title") or f"Dream reopening: {item['title']}"), 300
+    ).strip()
+    result = create_pondering_thread(
+        conn,
+        {
+            "session_id": context["selected_session_id"],
+            "question_id": context.get("selected_question_id"),
+            "title": title,
+            "state": "reopened",
+            "current_fit": (
+                "Provisional Dream reflection selected by Aleks for waking Study: "
+                f"{item['reflection']}"
+            ),
+            "missing_bridge": item.get("uncertainty") or "The fit still needs waking Study evidence and revision.",
+            "revisit_cue": item.get("why_it_may_matter") or "Revisit only if the connection remains useful.",
+            "source_refs": [
+                *item.get("source_refs", []),
+                f"selene_dream_reflection:{reflection_id}",
+                *[
+                    f"selene_comprehension_concept:{concept_id}"
+                    for concept_id in context["approved_concept_ids"]
+                ],
+            ],
+            "lineage_key": f"dream_reflection:{reflection_id}:study_reopening",
+            "origin_kind": "dream_reflection",
+            "origin_ref": f"selene_dream_reflection:{reflection_id}",
+            "candidate_state": "provisional_dream_reopening_not_evidence_or_fact",
+        },
+    )
+    return {
+        "study_thread_id": int(result["updated_thread_id"]),
+        "created": bool(result.get("created")),
+        "study_context": context,
+        "lineage_receipt": result.get("lineage_receipt"),
+    }
+
+
+def _attributable_study_context(
+    conn: sqlite3.Connection,
+    source_refs: Any,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload = payload or {}
+    refs = _json_list(source_refs)
+    session_ids = set(_ref_ids(refs, "selene_study_session:"))
+    concept_ids = set(_ref_ids(refs, "selene_comprehension_concept:"))
+    question_ids = set(_ref_ids(refs, "selene_study_question:"))
+    note_ids = _ref_ids(refs, "selene_study_note:")
+    thread_ids = _ref_ids(refs, "selene_study_pondering_thread:")
+
+    if note_ids:
+        marks = ",".join("?" for _ in note_ids)
+        for row in conn.execute(
+            f"SELECT session_id, concept_id FROM selene_study_notes WHERE id IN ({marks})",
+            tuple(note_ids),
+        ).fetchall():
+            session_ids.add(int(row["session_id"]))
+            if row["concept_id"]:
+                concept_ids.add(int(row["concept_id"]))
+    if thread_ids:
+        marks = ",".join("?" for _ in thread_ids)
+        for row in conn.execute(
+            f"SELECT session_id, question_id FROM selene_study_pondering_threads WHERE id IN ({marks})",
+            tuple(thread_ids),
+        ).fetchall():
+            session_ids.add(int(row["session_id"]))
+            if row["question_id"]:
+                question_ids.add(int(row["question_id"]))
+    if question_ids:
+        marks = ",".join("?" for _ in question_ids)
+        for row in conn.execute(
+            f"SELECT id, session_id, concept_id FROM selene_study_questions WHERE id IN ({marks})",
+            tuple(sorted(question_ids)),
+        ).fetchall():
+            session_ids.add(int(row["session_id"]))
+            if row["concept_id"]:
+                concept_ids.add(int(row["concept_id"]))
+    if session_ids:
+        marks = ",".join("?" for _ in session_ids)
+        session_rows = conn.execute(
+            f"SELECT id, concept_ids_json FROM selene_study_sessions WHERE id IN ({marks})",
+            tuple(sorted(session_ids)),
+        ).fetchall()
+        found_session_ids = {int(row["id"]) for row in session_rows}
+        session_ids &= found_session_ids
+        for row in session_rows:
+            concept_ids.update(int(value) for value in _loads(row["concept_ids_json"], []) if int(value) > 0)
+
+    approved_concept_ids: list[int] = []
+    if concept_ids:
+        marks = ",".join("?" for _ in concept_ids)
+        approved_concept_ids = [
+            int(row["id"])
+            for row in conn.execute(
+                f"""
+                SELECT id FROM selene_comprehension_concepts
+                WHERE id IN ({marks})
+                  AND state = 'approved_knowledge_resource'
+                  AND review_status = 'approved_for_knowledge_use'
+                  AND chat_use_permission = 'available_as_knowledge_resource'
+                ORDER BY id
+                """,
+                tuple(sorted(concept_ids)),
+            ).fetchall()
+        ]
+
+    requested_session_id = int(payload.get("study_session_id") or 0)
+    selected_session_id: int | None = None
+    stop_reason = ""
+    if requested_session_id:
+        if requested_session_id not in session_ids:
+            stop_reason = "selected_session_not_in_reflection_lineage"
+        else:
+            selected_session_id = requested_session_id
+    elif len(session_ids) == 1:
+        selected_session_id = next(iter(session_ids))
+    elif not session_ids:
+        stop_reason = "no_attributable_study_session"
+    else:
+        stop_reason = "multiple_attributable_sessions_require_selection"
+
+    selected_question_id: int | None = None
+    requested_question_id = int(payload.get("study_question_id") or 0)
+    if requested_question_id:
+        if requested_question_id not in question_ids:
+            stop_reason = "selected_question_not_in_reflection_lineage"
+        else:
+            selected_question_id = requested_question_id
+    elif len(question_ids) == 1:
+        selected_question_id = next(iter(question_ids))
+    if not approved_concept_ids and not stop_reason:
+        stop_reason = "no_attributable_approved_study_material"
+    eligible = bool(selected_session_id and approved_concept_ids and not stop_reason)
+    return {
+        "eligible": eligible,
+        "attributable_session_ids": sorted(session_ids),
+        "approved_concept_ids": approved_concept_ids,
+        "attributable_question_ids": sorted(question_ids),
+        "selected_session_id": selected_session_id,
+        "selected_question_id": selected_question_id,
+        "stop_reason": None if eligible else (stop_reason or "study_destination_not_eligible"),
+        "automatic_study_reopening": False,
+        "automatic_knowledge_approval": False,
+        "automatic_memory_write": False,
+    }
+
+
+def _ref_ids(source_refs: list[str], prefix: str) -> list[int]:
+    ids: list[int] = []
+    for ref in source_refs:
+        value = str(ref)
+        if not value.startswith(prefix):
+            continue
+        try:
+            record_id = int(value[len(prefix):].split(":", 1)[0])
+        except (TypeError, ValueError):
+            continue
+        if record_id > 0 and record_id not in ids:
+            ids.append(record_id)
+    return ids
 
 
 def _collect_source_candidates(
@@ -849,7 +1178,7 @@ def _study_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     note_rows = conn.execute(
         """
-        SELECT id, session_id, note_kind, meaning_summary, note_text,
+        SELECT id, session_id, concept_id, note_kind, meaning_summary, note_text,
                clarification_state, source_refs, updated_at
         FROM selene_study_notes
         WHERE note_kind IN ('connection', 'idea', 'revisit')
@@ -859,6 +1188,9 @@ def _study_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
         """
     ).fetchall()
     for row in note_rows:
+        row_source_refs = _json_list(row["source_refs"])
+        if any(str(ref).startswith("selene_dream_reflection:") for ref in row_source_refs):
+            continue
         summary = truncate(
             str(row["meaning_summary"] or row["note_text"] or ""),
             620,
@@ -877,7 +1209,8 @@ def _study_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
                 [
                     f"selene_study_note:{row['id']}",
                     f"selene_study_session:{row['session_id']}",
-                    *_json_list(row["source_refs"]),
+                    *([f"selene_comprehension_concept:{row['concept_id']}"] if row["concept_id"] else []),
+                    *row_source_refs,
                 ],
                 row["updated_at"],
                 salt=f"{row['note_kind']}:{row['clarification_state']}:{summary}",
@@ -885,7 +1218,7 @@ def _study_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
         )
     thread_rows = conn.execute(
         """
-        SELECT id, session_id, title, state, current_fit, missing_bridge,
+        SELECT id, session_id, question_id, title, state, current_fit, missing_bridge,
                prerequisite_needed, revisit_cue, source_refs, updated_at
         FROM selene_study_pondering_threads
         WHERE state != 'integrated_for_now'
@@ -895,6 +1228,9 @@ def _study_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
         """
     ).fetchall()
     for row in thread_rows:
+        row_source_refs = _json_list(row["source_refs"])
+        if any(str(ref).startswith("selene_dream_reflection:") for ref in row_source_refs):
+            continue
         visible = truncate(
             " ".join(
                 str(row[key] or "")
@@ -921,7 +1257,8 @@ def _study_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
                 [
                     f"selene_study_pondering_thread:{row['id']}",
                     f"selene_study_session:{row['session_id']}",
-                    *_json_list(row["source_refs"]),
+                    *([f"selene_study_question:{row['question_id']}"] if row["question_id"] else []),
+                    *row_source_refs,
                 ],
                 row["updated_at"],
                 salt=f"{row['state']}:{row['title']}:{visible}",
@@ -1378,7 +1715,7 @@ def _cycle_reflections(
         """,
         (cycle_id,),
     ).fetchall()
-    return [_decode_reflection(row) for row in rows]
+    return [_project_reflection(conn, row) for row in rows]
 
 
 def _cycle_row(
@@ -1400,7 +1737,7 @@ def _reflection_row(
         "SELECT * FROM selene_dream_reflections WHERE id = ?",
         (reflection_id,),
     ).fetchone()
-    return _decode_reflection(row) if row else None
+    return _project_reflection(conn, row) if row else None
 
 
 def _decode_cycle(row: sqlite3.Row | None) -> dict[str, Any]:
@@ -1425,6 +1762,74 @@ def _decode_reflection(row: sqlite3.Row | None) -> dict[str, Any]:
     item["expression_eligible"] = bool(item.get("expression_eligible"))
     item["not_fact_by_default"] = True
     item["not_memory_by_default"] = True
+    return item
+
+
+def _project_reflection(conn: sqlite3.Connection, row: sqlite3.Row | None) -> dict[str, Any]:
+    item = _decode_reflection(row)
+    if not item:
+        return item
+    selected_destination = str(item.get("selected_destination") or "")
+    if not selected_destination:
+        selected_destination = {
+            "approved_for_expression": "expression",
+            "routed_to_memory_review": "memory_review",
+            "routed_to_study_reopening": "study_reopening",
+            "rejected": "rejected",
+        }.get(str(item.get("state") or ""), "")
+    item["selected_destination"] = selected_destination or None
+    study_context = _attributable_study_context(conn, item.get("source_refs", []))
+    item["study_destination"] = study_context
+
+    destination_record_type: str | None = None
+    destination_record_id: int | None = None
+    if selected_destination == "expression":
+        destination_record_type = "selene_dream_reflection"
+        destination_record_id = int(item["id"])
+    elif selected_destination == "memory_review":
+        destination_record_type = "selene_memory_candidate"
+        destination_record_id = int(item.get("memory_candidate_id") or 0) or None
+    elif selected_destination == "study_reopening":
+        destination_record_type = "selene_study_pondering_thread"
+        destination_record_id = int(item.get("study_thread_id") or 0) or None
+
+    state = str(item.get("state") or "")
+    if state == "superseded":
+        terminal_stop_reason = "superseded_terminal_destination_preserved"
+    elif selected_destination:
+        terminal_stop_reason = "selected_destination_final_for_this_reflection"
+    elif state in {"needs_context", "held_for_tending"}:
+        terminal_stop_reason = "review_held_without_destination"
+    else:
+        terminal_stop_reason = None
+    item["destination_receipt"] = {
+        **build_reflective_lineage_receipt(
+            origin_record_type="selene_dream_reflection",
+            origin_record_id=int(item["id"]),
+            destination=selected_destination or "pending_review",
+            destination_record_type=destination_record_type or "",
+            destination_record_id=destination_record_id,
+            candidate_state=state,
+            source_refs=item.get("source_refs", []),
+            terminal_stop_reason=terminal_stop_reason,
+            duplicate_lineage_detected=False,
+        ),
+        "parent_source_refs": item.get("source_refs", []),
+        "selected_destination": selected_destination or None,
+        "destination_selected_at": item.get("destination_selected_at"),
+        "superseded_by_reflection_id": int(item.get("superseded_by_id") or 0) or None,
+        "terminal_destination_preserved": bool(state == "superseded" and selected_destination),
+        "cross_destination_allowed": False,
+        "duplicate_destination_created": False,
+        "automatic_study_reopening": False,
+    }
+    item["usefulness"] = {
+        "state": str(item.get("usefulness_state") or "not_assessed"),
+        "note": str(item.get("usefulness_note") or ""),
+        "assessed_by": str(item.get("reviewed_by") or "") or None,
+        "automatic_assessment": False,
+        "changes_review_decision": False,
+    }
     return item
 
 

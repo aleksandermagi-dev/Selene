@@ -7,9 +7,12 @@ from hashlib import sha256
 from typing import Any
 
 from .registry import truncate
+from .reflective_lineage import build_reflective_lineage_receipt
+from .semantic_relevance import evaluate_memory_privacy_eligibility
+from .study_workspace import create_pondering_thread
 
 
-ASSOCIATIVE_INTUITION_VERSION = "v1_bounded_dormant_context_reactivation"
+ASSOCIATIVE_INTUITION_VERSION = "v2_private_bounded_development_handoff"
 ASSOCIATIVE_INTUITION_BOUNDARY = (
     "read_only_source_bound_association_selection_and_handoff_only_no_truth_"
     "decision_retention_identity_governance_expression_or_action_authority"
@@ -206,12 +209,20 @@ def build_associative_intuition_bridge(
     diagnostic_only = payload.get("diagnostic_only") is True
     maximum_scan = max(20, min(int(payload.get("maximum_scan") or 300), 600))
     maximum_candidates = max(1, min(int(payload.get("maximum_candidates") or 4), 8))
+    speaker_envelope = (
+        payload.get("speaker_envelope") if isinstance(payload.get("speaker_envelope"), dict) else {}
+    )
 
-    sources = _explicit_sources(payload.get("source_packets"))
-    sources.extend(_collect_sources(conn, maximum_scan=maximum_scan))
+    explicit_sources, explicit_held = _explicit_sources(payload.get("source_packets"))
+    collected_sources, privacy_held = _collect_sources(
+        conn,
+        maximum_scan=maximum_scan,
+        speaker_envelope=speaker_envelope,
+    )
+    sources = [*explicit_sources, *collected_sources]
     sources = _deduplicate_sources(sources)
     ranked: list[tuple[int, str, dict[str, Any]]] = []
-    held: list[dict[str, Any]] = []
+    held: list[dict[str, Any]] = [*explicit_held, *privacy_held]
     scanned = 0
 
     for source in sources[:maximum_scan]:
@@ -318,6 +329,8 @@ def build_associative_intuition_bridge(
         "contribution_ready": contribution_ready,
         "contribution_candidates": contribution_candidates,
         "held_back_sources": held[:30],
+        "memory_privacy_gate_reused": True,
+        "speaker_envelope_applied": bool(speaker_envelope),
         "metacognition_handoff": {
             "available": bool(selected),
             "association_state": selected_state,
@@ -378,6 +391,15 @@ def build_associative_intuition_bridge(
         "association_is_proof": False,
         "association_is_memory": False,
         "candidate_requires_downstream_fit_check": bool(selected),
+        "stopping_receipt": _stopping_receipt(
+            selected=selected,
+            selected_state=selected_state,
+            contribution_ready=contribution_ready,
+            hard_boundary=hard_boundary,
+            diagnostic_only=diagnostic_only,
+            scanned=scanned,
+            held_count=len(held),
+        ),
         "writes_records": False,
         "visible_summary_only": True,
         "review_status": "diagnostic_only" if diagnostic_only else "status_only",
@@ -386,13 +408,187 @@ def build_associative_intuition_bridge(
     return _with_guards(result)
 
 
+def accept_association_for_study(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload = payload or {}
+    actor = str(payload.get("actor") or "").strip()
+    if actor not in {"Aleks", "Selene"}:
+        raise ValueError("an Association-to-Study handoff requires explicit Aleks or Selene acceptance")
+    candidate_id = str(payload.get("candidate_id") or "").strip()
+    if not candidate_id:
+        raise ValueError("candidate_id is required")
+    bridge = build_associative_intuition_bridge(
+        conn,
+        {
+            "trigger_text": payload.get("trigger_text") or payload.get("prompt") or payload.get("text"),
+            "dual_horizon_context": payload.get("dual_horizon_context") or {},
+            "source_packets": payload.get("source_packets") or [],
+            "speaker_envelope": payload.get("speaker_envelope") or {},
+            "maximum_scan": payload.get("maximum_scan") or 300,
+            "maximum_candidates": payload.get("maximum_candidates") or 8,
+        },
+    )
+    candidate = next(
+        (item for item in bridge.get("candidates") or [] if str(item.get("candidate_id") or "") == candidate_id),
+        None,
+    )
+    if not candidate:
+        raise ValueError("association candidate is no longer eligible in the supplied context")
+    if str(candidate.get("association_state") or "") not in {"felt_connection", "articulated_connection"}:
+        raise ValueError("only a felt or articulated provisional association can enter Study")
+
+    attributable_sessions = _candidate_study_session_ids(conn, candidate)
+    requested_session_id = int(payload.get("study_session_id") or 0)
+    if requested_session_id:
+        session_id = requested_session_id
+    elif len(attributable_sessions) == 1:
+        session_id = attributable_sessions[0]
+    elif not attributable_sessions:
+        raise ValueError("select an approved Study session for this association")
+    else:
+        raise ValueError("multiple attributable Study sessions require an explicit selection")
+    session = conn.execute("SELECT * FROM selene_study_sessions WHERE id = ?", (session_id,)).fetchone()
+    if not session:
+        raise ValueError("Study session not found")
+    concept_ids = [int(value) for value in _loads(session["concept_ids_json"], []) if int(value) > 0]
+    if not concept_ids:
+        raise ValueError("Association-to-Study requires a session with approved Study material")
+    marks = ",".join("?" for _ in concept_ids)
+    approved_count = int(
+        conn.execute(
+            f"""
+            SELECT COUNT(*) FROM selene_comprehension_concepts
+            WHERE id IN ({marks})
+              AND state = 'approved_knowledge_resource'
+              AND review_status = 'approved_for_knowledge_use'
+              AND chat_use_permission = 'available_as_knowledge_resource'
+            """,
+            tuple(concept_ids),
+        ).fetchone()[0]
+    )
+    if approved_count != len(concept_ids):
+        raise ValueError("Association-to-Study requires approved, Chat-eligible Study material")
+
+    result = create_pondering_thread(
+        conn,
+        {
+            "session_id": session_id,
+            "title": truncate(
+                str(payload.get("study_title") or f"Possible connection with {candidate.get('source_title') or 'earlier material'}"),
+                300,
+            ),
+            "state": "active",
+            "current_fit": (
+                "Explicitly accepted provisional association: "
+                f"{candidate.get('candidate_summary') or ''}"
+            ),
+            "missing_bridge": (
+                "State the transferable roles, compare a distinct case, and keep the connection revisable."
+            ),
+            "revisit_cue": (
+                "Stop if direct comparison supplies no new fit, a counterexample breaks the mapping, or the lineage is already active."
+            ),
+            "source_refs": [
+                *(candidate.get("safe_source_refs") or []),
+                f"associative_intuition_candidate:{candidate_id}",
+            ],
+            "lineage_key": f"associative_intuition:{candidate_id}:study_session:{session_id}",
+            "origin_kind": "associative_intuition",
+            "origin_ref": f"associative_intuition_candidate:{candidate_id}",
+            "candidate_state": "provisional_association_not_evidence_proof_fact_memory_or_answer",
+        },
+    )
+    created = bool(result.get("created"))
+    return _with_guards(
+        {
+            "status": "association_entered_study" if created else "association_study_lineage_already_active",
+            "name": "Associative Intuition Bridge",
+            "is_organ": False,
+            "connective_tissue_only": True,
+            "accepted_by": actor,
+            "bridge_id": bridge["bridge_id"],
+            "candidate_id": candidate_id,
+            "study_session_id": session_id,
+            "study_thread_id": int(result["updated_thread_id"]),
+            "created": created,
+            "writes_records": True,
+            "study_write_performed": created,
+            "explicit_acceptance_required": True,
+            "lineage_receipt": {
+                **build_reflective_lineage_receipt(
+                    origin_record_type="associative_intuition_candidate",
+                    origin_record_id=candidate_id,
+                    parent_record_type=str(candidate.get("source_class") or "association_source"),
+                    parent_record_id=str(candidate.get("source_id") or ""),
+                    destination="study_pondering",
+                    destination_record_type="selene_study_pondering_thread",
+                    destination_record_id=int(result["updated_thread_id"]),
+                    candidate_state=str(candidate.get("association_state") or "provisional"),
+                    source_refs=candidate.get("safe_source_refs") or [],
+                    terminal_stop_reason=(None if created else "duplicate_lineage_existing_thread_reused"),
+                    duplicate_lineage_detected=not created,
+                ),
+                "study_thread_lineage": result.get("lineage_receipt"),
+            },
+            "stopping_receipt": {
+                "scan_stopped": True,
+                "stop_reason": "explicit_acceptance_routed_once" if created else "duplicate_lineage_existing_thread_reused",
+                "new_evidence_created": False,
+                "truth_decided": False,
+                "memory_written": False,
+                "association_remains_provisional": True,
+            },
+            "association_is_evidence": False,
+            "association_is_proof": False,
+            "association_is_fact": False,
+            "association_is_memory": False,
+            "association_is_finished_answer": False,
+            "review_status": "visible_study_pondering_thread",
+            "provenance_boundary": ASSOCIATIVE_INTUITION_BOUNDARY,
+        }
+    )
+
+
+def _candidate_study_session_ids(conn: sqlite3.Connection, candidate: dict[str, Any]) -> list[int]:
+    source_id = str(candidate.get("source_id") or "")
+    session_ids: set[int] = set()
+    for prefix, table, id_column in (
+        ("selene_study_note:", "selene_study_notes", "id"),
+        ("selene_study_pondering_thread:", "selene_study_pondering_threads", "id"),
+    ):
+        if source_id.startswith(prefix):
+            try:
+                record_id = int(source_id[len(prefix):])
+            except ValueError:
+                continue
+            row = conn.execute(
+                f"SELECT session_id FROM {table} WHERE {id_column} = ?", (record_id,)
+            ).fetchone()
+            if row:
+                session_ids.add(int(row["session_id"]))
+    if source_id.startswith("selene_comprehension_concept:"):
+        try:
+            concept_id = int(source_id.rsplit(":", 1)[1])
+        except ValueError:
+            concept_id = 0
+        if concept_id:
+            for row in conn.execute("SELECT id, concept_ids_json FROM selene_study_sessions").fetchall():
+                if concept_id in {int(value) for value in _loads(row["concept_ids_json"], [])}:
+                    session_ids.add(int(row["id"]))
+    return sorted(session_ids)
+
+
 def _collect_sources(
     conn: sqlite3.Connection,
     *,
     maximum_scan: int,
-) -> list[dict[str, Any]]:
+    speaker_envelope: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     per_class = max(12, min(maximum_scan // 5, 120))
     sources: list[dict[str, Any]] = []
+    held: list[dict[str, Any]] = []
     for row in conn.execute(
         """
         SELECT * FROM selene_comprehension_concepts
@@ -441,6 +637,35 @@ def _collect_sources(
     ).fetchall():
         item = dict(row)
         source_id = f"selene_memory_candidate:{item['id']}"
+        memory_payload = _loads(item.get("payload_json"), {})
+        privacy_candidate = {
+            "consent_scope": str(item.get("consent_scope") or ""),
+            "eligible_channels": _text_list(memory_payload.get("eligible_channels")),
+            "minimum_authentication_strength": str(
+                memory_payload.get("minimum_authentication_strength") or ""
+            ),
+        }
+        privacy = evaluate_memory_privacy_eligibility(privacy_candidate, speaker_envelope)
+        if not speaker_envelope:
+            privacy = {
+                **privacy,
+                "accepted": False,
+                "reason": "speaker_envelope_missing_for_personal_memory",
+                "speaker_privacy_gate_applied": False,
+            }
+        if privacy["accepted"] is not True:
+            held.append(
+                {
+                    "source_id": source_id,
+                    "source_class": "approved_personal_memory",
+                    "reason": str(privacy["reason"]),
+                    "privacy_gate": privacy,
+                    "content_entered_candidate_text": False,
+                    "candidate_created": False,
+                    "stop_receipt": "held_before_association_text_construction",
+                }
+            )
+            continue
         sources.append(
             {
                 "source_id": source_id,
@@ -458,6 +683,7 @@ def _collect_sources(
                 "expression_eligible": True,
                 "study_only": False,
                 "personal_memory_is_domain_truth": False,
+                "privacy_gate": privacy,
             }
         )
     for row in conn.execute(
@@ -552,20 +778,33 @@ def _collect_sources(
                 "study_only": False,
             }
         )
-    return sources
+    return sources, held
 
 
-def _explicit_sources(value: Any) -> list[dict[str, Any]]:
+def _explicit_sources(value: Any) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     result: list[dict[str, Any]] = []
+    held: list[dict[str, Any]] = []
     for index, item in enumerate(value if isinstance(value, list) else []):
         if not isinstance(item, dict):
             continue
         source_ref = str(item.get("source_ref") or "").strip()
+        if source_ref and _private_ref(source_ref):
+            held.append(
+                {
+                    "source_id": f"held-current-source:{index + 1}",
+                    "source_class": "current_attributed_source",
+                    "reason": "private_source_reference_is_not_eligible_for_association_use",
+                    "content_entered_candidate_text": False,
+                    "candidate_created": False,
+                    "stop_receipt": "held_before_association_text_construction",
+                }
+            )
+            continue
         summary = truncate(
             str(item.get("summary") or item.get("statement") or item.get("content") or ""),
             1800,
         ).strip()
-        if not source_ref or not summary or _private_ref(source_ref):
+        if not source_ref or not summary:
             continue
         result.append(
             {
@@ -585,7 +824,7 @@ def _explicit_sources(value: Any) -> list[dict[str, Any]]:
                 "study_only": False,
             }
         )
-    return result
+    return result, held
 
 
 def _candidate(
@@ -628,6 +867,17 @@ def _candidate(
             "shared_semantic_cues": shared_cues[:8],
             "surface_wording_alone_is_proof": False,
             "source_was_dormant_before_this_trigger": True,
+        },
+        "fit_receipt": {
+            "fit_state": state,
+            "source_domain": str(source.get("topic") or ""),
+            "target_domain": "current_context",
+            "shared_terms": shared_terms[:8],
+            "shared_semantic_cues": shared_cues[:8],
+            "transferable_structure_articulated": state == "articulated_connection",
+            "new_evidence_supplied": False,
+            "independent_fit_check_complete": False,
+            "revision_required_if_counterexample_fits": True,
         },
         "source_id": source_id,
         "source_title": title,
@@ -732,6 +982,44 @@ def _held(source: dict[str, Any], reason: str) -> dict[str, Any]:
         "source_id": str(source.get("source_id") or ""),
         "source_class": str(source.get("source_class") or ""),
         "reason": reason,
+        "content_entered_candidate_text": False,
+        "candidate_created": False,
+    }
+
+
+def _stopping_receipt(
+    *,
+    selected: dict[str, Any],
+    selected_state: str,
+    contribution_ready: bool,
+    hard_boundary: bool,
+    diagnostic_only: bool,
+    scanned: int,
+    held_count: int,
+) -> dict[str, Any]:
+    if hard_boundary:
+        reason = "hard_boundary_holds_association_handoffs"
+    elif diagnostic_only:
+        reason = "diagnostic_preview_stops_before_promotion"
+    elif not selected:
+        reason = "no_useful_connection_noticed"
+    elif selected_state == "felt_connection":
+        reason = "transferable_structure_not_articulated"
+    elif contribution_ready:
+        reason = "one_provisional_candidate_released_for_downstream_fit_check"
+    else:
+        reason = "candidate_held_for_context_or_source_scope"
+    return {
+        "scan_stopped": True,
+        "stop_reason": reason,
+        "scanned_source_count": scanned,
+        "held_source_count": held_count,
+        "selected_candidate_id": str(selected.get("candidate_id") or "") or None,
+        "new_evidence_created": False,
+        "truth_decided": False,
+        "memory_written": False,
+        "study_written": False,
+        "recursive_reactivation_requested": False,
     }
 
 

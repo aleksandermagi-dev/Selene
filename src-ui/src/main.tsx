@@ -748,11 +748,14 @@ function App() {
     question_formation: "ready"
   });
   const [studyAnswers, setStudyAnswers] = useState<Record<string, string>>({});
+  const [studyReconstructions, setStudyReconstructions] = useState<Record<string, string>>({});
+  const [studyReopenContexts, setStudyReopenContexts] = useState<Record<string, string>>({});
   const [dreamStateStatus, setDreamStateStatus] = useState<Dict | null>(null);
   const [dreamCycles, setDreamCycles] = useState<Dict[]>([]);
   const [dreamReflections, setDreamReflections] = useState<Dict[]>([]);
   const [dreamLifecycleResult, setDreamLifecycleResult] = useState<Dict | null>(null);
   const [dreamDecisionNotes, setDreamDecisionNotes] = useState<Record<string, string>>({});
+  const [dreamUsefulnessStates, setDreamUsefulnessStates] = useState<Record<string, string>>({});
   const [memoryIndexStatus, setMemoryIndexStatus] = useState<Dict | null>(null);
   const [memoryIndexItems, setMemoryIndexItems] = useState<Dict[]>([]);
   const [memoryCandidates, setMemoryCandidates] = useState<Dict[]>([]);
@@ -3328,6 +3331,40 @@ function App() {
     api<{ items: Dict[] }>("/api/comprehension/concepts?limit=100").then((data) => setComprehensionConcepts(data.items || [])).catch(() => undefined);
   }
 
+  async function integrateStudyQuestionForNow(item: Dict) {
+    const questionId = Number(item.id || 0);
+    const reconstruction = (studyReconstructions[text(questionId)] || "").trim();
+    if (!questionId || !reconstruction) return;
+    const result = await api<Dict>("/api/study/questions/integrate-for-now", {
+      method: "POST",
+      body: JSON.stringify({ question_id: questionId, selene_reconstruction: reconstruction })
+    });
+    setStudyActionResult(result);
+    setStudyReconstructions((values) => ({ ...values, [text(questionId)]: "" }));
+    await refreshStudyWorkspace(Number(safeJsonObject(result.item).id || 0));
+  }
+
+  async function reopenStudyQuestion(item: Dict, mode: "still_unclear" | "question_without_words" | "return_later") {
+    const questionId = Number(item.id || 0);
+    if (!questionId) return;
+    const uncertainty = (studyReopenContexts[text(questionId)] || "").trim();
+    if (mode === "still_unclear" && !uncertainty) return;
+    const noWords = mode === "question_without_words";
+    const result = await api<Dict>("/api/study/questions/reopen", {
+      method: "POST",
+      body: JSON.stringify({
+        question_id: questionId,
+        question_text: noWords ? "" : text(item.question_text),
+        uncertainty_context: uncertainty,
+        formation_state: noWords ? "question_without_words" : "developing",
+        learning_state: mode === "return_later" ? "return_later" : "still_unclear"
+      })
+    });
+    setStudyActionResult(result);
+    setStudyReopenContexts((values) => ({ ...values, [text(questionId)]: "" }));
+    await refreshStudyWorkspace(Number(safeJsonObject(result.item).id || 0));
+  }
+
   function acceptStudyNotepadUpdate(result: Dict) {
     const note = safeJsonObject(result.item);
     setStudyActionResult({
@@ -3420,6 +3457,10 @@ function App() {
       action === "send_to_memory_review"
       && !window.confirm("Send this reflection to Memory as an inactive candidate awaiting separate review?")
     ) return;
+    if (
+      action === "send_to_study_reopening"
+      && !window.confirm("Reopen this provisional reflection in its attributable Study session? It will remain a visible question for fit checks, not fact or Memory.")
+    ) return;
     setDreamLifecycleResult({ status: "running", message: "Recording the Dream review decision." });
     try {
       const result = await api<Dict>("/api/dream/reflections/decide", {
@@ -3428,12 +3469,15 @@ function App() {
           reflection_id: id,
           actor: "Aleks",
           action,
-          decision_note: dreamDecisionNotes[String(id)] || ""
+          decision_note: dreamDecisionNotes[String(id)] || "",
+          usefulness_state: dreamUsefulnessStates[String(id)] || safeJsonObject(item.usefulness).state || "not_assessed",
+          usefulness_note: dreamDecisionNotes[String(id)] || ""
         })
       });
       setDreamLifecycleResult(result);
       await refreshDreamLifecycle();
       if (action === "send_to_memory_review") await refreshMemoryOrgan();
+      if (action === "send_to_study_reopening") await refreshStudyWorkspace();
       loadVessel();
     } catch (err) {
       setDreamLifecycleResult({ error: err instanceof Error ? err.message : "Dream review decision was rejected." });
@@ -6916,6 +6960,10 @@ function App() {
                     <div className="list compactList">
                       {((studySession.questions || []) as Dict[]).map((item) => {
                         const id = text(item.id);
+                        const integration = safeJsonObject(item.integration_receipt);
+                        const ancestry = safeJsonObject(item.question_ancestry);
+                        const activeDescendants = (ancestry.active_descendant_question_ids || []) as unknown[];
+                        const canReopen = text(item.status) !== "open" && activeDescendants.length === 0;
                         return (
                           <article className="packetCard" key={`study-question-${id}`}>
                             <div className="packetHeader">
@@ -6926,6 +6974,9 @@ function App() {
                             <div className="chips">
                               <span>{friendlyStatus(item.formation_state)}</span>
                               {item.teaching_candidate_id ? <span>teaching update: {text(item.teaching_candidate_id)}</span> : null}
+                              <span>integration: {friendlyStatus(integration.state || "awaiting answer")}</span>
+                              {ancestry.parent_question_id ? <span>reopened from question {text(ancestry.parent_question_id)}</span> : null}
+                              {((ancestry.descendant_question_ids || []) as unknown[]).length ? <span>{((ancestry.descendant_question_ids || []) as unknown[]).length} descendant(s)</span> : null}
                             </div>
                             {text(item.status) === "open" ? (
                               <>
@@ -6936,6 +6987,45 @@ function App() {
                                 <button className="primary" onClick={() => answerStudyQuestion(item)} disabled={!(studyAnswers[id] || "").trim()}>Answer</button>
                               </>
                             ) : <p><b>Aleks answered</b>{text(item.aleks_answer)}</p>}
+                            {text(integration.visible_selene_reconstruction) ? (
+                              <div className="studyCompassConnected">
+                                <span>Selene&apos;s visible reconstruction</span>
+                                <p>{text(integration.visible_selene_reconstruction)}</p>
+                                <small>Connected for now from approved knowledge; still revisable.</small>
+                              </div>
+                            ) : null}
+                            {integration.integration_allowed ? (
+                              <div className="studyCompassReflection">
+                                <label>
+                                  <span>Selene&apos;s reconstruction before connecting this for now</span>
+                                  <textarea
+                                    value={studyReconstructions[id] || ""}
+                                    onChange={(event) => setStudyReconstructions((values) => ({ ...values, [id]: event.target.value }))}
+                                    placeholder="Reconstruct what now makes sense in Selene's own visible words."
+                                  />
+                                </label>
+                                <button className="primary" onClick={() => integrateStudyQuestionForNow(item)} disabled={!(studyReconstructions[id] || "").trim()}>Integrate for now</button>
+                              </div>
+                            ) : null}
+                            {canReopen ? (
+                              <details className="studyCompassConditions">
+                                <summary>Reopen this question without erasing its history</summary>
+                                <p className="plainHelp">Reopening creates one visible descendant. The earlier answer and teaching-review state remain attributable.</p>
+                                <label>
+                                  <span>What still does not fit?</span>
+                                  <textarea
+                                    value={studyReopenContexts[id] || ""}
+                                    onChange={(event) => setStudyReopenContexts((values) => ({ ...values, [id]: event.target.value }))}
+                                    placeholder="This can name the missing bridge, or stay empty for no words yet / return later."
+                                  />
+                                </label>
+                                <div className="reviewActions">
+                                  <button disabled={!(studyReopenContexts[id] || "").trim()} onClick={() => reopenStudyQuestion(item, "still_unclear")}>I still don&apos;t get it</button>
+                                  <button onClick={() => reopenStudyQuestion(item, "question_without_words")}>No words for it yet</button>
+                                  <button onClick={() => reopenStudyQuestion(item, "return_later")}>Useful—return later</button>
+                                </div>
+                              </details>
+                            ) : null}
                           </article>
                         );
                       })}
@@ -7024,10 +7114,15 @@ function App() {
             </Panel>
 
             <Panel title="Dream Reflections">
-              <p className="plainHelp">These are provisional, source-linked reflections—not facts, memories, laws, or judgments. Approving one makes it available for explicit Dream discussion. Sending one to Memory creates a separate inactive Memory candidate.</p>
+              <p className="plainHelp">These are provisional, source-linked reflections—not facts, memories, laws, or judgments. Aleks may select one destination: discussion, inactive Memory review, or an attributable waking Study reopening. Usefulness can be recorded without choosing any destination.</p>
               <div className="list packetList">
                 {dreamReflections.map((item) => {
                   const id = text(item.id);
+                  const usefulness = safeJsonObject(item.usefulness);
+                  const destination = safeJsonObject(item.destination_receipt);
+                  const studyDestination = safeJsonObject(item.study_destination);
+                  const selectedDestination = text(item.selected_destination);
+                  const usefulnessState = dreamUsefulnessStates[id] ?? text(usefulness.state || "not_assessed");
                   return (
                     <article className="packetCard" key={`dream-reflection-${id}`}>
                       <div className="packetHeader">
@@ -7042,6 +7137,8 @@ function App() {
                         <span>confidence: {friendlyStatus(item.confidence)}</span>
                         <span>expression: {item.expression_eligible ? "reviewed" : "not active"}</span>
                         <span>memory: {item.memory_candidate_id ? `candidate ${text(item.memory_candidate_id)}` : "not memory"}</span>
+                        <span>destination: {selectedDestination ? friendlyStatus(selectedDestination) : "not selected"}</span>
+                        <span>usefulness: {friendlyStatus(usefulness.state || "not assessed")}</span>
                       </div>
                       <div className="chips">
                         {((item.source_refs || []) as unknown[]).slice(0, 6).map((ref) => <span key={`${id}-${text(ref)}`}>{text(ref)}</span>)}
@@ -7054,15 +7151,39 @@ function App() {
                           placeholder="Optional context for this decision"
                         />
                       </label>
-                      <div className="reviewActions">
-                        <button className="primary" onClick={() => decideDreamReflection(item, "approve_for_expression")}>Approve Reflection</button>
-                        <button onClick={() => decideDreamReflection(item, "send_to_memory_review")}>Send to Memory Review</button>
-                        <button onClick={() => decideDreamReflection(item, "needs_more_context")}>Needs Context</button>
-                        <button onClick={() => decideDreamReflection(item, "hold_for_tending")}>Hold</button>
-                        <button onClick={() => decideDreamReflection(item, "reopen")}>Reopen</button>
-                        <button onClick={() => decideDreamReflection(item, "supersede")}>Supersede</button>
-                        <button onClick={() => decideDreamReflection(item, "reject")}>Reject</button>
+                      <div className="studyCompassReflection">
+                        <label>
+                          <span>Usefulness (optional; this does not decide the reflection)</span>
+                          <select value={usefulnessState} onChange={(event) => setDreamUsefulnessStates((values) => ({ ...values, [id]: event.target.value }))}>
+                            <option value="not_assessed">Not assessed</option>
+                            <option value="useful_for_expression">Possibly useful for discussion</option>
+                            <option value="useful_for_memory_review">Possibly useful for Memory review</option>
+                            <option value="useful_for_study">Possibly useful for Study</option>
+                            <option value="needs_context">Needs context</option>
+                            <option value="unclear">Usefulness unclear</option>
+                            <option value="not_useful">Not useful</option>
+                          </select>
+                        </label>
+                        <button disabled={usefulnessState === "not_assessed"} onClick={() => decideDreamReflection(item, "record_usefulness")}>Record usefulness only</button>
                       </div>
+                      {selectedDestination ? (
+                        <div className="studyCompassConnected">
+                          <span>Selected destination receipt</span>
+                          <p>{friendlyStatus(destination.selected_destination)} · {text(destination.destination_ref || "no separate destination record")}</p>
+                          <small>This destination is idempotent and cannot cross-promote into another destination.</small>
+                        </div>
+                      ) : (
+                        <div className="reviewActions">
+                          <button className="primary" onClick={() => decideDreamReflection(item, "approve_for_expression")}>Approve Reflection</button>
+                          <button onClick={() => decideDreamReflection(item, "send_to_memory_review")}>Send to Memory Review</button>
+                          <button disabled={!studyDestination.eligible} onClick={() => decideDreamReflection(item, "send_to_study_reopening")}>Reopen in Study</button>
+                          <button onClick={() => decideDreamReflection(item, "needs_more_context")}>Needs Context</button>
+                          <button onClick={() => decideDreamReflection(item, "hold_for_tending")}>Hold</button>
+                          <button onClick={() => decideDreamReflection(item, "reopen")}>Reopen</button>
+                          <button onClick={() => decideDreamReflection(item, "supersede")}>Supersede</button>
+                          <button onClick={() => decideDreamReflection(item, "reject")}>Reject</button>
+                        </div>
+                      )}
                     </article>
                   );
                 })}

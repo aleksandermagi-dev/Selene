@@ -2930,6 +2930,53 @@ training, autonomy, action, package, or installation changed.
 answer → teaching candidate → reopening/integration lifecycle first, then move
 to Dream destinations and associative intuition.
 
+### 2026-08-28 — Reflective growth closes without deciding for Selene or Aleks
+
+**Starting question:** Can Study, Dream, Learning Compass, Associative
+Intuition, Comprehension, Metacognition, and Memory complete their reflective
+handoffs without another organ, hidden retention, automatic truth, or a loop?
+
+**Decision:** Mature the existing owners through typed lineage and stopping
+receipts. Let Aleks select every Dream destination, require visible Selene
+reconstruction before Study integration, and hold private Memory before its
+content can enter an association.
+
+**Work:** Added Study teaching-candidate state, question ancestry, direct
+reopening, and idempotent integrate-for-now; added typed Dream destination,
+usefulness, lineage, and Dream-to-Study rules; reused the canonical Phase 2
+Memory privacy gate in Associative Intuition; passed the speaker envelope from
+ordinary Chat; added explicit stopping and one provisional Study acceptance
+path; and introduced a storage-free shared reflective-lineage vocabulary.
+Updated the Study and Dream surfaces, routes, sidecar endpoints, schema
+migrations, maturity ledger, plan, implementation map, and evidence record.
+
+**Why:** Selene's reflective systems needed trustworthy handoffs, not more
+authority. Questions can remain unfinished, Dream review can remain with
+Aleks, and associations can remain possibilities while still being useful
+enough to revisit deliberately.
+
+**Evidence:** 70 focused lifecycle, lineage, privacy, stopping, walkthrough,
+and ledger checks passed. A broader 211-check conversation, sidecar, Memory,
+context, and Metacognition regression passed. A disposable resident-database
+copy migrated with counts unchanged at one Study session, zero Study
+questions, 24 pending Dream reflections, and zero personal Memory candidates.
+The frontend production build passed at 490.67 kB for the main bundle, 4.98 kB
+above the Phase 2 baseline, with lazy Study chunks and no Vite size warning.
+
+**What changed in our understanding:** The connective tissue can be shared as
+a receipt vocabulary without becoming an organ. A useful reflective path is
+not one that forces closure; it is one that preserves source, ancestry,
+privacy, uncertainty, destination, and a clear place to stop.
+
+**Boundaries preserved:** The 24 resident Dream reflections remain pending and
+were never opened for a decision, routed, or assigned usefulness. No resident
+Study or Memory decision, distress-provoking Dream test, live evaluation,
+identity, personality, law, authority, training, autonomy, external action,
+packaging, or installation changed.
+
+**Next:** Phase 4 — map attributable affect, Self-State, relationship, and
+agency inputs before changing any expression shaping or current-state claims.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

@@ -1329,6 +1329,11 @@ CREATE TABLE IF NOT EXISTS selene_dream_reflections (
   state TEXT NOT NULL DEFAULT 'pending_review',
   review_status TEXT NOT NULL DEFAULT 'pending_review',
   expression_eligible INTEGER NOT NULL DEFAULT 0,
+  selected_destination TEXT NOT NULL DEFAULT '',
+  study_thread_id INTEGER,
+  destination_selected_at TEXT,
+  usefulness_state TEXT NOT NULL DEFAULT 'not_assessed',
+  usefulness_note TEXT NOT NULL DEFAULT '',
   memory_candidate_id INTEGER,
   superseded_by_id INTEGER,
   decision_note TEXT NOT NULL DEFAULT '',
@@ -1339,6 +1344,7 @@ CREATE TABLE IF NOT EXISTS selene_dream_reflections (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (cycle_id) REFERENCES selene_dream_cycles(id),
   FOREIGN KEY (memory_candidate_id) REFERENCES selene_memory_candidates(id),
+  FOREIGN KEY (study_thread_id) REFERENCES selene_study_pondering_threads(id),
   FOREIGN KEY (superseded_by_id) REFERENCES selene_dream_reflections(id)
 );
 
@@ -1809,6 +1815,8 @@ CREATE TABLE IF NOT EXISTS selene_study_questions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   session_id INTEGER NOT NULL,
   concept_id INTEGER,
+  parent_question_id INTEGER,
+  root_question_id INTEGER,
   question_text TEXT NOT NULL DEFAULT '',
   formation_state TEXT NOT NULL DEFAULT 'ready',
   status TEXT NOT NULL DEFAULT 'open',
@@ -1817,6 +1825,9 @@ CREATE TABLE IF NOT EXISTS selene_study_questions (
   answered_by TEXT NOT NULL DEFAULT '',
   answer_source_refs TEXT NOT NULL DEFAULT '[]',
   teaching_candidate_id INTEGER,
+  integrated_candidate_id INTEGER,
+  integration_reconstruction TEXT NOT NULL DEFAULT '',
+  integrated_at TEXT,
   provenance_boundary TEXT NOT NULL,
   review_status TEXT NOT NULL DEFAULT 'study_question_visible',
   payload_json TEXT NOT NULL DEFAULT '{}',
@@ -1824,7 +1835,10 @@ CREATE TABLE IF NOT EXISTS selene_study_questions (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (session_id) REFERENCES selene_study_sessions(id),
   FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id),
-  FOREIGN KEY (teaching_candidate_id) REFERENCES selene_comprehension_concepts(id)
+  FOREIGN KEY (teaching_candidate_id) REFERENCES selene_comprehension_concepts(id),
+  FOREIGN KEY (integrated_candidate_id) REFERENCES selene_comprehension_concepts(id),
+  FOREIGN KEY (parent_question_id) REFERENCES selene_study_questions(id),
+  FOREIGN KEY (root_question_id) REFERENCES selene_study_questions(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_selene_study_questions_status
@@ -2465,6 +2479,20 @@ REQUIRED_COLUMNS = {
     },
     "selene_study_sessions": {
         "compass_goal_id": "INTEGER",
+    },
+    "selene_study_questions": {
+        "parent_question_id": "INTEGER",
+        "root_question_id": "INTEGER",
+        "integrated_candidate_id": "INTEGER",
+        "integration_reconstruction": "TEXT NOT NULL DEFAULT ''",
+        "integrated_at": "TEXT",
+    },
+    "selene_dream_reflections": {
+        "selected_destination": "TEXT NOT NULL DEFAULT ''",
+        "study_thread_id": "INTEGER",
+        "destination_selected_at": "TEXT",
+        "usefulness_state": "TEXT NOT NULL DEFAULT 'not_assessed'",
+        "usefulness_note": "TEXT NOT NULL DEFAULT ''",
     },
 }
 
