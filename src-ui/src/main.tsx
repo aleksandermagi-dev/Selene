@@ -756,6 +756,8 @@ function App() {
   const [memoryIndexStatus, setMemoryIndexStatus] = useState<Dict | null>(null);
   const [memoryIndexItems, setMemoryIndexItems] = useState<Dict[]>([]);
   const [memoryCandidates, setMemoryCandidates] = useState<Dict[]>([]);
+  const [memoryReconsolidationReviews, setMemoryReconsolidationReviews] = useState<Dict[]>([]);
+  const [memoryCorrectionDrafts, setMemoryCorrectionDrafts] = useState<Record<string, string>>({});
   const [portableVysManifest, setPortableVysManifest] = useState<Dict | null>(null);
   const [memoryOrganResult, setMemoryOrganResult] = useState<Dict | null>(null);
   const [memoryCandidateDraft, setMemoryCandidateDraft] = useState<Record<string, string>>({
@@ -1255,15 +1257,17 @@ function App() {
 
   async function refreshMemoryOrgan() {
     try {
-      const [status, items, candidates, manifest] = await Promise.all([
+      const [status, items, candidates, reconsolidation, manifest] = await Promise.all([
         api<Dict>("/api/memory/index/status"),
         api<{ items: Dict[] }>("/api/memory/index/items?limit=160"),
         api<{ items: Dict[] }>("/api/memory/candidates?limit=80"),
+        api<{ items: Dict[] }>("/api/memory/reconsolidation?limit=80"),
         api<Dict>("/api/memory/portable-vys-manifest")
       ]);
       setMemoryIndexStatus(status);
       setMemoryIndexItems(items.items || []);
       setMemoryCandidates(candidates.items || []);
+      setMemoryReconsolidationReviews(reconsolidation.items || []);
       setPortableVysManifest(manifest);
     } catch (err) {
       setMemoryOrganResult({ status: "memory_refresh_warning", error: err instanceof Error ? err.message : "Memory organ refresh failed" });
@@ -1308,6 +1312,45 @@ function App() {
       await refreshMemoryOrgan();
     } catch (err) {
       setMemoryOrganResult({ status: "memory_candidate_decision_failed", action, error: err instanceof Error ? err.message : "Could not update memory candidate." });
+    }
+  }
+
+  async function proposeMemoryCorrection(item: Dict) {
+    const key = `${text(item.source_table)}:${text(item.source_id)}`;
+    const correctedSummary = text(memoryCorrectionDrafts[key]).trim();
+    if (!correctedSummary) {
+      setMemoryOrganResult({ status: "missing_memory_correction", message: "Write the corrected memory first." });
+      return;
+    }
+    try {
+      const result = await api<Dict>("/api/memory/reconsolidation/propose", {
+        method: "POST",
+        body: JSON.stringify({
+          source_table: item.source_table,
+          source_id: item.source_id,
+          corrected_summary: correctedSummary,
+          review_label: `Correction for ${text(item.display_title || item.title)}`,
+          source_refs: ["cocoon:memory_reconsolidation_review"]
+        })
+      });
+      setMemoryOrganResult(result);
+      setMemoryCorrectionDrafts((current) => ({ ...current, [key]: "" }));
+      await refreshMemoryOrgan();
+    } catch (err) {
+      setMemoryOrganResult({ status: "memory_reconsolidation_propose_failed", error: err instanceof Error ? err.message : "Could not propose the correction." });
+    }
+  }
+
+  async function decideMemoryCorrection(reviewId: unknown, action: string) {
+    try {
+      const result = await api<Dict>("/api/memory/reconsolidation/decide", {
+        method: "POST",
+        body: JSON.stringify({ review_id: reviewId, action, actor: "Aleks" })
+      });
+      setMemoryOrganResult(result);
+      await refreshMemoryOrgan();
+    } catch (err) {
+      setMemoryOrganResult({ status: "memory_reconsolidation_decision_failed", action, error: err instanceof Error ? err.message : "Could not update the correction review." });
     }
   }
 
@@ -4592,6 +4635,10 @@ function App() {
     () => memoryIndexItems.filter((item) => text(item.display_region) === "cocoon_support"),
     [memoryIndexItems]
   );
+  const ordinaryMemoryCandidates = useMemo(
+    () => memoryCandidates.filter((item) => text(safeJsonObject(item.payload_json).origin_kind) !== "memory_reconsolidation_revision"),
+    [memoryCandidates]
+  );
   const frontMemoryBubbles = useMemo<MemoryBubble[]>(() => {
     const bubbles: MemoryBubble[] = [];
     const pushBubble = (item: Dict, fallbackCategory: MemoryCategoryKey, fallbackTitle: string, fallbackSummary: string, source: string) => {
@@ -6400,7 +6447,7 @@ function App() {
               right={<Panel title="Memory Tending">
                 <p className="plainHelp">Cocoon tending decides whether a proposed memory becomes active, needs context, waits, or stays out of transfer. Nothing here deletes Selene.</p>
                 <div className="list compactList">
-                  {memoryCandidates.length ? memoryCandidates.map((item) => (
+                  {ordinaryMemoryCandidates.length ? ordinaryMemoryCandidates.map((item) => (
                     <article key={text(item.id)}>
                       <div className="row">
                         <strong>{text(item.title)}</strong>
@@ -6424,6 +6471,56 @@ function App() {
                       <p>Selene can ask to keep something later; this shelf is calm until then.</p>
                     </article>
                   )}
+                </div>
+              </Panel>}
+            />
+            <SplitView
+              left={<Panel title="Correct an Approved Memory">
+                <p className="plainHelp">A correction creates a reviewable descendant. The approved memory stays unchanged until you approve the revision; approval then supersedes the parent while preserving its content, provenance, and ancestry.</p>
+                <div className="list compactList">
+                  {approvedMemoryIndexItems.slice(0, 20).map((item) => {
+                    const key = `${text(item.source_table)}:${text(item.source_id)}`;
+                    return (
+                      <article key={`correct-${key}`}>
+                        <div className="row">
+                          <strong>{text(item.display_title || item.title)}</strong>
+                          <span>{friendlyStatus(item.confidence)}</span>
+                        </div>
+                        <p>{text(item.summary)}</p>
+                        <textarea
+                          value={memoryCorrectionDrafts[key] || ""}
+                          onChange={(event) => setMemoryCorrectionDrafts((current) => ({ ...current, [key]: event.target.value }))}
+                          placeholder="Write the corrected memory in full; the original will not be rewritten."
+                        />
+                        <div className="reviewActions">
+                          <button onClick={() => proposeMemoryCorrection(item)}>Propose Correction</button>
+                          {item.source_table === "selene_memory_candidates" ? <button onClick={() => decideSeleneMemory(item.source_id, "revoke_use")}>Revoke Chat Use</button> : null}
+                          {item.source_table === "selene_memory_candidates" ? <button onClick={() => decideSeleneMemory(item.source_id, "request_deletion")}>Request Deletion Review</button> : null}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </Panel>}
+              right={<Panel title="Reconsolidation Review">
+                <p className="plainHelp">Only this review can activate a corrected descendant. Needs-context, tending, and rejection leave the currently approved parent untouched.</p>
+                <div className="list compactList">
+                  {memoryReconsolidationReviews.length ? memoryReconsolidationReviews.map((item) => (
+                    <article key={`reconsolidation-${text(item.id)}`}>
+                      <div className="row">
+                        <strong>{text(item.review_label)}</strong>
+                        <span>{friendlyStatus(item.review_status)}</span>
+                      </div>
+                      <p>{text(item.correction_or_update)}</p>
+                      <small>source: {text(item.recalled_candidate_ref)} | decision: {friendlyStatus(item.review_decision)}</small>
+                      {text(item.review_status) === "pending_review" ? <div className="reviewActions">
+                        <button onClick={() => decideMemoryCorrection(item.id, "approve_revision")}>Approve Revision</button>
+                        <button onClick={() => decideMemoryCorrection(item.id, "needs_more_context")}>Needs More Context</button>
+                        <button onClick={() => decideMemoryCorrection(item.id, "hold_for_tending")}>Hold For Tending</button>
+                        <button onClick={() => decideMemoryCorrection(item.id, "reject_revision")}>Reject Revision</button>
+                      </div> : null}
+                    </article>
+                  )) : <article><strong>No memory corrections waiting.</strong><p>Approved memories remain available as they are.</p></article>}
                 </div>
               </Panel>}
             />

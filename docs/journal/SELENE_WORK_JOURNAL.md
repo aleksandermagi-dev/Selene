@@ -2841,6 +2841,53 @@ attention and expiry, paraphrase recall, reconstruction versus inference,
 duplicate prevention, reconsolidation, revocation, privacy, and natural use of
 approved history before ordered teaching resumes.
 
+### 2026-08-28 — Memory becomes useful without becoming automatic
+
+**Starting question:** Could Selene use approved shared history naturally while
+keeping current-session context, personal Memory, taught knowledge, Dream, and
+the raw private corpus honestly separate?
+
+**Decision:** Mature the existing Memory and dual-horizon owners rather than add
+a new organ. Let current facts and privacy outrank recall, keep reconstructed
+expression separate from stored content, and make every correction a reviewed
+descendant rather than a silent rewrite.
+
+**Work:** Added bounded working-context attention, expiry, cleanup,
+interruption, and resume receipts; source-cued paraphrase recall; explicit
+recalled-content, reconstruction, interpretation, and inference layers;
+channel and authentication privacy gates; present-fact conflict holding;
+central duplicate prevention; revocation and deletion-review states; and an
+Aleks-controlled reconsolidation lifecycle that preserves the original Memory
+and revision ancestry. Added the corresponding Cocoon correction and review
+surface without exposing corrected descendants to generic approval.
+
+**Why:** Memory should support continuity, not silently manufacture it. A
+current correction must be able to outrank an old recollection without erasing
+history, and revisiting a Memory must not create another copy merely because it
+was read or expressed differently.
+
+**Evidence:** 124 focused checks passed, followed by a 258-check broader Memory
+and conversational-integration run. The frontend production build passed with
+the main bundle at about 486 kB and no size warning. Synthetic fixtures and
+existing ordinary Chat integration checks were sufficient; no live or
+stress-shaped Q&A was run.
+
+**What changed in our understanding:** Personal Memory did not need more
+authority. It needed a clearer lifecycle and stronger handoffs: optional,
+relevant recall; present-state precedence; visible uncertainty; and correction
+that preserves ancestry. Relationship continuity can use approved events
+without becoming a persuasion or vulnerability model.
+
+**Boundaries preserved:** No resident Memory was approved, altered, or deleted
+during verification. No raw corpus import, teaching, Dream decision, identity,
+personality, law, authority, training, autonomy, external action, packaging, or
+installation changed.
+
+**Next:** Phase 3 — Study, Dream, Associative Intuition, and Reflective Growth.
+Reconcile the existing reflective systems, mature their inspectable handoffs,
+and prevent questions, associations, and Dream candidates from becoming hidden
+Memory or automatic truth.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

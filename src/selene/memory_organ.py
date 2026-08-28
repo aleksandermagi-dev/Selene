@@ -44,6 +44,8 @@ MEMORY_STATES = {
     "superseded",
     "rejected",
     "b_only",
+    "revoked",
+    "deletion_requested",
 }
 TRANSFER_CLASSES = {
     "portable_vys_core",
@@ -125,6 +127,9 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
     retrieval_eligible_count = _retrieval_eligible_count(conn)
     memory_review_count = sum(1 for item in items if item.get("display_region") == "cocoon_memory_review")
     support_only_count = sum(1 for item in items if item.get("display_region") == "cocoon_support")
+    reconsolidation_rows = conn.execute(
+        "SELECT review_status, COUNT(*) AS count FROM c_memory_reconsolidation_reviews GROUP BY review_status"
+    ).fetchall()
     return _with_guards(
         {
             "status": "selene_memory_index_ready",
@@ -136,6 +141,10 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "memory_review_count": memory_review_count,
             "support_only_count": support_only_count,
             "candidate_counts": {str(row["state"]): int(row["count"]) for row in candidates},
+            "reconsolidation_review_counts": {
+                str(row["review_status"]): int(row["count"])
+                for row in reconsolidation_rows
+            },
             "category_counts": by_category,
             "approved_memory_category_counts": approved_by_category,
             "record_class_counts": record_class_counts,
@@ -165,13 +174,31 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
                     "Memory routing creates an inactive candidate only"
                 ),
                 "silent_promotion": False,
+                "equivalent_read_summary_retitle_or_study_proposal": "reuse_existing_record_without_duplicate",
+                "reconsolidation": "propose_review_approve_descendant_then_supersede_parent_without_erasing_ancestry",
+                "revocation": "stop_chat_use_and_preserve_audit_record",
+                "deletion_request": "stop_chat_use_and_hold_for_explicit_data_custody_review_without_pretending_erasure_occurred",
                 "raw_corpus_recall": False,
                 "legacy_memory_write_flag": (
                     "memory_write_active means hidden or unreviewed active-memory retention only; "
                     "typed lifecycle telemetry reports review-record and approved-promotion writes"
                 ),
             },
-            "resident_memory_contract_version": "v3_typed_lifecycle_telemetry",
+            "retrieval_layer_contract": [
+                "recalled_content",
+                "reconstruction",
+                "present_interpretation",
+                "explicit_downstream_inference_only",
+            ],
+            "relationship_continuity_contract": {
+                "approved_shared_history_may_inform_conversation": True,
+                "persuasion_profile_allowed": False,
+                "vulnerability_profile_allowed": False,
+            },
+            "working_context_owner": "Dual Horizon current-session working context contract",
+            "taught_knowledge_owner": "Comprehension and Integration",
+            "dream_owner": "Dream State",
+            "resident_memory_contract_version": "v4_mature_reviewed_memory_lifecycle",
             "dream_state_may_propose_not_promote": True,
             "raw_corpus_loaded": False,
             "raw_archive_recall_active": False,
@@ -342,6 +369,12 @@ def propose_memory_candidate(
     correction_path = truncate(str(payload.get("correction_path") or "Cocoon tending and Aleks correction"), 240)
     review_status = "pending_review" if state == "proposed" else "review_only"
     placement = _placement_payload(category, confidence, transfer_class, consent_scope, stability, emotional_texture, correction_path)
+    retrieval_cues = _memory_retrieval_cues(
+        title,
+        summary,
+        _json_list(payload.get("retrieval_cues")),
+    )
+    eligible_channels = _eligible_channels(payload.get("eligible_channels"))
     proposal_payload = {
         "proposal_note": payload.get("proposal_note") or "",
         "placement": placement,
@@ -350,8 +383,57 @@ def propose_memory_candidate(
         "origin_kind": payload.get("origin_kind") or "manual",
         "aleks_consent_text": truncate(str(payload.get("aleks_consent_text") or ""), 500),
         "consent_recorded": payload.get("consent_recorded") is True,
+        "retrieval_cues": retrieval_cues,
+        "eligible_channels": eligible_channels,
+        "minimum_authentication_strength": truncate(
+            str(payload.get("minimum_authentication_strength") or ""), 80
+        ),
+        "revision_ancestry": (
+            payload.get("revision_ancestry")
+            if isinstance(payload.get("revision_ancestry"), dict)
+            else {}
+        ),
+        "relationship_continuity_only": category == "relational",
+        "persuasion_profile_allowed": False,
+        "vulnerability_profile_allowed": False,
         **MEMORY_GUARDS,
     }
+    equivalent = _find_equivalent_memory(conn, summary)
+    if equivalent and payload.get("allow_equivalent_revision") is not True:
+        lifecycle = _memory_lifecycle_telemetry(
+            operation="equivalent_candidate_reused",
+            record_mutated=False,
+            commit=False,
+            previous_state=str(equivalent.get("state") or ""),
+            current_state=str(equivalent.get("state") or ""),
+            active_memory_eligibility_changed=False,
+        )
+        return _with_guards(
+            {
+                "status": "memory_candidate_reused_without_duplicate",
+                "item": equivalent,
+                "decision": "existing_equivalent_record_reused",
+                "placement": _placement_payload(
+                    str(equivalent.get("memory_category") or category),
+                    str(equivalent.get("confidence") or confidence),
+                    str(equivalent.get("transfer_class") or transfer_class),
+                    str(equivalent.get("consent_scope") or consent_scope),
+                    str(equivalent.get("stability") or stability),
+                    str(equivalent.get("emotional_texture") or emotional_texture),
+                    str(equivalent.get("correction_path") or correction_path),
+                ),
+                "duplicate_prevented": True,
+                "memory_candidate_created": False,
+                "active_after_approval_only": equivalent.get("retrieval_eligible") is not True,
+                "review_destination": (
+                    "Memory"
+                    if equivalent.get("retrieval_eligible") is True
+                    else "Cocoon Memory Candidates"
+                ),
+                "review_status": str(equivalent.get("review_status") or "review_only"),
+            },
+            lifecycle=lifecycle,
+        )
     cur = conn.execute(
         """
         INSERT INTO selene_memory_candidates
@@ -450,6 +532,14 @@ def decide_memory_candidate(
     confidence = str(current.get("confidence") or "partial")
     candidate_payload = current.get("payload_json") if isinstance(current.get("payload_json"), dict) else {}
     if action == "approve_memory":
+        if (
+            str(candidate_payload.get("origin_kind") or "")
+            == "memory_reconsolidation_revision"
+            and payload.get("reconsolidation_approval") is not True
+        ):
+            raise ValueError(
+                "memory revisions must be approved through their reconsolidation review"
+            )
         next_state = "approved_active_memory"
         review_status = "accepted_for_memory"
         chat_use = "can_use_in_chat"
@@ -488,8 +578,35 @@ def decide_memory_candidate(
         transfer_class = "do_not_transfer"
         next_state = "cocoon_tending" if next_state == "proposed" else next_state
         review_status = "do_not_transfer"
+    elif action == "reopen":
+        next_state = "proposed"
+        review_status = "reopened_for_review"
+        chat_use = "not_active_until_approved"
+    elif action == "revoke_use":
+        next_state = "revoked"
+        review_status = "revoked_preserved_for_audit"
+        chat_use = "not_active"
+    elif action == "request_deletion":
+        next_state = "deletion_requested"
+        review_status = "deletion_requested_preserved_pending_custody_review"
+        chat_use = "not_active"
     else:
         raise ValueError("unknown memory decision action")
+    decision_history = [
+        item
+        for item in candidate_payload.get("decision_history") or []
+        if isinstance(item, dict)
+    ][-39:]
+    decision_history.append(
+        {
+            "action": action,
+            "actor": truncate(str(payload.get("actor") or "Aleks"), 80),
+            "previous_state": previous_state,
+            "next_state": next_state,
+            "reason": truncate(str(payload.get("reason") or ""), 500),
+        }
+    )
+    candidate_payload = {**candidate_payload, "decision_history": decision_history}
     conn.execute(
         """
         UPDATE selene_memory_candidates
@@ -532,6 +649,295 @@ def decide_memory_candidate(
             "review_status": review_status,
         },
         lifecycle=lifecycle,
+    )
+
+
+def list_memory_reconsolidation_reviews(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload = payload or {}
+    limit = max(1, min(int(payload.get("limit") or 100), 500))
+    rows = conn.execute(
+        "SELECT * FROM c_memory_reconsolidation_reviews ORDER BY id DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    items: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        item["source_refs"] = _json_list(item.get("source_refs"))
+        item["payload_json"] = _loads_dict(item.get("payload_json"))
+        items.append(item)
+    return _with_guards(
+        {
+            "status": "memory_reconsolidation_reviews_ready",
+            "items": items,
+            "count": len(items),
+            "silent_rewrite_allowed": False,
+            "review_destination": "Cocoon Memory Tending",
+            "review_status": "review_only",
+        }
+    )
+
+
+def propose_memory_reconsolidation(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+    *,
+    commit: bool = True,
+) -> dict[str, Any]:
+    """Propose a corrected descendant without rewriting recalled Memory."""
+
+    payload = payload or {}
+    source_table = str(payload.get("source_table") or "selene_memory_candidates").strip()
+    source_id = str(payload.get("source_id") or payload.get("candidate_id") or "").strip()
+    if not source_id:
+        raise ValueError("recalled memory source id is required")
+    source = _approved_presentation_source(conn, source_table, source_id)
+    corrected_summary = truncate(
+        str(payload.get("corrected_summary") or payload.get("correction_or_update") or ""),
+        1600,
+    ).strip()
+    if not corrected_summary:
+        raise ValueError("corrected memory summary is required")
+    if _memory_meaning_key(corrected_summary) == _memory_meaning_key(
+        str(source.get("summary") or "")
+    ):
+        raise ValueError("reconsolidation requires a materially revised memory summary")
+    source_refs = list(
+        dict.fromkeys(
+            [
+                *_json_list(source.get("source_refs")),
+                *_json_list(payload.get("source_refs")),
+                f"memory:{source_table}:{source_id}:reconsolidation_source",
+            ]
+        )
+    )
+    ancestry = {
+        "revision_kind": "reviewed_memory_reconsolidation",
+        "parent_source_table": source_table,
+        "parent_source_id": source_id,
+        "parent_state": str(source.get("state") or "approved_active_memory"),
+        "parent_summary_preserved": True,
+        "silent_parent_rewrite": False,
+    }
+    proposed = propose_memory_candidate(
+        conn,
+        {
+            "title": payload.get("title") or source.get("title") or "Corrected memory",
+            "summary": corrected_summary,
+            "memory_category": source.get("memory_category") or "semantic",
+            "confidence": payload.get("confidence") or "partial",
+            "transfer_class": source.get("transfer_class") or "needs_review_before_transfer",
+            "consent_scope": source.get("consent_scope") or "private_selene_aleks_context",
+            "stability": "revision_pending",
+            "emotional_texture": source.get("emotional_texture") or "steady",
+            "correction_path": "Aleks reconsolidation review",
+            "source_refs": source_refs,
+            "retrieval_cues": payload.get("retrieval_cues") or source.get("retrieval_cues") or [],
+            "eligible_channels": source.get("eligible_channels") or [],
+            "minimum_authentication_strength": source.get("minimum_authentication_strength") or "",
+            "origin_kind": "memory_reconsolidation_revision",
+            "revision_ancestry": ancestry,
+        },
+        commit=False,
+    )
+    revision = proposed.get("item") if isinstance(proposed.get("item"), dict) else {}
+    revision_id = int(revision.get("id") or 0)
+    if not revision_id:
+        raise ValueError("reconsolidation revision candidate was not created or found")
+    review_payload = {
+        "source_table": source_table,
+        "source_id": source_id,
+        "revision_candidate_id": revision_id,
+        "ancestry": ancestry,
+        "parent_content_preserved": True,
+        "silent_rewrite_allowed": False,
+    }
+    cur = conn.execute(
+        """
+        INSERT INTO c_memory_reconsolidation_reviews
+        (review_label, recalled_candidate_ref, correction_or_update,
+         review_decision, status, source_refs, provenance_boundary,
+         review_status, payload_json)
+        VALUES (?, ?, ?, 'pending_continuity_save',
+                'memory_reconsolidation_review_only', ?, ?, 'pending_review', ?)
+        """,
+        (
+            truncate(str(payload.get("review_label") or f"Revision of {source.get('title') or 'memory'}"), 240),
+            f"{source_table}:{source_id}",
+            corrected_summary,
+            json.dumps(source_refs),
+            MEMORY_ORGAN_BOUNDARY,
+            json.dumps(review_payload),
+        ),
+    )
+    review_id = int(cur.lastrowid)
+    revision_payload = revision.get("payload_json") if isinstance(revision.get("payload_json"), dict) else {}
+    conn.execute(
+        "UPDATE selene_memory_candidates SET payload_json = ? WHERE id = ?",
+        (json.dumps({**revision_payload, "reconsolidation_review_id": review_id}), revision_id),
+    )
+    if commit:
+        conn.commit()
+    return _with_guards(
+        {
+            "status": "memory_reconsolidation_proposed",
+            "review_id": review_id,
+            "source_memory": source,
+            "revision_candidate": _candidate_row(conn, revision_id),
+            "parent_content_preserved": True,
+            "silent_rewrite_allowed": False,
+            "approval_required": True,
+            "review_destination": "Cocoon Memory Tending",
+            "review_status": "pending_review",
+        },
+        lifecycle=_memory_lifecycle_telemetry(
+            operation="reconsolidation_revision_proposed",
+            review_record_write_performed=True,
+            record_mutated=True,
+            commit=commit,
+            previous_state=str(source.get("state") or "approved_active_memory"),
+            current_state=str(source.get("state") or "approved_active_memory"),
+            active_memory_eligibility_changed=False,
+        ),
+    )
+
+
+def decide_memory_reconsolidation(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+    *,
+    commit: bool = True,
+) -> dict[str, Any]:
+    payload = payload or {}
+    review_id = int(payload.get("review_id") or payload.get("id") or 0)
+    if not review_id:
+        raise ValueError("reconsolidation review id is required")
+    row = conn.execute(
+        "SELECT * FROM c_memory_reconsolidation_reviews WHERE id = ?", (review_id,)
+    ).fetchone()
+    if not row:
+        raise ValueError("memory reconsolidation review not found")
+    review = dict(row)
+    review_payload = _loads_dict(review.get("payload_json"))
+    revision_id = int(review_payload.get("revision_candidate_id") or 0)
+    source_table = str(review_payload.get("source_table") or "")
+    source_id = str(review_payload.get("source_id") or "")
+    action = str(payload.get("action") or "").strip().lower()
+    if action not in {"approve_revision", "needs_more_context", "hold_for_tending", "reject_revision"}:
+        raise ValueError("unknown memory reconsolidation decision action")
+    revision_action = {
+        "approve_revision": "approve_memory",
+        "needs_more_context": "needs_more_context",
+        "hold_for_tending": "hold_for_tending",
+        "reject_revision": "reject",
+    }[action]
+    revision_decision = decide_memory_candidate(
+        conn,
+        {
+            "candidate_id": revision_id,
+            "action": revision_action,
+            "actor": payload.get("actor") or "Aleks",
+            "approval_source": "memory_reconsolidation_review",
+            "consent_text": payload.get("consent_text") or "",
+            "reason": payload.get("reason") or "",
+            "confidence": payload.get("confidence") or "clear",
+            "reconsolidation_approval": action == "approve_revision",
+        },
+        commit=False,
+    )
+    parent_superseded = False
+    if action == "approve_revision":
+        if source_table == "selene_memory_candidates":
+            parent = _candidate_row(conn, int(source_id))
+            parent_payload = parent.get("payload_json") if isinstance(parent.get("payload_json"), dict) else {}
+            conn.execute(
+                """
+                UPDATE selene_memory_candidates
+                SET state = 'superseded', review_status = 'superseded_by_approved_revision',
+                    chat_use_permission = 'not_active', payload_json = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (
+                    json.dumps(
+                        {
+                            **parent_payload,
+                            "superseded_by": {
+                                "source_table": "selene_memory_candidates",
+                                "source_id": revision_id,
+                                "reconsolidation_review_id": review_id,
+                            },
+                        }
+                    ),
+                    int(source_id),
+                ),
+            )
+        elif source_table == "b_approved_memory_references":
+            conn.execute(
+                """
+                UPDATE b_approved_memory_references
+                SET status = 'approved_reference_superseded_non_active'
+                WHERE id = ?
+                """,
+                (int(source_id),),
+            )
+        else:
+            raise ValueError("unsupported reconsolidation source table")
+        parent_superseded = True
+    review_status = {
+        "approve_revision": "accepted_reconsolidation",
+        "needs_more_context": "needs_context",
+        "hold_for_tending": "cocoon_tending",
+        "reject_revision": "rejected",
+    }[action]
+    final_payload = {
+        **review_payload,
+        "decision": {
+            "action": action,
+            "actor": truncate(str(payload.get("actor") or "Aleks"), 80),
+            "parent_superseded": parent_superseded,
+        },
+    }
+    conn.execute(
+        """
+        UPDATE c_memory_reconsolidation_reviews
+        SET review_decision = ?, review_status = ?, status = ?, payload_json = ?
+        WHERE id = ?
+        """,
+        (
+            action,
+            review_status,
+            "memory_reconsolidation_completed" if action == "approve_revision" else "memory_reconsolidation_review_only",
+            json.dumps(final_payload),
+            review_id,
+        ),
+    )
+    if commit:
+        conn.commit()
+    return _with_guards(
+        {
+            "status": "memory_reconsolidation_decision_recorded",
+            "action": action,
+            "review_id": review_id,
+            "review_status": review_status,
+            "parent_superseded": parent_superseded,
+            "parent_content_deleted": False,
+            "revision_candidate": _candidate_row(conn, revision_id),
+            "revision_ancestry_preserved": True,
+            "silent_rewrite_allowed": False,
+            "review_destination": "Cocoon Memory Tending",
+        },
+        lifecycle=_memory_lifecycle_telemetry(
+            operation=f"reconsolidation_{action}",
+            reviewed_decision_performed=True,
+            approved_promotion_performed=action == "approve_revision",
+            record_mutated=True,
+            commit=commit,
+            previous_state="approved_active_memory",
+            current_state="superseded" if parent_superseded else "approved_active_memory",
+            active_memory_eligibility_changed=parent_superseded,
+        ),
     )
 
 
@@ -611,6 +1017,11 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             "expression_summary": reconstruct_memory_summary_for_expression(item),
             "semantic_relevance": relevance,
         }
+        annotated["retrieval_layers"] = _retrieval_layer_packet(
+            annotated,
+            query=query,
+            relevance=relevance,
+        )
         if relevance.get("accepted") is True:
             semantic_matches.append(annotated)
         else:
@@ -662,6 +1073,20 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 if retrieval_mode == "contextual_relevance"
                 else "Use clear memory plainly; use fuzzy/partial memory with visible uncertainty."
             ),
+            "memory_layer_contract": {
+                "recalled_content": "approved source-bound content",
+                "reconstruction": "read-only present expression of that content",
+                "present_interpretation": "why the memory fits this turn",
+                "inference": "empty unless a downstream reasoning owner explicitly creates one",
+            },
+            "relationship_continuity": {
+                "approved_shared_history_used": any(
+                    str(item.get("memory_category") or "") == "relational"
+                    for item in matches
+                ),
+                "persuasion_profile_built": False,
+                "vulnerability_profile_built": False,
+            },
             "review_destination": "Status",
             "review_status": "status_only",
         }
@@ -705,6 +1130,38 @@ def reconstruct_memory_summary_for_expression(item: dict[str, Any] | None) -> st
     raw = re.sub(r"(?<=\w)_(?=\w)", " ", raw)
     raw = re.sub(r"\s+", " ", raw).strip(" .:-")
     return truncate(raw or "something from an earlier approved memory", 500)
+
+
+def _retrieval_layer_packet(
+    item: dict[str, Any],
+    *,
+    query: str,
+    relevance: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "recalled_content": truncate(str(item.get("summary") or ""), 1600),
+        "reconstruction": reconstruct_memory_summary_for_expression(item),
+        "present_interpretation": {
+            "selected_for_current_query": relevance.get("accepted") is True,
+            "selection_reason": str(relevance.get("reason") or ""),
+            "matched_query_terms": list(
+                dict.fromkeys(
+                    [
+                        *_json_list(relevance.get("subject_overlap")),
+                        *_json_list(relevance.get("core_overlap")),
+                    ]
+                )
+            )[:20],
+            "query_preview": truncate(query, 300),
+        },
+        "inference": {
+            "made": False,
+            "content": "",
+            "owner": "none_at_retrieval",
+        },
+        "source_content_mutated": False,
+        "reconstruction_retained_as_duplicate": False,
+    }
 
 
 def portable_vys_manifest(conn: sqlite3.Connection) -> dict[str, Any]:
@@ -799,6 +1256,7 @@ def _approved_memory_items(conn: sqlite3.Connection, *, limit: int) -> list[dict
             """
             SELECT * FROM b_approved_memory_references
             WHERE review_status = 'accepted_for_memory_accession'
+              AND COALESCE(status, '') != 'approved_reference_superseded_non_active'
             ORDER BY id DESC
             LIMIT ?
             """,
@@ -836,6 +1294,16 @@ def _decode_candidate(row: sqlite3.Row) -> dict[str, Any]:
     item["memory_category"] = _category(item.get("memory_category"))
     item["source_refs"] = _json_list(item.get("source_refs"))
     item["payload_json"] = _loads_dict(item.get("payload_json"))
+    item["retrieval_cues"] = _json_list(item["payload_json"].get("retrieval_cues"))
+    item["eligible_channels"] = _eligible_channels(item["payload_json"].get("eligible_channels"))
+    item["minimum_authentication_strength"] = str(
+        item["payload_json"].get("minimum_authentication_strength") or ""
+    )
+    item["revision_ancestry"] = (
+        item["payload_json"].get("revision_ancestry")
+        if isinstance(item["payload_json"].get("revision_ancestry"), dict)
+        else {}
+    )
     item["source_table"] = "selene_memory_candidates"
     item["source_id"] = item.get("id")
     retrieval_eligible = (
@@ -890,6 +1358,12 @@ def _approved_reference_item(row: sqlite3.Row) -> dict[str, Any]:
         "display_region": "selene_memory" if accepted else "cocoon_memory_review",
         "retention_status": "approved_memory" if accepted else "superseded",
         "memory_context_used": accepted,
+        "retrieval_cues": _memory_retrieval_cues(
+            str(item.get("title") or ""), summary, []
+        ),
+        "eligible_channels": [],
+        "minimum_authentication_strength": "",
+        "revision_ancestry": {},
     }
 
 
@@ -1055,26 +1529,56 @@ def _working_memory_item(row: sqlite3.Row) -> dict[str, Any]:
 
 def _rank_matches(query: str, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     query_tokens = _tokens(query)
+    canonical_query_tokens = _canonical_memory_tokens(query_tokens)
     tokens = set(query_tokens)
     ranked: list[tuple[int, dict[str, Any]]] = []
     for item in items:
+        cue_text = " ".join(_json_list(item.get("retrieval_cues")))
         haystack = " ".join(
             [
                 str(item.get("title") or ""),
                 str(item.get("summary") or ""),
                 str(item.get("memory_category") or ""),
                 str(item.get("emotional_texture") or ""),
+                cue_text,
             ]
         )
         haystack_tokens = _tokens(haystack)
         item_tokens = set(haystack_tokens)
         overlap = tokens & item_tokens
-        score = len(overlap)
+        canonical_overlap = canonical_query_tokens & _canonical_memory_tokens(haystack_tokens)
+        cue_overlaps = [
+            canonical_query_tokens & _canonical_memory_tokens(_tokens(cue))
+            for cue in _json_list(item.get("retrieval_cues"))
+        ]
+        supplied_cue_match = any(len(cue_overlap) >= 2 for cue_overlap in cue_overlaps)
+        score = len(overlap) + len(canonical_overlap)
         if tokens and score == 0:
             continue
-        if not _meaningful_memory_overlap(overlap, item, query_tokens=query_tokens, haystack_tokens=haystack_tokens):
+        if not supplied_cue_match and not _meaningful_memory_overlap(
+            overlap | canonical_overlap,
+            item,
+            query_tokens=list(canonical_query_tokens),
+            haystack_tokens=list(_canonical_memory_tokens(haystack_tokens)),
+        ):
             continue
-        ranked.append((score, {**item, "match_score": score}))
+        matched_cues = [
+            cue
+            for cue, cue_overlap in zip(
+                _json_list(item.get("retrieval_cues")), cue_overlaps
+            )
+            if cue_overlap
+        ]
+        ranked.append(
+            (
+                score,
+                {
+                    **item,
+                    "match_score": score,
+                    "matched_retrieval_cues": matched_cues[:8],
+                },
+            )
+        )
     ranked.sort(key=lambda pair: (pair[0], str(pair[1].get("updated_at") or pair[1].get("created_at") or "")), reverse=True)
     return [item for _, item in ranked]
 
@@ -1203,6 +1707,46 @@ def _tokens(value: str) -> list[str]:
     return [token for token in re.findall(r"[a-z0-9][a-z0-9_-]{2,}", value.lower()) if token not in stop]
 
 
+_MEMORY_CONCEPT_ALIASES = {
+    "button": "control",
+    "switch": "control",
+    "icon": "control",
+    "control": "control",
+    "open": "access",
+    "opens": "access",
+    "opened": "access",
+    "enter": "access",
+    "access": "access",
+    "recall": "remember",
+    "recalled": "remember",
+    "remembered": "remember",
+    "discuss": "conversation",
+    "discussed": "conversation",
+    "talk": "conversation",
+    "talked": "conversation",
+    "conversation": "conversation",
+    "help": "support",
+    "tending": "support",
+    "support": "support",
+}
+
+
+def _canonical_memory_tokens(tokens: list[str]) -> set[str]:
+    canonical: set[str] = set()
+    for token in tokens:
+        value = token.lower().replace("_", "-").strip("-")
+        if value.endswith("ies") and len(value) > 4:
+            value = value[:-3] + "y"
+        elif value.endswith("ing") and len(value) > 6:
+            value = value[:-3]
+        elif value.endswith("ed") and len(value) > 5:
+            value = value[:-2]
+        elif value.endswith("s") and not value.endswith(("ss", "us")) and len(value) > 4:
+            value = value[:-1]
+        canonical.add(_MEMORY_CONCEPT_ALIASES.get(value, value))
+    return canonical
+
+
 def _result_confidence(matches: list[dict[str, Any]]) -> str:
     if not matches:
         return "not_known"
@@ -1305,6 +1849,85 @@ def _excluded_reason(state: str, transfer_class: str) -> str:
     if transfer_class in {"b_only", "do_not_transfer", "needs_review_before_transfer", "local_only", "private_inner"}:
         return f"transfer_class:{transfer_class}"
     return "not_portable_by_default"
+
+
+def _memory_meaning_key(value: str) -> str:
+    normalized = " ".join(str(value or "").casefold().split())
+    normalized = re.sub(
+        r"^(?:a prior approved memory about|an approved memory about|"
+        r"aleks told selene that|selene remembers that|memory of)\s+",
+        "",
+        normalized,
+    )
+    normalized = re.sub(r"[^a-z0-9']+", " ", normalized)
+    return " ".join(normalized.split())
+
+
+def _find_equivalent_memory(
+    conn: sqlite3.Connection,
+    summary: str,
+) -> dict[str, Any]:
+    key = _memory_meaning_key(summary)
+    if not key:
+        return {}
+    rows = conn.execute(
+        """
+        SELECT * FROM selene_memory_candidates
+        WHERE state NOT IN ('rejected', 'superseded', 'revoked', 'deletion_requested', 'b_only')
+        ORDER BY id DESC LIMIT 500
+        """
+    ).fetchall()
+    for row in rows:
+        item = _decode_candidate(row)
+        if _memory_meaning_key(str(item.get("summary") or "")) == key:
+            return item
+    rows = conn.execute(
+        """
+        SELECT * FROM b_approved_memory_references
+        WHERE review_status = 'accepted_for_memory_accession'
+          AND COALESCE(status, '') != 'approved_reference_superseded_non_active'
+        ORDER BY id DESC LIMIT 500
+        """
+    ).fetchall()
+    for row in rows:
+        item = _approved_reference_item(row)
+        if _memory_meaning_key(str(item.get("summary") or "")) == key:
+            return item
+    return {}
+
+
+def _memory_retrieval_cues(
+    title: str,
+    summary: str,
+    supplied: list[str],
+) -> list[str]:
+    sentences = [
+        truncate(item.strip(), 240)
+        for item in re.split(r"(?<=[.!?])\s+|[;\n]+", summary)
+        if item.strip()
+    ][:4]
+    cues = [title, *sentences, *supplied]
+    result: list[str] = []
+    seen: set[str] = set()
+    for cue in cues:
+        clean = truncate(" ".join(str(cue or "").split()), 240).strip(" .:-")
+        key = _memory_meaning_key(clean)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        result.append(clean)
+    return result[:16]
+
+
+def _eligible_channels(value: Any) -> list[str]:
+    allowed = {"desktop", "mobile", "verizon_email_to_text", "local_api"}
+    return [
+        item
+        for item in dict.fromkeys(
+            str(entry).strip().lower() for entry in _json_list(value)
+        )
+        if item in allowed
+    ]
 
 
 def _json_list(value: Any) -> list[str]:

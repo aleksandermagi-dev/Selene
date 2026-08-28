@@ -427,6 +427,13 @@ def build_dual_horizon_context(
     approved_refs = [
         str(item.get("context_id") or "") for item in selected_approved
     ]
+    working_context_contract = _working_context_contract(
+        active_items,
+        selected_active,
+        dialogue=dialogue,
+        pragmatics=pragmatics,
+        max_active=max_active,
+    )
     grounding_text = _grounding_text(selected_active, selected_approved)
     return {
         "status": "dual_horizon_context_ready",
@@ -452,6 +459,7 @@ def build_dual_horizon_context(
             "maximum": max_approved,
             "selected_context_ids": approved_refs,
         },
+        "working_context_contract": working_context_contract,
         "shared_selection_fields": [
             "topic_keys",
             "entity_keys",
@@ -784,7 +792,8 @@ def _approved_horizon_items(
                 _context_item(
                     f"approved-memory-{memory_item.get('id')}",
                     summary=str(
-                        memory_item.get("summary")
+                        memory_item.get("expression_summary")
+                        or memory_item.get("summary")
                         or memory_item.get("title")
                         or ""
                     ),
@@ -1043,6 +1052,89 @@ def _grounding_text(
     if approved:
         parts.append("Selected approved or session-checkpoint context: " + " ".join(approved))
     return truncate(" ".join(parts), 1200)
+
+
+def _working_context_contract(
+    candidates: list[dict[str, Any]],
+    selected: list[dict[str, Any]],
+    *,
+    dialogue: dict[str, Any],
+    pragmatics: dict[str, Any],
+    max_active: int,
+) -> dict[str, Any]:
+    selected_ids = {
+        str(item.get("context_id") or "") for item in selected
+    }
+    dropped = [
+        str(item.get("context_id") or "")
+        for item in candidates
+        if str(item.get("context_id") or "") not in selected_ids
+    ]
+    braid = _dict(pragmatics.get("thread_braid"))
+    threads = [
+        item for item in braid.get("threads") or [] if isinstance(item, dict)
+    ]
+    paused = [
+        {
+            "thread_id": str(item.get("id") or ""),
+            "topic": truncate(str(item.get("topic") or ""), 300),
+        }
+        for item in threads
+        if str(item.get("state") or "") == "paused"
+    ]
+    transition = _dict(pragmatics.get("topic_transition"))
+    transient = _dict(_dict(dialogue.get("preferences")).get("transient"))
+    expired_ids = []
+    if transient and (
+        transient.get("active") is not True
+        or int(transient.get("remaining_turns") or 0) <= 0
+    ):
+        expired_ids.append("active-transient-response-preference")
+    interruption_detected = bool(
+        str(transition.get("kind") or "") == "interruption" or paused
+    )
+    return {
+        "version": "v1_bounded_working_context",
+        "attention_budget": {
+            "maximum_items": max_active,
+            "candidate_count": len(candidates),
+            "selected_count": len(selected),
+            "overflow_count": max(0, len(candidates) - len(selected)),
+            "selection_policy": (
+                "current_input_obligations_corrections_referents_and_active_"
+                "thread_before_nearby_paused_context"
+            ),
+        },
+        "expiry": {
+            "current_turn_items_expire_after_turn": [
+                str(item.get("context_id") or "")
+                for item in selected
+                if str(item.get("scope") or "") == "current_turn"
+            ],
+            "session_items_expire_when_session_closes": [
+                str(item.get("context_id") or "")
+                for item in selected
+                if "current_session" in str(item.get("scope") or "")
+            ],
+            "durable_items_created": 0,
+        },
+        "interruption_resume": {
+            "interruption_detected": interruption_detected,
+            "active_thread_id": str(braid.get("active_thread_id") or ""),
+            "paused_threads": paused,
+            "resume_uses_visible_thread_or_checkpoint_only": True,
+            "resume_creates_memory": False,
+        },
+        "cleanup": {
+            "attention_overflow_dropped_ids": dropped,
+            "expired_context_ids": expired_ids,
+            "dropped_content_retained_as_memory": False,
+            "stale_or_expired_context_may_not_ground_the_answer": True,
+        },
+        "session_context_is_personal_memory": False,
+        "session_context_is_taught_knowledge": False,
+        "session_context_is_dream_material": False,
+    }
 
 
 def _terms(value: str) -> set[str]:

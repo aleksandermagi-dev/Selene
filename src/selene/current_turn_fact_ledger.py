@@ -543,6 +543,12 @@ def _options(text: str) -> list[str]:
 def _clean_option(value: str) -> str:
     value = re.sub(r"^(?:the|a|an)\s+", "", value.strip(" ,.;:?"), flags=re.IGNORECASE)
     value = re.split(r"\b(?:and then|then|because|so that|while)\b", value, maxsplit=1, flags=re.IGNORECASE)[0]
+    value = re.sub(
+        r"\s+(?:as|in)\s+(?:a\s+)?(?:venn\s+diagram|table|list|chart|matrix)$",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    )
     return truncate(value.strip(" ,.;:?"), 140)
 
 

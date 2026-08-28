@@ -816,24 +816,30 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                     in {"observation", "relation", "quantity", "condition", "claim"}
                 ],
             ],
-            "comparison_candidates": list(
-                dict.fromkeys(
-                    str(value)
-                    for owner_input in conversation_spine.get("current_turn_owner_inputs") or []
-                    if isinstance(owner_input, dict)
-                    and "comparison" in (owner_input.get("requested_response_functions") or [])
-                    for value in (owner_input.get("supplied_fields") or {}).get("options") or []
-                    if str(value).strip()
+            "comparison_candidates": (
+                exploratory_input.get("comparison_candidates")
+                or list(
+                    dict.fromkeys(
+                        str(value)
+                        for owner_input in conversation_spine.get("current_turn_owner_inputs") or []
+                        if isinstance(owner_input, dict)
+                        and "comparison" in (owner_input.get("requested_response_functions") or [])
+                        for value in (owner_input.get("supplied_fields") or {}).get("options") or []
+                        if str(value).strip()
+                    )
                 )
             ),
-            "comparison_dimensions": list(
-                dict.fromkeys(
-                    str(value)
-                    for owner_input in conversation_spine.get("current_turn_owner_inputs") or []
-                    if isinstance(owner_input, dict)
-                    and "comparison" in (owner_input.get("requested_response_functions") or [])
-                    for value in (owner_input.get("supplied_fields") or {}).get("criteria") or []
-                    if str(value).strip()
+            "comparison_dimensions": (
+                exploratory_input.get("comparison_dimensions")
+                or list(
+                    dict.fromkeys(
+                        str(value)
+                        for owner_input in conversation_spine.get("current_turn_owner_inputs") or []
+                        if isinstance(owner_input, dict)
+                        and "comparison" in (owner_input.get("requested_response_functions") or [])
+                        for value in (owner_input.get("supplied_fields") or {}).get("criteria") or []
+                        if str(value).strip()
+                    )
                 )
             ),
             "approved_knowledge_items": (

@@ -831,11 +831,18 @@ def _is_personal_recall(value: str, question: bool) -> bool:
     if conversation_reference:
         return True
     past_anchor = _has_any(value, ("when we", "where we", "what we", "our last", "our previous", "our past", "i told you", "you told me", "i said", "you said", "last time", "yesterday", "before", "earlier"))
+    shared_anchor = bool(
+        re.search(r"\b(?:we|our|ours|us)\b", value)
+        and re.search(r"\b(?:did|got|had|made|used|went|talked|discussed|planned|built|chose|picked)\b", value)
+    )
     general_how_question = bool(re.match(r"^(?:do you remember|can you recall)\s+how\b", value))
-    if general_how_question and not past_anchor:
+    if general_how_question and not (past_anchor or shared_anchor):
         return False
     recall_verb = bool(re.search(r"\b(remember|recall|memory of|memories of)\b", value))
-    return recall_verb and (past_anchor or value.startswith(("do you remember", "what do you remember", "can you recall", "please recall")))
+    explicit_recall_phrase = bool(
+        re.search(r"\b(?:do you remember|what do you remember|can you recall|please recall)\b", value)
+    )
+    return recall_verb and (past_anchor or shared_anchor or explicit_recall_phrase)
 
 
 def _is_self_state_question(value: str, question: bool) -> bool:

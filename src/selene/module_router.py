@@ -227,11 +227,14 @@ from .gates import ArchiveAuditGate, ContinuityGate, GracefulFall
 from .kernel import kernel_state
 from .memory_organ import (
     decide_memory_candidate,
+    decide_memory_reconsolidation,
     list_memory_candidates,
+    list_memory_reconsolidation_reviews,
     memory_index_items,
     memory_index_status,
     portable_vys_manifest,
     propose_memory_candidate,
+    propose_memory_reconsolidation,
     retrieve_memory,
     set_memory_display_title,
 )
@@ -879,6 +882,12 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": list_memory_candidates(conn, payload)}
     if route_key == "memory.candidates.decide":
         return {"route": route_key, "result": decide_memory_candidate(conn, payload)}
+    if route_key == "memory.reconsolidation.list":
+        return {"route": route_key, "result": list_memory_reconsolidation_reviews(conn, payload)}
+    if route_key == "memory.reconsolidation.propose":
+        return {"route": route_key, "result": propose_memory_reconsolidation(conn, payload)}
+    if route_key == "memory.reconsolidation.decide":
+        return {"route": route_key, "result": decide_memory_reconsolidation(conn, payload)}
     if route_key == "memory.retrieve":
         return {"route": route_key, "result": retrieve_memory(conn, payload)}
     if route_key == "memory.portable_vys_manifest":

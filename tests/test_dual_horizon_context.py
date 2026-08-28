@@ -402,6 +402,37 @@ def test_active_budget_prioritizes_obligations_corrections_and_preferences():
     assert "temporary_response_shape" in relationships
     assert "current_input" in relationships
 
+    working = result["working_context_contract"]
+    assert working["attention_budget"]["maximum_items"] == 5
+    assert working["attention_budget"]["selected_count"] == 5
+    assert working["attention_budget"]["overflow_count"] > 0
+    assert working["cleanup"]["attention_overflow_dropped_ids"]
+    assert working["cleanup"]["dropped_content_retained_as_memory"] is False
+    assert working["expiry"]["durable_items_created"] == 0
+    assert working["session_context_is_personal_memory"] is False
+
+
+def test_working_context_preserves_a_visible_resume_point_without_durable_retention():
+    dialogue = _dialogue()
+    dialogue["pragmatics"]["topic_transition"] = {"kind": "interruption"}
+    result = build_dual_horizon_context(
+        {
+            "prompt": "Pause this for a moment; I need to answer the door.",
+            "dialogue_workspace": dialogue,
+            "conversation_spine": _spine(),
+            "max_active_items": 8,
+        }
+    )
+
+    working = result["working_context_contract"]
+    resume = working["interruption_resume"]
+    assert resume["interruption_detected"] is True
+    assert resume["active_thread_id"] == "thread-explanations"
+    assert resume["paused_threads"][0]["thread_id"] == "thread-experiment"
+    assert resume["resume_uses_visible_thread_or_checkpoint_only"] is True
+    assert resume["resume_creates_memory"] is False
+    _assert_locked(result)
+
 
 def test_spine_nlo_metacognition_and_coalition_observe_without_new_authority(
     tmp_path,

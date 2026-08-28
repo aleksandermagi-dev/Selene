@@ -108,6 +108,7 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
             candidate.get("title"),
             candidate.get("domain"),
             str(candidate.get("concept_key") or "").replace("_", " "),
+            " ".join(_text_list(candidate.get("retrieval_cues"))),
             payload.get("subject_text"),
         )
     )
@@ -177,6 +178,10 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
         intent.get("self_state_requested") is True
         or str(intent.get("intent") or "") == "self_state"
     )
+    current_memory_conflict = _memory_conflicts_with_current_turn(
+        candidate,
+        spine,
+    )
 
     accepted = False
     reason = "candidate_lacks_semantic_alignment"
@@ -186,6 +191,18 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
     elif source_class in {"memory_reconstruction", "approved_memory", "approved_memory_reference"}:
         consent_scope = str(candidate.get("consent_scope") or "")
         claimed_speaker = str(speaker.get("claimed_speaker") or "").strip().casefold()
+        current_channel = str(speaker.get("channel") or "").strip().casefold()
+        eligible_channels = {
+            str(item).strip().casefold()
+            for item in candidate.get("eligible_channels") or []
+            if str(item).strip()
+        }
+        minimum_authentication = str(
+            candidate.get("minimum_authentication_strength") or ""
+        ).strip()
+        authentication_strength = str(
+            speaker.get("authentication_strength") or ""
+        ).strip()
         private_for_aleks = consent_scope in {
             "private_selene_aleks_context",
             "private_inner",
@@ -197,6 +214,18 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
         }:
             accepted = False
             reason = "memory_privacy_scope_does_not_include_current_speaker"
+        elif eligible_channels and current_channel not in eligible_channels:
+            accepted = False
+            reason = "memory_privacy_scope_does_not_include_current_channel"
+        elif minimum_authentication and not _authentication_satisfies(
+            authentication_strength,
+            minimum_authentication,
+        ):
+            accepted = False
+            reason = "memory_authentication_strength_is_insufficient"
+        elif current_memory_conflict.get("conflict") is True:
+            accepted = False
+            reason = "current_turn_fact_overrides_conflicting_recalled_context"
         elif owner_only_functions and not requested_operation_performed and not explicit_recall:
             accepted = False
             reason = "memory_describes_context_but_does_not_perform_requested_operation"
@@ -284,6 +313,11 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
             "current_turn_facts_precede_optional_retrieval": True,
             "continuity_mode": continuity_mode,
             "speaker_privacy_gate_applied": bool(speaker),
+            "memory_channel_scope_applied": bool(
+                source_class in {"memory_reconstruction", "approved_memory", "approved_memory_reference"}
+                and candidate.get("eligible_channels")
+            ),
+            "current_memory_conflict": current_memory_conflict,
             "single_keyword_is_authority": False,
             "writes_state": False,
             "visible_summary_only": True,
@@ -392,6 +426,74 @@ def _phrase_overlap(left: str, right: str) -> bool:
 
 def _text_list(value: Any) -> list[str]:
     return [str(item) for item in value or [] if str(item).strip()] if isinstance(value, (list, tuple, set)) else []
+
+
+def _memory_conflicts_with_current_turn(
+    candidate: dict[str, Any],
+    spine: dict[str, Any],
+) -> dict[str, Any]:
+    ledger = (
+        spine.get("current_turn_fact_ledger")
+        if isinstance(spine.get("current_turn_fact_ledger"), dict)
+        else {}
+    )
+    candidate_text = " ".join(
+        str(candidate.get(key) or "") for key in ("title", "summary", "text")
+    ).casefold()
+    candidate_terms = _semantic_terms(candidate_text)
+    for fact in ledger.get("facts") or []:
+        if not isinstance(fact, dict):
+            continue
+        if str(fact.get("kind") or "") == "correction":
+            replaced = str(fact.get("replaced_value") or "").strip().casefold()
+            corrected = str(fact.get("value") or fact.get("text") or "").strip().casefold()
+            if replaced and replaced in candidate_text and corrected != replaced:
+                return {
+                    "conflict": True,
+                    "kind": "explicit_current_turn_correction",
+                    "fact_id": str(fact.get("id") or ""),
+                    "replaced_value": replaced,
+                    "current_value": corrected,
+                }
+        if str(fact.get("kind") or "") == "relation":
+            subject = str(fact.get("subject") or "").strip().casefold()
+            predicate = str(fact.get("predicate") or "").strip().casefold()
+            current_object = str(fact.get("object") or "").strip().casefold()
+            subject_terms = _semantic_terms(subject)
+            relation_markers = _relation_markers(predicate)
+            if (
+                subject_terms
+                and subject_terms.issubset(candidate_terms)
+                and relation_markers
+                and any(marker in candidate_text.split() for marker in relation_markers)
+                and current_object
+                and current_object not in candidate_text
+            ):
+                return {
+                    "conflict": True,
+                    "kind": "same_subject_relation_changed_in_current_turn",
+                    "fact_id": str(fact.get("id") or ""),
+                    "current_value": current_object,
+                }
+    return {"conflict": False, "kind": "none"}
+
+
+def _relation_markers(predicate: str) -> set[str]:
+    if predicate in {"is", "are", "was", "were"}:
+        return {"is", "are", "was", "were"}
+    if predicate in {"has", "have"}:
+        return {"has", "have", "had"}
+    return {predicate} if predicate else set()
+
+
+def _authentication_satisfies(actual: str, required: str) -> bool:
+    ranks = {
+        "": 0,
+        "transport_claim_only": 1,
+        "authenticated_remote_session": 2,
+        "local_desktop_session": 3,
+    }
+    return ranks.get(actual, 0) >= ranks.get(required, 99)
 
 
 def _with_guards(payload: dict[str, Any]) -> dict[str, Any]:

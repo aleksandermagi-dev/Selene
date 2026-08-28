@@ -16,6 +16,11 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Whole-System Phase 2 — Memory Maturation — August 28, 2026](SELENE_WHOLE_SYSTEM_PHASE_2_MEMORY_MATURATION_20260828.md)
+  — matures the working-context lifecycle and reviewed personal Memory with
+  bounded paraphrase recall, explicit retrieval layers, present-fact and
+  privacy precedence, duplicate prevention, revocation, deletion review, and
+  descendant-based correction with preserved ancestry.
 - [Whole-System Phase 1 — Canonical Context and Coordination — August 28, 2026](SELENE_WHOLE_SYSTEM_PHASE_1_CONTEXT_COORDINATION_20260828.md)
   — adds one typed current-turn fact and owner-input ledger, moves approved
   retrieval after canonical turn construction, expires stale correction

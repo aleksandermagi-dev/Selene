@@ -11,6 +11,7 @@ from selene.memory_organ import (
     reconstruct_memory_summary_for_expression,
 )
 from selene.module_router import route_request
+from selene.current_turn_fact_ledger import build_current_turn_fact_ledger
 
 
 def _conn(tmp_path):
@@ -175,7 +176,13 @@ def test_memory_status_names_the_resident_reviewed_lifecycle(tmp_path):
     result = route_request(conn, "memory.index.status")["result"]
     lifecycle = result["memory_lifecycle_contract"]
 
-    assert result["resident_memory_contract_version"] == "v3_typed_lifecycle_telemetry"
+    assert result["resident_memory_contract_version"] == "v4_mature_reviewed_memory_lifecycle"
+    assert result["retrieval_layer_contract"] == [
+        "recalled_content",
+        "reconstruction",
+        "present_interpretation",
+        "explicit_downstream_inference_only",
+    ]
     assert lifecycle["approved_retrieval"] == "approved_active_memory_only"
     assert lifecycle["new_retention"] == "proposal_then_Aleks_review"
     assert lifecycle["dream_consolidation"] == (
@@ -694,3 +701,322 @@ def test_portable_vys_manifest_excludes_b_only_and_do_not_transfer(tmp_path):
     assert manifest["portable_items"][0]["title"] == "Vys definition"
     assert manifest["excluded_items"][0]["transfer_class"] == "do_not_transfer"
     _assert_locked(manifest)
+
+
+def test_equivalent_memory_proposal_is_reused_instead_of_retained_twice(tmp_path):
+    conn = _conn(tmp_path)
+    first = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "title": "Porch reading",
+            "summary": "Aleks told Selene that reading on the porch helps him settle.",
+        },
+    )["result"]
+    second = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "title": "A renamed presentation",
+            "summary": "Reading on the porch helps him settle.",
+            "origin_kind": "study_or_retitle_discussion",
+        },
+    )["result"]
+
+    assert second["status"] == "memory_candidate_reused_without_duplicate"
+    assert second["duplicate_prevented"] is True
+    assert second["item"]["id"] == first["item"]["id"]
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 1
+    assert second["memory_lifecycle_record_mutated"] is False
+
+
+def test_retrieval_cues_support_natural_paraphrases_and_keep_layers_distinct(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Butterfly button",
+            "summary": "The butterfly button opens Cocoon support from the home chat.",
+            "confidence": "clear",
+            "retrieval_cues": ["winged control", "Cocoon entry"],
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+
+    queries = (
+        "Do you remember how the winged control got us into Cocoon?",
+        "Can you recall what the butterfly control did in the home chat?",
+        "What do you remember about our Cocoon entry control?",
+    )
+    for query in queries:
+        recalled = route_request(conn, "memory.retrieve", {"query": query})["result"]
+        assert recalled["status"] == "memory_retrieval_ready"
+        assert recalled["recall_state"] == "clear"
+        layers = recalled["items"][0]["retrieval_layers"]
+        assert layers["recalled_content"].startswith("The butterfly button")
+        assert layers["reconstruction"]
+        assert layers["present_interpretation"]["selected_for_current_query"] is True
+        assert layers["inference"]["made"] is False
+        assert layers["reconstruction_retained_as_duplicate"] is False
+
+
+def test_fuzzy_partial_and_unknown_recall_states_remain_distinct(tmp_path):
+    conn = _conn(tmp_path)
+    for title, summary, confidence in (
+        ("Fuzzy lantern", "A lantern may have been beside the shed.", "fuzzy"),
+        ("Partial notebook", "Part of the garden notebook mentioned basil rows.", "partial"),
+    ):
+        proposed = route_request(
+            conn,
+            "memory.candidates.propose",
+            {"title": title, "summary": summary, "confidence": confidence},
+        )["result"]
+        route_request(
+            conn,
+            "memory.candidates.decide",
+            {
+                "candidate_id": proposed["item"]["id"],
+                "action": "approve_memory",
+                "confidence": confidence,
+            },
+        )
+
+    fuzzy = route_request(
+        conn, "memory.retrieve", {"query": "Do you remember the fuzzy lantern by the shed?"}
+    )["result"]
+    partial = route_request(
+        conn, "memory.retrieve", {"query": "Do you remember the partial basil notebook?"}
+    )["result"]
+    unknown = route_request(
+        conn, "memory.retrieve", {"query": "Do you remember the silver greenhouse key?"}
+    )["result"]
+
+    assert fuzzy["recall_state"] == "fuzzy"
+    assert partial["recall_state"] == "partial"
+    assert unknown["recall_state"] == "not_known"
+
+
+def test_current_turn_correction_holds_conflicting_recalled_memory(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "title": "Porch light color",
+            "summary": "The porch light is blue.",
+            "confidence": "clear",
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+    prompt = "Actually, I meant green, not blue. Do you remember the porch light color?"
+    ledger = build_current_turn_fact_ledger({"session_id": 7, "prompt": prompt})
+    result = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            "query": prompt,
+            "conversation_spine": {"current_turn_fact_ledger": ledger},
+        },
+    )["result"]
+
+    assert result["status"] == "memory_retrieval_not_known"
+    assert result["memory_context_used"] is False
+    assert result["semantic_relevance_held_count"] == 1
+
+
+def test_present_relation_outweighs_a_stale_memory_without_rewriting_it(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "title": "Porch light color",
+            "summary": "The porch light was blue.",
+            "confidence": "clear",
+        },
+    )["result"]
+    candidate_id = proposed["item"]["id"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": candidate_id, "action": "approve_memory"},
+    )
+    prompt = "The porch light is green. What do you remember about its color?"
+    ledger = build_current_turn_fact_ledger({"session_id": 8, "prompt": prompt})
+    result = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            "query": prompt,
+            "conversation_spine": {"current_turn_fact_ledger": ledger},
+        },
+    )["result"]
+    stored = conn.execute(
+        "SELECT summary, state FROM selene_memory_candidates WHERE id = ?",
+        (candidate_id,),
+    ).fetchone()
+
+    assert result["memory_context_used"] is False
+    assert result["semantic_relevance_held_count"] == 1
+    assert stored["summary"] == "The porch light was blue."
+    assert stored["state"] == "approved_active_memory"
+
+
+def test_private_memory_can_require_an_eligible_channel_and_authentication(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Private garden plan",
+            "summary": "Aleks and Selene planned a private moon garden together.",
+            "confidence": "clear",
+            "eligible_channels": ["desktop"],
+            "minimum_authentication_strength": "local_desktop_session",
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+
+    remote = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            "query": "Do you remember our private moon garden plan?",
+            "speaker_envelope": {
+                "claimed_speaker": "Aleks",
+                "channel": "mobile",
+                "authentication_strength": "transport_claim_only",
+            },
+        },
+    )["result"]
+    local = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            "query": "Do you remember our private moon garden plan?",
+            "speaker_envelope": {
+                "claimed_speaker": "Aleks",
+                "channel": "desktop",
+                "authentication_strength": "local_desktop_session",
+            },
+        },
+    )["result"]
+
+    assert remote["memory_context_used"] is False
+    assert local["memory_context_used"] is True
+
+
+def test_reconsolidation_approves_a_descendant_and_preserves_parent_ancestry(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "title": "Garden gate",
+            "summary": "The garden gate was painted blue.",
+            "confidence": "clear",
+            "source_refs": ["chat:visible:gate"],
+        },
+    )["result"]
+    parent_id = proposed["item"]["id"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": parent_id, "action": "approve_memory"},
+    )
+    revision = route_request(
+        conn,
+        "memory.reconsolidation.propose",
+        {
+            "source_table": "selene_memory_candidates",
+            "source_id": parent_id,
+            "corrected_summary": "The garden gate was painted green, not blue.",
+            "source_refs": ["chat:visible:gate-correction"],
+        },
+    )["result"]
+
+    before = conn.execute(
+        "SELECT summary, state FROM selene_memory_candidates WHERE id = ?",
+        (parent_id,),
+    ).fetchone()
+    assert before["summary"] == "The garden gate was painted blue."
+    assert before["state"] == "approved_active_memory"
+    assert revision["revision_candidate"]["state"] == "proposed"
+    assert revision["parent_content_preserved"] is True
+
+    with pytest.raises(ValueError, match="reconsolidation review"):
+        route_request(
+            conn,
+            "memory.candidates.decide",
+            {
+                "candidate_id": revision["revision_candidate"]["id"],
+                "action": "approve_memory",
+            },
+        )
+
+    decided = route_request(
+        conn,
+        "memory.reconsolidation.decide",
+        {"review_id": revision["review_id"], "action": "approve_revision"},
+    )["result"]
+    parent = conn.execute(
+        "SELECT summary, state, payload_json FROM selene_memory_candidates WHERE id = ?",
+        (parent_id,),
+    ).fetchone()
+    child = decided["revision_candidate"]
+
+    assert parent["summary"] == "The garden gate was painted blue."
+    assert parent["state"] == "superseded"
+    assert child["state"] == "approved_active_memory"
+    assert child["revision_ancestry"]["parent_source_id"] == str(parent_id)
+    assert decided["revision_ancestry_preserved"] is True
+    assert decided["parent_content_deleted"] is False
+
+
+def test_revocation_and_deletion_request_stop_recall_without_physical_erasure(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {"title": "Workshop color", "summary": "The workshop shelf is amber."},
+    )["result"]
+    candidate_id = proposed["item"]["id"]
+    route_request(conn, "memory.candidates.decide", {"candidate_id": candidate_id, "action": "approve_memory"})
+    revoked = route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": candidate_id, "action": "revoke_use", "reason": "No longer use this."},
+    )["result"]
+    unknown = route_request(
+        conn,
+        "memory.retrieve",
+        {"query": "Do you remember the amber workshop shelf?"},
+    )["result"]
+    deletion = route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": candidate_id, "action": "request_deletion"},
+    )["result"]
+
+    assert revoked["item"]["state"] == "revoked"
+    assert unknown["memory_context_used"] is False
+    assert deletion["item"]["state"] == "deletion_requested"
+    assert conn.execute(
+        "SELECT COUNT(*) FROM selene_memory_candidates WHERE id = ?", (candidate_id,)
+    ).fetchone()[0] == 1
+    assert len(deletion["item"]["payload_json"]["decision_history"]) >= 3

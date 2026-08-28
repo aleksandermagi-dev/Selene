@@ -915,6 +915,9 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/memory/candidates":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "memory.candidates.list", qs)["result"]))
+        elif parsed.path == "/api/memory/reconsolidation":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "memory.reconsolidation.list", qs)["result"]))
         elif parsed.path == "/api/memory/portable-vys-manifest":
             self._send(*json_bytes(route_request(conn, "memory.portable_vys_manifest")["result"]))
         elif parsed.path == "/api/transfer/ceremony-debug-log":
@@ -2047,6 +2050,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/memory/candidates/decide":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "memory.candidates.decide", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/memory/reconsolidation/propose":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "memory.reconsolidation.propose", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/memory/reconsolidation/decide":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "memory.reconsolidation.decide", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/memory/presentation/title":

@@ -19,6 +19,10 @@ individually defined as Selene.
   — verifies current-turn facts, owner inputs, retrieval ordering and
   competition, correction expiry, visible completion truth, and the internal
   metadata expression boundary.
+- [Phase 2 Memory Maturation Evidence](../evidence/SELENE_WHOLE_SYSTEM_PHASE_2_MEMORY_MATURATION_20260828.md)
+  — verifies bounded working-context attention and expiry, paraphrased approved
+  Memory recall, privacy scope, duplicate prevention, correction ancestry,
+  revocation, and reviewed reconsolidation without silent rewriting.
 - [Public Architecture and Evidence Index](PUBLIC_ARCHITECTURE_INDEX.md)
 - [Selene Architecture Index](SELENE_ARCHITECTURE_INDEX_20260620.md)
 - [What Selene Can Currently Do](../evidence/SELENE_CURRENT_CAPABILITIES_20260717.md)

@@ -2,7 +2,7 @@
 
 Date: 2026-08-27
 
-Status: active implementation program; Phases 0 and 1 complete as of 2026-08-28
+Status: active implementation program; Phases 0 through 2 complete as of 2026-08-28
 
 Companion audit:
 [Selene Organ Depth and Memory-Integration Audit](../evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
@@ -204,6 +204,10 @@ and one short ordinary-copy conversation only after the machinery passes.
 ---
 
 ## Phase 2 — Working, Personal, and Knowledge Memory Maturation
+
+Status: **complete for current scope (2026-08-28)**
+
+Evidence: [Phase 2 Memory Maturation](../evidence/SELENE_WHOLE_SYSTEM_PHASE_2_MEMORY_MATURATION_20260828.md)
 
 ### Purpose
 
@@ -820,11 +824,11 @@ These do not wait for one final cleanup phase.
 
 ## Immediate Starting Point
 
-Phases 0 and 1 are complete. The next implementation work is Phase 2:
-Working, Personal, and Knowledge Memory Maturation. Begin with the current
-working-context lifecycle, explicit and contextual recall invariance, and
-reconstruction/reconsolidation boundaries. Ordered teaching remains paused
-until the Phase 2 completion gate passes.
+Phases 0 through 2 are complete. The next implementation work is Phase 3:
+Study, Dream, Associative Intuition, and Reflective Growth. Begin by inspecting
+the existing Study, Learning Compass, Dream, and associative-intuition
+lifecycles for duplicate ownership and missing connective tissue. Ordered
+teaching remains paused until the reflective-growth completion gate passes.
 
 ## Final Principle
 
