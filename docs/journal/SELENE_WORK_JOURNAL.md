@@ -2603,6 +2603,53 @@ self-replication changed. No stressful prompt or repair occurred.
 **Next:** Cultivate the five source contracts in the Q&A record, verify them
 synthetically, and only then consider one shorter ordinary-copy conversation.
 
+### 2026-08-27 — The broader conversation showed one coordination seam
+
+**Starting question:** Was the post-Group-7B problem isolated to decimals, or
+was the same issue present across Selene's conversational functions?
+
+**Decision:** Run one different twenty-one-turn ordinary conversation over the
+full conversational surface on disposable resident state. Record everything,
+repair nothing, and stop at natural closure.
+
+**Work:** Exercised greeting, emotional acknowledgment, mixed intent,
+referents, correction, named threads, topic shifts, callbacks, nonlinear
+series, comparison, prediction, hypothesis, conflicting data, uncertainty,
+disagreement, sarcasm, creative writing, revision, initiative, ordinary
+wrongness, and closure. Mapped the results in
+`docs/evidence/SELENE_BROAD_CONVERSATION_QNA_20260827.md` and removed the
+disposable database afterward.
+
+**Why:** One narrow Q&A could not distinguish a decimal-specific defect from a
+general conversational handoff problem. Different prompt wording and
+prompt-contained premises made absent teaching an invalid explanation for
+most divergences.
+
+**Evidence:** The system remained stable, original creative language and a
+natural closure appeared, and correction was recognized. However, stale
+`dependency_revision` state survived unrelated topics; supplied facts did not
+reach comparison, prediction, hypothesis, disagreement, or correction owners;
+irrelevant lessons and internal memory labels entered speech; and thirteen
+turns reported complete coverage despite visibly missing requested functions.
+SQLite integrity remained `ok`, and protected knowledge/Dream counts did not
+change.
+
+**What changed in our understanding:** This is not an isolated teaching or
+decimal problem. It is one broad coordination seam spanning conversational
+state, current-turn facts, act ownership, retrieval relevance, recomputation,
+completion proof, and expression input. More phrases or lessons would mask the
+source defect rather than repair it.
+
+**Boundaries preserved:** The configured database remained at 18 sessions and
+308 messages. No memory, identity, personality, governance, teaching,
+retention, Dream, training, external authority, autonomy, self-replication,
+package, or installed executable changed. No stressful prompt or production
+repair occurred.
+
+**Next:** Map the eight Cultivation contracts from the broad Q&A, implement
+them in dependency order, verify synthetically, and reserve one short
+ordinary-copy conversation for the completed repair gate.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:
