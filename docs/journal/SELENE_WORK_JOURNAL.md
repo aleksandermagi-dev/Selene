@@ -2888,6 +2888,48 @@ Reconcile the existing reflective systems, mature their inspectable handoffs,
 and prevent questions, associations, and Dream candidates from becoming hidden
 Memory or automatic truth.
 
+### 2026-08-28 — Phase 3 is mapped before the five-hour pause
+
+**Starting question:** What is actually missing between Study, Dream,
+Associative Intuition, Learning Compass, Comprehension, Metacognition, and
+Memory, and can Phase 3 mature them without building another overlapping organ?
+
+**Decision:** Treat Phase 3 as a connective-tissue pass. Pause before production
+edits, preserve the exact source map, and resume in dependency order rather
+than risk losing intent to the shortened task window.
+
+**Work:** Inspected the existing lifecycle owners, their routes, tests, UI
+surfaces, ordinary-Chat connections, and read-only resident counts. Recorded a
+four-part implementation sequence covering Study answer integration and
+question ancestry; Dream destination and Study reopening; associative privacy,
+fit, and stopping; and bounded cross-system verification. The 24 pending Dream
+reflections were counted but not opened, decided, or promoted.
+
+**Why:** The systems are already substantial. The missing capability is mostly
+the handoff between them. A clean source map prevents duplicated authority,
+automatic retention, cross-destination loops, and rushed fixes when a new task
+continues the work.
+
+**Evidence:** The worktree was clean at the start. Resident state contained one
+Study session, seven Compass goals, one settled pondering thread, one Dream
+cycle, and 24 pending reflections. The existing Phase 2 build baseline remains
+485.69 kB for the main frontend bundle with no Vite size warning. No test was
+needed because no production behavior changed.
+
+**What changed in our understanding:** Study already creates attributable
+teaching candidates, Dream already has a reviewed proposal lifecycle, and
+Associative Intuition already reaches ordinary Chat and Metacognition. Phase 3
+therefore needs integration receipts, privacy reuse, destination lineage, and
+explicit stopping—not another organ.
+
+**Boundaries preserved:** No production code, resident Study state, Dream
+decision, Memory, teaching item, identity, personality, law, authority,
+training, autonomy, action, package, or installation changed.
+
+**Next:** Resume at Phase 3A in the implementation map. Close the Study question
+answer → teaching candidate → reopening/integration lifecycle first, then move
+to Dream destinations and associative intuition.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

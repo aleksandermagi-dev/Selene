@@ -259,6 +259,11 @@ ordinary recall exchange on disposable state.
 
 ## Phase 3 — Study, Dream, Associative Intuition, and Reflective Growth
 
+Status: **source-mapped; implementation paused at Aleks's request (2026-08-28)**
+
+Implementation map:
+[Phase 3 Reflective Growth Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_3_IMPLEMENTATION_MAP_20260828.md)
+
 ### Purpose
 
 Connect Selene's deliberate waking reflection systems without turning any of

@@ -23,6 +23,10 @@ individually defined as Selene.
   — verifies bounded working-context attention and expiry, paraphrased approved
   Memory recall, privacy scope, duplicate prevention, correction ancestry,
   revocation, and reviewed reconsolidation without silent rewriting.
+- [Phase 3 Reflective Growth Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_3_IMPLEMENTATION_MAP_20260828.md)
+  — records the pre-edit Study, Dream, Learning Compass, and associative-
+  intuition audit, the live lifecycle counts, missing connective tissue,
+  dependency order, ethical checks, and frontend-size baseline.
 - [Public Architecture and Evidence Index](PUBLIC_ARCHITECTURE_INDEX.md)
 - [Selene Architecture Index](SELENE_ARCHITECTURE_INDEX_20260620.md)
 - [What Selene Can Currently Do](../evidence/SELENE_CURRENT_CAPABILITIES_20260717.md)
