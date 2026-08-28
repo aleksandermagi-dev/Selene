@@ -152,6 +152,35 @@ def test_revision_remains_held_when_no_owner_visibly_recomputes_the_result() -> 
     assert next_turn["recomputation"]["preserved_across_turn"] is True
 
 
+def test_real_topic_transition_expires_pending_revision_to_inspectable_ancestry() -> None:
+    revised = _revision(_prior_ledger())
+    held = record_visible_session_propositions(
+        {
+            "session_id": 1,
+            "ledger": revised,
+            "candidate_text": "I noticed the correction.",
+            "coverage_evaluation": {"all_required_addressed": False},
+            "answer_operations": {"results": []},
+        }
+    )
+
+    next_turn = prepare_session_proposition_revision(
+        {
+            "session_id": 1,
+            "prior_ledger": held,
+            "correction_refinement": {"detected": False},
+            "epistemic_revision_plan": {"detected": False},
+            "topic_transition": True,
+        }
+    )
+
+    assert next_turn["status"] == "session_proposition_revision_expired_to_ancestry"
+    assert next_turn["recomputation"]["state"] == "expired_on_topic_transition"
+    assert next_turn["recomputation"]["eligible_current_turn"] is False
+    assert next_turn["propositions"]
+    _assert_bounded(next_turn)
+
+
 def test_unknown_correction_target_holds_precisely_without_resetting_context() -> None:
     held = prepare_session_proposition_revision(
         {

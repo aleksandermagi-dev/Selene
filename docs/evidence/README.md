@@ -16,6 +16,11 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Whole-System Phase 1 — Canonical Context and Coordination — August 28, 2026](SELENE_WHOLE_SYSTEM_PHASE_1_CONTEXT_COORDINATION_20260828.md)
+  — adds one typed current-turn fact and owner-input ledger, moves approved
+  retrieval after canonical turn construction, expires stale correction
+  posture without erasing ancestry, and keeps internal retrieval labels behind
+  NLO/Voice expression.
 - [Whole-System Phase 0 — Canonical Maturity Ledger — August 27, 2026](SELENE_WHOLE_SYSTEM_PHASE_0_MATURITY_LEDGER_20260827.md)
   — generated read-only inventory of 27 organs and connective systems with
   distinct source, route, test, UI, authority, configured-state, connection,

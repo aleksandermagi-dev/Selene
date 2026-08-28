@@ -540,6 +540,16 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
     query = truncate(str(payload.get("query") or payload.get("text") or ""), 1000)
     limit = max(1, min(int(payload.get("limit") or 4), 12))
     intent_decision = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else classify_chat_intent(query)
+    conversation_spine = (
+        payload.get("conversation_spine")
+        if isinstance(payload.get("conversation_spine"), dict)
+        else {}
+    )
+    speaker_envelope = (
+        payload.get("speaker_envelope")
+        if isinstance(payload.get("speaker_envelope"), dict)
+        else {}
+    )
     explicit_recall = intent_decision.get("memory_recall_requested") is True
     contextual_relevance = payload.get("allow_contextual_relevance") is True
     retrieval_mode = "explicit_recall" if explicit_recall else "contextual_relevance" if contextual_relevance else "not_requested"
@@ -591,10 +601,16 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "source_id": "reviewed_memory" if explicit_recall else "contextual_approved_memory",
                 "source_class": "memory_reconstruction",
                 "intent_decision": intent_decision,
+                "conversation_spine": conversation_spine,
+                "speaker_envelope": speaker_envelope,
                 "explicit_recall": explicit_recall,
             }
         )
-        annotated = {**item, "semantic_relevance": relevance}
+        annotated = {
+            **item,
+            "expression_summary": reconstruct_memory_summary_for_expression(item),
+            "semantic_relevance": relevance,
+        }
         if relevance.get("accepted") is True:
             semantic_matches.append(annotated)
         else:
@@ -637,6 +653,8 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             "items": matches,
             "semantic_relevance_held_count": len(held_matches),
             "semantic_source_gate_applied": True,
+            "conversation_spine_gate_applied": bool(conversation_spine),
+            "speaker_privacy_gate_applied": bool(speaker_envelope),
             "intent_decision": intent_decision,
             "source_refs": [ref for item in matches for ref in _json_list(item.get("source_refs"))],
             "answer_guidance": (
@@ -648,6 +666,45 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             "review_status": "status_only",
         }
     )
+
+
+def reconstruct_memory_summary_for_expression(item: dict[str, Any] | None) -> str:
+    """Return visible memory meaning without review-lane or index scaffolding.
+
+    Memory titles, source IDs, review routes, and historical indexing fields are
+    retrieval metadata. They can select a memory but may not become Selene's
+    wording. This reconstruction is read-only and preserves the memory record.
+    """
+
+    item = item if isinstance(item, dict) else {}
+    raw = truncate(str(item.get("summary") or item.get("reference_summary") or ""), 2000)
+    plain_reason = re.search(
+        r"\bPlain reason:\s*(?P<reason>.+)$",
+        raw,
+        flags=re.IGNORECASE,
+    )
+    if plain_reason:
+        raw = plain_reason.group("reason")
+    else:
+        raw = re.sub(
+            r"^Core-linked\s+.+?\s+for\s+B\s+review\s+only\s*",
+            "",
+            raw,
+            flags=re.IGNORECASE,
+        )
+        raw = re.sub(
+            r"\b(?:Braid thread|Braid moment type|Thread origin status):\s*"
+            r"[^.;]+(?:[.;]|$)",
+            " ",
+            raw,
+            flags=re.IGNORECASE,
+        )
+    raw = re.sub(r"\bB\s+review(?:\s+only)?\b", "review", raw, flags=re.IGNORECASE)
+    raw = re.sub(r"\bC\s+activation\b", "activation", raw, flags=re.IGNORECASE)
+    raw = re.sub(r"\b(?:review_status|source_id|source_table|record_class)\s*[:=]\s*\S+", " ", raw, flags=re.IGNORECASE)
+    raw = re.sub(r"(?<=\w)_(?=\w)", " ", raw)
+    raw = re.sub(r"\s+", " ", raw).strip(" .:-")
+    return truncate(raw or "something from an earlier approved memory", 500)
 
 
 def portable_vys_manifest(conn: sqlite3.Connection) -> dict[str, Any]:

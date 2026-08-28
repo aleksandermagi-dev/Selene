@@ -2796,6 +2796,51 @@ current-turn facts, acts, obligations, thread and correction state, answer
 owner premise handoff, and the timing of Memory/knowledge retrieval before
 adding more teaching.
 
+### 2026-08-28 — Phase 1 gives every answer owner the same current turn
+
+**Starting question:** Why could strong organs still miss facts Aleks had just
+supplied, preserve a finished correction too long, or let an optional Memory
+label compete with the operation actually requested?
+
+**Decision:** Repair the shared context source rather than add phrase patches.
+Construct one visible-turn ledger before optional retrieval, require every
+answer operation to account for its owner inputs, and preserve correction
+ancestry without preserving stale correction posture.
+
+**Work:** Added a typed nonpersistent current-turn fact ledger and inspectable
+router keys; connected it to Conversation Spine, intelligenceOS, exploratory
+reasoning, Answer Engine, and typed answer operations; moved approved Memory
+retrieval after canonical Spine construction; added subject, role, thread,
+privacy, performed-function, and competition checks; expired resolved or
+topic-stale correction state; and centralized read-only Memory expression
+reconstruction so internal titles and review scaffolding stay behind NLO and
+Voice.
+
+**Why:** A capable solver cannot use facts it never receives, and an
+expression organ cannot repair missing substance without inventing it. One
+canonical turn lets specialized organs remain specialized while agreeing on
+what Aleks supplied and what each owner owes.
+
+**Evidence:** 130 focused machinery and status tests and 9 focused Selene Chat
+shell integration tests passed (139 selected checks total). The integration slice
+caught and repaired one retrieval-order variable fault before release. No live
+Q&A or stressful testing was needed.
+
+**What changed in our understanding:** The broad Q&A seam was not one weak
+organ. It was a timing and ownership problem between strong systems. Once the
+turn is canonical, Memory can contribute relevant reconstructed meaning
+without becoming the answer owner or leaking its index label.
+
+**Boundaries preserved:** No Memory or knowledge was retained, revised, or
+deleted. No identity, personality, governance, authority, training, autonomy,
+external action, package, or installation changed. NLO and Voice still own
+expression; facts in the ledger remain reported inputs, not verified truth.
+
+**Next:** Phase 2 — Working, Personal, and Knowledge Memory Maturation. Mature
+attention and expiry, paraphrase recall, reconstruction versus inference,
+duplicate prevention, reconsolidation, revocation, privacy, and natural use of
+approved history before ordered teaching resumes.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

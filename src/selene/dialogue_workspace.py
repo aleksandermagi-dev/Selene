@@ -199,6 +199,28 @@ def prepare_dialogue_turn(
         previous,
         contextual_follow_up=contextual_follow_up,
     )
+    topic_transition = str(contextual_follow_up.get("kind") or "") == "topic_shift" or any(
+        marker in interpreted_text.lower()
+        for marker in (
+            "separate topic",
+            "different topic",
+            "new topic",
+            "on another topic",
+            "separate question",
+            "different question",
+            "new question",
+        )
+    )
+    corrections = _advance_correction_lifecycle(
+        corrections,
+        current_correction_detected=correction.get("detected") is True,
+        topic_transition=topic_transition,
+        prior_recomputation=(
+            (prior_pragmatics.get("session_proposition_ledger") or {}).get("recomputation")
+            if isinstance(prior_pragmatics.get("session_proposition_ledger"), dict)
+            else {}
+        ),
+    )
     epistemic_updates = [
         item for item in prior_pragmatics.get("epistemic_updates") or [] if isinstance(item, dict)
     ][-12:]
@@ -281,6 +303,7 @@ def prepare_dialogue_turn(
             "epistemic_revision_plan": epistemic_update_plan,
             "turn_id": _loop_id(session_id, interpreted_text, 0).replace("dialogue_loop", "dialogue_turn"),
             "thread_id": active_thread_id,
+            "topic_transition": topic_transition,
         }
     )
     returned_to_prior_thread = bool(
@@ -1025,6 +1048,52 @@ def _correction_refinement(
         "scope": "current_session_refinement_only",
         "durable_memory_write": False,
     }
+
+
+def _advance_correction_lifecycle(
+    corrections: list[Any],
+    *,
+    current_correction_detected: bool,
+    topic_transition: bool,
+    prior_recomputation: dict[str, Any] | None,
+) -> list[Any]:
+    """Retire resolved or stale correction posture without deleting ancestry."""
+
+    recomputation = prior_recomputation if isinstance(prior_recomputation, dict) else {}
+    resolved = str(recomputation.get("state") or "") in {
+        "completed",
+        "premise_revised_no_dependent_result",
+        "not_required",
+        "expired_on_topic_transition",
+    }
+    if current_correction_detected:
+        return corrections
+    result: list[Any] = []
+    for item in corrections:
+        if not isinstance(item, dict) or str(item.get("status") or "") != "active_refinement":
+            result.append(item)
+            continue
+        if topic_transition:
+            result.append(
+                {
+                    **item,
+                    "status": "historical_stale_after_topic_transition",
+                    "eligible_current_turn": False,
+                    "lifecycle_reason": "a real topic transition ended the correction posture",
+                }
+            )
+        elif resolved:
+            result.append(
+                {
+                    **item,
+                    "status": "historical_resolved_refinement",
+                    "eligible_current_turn": False,
+                    "lifecycle_reason": "the correction was resolved and remains only as session ancestry",
+                }
+            )
+        else:
+            result.append(item)
+    return result
 
 
 def _utterance_units(

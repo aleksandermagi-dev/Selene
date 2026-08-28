@@ -2,7 +2,7 @@
 
 Date: 2026-08-27
 
-Status: current planning baseline; implementation has not begun
+Status: active implementation program; Phases 0 and 1 complete as of 2026-08-28
 
 Companion audit:
 [Selene Organ Depth and Memory-Integration Audit](../evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
@@ -150,6 +150,12 @@ inspection, and focused status tests. No live Q&A.
 ---
 
 ## Phase 1 — Canonical Context and Coordination Nervous System
+
+**Status:** Complete on 2026-08-28. The current turn now has one typed,
+nonpersistent fact ledger; answer owners account for supplied fields before
+asking for more; approved retrieval follows canonical turn construction; and
+stale correction posture expires without erasing ancestry. See the
+[Phase 1 evidence record](../evidence/SELENE_WHOLE_SYSTEM_PHASE_1_CONTEXT_COORDINATION_20260828.md).
 
 ### Purpose
 
@@ -814,17 +820,11 @@ These do not wait for one final cleanup phase.
 
 ## Immediate Starting Point
 
-The organ-depth audit already supplies most of Phase 0's human-readable map.
-The next implementation work is Phase 1, beginning with a source map of:
-
-1. conversation-state lifecycle;
-2. canonical current-turn fact extraction;
-3. dialogue-act ownership;
-4. owner premise handoff; and
-5. the point where Memory and knowledge retrieval currently occur relative to
-   Dialogue Workspace and Conversation Spine construction.
-
-No additional teaching should begin until the Phase 1 completion gate passes.
+Phases 0 and 1 are complete. The next implementation work is Phase 2:
+Working, Personal, and Knowledge Memory Maturation. Begin with the current
+working-context lifecycle, explicit and contextual recall invariance, and
+reconstruction/reconsolidation boundaries. Ordered teaching remains paused
+until the Phase 2 completion gate passes.
 
 ## Final Principle
 

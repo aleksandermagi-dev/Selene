@@ -108,6 +108,10 @@ from .compressed_structure_braid import (
     run_custom_instruction_braid,
 )
 from .conversation_spine import conversation_spine_status
+from .current_turn_fact_ledger import (
+    build_current_turn_fact_ledger,
+    current_turn_fact_ledger_status,
+)
 from .conversation_continuity import (
     conversation_continuity_status,
     resolve_conversation_continuity,
@@ -720,6 +724,10 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": answer_operations_status()}
     if route_key == "answer_operations.build":
         return {"route": route_key, "result": build_answer_operation_packet(payload)}
+    if route_key == "current_turn_facts.status":
+        return {"route": route_key, "result": current_turn_fact_ledger_status()}
+    if route_key == "current_turn_facts.build":
+        return {"route": route_key, "result": build_current_turn_fact_ledger(payload)}
     if route_key == "semantic_fulfillment.status":
         return {"route": route_key, "result": semantic_fulfillment_status()}
     if route_key == "semantic_fulfillment.evaluate":

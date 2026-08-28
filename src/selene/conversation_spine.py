@@ -6,6 +6,7 @@ from typing import Any
 
 from .pragmatic_planner import build_pragmatic_plan
 from .conversation_continuity import resolve_conversation_continuity
+from .current_turn_fact_ledger import build_current_turn_fact_ledger
 from .registry import truncate
 
 
@@ -64,6 +65,8 @@ def conversation_spine_status() -> dict[str, Any]:
                 "selective current-session epistemic updates and model ancestry",
                 "bounded visible session landmarks",
                 "open response obligations",
+                "typed current-turn entities quantities options criteria observations claims relations conditions corrections and sequence",
+                "owner-specific current-turn input receipts before optional retrieval",
                 "session topic branches returns dependencies and landings",
                 "one selected continuity target across immediate answers threads landmarks checkpoints and referents",
                 "bounded long-thread structural index and saturation handoff",
@@ -226,6 +229,21 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         for item in pragmatic_plan.get("response_obligations") or []
         if isinstance(item, dict)
     ]
+    current_turn_fact_ledger = build_current_turn_fact_ledger(
+        {
+            "session_id": session_id,
+            "prompt": prompt,
+            "interpreted_text": interpreted,
+            "obligations": obligations,
+            "correction_refinement": pragmatics.get("correction_refinement") or {},
+            "epistemic_revision": epistemic_revision,
+        }
+    )
+    current_turn_facts = [
+        item
+        for item in current_turn_fact_ledger.get("facts") or []
+        if isinstance(item, dict)
+    ]
     active_topic = truncate(str(dialogue.get("active_topic") or ""), 500)
     topic_anchors = _unique_text(
         [
@@ -269,6 +287,16 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         grounded_prompt = truncate(
             f"{grounded_prompt} Relevant user-supplied facts from this session: {fact_text}",
             4000,
+        )
+    if current_turn_facts:
+        current_fact_text = " ".join(
+            str(item.get("text") or "")
+            for item in current_turn_facts[:12]
+            if str(item.get("text") or "").strip()
+        )
+        grounded_prompt = truncate(
+            f"{grounded_prompt} Current-turn supplied facts: {current_fact_text}",
+            5000,
         )
     turn_id = "conversation-turn-" + sha256(
         f"{session_id}|{interpreted}|{previous['preview']}".encode("utf-8")
@@ -331,6 +359,10 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "session_facts": session_facts,
             "relevant_session_facts": relevant_session_facts,
             "session_facts_are_durable_memory": False,
+            "current_turn_fact_ledger": current_turn_fact_ledger,
+            "current_turn_facts": current_turn_facts,
+            "current_turn_owner_inputs": current_turn_fact_ledger.get("owner_inputs") or [],
+            "current_turn_facts_precede_optional_retrieval": True,
             "open_obligations": obligations,
             "obligation_sequence": [str(item.get("id") or "") for item in obligations],
             "obligation_ledger": {

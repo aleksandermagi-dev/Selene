@@ -77,6 +77,8 @@ def answer_operations_status() -> dict[str, Any]:
             "result_states": ["completed", "missing_input", "unsupported"],
             "generic_prose_may_complete_operation": False,
             "canonical_obligation_reparse_allowed": False,
+            "current_turn_owner_input_receipt_required": True,
+            "missing_input_may_repeat_supplied_current_turn_input": False,
             "review_status": "status_only",
             "provenance_boundary": ANSWER_OPERATIONS_BOUNDARY,
         }
@@ -115,6 +117,13 @@ def build_answer_operation_packet(payload: dict[str, Any] | None = None) -> dict
             )
             if hard_boundary
             else _execute_operation(obligation, operation, payload)
+        )
+        result = _attach_current_turn_input_receipt(
+            result,
+            obligation=obligation,
+            operation=operation,
+            spine=spine,
+            consumed=not hard_boundary,
         )
         results.append(result)
 
@@ -157,6 +166,19 @@ def build_answer_operation_packet(payload: dict[str, Any] | None = None) -> dict
             ),
             "version": "v1_typed_obligation_operation_results",
             "canonical_ledger_used": bool(ledger),
+            "current_turn_fact_ledger_used": bool(
+                _dict(spine.get("current_turn_fact_ledger"))
+            ),
+            "all_operation_inputs_accounted_for": bool(
+                results
+                and all(
+                    _dict(item.get("current_turn_input_receipt")).get(
+                        "accounted_before_result"
+                    )
+                    is True
+                    for item in results
+                )
+            ),
             "canonical_obligation_reparse_allowed": False,
             "operation_count": len(results),
             "completed_count": len(completed),
@@ -845,6 +867,121 @@ def _missing_result(
         "canonical_obligation_reparsed": False,
         **GUARDS,
     }
+
+
+def _attach_current_turn_input_receipt(
+    result: dict[str, Any],
+    *,
+    obligation: dict[str, Any],
+    operation: str,
+    spine: dict[str, Any],
+    consumed: bool,
+) -> dict[str, Any]:
+    """Record which visible facts were available before an owner result.
+
+    The receipt prevents a downstream missing-information sentence from asking
+    for candidates, criteria, observations, or corrections the speaker already
+    supplied. It does not manufacture the owner's answer.
+    """
+
+    obligation_id = str(obligation.get("id") or "")
+    owner_input = next(
+        (
+            item
+            for item in spine.get("current_turn_owner_inputs") or []
+            if isinstance(item, dict)
+            and str(item.get("obligation_id") or "") == obligation_id
+        ),
+        None,
+    )
+    ledger_present = isinstance(spine.get("current_turn_fact_ledger"), dict)
+    supplied_fields = _dict(
+        owner_input.get("supplied_fields") if isinstance(owner_input, dict) else {}
+    )
+    supplied_names = _texts(
+        owner_input.get("supplied_field_names")
+        if isinstance(owner_input, dict)
+        else []
+    )
+    receipt = {
+        "ledger_present": ledger_present,
+        "owner_input_present": isinstance(owner_input, dict),
+        "accounted_before_result": bool(
+            consumed and (isinstance(owner_input, dict) or not ledger_present)
+        ),
+        "fact_count": int(owner_input.get("fact_count") or 0)
+        if isinstance(owner_input, dict)
+        else 0,
+        "fact_ids": _texts(
+            owner_input.get("fact_ids") if isinstance(owner_input, dict) else []
+        ),
+        "supplied_field_names": supplied_names,
+        "current_turn_precedence": bool(
+            isinstance(owner_input, dict)
+            and owner_input.get("current_turn_precedence") is True
+        ),
+        "facts_are_owner_output": False,
+        "facts_are_independently_verified": False,
+    }
+    updated = {**result, "current_turn_input_receipt": receipt}
+    if str(result.get("status") or "") != "missing_input" or not supplied_names:
+        return updated
+
+    unmet = _unmet_current_turn_inputs(operation, supplied_fields)
+    updated["missing_input"] = (
+        "; ".join(unmet)
+        if unmet
+        else (
+            "the responsible owner still needs to produce the missing semantic "
+            "result fields; no additional user input identified"
+        )
+    )
+    updated["missing_input_accounts_for_current_turn"] = True
+    updated["already_supplied_current_turn_fields"] = supplied_names
+    updated["reason"] = (
+        "the current-turn inputs were consumed, but the responsible owner did "
+        "not yet return every required semantic result field"
+        if not unmet
+        else "only input categories not supplied in the current turn remain open"
+    )
+    return updated
+
+
+def _unmet_current_turn_inputs(
+    operation: str,
+    supplied_fields: dict[str, Any],
+) -> list[str]:
+    has = lambda field: _field_present(supplied_fields.get(field))
+    options = supplied_fields.get("options")
+    option_count = len(options) if isinstance(options, list) else int(bool(options))
+    basis_present = any(
+        has(field)
+        for field in ("criteria", "observations", "relations", "quantities", "claims")
+    )
+    open_inputs: list[str] = []
+    if operation == "comparison":
+        if option_count < 2:
+            open_inputs.append("two distinguishable candidates")
+        if not basis_present:
+            open_inputs.append("a shared comparison basis")
+    elif operation == "choice":
+        if option_count < 2:
+            open_inputs.append("the available options")
+        if not has("criteria"):
+            open_inputs.append("the criterion that should control the choice")
+    elif operation in {"prediction", "hypothesis", "causal_explanation"}:
+        if not any(has(field) for field in ("observations", "relations", "claims")):
+            open_inputs.append("a visible observation, supported relation, or reviewed claim")
+    elif operation == "disagreement":
+        if not any(has(field) for field in ("claims", "observations", "relations")):
+            open_inputs.append("the claim or observation to evaluate")
+    elif operation == "correction":
+        if not has("corrections") and not (
+            isinstance(supplied_fields.get("quantities"), list)
+            and len(supplied_fields.get("quantities") or []) >= 2
+        ):
+            open_inputs.append("the corrected input and the value it replaces")
+    return open_inputs
 
 
 def _operation_for_obligation(obligation: dict[str, Any]) -> str:

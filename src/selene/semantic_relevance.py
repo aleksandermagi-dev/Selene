@@ -60,6 +60,8 @@ def semantic_relevance_status() -> dict[str, Any]:
                 "requested answer role",
                 "conversation-thread compatibility",
                 "memory recall strength",
+                "speaker and memory privacy scope",
+                "current-turn fact and responsible-owner precedence",
                 "self-state ownership",
             ],
             "single_keyword_is_authority": False,
@@ -83,6 +85,7 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
     candidate = payload.get("candidate") if isinstance(payload.get("candidate"), dict) else {}
     intent = payload.get("intent_decision") if isinstance(payload.get("intent_decision"), dict) else {}
     spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
+    speaker = payload.get("speaker_envelope") if isinstance(payload.get("speaker_envelope"), dict) else {}
     meaning_route = intent.get("meaning_route") if isinstance(intent.get("meaning_route"), dict) else {}
     meaning_frame = (
         payload.get("canonical_meaning_frame")
@@ -158,6 +161,10 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
         not owner_only_functions
         or owner_only_functions & performed_functions
     )
+    current_turn_fact_count = int(
+        (spine.get("current_turn_fact_ledger") or {}).get("fact_count") or 0
+    ) if isinstance(spine.get("current_turn_fact_ledger"), dict) else 0
+    continuity_mode = str(spine.get("continuity_mode") or "")
     explicit_focus = _explicit_subject_focus(prompt, strong_subject_overlap)
     phrase_overlap = _phrase_overlap(prompt, " ".join((subject_text, core_text, application_text)))
     contextual = spine.get("contextual_follow_up") if isinstance(spine.get("contextual_follow_up"), dict) else {}
@@ -177,7 +184,29 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
         accepted = self_state_requested
         reason = "self_state_owned_by_self_state_intent" if accepted else "self_state_without_self_state_intent"
     elif source_class in {"memory_reconstruction", "approved_memory", "approved_memory_reference"}:
-        if contextual.get("detected") is True and not explicit_recall:
+        consent_scope = str(candidate.get("consent_scope") or "")
+        claimed_speaker = str(speaker.get("claimed_speaker") or "").strip().casefold()
+        private_for_aleks = consent_scope in {
+            "private_selene_aleks_context",
+            "private_inner",
+        }
+        if private_for_aleks and claimed_speaker and claimed_speaker not in {
+            "aleks",
+            "aleksander magi",
+            "aleksander rani magi",
+        }:
+            accepted = False
+            reason = "memory_privacy_scope_does_not_include_current_speaker"
+        elif owner_only_functions and not requested_operation_performed and not explicit_recall:
+            accepted = False
+            reason = "memory_describes_context_but_does_not_perform_requested_operation"
+        elif current_turn_fact_count and owner_only_functions and not explicit_recall:
+            accepted = False
+            reason = "current_turn_facts_and_responsible_owner_precede_contextual_memory"
+        elif continuity_mode in {"named_thread_return", "immediate_follow_up", "dependency_revision"} and not explicit_recall:
+            accepted = False
+            reason = "current_session_continuity_precedes_contextual_memory"
+        elif contextual.get("detected") is True and not explicit_recall:
             accepted = False
             reason = "immediate_callback_does_not_silently_import_memory"
         elif explicit_recall:
@@ -251,6 +280,10 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
             "phrase_overlap": phrase_overlap,
             "explicit_memory_recall": explicit_recall,
             "self_state_requested": self_state_requested,
+            "current_turn_fact_count": current_turn_fact_count,
+            "current_turn_facts_precede_optional_retrieval": True,
+            "continuity_mode": continuity_mode,
+            "speaker_privacy_gate_applied": bool(speaker),
             "single_keyword_is_authority": False,
             "writes_state": False,
             "visible_summary_only": True,

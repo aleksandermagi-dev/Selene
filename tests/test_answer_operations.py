@@ -436,6 +436,43 @@ def test_generic_comparison_method_does_not_impersonate_completed_comparison() -
     assert packet["generic_prose_accepted_as_completion"] is False
 
 
+def test_missing_report_cannot_request_current_turn_inputs_already_supplied() -> None:
+    obligation = {
+        "id": "obligation-1",
+        "required": True,
+        "responsible_owner": "answer_engine",
+        "requested_response_functions": ["comparison"],
+        "source_text": "Compare paper and thin card.",
+    }
+    spine = _spine(obligation)
+    spine["current_turn_fact_ledger"] = {"fact_count": 3}
+    spine["current_turn_owner_inputs"] = [
+        {
+            "obligation_id": "obligation-1",
+            "fact_count": 3,
+            "fact_ids": ["paper", "card", "durability"],
+            "supplied_field_names": ["options", "criteria"],
+            "supplied_fields": {
+                "options": ["paper", "thin card"],
+                "criteria": ["durability"],
+            },
+            "current_turn_precedence": True,
+        }
+    ]
+
+    packet = build_answer_operation_packet({"conversation_spine": spine})
+    result = packet["results"][0]
+
+    assert result["status"] == "missing_input"
+    assert "two supported candidates" not in result["missing_input"]
+    assert "shared comparison basis" not in result["missing_input"]
+    assert "no additional user input identified" in result["missing_input"]
+    assert result["current_turn_input_receipt"]["accounted_before_result"] is True
+    assert result["already_supplied_current_turn_fields"] == ["options", "criteria"]
+    assert packet["current_turn_fact_ledger_used"] is True
+    assert packet["all_operation_inputs_accounted_for"] is True
+
+
 def test_correction_and_closure_are_typed_without_changing_identity_or_authority() -> None:
     packet = build_answer_operation_packet(
         {

@@ -6,7 +6,10 @@ from hashlib import sha256
 import pytest
 
 from selene.db import connect, init_db
-from selene.memory_organ import propose_memory_candidate
+from selene.memory_organ import (
+    propose_memory_candidate,
+    reconstruct_memory_summary_for_expression,
+)
 from selene.module_router import route_request
 
 
@@ -28,6 +31,30 @@ def _assert_locked(result):
     assert result["self_replication_allowed"] is False
     assert result["autonomous_action_allowed"] is False
     assert result["durable_memory_write_requires_review"] is True
+
+
+def test_memory_expression_reconstruction_holds_internal_index_labels() -> None:
+    result = reconstruct_memory_summary_for_expression(
+        {
+            "title": "full_spectrum_mode_ignition",
+            "summary": (
+                "Core-linked braid moment for B review only "
+                "Braid thread: full_spectrum_mode_ignition "
+                "Braid moment type: Full-spectrum mode ignition "
+                "Thread origin status: thread_origin "
+                "Plain reason: Full-spectrum loads the system context in review terms; "
+                "it is not C activation."
+            ),
+        }
+    )
+
+    assert result == (
+        "Full-spectrum loads the system context in review terms; it is not activation"
+    )
+    assert "Braid" not in result
+    assert "B review" not in result
+    assert "thread_origin" not in result
+    assert "full_spectrum_mode_ignition" not in result
 
 
 def test_memory_index_includes_approved_reference_with_vys_metadata(tmp_path):

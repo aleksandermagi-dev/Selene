@@ -76,6 +76,27 @@ def prepare_session_proposition_revision(
     if not detected:
         prior_recomputation = _dict(prior.get("recomputation"))
         unresolved_state = str(prior_recomputation.get("state") or "")
+        if payload.get("topic_transition") is True and unresolved_state in {
+            "required",
+            "held_pending_owner_result",
+            "held_target_not_found",
+            "held_missing_corrected_input",
+        }:
+            return _finalize(
+                prior,
+                status="session_proposition_revision_expired_to_ancestry",
+                revision_event={},
+                recomputation={
+                    **prior_recomputation,
+                    "state": "expired_on_topic_transition",
+                    "reason": (
+                        "a real topic transition ended the active correction posture; "
+                        "revision ancestry remains inspectable"
+                    ),
+                    "preserved_across_turn": False,
+                    "eligible_current_turn": False,
+                },
+            )
         if unresolved_state in {
             "required",
             "held_pending_owner_result",

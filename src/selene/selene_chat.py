@@ -79,6 +79,7 @@ from .memory_organ import (
     decide_memory_candidate,
     memory_index_status,
     propose_memory_candidate,
+    reconstruct_memory_summary_for_expression,
     retrieve_memory,
 )
 from .meaning_router import interpret_turn_meaning
@@ -329,15 +330,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         contextual_follow_up,
     )
     intent_decision["relational_context"] = relational_context
-    memory_retrieval = retrieve_memory(
-        conn,
-        {
-            "query": meaning_text,
-            "limit": 4,
-            "intent_decision": intent_decision,
-            "allow_contextual_relevance": transfer_complete and not qa_probe,
-        },
-    )
     route = create_core_mind_route_preview(
         conn,
         {
@@ -351,7 +343,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "selene_chat_active_supervised",
                 *_json_list(diagnostic_context.get("source_refs")),
                 *chat_continuity.get("source_refs", []),
-                *memory_retrieval.get("source_refs", []),
             ],
             "suppress_review_queue": True,
         },
@@ -420,6 +411,17 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "contextual_follow_up": contextual_follow_up,
             "conversation_events": chat_continuity.get("current_session_events") or [],
         }
+    )
+    memory_retrieval = retrieve_memory(
+        conn,
+        {
+            "query": meaning_text,
+            "limit": 4,
+            "intent_decision": intent_decision,
+            "conversation_spine": conversation_spine,
+            "speaker_envelope": speaker_envelope,
+            "allow_contextual_relevance": transfer_complete and not qa_probe,
+        },
     )
     dual_horizon_context = build_dual_horizon_context(
         {
@@ -798,7 +800,42 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         {
             **exploratory_input,
             "prompt": meaning_text,
-            "observations": intelligence_support.get("observations") or [],
+            "observations": [
+                *(intelligence_support.get("observations") or []),
+                *[
+                    {
+                        "observation": str(item.get("text") or ""),
+                        "source_role": "user",
+                        "source_kind": "canonical_current_turn_fact",
+                        "premise_eligible": True,
+                    }
+                    for item in conversation_spine.get("current_turn_facts") or []
+                    if isinstance(item, dict)
+                    and str(item.get("text") or "").strip()
+                    and str(item.get("kind") or "")
+                    in {"observation", "relation", "quantity", "condition", "claim"}
+                ],
+            ],
+            "comparison_candidates": list(
+                dict.fromkeys(
+                    str(value)
+                    for owner_input in conversation_spine.get("current_turn_owner_inputs") or []
+                    if isinstance(owner_input, dict)
+                    and "comparison" in (owner_input.get("requested_response_functions") or [])
+                    for value in (owner_input.get("supplied_fields") or {}).get("options") or []
+                    if str(value).strip()
+                )
+            ),
+            "comparison_dimensions": list(
+                dict.fromkeys(
+                    str(value)
+                    for owner_input in conversation_spine.get("current_turn_owner_inputs") or []
+                    if isinstance(owner_input, dict)
+                    and "comparison" in (owner_input.get("requested_response_functions") or [])
+                    for value in (owner_input.get("supplied_fields") or {}).get("criteria") or []
+                    if str(value).strip()
+                )
+            ),
             "approved_knowledge_items": (
                 comprehension.get("knowledge_context") or {}
             ).get("answer_eligible_items")
@@ -3578,6 +3615,19 @@ def _intelligence_support(
 ) -> dict[str, Any]:
     meaning = intent_decision.get("meaning_route") if isinstance(intent_decision.get("meaning_route"), dict) else {}
     specialized_domain = str(meaning.get("selected_domain") or "")
+    spine = conversation_spine if isinstance(conversation_spine, dict) else {}
+    current_turn_observations = [
+        {
+            "observation": str(item.get("text") or ""),
+            "source_role": "user",
+            "source_kind": "canonical_current_turn_fact",
+            "premise_eligible": True,
+            "fact_id": str(item.get("id") or ""),
+            "fact_kind": str(item.get("kind") or "observation"),
+        }
+        for item in spine.get("current_turn_facts") or []
+        if isinstance(item, dict) and str(item.get("text") or "").strip()
+    ]
     recent_observations = [
         {
             "observation": str(item.get("preview") or ""),
@@ -3590,7 +3640,7 @@ def _intelligence_support(
     ]
     prompt_grounded_preview = build_answer_substance(
         text,
-        recent_observations,
+        [*recent_observations, *current_turn_observations],
     )
     prompt_grounded_available = bool(
         str(prompt_grounded_preview.get("answer") or "").strip()
@@ -3620,7 +3670,6 @@ def _intelligence_support(
             "review_status": "status_only",
         }
     contextual = contextual_follow_up if isinstance(contextual_follow_up, dict) else {}
-    spine = conversation_spine if isinstance(conversation_spine, dict) else {}
     selected_session_context = [
         {
             "observation": str(item.get("summary") or item.get("text") or "").strip(),
@@ -3640,13 +3689,13 @@ def _intelligence_support(
     ]
     deduplicated_observations: list[dict[str, Any]] = []
     seen_observations: set[str] = set()
-    for observation in [*selected_session_context, *recent_observations]:
+    for observation in [*recent_observations, *selected_session_context, *current_turn_observations]:
         value = " ".join(str(observation.get("observation") or "").lower().split())
         if not value or value in seen_observations:
             continue
         seen_observations.add(value)
         deduplicated_observations.append(observation)
-    recent_observations = deduplicated_observations[-16:]
+    recent_observations = deduplicated_observations[-24:]
     reasoning_prompt = truncate(
         text
         if prompt_grounded_available
@@ -3797,6 +3846,10 @@ def _answer_engine_support(
             str(item.get("preview") or "")
             for item in (chat_continuity.get("current_session_events") or [])[-8:]
             if isinstance(item, dict) and str(item.get("preview") or "").strip()
+        ] + [
+            str(item.get("text") or "")
+            for item in conversation_spine.get("current_turn_facts") or []
+            if isinstance(item, dict) and str(item.get("text") or "").strip()
         ],
         "completion_retry_enabled": chat_payload.get("completion_retry_enabled") is not False,
         "consult_great_library": False,
@@ -5404,53 +5457,25 @@ def _contextual_memory_reply(
     if not items:
         return ""
     first = items[0] if isinstance(items[0], dict) else {}
-    subject = truncate(
-        str(
-            callback.get("subject_label")
-            or first.get("title")
-            or "that earlier thread"
-        ).strip(),
-        160,
-    )
     if callback and callback.get("surface_callback_allowed") is not True:
-        if callback.get("silent_influence_allowed") is True and subject:
-            return f"{subject} remains relevant to the current point."
+        # Silent influence may supply reconstructed meaning, but it may not
+        # announce a callback or turn a retrieval label into speech.
+        if callback.get("silent_influence_allowed") is True:
+            return _chat_memory_summary(first)
         return ""
+    summary = _chat_memory_summary(first)
     confidence = str(memory_retrieval.get("recall_state") or "partial")
     if confidence == "clear":
-        return f"This connects with our earlier {subject} thread."
+        return f"This connects with something we discussed earlier: {summary}"
     return (
-        f"This may connect with our earlier {subject} thread, though the fit is "
+        f"This may connect with something we discussed earlier: {summary} The fit is "
         f"{confidence.replace('_', ' ')}."
     )
 
 
 def _chat_memory_summary(item: dict[str, Any]) -> str:
-    raw = str(item.get("summary") or item.get("title") or "something from approved memory")
-    title = str(item.get("title") or "")
-    combined = f"{title} {raw}".lower()
-    if "full_spectrum_mode_ignition" in combined or "full-spectrum" in combined or "full spectrum" in combined:
-        return (
-            "full-spectrum means a whole-map continuity cue: bringing the relevant threads into view, "
-            "without pretending that it activates anything or gives me hidden recall"
-        )
-    text = raw
-    replacements = {
-        "Core-linked braid moment for B review only": "",
-        "Core-linked bounded speech-memory pair for B review only": "",
-        "Bounded Core memory pair for B review only": "",
-        "B review only": "Cocoon-tended",
-        "B review": "Cocoon support",
-        "C activation": "activation",
-    }
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-    text = re.sub(r"\bBraid thread:\s*[A-Za-z0-9_-]+\b", "", text)
-    text = re.sub(r"\bBraid moment type:\s*", "", text)
-    text = re.sub(r"\bThread origin status:\s*[A-Za-z0-9_-]+\b", "", text)
-    text = re.sub(r"\bPlain reason:\s*", "", text)
-    text = re.sub(r"\s+", " ", text).strip(" :-")
-    return truncate(text or title or "something from approved memory", 360)
+    supplied = truncate(str(item.get("expression_summary") or ""), 500).strip()
+    return supplied or reconstruct_memory_summary_for_expression(item)
 
 
 def _memory_candidate_suggestion(

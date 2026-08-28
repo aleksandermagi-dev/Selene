@@ -4480,7 +4480,7 @@ def test_active_selene_chat_sanitizes_internal_memory_labels(tmp_path):
     result = route_request(conn, "selene_chat.send", {"text": "Do you remember what full-spectrum means?"})["result"]
 
     assert result["memory_context_used"] is True
-    assert "full-spectrum means a whole-map continuity cue" in result["candidate_text"]
+    assert "Full-spectrum loads the system context" in result["candidate_text"]
     assert "B review" not in result["candidate_text"]
     assert "Braid thread" not in result["candidate_text"]
     assert "Core-linked" not in result["candidate_text"]

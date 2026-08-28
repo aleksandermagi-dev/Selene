@@ -162,11 +162,15 @@ def resolve_conversation_continuity(
     )
     previous_answer = _previous_assistant(contextual, events)
     recomputation = _dict(proposition_ledger.get("recomputation"))
-    revision_active = str(recomputation.get("state") or "") in {
+    current_revision_detected = bool(
+        _dict(pragmatics.get("correction_refinement")).get("detected") is True
+        or _dict(pragmatics.get("epistemic_update_plan")).get("detected") is True
+    )
+    revision_active = current_revision_detected or str(recomputation.get("state") or "") in {
         "required",
         "held_pending_owner_result",
-        "premise_revised_no_dependent_result",
-        "completed",
+        "held_target_not_found",
+        "held_missing_corrected_input",
     }
     revised_proposition = next(
         (
@@ -193,6 +197,8 @@ def resolve_conversation_continuity(
     topic_shift = contextual_kind == "topic_shift" or any(
         cue in lower for cue in _TOPIC_SHIFT_CUES
     )
+    if topic_shift and not current_revision_detected:
+        revision_active = False
     immediate_follow_up = contextual_kind in _IMMEDIATE_FOLLOW_UP_KINDS
     mixed_intent = intent.get("mixed_intent") is True
     dialogue_acts = _dialogue_acts(intent, pragmatics)
@@ -363,6 +369,7 @@ def resolve_conversation_continuity(
             ],
             "stale_propositions_eligible_for_grounding": False,
             "session_proposition_ledger_observed": bool(proposition_ledger),
+            "revision_active": revision_active,
             "dependency_revision": recomputation if revision_active else {},
             "visible_summary_only": True,
             "hidden_chain_of_thought_exposed": False,

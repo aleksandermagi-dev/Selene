@@ -80,6 +80,35 @@ def test_conversation_spine_carries_the_canonical_obligation_ledger_without_repa
     assert spine["obligation_ledger"]["downstream_reparse_allowed"] is False
 
 
+def test_conversation_spine_carries_typed_current_turn_inputs_to_each_owner():
+    prompt = (
+        "Compare paper and thin card. Paper costs 2 dollars and thin card costs "
+        "4 dollars. Durability matters more. Choose one and explain why."
+    )
+    plan = build_pragmatic_plan({"prompt": prompt})
+    spine = build_conversation_spine(
+        {
+            "session_id": 72,
+            "prompt": prompt,
+            "intent_decision": classify_chat_intent(prompt),
+            "dialogue_workspace": _dialogue(prompt, topic="paper pinwheel"),
+            "pragmatic_plan": plan,
+        }
+    )
+
+    by_function = {
+        function: owner
+        for owner in spine["current_turn_owner_inputs"]
+        for function in owner["requested_response_functions"]
+    }
+    assert spine["current_turn_fact_ledger"]["fact_count"] >= 6
+    assert len(by_function["comparison"]["supplied_fields"]["options"]) == 2
+    assert by_function["choice"]["supplied_fields"]["criteria"] == ["Durability"]
+    assert spine["current_turn_facts_precede_optional_retrieval"] is True
+    assert "Current-turn supplied facts:" in spine["grounded_prompt"]
+    assert spine["memory_write_active"] is False
+
+
 def test_conversation_spine_carries_correctable_user_facts_only_within_the_session():
     prompt = "What were the porch dimensions and how many chairs did I say?"
     spine = build_conversation_spine(

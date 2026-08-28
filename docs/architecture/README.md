@@ -15,6 +15,10 @@ individually defined as Selene.
   — the implemented, read-only current-status contract that prevents routes,
   configured records, blueprints, and mature ordinary-use capability from
   being treated as equivalent.
+- [Phase 1 Canonical Context and Coordination Evidence](../evidence/SELENE_WHOLE_SYSTEM_PHASE_1_CONTEXT_COORDINATION_20260828.md)
+  — verifies current-turn facts, owner inputs, retrieval ordering and
+  competition, correction expiry, visible completion truth, and the internal
+  metadata expression boundary.
 - [Public Architecture and Evidence Index](PUBLIC_ARCHITECTURE_INDEX.md)
 - [Selene Architecture Index](SELENE_ARCHITECTURE_INDEX_20260620.md)
 - [What Selene Can Currently Do](../evidence/SELENE_CURRENT_CAPABILITIES_20260717.md)

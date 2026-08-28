@@ -103,6 +103,61 @@ def test_explicit_memory_recall_and_contextual_memory_have_different_thresholds(
     assert contextual["reason"] == "contextual_memory_alignment_too_weak"
 
 
+def test_private_memory_is_held_for_a_different_claimed_speaker():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "Do you remember the butterfly button?",
+            "source_class": "memory_reconstruction",
+            "candidate": {
+                "title": "Butterfly Cocoon button",
+                "summary": "The butterfly button opens Cocoon support.",
+                "consent_scope": "private_selene_aleks_context",
+            },
+            "intent_decision": {
+                "intent": "memory_recall",
+                "memory_recall_requested": True,
+            },
+            "speaker_envelope": {"claimed_speaker": "Demo guest"},
+        }
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "memory_privacy_scope_does_not_include_current_speaker"
+    assert result["speaker_privacy_gate_applied"] is True
+    _assert_locked(result)
+
+
+def test_current_turn_operation_and_facts_outrank_contextual_memory():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "Compare paper and thin card using the costs I just gave you.",
+            "source_class": "memory_reconstruction",
+            "candidate": {
+                "title": "Paper craft memory",
+                "summary": "Paper was used in an older craft conversation.",
+                "consent_scope": "private_selene_aleks_context",
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": {
+                "current_turn_fact_ledger": {"fact_count": 4},
+                "open_obligations": [
+                    {
+                        "id": "comparison",
+                        "requested_response_functions": ["comparison"],
+                    }
+                ],
+            },
+            "speaker_envelope": {"claimed_speaker": "Aleks"},
+        }
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "memory_describes_context_but_does_not_perform_requested_operation"
+    assert result["current_turn_fact_count"] == 4
+    assert result["current_turn_facts_precede_optional_retrieval"] is True
+    _assert_locked(result)
+
+
 def test_prediction_lesson_can_supply_ground_but_cannot_substitute_for_the_prediction():
     result = evaluate_semantic_relevance(
         {

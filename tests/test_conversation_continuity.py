@@ -272,6 +272,31 @@ def test_bounded_pronoun_uses_the_resolved_session_referent_without_guessing():
     _assert_locked(result)
 
 
+def test_completed_correction_remains_ancestry_not_an_active_dependency_revision():
+    result = resolve_conversation_continuity(
+        {
+            "prompt": "What should we work on next?",
+            "contextual_follow_up": {"detected": False, "kind": ""},
+            "dialogue_workspace": {
+                "pragmatics": {
+                    "correction_refinement": {"detected": False},
+                    "epistemic_update_plan": {"detected": False},
+                    "session_proposition_ledger": {
+                        "recomputation": {
+                            "state": "completed",
+                            "recomputed_proposition_id": "recomputed-result",
+                        }
+                    },
+                }
+            },
+        }
+    )
+
+    assert result["mode"] != "dependency_revision"
+    assert result["revision_active"] is False
+    _assert_locked(result)
+
+
 def test_thread_loom_branches_on_a_named_new_topic_then_returns_to_the_old_one():
     initial = build_thread_braid(
         {
