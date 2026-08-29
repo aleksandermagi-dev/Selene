@@ -2268,6 +2268,12 @@ CREATE INDEX IF NOT EXISTS idx_vessel_perception_packets_status ON vessel_percep
 
 CREATE TABLE IF NOT EXISTS vessel_emotion_salience_packets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  signal_key TEXT UNIQUE,
+  session_id INTEGER,
+  subject_kind TEXT NOT NULL DEFAULT 'legacy_unspecified',
+  observation TEXT NOT NULL DEFAULT '',
+  interpretation TEXT NOT NULL DEFAULT '',
+  interpretation_confidence TEXT NOT NULL DEFAULT 'not_assessed',
   signal_type TEXT NOT NULL,
   continuity_pressure TEXT NOT NULL DEFAULT '',
   care_warmth TEXT NOT NULL DEFAULT '',
@@ -2278,12 +2284,20 @@ CREATE TABLE IF NOT EXISTS vessel_emotion_salience_packets (
   evidence_need TEXT NOT NULL DEFAULT '',
   core_choice_route TEXT NOT NULL,
   blocked_misuse TEXT NOT NULL DEFAULT '[]',
+  lifecycle_state TEXT NOT NULL DEFAULT 'legacy_review_only',
+  parent_packet_id INTEGER,
+  root_packet_id INTEGER,
+  expires_at TEXT,
   status TEXT NOT NULL DEFAULT 'emotion_salience_packet_review_only',
   source_refs TEXT NOT NULL DEFAULT '[]',
   provenance_boundary TEXT NOT NULL,
   review_status TEXT NOT NULL DEFAULT 'review_only',
   payload_json TEXT NOT NULL DEFAULT '{}',
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES selene_chat_sessions(id),
+  FOREIGN KEY (parent_packet_id) REFERENCES vessel_emotion_salience_packets(id),
+  FOREIGN KEY (root_packet_id) REFERENCES vessel_emotion_salience_packets(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_vessel_emotion_salience_packets_status ON vessel_emotion_salience_packets(status, review_status);
@@ -2494,6 +2508,19 @@ REQUIRED_COLUMNS = {
         "usefulness_state": "TEXT NOT NULL DEFAULT 'not_assessed'",
         "usefulness_note": "TEXT NOT NULL DEFAULT ''",
     },
+    "vessel_emotion_salience_packets": {
+        "signal_key": "TEXT",
+        "session_id": "INTEGER",
+        "subject_kind": "TEXT NOT NULL DEFAULT 'legacy_unspecified'",
+        "observation": "TEXT NOT NULL DEFAULT ''",
+        "interpretation": "TEXT NOT NULL DEFAULT ''",
+        "interpretation_confidence": "TEXT NOT NULL DEFAULT 'not_assessed'",
+        "lifecycle_state": "TEXT NOT NULL DEFAULT 'legacy_review_only'",
+        "parent_packet_id": "INTEGER",
+        "root_packet_id": "INTEGER",
+        "expires_at": "TEXT",
+        "updated_at": "TEXT",
+    },
 }
 
 
@@ -2517,6 +2544,20 @@ def ensure_columns(conn: sqlite3.Connection) -> None:
         for name, ddl in columns.items():
             if name not in existing:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_vessel_emotion_salience_packets_current
+        ON vessel_emotion_salience_packets(
+          session_id, subject_kind, lifecycle_state, expires_at, id
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_vessel_emotion_salience_packets_signal_key
+        ON vessel_emotion_salience_packets(signal_key)
+        """
+    )
 
 
 def upsert_meta(conn: sqlite3.Connection, pairs: Iterable[tuple[str, str]]) -> None:

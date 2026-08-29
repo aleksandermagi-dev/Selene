@@ -112,6 +112,13 @@ def build_contextual_continuity_plan(
         if isinstance(payload.get("affect_expression_guidance"), dict)
         else {}
     )
+    relational = (
+        payload.get("relational_context")
+        if isinstance(payload.get("relational_context"), dict)
+        else intent.get("relational_context")
+        if isinstance(intent.get("relational_context"), dict)
+        else {}
+    )
     conversation_continuity = (
         payload.get("conversation_continuity")
         if isinstance(payload.get("conversation_continuity"), dict)
@@ -145,6 +152,13 @@ def build_contextual_continuity_plan(
         dialogue=dialogue,
         speaker=speaker,
     )
+    relationship_continuity = _relationship_continuity_receipt(
+        relational=relational,
+        callback=callback,
+        memory=memory,
+        events=events,
+        speaker=speaker,
+    )
     source_refs = [
         "contextual_continuity:current_turn",
         *[
@@ -158,6 +172,7 @@ def build_contextual_continuity_plan(
         "version": "v1_source_separated_callbacks_and_transient_context",
         "source_channels": source_channels,
         "speaker_scope": speaker,
+        "relationship_continuity": relationship_continuity,
         "transient_preferences": preferences,
         "callback_decision": callback,
         "conversation_continuity": conversation_continuity,
@@ -455,13 +470,97 @@ def _source_channels(
     ]
 
 
+def _relationship_continuity_receipt(
+    *,
+    relational: dict[str, Any],
+    callback: dict[str, Any],
+    memory: dict[str, Any],
+    events: list[dict[str, Any]],
+    speaker: dict[str, Any],
+) -> dict[str, Any]:
+    active_channels: list[str] = []
+    if relational.get("relational_context_present") is True:
+        active_channels.append("current_turn_relational_cues")
+    if events:
+        active_channels.append("visible_current_session_context")
+    if (
+        memory.get("memory_context_used") is True
+        and str(memory.get("memory_source_class") or "") == "approved_memory_index"
+    ):
+        active_channels.append("reviewed_personal_memory")
+    callback_source = str(callback.get("source_channel") or "")
+    private_turn = relational.get("private_relational_context") is True
+    speaker_name = str(speaker.get("speaker") or "").strip().casefold()
+    authentication = str(
+        speaker.get("authentication_strength") or ""
+    ).strip()
+    private_scope_compatible = not private_turn or (
+        speaker_name
+        in {"aleks", "aleksander magi", "aleksander rani magi"}
+        and authentication
+        in {"local_desktop_session", "authenticated_remote_session"}
+    )
+    return {
+        "status": (
+            "relationship_continuity_available"
+            if active_channels
+            else "relationship_continuity_not_selected"
+        ),
+        "active_source_channels": active_channels,
+        "current_turn_cue_types": [
+            str(item) for item in relational.get("cue_types") or []
+        ],
+        "callback_source_channel": callback_source,
+        "surface_callback_allowed": callback.get("surface_callback_allowed") is True,
+        "silent_context_allowed": callback.get("silent_influence_allowed") is True,
+        "reviewed_memory_privacy_gate_precedes_receipt": (
+            "reviewed_personal_memory" in active_channels
+        ),
+        "private_current_turn_scope": private_turn,
+        "private_scope_compatible": private_scope_compatible,
+        "response_script_supplied": False,
+        "reciprocal_emotion_claim_required": False,
+        "relationship_profile_created": False,
+        "current_turn_cues_are_durable_memory": False,
+        "visible_session_context_is_durable_memory": False,
+        "reviewed_memory_wording_may_be_repeated_as_script": False,
+        "user_affect_claimed_as_selene_state": False,
+        "attribution_required_if_memory_surfaces": (
+            callback_source == "reviewed_personal_memory"
+        ),
+        "terminal_stop": (
+            "source_separated_continuity_available"
+            if active_channels and private_scope_compatible
+            else "private_scope_incompatible"
+            if active_channels
+            else "no_relationship_continuity_needed"
+        ),
+    }
+
+
 def _speaker_scope(prompt: str, supplied: Any) -> dict[str, Any]:
-    if isinstance(supplied, dict) and str(supplied.get("speaker") or "").strip():
-        return {
-            "speaker": truncate(str(supplied.get("speaker") or ""), 80),
-            "source": str(supplied.get("source") or "explicit_payload"),
+    if isinstance(supplied, dict) and str(
+        supplied.get("speaker") or supplied.get("claimed_speaker") or ""
+    ).strip():
+        result = {
+            "speaker": truncate(
+                str(supplied.get("speaker") or supplied.get("claimed_speaker") or ""),
+                80,
+            ),
+            "source": str(
+                supplied.get("source")
+                or supplied.get("envelope_source")
+                or "explicit_payload"
+            ),
             "inferred_relationship_profile": False,
         }
+        if str(supplied.get("channel") or ""):
+            result["channel"] = str(supplied["channel"])
+        if str(supplied.get("authentication_strength") or ""):
+            result["authentication_strength"] = str(
+                supplied["authentication_strength"]
+            )
+        return result
     lower = prompt.lower()
     if "this is codex" in lower:
         speaker, source = "Codex", "explicit_current_turn"

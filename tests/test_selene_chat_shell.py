@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from selene.affect_signal_lifecycle import form_current_affect_signal
 from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.activation import ACTIVATION_APPROVAL_PHRASE
@@ -1263,28 +1264,27 @@ def test_active_selene_chat_carries_current_session_expression_guidance_without_
     route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
     opening = route_request(conn, "selene_chat.send", {"text": "Hello, Selene."})["result"]
     session_id = int(opening["session_id"])
-    conn.execute(
-        """
-        INSERT INTO vessel_emotion_salience_packets
-        (signal_type, continuity_pressure, care_warmth, uncertainty, repair_need, action_energy,
-         balance_state, evidence_need, core_choice_route, source_refs, provenance_boundary)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            "current conversation signal",
-            "high pressure but bounded",
-            "care remains available",
-            "open",
-            "none",
-            "stay present",
-            "not an alarm",
-            "current turn",
-            "Core/Mind retains choice",
-            json.dumps([f"selene_chat_session:{session_id}"]),
-            "test_affect_expression_boundary",
-        ),
+    form_current_affect_signal(
+        conn,
+        {
+            "session_id": session_id,
+            "subject_kind": "selene",
+            "authored_by": "Selene",
+            "observation": "I notice bounded pressure in this synthetic chat fixture.",
+            "interpretation": "Pressure may be present without becoming an alarm.",
+            "interpretation_confidence": "provisional",
+            "signal_type": "current conversation signal",
+            "continuity_pressure": "high pressure but bounded",
+            "care_warmth": "care remains available",
+            "uncertainty": "open",
+            "repair_need": "none",
+            "action_energy": "stay present",
+            "balance_state": "not an alarm",
+            "evidence_need": "current turn",
+            "core_choice_route": "Core/Mind retains choice",
+            "source_refs": ["synthetic:chat_affect_expression_boundary"],
+        },
     )
-    conn.commit()
 
     result = route_request(
         conn,

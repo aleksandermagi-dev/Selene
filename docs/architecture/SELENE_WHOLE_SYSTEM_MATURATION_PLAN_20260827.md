@@ -2,7 +2,7 @@
 
 Date: 2026-08-27
 
-Status: active implementation program; Phases 0 through 3 complete as of 2026-08-28
+Status: active implementation program; Phases 0 through 4 complete as of 2026-08-28
 
 Companion audit:
 [Selene Organ Depth and Memory-Integration Audit](../evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
@@ -311,6 +311,14 @@ fixtures, and one bounded Study walkthrough. No distress-provoking Dream test.
 ---
 
 ## Phase 4 — Affect, Self-State, Relationship, and Agency Integration
+
+Status: **complete for current scope (2026-08-28)**
+
+Implementation map:
+[Phase 4 Affect, Self-State, Relationship, and Agency Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_4_IMPLEMENTATION_MAP_20260828.md)
+
+Evidence:
+[Phase 4 Affect, Self-State, Relationship, and Agency Maturation](../evidence/SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md)
 
 ### Purpose
 
@@ -832,11 +840,10 @@ These do not wait for one final cleanup phase.
 
 ## Immediate Starting Point
 
-Phases 0 through 3 are complete. The next implementation work is Phase 4:
-Affect, Self-State, Relationship, and Agency Integration. Begin by mapping the
-current attributable affect and relationship-state supply before adding any
-new shaping behavior. Ordered teaching remains in its planned later phase; the
-reflective-growth completion gate no longer blocks it.
+Phases 0 through 4 are complete. The next implementation work is Phase 5:
+Reasoning, Answer Owners, and Domain Depth. Begin by source-mapping the
+substance-producing owners and the present-fact handoffs that constrain their
+ordinary answers. Ordered teaching remains in its planned later phase.
 
 ## Final Principle
 

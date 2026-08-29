@@ -5,6 +5,7 @@ import re
 import sqlite3
 from typing import Any
 
+from .affect_signal_lifecycle import select_current_affect_signal
 from .emotional_agency import build_response_agency_packet
 from .registry import truncate
 
@@ -46,7 +47,17 @@ def build_affect_expression_guidance(
         if isinstance(payload.get("contextual_continuity"), dict)
         else {}
     )
-    signal = _current_session_signal(conn, session_id, payload.get("affect_signal_id"))
+    signal_selection = select_current_affect_signal(
+        conn,
+        session_id=session_id,
+        allowed_subjects={"selene"},
+        affect_signal_id=payload.get("affect_signal_id"),
+    )
+    signal = (
+        signal_selection.get("signal")
+        if isinstance(signal_selection.get("signal"), dict)
+        else None
+    )
     relational_context = (
         payload.get("relational_context")
         if isinstance(payload.get("relational_context"), dict)
@@ -94,6 +105,9 @@ def build_affect_expression_guidance(
         "relational_context": relational_context,
         "relational_context_supplies_response_script": False,
         "current_session_signal": signal_shape,
+        "current_signal_eligibility": signal_selection.get("selection_receipt") or {},
+        "affect_guidance_consumes_stored_subjects": ["selene"],
+        "user_or_relationship_signal_claimed_as_selene_state": False,
         "response_agency": response_agency,
         "current_session_affect_signal_used": bool(signal),
         "historical_affect_packets_used": False,
@@ -118,44 +132,6 @@ def build_affect_expression_guidance(
         "provenance_boundary": AFFECT_EXPRESSION_BOUNDARY,
         **GUARDS,
     }
-
-
-def _current_session_signal(
-    conn: sqlite3.Connection,
-    session_id: int,
-    affect_signal_id: Any,
-) -> dict[str, Any] | None:
-    explicit_id = _integer(affect_signal_id)
-    row = None
-    if explicit_id:
-        row = conn.execute(
-            "SELECT * FROM vessel_emotion_salience_packets WHERE id = ?",
-            (explicit_id,),
-        ).fetchone()
-    elif session_id:
-        rows = conn.execute(
-            "SELECT * FROM vessel_emotion_salience_packets WHERE source_refs LIKE ? ORDER BY id DESC LIMIT 20",
-            (f"%selene_chat_session:{session_id}%",),
-        ).fetchall()
-        row = next(
-            (
-                candidate
-                for candidate in rows
-                if any(
-                    ref == f"selene_chat_session:{session_id}"
-                    for ref in _json_list(dict(candidate).get("source_refs"))
-                )
-            ),
-            None,
-        )
-    if row is None:
-        return None
-    item = dict(row)
-    refs = _json_list(item.get("source_refs"))
-    if session_id and not any(ref == f"selene_chat_session:{session_id}" for ref in refs):
-        return None
-    item["source_refs"] = refs
-    return item
 
 
 def _conversation_cues(

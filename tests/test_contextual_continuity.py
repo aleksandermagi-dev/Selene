@@ -162,6 +162,45 @@ def test_speaker_identity_is_explicitly_scoped_without_profile_inference():
     assert result["speaker_identity_is_inferred_relationship_profile"] is False
 
 
+def test_relationship_continuity_receipt_separates_current_turn_session_and_reviewed_memory():
+    result = build_contextual_continuity_plan(
+        {
+            "prompt": "I am back, hon <3—this connects with the telescope setup.",
+            "intent_decision": {
+                "relational_context": {
+                    "relational_context_present": True,
+                    "private_relational_context": True,
+                    "cue_types": ["reunion", "affectionate_address", "affectionate_symbol"],
+                }
+            },
+            "memory_context": _memory(),
+            "current_session_events": [
+                {"role": "user", "preview": "We compared the two setups."}
+            ],
+            "speaker_context": {
+                "claimed_speaker": "Aleks",
+                "channel": "desktop",
+                "authentication_strength": "local_desktop_session",
+            },
+        }
+    )
+
+    receipt = result["relationship_continuity"]
+    assert receipt["active_source_channels"] == [
+        "current_turn_relational_cues",
+        "visible_current_session_context",
+        "reviewed_personal_memory",
+    ]
+    assert receipt["private_scope_compatible"] is True
+    assert receipt["response_script_supplied"] is False
+    assert receipt["reciprocal_emotion_claim_required"] is False
+    assert receipt["relationship_profile_created"] is False
+    assert receipt["user_affect_claimed_as_selene_state"] is False
+    assert receipt["terminal_stop"] == "source_separated_continuity_available"
+    assert result["speaker_scope"]["speaker"] == "Aleks"
+    assert result["speaker_scope"]["authentication_strength"] == "local_desktop_session"
+
+
 def test_transient_preferences_expire_and_yield_without_becoming_durable(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)

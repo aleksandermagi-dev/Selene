@@ -473,6 +473,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             {
                 "prompt": meaning_text,
                 "session_id": session_id,
+                "affect_signal_id": payload.get("affect_signal_id"),
+                "speaker_envelope": speaker_envelope,
                 "active_conversation": True,
                 "hard_boundary": bool(hard_blockers),
                 "conversation_events": chat_continuity.get("current_session_events") or [],
@@ -490,6 +492,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "current_session_events": chat_continuity.get("current_session_events") or [],
             "conversation_continuity": conversation_continuity,
             "speaker_context": speaker_envelope,
+            "relational_context": relational_context,
         }
     )
     affect_expression = build_affect_expression_guidance(

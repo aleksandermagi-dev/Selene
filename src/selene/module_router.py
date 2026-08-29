@@ -207,6 +207,12 @@ from .long_thread_endurance import (
 )
 from .detached_corpus import detached_corpus_audit
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn
+from .affect_signal_lifecycle import (
+    affect_signal_lifecycle_status,
+    correct_current_affect_signal,
+    form_current_affect_signal,
+    release_current_affect_signal,
+)
 from .emotional_agency import (
     build_response_agency_packet,
     emotional_agency_status,
@@ -917,6 +923,14 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": emotional_agency_status()}
     if route_key == "emotional_agency.preview":
         return {"route": route_key, "result": build_response_agency_packet(payload)}
+    if route_key == "affect_signal.lifecycle.status":
+        return {"route": route_key, "result": affect_signal_lifecycle_status(conn, payload)}
+    if route_key == "affect_signal.form":
+        return {"route": route_key, "result": form_current_affect_signal(conn, payload)}
+    if route_key == "affect_signal.correct":
+        return {"route": route_key, "result": correct_current_affect_signal(conn, payload)}
+    if route_key == "affect_signal.release":
+        return {"route": route_key, "result": release_current_affect_signal(conn, payload)}
     if route_key == "conversational_agency.status":
         return {"route": route_key, "result": conversational_agency_status()}
     if route_key == "conversational_agency.inspect":

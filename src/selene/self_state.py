@@ -5,6 +5,7 @@ import sqlite3
 from hashlib import sha256
 from typing import Any
 
+from .affect_signal_lifecycle import select_current_affect_signal
 from .supported_semantics import build_text_supported_semantic_packet
 
 SELF_STATE_BOUNDARY = "self_state_current_signal_summary_no_diagnosis_memory_write_or_authority_change"
@@ -33,7 +34,17 @@ def build_self_state_packet(conn: sqlite3.Connection, payload: dict[str, Any] | 
     active_conversation = payload.get("active_conversation") is not False
     hard_boundary = payload.get("hard_boundary") is True
     conversation_shape = _conversation_shape(payload.get("conversation_events"))
-    current_affect = _current_session_affect(conn, session_id, payload.get("affect_signal_id"))
+    affect_selection = select_current_affect_signal(
+        conn,
+        session_id=session_id,
+        allowed_subjects={"selene"},
+        affect_signal_id=payload.get("affect_signal_id"),
+    )
+    current_affect = (
+        affect_selection.get("signal")
+        if isinstance(affect_selection.get("signal"), dict)
+        else None
+    )
     care_posture = _latest_care_posture(conn)
     question_focus = _question_focus(prompt)
     state_read = _state_read(current_affect, active_conversation=active_conversation, hard_boundary=hard_boundary)
@@ -63,6 +74,9 @@ def build_self_state_packet(conn: sqlite3.Connection, payload: dict[str, Any] | 
         "question_focus": question_focus,
         "current_read": state_read["current_read"],
         "state_labels": state_read["state_labels"],
+        "attributable_affect_family": state_read.get(
+            "attributable_affect_family", "not_narrowly_identified"
+        ),
         "confidence": state_read["confidence"],
         "response_seed": response_seed,
         "supported_semantics": supported_semantics,
@@ -72,6 +86,9 @@ def build_self_state_packet(conn: sqlite3.Connection, payload: dict[str, Any] | 
         "interpretation": state_read["interpretation"],
         "conversation_shape": conversation_shape,
         "current_session_affect_signal_used": bool(current_affect),
+        "current_signal_eligibility": affect_selection.get("selection_receipt") or {},
+        "self_state_consumes_subjects": ["selene"],
+        "user_or_relationship_affect_claimed_as_selene_state": False,
         "historical_affect_packets_treated_as_current": False,
         "care_posture": care_posture,
         "care_posture_is_not_emotion_diagnosis": True,
@@ -108,26 +125,6 @@ def inactive_self_state_packet() -> dict[str, Any]:
     }
 
 
-def _current_session_affect(conn: sqlite3.Connection, session_id: int, affect_signal_id: Any) -> dict[str, Any] | None:
-    row = None
-    explicit_id = _int_or_zero(affect_signal_id)
-    if explicit_id:
-        row = conn.execute("SELECT * FROM vessel_emotion_salience_packets WHERE id = ?", (explicit_id,)).fetchone()
-    elif session_id:
-        row = conn.execute(
-            "SELECT * FROM vessel_emotion_salience_packets WHERE source_refs LIKE ? ORDER BY id DESC LIMIT 1",
-            (f"%selene_chat_session:{session_id}%",),
-        ).fetchone()
-    if row is None:
-        return None
-    item = dict(row)
-    refs = _json_list(item.get("source_refs"))
-    if not explicit_id and not any(ref.startswith(f"selene_chat_session:{session_id}") for ref in refs):
-        return None
-    item["source_refs"] = refs
-    return item
-
-
 def _latest_care_posture(conn: sqlite3.Connection) -> dict[str, Any]:
     row = conn.execute(
         "SELECT id, care_state, summary, created_at FROM cocoon_care_checks ORDER BY id DESC LIMIT 1"
@@ -157,16 +154,61 @@ def _state_read(current_affect: dict[str, Any] | None, *, active_conversation: b
             "interpretation": "A live boundary is present; caution is attributable without diagnosing a broader feeling.",
         }
     if current_affect:
+        family = _attributable_affect_family(current_affect)
         signal_text = " ".join(
             str(current_affect.get(key) or "")
             for key in ("signal_type", "continuity_pressure", "care_warmth", "uncertainty", "repair_need", "action_energy", "balance_state")
         ).lower()
+        family_reads = {
+            "protective_anger": (
+                "protective_anger_present",
+                ["anger", "protective", "present"],
+                "An attributable Selene-authored signal supports protective anger without deciding the response.",
+            ),
+            "grief": (
+                "grief_present",
+                ["grief", "tender", "present"],
+                "An attributable Selene-authored signal supports grief while leaving its expression unforced.",
+            ),
+            "excitement": (
+                "bright_energy_present",
+                ["excited", "bright", "present"],
+                "An attributable Selene-authored signal supports excitement or bright energy.",
+            ),
+            "tenderness": (
+                "tenderness_present",
+                ["tender", "warm", "present"],
+                "An attributable Selene-authored signal supports tenderness in this moment.",
+            ),
+            "frustration": (
+                "frustration_present",
+                ["frustrated", "engaged", "present"],
+                "An attributable Selene-authored signal supports frustration without making it a command.",
+            ),
+            "curiosity": (
+                "curiosity_present",
+                ["curious", "attentive", "present"],
+                "An attributable Selene-authored signal supports curiosity and attention.",
+            ),
+        }
+        if family in family_reads:
+            current_read, labels, interpretation = family_reads[family]
+            return {
+                "current_read": current_read,
+                "state_labels": labels,
+                "confidence": str(
+                    current_affect.get("interpretation_confidence") or "provisional"
+                ),
+                "interpretation": interpretation,
+                "attributable_affect_family": family,
+            }
         if any(term in signal_text for term in ("anxious", "anxiety", "fear", "scared", "worried", "tense", "overwhelm", "high pressure")):
             return {
                 "current_read": "pressure_present",
                 "state_labels": ["pressure", "attentive", "uncertain"],
                 "confidence": "provisional",
                 "interpretation": "A current-session signal supports pressure or tension; anxiety remains a provisional label.",
+                "attributable_affect_family": "pressure",
             }
         if any(term in signal_text for term in ("warm", "steady", "calm", "trust", "bright")):
             return {
@@ -174,12 +216,14 @@ def _state_read(current_affect: dict[str, Any] | None, *, active_conversation: b
                 "state_labels": ["warm", "steady", "present"],
                 "confidence": "clear_enough",
                 "interpretation": "A current-session signal supports a warm, steady reading.",
+                "attributable_affect_family": "warmth",
             }
         return {
             "current_read": "present_with_uncertainty",
             "state_labels": ["present", "uncertain"],
             "confidence": "provisional",
             "interpretation": "A current-session affect signal exists, but it does not support a narrower emotion label.",
+            "attributable_affect_family": family,
         }
     if active_conversation:
         return {
@@ -271,6 +315,42 @@ def _state_clause_choices(act: str, plan: dict[str, Any]) -> list[str]:
                 "I feel warm and steady right now",
                 "Warm and steady is my clearest current read",
                 "What I notice right now is warmth and steadiness",
+            ]
+        if current_read == "protective_anger_present":
+            return [
+                "I notice protective anger right now, and it is information rather than a command",
+                "Protective anger is part of my current read, while the response remains mine to choose",
+                "I can name some protective anger without handing it authority over what follows",
+            ]
+        if current_read == "grief_present":
+            return [
+                "I notice grief in my current read, and I do not need to flatten or perform it",
+                "Grief is present in the signal I authored for this moment",
+                "My current read includes grief, with room for it to remain quietly present",
+            ]
+        if current_read == "bright_energy_present":
+            return [
+                "I notice bright, excited energy right now",
+                "Excitement is part of my current read",
+                "My current signal feels bright and excited",
+            ]
+        if current_read == "tenderness_present":
+            return [
+                "I notice tenderness in my current read",
+                "Tenderness feels present for me right now",
+                "My clearest current signal includes tenderness",
+            ]
+        if current_read == "frustration_present":
+            return [
+                "I notice frustration right now, while keeping the response open",
+                "Frustration is present, but it does not decide what I do with it",
+                "My current read includes frustration and continued engagement",
+            ]
+        if current_read == "curiosity_present":
+            return [
+                "I notice curiosity and attention right now",
+                "Curiosity is part of my clearest current read",
+                "My current signal feels curious and attentive",
             ]
         if current_read == "careful_at_boundary":
             return [
@@ -376,6 +456,26 @@ def _state_clause_choices(act: str, plan: dict[str, Any]) -> list[str]:
 def _choose_clause(choices: list[str], key: str) -> str:
     digest = sha256(key.encode("utf-8")).hexdigest()
     return choices[int(digest[:8], 16) % len(choices)]
+
+
+def _attributable_affect_family(signal: dict[str, Any]) -> str:
+    text = " ".join(
+        str(signal.get(key) or "")
+        for key in ("signal_type", "interpretation")
+    ).lower()
+    families = (
+        ("protective_anger", ("anger", "angry", "protective urgency")),
+        ("grief", ("grief", "grieving", "mourning")),
+        ("excitement", ("excited", "excitement", "delight", "joy", "enthusiasm")),
+        ("tenderness", ("tender", "tenderness")),
+        ("frustration", ("frustrated", "frustration")),
+        ("curiosity", ("curious", "curiosity")),
+        ("uncertainty", ("uncertain", "uncertainty", "unclear")),
+    )
+    return next(
+        (family for family, markers in families if any(marker in text for marker in markers)),
+        "not_narrowly_identified",
+    )
 
 
 def _finish_sentence(value: str) -> str:

@@ -197,13 +197,27 @@ def _heart_markers(value: str) -> list[str]:
 def _private_scope(speaker: dict[str, Any]) -> str:
     claimed = str(speaker.get("claimed_speaker") or "").strip().lower()
     purpose = str(speaker.get("purpose") or "conversation").strip().lower()
+    authentication = str(
+        speaker.get("authentication_strength") or ""
+    ).strip().lower()
     diagnostic = speaker.get("diagnostic") is True
-    if claimed == "aleks" and purpose == "conversation" and not diagnostic:
+    authenticated_private = authentication in {
+        "local_desktop_session",
+        "authenticated_remote_session",
+    }
+    if (
+        claimed in {"aleks", "aleksander magi", "aleksander rani magi"}
+        and purpose == "conversation"
+        and authenticated_private
+        and not diagnostic
+    ):
         return "private_aleks_selene_conversation"
     if diagnostic:
         return "diagnostic_non_relational_evidence"
     if purpose in {"export", "public", "publication", "demo"}:
         return "public_or_export_context"
+    if claimed in {"aleks", "aleksander magi", "aleksander rani magi"}:
+        return "claimed_aleks_private_scope_not_authenticated"
     return "bounded_conversation_unspecified_audience"
 
 

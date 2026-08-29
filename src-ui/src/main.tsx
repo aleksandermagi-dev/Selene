@@ -577,6 +577,7 @@ function App() {
   const [organContracts, setOrganContracts] = useState<Dict[]>([]);
   const [perceptionPackets, setPerceptionPackets] = useState<Dict[]>([]);
   const [emotionSaliencePackets, setEmotionSaliencePackets] = useState<Dict[]>([]);
+  const [affectLifecycleStatus, setAffectLifecycleStatus] = useState<Dict | null>(null);
   const [steps18ActionState, setSteps18ActionState] = useState<Dict | null>(null);
   const [vesselConstructionStatus, setVesselConstructionStatus] = useState<Dict | null>(null);
   const [organBusMessages, setOrganBusMessages] = useState<Dict[]>([]);
@@ -1620,6 +1621,7 @@ function App() {
     api<{ items: Dict[] }>("/api/vessel/organ-contracts").then((data) => setOrganContracts(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/perception-packets").then((data) => setPerceptionPackets(data.items)).catch(() => undefined);
     api<{ items: Dict[] }>("/api/vessel/emotion-salience-packets").then((data) => setEmotionSaliencePackets(data.items)).catch(() => undefined);
+    api<Dict>("/api/affect-signal/lifecycle/status").then(setAffectLifecycleStatus).catch(() => undefined);
     api<Dict>("/api/vessel/pre-core-review-packets").then(setPreCoreReviewPackets).catch(() => undefined);
     api<Dict>("/api/vessel/temporal-continuity/changes").then(setTemporalChanges).catch(() => undefined);
     loadVesselConstructionLayer();
@@ -5459,10 +5461,12 @@ function App() {
                 <div className="metrics miniMetrics">
                   <Metric label="Perception" value={text(perceptionPackets.length)} />
                   <Metric label="Emotion" value={text(emotionSaliencePackets.length)} />
+                  <Metric label="Current Affect" value={text(safeJsonObject(affectLifecycleStatus?.current_eligibility_counts).eligible_unexpired ?? 0)} />
                   <Metric label="Active Memory" value="blocked" />
                   <Metric label="Autonomous Action" value="blocked" />
                 </div>
-                <p className="plainHelp">Sight and emotion are major vessel signals, but they stay as review-only packets: observation versus interpretation, emotion as signal, Core choice through gates.</p>
+                <p className="plainHelp">Historical sight and emotion packets remain review-only. A current affect signal must be Selene-authored for Selene, exactly session-attributed, observation-separated from interpretation, unexpired, and active. Aleks does not decide Selene&apos;s state here; emotion informs and Core/Mind still chooses.</p>
+                <PlainResult value={affectLifecycleStatus} />
                 <PlainResult value={vesselPacketActionState} />
                 <div className="list compactList packetList">
                   {[...perceptionPackets.slice(0, 3), ...emotionSaliencePackets.slice(0, 3)].map((item, index) => renderSignalPacketCard(item, index, { tab: "status", category: "vessel" }))}
@@ -9173,18 +9177,20 @@ function App() {
               </div>
             </Panel>
             <Panel title="Steps 1-8 Review Layer">
-              <p className="plainHelp">Reasoning, research, evidence, organ contracts, sight/perception, and emotion/salience are review-only packet systems. Unrestricted activation, transfer approval, live memory, broad live recall, model training/LoRA, self-replication, and autonomous action remain blocked.</p>
+              <p className="plainHelp">Reasoning, research, evidence, organ contracts, sight/perception, and legacy emotion/salience packets remain review-only. Phase 4 current affect uses the same packet store only when subject, session, observation, interpretation, confidence, expiry, and lifecycle are attributable. Unrestricted activation, transfer approval, live memory, broad live recall, model training/LoRA, self-replication, and autonomous action remain blocked.</p>
               <div className="metrics miniMetrics">
                 <Metric label="Reasoning" value={text((steps18Status?.counts as Dict | undefined)?.reasoning_artifacts ?? reasoningArtifacts.length)} />
                 <Metric label="Research" value={text((steps18Status?.counts as Dict | undefined)?.academic_packets ?? academicPackets.length)} />
                 <Metric label="Perception" value={text((steps18Status?.counts as Dict | undefined)?.perception_packets ?? perceptionPackets.length)} />
                 <Metric label="Emotion" value={text((steps18Status?.counts as Dict | undefined)?.emotion_salience_packets ?? emotionSaliencePackets.length)} />
+                <Metric label="Current Affect" value={text(safeJsonObject(affectLifecycleStatus?.current_eligibility_counts).eligible_unexpired ?? 0)} />
               </div>
               <div className="reviewActions">
                 <button onClick={loadSteps18Layer}>Refresh Review Layer</button>
                 <button onClick={prepareSteps18ReviewLayer}>Prepare Review Layer</button>
               </div>
               <PlainResult value={vesselPacketActionState} />
+              <PlainResult value={affectLifecycleStatus} />
               <div className="list compactList packetList">
                 {[...perceptionPackets.slice(0, 2), ...emotionSaliencePackets.slice(0, 2)].map((item, index) => renderSignalPacketCard(item, index))}
                 {!perceptionPackets.length && !emotionSaliencePackets.length ? (

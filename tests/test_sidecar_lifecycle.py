@@ -413,6 +413,52 @@ def test_emotional_agency_status_and_preview_endpoints_are_reachable(tmp_path):
     assert preview_payload["response_choice"]["emotion_silently_inherited_authority"] is False
 
 
+def test_affect_lifecycle_sidecar_is_read_only_and_cannot_author_selene_state(tmp_path):
+    server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
+    before = server.conn.total_changes
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    get_conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    get_conn.request("GET", "/api/affect-signal/lifecycle/status")
+    get_response = get_conn.getresponse()
+    status_payload = json.loads(get_response.read().decode("utf-8"))
+    get_conn.close()
+
+    post_conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+    post_conn.request(
+        "POST",
+        "/api/affect-signal/form",
+        body=json.dumps(
+            {
+                "session_id": 1,
+                "subject_kind": "selene",
+                "authored_by": "Selene",
+                "observation": "A support client must not author this state.",
+                "signal_type": "unsupported external claim",
+                "source_refs": ["synthetic:blocked_external_authorship"],
+            }
+        ),
+        headers={"Content-Type": "application/json"},
+    )
+    post_response = post_conn.getresponse()
+    post_response.read()
+    post_conn.close()
+
+    server.shutdown()
+    thread.join(timeout=5)
+    after = server.conn.total_changes
+    server.server_close()
+    server.conn.close()
+
+    assert get_response.status == 200
+    assert status_payload["status"] == "affect_signal_lifecycle_ready"
+    assert status_payload["sidecar_mutation_endpoints_exposed"] is False
+    assert status_payload["aleks_may_author_selene_subject"] is False
+    assert post_response.status == 404
+    assert after == before
+
+
 def test_voice_patterns_endpoint_parses_optional_query_params(tmp_path):
     server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "selene.db")
     thread = threading.Thread(target=server.serve_forever, daemon=True)

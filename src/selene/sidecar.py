@@ -737,6 +737,9 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "metacognition.status")["result"]))
         elif parsed.path == "/api/emotional-agency/status":
             self._send(*json_bytes(route_request(conn, "emotional_agency.status")["result"]))
+        elif parsed.path == "/api/affect-signal/lifecycle/status":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "affect_signal.lifecycle.status", qs)["result"]))
         elif parsed.path == "/api/metacognition/runs":
             qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
             self._send(*json_bytes(route_request(conn, "metacognition.runs.list", {"limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))

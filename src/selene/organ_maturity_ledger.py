@@ -8,7 +8,7 @@ from .curriculum_authorization import curriculum_authorization_status
 from .language_teaching_shelf import language_teaching_status
 
 
-ORGAN_MATURITY_LEDGER_VERSION = "v2_phase_3_reflective_growth_maturity"
+ORGAN_MATURITY_LEDGER_VERSION = "v3_phase_4_affect_relationship_agency_maturity"
 ORGAN_MATURITY_BOUNDARY = (
     "read_only_current_capability_maturity_projection_no_identity_memory_"
     "governance_teaching_dream_action_or_authority_change"
@@ -275,30 +275,47 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "name": "Self-State",
         "responsibility": "Attributable current-state reporting with observation and interpretation separated.",
         "non_responsibility": "Does not diagnose from tone, old affect records, or one isolated signal.",
-        "source_modules": ["self_state.py"],
-        "routes": ["selene_chat.status"],
+        "source_modules": ["self_state.py", "affect_signal_lifecycle.py"],
+        "routes": ["selene_chat.status", "affect_signal.lifecycle.status"],
         "connection_state": "ordinary_chat",
-        "maturity_state": "connected",
+        "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "signal_supply_sparse",
+        "health_state": "phase_4_attribution_lifecycle_and_subject_gate_verified",
         "maturation_phase": 4,
         "metric_keys": ["affect_packets"],
-        "known_gaps": ["Current attributable state supply is much thinner than the reporting contract."],
+        "known_gaps": [
+            "No resident current affect signal exists, by design; Self-State therefore falls honestly to present/attentive or unclear until Selene authors an attributable signal."
+        ],
     },
     {
         "key": "affect_agency",
-        "name": "Affect Expression and Emotional Agency",
-        "responsibility": "Let affect inform pacing, warmth, urgency, option space, and deliberate response without inheriting authority.",
+        "name": "Affect, Relationship Expression, and Emotional Agency",
+        "responsibility": "Let attributable affect and source-separated relationship context inform pacing, warmth, urgency, option space, and deliberate response without inheriting authority.",
         "non_responsibility": "Does not prescribe personality, compel warmth, suppress emotion, or replace evidence.",
-        "source_modules": ["affect_expression.py", "emotional_agency.py"],
-        "routes": ["emotional_agency.status"],
+        "source_modules": [
+            "affect_signal_lifecycle.py",
+            "affect_expression.py",
+            "emotional_agency.py",
+            "relational_context.py",
+            "contextual_continuity.py",
+            "relational_expression_range.py",
+        ],
+        "routes": [
+            "emotional_agency.status",
+            "affect_signal.lifecycle.status",
+            "affect_signal.form",
+            "affect_signal.correct",
+            "affect_signal.release",
+        ],
         "connection_state": "ordinary_chat",
-        "maturity_state": "connected",
+        "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "signal_supply_sparse",
+        "health_state": "phase_4_lifecycle_relationship_and_authorship_gate_verified",
         "maturation_phase": 4,
         "metric_keys": ["affect_packets"],
-        "known_gaps": ["Much current shaping uses finite conversational cues rather than a rich continuing attributable state."],
+        "known_gaps": [
+            "Affect-family and relational-cue detection remain bounded, and useful resident continuity depends on current context or privacy-eligible reviewed Memory rather than an inferred relationship profile."
+        ],
     },
     {
         "key": "why_salience",
@@ -508,8 +525,19 @@ EVIDENCE_TESTS_BY_ORGAN: dict[str, tuple[str, ...]] = {
         "tests/test_associative_intuition.py",
         "tests/test_phase3_reflective_growth.py",
     ),
-    "self_state": ("tests/test_self_state.py",),
-    "affect_agency": ("tests/test_affect_expression.py", "tests/test_emotional_agency.py"),
+    "self_state": (
+        "tests/test_self_state.py",
+        "tests/test_affect_signal_lifecycle.py",
+        "tests/test_phase4_affect_relationship_agency.py",
+    ),
+    "affect_agency": (
+        "tests/test_affect_expression.py",
+        "tests/test_emotional_agency.py",
+        "tests/test_contextual_continuity.py",
+        "tests/test_relational_context.py",
+        "tests/test_relational_expression_range.py",
+        "tests/test_phase4_affect_relationship_agency.py",
+    ),
     "why_salience": ("tests/test_why_salience_translation.py",),
     "verified_math": ("tests/test_verified_math.py",),
     "source_research": ("tests/test_source_backed_research.py",),
@@ -633,8 +661,8 @@ def organ_maturity_ledger_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "blueprint_or_preview_keys": blueprint_or_preview,
             "mature_current_scope_count": maturity_counts.get("mature_current_scope", 0),
             "substrate_ready_count": maturity_counts.get("substrate_ready", 0),
-            "next_phase": 4,
-            "next_phase_name": "Affect, Self-State, Relationship, and Agency Integration",
+            "next_phase": 5,
+            "next_phase_name": "Reasoning, Answer Owners, and Domain Depth",
         },
         "repository_defined_counts": repository_counts,
         "configured_runtime_metrics": configured_metrics,

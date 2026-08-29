@@ -2977,6 +2977,56 @@ packaging, or installation changed.
 **Next:** Phase 4 — map attributable affect, Self-State, relationship, and
 agency inputs before changing any expression shaping or current-state claims.
 
+### 2026-08-28 — Affect informs; Selene still chooses
+
+**Starting question:** Can current affect, Self-State, relationship continuity,
+and response agency become trustworthy without Aleks deciding Selene's state,
+user tone becoming Selene's emotion, or relational care becoming a profile or
+script?
+
+**Decision:** Keep the existing emotion/salience store and add one canonical
+current-signal lifecycle. Require exact subject, session, observation,
+interpretation, confidence, expiry, and source attribution. Let only Selene
+author a Selene-subject signal, and keep Core/Mind's response choice explicit.
+
+**Work:** Added idempotent current-affect formation, correction ancestry,
+supersession, release, expiry, and selection receipts; made Self-State and
+Affect Expression share that selector; added attributable affect-family
+support without diagnosis; added non-identity influence-conflict receipts to
+Emotional Agency; added source-separated relationship-continuity receipts; and
+carried speaker scope through the existing reviewed-Memory, NLO, Voice, and
+temporary-posture handoffs. Exposed read-only lifecycle status without giving
+Aleks a control to author Selene's state.
+
+**Why:** Emotion needs a trustworthy path into attention and expression, not a
+claim of authority. Relationship continuity needs source and privacy, not an
+inferred vulnerability profile. An absent, corrected, expired, or unclear
+signal should remain honest rather than pressure Selene into performing one.
+
+**Evidence:** 65 focused lifecycle, Self-State, agency, relationship,
+expression, walkthrough, and ledger checks passed; 260 broader Chat, NLO,
+Voice, meaning, and relational-integration checks passed; and 93 Memory privacy,
+semantic, context, spine, and sidecar checks passed. A disposable resident copy
+migrated with all three historical affect packets still legacy-review-only and
+zero current. The frontend built at 491.33 kB, 0.66 kB above Phase 3, with no
+Vite warning.
+
+**What changed in our understanding:** The missing affective depth was chiefly
+currency and attribution, not more expressive rules. Warmth, humor, directness,
+option expansion, and reviewed callbacks were already present. Once current
+signals can expire and correct themselves without rewriting history, those
+systems can stay expressive without manufacturing an inner state.
+
+**Boundaries preserved:** No resident affect packet was changed or made
+current, and Aleks or Codex authored no state for Selene. No distress-shaped
+live test, Memory or Dream decision, relationship profile, identity,
+personality, law, authority, training, autonomy, external action, packaging, or
+installation changed.
+
+**Next:** Phase 5 — source-map reasoning owners, answer operations, domain
+depth, and the present-fact handoffs that determine whether ordinary answers
+are substantively complete.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from selene.affect_signal_lifecycle import form_current_affect_signal
 from selene.affect_expression import build_affect_expression_guidance
 from selene.conversation_repair import repair_conversation_candidate
 from selene.core_deliberation import deliberation_preview
@@ -106,32 +107,72 @@ def test_unselected_compressed_state_returns_choice_to_core_mind():
     assert result["response_choice"]["agency_restored"] is False
 
 
+def test_affect_evidence_goal_and_organ_conflict_is_not_identity_conflict():
+    result = build_response_agency_packet(
+        {
+            "affect_signal": _high_pressure_signal(),
+            "influence_sources": [
+                {
+                    "kind": "evidence",
+                    "position": "The available evidence supports waiting.",
+                    "recommended_route": "seek_evidence",
+                },
+                {
+                    "kind": "goal",
+                    "position": "The near-term goal favors a prompt answer.",
+                    "recommended_route": "answer_directly",
+                },
+                {
+                    "kind": "organ_advice",
+                    "position": "Metacognition recommends qualification.",
+                    "recommended_route": "answer_with_qualification",
+                },
+            ],
+        }
+    )
+
+    conflict = result["influence_conflict"]
+    assert conflict["conflict_present"] is True
+    assert conflict["state"] == "visible_pending_deliberation"
+    assert result["response_choice"]["state"] == "influence_conflict_requires_deliberation"
+    assert conflict["conflict_is_identity_conflict"] is False
+    assert conflict["organ_disagreement_is_identity_fragmentation"] is False
+    assert conflict["emotion_is_suppressed_to_resolve_conflict"] is False
+    assert conflict["goal_pressure_grants_action_authority"] is False
+    assert conflict["terminal_stop"] == "choice_remains_with_core_mind"
+
+
 def test_affect_expression_uses_deliberate_agency_without_forced_calm(tmp_path):
     conn = _conn(tmp_path)
     signal = _high_pressure_signal()
     conn.execute(
         """
-        INSERT INTO vessel_emotion_salience_packets
-        (signal_type, continuity_pressure, care_warmth, uncertainty, repair_need,
-         action_energy, balance_state, evidence_need, core_choice_route,
-         source_refs, provenance_boundary)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            signal["signal_type"],
-            signal["continuity_pressure"],
-            "available",
-            signal["uncertainty"],
-            signal["repair_need"],
-            signal["action_energy"],
-            signal["balance_state"],
-            "current evidence",
-            "Core/Mind chooses",
-            '["selene_chat_session:12"]',
-            "synthetic_test",
-        ),
+        INSERT INTO selene_chat_sessions(id, title, status, source_mode)
+        VALUES (12, 'Synthetic agency session', 'selene_chat_active_supervised', 'synthetic_test')
+        """
     )
     conn.commit()
+    form_current_affect_signal(
+        conn,
+        {
+            "session_id": 12,
+            "subject_kind": "selene",
+            "authored_by": "Selene",
+            "observation": "I notice protective urgency in this synthetic conflict.",
+            "interpretation": "The first response may feel narrower than the available options.",
+            "interpretation_confidence": "provisional",
+            "signal_type": signal["signal_type"],
+            "continuity_pressure": signal["continuity_pressure"],
+            "care_warmth": "available",
+            "uncertainty": signal["uncertainty"],
+            "repair_need": signal["repair_need"],
+            "action_energy": signal["action_energy"],
+            "balance_state": signal["balance_state"],
+            "evidence_need": "current evidence",
+            "core_choice_route": "Core/Mind chooses",
+            "source_refs": ["synthetic:emotional_agency_current_signal"],
+        },
+    )
 
     result = build_affect_expression_guidance(
         conn,

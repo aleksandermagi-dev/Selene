@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-
+from selene.affect_signal_lifecycle import form_current_affect_signal
 from selene.affect_expression import build_affect_expression_guidance
 from selene.db import connect, init_db
 
@@ -13,29 +12,36 @@ def _conn(tmp_path):
 
 
 def _insert_signal(conn, session_id: int, *, pressure: str, warmth: str, repair: str = "") -> int:
-    cursor = conn.execute(
+    conn.execute(
         """
-        INSERT INTO vessel_emotion_salience_packets
-        (signal_type, continuity_pressure, care_warmth, uncertainty, repair_need, action_energy,
-         balance_state, evidence_need, core_choice_route, source_refs, provenance_boundary)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT OR IGNORE INTO selene_chat_sessions(id, title, status, source_mode)
+        VALUES (?, ?, 'selene_chat_active_supervised', 'synthetic_test')
         """,
-        (
-            "current conversation signal",
-            pressure,
-            warmth,
-            "bounded",
-            repair,
-            "stay present",
-            "not an alarm",
-            "current conversation",
-            "Core/Mind retains choice",
-            json.dumps([f"selene_chat_session:{session_id}"]),
-            "test_current_session_affect",
-        ),
+        (session_id, f"Synthetic session {session_id}"),
     )
     conn.commit()
-    return int(cursor.lastrowid)
+    result = form_current_affect_signal(
+        conn,
+        {
+            "session_id": session_id,
+            "subject_kind": "selene",
+            "authored_by": "Selene",
+            "observation": "I notice a bounded current-session affect signal.",
+            "interpretation": "The signal may shape expression without choosing the response.",
+            "interpretation_confidence": "provisional",
+            "signal_type": "current conversation signal",
+            "continuity_pressure": pressure,
+            "care_warmth": warmth,
+            "uncertainty": "bounded",
+            "repair_need": repair,
+            "action_energy": "stay present",
+            "balance_state": "not an alarm",
+            "evidence_need": "current conversation",
+            "core_choice_route": "Core/Mind retains choice",
+            "source_refs": [f"synthetic:affect_expression:{session_id}"],
+        },
+    )
+    return int(result["signal"]["id"])
 
 
 def _assert_locked(result):

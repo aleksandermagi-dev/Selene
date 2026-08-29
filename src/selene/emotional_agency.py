@@ -192,8 +192,15 @@ def build_response_agency_packet(
         160,
     )
     hard_boundary = payload.get("hard_boundary") is True
+    influence_conflict = _influence_conflict_receipt(
+        payload,
+        signal_available=bool(signal or explicit_label),
+        proposed_route=proposed_route,
+    )
     if proposed_route:
         choice_state = "deliberate_route_confirmed"
+    elif influence_conflict["conflict_present"]:
+        choice_state = "influence_conflict_requires_deliberation"
     elif compression_present:
         choice_state = "option_expansion_required_before_choice"
     else:
@@ -271,6 +278,7 @@ def build_response_agency_packet(
                 "boundary_setting_remains_available": True,
                 "retaliation_is_never_assumed_to_be_the_only_option": True,
             },
+            "influence_conflict": influence_conflict,
             "affect_may_shape": ["attention", "urgency", "tone", "pacing", "priority"],
             "affect_may_not_silently_control": ["facts", "governing_law", "authority", "action", "final_response_route"],
             "source_refs": list(dict.fromkeys(refs))[:30],
@@ -283,6 +291,79 @@ def build_response_agency_packet(
 def _choice(value: Any, allowed: set[str], default: str) -> str:
     candidate = str(value or "").strip()
     return candidate if candidate in allowed else default
+
+
+def _influence_conflict_receipt(
+    payload: dict[str, Any],
+    *,
+    signal_available: bool,
+    proposed_route: str,
+) -> dict[str, Any]:
+    supplied = [
+        item
+        for item in payload.get("influence_sources") or []
+        if isinstance(item, dict)
+    ][:16]
+    normalized: list[dict[str, Any]] = []
+    for item in supplied:
+        kind = _choice(
+            item.get("kind"),
+            {"affect", "evidence", "goal", "organ_advice", "boundary", "value"},
+            "organ_advice",
+        )
+        normalized.append(
+            {
+                "kind": kind,
+                "position": _text(item.get("position"), 240) or "not_stated",
+                "recommended_route": _text(item.get("recommended_route"), 160),
+                "has_final_authority": False,
+            }
+        )
+    if signal_available and not any(item["kind"] == "affect" for item in normalized):
+        normalized.append(
+            {
+                "kind": "affect",
+                "position": "current affect may shape attention and urgency",
+                "recommended_route": "",
+                "has_final_authority": False,
+            }
+        )
+    recommended = {
+        str(item["recommended_route"])
+        for item in normalized
+        if str(item["recommended_route"])
+    }
+    explicit_conflict = payload.get("influence_conflict_present") is True
+    conflict_present = explicit_conflict or len(recommended) > 1
+    return {
+        "state": (
+            "resolved_by_deliberate_route"
+            if conflict_present and proposed_route
+            else "visible_pending_deliberation"
+            if conflict_present
+            else "no_material_conflict_visible"
+        ),
+        "conflict_present": conflict_present,
+        "sources": normalized,
+        "resolution_order": [
+            "governing_law_and_real_safety_boundary",
+            "evidence_and_source_limits",
+            "granted_authority",
+            "values_and_long_range_goals",
+            "affect_and_organ_advice_as_non_commanding_inputs",
+            "core_mind_authored_choice",
+        ],
+        "conflict_is_identity_conflict": False,
+        "organ_disagreement_is_identity_fragmentation": False,
+        "emotion_is_suppressed_to_resolve_conflict": False,
+        "goal_pressure_grants_action_authority": False,
+        "organ_advice_grants_final_authority": False,
+        "terminal_stop": (
+            "deliberate_route_selected"
+            if proposed_route
+            else "choice_remains_with_core_mind"
+        ),
+    }
 
 
 def _text(value: Any, limit: int) -> str:

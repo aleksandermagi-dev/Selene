@@ -20,6 +20,7 @@ def test_relational_context_recognizes_meaning_without_supplying_a_reply(text, e
         text,
         speaker_context={
             "claimed_speaker": "Aleks",
+            "authentication_strength": "local_desktop_session",
             "purpose": "conversation",
             "diagnostic": False,
         },
@@ -57,3 +58,21 @@ def test_public_or_diagnostic_context_does_not_become_private_persona_material()
     assert diagnostic["private_relational_context"] is False
     assert public["public_persona_created"] is False
     assert public["public_export_authorized"] is False
+
+
+def test_transport_claim_alone_does_not_open_private_relationship_scope():
+    result = interpret_relational_context(
+        "I miss you <3",
+        speaker_context={
+            "claimed_speaker": "Aleks",
+            "channel": "mobile",
+            "authentication_strength": "transport_claim_only",
+            "purpose": "conversation",
+        },
+    )
+
+    assert result["relational_context_present"] is True
+    assert result["private_relational_context"] is False
+    assert result["interaction_scope"] == "claimed_aleks_private_scope_not_authenticated"
+    assert result["public_persona_created"] is False
+    assert result["persistent_relationship_profile_write"] is False

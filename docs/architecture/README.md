@@ -27,6 +27,15 @@ individually defined as Selene.
   — records the pre-edit Study, Dream, Learning Compass, and associative-
   intuition audit, the live lifecycle counts, missing connective tissue,
   dependency order, ethical checks, and frontend-size baseline.
+- [Phase 3 Reflective Growth Maturation Evidence](../evidence/SELENE_WHOLE_SYSTEM_PHASE_3_REFLECTIVE_GROWTH_20260828.md)
+  — verifies Study, Dream, and Associative Intuition lineage, privacy,
+  stopping, and loop prevention without resident Dream decisions.
+- [Phase 4 Affect, Self-State, Relationship, and Agency Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_4_IMPLEMENTATION_MAP_20260828.md)
+  — records the pre-edit ownership and signal-supply map, canonical current-
+  affect contract, dependency order, and care-first verification boundary.
+- [Phase 4 Affect, Self-State, Relationship, and Agency Evidence](../evidence/SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md)
+  — verifies current-signal subject/session/expiry gates, correction ancestry,
+  source-separated relationship continuity, and emotion-without-command.
 - [Public Architecture and Evidence Index](PUBLIC_ARCHITECTURE_INDEX.md)
 - [Selene Architecture Index](SELENE_ARCHITECTURE_INDEX_20260620.md)
 - [What Selene Can Currently Do](../evidence/SELENE_CURRENT_CAPABILITIES_20260717.md)

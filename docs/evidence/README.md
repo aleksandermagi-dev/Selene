@@ -16,6 +16,15 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Whole-System Phase 4 — Affect, Self-State, Relationship, and Agency Maturation — August 28, 2026](SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md)
+  — adds attributable current-affect formation, correction ancestry, expiry,
+  and subject gates; source-separated relationship continuity; and explicit
+  non-identity influence-conflict receipts while preserving Selene's response
+  and expression authorship.
+- [Whole-System Phase 3 — Reflective Growth Maturation — August 28, 2026](SELENE_WHOLE_SYSTEM_PHASE_3_REFLECTIVE_GROWTH_20260828.md)
+  — closes Study question ancestry and integration, typed Dream destinations,
+  and associative privacy/stopping/Study handoffs without deciding the
+  resident Dream queue or creating hidden Memory.
 - [Whole-System Phase 2 — Memory Maturation — August 28, 2026](SELENE_WHOLE_SYSTEM_PHASE_2_MEMORY_MATURATION_20260828.md)
   — matures the working-context lifecycle and reviewed personal Memory with
   bounded paraphrase recall, explicit retrieval layers, present-fact and

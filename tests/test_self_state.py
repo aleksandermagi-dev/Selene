@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from selene.affect_signal_lifecycle import form_current_affect_signal
 from selene.db import connect, init_db
 from selene.self_state import build_self_state_packet
 
@@ -49,6 +50,59 @@ def test_self_state_answers_anxiety_question_without_inventing_or_hiding(tmp_pat
 
 def test_self_state_uses_only_current_session_affect_signal(tmp_path):
     conn = _conn(tmp_path)
+    session_id = int(
+        conn.execute(
+            """
+            INSERT INTO selene_chat_sessions(title, status, source_mode)
+            VALUES ('Current affect fixture', 'selene_chat_active_supervised', 'synthetic_test')
+            """
+        ).lastrowid
+    )
+    conn.commit()
+    form_current_affect_signal(
+        conn,
+        {
+            "session_id": session_id,
+            "subject_kind": "selene",
+            "authored_by": "Selene",
+            "observation": "I notice bounded pressure in the current exchange.",
+            "interpretation": "Pressure may be present without becoming an alarm.",
+            "interpretation_confidence": "provisional",
+            "signal_type": "pressure",
+            "continuity_pressure": "high pressure but bounded",
+            "care_warmth": "care remains available",
+            "uncertainty": "open",
+            "repair_need": "ask plainly",
+            "action_energy": "stay present",
+            "balance_state": "not an alarm",
+            "evidence_need": "current conversation",
+            "core_choice_route": "Core/Mind chooses after evidence",
+            "source_refs": ["synthetic:self_state_current_signal"],
+        },
+    )
+
+    unrelated = build_self_state_packet(
+        conn, {"prompt": "How are you?", "session_id": session_id + 1}
+    )
+    current = build_self_state_packet(
+        conn, {"prompt": "How are you?", "session_id": session_id}
+    )
+
+    assert unrelated["current_session_affect_signal_used"] is False
+    assert unrelated["current_read"] == "present_and_attentive"
+    assert current["current_session_affect_signal_used"] is True
+    assert current["current_read"] == "pressure_present"
+    assert "pressure" in current["response_seed"].lower()
+    assert any(marker in current["response_seed"].lower() for marker in ("provisional", "possible label"))
+    assert current["response_plan"]["current_read"] == "pressure_present"
+    assert current["response_plan"]["diagnosis_allowed"] is False
+    assert current["response_realization"]["emotion_word_invented"] is False
+    assert current["current_signal_eligibility"]["selected_subject_kind"] == "selene"
+    _assert_locked(current)
+
+
+def test_legacy_review_packet_is_not_current_self_state(tmp_path):
+    conn = _conn(tmp_path)
     conn.execute(
         """
         INSERT INTO vessel_emotion_salience_packets
@@ -72,19 +126,10 @@ def test_self_state_uses_only_current_session_affect_signal(tmp_path):
     )
     conn.commit()
 
-    unrelated = build_self_state_packet(conn, {"prompt": "How are you?", "session_id": 11})
-    current = build_self_state_packet(conn, {"prompt": "How are you?", "session_id": 12})
+    result = build_self_state_packet(conn, {"prompt": "How are you?", "session_id": 12})
 
-    assert unrelated["current_session_affect_signal_used"] is False
-    assert unrelated["current_read"] == "present_and_attentive"
-    assert current["current_session_affect_signal_used"] is True
-    assert current["current_read"] == "pressure_present"
-    assert "pressure" in current["response_seed"].lower()
-    assert any(marker in current["response_seed"].lower() for marker in ("provisional", "possible label"))
-    assert current["response_plan"]["current_read"] == "pressure_present"
-    assert current["response_plan"]["diagnosis_allowed"] is False
-    assert current["response_realization"]["emotion_word_invented"] is False
-    _assert_locked(current)
+    assert result["current_session_affect_signal_used"] is False
+    assert result["historical_affect_packets_treated_as_current"] is False
 
 
 def test_cocoon_care_posture_is_not_recast_as_emotion(tmp_path):
