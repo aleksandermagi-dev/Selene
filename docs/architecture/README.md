@@ -36,6 +36,10 @@ individually defined as Selene.
 - [Phase 4 Affect, Self-State, Relationship, and Agency Evidence](../evidence/SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md)
   — verifies current-signal subject/session/expiry gates, correction ancestry,
   source-separated relationship continuity, and emotion-without-command.
+- [Phase 5 Reasoning, Answer Owners, and Domain Depth Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_5_IMPLEMENTATION_MAP_20260828.md)
+  — records the pre-edit owner and source-precedence map, incremental exact-
+  domain sequence, explicit code-approval boundary, care constraints, and
+  dependency-ordered implementation gate.
 - [Public Architecture and Evidence Index](PUBLIC_ARCHITECTURE_INDEX.md)
 - [Selene Architecture Index](SELENE_ARCHITECTURE_INDEX_20260620.md)
 - [What Selene Can Currently Do](../evidence/SELENE_CURRENT_CAPABILITIES_20260717.md)

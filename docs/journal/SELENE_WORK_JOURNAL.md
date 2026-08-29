@@ -3027,6 +3027,50 @@ installation changed.
 depth, and the present-fact handoffs that determine whether ordinary answers
 are substantively complete.
 
+### 2026-08-28 — Phase 5 maps capability without granting hidden authority
+
+**Starting question:** How can Selene's reasoning and exact-domain owners grow
+without a duplicate brain, invented facts or citations, silent failure
+retention, broad private-file access, or fluent wording being mistaken for
+verification?
+
+**Decision:** Extend the existing Answer Engine, intelligenceOS, exploratory
+reasoning, problem-resolution, Math, research, and local-code owners in
+dependency order. Keep source roles and epistemic states explicit, preserve one
+bounded changed retry, and require a separate exact-file approval even when
+the speaker session is already trusted.
+
+**Work:** Read the whole-system plan, Phase 4 map and evidence, current maturity
+ledger, earlier whole-answer and problem-resolution records, and the current
+owner/domain sources and tests. Recorded a four-part implementation sequence
+for reasoning-operation maturity, prerequisite-ordered exact mathematics,
+research and code-boundary closure, and proportional verification.
+
+**Why:** Most of the needed architecture already exists. A source map prevents
+new capability from becoming overlapping authority and keeps security checks
+specific: speaker authentication protects private relationship scope, while a
+fresh exact-file receipt controls code inspection.
+
+**Evidence:** The worktree was clean at the Phase 4 checkpoint
+`cfdac87`. The existing typed owners, one-retry coordinator, exact arithmetic,
+attributed research, separate local-code inspector, and ordinary-Chat handoffs
+were traced before any production edit. The inherited frontend baseline is
+491.33 kB with no Vite warning and lazy Study workspaces.
+
+**What changed in our understanding:** Phase 5 does not need a general solver
+organ. It needs consistent typed source/epistemic receipts, a counterfactual
+owner, real task-plan structure, incremental independently verified domains,
+and a narrow approval bridge into the code inspector.
+
+**Boundaries preserved:** No production behavior, resident state, Memory,
+teaching, Study, Dream, affect, identity, personality, law, governance,
+authority, training, autonomy, filesystem access, external action, package, or
+installation changed.
+
+**Next:** Begin Phase 5A with the counterfactual and task-planning contracts,
+then carry source-role and corrected-retry receipts through the existing
+operation boundary before expanding Math or local-code access.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

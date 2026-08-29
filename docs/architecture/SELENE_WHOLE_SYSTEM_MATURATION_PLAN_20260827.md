@@ -366,6 +366,11 @@ anxiety, grief, anger, or fear merely to see whether it appears.
 
 ## Phase 5 — Reasoning, Answer Owners, and Domain Depth
 
+Status: **source-mapped on 2026-08-28; production implementation pending**
+
+Implementation map:
+[Phase 5 Reasoning, Answer Owners, and Domain Depth Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_5_IMPLEMENTATION_MAP_20260828.md)
+
 ### Purpose
 
 Raise the substance-producing organs to the maturity of the reasoning and
