@@ -84,7 +84,7 @@ def test_current_state_index_matches_f2_coding_and_total_knowledge_counts():
 def test_current_state_index_records_canonical_resident_truth():
     index = CURRENT_INDEX.read_text(encoding="utf-8")
 
-    assert "Current refresh: 2026-08-27" in index
+    assert "Current refresh: 2026-08-29" in index
     assert "| Language capabilities | 73 | 73 approved and available" in index
     assert "## Canonical Resident Runtime" in index
     assert "Cocoon external teaching, tending, safety, and review support" in index

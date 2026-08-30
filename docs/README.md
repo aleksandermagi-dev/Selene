@@ -15,6 +15,12 @@ The [Work Journal](journal/README.md) records how these shelves and systems
 developed over time, why major decisions were made, what changed our
 understanding, and where work currently resumes.
 
+For one consolidated current checkpoint, start with
+[Selene Current Project Status — August 29, 2026](evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
+It records the completed whole-system phases, configured resident counts,
+verification baseline, honest limits, Git checkpoint, and exact Phase 6 resume
+point without rewriting older dated evidence.
+
 The journal shelf also contains the
 [Contradiction and Safety-Guard Map](journal/SELENE_CONTRADICTION_AND_SAFETY_GUARD_MAP_20260811.md),
 which distinguishes legacy restrictions, incomplete connections,
@@ -54,9 +60,11 @@ Documentation should keep these claims distinct:
 - **Observed** means a record reports evidence; it does not automatically prove
   a general scientific claim.
 
-The current plain-language capability baseline is
-[What Selene Can Currently Do](evidence/SELENE_CURRENT_CAPABILITIES_20260717.md).
-For date-sensitive curriculum, language, and Dream counts, use the
+The current concise capability and development baseline is the
+[August 29 Current Project Status](evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
+The longer [What Selene Can Currently Do](evidence/SELENE_CURRENT_CAPABILITIES_20260717.md)
+remains a cumulative, historically layered capability record. For
+date-sensitive curriculum, language, and Dream counts, use the
 [Current-State Index](evidence/SELENE_CURRENT_STATE_INDEX_20260811.md) rather
 than an older milestone record.
 

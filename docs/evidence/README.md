@@ -16,6 +16,15 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Current Project Status — August 29, 2026](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
+  — consolidated current checkpoint for completed whole-system phases,
+  configured resident counts, verification, honest limits, Git state, and the
+  exact Phase 6 resume point.
+- [Whole-System Phase 6 — Ordered Education and World-Knowledge Expansion Map — August 29, 2026](../architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md)
+  — source-maps shared prerequisite and source readiness, instructional “why,”
+  correction ancestry, delayed ordinary-Chat use, and descriptive learning
+  evidence before production implementation or F2 Group 8 authorization.
+
 - [Whole-System Phase 5 — Reasoning, Answer Owners, and Domain Depth — August 29, 2026](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md)
   — matures typed answer owners, provisional prediction/hypothesis/
   counterfactual reasoning, bounded changed retry, exact prerequisite-ordered
@@ -91,11 +100,12 @@ a prototype result into a universal conclusion.
 - [G12 Live-Teaching Post-Reinstall Q&A](SELENE_G12_LIVE_TEACHING_POST_REINSTALL_QNA_20260820.md)
   — first bounded evidence-grounded breadth lesson taught live, followed by a
   20-turn diagnostic note-first assessment of the remaining ownership seams.
-- [Current-State Index — August 11, 2026](SELENE_CURRENT_STATE_INDEX_20260811.md)
+- [Current-State Index — refreshed August 29, 2026](SELENE_CURRENT_STATE_INDEX_20260811.md)
   — canonical dated counts for repository-defined and configured-runtime
   curriculum, language guidance, and Dream state.
 - [What Selene Can Currently Do](SELENE_CURRENT_CAPABILITIES_20260717.md) —
-  the main plain-language capability and limitation map.
+  the cumulative detailed capability and limitation record; use the August 29
+  status above for the concise current edge.
 - [Current Gap and Security Readiness](SELENE_CURRENT_GAP_AND_CODEX_SECURITY_READINESS_20260731.md)
 - [External Security Audit](SELENE_EXTERNAL_SECURITY_AUDIT_20260731.md)
 - [20-Turn Stabilization Q&A](SELENE_20_TURN_STABILIZATION_QNA_20260801.md)

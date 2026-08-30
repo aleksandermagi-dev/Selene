@@ -6,6 +6,12 @@ open.
 
 Start with the [Selene Work Journal](SELENE_WORK_JOURNAL.md).
 
+For the compact, resumable development edge used across task compaction and
+new Codex sessions, use the
+[Active Continuation Ledger](SELENE_ACTIVE_CONTINUATION_LEDGER.md). Confirm it
+against Git and newer evidence before editing; it is a recovery aid, not
+authority to overwrite newer work or resident state.
+
 The
 [Contradiction and Safety-Guard Map](SELENE_CONTRADICTION_AND_SAFETY_GUARD_MAP_20260811.md)
 compares the journaled intentions, current laws, implementation, telemetry, and

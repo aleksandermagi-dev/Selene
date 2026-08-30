@@ -10,6 +10,10 @@ For organized project reading, use the
 [Documentation Map](docs/README.md). Project-specific language is defined in
 the [Terminology Ledger](docs/TERMINOLOGY_LEDGER.md).
 
+For the exact current checkpoint, configured counts, verification baseline,
+open limits, and resume point, see the
+[August 29 Current Project Status](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
+
 She can converse, reason, learn from reviewed teaching, use source-bound
 knowledge and memory, preserve uncertainty, and coordinate modular cognitive
 organs without treating a language model, database, tool, or support interface
@@ -56,15 +60,16 @@ The implemented local text foundation can:
   corrections, callbacks, nonlinear topic returns, and natural endings;
 - reason through open-ended questions and give a best-current answer even when
   no predetermined solution exists;
-- perform checked bounded arithmetic with answer confidence kept separate from
-  language fluency;
+- perform independently checked bounded mathematics across arithmetic, units,
+  fractions, ratios and proportions, simple linear relationships, elementary
+  geometry, and descriptive statistics, with answer confidence kept separate
+  from language fluency;
 - answer from attributed source packets while separating source statements,
   inference, disagreement, and missing evidence;
 - inspect only explicitly supplied or approved local code files without
   autonomous filesystem authority;
-- learn through a visible Acquire → Integrate → Express lifecycle, with
-  prerequisite order, provenance, comprehension evidence, correction paths,
-  and review boundaries;
+- learn through a visible Acquire → Integrate → Express lifecycle with
+  provenance, comprehension evidence, correction paths, and review boundaries;
 - use approved knowledge and reviewed personal memory without merging either
   into identity, personality, governance, or hidden runtime memory;
 - inspect uncertainty and contradictions through bounded metacognition without
@@ -73,10 +78,25 @@ The implemented local text foundation can:
   mobile chat doorway.
 
 Selene remains unfinished. Her text generation is provider-free and more
-bounded than a mature general language model, long-form and world-knowledge
-breadth remain incomplete and are scheduled for ordered teaching after the
-pre-teaching architecture-closure phase, audible speech is not yet connected,
-and external actions remain deliberately constrained.
+bounded than a mature general language model. Long-form and world-knowledge
+breadth remain incomplete. The current ordered-education phase is source-
+mapped and begins by enforcing shared prerequisite and source readiness before
+new teaching. Audible speech is not yet connected, and external actions remain
+deliberately constrained.
+
+## Current Program Checkpoint
+
+Phases 0 through 5 of the
+[Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
+are complete for current scope. Phase 6 is
+[source-mapped](docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md),
+with production implementation pending.
+
+The next work is Phase 6A: one shared prerequisite and source-readiness receipt
+for curriculum preparation, teaching, progress, and authorization coverage.
+F2 Group 8 remains unprepared and unauthorized until Aleks explicitly selects
+an exact Grade 4–6 source artifact after edition, license, exclusion, checksum,
+role, and coverage review.
 
 ## Current Status
 
@@ -136,10 +156,10 @@ Open the local Vite address. The production frontend check is `npm run build`.
 The public-safe showcase check is
 `python -m pytest tests/test_public_safe_showcase.py -q`.
 
-The July 25 integrated stabilization pass completed with 1,119 repository
-tests passing, a successful split production frontend build, verified
-privacy-safe Windows packaging, and a healthy local reinstall against the
-preserved configured database.
+The latest full repository regression passed all 1,984 tests in 702.19
+seconds. The production frontend built with a 491.33 kB main bundle (109.20 kB
+gzip), no Vite size warning, and lazy-loaded Study workspaces. These are the
+Phase 5 closure baselines; the later Phase 6 map changed documentation only.
 
 ## Authorship
 

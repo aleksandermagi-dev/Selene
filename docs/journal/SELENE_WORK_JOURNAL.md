@@ -3174,6 +3174,52 @@ prerequisite/source-readiness receipt. Do not implement or authorize F2 Group
 8 until its exact source artifact and license are explicitly selected by
 Aleks.
 
+### 2026-08-29 — Current project record catches up before Phase 6A
+
+**Starting question:** Can the repository pause at the Phase 6 map and give a
+new reader one accurate account of current capability, configured state,
+verification, limits, Git position, and the next safe implementation edge?
+
+**Decision:** Preserve dated evidence as history and add one consolidated
+August 29 status record. Update the root and quick READMEs plus the current
+documentation, evidence, architecture, journal, and configured-state indexes
+to point to it and remove claims superseded by Phases 0 through 5.
+
+**Work:** Corrected the root README's stale July test baseline, pre-teaching
+language, and premature claim that shared prerequisite ordering was already
+enforced. Updated current Math and exact-approved code-inspection wording;
+refreshed the configured-state index through August 29; modernized the public
+architecture summary; distinguished the cumulative July capability record
+from the concise current checkpoint; and added a direct continuation-ledger
+link for compaction-safe resumption.
+
+**Why:** Historical records should remain honest to their dates, while current
+entrypoints must not require a reader to reconstruct the latest truth from
+dozens of milestones. One maintained current-status document reduces drift
+without flattening the project's evidence ancestry.
+
+**Evidence:** Seven current-state and public-safe-showcase tests passed. The
+curriculum shelf verified all 141 pinned files with zero failures. The
+production frontend rebuilt at 491.33 kB (gzip 109.20 kB), with no Vite warning
+and every Study workspace still split into lazy chunks. Relative documentation
+links and the staged Git diff are checked before commit.
+
+**What changed in our understanding:** The implementation was ahead of its
+front door. The most consequential stale claim was not an omitted feature but
+an overstated one: curriculum groups had documentary order, while shared
+runtime prerequisite enforcement is still Phase 6A work. Accurate limits make
+the completed capability easier—not harder—to understand.
+
+**Boundaries preserved:** Documentation and one documentation-contract test
+changed; production behavior and resident state did not. No teaching,
+authorization, Memory, Study, Dream, affect, identity, personality, Vys, law,
+governance, authority, training, autonomy, external action, package, reinstall,
+or remote Git push occurred. The hackathon workflow log remains excluded.
+
+**Next:** Resume exactly at Phase 6A with synthetic prerequisite and source-
+readiness tests. F2 Group 8 remains blocked on Aleks's later explicit exact-
+source selection.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

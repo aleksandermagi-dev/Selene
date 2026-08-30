@@ -2,7 +2,7 @@
 
 Originally indexed: 2026-08-11
 
-Current refresh: 2026-08-27
+Current refresh: 2026-08-29
 Branch: `evidence`
 Status: date-stamped repository and configured-runtime truth
 
@@ -26,7 +26,7 @@ knowledge or Dream reflections.
 
 ## Current Knowledge and Curriculum
 
-| Surface | Repository-defined | Configured runtime on 2026-08-27 | Meaning |
+| Surface | Repository-defined | Configured runtime on 2026-08-29 | Meaning |
 | --- | ---: | ---: | --- |
 | F1 curriculum groups | 17 | 17 retained groups | Ordered public-academic foundation groups |
 | F1 concepts | 106 unique concepts | 106 retained and Chat-eligible | Completed Acquire, Integrate, Express, and curriculum-authorized retention |
@@ -52,14 +52,31 @@ runtime date, all 73 stored rows were `approved_for_language_guidance` and
 
 The F2 and coding counts are supported by their group modules and the same
 curriculum authorization lifecycle. Coding knowledge is Chat-eligible within
-its retained scope, but the local-code inspection adapter remains a separate
-explicit, read-only route and is not connected to ordinary Chat.
+its retained scope. Ordinary Chat can reach the separate static local-code
+inspector only through attributed pasted code or an authenticated Aleks
+speaker envelope plus a fresh, exact-file, current-request approval. The
+inspector still cannot scan directories, execute code, or write files.
 
 The read-only organ maturity ledger now generates the repository-defined
 counts from the same curriculum and language registries and reports configured
 runtime metadata without returning private record content. It distinguishes a
 present table or route from connected, integration-verified, mature, preview,
 and blueprint states; those states are not interchangeable.
+
+## Current Whole-System Maturation Position
+
+Phases 0 through 5 are complete for current scope. Phase 6 is source-mapped
+and production implementation has not begun. The current edge is Phase 6A:
+make prerequisite and source readiness one shared runtime receipt before
+expanding educational breadth.
+
+F2 Group 8 remains unprepared and unauthorized. Its Grade 4-6 source artifact,
+edition, license, exclusions, checksum, source role, and bounded coverage must
+be reviewed and explicitly selected by Aleks before content implementation.
+See the
+[August 29 Current Project Status](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
+and the
+[Phase 6 Implementation Map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md).
 
 ## Current Dream State
 
@@ -144,6 +161,9 @@ production TypeScript/Vite build passed with the resident-state UI labels
 configured runtime validation passed through SQLite read-only mode
 6 focused organ-ledger and localhost transport tests passed at the 2026-08-27 Phase 0 checkpoint
 configured runtime reported 225 approved knowledge resources and SQLite integrity `ok`
+1,984 repository tests passed at the 2026-08-29 Phase 5 closure
+production TypeScript/Vite build passed at 491.33 kB (gzip 109.20 kB) with no size warning
+141 curriculum source files verified with zero checksum failures at the Phase 6 mapping checkpoint
 ```
 
 `tests/test_current_state_index.py` now checks the source-defined F1, F2,
@@ -153,9 +173,11 @@ silently leaving the headline numbers stale.
 
 ## Accurate External Wording
 
-As of August 27, 2026, Selene's configured local runtime contains 106 retained
+As of August 29, 2026, Selene's configured local runtime contains 106 retained
 F1 foundation concepts, 41 retained F2 concepts, five retained coding
 foundations, and 73 reviewed language capabilities across twelve groups. Her
 source-bound Dream lifecycle is complete;
 one explicit cycle produced 24 reflections that remain pending review, with no
-silent expression or memory promotion.
+silent expression or memory promotion. Whole-system maturation Phases 0
+through 5 are complete for current scope; Phase 6 is source-mapped and awaits
+its prerequisite/source-readiness implementation.

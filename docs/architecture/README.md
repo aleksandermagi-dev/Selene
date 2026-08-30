@@ -7,6 +7,9 @@ individually defined as Selene.
 
 ## Begin Here
 
+- [Current Project Status — August 29, 2026](../evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md)
+  — consolidated current phase, configured counts, verification baseline,
+  honest limits, Git checkpoint, and exact resume point.
 - [Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
   — dependency-ordered program for bringing every organ to trustworthy
   maturity within its own role, from canonical context and Memory through

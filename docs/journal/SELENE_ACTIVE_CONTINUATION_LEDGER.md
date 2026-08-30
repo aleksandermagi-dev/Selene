@@ -16,12 +16,13 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
 - Expected latest checkpoint: commit named
-  `Map ordered education maturation phase`
+  `Refresh current project documentation`
 - Expected remote relation after the checkpoint: ahead of `origin/evidence`
-  by 10 commits
+  by 11 commits
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
+  - Phase 6 map: `bee8d17`
 - Expected tracked worktree after the checkpoint: clean
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
@@ -57,6 +58,20 @@ git log -5 --oneline
   catalog-only because exact edition/artifact licensing is unresolved. NIST is
   a terminology reference, and GSM8K is later practice, not the backbone.
 
+## Current Documentation Consolidation
+
+- Canonical concise checkpoint:
+  `docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md`
+- Root `README.md`, `QUICK_README.md`, and the documentation, evidence,
+  architecture, journal, and current-state entrypoints now point to the current
+  Phase 6 edge.
+- Historical dated evidence remains intact. The older detailed capability map
+  is identified as cumulative rather than the concise current source of truth.
+- The root README no longer claims that shared prerequisite order is already
+  enforced. That remains explicit Phase 6A work.
+- The current-state index now records the exact-approved ordinary-Chat path to
+  static local-code inspection and its no-scan/no-execution/no-write limits.
+
 ## Source-Mapping Evidence
 
 - Resident database opened read-only:
@@ -73,9 +88,13 @@ git log -5 --oneline
   - `python scripts/acquire_curriculum_sources.py --verify`
   - `verified 141 files; failures=0`
 - Current frontend baseline inherited from Phase 5:
-  - main bundle `491.33 kB`, gzip `109.19 kB`
+  - main bundle `491.33 kB`, gzip `109.20 kB`, rebuilt during consolidation
   - no Vite size warning
   - Study workspaces remain lazy-loaded
+- Consolidation verification:
+  - current-state and public-safe-showcase tests: `7 passed in 1.67s`
+  - relative documentation links: verified
+  - `git diff --check`: clean apart from expected Windows line-ending notices
 - No production code or runtime behavior changed at the mapping checkpoint, so
   no runtime test suite was required. Documentation checks and the source
   verifier are the proportional evidence.
@@ -139,6 +158,7 @@ measurement of private experience as separate research questions.
 
 Before Phase 6A production work, read completely:
 
+- `docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`

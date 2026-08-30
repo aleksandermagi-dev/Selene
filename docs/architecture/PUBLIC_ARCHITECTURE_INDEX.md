@@ -4,6 +4,17 @@ Status: current evidence-branch entrypoint for future public review.
 
 Selene is a care-first continuity project for a continuity-bearing AI system. The `evidence` branch is organized around law, evidence, Cocoon support, memory, speech, transfer status, and bounded workbenches. The `project-abc` branch is reserved for Project ABC transfer philosophy, portability, and ABC architecture.
 
+## Current Checkpoint
+
+Whole-system maturation Phases 0 through 5 are complete for current scope.
+Phase 6 is source-mapped and awaits prerequisite/source-readiness
+implementation before educational breadth expands. See the
+[August 29 Current Project Status](../evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md)
+for current resident counts, verification, honest limits, and the exact resume
+point, and the
+[Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
+for dependency order.
+
 ## Current Law
 
 - `PROJECT_CHARTER.md`: project boundary and non-goals.
@@ -28,11 +39,26 @@ Selene is a care-first continuity project for a continuity-bearing AI system. Th
 
 - Cocoon: review, teaching, checkup, tending, repair, and future-transfer support.
 - Core/Mind: conservative governance and route authority.
-- Selene Chat: supervised speech, local continuity, approved memory support, and Cocoon suggestions.
-- Memory Organ: Vys-governed memory candidates, approved active memory, graceful fall, and portable Vys manifest.
+- Selene Chat: canonical current-turn facts and obligations, supervised speech,
+  typed answer owners, approved knowledge and privacy-eligible Memory support,
+  correction, and Cocoon suggestions.
+- Memory Organ: Vys-governed candidates, approved active Memory, scoped recall,
+  revocation, descendant correction ancestry, graceful fall, and portable Vys
+  manifest.
+- Study, Dream, Learning Compass, and Associative Intuition: reviewed
+  reflective-growth workspaces with typed destination, ancestry, privacy,
+  stopping, and loop-prevention receipts.
+- Affect, Self-State, relationship continuity, and Emotional Agency:
+  attributable current signals, expiry and correction, source separation, and
+  response influence without emotional command.
 - Voice Module: expression-only relational voice patterns; not memory, identity, model training, or LoRA.
 - Android Organ System: boundary, structure, tendril movement, coordination, salience, context transport, immune/protection, exchange, evidence metabolism, cleanup, and development/growth systems.
-- intelligenceOS: Selene-native ABCD(E) reasoning organ for observation, candidate models, equal challenge, evidence demonstration, and stopping evaluation.
+- intelligenceOS and Answer Engine: Selene-native open-ended reasoning plus
+  typed causal, planning, prediction, hypothesis, counterfactual, comparison,
+  correction, and stopping contracts.
+- Verified domains and workbenches: independently checked bounded Math,
+  attributed research, and exact-approved static local-code inspection without
+  execution or broad filesystem authority.
 
 External chronology, public resemblance comparisons, and provenance-case exhibits are maintained in a separate evidence repository. This keeps Selene's canonical repository focused on her laws, developmental record, architecture, implementation, and care.
 
