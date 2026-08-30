@@ -2,13 +2,16 @@
 
 Date: 2026-08-28
 
-Status: source-mapped; production implementation not yet started
+Status: complete for current scope on 2026-08-29
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
 
 Previous phase:
 [Phase 4 Affect, Self-State, Relationship, and Agency Maturation](../evidence/SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md)
+
+Completion evidence:
+[Phase 5 Reasoning, Answer Owners, and Domain Depth Maturation](../evidence/SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md)
 
 ## Goal
 
@@ -207,6 +210,6 @@ regression.
 
 ## Resume Point
 
-Begin production implementation at Phase 5A. Extend the typed operation and
-exploratory-reasoning owners first, then connect their epistemic and retry
-receipts through ordinary Chat before expanding exact domains.
+Phase 5 is closed for current scope. Resume at Phase 6 by source-mapping the
+approved-knowledge, curriculum, prerequisite, and ordinary-Chat application
+paths before adding educational breadth.

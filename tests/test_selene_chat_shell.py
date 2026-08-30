@@ -1312,6 +1312,38 @@ def test_active_selene_chat_carries_current_session_expression_guidance_without_
     _assert_locked(result)
 
 
+def test_active_selene_chat_inspects_only_the_current_exact_file_approved_by_aleks(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "Inspect answer_engine_status in this approved source code.",
+            "approved_workspace_files": [
+                {"path": "src/selene/answer_engine.py", "approved": True}
+            ],
+            "local_code_approval": {
+                "approved": True,
+                "scope": "current_request",
+                "exact_paths": ["src/selene/answer_engine.py"],
+            },
+        },
+    )["result"]
+    support = result["answer_engine_support"]
+
+    assert support["selected_domain"] == "local_code_inspection"
+    assert support["adapter_executed"] is True
+    assert support["local_code_approval"]["file_read_allowed"] is True
+    assert support["code_inspection"]["citations"]
+    assert "answer_engine_status" in result["candidate_text"]
+    assert result["response_coverage"]["all_required_resolved"] is True
+    assert result["reviewed_memory_write_occurred"] is False
+    _assert_locked(result)
+
+
 def test_active_chat_persists_one_trace_with_compact_activation_and_session_views(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

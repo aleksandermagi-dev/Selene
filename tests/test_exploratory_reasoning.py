@@ -125,6 +125,41 @@ def test_hypothesis_preserves_alternatives_tests_and_revision_without_equal_weig
     _assert_locked(result)
 
 
+def test_counterfactual_preserves_actual_state_and_source_roles_without_rewriting_history():
+    result = build_exploratory_reasoning_packet(
+        {
+            "prompt": "What if the second step came first?",
+            "observations": [
+                "The current sequence runs validation before release."
+            ],
+            "counterfactual": {
+                "changed_premise": "release came before validation",
+                "preserved_premises": [
+                    "the same artifact and acceptance criteria remained in scope"
+                ],
+                "consequence": (
+                    "the release would occur before its acceptance result was available"
+                ),
+                "actual_state": "validation currently comes before release",
+                "assumptions": ["validation is the source of the acceptance result"],
+                "what_would_change": [
+                    "a separate earlier verifier supplied the same acceptance result"
+                ],
+            },
+        }
+    )
+
+    counterfactual = result["counterfactual"]
+    assert result["response_kind"] == "bounded_counterfactual"
+    assert counterfactual["available"] is True
+    assert counterfactual["changed_premise_claimed_as_actual"] is False
+    assert counterfactual["actual_state_restored"] is True
+    assert counterfactual["history_rewritten"] is False
+    assert "not a claim" in result["response_seed"]
+    assert result["counterfactual_is_actual_state"] is False
+    _assert_locked(result)
+
+
 def test_comparison_builds_inspectable_venn_sets_under_one_standard():
     result = build_exploratory_reasoning_packet(
         {

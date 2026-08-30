@@ -34,7 +34,10 @@ _OPERATION_ALIASES = {
     "reason": "causal_explanation",
     "prediction": "prediction",
     "hypothesis": "hypothesis",
+    "counterfactual": "counterfactual",
     "comparison": "comparison",
+    "planning": "planning",
+    "plan": "planning",
     "choice": "choice",
     "disagreement": "disagreement",
     "claim_evaluation": "disagreement",
@@ -51,7 +54,23 @@ _CONTRACTS: dict[str, tuple[str, ...]] = {
     "causal_explanation": ("conclusion", "mechanism_or_reason", "basis"),
     "prediction": ("predicted_change", "basis", "revision_conditions"),
     "hypothesis": ("hypothesis", "basis", "revision_conditions"),
+    "counterfactual": (
+        "changed_premise",
+        "preserved_premises",
+        "consequence",
+        "basis",
+        "limits",
+        "actual_state_restored",
+    ),
     "comparison": ("candidates", "findings", "comparison_basis"),
+    "planning": (
+        "objective",
+        "steps",
+        "dependencies",
+        "constraints",
+        "fallback",
+        "stopping_condition",
+    ),
     "choice": ("selected_option", "criteria", "revision_conditions"),
     "disagreement": ("stance", "claim_evaluated", "premises"),
     "correction": ("corrected_input", "affected_result", "recompute_required"),
@@ -75,6 +94,14 @@ def answer_operations_status() -> dict[str, Any]:
             "version": "v1_typed_obligation_operation_results",
             "supported_operations": list(_CONTRACTS),
             "result_states": ["completed", "missing_input", "unsupported"],
+            "epistemic_states": [
+                "KNOWN_SUPPORTED",
+                "CANDIDATE_UNVERIFIED",
+                "UNKNOWN_INSUFFICIENT_EVIDENCE",
+                "CONFLICT_UNSATISFIABLE",
+                "WRONG_FALSIFIED",
+                "RETRY_UPDATED_APPROACH",
+            ],
             "generic_prose_may_complete_operation": False,
             "canonical_obligation_reparse_allowed": False,
             "current_turn_owner_input_receipt_required": True,
@@ -270,6 +297,35 @@ def _execute_operation(
                 supported_semantics=_dict(exploratory.get("supported_semantics")),
                 source_refs=_texts(exploratory.get("source_refs")),
             )
+    elif operation == "counterfactual":
+        counterfactual = _dict(exploratory.get("counterfactual"))
+        if counterfactual.get("available") is True:
+            return _complete_result(
+                obligation,
+                operation,
+                fields={
+                    "changed_premise": str(counterfactual.get("changed_premise") or ""),
+                    "preserved_premises": _texts(counterfactual.get("preserved_premises")),
+                    "consequence": str(counterfactual.get("consequence") or ""),
+                    "basis": _texts(counterfactual.get("basis_evidence_ids")),
+                    "assumptions": _texts(counterfactual.get("assumptions")),
+                    "alternatives": _texts(counterfactual.get("alternatives")),
+                    "limits": _texts(counterfactual.get("limits")),
+                    "revision_conditions": _texts(counterfactual.get("what_would_change")),
+                    "actual_state_restored": counterfactual.get("actual_state_restored") is True,
+                    "actual_state": str(counterfactual.get("actual_state") or ""),
+                },
+                source="exploratory_reasoning.counterfactual",
+                expression_source_id="exploratory_reasoning",
+                expression_seed=str(
+                    exploratory.get("response_seed")
+                    or counterfactual.get("response_seed")
+                    or counterfactual.get("consequence")
+                    or ""
+                ),
+                supported_semantics=_dict(exploratory.get("supported_semantics")),
+                source_refs=_texts(exploratory.get("source_refs")),
+            )
     elif operation == "comparison":
         comparison = _dict(exploratory.get("comparison"))
         if comparison.get("available") is True:
@@ -434,7 +490,63 @@ def _from_answer_substance(
     basis = str(substance.get("support_basis") or "current_prompt_only")
 
     fields: dict[str, Any]
-    if operation == "method" and _kind_fits(answer_kind, ("method", "plan", "step", "organization", "workflow", "action")):
+    if operation == "planning" and _kind_fits(
+        answer_kind,
+        ("plan", "planning", "organization", "workflow"),
+    ):
+        sequence = _surfaces_with_relation(units, {"sequence"}) or surfaces
+        constraints = _surfaces_with_role(units, {"condition", "limit"})
+        dependencies = _surfaces_with_relation(
+            units,
+            {"cause", "dependency", "support"},
+        )
+        stopping = next(
+            (
+                item
+                for item in reversed(sequence)
+                if re.search(
+                    r"\b(?:stop|finish|complete|check|review)\b",
+                    item,
+                    re.IGNORECASE,
+                )
+            ),
+            "",
+        )
+        if not stopping:
+            stopping_unit = next(
+                (
+                    item
+                    for item in reversed(units)
+                    if any(
+                        "stopping" in str(key).lower()
+                        for key in item.get("meaning_keys") or []
+                    )
+                ),
+                {},
+            )
+            stopping_surface = _semantic_surface(stopping_unit) if stopping_unit else ""
+            if stopping_surface:
+                stopping = f"Stop after this bounded step: {stopping_surface}"
+        elif "stop" not in stopping.lower():
+            stopping = f"Stop after this bounded step: {stopping}"
+        objective = str(obligation.get("source_text") or "").strip()
+        if not objective and surfaces:
+            objective = surfaces[0]
+        fields = {
+            "objective": objective,
+            "steps": sequence,
+            "dependencies": dependencies or sequence[:1],
+            "resources": _surfaces_with_role(units, {"context", "premise"}),
+            "constraints": constraints or ([missing_variable] if missing_variable else []),
+            "risks": [missing_variable] if missing_variable else [],
+            "fallback": (
+                f"Pause and revise the plan if {missing_variable}."
+                if missing_variable
+                else "Pause when a required dependency or constraint is no longer supported."
+            ),
+            "stopping_condition": stopping,
+        }
+    elif operation == "method" and _kind_fits(answer_kind, ("method", "plan", "step", "organization", "workflow", "action")):
         fields = {
             "steps": surfaces,
             "basis": basis,
@@ -829,6 +941,13 @@ def _complete_result(
         "supported_semantics": supported_semantics,
         "generic_prose_used_as_completion": False,
         "epistemic_status_preserved": True,
+        "epistemic_state": _completed_epistemic_state(operation, source),
+        "source_role_receipt": _source_role_receipt(source_refs, source),
+        "terminal_receipt": {
+            "state": "completed",
+            "further_attempt_authorized": False,
+            "automatic_retention": False,
+        },
         "canonical_obligation_reparsed": False,
         **GUARDS,
     }
@@ -864,6 +983,17 @@ def _missing_result(
         "supported_semantics": {},
         "generic_prose_used_as_completion": False,
         "epistemic_status_preserved": True,
+        "epistemic_state": (
+            "CONFLICT_UNSATISFIABLE"
+            if "conflict" in reason.lower() or "boundary" in reason.lower()
+            else "UNKNOWN_INSUFFICIENT_EVIDENCE"
+        ),
+        "source_role_receipt": _source_role_receipt([], source),
+        "terminal_receipt": {
+            "state": status,
+            "further_attempt_authorized": False,
+            "automatic_retention": False,
+        },
         "canonical_obligation_reparsed": False,
         **GUARDS,
     }
@@ -969,9 +1099,12 @@ def _unmet_current_turn_inputs(
             open_inputs.append("the available options")
         if not has("criteria"):
             open_inputs.append("the criterion that should control the choice")
-    elif operation in {"prediction", "hypothesis", "causal_explanation"}:
+    elif operation in {"prediction", "hypothesis", "counterfactual", "causal_explanation"}:
         if not any(has(field) for field in ("observations", "relations", "claims")):
             open_inputs.append("a visible observation, supported relation, or reviewed claim")
+    elif operation == "planning":
+        if not any(has(field) for field in ("claims", "criteria", "constraints", "options")):
+            open_inputs.append("a visible objective, constraint, or set of available options")
     elif operation == "disagreement":
         if not any(has(field) for field in ("claims", "observations", "relations")):
             open_inputs.append("the claim or observation to evaluate")
@@ -1120,6 +1253,44 @@ def _sentences(value: str) -> list[str]:
 
 def _kind_fits(kind: str, markers: tuple[str, ...]) -> bool:
     return any(marker in str(kind or "").lower() for marker in markers)
+
+
+def _completed_epistemic_state(operation: str, source: str) -> str:
+    if operation in {"prediction", "hypothesis", "counterfactual"}:
+        return "CANDIDATE_UNVERIFIED"
+    if operation == "disagreement" and "data_conflict" in source:
+        return "CONFLICT_UNSATISFIABLE"
+    if operation == "correction":
+        return "RETRY_UPDATED_APPROACH"
+    return "KNOWN_SUPPORTED"
+
+
+def _source_role_receipt(source_refs: list[str], source: str) -> dict[str, Any]:
+    roles: list[str] = []
+    for value in [source, *source_refs]:
+        lower = str(value).lower()
+        if (
+            "current_turn" in lower
+            or "current_conversation" in lower
+            or "answer_substance" in lower
+        ):
+            roles.append("current_visible_support")
+        if "knowledge" in lower or "teaching" in lower:
+            roles.append("approved_knowledge")
+        if "memory" in lower or "experience" in lower:
+            roles.append("reviewed_personal_experience")
+        if "verified" in lower or "answer_engine" in lower:
+            roles.append("verified_domain_or_answer_owner")
+        if "source" in lower or "paper:" in lower or "study:" in lower:
+            roles.append("attributed_source")
+        if "exploratory" in lower or "intelligence_os" in lower:
+            roles.append("bounded_reasoning_owner")
+    return {
+        "roles": list(dict.fromkeys(roles)) or ["typed_owner_result"],
+        "source_refs": list(dict.fromkeys(source_refs))[:40],
+        "expression_may_strengthen_status": False,
+        "retention_authorized": False,
+    }
 
 
 def _field_present(value: Any) -> bool:

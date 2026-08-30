@@ -366,10 +366,13 @@ anxiety, grief, anger, or fear merely to see whether it appears.
 
 ## Phase 5 — Reasoning, Answer Owners, and Domain Depth
 
-Status: **source-mapped on 2026-08-28; production implementation pending**
+Status: **complete for current scope on 2026-08-29**
 
 Implementation map:
 [Phase 5 Reasoning, Answer Owners, and Domain Depth Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_5_IMPLEMENTATION_MAP_20260828.md)
+
+Evidence:
+[Phase 5 Reasoning, Answer Owners, and Domain Depth Maturation](../evidence/SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md)
 
 ### Purpose
 

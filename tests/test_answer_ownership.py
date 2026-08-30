@@ -55,7 +55,9 @@ def test_self_state_and_preference_keep_their_current_answer_owners():
 def test_reasoning_operations_are_owned_by_the_organs_that_perform_them():
     prediction = _owned("What do you predict will happen next?")
     hypothesis = _owned("What is your best current hypothesis for this pattern?")
+    counterfactual = _owned("What if release happened before validation?")
     comparison = _owned("Compare the two designs.", kind="comparison")
+    planning = _owned("How should we plan this work?", kind="method")
     action = _owned("What is the smallest safe inspection we can do?")
 
     assert (prediction["responsible_owner"], prediction["answer_act"]) == (
@@ -63,9 +65,16 @@ def test_reasoning_operations_are_owned_by_the_organs_that_perform_them():
         "prompt_grounded_prediction",
     )
     assert hypothesis["requested_response_functions"] == ["hypothesis"]
+    assert counterfactual["requested_response_functions"] == ["counterfactual"]
+    assert counterfactual["responsible_owner"] == "intelligence_os"
     assert comparison["answer_domain"] == "comparison_planning"
+    assert planning["requested_response_functions"] == ["planning"]
+    assert planning["answer_domain"] == "comparison_planning"
     assert action["requested_response_functions"] == ["method", "action_scope"]
-    assert all(item["external_evidence_required"] is False for item in (prediction, hypothesis, comparison, action))
+    assert all(
+        item["external_evidence_required"] is False
+        for item in (prediction, hypothesis, counterfactual, comparison, planning, action)
+    )
 
 
 def test_external_fact_and_attributed_research_remain_evidence_owned():

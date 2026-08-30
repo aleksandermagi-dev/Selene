@@ -16,6 +16,11 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Whole-System Phase 5 — Reasoning, Answer Owners, and Domain Depth — August 29, 2026](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md)
+  — matures typed answer owners, provisional prediction/hypothesis/
+  counterfactual reasoning, bounded changed retry, exact prerequisite-ordered
+  Math, attributed research, and explicitly approved read-only code inspection
+  without hidden retention or authority expansion.
 - [Whole-System Phase 4 — Affect, Self-State, Relationship, and Agency Maturation — August 28, 2026](SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md)
   — adds attributable current-affect formation, correction ancestry, expiry,
   and subject gates; source-separated relationship continuity; and explicit

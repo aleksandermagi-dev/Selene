@@ -8,7 +8,7 @@ from .supported_semantics import build_text_supported_semantic_packet
 
 
 EXPLORATORY_REASONING_BOUNDARY = (
-    "current_turn_prediction_hypothesis_comparison_and_data_conflict_coordination_"
+    "current_turn_prediction_hypothesis_counterfactual_comparison_and_data_conflict_coordination_"
     "only_no_fact_memory_identity_governance_training_authority_or_action_change"
 )
 
@@ -46,6 +46,16 @@ _HYPOTHESIS_CUES = (
     "what might explain",
     "what could explain",
     "what do you suspect",
+)
+
+_COUNTERFACTUAL_CUES = (
+    "counterfactual",
+    "hypothetically",
+    "suppose",
+    "imagine",
+    "what if",
+    "what would happen if",
+    "what could happen if",
 )
 
 _COMPARISON_CUES = (
@@ -99,10 +109,11 @@ def exploratory_reasoning_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "exploratory_reasoning_coordination_ready",
-            "version": "v1_bounded_prediction_hypothesis_comparison_conflict",
+            "version": "v2_bounded_prediction_hypothesis_counterfactual_comparison_conflict",
             "capabilities": [
                 "bounded prediction from a visible or reviewed basis",
                 "open hypothesis with alternatives and revision conditions",
+                "counterfactual consequence with changed and preserved premises kept separate from actual state",
                 "comparison dimensions and Venn-style shared/only sets",
                 "claim-level data conflict without identity conflict",
                 "one smallest safe discriminating check",
@@ -151,6 +162,11 @@ def build_exploratory_reasoning_packet(
         alternatives=payload.get("alternatives") or payload.get("candidate_models"),
         requested="hypothesis" in requested_modes,
     )
+    counterfactual = _counterfactual(
+        evidence,
+        supplied=_dict(payload.get("counterfactual")),
+        requested="counterfactual" in requested_modes,
+    )
     comparison = _comparison(
         payload.get("comparison_candidates"),
         dimensions=payload.get("comparison_dimensions"),
@@ -174,6 +190,7 @@ def build_exploratory_reasoning_packet(
         requested_modes,
         prediction=prediction,
         hypothesis=hypothesis,
+        counterfactual=counterfactual,
         comparison=comparison,
         data_conflict=data_conflict,
         blocked=bool(blockers),
@@ -197,6 +214,8 @@ def build_exploratory_reasoning_packet(
             if response_kind == "bounded_prediction"
             else "open_hypothesis"
             if response_kind == "open_hypothesis"
+            else "bounded_counterfactual_not_actual_state"
+            if response_kind == "bounded_counterfactual"
             else "unresolved_claim_level_conflict"
             if response_kind == "data_conflict"
             else "bounded_supported_comparison"
@@ -213,7 +232,7 @@ def build_exploratory_reasoning_packet(
             if blockers
             else "exploratory_reasoning_not_material"
         ),
-        "version": "v1_bounded_prediction_hypothesis_comparison_conflict",
+        "version": "v2_bounded_prediction_hypothesis_counterfactual_comparison_conflict",
         "prompt": prompt,
         "requested_modes": requested_modes,
         "evidence_ledger": evidence,
@@ -223,6 +242,7 @@ def build_exploratory_reasoning_packet(
         ),
         "prediction": prediction,
         "hypothesis": hypothesis,
+        "counterfactual": counterfactual,
         "comparison": comparison,
         "data_conflict": data_conflict,
         "response_kind": response_kind,
@@ -235,6 +255,7 @@ def build_exploratory_reasoning_packet(
         "alternatives_not_equal_probability_without_support": True,
         "prediction_is_fact": False,
         "hypothesis_is_fact": False,
+        "counterfactual_is_actual_state": False,
         "reviewed_experience_is_personal_scope": True,
         "data_conflict_is_identity_conflict": False,
         "terminology_change_is_identity_loss": False,
@@ -255,6 +276,7 @@ def _requested_modes(lower: str, payload: dict[str, Any]) -> list[str]:
     detected = [
         *( ["prediction"] if any(cue in lower for cue in _PREDICTION_CUES) else [] ),
         *( ["hypothesis"] if any(cue in lower for cue in _HYPOTHESIS_CUES) else [] ),
+        *( ["counterfactual"] if any(cue in lower for cue in _COUNTERFACTUAL_CUES) else [] ),
         *( ["comparison"] if any(cue in lower for cue in _COMPARISON_CUES) else [] ),
         *( ["data_conflict"] if any(cue in lower for cue in _CONFLICT_CUES) else [] ),
     ]
@@ -502,6 +524,62 @@ def _hypothesis(
     }
 
 
+def _counterfactual(
+    evidence: list[dict[str, Any]],
+    *,
+    supplied: dict[str, Any],
+    requested: bool,
+) -> dict[str, Any]:
+    if not requested:
+        return {"requested": False, "available": False}
+    changed = truncate(str(supplied.get("changed_premise") or ""), 1000).strip()
+    preserved = _texts(supplied.get("preserved_premises"))
+    consequence = truncate(str(supplied.get("consequence") or ""), 1400).strip()
+    actual_state = truncate(str(supplied.get("actual_state") or ""), 1000).strip()
+    assumptions = _texts(supplied.get("assumptions"))
+    alternatives = _texts(supplied.get("alternatives"))
+    limits = _texts(supplied.get("limits"))
+    what_would_change = _texts(
+        supplied.get("what_would_change") or supplied.get("revision_conditions")
+    )
+    available = bool(changed and preserved and consequence and evidence)
+    response_seed = ""
+    if available:
+        response_seed = truncate(
+            f"Counterfactually, if {changed}, while {preserved[0]}, then {consequence} "
+            "This is a conditional consequence from the stated basis, not a claim that the changed premise is actual."
+            + (f" The actual state remains: {actual_state}." if actual_state else ""),
+            1800,
+        )
+    return {
+        "requested": True,
+        "available": available,
+        "epistemic_state": (
+            "bounded_counterfactual"
+            if available
+            else "missing_supported_counterfactual"
+        ),
+        "changed_premise": changed,
+        "preserved_premises": preserved,
+        "consequence": consequence if available else "",
+        "actual_state": actual_state,
+        "actual_state_restored": bool(available),
+        "basis_evidence_ids": [item["evidence_id"] for item in evidence],
+        "assumptions": assumptions,
+        "alternatives": alternatives,
+        "limits": limits
+        or (
+            ["the consequence applies only if the changed and preserved premises hold"]
+            if available
+            else []
+        ),
+        "what_would_change": what_would_change,
+        "response_seed": response_seed,
+        "changed_premise_claimed_as_actual": False,
+        "history_rewritten": False,
+    }
+
+
 def _comparison(
     value: Any,
     *,
@@ -616,6 +694,7 @@ def _response_seed(
     *,
     prediction: dict[str, Any],
     hypothesis: dict[str, Any],
+    counterfactual: dict[str, Any],
     comparison: dict[str, Any],
     data_conflict: dict[str, Any],
     blocked: bool,
@@ -651,6 +730,8 @@ def _response_seed(
         if venn.get("unresolved"):
             parts.append(f"Still unresolved: {', '.join(str(item) for item in venn['unresolved'][:2])}.")
         return "venn_comparison", " ".join(parts)
+    if "counterfactual" in modes and counterfactual.get("available") is True:
+        return "bounded_counterfactual", str(counterfactual.get("response_seed") or "")
     if "prediction" in modes and prediction.get("available") is True:
         change = str((prediction.get("what_would_change") or [""])[0])
         response = f"My bounded prediction is: {prediction['statement']}"

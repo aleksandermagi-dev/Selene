@@ -14,6 +14,11 @@ LOCAL_CODE_BOUNDARY = (
     "read_only_no_scan_write_execution_memory_identity_law_or_authority_change"
 )
 
+LOCAL_CODE_APPROVAL_BOUNDARY = (
+    "current_chat_request_exact_file_approval_only_no_directory_glob_stale_"
+    "transport_claim_execution_write_memory_identity_or_authority_expansion"
+)
+
 MAX_FILES = 8
 MAX_FILE_BYTES = 200_000
 MAX_TOTAL_BYTES = 800_000
@@ -86,8 +91,133 @@ def local_code_inspection_status() -> dict[str, Any]:
         "arbitrary_workspace_root_allowed": False,
         "observation_interpretation_separated": True,
         "citations_required": True,
+        "chat_exact_file_approval_required": True,
+        "chat_file_approval_requires_authenticated_aleks_session": True,
+        "attributed_pasted_code_requires_filesystem_approval": False,
         "review_status": "status_only",
         "provenance_boundary": LOCAL_CODE_BOUNDARY,
+    }
+
+
+def build_local_code_approval_receipt(
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Authorize only exact files selected for this one Chat request.
+
+    This is separate from speaker authentication: the trusted session answers
+    who may approve, while this receipt answers which exact files may be read
+    now. Attributed pasted code needs no filesystem approval because it does
+    not cause a file read.
+    """
+
+    source = payload if isinstance(payload, dict) else {}
+    speaker = (
+        source.get("speaker_envelope")
+        if isinstance(source.get("speaker_envelope"), dict)
+        else {}
+    )
+    approval = (
+        source.get("local_code_approval")
+        if isinstance(source.get("local_code_approval"), dict)
+        else {}
+    )
+    files = [
+        item
+        for item in source.get("approved_workspace_files") or []
+        if isinstance(item, dict)
+    ][:MAX_FILES]
+    pasted_packets = [
+        item
+        for item in source.get("code_packets") or []
+        if isinstance(item, dict)
+        and str(item.get("source_ref") or "").strip()
+        and str(item.get("content") or "")
+    ][:MAX_FILES]
+    claimed = str(speaker.get("claimed_speaker") or "").strip().casefold()
+    authentication = str(
+        speaker.get("authentication_strength") or ""
+    ).strip().casefold()
+    authenticated_aleks = claimed in {
+        "aleks",
+        "aleksander magi",
+        "aleksander rani magi",
+    } and authentication in {
+        "local_desktop_session",
+        "authenticated_remote_session",
+        "cryptographically_verified_authorship",
+        "os_authenticated_named_identity",
+    }
+    exact_paths = [
+        str(item.get("path") or "").strip()
+        for item in files
+        if item.get("approved") is True and str(item.get("path") or "").strip()
+    ]
+    selected_paths = [
+        str(value).strip()
+        for value in approval.get("exact_paths") or []
+        if str(value).strip()
+    ]
+    exact_match = bool(exact_paths) and set(exact_paths) == set(selected_paths)
+    current_request = str(approval.get("scope") or "") == "current_request"
+    explicit = approval.get("approved") is True
+    diagnostic = speaker.get("diagnostic") is True
+    file_read_allowed = bool(
+        authenticated_aleks
+        and explicit
+        and current_request
+        and exact_match
+        and not diagnostic
+    )
+    pasted_allowed = bool(pasted_packets)
+    blockers: list[str] = []
+    if files and not authenticated_aleks:
+        blockers.append("authenticated_aleks_session_required_for_file_read")
+    if files and not explicit:
+        blockers.append("explicit_file_approval_missing")
+    if files and not current_request:
+        blockers.append("approval_must_be_scoped_to_current_request")
+    if files and not exact_match:
+        blockers.append("approved_paths_do_not_exactly_match_selected_paths")
+    if diagnostic and files:
+        blockers.append("diagnostic_context_cannot_approve_file_read")
+    if not files and not pasted_packets:
+        blockers.append("no_attributed_paste_or_exact_approved_file")
+    return {
+        "status": (
+            "local_code_chat_input_authorized"
+            if file_read_allowed or pasted_allowed
+            else "local_code_chat_input_held"
+        ),
+        "eligible": bool(file_read_allowed or pasted_allowed),
+        "input_mode": (
+            "attributed_pasted_code"
+            if pasted_allowed and not file_read_allowed
+            else "exact_approved_workspace_files"
+            if file_read_allowed and not pasted_allowed
+            else "attributed_paste_and_exact_approved_files"
+            if file_read_allowed and pasted_allowed
+            else "none"
+        ),
+        "file_read_allowed": file_read_allowed,
+        "attributed_paste_allowed": pasted_allowed,
+        "authenticated_aleks": authenticated_aleks,
+        "approval_scope": str(approval.get("scope") or ""),
+        "approved_paths": exact_paths if file_read_allowed else [],
+        "selected_paths": selected_paths,
+        "blockers": list(dict.fromkeys(blockers)),
+        "directory_scan_allowed": False,
+        "glob_allowed": False,
+        "code_execution_allowed": False,
+        "filesystem_write_allowed": False,
+        "approval_reusable_across_requests": False,
+        "speaker_authentication_alone_authorizes_files": False,
+        "memory_write_active": False,
+        "identity_change": False,
+        "governance_change": False,
+        "authority_change": False,
+        "autonomous_action_allowed": False,
+        "review_status": "status_only",
+        "provenance_boundary": LOCAL_CODE_APPROVAL_BOUNDARY,
     }
 
 

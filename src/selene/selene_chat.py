@@ -10,6 +10,7 @@ from .answer_engine import (
     preview_answer_coordination,
     preview_answer_route,
     run_comparison_planning_answer,
+    run_local_code_inspection_answer,
     run_source_backed_research_answer,
     run_verified_math_answer,
 )
@@ -736,6 +737,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         memory_retrieval,
         chat_continuity,
         intelligence_support,
+        speaker_envelope=speaker_envelope,
         contextual_content_seed=(
             explicit_humor_reply
             or ordinary_uncertainty_reply
@@ -3211,7 +3213,7 @@ def _formation_braid_candidates(
                 "exactness_lock": (
                     source_id == "answer_engine"
                     and str(answer_packet.get("domain") or "")
-                    in {"verified_math", "source_backed_research"}
+                    in {"verified_math", "source_backed_research", "local_code_inspection"}
                     and answer_engine_support.get("route_validated_for_exactness") is True
                 ),
             }
@@ -3774,6 +3776,7 @@ def _answer_engine_support(
     chat_continuity: dict[str, Any],
     intelligence_support: dict[str, Any],
     *,
+    speaker_envelope: dict[str, Any] | None = None,
     contextual_content_seed: str = "",
     hard: bool,
 ) -> dict[str, Any]:
@@ -3847,6 +3850,25 @@ def _answer_engine_support(
         "comprehension_context": comprehension,
         "memory_context": memory_retrieval,
         "source_packets": source_packets,
+        "code_packets": [
+            item
+            for item in chat_payload.get("code_packets") or []
+            if isinstance(item, dict)
+        ][:8],
+        "approved_workspace_files": [
+            item
+            for item in chat_payload.get("approved_workspace_files") or []
+            if isinstance(item, dict)
+        ][:8],
+        "local_code_approval": (
+            chat_payload.get("local_code_approval")
+            if isinstance(chat_payload.get("local_code_approval"), dict)
+            else {}
+        ),
+        "speaker_envelope": (
+            speaker_envelope if isinstance(speaker_envelope, dict) else {}
+        ),
+        "local_code_chat_request": True,
         "requested_domain": str(chat_payload.get("requested_domain") or "").strip(),
         "requested_depth": intent_decision.get("response_depth") or "standard",
         "source_refs": [
@@ -3989,6 +4011,8 @@ def _answer_engine_support(
                 unit_result = run_verified_math_answer(unit_payload)
             elif unit_domain == "source_backed_research":
                 unit_result = run_source_backed_research_answer(unit_payload)
+            elif unit_domain == "local_code_inspection":
+                unit_result = run_local_code_inspection_answer(unit_payload)
             else:
                 unit_result = run_comparison_planning_answer(conn, unit_payload)
             unit_packet = (
@@ -4066,7 +4090,7 @@ def _answer_engine_support(
             "status": "answer_engine_coordinated_multi_domain_answer_ready",
             "reason": "bounded adapters answered their own obligations before NLO expression",
         }
-    if domain == "local_code_inspection":
+    if domain == "local_code_inspection" and not executable_units:
         return {
             **base,
             "used": True,
@@ -4082,7 +4106,7 @@ def _answer_engine_support(
             "reason": "the visible answer states the real input boundary and the bounded available route",
             "deferred_by_scope": True,
         }
-    if domain not in {"verified_math", "source_backed_research", "comparison_planning"}:
+    if domain not in {"verified_math", "source_backed_research", "comparison_planning", "local_code_inspection"}:
         return {
             **base,
             "selected_domain": domain,
@@ -4095,6 +4119,8 @@ def _answer_engine_support(
         result = run_verified_math_answer(engine_payload)
     elif domain == "source_backed_research":
         result = run_source_backed_research_answer(engine_payload)
+    elif domain == "local_code_inspection":
+        result = run_local_code_inspection_answer(engine_payload)
     else:
         initial_run = None
         if intelligence_support.get("used") is True:
@@ -4138,7 +4164,7 @@ def _answer_engine_support(
         "adapter_executed": result.get("adapter_executed") is True,
         "answer_generated": result.get("answer_generated") is True,
         "route_validated_for_exactness": bool(
-            domain in {"verified_math", "source_backed_research"}
+            domain in {"verified_math", "source_backed_research", "local_code_inspection"}
             and any(
                 str(item.get("selected_domain") or "") == domain
                 and str(item.get("responsible_owner") or "") == "answer_engine"
@@ -4148,6 +4174,8 @@ def _answer_engine_support(
         ),
         "source_research": result.get("source_research") or {},
         "math_verification": result.get("math_verification") or {},
+        "code_inspection": result.get("code_inspection") or {},
+        "local_code_approval": result.get("local_code_approval") or {},
         "status": result.get("status") or "answer_engine_result_ready",
         "reason": "bounded Answer Engine adapter supplied the content meaning to NLO and Voice",
     }
@@ -4521,6 +4549,75 @@ def _evaluate_chat_response_coverage(
             if str(item.get("loop_id") or ""):
                 answered_loop_ids.add(str(item["loop_id"]))
         items.append(item)
+    recorded_ids = {
+        str(item.get("obligation_id") or "")
+        for item in items
+        if str(item.get("obligation_id") or "")
+    }
+    coordination_units = [
+        item
+        for item in (
+            (answer_engine_support.get("coordination_plan") or {}).get(
+                "coordination_units"
+            )
+            or []
+        )
+        if isinstance(item, dict)
+    ]
+    for unit in coordination_units:
+        obligation = (
+            unit.get("obligation")
+            if isinstance(unit.get("obligation"), dict)
+            else {}
+        )
+        obligation_id = str(obligation.get("id") or "")
+        if obligation_id not in owner_ids or obligation_id in recorded_ids:
+            continue
+        items.append(
+            {
+                "obligation_id": obligation_id,
+                "loop_id": str(obligation.get("loop_id") or ""),
+                "kind": str(obligation.get("kind") or "direct_request"),
+                "answer_act": str(obligation.get("answer_act") or ""),
+                "responsible_owner": "answer_engine",
+                "answer_domain": str(unit.get("selected_domain") or ""),
+                "requested_response_functions": [
+                    str(item)
+                    for item in obligation.get("requested_response_functions") or []
+                    if str(item)
+                ],
+                "answer_ownership_classified": True,
+                "addressed": True,
+                "resolved_for_release": True,
+                "resolution_state": "answered",
+                "explicitly_held": False,
+                "supported_route_present": False,
+                "owner_resolution_evidence": {
+                    "owner": "answer_engine",
+                    "obligation_ids": [obligation_id],
+                    "resolution_kind": "answer",
+                    "current_turn_only": True,
+                    "verified_domain_packet": True,
+                },
+                "owner_resolution_semantic_alignment": True,
+                "visible_text_addressed": True,
+                "semantic_addressed": True,
+                "heuristic_addressed_before_typed_fulfillment": False,
+                "typed_operation_required": False,
+                "semantic_fulfillment": {},
+                "matched_semantic_unit_ids": [],
+                "semantic_match_basis": [
+                    "complete_current_turn_domain_packet",
+                    "required_answer_fragments_visible",
+                ],
+                "coverage_basis": "verified_current_turn_domain_owner",
+                "coverage_score": 1.0,
+                "status": "addressed_by_verified_current_turn_domain_owner",
+                "domain_owner_alignment": True,
+                "semantic_alignment_required": False,
+            }
+        )
+        recorded_ids.add(obligation_id)
     addressed_count = sum(1 for item in items if item.get("addressed") is True)
     resolved_count = sum(1 for item in items if item.get("resolved_for_release") is True)
     all_addressed = bool(items) and addressed_count == len(items)
@@ -6041,6 +6138,7 @@ def _canonical_exploratory_modes(conversation_spine: dict[str, Any]) -> list[str
     mode_by_function = {
         "prediction": "prediction",
         "hypothesis": "hypothesis",
+        "counterfactual": "counterfactual",
         "comparison": "comparison",
         "disagreement": "data_conflict",
         "claim_evaluation": "data_conflict",

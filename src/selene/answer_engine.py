@@ -7,7 +7,10 @@ from typing import Any
 
 from .intelligence_os import run_intelligence_os_reason
 from .problem_resolution import build_problem_resolution
-from .local_code_inspection import inspect_local_code
+from .local_code_inspection import (
+    build_local_code_approval_receipt,
+    inspect_local_code,
+)
 from .answer_ownership import research_domain_requested
 from .meaning_router import interpret_turn_meaning
 from .pragmatic_planner import build_pragmatic_plan, evaluate_response_coverage
@@ -63,14 +66,14 @@ AUTHORITY_MARKERS = (
 
 def answer_engine_status() -> dict[str, Any]:
     adapter_status = {domain: "contract_only_not_connected" for domain in DOMAINS}
-    adapter_status["verified_math"] = "exact_arithmetic_adapter_connected_to_supervised_chat"
+    adapter_status["verified_math"] = "prerequisite_ordered_exact_math_connected_to_supervised_chat"
     adapter_status["comparison_planning"] = "intelligence_os_adapter_connected_to_supervised_chat"
     adapter_status["source_backed_research"] = "attributed_source_packet_adapter_connected_to_supervised_chat"
-    adapter_status["local_code_inspection"] = "explicit_source_static_inspection_available_not_connected_to_chat"
+    adapter_status["local_code_inspection"] = "current_request_approved_static_inspection_connected_to_supervised_chat"
     return _with_guards(
         {
             "status": "answer_engine_supervised_chat_bridge_ready",
-            "version": "v5_obligation_coordination_bridge",
+            "version": "v6_reasoning_and_domain_maturation_bridge",
             "phase": "phase_11_pre_teaching_architecture_closure",
             "domains": list(DOMAINS),
             "domain_adapter_status": adapter_status,
@@ -99,9 +102,10 @@ def answer_engine_status() -> dict[str, Any]:
             "open_ended_problem_solving_adapter": "comparison_planning",
             "open_ended_problem_solving_requires_preexisting_answer": False,
             "source_backed_research_does_not_replace_open_ended_reasoning": True,
-            "supervised_chat_domains": ["verified_math", "comparison_planning", "source_backed_research"],
-            "local_code_supervised_chat_connected": False,
-            "local_code_chat_decision": "kept_as_an_explicit_separate_inspection_route",
+            "supervised_chat_domains": ["verified_math", "comparison_planning", "source_backed_research", "local_code_inspection"],
+            "local_code_supervised_chat_connected": True,
+            "local_code_chat_decision": "connected_only_for_attributed_paste_or_current_request_exact_file_approval",
+            "local_code_authentication_alone_authorizes_files": False,
             "source_backed_chat_requires_attributed_packets": True,
             "review_status": "status_only",
             "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
@@ -111,7 +115,9 @@ def answer_engine_status() -> dict[str, Any]:
 
 def preview_answer_coordination(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     """Route each required dialogue obligation without executing an adapter."""
+    payload = payload or {}
     request = build_answer_request(payload)
+    local_code_approval = build_local_code_approval_receipt(payload)
     obligations = list(request.get("dialogue_obligations") or [])
     if not obligations:
         obligations = [
@@ -163,8 +169,12 @@ def preview_answer_coordination(payload: dict[str, Any] | None = None) -> dict[s
             owner = typed_owner
             executable_in_chat = False
         elif domain == "local_code_inspection":
-            owner = "separate_bounded_code_inspection_route"
-            executable_in_chat = False
+            owner = (
+                "answer_engine"
+                if local_code_approval.get("eligible") is True
+                else "separate_bounded_code_inspection_route"
+            )
+            executable_in_chat = local_code_approval.get("eligible") is True
         elif domain in {"verified_math", "comparison_planning", "source_backed_research"}:
             owner = "answer_engine"
             executable_in_chat = True
@@ -211,7 +221,8 @@ def preview_answer_coordination(payload: dict[str, Any] | None = None) -> dict[s
             "adapter_executed": False,
             "answer_generated": False,
             "completion_cycle_limit": 1,
-            "local_code_chat_connected": False,
+            "local_code_chat_connected": True,
+            "local_code_approval": local_code_approval,
             "review_status": "status_only",
             "provenance_boundary": ANSWER_ENGINE_BOUNDARY,
         }
@@ -571,14 +582,40 @@ def run_local_code_inspection_answer(payload: dict[str, Any] | None = None) -> d
     if route["selected_domain"] != "local_code_inspection":
         return _adapter_not_available(request, route, "local_code_inspection")
     request = _ensure_domain_request_obligation(request, "local_code_inspection")
-    inspection = inspect_local_code(
-        {
-            "prompt": request["prompt"],
-            "inspection_terms": payload.get("inspection_terms"),
-            "code_packets": payload.get("code_packets") or [],
-            "approved_workspace_files": payload.get("approved_workspace_files") or [],
+    approval_receipt = build_local_code_approval_receipt(payload)
+    chat_request = payload.get("local_code_chat_request") is True
+    if chat_request and approval_receipt.get("eligible") is not True:
+        inspection = {
+            "status": "local_code_inspection_unable",
+            "inspected": False,
+            "result_summary": "",
+            "no_answer_reason": (
+                "Chat inspection needs attributed pasted code or a fresh exact-file approval "
+                "from an authenticated Aleks session for this request."
+            ),
+            "observations": [],
+            "interpretations": [],
+            "citations": [],
+            "source_refs": [],
+            "assumptions": [],
+            "limitations": approval_receipt.get("blockers") or [],
+            "evidence_confidence": "no_approved_code_evidence",
+            "answer_confidence": "unable_to_inspect",
         }
-    )
+    else:
+        inspection = inspect_local_code(
+            {
+                "prompt": request["prompt"],
+                "inspection_terms": payload.get("inspection_terms"),
+                "code_packets": payload.get("code_packets") or [],
+                "approved_workspace_files": (
+                    payload.get("approved_workspace_files") or []
+                    if not chat_request
+                    or approval_receipt.get("file_read_allowed") is True
+                    else []
+                ),
+            }
+        )
     inspected = inspection.get("inspected") is True
     direct_answer = str(inspection.get("result_summary") or "").strip() if inspected else ""
     no_answer_reason = "" if inspected else str(inspection.get("no_answer_reason") or "").strip()
@@ -633,6 +670,7 @@ def run_local_code_inspection_answer(payload: dict[str, Any] | None = None) -> d
             "answer_packet": packet,
             "confidence_vector": confidence,
             "code_inspection": inspection,
+            "local_code_approval": approval_receipt,
             "completion_retry": _completion_retry_result(False, 0, [], enabled=False),
             "adapter_executed": True,
             "answer_generated": bool(direct_answer),

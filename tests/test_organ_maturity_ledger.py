@@ -73,13 +73,21 @@ def test_maturity_ledger_distinguishes_connected_preview_and_blueprint_states(tm
     assert _item(result, "associative_intuition")["maturity_state"] == "mature_current_scope"
     assert _item(result, "self_state")["maturity_state"] == "mature_current_scope"
     assert _item(result, "affect_agency")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "intelligence_os")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "answer_engine")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "problem_resolution")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "verified_math")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "source_research")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "local_code")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "local_code")["connection_state"] == "ordinary_chat"
     assert _item(result, "perception")["maturity_state"] == "review_preview"
     assert _item(result, "audible_voice")["maturity_state"] == "blueprint"
     assert _item(result, "audible_voice")["connection_state"] == "not_connected"
     assert _item(result, "embodiment")["health_state"] == "structural_preflight_only"
     assert "audible_voice" in result["summary"]["blueprint_or_preview_keys"]
     assert "conversation_context" not in result["summary"]["integration_gap_keys"]
-    assert result["summary"]["next_phase"] == 5
+    assert "answer_engine" not in result["summary"]["integration_gap_keys"]
+    assert result["summary"]["next_phase"] == 6
     conn.close()
 
 

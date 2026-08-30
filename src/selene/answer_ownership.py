@@ -127,12 +127,25 @@ def enrich_obligation_ownership(
         owner = "intelligence_os"
         completion_policy = "owner_must_perform_requested_operation"
         response_functions = ["reason"]
+    elif kind == "method" and _planning_requested(lower):
+        answer_act = "task_specific_plan"
+        epistemic_basis = "visible_objective_resources_constraints_and_dependencies"
+        owner = "answer_engine"
+        answer_domain = "comparison_planning"
+        completion_policy = "owner_must_perform_requested_operation"
+        response_functions = ["planning"]
     elif kind == "method":
         answer_act = "prompt_grounded_operation"
         epistemic_basis = "visible_premises_constraints_and_supported_content"
         owner = "ordinary_conversation_path"
         completion_policy = "owner_must_perform_requested_operation"
         response_functions = ["method"]
+    elif _counterfactual_requested(lower) and generic_kind:
+        answer_act = "bounded_counterfactual"
+        epistemic_basis = "declared_changed_premise_and_visible_supported_model"
+        owner = "intelligence_os"
+        completion_policy = "owner_must_perform_requested_operation"
+        response_functions = ["counterfactual"]
     elif _prediction_requested(lower) and generic_kind:
         answer_act = "prompt_grounded_prediction"
         epistemic_basis = "visible_premises_and_bounded_model"
@@ -256,6 +269,27 @@ def _prediction_requested(lower: str) -> bool:
     )
 
 
+def _counterfactual_requested(lower: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:counterfactual|hypothetically|suppose|imagine)\b|"
+            r"\bwhat (?:would|could) happen if\b|\bwhat if\b",
+            lower,
+        )
+    )
+
+
+def _planning_requested(lower: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:how should we|how would you|help (?:me|us)) plan\b|"
+            r"\b(?:create|make|build|draft|give (?:me|us)) (?:a )?(?:task[- ]specific )?plan\b|"
+            r"\bplan (?:this|the task|the work|our next steps?)\b",
+            lower,
+        )
+    )
+
+
 def _hypothesis_requested(lower: str) -> bool:
     return bool(
         re.search(
@@ -304,7 +338,7 @@ def _immediate_session_reason_requested(lower: str) -> bool:
 def _external_fact_requested(lower: str, kind: str) -> bool:
     if kind in {
         "self_state_check_in", "provisional_inference", "comparison",
-        "correction_update", "method", "choice_or_priority",
+        "correction_update", "method", "choice_or_priority", "counterfactual",
     }:
         return False
     return bool(

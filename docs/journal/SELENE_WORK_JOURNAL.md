@@ -3071,6 +3071,55 @@ installation changed.
 then carry source-role and corrected-retry receipts through the existing
 operation boundary before expanding Math or local-code access.
 
+### 2026-08-29 — Reasoning deepens without becoming hidden authority
+
+**Starting question:** Can Selene's reasoning and domain owners become more
+substantive without a duplicate brain, automatic truth, invented citations,
+silent failure retention, or broad access to private workspace files?
+
+**Decision:** Mature the existing owners through typed source, epistemic, and
+terminal receipts. Keep exploratory claims provisional, exact domains
+independently checked, retries bounded, and local-code access separate from
+speaker authentication through a fresh exact-file approval.
+
+**Work:** Added explicit counterfactual and task-plan contracts; unified source-
+role, epistemic, stopping, and no-retention receipts across answer operations;
+expanded exact Math through units, fractions, ratios, simple linear equations,
+introductory geometry, and descriptive statistics; and connected the existing
+static code inspector to ordinary Chat through the speaker envelope and a
+current-request exact-path gate. Updated the maturity ledger, plan, map,
+architecture and evidence shelves, and Phase 5 evidence record.
+
+**Why:** Selene needed stronger substance and clearer limits, not another organ
+or more authority. A good answer should show what supports it, what remains
+provisional, what would change it, and where the work stops. Trusted identity
+protects relationship scope, but it is not permission to read a file.
+
+**Evidence:** 188 focused reasoning, ownership, operation, Math, research,
+local-code, fact-ledger, and maturity-ledger checks passed. The full 115-test
+Chat shell, 260-test Chat/NLO/Voice integration set, and 98-test Memory privacy,
+context, spine, sidecar, and speaker-envelope set passed. A disposable mixed
+reasoning walkthrough completed prediction, counterfactual, and planning once
+without retention. The frontend remained 491.33 kB (gzip 109.19 kB), with no
+Vite warning and lazy Study workspaces. The final full repository regression
+passed all 1,984 tests in 11 minutes 42 seconds.
+
+**What changed in our understanding:** The central reasoning gap was not a lack
+of free-form generation. It was inconsistent operation contracts and domain
+verification. Once sources, provisional states, correction conditions,
+independent checks, and stops are explicit, capability can deepen without
+turning expression into proof or access into ownership.
+
+**Boundaries preserved:** No high-stakes live prediction, distress-shaped test,
+resident Memory, Study, Dream, affect, or teaching decision, broad scan, code
+execution, identity, personality, Vys, law, governance, authority, training,
+autonomy, external action, packaging, or installation changed. The 24 resident
+Dream reflections remain pending for Aleks.
+
+**Next:** Phase 6 — source-map ordered education and world-knowledge expansion,
+starting with the approved-knowledge and prerequisite paths the mature
+reasoning owners can select and apply in ordinary Chat.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

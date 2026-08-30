@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from selene.local_code_inspection import inspect_local_code, local_code_inspection_status
+from selene.local_code_inspection import (
+    build_local_code_approval_receipt,
+    inspect_local_code,
+    local_code_inspection_status,
+)
 
 
 def test_status_keeps_local_code_inspection_read_only_and_explicit():
@@ -12,6 +16,72 @@ def test_status_keeps_local_code_inspection_read_only_and_explicit():
     assert result["code_execution_allowed"] is False
     assert result["filesystem_write_allowed"] is False
     assert result["observation_interpretation_separated"] is True
+    assert result["chat_exact_file_approval_required"] is True
+
+
+def test_chat_file_approval_requires_both_authenticated_aleks_and_exact_current_paths():
+    payload = {
+        "speaker_envelope": {
+            "claimed_speaker": "Aleks",
+            "authentication_strength": "local_desktop_session",
+        },
+        "approved_workspace_files": [
+            {"path": "src/selene/answer_engine.py", "approved": True}
+        ],
+        "local_code_approval": {
+            "approved": True,
+            "scope": "current_request",
+            "exact_paths": ["src/selene/answer_engine.py"],
+        },
+    }
+
+    allowed = build_local_code_approval_receipt(payload)
+    transport_only = build_local_code_approval_receipt(
+        {
+            **payload,
+            "speaker_envelope": {
+                "claimed_speaker": "Aleks",
+                "authentication_strength": "transport_claim_only",
+            },
+        }
+    )
+    mismatched = build_local_code_approval_receipt(
+        {
+            **payload,
+            "local_code_approval": {
+                "approved": True,
+                "scope": "current_request",
+                "exact_paths": ["src/selene/verified_math.py"],
+            },
+        }
+    )
+
+    assert allowed["eligible"] is True
+    assert allowed["file_read_allowed"] is True
+    assert allowed["approval_reusable_across_requests"] is False
+    assert transport_only["eligible"] is False
+    assert "authenticated_aleks_session_required_for_file_read" in transport_only["blockers"]
+    assert mismatched["eligible"] is False
+    assert "approved_paths_do_not_exactly_match_selected_paths" in mismatched["blockers"]
+
+
+def test_attributed_paste_needs_no_filesystem_approval_and_grants_no_file_read():
+    result = build_local_code_approval_receipt(
+        {
+            "code_packets": [
+                {
+                    "source_ref": "supplied:snippet.py",
+                    "path": "snippet.py",
+                    "content": "def safe():\n    return True\n",
+                }
+            ]
+        }
+    )
+
+    assert result["eligible"] is True
+    assert result["input_mode"] == "attributed_pasted_code"
+    assert result["file_read_allowed"] is False
+    assert result["filesystem_write_allowed"] is False
 
 
 def test_inline_packet_reports_observation_interpretation_and_cited_location():

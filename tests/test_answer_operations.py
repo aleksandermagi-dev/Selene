@@ -42,6 +42,8 @@ def test_status_declares_typed_non_authoritative_operation_contracts() -> None:
 
     assert status["status"] == "answer_operation_coordination_ready"
     assert "prediction" in status["supported_operations"]
+    assert "counterfactual" in status["supported_operations"]
+    assert "planning" in status["supported_operations"]
     assert status["generic_prose_may_complete_operation"] is False
     assert status["canonical_obligation_reparse_allowed"] is False
     assert status["memory_write_active"] is False
@@ -293,6 +295,129 @@ def test_structured_hypothesis_preserves_alternatives_and_discriminating_check()
     assert result["fields"]["alternatives"]
     assert result["fields"]["discriminating_checks"]
     assert result["fields"]["revision_conditions"]
+
+
+def test_structured_counterfactual_restores_actual_state_and_stays_candidate() -> None:
+    packet = build_answer_operation_packet(
+        {
+            "conversation_spine": _spine(
+                requested_response_functions=["counterfactual"],
+                source_text="What if release happened before validation?",
+            ),
+            "exploratory_reasoning": {
+                "counterfactual": {
+                    "available": True,
+                    "changed_premise": "release happened before validation",
+                    "preserved_premises": ["the same acceptance rule remained"],
+                    "consequence": "the release would lack the validation result",
+                    "basis_evidence_ids": ["current-sequence"],
+                    "limits": ["only this dependency is changed"],
+                    "actual_state": "validation currently precedes release",
+                    "actual_state_restored": True,
+                    "what_would_change": ["another verifier supplied the result"],
+                },
+                "response_seed": "Counterfactually, release would lack the validation result.",
+                "source_refs": ["current_conversation:visible_observation"],
+            },
+        }
+    )
+
+    result = packet["results"][0]
+    assert result["status"] == "completed"
+    assert result["fields"]["actual_state_restored"] is True
+    assert result["epistemic_state"] == "CANDIDATE_UNVERIFIED"
+    assert result["source_role_receipt"]["expression_may_strengthen_status"] is False
+    assert result["terminal_receipt"]["automatic_retention"] is False
+
+
+def test_phase_five_synthetic_mixed_reasoning_walkthrough_is_disposable() -> None:
+    prompt = (
+        "Given this synthetic tray test, predict the next result, consider what "
+        "would change if the divider moved first, and plan one bounded recheck."
+    )
+    packet = build_answer_operation_packet(
+        {
+            "conversation_spine": _spine(
+                {
+                    "requested_response_functions": ["prediction"],
+                    "source_text": prompt,
+                },
+                {
+                    "requested_response_functions": ["counterfactual"],
+                    "source_text": prompt,
+                },
+                {
+                    "requested_response_functions": ["planning"],
+                    "source_text": prompt,
+                    "responsible_owner": "answer_engine",
+                },
+            ),
+            "exploratory_reasoning": {
+                "prediction": {
+                    "available": True,
+                    "statement": "The token will remain in the left tray on the next unchanged run.",
+                    "basis_evidence_ids": ["synthetic:tray-observation-1"],
+                    "conditions": ["the divider and tray angle remain unchanged"],
+                    "assumptions": ["the first observation was representative"],
+                    "alternatives": ["the token crosses because of an unnoticed tilt"],
+                    "what_would_change": ["an unchanged repeat places the token in the right tray"],
+                },
+                "counterfactual": {
+                    "available": True,
+                    "changed_premise": "the divider moved before the token was released",
+                    "preserved_premises": ["the same tray and token were used"],
+                    "consequence": "the earlier observation would not determine the new path",
+                    "basis_evidence_ids": ["synthetic:tray-observation-1"],
+                    "limits": ["only divider timing is changed"],
+                    "actual_state": "the divider did not move before the observed release",
+                    "actual_state_restored": True,
+                    "what_would_change": ["a controlled divider-timing comparison was observed"],
+                },
+                "response_seed": "The synthetic tray result remains provisional.",
+                "source_refs": ["synthetic:tray-observation-1"],
+            },
+            "intelligence_os_support": _intelligence(prompt),
+        }
+    )
+
+    assert packet["status"] == "answer_operations_complete"
+    assert packet["operation_count"] == packet["completed_count"] == 3
+    assert packet["expression_handoff"]["composition_required"] is True
+    by_operation = {item["operation"]: item for item in packet["results"]}
+    assert set(by_operation) == {"prediction", "counterfactual", "planning"}
+    assert by_operation["prediction"]["epistemic_state"] == "CANDIDATE_UNVERIFIED"
+    assert by_operation["counterfactual"]["fields"]["actual_state_restored"] is True
+    assert "stop" in by_operation["planning"]["fields"]["stopping_condition"].lower()
+    assert all(
+        item["terminal_receipt"]["automatic_retention"] is False
+        for item in packet["results"]
+    )
+
+
+def test_concrete_resource_plan_has_task_specific_dependencies_fallback_and_stop() -> None:
+    prompt = (
+        "I have twenty minutes, tea, and a notebook. Help me plan one small thing."
+    )
+    packet = build_answer_operation_packet(
+        {
+            "conversation_spine": _spine(
+                requested_response_functions=["planning"],
+                source_text=prompt,
+                responsible_owner="answer_engine",
+            ),
+            "intelligence_os_support": _intelligence(prompt),
+        }
+    )
+
+    result = packet["results"][0]
+    assert result["status"] == "completed"
+    assert result["operation"] == "planning"
+    assert result["fields"]["steps"]
+    assert result["fields"]["dependencies"]
+    assert result["fields"]["constraints"]
+    assert result["fields"]["fallback"]
+    assert "stop" in result["fields"]["stopping_condition"].lower()
+    assert result["terminal_receipt"]["further_attempt_authorized"] is False
 
 
 def test_causal_explanation_has_conclusion_mechanism_and_basis() -> None:

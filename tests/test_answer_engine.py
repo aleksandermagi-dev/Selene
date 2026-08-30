@@ -37,7 +37,7 @@ def _assert_locked(result):
     assert result["live_chat_connected"] is True
 
 
-def test_answer_engine_status_connects_math_research_and_comparison_while_code_stays_deferred():
+def test_answer_engine_status_connects_mature_bounded_domains_with_code_approval_gate():
     result = answer_engine_status()
 
     assert result["status"] == "answer_engine_supervised_chat_bridge_ready"
@@ -49,8 +49,8 @@ def test_answer_engine_status_connects_math_research_and_comparison_while_code_s
         "memory_confidence",
         "expression_confidence",
     }
-    assert result["domain_adapter_status"]["verified_math"] == "exact_arithmetic_adapter_connected_to_supervised_chat"
-    assert result["domain_adapter_status"]["local_code_inspection"] == "explicit_source_static_inspection_available_not_connected_to_chat"
+    assert result["domain_adapter_status"]["verified_math"] == "prerequisite_ordered_exact_math_connected_to_supervised_chat"
+    assert result["domain_adapter_status"]["local_code_inspection"] == "current_request_approved_static_inspection_connected_to_supervised_chat"
     assert result["domain_adapter_status"]["comparison_planning"] == "intelligence_os_adapter_connected_to_supervised_chat"
     assert result["domain_adapter_status"]["source_backed_research"] == "attributed_source_packet_adapter_connected_to_supervised_chat"
     assert all(
@@ -66,7 +66,8 @@ def test_answer_engine_status_connects_math_research_and_comparison_while_code_s
     assert result["open_ended_problem_solving_adapter"] == "comparison_planning"
     assert result["open_ended_problem_solving_requires_preexisting_answer"] is False
     assert result["source_backed_research_does_not_replace_open_ended_reasoning"] is True
-    assert result["local_code_supervised_chat_connected"] is False
+    assert result["local_code_supervised_chat_connected"] is True
+    assert result["local_code_authentication_alone_authorizes_files"] is False
     _assert_locked(result)
 
 
@@ -619,17 +620,19 @@ def test_verified_math_adapter_accepts_an_expression_without_a_duplicate_prompt(
     _assert_locked(result)
 
 
-def test_verified_math_adapter_leaves_unsupported_symbolic_problem_open():
+def test_verified_math_adapter_verifies_one_linear_variable_and_leaves_broader_symbolic_work_open():
     result = run_verified_math_answer({"prompt": "Solve for x: x + 2 = 5"})
+    broader = run_verified_math_answer({"prompt": "Solve for x and y: x + y = 5"})
 
-    assert result["status"] == "answer_engine_verified_math_unable_to_answer"
-    assert result["answer_generated"] is False
-    assert result["answer_packet"]["direct_answer"] == ""
-    assert result["answer_packet"]["no_answer_reason"]
-    assert result["confidence_vector"]["answer_confidence"] == "unable_to_verify"
-    assert result["answer_packet"]["unanswered_obligations"]
-    assert result["answer_packet"]["unanswered_obligations"][0]["kind"] == "math_verification"
+    assert result["status"] == "answer_engine_verified_math_answer_ready"
+    assert result["answer_packet"]["direct_answer"] == "x = 3."
+    assert result["math_verification"]["independent_verification"]["matches_released_result"] is True
+    assert broader["status"] == "answer_engine_verified_math_unable_to_answer"
+    assert broader["answer_generated"] is False
+    assert broader["answer_packet"]["direct_answer"] == ""
+    assert broader["answer_packet"]["unanswered_obligations"]
     _assert_locked(result)
+    _assert_locked(broader)
 
 
 def test_verified_math_chat_extraction_does_not_misread_a_symbolic_minus_expression():
@@ -707,6 +710,52 @@ def test_local_code_adapter_answers_only_from_supplied_code_locations():
     assert result["confidence_vector"]["expression_confidence"] == "not_assessed"
     assert result["code_inspection"]["filesystem_write_allowed"] is False
     _assert_locked(result)
+
+
+def test_local_code_chat_file_read_requires_current_exact_authenticated_approval():
+    file_spec = {"path": "src/selene/answer_engine.py", "approved": True}
+    base = {
+        "prompt": "Inspect answer_engine_status in the approved source code.",
+        "inspection_terms": ["answer_engine_status"],
+        "approved_workspace_files": [file_spec],
+        "local_code_chat_request": True,
+    }
+    held = run_local_code_inspection_answer(
+        {
+            **base,
+            "speaker_envelope": {
+                "claimed_speaker": "Aleks",
+                "authentication_strength": "local_desktop_session",
+            },
+        }
+    )
+    allowed = run_local_code_inspection_answer(
+        {
+            **base,
+            "speaker_envelope": {
+                "claimed_speaker": "Aleks",
+                "authentication_strength": "local_desktop_session",
+            },
+            "local_code_approval": {
+                "approved": True,
+                "scope": "current_request",
+                "exact_paths": ["src/selene/answer_engine.py"],
+            },
+        }
+    )
+
+    assert held["status"] == "answer_engine_local_code_inspection_unable"
+    assert held["adapter_executed"] is True
+    assert held["local_code_approval"]["eligible"] is False
+    assert allowed["status"] == "answer_engine_local_code_inspection_ready"
+    assert allowed["local_code_approval"]["file_read_allowed"] is True
+    assert allowed["code_inspection"]["citations"]
+    assert all(
+        item["path"] == "src/selene/answer_engine.py"
+        for item in allowed["code_inspection"]["citations"]
+    )
+    _assert_locked(held)
+    _assert_locked(allowed)
 
 
 def test_local_code_adapter_falls_gracefully_without_approved_or_supplied_code():
