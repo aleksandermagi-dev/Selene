@@ -39,16 +39,18 @@ governing law, personal memory, relationships, or authority.
 
 ## Foundational Teaching Groups
 
-Current checkpoint (August 27, 2026): all 17 listed F1 groups contain 106
+Current checkpoint (August 29, 2026): all 17 listed F1 groups contain 106
 unique retained foundation concepts in the configured runtime. The Group 17
 closure bridge completed the two bounded gaps identified by the earlier F1
-closure audit. F2 now contains 35 retained concepts across paragraph
+closure audit. F2 now contains 41 retained concepts across paragraph
 meaning, source grounding, vocabulary structure, comparison, point of view,
 organized composition, multi-digit arithmetic, factors, multiples,
 divisibility, operation order, fractions as numbers, fraction equivalence,
 comparison, composition, fraction-operation relationships, equal-sharing
-quotients, scaling, and unit-fraction division. This closes the currently defined F1 sequence, not
-Selene's broader elementary-through-college education.
+quotients, scaling, unit-fraction division, decimal place value, decimal
+comparison and rounding, and bounded decimal operations. This closes the
+currently defined F1 sequence and reaches F2 Group 7B, not Selene's broader
+elementary-through-college education.
 
 - [F1 Group 1: Foundations](SELENE_F1_FOUNDATION_GROUP_1_20260719.md)
 - [F1 Group 2: Language and Number](SELENE_F1_LANGUAGE_NUMBER_GROUP_2_20260719.md)

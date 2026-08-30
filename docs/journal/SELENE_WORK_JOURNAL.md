@@ -3120,6 +3120,60 @@ Dream reflections remain pending for Aleks.
 starting with the approved-knowledge and prerequisite paths the mature
 reasoning owners can select and apply in ordinary Chat.
 
+### 2026-08-29 — Ordered education maps prerequisites before breadth
+
+**Starting question:** How can Selene continue from F2 Group 7B into broader
+education while making prerequisite order, source acceptance, instructional
+“why,” reviewed correction, and delayed ordinary use genuinely trustworthy?
+
+**Decision:** Mature the existing Curriculum Authorization, Comprehension,
+Teaching Lifecycle, ordinary-Chat retrieval, and LEA owners. Add a shared
+prerequisite/source-readiness receipt first; do not create another teaching or
+assessment organ. Keep F2 Group 8 unprepared and unauthorized until Aleks
+selects an exact Grade 4-6 artifact after license and source review.
+
+**Work:** Read the governing teaching, authorization, source-shelf,
+foundational-map, pedagogical, expression, Cultivation, and Phase 6 records;
+traced the runtime schemas, shared group functions, comprehension decisions,
+teaching stages, ordinary-Chat knowledge handoff, and current tests; verified
+the local source shelf; and recorded a four-part implementation sequence for
+readiness, teaching-contract maturity, correction ancestry and delayed use,
+and descriptive learning evidence. Corrected stale education-shelf counts.
+
+**Why:** The strongest existing machinery is already careful, but a later
+group can currently be prepared without a shared prerequisite check, and an
+approved concept can be reopened only by changing its row in place. Closing
+those lifecycle gaps before adding content prevents curriculum order from
+remaining merely documentary and prevents correction from becoming silent
+rewriting.
+
+**Evidence:** The resident database was inspected read-only: 27 active
+authorizations, 272 comprehension concepts, 225 approved general-knowledge
+resources, 47 tending candidates, 226 teaching lifecycles, one
+acquire-needs-review lifecycle, and zero LEA runs. F2 contains 41 retained
+concepts through Groups 7A and 7B. The source verifier passed 141 files with
+zero failures; the shelf contains 62 cataloged sources and 51 mirrored
+snapshots. No production test was required because runtime behavior did not
+change.
+
+**What changed in our understanding:** Phase 6 has three runtime defects and
+one proof gap to close before breadth: prerequisites and source acceptance are
+not shared enforced gates; correction lacks descendant ancestry; instructional
+“why” is not a typed lifecycle obligation; and delayed ordinary-Chat use needs
+education-specific evidence. The narrow affective Why + Salience helper is not
+the education owner.
+
+**Boundaries preserved:** No production behavior, resident teaching item,
+authorization, approved knowledge, Memory, Study, Dream, affect, identity,
+personality, Vys, law, governance, authority, training, autonomy, external
+action, package, or installation changed. The unfinished resident lifecycle
+was counted but not opened or decided.
+
+**Next:** Begin Phase 6A with synthetic tests and a migration-safe shared
+prerequisite/source-readiness receipt. Do not implement or authorize F2 Group
+8 until its exact source artifact and license are explicitly selected by
+Aleks.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

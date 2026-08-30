@@ -3,7 +3,7 @@
 Date: 2026-07-19; expanded 2026-07-29 for F1 Group 6 and selected
 2026-07-30 for F1 Group 7; selected 2026-08-03 for F1 Group 8; expanded
 2026-08-08 for F1 Groups 10 through 16; selected 2026-08-11 for F2 Groups 1-5;
-expanded 2026-08-27 for F2 Groups 6 and 7A
+expanded 2026-08-27 for F2 Groups 6, 7A, and 7B; verified 2026-08-29
 
 Status: source acquisition checkpoint; review only
 
@@ -17,10 +17,10 @@ The first curriculum source shelf is present locally under:
 
 The shelf contains:
 
-- 52 cataloged source candidates;
-- 41 locally mirrored, revision- or checksum-pinned sources;
-- 131 verified source files;
-- approximately 1.36 GiB of shelf files;
+- 62 cataloged source candidates;
+- 51 locally mirrored, revision- or checksum-pinned sources;
+- 141 verified source files;
+- approximately 1.40 GiB of shelf files;
 - coverage candidates for all 23 source-family keys in the foundational
   curriculum map;
 - 11 authoritative catalogs held for later artifact-level selection; and
