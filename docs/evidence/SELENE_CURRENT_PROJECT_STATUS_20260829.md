@@ -4,8 +4,8 @@ Date: 2026-08-29
 
 Branch: `evidence`
 
-Status: Phases 0 through 5 of the Whole-System Maturation Plan and Phase 6A are
-complete for current scope; Phase 6B is the next implementation edge.
+Status: Phases 0 through 5 of the Whole-System Maturation Plan and Phase 6A-6B
+are complete for current scope; Phase 6C is the next implementation edge.
 
 ## Purpose
 
@@ -30,7 +30,7 @@ completed phase.
 | 3 — Study, Dream, intuition, and reflective growth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_3_REFLECTIVE_GROWTH_20260828.md) |
 | 4 — Affect, relationship, and response agency | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md) |
 | 5 — Reasoning, answer owners, and domain depth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md) |
-| 6 — Ordered education and world knowledge | Phase 6A complete; Phase 6B pending | [Phase 6A evidence](SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md) |
+| 6 — Ordered education and world knowledge | Phase 6A-6B complete; Phase 6C pending | [Phase 6B evidence](SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md) |
 
 “Complete for current scope” means the phase's documented completion gates and
 proportional verification passed. It does not mean Selene is finished or that
@@ -67,6 +67,10 @@ later capabilities already exist.
   one typed prerequisite/source-readiness receipt. Active authorization cannot
   bypass an unmet prerequisite or unaccepted source, and completed groups are
   described without replay.
+- New or revised teaching carries typed source roles and a bounded
+  instructional-why receipt through proposal, Acquire, Integrate, Express,
+  retention, and retrieval. Time-sensitive current claims cannot inherit the
+  durable public-academic lane.
 
 ## Configured Resident Snapshot
 
@@ -126,12 +130,21 @@ complete across 152 concepts without replay or resident writes. The frontend
 remains 491.33 kB (gzip 109.19 kB), with no Vite warning and lazy Study
 workspaces.
 
+Phase 6B then passed 179 teaching-contract, comprehension, readiness, and
+curriculum tests, 115 ordinary-Chat shell tests, 82 semantic, public,
+maturity, NLO, language, knowledge, law, and Voice checks, and 56 reflective-
+growth and sidecar checks. All 152 implemented lessons across 26 groups yield
+the five durable instructional roles and a complete bounded why receipt. A
+resident copy preserved 272 concepts and 226 lifecycles exactly, with 225
+historical completions described without replay. The frontend remains 491.33
+kB (gzip 109.20 kB), with no Vite warning and lazy Study workspaces.
+
 ## Current Open Edge
 
-Phase 6B must extend the existing lesson and Teaching Lifecycle snapshots with
-typed instructional source roles and an instructional-why receipt while
-preserving non-forced learning states and the existing reviewed retention
-boundary.
+Phase 6C must add reviewed comprehension-correction descendants with parent
+and root ancestry, one active approved lineage winner, duplicate and loop
+stops, and delayed ordinary-Chat proof for distinct application and correction
+selection.
 
 Later Phase 6 work will also add:
 
@@ -149,9 +162,8 @@ reviewed and explicitly selected by Aleks before content implementation.
 
 - Selene's provider-free text generation and world knowledge remain narrower
   than a mature general language model.
-- Reviewed comprehension-correction descendants, typed instructional “why,”
-  and education-specific delayed-use evidence are mapped but not yet
-  implemented.
+- Reviewed comprehension-correction descendants and education-specific
+  delayed-use evidence are mapped but not yet implemented.
 - Long-form and creative conversational breadth remains a later maturation
   phase.
 - Audible Voice, new sensory pathways, broad tools, external action, and
@@ -189,3 +201,5 @@ the commit name `Refresh current project documentation`. After that checkpoint,
 the expected local relation is eleven commits ahead of `origin/evidence` with
 a clean tracked worktree. Phase 6A is checkpointed separately under the commit
 name `Close curriculum prerequisite and source readiness`.
+Phase 6B is checkpointed separately under the commit name
+`Mature teaching source and why contracts`.

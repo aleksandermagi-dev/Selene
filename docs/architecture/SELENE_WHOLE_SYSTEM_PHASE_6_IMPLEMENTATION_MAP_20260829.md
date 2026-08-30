@@ -2,7 +2,7 @@
 
 Date: 2026-08-29
 
-Status: Phase 6A complete on 2026-08-30; Phase 6B pending
+Status: Phases 6A and 6B complete on 2026-08-30; Phase 6C pending
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -215,6 +215,11 @@ Evidence:
 
 ### Phase 6B — Teaching contract and instructional-why maturity
 
+Status: **complete for current scope (2026-08-30)**
+
+Evidence:
+[Phase 6B Teaching Contract and Instructional Why](../evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md)
+
 - extend the existing lesson and lifecycle snapshots with typed source roles:
   `source_statement`, `inference`, `example`, `practice`, `verification`, and
   `current_fact` where applicable;
@@ -313,11 +318,22 @@ checksum failures:         0
 
 Phase 6 must keep both provenance integrity and bundle size visible.
 
+Phase 6B retained the same frontend boundary:
+
+```text
+main application bundle: 491.33 kB (gzip 109.20 kB)
+Vite size warning:        none
+Study workspaces:         lazy-loaded
+```
+
 ## Resume Point
 
-Begin Phase 6B in production code. Extend the existing lesson and Teaching
-Lifecycle snapshots with typed source roles and an instructional-why receipt,
-preserving non-forced learning states and every current care boundary. Do not
+Begin Phase 6C with synthetic correction-lineage tests. Create one idempotent
+revision descendant for an approved concept, preserve parent and root
+ancestry, hold the parent out of ordinary answer seeding while correction is
+unresolved, and select one active lineage winner only after the descendant
+completes source review and Acquire -> Integrate -> Express. Then prove delayed
+distinct-case Chat use and clean switching to the approved correction. Do not
 create F2 Group 8 or activate a new resident authorization until its exact
 source artifact and license have been selected and explicitly approved by
 Aleks.

@@ -93,6 +93,14 @@ def _integrate(conn, concept_id, *, supporting_ids=None):
             "contradiction_classification": "none_identified",
             "unresolved_questions": ["Which additional orbital element is needed for the current problem?"],
             "integration_confidence": "bounded",
+            "instructional_why": {
+                "why_kind": "relationship",
+                "explanatory_relationship": "Eccentricity relates the long and short dimensions of an orbit to its departure from a circle.",
+                "why_it_matters": "It lets orbital shape be compared without confusing shape with tilt or timing.",
+                "scope": "Use it for bounded comparisons of elliptical orbital shape.",
+                "failure_or_exception_condition": "It does not determine inclination, orientation, period, or every property of an orbit.",
+                "unresolved_uncertainty": "The current problem may require another orbital element in addition to eccentricity.",
+            },
         },
     )["result"]
 

@@ -24,10 +24,13 @@ a prototype result into a universal conclusion.
   — enforces one typed readiness receipt across curriculum status, prepare,
   teach, and authorization coverage while migrating completed groups without
   replay or resident decisions.
+- [Whole-System Phase 6B — Teaching Contract and Instructional Why — August 30, 2026](SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md)
+  — carries typed source roles, durable/current classification, and a bounded
+  instructional-why receipt through the existing reviewed teaching lifecycle.
 - [Whole-System Phase 6 — Ordered Education and World-Knowledge Expansion Map — August 29, 2026](../architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md)
-  — tracks completed Phase 6A and source-maps instructional “why,” correction
-  ancestry, delayed ordinary-Chat use, and descriptive learning evidence
-  before F2 Group 8 authorization.
+  — tracks completed Phase 6A-6B and source-maps correction ancestry, delayed
+  ordinary-Chat use, and descriptive learning evidence before F2 Group 8
+  authorization.
 
 - [Whole-System Phase 5 — Reasoning, Answer Owners, and Domain Depth — August 29, 2026](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md)
   — matures typed answer owners, provisional prediction/hypothesis/

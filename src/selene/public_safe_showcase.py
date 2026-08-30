@@ -103,6 +103,23 @@ def run_public_safe_showcase(conn: sqlite3.Connection) -> dict[str, Any]:
             "counterexamples": ["A heater creates a heat input; a store does not create energy."],
             "limits": ["The packet does not establish efficiency or loss rate."],
             "source_refs": [SHOWCASE_SOURCE_REF],
+            "knowledge_class": "reviewed_general_knowledge_candidate",
+            "freshness_class": "durable_source_bounded",
+            "source_roles": [
+                {"role": "source_statement", "content_fields": ["material", "principles"], "source_refs": [SHOWCASE_SOURCE_REF]},
+                {"role": "inference", "content_fields": ["relationships"], "source_refs": [SHOWCASE_SOURCE_REF]},
+                {"role": "example", "content_fields": ["examples", "counterexamples"], "source_refs": [SHOWCASE_SOURCE_REF]},
+                {"role": "practice", "content_fields": ["distinct_application", "questions"], "source_refs": [SHOWCASE_SOURCE_REF]},
+                {"role": "verification", "content_fields": ["limits", "correction_response"], "source_refs": [SHOWCASE_SOURCE_REF]},
+            ],
+            "instructional_why": {
+                "why_kind": "mechanism",
+                "explanatory_relationship": "A thermal store separates the time of heat input from the time some stored heat is released.",
+                "why_it_matters": "The distinction prevents shifted availability from being confused with creation of energy.",
+                "scope": "Use for bounded reasoning about heat availability across time.",
+                "failure_or_exception_condition": "Efficiency, heat loss, and capacity still require separate evidence.",
+                "unresolved_uncertainty": "The synthetic packet does not quantify losses during storage.",
+            },
             "source_metadata": {
                 "public_safe": True,
                 "source_kind": "original_synthetic_demo_packet",

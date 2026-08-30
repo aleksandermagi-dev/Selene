@@ -17,6 +17,7 @@ from selene.selene_chat import (
     _preserve_bounded_conversation_invariants,
 )
 from selene.human_conversational_realization import realize_human_conversation
+from tests.curriculum_test_support import satisfy_group_prerequisites
 
 
 def _conn(tmp_path):
@@ -3002,6 +3003,7 @@ def test_rephrased_qna_transfers_fairness_follow_up_warmth_and_dream_review_boun
 ):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
+    satisfy_group_prerequisites(conn, "f1_community_rules_group_7")
     route_request(
         conn,
         "curriculum.authorization.activate_f1_community_rules",

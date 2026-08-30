@@ -7,6 +7,8 @@ from difflib import SequenceMatcher
 from typing import Any
 
 from .comprehension_integration import (
+    build_instructional_source_role_receipt,
+    build_instructional_why_receipt,
     decide_comprehension_concept,
     evaluate_understanding,
     retrieve_approved_knowledge,
@@ -50,6 +52,14 @@ CONTRADICTION_CLASSES = {
 
 INTEGRATION_CONFIDENCE_LEVELS = {"low", "developing", "bounded", "strong"}
 
+NON_FORCED_LEARNING_STATES = (
+    "developing",
+    "needs_representation",
+    "needs_prerequisite",
+    "revisit",
+    "unclear",
+)
+
 
 def teaching_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
     row = conn.execute(
@@ -69,7 +79,7 @@ def teaching_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
     return _with_guards(
         {
             "status": "teaching_lifecycle_ready",
-            "version": "phase_4_acquire_integrate_express",
+            "version": "phase_6b_typed_source_and_instructional_why",
             "lifecycle_count": int(row["total"] or 0),
             "acquired_count": int(row["acquired"] or 0),
             "integrated_count": int(row["integrated"] or 0),
@@ -86,6 +96,10 @@ def teaching_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "personality, identity, memory, governance, imitation, affect prescription, or invented meaning remain exceptions."
             ),
             "education_expression_personality_law_active": True,
+            "typed_instructional_source_roles_required_for_new_or_revised_work": True,
+            "instructional_why_receipt_required_for_new_or_revised_work": True,
+            "non_forced_learning_states": list(NON_FORCED_LEARNING_STATES),
+            "historical_completed_lifecycles_require_no_replay": True,
             "education_may_expand_capability_and_contextual_expression": True,
             "education_may_change_personality": False,
             "review_destination": "Cocoon Teaching / Lessons",
@@ -167,6 +181,18 @@ def acquire_teaching_item(
     uncertainties = _text_list(payload.get("uncertainties")) or _json_text_list(concept.get("limits_json"))
     distinctions = _text_list(payload.get("near_concept_distinctions")) or _json_text_list(concept.get("counterexamples_json"))
     source_refs = _json_list(concept.get("source_refs"))
+    concept_payload = _loads(concept.get("payload_json"), {})
+    knowledge_class = str(concept_payload.get("knowledge_class") or "unspecified_review_required")
+    freshness_class = str(concept_payload.get("freshness_class") or "unspecified_requires_review")
+    source_role_receipt = concept_payload.get("source_role_receipt")
+    if payload.get("source_roles") is not None or payload.get("source_role_receipt") is not None:
+        source_role_receipt = build_instructional_source_role_receipt(
+            payload.get("source_roles") or payload.get("source_role_receipt"),
+            source_refs=source_refs,
+            knowledge_class=knowledge_class,
+            freshness_class=freshness_class,
+        )
+    learning_state = _learning_state(payload)
 
     missing = [
         name
@@ -186,6 +212,10 @@ def acquire_teaching_item(
     )
     if law_review["permitted"] is not True:
         missing.append("education_expression_personality_law")
+    if not isinstance(source_role_receipt, dict) or source_role_receipt.get("status") != "typed_source_roles_recorded":
+        missing.append("typed_source_roles")
+    if learning_state != "developing":
+        missing.append(f"learning_state.{learning_state}")
     snapshot = {
         "stage": "acquire",
         "status": "complete" if not missing else "needs_review",
@@ -197,7 +227,12 @@ def acquire_teaching_item(
         "examples": examples[:30],
         "uncertainties": uncertainties[:30],
         "source_provenance": source_refs[:100],
+        "source_role_receipt": source_role_receipt if isinstance(source_role_receipt, dict) else {},
+        "knowledge_class": knowledge_class,
+        "freshness_class": freshness_class,
         "near_concept_distinctions": distinctions[:30],
+        "learning_state": learning_state,
+        "completion_forced": False,
         "education_expression_personality_law": law_review,
         "missing_fields": missing,
         "knowledge_retained": False,
@@ -257,7 +292,20 @@ def integrate_teaching_item(
         str(payload.get("reopening_path") or "Reopen when a contradiction, correction, or poor-fit application appears."),
         1200,
     ).strip()
+    concept_payload = _loads(concept.get("payload_json"), {})
+    instructional_why_receipt = build_instructional_why_receipt(
+        payload.get("instructional_why")
+        or payload.get("instructional_why_receipt")
+        or concept_payload.get("instructional_why_receipt")
+    )
+    learning_state = _learning_state(payload)
     missing = [name for name, value in (("scope_of_application", scope), ("correction_path", correction_path), ("reopening_path", reopening_path)) if not value]
+    missing.extend(
+        f"instructional_why.{name}"
+        for name in instructional_why_receipt.get("missing_fields") or []
+    )
+    if learning_state != "developing":
+        missing.append(f"learning_state.{learning_state}")
     if contradiction_class == "direct_conflict" and not conflicting and not unresolved:
         missing.append("conflict_evidence_or_unresolved_question")
 
@@ -306,11 +354,16 @@ def integrate_teaching_item(
         "supporting_concepts": supporting,
         "conflicting_concepts": conflicting,
         "scope_of_application": scope,
+        "instructional_why_receipt": instructional_why_receipt,
+        "knowledge_class": str(concept_payload.get("knowledge_class") or "unspecified_review_required"),
+        "freshness_class": str(concept_payload.get("freshness_class") or "unspecified_requires_review"),
         "contradiction_classification": contradiction_class,
         "unresolved_questions": unresolved,
         "correction_path": correction_path,
         "reopening_path": reopening_path,
         "integration_confidence": confidence,
+        "learning_state": learning_state,
+        "completion_forced": False,
         "confidence_boundary": "Integration confidence describes fit of this reviewed map, not factual certainty or sentence fluency.",
         "education_expression_personality_law": law_review,
         "intelligence_os_support": {
@@ -382,6 +435,9 @@ def express_teaching_item(
     limits = _text_list(payload.get("limits")) or _json_text_list(concept.get("limits_json")) or _text_list(acquire.get("uncertainties"))
     counterexamples = _text_list(payload.get("counterexamples")) or _json_text_list(concept.get("counterexamples_json")) or _text_list(acquire.get("near_concept_distinctions"))
     correction_response = truncate(str(payload.get("correction_response") or ""), 1800).strip()
+    learning_state = _learning_state(payload)
+    integrate = lifecycle.get("integrate") if isinstance(lifecycle.get("integrate"), dict) else {}
+    acquire = lifecycle.get("acquire") if isinstance(lifecycle.get("acquire"), dict) else {}
 
     missing: list[str] = []
     for name, present in (
@@ -427,6 +483,8 @@ def express_teaching_item(
     )
     if law_review["permitted"] is not True:
         missing.append("education_expression_personality_law")
+    if learning_state != "developing":
+        missing.append(f"learning_state.{learning_state}")
     missing = list(dict.fromkeys(missing))
     snapshot = {
         "stage": "express",
@@ -441,6 +499,12 @@ def express_teaching_item(
         "limits": limits,
         "counterexamples": counterexamples,
         "correction_response": correction_response,
+        "source_role_receipt": acquire.get("source_role_receipt") or {},
+        "instructional_why_receipt": integrate.get("instructional_why_receipt") or {},
+        "knowledge_class": str(integrate.get("knowledge_class") or acquire.get("knowledge_class") or "unspecified_review_required"),
+        "freshness_class": str(integrate.get("freshness_class") or acquire.get("freshness_class") or "unspecified_requires_review"),
+        "learning_state": learning_state,
+        "completion_forced": False,
         "source_alignment_confirmed": source_alignment,
         "source_parroting_check": {
             "passed": no_source_parroting,
@@ -498,6 +562,7 @@ def approve_teaching_lifecycle(
         raise ValueError("retention requires explicit Aleks approval")
     if any(lifecycle[f"{stage}_status"] != "complete" for stage in ("acquire", "integrate", "express")):
         raise ValueError("retention requires complete Acquire, Integrate, and Express stages")
+    _require_phase6_instructional_contract(lifecycle)
 
     law_review = _review_stored_lifecycle_expression(lifecycle)
     if law_review["permitted"] is not True:
@@ -507,6 +572,8 @@ def approve_teaching_lifecycle(
         conn,
         {"concept_id": int(lifecycle["concept_id"]), "action": "approve_knowledge"},
     )
+    decided_item = decision.get("item") or {}
+    concept_payload = decided_item.get("payload") if isinstance(decided_item.get("payload"), dict) else {}
     snapshot = {
         "stage": "approval",
         "status": "approved_by_aleks",
@@ -514,8 +581,13 @@ def approve_teaching_lifecycle(
         "approval_actor": "Aleks",
         "explicit_approval": True,
         "knowledge_resource_active": decision.get("knowledge_resource_active") is True,
-        "retention_state": (decision.get("item") or {}).get("retention_state"),
-        "chat_use_permission": (decision.get("item") or {}).get("chat_use_permission"),
+        "retention_state": decided_item.get("retention_state"),
+        "chat_use_permission": decided_item.get("chat_use_permission"),
+        "knowledge_class": str(concept_payload.get("knowledge_class") or "unspecified_review_required"),
+        "freshness_class": str(concept_payload.get("freshness_class") or "unspecified_requires_review"),
+        "current_fact_present": decision.get("current_fact_present") is True,
+        "source_role_receipt": concept_payload.get("source_role_receipt") or {},
+        "instructional_why_receipt": concept_payload.get("instructional_why_receipt") or {},
         "memory_created": False,
         "identity_changed": False,
         "governance_changed": False,
@@ -524,16 +596,21 @@ def approve_teaching_lifecycle(
         "review_status": "aleks_retention_decision",
         "provenance_boundary": TEACHING_LIFECYCLE_BOUNDARY,
     }
+    approved_current_stage = (
+        "approved_current_claim_requires_fresh_source"
+        if decision.get("current_fact_present") is True
+        else "approved_knowledge_resource"
+    )
     conn.execute(
         """
         UPDATE selene_teaching_lifecycles
-        SET current_stage = 'approved_knowledge_resource', approval_status = 'approved_by_aleks',
+        SET current_stage = ?, approval_status = 'approved_by_aleks',
             approval_mode = 'item_exception_approval', authorization_id = NULL,
             authorization_snapshot_json = '{}',
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
-        (lifecycle["id"],),
+        (approved_current_stage, lifecycle["id"]),
     )
     conn.commit()
     concept = decision.get("item") or {}
@@ -561,6 +638,7 @@ def approve_teaching_lifecycle_under_authorization(
         raise ValueError("teaching lifecycle not found")
     if any(lifecycle[f"{stage}_status"] != "complete" for stage in ("acquire", "integrate", "express")):
         raise ValueError("retention requires complete Acquire, Integrate, and Express stages")
+    _require_phase6_instructional_contract(lifecycle)
     authorization_id = int(authorization_decision.get("authorization_id") or 0)
     if authorization_decision.get("decision") != "covered_by_active_authorization" or authorization_id <= 0:
         raise ValueError("recorded authorization did not cover this teaching lifecycle")
@@ -583,11 +661,19 @@ def approve_teaching_lifecycle_under_authorization(
         and authorization_scope.get("authorization_class") == "language_capability_range"
     )
     concept = _concept_row(conn, int(lifecycle["concept_id"]))
+    concept_payload = _loads(concept.get("payload_json"), {})
+    source_role_receipt = concept_payload.get("source_role_receipt")
+    current_fact_present = bool(
+        concept_payload.get("knowledge_class") == "time_sensitive_current_claim"
+        or concept_payload.get("freshness_class") == "time_sensitive_current"
+        or (
+            isinstance(source_role_receipt, dict)
+            and source_role_receipt.get("current_fact_present") is True
+        )
+    )
+    if current_fact_present:
+        raise ValueError("time-sensitive current claims require explicit item review and fresh-source handling")
     if language_capability_authorization:
-        try:
-            concept_payload = json.loads(str(concept.get("payload_json") or "{}"))
-        except (json.JSONDecodeError, TypeError):
-            concept_payload = {}
         covered_source_types = authorization_scope.get("covered_source_types")
         if not isinstance(covered_source_types, list):
             legacy_source_type = str(authorization_scope.get("covered_source_type") or "")
@@ -629,6 +715,11 @@ def approve_teaching_lifecycle_under_authorization(
         "knowledge_resource_active": decision.get("knowledge_resource_active") is True,
         "retention_state": (decision.get("item") or {}).get("retention_state"),
         "chat_use_permission": (decision.get("item") or {}).get("chat_use_permission"),
+        "knowledge_class": str(concept_payload.get("knowledge_class") or "unspecified_review_required"),
+        "freshness_class": str(concept_payload.get("freshness_class") or "unspecified_requires_review"),
+        "current_fact_present": False,
+        "source_role_receipt": concept_payload.get("source_role_receipt") or {},
+        "instructional_why_receipt": concept_payload.get("instructional_why_receipt") or {},
         "memory_created": False,
         "identity_changed": False,
         "governance_changed": False,
@@ -981,6 +1072,11 @@ def _review_stored_lifecycle_expression(lifecycle: dict[str, Any]) -> dict[str, 
         *_text_list(acquire.get("uncertainties")),
         *_text_list(acquire.get("near_concept_distinctions")),
         str(integrate.get("scope_of_application") or ""),
+        str((integrate.get("instructional_why_receipt") or {}).get("explanatory_relationship") or ""),
+        str((integrate.get("instructional_why_receipt") or {}).get("why_it_matters") or ""),
+        str((integrate.get("instructional_why_receipt") or {}).get("scope") or ""),
+        str((integrate.get("instructional_why_receipt") or {}).get("failure_or_exception_condition") or ""),
+        str((integrate.get("instructional_why_receipt") or {}).get("unresolved_uncertainty") or ""),
         *_text_list(integrate.get("unresolved_questions")),
         str(integrate.get("correction_path") or ""),
         str(integrate.get("reopening_path") or ""),
@@ -995,6 +1091,26 @@ def _review_stored_lifecycle_expression(lifecycle: dict[str, Any]) -> dict[str, 
         str(express.get("correction_response") or ""),
     ]
     return review_education_expression({"teaching_texts": texts})
+
+
+def _require_phase6_instructional_contract(lifecycle: dict[str, Any]) -> None:
+    acquire = lifecycle.get("acquire") if isinstance(lifecycle.get("acquire"), dict) else {}
+    integrate = lifecycle.get("integrate") if isinstance(lifecycle.get("integrate"), dict) else {}
+    source_roles = acquire.get("source_role_receipt")
+    why_receipt = integrate.get("instructional_why_receipt")
+    if not isinstance(source_roles, dict) or source_roles.get("status") != "typed_source_roles_recorded":
+        raise ValueError("retention requires typed instructional source roles")
+    if not isinstance(why_receipt, dict) or why_receipt.get("status") != "complete":
+        raise ValueError("retention requires a complete instructional-why receipt")
+
+
+def _learning_state(payload: dict[str, Any]) -> str:
+    state = str(payload.get("learning_state") or "developing").strip()
+    if state not in NON_FORCED_LEARNING_STATES:
+        raise ValueError(
+            "learning_state must be developing, needs_representation, needs_prerequisite, revisit, or unclear"
+        )
+    return state
 
 
 def _with_guards(result: dict[str, Any]) -> dict[str, Any]:

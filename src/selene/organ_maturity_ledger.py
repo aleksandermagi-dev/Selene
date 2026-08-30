@@ -128,10 +128,12 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "connection_state": "ordinary_chat",
         "maturity_state": "integration_verified",
         "target_state": "mature_current_scope",
-        "health_state": "lifecycle_stable_delivery_gap_downstream",
+        "health_state": "phase_6b_typed_source_roles_and_instructional_why_verified",
         "maturation_phase": 6,
         "metric_keys": ["knowledge_concepts", "approved_knowledge", "teaching_lifecycles"],
-        "known_gaps": ["Successful retention does not yet guarantee correct ordinary-Chat selection and application."],
+        "known_gaps": [
+            "Reviewed correction still needs descendant ancestry, and delayed distinct-case Chat use needs Phase 6C proof."
+        ],
     },
     {
         "key": "metacognition",

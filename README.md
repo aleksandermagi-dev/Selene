@@ -80,19 +80,21 @@ The implemented local text foundation can:
 Selene remains unfinished. Her text generation is provider-free and more
 bounded than a mature general language model. Long-form and world-knowledge
 breadth remain incomplete. Ordered education now enforces one shared
-prerequisite and source-readiness receipt before new teaching. Audible speech
-is not yet connected, and external actions remain deliberately constrained.
+prerequisite/source-readiness receipt plus typed source roles and a bounded
+instructional-why receipt before reviewed retention. Audible speech is not yet
+connected, and external actions remain deliberately constrained.
 
 ## Current Program Checkpoint
 
 Phases 0 through 5 of the
 [Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
-are complete for current scope. Phase 6A is
-[complete](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md),
-and Phase 6B is pending.
+are complete for current scope. Phase 6A and Phase 6B are
+[complete](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md),
+and Phase 6C is pending.
 
-The next work is Phase 6B: typed instructional source roles and an
-instructional-why receipt inside the existing Teaching Lifecycle.
+The next work is Phase 6C: reviewed correction descendants with preserved
+ancestry and delayed ordinary-Chat evidence for distinct application and
+approved-correction selection.
 F2 Group 8 remains unprepared and unauthorized until Aleks explicitly selects
 an exact Grade 4–6 source artifact after edition, license, exclusion, checksum,
 role, and coverage review.
@@ -158,8 +160,10 @@ The public-safe showcase check is
 The latest full repository regression passed all 1,984 tests in 702.19
 seconds. Phase 6A then passed 140 curriculum checks and 43 teaching,
 comprehension, maturity, runtime-truth, and public checks. The production
-frontend remains 491.33 kB (109.19 kB gzip), with no Vite size warning and
-lazy-loaded Study workspaces.
+frontend remains 491.33 kB (109.20 kB gzip), with no Vite size warning and
+lazy-loaded Study workspaces. Phase 6B passed 179 core teaching and curriculum
+checks, 115 ordinary-Chat checks, 82 semantic/expression/maturity checks, and
+56 reflective-growth and sidecar checks.
 
 ## Authorship
 

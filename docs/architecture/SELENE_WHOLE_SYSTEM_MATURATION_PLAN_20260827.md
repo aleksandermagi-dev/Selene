@@ -2,7 +2,7 @@
 
 Date: 2026-08-27
 
-Status: active implementation program; Phases 0 through 5 complete as of 2026-08-29; Phase 6A complete as of 2026-08-30
+Status: active implementation program; Phases 0 through 5 and Phase 6A-6B complete as of 2026-08-30
 
 Companion audit:
 [Selene Organ Depth and Memory-Integration Audit](../evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
@@ -425,7 +425,7 @@ voice grading during unfinished domain work.
 
 ## Phase 6 — Ordered Education and World-Knowledge Expansion
 
-Status: **Phase 6A complete on 2026-08-30; Phase 6B pending**
+Status: **Phases 6A and 6B complete on 2026-08-30; Phase 6C pending**
 
 Implementation map:
 [Phase 6 Ordered Education and World-Knowledge Expansion Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md)
@@ -853,10 +853,10 @@ These do not wait for one final cleanup phase.
 
 ## Immediate Starting Point
 
-Phases 0 through 5 and Phase 6A are complete. The next production work is
-Phase 6B: extend the existing lesson and Teaching Lifecycle snapshots with
-typed source roles and an instructional-why receipt before expanding
-educational breadth. F2 Group 8 remains unprepared and unauthorized until an
+Phases 0 through 5 and Phase 6A-6B are complete. The next production work is
+Phase 6C: add reviewed correction descendants with preserved ancestry and
+prove delayed distinct-case ordinary-Chat use plus clean selection of an
+approved correction. F2 Group 8 remains unprepared and unauthorized until an
 exact Grade 4-6 source artifact and license are selected and explicitly
 approved by Aleks.
 

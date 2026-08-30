@@ -2062,6 +2062,11 @@ def evaluate_curriculum_coverage(
     concept = dict(concept_row)
     concept_payload = _loads(concept.get("payload_json"), {})
     metadata = concept_payload.get("source_metadata") if isinstance(concept_payload.get("source_metadata"), dict) else {}
+    source_role_receipt = (
+        concept_payload.get("source_role_receipt")
+        if isinstance(concept_payload.get("source_role_receipt"), dict)
+        else {}
+    )
     group_key = str(metadata.get("curriculum_group_key") or "")
     readiness = curriculum_group_readiness(conn, group_key) if group_key in CURRICULUM_GROUP_MANIFESTS else None
     lifecycle_row = conn.execute("SELECT * FROM selene_teaching_lifecycles WHERE concept_id = ?", (concept_id,)).fetchone()
@@ -2071,6 +2076,12 @@ def evaluate_curriculum_coverage(
         exceptions.append("uncertain_or_missing_provenance")
     if metadata.get("exception_flags"):
         exceptions.extend(str(item) for item in metadata.get("exception_flags") if str(item))
+    if (
+        concept_payload.get("knowledge_class") == "time_sensitive_current_claim"
+        or concept_payload.get("freshness_class") == "time_sensitive_current"
+        or source_role_receipt.get("current_fact_present") is True
+    ):
+        exceptions.append("outdated_or_time_sensitive_claim")
     if not lifecycle or any(lifecycle.get(f"{stage}_status") != "complete" for stage in ("acquire", "integrate", "express")):
         exceptions.append("lifecycle_or_understanding_incomplete")
     integrate_snapshot = _loads(lifecycle.get("integrate_json"), {})
@@ -2190,6 +2201,34 @@ def _activate_authorization_record(
     )
 
 
+def _curriculum_source_roles(
+    lesson: dict[str, Any],
+    source_refs: list[str],
+) -> list[dict[str, Any]]:
+    refs = list(dict.fromkeys(str(item) for item in source_refs if str(item).strip()))
+    return [
+        {"role": "source_statement", "content_fields": ["material", "principles"], "source_refs": refs},
+        {"role": "inference", "content_fields": ["relationships", "near_concept_distinctions"], "source_refs": refs},
+        {"role": "example", "content_fields": ["examples", "counterexamples"], "source_refs": refs},
+        {"role": "practice", "content_fields": ["application", "questions", "comparisons"], "source_refs": refs},
+        {"role": "verification", "content_fields": ["limits", "correction_response"], "source_refs": refs},
+    ]
+
+
+def _curriculum_instructional_why(lesson: dict[str, Any]) -> dict[str, str]:
+    relationships = [str(item).strip() for item in lesson.get("relationships") or [] if str(item).strip()]
+    limits = [str(item).strip() for item in lesson.get("limits") or [] if str(item).strip()]
+    unresolved = [str(item).strip() for item in lesson.get("unresolved_questions") or [] if str(item).strip()]
+    return {
+        "why_kind": str(lesson.get("why_kind") or "multiple"),
+        "explanatory_relationship": str(lesson.get("material") or "").strip(),
+        "why_it_matters": relationships[0] if relationships else "",
+        "scope": str(lesson.get("scope_of_application") or "").strip(),
+        "failure_or_exception_condition": limits[0] if limits else "",
+        "unresolved_uncertainty": unresolved[0] if unresolved else "",
+    }
+
+
 def _prepare_defined_group(
     conn: sqlite3.Connection,
     payload: dict[str, Any],
@@ -2237,6 +2276,9 @@ def _prepare_defined_group(
             }
         )
     for order, lesson in enumerate(lessons, start=1):
+        lesson_source_refs = list(lesson.get("source_refs") or default_source_refs)
+        source_roles = _curriculum_source_roles(lesson, lesson_source_refs)
+        instructional_why = _curriculum_instructional_why(lesson)
         result = propose_comprehension_concept(
             conn,
             {
@@ -2249,9 +2291,13 @@ def _prepare_defined_group(
                 "examples": lesson["examples"],
                 "counterexamples": lesson["counterexamples"],
                 "limits": lesson["limits"],
-                "source_refs": lesson.get("source_refs") or list(default_source_refs),
+                "source_refs": lesson_source_refs,
                 "confidence": "developing",
                 "teaching_source_type": "bounded_public_academic_curriculum",
+                "knowledge_class": "public_academic_foundation",
+                "freshness_class": "durable_foundation_with_source_specific_limits",
+                "source_roles": source_roles,
+                "instructional_why": instructional_why,
                 "source_metadata": {
                     "curriculum_band": curriculum_band,
                     "curriculum_families": lesson.get("families") or list(default_families),
@@ -2259,6 +2305,8 @@ def _prepare_defined_group(
                     "curriculum_order": order,
                     "source_ids": lesson.get("source_ids") or list(default_source_ids),
                     "knowledge_class": "public_academic_foundation",
+                    "freshness_class": "durable_foundation_with_source_specific_limits",
+                    "instructional_contract_version": "phase6b_typed_source_and_why_v1",
                     "exception_flags": [],
                     "license_notes_preserved": True,
                     "source_images_or_media_used": False,
@@ -2322,6 +2370,8 @@ def _teach_defined_group(
         default_source_ids=default_source_ids,
         prepared_status=prepared_status,
     )
+
+
     retained: list[dict[str, Any]] = []
     already_retained: list[dict[str, Any]] = []
     held: list[dict[str, Any]] = []
@@ -2346,6 +2396,10 @@ def _teach_defined_group(
                     "vocabulary": lesson["vocabulary"],
                     "uncertainties": lesson["limits"],
                     "near_concept_distinctions": lesson["near_concept_distinctions"],
+                    "source_roles": _curriculum_source_roles(
+                        lesson,
+                        list(lesson.get("source_refs") or default_source_refs),
+                    ),
                 },
             )
         lifecycle = conn.execute("SELECT * FROM selene_teaching_lifecycles WHERE concept_id = ?", (concept_id,)).fetchone()
@@ -2358,6 +2412,7 @@ def _teach_defined_group(
                     "contradiction_classification": "none_identified",
                     "unresolved_questions": lesson["unresolved_questions"],
                     "integration_confidence": "bounded",
+                    "instructional_why": _curriculum_instructional_why(lesson),
                 },
             )
         lifecycle = conn.execute("SELECT * FROM selene_teaching_lifecycles WHERE concept_id = ?", (concept_id,)).fetchone()

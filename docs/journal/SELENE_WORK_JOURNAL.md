@@ -3267,6 +3267,55 @@ F2 Group 8 remains absent, unprepared, and unauthorized.
 instructional-why receipt to the existing lesson and Teaching Lifecycle
 snapshots while preserving non-forced learning states.
 
+### 2026-08-30 — Teaching preserves both its sources and its why
+
+**Starting question:** Can Selene distinguish source statement, inference,
+example, practice, verification, and current fact while requiring a useful
+instructional explanation without adding another organ or flattening learning
+into completion pressure?
+
+**Decision:** Extend the existing Comprehension proposal and Acquire ->
+Integrate -> Express snapshots. Make source roles typed at proposal and
+Acquire, make the bounded instructional-why receipt an Integrate obligation,
+and let current claims remain reviewed but non-durable until a fresh source is
+available.
+
+**Work:** Added typed knowledge/freshness and source-role receipts; required
+why kind, explanatory relationship, significance, scope, exception, and
+unresolved uncertainty; carried the receipts through expression, approval,
+and retrieval; prevented current facts from inheriting curriculum standing
+authorization or ordinary durable retrieval; routed all 152 implemented
+curriculum lessons and the existing language lesson shelf through the shared
+contract; and preserved five non-forced learning states.
+
+**Why:** Teaching already had strong content fields and review stages. The
+root gap was that their roles and explanatory relationship were not one
+required, inspectable contract. Strengthening that seam preserves the healthy
+lifecycle and avoids a duplicate Why system or hidden truth decision.
+
+**Evidence:** 179 core teaching, comprehension, readiness, and curriculum
+checks passed; 115 ordinary-Chat shell checks, 82 semantic/expression/maturity
+checks, and 56 reflective-growth and sidecar checks passed. All 26 groups and
+152 lessons produced complete contracts. A resident copy kept 272 concepts
+and 226 lifecycles unchanged, describing 225 historical completions without
+replay. The frontend remained 491.33 kB (gzip 109.20 kB), with no Vite warning
+and lazy Study workspaces.
+
+**What changed in our understanding:** Durable academic knowledge and current
+claims need different retention and retrieval behavior even when both have
+good provenance. “Why” is most trustworthy when it names relationship, value,
+scope, failure, and uncertainty together rather than relying on fluent lesson
+prose.
+
+**Boundaries preserved:** No resident teaching or authorization decision,
+Dream decision, Memory, Study, affect, identity, personality, Vys, law,
+governance, authority, training, autonomy, external action, package, or
+installation changed. The one unfinished teaching lifecycle was not opened.
+
+**Next:** Phase 6C — create reviewed correction descendants with preserved
+parent/root ancestry and prove delayed distinct-case ordinary-Chat use plus
+clean selection of one approved correction winner.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

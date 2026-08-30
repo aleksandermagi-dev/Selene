@@ -2431,7 +2431,9 @@ def _ensure_language_concept(
     evidence: dict[str, Any],
 ) -> dict[str, Any]:
     key = str(lesson["key"])
-    blueprint = _review_blueprint(evidence)
+    blueprint = _review_blueprint(lesson, evidence)
+    source_refs = _lesson_source_refs(key, lesson)
+    instructional_why = blueprint["integrate"]["instructional_why"]
     return propose_comprehension_concept(
         conn,
         {
@@ -2444,12 +2446,21 @@ def _ensure_language_concept(
             "examples": list(evidence.get("examples") or []),
             "counterexamples": list(evidence.get("counterexamples") or []),
             "limits": list(evidence.get("uncertainties") or []),
-            "source_refs": _lesson_source_refs(key, lesson),
+            "source_refs": source_refs,
             "confidence": "developing",
             "correction_path": "Return the language lesson to Cocoon, revise its evidence, and reopen NLO guidance only after Aleks review.",
             "teaching_source_type": str(
                 lesson.get("teaching_source_type") or "project_authored_provider_free_language_lesson"
             ),
+            "knowledge_class": "language_capability_guidance",
+            "freshness_class": "durable_source_bounded",
+            "source_roles": [
+                {"role": "source_statement", "content_fields": ["purpose", "response_moves"], "source_refs": source_refs},
+                {"role": "example", "content_fields": ["examples", "counterexamples"], "source_refs": source_refs},
+                {"role": "practice", "content_fields": ["distinct_examples", "questions"], "source_refs": source_refs},
+                {"role": "verification", "content_fields": ["uncertainties", "correction_response"], "source_refs": source_refs},
+            ],
+            "instructional_why": instructional_why,
             "source_metadata": {
                 "language_lesson_key": key,
                 **_lesson_group_metadata(lesson),
@@ -2463,6 +2474,9 @@ def _ensure_language_concept(
                     str(ref).startswith("license:") for ref in _lesson_source_refs(key, lesson)
                 ),
                 "provider_used": False,
+                "knowledge_class": "language_capability_guidance",
+                "freshness_class": "durable_source_bounded",
+                "instructional_contract_version": "phase6b_typed_source_and_why_v1",
             },
         },
     )
@@ -2477,7 +2491,7 @@ def _lesson_content(lesson: dict[str, Any], evidence: dict[str, Any]) -> dict[st
         "response_moves": list(lesson.get("response_moves") or []),
         "examples": list(evidence.get("examples") or []),
         "counterexamples": list(evidence.get("counterexamples") or []),
-        "review_blueprint": _review_blueprint(evidence),
+        "review_blueprint": _review_blueprint(lesson, evidence),
     }
 
 
@@ -2494,9 +2508,20 @@ def _lesson_boundaries(lesson: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _review_blueprint(evidence: dict[str, Any]) -> dict[str, Any]:
+def _review_blueprint(lesson: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any]:
     uncertainties = list(evidence.get("uncertainties") or [])
     counterexamples = list(evidence.get("counterexamples") or [])
+    apply_when = [str(item) for item in lesson.get("apply_when") or [] if str(item).strip()]
+    questions = [str(item) for item in evidence.get("questions") or [] if str(item).strip()]
+    constraints = [str(item) for item in lesson.get("constraints") or [] if str(item).strip()]
+    instructional_why = {
+        "why_kind": "relationship",
+        "explanatory_relationship": str(evidence.get("explanation") or lesson.get("purpose") or ""),
+        "why_it_matters": apply_when[0] if apply_when else str(lesson.get("purpose") or ""),
+        "scope": str(evidence.get("scope_of_application") or ""),
+        "failure_or_exception_condition": str((uncertainties or constraints or [""])[0]),
+        "unresolved_uncertainty": str((questions or uncertainties or [""])[0]),
+    }
     return {
         "acquire": {
             "vocabulary": list(evidence.get("vocabulary") or []),
@@ -2508,6 +2533,7 @@ def _review_blueprint(evidence: dict[str, Any]) -> dict[str, Any]:
             "contradiction_classification": "none_identified",
             "unresolved_questions": [],
             "integration_confidence": "bounded",
+            "instructional_why": instructional_why,
         },
         "express": {
             "teach_back": str(evidence.get("explanation") or ""),

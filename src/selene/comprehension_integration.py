@@ -40,6 +40,43 @@ GUARDS: dict[str, Any] = {
 APPROVED_STATE = "approved_knowledge_resource"
 ACTIVE_CHAT_PERMISSION = "available_as_knowledge_resource"
 
+INSTRUCTIONAL_SOURCE_ROLES = {
+    "source_statement",
+    "inference",
+    "example",
+    "practice",
+    "verification",
+    "current_fact",
+}
+
+INSTRUCTIONAL_WHY_KINDS = {
+    "cause",
+    "mechanism",
+    "significance",
+    "dependency",
+    "purpose",
+    "comparison",
+    "relationship",
+    "multiple",
+}
+
+KNOWLEDGE_CLASSES = {
+    "public_academic_foundation",
+    "time_sensitive_current_claim",
+    "reviewed_general_knowledge_candidate",
+    "language_capability_guidance",
+    "study_answer_candidate",
+    "unspecified_review_required",
+}
+
+FRESHNESS_CLASSES = {
+    "durable_foundation_with_source_specific_limits",
+    "durable_source_bounded",
+    "time_sensitive_current",
+    "source_bounded_requires_item_review",
+    "unspecified_requires_review",
+}
+
 DECISIONS: dict[str, tuple[str, str, str]] = {
     "approve_knowledge": (APPROVED_STATE, "approved_for_knowledge_use", ACTIVE_CHAT_PERMISSION),
     "needs_more_context": ("needs_context", "needs_more_context", "not_active_until_approved"),
@@ -286,6 +323,84 @@ def propose_comprehension_concept(
         (concept_key,),
     ).fetchone()
     if existing:
+        existing_item = _decode_concept(existing)
+        if existing_item.get("state") != APPROVED_STATE and any(
+            payload.get(key) is not None
+            for key in (
+                "source_roles",
+                "source_role_receipt",
+                "instructional_why",
+                "instructional_why_receipt",
+                "knowledge_class",
+                "freshness_class",
+            )
+        ):
+            existing_payload = (
+                dict(existing_item.get("payload"))
+                if isinstance(existing_item.get("payload"), dict)
+                else {}
+            )
+            supplied_metadata = (
+                dict(payload.get("source_metadata"))
+                if isinstance(payload.get("source_metadata"), dict)
+                else {}
+            )
+            teaching_source_type = str(
+                payload.get("teaching_source_type")
+                or existing_payload.get("teaching_source_type")
+                or "approved_or_user_supplied_teaching"
+            )
+            existing_metadata = (
+                dict(existing_payload.get("source_metadata"))
+                if isinstance(existing_payload.get("source_metadata"), dict)
+                else {}
+            )
+            knowledge_class, freshness_class = instructional_knowledge_classification(
+                teaching_source_type=teaching_source_type,
+                knowledge_class=(
+                    payload.get("knowledge_class")
+                    or supplied_metadata.get("knowledge_class")
+                    or existing_payload.get("knowledge_class")
+                    or existing_metadata.get("knowledge_class")
+                ),
+                freshness_class=(
+                    payload.get("freshness_class")
+                    or supplied_metadata.get("freshness_class")
+                    or existing_payload.get("freshness_class")
+                    or existing_metadata.get("freshness_class")
+                ),
+            )
+            role_value = payload.get("source_roles") or payload.get("source_role_receipt")
+            why_value = payload.get("instructional_why") or payload.get("instructional_why_receipt")
+            if role_value is not None:
+                existing_payload["source_role_receipt"] = build_instructional_source_role_receipt(
+                    role_value,
+                    source_refs=source_refs,
+                    knowledge_class=knowledge_class,
+                    freshness_class=freshness_class,
+                )
+            if why_value is not None:
+                existing_payload["instructional_why_receipt"] = build_instructional_why_receipt(why_value)
+            existing_metadata.update(supplied_metadata)
+            existing_metadata["knowledge_class"] = knowledge_class
+            existing_metadata["freshness_class"] = freshness_class
+            existing_payload.update(
+                {
+                    "teaching_source_type": teaching_source_type,
+                    "source_metadata": existing_metadata,
+                    "knowledge_class": knowledge_class,
+                    "freshness_class": freshness_class,
+                }
+            )
+            conn.execute(
+                "UPDATE selene_comprehension_concepts SET payload_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (json.dumps(existing_payload, sort_keys=True), int(existing_item["id"])),
+            )
+            conn.commit()
+            existing = conn.execute(
+                "SELECT * FROM selene_comprehension_concepts WHERE id = ?",
+                (int(existing_item["id"]),),
+            ).fetchone()
         return _with_guards(
             {
                 "status": "comprehension_concept_already_exists",
@@ -299,6 +414,28 @@ def propose_comprehension_concept(
     examples = _text_list(payload.get("examples"))
     counterexamples = _text_list(payload.get("counterexamples"))
     limits = _text_list(payload.get("limits"))
+    teaching_source_type = str(payload.get("teaching_source_type") or "approved_or_user_supplied_teaching")
+    source_metadata = (
+        dict(payload.get("source_metadata"))
+        if isinstance(payload.get("source_metadata"), dict)
+        else {}
+    )
+    knowledge_class, freshness_class = instructional_knowledge_classification(
+        teaching_source_type=teaching_source_type,
+        knowledge_class=payload.get("knowledge_class") or source_metadata.get("knowledge_class"),
+        freshness_class=payload.get("freshness_class") or source_metadata.get("freshness_class"),
+    )
+    source_role_receipt = build_instructional_source_role_receipt(
+        payload.get("source_roles") or payload.get("source_role_receipt"),
+        source_refs=source_refs,
+        knowledge_class=knowledge_class,
+        freshness_class=freshness_class,
+    )
+    instructional_why_receipt = build_instructional_why_receipt(
+        payload.get("instructional_why") or payload.get("instructional_why_receipt")
+    )
+    source_metadata["knowledge_class"] = knowledge_class
+    source_metadata["freshness_class"] = freshness_class
     cursor = conn.execute(
         """
         INSERT INTO selene_comprehension_concepts
@@ -325,8 +462,12 @@ def propose_comprehension_concept(
             truncate(str(payload.get("correction_path") or "Cocoon teaching review and source-linked revision"), 500),
             json.dumps(
                 {
-                    "teaching_source_type": str(payload.get("teaching_source_type") or "approved_or_user_supplied_teaching"),
-                    "source_metadata": payload.get("source_metadata") if isinstance(payload.get("source_metadata"), dict) else {},
+                    "teaching_source_type": teaching_source_type,
+                    "source_metadata": source_metadata,
+                    "knowledge_class": knowledge_class,
+                    "freshness_class": freshness_class,
+                    "source_role_receipt": source_role_receipt,
+                    "instructional_why_receipt": instructional_why_receipt,
                     "understanding_evidence": {},
                     "knowledge_not_governance": True,
                     "identity_unchanged": True,
@@ -446,6 +587,7 @@ def decide_comprehension_concept(
     concept = _concept_row(conn, concept_id)
     if not concept:
         raise ValueError("comprehension concept not found")
+    concept_payload = concept.get("payload") if isinstance(concept.get("payload"), dict) else {}
     if action == "approve_knowledge":
         latest = conn.execute(
             """
@@ -458,8 +600,28 @@ def decide_comprehension_concept(
         evidence = _loads(latest["result_json"] if latest else "", {})
         if evidence.get("understanding_evidence_sufficient") is not True:
             raise ValueError("knowledge approval requires source-linked understanding evidence first")
+        if concept_payload.get("knowledge_class") in {
+            "public_academic_foundation",
+            "time_sensitive_current_claim",
+        }:
+            lifecycle = conn.execute(
+                "SELECT acquire_status, integrate_status, express_status FROM selene_teaching_lifecycles WHERE concept_id = ?",
+                (concept_id,),
+            ).fetchone()
+            if not lifecycle or any(
+                lifecycle[f"{stage}_status"] != "complete"
+                for stage in ("acquire", "integrate", "express")
+            ):
+                raise ValueError(
+                    "public-academic and current-claim retention requires complete Acquire, Integrate, and Express"
+                )
     state, review_status, chat_permission = DECISIONS[action]
+    current_fact_present = _current_fact_present(concept_payload)
+    if action == "approve_knowledge" and current_fact_present:
+        chat_permission = "requires_fresh_current_source"
     retention_state = "retained_reviewed_knowledge" if state == APPROVED_STATE else "candidate_not_retained"
+    if state == APPROVED_STATE and current_fact_present:
+        retention_state = "retained_reviewed_current_claim"
     if state in {"superseded", "rejected"}:
         retention_state = "inactive_knowledge_record"
     conn.execute(
@@ -477,7 +639,10 @@ def decide_comprehension_concept(
             "status": "comprehension_concept_decided",
             "action": action,
             "item": _concept_row(conn, concept_id),
-            "knowledge_resource_active": state == APPROVED_STATE,
+            "knowledge_resource_active": state == APPROVED_STATE and chat_permission == ACTIVE_CHAT_PERMISSION,
+            "current_fact_present": current_fact_present,
+            "knowledge_class": str(concept_payload.get("knowledge_class") or "unspecified_review_required"),
+            "freshness_class": str(concept_payload.get("freshness_class") or "unspecified_requires_review"),
             "memory_write_active": False,
             "identity_changed": False,
             "governance_changed": False,
@@ -848,6 +1013,11 @@ def retrieve_approved_knowledge(
                 "limits": item["limits"][:6],
                 "confidence": item["confidence"],
                 "source_refs": item["source_refs"],
+                "knowledge_class": str((item.get("payload") or {}).get("knowledge_class") or "unspecified_review_required"),
+                "freshness_class": str((item.get("payload") or {}).get("freshness_class") or "unspecified_requires_review"),
+                "source_role_receipt": (item.get("payload") or {}).get("source_role_receipt") or {},
+                "instructional_why_receipt": (item.get("payload") or {}).get("instructional_why_receipt") or {},
+                "current_fact_present": _current_fact_present(item.get("payload") or {}),
                 "matched_terms": item.get("matched_terms") or [],
                 "retrieval_subject_terms": item.get("retrieval_subject_terms") or [],
                 "retrieval_core_terms": item.get("retrieval_core_terms") or [],
@@ -862,6 +1032,7 @@ def retrieve_approved_knowledge(
         "identity_source": False,
         "canonical_meaning_frame_applied": bool(frame),
         "protected_query_terms": sorted(protected_terms),
+        "freshness_gate": "time_sensitive_current_claims_require_a_fresh_attributed_current_source_and_do_not_seed_as_durable_knowledge",
     }
 
 
@@ -1506,6 +1677,136 @@ def _decode_concept(row: sqlite3.Row) -> dict[str, Any]:
     item["source_refs"] = _loads(item.get("source_refs"), [])
     item["payload"] = _loads(item.pop("payload_json", "{}"), {})
     return item
+
+
+def instructional_knowledge_classification(
+    *,
+    teaching_source_type: str,
+    knowledge_class: Any = None,
+    freshness_class: Any = None,
+) -> tuple[str, str]:
+    source_type = str(teaching_source_type or "").strip()
+    default_knowledge = "reviewed_general_knowledge_candidate"
+    default_freshness = "source_bounded_requires_item_review"
+    if source_type == "bounded_public_academic_curriculum":
+        default_knowledge = "public_academic_foundation"
+        default_freshness = "durable_foundation_with_source_specific_limits"
+    elif source_type.startswith("aleks_answer_to_selene_study_question"):
+        default_knowledge = "study_answer_candidate"
+    elif "language" in source_type or source_type == "accepted_b_teaching_packet":
+        default_knowledge = "language_capability_guidance"
+        default_freshness = "durable_source_bounded"
+
+    selected_knowledge = str(knowledge_class or default_knowledge).strip()
+    selected_freshness = str(freshness_class or default_freshness).strip()
+    if selected_knowledge not in KNOWLEDGE_CLASSES:
+        raise ValueError(f"unsupported instructional knowledge class: {selected_knowledge}")
+    if selected_freshness not in FRESHNESS_CLASSES:
+        raise ValueError(f"unsupported instructional freshness class: {selected_freshness}")
+    if (selected_knowledge == "time_sensitive_current_claim") != (
+        selected_freshness == "time_sensitive_current"
+    ):
+        raise ValueError("time-sensitive current claims require matching knowledge and freshness classes")
+    return selected_knowledge, selected_freshness
+
+
+def build_instructional_source_role_receipt(
+    value: Any,
+    *,
+    source_refs: list[str],
+    knowledge_class: str,
+    freshness_class: str,
+) -> dict[str, Any]:
+    if isinstance(value, dict):
+        raw_roles = value.get("roles")
+    else:
+        raw_roles = value
+    if raw_roles in (None, ""):
+        raw_roles = [
+            {
+                "role": "source_statement",
+                "content_fields": ["material"],
+                "source_refs": source_refs,
+            }
+        ]
+    if not isinstance(raw_roles, (list, tuple)):
+        raise ValueError("source_roles must be a list of typed role entries")
+
+    roles: list[dict[str, Any]] = []
+    for raw in raw_roles:
+        if not isinstance(raw, dict):
+            raise ValueError("each instructional source role must be a typed object")
+        role = str(raw.get("role") or "").strip()
+        if role not in INSTRUCTIONAL_SOURCE_ROLES:
+            raise ValueError(f"unsupported instructional source role: {role or 'missing'}")
+        content_fields = _text_list(raw.get("content_fields"))
+        if not content_fields:
+            raise ValueError(f"instructional source role {role} requires content_fields")
+        role_refs = _json_list(raw.get("source_refs")) or list(source_refs)
+        if not role_refs:
+            raise ValueError(f"instructional source role {role} requires source_refs")
+        roles.append(
+            {
+                "role": role,
+                "content_fields": content_fields,
+                "source_refs": list(dict.fromkeys(role_refs))[:100],
+                "automatic_truth": False,
+            }
+        )
+    current_fact_present = any(item["role"] == "current_fact" for item in roles)
+    if current_fact_present and (
+        knowledge_class != "time_sensitive_current_claim"
+        or freshness_class != "time_sensitive_current"
+    ):
+        raise ValueError("current_fact source roles require time-sensitive current classification")
+    if knowledge_class == "time_sensitive_current_claim" and not current_fact_present:
+        raise ValueError("time-sensitive current claims require a current_fact source role")
+    return {
+        "status": "typed_source_roles_recorded",
+        "roles": roles,
+        "role_types": list(dict.fromkeys(item["role"] for item in roles)),
+        "knowledge_class": knowledge_class,
+        "freshness_class": freshness_class,
+        "current_fact_present": current_fact_present,
+        "source_statement_is_not_automatic_truth": True,
+        "inference_remains_distinct_from_source_statement": True,
+    }
+
+
+def build_instructional_why_receipt(value: Any) -> dict[str, Any]:
+    raw = dict(value) if isinstance(value, dict) else {}
+    why_kind = str(raw.get("why_kind") or "").strip()
+    if why_kind and why_kind not in INSTRUCTIONAL_WHY_KINDS:
+        raise ValueError(f"unsupported instructional why kind: {why_kind}")
+    fields = {
+        "why_kind": why_kind,
+        "explanatory_relationship": truncate(str(raw.get("explanatory_relationship") or ""), 3000).strip(),
+        "why_it_matters": truncate(str(raw.get("why_it_matters") or ""), 3000).strip(),
+        "scope": truncate(str(raw.get("scope") or ""), 3000).strip(),
+        "failure_or_exception_condition": truncate(
+            str(raw.get("failure_or_exception_condition") or ""), 3000
+        ).strip(),
+        "unresolved_uncertainty": truncate(str(raw.get("unresolved_uncertainty") or ""), 3000).strip(),
+    }
+    missing = [name for name, item in fields.items() if not item]
+    return {
+        "status": "complete" if not missing else "needs_review",
+        **fields,
+        "missing_fields": missing,
+        "bounded_instructional_explanation_only": True,
+        "affective_why_salience_owner_unchanged": True,
+        "automatic_truth": False,
+    }
+
+
+def _current_fact_present(concept_payload: dict[str, Any]) -> bool:
+    receipt = concept_payload.get("source_role_receipt")
+    roles = receipt.get("roles") if isinstance(receipt, dict) else []
+    return bool(
+        concept_payload.get("knowledge_class") == "time_sensitive_current_claim"
+        or concept_payload.get("freshness_class") == "time_sensitive_current"
+        or any(isinstance(item, dict) and item.get("role") == "current_fact" for item in roles or [])
+    )
 
 
 def _decode_run(row: sqlite3.Row) -> dict[str, Any]:

@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-08-30
 
-Status: Phase 6A complete; resume at Phase 6B production implementation
+Status: Phases 6A and 6B complete; resume at Phase 6C production implementation
 
 ## Purpose
 
@@ -16,14 +16,15 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
 - Expected latest checkpoint: commit named
-  `Close curriculum prerequisite and source readiness`
+  `Mature teaching source and why contracts`
 - Expected remote relation after the checkpoint: ahead of `origin/evidence`
-  by 12 commits
+  by 13 commits
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
   - Phase 6 map: `bee8d17`
   - Current documentation: `f6f95e0`
+  - Phase 6A: `7a293c9`
 - Expected tracked worktree after the checkpoint: clean
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
@@ -35,12 +36,14 @@ git status --short --branch
 git log -5 --oneline
 ```
 
-## Completed Phase 6A
+## Completed Phase 6A-6B
 
 - Implementation map:
   `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
 - Evidence:
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md`
+- Phase 6B evidence:
+  `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
 - The existing Curriculum Authorization owner now holds typed manifests for
   all 26 implemented F1, F2, and Coding groups.
 - One shared receipt exposes `ready`, `needs_prerequisite`,
@@ -52,8 +55,18 @@ git log -5 --oneline
   prerequisite, source acceptance, or bounded authorization is missing.
 - Existing completed groups are described from approved concept state without
   replay, reteaching, or new authorization events.
-- Phase 6B adds typed source roles and instructional “why” while preserving
-  Acquire -> Integrate -> Express and non-graded tending states.
+- New and revised proposals retain typed source roles, knowledge/freshness
+  class, and one bounded instructional-why receipt.
+- Acquire validates the source-role receipt; Integrate requires why kind,
+  explanatory relationship, why it matters, scope, failure/exception, and
+  unresolved uncertainty; Express and retention preserve both receipts.
+- All 152 implemented lessons across 26 groups produce complete Phase 6B
+  contracts. Language-capability lessons reuse the same lifecycle.
+- `current_fact` requires matching time-sensitive classification, cannot
+  inherit standing curriculum authorization, and does not seed ordinary Chat
+  as durable retained knowledge.
+- `developing`, `needs_representation`, `needs_prerequisite`, `revisit`, and
+  `unclear` remain visible, non-forced states.
 - Phase 6C adds idempotent correction descendants, parent/root ancestry, one
   active approved lineage winner, loop stops, and delayed ordinary-Chat use.
 - Phase 6D adds a concept-level descriptive learning profile and bounded
@@ -76,23 +89,26 @@ git log -5 --oneline
   Phase 6 edge.
 - Historical dated evidence remains intact. The older detailed capability map
   is identified as cumulative rather than the concise current source of truth.
-- The root README now accurately records the implemented shared prerequisite
-  and source-readiness gate and names Phase 6B as the next edge.
+- The root README now accurately records the implemented readiness and
+  teaching-contract gates and names Phase 6C as the next edge.
 - The current-state index now records the exact-approved ordinary-Chat path to
   static local-code inspection and its no-scan/no-execution/no-write limits.
 
-## Phase 6A Evidence
+## Phase 6B Evidence
 
 - Production and compatibility checks:
-  - 140 curriculum authorization, F1, F2, Coding, and Phase 6A tests passed
-  - 43 teaching, comprehension, maturity, runtime-truth, and public checks
+  - 179 teaching-contract, comprehension, readiness, and curriculum tests
     passed
+  - 115 ordinary-Chat shell tests passed
+  - 82 semantic, public, maturity, NLO, language, knowledge, law, and Voice
+    checks passed
+  - 56 Study, Dream, reflective-growth, and sidecar checks passed
 - Disposable resident-copy status:
-  - 26 of 26 implemented groups reported `complete`
-  - 152 curriculum-authorized concepts described
-  - no replay, reteaching, resident write, or resident decision
+  - 272 concepts and 226 teaching lifecycles before and after initialization
+  - 225 historical completed lifecycles described without replay
+  - one acquire-needs-review lifecycle left untouched
 - Frontend comparison:
-  - main bundle `491.33 kB`, gzip `109.19 kB`
+  - main bundle `491.33 kB`, gzip `109.20 kB`
   - no Vite size warning
   - Study workspaces remain lazy-loaded
 - `git diff --check`: clean apart from expected Windows line-ending notices
@@ -101,16 +117,12 @@ git log -5 --oneline
 
 - `reopen_for_revision` mutates the approved comprehension row; the schema has
   no parent/root/descendant correction ancestry.
-- instructional “why” is usually present in lesson prose but is not a typed
-  required lifecycle receipt.
 - the current LEA is conversation-oriented and does not expose the Phase 6
   concept profile: clear, developing, needs representation, needs
   prerequisite, or revisit.
 - approved knowledge already reaches ordinary Chat through guarded relevance;
   Phase 6 must prove delayed distinct-case and correction behavior rather than
   create another retrieval system.
-- `why_salience.py` is an affective salience status helper, not the education
-  owner.
 
 ## Resident and Ethical Boundaries
 
@@ -150,12 +162,13 @@ measurement of private experience as separate research questions.
 
 ## Required Reading Before Editing
 
-Before Phase 6B production work, read completely:
+Before Phase 6C production work, read completely:
 
 - `docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md`
+- `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -168,11 +181,13 @@ resident teaching.
 
 ## Exact Resume Point
 
-Begin Phase 6B with synthetic failing tests for typed instructional source
-roles and an instructional-why receipt. Extend the existing lesson and
-Teaching Lifecycle snapshots; do not add another teaching or Why organ. Keep
-developing, needs representation, needs prerequisite, revisit, and unclear as
-valid non-forced states. Do not create F2 Group 8 or activate any resident
+Begin Phase 6C with synthetic failing tests for one idempotent correction
+descendant. Add parent/root ancestry and one active approved lineage winner to
+the existing Comprehension and Teaching Lifecycle owners; do not mutate the
+approved parent in place or create another knowledge store. Hold unresolved
+corrections out of ordinary answer seeding, stop duplicate descendants and
+loops, and then prove delayed distinct-case Chat use plus clean selection of
+the approved correction. Do not create F2 Group 8 or activate any resident
 authorization until Aleks explicitly selects its exact reviewed source.
 
 After each meaningful checkpoint, update the dated Work Journal and refresh
