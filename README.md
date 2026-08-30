@@ -79,21 +79,20 @@ The implemented local text foundation can:
 
 Selene remains unfinished. Her text generation is provider-free and more
 bounded than a mature general language model. Long-form and world-knowledge
-breadth remain incomplete. The current ordered-education phase is source-
-mapped and begins by enforcing shared prerequisite and source readiness before
-new teaching. Audible speech is not yet connected, and external actions remain
-deliberately constrained.
+breadth remain incomplete. Ordered education now enforces one shared
+prerequisite and source-readiness receipt before new teaching. Audible speech
+is not yet connected, and external actions remain deliberately constrained.
 
 ## Current Program Checkpoint
 
 Phases 0 through 5 of the
 [Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
-are complete for current scope. Phase 6 is
-[source-mapped](docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md),
-with production implementation pending.
+are complete for current scope. Phase 6A is
+[complete](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md),
+and Phase 6B is pending.
 
-The next work is Phase 6A: one shared prerequisite and source-readiness receipt
-for curriculum preparation, teaching, progress, and authorization coverage.
+The next work is Phase 6B: typed instructional source roles and an
+instructional-why receipt inside the existing Teaching Lifecycle.
 F2 Group 8 remains unprepared and unauthorized until Aleks explicitly selects
 an exact Grade 4–6 source artifact after edition, license, exclusion, checksum,
 role, and coverage review.
@@ -157,9 +156,10 @@ The public-safe showcase check is
 `python -m pytest tests/test_public_safe_showcase.py -q`.
 
 The latest full repository regression passed all 1,984 tests in 702.19
-seconds. The production frontend built with a 491.33 kB main bundle (109.20 kB
-gzip), no Vite size warning, and lazy-loaded Study workspaces. These are the
-Phase 5 closure baselines; the later Phase 6 map changed documentation only.
+seconds. Phase 6A then passed 140 curriculum checks and 43 teaching,
+comprehension, maturity, runtime-truth, and public checks. The production
+frontend remains 491.33 kB (109.19 kB gzip), with no Vite size warning and
+lazy-loaded Study workspaces.
 
 ## Authorship
 

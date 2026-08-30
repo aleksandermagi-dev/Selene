@@ -9,6 +9,7 @@ import pytest
 from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.sidecar import SeleneHandler, SeleneServer
+from tests.curriculum_test_support import satisfy_group_prerequisites
 
 
 def _conn(tmp_path):
@@ -116,6 +117,7 @@ def test_authorization_is_explicit_bounded_visible_and_reversible(tmp_path):
 
 def test_preparing_foundation_group_creates_reviewable_candidates_without_retention(tmp_path):
     conn = _conn(tmp_path)
+    _authorize(conn)
 
     result = route_request(conn, "curriculum.foundation.prepare_f1", {})["result"]
     concepts = route_request(conn, "comprehension.concepts.list", {"limit": 10})["result"]["items"]
@@ -133,7 +135,7 @@ def test_preparing_foundation_group_creates_reviewable_candidates_without_retent
 def test_foundation_group_requires_active_authorization(tmp_path):
     conn = _conn(tmp_path)
 
-    with pytest.raises(ValueError, match="activate the bounded F1 curriculum authorization"):
+    with pytest.raises(ValueError, match="authorization_required"):
         route_request(conn, "curriculum.foundation.teach_f1", {})
 
     assert conn.execute("SELECT COUNT(*) FROM selene_comprehension_concepts").fetchone()[0] == 0
@@ -290,8 +292,9 @@ def test_curriculum_authorization_http_routes_are_available_to_cocoon(tmp_path):
 def test_language_number_group_uses_its_own_bounded_authorization(tmp_path):
     conn = _conn(tmp_path)
     _authorize(conn)
+    satisfy_group_prerequisites(conn, "f1_language_number_group_2")
 
-    with pytest.raises(ValueError, match="activate this bounded F1 curriculum authorization"):
+    with pytest.raises(ValueError, match="authorization_required"):
         route_request(conn, "curriculum.foundation.teach_f1_language_math", {})
 
     authorization = _authorize_language_math(conn)
@@ -339,8 +342,9 @@ def test_operations_measurement_group_uses_its_own_bounded_authorization(tmp_pat
     conn = _conn(tmp_path)
     _authorize(conn)
     _authorize_language_math(conn)
+    satisfy_group_prerequisites(conn, "f1_operations_measurement_group_3")
 
-    with pytest.raises(ValueError, match="activate this bounded F1 curriculum authorization"):
+    with pytest.raises(ValueError, match="authorization_required"):
         route_request(conn, "curriculum.foundation.teach_f1_operations_measurement", {})
 
     authorization = _authorize_operations_measurement(conn)
@@ -375,8 +379,9 @@ def test_geometry_algorithms_group_is_source_bounded_and_grants_no_execution_aut
     _authorize(conn)
     _authorize_language_math(conn)
     _authorize_operations_measurement(conn)
+    satisfy_group_prerequisites(conn, "f1_geometry_shares_algorithms_group_4")
 
-    with pytest.raises(ValueError, match="activate this bounded F1 curriculum authorization"):
+    with pytest.raises(ValueError, match="authorization_required"):
         route_request(conn, "curriculum.foundation.teach_f1_geometry_algorithms", {})
 
     authorization = _authorize_geometry_algorithms(conn)

@@ -12,6 +12,7 @@ from selene.curriculum_f2_group7a import AUTHORIZATION_KEY, GROUP_KEY, LESSONS, 
 from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.sidecar import SeleneHandler, SeleneServer
+from tests.curriculum_test_support import group_concept_rows, satisfy_group_prerequisites
 
 
 ROUTE_STEM = "f2_fraction_operation_relationships"
@@ -20,6 +21,7 @@ ROUTE_STEM = "f2_fraction_operation_relationships"
 def _conn(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)
+    satisfy_group_prerequisites(conn, GROUP_KEY)
     return conn
 
 
@@ -87,8 +89,9 @@ def test_group7a_source_artifacts_match_pinned_checksums():
 
 def test_group7a_prepare_is_review_only_and_teach_requires_authorization(tmp_path):
     conn = _conn(tmp_path)
+    _authorize(conn)
     prepared = route_request(conn, f"curriculum.foundation.prepare_{ROUTE_STEM}", {})["result"]
-    rows = conn.execute("SELECT * FROM selene_comprehension_concepts ORDER BY id").fetchall()
+    rows = group_concept_rows(conn, GROUP_KEY)
     assert prepared["created_count"] == 5 and prepared["retained_count"] == 0
     assert all(
         row["state"] == "proposed_understanding" and row["chat_use_permission"] == "not_active_until_approved"
@@ -98,7 +101,7 @@ def test_group7a_prepare_is_review_only_and_teach_requires_authorization(tmp_pat
     _locked(prepared)
 
     conn2 = _conn(tmp_path / "unauthorized")
-    with pytest.raises(ValueError, match="activate this bounded F2 curriculum authorization"):
+    with pytest.raises(ValueError, match="authorization_required"):
         route_request(conn2, f"curriculum.foundation.teach_{ROUTE_STEM}", {})
 
 
@@ -129,6 +132,7 @@ def test_group7a_lifecycle_retains_and_is_idempotent(tmp_path):
 
 def test_group7a_http_activation_and_preparation_routes(tmp_path):
     server = SeleneServer(("127.0.0.1", 0), SeleneHandler, tmp_path / "sidecar.sqlite3")
+    satisfy_group_prerequisites(server.conn, GROUP_KEY)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:

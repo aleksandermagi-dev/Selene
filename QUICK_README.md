@@ -3,9 +3,9 @@
 Selene is a local-first AI system designed to understand, reason, learn, and
 converse without treating a language model as the whole mind.
 
-As of August 29, 2026, whole-system maturation Phases 0 through 5 are complete
-for current scope. Phase 6—ordered education and world-knowledge expansion—is
-source-mapped, with its prerequisite machinery still to be implemented.
+As of August 30, 2026, whole-system maturation Phases 0 through 5 and Phase 6A
+are complete for current scope. Ordered education now has shared prerequisite
+and source-readiness enforcement; Phase 6B is the next implementation edge.
 
 ## The Problem She Solves
 
@@ -86,9 +86,9 @@ Selene is not:
 Selene's architecture is substantial, but her education is still in progress.
 Her world knowledge and language breadth are smaller than those of a mature
 general language model. Long-form conversation, broader academic coverage,
-and future audible speech still need further teaching or development. Shared
-curriculum prerequisite enforcement and reviewed knowledge-correction ancestry
-are mapped but not yet implemented. Dream's
+and future audible speech still need further teaching or development. Typed
+instructional “why” and reviewed knowledge-correction ancestry remain mapped
+but not yet implemented. Dream's
 source-bound lifecycle is implemented, although its reflections remain
 review-governed and its ordinary usefulness should be assessed proportionally
 over time. External actions remain deliberately bounded.

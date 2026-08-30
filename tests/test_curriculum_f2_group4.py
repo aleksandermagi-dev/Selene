@@ -9,6 +9,7 @@ import pytest
 from selene.curriculum_f2_group4 import AUTHORIZATION_KEY, GROUP_KEY, LESSONS, SCOPE
 from selene.db import connect, init_db
 from selene.module_router import route_request
+from tests.curriculum_test_support import group_concept_rows, satisfy_group_prerequisites
 
 
 ROUTE_STEM = "f2_multi_digit_arithmetic_operations"
@@ -17,6 +18,7 @@ ROUTE_STEM = "f2_multi_digit_arithmetic_operations"
 def _conn(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)
+    satisfy_group_prerequisites(conn, GROUP_KEY)
     return conn
 
 
@@ -61,14 +63,15 @@ def test_group4_source_artifacts_match_pinned_checksums():
 
 def test_group4_prepare_is_review_only_and_teach_requires_authorization(tmp_path):
     conn = _conn(tmp_path)
+    _authorize(conn)
     prepared = route_request(conn, f"curriculum.foundation.prepare_{ROUTE_STEM}", {})["result"]
-    rows = conn.execute("SELECT * FROM selene_comprehension_concepts ORDER BY id").fetchall()
+    rows = group_concept_rows(conn, GROUP_KEY)
     assert prepared["created_count"] == 5 and prepared["retained_count"] == 0
     assert all(row["state"] == "proposed_understanding" and row["chat_use_permission"] == "not_active_until_approved" for row in rows)
     assert all(json.loads(row["payload_json"])["source_metadata"]["curriculum_band"] == "F2" for row in rows)
     _locked(prepared)
     conn2 = _conn(tmp_path / "unauthorized")
-    with pytest.raises(ValueError, match="activate this bounded F2 curriculum authorization"):
+    with pytest.raises(ValueError, match="authorization_required"):
         route_request(conn2, f"curriculum.foundation.teach_{ROUTE_STEM}", {})
 
 

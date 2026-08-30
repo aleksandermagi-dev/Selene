@@ -20,10 +20,14 @@ a prototype result into a universal conclusion.
   — consolidated current checkpoint for completed whole-system phases,
   configured resident counts, verification, honest limits, Git state, and the
   exact Phase 6 resume point.
+- [Whole-System Phase 6A — Prerequisite and Source Readiness — August 30, 2026](SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md)
+  — enforces one typed readiness receipt across curriculum status, prepare,
+  teach, and authorization coverage while migrating completed groups without
+  replay or resident decisions.
 - [Whole-System Phase 6 — Ordered Education and World-Knowledge Expansion Map — August 29, 2026](../architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md)
-  — source-maps shared prerequisite and source readiness, instructional “why,”
-  correction ancestry, delayed ordinary-Chat use, and descriptive learning
-  evidence before production implementation or F2 Group 8 authorization.
+  — tracks completed Phase 6A and source-maps instructional “why,” correction
+  ancestry, delayed ordinary-Chat use, and descriptive learning evidence
+  before F2 Group 8 authorization.
 
 - [Whole-System Phase 5 — Reasoning, Answer Owners, and Domain Depth — August 29, 2026](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md)
   — matures typed answer owners, provisional prediction/hypothesis/

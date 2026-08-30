@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from typing import Any
+from typing import Any, Literal, TypedDict
 
 from .comprehension_integration import propose_comprehension_concept
 from .curriculum_f1_group3 import (
@@ -658,6 +658,273 @@ F1_LANGUAGE_MATH_GROUP: tuple[dict[str, Any], ...] = (
 )
 
 
+ReadinessState = Literal[
+    "ready",
+    "needs_prerequisite",
+    "source_review_required",
+    "authorization_required",
+    "complete",
+]
+
+
+class SourceAcceptanceReceipt(TypedDict):
+    status: Literal["accepted_for_bounded_teaching", "source_review_required"]
+    receipt_version: str
+    source_ids: list[str]
+    source_refs: list[str]
+    artifact_checksum_refs: list[str]
+    license_refs: list[str]
+    artifact_scope: str
+    license_scope: str
+    source_role: str
+    knowledge_class: str
+    freshness_class: str
+    dispute_context_flags: list[str]
+    exclusions: list[str]
+    original_language_reconstruction_feasible: bool
+    accepted_by: str
+    accepted_on: str
+    acceptance_basis: str
+    source_shelf_record: str
+    retrieval_record: str
+
+
+class CurriculumGroupManifest(TypedDict):
+    band: str
+    group_key: str
+    title: str
+    authorization_key: str
+    concept_keys: list[str]
+    ordered_predecessor_groups: list[str]
+    required_concept_keys: list[str]
+    source_acceptance_receipt: SourceAcceptanceReceipt
+    exception_route: str
+
+
+_SOURCE_SHELF_RECORD = "docs/education/SELENE_CURRICULUM_SOURCE_SHELF_20260719.md"
+_SOURCE_RETRIEVAL_RECORD = "local-data/curriculum_sources_20260719/manifest.lock.json"
+_READINESS_EXCEPTION_ROUTE = "Cocoon Teaching / Lessons"
+
+
+def _unique_strings(values: list[str] | tuple[str, ...]) -> list[str]:
+    return list(dict.fromkeys(str(value) for value in values if str(value)))
+
+
+def _lesson_source_refs(
+    lessons: tuple[dict[str, Any], ...],
+    fallback: list[str] | tuple[str, ...] = (),
+) -> list[str]:
+    refs = list(fallback)
+    for lesson in lessons:
+        refs.extend(str(value) for value in lesson.get("source_refs") or [])
+    return _unique_strings(refs)
+
+
+def _accepted_source_receipt(
+    *,
+    source_ids: list[str],
+    source_refs: list[str],
+    accepted_on: str,
+) -> SourceAcceptanceReceipt:
+    return {
+        "status": "accepted_for_bounded_teaching",
+        "receipt_version": "phase6a_source_acceptance_v1",
+        "source_ids": _unique_strings(source_ids),
+        "source_refs": _unique_strings(source_refs),
+        "artifact_checksum_refs": [ref for ref in _unique_strings(source_refs) if ref.startswith("sha256:")],
+        "license_refs": [ref for ref in _unique_strings(source_refs) if ref.startswith("license:")],
+        "artifact_scope": "only the source IDs and checksum-pinned artifacts named in this receipt",
+        "license_scope": "source-specific shelf terms, notices, attribution, and third-party exclusions remain controlling",
+        "source_role": "bounded_core_teaching_and_reference",
+        "knowledge_class": "public_academic_foundation",
+        "freshness_class": "durable_foundation_with_source_specific_limits",
+        "dispute_context_flags": [],
+        "exclusions": [
+            "source wording, classroom scripts, assessments, and media are not retained by default",
+            "third-party and source-specific license exclusions remain controlling",
+        ],
+        "original_language_reconstruction_feasible": True,
+        "accepted_by": "Aleks",
+        "accepted_on": accepted_on,
+        "acceptance_basis": "descriptive migration of an existing reviewed, source-bound curriculum group; not a new teaching decision",
+        "source_shelf_record": _SOURCE_SHELF_RECORD,
+        "retrieval_record": _SOURCE_RETRIEVAL_RECORD,
+    }
+
+
+_GROUP_DEFINITIONS: tuple[dict[str, Any], ...] = (
+    {"band": "F1", "group_key": "f1_science_inquiry_group_1", "title": "F1 science and inquiry foundations — group 1", "authorization_key": F1_AUTHORIZATION_KEY, "lessons": FOUNDATION_GROUP, "scope": F1_SCOPE, "predecessors": (), "source_refs": SOURCE_REFS, "accepted_on": "2026-07-19"},
+    {"band": "F1", "group_key": F1_LANGUAGE_MATH_GROUP_KEY, "title": "F1 language and number foundations — group 2", "authorization_key": F1_LANGUAGE_MATH_AUTHORIZATION_KEY, "lessons": F1_LANGUAGE_MATH_GROUP, "scope": F1_LANGUAGE_MATH_SCOPE, "predecessors": ("f1_science_inquiry_group_1",), "accepted_on": "2026-07-19"},
+    {"band": "F1", "group_key": F1_GROUP3_KEY, "title": "F1 operations, data, measurement, and time — group 3", "authorization_key": F1_GROUP3_AUTHORIZATION_KEY, "lessons": F1_GROUP3_LESSONS, "scope": F1_GROUP3_SCOPE, "predecessors": (F1_LANGUAGE_MATH_GROUP_KEY,), "accepted_on": "2026-07-19"},
+    {"band": "F1", "group_key": F1_GROUP4_KEY, "title": "F1 geometry, equal shares, and algorithms — group 4", "authorization_key": F1_GROUP4_AUTHORIZATION_KEY, "lessons": F1_GROUP4_LESSONS, "scope": F1_GROUP4_SCOPE, "predecessors": (F1_LANGUAGE_MATH_GROUP_KEY,), "accepted_on": "2026-07-19"},
+    {"band": "F1", "group_key": F1_GROUP5_KEY, "title": "F1 equal groups, data interpretation, and money — group 5", "authorization_key": F1_GROUP5_AUTHORIZATION_KEY, "lessons": F1_GROUP5_LESSONS, "scope": F1_GROUP5_SCOPE, "predecessors": (F1_GROUP3_KEY, F1_GROUP4_KEY), "accepted_on": "2026-07-20"},
+    {"band": "F1", "group_key": F1_GROUP6_KEY, "title": "F1 mass and capacity foundations — group 6", "authorization_key": F1_GROUP6_AUTHORIZATION_KEY, "lessons": F1_GROUP6_LESSONS, "scope": F1_GROUP6_SCOPE, "predecessors": (F1_GROUP3_KEY,), "accepted_on": "2026-07-29"},
+    {"band": "F1", "group_key": F1_GROUP7_KEY, "title": "F1 community, rules, and civic reasoning — group 7", "authorization_key": F1_GROUP7_AUTHORIZATION_KEY, "lessons": F1_GROUP7_LESSONS, "scope": F1_GROUP7_SCOPE, "predecessors": (F1_LANGUAGE_MATH_GROUP_KEY,), "accepted_on": "2026-07-30"},
+    {"band": "F1", "group_key": F1_GROUP8_KEY, "title": "F1 history and evidence foundations — group 8", "authorization_key": F1_GROUP8_AUTHORIZATION_KEY, "lessons": F1_GROUP8_LESSONS, "scope": F1_GROUP8_SCOPE, "predecessors": ("f1_science_inquiry_group_1", F1_GROUP7_KEY), "accepted_on": "2026-08-03"},
+    {"band": "F1", "group_key": F1_GROUP9_KEY, "title": "F1 materials, change, and motion foundations — group 9", "authorization_key": F1_GROUP9_AUTHORIZATION_KEY, "lessons": F1_GROUP9_LESSONS, "scope": F1_GROUP9_SCOPE, "predecessors": ("f1_science_inquiry_group_1", F1_GROUP3_KEY), "accepted_on": "2026-08-08"},
+    {"band": "F1", "group_key": F1_GROUP10_KEY, "title": "F1 pushes, pulls, and forces foundations — group 10", "authorization_key": F1_GROUP10_AUTHORIZATION_KEY, "lessons": F1_GROUP10_LESSONS, "scope": F1_GROUP10_SCOPE, "predecessors": (F1_GROUP9_KEY,), "accepted_on": "2026-08-08"},
+    {"band": "F1", "group_key": F1_GROUP11_KEY, "title": "F1 light and sound foundations — group 11", "authorization_key": F1_GROUP11_AUTHORIZATION_KEY, "lessons": F1_GROUP11_LESSONS, "scope": F1_GROUP11_SCOPE, "predecessors": (F1_GROUP10_KEY,), "accepted_on": "2026-08-08"},
+    {"band": "F1", "group_key": F1_GROUP12_KEY, "title": "F1 simple machines and mechanical systems — group 12", "authorization_key": F1_GROUP12_AUTHORIZATION_KEY, "lessons": F1_GROUP12_LESSONS, "scope": F1_GROUP12_SCOPE, "predecessors": (F1_GROUP4_KEY, F1_GROUP9_KEY, F1_GROUP10_KEY, F1_GROUP11_KEY), "accepted_on": "2026-08-08"},
+    {"band": "F1", "group_key": F1_GROUP13_KEY, "title": "F1 living things, needs, parts, and survival — group 13", "authorization_key": F1_GROUP13_AUTHORIZATION_KEY, "lessons": F1_GROUP13_LESSONS, "scope": F1_GROUP13_SCOPE, "predecessors": ("f1_science_inquiry_group_1", F1_GROUP9_KEY), "accepted_on": "2026-08-08"},
+    {"band": "F1", "group_key": F1_GROUP14_KEY, "title": "F1 weather, seasons, Earth, Sun, Moon, and sky cycles — group 14", "authorization_key": F1_GROUP14_AUTHORIZATION_KEY, "lessons": F1_GROUP14_LESSONS, "scope": F1_GROUP14_SCOPE, "predecessors": ("f1_science_inquiry_group_1", F1_GROUP3_KEY), "accepted_on": "2026-08-08"},
+    {"band": "F1", "group_key": F1_GROUP15_KEY, "title": "F1 human body systems, care, and health evidence — group 15", "authorization_key": F1_GROUP15_AUTHORIZATION_KEY, "lessons": F1_GROUP15_LESSONS, "scope": F1_GROUP15_SCOPE, "predecessors": ("f1_science_inquiry_group_1", F1_GROUP13_KEY), "accepted_on": "2026-08-08"},
+    {"band": "F1", "group_key": F1_GROUP16_KEY, "title": "F1 helpful computers and cross-domain integration — group 16", "authorization_key": F1_GROUP16_AUTHORIZATION_KEY, "lessons": F1_GROUP16_LESSONS, "scope": F1_GROUP16_SCOPE, "predecessors": ("f1_science_inquiry_group_1", F1_GROUP4_KEY), "accepted_on": "2026-08-08"},
+    {"band": "F1", "group_key": F1_GROUP17_KEY, "title": "F1 text purpose and everyday economy closure bridge — group 17", "authorization_key": F1_GROUP17_AUTHORIZATION_KEY, "lessons": F1_GROUP17_LESSONS, "scope": F1_GROUP17_SCOPE, "predecessors": (F1_LANGUAGE_MATH_GROUP_KEY, F1_GROUP5_KEY, F1_GROUP7_KEY, F1_GROUP8_KEY), "accepted_on": "2026-08-08"},
+    {"band": "F2", "group_key": F2_GROUP1_KEY, "title": "F2 paragraph meaning and source-grounded communication — group 1", "authorization_key": F2_GROUP1_AUTHORIZATION_KEY, "lessons": F2_GROUP1_LESSONS, "scope": F2_GROUP1_SCOPE, "predecessors": (F1_LANGUAGE_MATH_GROUP_KEY, F1_GROUP8_KEY, F1_GROUP17_KEY), "accepted_on": "2026-08-11"},
+    {"band": "F2", "group_key": F2_GROUP2_KEY, "title": "F2 vocabulary structure and comparison — group 2", "authorization_key": F2_GROUP2_AUTHORIZATION_KEY, "lessons": F2_GROUP2_LESSONS, "scope": F2_GROUP2_SCOPE, "predecessors": (F2_GROUP1_KEY,), "accepted_on": "2026-08-11"},
+    {"band": "F2", "group_key": F2_GROUP3_KEY, "title": "F2 point of view and organized composition — group 3", "authorization_key": F2_GROUP3_AUTHORIZATION_KEY, "lessons": F2_GROUP3_LESSONS, "scope": F2_GROUP3_SCOPE, "predecessors": (F2_GROUP1_KEY, F2_GROUP2_KEY), "accepted_on": "2026-08-11"},
+    {"band": "F2", "group_key": F2_GROUP4_KEY, "title": "F2 multi-digit arithmetic and operation relationships — group 4", "authorization_key": F2_GROUP4_AUTHORIZATION_KEY, "lessons": F2_GROUP4_LESSONS, "scope": F2_GROUP4_SCOPE, "predecessors": (F1_GROUP3_KEY, F1_GROUP5_KEY), "accepted_on": "2026-08-11"},
+    {"band": "F2", "group_key": F2_GROUP5_KEY, "title": "F2 factors, multiples, divisibility, and operation order — group 5", "authorization_key": F2_GROUP5_AUTHORIZATION_KEY, "lessons": F2_GROUP5_LESSONS, "scope": F2_GROUP5_SCOPE, "predecessors": (F2_GROUP4_KEY,), "accepted_on": "2026-08-11"},
+    {"band": "F2", "group_key": F2_GROUP6_KEY, "title": "F2 fractions as numbers, equivalence, comparison, and composition — group 6", "authorization_key": F2_GROUP6_AUTHORIZATION_KEY, "lessons": F2_GROUP6_LESSONS, "scope": F2_GROUP6_SCOPE, "predecessors": (F1_GROUP4_KEY, F2_GROUP4_KEY, F2_GROUP5_KEY), "accepted_on": "2026-08-27"},
+    {"band": "F2", "group_key": F2_GROUP7A_KEY, "title": "F2 fraction-operation relationships — group 7A", "authorization_key": F2_GROUP7A_AUTHORIZATION_KEY, "lessons": F2_GROUP7A_LESSONS, "scope": F2_GROUP7A_SCOPE, "predecessors": (F2_GROUP6_KEY,), "accepted_on": "2026-08-27"},
+    {"band": "F2", "group_key": F2_GROUP7B_KEY, "title": "F2 decimals, place value, operations, and reasonableness — group 7B", "authorization_key": F2_GROUP7B_AUTHORIZATION_KEY, "lessons": F2_GROUP7B_LESSONS, "scope": F2_GROUP7B_SCOPE, "predecessors": (F2_GROUP7A_KEY,), "accepted_on": "2026-08-27"},
+    {"band": "CODING-1", "group_key": CODING_GROUP1_KEY, "title": "Coding computational thinking and code reading — group 1", "authorization_key": CODING_GROUP1_AUTHORIZATION_KEY, "lessons": CODING_GROUP1_LESSONS, "scope": CODING_GROUP1_SCOPE, "predecessors": (F1_GROUP4_KEY, F1_GROUP16_KEY), "accepted_on": "2026-08-13"},
+)
+
+_GROUP_DEFINITIONS_BY_KEY = {str(item["group_key"]): item for item in _GROUP_DEFINITIONS}
+
+
+def _build_group_manifests() -> dict[str, CurriculumGroupManifest]:
+    manifests: dict[str, CurriculumGroupManifest] = {}
+    for definition in _GROUP_DEFINITIONS:
+        predecessors = list(definition["predecessors"])
+        required_concept_keys = _unique_strings(
+            [
+                lesson["concept_key"]
+                for predecessor in predecessors
+                for lesson in _GROUP_DEFINITIONS_BY_KEY[predecessor]["lessons"]
+            ]
+        )
+        lessons = definition["lessons"]
+        source_refs = _lesson_source_refs(lessons, definition.get("source_refs") or ())
+        manifests[definition["group_key"]] = {
+            "band": definition["band"],
+            "group_key": definition["group_key"],
+            "title": definition["title"],
+            "authorization_key": definition["authorization_key"],
+            "concept_keys": [lesson["concept_key"] for lesson in lessons],
+            "ordered_predecessor_groups": predecessors,
+            "required_concept_keys": required_concept_keys,
+            "source_acceptance_receipt": _accepted_source_receipt(
+                source_ids=list(definition["scope"]["source_ids"]),
+                source_refs=source_refs,
+                accepted_on=definition["accepted_on"],
+            ),
+            "exception_route": _READINESS_EXCEPTION_ROUTE,
+        }
+    return manifests
+
+
+CURRICULUM_GROUP_MANIFESTS: dict[str, CurriculumGroupManifest] = _build_group_manifests()
+
+
+def _approved_concept_keys(conn: sqlite3.Connection, concept_keys: list[str]) -> set[str]:
+    if not concept_keys:
+        return set()
+    placeholders = ",".join("?" for _ in concept_keys)
+    rows = conn.execute(
+        f"SELECT concept_key FROM selene_comprehension_concepts WHERE concept_key IN ({placeholders}) AND state = 'approved_knowledge_resource'",
+        concept_keys,
+    ).fetchall()
+    return {str(row["concept_key"]) for row in rows}
+
+
+def curriculum_group_readiness(conn: sqlite3.Connection, group_key: str) -> dict[str, Any]:
+    manifest = CURRICULUM_GROUP_MANIFESTS.get(str(group_key))
+    if not manifest:
+        raise ValueError(f"curriculum group manifest not found: {group_key}")
+
+    concept_keys = list(manifest["concept_keys"])
+    approved_group_concepts = _approved_concept_keys(conn, concept_keys)
+    group_complete = bool(concept_keys) and len(approved_group_concepts) == len(concept_keys)
+
+    required_concept_keys = list(manifest["required_concept_keys"])
+    approved_prerequisites = _approved_concept_keys(conn, required_concept_keys)
+    unmet_concept_keys = [key for key in required_concept_keys if key not in approved_prerequisites]
+    unmet_predecessor_groups: list[str] = []
+    for predecessor_key in manifest["ordered_predecessor_groups"]:
+        predecessor = CURRICULUM_GROUP_MANIFESTS[predecessor_key]
+        if any(key not in approved_prerequisites for key in predecessor["concept_keys"]):
+            unmet_predecessor_groups.append(predecessor_key)
+
+    source_receipt = dict(manifest["source_acceptance_receipt"])
+    source_accepted = source_receipt.get("status") == "accepted_for_bounded_teaching"
+    authorization = _authorization_by_key(conn, manifest["authorization_key"])
+    authorization_active = bool(authorization and authorization.get("status") == "active")
+
+    if group_complete:
+        readiness: ReadinessState = "complete"
+    elif unmet_concept_keys:
+        readiness = "needs_prerequisite"
+    elif not source_accepted:
+        readiness = "source_review_required"
+    elif not authorization_active:
+        readiness = "authorization_required"
+    else:
+        readiness = "ready"
+
+    return {
+        "receipt_version": "phase6a_curriculum_group_readiness_v1",
+        "status": readiness,
+        "band": manifest["band"],
+        "group_key": manifest["group_key"],
+        "ordered_predecessor_groups": list(manifest["ordered_predecessor_groups"]),
+        "required_concept_keys": required_concept_keys,
+        "approved_prerequisite_concept_keys": [key for key in required_concept_keys if key in approved_prerequisites],
+        "unmet_predecessor_groups": unmet_predecessor_groups,
+        "unmet_concept_keys": unmet_concept_keys,
+        "group_concept_keys": concept_keys,
+        "approved_group_concept_keys": [key for key in concept_keys if key in approved_group_concepts],
+        "source_acceptance_receipt": source_receipt,
+        "unmet_source_ids": [] if source_accepted else list(source_receipt.get("source_ids") or []),
+        "authorization": {
+            "authorization_key": manifest["authorization_key"],
+            "status": authorization.get("status") if authorization else "not_recorded",
+            "authorization_id": authorization.get("id") if authorization else None,
+            "active": authorization_active,
+        },
+        "unmet_decision": (
+            None
+            if readiness in {"ready", "complete"}
+            else "complete_declared_prerequisites"
+            if readiness == "needs_prerequisite"
+            else "accept_exact_bounded_source_artifact"
+            if readiness == "source_review_required"
+            else "record_explicit_bounded_aleks_authorization"
+        ),
+        "exception_route": manifest["exception_route"],
+        "score": None,
+        "deadline": None,
+        "descriptive_migration_only": group_complete,
+        "replay_or_reteaching_performed": False,
+    }
+
+
+def _require_group_ready(
+    conn: sqlite3.Connection,
+    group_key: str,
+    *,
+    operation: str,
+) -> dict[str, Any]:
+    readiness = curriculum_group_readiness(conn, group_key)
+    if readiness["status"] in {"ready", "complete"}:
+        return readiness
+    details: list[str] = []
+    if readiness["unmet_predecessor_groups"]:
+        details.append("unmet groups=" + ",".join(readiness["unmet_predecessor_groups"]))
+    if readiness["unmet_concept_keys"]:
+        details.append("unmet concepts=" + ",".join(readiness["unmet_concept_keys"]))
+    if readiness["unmet_source_ids"]:
+        details.append("unaccepted sources=" + ",".join(readiness["unmet_source_ids"]))
+    if readiness["unmet_decision"]:
+        details.append("decision=" + str(readiness["unmet_decision"]))
+    raise ValueError(
+        f"cannot {operation} curriculum group {group_key}: {readiness['status']}; "
+        + "; ".join(details)
+        + f"; review in {readiness['exception_route']}"
+    )
+
+
 def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
     row = conn.execute(
         """
@@ -827,6 +1094,14 @@ def curriculum_authorization_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "authorization_count": int(row["total"] or 0),
             "active_authorization_count": int(row["active"] or 0),
             "audit_event_count": event_count,
+            "readiness_receipt_version": "phase6a_curriculum_group_readiness_v1",
+            "readiness_states": [
+                "ready",
+                "needs_prerequisite",
+                "source_review_required",
+                "authorization_required",
+                "complete",
+            ],
             "first_group": first_group,
             "second_group": second_group,
             "third_group": third_group,
@@ -1194,59 +1469,16 @@ def prepare_f1_foundation_group(
     conn: sqlite3.Connection,
     payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    payload = payload or {}
-    _reject_authority_change(payload)
-    created: list[dict[str, Any]] = []
-    existing: list[dict[str, Any]] = []
-    for order, lesson in enumerate(FOUNDATION_GROUP, start=1):
-        result = propose_comprehension_concept(
-            conn,
-            {
-                "concept_key": lesson["concept_key"],
-                "title": lesson["title"],
-                "domain": lesson["domain"],
-                "material": lesson["material"],
-                "principles": lesson["principles"],
-                "relationships": lesson["relationships"],
-                "examples": lesson["examples"],
-                "counterexamples": lesson["counterexamples"],
-                "limits": lesson["limits"],
-                "source_refs": SOURCE_REFS,
-                "confidence": "developing",
-                "teaching_source_type": "bounded_public_academic_curriculum",
-                "source_metadata": {
-                    "curriculum_band": "F1",
-                    "curriculum_families": ["SCI-0", "SCI-1", "RES-1", "ELA-2", "ENG-1"],
-                    "curriculum_group_key": "f1_science_inquiry_group_1",
-                    "curriculum_order": order,
-                    "source_ids": F1_SCOPE["source_ids"],
-                    "knowledge_class": "public_academic_foundation",
-                    "exception_flags": [],
-                    "license_notes_preserved": True,
-                    "source_images_or_media_used": False,
-                },
-            },
-        )
-        summary = {
-            "concept_id": result["item"]["id"],
-            "concept_key": result["item"]["concept_key"],
-            "title": result["item"]["title"],
-            "curriculum_order": order,
-        }
-        (created if result.get("created") else existing).append(summary)
-    return _with_guards(
-        {
-            "status": "f1_foundation_group_prepared",
-            "group_key": "f1_science_inquiry_group_1",
-            "created_count": len(created),
-            "existing_count": len(existing),
-            "created": created,
-            "existing": existing,
-            "retained_count": 0,
-            "chat_use_before_lifecycle_completion": False,
-            "review_destination": "Cocoon Teaching / Lessons",
-            "provenance_boundary": PROVENANCE_BOUNDARY,
-        }
+    return _prepare_defined_group(
+        conn,
+        payload or {},
+        lessons=FOUNDATION_GROUP,
+        group_key="f1_science_inquiry_group_1",
+        curriculum_band="F1",
+        default_source_refs=SOURCE_REFS,
+        default_families=F1_SCOPE["families"],
+        default_source_ids=F1_SCOPE["source_ids"],
+        prepared_status="f1_foundation_group_prepared",
     )
 
 
@@ -1254,125 +1486,19 @@ def teach_f1_foundation_group(
     conn: sqlite3.Connection,
     payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    payload = payload or {}
-    _reject_authority_change(payload)
-    authorization = _authorization_by_key(conn, F1_AUTHORIZATION_KEY)
-    if not authorization or authorization["status"] != "active":
-        raise ValueError("activate the bounded F1 curriculum authorization before teaching this group")
-    prepared = prepare_f1_foundation_group(conn, payload)
-    retained: list[dict[str, Any]] = []
-    already_retained: list[dict[str, Any]] = []
-    held: list[dict[str, Any]] = []
-    for lesson in FOUNDATION_GROUP:
-        concept = conn.execute(
-            "SELECT * FROM selene_comprehension_concepts WHERE concept_key = ?",
-            (lesson["concept_key"],),
-        ).fetchone()
-        if not concept:
-            held.append({"concept_key": lesson["concept_key"], "reason": "candidate_missing_after_prepare"})
-            continue
-        concept_id = int(concept["id"])
-        if concept["state"] == "approved_knowledge_resource":
-            already_retained.append({"concept_id": concept_id, "concept_key": lesson["concept_key"], "title": lesson["title"]})
-            continue
-        lifecycle = conn.execute("SELECT * FROM selene_teaching_lifecycles WHERE concept_id = ?", (concept_id,)).fetchone()
-        if not lifecycle or lifecycle["acquire_status"] != "complete":
-            acquire_teaching_item(
-                conn,
-                {
-                    "concept_id": concept_id,
-                    "vocabulary": lesson["vocabulary"],
-                    "uncertainties": lesson["limits"],
-                    "near_concept_distinctions": lesson["near_concept_distinctions"],
-                },
-            )
-        lifecycle = conn.execute("SELECT * FROM selene_teaching_lifecycles WHERE concept_id = ?", (concept_id,)).fetchone()
-        if lifecycle["integrate_status"] != "complete":
-            integrate_teaching_item(
-                conn,
-                {
-                    "concept_id": concept_id,
-                    "scope_of_application": lesson["scope_of_application"],
-                    "contradiction_classification": "none_identified",
-                    "unresolved_questions": lesson["unresolved_questions"],
-                    "integration_confidence": "bounded",
-                },
-            )
-        lifecycle = conn.execute("SELECT * FROM selene_teaching_lifecycles WHERE concept_id = ?", (concept_id,)).fetchone()
-        if lifecycle["express_status"] != "complete":
-            express_teaching_item(
-                conn,
-                {
-                    "concept_id": concept_id,
-                    "explanation": lesson["explanation"],
-                    "distinct_examples": [lesson["application"]],
-                    "analogies": lesson["analogy"],
-                    "questions": lesson["questions"],
-                    "comparisons": lesson["comparisons"],
-                    "conversational_participation": lesson["participation"],
-                    "limits": lesson["limits"],
-                    "counterexamples": lesson["counterexamples"],
-                    "correction_response": lesson["correction_response"],
-                    "source_alignment": True,
-                },
-            )
-        authorization_decision = evaluate_curriculum_coverage(conn, {"concept_id": concept_id})
-        if authorization_decision["decision"] != "covered_by_active_authorization":
-            held.append(
-                {
-                    "concept_id": concept_id,
-                    "concept_key": lesson["concept_key"],
-                    "title": lesson["title"],
-                    "reason": "exception_review_required",
-                    "authorization_decision": authorization_decision,
-                }
-            )
-            _store_event(
-                conn,
-                authorization["id"],
-                "candidate_held_for_exception_review",
-                authorization_decision,
-                concept_id=concept_id,
-                lifecycle_id=authorization_decision.get("lifecycle_id"),
-            )
-            continue
-        result = approve_teaching_lifecycle_under_authorization(
-            conn,
-            {"concept_id": concept_id},
-            authorization_decision,
-        )
-        retained.append(
-            {
-                "concept_id": concept_id,
-                "concept_key": lesson["concept_key"],
-                "title": lesson["title"],
-                "approval_status": result["item"]["approval_status"],
-                "chat_use_permission": result["item"]["chat_use_permission"],
-            }
-        )
-        _store_event(
-            conn,
-            authorization["id"],
-            "knowledge_retained_under_authorization",
-            authorization_decision,
-            concept_id=concept_id,
-            lifecycle_id=result["item"]["id"],
-        )
-    return _with_guards(
-        {
-            "status": "f1_foundation_group_taught" if not held else "f1_foundation_group_partially_held",
-            "group_key": "f1_science_inquiry_group_1",
-            "prepared": prepared,
-            "retained_count": len(retained),
-            "already_retained_count": len(already_retained),
-            "held_count": len(held),
-            "retained": retained,
-            "already_retained": already_retained,
-            "held": held,
-            "authorization": authorization,
-            "review_destination": "Cocoon Teaching / Lessons",
-            "provenance_boundary": PROVENANCE_BOUNDARY,
-        }
+    return _teach_defined_group(
+        conn,
+        payload or {},
+        lessons=FOUNDATION_GROUP,
+        group_key="f1_science_inquiry_group_1",
+        authorization_key=F1_AUTHORIZATION_KEY,
+        curriculum_band="F1",
+        default_source_refs=SOURCE_REFS,
+        default_families=F1_SCOPE["families"],
+        default_source_ids=F1_SCOPE["source_ids"],
+        prepared_status="f1_foundation_group_prepared",
+        taught_status="f1_foundation_group_taught",
+        held_status="f1_foundation_group_partially_held",
     )
 
 
@@ -1936,6 +2062,8 @@ def evaluate_curriculum_coverage(
     concept = dict(concept_row)
     concept_payload = _loads(concept.get("payload_json"), {})
     metadata = concept_payload.get("source_metadata") if isinstance(concept_payload.get("source_metadata"), dict) else {}
+    group_key = str(metadata.get("curriculum_group_key") or "")
+    readiness = curriculum_group_readiness(conn, group_key) if group_key in CURRICULUM_GROUP_MANIFESTS else None
     lifecycle_row = conn.execute("SELECT * FROM selene_teaching_lifecycles WHERE concept_id = ?", (concept_id,)).fetchone()
     lifecycle = dict(lifecycle_row) if lifecycle_row else {}
     exceptions: list[str] = []
@@ -1956,6 +2084,10 @@ def evaluate_curriculum_coverage(
         exceptions.append("lifecycle_or_understanding_incomplete")
     if express_snapshot and express_snapshot.get("source_parroting_check", {}).get("passed") is not True:
         exceptions.append("source_phrase_copying")
+    if readiness and readiness["status"] == "needs_prerequisite":
+        exceptions.append("curriculum_prerequisite_incomplete")
+    if readiness and readiness["status"] == "source_review_required":
+        exceptions.append("curriculum_source_review_required")
 
     authorizations = conn.execute("SELECT * FROM selene_curriculum_authorizations WHERE status = 'active' ORDER BY id ASC").fetchall()
     matching: dict[str, Any] | None = None
@@ -1966,7 +2098,6 @@ def evaluate_curriculum_coverage(
         families = {str(value) for value in metadata.get("curriculum_families") or []}
         source_ids = {str(value) for value in metadata.get("source_ids") or []}
         knowledge_class = str(metadata.get("knowledge_class") or "")
-        group_key = str(metadata.get("curriculum_group_key") or "")
         if (
             band in scope.get("bands", [])
             and families.issubset(set(scope.get("families", [])))
@@ -1989,6 +2120,7 @@ def evaluate_curriculum_coverage(
             "concept_id": concept_id,
             "lifecycle_id": int(lifecycle.get("id") or 0) or None,
             "curriculum_metadata": metadata,
+            "readiness": readiness,
             "exceptions": exceptions,
             "individual_item_approval_required": bool(exceptions),
             "review_destination": "Cocoon Teaching / Lessons" if exceptions else "authorization audit ledger",
@@ -2039,10 +2171,19 @@ def _activate_authorization_record(
     if not authorization:
         raise ValueError("curriculum authorization could not be recorded")
     _store_event(conn, authorization["id"], "authorization_activated", {"authorization": authorization})
+    manifest = next(
+        (
+            item
+            for item in CURRICULUM_GROUP_MANIFESTS.values()
+            if item["authorization_key"] == authorization_key
+        ),
+        None,
+    )
     return _with_guards(
         {
             "status": "curriculum_authorization_active",
             "item": authorization,
+            "readiness": curriculum_group_readiness(conn, manifest["group_key"]) if manifest else None,
             "review_destination": "Cocoon Teaching / Lessons",
             "provenance_boundary": PROVENANCE_BOUNDARY,
         }
@@ -2056,10 +2197,45 @@ def _prepare_defined_group(
     lessons: tuple[dict[str, Any], ...],
     group_key: str,
     curriculum_band: str = "F1",
+    default_source_refs: list[str] | tuple[str, ...] = (),
+    default_families: list[str] | tuple[str, ...] = (),
+    default_source_ids: list[str] | tuple[str, ...] = (),
+    prepared_status: str = "curriculum_foundation_group_prepared",
 ) -> dict[str, Any]:
     _reject_authority_change(payload)
+    readiness_before = _require_group_ready(conn, group_key, operation="prepare")
     created: list[dict[str, Any]] = []
     existing: list[dict[str, Any]] = []
+    if readiness_before["status"] == "complete":
+        for order, lesson in enumerate(lessons, start=1):
+            row = conn.execute(
+                "SELECT id, concept_key, title FROM selene_comprehension_concepts WHERE concept_key = ?",
+                (lesson["concept_key"],),
+            ).fetchone()
+            if row:
+                existing.append(
+                    {
+                        "concept_id": int(row["id"]),
+                        "concept_key": row["concept_key"],
+                        "title": row["title"],
+                        "curriculum_order": order,
+                    }
+                )
+        return _with_guards(
+            {
+                "status": prepared_status,
+                "group_key": group_key,
+                "created_count": 0,
+                "existing_count": len(existing),
+                "created": [],
+                "existing": existing,
+                "retained_count": len(existing),
+                "readiness": readiness_before,
+                "chat_use_before_lifecycle_completion": False,
+                "review_destination": "Cocoon Teaching / Lessons",
+                "provenance_boundary": PROVENANCE_BOUNDARY,
+            }
+        )
     for order, lesson in enumerate(lessons, start=1):
         result = propose_comprehension_concept(
             conn,
@@ -2073,15 +2249,15 @@ def _prepare_defined_group(
                 "examples": lesson["examples"],
                 "counterexamples": lesson["counterexamples"],
                 "limits": lesson["limits"],
-                "source_refs": lesson["source_refs"],
+                "source_refs": lesson.get("source_refs") or list(default_source_refs),
                 "confidence": "developing",
                 "teaching_source_type": "bounded_public_academic_curriculum",
                 "source_metadata": {
                     "curriculum_band": curriculum_band,
-                    "curriculum_families": lesson["families"],
+                    "curriculum_families": lesson.get("families") or list(default_families),
                     "curriculum_group_key": group_key,
                     "curriculum_order": order,
-                    "source_ids": lesson["source_ids"],
+                    "source_ids": lesson.get("source_ids") or list(default_source_ids),
                     "knowledge_class": "public_academic_foundation",
                     "exception_flags": [],
                     "license_notes_preserved": True,
@@ -2098,13 +2274,14 @@ def _prepare_defined_group(
         (created if result.get("created") else existing).append(summary)
     return _with_guards(
         {
-            "status": "curriculum_foundation_group_prepared",
+            "status": prepared_status,
             "group_key": group_key,
             "created_count": len(created),
             "existing_count": len(existing),
             "created": created,
             "existing": existing,
             "retained_count": 0,
+            "readiness": curriculum_group_readiness(conn, group_key),
             "chat_use_before_lifecycle_completion": False,
             "review_destination": "Cocoon Teaching / Lessons",
             "provenance_boundary": PROVENANCE_BOUNDARY,
@@ -2120,19 +2297,30 @@ def _teach_defined_group(
     group_key: str,
     authorization_key: str,
     curriculum_band: str = "F1",
+    default_source_refs: list[str] | tuple[str, ...] = (),
+    default_families: list[str] | tuple[str, ...] = (),
+    default_source_ids: list[str] | tuple[str, ...] = (),
+    prepared_status: str = "curriculum_foundation_group_prepared",
+    taught_status: str = "curriculum_foundation_group_taught",
+    held_status: str = "curriculum_foundation_group_partially_held",
 ) -> dict[str, Any]:
     _reject_authority_change(payload)
+    readiness_before = _require_group_ready(conn, group_key, operation="teach")
     authorization = _authorization_by_key(conn, authorization_key)
-    if not authorization or authorization["status"] != "active":
-        raise ValueError(
-            f"activate this bounded {curriculum_band} curriculum authorization before teaching the group"
-        )
+    if readiness_before["status"] != "complete" and (
+        not authorization or authorization["status"] != "active"
+    ):
+        raise ValueError(f"cannot teach curriculum group {group_key}: authorization_required")
     prepared = _prepare_defined_group(
         conn,
         payload,
         lessons=lessons,
         group_key=group_key,
         curriculum_band=curriculum_band,
+        default_source_refs=default_source_refs,
+        default_families=default_families,
+        default_source_ids=default_source_ids,
+        prepared_status=prepared_status,
     )
     retained: list[dict[str, Any]] = []
     already_retained: list[dict[str, Any]] = []
@@ -2234,7 +2422,7 @@ def _teach_defined_group(
         )
     return _with_guards(
         {
-            "status": "curriculum_foundation_group_taught" if not held else "curriculum_foundation_group_partially_held",
+            "status": taught_status if not held else held_status,
             "group_key": group_key,
             "prepared": prepared,
             "retained_count": len(retained),
@@ -2244,6 +2432,7 @@ def _teach_defined_group(
             "already_retained": already_retained,
             "held": held,
             "authorization": authorization,
+            "readiness": curriculum_group_readiness(conn, group_key),
             "review_destination": "Cocoon Teaching / Lessons",
             "provenance_boundary": PROVENANCE_BOUNDARY,
         }
@@ -2271,6 +2460,7 @@ def _group_progress(
             concept_keys,
         ).fetchone()[0]
     )
+    manifest = CURRICULUM_GROUP_MANIFESTS[group_key]
     return {
         "group_key": group_key,
         "title": title,
@@ -2278,6 +2468,16 @@ def _group_progress(
         "prepared_count": prepared,
         "retained_count": retained,
         "source_ids": source_ids,
+        "manifest": {
+            "band": manifest["band"],
+            "group_key": manifest["group_key"],
+            "authorization_key": manifest["authorization_key"],
+            "ordered_predecessor_groups": list(manifest["ordered_predecessor_groups"]),
+            "required_concept_keys": list(manifest["required_concept_keys"]),
+            "source_acceptance_receipt": dict(manifest["source_acceptance_receipt"]),
+            "exception_route": manifest["exception_route"],
+        },
+        "readiness": curriculum_group_readiness(conn, group_key),
     }
 
 

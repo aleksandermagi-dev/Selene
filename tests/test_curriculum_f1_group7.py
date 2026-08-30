@@ -10,11 +10,13 @@ from selene.curriculum_f1_group7 import AUTHORIZATION_KEY, GROUP_KEY, LESSONS, S
 from selene.db import connect, init_db
 from selene.module_router import route_request
 from selene.sidecar import SeleneHandler, SeleneServer
+from tests.curriculum_test_support import group_concept_rows, satisfy_group_prerequisites
 
 
 def _conn(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)
+    satisfy_group_prerequisites(conn, GROUP_KEY)
     return conn
 
 
@@ -97,13 +99,12 @@ def test_group7_preserves_people_rules_law_and_fairness_distinctions():
 
 def test_group7_preparation_is_reviewable_and_non_retaining(tmp_path):
     conn = _conn(tmp_path)
+    _authorize(conn)
 
     result = route_request(
         conn, "curriculum.foundation.prepare_f1_community_rules", {}
     )["result"]
-    rows = conn.execute(
-        "SELECT * FROM selene_comprehension_concepts ORDER BY id"
-    ).fetchall()
+    rows = group_concept_rows(conn, GROUP_KEY)
 
     assert result["created_count"] == 6
     assert result["retained_count"] == 0
@@ -125,16 +126,11 @@ def test_group7_requires_its_own_explicit_authorization(tmp_path):
     conn = _conn(tmp_path)
 
     with pytest.raises(
-        ValueError, match="activate this bounded F1 curriculum authorization"
+        ValueError, match="authorization_required"
     ):
         route_request(conn, "curriculum.foundation.teach_f1_community_rules", {})
 
-    assert (
-        conn.execute(
-            "SELECT COUNT(*) FROM selene_comprehension_concepts"
-        ).fetchone()[0]
-        == 0
-    )
+    assert group_concept_rows(conn, GROUP_KEY) == []
 
 
 def test_group7_completes_lifecycle_retains_and_is_idempotent(tmp_path):
@@ -194,6 +190,7 @@ def test_group7_http_activation_and_preparation_routes_are_available(tmp_path):
     server = SeleneServer(
         ("127.0.0.1", 0), SeleneHandler, tmp_path / "sidecar.sqlite3"
     )
+    satisfy_group_prerequisites(server.conn, GROUP_KEY)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:

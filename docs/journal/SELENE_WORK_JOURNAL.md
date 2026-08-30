@@ -3220,6 +3220,53 @@ or remote Git push occurred. The hackathon workflow log remains excluded.
 readiness tests. F2 Group 8 remains blocked on Aleks's later explicit exact-
 source selection.
 
+### 2026-08-30 — Curriculum order becomes a shared runtime gate
+
+**Starting question:** Can curriculum preparation, teaching, progress, and
+authorization coverage share one honest prerequisite/source decision without
+replaying completed resident teaching or turning authorization into automatic
+truth?
+
+**Decision:** Add one typed group manifest and one computed readiness receipt
+inside the existing Curriculum Authorization owner. Let approved concept state
+establish completion, require exact predecessor concepts, accepted bounded
+sources, and active authorization before new candidate text, and keep readiness
+descriptive rather than graded.
+
+**Work:** Declared manifests for all 26 implemented F1, F2, and Coding groups;
+added `ready`, `needs_prerequisite`, `source_review_required`,
+`authorization_required`, and `complete`; connected the receipt to status,
+activation visibility, prepare, teach, and coverage; made completed-group
+handling idempotent and replay-free; and updated isolated curriculum tests to
+use disposable prerequisite fixtures.
+
+**Why:** The defect was one missing shared gate, not twenty-six route-specific
+mistakes. Repairing the common owner prevents an active authorization from
+hiding a missing foundation or an unaccepted source while preserving the
+existing teaching lifecycle and review authority.
+
+**Evidence:** 140 curriculum authorization, F1, F2, Coding, and Phase 6A tests
+passed; 43 teaching, comprehension, maturity, runtime-truth, and public checks
+passed. A disposable resident copy reported all 26 implemented groups complete
+across the existing 152 curriculum-authorized concepts without replay. The
+frontend remained 491.33 kB (gzip 109.19 kB), with no Vite warning and lazy
+Study workspaces.
+
+**What changed in our understanding:** Authorization, source acceptance, and
+prerequisite completion are separate facts. A valid authorization can exist
+while a group still honestly says `needs_prerequisite`; completed historical
+groups can remain complete without reconstructing or repeating their teaching.
+
+**Boundaries preserved:** No resident teaching or authorization decision,
+Memory, Study, Dream, affect, identity, personality, Vys, law, governance,
+training, autonomy, external action, package, or installation changed. The 24
+Dream reflections and the one unfinished teaching lifecycle remain for Aleks.
+F2 Group 8 remains absent, unprepared, and unauthorized.
+
+**Next:** Phase 6B — add typed instructional source roles and an
+instructional-why receipt to the existing lesson and Teaching Lifecycle
+snapshots while preserving non-forced learning states.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

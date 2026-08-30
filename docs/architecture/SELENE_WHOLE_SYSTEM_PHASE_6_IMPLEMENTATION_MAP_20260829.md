@@ -2,7 +2,7 @@
 
 Date: 2026-08-29
 
-Status: source-mapped; production implementation pending
+Status: Phase 6A complete on 2026-08-30; Phase 6B pending
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -192,6 +192,11 @@ must not silently teach the group.
 
 ### Phase 6A — Prerequisite and source-readiness closure
 
+Status: **complete for current scope (2026-08-30)**
+
+Evidence:
+[Phase 6A Prerequisite and Source Readiness](../evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md)
+
 - define a typed group manifest inside the existing curriculum owner with
   band, group key, ordered predecessor groups, required concept keys, source
   acceptance receipt, and exception route;
@@ -310,8 +315,9 @@ Phase 6 must keep both provenance integrity and bundle size visible.
 
 ## Resume Point
 
-Begin Phase 6A in production code. First add the shared prerequisite and
-source-readiness receipt using synthetic tests and migration-safe descriptive
-state for existing groups. Do not create F2 Group 8 or activate a new resident
-authorization until its exact source artifact and license have been selected
-and explicitly approved by Aleks.
+Begin Phase 6B in production code. Extend the existing lesson and Teaching
+Lifecycle snapshots with typed source roles and an instructional-why receipt,
+preserving non-forced learning states and every current care boundary. Do not
+create F2 Group 8 or activate a new resident authorization until its exact
+source artifact and license have been selected and explicitly approved by
+Aleks.

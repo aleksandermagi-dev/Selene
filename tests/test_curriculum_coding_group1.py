@@ -8,6 +8,7 @@ from selene.curriculum_coding_group1 import AUTHORIZATION_KEY, GROUP_KEY, LESSON
 from selene.db import connect, init_db
 from selene.local_code_inspection import inspect_local_code, local_code_inspection_status
 from selene.module_router import route_request
+from tests.curriculum_test_support import group_concept_rows, satisfy_group_prerequisites
 
 
 ROUTE_STEM = "coding_computational_thinking_code_reading"
@@ -16,6 +17,7 @@ ROUTE_STEM = "coding_computational_thinking_code_reading"
 def _conn(tmp_path):
     conn = connect(tmp_path / "selene.sqlite3")
     init_db(conn)
+    satisfy_group_prerequisites(conn, GROUP_KEY)
     return conn
 
 
@@ -80,8 +82,9 @@ def test_coding_group1_teaches_reasoning_and_reading_not_execution_authority():
 
 def test_coding_group1_prepare_is_review_only_and_teach_requires_explicit_authorization(tmp_path):
     conn = _conn(tmp_path)
+    _authorize(conn)
     prepared = route_request(conn, f"curriculum.foundation.prepare_{ROUTE_STEM}", {})["result"]
-    rows = conn.execute("SELECT * FROM selene_comprehension_concepts ORDER BY id").fetchall()
+    rows = group_concept_rows(conn, GROUP_KEY)
 
     assert prepared["created_count"] == 5
     assert prepared["retained_count"] == 0
@@ -91,7 +94,7 @@ def test_coding_group1_prepare_is_review_only_and_teach_requires_explicit_author
     _locked(prepared)
 
     unauthorized = _conn(tmp_path / "unauthorized")
-    with pytest.raises(ValueError, match="activate this bounded CODING-1 curriculum authorization"):
+    with pytest.raises(ValueError, match="authorization_required"):
         route_request(unauthorized, f"curriculum.foundation.teach_{ROUTE_STEM}", {})
 
 
