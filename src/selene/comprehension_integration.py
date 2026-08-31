@@ -118,23 +118,30 @@ def comprehension_status(conn: sqlite3.Connection) -> dict[str, Any]:
         ).fetchone()[0]
     )
     approved = int(row["approved"] or 0)
+    correction_descendant_count = int(
+        conn.execute(
+            "SELECT COUNT(*) FROM selene_comprehension_concepts WHERE parent_concept_id IS NOT NULL"
+        ).fetchone()[0]
+    )
     return _with_guards(
         {
             "status": "comprehension_integration_ready",
-            "version": "v1_guided_understanding",
+            "version": "phase_6c_reviewed_correction_lineage",
             "organ_name": "Comprehension and Integration Organ",
             "method": "teach_reconstruct_discuss_apply_challenge_correct_generalize_express",
             "concept_count": int(row["total"] or 0),
             "approved_knowledge_count": approved,
             "tending_count": int(row["tending"] or 0),
             "reopened_count": int(row["reopened"] or 0),
+            "correction_descendant_count": correction_descendant_count,
+            "correction_lineage_rule": "An approved concept reopens through one source-attributed descendant; ordinary Chat uses no lineage node until one reviewed descendant becomes the sole active winner.",
             "eligible_teaching_packet_count": eligible_teaching_packets,
             "prepared_teaching_packet_count": prepared_teaching_packets,
             "run_count": run_count,
             "latest_run": _decode_run(latest) if latest else None,
             "chat_knowledge_available": approved > 0,
             "retention_rule": "A taught concept remains a candidate until understanding evidence and either a bounded Aleks curriculum authorization or an explicit Aleks exception decision are present.",
-            "reopening_rule": "Fluent or familiar knowledge may be reopened when contradiction, correction, or anomaly appears.",
+            "reopening_rule": "Fluent or familiar knowledge may be reopened through a preserved correction descendant when contradiction, correction, or anomaly appears.",
             "project_law": "Knowledge expands what Selene can understand and discuss; it does not redefine Selene.",
             "review_destination": "Cocoon Teaching / Lessons",
             "review_status": "status_only",
@@ -587,8 +594,19 @@ def decide_comprehension_concept(
     concept = _concept_row(conn, concept_id)
     if not concept:
         raise ValueError("comprehension concept not found")
+    if action == "reopen_for_revision":
+        return _reopen_comprehension_concept(conn, concept, payload)
     concept_payload = concept.get("payload") if isinstance(concept.get("payload"), dict) else {}
+    parent_concept_id = int(concept.get("parent_concept_id") or 0)
     if action == "approve_knowledge":
+        if concept.get("state") in {"superseded", "rejected"}:
+            raise ValueError("inactive comprehension records cannot be approved")
+        open_child = conn.execute(
+            "SELECT id FROM selene_comprehension_concepts WHERE parent_concept_id = ? LIMIT 1",
+            (concept_id,),
+        ).fetchone()
+        if concept.get("state") == "reopened_for_revision" or open_child:
+            raise ValueError("a historical reopened parent cannot be reapproved; review its correction descendant")
         latest = conn.execute(
             """
             SELECT result_json FROM selene_comprehension_runs
@@ -600,7 +618,7 @@ def decide_comprehension_concept(
         evidence = _loads(latest["result_json"] if latest else "", {})
         if evidence.get("understanding_evidence_sufficient") is not True:
             raise ValueError("knowledge approval requires source-linked understanding evidence first")
-        if concept_payload.get("knowledge_class") in {
+        if parent_concept_id or concept_payload.get("knowledge_class") in {
             "public_academic_foundation",
             "time_sensitive_current_claim",
         }:
@@ -613,7 +631,7 @@ def decide_comprehension_concept(
                 for stage in ("acquire", "integrate", "express")
             ):
                 raise ValueError(
-                    "public-academic and current-claim retention requires complete Acquire, Integrate, and Express"
+                    "correction, public-academic, and current-claim retention requires complete Acquire, Integrate, and Express"
                 )
     state, review_status, chat_permission = DECISIONS[action]
     current_fact_present = _current_fact_present(concept_payload)
@@ -624,16 +642,70 @@ def decide_comprehension_concept(
         retention_state = "retained_reviewed_current_claim"
     if state in {"superseded", "rejected"}:
         retention_state = "inactive_knowledge_record"
+    root_concept_id = int(concept.get("root_concept_id") or concept_id)
+    lineage_state = str(concept.get("lineage_state") or "root_candidate")
+    if state == APPROVED_STATE:
+        lineage_state = "active_winner"
+        if parent_concept_id:
+            parent = _concept_row(conn, parent_concept_id)
+            if not parent or parent.get("state") != "reopened_for_revision":
+                raise ValueError("revision approval requires its preserved parent to remain under review")
+            competing = conn.execute(
+                """
+                SELECT id FROM selene_comprehension_concepts
+                WHERE id != ?
+                  AND (id = ? OR root_concept_id = ?)
+                  AND state = 'approved_knowledge_resource'
+                  AND review_status = 'approved_for_knowledge_use'
+                  AND chat_use_permission = 'available_as_knowledge_resource'
+                """,
+                (concept_id, root_concept_id, root_concept_id),
+            ).fetchall()
+            if competing:
+                raise ValueError("correction lineage already has an active approved winner")
+            conn.execute(
+                """
+                UPDATE selene_comprehension_concepts
+                SET state = 'superseded', review_status = 'superseded',
+                    chat_use_permission = 'not_available',
+                    retention_state = 'inactive_knowledge_record',
+                    superseded_by_concept_id = ?, lineage_state = 'historical_superseded',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (concept_id, parent_concept_id),
+            )
+            child_lifecycle = conn.execute(
+                "SELECT id FROM selene_teaching_lifecycles WHERE concept_id = ?",
+                (concept_id,),
+            ).fetchone()
+            parent_lifecycle = conn.execute(
+                "SELECT id FROM selene_teaching_lifecycles WHERE concept_id = ?",
+                (parent_concept_id,),
+            ).fetchone()
+            if child_lifecycle and parent_lifecycle:
+                conn.execute(
+                    """
+                    UPDATE selene_teaching_lifecycles
+                    SET current_stage = 'superseded_by_approved_revision',
+                        approval_status = 'superseded_by_approved_revision',
+                        superseded_by_lifecycle_id = ?, lineage_state = 'historical_superseded',
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (int(child_lifecycle["id"]), int(parent_lifecycle["id"])),
+                )
     conn.execute(
         """
         UPDATE selene_comprehension_concepts
         SET state = ?, review_status = ?, chat_use_permission = ?, retention_state = ?,
-            updated_at = CURRENT_TIMESTAMP
+            lineage_state = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
-        (state, review_status, chat_permission, retention_state, concept_id),
+        (state, review_status, chat_permission, retention_state, lineage_state, concept_id),
     )
     conn.commit()
+    lineage_receipt = _comprehension_lineage_receipt(conn, concept_id)
     return _with_guards(
         {
             "status": "comprehension_concept_decided",
@@ -643,6 +715,7 @@ def decide_comprehension_concept(
             "current_fact_present": current_fact_present,
             "knowledge_class": str(concept_payload.get("knowledge_class") or "unspecified_review_required"),
             "freshness_class": str(concept_payload.get("freshness_class") or "unspecified_requires_review"),
+            "lineage_receipt": lineage_receipt,
             "memory_write_active": False,
             "identity_changed": False,
             "governance_changed": False,
@@ -650,6 +723,259 @@ def decide_comprehension_concept(
             "provenance_boundary": COMPREHENSION_BOUNDARY,
         }
     )
+
+
+def _reopen_comprehension_concept(
+    conn: sqlite3.Connection,
+    concept: dict[str, Any],
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    concept_id = int(concept["id"])
+    if concept.get("state") == "superseded":
+        receipt = _comprehension_lineage_receipt(conn, concept_id)
+        return _with_guards(
+            {
+                "status": "comprehension_revision_lineage_stopped",
+                "action": "reopen_for_revision",
+                "item": concept,
+                "lineage_receipt": receipt,
+                "stopping_receipt": {
+                    "status": "stopped",
+                    "reason": "superseded_lineage_node_cannot_reopen",
+                    "requested_concept_id": concept_id,
+                    "active_winner_concept_id": receipt.get("active_winner_concept_id"),
+                    "duplicate_created": False,
+                    "loop_created": False,
+                },
+                "provenance_boundary": COMPREHENSION_BOUNDARY,
+            }
+        )
+
+    existing = conn.execute(
+        "SELECT * FROM selene_comprehension_concepts WHERE parent_concept_id = ? LIMIT 1",
+        (concept_id,),
+    ).fetchone()
+    if existing:
+        item = _decode_concept(existing)
+        return _with_guards(
+            {
+                "status": "comprehension_revision_descendant_already_exists",
+                "action": "reopen_for_revision",
+                "created": False,
+                "item": item,
+                "lineage_receipt": _comprehension_lineage_receipt(conn, int(item["id"])),
+                "stopping_receipt": {
+                    "status": "stopped",
+                    "reason": "duplicate_open_descendant_stopped",
+                    "requested_concept_id": concept_id,
+                    "existing_descendant_concept_id": int(item["id"]),
+                    "duplicate_created": False,
+                    "loop_created": False,
+                },
+                "provenance_boundary": COMPREHENSION_BOUNDARY,
+            }
+        )
+
+    if not (
+        concept.get("state") == APPROVED_STATE
+        and concept.get("review_status") == "approved_for_knowledge_use"
+        and concept.get("chat_use_permission") == ACTIVE_CHAT_PERMISSION
+    ):
+        return _with_guards(
+            {
+                "status": "comprehension_revision_lineage_stopped",
+                "action": "reopen_for_revision",
+                "item": concept,
+                "lineage_receipt": _comprehension_lineage_receipt(conn, concept_id),
+                "stopping_receipt": {
+                    "status": "stopped",
+                    "reason": "only_the_active_approved_winner_can_be_reopened",
+                    "requested_concept_id": concept_id,
+                    "duplicate_created": False,
+                    "loop_created": False,
+                },
+                "provenance_boundary": COMPREHENSION_BOUNDARY,
+            }
+        )
+
+    correction_reason = truncate(str(payload.get("correction_reason") or ""), 1600).strip()
+    if not correction_reason:
+        raise ValueError("correction_reason is required to reopen approved knowledge")
+    revision_source_refs = _json_list(payload.get("revision_source_refs"))
+    if not revision_source_refs:
+        raise ValueError("revision_source_refs are required for a correction descendant")
+    revised_material = truncate(str(payload.get("revised_material") or ""), 4000).strip()
+    if not revised_material:
+        raise ValueError("revised_material is required for a correction descendant")
+
+    parent_payload = dict(concept.get("payload") or {})
+    inherited_source_refs = _json_list(concept.get("source_refs"))
+    source_refs = list(dict.fromkeys([*inherited_source_refs, *revision_source_refs]))[:100]
+    knowledge_class = str(parent_payload.get("knowledge_class") or "unspecified_review_required")
+    freshness_class = str(parent_payload.get("freshness_class") or "unspecified_requires_review")
+    source_role_receipt = build_instructional_source_role_receipt(
+        payload.get("revised_source_roles"),
+        source_refs=revision_source_refs,
+        knowledge_class=knowledge_class,
+        freshness_class=freshness_class,
+    )
+    instructional_why_receipt = build_instructional_why_receipt(
+        payload.get("revised_instructional_why")
+        or parent_payload.get("instructional_why_receipt")
+    )
+    root_concept_id = int(concept.get("root_concept_id") or concept_id)
+    revision_key = f"{concept['concept_key']}__revision_{concept_id}"
+    descendant_payload = {
+        **parent_payload,
+        "source_role_receipt": source_role_receipt,
+        "instructional_why_receipt": instructional_why_receipt,
+        "understanding_evidence": {},
+        "correction_lineage": {
+            "status": "revision_descendant_awaiting_review",
+            "parent_concept_id": concept_id,
+            "root_concept_id": root_concept_id,
+            "reason_for_review": correction_reason,
+            "inherited_source_refs": inherited_source_refs,
+            "revision_source_refs": revision_source_refs,
+            "original_parent_preserved": True,
+            "parent_content_mutated": False,
+            "active_winner_selected": False,
+            "requires_source_review": True,
+            "requires_acquire_integrate_express": True,
+            "automatic_truth": False,
+        },
+    }
+
+    cursor = conn.execute(
+        """
+        INSERT INTO selene_comprehension_concepts
+        (concept_key, parent_concept_id, root_concept_id, revision_reason, lineage_state,
+         title, domain, central_claim, principles_json, relationships_json, examples_json,
+         counterexamples_json, limits_json, source_refs, provenance_boundary, confidence,
+         retention_state, chat_use_permission, correction_path, state, review_status,
+         payload_json, updated_at)
+        VALUES (?, ?, ?, ?, 'revision_candidate', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                'candidate_not_retained', 'not_active_until_approved', ?,
+                'proposed_understanding', 'pending_cocoon_teaching_review', ?, CURRENT_TIMESTAMP)
+        """,
+        (
+            revision_key,
+            concept_id,
+            root_concept_id,
+            correction_reason,
+            concept["title"],
+            concept["domain"],
+            revised_material,
+            json.dumps(_text_list(payload.get("revised_principles")) or concept.get("principles") or [], sort_keys=True),
+            json.dumps(_text_list(payload.get("revised_relationships")) or concept.get("relationships") or [], sort_keys=True),
+            json.dumps(_text_list(payload.get("revised_examples")) or concept.get("examples") or [], sort_keys=True),
+            json.dumps(_text_list(payload.get("revised_counterexamples")) or concept.get("counterexamples") or [], sort_keys=True),
+            json.dumps(_text_list(payload.get("revised_limits")) or concept.get("limits") or [], sort_keys=True),
+            json.dumps(source_refs, sort_keys=True),
+            COMPREHENSION_BOUNDARY,
+            str(payload.get("confidence") or "developing"),
+            truncate(str(concept.get("correction_path") or "Cocoon teaching review and source-linked revision"), 500),
+            json.dumps(descendant_payload, sort_keys=True),
+        ),
+    )
+    descendant_id = int(cursor.lastrowid)
+    conn.execute(
+        """
+        UPDATE selene_comprehension_concepts
+        SET state = 'reopened_for_revision',
+            review_status = 'correction_descendant_in_review',
+            chat_use_permission = 'not_active_until_revision_approved',
+            retention_state = 'retained_historical_knowledge_pending_correction',
+            lineage_state = 'historical_parent_under_review',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (concept_id,),
+    )
+    conn.execute(
+        """
+        UPDATE selene_teaching_lifecycles
+        SET current_stage = 'correction_descendant_in_review',
+            approval_status = 'historical_approval_under_review',
+            lineage_state = 'historical_parent_under_review',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE concept_id = ?
+        """,
+        (concept_id,),
+    )
+    conn.commit()
+    item = _concept_row(conn, descendant_id)
+    receipt = _comprehension_lineage_receipt(conn, descendant_id)
+    return _with_guards(
+        {
+            "status": "comprehension_revision_descendant_created",
+            "action": "reopen_for_revision",
+            "created": True,
+            "item": item,
+            "lineage_receipt": receipt,
+            "stopping_receipt": {
+                "status": "continue_through_reviewed_teaching_lifecycle",
+                "reason": "one_revision_descendant_created",
+                "duplicate_created": False,
+                "loop_created": False,
+            },
+            "knowledge_resource_active": False,
+            "memory_write_active": False,
+            "review_destination": "Cocoon Teaching / Lessons",
+            "provenance_boundary": COMPREHENSION_BOUNDARY,
+        }
+    )
+
+
+def _comprehension_lineage_receipt(
+    conn: sqlite3.Connection,
+    concept_id: int,
+) -> dict[str, Any]:
+    concept = _concept_row(conn, concept_id)
+    if not concept:
+        return {}
+    root_id = int(concept.get("root_concept_id") or concept_id)
+    rows = conn.execute(
+        """
+        SELECT id, parent_concept_id, root_concept_id, superseded_by_concept_id,
+               state, review_status, chat_use_permission, lineage_state
+        FROM selene_comprehension_concepts
+        WHERE id = ? OR root_concept_id = ?
+        ORDER BY id ASC
+        """,
+        (root_id, root_id),
+    ).fetchall()
+    nodes = [dict(row) for row in rows]
+    active = [
+        item
+        for item in nodes
+        if item["state"] == APPROVED_STATE
+        and item["review_status"] == "approved_for_knowledge_use"
+        and item["chat_use_permission"] == ACTIVE_CHAT_PERMISSION
+    ]
+    unresolved = any(item["state"] in {"reopened_for_revision", "proposed_understanding", "needs_context", "held_for_tending"} for item in nodes)
+    return {
+        "status": (
+            "one_active_approved_winner"
+            if len(active) == 1
+            else "correction_unresolved_no_active_winner"
+            if not active and unresolved
+            else "lineage_without_active_winner"
+            if not active
+            else "invalid_multiple_active_winners"
+        ),
+        "requested_concept_id": concept_id,
+        "root_concept_id": root_id,
+        "parent_concept_id": int(concept.get("parent_concept_id") or 0) or None,
+        "active_winner_concept_id": int(active[0]["id"]) if len(active) == 1 else None,
+        "active_winner_count": len(active),
+        "lineage_concept_ids": [int(item["id"]) for item in nodes],
+        "unresolved_correction": unresolved and not active,
+        "duplicate_descendant_allowed": False,
+        "loop_detected": False,
+        "historical_nodes_preserved": True,
+        "ordinary_chat_uses_only_active_winner": True,
+    }
 
 
 def build_comprehension_packet(
@@ -847,7 +1173,7 @@ def build_comprehension_packet(
     result = _with_guards(
         {
             "status": "comprehension_packet_ready",
-            "version": "v1_guided_understanding",
+            "version": "phase_6c_reviewed_correction_lineage",
             "organ_name": "Comprehension and Integration Organ",
             "understanding_state": understanding_state,
             "present_in_conversation": True,
@@ -939,6 +1265,9 @@ def retrieve_approved_knowledge(
     ranked: list[tuple[int, int, dict[str, Any]]] = []
     for row in rows:
         item = _decode_concept(row)
+        item["reviewed_reconstruction"] = _reviewed_correction_reconstruction(
+            conn, item
+        )
         guidance_only = _is_language_guidance_concept(item)
         if guidance_only and not include_language_guidance:
             continue
@@ -1003,6 +1332,18 @@ def retrieve_approved_knowledge(
             {
                 "id": item["id"],
                 "concept_key": item["concept_key"],
+                "parent_concept_id": item.get("parent_concept_id"),
+                "root_concept_id": item.get("root_concept_id") or item["id"],
+                "superseded_by_concept_id": item.get("superseded_by_concept_id"),
+                "lineage_state": item.get("lineage_state") or "active_winner",
+                "lineage_receipt": {
+                    "status": "one_active_approved_winner",
+                    "root_concept_id": item.get("root_concept_id") or item["id"],
+                    "parent_concept_id": item.get("parent_concept_id"),
+                    "active_winner_concept_id": item["id"],
+                    "ordinary_chat_uses_only_active_winner": True,
+                    "automatic_truth": False,
+                },
                 "title": item["title"],
                 "domain": item["domain"],
                 "central_claim": item["central_claim"],
@@ -1017,6 +1358,7 @@ def retrieve_approved_knowledge(
                 "freshness_class": str((item.get("payload") or {}).get("freshness_class") or "unspecified_requires_review"),
                 "source_role_receipt": (item.get("payload") or {}).get("source_role_receipt") or {},
                 "instructional_why_receipt": (item.get("payload") or {}).get("instructional_why_receipt") or {},
+                "reviewed_reconstruction": item.get("reviewed_reconstruction") or {},
                 "current_fact_present": _current_fact_present(item.get("payload") or {}),
                 "matched_terms": item.get("matched_terms") or [],
                 "retrieval_subject_terms": item.get("retrieval_subject_terms") or [],
@@ -1228,7 +1570,7 @@ def _answer_eligible_knowledge_items(
         "thing", "things", "use", "version", "why",
     }
     weak_subject_terms = {
-        "available", "current", "equal", "inside", "outside", "possible", "same",
+        "available", "container", "current", "equal", "inside", "outside", "possible", "same",
     }
     eligible: list[dict[str, Any]] = []
     for item in items:
@@ -1404,14 +1746,18 @@ def _knowledge_response_seed(
             return {
                 "content_seed": truncate(" ".join(fragments), 3000),
                 "answer_kind": "multi_obligation_knowledge_synthesis" if len(support) > 1 else "obligation_bound_knowledge",
-                "why_relationship_included": any(item.get("support_field") in {"principle", "relationship"} for item in support),
+                "why_relationship_included": any(
+                    item.get("support_field")
+                    in {"principle", "relationship", "reviewed_reconstruction"}
+                    for item in support
+                ),
                 "limit_included": any(item.get("support_field") in {"limit", "counterexample"} for item in support),
                 "obligation_support": support,
                 "concept_ids": list(dict.fromkeys(item.get("concept_id") for item in support if item.get("concept_id"))),
                 "source_refs": list(dict.fromkeys(ref for item in support for ref in item.get("source_refs") or []))[:30],
             }
     item = items[0]
-    central = truncate(str(item.get("central_claim") or "").strip(), 1400)
+    central = truncate(_knowledge_seed_text(item).strip(), 1400)
     lower = prompt.lower()
     asks_why = bool(re.search(r"\bwhy\b|\breason\b|\bcause\b|\bmechanism\b", lower))
     asks_limit = bool(re.search(r"\bwhen\b|\blimit\b|\bexception\b|\bnot apply\b|\bfail\b", lower))
@@ -1507,7 +1853,7 @@ def _knowledge_fragment_for_obligation(
             str(obligation.get("topic") or ""),
         ]
     ).lower()
-    central = truncate(str(item.get("central_claim") or ""), 1200)
+    central = truncate(_knowledge_seed_text(item), 1200)
     concept_key = str(item.get("concept_key") or "")
     if "observation" in source and "interpretation" in source and "separate" in source:
         application = _prompt_observation_interpretation(prompt_context)
@@ -1598,6 +1944,11 @@ def _knowledge_fragment_for_obligation(
         field = "counterexample" if item.get("counterexamples") else "limit"
         return (truncate(str(values[0]), 800), field) if values else ("", "unsupported")
     if kind == "reason" or any(marker in source for marker in ("why", "reason", "mechanism", "cause")):
+        reconstruction = item.get("reviewed_reconstruction")
+        if isinstance(reconstruction, dict) and reconstruction.get("available") is True:
+            explanation = truncate(str(reconstruction.get("explanation") or ""), 1200)
+            if explanation:
+                return explanation, "reviewed_reconstruction"
         values = [*list(item.get("principles") or []), *list(item.get("relationships") or [])]
         relevance_terms = set(_terms(source)) - {
             "conclusion", "explain", "give", "remain", "reason", "should", "why",
@@ -1638,6 +1989,66 @@ def _is_language_guidance_concept(item: dict[str, Any]) -> bool:
         or domain.startswith("communication.")
         or str(item.get("concept_key") or "").startswith("language_lesson:")
     )
+
+
+def _reviewed_correction_reconstruction(
+    conn: sqlite3.Connection,
+    item: dict[str, Any],
+) -> dict[str, Any]:
+    if not int(item.get("parent_concept_id") or 0):
+        return {
+            "status": "not_a_correction_descendant",
+            "available": False,
+        }
+    row = conn.execute(
+        """
+        SELECT express_status, express_json, approval_status
+        FROM selene_teaching_lifecycles
+        WHERE concept_id = ?
+        """,
+        (int(item["id"]),),
+    ).fetchone()
+    if not row or row["express_status"] != "complete" or str(row["approval_status"]) not in {
+        "approved_by_aleks",
+        "approved_under_curriculum_authorization",
+        "approved_under_language_capability_authorization",
+    }:
+        return {
+            "status": "reviewed_correction_reconstruction_unavailable",
+            "available": False,
+        }
+    express = _loads(row["express_json"], {})
+    explanation = truncate(
+        str(express.get("explanation_in_original_language") or ""), 3000
+    ).strip()
+    parroting = express.get("source_parroting_check")
+    parroting_passed = bool(
+        isinstance(parroting, dict) and parroting.get("passed") is True
+    )
+    if not explanation or not parroting_passed:
+        return {
+            "status": "reviewed_correction_reconstruction_unavailable",
+            "available": False,
+            "source_parroting_check_passed": parroting_passed,
+        }
+    return {
+        "status": "reviewed_correction_reconstruction_available",
+        "available": True,
+        "explanation": explanation,
+        "distinct_examples": _text_list(express.get("distinct_examples"))[:6],
+        "limits": _text_list(express.get("limits"))[:6],
+        "counterexamples": _text_list(express.get("counterexamples"))[:6],
+        "source_parroting_check_passed": True,
+        "reviewed_expression_only": True,
+        "automatic_truth": False,
+    }
+
+
+def _knowledge_seed_text(item: dict[str, Any]) -> str:
+    reconstruction = item.get("reviewed_reconstruction")
+    if isinstance(reconstruction, dict) and reconstruction.get("available") is True:
+        return str(reconstruction.get("explanation") or item.get("central_claim") or "")
+    return str(item.get("central_claim") or "")
 
 
 def _store_run(

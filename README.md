@@ -88,13 +88,13 @@ connected, and external actions remain deliberately constrained.
 
 Phases 0 through 5 of the
 [Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
-are complete for current scope. Phase 6A and Phase 6B are
-[complete](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md),
-and Phase 6C is pending.
+are complete for current scope. Phase 6A through Phase 6C are
+[complete](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md),
+and Phase 6D is pending.
 
-The next work is Phase 6C: reviewed correction descendants with preserved
-ancestry and delayed ordinary-Chat evidence for distinct application and
-approved-correction selection.
+The next work is Phase 6D: a descriptive concept-level learning profile inside
+the existing LEA owner, one gentle synthetic Group 8-shaped walkthrough, and
+broader Phase 6 closure verification without pass/fail worth or speed pressure.
 F2 Group 8 remains unprepared and unauthorized until Aleks explicitly selects
 an exact Grade 4–6 source artifact after edition, license, exclusion, checksum,
 role, and coverage review.
@@ -164,6 +164,11 @@ frontend remains 491.33 kB (109.20 kB gzip), with no Vite size warning and
 lazy-loaded Study workspaces. Phase 6B passed 179 core teaching and curriculum
 checks, 115 ordinary-Chat checks, 82 semantic/expression/maturity checks, and
 56 reflective-growth and sidecar checks.
+Phase 6C passed 163 correction-lineage, teaching, readiness, and ordinary-Chat
+checks plus 195 semantic, Memory, context, reflective, maturity, NLO, Voice,
+and public-boundary checks. A disposable resident copy preserved all 272
+concepts, 226 lifecycles, and 24 Dream reflections, and the frontend remains
+491.33 kB (109.20 kB gzip) with no Vite warning.
 
 ## Authorship
 

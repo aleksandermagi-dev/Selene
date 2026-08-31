@@ -3316,6 +3316,58 @@ installation changed. The one unfinished teaching lifecycle was not opened.
 parent/root ancestry and prove delayed distinct-case ordinary-Chat use plus
 clean selection of one approved correction winner.
 
+### 2026-08-31 — Knowledge correction gains ancestry and one reviewed winner
+
+**Starting question:** Can an approved taught concept be corrected without
+mutating its history, leaving two answer-bearing versions active, or letting a
+revision skip the source and teaching lifecycle?
+
+**Decision:** Reopen through one idempotent descendant inside the existing
+Comprehension and Teaching Lifecycle owners. Hold the historical parent out of
+ordinary Chat during review, require an attributable correction reason and
+source, and select a replacement only after Acquire -> Integrate -> Express and
+reviewed approval.
+
+**Work:** Added parent/root/supersession ancestry to concepts and teaching
+lifecycles; one-child uniqueness, duplicate and loop stopping receipts, and an
+explicit active-winner receipt; reviewed Express reconstruction for corrected
+Chat use; and delayed selection of the approved winner across a database
+reopen. A competing container-capacity concept remains retrievable for review
+but cannot answer an insulation question. Cultivation also narrowed an older
+warm/cool phrase rule so it requires typed current correction state rather than
+claiming every matching academic question is a prior conversational repair.
+
+**Why:** A correction is trustworthy when it preserves what was previously
+approved, shows why and from where it changed, and passes the same learning
+standard as the original. Mutating the row or letting both versions answer
+would hide ancestry; building a correction organ would duplicate authority.
+
+**Evidence:** Four synthetic lineage and delayed-Chat tests passed. The broader
+Phase 6C/teaching/ordinary-Chat set passed 163 checks, and 195 semantic,
+Memory, context, Study, Dream, intuition, maturity, NLO, Voice, and public-
+boundary checks passed. A disposable resident copy preserved 272 concepts,
+226 lifecycles, and 24 Dream reflections with SQLite integrity `ok`. The
+frontend remained 491.33 kB (gzip 109.20 kB), with no Vite warning and lazy
+Study workspaces.
+
+**What changed in our understanding:** Delayed-use reliability depends on more
+than retrieval. A valid correction also needs one lineage winner, a reviewed
+reconstruction at the expression boundary, competing-concept rejection, and
+protection from stale conversational phrase rules that can outrank knowledge
+for the wrong reason.
+
+**Boundaries preserved:** Only fictional disposable concepts were corrected.
+No resident teaching, knowledge, authorization, Memory, Study, Dream, affect,
+identity, personality, Vys, law, governance, authority, training, autonomy,
+external action, package, or installation changed. All 24 resident Dream
+reflections remain pending for Aleks, and the unfinished teaching lifecycle
+was not opened.
+
+**Next:** Phase 6D — extend the existing LEA owner with a descriptive concept-
+level profile, run the gentle synthetic Group 8-shaped walkthrough and broader
+closure verification, and close Phase 6 without pass/fail worth or speed
+pressure.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

@@ -76,15 +76,22 @@ def teaching_lifecycle_status(conn: sqlite3.Connection) -> dict[str, Any]:
         FROM selene_teaching_lifecycles
         """
     ).fetchone()
+    correction_descendant_count = int(
+        conn.execute(
+            "SELECT COUNT(*) FROM selene_teaching_lifecycles WHERE parent_lifecycle_id IS NOT NULL"
+        ).fetchone()[0]
+    )
     return _with_guards(
         {
             "status": "teaching_lifecycle_ready",
-            "version": "phase_6b_typed_source_and_instructional_why",
+            "version": "phase_6c_reviewed_correction_lineage",
             "lifecycle_count": int(row["total"] or 0),
             "acquired_count": int(row["acquired"] or 0),
             "integrated_count": int(row["integrated"] or 0),
             "expressed_count": int(row["expressed"] or 0),
             "approved_count": int(row["approved"] or 0),
+            "correction_descendant_count": correction_descendant_count,
+            "correction_lineage_rule": "A revision lifecycle inherits parent/root ancestry and can replace the prior winner only after source review and complete Acquire, Integrate, and Express.",
             "stages": [
                 {"stage": "acquire", "owner": "Comprehension", "retains_knowledge": False},
                 {"stage": "integrate", "owner": "intelligenceOS + Comprehension", "retains_knowledge": False},
@@ -606,7 +613,7 @@ def approve_teaching_lifecycle(
         UPDATE selene_teaching_lifecycles
         SET current_stage = ?, approval_status = 'approved_by_aleks',
             approval_mode = 'item_exception_approval', authorization_id = NULL,
-            authorization_snapshot_json = '{}',
+            authorization_snapshot_json = '{}', lineage_state = 'active_winner',
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
@@ -734,7 +741,8 @@ def approve_teaching_lifecycle_under_authorization(
         SET current_stage = 'approved_knowledge_resource',
             approval_status = ?,
             approval_mode = ?, authorization_id = ?,
-            authorization_snapshot_json = ?, updated_at = CURRENT_TIMESTAMP
+            authorization_snapshot_json = ?, lineage_state = 'active_winner',
+            updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
         (
@@ -794,15 +802,30 @@ def _ensure_lifecycle(conn: sqlite3.Connection, concept: dict[str, Any], source_
     ).fetchone()
     if existing:
         return dict(existing)
+    parent_lifecycle_id: int | None = None
+    root_lifecycle_id: int | None = None
+    parent_concept_id = int(concept.get("parent_concept_id") or 0)
+    if parent_concept_id:
+        parent = conn.execute(
+            "SELECT id, root_lifecycle_id FROM selene_teaching_lifecycles WHERE concept_id = ?",
+            (parent_concept_id,),
+        ).fetchone()
+        if parent:
+            parent_lifecycle_id = int(parent["id"])
+            root_lifecycle_id = int(parent["root_lifecycle_id"] or parent_lifecycle_id)
     cursor = conn.execute(
         """
         INSERT INTO selene_teaching_lifecycles
-        (lifecycle_key, concept_id, source_refs, provenance_boundary)
-        VALUES (?, ?, ?, ?)
+        (lifecycle_key, concept_id, parent_lifecycle_id, root_lifecycle_id,
+         lineage_state, source_refs, provenance_boundary)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (
             f"teaching_lifecycle_concept_{int(concept['id'])}",
             int(concept["id"]),
+            parent_lifecycle_id,
+            root_lifecycle_id,
+            "revision_candidate" if parent_lifecycle_id else "root_candidate",
             json.dumps(source_refs, sort_keys=True),
             TEACHING_LIFECYCLE_BOUNDARY,
         ),
@@ -868,6 +891,8 @@ def _require_editable_candidate(concept: dict[str, Any]) -> None:
         raise ValueError("approved knowledge must be explicitly reopened before revising its teaching lifecycle")
     if concept["state"] in {"superseded", "rejected"}:
         raise ValueError("inactive comprehension records cannot advance through the teaching lifecycle")
+    if concept.get("state") == "reopened_for_revision" or concept.get("lineage_state") == "historical_parent_under_review":
+        raise ValueError("a reopened parent is historical; advance its correction descendant instead")
     if not _json_list(concept["source_refs"]):
         raise ValueError("source provenance is required for the teaching lifecycle")
 

@@ -578,6 +578,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     session_fact_reply = session_fact_response_seed(meaning_text, conversation_spine)
     correction_reconstruction_reply = _correction_reconstruction_response_seed(
         meaning_text,
+        intent_decision=intent_decision,
+        epistemic_revision=epistemic_revision,
     )
     if correction_reconstruction_reply:
         session_fact_reply = correction_reconstruction_reply
@@ -870,6 +872,28 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     }
     knowledge_content_seed = str(comprehension.get("knowledge_response_seed") or "")
     domain_content_seed = str(answer_engine_support.get("content_seed") or "")
+    if _generic_reasoning_yields_to_reviewed_correction(
+        intelligence_support,
+        comprehension,
+        knowledge_content_seed,
+    ):
+        reasoning_content_seed = ""
+        intelligence_support = {
+            **intelligence_support,
+            "used": False,
+            "best_current_answer": "",
+            "answer_substance": {
+                **(
+                    intelligence_support.get("answer_substance")
+                    if isinstance(intelligence_support.get("answer_substance"), dict)
+                    else {}
+                ),
+                "selected_for_answer": False,
+                "response_seed": "",
+            },
+            "yielded_to_reviewed_correction": True,
+            "yield_reason": "a complete relevant reviewed correction outranks a generic missing-detail fallback",
+        }
     prompt_grounded_reasoning_precedes_knowledge = _prompt_grounded_reasoning_owns_turn(
         intelligence_support
     ) and str(contextual_follow_up.get("kind") or "") not in {
@@ -3296,6 +3320,9 @@ def _figurative_response_seed(packet: dict[str, Any]) -> str:
 
 def _correction_reconstruction_response_seed(
     prompt: str,
+    *,
+    intent_decision: dict[str, Any] | None = None,
+    epistemic_revision: dict[str, Any] | None = None,
 ) -> str:
     """Apply a local correction to the answer that is still due.
 
@@ -3303,6 +3330,16 @@ def _correction_reconstruction_response_seed(
     treats ordinary correction as failure.
     """
 
+    intent = intent_decision if isinstance(intent_decision, dict) else {}
+    revision = epistemic_revision if isinstance(epistemic_revision, dict) else {}
+    dialogue_acts = {str(item) for item in intent.get("dialogue_acts") or []}
+    correction_active = bool(
+        str(intent.get("intent") or "") in {"correction", "receive_correction"}
+        or dialogue_acts.intersection({"correction", "receive_correction"})
+        or revision.get("detected") is True
+    )
+    if not correction_active:
+        return ""
     lower = " ".join(str(prompt or "").lower().replace("’", "'").split())
     if (
         "cool" in lower
@@ -4265,6 +4302,64 @@ def _answer_engine_yields_to_approved_knowledge(
         )
     )
     return explicitly_incomplete
+
+
+def _generic_reasoning_yields_to_reviewed_correction(
+    support: dict[str, Any],
+    comprehension: dict[str, Any],
+    knowledge_content_seed: str,
+) -> bool:
+    """Prefer a complete reviewed correction over a generic no-basis fallback.
+
+    Current-turn grounded reasoning still retains precedence. This applies only
+    when ordinary knowledge selection found one active correction winner with
+    reviewed reconstruction and the parallel reasoning path supplied no
+    substantive answer.
+    """
+
+    if not knowledge_content_seed.strip():
+        return False
+    knowledge = (
+        comprehension.get("knowledge_context")
+        if isinstance(comprehension.get("knowledge_context"), dict)
+        else {}
+    )
+    items = [item for item in knowledge.get("answer_eligible_items") or [] if isinstance(item, dict)]
+    if len(items) != 1:
+        return False
+    item = items[0]
+    lineage = item.get("lineage_receipt") if isinstance(item.get("lineage_receipt"), dict) else {}
+    reconstruction = (
+        item.get("reviewed_reconstruction")
+        if isinstance(item.get("reviewed_reconstruction"), dict)
+        else {}
+    )
+    if not (
+        int(item.get("parent_concept_id") or 0) > 0
+        and int(lineage.get("active_winner_concept_id") or 0) == int(item.get("id") or 0)
+        and reconstruction.get("available") is True
+    ):
+        return False
+    substance = support.get("answer_substance") if isinstance(support.get("answer_substance"), dict) else {}
+    response = str(support.get("best_current_answer") or "").lower()
+    generic_missing = bool(
+        not response.strip()
+        or substance.get("selected_for_answer") is not True
+        or any(
+            marker in response
+            for marker in (
+                "not enough grounded detail",
+                "do not have enough grounded detail",
+                "missing piece",
+                "cannot answer that part reliably",
+            )
+        )
+    )
+    if generic_missing:
+        return True
+    if _prompt_grounded_reasoning_owns_turn(support):
+        return False
+    return False
 
 
 def _preserve_answer_engine_invariants(

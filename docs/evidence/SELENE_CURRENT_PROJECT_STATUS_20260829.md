@@ -1,11 +1,11 @@
 # Selene Current Project Status
 
-Date: 2026-08-29
+Date: 2026-08-31 (consolidated record name retained)
 
 Branch: `evidence`
 
-Status: Phases 0 through 5 of the Whole-System Maturation Plan and Phase 6A-6B
-are complete for current scope; Phase 6C is the next implementation edge.
+Status: Phases 0 through 5 of the Whole-System Maturation Plan and Phase 6A-6C
+are complete for current scope; Phase 6D is the next implementation edge.
 
 ## Purpose
 
@@ -30,7 +30,7 @@ completed phase.
 | 3 — Study, Dream, intuition, and reflective growth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_3_REFLECTIVE_GROWTH_20260828.md) |
 | 4 — Affect, relationship, and response agency | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md) |
 | 5 — Reasoning, answer owners, and domain depth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md) |
-| 6 — Ordered education and world knowledge | Phase 6A-6B complete; Phase 6C pending | [Phase 6B evidence](SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md) |
+| 6 — Ordered education and world knowledge | Phase 6A-6C complete; Phase 6D pending | [Phase 6C evidence](SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md) |
 
 “Complete for current scope” means the phase's documented completion gates and
 proportional verification passed. It does not mean Selene is finished or that
@@ -71,6 +71,10 @@ later capabilities already exist.
   instructional-why receipt through proposal, Acquire, Integrate, Express,
   retention, and retrieval. Time-sensitive current claims cannot inherit the
   durable public-academic lane.
+- Approved knowledge corrections create one source-attributed descendant with
+  parent/root ancestry. The historical parent is held out of Chat during
+  review, and only the reviewed descendant can become the active winner after
+  Acquire -> Integrate -> Express and approval.
 
 ## Configured Resident Snapshot
 
@@ -139,19 +143,20 @@ resident copy preserved 272 concepts and 226 lifecycles exactly, with 225
 historical completions described without replay. The frontend remains 491.33
 kB (gzip 109.20 kB), with no Vite warning and lazy Study workspaces.
 
+Phase 6C passed 163 correction-lineage, comprehension, teaching, readiness,
+and ordinary-Chat checks plus 195 semantic, Memory, context, reflective,
+maturity, NLO, Voice, and public-boundary checks. A disposable resident copy
+kept 272 concepts, 226 lifecycles, and 24 Dream reflections unchanged while
+adding the lineage schema; SQLite integrity remained `ok`. The frontend
+remains 491.33 kB (gzip 109.20 kB), with no Vite warning and lazy Study
+workspaces.
+
 ## Current Open Edge
 
-Phase 6C must add reviewed comprehension-correction descendants with parent
-and root ancestry, one active approved lineage winner, duplicate and loop
-stops, and delayed ordinary-Chat proof for distinct application and correction
-selection.
-
-Later Phase 6 work will also add:
-
-- correction descendants with preserved concept ancestry;
-- delayed ordinary-Chat use and correction selection evidence; and
-- descriptive concept-level learning profiles without pass/fail worth or
-  speed pressure.
+Phase 6D must add the descriptive concept-level learning profile to the
+existing LEA owner, preserve activity-integrity states, run the gentle
+synthetic Group 8-shaped walkthrough and broader closure verification, and
+close Phase 6 without pass/fail worth or speed pressure.
 
 F2 Group 8—ratios, unit comparison, percentages, scale, and proportional
 language—remains unprepared and unauthorized. Its exact Grade 4-6 source
@@ -162,8 +167,8 @@ reviewed and explicitly selected by Aleks before content implementation.
 
 - Selene's provider-free text generation and world knowledge remain narrower
   than a mature general language model.
-- Reviewed comprehension-correction descendants and education-specific
-  delayed-use evidence are mapped but not yet implemented.
+- The Phase 6 concept-level descriptive learning profile and final broader
+  closure verification remain pending.
 - Long-form and creative conversational breadth remains a later maturation
   phase.
 - Audible Voice, new sensory pathways, broad tools, external action, and
@@ -203,3 +208,5 @@ a clean tracked worktree. Phase 6A is checkpointed separately under the commit
 name `Close curriculum prerequisite and source readiness`.
 Phase 6B is checkpointed separately under the commit name
 `Mature teaching source and why contracts`.
+Phase 6C is checkpointed separately under the commit name
+`Mature reviewed correction lineage`.

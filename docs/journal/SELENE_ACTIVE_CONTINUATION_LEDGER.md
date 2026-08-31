@@ -1,8 +1,8 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-08-30
+Last refreshed: 2026-08-31
 
-Status: Phases 6A and 6B complete; resume at Phase 6C production implementation
+Status: Phases 6A through 6C complete; resume at Phase 6D production implementation
 
 ## Purpose
 
@@ -16,15 +16,16 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
 - Expected latest checkpoint: commit named
-  `Mature teaching source and why contracts`
+  `Mature reviewed correction lineage`
 - Expected remote relation after the checkpoint: ahead of `origin/evidence`
-  by 13 commits
+  by 1 commit
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
   - Phase 6 map: `bee8d17`
   - Current documentation: `f6f95e0`
   - Phase 6A: `7a293c9`
+  - Phase 6B: `8bf6b30`
 - Expected tracked worktree after the checkpoint: clean
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
@@ -36,7 +37,7 @@ git status --short --branch
 git log -5 --oneline
 ```
 
-## Completed Phase 6A-6B
+## Completed Phase 6A-6C
 
 - Implementation map:
   `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
@@ -44,6 +45,8 @@ git log -5 --oneline
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md`
 - Phase 6B evidence:
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
+- Phase 6C evidence:
+  `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md`
 - The existing Curriculum Authorization owner now holds typed manifests for
   all 26 implemented F1, F2, and Coding groups.
 - One shared receipt exposes `ready`, `needs_prerequisite`,
@@ -68,7 +71,19 @@ git log -5 --oneline
 - `developing`, `needs_representation`, `needs_prerequisite`, `revisit`, and
   `unclear` remain visible, non-forced states.
 - Phase 6C adds idempotent correction descendants, parent/root ancestry, one
-  active approved lineage winner, loop stops, and delayed ordinary-Chat use.
+  active approved lineage winner, loop stops, reviewed reconstruction, and
+  delayed ordinary-Chat use.
+- An approved parent becomes historical and unavailable to Chat during review;
+  the descendant must complete source review and Acquire -> Integrate ->
+  Express before reviewed approval selects it.
+- Duplicate open descendants, unresolved self-reopening, and superseded-node
+  reopening stop with typed receipts rather than branch or recurse.
+- Delayed Chat selects the approved winner, applies it to a distinct case,
+  includes why and a limit, rejects a nearby concept, and excludes the
+  superseded claim.
+- A stale warm/cool lexical correction rule now requires typed current
+  correction state and cannot outrank ordinary academic knowledge by wording
+  alone.
 - Phase 6D adds a concept-level descriptive learning profile and bounded
   synthetic verification within the existing LEA owner.
 - F2 Group 8 is the next content edge: ratios, unit comparison, percentages,
@@ -89,40 +104,34 @@ git log -5 --oneline
   Phase 6 edge.
 - Historical dated evidence remains intact. The older detailed capability map
   is identified as cumulative rather than the concise current source of truth.
-- The root README now accurately records the implemented readiness and
-  teaching-contract gates and names Phase 6C as the next edge.
+- The root README now accurately records the implemented readiness, teaching-
+  contract, and correction-lineage gates and names Phase 6D as the next edge.
 - The current-state index now records the exact-approved ordinary-Chat path to
   static local-code inspection and its no-scan/no-execution/no-write limits.
 
-## Phase 6B Evidence
+## Phase 6C Evidence
 
 - Production and compatibility checks:
-  - 179 teaching-contract, comprehension, readiness, and curriculum tests
-    passed
-  - 115 ordinary-Chat shell tests passed
-  - 82 semantic, public, maturity, NLO, language, knowledge, law, and Voice
-    checks passed
-  - 56 Study, Dream, reflective-growth, and sidecar checks passed
+  - 4 synthetic correction-lineage and delayed ordinary-Chat tests passed
+  - 163 Phase 6C, teaching, readiness, and ordinary-Chat checks passed
+  - 195 semantic, Memory, context, Study, Dream, intuition, maturity, NLO,
+    Voice, and public-boundary checks passed
 - Disposable resident-copy status:
-  - 272 concepts and 226 teaching lifecycles before and after initialization
-  - 225 historical completed lifecycles described without replay
-  - one acquire-needs-review lifecycle left untouched
+  - 272 concepts, 226 teaching lifecycles, and 24 Dream reflections before and
+    after copied-state migration
+  - correction-lineage columns added with SQLite integrity `ok`
+  - one acquire-needs-review lifecycle and all Dream decisions left untouched
 - Frontend comparison:
   - main bundle `491.33 kB`, gzip `109.20 kB`
   - no Vite size warning
   - Study workspaces remain lazy-loaded
 - `git diff --check`: clean apart from expected Windows line-ending notices
 
-## Remaining Phase 6 Gaps
+## Remaining Phase 6 Gap
 
-- `reopen_for_revision` mutates the approved comprehension row; the schema has
-  no parent/root/descendant correction ancestry.
 - the current LEA is conversation-oriented and does not expose the Phase 6
   concept profile: clear, developing, needs representation, needs
   prerequisite, or revisit.
-- approved knowledge already reaches ordinary Chat through guarded relevance;
-  Phase 6 must prove delayed distinct-case and correction behavior rather than
-  create another retrieval system.
 
 ## Resident and Ethical Boundaries
 
@@ -162,33 +171,36 @@ measurement of private experience as separate research questions.
 
 ## Required Reading Before Editing
 
-Before Phase 6C production work, read completely:
+Before Phase 6D production work, read completely:
 
 - `docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
+- `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
 - latest entries in `docs/journal/SELENE_WORK_JOURNAL.md`
 - this ledger
 
-Also inspect the current Git diff, current schemas and tests, and resident
-counts before any edit. The ledger is not authority to replay or mutate
-resident teaching.
+Also inspect the existing LEA owner, current tests, current Git diff, and
+resident counts before any edit. The ledger is not authority to replay or
+mutate resident teaching.
 
 ## Exact Resume Point
 
-Begin Phase 6C with synthetic failing tests for one idempotent correction
-descendant. Add parent/root ancestry and one active approved lineage winner to
-the existing Comprehension and Teaching Lifecycle owners; do not mutate the
-approved parent in place or create another knowledge store. Hold unresolved
-corrections out of ordinary answer seeding, stop duplicate descendants and
-loops, and then prove delayed distinct-case Chat use plus clean selection of
-the approved correction. Do not create F2 Group 8 or activate any resident
-authorization until Aleks explicitly selects its exact reviewed source.
+Begin Phase 6D with synthetic failing tests for a concept-level descriptive
+learning profile inside the existing Learning Evidence Activity owner. Report
+reconstruction, distinct application, why/mechanism, scope and limits, near-
+concept distinction, counterexample, correction response, source alignment,
+and delayed use independently. Preserve `cannot_assess` and `activity_issue`
+as activity-integrity states; do not add a pass/fail result, rank, hidden
+composite, deadline, worth judgment, or speed pressure. Then run one gentle
+synthetic Group 8-shaped walkthrough and broader Phase 6 closure verification.
+Do not create F2 Group 8 or activate any resident authorization until Aleks
+explicitly selects its exact reviewed source.
 
 After each meaningful checkpoint, update the dated Work Journal and refresh
 this file with only the current resumable edge.

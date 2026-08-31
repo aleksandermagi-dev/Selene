@@ -1748,6 +1748,11 @@ ON selene_language_teaching_shelf(category, review_status, status);
 CREATE TABLE IF NOT EXISTS selene_comprehension_concepts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   concept_key TEXT NOT NULL UNIQUE,
+  parent_concept_id INTEGER,
+  root_concept_id INTEGER,
+  superseded_by_concept_id INTEGER,
+  revision_reason TEXT NOT NULL DEFAULT '',
+  lineage_state TEXT NOT NULL DEFAULT 'root_candidate',
   title TEXT NOT NULL,
   domain TEXT NOT NULL DEFAULT 'general',
   central_claim TEXT NOT NULL,
@@ -1766,7 +1771,10 @@ CREATE TABLE IF NOT EXISTS selene_comprehension_concepts (
   review_status TEXT NOT NULL DEFAULT 'pending_cocoon_teaching_review',
   payload_json TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (parent_concept_id) REFERENCES selene_comprehension_concepts(id),
+  FOREIGN KEY (root_concept_id) REFERENCES selene_comprehension_concepts(id),
+  FOREIGN KEY (superseded_by_concept_id) REFERENCES selene_comprehension_concepts(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_selene_comprehension_concepts_state
@@ -2023,6 +2031,10 @@ CREATE TABLE IF NOT EXISTS selene_teaching_lifecycles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   lifecycle_key TEXT NOT NULL UNIQUE,
   concept_id INTEGER NOT NULL UNIQUE,
+  parent_lifecycle_id INTEGER,
+  root_lifecycle_id INTEGER,
+  superseded_by_lifecycle_id INTEGER,
+  lineage_state TEXT NOT NULL DEFAULT 'root_candidate',
   current_stage TEXT NOT NULL DEFAULT 'not_started',
   acquire_status TEXT NOT NULL DEFAULT 'not_started',
   acquire_json TEXT NOT NULL DEFAULT '{}',
@@ -2036,7 +2048,10 @@ CREATE TABLE IF NOT EXISTS selene_teaching_lifecycles (
   review_status TEXT NOT NULL DEFAULT 'status_only',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id)
+  FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id),
+  FOREIGN KEY (parent_lifecycle_id) REFERENCES selene_teaching_lifecycles(id),
+  FOREIGN KEY (root_lifecycle_id) REFERENCES selene_teaching_lifecycles(id),
+  FOREIGN KEY (superseded_by_lifecycle_id) REFERENCES selene_teaching_lifecycles(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_selene_teaching_lifecycles_stage
@@ -2484,6 +2499,17 @@ REQUIRED_COLUMNS = {
         "approval_mode": "TEXT NOT NULL DEFAULT 'awaiting_decision'",
         "authorization_id": "INTEGER",
         "authorization_snapshot_json": "TEXT NOT NULL DEFAULT '{}'",
+        "parent_lifecycle_id": "INTEGER",
+        "root_lifecycle_id": "INTEGER",
+        "superseded_by_lifecycle_id": "INTEGER",
+        "lineage_state": "TEXT NOT NULL DEFAULT 'root_candidate'",
+    },
+    "selene_comprehension_concepts": {
+        "parent_concept_id": "INTEGER",
+        "root_concept_id": "INTEGER",
+        "superseded_by_concept_id": "INTEGER",
+        "revision_reason": "TEXT NOT NULL DEFAULT ''",
+        "lineage_state": "TEXT NOT NULL DEFAULT 'root_candidate'",
     },
     "selene_language_teaching_shelf": {
         "lesson_content_json": "TEXT NOT NULL DEFAULT '{}'",
@@ -2556,6 +2582,32 @@ def ensure_columns(conn: sqlite3.Connection) -> None:
         """
         CREATE UNIQUE INDEX IF NOT EXISTS idx_vessel_emotion_salience_packets_signal_key
         ON vessel_emotion_salience_packets(signal_key)
+        """
+    )
+    conn.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_selene_comprehension_revision_parent
+        ON selene_comprehension_concepts(parent_concept_id)
+        WHERE parent_concept_id IS NOT NULL
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_selene_comprehension_revision_root
+        ON selene_comprehension_concepts(root_concept_id, lineage_state, id)
+        """
+    )
+    conn.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_selene_teaching_revision_parent
+        ON selene_teaching_lifecycles(parent_lifecycle_id)
+        WHERE parent_lifecycle_id IS NOT NULL
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_selene_teaching_revision_root
+        ON selene_teaching_lifecycles(root_lifecycle_id, lineage_state, id)
         """
     )
 

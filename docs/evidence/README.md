@@ -16,7 +16,7 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
-- [Current Project Status — August 29, 2026](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
+- [Current Project Status — updated August 31, 2026](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
   — consolidated current checkpoint for completed whole-system phases,
   configured resident counts, verification, honest limits, Git state, and the
   exact Phase 6 resume point.
@@ -27,10 +27,13 @@ a prototype result into a universal conclusion.
 - [Whole-System Phase 6B — Teaching Contract and Instructional Why — August 30, 2026](SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md)
   — carries typed source roles, durable/current classification, and a bounded
   instructional-why receipt through the existing reviewed teaching lifecycle.
+- [Whole-System Phase 6C — Reviewed Correction Lineage and Delayed Chat Use — August 31, 2026](SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md)
+  — preserves parent/root ancestry, stops duplicate or competing correction
+  branches, selects one reviewed winner, and proves delayed distinct-case Chat
+  use without returning the superseded claim.
 - [Whole-System Phase 6 — Ordered Education and World-Knowledge Expansion Map — August 29, 2026](../architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md)
-  — tracks completed Phase 6A-6B and source-maps correction ancestry, delayed
-  ordinary-Chat use, and descriptive learning evidence before F2 Group 8
-  authorization.
+  — tracks completed Phase 6A-6C and the remaining descriptive learning
+  evidence and closure work before F2 Group 8 authorization.
 
 - [Whole-System Phase 5 — Reasoning, Answer Owners, and Domain Depth — August 29, 2026](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md)
   — matures typed answer owners, provisional prediction/hypothesis/

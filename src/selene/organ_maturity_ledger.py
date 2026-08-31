@@ -128,11 +128,11 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "connection_state": "ordinary_chat",
         "maturity_state": "integration_verified",
         "target_state": "mature_current_scope",
-        "health_state": "phase_6b_typed_source_roles_and_instructional_why_verified",
+        "health_state": "phase_6c_reviewed_correction_lineage_and_delayed_chat_verified",
         "maturation_phase": 6,
         "metric_keys": ["knowledge_concepts", "approved_knowledge", "teaching_lifecycles"],
         "known_gaps": [
-            "Reviewed correction still needs descendant ancestry, and delayed distinct-case Chat use needs Phase 6C proof."
+            "The concept-level descriptive learning profile and broader Phase 6 closure remain Phase 6D work."
         ],
     },
     {

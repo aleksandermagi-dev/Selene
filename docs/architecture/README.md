@@ -49,9 +49,9 @@ individually defined as Selene.
   research, and exact-approved read-only code inspection through Chat.
 - [Phase 6 Ordered Education and World-Knowledge Expansion Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md)
   — records the completed Phase 6A prerequisite/source-readiness and Phase 6B
-  teaching-contract gates, the remaining correction-lineage and descriptive
-  learning-profile contracts, and the bounded F2 Group 8 source decision still
-  required before content implementation.
+  teaching-contract gates, completed Phase 6C correction lineage and delayed
+  use, the remaining Phase 6D learning-profile closure, and the bounded F2
+  Group 8 source decision still required before content implementation.
 - [Public Architecture and Evidence Index](PUBLIC_ARCHITECTURE_INDEX.md)
 - [Selene Architecture Index](SELENE_ARCHITECTURE_INDEX_20260620.md)
 - [What Selene Can Currently Do](../evidence/SELENE_CURRENT_CAPABILITIES_20260717.md)
