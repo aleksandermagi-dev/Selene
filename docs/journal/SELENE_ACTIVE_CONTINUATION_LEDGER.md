@@ -15,10 +15,10 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
-- Expected latest checkpoint: commit named
-  `Close descriptive learning evidence phase`
-- Expected remote relation after the checkpoint: ahead of `origin/evidence`
-  by 2 commits
+- Latest Phase implementation checkpoint: `28abf57`
+  (`Close descriptive learning evidence phase`)
+- Expected remote relation after the checkpoint: synchronized with
+  `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -27,6 +27,7 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6A: `7a293c9`
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
+  - Phase 6D and Phase 6 closure: `28abf57`
 - Expected tracked worktree after the checkpoint: clean
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
