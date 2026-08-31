@@ -18,8 +18,8 @@ understanding, and where work currently resumes.
 For one consolidated current checkpoint, start with
 [Selene Current Project Status — updated August 31, 2026](evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
 It records the completed whole-system phases, configured resident counts,
-verification baseline, honest limits, Git checkpoint, and exact Phase 6 resume
-point—currently Phase 6D—without rewriting older dated evidence.
+verification baseline, honest limits, Git checkpoint, and exact maturation
+resume point—currently Phase 7—without rewriting older dated evidence.
 
 The journal shelf also contains the
 [Contradiction and Safety-Guard Map](journal/SELENE_CONTRADICTION_AND_SAFETY_GUARD_MAP_20260811.md),

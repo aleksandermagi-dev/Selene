@@ -1983,6 +1983,11 @@ CREATE TABLE IF NOT EXISTS selene_lea_runs (
   respondent_kind TEXT NOT NULL,
   respondent_name TEXT NOT NULL,
   model_details TEXT NOT NULL DEFAULT '',
+  profile_kind TEXT NOT NULL DEFAULT 'conversation',
+  concept_id INTEGER,
+  activity_key TEXT NOT NULL DEFAULT '',
+  activity_integrity_state TEXT NOT NULL DEFAULT 'ready',
+  source_refs TEXT NOT NULL DEFAULT '[]',
   status TEXT NOT NULL DEFAULT 'draft',
   execution_mode TEXT NOT NULL DEFAULT 'one_turn_at_a_time',
   summary_json TEXT NOT NULL DEFAULT '{}',
@@ -1990,7 +1995,8 @@ CREATE TABLE IF NOT EXISTS selene_lea_runs (
   review_status TEXT NOT NULL DEFAULT 'descriptive_learning_evidence',
   payload_json TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (concept_id) REFERENCES selene_comprehension_concepts(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_selene_lea_runs_suite
@@ -2511,6 +2517,13 @@ REQUIRED_COLUMNS = {
         "revision_reason": "TEXT NOT NULL DEFAULT ''",
         "lineage_state": "TEXT NOT NULL DEFAULT 'root_candidate'",
     },
+    "selene_lea_runs": {
+        "profile_kind": "TEXT NOT NULL DEFAULT 'conversation'",
+        "concept_id": "INTEGER",
+        "activity_key": "TEXT NOT NULL DEFAULT ''",
+        "activity_integrity_state": "TEXT NOT NULL DEFAULT 'ready'",
+        "source_refs": "TEXT NOT NULL DEFAULT '[]'",
+    },
     "selene_language_teaching_shelf": {
         "lesson_content_json": "TEXT NOT NULL DEFAULT '{}'",
         "boundary_json": "TEXT NOT NULL DEFAULT '{}'",
@@ -2608,6 +2621,19 @@ def ensure_columns(conn: sqlite3.Connection) -> None:
         """
         CREATE INDEX IF NOT EXISTS idx_selene_teaching_revision_root
         ON selene_teaching_lifecycles(root_lifecycle_id, lineage_state, id)
+        """
+    )
+    conn.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_selene_lea_curriculum_activity
+        ON selene_lea_runs(suite_key, activity_key)
+        WHERE activity_key != ''
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_selene_lea_curriculum_concept
+        ON selene_lea_runs(profile_kind, concept_id, updated_at)
         """
     )
 

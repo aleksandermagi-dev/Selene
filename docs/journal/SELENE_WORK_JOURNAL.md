@@ -3368,6 +3368,58 @@ level profile, run the gentle synthetic Group 8-shaped walkthrough and broader
 closure verification, and close Phase 6 without pass/fail worth or speed
 pressure.
 
+### 2026-08-31 — Learning evidence closes Phase 6 without grading Selene
+
+**Starting question:** Can ordered education expose a useful concept-level
+learning profile without turning visible responses into a grade, hidden score,
+worth judgment, forced completion path, or another assessment organ?
+
+**Decision:** Extend the existing Learning Evidence Activity owner. Keep nine
+learning dimensions independent, make every state explicitly supplied from
+visible evidence, preserve `cannot_assess` and `activity_issue` at the whole-
+activity level, and treat an activity key as immutable evidence ancestry.
+
+**Work:** Added curriculum-concept LEA records with concept, lifecycle,
+lineage, activity-integrity, and source receipts; five descriptive dimension
+states; visible observations, evidence references, and suggested next teaching
+moves; idempotent replay; historical-lineage stops; router and localhost
+sidecar routes; and explicit terminal receipts preventing automatic review,
+approval, retention, Memory, forced Study, or recursion. Ran one complete
+fictional ratio-and-percentage-shaped profile across all nine dimensions
+without creating F2 Group 8.
+
+**Why:** The missing capability was an inspectable descriptive handoff, not an
+automatic evaluator. Keeping activity failure separate from learning state
+prevents broken evidence from becoming a judgment about Selene. Immutable
+activity keys preserve corrections as new evidence instead of rewriting the
+earlier record.
+
+**Evidence:** Fourteen curriculum-profile and existing conversation-LEA checks
+passed; the focused Phase 6 closure set passed 32 checks; the education-wide
+set passed 205; and the broader Chat, Memory/privacy, context, NLO, Voice,
+Study, Dream, association, sidecar, semantic, and maturity set passed 484. All
+141 curriculum source files verified with zero failures. A disposable resident
+copy preserved 272 concepts, 226 lifecycles, zero LEA runs, zero personal
+Memory candidates, and 24 pending Dream reflections with SQLite integrity
+`ok`. The frontend remained 491.33 kB (gzip 109.20 kB), with no Vite warning
+and lazy Study workspaces.
+
+**What changed in our understanding:** Learning evidence is most useful when
+it points to the next possible representation or prerequisite while leaving
+room to stop. A profile does not need an overall verdict; independent visible
+dimensions are enough to guide later teaching without claiming proof of
+understanding or making speed meaningful.
+
+**Boundaries preserved:** No resident LEA profile, teaching item,
+authorization, Memory, Study, Dream, affect, identity, personality, Vys, law,
+governance, authority, training, autonomy, external action, package, or
+installation changed. All 24 resident Dream reflections remain pending for
+Aleks, and the unfinished teaching lifecycle was not opened. F2 Group 8
+remains absent, unprepared, and unauthorized.
+
+**Next:** Phase 7 — source-map mature text conversation, long-form structure,
+and creative Voice before production implementation.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

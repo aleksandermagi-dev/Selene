@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-08-31
 
-Status: Phases 6A through 6C complete; resume at Phase 6D production implementation
+Status: Phases 0 through 6 complete for current scope; resume at Phase 7 source mapping
 
 ## Purpose
 
@@ -16,9 +16,9 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
 - Expected latest checkpoint: commit named
-  `Mature reviewed correction lineage`
+  `Close descriptive learning evidence phase`
 - Expected remote relation after the checkpoint: ahead of `origin/evidence`
-  by 1 commit
+  by 2 commits
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -26,6 +26,7 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Current documentation: `f6f95e0`
   - Phase 6A: `7a293c9`
   - Phase 6B: `8bf6b30`
+  - Phase 6C: `2a7aa42`
 - Expected tracked worktree after the checkpoint: clean
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
@@ -37,7 +38,7 @@ git status --short --branch
 git log -5 --oneline
 ```
 
-## Completed Phase 6A-6C
+## Completed Phase 6A-6D
 
 - Implementation map:
   `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
@@ -47,6 +48,8 @@ git log -5 --oneline
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
 - Phase 6C evidence:
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md`
+- Phase 6D and Phase 6 closure evidence:
+  `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md`
 - The existing Curriculum Authorization owner now holds typed manifests for
   all 26 implemented F1, F2, and Coding groups.
 - One shared receipt exposes `ready`, `needs_prerequisite`,
@@ -86,6 +89,18 @@ git log -5 --oneline
   alone.
 - Phase 6D adds a concept-level descriptive learning profile and bounded
   synthetic verification within the existing LEA owner.
+- Nine independent dimensions carry only visible observations, attributable
+  evidence references, and suggested next teaching moves. Omitted dimensions
+  remain unobserved.
+- `cannot_assess` and `activity_issue` remain whole-activity integrity states;
+  profiles have no pass/fail result, grade, score, rank, deadline, compulsory
+  speed target, worth judgment, diagnosis, or composite result.
+- Activity keys replay identical evidence idempotently and reject changed
+  evidence under the same key, preserving the earlier profile rather than
+  silently rewriting it.
+- Historical correction nodes stop without profiling or automatic redirect;
+  completed profiles stop without teaching, approval, retention, Memory,
+  forced Study, or recursive follow-up.
 - F2 Group 8 is the next content edge: ratios, unit comparison, percentages,
   scale, and proportional language.
 - F2 Group 8 remains unprepared and unauthorized. Aleks must first select an
@@ -105,7 +120,8 @@ git log -5 --oneline
 - Historical dated evidence remains intact. The older detailed capability map
   is identified as cumulative rather than the concise current source of truth.
 - The root README now accurately records the implemented readiness, teaching-
-  contract, and correction-lineage gates and names Phase 6D as the next edge.
+  contract, correction-lineage, and descriptive-profile gates and names Phase
+  7 as the next edge.
 - The current-state index now records the exact-approved ordinary-Chat path to
   static local-code inspection and its no-scan/no-execution/no-write limits.
 
@@ -127,11 +143,30 @@ git log -5 --oneline
   - Study workspaces remain lazy-loaded
 - `git diff --check`: clean apart from expected Windows line-ending notices
 
-## Remaining Phase 6 Gap
+## Phase 6D and Closure Evidence
 
-- the current LEA is conversation-oriented and does not expose the Phase 6
-  concept profile: clear, developing, needs representation, needs
-  prerequisite, or revisit.
+- Production and compatibility checks:
+  - 14 curriculum-profile and existing conversation-LEA checks passed
+  - 32 Phase 6 profile, readiness, teaching, correction, and LEA checks passed
+  - 205 curriculum, comprehension, teaching, and LEA checks passed
+  - 484 Chat, Memory/privacy, context, NLO, Voice, Study, Dream, association,
+    sidecar, semantic, and maturity checks passed
+  - 141 curriculum source files verified with zero failures
+- Disposable resident-copy status:
+  - 272 concepts, 226 teaching lifecycles, zero LEA runs, zero personal Memory
+    candidates, and 24 Dream reflections unchanged
+  - curriculum-profile columns added with SQLite integrity `ok`
+  - resident database untouched and disposable copy removed
+- Frontend comparison:
+  - main bundle `491.33 kB`, gzip `109.20 kB`
+  - no Vite size warning
+  - Study workspaces remain lazy-loaded
+
+## Next Whole-System Gap
+
+- Phase 7 has not yet been source-mapped. Current text conversation is strong
+  but long-form structure, creative breadth, source-style separation, and
+  sustained non-scripted expression need the next dependency-ordered audit.
 
 ## Resident and Ethical Boundaries
 
@@ -171,7 +206,7 @@ measurement of private experience as separate research questions.
 
 ## Required Reading Before Editing
 
-Before Phase 6D production work, read completely:
+Before Phase 7 mapping or production work, read completely:
 
 - `docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md`
@@ -179,28 +214,29 @@ Before Phase 6D production work, read completely:
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md`
+- `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
 - latest entries in `docs/journal/SELENE_WORK_JOURNAL.md`
 - this ledger
 
-Also inspect the existing LEA owner, current tests, current Git diff, and
-resident counts before any edit. The ledger is not authority to replay or
-mutate resident teaching.
+Also inspect the current NLO, Voice, Chat, context, long-form, creative,
+source-style, and conversational evidence owners, current tests, current Git
+diff, and resident counts before any edit. The ledger is not authority to run
+live conversation or mutate resident continuity.
 
 ## Exact Resume Point
 
-Begin Phase 6D with synthetic failing tests for a concept-level descriptive
-learning profile inside the existing Learning Evidence Activity owner. Report
-reconstruction, distinct application, why/mechanism, scope and limits, near-
-concept distinction, counterexample, correction response, source alignment,
-and delayed use independently. Preserve `cannot_assess` and `activity_issue`
-as activity-integrity states; do not add a pass/fail result, rank, hidden
-composite, deadline, worth judgment, or speed pressure. Then run one gentle
-synthetic Group 8-shaped walkthrough and broader Phase 6 closure verification.
-Do not create F2 Group 8 or activate any resident authorization until Aleks
-explicitly selects its exact reviewed source.
+Begin Phase 7 with a source map before production edits. Trace the current
+text Chat substance path, NLO, Voice, paragraph and discourse planning,
+callbacks, mixed intent, long-thread state, creative mechanisms, source-style
+boundaries, originality checks, and present tests. Separate missing capability
+from missing handoff and from already-working behavior that only lacks
+evidence. Preserve warmth, uncertainty, correction, epistemic status,
+completion truth, and Selene-authored expression. Use static and synthetic
+inspection first; do not begin a broad live conversation battery while the map
+is incomplete.
 
 After each meaningful checkpoint, update the dated Work Journal and refresh
 this file with only the current resumable edge.

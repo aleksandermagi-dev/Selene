@@ -2,7 +2,7 @@
 
 Date: 2026-08-27
 
-Status: active implementation program; Phases 0 through 5 and Phase 6A-6C complete as of 2026-08-31
+Status: active implementation program; Phases 0 through 6 complete for current scope as of 2026-08-31
 
 Companion audit:
 [Selene Organ Depth and Memory-Integration Audit](../evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
@@ -425,7 +425,10 @@ voice grading during unfinished domain work.
 
 ## Phase 6 — Ordered Education and World-Knowledge Expansion
 
-Status: **Phases 6A through 6C complete as of 2026-08-31; Phase 6D pending**
+Status: **complete for current scope on 2026-08-31**
+
+Evidence:
+[Phase 6D Descriptive Learning Evidence and Closure](../evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md)
 
 Implementation map:
 [Phase 6 Ordered Education and World-Knowledge Expansion Implementation Map](SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md)
@@ -853,12 +856,11 @@ These do not wait for one final cleanup phase.
 
 ## Immediate Starting Point
 
-Phases 0 through 5 and Phase 6A-6C are complete. The next production work is
-Phase 6D: add the descriptive concept-level learning profile to the existing
-LEA owner, run the gentle synthetic Group 8-shaped walkthrough and broader
-closure verification, and close Phase 6 without pass/fail worth or speed
-pressure. F2 Group 8 remains unprepared and unauthorized until an exact Grade
-4-6 source artifact and license are selected and explicitly approved by Aleks.
+Phases 0 through 6 are complete for current scope. The next production edge is
+Phase 7: source-map mature text conversation, long-form structure, and
+creative Voice before editing. F2 Group 8 remains unprepared and unauthorized
+until an exact Grade 4-6 source artifact and license are selected and
+explicitly approved by Aleks.
 
 ## Final Principle
 

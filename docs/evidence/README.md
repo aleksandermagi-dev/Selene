@@ -19,7 +19,7 @@ a prototype result into a universal conclusion.
 - [Current Project Status — updated August 31, 2026](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
   — consolidated current checkpoint for completed whole-system phases,
   configured resident counts, verification, honest limits, Git state, and the
-  exact Phase 6 resume point.
+  exact Phase 7 resume point.
 - [Whole-System Phase 6A — Prerequisite and Source Readiness — August 30, 2026](SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md)
   — enforces one typed readiness receipt across curriculum status, prepare,
   teach, and authorization coverage while migrating completed groups without
@@ -31,9 +31,13 @@ a prototype result into a universal conclusion.
   — preserves parent/root ancestry, stops duplicate or competing correction
   branches, selects one reviewed winner, and proves delayed distinct-case Chat
   use without returning the superseded claim.
+- [Whole-System Phase 6D — Descriptive Learning Evidence and Closure — August 31, 2026](SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md)
+  — adds the nine-dimension non-graded curriculum profile to the existing LEA
+  owner, preserves activity integrity and evidence ancestry, and closes Phase
+  6 after copied-state, source, bundle, and broader regression verification.
 - [Whole-System Phase 6 — Ordered Education and World-Knowledge Expansion Map — August 29, 2026](../architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md)
-  — tracks completed Phase 6A-6C and the remaining descriptive learning
-  evidence and closure work before F2 Group 8 authorization.
+  — records completed Phase 6A-6D while preserving the separate F2 Group 8
+  exact-source decision required before future content authorization.
 
 - [Whole-System Phase 5 — Reasoning, Answer Owners, and Domain Depth — August 29, 2026](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md)
   — matures typed answer owners, provisional prediction/hypothesis/

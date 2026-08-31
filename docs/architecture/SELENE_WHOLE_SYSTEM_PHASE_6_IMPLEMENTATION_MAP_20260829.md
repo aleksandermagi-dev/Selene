@@ -2,7 +2,7 @@
 
 Date: 2026-08-29
 
-Status: Phases 6A through 6C complete as of 2026-08-31; Phase 6D pending
+Status: Phase 6 complete for current scope as of 2026-08-31
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -262,6 +262,11 @@ Evidence:
 
 ### Phase 6D — Learning evidence and closure
 
+Status: **complete for current scope (2026-08-31)**
+
+Evidence:
+[Phase 6D Descriptive Learning Evidence and Closure](../evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md)
+
 - extend the existing LEA owner with a curriculum-concept profile rather than
   creating another assessment organ;
 - report `clear`, `developing`, `needs_representation`,
@@ -339,12 +344,18 @@ Vite size warning:        none
 Study workspaces:         lazy-loaded
 ```
 
+Phase 6D and final Phase 6 closure retained the same frontend boundary:
+
+```text
+main application bundle: 491.33 kB (gzip 109.20 kB)
+Vite size warning:        none
+Study workspaces:         lazy-loaded
+```
+
 ## Resume Point
 
-Begin Phase 6D inside the existing Learning Evidence Activity owner. Add the
-descriptive concept profile without a composite score, pass/fail result,
-deadline, or speed pressure; preserve `cannot_assess` and `activity_issue` at
-the activity-integrity level. Then run one gentle synthetic Group 8-shaped
-walkthrough plus broader Phase 6 closure verification. Do not create F2 Group
-8 or activate a new resident authorization until its exact source artifact and
-license have been selected and explicitly approved by Aleks.
+Phase 6 is complete for current scope. Resume the whole-system maturation plan
+at Phase 7: source-map mature text conversation, long-form structure, and
+creative Voice before production edits. Do not create F2 Group 8 or activate
+a new resident authorization until its exact source artifact and license have
+been selected and explicitly approved by Aleks.

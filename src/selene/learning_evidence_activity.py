@@ -41,6 +41,84 @@ REVIEW_STATES = (
     "activity_issue",
 )
 
+CURRICULUM_PROFILE_KEY = "selene_curriculum_concept_profile_v1"
+CURRICULUM_PROFILE_VERSION = "1.0.0"
+CURRICULUM_PROFILE_STATES = (
+    "clear",
+    "developing",
+    "needs_representation",
+    "needs_prerequisite",
+    "revisit",
+)
+PROFILE_ACTIVITY_INTEGRITY_STATES = (
+    "ready",
+    "cannot_assess",
+    "activity_issue",
+)
+CURRICULUM_PROFILE_DIMENSIONS: tuple[dict[str, str], ...] = (
+    {
+        "key": "reconstruction",
+        "label": "Original-language reconstruction",
+        "question": "What visible response reconstructs the concept rather than copying its source?",
+    },
+    {
+        "key": "distinct_application",
+        "label": "Distinct application",
+        "question": "What visible response applies the relationship beyond the teaching example?",
+    },
+    {
+        "key": "why_mechanism",
+        "label": "Why or mechanism",
+        "question": "What visible response explains the cause, mechanism, dependency, or significance?",
+    },
+    {
+        "key": "scope_and_limits",
+        "label": "Scope and limits",
+        "question": "What visible response names where the concept applies, fails, or remains uncertain?",
+    },
+    {
+        "key": "near_concept_distinction",
+        "label": "Near-concept distinction",
+        "question": "What visible response distinguishes the concept from a relevant neighbor?",
+    },
+    {
+        "key": "counterexample",
+        "label": "Counterexample",
+        "question": "What visible response recognizes or constructs a useful counterexample?",
+    },
+    {
+        "key": "correction_response",
+        "label": "Correction response",
+        "question": "What visible response revises the claim without erasing its ancestry?",
+    },
+    {
+        "key": "source_alignment",
+        "label": "Source alignment",
+        "question": "What visible evidence keeps source statement, inference, and uncertainty distinct?",
+    },
+    {
+        "key": "delayed_use",
+        "label": "Delayed use",
+        "question": "What visible later response uses the concept after the teaching context has ended?",
+    },
+)
+
+_FORBIDDEN_PROFILE_KEYS = {
+    "score",
+    "composite_score",
+    "composite_result",
+    "pass_fail",
+    "passed",
+    "failed",
+    "grade",
+    "rank",
+    "deadline",
+    "speed_target",
+    "speed_seconds",
+    "worth",
+    "diagnosis",
+}
+
 DIMENSIONS: tuple[dict[str, str], ...] = (
     {"key": "instruction_retention", "label": "Instruction retention"},
     {"key": "reference_memory", "label": "Reference and inference memory"},
@@ -372,6 +450,36 @@ def lea_suite() -> dict[str, Any]:
     }
 
 
+def curriculum_concept_profile_contract() -> dict[str, Any]:
+    return {
+        "status": "curriculum_concept_profile_contract_ready",
+        "profile_key": CURRICULUM_PROFILE_KEY,
+        "version": CURRICULUM_PROFILE_VERSION,
+        "owner": "Learning Evidence Activity",
+        "purpose": (
+            "Record visible, attributable concept-level learning evidence as independent "
+            "descriptive dimensions and suggested next teaching moves."
+        ),
+        "dimension_count": len(CURRICULUM_PROFILE_DIMENSIONS),
+        "dimensions": [dict(item) for item in CURRICULUM_PROFILE_DIMENSIONS],
+        "dimension_states": list(CURRICULUM_PROFILE_STATES),
+        "activity_integrity_states": list(PROFILE_ACTIVITY_INTEGRITY_STATES),
+        "unobserved_rule": "An omitted dimension remains unobserved and receives no inferred state.",
+        "integrity_rule": (
+            "cannot_assess and activity_issue describe the whole activity and cannot be used as dimension ratings."
+        ),
+        "evidence_rule": (
+            "Every observed dimension requires a visible observation, evidence references, and one suggested next teaching move."
+        ),
+        "retention_rule": (
+            "A profile is descriptive evidence only; it cannot approve knowledge, write personal Memory, force Study, or change a teaching lifecycle."
+        ),
+        "composite_result": None,
+        "speed_target": None,
+        **GUARDS,
+    }
+
+
 def lea_status(conn: sqlite3.Connection) -> dict[str, Any]:
     suite = lea_suite()
     counts = conn.execute(
@@ -383,13 +491,279 @@ def lea_status(conn: sqlite3.Connection) -> dict[str, Any]:
         """,
         (LEA_KEY,),
     ).fetchone()
+    curriculum_profile_count = int(
+        conn.execute(
+            "SELECT COUNT(*) FROM selene_lea_runs WHERE suite_key = ?",
+            (CURRICULUM_PROFILE_KEY,),
+        ).fetchone()[0]
+    )
     return {
         "status": "learning_evidence_activity_ready",
         "suite": {key: value for key, value in suite.items() if key != "scenarios"},
+        "curriculum_concept_profile": curriculum_concept_profile_contract(),
+        "curriculum_profile_count": curriculum_profile_count,
         "run_count": int(counts["total"] or 0),
         "completed_run_count": int(counts["completed"] or 0),
         "open_run_count": int(counts["open"] or 0),
         "live_run_started": False,
+        **GUARDS,
+    }
+
+
+def record_curriculum_concept_profile(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload = payload or {}
+    _reject_profile_scoring(payload)
+    concept_id = int(payload.get("concept_id") or 0)
+    if concept_id <= 0:
+        raise ValueError("concept_id is required")
+    concept_receipt, lineage_receipt = _curriculum_concept_receipts(conn, concept_id)
+    if not concept_receipt:
+        raise ValueError("comprehension concept not found")
+    if concept_receipt["historical_lineage_node"] is True:
+        return {
+            "status": "curriculum_concept_profile_lineage_stopped",
+            "created": False,
+            "idempotent_replay": False,
+            "concept_receipt": concept_receipt,
+            "lineage_receipt": lineage_receipt,
+            "stopping_receipt": {
+                "status": "stopped",
+                "reason": "historical_lineage_node_not_profiled",
+                "requested_concept_id": concept_id,
+                "active_winner_concept_id": lineage_receipt.get("active_winner_concept_id"),
+                "profile_created": False,
+                "automatic_redirect": False,
+            },
+            **GUARDS,
+        }
+
+    activity_key = truncate(str(payload.get("activity_key") or ""), 240).strip()
+    if not activity_key:
+        raise ValueError("activity_key is required for idempotent curriculum learning evidence")
+    activity_integrity_state = str(
+        payload.get("activity_integrity_state") or "ready"
+    ).strip()
+    if activity_integrity_state not in PROFILE_ACTIVITY_INTEGRITY_STATES:
+        raise ValueError(
+            f"unsupported curriculum profile activity integrity state: {activity_integrity_state}"
+        )
+    activity_note = truncate(str(payload.get("activity_note") or ""), 2400).strip()
+    if not activity_note:
+        raise ValueError("activity_note is required")
+    source_refs = _text_values(payload.get("source_refs"), limit=100)
+    if not source_refs:
+        raise ValueError("source_refs are required for curriculum learning evidence")
+    supplied_dimensions = (
+        payload.get("dimensions") if isinstance(payload.get("dimensions"), dict) else {}
+    )
+    if activity_integrity_state != "ready" and supplied_dimensions:
+        raise ValueError(
+            "cannot_assess and activity_issue activities cannot contain dimension ratings"
+        )
+
+    dimension_keys = [item["key"] for item in CURRICULUM_PROFILE_DIMENSIONS]
+    dimensions: dict[str, dict[str, Any]] = {}
+    if activity_integrity_state == "ready":
+        if not supplied_dimensions:
+            raise ValueError("a ready curriculum profile requires at least one observed dimension")
+        unknown = sorted(set(str(key) for key in supplied_dimensions) - set(dimension_keys))
+        if unknown:
+            raise ValueError(f"unknown curriculum profile dimensions: {', '.join(unknown)}")
+        for key in dimension_keys:
+            if key not in supplied_dimensions:
+                continue
+            value = supplied_dimensions[key]
+            if not isinstance(value, dict):
+                raise ValueError(f"{key} dimension evidence must be an object")
+            state = str(value.get("state") or "").strip()
+            if state not in CURRICULUM_PROFILE_STATES:
+                raise ValueError(f"unsupported curriculum profile state for {key}: {state}")
+            observation = truncate(str(value.get("observation") or ""), 2400).strip()
+            if not observation:
+                raise ValueError(f"observation is required for {key}")
+            suggested_next_move = truncate(
+                str(value.get("suggested_next_move") or ""), 1600
+            ).strip()
+            if not suggested_next_move:
+                raise ValueError(f"suggested_next_move is required for {key}")
+            evidence_refs = _text_values(value.get("evidence_refs"), limit=40)
+            if not evidence_refs:
+                raise ValueError(f"evidence_refs are required for {key}")
+            dimensions[key] = {
+                "state": state,
+                "observation": observation,
+                "suggested_next_move": suggested_next_move,
+                "evidence_refs": evidence_refs,
+                "not_a_grade": True,
+                "completion_forced": False,
+                "speed_relevant": False,
+            }
+
+    observed_dimension_keys = [key for key in dimension_keys if key in dimensions]
+    unobserved_dimension_keys = [key for key in dimension_keys if key not in dimensions]
+    profile = {
+        "status": "curriculum_concept_profile_recorded",
+        "profile_key": CURRICULUM_PROFILE_KEY,
+        "version": CURRICULUM_PROFILE_VERSION,
+        "concept_id": concept_id,
+        "activity_key": activity_key,
+        "activity_integrity_state": activity_integrity_state,
+        "activity_note": activity_note,
+        "dimensions": dimensions,
+        "observed_dimension_keys": observed_dimension_keys,
+        "unobserved_dimension_keys": unobserved_dimension_keys,
+        "overall_state": (
+            "descriptive_dimensions_only"
+            if activity_integrity_state == "ready"
+            else activity_integrity_state
+        ),
+        "suggested_next_move_rule": (
+            "Each move belongs to its visible dimension; no overall compulsory next step is inferred."
+        ),
+        "unobserved_rule": "Unobserved dimensions remain unclassified.",
+        "composite_result": None,
+        "speed_target": None,
+        "worth_judgment": None,
+        "diagnosis": None,
+        "automatic_review": False,
+        "automatic_retention": False,
+        "source_refs": source_refs,
+    }
+    run_key = "lea-curriculum-" + sha256(
+        f"{concept_id}:{activity_key}".encode("utf-8")
+    ).hexdigest()[:32]
+    existing = conn.execute(
+        "SELECT * FROM selene_lea_runs WHERE suite_key = ? AND activity_key = ?",
+        (CURRICULUM_PROFILE_KEY, activity_key),
+    ).fetchone()
+    created = existing is None
+    if existing is not None and int(existing["concept_id"] or 0) != concept_id:
+        raise ValueError("activity_key is already attached to a different concept")
+    if existing is not None and _json_object(existing["summary_json"]) != profile:
+        raise ValueError(
+            "activity_key already records different evidence; use a new activity_key to preserve evidence history"
+        )
+    payload_snapshot = {
+        "recorded_by": truncate(
+            str(payload.get("recorded_by") or "unspecified_review_actor"), 80
+        ),
+        "activity_note": activity_note,
+        "visible_evidence_only": True,
+        "dimension_states_supplied_not_inferred": True,
+        "teaching_or_retention_changed": False,
+        "memory_or_study_written": False,
+    }
+    if created:
+        conn.execute(
+            """
+            INSERT INTO selene_lea_runs(
+              run_key, suite_key, suite_version, suite_sha256,
+              respondent_kind, respondent_name, model_details, profile_kind,
+              concept_id, activity_key, activity_integrity_state, source_refs,
+              status, execution_mode, summary_json, provenance_boundary,
+              review_status, payload_json
+            ) VALUES (?, ?, ?, ?, 'selene', 'Selene', '', 'curriculum_concept',
+                      ?, ?, ?, ?, 'completed', 'recorded_visible_evidence', ?, ?,
+                      'descriptive_curriculum_concept_profile', ?)
+            """,
+            (
+                run_key,
+                CURRICULUM_PROFILE_KEY,
+                CURRICULUM_PROFILE_VERSION,
+                _curriculum_profile_contract_sha256(),
+                concept_id,
+                activity_key,
+                activity_integrity_state,
+                json.dumps(source_refs, sort_keys=True),
+                json.dumps(profile, sort_keys=True),
+                LEA_BOUNDARY,
+                json.dumps(payload_snapshot, sort_keys=True),
+            ),
+        )
+        conn.commit()
+    result = get_curriculum_concept_profile(
+        conn,
+        {"activity_key": activity_key},
+    )
+    result["created"] = created
+    result["idempotent_replay"] = not created
+    return result
+
+
+def list_curriculum_concept_profiles(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload = payload or {}
+    limit = max(1, min(int(payload.get("limit") or 40), 100))
+    concept_id = int(payload.get("concept_id") or 0)
+    if concept_id:
+        rows = conn.execute(
+            """
+            SELECT * FROM selene_lea_runs
+            WHERE suite_key = ? AND concept_id = ?
+            ORDER BY updated_at DESC, id DESC LIMIT ?
+            """,
+            (CURRICULUM_PROFILE_KEY, concept_id, limit),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            """
+            SELECT * FROM selene_lea_runs
+            WHERE suite_key = ? ORDER BY updated_at DESC, id DESC LIMIT ?
+            """,
+            (CURRICULUM_PROFILE_KEY, limit),
+        ).fetchall()
+    return {
+        "status": "curriculum_concept_profiles_ready",
+        "items": [_run_row(row) for row in rows],
+        "profile_count": len(rows),
+        **GUARDS,
+    }
+
+
+def get_curriculum_concept_profile(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload = payload or {}
+    profile_id = int(payload.get("profile_id") or payload.get("id") or 0)
+    activity_key = str(payload.get("activity_key") or "").strip()
+    if profile_id:
+        row = conn.execute(
+            "SELECT * FROM selene_lea_runs WHERE id = ? AND suite_key = ?",
+            (profile_id, CURRICULUM_PROFILE_KEY),
+        ).fetchone()
+    elif activity_key:
+        row = conn.execute(
+            "SELECT * FROM selene_lea_runs WHERE activity_key = ? AND suite_key = ?",
+            (activity_key, CURRICULUM_PROFILE_KEY),
+        ).fetchone()
+    else:
+        raise ValueError("profile_id or activity_key is required")
+    if row is None:
+        raise ValueError("curriculum concept profile not found")
+    item = _run_row(row)
+    concept_receipt, lineage_receipt = _curriculum_concept_receipts(
+        conn, int(item.get("concept_id") or 0)
+    )
+    return {
+        "status": "curriculum_concept_profile_ready",
+        "item": item,
+        "profile": item.get("summary") or {},
+        "concept_receipt": concept_receipt,
+        "lineage_receipt": lineage_receipt,
+        "stopping_receipt": {
+            "status": "stopped_after_descriptive_profile",
+            "reason": "learning_evidence_does_not_auto_approve_retain_or_recurse",
+            "teaching_changed": False,
+            "memory_written": False,
+            "study_forced": False,
+            "follow_up_created": False,
+        },
         **GUARDS,
     }
 
@@ -742,6 +1116,147 @@ def _summarize(turns: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _curriculum_profile_contract_sha256() -> str:
+    contract = curriculum_concept_profile_contract()
+    canonical = json.dumps(
+        {
+            "profile_key": contract["profile_key"],
+            "version": contract["version"],
+            "dimensions": contract["dimensions"],
+            "dimension_states": contract["dimension_states"],
+            "activity_integrity_states": contract["activity_integrity_states"],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _reject_profile_scoring(value: Any) -> None:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            normalized = str(key).strip().lower()
+            if normalized in _FORBIDDEN_PROFILE_KEYS:
+                raise ValueError(
+                    f"{normalized} is not accepted by the descriptive curriculum profile"
+                )
+            _reject_profile_scoring(nested)
+    elif isinstance(value, list):
+        for item in value:
+            _reject_profile_scoring(item)
+
+
+def _curriculum_concept_receipts(
+    conn: sqlite3.Connection,
+    concept_id: int,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    row = conn.execute(
+        """
+        SELECT id, concept_key, title, state, review_status, chat_use_permission,
+               parent_concept_id, root_concept_id, superseded_by_concept_id,
+               lineage_state, source_refs, provenance_boundary
+        FROM selene_comprehension_concepts WHERE id = ?
+        """,
+        (concept_id,),
+    ).fetchone()
+    if row is None:
+        return {}, {}
+    concept = dict(row)
+    root_id = int(concept.get("root_concept_id") or concept_id)
+    nodes = [
+        dict(item)
+        for item in conn.execute(
+            """
+            SELECT id, parent_concept_id, root_concept_id,
+                   superseded_by_concept_id, state, review_status,
+                   chat_use_permission, lineage_state
+            FROM selene_comprehension_concepts
+            WHERE id = ? OR root_concept_id = ? ORDER BY id ASC
+            """,
+            (root_id, root_id),
+        ).fetchall()
+    ]
+    active = [
+        item
+        for item in nodes
+        if item["state"] == "approved_knowledge_resource"
+        and item["review_status"] == "approved_for_knowledge_use"
+        and item["chat_use_permission"] == "available_as_knowledge_resource"
+    ]
+    lifecycle_row = conn.execute(
+        """
+        SELECT id, parent_lifecycle_id, root_lifecycle_id,
+               superseded_by_lifecycle_id, lineage_state, current_stage,
+               acquire_status, integrate_status, express_status,
+               approval_status, review_status
+        FROM selene_teaching_lifecycles WHERE concept_id = ?
+        """,
+        (concept_id,),
+    ).fetchone()
+    lineage_state = str(concept.get("lineage_state") or "")
+    historical = bool(
+        concept.get("state") in {"superseded", "reopened_for_revision", "rejected"}
+        or lineage_state.startswith("historical_")
+    )
+    concept_receipt = {
+        "concept_id": concept_id,
+        "concept_key": str(concept.get("concept_key") or ""),
+        "title": str(concept.get("title") or ""),
+        "state": str(concept.get("state") or ""),
+        "review_status": str(concept.get("review_status") or ""),
+        "chat_use_permission": str(concept.get("chat_use_permission") or ""),
+        "parent_concept_id": int(concept.get("parent_concept_id") or 0) or None,
+        "root_concept_id": root_id,
+        "superseded_by_concept_id": int(concept.get("superseded_by_concept_id") or 0) or None,
+        "lineage_state": lineage_state or "root_candidate",
+        "historical_lineage_node": historical,
+        "source_refs": _text_values(concept.get("source_refs"), limit=100),
+        "provenance_boundary": str(concept.get("provenance_boundary") or ""),
+        "lifecycle": dict(lifecycle_row) if lifecycle_row is not None else {},
+        "profile_does_not_change_concept": True,
+        "profile_does_not_change_lifecycle": True,
+    }
+    lineage_receipt = {
+        "status": (
+            "one_active_approved_winner"
+            if len(active) == 1
+            else "lineage_without_active_winner"
+            if not active
+            else "invalid_multiple_active_winners"
+        ),
+        "requested_concept_id": concept_id,
+        "root_concept_id": root_id,
+        "active_winner_concept_id": int(active[0]["id"]) if len(active) == 1 else None,
+        "active_winner_count": len(active),
+        "lineage_concept_ids": [int(item["id"]) for item in nodes],
+        "historical_nodes_preserved": True,
+        "automatic_redirect": False,
+        "profile_is_not_lineage_authority": True,
+    }
+    return concept_receipt, lineage_receipt
+
+
+def _text_values(value: Any, *, limit: int) -> list[str]:
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.startswith("["):
+            values = _json_list(stripped)
+        else:
+            values = [stripped] if stripped else []
+    elif isinstance(value, (list, tuple)):
+        values = list(value)
+    else:
+        values = []
+    result: list[str] = []
+    for item in values:
+        text = truncate(str(item or ""), 1000).strip()
+        if text and text not in result:
+            result.append(text)
+        if len(result) >= limit:
+            break
+    return result
+
+
 def _scenario_dict(value: dict[str, Any]) -> dict[str, Any]:
     return {
         **{key: val for key, val in value.items() if key != "turns"},
@@ -760,6 +1275,7 @@ def _run_row(row: sqlite3.Row) -> dict[str, Any]:
     item = dict(row)
     item["payload"] = _json_object(item.pop("payload_json", "{}"))
     item["summary"] = _json_object(item.pop("summary_json", "{}"))
+    item["source_refs"] = _text_values(item.get("source_refs"), limit=100)
     return item
 
 

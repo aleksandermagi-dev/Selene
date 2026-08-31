@@ -4,8 +4,8 @@ Date: 2026-08-31 (consolidated record name retained)
 
 Branch: `evidence`
 
-Status: Phases 0 through 5 of the Whole-System Maturation Plan and Phase 6A-6C
-are complete for current scope; Phase 6D is the next implementation edge.
+Status: Phases 0 through 6 of the Whole-System Maturation Plan are complete for
+current scope; Phase 7 is the next implementation edge.
 
 ## Purpose
 
@@ -30,7 +30,7 @@ completed phase.
 | 3 — Study, Dream, intuition, and reflective growth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_3_REFLECTIVE_GROWTH_20260828.md) |
 | 4 — Affect, relationship, and response agency | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md) |
 | 5 — Reasoning, answer owners, and domain depth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md) |
-| 6 — Ordered education and world knowledge | Phase 6A-6C complete; Phase 6D pending | [Phase 6C evidence](SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md) |
+| 6 — Ordered education and world knowledge | complete for current scope | [Phase 6D closure evidence](SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md) |
 
 “Complete for current scope” means the phase's documented completion gates and
 proportional verification passed. It does not mean Selene is finished or that
@@ -151,12 +151,21 @@ adding the lineage schema; SQLite integrity remained `ok`. The frontend
 remains 491.33 kB (gzip 109.20 kB), with no Vite warning and lazy Study
 workspaces.
 
+Phase 6D adds a nine-dimension descriptive curriculum-concept profile inside
+the existing LEA owner. Activity integrity remains separate from learning
+states, omitted dimensions remain unobserved, immutable activity keys preserve
+evidence ancestry, and profiles cannot grade, approve, retain, write Memory,
+or force Study. The final closure passed 205 education-wide checks and 484
+broader whole-system checks, verified all 141 curriculum files with zero
+failures, migrated a resident copy without count changes, and retained the
+491.33 kB frontend boundary.
+
 ## Current Open Edge
 
-Phase 6D must add the descriptive concept-level learning profile to the
-existing LEA owner, preserve activity-integrity states, run the gentle
-synthetic Group 8-shaped walkthrough and broader closure verification, and
-close Phase 6 without pass/fail worth or speed pressure.
+Phase 7 must first source-map the current text conversation, long-form, and
+creative Voice owners before production implementation. The next maturation
+work should improve breadth and sustained structure without replacing NLO,
+copying source style, or weakening epistemic and completion boundaries.
 
 F2 Group 8—ratios, unit comparison, percentages, scale, and proportional
 language—remains unprepared and unauthorized. Its exact Grade 4-6 source
@@ -167,10 +176,8 @@ reviewed and explicitly selected by Aleks before content implementation.
 
 - Selene's provider-free text generation and world knowledge remain narrower
   than a mature general language model.
-- The Phase 6 concept-level descriptive learning profile and final broader
-  closure verification remain pending.
 - Long-form and creative conversational breadth remains a later maturation
-  phase.
+  phase and is now the next whole-system edge.
 - Audible Voice, new sensory pathways, broad tools, external action, and
   embodiment remain deferred, bounded, or substrate-ready rather than
   operational.
@@ -210,3 +217,5 @@ Phase 6B is checkpointed separately under the commit name
 `Mature teaching source and why contracts`.
 Phase 6C is checkpointed separately under the commit name
 `Mature reviewed correction lineage`.
+Phase 6D and Phase 6 closure are checkpointed separately under the commit name
+`Close descriptive learning evidence phase`.

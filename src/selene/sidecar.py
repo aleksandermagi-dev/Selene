@@ -777,6 +777,18 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "study.lea.suite")["result"]))
         elif parsed.path == "/api/study/lea/runs":
             self._send(*json_bytes(route_request(conn, "study.lea.runs.list", qs)["result"]))
+        elif parsed.path == "/api/study/lea/curriculum-profiles":
+            self._send(*json_bytes(route_request(conn, "study.lea.curriculum_profiles.list", qs)["result"]))
+        elif parsed.path.startswith("/api/study/lea/curriculum-profiles/"):
+            try:
+                profile_id = int(parsed.path.removeprefix("/api/study/lea/curriculum-profiles/"))
+                self._send(*json_bytes(route_request(
+                    conn,
+                    "study.lea.curriculum_profile.detail",
+                    {"profile_id": profile_id},
+                )["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif parsed.path.startswith("/api/study/lea/runs/"):
             try:
                 run_id = int(parsed.path.removeprefix("/api/study/lea/runs/"))
@@ -1640,6 +1652,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
             "/api/study/lea/selene/advance",
             "/api/study/lea/turns/review",
             "/api/study/lea/runs/complete",
+            "/api/study/lea/curriculum-profiles/record",
         }:
             route_key = {
                 "/api/study/sessions/start": "study.session.start",
@@ -1663,6 +1676,7 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 "/api/study/lea/selene/advance": "study.lea.selene.advance",
                 "/api/study/lea/turns/review": "study.lea.turn.review",
                 "/api/study/lea/runs/complete": "study.lea.run.complete",
+                "/api/study/lea/curriculum-profiles/record": "study.lea.curriculum_profile.record",
             }[request_path]
             try:
                 self._send(*json_bytes(route_request(self.server.conn, route_key, body)["result"]))

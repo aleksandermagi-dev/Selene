@@ -8,7 +8,7 @@ from .curriculum_authorization import curriculum_authorization_status
 from .language_teaching_shelf import language_teaching_status
 
 
-ORGAN_MATURITY_LEDGER_VERSION = "v4_phase_5_reasoning_domain_maturity"
+ORGAN_MATURITY_LEDGER_VERSION = "v5_phase_6_ordered_education_maturity"
 ORGAN_MATURITY_BOUNDARY = (
     "read_only_current_capability_maturity_projection_no_identity_memory_"
     "governance_teaching_dream_action_or_authority_change"
@@ -209,12 +209,12 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "source_modules": ["comprehension_integration.py", "semantic_relevance.py"],
         "routes": ["comprehension.status"],
         "connection_state": "ordinary_chat",
-        "maturity_state": "integration_verified",
+        "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "phase_1_relevance_and_competition_gate_verified",
-        "maturation_phase": 1,
+        "health_state": "phase_6_prerequisite_source_why_correction_and_delayed_use_verified",
+        "maturation_phase": 6,
         "metric_keys": ["approved_knowledge"],
-        "known_gaps": ["Broader subject coverage and delayed ordinary-use application remain ordered-education work."],
+        "known_gaps": ["Broader subject coverage remains future curriculum work; exact new sources and authorizations stay separately reviewable."],
     },
     {
         "key": "study",
@@ -227,15 +227,18 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
             "study.question.reopen",
             "study.question.integrate_for_now",
             "study.lea.status",
+            "study.lea.curriculum_profiles.list",
+            "study.lea.curriculum_profile.detail",
+            "study.lea.curriculum_profile.record",
         ],
         "connection_state": "resident_workspace",
         "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "phase_3_lifecycle_and_lineage_gate_verified",
-        "maturation_phase": 3,
-        "metric_keys": ["study_sessions", "study_questions", "study_notes", "study_evidence", "learning_compass_goals"],
+        "health_state": "phase_6_descriptive_concept_profile_and_integrity_gate_verified",
+        "maturation_phase": 6,
+        "metric_keys": ["study_sessions", "study_questions", "study_notes", "study_evidence", "learning_compass_goals", "curriculum_concept_profiles"],
         "known_gaps": [
-            "Broader ordered teaching and later ordinary conversational use remain later phases; Study does not grade readiness or force closure."
+            "Broader future teaching remains source- and authorization-bound; Study does not grade readiness, force closure, or infer unobserved profile dimensions."
         ],
     },
     {
@@ -527,10 +530,14 @@ EVIDENCE_TESTS_BY_ORGAN: dict[str, tuple[str, ...]] = {
         "tests/test_dual_horizon_context.py",
         "tests/test_semantic_relevance.py",
     ),
-    "approved_knowledge_retrieval": ("tests/test_comprehension_integration.py",),
+    "approved_knowledge_retrieval": (
+        "tests/test_comprehension_integration.py",
+        "tests/test_teaching_correction_lineage.py",
+    ),
     "study": (
         "tests/test_study_workspace.py",
         "tests/test_learning_evidence_activity.py",
+        "tests/test_curriculum_concept_learning_profile.py",
         "tests/test_phase3_reflective_growth.py",
     ),
     "dream": ("tests/test_dream_state.py", "tests/test_phase3_reflective_growth.py"),
@@ -681,8 +688,8 @@ def organ_maturity_ledger_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "blueprint_or_preview_keys": blueprint_or_preview,
             "mature_current_scope_count": maturity_counts.get("mature_current_scope", 0),
             "substrate_ready_count": maturity_counts.get("substrate_ready", 0),
-            "next_phase": 6,
-            "next_phase_name": "Ordered Education and World-Knowledge Expansion",
+            "next_phase": 7,
+            "next_phase_name": "Mature Text Conversation, Long Form, and Creative Voice",
         },
         "repository_defined_counts": repository_counts,
         "configured_runtime_metrics": configured_metrics,
@@ -792,6 +799,11 @@ def _configured_metrics(conn: sqlite3.Connection) -> dict[str, int]:
         "study_notes": _count(conn, "selene_study_notes"),
         "study_evidence": _count(conn, "selene_study_evidence"),
         "learning_compass_goals": _count(conn, "selene_learning_compass_goals"),
+        "curriculum_concept_profiles": _count(
+            conn,
+            "selene_lea_runs",
+            "suite_key = 'selene_curriculum_concept_profile_v1'",
+        ),
         "dream_cycles": _count(conn, "selene_dream_cycles"),
         "dream_reflections": _count(conn, "selene_dream_reflections"),
         "approved_dream_reflections": _count(

@@ -426,11 +426,14 @@ from .learning_evidence_activity import (
     advance_selene_lea,
     complete_lea_run,
     create_lea_run,
+    get_curriculum_concept_profile,
     get_lea_run,
     lea_status,
     lea_suite,
+    list_curriculum_concept_profiles,
     list_lea_runs,
     record_lea_response,
+    record_curriculum_concept_profile,
     review_lea_turn,
 )
 from .my_office_cleanup import clean_up_my_office_residue
@@ -1048,6 +1051,12 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": review_lea_turn(conn, payload)}
     if route_key == "study.lea.run.complete":
         return {"route": route_key, "result": complete_lea_run(conn, payload)}
+    if route_key == "study.lea.curriculum_profiles.list":
+        return {"route": route_key, "result": list_curriculum_concept_profiles(conn, payload)}
+    if route_key == "study.lea.curriculum_profile.detail":
+        return {"route": route_key, "result": get_curriculum_concept_profile(conn, payload)}
+    if route_key == "study.lea.curriculum_profile.record":
+        return {"route": route_key, "result": record_curriculum_concept_profile(conn, payload)}
     if route_key == "teaching.lifecycle.status":
         return {"route": route_key, "result": teaching_lifecycle_status(conn)}
     if route_key == "teaching.lifecycle.list":
