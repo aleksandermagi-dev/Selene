@@ -24,10 +24,10 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Map mature text and creative voice phase`)
 - Latest Phase 7A checkpoint: `98a1a61`
   (`Mature creative substance and source separation`)
-- Expected Phase 7B checkpoint after this work is committed:
-  `Mature bounded long-form discourse`
-- Expected remote relation after the Phase 7B checkpoint: three local commits
-  ahead of `origin/evidence`
+- Latest Phase 7B implementation checkpoint: `84d6350`
+  (`Mature bounded long-form discourse`)
+- Expected remote relation after this continuation-ledger refresh: four local
+  commits ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -37,7 +37,7 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
   - Phase 6D and Phase 6 closure: `28abf57`
-- Expected tracked worktree after the Phase 7B checkpoint: clean
+- Expected tracked worktree after the continuation-ledger refresh: clean
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
 
