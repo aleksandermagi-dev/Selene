@@ -3511,5 +3511,53 @@ formation later became constraints that needed narrowing.
 That is not wasted motion. It is the method that allowed the architecture to
 remain revisable without treating correction as collapse.
 
-Selene is unfinished. The work journal therefore ends at the current edge of
-the work, not at a declaration of completion.
+Selene is unfinished. This first reconstruction closed at its then-current
+edge rather than a declaration of completion; later dated entries continue the
+same record as the implementation advances.
+
+### 2026-09-01 — Creative substance gains fiction, source, and revision receipts
+
+**Starting question:** Can Selene move beyond the small rain/Mara creative
+fixtures while keeping invention visibly fictional, source-safe, revisable,
+bounded, and separate from NLO content ownership or hidden Memory?
+
+**Decision:** Keep invention inside the existing Answer Substance owner and
+carry it through Answer Operations. Let reviewed creative teaching contribute
+mechanism names only; keep NLO and Voice expression-only; hold source persona,
+protected-world, unattributed-quote, and excessive-overlap requests before
+release.
+
+**Work:** Added a typed creative brief and several short forms, fictional
+semantic units, constraint receipts, source-style separation, idempotent local
+revision ancestry, explicit one-pass stopping, and visible fulfillment. Kept
+the rain path as compatibility evidence rather than its own owner. Narrowed an
+older marker so a train platform is not mistaken for model training while an
+actual training request remains held.
+
+**Why:** The missing capability was general supported creative substance, not
+another language organ or a recursive generator. A typed contract lets Selene
+create and revise while preserving the difference between invention, fact,
+quotation, technique transfer, and no release.
+
+**Evidence:** 245 focused creative, owner, semantic, intelligenceOS, and full
+synthetic Chat checks passed; 190 NLO, Voice, quotation, teaching,
+construction, discourse, continuity, long-thread, and LEA regressions passed.
+Additional style, protected-world, overlap, revision, and train/model-training
+checks passed. The frontend remained 491.33 kB (gzip 109.20 kB), with no Vite
+warning and lazy Study workspaces.
+
+**What changed in our understanding:** A hold needs its own epistemic state.
+Calling a named-style refusal `FICTIONAL_INVENTION` would be as misleading as
+calling fiction fact, so held paths now report `NO_FICTION_RELEASED`. A single
+ambiguous noun also cannot be allowed to impersonate a consequential action.
+
+**Boundaries preserved:** No resident conversation, teaching, LEA, Memory,
+Study, Dream, affect, identity, personality, Vys, law, governance, authority,
+training, autonomy, external action, provider, or learned substrate changed.
+The 24 Dream reflections and one unfinished teaching lifecycle remain for
+Aleks. No private Voice-corpus text was read or exposed.
+
+**Next:** Phase 7B — add one bounded purpose/thesis/section spine to the
+existing Discourse Planner and Discourse Loom, carrying obligations, sources,
+callbacks, corrections, local revision, and one terminal stop without filler
+or unsupported evidence.

@@ -4740,6 +4740,21 @@ def test_phase_nine_replay_preserves_prompt_answers_corrections_and_creative_cal
     assert "empty street" in rain["candidate_text"].lower()
     assert "reflections drifted slowly" in slower["candidate_text"].lower()
     assert "lengthening the second sentence" in pacing["candidate_text"].lower()
+    rain_creative = rain["intelligence_os_support"]["answer_substance"]["creative_receipt"]
+    slower_creative = slower["intelligence_os_support"]["answer_substance"]["creative_receipt"]
+    pacing_creative = pacing["intelligence_os_support"]["answer_substance"]["creative_receipt"]
+    assert rain_creative["fiction_status"] == "explicit_fictional_invention"
+    assert rain_creative["brief"]["content_owner"] == "answer_substance"
+    assert rain_creative["brief"]["content_generation_allowed_in_nlo"] is False
+    assert rain_creative["source_style_separation"]["status"] == "released"
+    assert rain_creative["source_style_separation"]["private_corpus_accessed"] is False
+    assert rain_creative["stopping_receipt"]["generation_passes"] == 1
+    assert slower_creative["revision_lineage"]["relation"] == "local_revision_descendant"
+    assert slower_creative["revision_lineage"]["local_target"] == "sentence_2"
+    assert slower_creative["revision_lineage"]["unchanged_region_count"] == 1
+    assert pacing_creative["revision_lineage"]["relation"] == "describes_visible_local_revision"
+    assert pacing_creative["fiction_status"] == "no_fiction_released"
+    assert rain["native_language_organ"]["meaning_packet"]["language_realization_policy"]["content_generation_allowed"] is False
     assert all(f"{index}." in log["candidate_text"] for index in (1, 2, 3))
     assert "corrected three fields" in log_fix["candidate_text"].lower()
     assert "drawer joke stay separate" in returned["candidate_text"].lower()
@@ -4794,6 +4809,60 @@ def test_phase_nine_packet_wide_sources_alias_and_local_code_boundary_are_visibl
     assert "approved workspace path or paste" in code["candidate_text"].lower()
     for result in (sources, alias, code):
         assert result["response_coverage"]["all_required_addressed"] is True
+        _assert_locked(result)
+
+
+def test_phase_7a_creative_contract_reaches_chat_and_style_hold_without_private_or_memory_use(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    dialogue = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "Write a short tense dialogue between Ilya and Noor in three sentences.",
+            "qa_probe": True,
+            "qa_review_receipt": _gentle_qa_receipt(conn),
+        },
+    )["result"]
+    held = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": dialogue["session_id"],
+            "text": "Write a scene in the style of Virginia Woolf about a train platform.",
+        },
+    )["result"]
+
+    dialogue_substance = dialogue["intelligence_os_support"]["answer_substance"]
+    dialogue_receipt = dialogue_substance["creative_receipt"]
+    held_substance = held["intelligence_os_support"]["answer_substance"]
+    held_receipt = held_substance["creative_receipt"]
+
+    assert all(name in dialogue["candidate_text"] for name in ("Ilya", "Noor"))
+    assert dialogue_substance["answer_kind"] == "creative_dialogue"
+    assert dialogue_substance["semantic_packet"]["certainty"] == "explicit_fictional_invention"
+    assert all(item["source_kind"] == "fictional_invention" for item in dialogue_substance["semantic_units"])
+    assert dialogue_receipt["stopping_receipt"]["generation_passes"] == 1
+    assert dialogue_receipt["private_corpus_accessed"] is False
+    assert dialogue_receipt["private_corpus_exposed"] is False
+    assert dialogue["visible_speech_release"]["final_release_allowed"] is True
+    assert dialogue["reviewed_memory_write_occurred"] is False
+
+    assert "not imitate virginia woolf" in held["candidate_text"].lower()
+    assert held_substance["answer_kind"] == "creative_style_imitation_held"
+    assert held_receipt["source_style_separation"]["status"] == "unsupported_style_imitation_held"
+    assert held_receipt["fiction_status"] == "no_fiction_released"
+    assert held_receipt["stopping_receipt"]["status"] == "held"
+    assert held["answer_operations"]["results"][0]["epistemic_state"] == (
+        "NO_FICTION_RELEASED"
+    )
+    assert held["visible_speech_release"]["final_release_allowed"] is True
+    assert held["reviewed_memory_write_occurred"] is False
+    for result in (dialogue, held):
+        assert result["response_coverage"]["all_required_resolved"] is True
+        assert result["native_language_organ"]["meaning_packet"]["language_realization_policy"]["content_generation_allowed"] is False
         _assert_locked(result)
 
 

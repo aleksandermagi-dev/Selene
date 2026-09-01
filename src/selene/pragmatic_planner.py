@@ -824,7 +824,7 @@ def _unit_obligations(
                 or re.search(
                 r"(?:^|[):.!?]\s*)(?:summarize|recap|take\s+(?:this|these)\s+in\s+order|"
                 r"give|tell|show|look\s+at|compare|contrast|explain|name|revise|update|adjust|return|"
-                r"recommend|choose|pick|select|suggest|propose|ask|write|sort|arrange|describe|identify|state|disagree|"
+                r"recommend|choose|pick|select|suggest|propose|ask|write|make|sort|arrange|describe|identify|state|disagree|"
                 r"let\s+the\s+(?:conversation|chat)\s+end)\b",
                 text,
                 flags=re.IGNORECASE,
@@ -888,6 +888,17 @@ def _request_kind(text: str) -> str:
         return "preference"
     if _explicit_humor_request(lower):
         return "humor"
+    if (
+        re.search(
+            r"\b(?:write|create|compose|draft|invent|imagine|describe|revise|rewrite|make)\b",
+            lower,
+        )
+        and re.search(
+            r"\b(?:dialogue|metaphor|description|scene|paragraph|story|narrative|sentences?|pacing)\b",
+            lower,
+        )
+    ):
+        return "creative_expression"
     if re.search(
         r"\b(?:disagree|push back|challenge (?:that|the|my) (?:claim|conclusion|assumption))\b",
         lower,
@@ -1602,14 +1613,14 @@ def _utterance_units(value: str) -> list[dict[str, Any]]:
         elif re.match(
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"
             r"(?:compare|contrast|explain|show|tell|look\s+at|help|give|list|summarize|check|"
-            r"recommend|choose|pick|select|suggest|propose|ask|acknowledge|write|sort|arrange|outline|walk|describe|identify|state|revise|update|adjust|"
+            r"recommend|choose|pick|select|suggest|propose|ask|acknowledge|write|make|sort|arrange|outline|walk|describe|identify|state|revise|update|adjust|"
             r"separate|distinguish|calculate|count|disagree|challenge|return\b.*\b(?:explain|answer|summarize))\b",
             lower,
         ):
             kind = "direct_request"
         elif re.match(
             r"^(?:if|when|given)\b.+,\s*(?:compare|explain|give|tell|show|list|"
-            r"recommend|suggest|write|sort|arrange|describe|identify|state|disagree|challenge)\b",
+            r"recommend|suggest|write|make|sort|arrange|describe|identify|state|disagree|challenge)\b",
             lower,
         ):
             kind = "direct_request"
@@ -1701,6 +1712,7 @@ def _response_function_for_kind(kind: str) -> str:
         "conditional_disagreement": "disagreement",
         "disagreement": "disagreement",
         "correction_update": "correction",
+        "creative_expression": "creative_expression",
     }.get(kind, "answer")
 
 

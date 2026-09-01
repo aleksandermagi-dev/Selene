@@ -109,6 +109,12 @@ def enrich_obligation_ownership(
         owner = "ordinary_conversation_path"
         completion_policy = "owner_must_author_answer"
         response_functions = ["preference"]
+    elif kind == "creative_expression":
+        answer_act = "prompt_grounded_creative_expression"
+        epistemic_basis = "explicit_fiction_or_prompt_grounded_creative_boundary"
+        owner = "intelligence_os"
+        completion_policy = "owner_must_return_typed_creative_contract"
+        response_functions = ["creative_expression"]
     elif kind == "choice_or_priority":
         answer_act = "prompt_grounded_operation"
         epistemic_basis = "visible_premises_constraints_and_supported_content"

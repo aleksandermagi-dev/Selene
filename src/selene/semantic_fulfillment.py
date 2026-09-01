@@ -340,6 +340,21 @@ def _visible_requirements(
         return [_requirement("points", fields.get("points"), requested_count or 1)]
     if operation == "closure":
         return [_requirement("closure_intent", fields.get("closure_intent"))]
+    if operation == "creative_expression":
+        if str(fields.get("fiction_status") or "") != "explicit_fictional_invention":
+            return [
+                _requirement(
+                    "visible_creative_output",
+                    fields.get("visible_creative_output"),
+                )
+            ]
+        return [
+            _requirement(
+                "creative_units",
+                fields.get("creative_units") or fields.get("visible_creative_output"),
+                requested_count or 1,
+            )
+        ]
     return []
 
 
@@ -446,6 +461,7 @@ def _performed_count(operation: str, receipts: list[dict[str, Any]]) -> int:
         "method": "steps",
         "comparison": "findings",
         "summary": "points",
+        "creative_expression": "creative_units",
     }
     target = count_fields.get(operation)
     if target:

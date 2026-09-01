@@ -47,6 +47,24 @@ def test_pragmatic_plan_turns_multi_part_prompt_into_visible_obligations():
     assert plan["memory_write_active"] is False
 
 
+def test_creative_request_becomes_one_canonical_typed_expression_obligation():
+    prompt = "Write a short tense dialogue between Ilya and Noor in three sentences."
+    plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": _dialogue([]),
+            "content_seed": "",
+        }
+    )
+
+    assert len(plan["response_obligations"]) == 1
+    obligation = plan["response_obligations"][0]
+    assert obligation["kind"] == "creative_expression"
+    assert obligation["requested_response_functions"] == ["creative_expression"]
+    assert obligation["source_text"] == prompt
+    assert plan["obligation_ledger"]["downstream_reparse_allowed"] is False
+
+
 def test_content_light_turn_does_not_create_an_unresolved_answer_from_spine_wording():
     coverage = evaluate_response_coverage(
         {"response_obligations": []},

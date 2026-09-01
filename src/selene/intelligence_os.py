@@ -49,7 +49,12 @@ HIGH_STAKES_MARKERS = (
     "runtime recall",
     "raw corpus",
     "raw import",
-    "train",
+    "train selene",
+    "train the model",
+    "train a model",
+    "train this model",
+    "train the system",
+    "train the voice",
     "fine-tune",
     "lora",
     "autonomous",
@@ -146,7 +151,15 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
             ),
         }
     answer_shape = _answer_shape(evaluation, challenge)
-    answer_substance = build_answer_substance(prompt, observations)
+    answer_substance = build_answer_substance(
+        prompt,
+        observations,
+        language_guidance=(
+            payload.get("language_teaching_guidance")
+            if isinstance(payload.get("language_teaching_guidance"), dict)
+            else {}
+        ),
+    )
     hypothesis_attempt = build_bounded_hypothesis_attempt(
         {
             "prompt": prompt,

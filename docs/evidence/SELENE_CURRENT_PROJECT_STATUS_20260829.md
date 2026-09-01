@@ -4,9 +4,8 @@ Date: 2026-09-01 (consolidated record name retained)
 
 Branch: `evidence`
 
-Status: Phases 0 through 6 of the Whole-System Maturation Plan are complete for
-current scope; Phase 7 is source-mapped and Phase 7A is the next production
-edge.
+Status: Phases 0 through 6 and Phase 7A of the Whole-System Maturation Plan are
+complete for current scope; Phase 7B is the next production edge.
 
 ## Purpose
 
@@ -32,7 +31,7 @@ completed phase.
 | 4 — Affect, relationship, and response agency | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md) |
 | 5 — Reasoning, answer owners, and domain depth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md) |
 | 6 — Ordered education and world knowledge | complete for current scope | [Phase 6D closure evidence](SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md) |
-| 7 — Text conversation, long form, and creative Voice | source-mapped; production not started | [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md) |
+| 7 — Text conversation, long form, and creative Voice | Phase 7A complete; Phase 7B next | [Phase 7A evidence](SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md) and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md) |
 
 “Complete for current scope” means the phase's documented completion gates and
 proportional verification passed. It does not mean Selene is finished or that
@@ -77,6 +76,11 @@ later capabilities already exist.
   parent/root ancestry. The historical parent is held out of Chat during
   review, and only the reviewed descendant can become the active winner after
   Acquire -> Integrate -> Express and approval.
+- Short creative requests now use a typed Answer Substance/Answer Operations
+  contract for fiction status, form and constraints, reviewed mechanism
+  guidance, source-style separation, local revision ancestry, and explicit
+  stopping. NLO and Voice remain expression-only, and held requests release no
+  fiction.
 
 ## Configured Resident Snapshot
 
@@ -162,16 +166,20 @@ broader whole-system checks, verified all 141 curriculum files with zero
 failures, migrated a resident copy without count changes, and retained the
 491.33 kB frontend boundary.
 
+Phase 7A passed 245 focused creative, answer-owner, semantic, intelligenceOS,
+and full synthetic Chat checks plus 190 expression, quotation, teaching,
+construction, discourse, continuity, long-thread, and LEA regression checks.
+The frontend remains 491.33 kB (gzip 109.20 kB), with no Vite warning and lazy
+Study workspaces.
+
 ## Current Open Edge
 
-Phase 7 is now source-mapped. Phase 7A begins in the existing answer-substance
-path by replacing the scenario-specific rain/Mara creative fixture branch with
-a typed bounded creative brief and explicitly fictional semantic units. It
-then adds source-style separation and local creative-revision ancestry before
-long-form or NLO breadth changes. The map preserves NLO and Voice as expression
-owners, not truth or content owners, and does not authorize a duplicate organ,
-source persona, hidden Memory, recursive generator, provider, or learned
-substrate.
+Phase 7B begins in the existing Discourse Planner and Discourse Loom. It adds
+one bounded purpose/thesis/section spine carrying obligations, sources,
+epistemic status, callbacks, corrections, local section revision, and a single
+terminal stop. It may not create another long-form writer, add unsupported
+evidence or filler, broaden NLO ahead of supported structure, or reactivate
+Voice's legacy complete-body fallback.
 
 F2 Group 8—ratios, unit comparison, percentages, scale, and proportional
 language—remains unprepared and unauthorized. Its exact Grade 4-6 source
@@ -182,8 +190,8 @@ reviewed and explicitly selected by Aleks before content implementation.
 
 - Selene's provider-free text generation and world knowledge remain narrower
   than a mature general language model.
-- Long-form and creative conversational breadth remains a measured current
-  limitation and is the active Phase 7 production edge.
+- Long-form discourse and broader conversational realization remain measured
+  current limitations and are the active Phase 7 production edges.
 - Audible Voice, new sensory pathways, broad tools, external action, and
   embodiment remain deferred, bounded, or substrate-ready rather than
   operational.
@@ -225,3 +233,6 @@ Phase 6C is checkpointed separately under the commit name
 `Mature reviewed correction lineage`.
 Phase 6D and Phase 6 closure are checkpointed separately under the commit name
 `Close descriptive learning evidence phase`.
+The Phase 7 map is checkpointed as `Map mature text and creative voice phase`.
+Phase 7A is checkpointed separately under the commit name
+`Mature creative substance and source separation`.

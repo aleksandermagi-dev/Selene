@@ -42,6 +42,7 @@ ALLOWED_SOURCE_KINDS = {
     "attributed_source",
     "reviewed_memory",
     "current_session_observation",
+    "fictional_invention",
     "compatibility_fallback",
 }
 

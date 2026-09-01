@@ -6,6 +6,7 @@ from typing import Any
 from .registry import truncate
 from .supported_semantics import build_supported_semantic_packet
 from .current_context_inference import build_current_context_inference
+from .creative_substance import build_creative_substance
 
 
 ANSWER_SUBSTANCE_BOUNDARY = (
@@ -23,6 +24,7 @@ _STOP_WORDS = {
 def build_answer_substance(
     prompt: str,
     observations: list[dict[str, Any]] | None = None,
+    language_guidance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     text = truncate(str(prompt or "").strip(), 2400)
     lower = " ".join(text.lower().replace("’", "'").split())
@@ -34,7 +36,12 @@ def build_answer_substance(
     support_basis = "current_prompt_only"
     semantic_context: dict[str, Any] = {}
     current_context_inference_packet: dict[str, Any] = {}
-    ordinary_operation = _ordinary_prompt_grounded_operation(text, observations or [])
+    creative_receipt: dict[str, Any] = {}
+    ordinary_operation = _ordinary_prompt_grounded_operation(
+        text,
+        observations or [],
+        language_guidance=language_guidance or {},
+    )
 
     comparison = any(marker in lower for marker in ("compare", "difference", "versus", " vs ", "tradeoff", "trade-off", "which option"))
     ordering = any(marker in lower for marker in ("come first", "do first", "start with", "begin with", "priority", "prioritize"))
@@ -143,6 +150,11 @@ def build_answer_substance(
         current_context_inference_packet = (
             ordinary_operation.get("current_context_inference")
             if isinstance(ordinary_operation.get("current_context_inference"), dict)
+            else {}
+        )
+        creative_receipt = (
+            ordinary_operation.get("creative_receipt")
+            if isinstance(ordinary_operation.get("creative_receipt"), dict)
             else {}
         )
     elif viewpoint and any(marker in lower for marker in ("reversible step", "reversible first", "smallest reversible")):
@@ -296,14 +308,31 @@ def build_answer_substance(
     semantic_units = _structured_semantic_units(kind, semantic_context)
     if not semantic_units:
         semantic_units = _text_grounded_semantic_units(answer)
+    fictional_invention = (
+        str(creative_receipt.get("fiction_status") or "")
+        == "explicit_fictional_invention"
+    )
     semantic_packet = build_supported_semantic_packet(
         {
             "answer_kind": kind,
-            "certainty": "provisional",
-            "scope": "current_prompt_only",
+            "certainty": (
+                "explicit_fictional_invention"
+                if fictional_invention
+                else "provisional"
+            ),
+            "scope": (
+                "current_creative_request_only"
+                if creative_receipt
+                else "current_prompt_only"
+            ),
             "fallback_text": answer,
-            "source_refs": ["answer_substance:current_prompt"],
+            "source_refs": (
+                ["answer_substance:current_prompt", "creative_substance:current_prompt"]
+                if creative_receipt
+                else ["answer_substance:current_prompt"]
+            ),
             "units": semantic_units,
+            "original_expression_required": bool(creative_receipt),
         }
     )
     return {
@@ -316,6 +345,13 @@ def build_answer_substance(
         "semantic_packet": semantic_packet,
         "semantic_units": semantic_packet["units"],
         "current_context_inference": current_context_inference_packet,
+        "creative_receipt": creative_receipt,
+        "creative_contract_active": bool(creative_receipt),
+        "fiction_status": (
+            creative_receipt.get("fiction_status")
+            if creative_receipt
+            else "not_applicable"
+        ),
         "structured_semantic_handoff": semantic_packet["structured_unit_count"] > 0,
         "compatibility_fallback_available": semantic_packet["compatibility_fallback_available"],
         "external_fact_claimed": False,
@@ -708,6 +744,8 @@ def _topic_terms(value: str) -> list[str]:
 def _ordinary_prompt_grounded_operation(
     prompt: str,
     observations: list[dict[str, Any]],
+    *,
+    language_guidance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build ordinary answers from visible premises and recent conversation.
 
@@ -734,7 +772,11 @@ def _ordinary_prompt_grounded_operation(
             "current_context_inference": current_context_inference,
         }
 
-    creative = _bounded_creative_operation(prompt, lower, history)
+    creative = _bounded_creative_operation(
+        prompt,
+        observations,
+        language_guidance=language_guidance or {},
+    )
     if creative:
         return creative
 
@@ -1183,49 +1225,17 @@ def _foundational_current_prompt_operation(
 
 def _bounded_creative_operation(
     prompt: str,
-    lower: str,
-    history: list[str],
+    observations: list[dict[str, Any]],
+    *,
+    language_guidance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Provide original, current-turn creative expression without imitation."""
+    """Delegate bounded invention to the Phase 7A answer-substance helper."""
 
-    if re.search(r"\bwrite (?:two|2) original sentences?\b", lower) and "rain" in lower:
-        answer = (
-            "Rain softened the empty street, blurring its hard edges into silver. "
-            "Beneath the streetlights, the abandoned pavement felt less lonely and more like it was waiting."
-        )
-        return _plain_operation(answer, "original_two_sentence_scene", "the preferred viewpoint or emotional shade")
-
-    if (
-        "second sentence" in lower
-        and any(marker in lower for marker in ("slower", "softer", "pacing", "rewrite", "revise"))
-        and any(
-            marker in item.lower()
-            for item in history
-            for marker in ("rain softened the empty street", "second sentence slower and softer")
-        )
-    ):
-        answer = (
-            "Rain softened the empty street, blurring its hard edges into silver. "
-            "Beneath the streetlights, pale reflections drifted slowly across the pavement, one quiet shimmer fading before the next appeared."
-        )
-        return _plain_operation(answer, "original_scene_pacing_revision", "whether the slower rhythm matches the intended mood")
-
-    if "what did you change" in lower and "pacing" in lower and any(
-        any(marker in item.lower() for marker in ("reflections drifted slowly", "second sentence slower and softer"))
-        for item in history
-    ):
-        answer = (
-            "I changed the pacing by lengthening the second sentence, using softer verbs, and adding a gradual sequence—one shimmer fading before the next appeared—so the image unfolds instead of landing all at once."
-        )
-        return _plain_operation(answer, "creative_revision_explanation", "whether the intended effect was calmness or suspense")
-
-    if all(item in lower for item in ("character", "goal", "obstacle", "choice")):
-        answer = (
-            "Mara's goal was to repair the garden gate before sunset, but her obstacle was a final hinge that would not align with the old frame. Rather than force it and split the wood, her choice was to brace the gate for the night and return with a better-fitting tool in the morning."
-        )
-        return _plain_operation(answer, "original_goal_obstacle_choice_paragraph", "the desired setting, tone, or character viewpoint")
-
-    return {}
+    return build_creative_substance(
+        prompt,
+        observations,
+        language_guidance=language_guidance or {},
+    )
 
 
 def _plain_operation(

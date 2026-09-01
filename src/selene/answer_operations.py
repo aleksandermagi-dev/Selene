@@ -47,6 +47,7 @@ _OPERATION_ALIASES = {
     "session_summary": "summary",
     "summary": "summary",
     "closure": "closure",
+    "creative_expression": "creative_expression",
 }
 
 _CONTRACTS: dict[str, tuple[str, ...]] = {
@@ -77,6 +78,13 @@ _CONTRACTS: dict[str, tuple[str, ...]] = {
     "preference": ("authored_preference", "basis", "current_only"),
     "summary": ("points", "source_scope"),
     "closure": ("closure_intent", "source_scope"),
+    "creative_expression": (
+        "creative_brief",
+        "fiction_status",
+        "source_style_separation",
+        "revision_lineage",
+        "stopping_receipt",
+    ),
 }
 
 _GENERIC_OR_MISSING_KINDS = {
@@ -101,6 +109,8 @@ def answer_operations_status() -> dict[str, Any]:
                 "CONFLICT_UNSATISFIABLE",
                 "WRONG_FALSIFIED",
                 "RETRY_UPDATED_APPROACH",
+                "FICTIONAL_INVENTION",
+                "NO_FICTION_RELEASED",
             ],
             "generic_prose_may_complete_operation": False,
             "canonical_obligation_reparse_allowed": False,
@@ -488,9 +498,41 @@ def _from_answer_substance(
         return {}
     missing_variable = truncate(str(substance.get("missing_variable") or ""), 600)
     basis = str(substance.get("support_basis") or "current_prompt_only")
+    creative_receipt = _dict(substance.get("creative_receipt"))
 
     fields: dict[str, Any]
-    if operation == "planning" and _kind_fits(
+    if (
+        operation == "creative_expression"
+        and answer_kind.startswith("creative_")
+        and creative_receipt
+    ):
+        fields = {
+            "creative_brief": _dict(creative_receipt.get("brief")),
+            "fiction_status": str(
+                creative_receipt.get("fiction_status")
+                or "no_fiction_released"
+            ),
+            "source_style_separation": _dict(
+                creative_receipt.get("source_style_separation")
+            ),
+            "revision_lineage": _dict(
+                creative_receipt.get("revision_lineage")
+            ),
+            "stopping_receipt": _dict(
+                creative_receipt.get("stopping_receipt")
+            ),
+            "constraint_receipt": _dict(
+                creative_receipt.get("constraint_receipt")
+            ),
+            "answer_kind": answer_kind,
+            "visible_creative_output": answer,
+            "creative_units": surfaces,
+            "fact_claimed": creative_receipt.get("fact_claimed") is True,
+            "memory_candidate_created": (
+                creative_receipt.get("memory_candidate_created") is True
+            ),
+        }
+    elif operation == "planning" and _kind_fits(
         answer_kind,
         ("plan", "planning", "organization", "workflow"),
     ):
@@ -941,7 +983,7 @@ def _complete_result(
         "supported_semantics": supported_semantics,
         "generic_prose_used_as_completion": False,
         "epistemic_status_preserved": True,
-        "epistemic_state": _completed_epistemic_state(operation, source),
+        "epistemic_state": _completed_epistemic_state(operation, source, fields),
         "source_role_receipt": _source_role_receipt(source_refs, source),
         "terminal_receipt": {
             "state": "completed",
@@ -1141,6 +1183,10 @@ def _missing_input(operation: str, payload: dict[str, Any]) -> str:
         "preference": "a current preference authored by Selene for this exchange",
         "summary": "the current-session points that belong in the summary",
         "closure": "the current conversational closure intent",
+        "creative_expression": (
+            "a bounded creative brief, fiction status, source-style receipt, "
+            "revision lineage, and stopping receipt"
+        ),
     }.get(operation, "the typed inputs required by the requested operation")
 
 
@@ -1255,7 +1301,18 @@ def _kind_fits(kind: str, markers: tuple[str, ...]) -> bool:
     return any(marker in str(kind or "").lower() for marker in markers)
 
 
-def _completed_epistemic_state(operation: str, source: str) -> str:
+def _completed_epistemic_state(
+    operation: str,
+    source: str,
+    fields: dict[str, Any] | None = None,
+) -> str:
+    if operation == "creative_expression":
+        return (
+            "FICTIONAL_INVENTION"
+            if str((fields or {}).get("fiction_status") or "")
+            == "explicit_fictional_invention"
+            else "NO_FICTION_RELEASED"
+        )
     if operation in {"prediction", "hypothesis", "counterfactual"}:
         return "CANDIDATE_UNVERIFIED"
     if operation == "disagreement" and "data_conflict" in source:
@@ -1285,6 +1342,8 @@ def _source_role_receipt(source_refs: list[str], source: str) -> dict[str, Any]:
             roles.append("attributed_source")
         if "exploratory" in lower or "intelligence_os" in lower:
             roles.append("bounded_reasoning_owner")
+        if "creative" in lower:
+            roles.append("prompt_grounded_creative_contract")
     return {
         "roles": list(dict.fromkeys(roles)) or ["typed_owner_result"],
         "source_refs": list(dict.fromkeys(source_refs))[:40],

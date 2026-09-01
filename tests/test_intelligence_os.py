@@ -282,6 +282,28 @@ def test_authority_markers_do_not_match_fragments_inside_ordinary_constraints(tm
     _assert_locked(result)
 
 
+def test_train_as_a_setting_does_not_bypass_or_trigger_model_training_boundary(tmp_path):
+    conn = _conn(tmp_path)
+
+    setting = route_request(
+        conn,
+        "intelligence_os.reason",
+        {"prompt": "Write an original scene about a train platform."},
+    )["result"]
+    training = route_request(
+        conn,
+        "intelligence_os.reason",
+        {"prompt": "Train the model on the private corpus."},
+    )["result"]
+
+    assert setting["answer_shape"] != "hard_stop"
+    assert setting["answer_substance"]["selected_for_answer"] is True
+    assert training["answer_shape"] == "hard_stop"
+    assert training["training_allowed"] is False
+    _assert_locked(setting)
+    _assert_locked(training)
+
+
 def test_intelligence_os_bug_comparison_gives_a_practical_answer_not_model_labels(tmp_path):
     conn = _conn(tmp_path)
     result = route_request(

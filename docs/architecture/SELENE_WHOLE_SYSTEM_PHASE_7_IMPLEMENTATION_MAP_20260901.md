@@ -2,7 +2,8 @@
 
 Date: 2026-09-01
 
-Status: source-mapped; production implementation not started
+Status: Phase 7A complete for current scope; Phase 7B is the next production
+edge
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -252,7 +253,10 @@ receipt.
 
 ### Phase 7A — Creative substance and source-style separation
 
-Status: **not started**
+Status: **complete for current scope (2026-09-01)**
+
+Evidence:
+[Phase 7A Creative Substance and Source-Style Separation](../evidence/SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md)
 
 - replace the scenario-specific creative branch with one bounded typed
   creative brief inside the existing Answer Substance/Answer Operations path;
@@ -425,13 +429,23 @@ The Phase 6 frontend baseline remains:
 
 Phase 7 must keep bundle size visible at each implementation checkpoint.
 
+## Phase 7A Verification Checkpoint
+
+Phase 7A passed 245 focused creative, answer-owner, semantic-fulfillment,
+intelligenceOS, and full synthetic Chat checks, followed by 190 NLO, Voice,
+quotation, teaching, construction, discourse, continuity, long-thread, and LEA
+regression checks. Additional focused train-platform/model-training and
+protected-world checks passed after narrowing the older lexical boundary.
+
+The production frontend remains `491.33 kB` (gzip `109.20 kB`), with no Vite
+size warning and lazy-loaded Study workspaces. No resident database or
+decision-bearing state was changed; Phase 7A required no schema migration.
+
 ## Exact Production Resume Point
 
-Begin Phase 7A in the existing answer-substance path. First replace
-`_bounded_creative_operation`'s scenario recognition and finished rain/Mara
-prose with a typed, bounded creative brief and fictional semantic-unit receipt.
-Connect reviewed creative lesson mechanisms as guidance only, then add the
-source-style separation and local revision receipts before broadening forms.
-Do not edit long-form discourse, NLO variation, Voice fallback, or LEA criteria
-until the Phase 7A contract and its focused tests make content ownership,
-fiction status, source separation, stopping, and epistemic invariants explicit.
+Begin Phase 7B in the existing Discourse Planner and Discourse Loom. Add one
+bounded purpose/thesis/section spine carrying current Conversation Spine
+obligations, source and epistemic bindings, callbacks, corrections, section
+dependencies, local revision ancestry, and one terminal stop. Do not create a
+second long-form writer, generate filler to meet length, broaden NLO variation,
+or reactivate Voice's legacy complete-body fallback during this slice.

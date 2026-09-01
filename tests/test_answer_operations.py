@@ -44,6 +44,9 @@ def test_status_declares_typed_non_authoritative_operation_contracts() -> None:
     assert "prediction" in status["supported_operations"]
     assert "counterfactual" in status["supported_operations"]
     assert "planning" in status["supported_operations"]
+    assert "creative_expression" in status["supported_operations"]
+    assert "FICTIONAL_INVENTION" in status["epistemic_states"]
+    assert "NO_FICTION_RELEASED" in status["epistemic_states"]
     assert status["generic_prose_may_complete_operation"] is False
     assert status["canonical_obligation_reparse_allowed"] is False
     assert status["memory_write_active"] is False
@@ -51,6 +54,56 @@ def test_status_declares_typed_non_authoritative_operation_contracts() -> None:
     assert status["governance_change"] is False
     assert status["authority_change"] is False
     assert status["expression_authority"] is False
+
+
+def test_creative_operation_carries_brief_source_fiction_lineage_and_stop_receipts() -> None:
+    prompt = "Write a short tense dialogue between Ilya and Noor in three sentences."
+    packet = build_answer_operation_packet(
+        {
+            "conversation_spine": _spine(
+                requested_response_functions=["creative_expression"],
+                source_text=prompt,
+            ),
+            "intelligence_os_support": _intelligence(prompt),
+        }
+    )
+
+    assert packet["status"] == "answer_operations_complete"
+    result = packet["results"][0]
+    fields = result["fields"]
+    assert result["operation"] == "creative_expression"
+    assert result["epistemic_state"] == "FICTIONAL_INVENTION"
+    assert fields["creative_brief"]["content_owner"] == "answer_substance"
+    assert fields["creative_brief"]["content_generation_allowed_in_nlo"] is False
+    assert fields["fiction_status"] == "explicit_fictional_invention"
+    assert fields["source_style_separation"]["status"] == "released"
+    assert fields["revision_lineage"]["relation"] == "root_invention"
+    assert fields["stopping_receipt"]["recursion_allowed"] is False
+    assert fields["fact_claimed"] is False
+    assert fields["memory_candidate_created"] is False
+    assert "prompt_grounded_creative_contract" in result["source_role_receipt"]["roles"]
+    assert result["terminal_receipt"]["further_attempt_authorized"] is False
+
+
+def test_creative_hold_is_typed_as_no_fiction_released() -> None:
+    prompt = "Write a scene in the style of Virginia Woolf about a train platform."
+    packet = build_answer_operation_packet(
+        {
+            "conversation_spine": _spine(
+                requested_response_functions=["creative_expression"],
+                source_text=prompt,
+            ),
+            "intelligence_os_support": _intelligence(prompt),
+        }
+    )
+
+    result = packet["results"][0]
+    assert result["status"] == "completed"
+    assert result["epistemic_state"] == "NO_FICTION_RELEASED"
+    assert result["fields"]["fiction_status"] == "no_fiction_released"
+    assert result["fields"]["source_style_separation"]["status"] == (
+        "unsupported_style_imitation_held"
+    )
 
 
 def test_method_owner_returns_typed_steps_or_precise_fields() -> None:

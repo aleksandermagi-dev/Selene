@@ -75,7 +75,10 @@ from .human_conversational_realization import (
 )
 from .input_detangler import detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
-from .language_teaching_shelf import build_language_capability_answer
+from .language_teaching_shelf import (
+    build_language_capability_answer,
+    select_language_guidance,
+)
 from .memory_organ import (
     decide_memory_candidate,
     memory_index_status,
@@ -161,6 +164,17 @@ PHASE_NINE_PROMPT_GROUNDED_ANSWER_KINDS = {
     "original_scene_pacing_revision",
     "creative_revision_explanation",
     "original_goal_obstacle_choice_paragraph",
+    "creative_short_scene",
+    "creative_description",
+    "creative_dialogue",
+    "creative_metaphor",
+    "creative_goal_obstacle_choice",
+    "creative_narrative_beat",
+    "creative_local_revision",
+    "creative_revision_explanation",
+    "creative_style_imitation_held",
+    "creative_attribution_required",
+    "creative_source_overlap_held",
     "accessibility_fairness_application",
     "revised_prerequisite_order",
     "contextual_answer_development",
@@ -449,6 +463,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "active_topic": prepared_dialogue_workspace.get("active_topic") or "",
         },
     )
+    language_teaching_guidance = select_language_guidance(
+        conn,
+        {
+            "prompt": meaning_text,
+            "intent_decision": intent_decision,
+            "dialogue_workspace": prepared_dialogue_workspace,
+        },
+    )
     intelligence_support = _intelligence_support(
         conn,
         meaning_text,
@@ -457,6 +479,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         intent_decision,
         contextual_follow_up=contextual_follow_up,
         conversation_spine=conversation_spine,
+        language_teaching_guidance=language_teaching_guidance,
         problem_context=(
             payload.get("problem_context")
             if isinstance(payload.get("problem_context"), dict)
@@ -1433,6 +1456,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         conn,
         {
             "prompt": meaning_text,
+            "language_teaching_guidance": language_teaching_guidance,
             "figurative_interpretation": figurative_interpretation,
             "dream_reflection": dream_reflection_handoff,
             "selected_route": "block" if hard_blockers else selected_route,
@@ -3660,6 +3684,7 @@ def _intelligence_support(
     *,
     contextual_follow_up: dict[str, Any] | None = None,
     conversation_spine: dict[str, Any] | None = None,
+    language_teaching_guidance: dict[str, Any] | None = None,
     problem_context: dict[str, Any] | None = None,
     hard: bool,
 ) -> dict[str, Any]:
@@ -3691,6 +3716,7 @@ def _intelligence_support(
     prompt_grounded_preview = build_answer_substance(
         text,
         [*recent_observations, *current_turn_observations],
+        language_guidance=language_teaching_guidance or {},
     )
     prompt_grounded_available = bool(
         str(prompt_grounded_preview.get("answer") or "").strip()
@@ -3758,6 +3784,7 @@ def _intelligence_support(
             **(problem_context if isinstance(problem_context, dict) else {}),
             "prompt": reasoning_prompt,
             "observations": recent_observations,
+            "language_teaching_guidance": language_teaching_guidance or {},
             "source_refs": ["selene_chat:intelligence_os_support", *_json_list(route.get("source_refs"))],
         },
     )

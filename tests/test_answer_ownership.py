@@ -3,6 +3,26 @@ from __future__ import annotations
 from selene.answer_ownership import enrich_obligation_ownership, research_domain_requested
 
 
+def test_creative_expression_is_owned_by_typed_prompt_grounded_answer_substance() -> None:
+    result = enrich_obligation_ownership(
+        {
+            "id": "creative-1",
+            "kind": "creative_expression",
+            "source_text": "Write a short dialogue between Ilya and Noor.",
+        },
+        intent_decision={},
+    )
+
+    assert result["answer_act"] == "prompt_grounded_creative_expression"
+    assert result["epistemic_basis"] == "explicit_fiction_or_prompt_grounded_creative_boundary"
+    assert result["responsible_owner"] == "intelligence_os"
+    assert result["requested_response_functions"] == ["creative_expression"]
+    assert result["completion_policy"] == "owner_must_return_typed_creative_contract"
+    assert result["external_evidence_required"] is False
+    assert result["memory_write_active"] is False
+    assert result["identity_change"] is False
+
+
 def _owned(text: str, *, kind: str = "direct_question", intent: dict | None = None) -> dict:
     return enrich_obligation_ownership(
         {
