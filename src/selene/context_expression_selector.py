@@ -190,6 +190,7 @@ def select_discourse_loom(
         )
         loom["selected_candidate_text"] = str(selected.get("candidate_text") or "")
         loom["selected_paragraphs"] = deepcopy(selected.get("paragraphs") or [])
+        loom["section_receipts"] = deepcopy(selected.get("section_receipts") or [])
     loom["context_expression_selection"] = selection
     loom["context_selection_performed"] = selection["selection_performed"]
     loom["context_selection_pass_count"] = selection["selection_pass_count"]

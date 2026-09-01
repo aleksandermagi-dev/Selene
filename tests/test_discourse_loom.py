@@ -276,6 +276,80 @@ def test_attributed_thread_return_uses_traversal_order_without_inventing_callbac
     )
 
 
+def test_typed_spine_selects_x_y_x_with_y_z_return_and_stops_once():
+    discourse = build_supported_discourse_plan(
+        {
+            "content_seed": (
+                "Place the beds first. "
+                "Check the water schedule. "
+                "Revise bed spacing from that schedule. "
+                "Then record the bounded layout."
+            ),
+            "response_depth": "developed",
+            "response_obligations": [
+                {
+                    "id": "x-start",
+                    "source_text": "Place the beds.",
+                    "coverage_terms": ["place", "beds"],
+                    "thread_id": "x",
+                    "thread_action": "start",
+                    "thread_traversal_index": 1,
+                },
+                {
+                    "id": "y-branch",
+                    "source_text": "Check the water schedule.",
+                    "coverage_terms": ["water", "schedule"],
+                    "thread_id": "y",
+                    "thread_action": "branch",
+                    "thread_traversal_index": 2,
+                },
+                {
+                    "id": "x-return",
+                    "source_text": "Revise bed spacing.",
+                    "coverage_terms": ["revise", "spacing"],
+                    "thread_id": "x",
+                    "thread_action": "revise_with_dependency",
+                    "thread_traversal_index": 3,
+                    "dependency_thread_id": "y",
+                },
+                {
+                    "id": "z-land",
+                    "source_text": "Record the layout.",
+                    "coverage_terms": ["record", "layout"],
+                    "thread_id": "z",
+                    "thread_action": "land",
+                    "thread_traversal_index": 4,
+                    "dependency_thread_id": "x",
+                },
+            ],
+            "thread_braid": {
+                "braided": True,
+                "turn_traversal": [
+                    {"index": 1, "thread_id": "x", "action": "start"},
+                    {"index": 2, "thread_id": "y", "action": "branch"},
+                    {"index": 3, "thread_id": "x", "action": "revise_with_dependency", "dependency_thread_id": "y"},
+                    {"index": 4, "thread_id": "z", "action": "land", "dependency_thread_id": "x"},
+                ],
+            },
+        }
+    )
+    loom = weave_supported_discourse(
+        discourse,
+        response_depth="developed",
+        contextual_plan={"response_depth": "developed", "supported_content_unit_count": 4},
+    )
+
+    assert loom["selected_loom_specification_id"] == "discourse:thread_traversal"
+    text = loom["selected_candidate_text"]
+    assert text.index("Place the beds") < text.index("water schedule")
+    assert text.index("water schedule") < text.index("Revise bed spacing")
+    assert text.index("Revise bed spacing") < text.index("record the bounded layout")
+    assert "Bringing that back with the new piece:" in text
+    assert "For the final point:" in text
+    assert loom["terminal_stopping_receipt_count"] == 1
+    assert loom["recursive_generation_used"] is False
+
+
 def test_brief_discourse_may_omit_optional_support_but_not_required_limits_or_obligations():
     discourse = {
         "status": "supported_discourse_plan_ready",
@@ -326,6 +400,77 @@ def test_no_supported_closure_means_stop_without_a_forced_question_or_ending():
     assert loom["forced_closure_added"] is False
     assert not loom["selected_candidate_text"].endswith("?")
     assert "anything else" not in loom["selected_candidate_text"].lower()
+
+
+def test_discourse_loom_preserves_typed_section_receipts_and_one_terminal_stop():
+    discourse = build_supported_discourse_plan(
+        {
+            "supported_content_units": [
+                {
+                    "id": "thesis",
+                    "text": "Use the reversible option.",
+                    "role": "thesis",
+                    "supported": True,
+                    "source_kind": "prompt_grounded_method",
+                    "certainty": "supported",
+                },
+                {
+                    "id": "example",
+                    "text": "A one-week pilot can be undone.",
+                    "role": "example",
+                    "supported": True,
+                    "source_kind": "fictional_invention",
+                    "certainty": "illustrative_only",
+                },
+            ],
+            "response_depth": "developed",
+        }
+    )
+    loom = weave_supported_discourse(discourse, response_depth="developed")
+
+    assert loom["section_plan_id"] == discourse["discourse_spine"]["plan_id"]
+    assert [item["function"] for item in loom["section_receipts"]] == ["thesis", "example"]
+    assert all(item["state"] == "realized_from_declared_supported_units" for item in loom["section_receipts"])
+    assert all(item["source_and_epistemic_bindings_preserved"] is True for item in loom["section_receipts"])
+    assert loom["terminal_stopping_receipt"]["terminal"] is True
+    assert loom["terminal_stopping_receipt_count"] == 1
+    assert loom["terminal_stopping_receipt"]["further_generation_allowed"] is False
+    assert loom["paragraph_limit"] == 8
+    _assert_locked(loom)
+
+
+def test_discourse_loom_exposes_local_revision_receipt_without_resetting_other_sections():
+    base_payload = {
+        "supported_content_units": [
+            {"id": "thesis", "text": "Run the pilot.", "role": "thesis", "supported": True},
+            {"id": "reason", "text": "It is reversible.", "role": "explanation", "supported": True},
+            {"id": "limit", "text": "The result is local.", "role": "qualification", "supported": True},
+        ],
+        "response_depth": "developed",
+    }
+    initial = build_supported_discourse_plan(base_payload)
+    target = initial["discourse_spine"]["section_plan"][1]["section_id"]
+    revised = build_supported_discourse_plan(
+        {
+            **base_payload,
+            "supported_content_units": [
+                *base_payload["supported_content_units"],
+                {"id": "reason_v2", "text": "It is reversible and observable.", "role": "explanation", "supported": True},
+            ],
+            "section_revision": {
+                "prior_discourse_spine": initial["discourse_spine"],
+                "target_section_id": target,
+                "replacement_content_unit_ids": ["reason_v2"],
+            },
+        }
+    )
+    loom = weave_supported_discourse(revised, response_depth="developed")
+
+    assert loom["local_revision_receipt"]["status"] == "local_section_revision_applied"
+    assert loom["local_revision_receipt"]["other_sections_changed"] is False
+    assert loom["local_revision_receipt"]["conversation_reset"] is False
+    assert "It is reversible and observable." in loom["selected_candidate_text"]
+    assert "It is reversible." not in loom["selected_candidate_text"]
 
 
 def test_exact_and_specialized_social_structures_remain_as_supplied_only():
@@ -392,6 +537,20 @@ def test_nlo_uses_discourse_loom_for_supported_long_form_without_writing(tmp_pat
     assert result["candidate_text"].lower().count("one-week trial") == 1
     assert "One limit:" in result["candidate_text"]
     assert loom["visible_speech_applied"] is True
+    assert result["discourse_plan"]["supported_discourse"]["discourse_spine"]["status"] == "typed_discourse_spine_ready"
+    assert result["discourse_plan"]["supported_discourse"]["discourse_spine"]["release_alignment"] == {
+        "state": "pre_expression_release_alignment_carried",
+        "content_source_release_allowed": False,
+        "final_release_owner": "Conversation Spine and Chat",
+        "planner_has_release_authority": False,
+    }
+    assert loom["terminal_stopping_receipt_count"] == 1
+    selected_candidate = next(
+        item
+        for item in loom["candidates"]
+        if item["discourse_candidate_id"] == loom["selected_discourse_candidate_id"]
+    )
+    assert loom["section_receipts"] == selected_candidate["section_receipts"]
     assert result["revision"]["discourse_loom_checked"] is True
     assert result["revision"]["selected_discourse_invariants_passed"] is True
     assert result["revision"]["forced_closure_added"] is False

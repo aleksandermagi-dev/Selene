@@ -90,12 +90,15 @@ Phases 0 through 6 of the
 [Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
 are [complete for current scope](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md).
 
-Phase 7A is now
-[complete for current scope](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md).
+Phases 7A and 7B are now complete for current scope:
+[creative substance and source-style separation](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md)
+and [bounded long-form discourse](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md).
 Short creative work now carries typed fictional substance, constraints,
 source-style separation, local revision ancestry, and explicit stopping inside
-the existing answer path. The next work is Phase 7B: extend the existing
-discourse planner/loom with one bounded purpose, thesis, and section spine.
+the existing answer path. Longer supported answers now carry one bounded
+purpose, thesis, and section spine with source, epistemic, obligation, thread,
+revision, completeness, and terminal-stop receipts. The next work is Phase 7C:
+broaden bounded structured conversational realization through existing owners.
 F2 Group 8 remains unprepared and unauthorized until Aleks explicitly selects
 an exact Grade 4–6 source artifact after edition, license, exclusion, checksum,
 role, and coverage review.
@@ -180,6 +183,11 @@ and full synthetic Chat checks plus 190 NLO, Voice, quotation, teaching,
 construction, discourse, continuity, long-thread, and LEA regression checks.
 The frontend remains 491.33 kB (109.20 kB gzip) with no Vite warning and lazy
 Study workspaces.
+Phase 7B passed 120 final focused discourse, NLO, selector, Conversation Spine,
+workspace, thread, and endurance checks plus 182 full synthetic Chat and
+answer-owner checks. The broader expression/continuity regression passed 270,
+and the frontend remains 491.33 kB (109.20 kB gzip) with no Vite warning and
+lazy Study workspaces.
 
 ## Authorship
 

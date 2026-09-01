@@ -10,17 +10,28 @@ DISCOURSE_LOOM_BOUNDARY = (
 )
 
 MAX_DISCOURSE_CANDIDATES = 4
+MAX_DISCOURSE_PARAGRAPHS = 8
 
 ROLE_ORDER = {
     "thesis": 0,
     "correction": 1,
     "support": 2,
+    "explanation": 2,
     "assumption": 3,
     "example": 4,
+    "analogy": 4,
+    "comparison": 4,
     "counterexample": 5,
+    "counterpressure": 5,
     "limitation": 6,
+    "qualification": 6,
     "reopening": 7,
+    "return": 7,
+    "summary": 8,
     "conclusion": 8,
+    "story": 4,
+    "dialogue": 4,
+    "technical_walkthrough": 4,
 }
 
 
@@ -28,8 +39,9 @@ def discourse_loom_status() -> dict[str, Any]:
     return _locked(
         {
             "status": "discourse_loom_ready",
-            "version": "v1_supported_role_discourse_candidates",
+            "version": "v2_typed_section_discourse_candidates",
             "candidate_limit": MAX_DISCOURSE_CANDIDATES,
+            "paragraph_limit": MAX_DISCOURSE_PARAGRAPHS,
             "selection_pass_limit": 1,
             "supported_roles": list(ROLE_ORDER),
             "recursive_generation_allowed": False,
@@ -49,6 +61,11 @@ def weave_supported_discourse(
     recent_texts: list[str] | None = None,
 ) -> dict[str, Any]:
     discourse = supported_discourse or {}
+    discourse_spine = (
+        discourse.get("discourse_spine")
+        if isinstance(discourse.get("discourse_spine"), dict)
+        else {}
+    )
     selected_formation = selected_formation or {}
     contextual_plan = contextual_plan or {}
     recent_texts = [str(item).strip() for item in recent_texts or [] if str(item).strip()]
@@ -101,6 +118,12 @@ def weave_supported_discourse(
         duplicate_of = seen_surfaces.get(normalized, "") if normalized else ""
         if normalized and not duplicate_of:
             seen_surfaces[normalized] = str(specification.get("loom_specification_id") or "")
+        section_receipts = _section_realization_receipts(
+            discourse,
+            realization,
+            units,
+            collapsed_seed_ids=collapsed_seed_ids,
+        )
         invariant = _invariant_check(
             realization,
             specification,
@@ -109,6 +132,7 @@ def weave_supported_discourse(
             obligation_ids=obligation_ids,
             closure_id=closure_id,
             expected_source_refs=[str(item) for item in discourse.get("source_refs") or []],
+            section_receipts=section_receipts,
         )
         score = _score(
             realization,
@@ -126,6 +150,7 @@ def weave_supported_discourse(
                 "loom_specification_id": str(specification.get("loom_specification_id") or ""),
                 "candidate_text": text,
                 "paragraphs": realization.get("paragraphs") or [],
+                "section_receipts": section_receipts,
                 "included_content_unit_ids": realization.get("included_content_unit_ids") or [],
                 "invariant_check": invariant,
                 "score": score["total"],
@@ -160,6 +185,21 @@ def weave_supported_discourse(
         }
     )
     selection_active = len(selectable) > 1 and distinct_count > 1 and not hold_reason
+    terminal_stop = (
+        deepcopy(discourse.get("stopping_receipt"))
+        if isinstance(discourse.get("stopping_receipt"), dict)
+        else {
+            "status": "terminal_discourse_stop",
+            "terminal": True,
+            "reason": "supported_content_exhausted",
+            "generation_pass_count": 1,
+            "further_generation_allowed": False,
+            "forced_closure_added": False,
+        }
+    )
+    terminal_stop["terminal"] = True
+    terminal_stop["further_generation_allowed"] = False
+    terminal_stop["loom_preserved"] = True
     return _locked(
         {
             "status": (
@@ -169,9 +209,10 @@ def weave_supported_discourse(
                 if selected
                 else "discourse_loom_no_supported_content"
             ),
-            "version": "v1_supported_role_discourse_candidates",
+            "version": "v2_typed_section_discourse_candidates",
             "response_depth": depth,
             "candidate_limit": MAX_DISCOURSE_CANDIDATES,
+            "paragraph_limit": MAX_DISCOURSE_PARAGRAPHS,
             "generated_candidate_count": len(candidates),
             "distinct_candidate_count": distinct_count,
             "selectable_candidate_count": len(selectable),
@@ -190,6 +231,12 @@ def weave_supported_discourse(
             ),
             "selected_candidate_text": str((selected or {}).get("candidate_text") or ""),
             "selected_paragraphs": (selected or {}).get("paragraphs") or [],
+            "section_plan_id": str(discourse_spine.get("plan_id") or ""),
+            "section_receipts": (selected or {}).get("section_receipts") or [],
+            "unsupported_role_holds": discourse_spine.get("unsupported_role_holds") or [],
+            "local_revision_receipt": discourse_spine.get("local_revision_receipt") or {},
+            "terminal_stopping_receipt": terminal_stop,
+            "terminal_stopping_receipt_count": 1,
             "candidates": candidates,
             "content_unit_ids": list(unit_by_id),
             "required_content_unit_ids": required_ids,
@@ -210,10 +257,19 @@ def _active_units(
     discourse: dict[str, Any],
     selected_formation: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], list[str]]:
+    spine = discourse.get("discourse_spine") if isinstance(discourse.get("discourse_spine"), dict) else {}
+    revision = spine.get("local_revision_receipt") if isinstance(spine.get("local_revision_receipt"), dict) else {}
+    retired_ids = {
+        str(item)
+        for item in revision.get("retired_target_content_unit_ids") or []
+        if str(item)
+    }
     original = [
         deepcopy(item)
         for item in discourse.get("content_units") or []
-        if isinstance(item, dict) and str(item.get("text") or "").strip()
+        if isinstance(item, dict)
+        and str(item.get("text") or "").strip()
+        and str(item.get("id") or "") not in retired_ids
     ]
     formation_text = str(selected_formation.get("candidate_text") or "").strip()
     structured = (
@@ -264,7 +320,10 @@ def _required_unit_ids(
     required = [
         str(item.get("id") or "")
         for item in units
-        if item.get("role") in {"thesis", "correction", "limitation", "reopening", "conclusion"}
+        if item.get("role") in {
+            "thesis", "correction", "limitation", "qualification", "reopening", "return",
+            "summary", "conclusion",
+        }
     ]
     required.extend(
         _obligation_unit_ids(
@@ -444,12 +503,18 @@ def _role_groups(units: list[dict[str, Any]]) -> list[list[str]]:
     development = [
         str(item.get("id") or "")
         for item in units
-        if item.get("role") in {"correction", "support", "assumption", "example"}
+        if item.get("role") in {
+            "correction", "support", "explanation", "assumption", "example", "analogy",
+            "comparison", "counterexample", "counterpressure", "story", "dialogue",
+            "technical_walkthrough",
+        }
     ]
     closure = [
         str(item.get("id") or "")
         for item in units
-        if item.get("role") in {"limitation", "reopening", "conclusion"}
+        if item.get("role") in {
+            "limitation", "qualification", "reopening", "return", "summary", "conclusion",
+        }
     ]
     for group in (thesis, development, closure):
         if group:
@@ -569,7 +634,9 @@ def _realize_specification(
         int(index): str(action or "")
         for index, action in (specification.get("thread_transition_actions") or {}).items()
     }
-    for paragraph_index, group in enumerate(specification.get("paragraph_unit_ids") or []):
+    for paragraph_index, group in enumerate(
+        (specification.get("paragraph_unit_ids") or [])[:MAX_DISCOURSE_PARAGRAPHS]
+    ):
         pieces: list[str] = []
         group_ids: list[str] = []
         for unit_index, unit_id in enumerate(group):
@@ -598,6 +665,8 @@ def _realize_specification(
                     "index": len(paragraphs) + 1,
                     "content_unit_ids": group_ids,
                     "text": paragraph_text,
+                    "completeness_state": "complete_from_declared_supported_units",
+                    "unsupported_content_added": False,
                 }
             )
     return {
@@ -633,7 +702,9 @@ def _render_unit(
     if (
         not role_explicit
         or first
-        or unit.get("role") in {"thesis", "support", "conclusion", "correction"}
+        or unit.get("role") in {
+            "thesis", "support", "explanation", "summary", "conclusion", "correction",
+        }
     ):
         return text
     role = str(unit.get("role") or "support")
@@ -643,10 +714,105 @@ def _render_unit(
         "assumption": "One assumption",
         "limitation": "One limit",
         "reopening": "What would change this",
+        "qualification": "One qualification",
+        "analogy": "As an analogy",
+        "comparison": "By comparison",
+        "counterpressure": "One counterpressure",
+        "return": "Returning to the main point",
+        "story": "In the supported story",
+        "dialogue": "In the supplied dialogue",
+        "technical_walkthrough": "In the supported walkthrough",
     }.get(role, "")
     if not prefix or text.lower().startswith(prefix.lower()):
         return text
     return f"{prefix}: {text}"
+
+
+def _section_realization_receipts(
+    discourse: dict[str, Any],
+    realization: dict[str, Any],
+    active_units: list[dict[str, Any]],
+    *,
+    collapsed_seed_ids: list[str],
+) -> list[dict[str, Any]]:
+    spine = discourse.get("discourse_spine") if isinstance(discourse.get("discourse_spine"), dict) else {}
+    included = {str(item) for item in realization.get("included_content_unit_ids") or []}
+    original_by_id = {
+        str(item.get("id") or ""): item
+        for item in discourse.get("content_units") or []
+        if isinstance(item, dict)
+    }
+    active_by_id = {str(item.get("id") or ""): item for item in active_units}
+    receipts: list[dict[str, Any]] = []
+    for section in (spine.get("section_plan") or [])[:MAX_DISCOURSE_PARAGRAPHS]:
+        if not isinstance(section, dict):
+            continue
+        planned_ids = [str(item) for item in section.get("content_unit_ids") or []]
+        mapped_ids = list(
+            dict.fromkeys(
+                _mapped_unit_id(item, collapsed_seed_ids)
+                for item in planned_ids
+                if _mapped_unit_id(item, collapsed_seed_ids)
+            )
+        )
+        realized = bool(mapped_ids) and all(item in included for item in mapped_ids)
+        planned_units = [original_by_id[item] for item in planned_ids if item in original_by_id]
+        source_bindings = _unique_bindings(
+            [
+                {
+                    "source_kind": str(item.get("source_kind") or "compatibility_fallback"),
+                    "source_refs": [str(ref) for ref in item.get("source_refs") or []],
+                }
+                for item in planned_units
+            ]
+        )
+        epistemic_bindings = _unique_bindings(
+            [
+                {
+                    "certainty": str(item.get("certainty") or "supported_unspecified"),
+                    "scope": str(item.get("scope") or "current_response"),
+                }
+                for item in planned_units
+            ]
+        )
+        bindings_preserved = (
+            len(planned_units) == len(planned_ids)
+            and source_bindings == (section.get("source_bindings") or [])
+            and epistemic_bindings == (section.get("epistemic_bindings") or [])
+            and all(
+                item in active_by_id or item in collapsed_seed_ids
+                for item in planned_ids
+            )
+        )
+        receipts.append(
+            {
+                "section_id": str(section.get("section_id") or ""),
+                "function": str(section.get("function") or ""),
+                "planned_content_unit_ids": planned_ids,
+                "realized_content_unit_ids": mapped_ids if realized else [item for item in mapped_ids if item in included],
+                "planned_completeness_state": str(section.get("completeness_state") or ""),
+                "state": (
+                    "realized_from_declared_supported_units"
+                    if realized
+                    else "held_before_incomplete_section_realization"
+                ),
+                "source_and_epistemic_bindings_preserved": bindings_preserved,
+                "section_fingerprint": str(section.get("section_fingerprint") or ""),
+                "parent_section_fingerprint": str(section.get("parent_section_fingerprint") or ""),
+                "obligation_ids": section.get("obligation_ids") or [],
+                "thread_bindings": section.get("thread_bindings") or [],
+                "unsupported_content_added": False,
+            }
+        )
+    return receipts
+
+
+def _unique_bindings(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for item in values:
+        if item not in result:
+            result.append(item)
+    return result
 
 
 def _invariant_check(
@@ -658,6 +824,7 @@ def _invariant_check(
     obligation_ids: list[str],
     closure_id: str,
     expected_source_refs: list[str],
+    section_receipts: list[dict[str, Any]],
 ) -> dict[str, Any]:
     included = [str(item) for item in realization.get("included_content_unit_ids") or []]
     declared = [
@@ -677,6 +844,16 @@ def _invariant_check(
             item.get("role") == "thesis" for item in unit_by_id.values()
         ),
         "specification_forbids_meaning_change": specification.get("meaning_change_allowed") is False,
+        "complete_sections_preserved": all(
+            item.get("state") == "realized_from_declared_supported_units"
+            for item in section_receipts
+            if item.get("planned_completeness_state") == "complete_from_supported_units"
+        ),
+        "section_source_and_epistemic_bindings_preserved": all(
+            item.get("source_and_epistemic_bindings_preserved") is True
+            for item in section_receipts
+            if item.get("state") == "realized_from_declared_supported_units"
+        ),
     }
     return {
         "passed": all(checks.values()),
@@ -713,7 +890,7 @@ def _score(
         "recent_surface_distance": _recent_score(text, recent_texts),
         "distinct_surface_realization": -80.0 if duplicate_of else 4.0,
         "plan_alignment": (
-            3.0
+            5.0
             if specification.get("loom_specification_id") == "discourse:plan_order"
             else 0.0
         ),

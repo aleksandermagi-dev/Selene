@@ -3,13 +3,14 @@
 Selene is a local-first AI system designed to understand, reason, learn, and
 converse without treating a language model as the whole mind.
 
-As of September 1, 2026, whole-system maturation Phases 0 through 6 are complete
-for current scope. Ordered education now has shared
+As of September 1, 2026, whole-system maturation Phases 0 through 6 and Phases
+7A-7B are complete for current scope. Ordered education now has shared
 prerequisite/source-readiness enforcement plus typed source roles and bounded
 instructional why plus reviewed correction ancestry and delayed ordinary-Chat
-selection, plus a nine-dimension descriptive learning profile. Phase 7 is
-source-mapped, and its typed creative-substance path is the next production
-edge.
+selection, plus a nine-dimension descriptive learning profile. Creative
+substance is typed and source-separated, and longer supported answers now use
+one bounded section spine with local revision and explicit stopping. Bounded
+structured conversational breadth is the next production edge.
 
 ## The Problem She Solves
 
@@ -43,6 +44,10 @@ Selene can currently:
   flag them for recheck when contrary evidence appears;
 - distinguish what a source says from what she infers;
 - distinguish answer confidence from fluent-sounding language;
+- create bounded short fiction with visible fictional status, source-style
+  separation, local revision ancestry, and an explicit stop;
+- organize longer supported answers across purpose, thesis, sections,
+  callbacks, qualifications, and local repair without adding filler;
 - use approved knowledge and reviewed personal memory without confusing either
   with identity;
 - notice when an answer is incomplete, uncertain, contradictory, or does not
@@ -89,9 +94,10 @@ Selene is not:
 
 Selene's architecture is substantial, but her education is still in progress.
 Her world knowledge and language breadth are smaller than those of a mature
-general language model. Long-form conversation, broader academic coverage,
-and future audible speech still need further teaching or development.
-Long-form and creative conversational breadth are the next whole-system edge.
+general language model. Broader structured conversational realization,
+broader academic coverage, and future audible speech still need further
+teaching or development. Structured expressive breadth is the next
+whole-system edge.
 Dream's
 source-bound lifecycle is implemented, although its reflections remain
 review-governed and its ordinary usefulness should be assessed proportionally
@@ -110,4 +116,4 @@ as her capabilities grow.
 For implementation details, governing documents, verification, and development
 instructions, see [README.md](README.md). For exact current counts and the
 development edge, see the
-[Current Project Status — updated August 31](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
+[Current Project Status — updated September 1](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).

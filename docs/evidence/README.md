@@ -19,7 +19,11 @@ a prototype result into a universal conclusion.
 - [Current Project Status — updated September 1, 2026](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
   — consolidated current checkpoint for completed whole-system phases,
   configured resident counts, verification, honest limits, Git state, and the
-  exact Phase 7A resume point.
+  exact Phase 7C resume point.
+- [Whole-System Phase 7B — Long-Form Discourse Lifecycle — September 1, 2026](SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md)
+  — verifies one bounded typed section spine, source/epistemic and thread
+  receipts, unsupported-role holds, local target-only revision, and a single
+  terminal stop inside the existing planner and loom.
 - [Whole-System Phase 7 — Text Conversation, Long Form, and Creative Voice Map — September 1, 2026](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md)
   — traces the current expression owners, isolates the scenario-specific
   creative and shallow discourse seams, and orders creative substance,

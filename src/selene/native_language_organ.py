@@ -450,9 +450,22 @@ def _build_language_result(
     )
     plan["human_conversational_realization"] = human_conversational_realization
     draft = str(human_conversational_realization.get("candidate_text") or draft)
+    contextual_composition_plan = (
+        plan.get("contextual_composition_plan")
+        if isinstance(plan.get("contextual_composition_plan"), dict)
+        else {}
+    )
+    if _typed_discourse_structure_requires_preservation(draft, discourse_loom):
+        contextual_composition_plan = {
+            **contextual_composition_plan,
+            "content_recomposition_allowed": False,
+            "typed_discourse_structure_locked": True,
+            "typed_discourse_lock_reason": "multiple_supported_visible_section_labels",
+        }
+        plan["contextual_composition_plan"] = contextual_composition_plan
     contextual_composition = apply_contextual_composition(
         draft,
-        plan.get("contextual_composition_plan"),
+        contextual_composition_plan,
     )
     plan["contextual_composition"] = contextual_composition
     draft = str(contextual_composition.get("candidate_text") or draft)
@@ -1343,6 +1356,35 @@ def _meaning_packet(
     }
 
 
+def _discourse_source_kind(source_class: str) -> str:
+    return {
+        "approved_knowledge": "approved_knowledge",
+        "domain_answer": "verified_domain_answer",
+        "memory_reconstruction": "reviewed_memory",
+        "self_state": "current_session_observation",
+        "reasoning_answer": "labeled_inference",
+    }.get(str(source_class or ""), "compatibility_fallback")
+
+
+def _typed_discourse_structure_requires_preservation(
+    text: str,
+    discourse_loom: dict[str, Any],
+) -> bool:
+    section_receipts = [
+        item
+        for item in discourse_loom.get("section_receipts") or []
+        if isinstance(item, dict)
+        and item.get("state") == "realized_from_declared_supported_units"
+    ]
+    if len(section_receipts) < 2:
+        return False
+    visible_labels = re.findall(
+        r"(?:^|(?<=[.!?])\s+)([A-Z][A-Za-z0-9 _/-]{1,32})\s*:",
+        str(text or ""),
+    )
+    return len(visible_labels) >= 2
+
+
 def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any], mode: str) -> dict[str, Any]:
     intent = str(meaning["intent"])
     response_depth = str(meaning.get("response_depth") or "standard")
@@ -1546,8 +1588,29 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
                 else []
             ),
             "content_seed": meaning.get("content_seed") or "",
+            "content_seed_metadata": {
+                "source_kind": _discourse_source_kind(
+                    str(meaning.get("content_source_class") or "")
+                ),
+                "source_refs": meaning.get("source_refs") or [],
+                "certainty": str(
+                    (meaning.get("supported_semantics") or {}).get("certainty")
+                    or payload.get("certainty")
+                    or "supported_unspecified"
+                ),
+                "scope": str(
+                    (meaning.get("supported_semantics") or {}).get("scope")
+                    or "current_response"
+                ),
+                "origin_source_class": str(meaning.get("content_source_class") or ""),
+            },
             "response_depth": response_depth,
             "expression_profile": meaning.get("expression_profile") or "direct",
+            "discourse_purpose": str(payload.get("discourse_purpose") or "answer_supported_request"),
+            "audience": str(payload.get("audience") or "current_interlocutor"),
+            "register": str(payload.get("register") or meaning.get("expression_profile") or "conversational"),
+            "requested_form": str(payload.get("requested_form") or meaning.get("answer_shape") or "bounded_response"),
+            "requested_discourse_roles": payload.get("requested_discourse_roles") or [],
             "response_obligations": pragmatic_plan.get("response_obligations") or [],
             "support_points": _visible_support_items(reasoning_support.get("support_points")),
             "examples": [
@@ -1570,6 +1633,19 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
                 ],
             ],
             "thread_braid": pragmatic_plan.get("thread_braid") or dialogue.get("thread_braid") or {},
+            "source_compatibility": (
+                (meaning.get("conversation_spine") or {}).get("source_compatibility")
+                if isinstance(meaning.get("conversation_spine"), dict)
+                else {}
+            ),
+            "selected_source_class": str(meaning.get("content_source_class") or ""),
+            "release_alignment": {
+                "state": "pre_expression_release_alignment_carried",
+                "content_source_release_allowed": meaning.get("content_source_release_allowed") is True,
+                "final_release_owner": "Conversation Spine and Chat",
+                "planner_has_release_authority": False,
+            },
+            "section_revision": payload.get("section_revision") or {},
         }
     )
     pragmatic_continuity = build_pragmatic_continuity_plan(

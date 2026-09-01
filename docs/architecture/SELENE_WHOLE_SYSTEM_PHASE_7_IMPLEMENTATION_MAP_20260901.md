@@ -2,8 +2,8 @@
 
 Date: 2026-09-01
 
-Status: Phase 7A complete for current scope; Phase 7B is the next production
-edge
+Status: Phases 7A and 7B complete for current scope; Phase 7C is the next
+production edge
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -281,7 +281,7 @@ Evidence:
 
 ### Phase 7B — Long-form discourse lifecycle
 
-Status: **not started**
+Status: **complete for current scope — 2026-09-01**
 
 - extend the existing discourse planner/loom with one typed discourse spine
   and section plan rather than a second long-form writer;
@@ -443,9 +443,10 @@ decision-bearing state was changed; Phase 7A required no schema migration.
 
 ## Exact Production Resume Point
 
-Begin Phase 7B in the existing Discourse Planner and Discourse Loom. Add one
-bounded purpose/thesis/section spine carrying current Conversation Spine
-obligations, source and epistemic bindings, callbacks, corrections, section
-dependencies, local revision ancestry, and one terminal stop. Do not create a
-second long-form writer, generate filler to meet length, broaden NLO variation,
-or reactivate Voice's legacy complete-body fallback during this slice.
+Begin Phase 7C by source-mapping the existing Supported Semantics,
+Construction Lattice, Candidate Garden, contextual selector, NLO, Voice, and
+reviewed language-guidance seams against the new Phase 7B section and terminal
+stop receipts. Broaden only bounded structured realization from supported
+input, preserve one candidate-generation and selection pass, and keep recent
+functional variation separate from persona, Memory, answer substance, or a
+learned substrate. Do not reactivate Voice's legacy complete-body fallback.

@@ -253,3 +253,274 @@ def test_discourse_plan_preserves_thread_traversal_and_dependency_bindings():
     ]
     assert result["thread_obligation_bindings"][-1]["dependency_thread_id"] == "y"
     assert result["content_generation_allowed"] is False
+
+
+def test_discourse_spine_carries_purpose_sections_sources_epistemics_and_terminal_stop():
+    result = build_supported_discourse_plan(
+        {
+            "supported_content_units": [
+                {
+                    "id": "claim",
+                    "text": "Use the reversible pilot first.",
+                    "role": "thesis",
+                    "supported": True,
+                    "source_kind": "prompt_grounded_method",
+                    "source_refs": ["prompt:pilot"],
+                    "certainty": "supported_recommendation",
+                    "scope": "current pilot only",
+                    "obligation_ids": ["recommend"],
+                },
+                {
+                    "id": "why",
+                    "text": "It creates evidence without locking in the design.",
+                    "role": "explanation",
+                    "supported": True,
+                    "source_kind": "verified_domain_answer",
+                    "source_refs": ["answer:pilot"],
+                    "certainty": "bounded",
+                    "scope": "tested conditions",
+                    "obligation_ids": ["reason"],
+                },
+                {
+                    "id": "limit",
+                    "text": "The result remains local to the tested conditions.",
+                    "role": "qualification",
+                    "supported": True,
+                    "source_kind": "attributed_source",
+                    "source_refs": ["source:trial"],
+                    "certainty": "attributed",
+                    "scope": "source statement",
+                },
+            ],
+            "response_depth": "developed",
+            "discourse_purpose": "recommend a bounded next step",
+            "audience": "Aleks",
+            "register": "technical_conversational",
+            "response_obligations": [
+                {
+                    "id": "recommend",
+                    "kind": "choice_or_priority",
+                    "source_text": "Which pilot should come first?",
+                    "coverage_terms": ["pilot", "first"],
+                    "required": True,
+                },
+                {
+                    "id": "reason",
+                    "kind": "reason",
+                    "source_text": "Explain why.",
+                    "coverage_terms": ["evidence"],
+                    "required": True,
+                },
+            ],
+            "source_compatibility": {
+                "compatible_source_classes": ["reasoning_answer", "domain_answer"],
+                "topic_alignment_required_for_content_sources": True,
+            },
+            "selected_source_class": "reasoning_answer",
+            "release_alignment": {"state": "eligible_for_release_check"},
+        }
+    )
+
+    spine = result["discourse_spine"]
+    assert spine["purpose"] == "recommend a bounded next step"
+    assert spine["audience"] == "Aleks"
+    assert spine["register"] == "technical_conversational"
+    assert spine["thesis"]["content_unit_id"] == "claim"
+    assert [item["function"] for item in spine["section_plan"]] == [
+        "thesis",
+        "explanation",
+        "qualification",
+    ]
+    assert all(item["completeness_state"] == "complete_from_supported_units" for item in spine["section_plan"])
+    explanation = spine["section_plan"][1]
+    assert explanation["source_bindings"] == [
+        {"source_kind": "verified_domain_answer", "source_refs": ["answer:pilot"]}
+    ]
+    assert explanation["epistemic_bindings"] == [
+        {"certainty": "bounded", "scope": "tested conditions"}
+    ]
+    assert spine["source_compatibility"]["selected_source_class"] == "reasoning_answer"
+    assert spine["release_alignment"] == {"state": "eligible_for_release_check"}
+    assert all(item["correction_state"] == {} for item in spine["section_plan"])
+    assert all(
+        item["source_compatibility"]["selected_source_class"] == "reasoning_answer"
+        for item in spine["section_plan"]
+    )
+    assert all(
+        item["release_alignment"] == {"state": "eligible_for_release_check"}
+        for item in spine["section_plan"]
+    )
+    assert result["stopping_receipt"]["terminal"] is True
+    assert result["stopping_receipt"]["generation_pass_count"] == 1
+    assert result["stopping_receipt"]["further_generation_allowed"] is False
+    assert result["hard_limits"] == {
+        "content_units": 30,
+        "sections": 8,
+        "paragraphs": 8,
+        "planning_passes": 1,
+    }
+
+
+def test_discourse_spine_holds_requested_unsupported_roles_instead_of_filling_them():
+    result = build_supported_discourse_plan(
+        {
+            "content_seed": "Memory preserves reviewed continuity.",
+            "requested_discourse_roles": ["analogy", "technical_walkthrough"],
+            "response_obligations": [
+                {
+                    "id": "analogy",
+                    "kind": "requested_section",
+                    "source_text": "Add an analogy.",
+                    "coverage_terms": ["analogy"],
+                    "required": True,
+                    "requested_response_functions": ["analogy"],
+                }
+            ],
+        }
+    )
+
+    spine = result["discourse_spine"]
+    assert [item["role"] for item in spine["unsupported_role_holds"]] == [
+        "analogy",
+        "technical_walkthrough",
+    ]
+    assert all(item["state"] == "held_no_supported_unit" for item in spine["unsupported_role_holds"])
+    assert all(item["content_added"] is False for item in spine["unsupported_role_holds"])
+    assert spine["section_plan"] == [
+        {
+            **spine["section_plan"][0],
+            "content_unit_ids": ["content_1"],
+        }
+    ]
+    assert result["stopping_receipt"]["reason"] == "unsupported_roles_or_obligations_held_visible"
+    assert result["content_generation_allowed"] is False
+
+
+def test_supported_analogy_role_binds_by_declared_function_without_inventing_content():
+    result = build_supported_discourse_plan(
+        {
+            "supported_content_units": [
+                {
+                    "id": "answer",
+                    "text": "The gate separates review from release.",
+                    "role": "thesis",
+                    "supported": True,
+                },
+                {
+                    "id": "analogy_unit",
+                    "text": "A vestibule provides the same kind of pause between outside and inside.",
+                    "role": "analogy",
+                    "supported": True,
+                    "source_kind": "fictional_invention",
+                    "certainty": "illustrative_only",
+                    "obligation_ids": ["analogy_request"],
+                },
+            ],
+            "response_obligations": [
+                {
+                    "id": "analogy_request",
+                    "kind": "requested_section",
+                    "source_text": "Give an analogy.",
+                    "coverage_terms": ["analogy"],
+                    "requested_response_functions": ["analogy"],
+                    "required": True,
+                }
+            ],
+        }
+    )
+
+    assert result["unsupported_role_holds"] == []
+    assert result["obligation_bindings"][0]["content_unit_ids"] == ["analogy_unit"]
+    assert result["all_obligations_grounded"] is True
+    analogy = next(item for item in result["section_plan"] if item["function"] == "analogy")
+    assert analogy["epistemic_bindings"] == [
+        {"certainty": "illustrative_only", "scope": "current_response"}
+    ]
+
+
+def test_discourse_spine_rejects_an_ineligible_source_before_section_planning():
+    result = build_supported_discourse_plan(
+        {
+            "supported_content_units": [
+                {
+                    "id": "supported",
+                    "text": "The observed result is provisional.",
+                    "role": "thesis",
+                    "supported": True,
+                    "source_kind": "current_session_observation",
+                },
+                {
+                    "id": "hidden_guess",
+                    "text": "An unowned claim should not enter the plan.",
+                    "role": "explanation",
+                    "supported": True,
+                    "source_kind": "unowned_generation",
+                },
+            ]
+        }
+    )
+
+    assert [item["id"] for item in result["content_units"]] == ["supported"]
+    assert result["source_holds"] == [
+        {
+            "content_unit_id": "hidden_guess",
+            "source_kind": "unowned_generation",
+            "state": "held_before_discourse_planning",
+            "reason": "source_kind_not_eligible_for_supported_discourse",
+            "content_entered_plan": False,
+        }
+    ]
+
+
+def test_local_section_revision_preserves_other_sections_and_records_ancestry():
+    payload = {
+        "supported_content_units": [
+            {"id": "thesis", "text": "Run the pilot.", "role": "thesis", "supported": True},
+            {"id": "reason", "text": "It is reversible.", "role": "explanation", "supported": True},
+            {"id": "limit", "text": "The result is local.", "role": "qualification", "supported": True},
+        ],
+        "response_depth": "developed",
+    }
+    initial = build_supported_discourse_plan(payload)
+    target = initial["discourse_spine"]["section_plan"][1]
+    before = {
+        item["section_id"]: item["section_fingerprint"]
+        for item in initial["discourse_spine"]["section_plan"]
+    }
+
+    revised = build_supported_discourse_plan(
+        {
+            **payload,
+            "supported_content_units": [
+                *payload["supported_content_units"],
+                {
+                    "id": "revised_reason",
+                    "text": "It is reversible and observable.",
+                    "role": "explanation",
+                    "supported": True,
+                    "source_kind": "prompt_grounded_method",
+                },
+            ],
+            "section_revision": {
+                "prior_discourse_spine": initial["discourse_spine"],
+                "target_section_id": target["section_id"],
+                "replacement_content_unit_ids": ["revised_reason"],
+                "revision_reason": "make the supported reason more precise",
+            },
+        }
+    )
+
+    spine = revised["discourse_spine"]
+    receipt = spine["local_revision_receipt"]
+    after = {item["section_id"]: item for item in spine["section_plan"]}
+    assert receipt["status"] == "local_section_revision_applied"
+    assert receipt["target_section_id"] == target["section_id"]
+    assert receipt["parent_plan_id"] == initial["discourse_spine"]["plan_id"]
+    assert receipt["root_plan_id"] == initial["discourse_spine"]["plan_id"]
+    assert receipt["revision_pass_count"] == 1
+    assert after[target["section_id"]]["content_unit_ids"] == ["revised_reason"]
+    assert after[target["section_id"]]["parent_section_fingerprint"] == before[target["section_id"]]
+    for section_id in receipt["unchanged_section_ids"]:
+        assert after[section_id]["section_fingerprint"] == before[section_id]
+    assert receipt["conversation_reset"] is False
+    assert receipt["other_sections_changed"] is False

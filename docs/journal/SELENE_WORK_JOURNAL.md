@@ -3561,3 +3561,53 @@ Aleks. No private Voice-corpus text was read or exposed.
 existing Discourse Planner and Discourse Loom, carrying obligations, sources,
 callbacks, corrections, local revision, and one terminal stop without filler
 or unsupported evidence.
+
+### 2026-09-01 — Long-form discourse gains bounded sections and local repair
+
+**Starting question:** Can Selene sustain a supported longer answer across
+purpose, obligations, side threads, return, qualifications, and revision
+without another writer, invented filler, or a recursive generation loop?
+
+**Decision:** Mature the existing Discourse Planner and Discourse Loom. Give
+them one typed purpose/thesis/section spine, source and epistemic receipts,
+visible unsupported-role holds, local section ancestry, and one terminal stop.
+Keep answer substance upstream and final release with Conversation Spine and
+Chat.
+
+**Work:** Added supported discourse roles, source eligibility before planning,
+hard unit/section/paragraph/pass limits, obligation/function ancestry,
+section-level correction/source/release/thread/dependency receipts, stable
+fingerprints, and local target-only revision. Extended loom invariants and
+selection receipts, preserved X → Y → X-with-Y → Z traversal, and narrowly
+protected visible multi-section labels from brief compaction after a synthetic
+replay exposed that compatibility edge.
+
+**Why:** Long-form maturity is coordination over supported meaning, not license
+to make more content. A visible hold is more honest than an unsupported
+analogy or section, and a local repair should prove what stayed unchanged
+rather than silently regenerate the conversation.
+
+**Evidence:** The pre-edit baseline passed 105 checks. Final focused discourse,
+NLO, selector, Conversation Spine, workspace, thread, and endurance checks
+passed 120; full synthetic Chat and answer-owner checks passed 182; and the
+broader expression/Voice/creative/teaching/continuity regression passed 270.
+The frontend remained 491.33 kB (gzip 109.20 kB), with no Vite warning and
+lazy Study workspaces. Resident SQLite integrity remained `ok` under read-only
+inspection.
+
+**What changed in our understanding:** A section receipt has to travel with the
+selected candidate, not merely the planner's first choice. Visible labels can
+also be structural obligations: preserving their words while flattening their
+function is not enough. Finally, one attributable thread anchor per traversal
+move prevents a weak lexical overlap from swallowing a later exact return.
+
+**Boundaries preserved:** No resident conversation, teaching, LEA, Memory,
+Study, Dream, affect, identity, personality, Vys, law, governance, authority,
+training, autonomy, external action, provider, or learned substrate changed.
+All 24 Dream reflections and the one unfinished teaching lifecycle remain for
+Aleks. NLO and Voice remain expression owners, not fact or answer owners.
+
+**Next:** Phase 7C — source-map and then broaden bounded structured
+conversational realization through the existing semantic, construction,
+candidate, NLO, and Voice owners while preserving one pass, section receipts,
+source/certainty, and natural stopping.

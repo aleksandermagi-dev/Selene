@@ -16,8 +16,8 @@ individually defined as Selene.
   education, expression, agency, perception, action, and embodiment.
 - [Phase 7 Text Conversation, Long Form, and Creative Voice Map](SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md)
   — maps the current answer, discourse, NLO, Voice, quotation, teaching, and
-  evidence owners and defines the care-bounded production order beginning at
-  typed creative substance rather than another language organ.
+  evidence owners and records completed creative-substance and long-form
+  discourse work before the next bounded structured-realization edge.
 - [Phase 0 Canonical Maturity Ledger Evidence](../evidence/SELENE_WHOLE_SYSTEM_PHASE_0_MATURITY_LEDGER_20260827.md)
   — the implemented, read-only current-status contract that prevents routes,
   configured records, blueprints, and mature ordinary-use capability from

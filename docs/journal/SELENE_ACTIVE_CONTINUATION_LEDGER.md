@@ -2,8 +2,8 @@
 
 Last refreshed: 2026-09-01
 
-Status: Phases 0 through 6 and Phase 7A complete for current scope; resume at
-Phase 7B long-form discourse implementation
+Status: Phases 0 through 6 and Phases 7A-7B complete for current scope; resume
+at Phase 7C structured conversational breadth source mapping
 
 ## Purpose
 
@@ -22,9 +22,11 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Refresh Phase 6 continuation checkpoint`)
 - Latest Phase 7 map checkpoint: `d0806f4`
   (`Map mature text and creative voice phase`)
-- Expected Phase 7A checkpoint after this work is committed:
-  `Mature creative substance and source separation`
-- Expected remote relation after the Phase 7A checkpoint: two local commits
+- Latest Phase 7A checkpoint: `98a1a61`
+  (`Mature creative substance and source separation`)
+- Expected Phase 7B checkpoint after this work is committed:
+  `Mature bounded long-form discourse`
+- Expected remote relation after the Phase 7B checkpoint: three local commits
   ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
@@ -35,7 +37,7 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
   - Phase 6D and Phase 6 closure: `28abf57`
-- Expected tracked worktree after the Phase 7A checkpoint: clean
+- Expected tracked worktree after the Phase 7B checkpoint: clean
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
 
@@ -170,12 +172,14 @@ git log -5 --oneline
   - no Vite size warning
   - Study workspaces remain lazy-loaded
 
-## Next Whole-System Gap
+## Current Phase 7 Edge
 
 - Phase 7 implementation map:
   `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md`
 - Phase 7A evidence:
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md`
+- Phase 7B evidence:
+  `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md`
 - The scenario-specific creative seam has been replaced with a typed bounded
   brief and explicitly fictional semantic units inside Answer Substance and
   Answer Operations.
@@ -188,10 +192,12 @@ git log -5 --oneline
   preserved regions, an idempotency key, and no recursive retry.
 - Held requests report `NO_FICTION_RELEASED`; released inventions report
   `FICTIONAL_INVENTION` and cannot become facts or Memory.
-- Phase 7B now extends the existing Discourse Planner/Loom with a typed
-  purpose/thesis/section spine. Phase 7C later broadens bounded structured
-  realization; Phase 7D extends descriptive LEA evidence and records the
-  learned-substrate decision boundary.
+- Phase 7B extends the existing Discourse Planner/Loom with a typed
+  purpose/thesis/section spine, source/epistemic/correction/release/thread
+  receipts, local target-only revision, and one terminal stop.
+- Phase 7C next broadens bounded structured realization; Phase 7D extends
+  descriptive LEA evidence and records the learned-substrate decision
+  boundary.
 - No new organ, hidden Memory, source persona, recursive generator, provider,
   or automatic learned substrate is authorized.
 
@@ -220,6 +226,24 @@ git log -5 --oneline
   attribution, overlap, and local-revision checks passed.
 - Frontend main bundle remains 491.33 kB (gzip 109.20 kB), with no Vite size
   warning and lazy-loaded Study workspaces.
+- No schema change, resident migration, live resident conversation, or
+  decision-bearing resident write was needed.
+
+## Phase 7B Evidence
+
+- 105 focused owner and continuity checks passed before production edits.
+- 120 final discourse, NLO, contextual-selection, Conversation Spine,
+  workspace, thread-return, and long-thread checks passed.
+- 182 full synthetic Chat and answer-owner checks passed after the narrow
+  visible-section-label compatibility repair.
+- 270 broader NLO, Voice, quotation, creative, teaching, construction,
+  candidate, continuity, long-thread, and LEA checks passed.
+- Frontend main bundle remains 491.33 kB (gzip 109.20 kB), with no Vite size
+  warning and lazy-loaded Study workspaces.
+- Read-only resident integrity remained `ok`; 113 NLO runs, 16 Voice runs, 73
+  language-teaching items, zero LEA runs, 24 pending Dream reflections, and
+  zero personal Memory candidates were observed. The one lifecycle at
+  `acquire_needs_review` was not opened.
 - No schema change, resident migration, live resident conversation, or
   decision-bearing resident write was needed.
 
@@ -271,6 +295,7 @@ Before Phase 7 mapping or production work, read completely:
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md`
+- `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -285,17 +310,17 @@ live conversation or mutate resident continuity.
 
 ## Exact Resume Point
 
-Begin Phase 7B in the existing `discourse_planner.py` and `discourse_loom.py`
-owners. Source-map their current plan/realization seams against Conversation
-Spine obligations, correction state, sources, epistemic units, callbacks, and
-long-thread return before editing. Then add one bounded purpose/thesis/section
-spine and a single terminal stop, with local section-revision ancestry and
-unchanged-section receipts.
+Begin Phase 7C with source mapping only. Trace the existing Supported
+Semantics, Construction Lattice, Candidate Garden, contextual selector, NLO,
+Voice, and reviewed language-guidance inputs against Phase 7B section,
+source/epistemic, correction, thread, revision, and terminal-stop receipts.
+Briefly record the proposed bounded-realization shape before editing.
 
-Do not create another long-form writer, fill unsupported sections merely to
-meet length, broaden NLO variation ahead of supported structured input,
-reactivate Voice's legacy complete-body fallback, run resident conversation,
-or change LEA criteria during the first 7B slice.
+Then broaden only supported lexical, clause, sentence, acknowledgment, pivot,
+uncertainty, disagreement, humor, warmth, and closure variation through the
+existing owners. Keep one generation and selection pass, preserve all Phase
+7B receipts, and do not create a persona, hidden transcript/Memory, provider,
+learned substrate, new answer owner, or Voice legacy complete-body fallback.
 
 After each meaningful checkpoint, update the dated Work Journal and refresh
 this file with only the current resumable edge.
