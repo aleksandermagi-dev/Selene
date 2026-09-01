@@ -1,8 +1,9 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-08-31
+Last refreshed: 2026-09-01
 
-Status: Phases 0 through 6 complete for current scope; resume at Phase 7 source mapping
+Status: Phases 0 through 6 complete for current scope; Phase 7 source-mapped;
+resume at Phase 7A production implementation
 
 ## Purpose
 
@@ -17,8 +18,12 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Branch: `evidence`
 - Latest Phase implementation checkpoint: `28abf57`
   (`Close descriptive learning evidence phase`)
-- Expected remote relation after the checkpoint: synchronized with
-  `origin/evidence`
+- Latest documentation checkpoint at the start of Phase 7: `9148b76`
+  (`Refresh Phase 6 continuation checkpoint`)
+- Latest Phase 7 map checkpoint: current commit
+  (`Map mature text and creative voice phase`)
+- Expected remote relation after the Phase 7 map checkpoint: one local commit
+  ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -28,7 +33,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
   - Phase 6D and Phase 6 closure: `28abf57`
-- Expected tracked worktree after the checkpoint: clean
+- Expected tracked worktree after the mapping checkpoint: clean; no production
+  code modified
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
 
@@ -165,9 +171,46 @@ git log -5 --oneline
 
 ## Next Whole-System Gap
 
-- Phase 7 has not yet been source-mapped. Current text conversation is strong
-  but long-form structure, creative breadth, source-style separation, and
-  sustained non-scripted expression need the next dependency-ordered audit.
+- Phase 7 implementation map:
+  `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md`
+- Current text conversation has strong obligation, correction, callback,
+  quotation, uncertainty, source, and stopping owners.
+- The first production defect is
+  `answer_substance._bounded_creative_operation`: it recognizes a small rain
+  exercise and one Mara/garden prompt and returns finished fixture prose.
+- Phase 7A replaces that seam with a typed bounded creative brief and
+  explicitly fictional semantic units inside the existing Answer Substance /
+  Answer Operations path.
+- Reviewed creative and public-domain teaching remains guidance only. NLO's
+  `content_generation_allowed` stays false; answer content is not moved into
+  the language organ.
+- Add one source-style separation receipt reusing quotation/echo boundaries.
+  It must distinguish quote, paraphrase, current-turn playful echo, technique
+  transfer, and original invention without reading or exposing the private
+  Voice corpus.
+- Add creative revision parent/root/local-target ancestry and preserve
+  unaffected regions.
+- Phase 7B then extends the existing discourse planner/loom with a typed
+  purpose/thesis/section spine; Phase 7C broadens bounded structured
+  realization; Phase 7D extends descriptive LEA evidence and records the
+  learned-substrate decision boundary.
+- No new organ, hidden Memory, source persona, recursive generator, provider,
+  or automatic learned substrate is authorized.
+
+## Phase 7 Mapping Evidence
+
+- 219 focused discourse, candidate, NLO, Voice, long-thread, quotation,
+  creative-teaching, public-domain transfer, Conversation LEA, conversation-
+  spine, workspace, pragmatic, and breadth-lesson tests passed before
+  production edits.
+- Resident database was opened read-only; SQLite integrity reported `ok`.
+- Resident counts relevant to this phase: 18 chat sessions, 308 chat messages,
+  113 NLO runs, 16 Voice runs, 73 language-teaching items, zero LEA runs, 24
+  pending Dream reflections, and zero personal Memory candidates.
+- The one resident `acquire_needs_review` teaching lifecycle and the 24 Dream
+  decisions remain untouched.
+- Phase 6 frontend baseline remains 491.33 kB (gzip 109.20 kB), no Vite
+  warning, with Study workspaces lazy-loaded.
 
 ## Resident and Ethical Boundaries
 
@@ -212,6 +255,7 @@ Before Phase 7 mapping or production work, read completely:
 - `docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
+- `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md`
@@ -222,22 +266,27 @@ Before Phase 7 mapping or production work, read completely:
 - latest entries in `docs/journal/SELENE_WORK_JOURNAL.md`
 - this ledger
 
-Also inspect the current NLO, Voice, Chat, context, long-form, creative,
-source-style, and conversational evidence owners, current tests, current Git
+Also inspect the current NLO, Voice, Chat, answer-substance, supported-
+semantics, construction, discourse, context, long-form, creative, quotation,
+source-style, and conversational-evidence owners, current tests, current Git
 diff, and resident counts before any edit. The ledger is not authority to run
 live conversation or mutate resident continuity.
 
 ## Exact Resume Point
 
-Begin Phase 7 with a source map before production edits. Trace the current
-text Chat substance path, NLO, Voice, paragraph and discourse planning,
-callbacks, mixed intent, long-thread state, creative mechanisms, source-style
-boundaries, originality checks, and present tests. Separate missing capability
-from missing handoff and from already-working behavior that only lacks
-evidence. Preserve warmth, uncertainty, correction, epistemic status,
-completion truth, and Selene-authored expression. Use static and synthetic
-inspection first; do not begin a broad live conversation battery while the map
-is incomplete.
+Begin Phase 7A in the existing answer-substance path. Replace the scenario-
+specific creative operation with a typed bounded creative brief and fictional
+semantic-unit receipt. First preserve the existing rain exercise as a
+compatibility case while removing its unique hard-coded ownership; then add
+several synthetic forms and paraphrases. Connect reviewed creative lesson
+mechanisms as guidance only. Add source mode, exact/bounded near-overlap,
+protected-feature holds, private-corpus non-access, explicit stopping, and
+local creative-revision ancestry before changing discourse or NLO breadth.
+
+Keep the first production slice small and test-led. Do not begin Phase 7B,
+reactivate Voice's legacy complete-body fallback, run resident conversation,
+or create a broad live Q&A battery until Phase 7A makes content ownership,
+fiction status, source separation, stopping, and epistemic invariants explicit.
 
 After each meaningful checkpoint, update the dated Work Journal and refresh
 this file with only the current resumable edge.

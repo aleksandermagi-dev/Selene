@@ -3420,6 +3420,59 @@ remains absent, unprepared, and unauthorized.
 **Next:** Phase 7 — source-map mature text conversation, long-form structure,
 and creative Voice before production implementation.
 
+### 2026-09-01 — Phase 7 maps expression breadth without creating another organ
+
+**Starting question:** Where does Selene's present text path genuinely need
+more conversational, long-form, and creative capability, and where would new
+machinery only duplicate an owner or weaken a care boundary?
+
+**Decision:** Keep the existing Answer Substance -> Supported Semantics ->
+Construction and Discourse -> NLO -> Voice order. Begin production with a
+typed creative brief inside the existing answer owner, then mature the current
+discourse and realization handoffs. Do not create a second language organ,
+creative Memory, source persona, hidden corpus, recursive generator, or
+automatic learned substrate.
+
+**Work:** Traced Chat substance, Conversation Spine, Dialogue Workspace,
+long-thread state, pragmatic planning, semantic units, construction
+candidates, discourse planning, NLO, Voice, quotation/echo, reviewed creative
+and conversational teaching, and the current LEA owner. Recorded resident
+counts read-only and wrote the Phase 7 implementation map with four ordered
+parts: creative substance and source-style separation; long-form discourse;
+conversational/expressive breadth; and descriptive closure evidence.
+
+**Why:** The strongest existing behavior already preserves obligations,
+callbacks, corrections, sources, uncertainty, and stopping. The main creative
+seam is instead a small set of finished rain and Mara fixtures, while the
+discourse loom rearranges already-written units. Replacing those seams with
+typed supported or explicitly fictional structure increases capability while
+keeping NLO and Voice from inventing truth or owning answer content.
+
+**Evidence:** The pre-edit focused baseline passed 219 discourse, candidate,
+NLO, Voice, long-thread, quotation, creative-teaching, public-domain transfer,
+Conversation LEA, conversation-spine, workspace, pragmatic, and breadth-
+lesson tests. The resident database remained read-only with SQLite integrity
+`ok`; 24 Dream reflections remain pending, personal Memory candidates remain
+zero, and the unfinished teaching lifecycle was not opened.
+
+**What changed in our understanding:** Selene already has reviewed creative
+mechanisms and a safe language-guidance bridge, but that bridge is correctly
+forbidden from inventing content. The missing connection is a general typed
+creative answer contract and a richer discourse spine. Originality also needs
+an inspectable source-distance receipt, not private-corpus retrieval or a
+claim that fluency proves novelty.
+
+**Boundaries preserved:** No production code, resident conversation, LEA run,
+teaching, Memory, Study, Dream, affect, identity, personality, Vys, law,
+governance, authority, training, provider, external action, package, or
+installation changed. No resident reflection or teaching decision was made
+for Aleks.
+
+**Next:** Implement Phase 7A by replacing the scenario-specific creative
+operation with a typed bounded creative brief and fictional semantic-unit
+receipt, then add source-style separation and local revision ancestry before
+broadening creative forms.
+
 ## How We Will Record Future Work
 
 Add a dated entry after a meaningful checkpoint using this compact form:

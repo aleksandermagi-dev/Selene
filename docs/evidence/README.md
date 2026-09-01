@@ -16,10 +16,15 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
-- [Current Project Status — updated August 31, 2026](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
+- [Current Project Status — updated September 1, 2026](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
   — consolidated current checkpoint for completed whole-system phases,
   configured resident counts, verification, honest limits, Git state, and the
-  exact Phase 7 resume point.
+  exact Phase 7A resume point.
+- [Whole-System Phase 7 — Text Conversation, Long Form, and Creative Voice Map — September 1, 2026](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md)
+  — traces the current expression owners, isolates the scenario-specific
+  creative and shallow discourse seams, and orders creative substance,
+  source-style separation, long-form structure, bounded expressive breadth,
+  and descriptive closure evidence without adding another organ.
 - [Whole-System Phase 6A — Prerequisite and Source Readiness — August 30, 2026](SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md)
   — enforces one typed readiness receipt across curriculum status, prepare,
   teach, and authorization coverage while migrating completed groups without

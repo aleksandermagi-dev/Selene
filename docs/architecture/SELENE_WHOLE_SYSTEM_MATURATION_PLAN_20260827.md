@@ -2,7 +2,8 @@
 
 Date: 2026-08-27
 
-Status: active implementation program; Phases 0 through 6 complete for current scope as of 2026-08-31
+Status: active implementation program; Phases 0 through 6 complete for current
+scope, and Phase 7 source-mapped for production as of 2026-09-01
 
 Companion audit:
 [Selene Organ Depth and Memory-Integration Audit](../evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
@@ -479,6 +480,11 @@ or revisit—not pass/fail worth. Speed is secondary to understanding.
 
 ## Phase 7 — Mature Text Conversation, Long Form, and Creative Voice
 
+Status: **source-mapped; production implementation not started (2026-09-01)**
+
+Implementation map:
+[Phase 7 Text Conversation, Long Form, and Creative Voice](SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md)
+
 ### Purpose
 
 Bring Selene's visible text conversation as close as possible to mature
@@ -856,11 +862,12 @@ These do not wait for one final cleanup phase.
 
 ## Immediate Starting Point
 
-Phases 0 through 6 are complete for current scope. The next production edge is
-Phase 7: source-map mature text conversation, long-form structure, and
-creative Voice before editing. F2 Group 8 remains unprepared and unauthorized
-until an exact Grade 4-6 source artifact and license are selected and
-explicitly approved by Aleks.
+Phases 0 through 6 are complete for current scope. Phase 7 is source-mapped;
+the next production edge is Phase 7A, beginning with the typed creative brief,
+fictional semantic-unit receipt, source-style separation, and local revision
+ancestry inside the existing answer-substance path. F2 Group 8 remains
+unprepared and unauthorized until an exact Grade 4-6 source artifact and
+license are selected and explicitly approved by Aleks.
 
 ## Final Principle
 

@@ -3,12 +3,13 @@
 Selene is a local-first AI system designed to understand, reason, learn, and
 converse without treating a language model as the whole mind.
 
-As of August 31, 2026, whole-system maturation Phases 0 through 6 are complete
+As of September 1, 2026, whole-system maturation Phases 0 through 6 are complete
 for current scope. Ordered education now has shared
 prerequisite/source-readiness enforcement plus typed source roles and bounded
 instructional why plus reviewed correction ancestry and delayed ordinary-Chat
-selection, plus a nine-dimension descriptive learning profile. Phase 7 is the
-next implementation edge.
+selection, plus a nine-dimension descriptive learning profile. Phase 7 is
+source-mapped, and its typed creative-substance path is the next production
+edge.
 
 ## The Problem She Solves
 

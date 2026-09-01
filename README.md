@@ -90,8 +90,11 @@ Phases 0 through 6 of the
 [Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
 are [complete for current scope](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md).
 
-The next work is Phase 7: source-map mature text conversation, long-form
-structure, and creative Voice before production edits.
+Phase 7 is now
+[source-mapped](docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md).
+The next work is Phase 7A: replace the scenario-specific creative fixture seam
+with a typed bounded creative brief, fictional semantic units, source-style
+separation, and local revision ancestry inside the existing answer path.
 F2 Group 8 remains unprepared and unauthorized until Aleks explicitly selects
 an exact Grade 4–6 source artifact after edition, license, exclusion, checksum,
 role, and coverage review.
