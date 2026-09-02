@@ -505,6 +505,53 @@ def test_nlo_recomposes_supported_sentence_relations_under_approved_language_gui
     _assert_locked(result)
 
 
+def test_nlo_exposes_one_bounded_functional_realization_receipt_to_voice(tmp_path):
+    conn = _conn(tmp_path)
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": "Explain the reversible pilot and then let the answer rest.",
+            "content_seed": (
+                "The reversible pilot produces evidence before expansion. "
+                "Its result remains local and provisional."
+            ),
+            "conversation_context": {
+                "turn_count": 4,
+                "recent_assistant_texts": [
+                    "The key point is: The earlier result remained provisional."
+                ],
+            },
+            "language_teaching_guidance": {
+                "used": True,
+                "lesson_keys": [
+                    "natural_openings_and_pivots",
+                    "evidence_grounded_natural_pause_and_closure",
+                ],
+                "response_moves": [
+                    "enter_actual_move",
+                    "close_only_complete_thought",
+                ],
+            },
+        },
+        record_run=False,
+    )
+
+    receipt = result["bounded_conversational_realization"]
+    assert receipt == result["voice_handoff"]["bounded_conversational_realization"]
+    assert receipt["generation_pass_count"] == 1
+    assert receipt["selection_pass_count"] == 1
+    assert receipt["meaning_change_allowed"] is False
+    assert receipt["epistemic_status_change_allowed"] is False
+    assert receipt["memory_write_active"] is False
+    assert receipt["hidden_transcript_created"] is False
+    assert receipt["breadth_ceiling"]["state"] in {
+        "bounded_range_available",
+        "supported_surface_preserved",
+    }
+    assert result["revision"]["bounded_functional_realization_checked"] is True
+    _assert_locked(result)
+
+
 def test_nlo_uses_expression_guidance_as_optional_voice_handoff_not_emotion_claim(tmp_path):
     conn = _conn(tmp_path)
     result = route_request(

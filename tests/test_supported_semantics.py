@@ -183,8 +183,11 @@ def test_answer_substance_structures_common_reasoning_and_marks_unmigrated_fallb
         "compare inputs outputs and risks",
     ]
     assert comparison["compatibility_fallback_available"] is True
-    assert unknown["structured_semantic_handoff"] is False
-    assert unknown["semantic_packet"]["formation_mode"] == "text_grounded"
+    assert unknown["structured_semantic_handoff"] is True
+    assert unknown["semantic_packet"]["formation_mode"] == "structured"
+    assert {
+        item["role"] for item in unknown["semantic_packet"]["units"]
+    } == {"answer", "request"}
     assert unknown["semantic_packet"]["compatibility_fallback_available"] is True
     _assert_locked(comparison["semantic_packet"])
     _assert_locked(unknown["semantic_packet"])

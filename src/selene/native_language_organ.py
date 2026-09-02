@@ -449,6 +449,11 @@ def _build_language_result(
         recent_texts=[str(item) for item in meaning.get("recent_assistant_texts") or []],
     )
     plan["human_conversational_realization"] = human_conversational_realization
+    bounded_conversational_realization = (
+        human_conversational_realization.get("functional_realization_receipt")
+        if isinstance(human_conversational_realization.get("functional_realization_receipt"), dict)
+        else {}
+    )
     draft = str(human_conversational_realization.get("candidate_text") or draft)
     contextual_composition_plan = (
         plan.get("contextual_composition_plan")
@@ -538,6 +543,7 @@ def _build_language_result(
         "discourse_plan": plan,
         "contextual_composition": contextual_composition,
         "human_conversational_realization": human_conversational_realization,
+        "bounded_conversational_realization": bounded_conversational_realization,
         "draft_text": draft,
         "candidate_text": candidate,
         "revision": revision,
@@ -593,6 +599,7 @@ def _build_language_result(
             "special_expression_realization": plan.get("special_expression_realization") or {},
             "human_conversational_plan": plan.get("human_conversational_plan") or {},
             "human_conversational_realization": plan.get("human_conversational_realization") or {},
+            "bounded_conversational_realization": bounded_conversational_realization,
         },
         "source_refs": meaning["source_refs"],
         "review_destination": "Status",
@@ -1884,6 +1891,10 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "contextual_composition_plan": contextual_composition_plan,
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
             "relational_expression_range": relational_expression_range,
+            "pragmatic_continuity": pragmatic_continuity,
+            "conversational_energy": conversational_energy,
+            "language_teaching_guidance": meaning.get("language_teaching_guidance") or {},
+            "recent_assistant_texts": meaning.get("recent_assistant_texts") or [],
             # Formation can fall back to the user's prompt when no answer
             # content exists.  Only an actual supplied/owned content seed may
             # authorize general supported-answer surface variation.
@@ -2216,6 +2227,13 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         if isinstance(plan.get("generative_thought_realization"), dict)
         else {}
     )
+    bounded_functional_realization = (
+        (plan.get("human_conversational_realization") or {}).get(
+            "functional_realization_receipt"
+        )
+        if isinstance(plan.get("human_conversational_realization"), dict)
+        else {}
+    )
     return text, {
         "passed": not any(flag == "authority_overclaim_removed" for flag in flags),
         "flags": list(dict.fromkeys(flags)),
@@ -2223,6 +2241,18 @@ def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, A
         "truth_boundary_checked": True,
         "repetition_checked": True,
         "recent_response_repetition_checked": True,
+        "bounded_functional_realization_checked": bool(
+            bounded_functional_realization
+        ),
+        "bounded_functional_generation_pass_count": int(
+            bounded_functional_realization.get("generation_pass_count") or 0
+        ),
+        "bounded_functional_selection_pass_count": int(
+            bounded_functional_realization.get("selection_pass_count") or 0
+        ),
+        "bounded_functional_meaning_change_allowed": False,
+        "bounded_functional_epistemic_status_change_allowed": False,
+        "bounded_functional_hidden_transcript_created": False,
         "language_guidance_checked": True,
         "approved_language_realization_applied": language_policy.get("used") is True,
         "language_realization_features": language_policy.get("features") or [],

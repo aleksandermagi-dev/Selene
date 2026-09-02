@@ -283,3 +283,62 @@ def test_supported_answer_can_use_context_shaped_warmth_without_forcing_it():
         for item in surfaces
     )
     assert all(item["release_safe"] is True for item in results)
+
+
+def test_functional_realization_receipt_is_abstract_bounded_and_single_pass():
+    recent = [
+        "Absolutely—here is the useful part: The first result stayed provisional.",
+        "The key point is: The second result kept its limit.\n\nThat was enough for now.",
+    ]
+    plan = build_human_conversational_plan(
+        {
+            "epistemic_composition": {"dominant_state": "supported_answer", "parts": []},
+            "epistemic_answer_state": {"epistemic_state": "supported_answer"},
+            "contextual_composition_plan": {
+                "expression_profile": "explanation",
+                "response_depth": "standard",
+                "decisions": {"stopping": "answer_and_stop_when_complete"},
+            },
+            "pragmatic_continuity": {
+                "ending_decision": {"mode": "answer_and_stop_when_complete"},
+                "topic_transition": {"kind": "explicit_return"},
+            },
+            "language_teaching_guidance": {
+                "used": True,
+                "lesson_keys": [
+                    "natural_openings_and_pivots",
+                    "evidence_grounded_natural_pause_and_closure",
+                ],
+                "response_moves": [
+                    "enter_actual_move",
+                    "avoid_stock_preface",
+                    "close_only_complete_thought",
+                ],
+            },
+            "recent_assistant_texts": recent,
+            "supported_surface_available": True,
+        }
+    )
+    result = realize_human_conversation(
+        "The pilot remains useful. Its limit remains visible.",
+        plan,
+        variation_key="functional-receipt",
+        recent_texts=recent,
+    )
+
+    receipt = result["functional_realization_receipt"]
+    assert receipt["version"] == "v1_bounded_functional_realization"
+    assert receipt["generation_pass_count"] == 1
+    assert receipt["selection_pass_count"] == 1
+    assert receipt["recursive_generation_used"] is False
+    assert receipt["provider_generation_used"] is False
+    assert receipt["content_generation_allowed"] is False
+    assert receipt["raw_recent_text_retained"] is False
+    assert receipt["recent_functional_constructions"]
+    assert all("text" not in item for item in receipt["recent_functional_constructions"])
+    assert not any(value in str(receipt) for value in recent)
+    assert "pivot" in receipt["available_functions"]
+    assert "natural_stopping" in receipt["available_functions"]
+    assert receipt["terminal_stop"]["state"] == "realization_complete"
+    assert result["meaning_preserved"] is True
+    _assert_bounded(result)

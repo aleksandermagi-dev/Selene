@@ -11,6 +11,8 @@ def test_fluency_without_distinct_application_reopens_understanding():
     assert result["answer_kind"] == "reopen_fluency_without_transfer"
     assert "familiarity, not transferable understanding" in result["answer"]
     assert "check reconstruction and application again" in result["answer"]
+    assert result["structured_semantic_handoff"] is True
+    assert result["semantic_packet"]["formation_mode"] == "structured"
     assert result["external_fact_claimed"] is False
 
 
@@ -22,6 +24,7 @@ def test_exact_answer_is_distinguished_from_transferable_understanding():
     assert result["answer_kind"] == "exactness_understanding_distinction"
     assert "correct for one case" in result["answer"]
     assert "apply it to a different case" in result["answer"]
+    assert result["structured_semantic_handoff"] is True
     assert result["external_fact_claimed"] is False
 
 
@@ -77,6 +80,10 @@ def test_unknown_subject_gets_a_material_scope_question_without_inventing_facts(
     assert result["answer_kind"] == "bounded_knowledge_gap"
     assert "grounded knowledge about black holes" in result["answer"]
     assert "what it is, how it works, or why it matters" in result["answer"]
+    assert result["structured_semantic_handoff"] is True
+    assert {
+        item["role"] for item in result["semantic_packet"]["units"]
+    } == {"answer", "request"}
     assert result["source_required_for_factual_claim"] is True
     assert result["external_fact_claimed"] is False
 

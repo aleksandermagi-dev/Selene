@@ -3611,3 +3611,44 @@ Aleks. NLO and Voice remain expression owners, not fact or answer owners.
 conversational realization through the existing semantic, construction,
 candidate, NLO, and Voice owners while preserving one pass, section receipts,
 source/certainty, and natural stopping.
+
+### 2026-09-02 — Conversational breadth gains a bounded functional receipt
+
+**Starting question:** Can Selene vary more owner-known conversational seams
+without parsing arbitrary prose, learning a persona, keeping a hidden
+transcript, or adding another generation loop?
+
+**Decision:** Route only known Answer Substance seams through typed semantic
+units and extend the existing Human Conversational Realization owner with an
+abstract functional-range receipt. Keep content, truth, sources, certainty,
+Memory, and release authority with their existing owners.
+
+**Work:** Added structured units for fluency versus transfer, exact answers
+versus understanding, collaborative help, bounded knowledge gaps, source
+requirements, and causal evidence gaps. Added context-supported function
+availability, abstract recent opening/cadence/ending families, an eight-
+candidate ceiling, one generation and selection pass, invariant locks, and a
+terminal stop. Carried the receipt through NLO into Voice and added revision
+checks for meaning, epistemic state, and hidden-transcript boundaries.
+
+**Why:** Conversational maturity is wider truthful form over supported meaning,
+not permission to invent content or turn repeated language into identity.
+Abstract functional history is enough to reduce local repetition without
+creating private continuity or a second Memory system.
+
+**Evidence:** Focused red-to-green checks passed 56. The broader semantic,
+construction, candidate, conversational-realization, NLO, context, discourse,
+quotation, and relational-expression regression passed 187. Python
+compilation and diff checks passed. The frontend remained 491.33 kB (gzip
+109.20 kB), with no Vite warning and lazy Study workspaces.
+
+**Boundaries preserved:** No resident conversation, teaching decision, LEA,
+Memory, Study, Dream, affect, identity, personality, Vys, law, governance,
+authority, training, autonomy, external action, provider, or learned substrate
+changed. The 24 Dream reflections and the unfinished teaching review remain
+Aleks's decisions.
+
+**Next:** Phase 7D — extend the existing descriptive LEA owner with
+source-contained Phase 7 activities and metamorphic/long-thread evidence, then
+perform one gentle disposable walkthrough and record the learned-substrate
+decision boundary.

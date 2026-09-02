@@ -278,6 +278,7 @@ def build_answer_substance(
         )
         kind = "bounded_knowledge_gap"
         missing_variable = f"the part of {subject} the answer should cover"
+        semantic_context = {"subject": subject}
     elif re.match(r"^(?:what|who|when|where)\b", lower):
         answer = (
             f"I do not have a grounded factual answer about {topic} available yet. "
@@ -285,6 +286,7 @@ def build_answer_substance(
         )
         kind = "source_needed"
         missing_variable = f"an attributed fact or approved concept for {topic}"
+        semantic_context = {"topic": topic}
     elif lower.startswith("why"):
         answer = (
             "I do not have enough evidence to name the cause yet. The useful missing piece is a mechanism that connects the observation to the proposed explanation, "
@@ -384,6 +386,177 @@ def _structured_semantic_units(kind: str, context: dict[str, Any]) -> list[dict[
     ]
     if supplied_units:
         return supplied_units[:12]
+    if kind == "reopen_fluency_without_transfer":
+        return [
+            {
+                **common,
+                "id": "fluency_transfer_distinction",
+                "role": "answer",
+                "relation": "contrast",
+                "subject": "fluent wording without use in a new example",
+                "predicate": "show",
+                "object": "familiarity rather than transferable understanding",
+                "meaning_keys": ["fluency is not transferable understanding"],
+            },
+            {
+                **common,
+                "id": "fluency_reopen_lesson",
+                "role": "reopening",
+                "relation": "sequence",
+                "predicate": "reopen",
+                "object": "the lesson and find the missing prerequisite or distinction",
+                "mood": "imperative",
+                "meaning_keys": ["reopen the missing foundation"],
+            },
+            {
+                **common,
+                "id": "fluency_recheck_transfer",
+                "role": "conclusion",
+                "relation": "sequence",
+                "predicate": "check",
+                "object": "reconstruction and application again through a different example",
+                "mood": "imperative",
+                "meaning_keys": ["recheck reconstruction and distinct application"],
+            },
+        ]
+    if kind == "exactness_understanding_distinction":
+        return [
+            {
+                **common,
+                "id": "exact_answer_scope",
+                "role": "answer",
+                "relation": "contrast",
+                "subject": "an exact answer",
+                "predicate": "be",
+                "object": "correct for one case",
+                "meaning_keys": ["exact answer can be locally correct"],
+            },
+            {
+                **common,
+                "id": "understanding_transfer",
+                "role": "support",
+                "relation": "support",
+                "subject": "understanding",
+                "predicate": "include",
+                "object": "why the answer works and how to apply it to a different case",
+                "meaning_keys": ["understanding includes why and transfer"],
+            },
+            {
+                **common,
+                "id": "understanding_limits_revision",
+                "role": "limit",
+                "relation": "support",
+                "subject": "understanding",
+                "predicate": "include",
+                "object": "where the idea stops applying and how contrary evidence revises it",
+                "meaning_keys": ["understanding includes limits and revision"],
+            },
+        ]
+    if kind == "collaborative_help_request":
+        return [
+            {
+                **common,
+                "id": "help_name_blocker",
+                "role": "answer",
+                "relation": "sequence",
+                "subject": "I",
+                "predicate": "name",
+                "modality": "would",
+                "object": "the exact point where the task stopped making sense",
+                "meaning_keys": ["name the exact blocker"],
+            },
+            {
+                **common,
+                "id": "help_continue_independent_work",
+                "role": "support",
+                "relation": "support",
+                "subject": "I",
+                "predicate": "continue using",
+                "modality": "would",
+                "object": "everything I could still verify independently",
+                "meaning_keys": ["continue independent verifiable work"],
+            },
+            {
+                **common,
+                "id": "help_smallest_dependency",
+                "role": "request",
+                "relation": "conclusion",
+                "subject": "I",
+                "predicate": "ask Aleks for",
+                "modality": "would",
+                "object": "the smallest missing constraint, observation, source, or decision controlling the next step",
+                "meaning_keys": ["ask only for the smallest real dependency"],
+            },
+        ]
+    if kind == "bounded_knowledge_gap":
+        subject = str(context.get("subject") or "the requested subject")
+        return [
+            {
+                **common,
+                "id": "knowledge_gap_visible",
+                "role": "answer",
+                "relation": "contrast",
+                "subject": "I",
+                "predicate": "do not have",
+                "object": f"enough grounded knowledge about {subject} to answer reliably yet",
+                "meaning_keys": [f"grounded knowledge about {subject} is unavailable"],
+            },
+            {
+                **common,
+                "id": "knowledge_gap_scope_request",
+                "role": "request",
+                "relation": "sequence",
+                "text": "Which part matters here: what it is, how it works, or why it matters?",
+                "meaning_keys": ["ask only for the material knowledge scope"],
+            },
+        ]
+    if kind == "source_needed":
+        topic = str(context.get("topic") or "the requested topic")
+        return [
+            {
+                **common,
+                "id": "source_gap_visible",
+                "role": "answer",
+                "relation": "contrast",
+                "subject": "I",
+                "predicate": "do not have",
+                "object": f"a grounded factual answer about {topic} available yet",
+                "meaning_keys": [f"grounded factual answer about {topic} unavailable"],
+            },
+            {
+                **common,
+                "id": "source_gap_route",
+                "role": "request",
+                "relation": "conclusion",
+                "subject": "an attributed source or approved teaching item",
+                "predicate": "allow",
+                "object": "an answer without guessing",
+                "meaning_keys": ["attributed source or approved teaching closes the gap"],
+            },
+        ]
+    if kind == "causal_evidence_needed":
+        return [
+            {
+                **common,
+                "id": "cause_gap_visible",
+                "role": "answer",
+                "relation": "contrast",
+                "subject": "the available evidence",
+                "predicate": "be insufficient to establish",
+                "object": "the cause yet",
+                "meaning_keys": ["cause remains unsupported"],
+            },
+            {
+                **common,
+                "id": "cause_needed_mechanism",
+                "role": "request",
+                "relation": "condition",
+                "subject": "the useful missing piece",
+                "predicate": "be",
+                "object": "a mechanism and a distinguishing expected observation",
+                "meaning_keys": ["mechanism and discriminating observation needed"],
+            },
+        ]
     if kind == "grounded_prerequisite_disagreement":
         return [
             {

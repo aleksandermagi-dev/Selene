@@ -4,8 +4,8 @@ Date: 2026-09-01 (consolidated record name retained)
 
 Branch: `evidence`
 
-Status: Phases 0 through 6 and Phases 7A-7B of the Whole-System Maturation Plan
-are complete for current scope; Phase 7C is the next production edge.
+Status: Phases 0 through 6 and Phases 7A-7C of the Whole-System Maturation Plan
+are complete for current scope; Phase 7D is the next production edge.
 
 ## Purpose
 
@@ -31,7 +31,7 @@ completed phase.
 | 4 — Affect, relationship, and response agency | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md) |
 | 5 — Reasoning, answer owners, and domain depth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md) |
 | 6 — Ordered education and world knowledge | complete for current scope | [Phase 6D closure evidence](SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md) |
-| 7 — Text conversation, long form, and creative Voice | Phases 7A-7B complete; Phase 7C next | [Phase 7A evidence](SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md), [Phase 7B evidence](SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md) |
+| 7 — Text conversation, long form, and creative Voice | Phases 7A-7C complete; Phase 7D next | [Phase 7A evidence](SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md), [Phase 7B evidence](SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md), [Phase 7C evidence](SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md) |
 
 “Complete for current scope” means the phase's documented completion gates and
 proportional verification passed. It does not mean Selene is finished or that
@@ -181,16 +181,21 @@ answer-owner checks; the broader expression/continuity regression passed 270.
 The frontend remains 491.33 kB (gzip 109.20 kB), with no Vite warning and lazy
 Study workspaces.
 
+Phase 7C routes additional owner-known answer seams through typed semantic
+units and adds one bounded functional-realization receipt through NLO to
+Voice. Recent expression context is reduced to abstract opening, cadence, and
+ending families rather than retained as transcript or Memory. Verification
+passed 187 focused and compatibility checks. The frontend remains 491.33 kB
+(gzip 109.20 kB), with no Vite warning and lazy Study workspaces.
+
 ## Current Open Edge
 
-Phase 7C begins by source-mapping the existing Supported Semantics,
-Construction Lattice, Candidate Garden, contextual selector, NLO, Voice, and
-reviewed language-guidance seams. It may broaden bounded structured
-realization only from supported input, with one candidate-generation and
-selection pass, while preserving Phase 7B sections and stopping. It may not
-create a persona, hidden transcript or Memory, new answer owner, provider, or
-learned substrate, and may not reactivate Voice's legacy complete-body
-fallback.
+Phase 7D begins by source-mapping the existing Language Evidence and
+Assimilation owner against the Phase 7A-7C receipts. It may add only
+source-contained, descriptive creative, discourse, conversational-range,
+revision, metamorphic, long-thread, and stopping observations. It may not add
+a score, grade, rank, diagnosis, deadline, resident decision, learned
+substrate, or broad live resident conversation battery.
 
 F2 Group 8—ratios, unit comparison, percentages, scale, and proportional
 language—remains unprepared and unauthorized. Its exact Grade 4-6 source
@@ -201,8 +206,9 @@ reviewed and explicitly selected by Aleks before content implementation.
 
 - Selene's provider-free text generation and world knowledge remain narrower
   than a mature general language model.
-- Broader structured conversational realization remains a measured current
-  limitation and is the active Phase 7C production edge.
+- The deterministic conversational ceiling still requires descriptive Phase
+  7D evidence; the implementation does not claim open-ended learned-model
+  equivalence.
 - Audible Voice, new sensory pathways, broad tools, external action, and
   embodiment remain deferred, bounded, or substrate-ready rather than
   operational.
@@ -249,3 +255,5 @@ Phase 7A is checkpointed separately under the commit name
 `Mature creative substance and source separation`.
 Phase 7B is checkpointed separately under the commit name
 `Mature bounded long-form discourse`.
+Phase 7C is checkpointed separately under the commit name
+`Mature bounded conversational breadth`.

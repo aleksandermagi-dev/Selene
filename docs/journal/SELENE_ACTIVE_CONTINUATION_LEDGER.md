@@ -1,9 +1,9 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-01
+Last refreshed: 2026-09-02
 
-Status: Phases 0 through 6 and Phases 7A-7B complete for current scope; resume
-at Phase 7C structured conversational breadth source mapping
+Status: Phases 0 through 6 and Phases 7A-7C complete for current scope; resume
+at Phase 7D descriptive evidence and closure source mapping
 
 ## Purpose
 
@@ -26,7 +26,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Mature creative substance and source separation`)
 - Latest Phase 7B implementation checkpoint: `84d6350`
   (`Mature bounded long-form discourse`)
-- Expected remote relation after this continuation-ledger refresh: four local
+- Phase 7C checkpoint is the current staged implementation edge; confirm its
+  hash from Git after commit (`Mature bounded conversational breadth`).
+- Expected remote relation after the Phase 7C commit: five local
   commits ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
@@ -180,6 +182,8 @@ git log -5 --oneline
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md`
 - Phase 7B evidence:
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md`
+- Phase 7C evidence:
+  `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md`
 - The scenario-specific creative seam has been replaced with a typed bounded
   brief and explicitly fictional semantic units inside Answer Substance and
   Answer Operations.
@@ -195,9 +199,14 @@ git log -5 --oneline
 - Phase 7B extends the existing Discourse Planner/Loom with a typed
   purpose/thesis/section spine, source/epistemic/correction/release/thread
   receipts, local target-only revision, and one terminal stop.
-- Phase 7C next broadens bounded structured realization; Phase 7D extends
-  descriptive LEA evidence and records the learned-substrate decision
-  boundary.
+- Phase 7C routes additional high-use Answer Substance seams through typed
+  semantic units and exposes one bounded functional-realization receipt from
+  the existing conversational owner through NLO to Voice.
+- Recent variation state contains abstract opening/cadence/ending families
+  only; one generation and selection pass, an eight-candidate ceiling,
+  invariant locks, and an explicit terminal stop remain visible.
+- Phase 7D next extends descriptive LEA evidence and records the learned-
+  substrate decision boundary.
 - No new organ, hidden Memory, source persona, recursive generator, provider,
   or automatic learned substrate is authorized.
 
@@ -246,6 +255,18 @@ git log -5 --oneline
   `acquire_needs_review` was not opened.
 - No schema change, resident migration, live resident conversation, or
   decision-bearing resident write was needed.
+
+## Phase 7C Evidence
+
+- 56 focused red-to-green checks and 187 broader semantic, construction,
+  candidate, NLO, contextual, discourse, quotation, and relational-expression
+  checks passed.
+- Python compilation and diff checks passed.
+- Frontend main bundle remains 491.33 kB (gzip 109.20 kB), with no Vite size
+  warning and lazy-loaded Study workspaces.
+- Read-only resident inspection remained the only resident access; no schema,
+  migration, conversation, Memory, Study, Dream, teaching, affect, or LEA
+  decision was changed.
 
 ## Resident and Ethical Boundaries
 
@@ -296,6 +317,7 @@ Before Phase 7 mapping or production work, read completely:
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md`
+- `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -310,17 +332,18 @@ live conversation or mutate resident continuity.
 
 ## Exact Resume Point
 
-Begin Phase 7C with source mapping only. Trace the existing Supported
-Semantics, Construction Lattice, Candidate Garden, contextual selector, NLO,
-Voice, and reviewed language-guidance inputs against Phase 7B section,
-source/epistemic, correction, thread, revision, and terminal-stop receipts.
-Briefly record the proposed bounded-realization shape before editing.
+Begin Phase 7D with source mapping only. Trace the existing Language Evidence
+and Assimilation owner, current Conversation LEA activities and descriptive
+dimensions, and Phase 7A-7C receipts. Briefly record how source-contained
+creative, discourse, conversational-range, local-revision, metamorphic,
+long-thread, and stopping observations can enter that existing owner.
 
-Then broaden only supported lexical, clause, sentence, acknowledgment, pivot,
-uncertainty, disagreement, humor, warmth, and closure variation through the
-existing owners. Keep one generation and selection pass, preserve all Phase
-7B receipts, and do not create a persona, hidden transcript/Memory, provider,
-learned substrate, new answer owner, or Voice legacy complete-body fallback.
+Then add only descriptive observed dimensions and one suggested next move per
+observed dimension. Preserve omitted-as-unobserved semantics; do not create a
+score, grade, rank, diagnosis, deadline, pressure, resident decision, learned
+substrate, or broad live resident conversation battery. Run static and focused
+suites before one gentle disposable walkthrough, compare the frontend bundle,
+and close Phase 7 with an explicit learned-substrate decision receipt.
 
 After each meaningful checkpoint, update the dated Work Journal and refresh
 this file with only the current resumable edge.

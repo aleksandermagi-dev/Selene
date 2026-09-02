@@ -2,8 +2,8 @@
 
 Date: 2026-09-01
 
-Status: Phases 7A and 7B complete for current scope; Phase 7C is the next
-production edge
+Status: Phases 7A through 7C complete for current scope; Phase 7D is the next
+production edge (2026-09-02)
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -305,7 +305,10 @@ Status: **complete for current scope — 2026-09-01**
 
 ### Phase 7C — Conversational and expressive breadth
 
-Status: **not started**
+Status: **complete for current scope — 2026-09-02**
+
+Evidence:
+[Phase 7C Conversational and Expressive Breadth](../evidence/SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md)
 
 - route more high-use answer seams through structured semantic units so the
   existing construction lattice can vary form without changing meaning;
@@ -443,10 +446,11 @@ decision-bearing state was changed; Phase 7A required no schema migration.
 
 ## Exact Production Resume Point
 
-Begin Phase 7C by source-mapping the existing Supported Semantics,
-Construction Lattice, Candidate Garden, contextual selector, NLO, Voice, and
-reviewed language-guidance seams against the new Phase 7B section and terminal
-stop receipts. Broaden only bounded structured realization from supported
-input, preserve one candidate-generation and selection pass, and keep recent
-functional variation separate from persona, Memory, answer substance, or a
-learned substrate. Do not reactivate Voice's legacy complete-body fallback.
+Begin Phase 7D by source-mapping the existing Language Evidence and
+Assimilation owner, its current conversation activities and descriptive
+dimensions, and the Phase 7A-7C receipts. Extend that existing owner with
+source-contained creative, discourse, conversational-range, revision,
+metamorphic, long-thread, and stopping observations. Preserve descriptive
+states and one suggested next move per observed dimension; do not create a
+score, grade, rank, diagnosis, deadline, resident decision, learned substrate,
+or broad live conversation battery.

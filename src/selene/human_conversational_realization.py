@@ -146,6 +146,9 @@ def build_human_conversational_plan(
     contextual = _dict(payload.get("contextual_composition_plan"))
     affect = _dict(payload.get("affect_expression_guidance"))
     expression_range = _dict(payload.get("relational_expression_range"))
+    pragmatic = _dict(payload.get("pragmatic_continuity"))
+    teaching = _dict(payload.get("language_teaching_guidance"))
+    energy = _dict(payload.get("conversational_energy"))
     dimensions = _dict(affect.get("dimensions"))
     parts = [item for item in composition.get("parts") or [] if isinstance(item, dict)]
     supported = [item for item in parts if item.get("epistemic_state") != "missing_ground"]
@@ -175,6 +178,16 @@ def build_human_conversational_plan(
         else str(composition.get("dominant_state") or answer_state.get("epistemic_state") or "supported_answer")
     )
     eligible = bool(not exact_locked and not hard_boundary and not social_owned)
+    functional_realization = _functional_realization_plan(
+        eligible=eligible,
+        profile=profile,
+        pragmatic=pragmatic,
+        teaching=teaching,
+        energy=energy,
+        expression_range=expression_range,
+        recent_texts=_texts(payload.get("recent_assistant_texts")),
+        supported_surface_available=supported_surface_available,
+    )
     missing_details = [
         {
             "obligation_id": str(item.get("obligation_id") or ""),
@@ -276,6 +289,7 @@ def build_human_conversational_plan(
             "epistemic_label_may_change": False,
             "fact_or_source_wording_may_be_invented": False,
             "whole_response_template_selected": False,
+            "functional_realization": functional_realization,
             "coordinated_expression_contract_active": True,
             "review_status": "status_only",
             "provenance_boundary": HUMAN_CONVERSATIONAL_REALIZATION_BOUNDARY,
@@ -779,10 +793,158 @@ def _result(
             "expression_availability": plan.get("expression_availability") or {},
             "hard_truth_softened": False,
             "whole_response_template_selected": False,
+            "functional_realization_receipt": _functional_realization_receipt(
+                plan,
+                applied=bool(applied and release_safe),
+            ),
             "coordinated_expression_contract_active": True,
             "provenance_boundary": HUMAN_CONVERSATIONAL_REALIZATION_BOUNDARY,
         }
     )
+
+
+def _functional_realization_plan(
+    *,
+    eligible: bool,
+    profile: str,
+    pragmatic: dict[str, Any],
+    teaching: dict[str, Any],
+    energy: dict[str, Any],
+    expression_range: dict[str, Any],
+    recent_texts: list[str],
+    supported_surface_available: bool,
+) -> dict[str, Any]:
+    """Expose bounded conversational functions without retaining conversation text."""
+
+    available: list[str] = []
+    if eligible and supported_surface_available:
+        available.extend(("direct_entry", "cadence"))
+
+    lesson_keys = _texts(teaching.get("lesson_keys"))
+    lesson_moves = _texts(teaching.get("response_moves"))
+    lesson_surface = " ".join((*lesson_keys, *lesson_moves)).lower()
+    transition = _dict(pragmatic.get("topic_transition"))
+    ending = _dict(pragmatic.get("ending_decision"))
+    energy_channels = _texts(energy.get("selected_channel_names"))
+    expression_channels = _texts(expression_range.get("selected_channel_names"))
+    channels = {item.lower() for item in (*energy_channels, *expression_channels)}
+
+    if eligible and (
+        profile in {"partial_answer", "missing_ground"}
+        or "uncertainty" in lesson_surface
+    ):
+        available.append("uncertainty")
+    if eligible and (profile == "open_hypothesis" or "hypothesis" in lesson_surface):
+        available.append("hypothesis")
+    if eligible and (
+        profile in {"venn_comparison", "data_conflict"}
+        or "disagreement" in lesson_surface
+    ):
+        available.append("disagreement")
+    if eligible and ("collabor" in lesson_surface or "help" in lesson_surface):
+        available.append("collaborative_help")
+    if eligible and (transition or "pivot" in lesson_surface or "return" in lesson_surface):
+        available.append("pivot")
+    if eligible and (channels & {"warmth", "tenderness"} or "warmth" in lesson_surface):
+        available.append("warmth")
+    if eligible and (channels & {"humor", "play"} or "humor" in lesson_surface):
+        available.append("humor")
+    if eligible and (
+        ending
+        or "closure" in lesson_surface
+        or "close_only_complete_thought" in lesson_surface
+    ):
+        available.append("natural_stopping")
+
+    return {
+        "status": "bounded_functional_realization_available" if available else "supported_surface_preserved",
+        "version": "v1_bounded_functional_realization_plan",
+        "available_functions": list(dict.fromkeys(available)),
+        "recent_functional_constructions": _abstract_functional_constructions(recent_texts),
+        "recent_input_count": len(recent_texts[:6]),
+        "raw_recent_text_retained": False,
+        "generation_pass_limit": 1,
+        "selection_pass_limit": 1,
+        "candidate_ceiling": 8,
+        "whole_response_templates_allowed": False,
+        "content_generation_allowed": False,
+        "persona_inference_allowed": False,
+        "memory_write_active": False,
+    }
+
+
+def _abstract_functional_constructions(recent_texts: list[str]) -> list[dict[str, str]]:
+    constructions: list[dict[str, str]] = []
+    for value in recent_texts[:6]:
+        recent = _paragraphs(value)
+        normalized = _normalize(recent)
+        opening_family = (
+            "acknowledgement"
+            if normalized.startswith(("yes ", "yeah ", "absolutely ", "of course "))
+            else "explicit_pivot"
+            if normalized.startswith(("the key point", "in plain terms", "taken together"))
+            else "direct_entry"
+        )
+        paragraph_count = len([item for item in recent.split("\n\n") if item.strip()])
+        sentence_count = len([item for item in re.split(r"[.!?]+", recent) if item.strip()])
+        cadence_family = (
+            "multi_paragraph" if paragraph_count > 1 else "multi_sentence" if sentence_count > 1 else "single_sentence"
+        )
+        ending_family = "question" if recent.endswith("?") else "closed_statement" if recent.endswith((".", "!")) else "open_statement"
+        signature = {
+            "opening_family": opening_family,
+            "cadence_family": cadence_family,
+            "ending_family": ending_family,
+        }
+        if signature not in constructions:
+            constructions.append(signature)
+    return constructions
+
+
+def _functional_realization_receipt(
+    plan: dict[str, Any],
+    *,
+    applied: bool,
+) -> dict[str, Any]:
+    functional = _dict(plan.get("functional_realization"))
+    available = _texts(functional.get("available_functions"))
+    recent = [
+        {
+            "opening_family": str(item.get("opening_family") or "direct_entry"),
+            "cadence_family": str(item.get("cadence_family") or "single_sentence"),
+            "ending_family": str(item.get("ending_family") or "open_statement"),
+        }
+        for item in functional.get("recent_functional_constructions") or []
+        if isinstance(item, dict)
+    ]
+    return {
+        "status": "bounded_functional_realization_complete",
+        "version": "v1_bounded_functional_realization",
+        "available_functions": available,
+        "recent_functional_constructions": recent,
+        "raw_recent_text_retained": False,
+        "generation_pass_count": 1,
+        "selection_pass_count": 1,
+        "recursive_generation_used": False,
+        "provider_generation_used": False,
+        "content_generation_allowed": False,
+        "meaning_change_allowed": False,
+        "epistemic_status_change_allowed": False,
+        "memory_write_active": False,
+        "hidden_transcript_created": False,
+        "persona_inference_used": False,
+        "whole_response_template_selected": False,
+        "surface_change_applied": applied,
+        "breadth_ceiling": {
+            "state": "bounded_range_available" if available else "supported_surface_preserved",
+            "candidate_ceiling": int(functional.get("candidate_ceiling") or 8),
+            "available_function_count": len(available),
+        },
+        "terminal_stop": {
+            "state": "realization_complete",
+            "further_generation_authorized": False,
+        },
+    }
 
 
 def _epistemic_label_present(profile: str, text: str) -> bool:
