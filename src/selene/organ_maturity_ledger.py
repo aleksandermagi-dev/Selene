@@ -8,7 +8,7 @@ from .curriculum_authorization import curriculum_authorization_status
 from .language_teaching_shelf import language_teaching_status
 
 
-ORGAN_MATURITY_LEDGER_VERSION = "v5_phase_6_ordered_education_maturity"
+ORGAN_MATURITY_LEDGER_VERSION = "v6_phase_7_text_conversation_maturity"
 ORGAN_MATURITY_BOUNDARY = (
     "read_only_current_capability_maturity_projection_no_identity_memory_"
     "governance_teaching_dream_action_or_authority_change"
@@ -173,12 +173,14 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "source_modules": ["native_language_organ.py", "voice_module.py", "visible_speech.py"],
         "routes": ["native_language.status", "voice_module.status"],
         "connection_state": "ordinary_chat",
-        "maturity_state": "integration_verified",
+        "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "strong_expression_upstream_input_gap",
+        "health_state": "phase_7_creative_discourse_breadth_and_stopping_gate_verified",
         "maturation_phase": 7,
         "metric_keys": ["native_language_runs", "voice_runs"],
-        "known_gaps": ["Finite construction breadth remains and wrong upstream substance can still produce fluent but irrelevant speech."],
+        "known_gaps": [
+            "Deterministic construction breadth remains finite and wrong upstream substance can still produce fluent but irrelevant speech; the current gate does not claim learned-model equivalence."
+        ],
     },
     {
         "key": "memory",
@@ -234,7 +236,7 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "connection_state": "resident_workspace",
         "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "phase_6_descriptive_concept_profile_and_integrity_gate_verified",
+        "health_state": "phase_6_learning_and_phase_7_language_evidence_gates_verified",
         "maturation_phase": 6,
         "metric_keys": ["study_sessions", "study_questions", "study_notes", "study_evidence", "learning_compass_goals", "curriculum_concept_profiles"],
         "known_gaps": [
@@ -524,7 +526,11 @@ EVIDENCE_TESTS_BY_ORGAN: dict[str, tuple[str, ...]] = {
     "comprehension": ("tests/test_comprehension_integration.py",),
     "metacognition": ("tests/test_metacognition.py",),
     "conversation_context": ("tests/test_dialogue_workspace.py", "tests/test_conversation_spine.py"),
-    "nlo_voice_text": ("tests/test_native_language_organ.py", "tests/test_voice_module.py"),
+    "nlo_voice_text": (
+        "tests/test_native_language_organ.py",
+        "tests/test_voice_module.py",
+        "tests/test_phase7_language_evidence.py",
+    ),
     "memory": (
         "tests/test_memory_organ.py",
         "tests/test_dual_horizon_context.py",
@@ -539,6 +545,7 @@ EVIDENCE_TESTS_BY_ORGAN: dict[str, tuple[str, ...]] = {
         "tests/test_learning_evidence_activity.py",
         "tests/test_curriculum_concept_learning_profile.py",
         "tests/test_phase3_reflective_growth.py",
+        "tests/test_phase7_language_evidence.py",
     ),
     "dream": ("tests/test_dream_state.py", "tests/test_phase3_reflective_growth.py"),
     "associative_intuition": (
@@ -688,8 +695,8 @@ def organ_maturity_ledger_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "blueprint_or_preview_keys": blueprint_or_preview,
             "mature_current_scope_count": maturity_counts.get("mature_current_scope", 0),
             "substrate_ready_count": maturity_counts.get("substrate_ready", 0),
-            "next_phase": 7,
-            "next_phase_name": "Mature Text Conversation, Long Form, and Creative Voice",
+            "next_phase": 8,
+            "next_phase_name": "Executive Initiative, Goals, Commitments, and Collaboration",
         },
         "repository_defined_counts": repository_counts,
         "configured_runtime_metrics": configured_metrics,

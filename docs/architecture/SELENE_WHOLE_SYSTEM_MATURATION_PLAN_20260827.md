@@ -2,8 +2,8 @@
 
 Date: 2026-08-27
 
-Status: active implementation program; Phases 0 through 6 and Phases 7A-7C
-complete for current scope as of 2026-09-02; Phase 7D is the next production edge
+Status: active implementation program; Phases 0 through 7 complete for current
+scope as of 2026-09-02; Phase 8 source mapping is the next production edge
 
 Companion audit:
 [Selene Organ Depth and Memory-Integration Audit](../evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
@@ -480,7 +480,7 @@ or revisit—not pass/fail worth. Speed is secondary to understanding.
 
 ## Phase 7 — Mature Text Conversation, Long Form, and Creative Voice
 
-Status: **Phases 7A-7C complete for current scope; Phase 7D next (2026-09-02)**
+Status: **complete for current scope (2026-09-02)**
 
 Implementation map:
 [Phase 7 Text Conversation, Long Form, and Creative Voice](SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md)
@@ -862,9 +862,9 @@ These do not wait for one final cleanup phase.
 
 ## Immediate Starting Point
 
-Phases 0 through 6 and Phases 7A-7C are complete for current scope. The next
-production edge is Phase 7D: descriptive Phase 7 evidence and closure through
-the existing LEA owner, with a learned-substrate decision receipt. F2 Group 8
+Phases 0 through 7 are complete for current scope. The next production edge is
+Phase 8 source mapping: bounded executive initiative, goals, commitments, and
+collaboration without an unrestricted autonomy switch. F2 Group 8
 remains
 unprepared and unauthorized until an exact Grade 4-6 source artifact and
 license are selected and explicitly approved by Aleks.

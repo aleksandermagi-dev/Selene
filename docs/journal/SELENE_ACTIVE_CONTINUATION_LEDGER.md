@@ -2,8 +2,8 @@
 
 Last refreshed: 2026-09-02
 
-Status: Phases 0 through 6 and Phases 7A-7C complete for current scope; resume
-at Phase 7D descriptive evidence and closure source mapping
+Status: Phases 0 through 7 complete for current scope; resume at Phase 8
+executive initiative source mapping
 
 ## Purpose
 
@@ -26,9 +26,11 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Mature creative substance and source separation`)
 - Latest Phase 7B implementation checkpoint: `84d6350`
   (`Mature bounded long-form discourse`)
-- Phase 7C checkpoint is the current staged implementation edge; confirm its
-  hash from Git after commit (`Mature bounded conversational breadth`).
-- Expected remote relation after the Phase 7C commit: five local
+- Latest Phase 7C checkpoint: `b44f4d9`
+  (`Mature bounded conversational breadth`)
+- Phase 7D closure is the current staged implementation edge; confirm its hash
+  from Git after commit (`Close descriptive text conversation phase`).
+- Expected remote relation after the Phase 7D commit: six local
   commits ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
@@ -174,7 +176,7 @@ git log -5 --oneline
   - no Vite size warning
   - Study workspaces remain lazy-loaded
 
-## Current Phase 7 Edge
+## Completed Phase 7 and Current Phase 8 Edge
 
 - Phase 7 implementation map:
   `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md`
@@ -184,6 +186,8 @@ git log -5 --oneline
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md`
 - Phase 7C evidence:
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md`
+- Phase 7D closure evidence:
+  `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md`
 - The scenario-specific creative seam has been replaced with a typed bounded
   brief and explicitly fictional semantic units inside Answer Substance and
   Answer Operations.
@@ -205,8 +209,14 @@ git log -5 --oneline
 - Recent variation state contains abstract opening/cadence/ending families
   only; one generation and selection pass, an eight-candidate ceiling,
   invariant locks, and an explicit terminal stop remain visible.
-- Phase 7D next extends descriptive LEA evidence and records the learned-
-  substrate decision boundary.
+- Phase 7D extends the existing LEA owner with 15 independent source-contained
+  descriptive dimensions, one gentle disposable walkthrough, and an explicit
+  learned-substrate decision boundary.
+- Closure state is `deterministic_scope_sufficient_for_current_gate`; no
+  provider, model download, training, LoRA, or substrate change is authorized.
+- Phase 8 source mapping is next: goals, initiative, commitments,
+  collaboration, help-seeking, Core/Mind coordination, action boundaries, and
+  stopping.
 - No new organ, hidden Memory, source persona, recursive generator, provider,
   or automatic learned substrate is authorized.
 
@@ -268,6 +278,19 @@ git log -5 --oneline
   migration, conversation, Memory, Study, Dream, teaching, affect, or LEA
   decision was changed.
 
+## Phase 7D Evidence and Closure
+
+- 11 Phase 7D contract/walkthrough checks and 246 focused Phase 7 checks
+  passed.
+- The final full repository regression passed 2,040 tests in 11m42s after
+  three narrow compatibility repairs were proven by exact reruns.
+- The walkthrough used a disposable database and left zero Chat, NLO, and LEA
+  run records.
+- Python compilation and diff checks passed. The frontend remains 491.33 kB
+  (gzip 109.20 kB), with no Vite warning and lazy Study workspaces.
+- The maturity ledger records NLO/text Voice as mature for current scope within
+  expression authority and advances the next phase to Phase 8.
+
 ## Resident and Ethical Boundaries
 
 - Preserve all existing work and unrelated user files.
@@ -306,7 +329,7 @@ measurement of private experience as separate research questions.
 
 ## Required Reading Before Editing
 
-Before Phase 7 mapping or production work, read completely:
+Before Phase 8 mapping or production work, read completely:
 
 - `docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md`
@@ -318,32 +341,33 @@ Before Phase 7 mapping or production work, read completely:
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md`
+- `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
 - latest entries in `docs/journal/SELENE_WORK_JOURNAL.md`
 - this ledger
 
-Also inspect the current NLO, Voice, Chat, answer-substance, supported-
-semantics, construction, discourse, context, long-form, creative, quotation,
-source-style, and conversational-evidence owners, current tests, current Git
-diff, and resident counts before any edit. The ledger is not authority to run
-live conversation or mutate resident continuity.
+Also inspect the current goal/drive, conversational-agency, commitment,
+collaboration/help-seeking, Core/Mind coordination, tool/Tendril boundary, and
+stopping owners, current tests, current Git diff, and resident counts before
+any edit. The ledger is not authority to run live conversation, act
+externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Begin Phase 7D with source mapping only. Trace the existing Language Evidence
-and Assimilation owner, current Conversation LEA activities and descriptive
-dimensions, and Phase 7A-7C receipts. Briefly record how source-contained
-creative, discourse, conversational-range, local-revision, metamorphic,
-long-thread, and stopping observations can enter that existing owner.
+Begin Phase 8 with source mapping only. Trace existing goal and drive previews,
+conversation initiative, commitment anomaly coordination, collaboration and
+help-seeking, Core/Mind responsibility resolution, tool/Tendril action
+boundaries, governing requirements, and natural stopping against the Phase 8
+completion gate. Briefly record the smallest typed contract and graduation
+order before editing.
 
-Then add only descriptive observed dimensions and one suggested next move per
-observed dimension. Preserve omitted-as-unobserved semantics; do not create a
-score, grade, rank, diagnosis, deadline, pressure, resident decision, learned
-substrate, or broad live resident conversation battery. Run static and focused
-suites before one gentle disposable walkthrough, compare the frontend bundle,
-and close Phase 7 with an explicit learned-substrate decision receipt.
+Do not create an unrestricted autonomy switch, hidden agenda, organ turf war,
+silent commitment loss, external action authority, identity/personality/Vys
+change, or automatic Memory/Study/tool action. Graduate conversation, Study,
+tools, Tendril, and later embodiment separately under existing authority and
+stopping rules.
 
 After each meaningful checkpoint, update the dated Work Journal and refresh
 this file with only the current resumable edge.

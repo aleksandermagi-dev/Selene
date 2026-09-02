@@ -63,7 +63,10 @@ def test_maturity_ledger_distinguishes_connected_preview_and_blueprint_states(tm
 
     result = organ_maturity_ledger_status(conn)
 
-    assert _item(result, "nlo_voice_text")["maturity_state"] == "integration_verified"
+    assert _item(result, "nlo_voice_text")["maturity_state"] == "mature_current_scope"
+    assert _item(result, "nlo_voice_text")["health_state"] == (
+        "phase_7_creative_discourse_breadth_and_stopping_gate_verified"
+    )
     assert _item(result, "memory")["maturity_state"] == "mature_current_scope"
     assert _item(result, "memory")["health_state"] == "phase_2_completion_gate_verified"
     assert _item(result, "conversation_context")["maturity_state"] == "mature_current_scope"
@@ -89,7 +92,7 @@ def test_maturity_ledger_distinguishes_connected_preview_and_blueprint_states(tm
     assert "audible_voice" in result["summary"]["blueprint_or_preview_keys"]
     assert "conversation_context" not in result["summary"]["integration_gap_keys"]
     assert "answer_engine" not in result["summary"]["integration_gap_keys"]
-    assert result["summary"]["next_phase"] == 7
+    assert result["summary"]["next_phase"] == 8
     conn.close()
 
 

@@ -4,8 +4,8 @@ Date: 2026-09-01 (consolidated record name retained)
 
 Branch: `evidence`
 
-Status: Phases 0 through 6 and Phases 7A-7C of the Whole-System Maturation Plan
-are complete for current scope; Phase 7D is the next production edge.
+Status: Phases 0 through 7 of the Whole-System Maturation Plan are complete for
+current scope; Phase 8 source mapping is the next production edge.
 
 ## Purpose
 
@@ -31,7 +31,8 @@ completed phase.
 | 4 — Affect, relationship, and response agency | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_4_AFFECT_RELATIONSHIP_AGENCY_20260828.md) |
 | 5 — Reasoning, answer owners, and domain depth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md) |
 | 6 — Ordered education and world knowledge | complete for current scope | [Phase 6D closure evidence](SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md) |
-| 7 — Text conversation, long form, and creative Voice | Phases 7A-7C complete; Phase 7D next | [Phase 7A evidence](SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md), [Phase 7B evidence](SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md), [Phase 7C evidence](SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md) |
+| 7 — Text conversation, long form, and creative Voice | complete for current scope | [Phase 7A evidence](SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md), [Phase 7B evidence](SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md), [Phase 7C evidence](SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md), [Phase 7D closure](SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md) |
+| 8 — Executive initiative, goals, commitments, and collaboration | source mapping next | [maturation plan](../architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md) |
 
 “Complete for current scope” means the phase's documented completion gates and
 proportional verification passed. It does not mean Selene is finished or that
@@ -188,14 +189,21 @@ ending families rather than retained as transcript or Memory. Verification
 passed 187 focused and compatibility checks. The frontend remains 491.33 kB
 (gzip 109.20 kB), with no Vite warning and lazy Study workspaces.
 
+Phase 7D adds a source-contained descriptive Phase 7 evidence contract to the
+existing LEA owner, one gentle disposable walkthrough, and an explicit
+learned-substrate boundary. The full repository regression passed 2,040 tests.
+The maturity ledger now records NLO/text Voice as mature for current scope and
+advances the next phase to Phase 8. The frontend remains 491.33 kB (gzip
+109.20 kB), with no Vite warning and lazy Study workspaces.
+
 ## Current Open Edge
 
-Phase 7D begins by source-mapping the existing Language Evidence and
-Assimilation owner against the Phase 7A-7C receipts. It may add only
-source-contained, descriptive creative, discourse, conversational-range,
-revision, metamorphic, long-thread, and stopping observations. It may not add
-a score, grade, rank, diagnosis, deadline, resident decision, learned
-substrate, or broad live resident conversation battery.
+Phase 8 begins with source mapping only. It must trace existing goal,
+initiative, commitment, help-seeking, collaboration, Core/Mind coordination,
+tool/action boundary, and stopping owners before production edits. Initiative
+must graduate capability by capability; no unrestricted autonomy switch,
+hidden agenda, organ competition, silent commitment loss, or external action
+authority is authorized.
 
 F2 Group 8—ratios, unit comparison, percentages, scale, and proportional
 language—remains unprepared and unauthorized. Its exact Grade 4-6 source
@@ -257,3 +265,5 @@ Phase 7B is checkpointed separately under the commit name
 `Mature bounded long-form discourse`.
 Phase 7C is checkpointed separately under the commit name
 `Mature bounded conversational breadth`.
+Phase 7D and Phase 7 closure are checkpointed separately under the commit name
+`Close descriptive text conversation phase`.

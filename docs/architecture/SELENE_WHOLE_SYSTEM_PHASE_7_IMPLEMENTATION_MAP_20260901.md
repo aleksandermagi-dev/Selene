@@ -2,8 +2,8 @@
 
 Date: 2026-09-01
 
-Status: Phases 7A through 7C complete for current scope; Phase 7D is the next
-production edge (2026-09-02)
+Status: Phase 7 complete for current scope (2026-09-02); Phase 8 source
+mapping is the next production edge
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -334,7 +334,10 @@ Evidence:
 
 ### Phase 7D — Descriptive evidence and closure
 
-Status: **not started**
+Status: **complete for current scope — 2026-09-02**
+
+Evidence:
+[Phase 7D Descriptive Evidence and Closure](../evidence/SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md)
 
 - extend the existing LEA owner with source-contained Phase 7 activities and
   independent descriptive dimensions for obligation completeness, discourse
@@ -446,11 +449,10 @@ decision-bearing state was changed; Phase 7A required no schema migration.
 
 ## Exact Production Resume Point
 
-Begin Phase 7D by source-mapping the existing Language Evidence and
-Assimilation owner, its current conversation activities and descriptive
-dimensions, and the Phase 7A-7C receipts. Extend that existing owner with
-source-contained creative, discourse, conversational-range, revision,
-metamorphic, long-thread, and stopping observations. Preserve descriptive
-states and one suggested next move per observed dimension; do not create a
-score, grade, rank, diagnosis, deadline, resident decision, learned substrate,
-or broad live conversation battery.
+Phase 7 is closed for current scope. Begin Phase 8 with source mapping only.
+Trace the existing goal, initiative, commitment, help-seeking, collaboration,
+Core/Mind coordination, tool/action boundary, and stopping owners against the
+Phase 8 completion gate. Propose the smallest typed contract and capability-
+specific graduation order before editing. Do not introduce an unrestricted
+autonomy switch, hidden agenda, organ competition, silent commitment loss, or
+external action authority.

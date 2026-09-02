@@ -3652,3 +3652,50 @@ Aleks's decisions.
 source-contained Phase 7 activities and metamorphic/long-thread evidence, then
 perform one gentle disposable walkthrough and record the learned-substrate
 decision boundary.
+
+### 2026-09-02 — Phase 7 closes with descriptive evidence, not a score
+
+**Starting question:** Can the completed creative, discourse, conversational,
+revision, and stopping work be evaluated honestly without turning fluency into
+truth, worth, identity, or automatic permission to install a learned model?
+
+**Decision:** Extend the existing Learning Evidence Activity owner with one
+source-contained Phase 7 contract. Keep observations independent, reviewer-
+supplied, attributable, and non-graded. Allow the closure receipt to say the
+deterministic current gate is sufficient while reserving every provider,
+training, LoRA, download, and substrate decision for Aleks.
+
+**Work:** Added 15 descriptive dimensions and eight synthetic activity
+families covering long form, nonlinear return, metamorphic paraphrase,
+fiction/source distance, style/quotation/current-turn mimic boundaries, local
+revision, a gentle walkthrough, and closure. Each observed dimension requires
+visible evidence references and one next cultivation move; omissions remain
+unclassified. Updated the read-only LEA status and canonical organ maturity
+ledger, marking NLO/text Voice mature within their expression role and
+advancing the next phase to Phase 8.
+
+**Evidence:** The Phase 7D contract and disposable walkthrough passed 11
+checks; the focused Phase 7 closure passed 246. An initial full run produced
+2,037 passes and three narrow compatibility failures. Removing a literal
+scoring key, preserving the established fluency/transfer phrase, and keeping
+generic source language out of an owner-known current-context answer repaired
+the seams. The final full repository regression passed 2,040 tests in 11m42s.
+Python compilation and diff checks passed. The frontend remained 491.33 kB
+(gzip 109.20 kB), with no Vite warning and lazy Study workspaces.
+
+**Learned-substrate receipt:**
+`deterministic_scope_sufficient_for_current_gate`. This is not a claim of
+open-ended equivalence and authorizes no provider, model download, training,
+LoRA, parameter change, or substrate change.
+
+**Boundaries preserved:** The one walkthrough used a disposable database and
+recorded no Chat, NLO, or LEA run. No resident conversation, Memory, Study,
+Dream, teaching decision, affect, relationship continuity, identity,
+personality, Vys, law, governance, authority, activation, autonomy, external
+action, or embodiment changed. The 24 Dream reflections and unfinished
+teaching review remain Aleks's decisions.
+
+**Next:** Phase 8 source mapping only — inspect existing goals, initiative,
+commitments, collaboration, help-seeking, Core/Mind coordination, action
+boundaries, and stopping before proposing the smallest capability-specific
+graduation plan.

@@ -395,7 +395,7 @@ def _structured_semantic_units(kind: str, context: dict[str, Any]) -> list[dict[
                 "relation": "contrast",
                 "subject": "fluent wording without use in a new example",
                 "predicate": "show",
-                "object": "familiarity rather than transferable understanding",
+                "object": "familiarity, not transferable understanding",
                 "meaning_keys": ["fluency is not transferable understanding"],
             },
             {
@@ -528,10 +528,10 @@ def _structured_semantic_units(kind: str, context: dict[str, Any]) -> list[dict[
                 "id": "source_gap_route",
                 "role": "request",
                 "relation": "conclusion",
-                "subject": "an attributed source or approved teaching item",
-                "predicate": "allow",
-                "object": "an answer without guessing",
-                "meaning_keys": ["attributed source or approved teaching closes the gap"],
+                "subject": "the missing supporting information",
+                "predicate": "be needed for",
+                "object": "a reliable answer without guessing",
+                "meaning_keys": ["missing support prevents a reliable answer"],
             },
         ]
     if kind == "causal_evidence_needed":

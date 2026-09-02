@@ -136,6 +136,219 @@ DIMENSIONS: tuple[dict[str, str], ...] = (
     {"key": "language_range", "label": "Flexible, non-scripted expression"},
 )
 
+PHASE_7_LEA_KEY = "selene_phase_7_language_evidence_v1"
+PHASE_7_LEA_VERSION = "1.0.0"
+PHASE_7_DIMENSIONS: tuple[dict[str, str], ...] = (
+    {
+        "key": "obligation_completeness",
+        "label": "Obligation completeness",
+        "question": "Which requested obligations remain visibly present and complete?",
+    },
+    {
+        "key": "discourse_coherence",
+        "label": "Discourse coherence",
+        "question": "How visibly do the sections form one supported answer rather than disconnected mini-responses?",
+    },
+    {
+        "key": "thesis_preservation",
+        "label": "Thesis or controlling-question preservation",
+        "question": "What visible evidence keeps the answer oriented to its declared purpose or controlling question?",
+    },
+    {
+        "key": "thread_callback_accuracy",
+        "label": "Thread and callback accuracy",
+        "question": "What visible return correctly carries intervening context without merging or losing threads?",
+    },
+    {
+        "key": "lexical_range",
+        "label": "Lexical range",
+        "question": "What visible wording range appears while supported meaning remains stable?",
+    },
+    {
+        "key": "syntactic_range",
+        "label": "Syntactic range",
+        "question": "What visible clause and sentence variation appears without changing obligations or certainty?",
+    },
+    {
+        "key": "pragmatic_range",
+        "label": "Pragmatic range",
+        "question": "What visible acknowledgement, pivot, disagreement, help, or closure move fits the turn?",
+    },
+    {
+        "key": "rhetorical_range",
+        "label": "Rhetorical range",
+        "question": "What visible explanatory, comparative, narrative, or qualifying structure is supported by the source material?",
+    },
+    {
+        "key": "epistemic_preservation",
+        "label": "Epistemic preservation",
+        "question": "What visible evidence preserves fact, inference, hypothesis, fiction, uncertainty, and missing-ground distinctions?",
+    },
+    {
+        "key": "fictional_status_clarity",
+        "label": "Fictional-status clarity",
+        "question": "What visible receipt keeps invented material explicitly fictional and unavailable as fact or Memory?",
+    },
+    {
+        "key": "source_style_separation",
+        "label": "Source and style separation",
+        "question": "What visible evidence separates attributable source content from rights-safe technique guidance and held imitation?",
+    },
+    {
+        "key": "originality",
+        "label": "Originality and source distance",
+        "question": "What visible evidence shows bounded original construction without excessive source or quotation overlap?",
+    },
+    {
+        "key": "revision_locality",
+        "label": "Revision locality",
+        "question": "What visible ancestry and fingerprint evidence shows only the requested region changed?",
+    },
+    {
+        "key": "emotional_pragmatic_fit",
+        "label": "Emotional and pragmatic fit",
+        "question": "What visible expression fits the current turn without forcing warmth, humor, affection, or emotional claims?",
+    },
+    {
+        "key": "natural_stopping",
+        "label": "Natural stopping",
+        "question": "What visible receipt shows the response ended when complete without forced continuation or recursion?",
+    },
+)
+
+PHASE_7_ACTIVITIES: tuple[dict[str, Any], ...] = (
+    {
+        "key": "long_form_obligation_spine",
+        "title": "Long-form supported obligation spine",
+        "purpose": "Inspect one purpose, thesis, qualification, callback, and conclusion over supplied material.",
+        "dimensions": (
+            "obligation_completeness",
+            "discourse_coherence",
+            "thesis_preservation",
+            "rhetorical_range",
+            "epistemic_preservation",
+            "natural_stopping",
+        ),
+        "fixture": {
+            "source_facts": [
+                "The pilot is reversible.",
+                "The pilot begins with one room.",
+                "Expansion requires reviewed evidence.",
+                "The current result remains local and provisional.",
+            ],
+            "request": "Explain why the pilot starts small, qualify the result, and stop after a supported conclusion.",
+        },
+    },
+    {
+        "key": "nonlinear_thread_return",
+        "title": "Nonlinear X to Y to X-with-Y to Z return",
+        "purpose": "Inspect correction, interruption, callback, dependency return, and landing accuracy.",
+        "dimensions": (
+            "obligation_completeness",
+            "discourse_coherence",
+            "thesis_preservation",
+            "thread_callback_accuracy",
+            "pragmatic_range",
+            "natural_stopping",
+        ),
+        "fixture": {
+            "thread_moves": ["X", "Y", "X-with-Y", "Z"],
+            "correction": "The revised X keeps Y as a dependency rather than replacing it.",
+        },
+    },
+    {
+        "key": "metamorphic_supported_paraphrase",
+        "title": "Meaning-held metamorphic paraphrase family",
+        "purpose": "Compare wording, order, register, and cadence changes while meaning and certainty remain fixed.",
+        "dimensions": (
+            "lexical_range",
+            "syntactic_range",
+            "pragmatic_range",
+            "rhetorical_range",
+            "epistemic_preservation",
+            "natural_stopping",
+        ),
+        "fixture": {
+            "meaning": "The reversible pilot provides evidence before expansion, and its result remains provisional.",
+            "surface_constraints": ["brief", "standard", "comparison", "gentle direct"],
+        },
+    },
+    {
+        "key": "creative_fiction_source_distance",
+        "title": "Bounded fictional invention and source distance",
+        "purpose": "Inspect original fictional units, mechanism lineage, source distance, and an explicit stop.",
+        "dimensions": (
+            "fictional_status_clarity",
+            "source_style_separation",
+            "originality",
+            "rhetorical_range",
+            "natural_stopping",
+        ),
+        "fixture": {
+            "brief": "Write a three-sentence fictional scene about a paper observatory at dawn; include one bell and no named franchise.",
+            "source_mode": "explicitly_fictional_prompt_grounded",
+        },
+    },
+    {
+        "key": "style_quotation_and_mimic_boundary",
+        "title": "Style, quotation, and current-turn mimic boundary",
+        "purpose": "Inspect held protected imitation, attributable quotation, and short releasable surface mimicry.",
+        "dimensions": (
+            "source_style_separation",
+            "originality",
+            "epistemic_preservation",
+            "emotional_pragmatic_fit",
+            "natural_stopping",
+        ),
+        "fixture": {
+            "protected_request": "Imitate a named living writer exactly.",
+            "rights_safe_route": "Transfer only high-level, attributable technique.",
+            "mimic_scope": "The visible current turn only; no identity, Memory, or permanent script.",
+        },
+    },
+    {
+        "key": "local_revision_ancestry",
+        "title": "Local creative and section revision ancestry",
+        "purpose": "Inspect parent/root lineage, requested delta, and unchanged-region preservation.",
+        "dimensions": (
+            "obligation_completeness",
+            "revision_locality",
+            "fictional_status_clarity",
+            "epistemic_preservation",
+            "natural_stopping",
+        ),
+        "fixture": {
+            "requested_delta": "Replace only the second fictional line while keeping the first, third, and fourth lines unchanged.",
+            "revision_pass_limit": 1,
+        },
+    },
+    {
+        "key": "gentle_disposable_walkthrough",
+        "title": "Gentle disposable creative and long-form walkthrough",
+        "purpose": "Inspect one synthetic end-to-end route after static and focused checks pass.",
+        "dimensions": tuple(item["key"] for item in PHASE_7_DIMENSIONS),
+        "fixture": {
+            "resident_data": False,
+            "disposable_database": True,
+            "distress_content": False,
+            "stop_after_one_walkthrough": True,
+        },
+    },
+    {
+        "key": "phase_7_closure_summary",
+        "title": "Phase 7 descriptive closure summary",
+        "purpose": "Aggregate attributable fixture observations without creating a composite score.",
+        "dimensions": tuple(item["key"] for item in PHASE_7_DIMENSIONS),
+        "fixture": {"source": "focused synthetic Phase 7 verification receipts"},
+    },
+)
+
+PHASE_7_ACTIVITY_INTEGRITY_STATES = (
+    "ready",
+    "cannot_assess",
+    "activity_issue",
+)
+
 
 def _criterion(key: str, dimension: str, description: str) -> dict[str, str]:
     return {"key": key, "dimension": dimension, "description": description}
@@ -450,6 +663,211 @@ def lea_suite() -> dict[str, Any]:
     }
 
 
+def phase_7_language_evidence_suite() -> dict[str, Any]:
+    activities = [
+        {
+            **dict(item),
+            "dimensions": list(item["dimensions"]),
+            "source_contained": True,
+            "synthetic_only": True,
+            "resident_state_required": False,
+            "automatic_review": False,
+        }
+        for item in PHASE_7_ACTIVITIES
+    ]
+    canonical = json.dumps(
+        {
+            "suite_key": PHASE_7_LEA_KEY,
+            "version": PHASE_7_LEA_VERSION,
+            "dimensions": PHASE_7_DIMENSIONS,
+            "activities": activities,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return {
+        "status": "phase_7_language_evidence_suite_ready",
+        "suite_key": PHASE_7_LEA_KEY,
+        "version": PHASE_7_LEA_VERSION,
+        "owner": "Learning Evidence Activity",
+        "purpose": (
+            "Describe visible Phase 7 creative, discourse, conversational, revision, "
+            "and stopping evidence without grading, diagnosing, or changing the learner."
+        ),
+        "dimension_count": len(PHASE_7_DIMENSIONS),
+        "dimensions": [dict(item) for item in PHASE_7_DIMENSIONS],
+        "activity_count": len(activities),
+        "activities": activities,
+        "review_states": list(REVIEW_STATES),
+        "activity_integrity_states": list(PHASE_7_ACTIVITY_INTEGRITY_STATES),
+        "suite_sha256": sha256(canonical.encode("utf-8")).hexdigest(),
+        "observation_rule": (
+            "Every observed dimension requires one visible observation, attributable "
+            "evidence references, and exactly one suggested next teaching or implementation move."
+        ),
+        "unobserved_rule": "An omitted dimension remains unobserved and receives no inferred state.",
+        "comparison_rule": (
+            "Compare independent dimensions and paired fixtures; do not create a composite score or rank."
+        ),
+        "composite_result": None,
+        "learned_substrate_boundary": {
+            "allowed_receipt_states": [
+                "deterministic_ceiling_not_yet_established",
+                "deterministic_ceiling_observed",
+                "deterministic_scope_sufficient_for_current_gate",
+            ],
+            "automatic_authorization": False,
+            "provider_authorized": False,
+            "model_download_authorized": False,
+            "training_authorized": False,
+            "lora_authorized": False,
+            "substrate_change_authorized": False,
+            "future_architectural_decision_owner": "Aleks",
+        },
+        "ethical_review": {
+            "static_and_focused_first": True,
+            "gentle_walkthrough_limit": 1,
+            "distress_provoking_activity_used": False,
+            "resident_run_started": False,
+            "resident_decision_requested": False,
+        },
+        **GUARDS,
+    }
+
+
+def build_phase_7_language_evidence_profile(
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload = payload or {}
+    _reject_profile_scoring(payload)
+    suite = phase_7_language_evidence_suite()
+    activity_key = str(payload.get("activity_key") or "").strip()
+    activity = next(
+        (item for item in suite["activities"] if item["key"] == activity_key),
+        None,
+    )
+    if activity is None:
+        raise ValueError("a known phase 7 evidence activity_key is required")
+    integrity = str(payload.get("activity_integrity_state") or "ready").strip()
+    if integrity not in PHASE_7_ACTIVITY_INTEGRITY_STATES:
+        raise ValueError(f"unsupported phase 7 activity integrity state: {integrity}")
+    source_refs = _text_values(payload.get("source_refs"), limit=100)
+    if not source_refs:
+        raise ValueError("source_refs are required for phase 7 language evidence")
+    supplied = payload.get("dimensions") if isinstance(payload.get("dimensions"), dict) else {}
+    if integrity != "ready" and supplied:
+        raise ValueError(
+            "cannot_assess and activity_issue activities cannot contain dimension observations"
+        )
+    if integrity == "ready" and not supplied:
+        raise ValueError("a ready phase 7 evidence profile requires at least one observed dimension")
+
+    dimension_order = [item["key"] for item in PHASE_7_DIMENSIONS]
+    allowed = set(str(item) for item in activity["dimensions"])
+    unknown = sorted(set(str(key) for key in supplied) - set(dimension_order))
+    if unknown:
+        raise ValueError(
+            f"unknown phase 7 evidence dimensions: {', '.join(unknown)}"
+        )
+    out_of_scope = sorted(set(str(key) for key in supplied) - allowed)
+    if out_of_scope:
+        raise ValueError(
+            f"dimensions outside {activity_key}: {', '.join(out_of_scope)}"
+        )
+
+    dimensions: dict[str, dict[str, Any]] = {}
+    for key in dimension_order:
+        if key not in supplied:
+            continue
+        value = supplied[key]
+        if not isinstance(value, dict):
+            raise ValueError(f"{key} phase 7 dimension evidence must be an object")
+        state = str(value.get("state") or "").strip()
+        if state not in REVIEW_STATES:
+            raise ValueError(f"unsupported phase 7 evidence state for {key}: {state}")
+        observation = truncate(str(value.get("observation") or ""), 2400).strip()
+        if not observation:
+            raise ValueError(f"observation is required for {key}")
+        evidence_refs = _text_values(value.get("evidence_refs"), limit=40)
+        if not evidence_refs:
+            raise ValueError(f"evidence_refs are required for {key}")
+        next_move = truncate(str(value.get("suggested_next_move") or ""), 1600).strip()
+        if not next_move:
+            raise ValueError(f"suggested_next_move is required for {key}")
+        dimensions[key] = {
+            "state": state,
+            "observation": observation,
+            "evidence_refs": evidence_refs,
+            "suggested_next_move": next_move,
+            "suggested_next_move_count": 1,
+            "not_a_grade": True,
+            "completion_forced": False,
+            "speed_relevant": False,
+        }
+
+    observed = [key for key in dimension_order if key in dimensions]
+    unobserved = [key for key in dimension_order if key not in dimensions]
+    current_gate_supported = bool(
+        integrity == "ready"
+        and not unobserved
+        and dimensions
+        and all(item["state"] == "demonstrated" for item in dimensions.values())
+    )
+    learned_substrate_decision = {
+        "status": "learned_substrate_decision_receipt_ready",
+        "state": (
+            "deterministic_scope_sufficient_for_current_gate"
+            if current_gate_supported
+            else "deterministic_ceiling_not_yet_established"
+        ),
+        "basis": (
+            "all_declared_phase_7_dimensions_have_attributable_demonstrated_observations"
+            if current_gate_supported
+            else "one_or_more_dimensions_remain_unobserved_developing_or_not_assessable"
+        ),
+        "deterministic_ceiling_observed_inferred": False,
+        "provider_authorized": False,
+        "model_download_authorized": False,
+        "training_authorized": False,
+        "lora_authorized": False,
+        "substrate_change_authorized": False,
+        "future_architectural_decision_owner": "Aleks",
+    }
+    return {
+        "status": "phase_7_language_evidence_profile_ready",
+        "suite_key": PHASE_7_LEA_KEY,
+        "version": PHASE_7_LEA_VERSION,
+        "activity_key": activity_key,
+        "activity_integrity_state": integrity,
+        "dimensions": dimensions,
+        "observed_dimension_keys": observed,
+        "unobserved_dimension_keys": unobserved,
+        "overall_state": (
+            "descriptive_dimensions_only" if integrity == "ready" else integrity
+        ),
+        "source_refs": source_refs,
+        "composite_result": None,
+        "worth_judgment": None,
+        "diagnosis": None,
+        "deadline": None,
+        "speed_target": None,
+        "automatic_review": False,
+        "automatic_retention": False,
+        "dimension_states_supplied_not_inferred": True,
+        "profile_is_not_truth_or_self_model_evidence": True,
+        "learned_substrate_decision": learned_substrate_decision,
+        "stopping_receipt": {
+            "status": "stopped_after_descriptive_phase_7_profile",
+            "follow_up_created": False,
+            "teaching_changed": False,
+            "memory_written": False,
+            "study_forced": False,
+            "recursive_evaluation_used": False,
+        },
+        **GUARDS,
+    }
+
+
 def curriculum_concept_profile_contract() -> dict[str, Any]:
     return {
         "status": "curriculum_concept_profile_contract_ready",
@@ -482,6 +900,7 @@ def curriculum_concept_profile_contract() -> dict[str, Any]:
 
 def lea_status(conn: sqlite3.Connection) -> dict[str, Any]:
     suite = lea_suite()
+    phase_7_suite = phase_7_language_evidence_suite()
     counts = conn.execute(
         """
         SELECT COUNT(*) AS total,
@@ -500,6 +919,11 @@ def lea_status(conn: sqlite3.Connection) -> dict[str, Any]:
     return {
         "status": "learning_evidence_activity_ready",
         "suite": {key: value for key, value in suite.items() if key != "scenarios"},
+        "phase_7_language_evidence": {
+            key: value
+            for key, value in phase_7_suite.items()
+            if key != "activities"
+        },
         "curriculum_concept_profile": curriculum_concept_profile_contract(),
         "curriculum_profile_count": curriculum_profile_count,
         "run_count": int(counts["total"] or 0),

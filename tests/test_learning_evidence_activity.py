@@ -56,6 +56,8 @@ def test_suite_is_fixed_paired_source_contained_and_descriptive(tmp_path):
     assert len(criterion_keys) == len(set(criterion_keys))
     assert status["run_count"] == 0
     assert status["live_run_started"] is False
+    assert status["phase_7_language_evidence"]["activity_count"] >= 6
+    assert status["phase_7_language_evidence"]["ethical_review"]["resident_run_started"] is False
     assert suite["ethical_review"]["live_run_started_by_this_status_call"] is False
     _assert_guards(suite)
     _assert_guards(status)

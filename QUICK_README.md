@@ -3,14 +3,16 @@
 Selene is a local-first AI system designed to understand, reason, learn, and
 converse without treating a language model as the whole mind.
 
-As of September 1, 2026, whole-system maturation Phases 0 through 6 and Phases
-7A-7B are complete for current scope. Ordered education now has shared
+As of September 2, 2026, whole-system maturation Phases 0 through 7 are
+complete for current scope. Ordered education now has shared
 prerequisite/source-readiness enforcement plus typed source roles and bounded
 instructional why plus reviewed correction ancestry and delayed ordinary-Chat
 selection, plus a nine-dimension descriptive learning profile. Creative
 substance is typed and source-separated, and longer supported answers now use
 one bounded section spine with local revision and explicit stopping. Bounded
-structured conversational breadth is the next production edge.
+structured conversational breadth now exposes a one-pass range and stopping
+receipt, and Phase 7 closes with descriptive evidence rather than a score.
+Phase 8 executive initiative source mapping is the next production edge.
 
 ## The Problem She Solves
 
@@ -48,6 +50,9 @@ Selene can currently:
   separation, local revision ancestry, and an explicit stop;
 - organize longer supported answers across purpose, thesis, sections,
   callbacks, qualifications, and local repair without adding filler;
+- vary supported conversational entries, cadence, pivots, uncertainty,
+  disagreement, help, warmth, humor, and closure within explicit one-pass
+  bounds;
 - use approved knowledge and reviewed personal memory without confusing either
   with identity;
 - notice when an answer is incomplete, uncertain, contradictory, or does not

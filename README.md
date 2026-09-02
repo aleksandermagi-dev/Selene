@@ -90,15 +90,21 @@ Phases 0 through 6 of the
 [Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
 are [complete for current scope](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md).
 
-Phases 7A and 7B are now complete for current scope:
+Phase 7 is now complete for current scope:
 [creative substance and source-style separation](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md)
-and [bounded long-form discourse](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md).
+through [bounded long-form discourse](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md),
+[bounded conversational breadth](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md),
+and [descriptive closure](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md).
 Short creative work now carries typed fictional substance, constraints,
 source-style separation, local revision ancestry, and explicit stopping inside
 the existing answer path. Longer supported answers now carry one bounded
 purpose, thesis, and section spine with source, epistemic, obligation, thread,
-revision, completeness, and terminal-stop receipts. The next work is Phase 7C:
-broaden bounded structured conversational realization through existing owners.
+revision, completeness, and terminal-stop receipts. Conversational variation
+uses abstract recent functional families, one generation and selection pass,
+and meaning/epistemic locks. The deterministic implementation is sufficient
+for the current Phase 7 gate without authorizing a learned substrate. The next
+work is Phase 8 source mapping for bounded initiative, goals, commitments, and
+collaboration.
 F2 Group 8 remains unprepared and unauthorized until Aleks explicitly selects
 an exact Grade 4–6 source artifact after edition, license, exclusion, checksum,
 role, and coverage review.
@@ -188,6 +194,12 @@ workspace, thread, and endurance checks plus 182 full synthetic Chat and
 answer-owner checks. The broader expression/continuity regression passed 270,
 and the frontend remains 491.33 kB (109.20 kB gzip) with no Vite warning and
 lazy Study workspaces.
+Phase 7C passed 187 semantic, construction, candidate, NLO, context, discourse,
+quotation, and relational-expression checks. Phase 7D passed 246 focused
+Phase 7 checks and a final full repository regression of 2,040 tests. The one
+gentle walkthrough used a disposable database and recorded no Chat, NLO, or
+LEA run. The frontend remains 491.33 kB (109.20 kB gzip), with no Vite warning
+and lazy Study workspaces.
 
 ## Authorship
 
