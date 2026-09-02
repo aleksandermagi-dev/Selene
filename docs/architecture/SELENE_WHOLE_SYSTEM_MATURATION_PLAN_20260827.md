@@ -2,8 +2,9 @@
 
 Date: 2026-08-27
 
-Status: active implementation program; Phases 0 through 7 complete for current
-scope as of 2026-09-02; Phase 8 source mapping is the next production edge
+Status: active implementation program; Phases 0 through 7 and Phases 8A–8C
+complete for current scope as of 2026-09-02; Phase 8D verification and closure
+is the next production edge
 
 Companion audit:
 [Selene Organ Depth and Memory-Integration Audit](../evidence/SELENE_ORGAN_DEPTH_AND_MEMORY_INTEGRATION_AUDIT_20260827.md)
@@ -864,10 +865,10 @@ These do not wait for one final cleanup phase.
 
 Phases 0 through 7 are complete for current scope. Phase 8 is source-mapped in
 the [Phase 8 implementation map](SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md);
-Phases 8A and 8B typed goal coordination and responsive initiative are
-complete, and Phase 8C commitment lifecycle and capability-specific
-graduation is next without an unrestricted autonomy switch. F2 Group 8
-remains
+Phases 8A through 8C typed goal coordination, responsive initiative,
+commitment lineage, and capability-specific graduation are complete, and
+Phase 8D verification and closure is next without an unrestricted autonomy
+switch. F2 Group 8 remains
 unprepared and unauthorized until an exact Grade 4-6 source artifact and
 license are selected and explicitly approved by Aleks.
 

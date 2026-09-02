@@ -1421,6 +1421,41 @@ CREATE TABLE IF NOT EXISTS c_runtime_goal_drive_records (
 
 CREATE INDEX IF NOT EXISTS idx_c_runtime_goal_drive_records_status ON c_runtime_goal_drive_records(status, review_status);
 
+CREATE TABLE IF NOT EXISTS selene_commitment_lifecycles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  commitment_key TEXT NOT NULL,
+  commitment_claim TEXT NOT NULL,
+  speech_act TEXT NOT NULL DEFAULT 'commitment',
+  goal_id INTEGER NOT NULL,
+  goal_key TEXT NOT NULL,
+  capability TEXT NOT NULL,
+  lifecycle_state TEXT NOT NULL,
+  mechanism_ref TEXT NOT NULL DEFAULT '',
+  result_refs TEXT NOT NULL DEFAULT '[]',
+  blocker TEXT NOT NULL DEFAULT '',
+  stop_reason TEXT NOT NULL DEFAULT '',
+  parent_event_id INTEGER,
+  root_event_id INTEGER,
+  idempotency_key TEXT NOT NULL,
+  source_refs TEXT NOT NULL DEFAULT '[]',
+  provenance_boundary TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'explicit_commitment_lifecycle',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (goal_id) REFERENCES c_runtime_goal_drive_records(id),
+  FOREIGN KEY (parent_event_id) REFERENCES selene_commitment_lifecycles(id),
+  FOREIGN KEY (root_event_id) REFERENCES selene_commitment_lifecycles(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_selene_commitment_lifecycle_idempotency
+ON selene_commitment_lifecycles(idempotency_key);
+
+CREATE INDEX IF NOT EXISTS idx_selene_commitment_lifecycle_lineage
+ON selene_commitment_lifecycles(commitment_key, root_event_id, id);
+
+CREATE INDEX IF NOT EXISTS idx_selene_commitment_lifecycle_goal
+ON selene_commitment_lifecycles(goal_id, capability, lifecycle_state, id);
+
 CREATE TABLE IF NOT EXISTS c_memory_event_binding_records (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   event_label TEXT NOT NULL,

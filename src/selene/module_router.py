@@ -198,9 +198,14 @@ from .advice_authority_coordination import (
     build_advice_authority_coordination,
 )
 from .commitment_anomaly_coordination import (
+    build_capability_graduation_receipts,
     build_commitment_anomaly_coordination,
+    commitment_lifecycle_status,
     commitment_anomaly_coordination_status,
     inspect_visible_commitment_claim,
+    list_commitment_lifecycles,
+    record_commitment_acceptance,
+    transition_commitment_lifecycle,
 )
 from .long_thread_endurance import (
     build_long_thread_endurance_plan,
@@ -1469,6 +1474,19 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
                 else payload,
             ),
         }
+    if route_key == "commitment_lifecycle.accept":
+        return {"route": route_key, "result": record_commitment_acceptance(conn, payload)}
+    if route_key == "commitment_lifecycle.transition":
+        return {"route": route_key, "result": transition_commitment_lifecycle(conn, payload)}
+    if route_key == "commitment_lifecycle.status":
+        return {"route": route_key, "result": commitment_lifecycle_status(conn)}
+    if route_key == "commitment_lifecycle.list":
+        return {
+            "route": route_key,
+            "result": list_commitment_lifecycles(conn, int(payload.get("limit") or 50)),
+        }
+    if route_key == "capability_graduation.status":
+        return {"route": route_key, "result": build_capability_graduation_receipts(payload)}
     if route_key == "conversation.long_thread_endurance.status":
         return {
             "route": route_key,

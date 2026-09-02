@@ -3819,3 +3819,46 @@ provider, training, and substrate remain unchanged.
 **Next:** Phase 8C — add explicit commitment goal/capability lineage and
 idempotent lifecycle transitions, then report conversation, Study, Memory,
 tool, Tendril, and embodiment maturity separately without granting action.
+
+### 2026-09-02 — Commitments keep one goal, one capability, and honest evidence
+
+**Starting question:** Can an explicit promise remain accountable across turns
+without turning an idea into an obligation, a lifecycle into action authority,
+or a claimed result into proof?
+
+**Decision:** Extend the existing commitment-anomaly owner with a persistent,
+idempotent event lineage. Bind acceptance to one existing nonterminal typed
+goal and its exact capability. Report capability maturity separately and keep
+every downstream owner authoritative for its own action.
+
+**Work:** Added explicit accepted, in-progress, fulfilled, blocked, released,
+and closed events with root/parent ancestry, stable commitment and goal keys,
+mechanism, result evidence, blocker, source references, and terminal stopping.
+Changed idempotency replays and cross-lineage transitions are rejected.
+Fulfillment language can use a recorded lifecycle receipt, while an
+unrecorded fulfilled-shaped object cannot release a completion claim. Added
+separate conversation, Study, Memory-proposal, tool, Tendril, and future-
+embodiment receipts, explicit routes, additive storage, and read-only status.
+
+**Evidence:** Twelve direct Phase 8C checks passed. The commitment/anomaly and
+maturity-ledger regression brought the focused total to 33, and the broader
+goal, initiative, runtime, Core/Mind route, and sidecar-lifecycle regression
+passed 118. Python compilation and whitespace checks passed apart from
+expected Windows line-ending notices. All records were disposable.
+
+**What changed in our understanding:** Idempotency has to preserve event
+meaning, not merely return whichever row owns a reused key. Likewise, a typed
+fulfillment shape is still only a claim until it is tied to a recorded event
+and visible result references. Capability graduation is safest as several
+narrow receipts rather than one autonomy label.
+
+**Boundaries preserved:** No resident schema or record was changed; no live
+tool or Tendril action ran; no goal or commitment granted authority; and no
+Dream, Study, Memory, teaching, relationship, affect, identity, personality,
+Vys, law, governance, provider, training, or substrate decision changed. The
+24 Dream reflections remain Aleks's decisions.
+
+**Next:** Phase 8D — run the complete focused matrix, one gentle disposable
+goal/commitment walkthrough, read-only resident integrity/count checks, the
+full regression, Python compilation, and the frontend bundle comparison before
+closing Phase 8.

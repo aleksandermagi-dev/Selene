@@ -983,6 +983,13 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "c_remaining.runtime.status")["result"]))
         elif parsed.path == "/api/vessel/goal-drive/status":
             self._send(*json_bytes(route_request(conn, "vessel.goal_drive.status")["result"]))
+        elif parsed.path == "/api/commitment-lifecycle/status":
+            self._send(*json_bytes(route_request(conn, "commitment_lifecycle.status")["result"]))
+        elif parsed.path == "/api/commitment-lifecycle/list":
+            qs = {key: values[0] for key, values in parse_qs(parsed.query).items() if values}
+            self._send(*json_bytes(route_request(conn, "commitment_lifecycle.list", {"limit": int(qs.get("limit") or 50)})["result"]))
+        elif parsed.path == "/api/capability-graduation/status":
+            self._send(*json_bytes(route_request(conn, "capability_graduation.status")["result"]))
         elif parsed.path == "/api/vessel/memory-lifecycle/status":
             self._send(*json_bytes(route_request(conn, "vessel.memory_lifecycle.status")["result"]))
         elif parsed.path == "/api/vessel/temporal-continuity/status":
@@ -2322,6 +2329,16 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/vessel/goal-drive/record":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.goal_drive.record", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/commitment-lifecycle/accept":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "commitment_lifecycle.accept", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/commitment-lifecycle/transition":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "commitment_lifecycle.transition", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/diagnostics/expanded-sweep":

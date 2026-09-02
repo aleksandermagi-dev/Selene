@@ -5,8 +5,8 @@ Date: 2026-09-01 (consolidated record name retained)
 Branch: `evidence`
 
 Status: Phases 0 through 7 of the Whole-System Maturation Plan are complete for
-current scope; Phases 8A and 8B are complete and Phase 8C is the next
-production edge.
+current scope; Phases 8A through 8C are complete and Phase 8D verification and
+closure is the next production edge.
 
 ## Purpose
 
@@ -33,7 +33,7 @@ completed phase.
 | 5 — Reasoning, answer owners, and domain depth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md) |
 | 6 — Ordered education and world knowledge | complete for current scope | [Phase 6D closure evidence](SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md) |
 | 7 — Text conversation, long form, and creative Voice | complete for current scope | [Phase 7A evidence](SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md), [Phase 7B evidence](SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md), [Phase 7C evidence](SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md), [Phase 7D closure](SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md) |
-| 8 — Executive initiative, goals, commitments, and collaboration | 8A–8B complete; 8C next | [Phase 8A evidence](SELENE_WHOLE_SYSTEM_PHASE_8A_GOAL_COORDINATION_20260902.md), [Phase 8B evidence](SELENE_WHOLE_SYSTEM_PHASE_8B_RESPONSIVE_INITIATIVE_20260902.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md) |
+| 8 — Executive initiative, goals, commitments, and collaboration | 8A–8C complete; 8D next | [Phase 8A evidence](SELENE_WHOLE_SYSTEM_PHASE_8A_GOAL_COORDINATION_20260902.md), [Phase 8B evidence](SELENE_WHOLE_SYSTEM_PHASE_8B_RESPONSIVE_INITIATIVE_20260902.md), [Phase 8C evidence](SELENE_WHOLE_SYSTEM_PHASE_8C_COMMITMENT_GRADUATION_20260902.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md) |
 
 “Complete for current scope” means the phase's documented completion gates and
 proportional verification passed. It does not mean Selene is finished or that
@@ -204,7 +204,11 @@ bounded Core/Mind responsibility-conflict receipt. Phase 8B carries one
 ephemeral selection through existing contribution, energy, pragmatic, NLO,
 Voice, and resident Chat owners with authenticated ownership, genuine help,
 and terminal stopping. Ordinary Chat creates no typed goal record. Phase 8C
-next adds explicit commitment lineage and capability-specific graduation.
+adds explicit, idempotent commitment ancestry tied to one nonterminal typed
+goal and capability, evidence-backed fulfillment, visible blockers, terminal
+stopping, and separate conversation, Study, Memory-proposal, tool, Tendril,
+and future-embodiment graduation receipts. Phase 8D verification and closure
+is next.
 No unrestricted autonomy switch, hidden agenda, organ competition, silent
 commitment loss, or external action authority is authorized.
 

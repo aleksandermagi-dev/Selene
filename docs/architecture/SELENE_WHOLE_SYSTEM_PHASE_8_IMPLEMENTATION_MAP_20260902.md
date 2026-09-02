@@ -2,8 +2,8 @@
 
 Date: 2026-09-02
 
-Status: Phases 8A and 8B complete for current scope; Phase 8C is the next
-production edge
+Status: Phases 8A through 8C complete for current scope; Phase 8D verification
+and closure is the next production edge
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -293,7 +293,10 @@ Evidence:
 
 ### Phase 8C — Commitment lifecycle and capability-specific graduation
 
-Status: **next**
+Status: **complete for current scope — 2026-09-02**
+
+Evidence:
+[Phase 8C Commitment and Capability Graduation](../evidence/SELENE_WHOLE_SYSTEM_PHASE_8C_COMMITMENT_GRADUATION_20260902.md)
 
 - extend the existing commitment owner with one goal/capability lineage and
   explicit accepted/in-progress/fulfilled/blocked/released/closed transitions;
@@ -311,7 +314,7 @@ Status: **next**
 
 ### Phase 8D — Verification and closure
 
-Status: **planned after 8C**
+Status: **next**
 
 - run focused lifecycle, owner/scope, conflict, interruption, help-seeking,
   capability, lineage, idempotency, and stopping tests;
@@ -368,9 +371,8 @@ Phase 8 is complete for current scope only when:
 
 ## Exact Production Resume Point
 
-Begin Phase 8C with focused red tests for an explicit commitment linked to
-exactly one goal and capability, idempotent accepted/in-progress/fulfilled/
-blocked/released/closed transitions, required result evidence, and rejection
-of cross-goal or cross-capability completion. Then expose separate graduation
-receipts for conversation, Study, Memory proposal, named tools, Tendril, and
-future embodiment without granting any new authority or action.
+Begin Phase 8D with the complete focused Phase 8 matrix and one gentle
+disposable walkthrough from an explicit typed goal through commitment
+acceptance, in-progress mechanism, and evidence-backed fulfillment. Then run
+read-only resident integrity/count checks, the full repository regression,
+Python compilation, and the frontend production build before closing Phase 8.

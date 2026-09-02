@@ -8,7 +8,7 @@ from .curriculum_authorization import curriculum_authorization_status
 from .language_teaching_shelf import language_teaching_status
 
 
-ORGAN_MATURITY_LEDGER_VERSION = "v8_phase_8b_responsive_initiative"
+ORGAN_MATURITY_LEDGER_VERSION = "v9_phase_8c_commitment_graduation"
 ORGAN_MATURITY_BOUNDARY = (
     "read_only_current_capability_maturity_projection_no_identity_memory_"
     "governance_teaching_dream_action_or_authority_change"
@@ -420,14 +420,14 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "responsibility": "Choose what to pursue, suggest, ask, hold, complete, or stop within graduated scope.",
         "non_responsibility": "Does not create hidden agendas or allow organ advice to become whole-system authority.",
         "source_modules": ["remaining_runtime.py", "core_mind.py", "resident_authority.py", "conversational_agency.py", "conversational_contribution.py", "conversational_energy.py", "pragmatic_continuity.py", "commitment_anomaly_coordination.py", "selene_chat.py"],
-        "routes": ["vessel.goal_drive.status", "vessel.goal_drive.coordinate", "vessel.goal_drive.record", "conversational_agency.status", "conversational_contribution.status", "conversational_energy.status", "selene_chat.send"],
+        "routes": ["vessel.goal_drive.status", "vessel.goal_drive.coordinate", "vessel.goal_drive.record", "conversational_agency.status", "conversational_contribution.status", "conversational_energy.status", "commitment_lifecycle.status", "commitment_lifecycle.list", "capability_graduation.status", "selene_chat.send"],
         "connection_state": "ordinary_chat",
-        "maturity_state": "connected",
+        "maturity_state": "integration_verified",
         "target_state": "mature_current_scope",
-        "health_state": "phase_8b_goal_bound_responsive_initiative_verified",
+        "health_state": "phase_8c_commitment_and_capability_graduation_verified",
         "maturation_phase": 8,
-        "metric_keys": ["typed_goal_records", "legacy_goal_previews"],
-        "known_gaps": ["Commitment lifecycle and capability-specific graduation receipts remain for Phase 8C."],
+        "metric_keys": ["typed_goal_records", "legacy_goal_previews", "commitment_lifecycle_events"],
+        "known_gaps": ["Phase 8D full regression, disposable walkthrough, resident read-only check, and frontend comparison remain."],
     },
     {
         "key": "perception",
@@ -578,7 +578,7 @@ EVIDENCE_TESTS_BY_ORGAN: dict[str, tuple[str, ...]] = {
     ),
     "cocoon": ("tests/test_cocoon_care.py", "tests/test_cocoon_bridge.py"),
     "tendril_action": ("tests/test_library_tendril.py", "tests/test_tendril_email.py"),
-    "goals_initiative": ("tests/test_phase8_goal_coordination.py", "tests/test_phase8_responsive_initiative.py", "tests/test_conversational_agency.py", "tests/test_remaining_runtime.py", "tests/test_selene_chat_shell.py"),
+    "goals_initiative": ("tests/test_phase8_goal_coordination.py", "tests/test_phase8_responsive_initiative.py", "tests/test_phase8_commitment_graduation.py", "tests/test_commitment_anomaly_coordination.py", "tests/test_conversational_agency.py", "tests/test_remaining_runtime.py", "tests/test_selene_chat_shell.py"),
     "perception": ("tests/test_cocoon_readiness_pipeline.py",),
     "audible_voice": (),
     "embodiment": ("tests/test_android_system_workflow.py", "tests/test_c_vessel_build.py"),
@@ -824,6 +824,7 @@ def _configured_metrics(conn: sqlite3.Connection) -> dict[str, int]:
         "goal_drive_previews": _count(conn, "c_runtime_goal_drive_records"),
         "typed_goal_records": _count(conn, "c_runtime_goal_drive_records", "goal_key != ''"),
         "legacy_goal_previews": _count(conn, "c_runtime_goal_drive_records", "goal_key = ''"),
+        "commitment_lifecycle_events": _count(conn, "selene_commitment_lifecycles"),
         "tendril_previews": _count(conn, "vessel_tendril_plan_previews"),
         "organ_contracts": _count(conn, "vessel_organ_contracts"),
         "organ_bus_messages": _count(conn, "vessel_organ_bus_messages"),

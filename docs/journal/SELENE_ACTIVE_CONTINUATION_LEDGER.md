@@ -2,8 +2,8 @@
 
 Last refreshed: 2026-09-02
 
-Status: Phases 0 through 7 and Phases 8A–8B complete for current scope; Phase
-8C commitment lifecycle and capability-specific graduation is next
+Status: Phases 0 through 7 and Phases 8A–8C complete for current scope; Phase
+8D verification and closure is next
 
 ## Purpose
 
@@ -34,9 +34,11 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Map executive initiative maturation phase`)
 - Latest Phase 8A checkpoint: `0200416`
   (`Mature typed goal coordination`)
-- Phase 8B is the current uncommitted implementation checkpoint.
-- Expected remote relation before the Phase 8B commit: eight local
-  commits ahead of `origin/evidence`
+- Latest Phase 8B checkpoint: `f8b4b16`
+  (`Connect bounded responsive initiative`)
+- Phase 8C implementation and evidence are the current uncommitted checkpoint.
+- Current remote relation before the Phase 8C commit: nine local commits ahead
+  of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -46,10 +48,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
   - Phase 6D and Phase 6 closure: `28abf57`
-- Expected tracked worktree before the Phase 8B commit: conversational
-  contribution, energy, pragmatic continuity, Core/Mind stopping, Chat,
-  maturity ledger, tests, evidence, status, map, journal, and this ledger are
-  modified
+- Expected tracked worktree before the Phase 8C commit: commitment lifecycle,
+  database schema, routes, maturity ledger, tests, evidence, current status,
+  Phase 8 map, journal, and this ledger are modified
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
 
@@ -262,6 +263,22 @@ git log -5 --oneline
   and terminal states stop cleanly.
 - Ten direct Phase 8B, 52 focused conversational, 89 NLO/Voice, and 116 full
   Chat-shell checks passed.
+- Phase 8C evidence:
+  `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8C_COMMITMENT_GRADUATION_20260902.md`
+- Commitments now require explicit acceptance, one existing nonterminal typed
+  goal, one exact capability, source and mechanism references, and an
+  idempotency key whose replay meaning cannot change.
+- Accepted, in-progress, fulfilled, blocked, released, and closed events retain
+  root/parent ancestry. Fulfilled events require result references; blocked
+  events require a visible blocker; stopped states require a reason; terminal
+  lineages do not reopen.
+- A recorded lifecycle receipt may support matching visible future/completion
+  language. An unrecorded fulfilled-shaped dictionary cannot.
+- Conversation, Study, Memory proposal, tools, Tendril, and future embodiment
+  now have separate non-authorizing graduation receipts. No aggregate autonomy
+  state or action grant exists.
+- Twelve direct Phase 8C, 33 focused commitment/maturity, and 118 broader
+  owner/runtime/route checks passed. All writes were disposable.
 
 ## Phase 7 Mapping Evidence
 
@@ -388,6 +405,7 @@ Before Phase 8 mapping or production work, read completely:
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8A_GOAL_COORDINATION_20260902.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8B_RESPONSIVE_INITIATIVE_20260902.md`
+- `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8C_COMMITMENT_GRADUATION_20260902.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -402,13 +420,12 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Phases 8A and 8B are green and documented. Begin 8C with focused red tests for
-an explicit commitment linked to exactly one typed goal and one capability,
-idempotent accepted/in-progress/fulfilled/blocked/released/closed transitions,
-required result evidence, and rejection of cross-goal/capability completion.
-Then expose separate graduation receipts for conversation, Study, Memory
-proposal, named tools, Tendril, and future embodiment. Do not grant or execute
-any new capability.
+Phases 8A through 8C are green and documented. Begin 8D with the complete
+focused Phase 8 matrix and one gentle disposable typed-goal -> accepted ->
+in-progress -> fulfilled walkthrough. Then recheck resident integrity and
+counts read-only, run the complete repository regression, compile Python, and
+build the frontend. Record bundle size and lazy Study chunks before marking
+Phase 8 mature for current scope and advancing the ledger to Phase 9.
 
 Do not create an unrestricted autonomy switch, hidden agenda, organ turf war,
 silent commitment loss, external action authority, identity/personality/Vys
