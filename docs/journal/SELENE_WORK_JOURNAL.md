@@ -3910,3 +3910,48 @@ LoRA, sensor, audible Voice, or embodiment state changed.
 **Next:** Pause at the completed Phase 8 boundary. Phase 9 has not started.
 When Aleks explicitly resumes phase work, begin with perception source mapping
 only.
+
+### 2026-09-02 — Fresh reinstall passes; bounded Q&A records repair work without starting it
+
+**Starting question:** Is the completed Phase 8 checkpoint freshly installed,
+healthy, and safe enough for one observation-only conversation check before
+any repair or Phase 9 work?
+
+**Decision:** Build and silently reinstall the clean Phase 8 checkpoint, verify
+the installed package and local-process boundary, then use the Test Impact Law
+for two gentle sessions on one disposable continuity copy. Separate the
+diagnostic-only pass from the ordinary-copy knowledge check and record defects
+without fixing them.
+
+**Install evidence:** Packaging from clean source revision `4505985` passed.
+The frontend remained 491.33 kB (gzip 109.19 kB), with no Vite warning and
+lazy Study workspaces. The 16,010,787-byte installer had SHA-256
+`b87192109e8767811e6caa38fd240dc01db2cda52a2eaef6abf22b913aacd8f6`;
+the silent reinstall exited `0`; and the installed executable had SHA-256
+`b4a0b488167316ba9a7e9b78381b0be10f05d2d4d9bdd17e5ca4edcdc88c80c1`.
+Package health, My Office readiness, privacy, local-process capability, and
+protected transfer checks passed with zero warnings. Code signing remains
+unconfigured.
+
+**Q&A evidence:** Fourteen low-pressure turns ran on a disposable copy, not
+resident continuity. Warm terminal closure, creative two-sentence generation,
+first-sentence preservation during local revision, correction recognition,
+provisional-association boundaries, and Phase 8 terminal goal coordination
+worked. Direct fraction answering, prompt-contained premise use, hypothesis
+formation, correction recomputation, retrieval role fit, association
+usefulness, and visible completion proof remain incomplete. The diagnostic
+pass also exposed internal-contract language; the ordinary pass is the fair
+knowledge assessment because `qa_probe` intentionally disables approved
+knowledge.
+
+**Boundaries preserved:** No production fix or Phase 9 work occurred. Resident
+read-only inspection remained integrity `ok` with 18 Chat sessions, 308
+messages, 0 personal Memory candidates, 272 concepts, 226 teaching
+lifecycles, 1 Dream cycle, and all 24 Dream reflections pending Aleks review.
+The disposable copy was removed after recording the evidence. No Memory,
+Study, Dream, teaching, identity, personality, Vys, affect, governance,
+training, autonomy, external-action, or self-replication decision changed.
+
+**Next:** Pause. When Aleks requests repair, cultivate the existing answer and
+handoff owners in P0 order; do not add teaching or another organ to disguise a
+coordination defect. Phase 9 remains unstarted.
