@@ -2,7 +2,7 @@
 
 Originally indexed: 2026-08-11
 
-Current refresh: 2026-08-29
+Current refresh: 2026-09-02
 Branch: `evidence`
 Status: date-stamped repository and configured-runtime truth
 
@@ -65,10 +65,10 @@ and blueprint states; those states are not interchangeable.
 
 ## Current Whole-System Maturation Position
 
-Phases 0 through 5 are complete for current scope. Phase 6 is source-mapped
-and production implementation has not begun. The current edge is Phase 6A:
-make prerequisite and source readiness one shared runtime receipt before
-expanding educational breadth.
+Phases 0 through 8 are complete for current scope. Phase work is paused at the
+verified Phase 8 boundary. Typed goal coordination, responsive initiative,
+explicit commitment lifecycle, and capability-specific graduation are mature
+for current scope without a global autonomy switch or inherited action grant.
 
 F2 Group 8 remains unprepared and unauthorized. Its Grade 4-6 source artifact,
 edition, license, exclusions, checksum, source role, and bounded coverage must
@@ -76,7 +76,7 @@ be reviewed and explicitly selected by Aleks before content implementation.
 See the
 [August 29 Current Project Status](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
 and the
-[Phase 6 Implementation Map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md).
+[Phase 8 Closure Evidence](SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md).
 
 ## Current Dream State
 
@@ -179,5 +179,5 @@ foundations, and 73 reviewed language capabilities across twelve groups. Her
 source-bound Dream lifecycle is complete;
 one explicit cycle produced 24 reflections that remain pending review, with no
 silent expression or memory promotion. Whole-system maturation Phases 0
-through 5 are complete for current scope; Phase 6 is source-mapped and awaits
-its prerequisite/source-readiness implementation.
+through 8 are complete for current scope, and phase work is paused at the
+verified Phase 8 boundary.

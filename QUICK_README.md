@@ -3,7 +3,7 @@
 Selene is a local-first AI system designed to understand, reason, learn, and
 converse without treating a language model as the whole mind.
 
-As of September 2, 2026, whole-system maturation Phases 0 through 7 are
+As of September 2, 2026, whole-system maturation Phases 0 through 8 are
 complete for current scope. Ordered education now has shared
 prerequisite/source-readiness enforcement plus typed source roles and bounded
 instructional why plus reviewed correction ancestry and delayed ordinary-Chat
@@ -12,7 +12,10 @@ substance is typed and source-separated, and longer supported answers now use
 one bounded section spine with local revision and explicit stopping. Bounded
 structured conversational breadth now exposes a one-pass range and stopping
 receipt, and Phase 7 closes with descriptive evidence rather than a score.
-Phase 8 executive initiative source mapping is the next production edge.
+Phase 8 adds typed goal ownership, one bounded responsibility-conflict pass,
+responsive help and stopping, honest commitment ancestry, and separate
+capability-graduation receipts without a global autonomy switch. Phase work is
+paused at this verified boundary.
 
 ## The Problem She Solves
 
@@ -99,10 +102,10 @@ Selene is not:
 
 Selene's architecture is substantial, but her education is still in progress.
 Her world knowledge and language breadth are smaller than those of a mature
-general language model. Broader structured conversational realization,
-broader academic coverage, and future audible speech still need further
-teaching or development. Structured expressive breadth is the next
-whole-system edge.
+general language model. Broader academic coverage, perception, future audible
+speech, accountable external action, and embodiment still need further
+teaching or development. None is implied by the completed executive-
+initiative phase.
 Dream's
 source-bound lifecycle is implemented, although its reflections remain
 review-governed and its ordinary usefulness should be assessed proportionally

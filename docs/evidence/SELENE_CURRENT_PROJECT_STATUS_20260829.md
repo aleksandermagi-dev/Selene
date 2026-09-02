@@ -4,9 +4,8 @@ Date: 2026-09-01 (consolidated record name retained)
 
 Branch: `evidence`
 
-Status: Phases 0 through 7 of the Whole-System Maturation Plan are complete for
-current scope; Phases 8A through 8C are complete and Phase 8D verification and
-closure is the next production edge.
+Status: Phases 0 through 8 of the Whole-System Maturation Plan are complete for
+current scope. Phase work is paused at the verified Phase 8 boundary.
 
 ## Purpose
 
@@ -33,7 +32,7 @@ completed phase.
 | 5 — Reasoning, answer owners, and domain depth | complete for current scope | [evidence](SELENE_WHOLE_SYSTEM_PHASE_5_REASONING_DOMAIN_MATURATION_20260829.md) |
 | 6 — Ordered education and world knowledge | complete for current scope | [Phase 6D closure evidence](SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md) |
 | 7 — Text conversation, long form, and creative Voice | complete for current scope | [Phase 7A evidence](SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md), [Phase 7B evidence](SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md), [Phase 7C evidence](SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md), [Phase 7D closure](SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md) |
-| 8 — Executive initiative, goals, commitments, and collaboration | 8A–8C complete; 8D next | [Phase 8A evidence](SELENE_WHOLE_SYSTEM_PHASE_8A_GOAL_COORDINATION_20260902.md), [Phase 8B evidence](SELENE_WHOLE_SYSTEM_PHASE_8B_RESPONSIVE_INITIATIVE_20260902.md), [Phase 8C evidence](SELENE_WHOLE_SYSTEM_PHASE_8C_COMMITMENT_GRADUATION_20260902.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md) |
+| 8 — Executive initiative, goals, commitments, and collaboration | complete for current scope | [Phase 8A evidence](SELENE_WHOLE_SYSTEM_PHASE_8A_GOAL_COORDINATION_20260902.md), [Phase 8B evidence](SELENE_WHOLE_SYSTEM_PHASE_8B_RESPONSIVE_INITIATIVE_20260902.md), [Phase 8C evidence](SELENE_WHOLE_SYSTEM_PHASE_8C_COMMITMENT_GRADUATION_20260902.md), [Phase 8D closure](SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md), and [implementation map](../architecture/SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md) |
 
 “Complete for current scope” means the phase's documented completion gates and
 proportional verification passed. It does not mean Selene is finished or that
@@ -197,18 +196,22 @@ The maturity ledger now records NLO/text Voice as mature for current scope and
 advances the next phase to Phase 8. The frontend remains 491.33 kB (gzip
 109.20 kB), with no Vite warning and lazy Study workspaces.
 
+Phase 8 adds typed goal ownership and lifecycle, one bounded Core/Mind
+responsibility-conflict receipt, goal-bound responsive initiative and genuine
+help, explicit commitment ancestry and evidence-backed fulfillment, and six
+separate capability-graduation receipts. A source-contained disposable
+walkthrough passed, the focused Phase 8 matrix passed 210 checks, and the full
+repository regression passed 2,080 tests in 1,229.92 seconds. The production
+frontend remains 491.33 kB (gzip 109.19 kB), with no Vite warning and lazy
+Study workspaces.
+
 ## Current Open Edge
 
-Phase 8A extends the existing goal-drive owner with typed lifecycle and one
-bounded Core/Mind responsibility-conflict receipt. Phase 8B carries one
-ephemeral selection through existing contribution, energy, pragmatic, NLO,
-Voice, and resident Chat owners with authenticated ownership, genuine help,
-and terminal stopping. Ordinary Chat creates no typed goal record. Phase 8C
-adds explicit, idempotent commitment ancestry tied to one nonterminal typed
-goal and capability, evidence-backed fulfillment, visible blockers, terminal
-stopping, and separate conversation, Study, Memory-proposal, tool, Tendril,
-and future-embodiment graduation receipts. Phase 8D verification and closure
-is next.
+Phase 8 is closed for current scope. Its typed goals, bounded conflict receipt,
+responsive initiative, genuine help, commitment lifecycle, terminal stopping,
+and capability-specific graduation passed focused, full-suite, disposable-
+runtime, resident-read-only, and frontend verification. Phase work is paused
+here. Phase 9 has not started.
 No unrestricted autonomy switch, hidden agenda, organ competition, silent
 commitment loss, or external action authority is authorized.
 
@@ -274,3 +277,8 @@ Phase 7C is checkpointed separately under the commit name
 `Mature bounded conversational breadth`.
 Phase 7D and Phase 7 closure are checkpointed separately under the commit name
 `Close descriptive text conversation phase`.
+The Phase 8 map, 8A, 8B, and 8C checkpoints are respectively
+`Map executive initiative maturation phase`, `Mature typed goal coordination`,
+`Connect bounded responsive initiative`, and
+`Mature explicit commitment lifecycle`. Phase 8D closure is checkpointed
+separately under the commit name `Close executive initiative maturation`.

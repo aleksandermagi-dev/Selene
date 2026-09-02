@@ -85,10 +85,10 @@ def test_maturity_ledger_distinguishes_connected_preview_and_blueprint_states(tm
     assert _item(result, "source_research")["maturity_state"] == "mature_current_scope"
     assert _item(result, "local_code")["maturity_state"] == "mature_current_scope"
     assert _item(result, "local_code")["connection_state"] == "ordinary_chat"
-    assert _item(result, "goals_initiative")["maturity_state"] == "integration_verified"
+    assert _item(result, "goals_initiative")["maturity_state"] == "mature_current_scope"
     assert _item(result, "goals_initiative")["connection_state"] == "ordinary_chat"
     assert _item(result, "goals_initiative")["health_state"] == (
-        "phase_8c_commitment_and_capability_graduation_verified"
+        "phase_8_completion_gate_verified"
     )
     assert _item(result, "perception")["maturity_state"] == "review_preview"
     assert _item(result, "audible_voice")["maturity_state"] == "blueprint"
@@ -97,7 +97,7 @@ def test_maturity_ledger_distinguishes_connected_preview_and_blueprint_states(tm
     assert "audible_voice" in result["summary"]["blueprint_or_preview_keys"]
     assert "conversation_context" not in result["summary"]["integration_gap_keys"]
     assert "answer_engine" not in result["summary"]["integration_gap_keys"]
-    assert result["summary"]["next_phase"] == 8
+    assert result["summary"]["next_phase"] == 9
     conn.close()
 
 

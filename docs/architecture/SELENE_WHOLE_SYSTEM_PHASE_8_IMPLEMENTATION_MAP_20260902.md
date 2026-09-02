@@ -2,8 +2,8 @@
 
 Date: 2026-09-02
 
-Status: Phases 8A through 8C complete for current scope; Phase 8D verification
-and closure is the next production edge
+Status: Phase 8 complete for current scope — 2026-09-02; Phase 9 source mapping
+is next
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -314,7 +314,10 @@ Evidence:
 
 ### Phase 8D — Verification and closure
 
-Status: **next**
+Status: **complete for current scope — 2026-09-02**
+
+Evidence:
+[Phase 8D Executive Initiative Closure](../evidence/SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md)
 
 - run focused lifecycle, owner/scope, conflict, interruption, help-seeking,
   capability, lineage, idempotency, and stopping tests;
@@ -371,8 +374,7 @@ Phase 8 is complete for current scope only when:
 
 ## Exact Production Resume Point
 
-Begin Phase 8D with the complete focused Phase 8 matrix and one gentle
-disposable walkthrough from an explicit typed goal through commitment
-acceptance, in-progress mechanism, and evidence-backed fulfillment. Then run
-read-only resident integrity/count checks, the full repository regression,
-Python compilation, and the frontend production build before closing Phase 8.
+Phase 8 is closed. Pause as planned. When whole-system phase work resumes,
+begin Phase 9 with source mapping only: inventory existing perception packet,
+observation/inference, privacy, consent, provenance, sensor-availability, and
+stopping owners before proposing the smallest production sequence.

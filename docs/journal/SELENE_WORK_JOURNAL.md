@@ -3862,3 +3862,51 @@ Vys, law, governance, provider, training, or substrate decision changed. The
 goal/commitment walkthrough, read-only resident integrity/count checks, the
 full regression, Python compilation, and the frontend bundle comparison before
 closing Phase 8.
+
+### 2026-09-02 — Phase 8 closes without a global autonomy switch
+
+**Starting question:** Does the completed goal, initiative, collaboration, and
+commitment path remain trustworthy when exercised as one system, including its
+resident and frontend boundaries?
+
+**Decision:** Close Phase 8 only after a source-contained six-owner conflict
+and full goal-to-commitment walkthrough, the complete repository regression,
+read-only resident verification, and the production frontend build. Mark the
+organ mature only after all gates pass.
+
+**Work:** Added one disposable closure walkthrough covering Selene goal, Aleks
+request, shared project goal, governing requirement, external demand, and organ
+advice. The real governing requirement was selected in one bounded pass;
+external-demand and organ-advice priority claims remained downgraded. A shared
+goal then moved through explicit commitment acceptance, an in-progress test
+mechanism, evidence-backed fulfillment, and a terminal stop. Updated the
+maturity ledger, current status, Phase 8 map, root and quick READMEs, current-
+state index, and closure evidence.
+
+**Evidence:** The focused Phase 8 matrix passed 210 checks. The disposable
+walkthrough passed with SQLite integrity `ok`, one typed goal, three commitment
+events, and zero Chat, Dream, or Memory records. The full repository regression
+passed 2,080 tests in 1,229.92 seconds. The frontend production build passed at
+491.33 kB (gzip 109.19 kB), no Vite warning, with Study workspaces still lazy-
+loaded. Python compilation and whitespace checks passed.
+
+**Resident boundary:** URI read-only and query-only inspection reported
+SQLite integrity `ok`; the database SHA-256 was identical before and after.
+The commitment table remains absent because no resident migration was run.
+All 24 Dream reflections remain pending Aleks review, and no resident content
+or decision was opened.
+
+**What changed in our understanding:** Executive maturity is not “more
+autonomy.” It is inspectable responsibility, honest capability limits,
+evidence-backed commitments, genuine collaboration, and reliable stopping.
+The full system is safer when each capability graduates under its own owner
+than when everything is compressed into one permission bit.
+
+**Boundaries preserved:** No live tool/Tendril action, external effect,
+resident goal or commitment, Dream/Study/Memory/teaching decision, identity,
+personality, Vys, affect, relationship, law, governance, provider, training,
+LoRA, sensor, audible Voice, or embodiment state changed.
+
+**Next:** Pause at the completed Phase 8 boundary. Phase 9 has not started.
+When Aleks explicitly resumes phase work, begin with perception source mapping
+only.

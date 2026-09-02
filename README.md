@@ -86,9 +86,9 @@ connected, and external actions remain deliberately constrained.
 
 ## Current Program Checkpoint
 
-Phases 0 through 6 of the
+Phases 0 through 8 of the
 [Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
-are [complete for current scope](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6D_LEARNING_EVIDENCE_CLOSURE_20260831.md).
+are [complete for current scope](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md).
 
 Phase 7 is now complete for current scope:
 [creative substance and source-style separation](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md)
@@ -102,9 +102,16 @@ purpose, thesis, and section spine with source, epistemic, obligation, thread,
 revision, completeness, and terminal-stop receipts. Conversational variation
 uses abstract recent functional families, one generation and selection pass,
 and meaning/epistemic locks. The deterministic implementation is sufficient
-for the current Phase 7 gate without authorizing a learned substrate. The next
-work is Phase 8 source mapping for bounded initiative, goals, commitments, and
-collaboration.
+for the current Phase 7 gate without authorizing a learned substrate.
+
+Phase 8 now gives goals typed owner/scope/evidence/authority/lifecycle state,
+lets Core/Mind resolve a bounded responsibility set once, carries one
+responsive move through existing conversation owners, and retains explicit
+commitments until evidence-backed fulfillment, a visible blocker, release, or
+closure. Conversation, Study, Memory proposal, tools, Tendril, and future
+embodiment remain separately governed; there is no global autonomy switch.
+The full repository regression passes 2,080 tests, and phase work is paused at
+this verified boundary.
 F2 Group 8 remains unprepared and unauthorized until Aleks explicitly selects
 an exact Grade 4–6 source artifact after edition, license, exclusion, checksum,
 role, and coverage review.

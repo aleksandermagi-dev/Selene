@@ -8,7 +8,7 @@ from .curriculum_authorization import curriculum_authorization_status
 from .language_teaching_shelf import language_teaching_status
 
 
-ORGAN_MATURITY_LEDGER_VERSION = "v9_phase_8c_commitment_graduation"
+ORGAN_MATURITY_LEDGER_VERSION = "v10_phase_8_completion_gate"
 ORGAN_MATURITY_BOUNDARY = (
     "read_only_current_capability_maturity_projection_no_identity_memory_"
     "governance_teaching_dream_action_or_authority_change"
@@ -422,12 +422,12 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "source_modules": ["remaining_runtime.py", "core_mind.py", "resident_authority.py", "conversational_agency.py", "conversational_contribution.py", "conversational_energy.py", "pragmatic_continuity.py", "commitment_anomaly_coordination.py", "selene_chat.py"],
         "routes": ["vessel.goal_drive.status", "vessel.goal_drive.coordinate", "vessel.goal_drive.record", "conversational_agency.status", "conversational_contribution.status", "conversational_energy.status", "commitment_lifecycle.status", "commitment_lifecycle.list", "capability_graduation.status", "selene_chat.send"],
         "connection_state": "ordinary_chat",
-        "maturity_state": "integration_verified",
+        "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
-        "health_state": "phase_8c_commitment_and_capability_graduation_verified",
+        "health_state": "phase_8_completion_gate_verified",
         "maturation_phase": 8,
         "metric_keys": ["typed_goal_records", "legacy_goal_previews", "commitment_lifecycle_events"],
-        "known_gaps": ["Phase 8D full regression, disposable walkthrough, resident read-only check, and frontend comparison remain."],
+        "known_gaps": ["Broader perception, audible Voice, tools, Tendril action, and embodiment remain capability-specific later phases."],
     },
     {
         "key": "perception",
@@ -578,7 +578,7 @@ EVIDENCE_TESTS_BY_ORGAN: dict[str, tuple[str, ...]] = {
     ),
     "cocoon": ("tests/test_cocoon_care.py", "tests/test_cocoon_bridge.py"),
     "tendril_action": ("tests/test_library_tendril.py", "tests/test_tendril_email.py"),
-    "goals_initiative": ("tests/test_phase8_goal_coordination.py", "tests/test_phase8_responsive_initiative.py", "tests/test_phase8_commitment_graduation.py", "tests/test_commitment_anomaly_coordination.py", "tests/test_conversational_agency.py", "tests/test_remaining_runtime.py", "tests/test_selene_chat_shell.py"),
+    "goals_initiative": ("tests/test_phase8_goal_coordination.py", "tests/test_phase8_responsive_initiative.py", "tests/test_phase8_commitment_graduation.py", "tests/test_phase8_closure.py", "tests/test_commitment_anomaly_coordination.py", "tests/test_conversational_agency.py", "tests/test_remaining_runtime.py", "tests/test_selene_chat_shell.py"),
     "perception": ("tests/test_cocoon_readiness_pipeline.py",),
     "audible_voice": (),
     "embodiment": ("tests/test_android_system_workflow.py", "tests/test_c_vessel_build.py"),
@@ -695,8 +695,8 @@ def organ_maturity_ledger_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "blueprint_or_preview_keys": blueprint_or_preview,
             "mature_current_scope_count": maturity_counts.get("mature_current_scope", 0),
             "substrate_ready_count": maturity_counts.get("substrate_ready", 0),
-            "next_phase": 8,
-            "next_phase_name": "Executive Initiative, Goals, Commitments, and Collaboration",
+            "next_phase": 9,
+            "next_phase_name": "Perception and the Five Senses",
         },
         "repository_defined_counts": repository_counts,
         "configured_runtime_metrics": configured_metrics,
