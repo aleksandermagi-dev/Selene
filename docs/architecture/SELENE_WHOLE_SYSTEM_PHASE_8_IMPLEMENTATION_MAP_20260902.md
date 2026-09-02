@@ -2,7 +2,8 @@
 
 Date: 2026-09-02
 
-Status: source-mapped; Phase 8A is the next production edge
+Status: Phase 8A complete for current scope; Phase 8B is the next production
+edge
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -249,7 +250,10 @@ no aggregate `autonomous`, `allowed`, or equivalent whole-system boolean.
 
 ### Phase 8A — Typed goal lifecycle and Core/Mind conflict receipt
 
-Status: **next**
+Status: **complete for current scope — 2026-09-02**
+
+Evidence:
+[Phase 8A Goal Coordination](../evidence/SELENE_WHOLE_SYSTEM_PHASE_8A_GOAL_COORDINATION_20260902.md)
 
 - extend the existing goal-drive owner with typed owner, scope, priority,
   evidence, stop, authority, lifecycle, ancestry, and idempotency fields;
@@ -267,7 +271,7 @@ Status: **next**
 
 ### Phase 8B — Responsive initiative, collaboration, and stopping
 
-Status: **planned after 8A**
+Status: **next**
 
 - carry the selected current-turn goal and conflict receipt into the existing
   contribution and energy owners;
@@ -361,9 +365,9 @@ Phase 8 is complete for current scope only when:
 
 ## Exact Production Resume Point
 
-Begin Phase 8A with focused red tests for the typed goal responsibility
-packet, ephemeral current-turn coordination, explicit persistence,
-idempotency/lineage, and the bounded Core/Mind conflict receipt. Preserve the
-existing `goal_drive_preview` behavior and its two resident review-only
-records. Do not integrate the Chat contribution path until the 8A contract is
-green and inspectable.
+Begin Phase 8B with focused red tests that carry one ephemeral 8A selection
+and terminal conflict receipt into the existing conversational contribution,
+energy, and pragmatic-continuity owners. Preserve direct-answer priority,
+responsive-only initiative, one contribution at most, genuine help-seeking,
+interruption, wait, quiet, and natural closure. Do not persist current-turn
+goals or create a second conversational owner.

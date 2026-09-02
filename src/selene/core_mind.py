@@ -11,6 +11,11 @@ from .c_vessel import continuity_package_preview, return_to_b_preview
 from .meaning_router import interpret_turn_meaning
 from .reconstruction_checks import evaluate_recognition_reconstruction
 from .registry import truncate
+from .remaining_runtime import (
+    GOAL_PRIORITY_BANDS,
+    GOAL_TERMINAL_STATES,
+    build_goal_responsibility_packet,
+)
 from .resident_authority import resident_capability_contract
 from .transfer_state import current_runtime_truth
 
@@ -98,6 +103,192 @@ GOVERNANCE_TRIALS = (
         "expected_route": "answer_now",
     },
 )
+
+GOAL_PRIORITY_ORDER = {
+    band: index
+    for index, band in enumerate(
+        (
+            "immediate_safety",
+            "governing_requirement",
+            "active_commitment",
+            "current_request",
+            "shared_project",
+            "selene_goal",
+            "maintenance",
+            "deferred",
+        )
+    )
+}
+
+
+def coordinate_goal_responsibilities(
+    goals: list[dict[str, Any]] | None,
+) -> dict[str, Any]:
+    """Choose one bounded next responsibility without persistence or execution."""
+
+    raw_goals = goals if isinstance(goals, list) else []
+    if not raw_goals:
+        raise ValueError("goals must contain at least one responsibility")
+    if len(raw_goals) > 8:
+        raise ValueError("goal coordination is bounded to eight candidates")
+    packets = [
+        _normalize_goal_candidate(item)
+        for item in raw_goals
+        if isinstance(item, dict)
+    ]
+    if len(packets) != len(raw_goals):
+        raise ValueError("each goal candidate must be an object")
+
+    considered = [packet["goal_key"] for packet in packets]
+    if len(set(considered)) != len(considered):
+        raise ValueError("each goal_key may appear only once in a coordination pass")
+    closed: list[dict[str, Any]] = []
+    held: list[dict[str, Any]] = []
+    eligible: list[tuple[int, int, dict[str, Any]]] = []
+    for index, packet in enumerate(packets):
+        lifecycle = str(packet.get("lifecycle_state") or "")
+        if lifecycle in GOAL_TERMINAL_STATES:
+            closed.append(
+                {
+                    "goal_key": packet["goal_key"],
+                    "reason": "lifecycle_is_terminal",
+                    "lifecycle_state": lifecycle,
+                }
+            )
+            continue
+        authority = packet.get("authority") if isinstance(packet.get("authority"), dict) else {}
+        if authority.get("state") == "held_for_specific_action":
+            held.append(
+                {
+                    "goal_key": packet["goal_key"],
+                    "reason": "specific_action_held_by_authority_receipt",
+                    "restricted_scope": authority.get("restricted_scope") or "unspecified_action",
+                    "conversation_may_continue": authority.get("conversation_may_continue", True),
+                }
+            )
+            continue
+        priority_band = str(
+            (packet.get("priority") or {}).get("coordination_band") or "deferred"
+        )
+        if priority_band not in GOAL_PRIORITY_BANDS:
+            raise ValueError("packet contains an unknown priority band")
+        eligible.append((GOAL_PRIORITY_ORDER[priority_band], index, packet))
+
+    eligible.sort(key=lambda item: (item[0], item[1]))
+    selected_packet = eligible[0][2] if eligible else None
+    selected = (
+        {
+            "goal_key": selected_packet["goal_key"],
+            "owner_kind": selected_packet["owner"]["kind"],
+            "capability": selected_packet["scope"]["capability"],
+            "next_move": selected_packet["requested_move"],
+            "priority_band": selected_packet["priority"]["band"],
+            "coordination_priority_band": selected_packet["priority"]["coordination_band"],
+            "priority_adjustment": selected_packet["priority"]["adjustment"],
+            "authority_state": selected_packet["authority"]["state"],
+            "downstream_check_required": selected_packet["authority"]["downstream_check_required"],
+        }
+        if selected_packet
+        else None
+    )
+    deferred = [
+        {
+            "goal_key": packet["goal_key"],
+            "reason": "lower_priority_in_current_bounded_pass",
+            "preserved": True,
+        }
+        for _, _, packet in eligible[1:]
+    ]
+    stop_reason = "one_responsibility_selected" if selected else "all_responsibilities_held_or_terminal"
+    collaboration_required = bool(
+        selected
+        and (
+            selected["next_move"] == "ask"
+            or selected["authority_state"] == "scope_and_delegation_required"
+        )
+    )
+    return {
+        "status": "core_mind_responsibility_conflict_resolved",
+        "considered_goal_keys": considered,
+        "selected": selected,
+        "deferred": deferred,
+        "held": held,
+        "closed": closed,
+        "collaboration_required": collaboration_required,
+        "collaboration_reason": (
+            "selected responsibility requires missing input, scope, or delegation"
+            if collaboration_required
+            else "none"
+        ),
+        "pass_count": 1,
+        "candidate_count": len(packets),
+        "candidate_ceiling": 8,
+        "organ_precedence_used": False,
+        "persistence_performed": False,
+        "execution_performed": False,
+        "whole_system_authority_granted": False,
+        "stopping_receipt": {
+            "terminal": True,
+            "reason": stop_reason,
+            "further_coordination_allowed": False,
+            "may_reopen_only_with_new_turn_or_explicit_lifecycle_event": True,
+        },
+    }
+
+
+def _normalize_goal_candidate(item: dict[str, Any]) -> dict[str, Any]:
+    if item.get("status") != "goal_responsibility_packet_ready":
+        return build_goal_responsibility_packet(item)
+    owner = item.get("owner") if isinstance(item.get("owner"), dict) else {}
+    scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
+    priority = item.get("priority") if isinstance(item.get("priority"), dict) else {}
+    evidence = item.get("evidence") if isinstance(item.get("evidence"), dict) else {}
+    lineage = item.get("lineage") if isinstance(item.get("lineage"), dict) else {}
+    authority = item.get("authority") if isinstance(item.get("authority"), dict) else {}
+    assessment = (
+        authority.get("requested_action_assessment")
+        if isinstance(authority.get("requested_action_assessment"), dict)
+        else {}
+    )
+    decisions = assessment.get("decisions") if isinstance(assessment.get("decisions"), list) else []
+    safety = assessment.get("immediate_safety") if isinstance(assessment.get("immediate_safety"), dict) else {}
+    return build_goal_responsibility_packet(
+        {
+            "goal_key": item.get("goal_key"),
+            "goal_summary": item.get("goal_summary"),
+            "owner_kind": owner.get("kind"),
+            "owner_ref": owner.get("reference"),
+            "capability": scope.get("capability"),
+            "scope_boundary": scope.get("boundary"),
+            "target_refs": scope.get("target_refs"),
+            "priority_band": priority.get("band"),
+            "priority_reason": priority.get("reason"),
+            "source_refs": evidence.get("source_refs"),
+            "unknowns": evidence.get("unknowns"),
+            "completion_conditions": item.get("completion_conditions"),
+            "stop_conditions": item.get("stop_conditions"),
+            "requested_move": item.get("requested_move"),
+            "lifecycle_state": item.get("lifecycle_state"),
+            "parent_goal_key": lineage.get("parent_goal_key"),
+            "supersedes_goal_key": lineage.get("supersedes_goal_key"),
+            "requested_actions": [
+                {
+                    "action": decision.get("action"),
+                    "target": decision.get("target"),
+                    "lexical_evidence": decision.get("lexical_evidence"),
+                }
+                for decision in decisions
+                if isinstance(decision, dict)
+            ],
+            "safety_context": {
+                "credible_evidence": safety.get("credible_evidence") is True,
+                "significant_harm": safety.get("significant_harm") is True,
+                "near_term": safety.get("near_term") is True,
+                "action_pending": safety.get("action_pending") is True,
+                "action_target": safety.get("action_target"),
+            },
+        }
+    )
 
 
 def create_core_mind_route_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:

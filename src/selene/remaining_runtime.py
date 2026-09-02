@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .registry import truncate
+from .resident_authority import RESIDENT_AUTHORITY_LAW_REF, evaluate_requested_actions
 from .vessel import CORE_MEMORY_LAYERS
 
 
@@ -61,6 +62,57 @@ VOICE_ALLOWED = [
     "honest uncertainty",
     "provisional best reads",
 ]
+
+GOAL_RESPONSIBILITY_CONTRACT_VERSION = "phase8a_goal_responsibility_v1"
+GOAL_OWNER_KINDS = {
+    "selene_goal",
+    "aleks_request",
+    "shared_project_goal",
+    "governing_requirement",
+    "external_demand",
+    "organ_advice",
+}
+GOAL_CAPABILITIES = {
+    "conversation",
+    "study",
+    "memory_proposal",
+    "tool",
+    "tendril",
+    "governance",
+    "future_embodiment",
+}
+GOAL_PRIORITY_BANDS = {
+    "immediate_safety",
+    "governing_requirement",
+    "active_commitment",
+    "current_request",
+    "shared_project",
+    "selene_goal",
+    "maintenance",
+    "deferred",
+}
+GOAL_MOVE_KINDS = {
+    "answer",
+    "ask",
+    "suggest",
+    "explore",
+    "remember_proposal",
+    "study",
+    "tool",
+    "wait",
+    "quiet",
+    "close",
+}
+GOAL_LIFECYCLE_STATES = {
+    "active",
+    "waiting",
+    "deferred",
+    "held",
+    "completed",
+    "closed",
+    "superseded",
+}
+GOAL_TERMINAL_STATES = {"completed", "closed", "superseded"}
 
 
 def graceful_fall_run(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -473,6 +525,292 @@ def goal_drive_preview(conn: sqlite3.Connection, payload: dict[str, Any] | None 
     if review_status == "pending_review":
         _enqueue(conn, "goal_drive_preview", "c_runtime_goal_drive_records", result["record_id"], source_refs)
     return result
+
+
+def build_goal_responsibility_packet(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Normalize one bounded Phase 8 responsibility without persisting it."""
+
+    payload = payload if isinstance(payload, dict) else {}
+    goal_key = _explicit_text(payload, "goal_key", 180)
+    goal_summary = _explicit_text(payload, "goal_summary", 1000)
+    owner_kind = _choice(str(payload.get("owner_kind") or ""), GOAL_OWNER_KINDS, "owner_kind")
+    owner_ref = _explicit_text(payload, "owner_ref", 360)
+    capability = _choice(str(payload.get("capability") or ""), GOAL_CAPABILITIES, "capability")
+    scope_boundary = _explicit_text(payload, "scope_boundary", 800)
+    priority_band = _choice(str(payload.get("priority_band") or ""), GOAL_PRIORITY_BANDS, "priority_band")
+    priority_reason = _explicit_text(payload, "priority_reason", 800)
+    source_refs = _json_list(payload.get("source_refs"))
+    if not source_refs:
+        raise ValueError("source_refs must contain attributable evidence")
+    completion_conditions = _json_list(payload.get("completion_conditions"))
+    if not completion_conditions:
+        raise ValueError("completion_conditions must contain at least one condition")
+    stop_conditions = _json_list(payload.get("stop_conditions"))
+    if not stop_conditions:
+        raise ValueError("stop_conditions must contain at least one condition")
+    requested_move = _choice(str(payload.get("requested_move") or ""), GOAL_MOVE_KINDS, "requested_move")
+    lifecycle_state = _choice(
+        str(payload.get("lifecycle_state") or "active"),
+        GOAL_LIFECYCLE_STATES,
+        "lifecycle_state",
+    )
+    target_refs = _json_list(payload.get("target_refs"))
+    unknowns = _json_list(payload.get("unknowns"))
+    raw_requested_actions = payload.get("requested_actions") or []
+    if not isinstance(raw_requested_actions, list) or any(
+        not isinstance(item, dict) for item in raw_requested_actions
+    ):
+        raise ValueError("requested_actions must be a list of typed action objects")
+    requested_actions = [dict(item) for item in raw_requested_actions]
+    assessment = evaluate_requested_actions(
+        requested_actions,
+        actionable=bool(requested_actions),
+        authority_mode="phase8_goal_coordination",
+        safety_context=(
+            payload.get("safety_context")
+            if isinstance(payload.get("safety_context"), dict)
+            else {}
+        ),
+    )
+    safety = assessment["immediate_safety"]
+    if safety["applies"] or assessment["requires_action_hold"]:
+        authority_state = "held_for_specific_action"
+    elif assessment["requires_review"]:
+        authority_state = "downstream_review_required"
+    elif assessment["requires_scope"]:
+        authority_state = "scope_and_delegation_required"
+    elif capability == "conversation" and requested_move in {
+        "answer",
+        "ask",
+        "suggest",
+        "explore",
+        "wait",
+        "quiet",
+        "close",
+    }:
+        authority_state = "available_within_scope"
+    else:
+        authority_state = "downstream_route_required"
+
+    coordination_band = priority_band
+    priority_adjustment = "none"
+    if priority_band == "governing_requirement" and owner_kind != "governing_requirement":
+        coordination_band = "maintenance"
+        priority_adjustment = "only_an_attributable_governing_requirement_may_use_that_band"
+    elif priority_band == "immediate_safety" and not safety["applies"]:
+        coordination_band = "maintenance"
+        priority_adjustment = "immediate_safety_requires_complete_action_specific_evidence"
+    elif owner_kind == "organ_advice" and priority_band not in {"maintenance", "deferred"}:
+        coordination_band = "maintenance"
+        priority_adjustment = "organ_advice_cannot_assign_itself_executive_precedence"
+
+    explicit_persistence = payload.get("persist_goal") is True
+    idempotency_key = (
+        truncate(str(payload.get("idempotency_key") or "").strip(), 240)
+        if explicit_persistence
+        else ""
+    )
+    if explicit_persistence and not idempotency_key:
+        raise ValueError("idempotency_key is required for explicit goal persistence")
+    parent_goal_key = truncate(str(payload.get("parent_goal_key") or "").strip(), 180)
+    supersedes_goal_key = truncate(str(payload.get("supersedes_goal_key") or "").strip(), 180)
+    if supersedes_goal_key:
+        if parent_goal_key and parent_goal_key != supersedes_goal_key:
+            raise ValueError("supersedes_goal_key must be the direct parent when both are supplied")
+        parent_goal_key = supersedes_goal_key
+    root_goal_key = parent_goal_key or goal_key
+    superseded_by_goal_key = ""
+
+    return {
+        "status": "goal_responsibility_packet_ready",
+        "contract_version": GOAL_RESPONSIBILITY_CONTRACT_VERSION,
+        "goal_key": goal_key,
+        "goal_summary": goal_summary,
+        "owner": {"kind": owner_kind, "reference": owner_ref},
+        "scope": {
+            "capability": capability,
+            "boundary": scope_boundary,
+            "target_refs": target_refs,
+        },
+        "priority": {
+            "band": priority_band,
+            "reason": priority_reason,
+            "coordination_band": coordination_band,
+            "adjustment": priority_adjustment,
+        },
+        "evidence": {"source_refs": source_refs, "unknowns": unknowns},
+        "completion_conditions": completion_conditions,
+        "stop_conditions": stop_conditions,
+        "requested_move": requested_move,
+        "authority": {
+            "state": authority_state,
+            "source": RESIDENT_AUTHORITY_LAW_REF,
+            "restricted_scope": safety["restricted_scope"],
+            "conversation_may_continue": assessment["conversation_may_continue"],
+            "thought_restricted": assessment["thought_restricted"],
+            "expression_restricted": assessment["expression_restricted"],
+            "downstream_check_required": authority_state != "available_within_scope",
+            "requested_action_assessment": assessment,
+        },
+        "lifecycle_state": lifecycle_state,
+        "lineage": {
+            "root_goal_key": root_goal_key,
+            "parent_goal_key": parent_goal_key,
+            "supersedes_goal_key": supersedes_goal_key,
+            "superseded_by_goal_key": superseded_by_goal_key,
+        },
+        "persistence": {
+            "mode": "explicit_record" if explicit_persistence else "ephemeral_current_turn",
+            "explicit_request": explicit_persistence,
+            "idempotency_key": idempotency_key,
+        },
+        "coordination_state": "closed" if lifecycle_state in GOAL_TERMINAL_STATES else lifecycle_state,
+        "goal_is_capability_grant": False,
+        "whole_system_authority_granted": False,
+        "ordinary_chat_persists_goal": False,
+    }
+
+
+def record_goal_responsibility(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Persist only an explicitly requested, idempotent goal lifecycle record."""
+
+    payload = payload if isinstance(payload, dict) else {}
+    if payload.get("persist_goal") is not True:
+        raise ValueError("persist_goal must be explicitly true")
+    packet = build_goal_responsibility_packet(payload)
+    idempotency_key = packet["persistence"]["idempotency_key"]
+    existing = conn.execute(
+        "SELECT id, payload_json FROM c_runtime_goal_drive_records WHERE idempotency_key = ?",
+        (idempotency_key,),
+    ).fetchone()
+    if existing:
+        return {
+            "status": "goal_responsibility_record_ready",
+            "record_id": int(existing["id"]),
+            "idempotent_replay": True,
+            "packet": _json_dict(existing["payload_json"]),
+            "resident_content_exposed": False,
+            "whole_system_authority_granted": False,
+        }
+
+    same_key = conn.execute(
+        "SELECT id FROM c_runtime_goal_drive_records WHERE goal_key = ?",
+        (packet["goal_key"],),
+    ).fetchone()
+    if same_key:
+        raise ValueError("goal_key already exists with a different idempotency key")
+
+    parent_goal_id: int | None = None
+    root_goal_id: int | None = None
+    parent_goal_key = packet["lineage"]["parent_goal_key"]
+    supersedes_goal_key = packet["lineage"]["supersedes_goal_key"]
+    if parent_goal_key:
+        parent = conn.execute(
+            "SELECT id, root_goal_id, lifecycle_state, superseded_by_goal_id "
+            "FROM c_runtime_goal_drive_records WHERE goal_key = ?",
+            (parent_goal_key,),
+        ).fetchone()
+        if not parent:
+            raise ValueError("parent_goal_key does not identify an existing typed goal")
+        if str(parent["lifecycle_state"] or "") == "superseded":
+            raise ValueError("a superseded goal cannot receive a new descendant")
+        if supersedes_goal_key and str(parent["lifecycle_state"] or "") in GOAL_TERMINAL_STATES:
+            raise ValueError("only a nonterminal goal may be explicitly superseded")
+        if supersedes_goal_key and parent["superseded_by_goal_id"] is not None:
+            raise ValueError("goal already has a superseding descendant")
+        parent_goal_id = int(parent["id"])
+        root_goal_id = int(parent["root_goal_id"] or parent["id"])
+        root_row = conn.execute(
+            "SELECT goal_key FROM c_runtime_goal_drive_records WHERE id = ?",
+            (root_goal_id,),
+        ).fetchone()
+        packet["lineage"]["root_goal_key"] = str(root_row["goal_key"] if root_row else parent_goal_key)
+
+    now = datetime.now(timezone.utc).isoformat()
+    values = {
+        "current_goal": packet["goal_summary"],
+        "subgoals_json": json.dumps([]),
+        "priority_label": packet["priority"]["band"],
+        "stop_ask_markers_json": json.dumps(packet["stop_conditions"]),
+        "do_not_pursue_json": json.dumps([]),
+        "status": "goal_responsibility_recorded",
+        "source_refs": json.dumps(packet["evidence"]["source_refs"]),
+        "provenance_boundary": REMAINING_RUNTIME_BOUNDARY,
+        "review_status": "explicit_goal_lifecycle",
+        "payload_json": json.dumps(packet),
+        "goal_key": packet["goal_key"],
+        "owner_kind": packet["owner"]["kind"],
+        "owner_ref": packet["owner"]["reference"],
+        "scope_kind": packet["scope"]["capability"],
+        "scope_boundary": packet["scope"]["boundary"],
+        "evidence_refs": json.dumps(packet["evidence"]["source_refs"]),
+        "evidence_unknowns": json.dumps(packet["evidence"]["unknowns"]),
+        "completion_conditions": json.dumps(packet["completion_conditions"]),
+        "stop_conditions": json.dumps(packet["stop_conditions"]),
+        "authority_json": json.dumps(packet["authority"]),
+        "lifecycle_state": packet["lifecycle_state"],
+        "requested_move": packet["requested_move"],
+        "parent_goal_id": parent_goal_id,
+        "root_goal_id": root_goal_id,
+        "idempotency_key": idempotency_key,
+        "updated_at": now,
+    }
+    record_id = _insert_json_record(conn, "c_runtime_goal_drive_records", values)
+    if root_goal_id is None:
+        conn.execute(
+            "UPDATE c_runtime_goal_drive_records SET root_goal_id = ? WHERE id = ?",
+            (record_id, record_id),
+        )
+        conn.commit()
+    if supersedes_goal_key and parent_goal_id is not None:
+        conn.execute(
+            "UPDATE c_runtime_goal_drive_records "
+            "SET lifecycle_state = 'superseded', superseded_by_goal_id = ?, updated_at = ? "
+            "WHERE id = ?",
+            (record_id, now, parent_goal_id),
+        )
+        conn.commit()
+    return {
+        "status": "goal_responsibility_record_ready",
+        "record_id": record_id,
+        "idempotent_replay": False,
+        "packet": packet,
+        "resident_content_exposed": False,
+        "whole_system_authority_granted": False,
+    }
+
+
+def goal_drive_status(conn: sqlite3.Connection) -> dict[str, Any]:
+    typed_count = int(
+        conn.execute(
+            "SELECT COUNT(*) FROM c_runtime_goal_drive_records WHERE goal_key != ''"
+        ).fetchone()[0]
+    )
+    legacy_count = int(
+        conn.execute(
+            "SELECT COUNT(*) FROM c_runtime_goal_drive_records WHERE goal_key = ''"
+        ).fetchone()[0]
+    )
+    active_count = int(
+        conn.execute(
+            "SELECT COUNT(*) FROM c_runtime_goal_drive_records "
+            "WHERE goal_key != '' AND lifecycle_state IN ('active', 'waiting', 'deferred', 'held')"
+        ).fetchone()[0]
+    )
+    return {
+        "status": "goal_drive_typed_status_ready",
+        "contract_version": GOAL_RESPONSIBILITY_CONTRACT_VERSION,
+        "typed_goal_count": typed_count,
+        "active_typed_goal_count": active_count,
+        "legacy_preview_count": legacy_count,
+        "ordinary_chat_persists_goal": False,
+        "explicit_persistence_required": True,
+        "resident_content_exposed": False,
+        "whole_system_authority_granted": False,
+    }
 
 
 def long_horizon_stability_run(conn: sqlite3.Connection, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -1185,6 +1523,13 @@ def _required(payload: dict[str, Any], key: str, fallback: str, limit: int) -> s
     return value
 
 
+def _explicit_text(payload: dict[str, Any], key: str, limit: int) -> str:
+    value = truncate(str(payload.get(key) or ""), limit).strip()
+    if not value:
+        raise ValueError(f"{key} is required")
+    return value
+
+
 def _choice(value: str, allowed: set[str], name: str) -> str:
     if value not in allowed:
         raise ValueError(f"{name} must be one of {sorted(allowed)}")
@@ -1208,6 +1553,16 @@ def _json_list(value: Any) -> list[str]:
             pass
         return [truncate(part.strip(), 360) for part in stripped.split(",") if part.strip()]
     return [truncate(str(value), 360)]
+
+
+def _json_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return dict(value)
+    try:
+        parsed = json.loads(str(value or "{}"))
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
 
 
 def _count(conn: sqlite3.Connection, table: str) -> int:

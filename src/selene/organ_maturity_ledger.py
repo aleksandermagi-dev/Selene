@@ -8,7 +8,7 @@ from .curriculum_authorization import curriculum_authorization_status
 from .language_teaching_shelf import language_teaching_status
 
 
-ORGAN_MATURITY_LEDGER_VERSION = "v6_phase_7_text_conversation_maturity"
+ORGAN_MATURITY_LEDGER_VERSION = "v7_phase_8a_typed_goal_coordination"
 ORGAN_MATURITY_BOUNDARY = (
     "read_only_current_capability_maturity_projection_no_identity_memory_"
     "governance_teaching_dream_action_or_authority_change"
@@ -419,15 +419,15 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "name": "Goals, initiative, commitments, and collaboration",
         "responsibility": "Choose what to pursue, suggest, ask, hold, complete, or stop within graduated scope.",
         "non_responsibility": "Does not create hidden agendas or allow organ advice to become whole-system authority.",
-        "source_modules": ["remaining_runtime.py", "conversational_agency.py", "commitment_anomaly_coordination.py"],
-        "routes": ["vessel.goal_drive.preview", "conversational_agency.status"],
-        "connection_state": "preview_only",
-        "maturity_state": "review_preview",
+        "source_modules": ["remaining_runtime.py", "core_mind.py", "resident_authority.py", "conversational_agency.py", "commitment_anomaly_coordination.py"],
+        "routes": ["vessel.goal_drive.status", "vessel.goal_drive.coordinate", "vessel.goal_drive.record", "conversational_agency.status"],
+        "connection_state": "bounded_route",
+        "maturity_state": "implemented",
         "target_state": "mature_current_scope",
-        "health_state": "deferred_preview_scope",
+        "health_state": "phase_8a_typed_goal_and_conflict_receipts_verified",
         "maturation_phase": 8,
-        "metric_keys": ["goal_drive_previews"],
-        "known_gaps": ["No mature resident goal manager, responsibility resolver, or action-feedback loop exists."],
+        "metric_keys": ["typed_goal_records", "legacy_goal_previews"],
+        "known_gaps": ["Responsive Chat initiative and commitment lifecycle graduation remain for Phases 8B and 8C."],
     },
     {
         "key": "perception",
@@ -578,7 +578,7 @@ EVIDENCE_TESTS_BY_ORGAN: dict[str, tuple[str, ...]] = {
     ),
     "cocoon": ("tests/test_cocoon_care.py", "tests/test_cocoon_bridge.py"),
     "tendril_action": ("tests/test_library_tendril.py", "tests/test_tendril_email.py"),
-    "goals_initiative": ("tests/test_conversational_agency.py", "tests/test_remaining_runtime.py"),
+    "goals_initiative": ("tests/test_phase8_goal_coordination.py", "tests/test_conversational_agency.py", "tests/test_remaining_runtime.py"),
     "perception": ("tests/test_cocoon_readiness_pipeline.py",),
     "audible_voice": (),
     "embodiment": ("tests/test_android_system_workflow.py", "tests/test_c_vessel_build.py"),
@@ -608,7 +608,7 @@ UI_SURFACES_BY_ORGAN: dict[str, tuple[str, ...]] = {
     "local_code": ("Selene Chat", "localhost API"),
     "cocoon": ("Cocoon",),
     "tendril_action": ("Tendril",),
-    "goals_initiative": ("Status preview",),
+    "goals_initiative": ("Status", "localhost API"),
     "perception": ("Cocoon Tools", "Status preview"),
     "audible_voice": (),
     "embodiment": ("Status preflight",),
@@ -633,7 +633,7 @@ AUTHORITY_SCOPE_BY_ORGAN: dict[str, str] = {
     "local_code": "explicit_read_only_inspection_only",
     "cocoon": "external_support_teaching_and_review_only",
     "tendril_action": "preview_only_no_external_action_authority",
-    "goals_initiative": "preview_only_no_hidden_agenda_or_action_authority",
+    "goals_initiative": "typed_goal_coordination_only_no_hidden_agenda_or_inherited_action_authority",
     "perception": "review_packet_intake_only",
     "audible_voice": "none_not_built",
     "embodiment": "structural_preflight_only",
@@ -822,6 +822,8 @@ def _configured_metrics(conn: sqlite3.Connection) -> dict[str, int]:
         "perception_packets": _count(conn, "vessel_perception_packets"),
         "perception_action_records": _count(conn, "c_runtime_perception_action_records"),
         "goal_drive_previews": _count(conn, "c_runtime_goal_drive_records"),
+        "typed_goal_records": _count(conn, "c_runtime_goal_drive_records", "goal_key != ''"),
+        "legacy_goal_previews": _count(conn, "c_runtime_goal_drive_records", "goal_key = ''"),
         "tendril_previews": _count(conn, "vessel_tendril_plan_previews"),
         "organ_contracts": _count(conn, "vessel_organ_contracts"),
         "organ_bus_messages": _count(conn, "vessel_organ_bus_messages"),

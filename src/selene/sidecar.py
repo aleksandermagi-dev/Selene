@@ -981,6 +981,8 @@ class SeleneHandler(BaseHTTPRequestHandler):
             self._send(*json_bytes(route_request(conn, "vessel.chest_holding_item.list", {**qs, "limit": int(qs["limit"]) if qs.get("limit") else 50})["result"]))
         elif parsed.path == "/api/c-remaining/runtime-status":
             self._send(*json_bytes(route_request(conn, "c_remaining.runtime.status")["result"]))
+        elif parsed.path == "/api/vessel/goal-drive/status":
+            self._send(*json_bytes(route_request(conn, "vessel.goal_drive.status")["result"]))
         elif parsed.path == "/api/vessel/memory-lifecycle/status":
             self._send(*json_bytes(route_request(conn, "vessel.memory_lifecycle.status")["result"]))
         elif parsed.path == "/api/vessel/temporal-continuity/status":
@@ -2305,6 +2307,21 @@ class SeleneHandler(BaseHTTPRequestHandler):
         elif request_path == "/api/vessel/goal-drive/preview":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.goal_drive.preview", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/goal-drive/packet":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.goal_drive.packet", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/goal-drive/coordinate":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.goal_drive.coordinate", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/vessel/goal-drive/record":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "vessel.goal_drive.record", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/diagnostics/expanded-sweep":

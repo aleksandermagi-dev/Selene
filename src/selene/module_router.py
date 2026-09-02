@@ -172,6 +172,7 @@ from .core_deliberation import (
     uncertainty_preview,
 )
 from .core_mind import (
+    coordinate_goal_responsibilities,
     create_core_mind_route_preview,
     governance_route_report,
     list_core_mind_governance_trials,
@@ -482,12 +483,14 @@ from .transfer_completion import (
 )
 from .research_integrity import AcademicWorkflowRouter, CitationIntegrity, ResearchIntegrityCore, research_integrity_report
 from .remaining_runtime import (
+    build_goal_responsibility_packet,
     causal_sandbox_run,
     control_panel_preview,
     dream_consolidation_propose,
     expanded_diagnostics_sweep,
     graceful_fall_run,
     goal_drive_preview,
+    goal_drive_status,
     long_horizon_stability_run,
     memory_consolidation_propose,
     memory_event_bind,
@@ -496,6 +499,7 @@ from .remaining_runtime import (
     perception_action_preview,
     pre_core_review_packets,
     prepare_night_cycle,
+    record_goal_responsibility,
     remaining_runtime_status,
     temporal_continuity_changes,
     temporal_continuity_status,
@@ -1602,6 +1606,19 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": causal_sandbox_run(conn, payload)}
     if route_key == "vessel.goal_drive.preview":
         return {"route": route_key, "result": goal_drive_preview(conn, payload)}
+    if route_key == "vessel.goal_drive.packet":
+        return {"route": route_key, "result": build_goal_responsibility_packet(payload)}
+    if route_key == "vessel.goal_drive.coordinate":
+        return {
+            "route": route_key,
+            "result": coordinate_goal_responsibilities(
+                payload.get("goals") if isinstance(payload.get("goals"), list) else []
+            ),
+        }
+    if route_key == "vessel.goal_drive.record":
+        return {"route": route_key, "result": record_goal_responsibility(conn, payload)}
+    if route_key == "vessel.goal_drive.status":
+        return {"route": route_key, "result": goal_drive_status(conn)}
     if route_key == "vessel.temporal_continuity.status":
         return {"route": route_key, "result": temporal_continuity_status(conn)}
     if route_key == "vessel.temporal_continuity.changes":

@@ -85,6 +85,11 @@ def test_maturity_ledger_distinguishes_connected_preview_and_blueprint_states(tm
     assert _item(result, "source_research")["maturity_state"] == "mature_current_scope"
     assert _item(result, "local_code")["maturity_state"] == "mature_current_scope"
     assert _item(result, "local_code")["connection_state"] == "ordinary_chat"
+    assert _item(result, "goals_initiative")["maturity_state"] == "implemented"
+    assert _item(result, "goals_initiative")["connection_state"] == "bounded_route"
+    assert _item(result, "goals_initiative")["health_state"] == (
+        "phase_8a_typed_goal_and_conflict_receipts_verified"
+    )
     assert _item(result, "perception")["maturity_state"] == "review_preview"
     assert _item(result, "audible_voice")["maturity_state"] == "blueprint"
     assert _item(result, "audible_voice")["connection_state"] == "not_connected"

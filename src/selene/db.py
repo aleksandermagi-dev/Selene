@@ -1399,6 +1399,23 @@ CREATE TABLE IF NOT EXISTS c_runtime_goal_drive_records (
   provenance_boundary TEXT NOT NULL,
   review_status TEXT NOT NULL DEFAULT 'review_only',
   payload_json TEXT NOT NULL DEFAULT '{}',
+  goal_key TEXT NOT NULL DEFAULT '',
+  owner_kind TEXT NOT NULL DEFAULT 'legacy_unspecified',
+  owner_ref TEXT NOT NULL DEFAULT '',
+  scope_kind TEXT NOT NULL DEFAULT 'legacy_preview',
+  scope_boundary TEXT NOT NULL DEFAULT '',
+  evidence_refs TEXT NOT NULL DEFAULT '[]',
+  evidence_unknowns TEXT NOT NULL DEFAULT '[]',
+  completion_conditions TEXT NOT NULL DEFAULT '[]',
+  stop_conditions TEXT NOT NULL DEFAULT '[]',
+  authority_json TEXT NOT NULL DEFAULT '{}',
+  lifecycle_state TEXT NOT NULL DEFAULT 'legacy_review_only',
+  requested_move TEXT NOT NULL DEFAULT 'wait',
+  parent_goal_id INTEGER,
+  root_goal_id INTEGER,
+  superseded_by_goal_id INTEGER,
+  idempotency_key TEXT NOT NULL DEFAULT '',
+  updated_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -2547,6 +2564,25 @@ REQUIRED_COLUMNS = {
         "usefulness_state": "TEXT NOT NULL DEFAULT 'not_assessed'",
         "usefulness_note": "TEXT NOT NULL DEFAULT ''",
     },
+    "c_runtime_goal_drive_records": {
+        "goal_key": "TEXT NOT NULL DEFAULT ''",
+        "owner_kind": "TEXT NOT NULL DEFAULT 'legacy_unspecified'",
+        "owner_ref": "TEXT NOT NULL DEFAULT ''",
+        "scope_kind": "TEXT NOT NULL DEFAULT 'legacy_preview'",
+        "scope_boundary": "TEXT NOT NULL DEFAULT ''",
+        "evidence_refs": "TEXT NOT NULL DEFAULT '[]'",
+        "evidence_unknowns": "TEXT NOT NULL DEFAULT '[]'",
+        "completion_conditions": "TEXT NOT NULL DEFAULT '[]'",
+        "stop_conditions": "TEXT NOT NULL DEFAULT '[]'",
+        "authority_json": "TEXT NOT NULL DEFAULT '{}'",
+        "lifecycle_state": "TEXT NOT NULL DEFAULT 'legacy_review_only'",
+        "requested_move": "TEXT NOT NULL DEFAULT 'wait'",
+        "parent_goal_id": "INTEGER",
+        "root_goal_id": "INTEGER",
+        "superseded_by_goal_id": "INTEGER",
+        "idempotency_key": "TEXT NOT NULL DEFAULT ''",
+        "updated_at": "TEXT",
+    },
     "vessel_emotion_salience_packets": {
         "signal_key": "TEXT",
         "session_id": "INTEGER",
@@ -2634,6 +2670,26 @@ def ensure_columns(conn: sqlite3.Connection) -> None:
         """
         CREATE INDEX IF NOT EXISTS idx_selene_lea_curriculum_concept
         ON selene_lea_runs(profile_kind, concept_id, updated_at)
+        """
+    )
+    conn.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_c_runtime_goal_drive_goal_key
+        ON c_runtime_goal_drive_records(goal_key)
+        WHERE goal_key != ''
+        """
+    )
+    conn.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_c_runtime_goal_drive_idempotency
+        ON c_runtime_goal_drive_records(idempotency_key)
+        WHERE idempotency_key != ''
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_c_runtime_goal_drive_lineage
+        ON c_runtime_goal_drive_records(root_goal_id, parent_goal_id, lifecycle_state, id)
         """
     )
 

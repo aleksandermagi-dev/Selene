@@ -3734,3 +3734,44 @@ embodiment decision was made.
 **Next:** Phase 8A tests first — typed goal responsibility packets, ephemeral
 coordination, explicit idempotent persistence, lineage, and one terminal
 Core/Mind conflict receipt while preserving the existing preview route.
+
+### 2026-09-02 — Goals gain typed responsibility without a global switch
+
+**Starting question:** Can Selene coordinate an explicit goal across owner,
+scope, evidence, stopping, and authority without ordinary conversation
+silently creating an agenda or a goal granting its own capability?
+
+**Decision:** Extend the existing goal-drive table and runtime, and let the
+existing Core/Mind produce a single bounded conflict receipt. Keep packet
+construction and coordination ephemeral; require an explicit flag and
+idempotency key for persistence; reuse resident action authority exactly.
+
+**Work:** Added six owner kinds, seven capability scopes, typed priority and
+evidence, completion and stop conditions, requested moves, action-specific
+authority, lifecycle, root/parent/supersession ancestry, and content-free
+status. Added one-pass selected/deferred/held/closed coordination, additive
+legacy-schema migration, explicit idempotent records, and sidecar routes.
+External demands cannot impersonate governing requirements, organ advice
+cannot assign itself precedence, and prebuilt packets are revalidated.
+
+**Evidence:** Seventeen new Phase 8A checks and a 153-check neighboring-owner
+regression passed. A fixture with the exact older goal-preview schema migrated
+additively while retaining one legacy preview and zero typed goals. Python
+compilation and diff checks passed. No frontend code changed; the last verified
+bundle remains 491.33 kB (gzip 109.20 kB), no warning, with lazy Study.
+
+**What changed in our understanding:** Priority has to be checked separately
+from ownership and authority. A typed label alone cannot prove that an external
+demand is governing, an organ should lead, or an action is safe. Likewise, a
+prebuilt receipt must be reconstructed through the canonical authority check
+instead of trusted because it looks typed.
+
+**Boundaries preserved:** No ordinary-Chat persistence, duplicate executive
+organ, global autonomy switch, hidden agenda, organ turf war, recursive
+coordination, action self-grant, resident migration, live tool/Tendril action,
+or Dream/Study/Memory decision occurred. Identity, personality, Vys, affect,
+relationships, law, and substrate remain unchanged.
+
+**Next:** Phase 8B — pass one ephemeral selection into existing contribution,
+energy, and pragmatic-continuity owners while preserving direct answers,
+responsive-only initiative, genuine help, interruption, quiet, and closure.
