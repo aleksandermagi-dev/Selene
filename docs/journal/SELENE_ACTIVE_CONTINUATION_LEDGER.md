@@ -2,8 +2,8 @@
 
 Last refreshed: 2026-09-02
 
-Status: Phases 0 through 7 and Phases 8A–8C complete for current scope; Phase
-8D verification and closure is next
+Status: Phases 0 through 8 complete for current scope; phase work is paused at
+the verified Phase 8 boundary and Phase 9 has not started
 
 ## Purpose
 
@@ -36,9 +36,12 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Mature typed goal coordination`)
 - Latest Phase 8B checkpoint: `f8b4b16`
   (`Connect bounded responsive initiative`)
-- Phase 8C implementation and evidence are the current uncommitted checkpoint.
-- Current remote relation before the Phase 8C commit: nine local commits ahead
-  of `origin/evidence`
+- Latest Phase 8C checkpoint: `d0ca6fb`
+  (`Mature explicit commitment lifecycle`)
+- Latest Phase 8D and Phase 8 closure checkpoint: `3cb2a8c`
+  (`Close executive initiative maturation`)
+- Current remote relation after this ledger checkpoint: twelve local commits
+  ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -48,9 +51,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
   - Phase 6D and Phase 6 closure: `28abf57`
-- Expected tracked worktree before the Phase 8C commit: commitment lifecycle,
-  database schema, routes, maturity ledger, tests, evidence, current status,
-  Phase 8 map, journal, and this ledger are modified
+- Expected tracked worktree after this ledger-only continuation checkpoint:
+  clean
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
 
@@ -185,7 +187,7 @@ git log -5 --oneline
   - no Vite size warning
   - Study workspaces remain lazy-loaded
 
-## Completed Phase 7 and Current Phase 8 Edge
+## Completed Phases 7 and 8
 
 - Phase 7 implementation map:
   `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md`
@@ -223,9 +225,9 @@ git log -5 --oneline
   learned-substrate decision boundary.
 - Closure state is `deterministic_scope_sufficient_for_current_gate`; no
   provider, model download, training, LoRA, or substrate change is authorized.
-- Phase 8 source mapping is next: goals, initiative, commitments,
-  collaboration, help-seeking, Core/Mind coordination, action boundaries, and
-  stopping.
+- At Phase 7 closure, Phase 8 source mapping covered goals, initiative,
+  commitments, collaboration, help-seeking, Core/Mind coordination, action
+  boundaries, and stopping.
 - Phase 8 source mapping found the smallest implementation order: 8A typed
   goal ownership and Core/Mind conflict receipts; 8B responsive initiative,
   collaboration, help, silence, and ending coordination; 8C commitment
@@ -233,7 +235,7 @@ git log -5 --oneline
   closure.
 - The existing owners remain canonical: goal drive in `remaining_runtime.py`,
   responsive contribution/energy, commitment anomaly coordination, Core/Mind,
-  resident authority, and Tendril. No duplicate executive organ is planned.
+  resident authority, and Tendril. No duplicate executive organ was created.
 - No new organ, hidden Memory, source persona, recursive generator, provider,
   or automatic learned substrate is authorized.
 - Phase 8 implementation map:
@@ -279,6 +281,24 @@ git log -5 --oneline
   state or action grant exists.
 - Twelve direct Phase 8C, 33 focused commitment/maturity, and 118 broader
   owner/runtime/route checks passed. All writes were disposable.
+- Phase 8D closure evidence:
+  `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md`
+- One disposable walkthrough considered all six goal-owner kinds in one
+  bounded pass, selected the attributable governing responsibility, preserved
+  priority downgrades, and moved one shared goal commitment through accepted,
+  in-progress, fulfilled, and terminal stopping with result evidence.
+- The focused Phase 8 matrix passed 210 checks. The full repository regression
+  passed 2,080 tests in 1,229.92 seconds.
+- Frontend production build passed at 491.33 kB (gzip 109.19 kB), without a
+  Vite size warning; Study workspaces remain lazy-loaded.
+- Resident URI read-only/query-only inspection reported integrity `ok`; the
+  SHA-256 remained
+  `0F3D16B53315A7FA0DC627B2BBE36F3D9D11EF7CF837405740E28DBDD2A4593C`.
+  No resident commitment table was created, and all 24 Dream reflections
+  remain pending Aleks review.
+- The maturity ledger marks goals/initiative `mature_current_scope`, records
+  `phase_8_completion_gate_verified`, and points to Phase 9 only as the future
+  phase. Phase 9 work is not started.
 
 ## Phase 7 Mapping Evidence
 
@@ -406,6 +426,7 @@ Before Phase 8 mapping or production work, read completely:
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8A_GOAL_COORDINATION_20260902.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8B_RESPONSIVE_INITIATIVE_20260902.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8C_COMMITMENT_GRADUATION_20260902.md`
+- `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -420,12 +441,12 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Phases 8A through 8C are green and documented. Begin 8D with the complete
-focused Phase 8 matrix and one gentle disposable typed-goal -> accepted ->
-in-progress -> fulfilled walkthrough. Then recheck resident integrity and
-counts read-only, run the complete repository regression, compile Python, and
-build the frontend. Record bundle size and lazy Study chunks before marking
-Phase 8 mature for current scope and advancing the ledger to Phase 9.
+Phase 8 is complete for current scope and phase work is paused. Do not begin
+Phase 9 without Aleks explicitly resuming it. The next action after this
+checkpoint is the separately requested dependency/Q&A maintenance decision,
+or another task Aleks names. If Phase 9 is later resumed, begin with source
+mapping only; do not infer sensor, microphone, camera, audible Voice, network,
+external-action, or embodiment authority.
 
 Do not create an unrestricted autonomy switch, hidden agenda, organ turf war,
 silent commitment loss, external action authority, identity/personality/Vys
