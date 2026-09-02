@@ -3699,3 +3699,38 @@ teaching review remain Aleks's decisions.
 commitments, collaboration, help-seeking, Core/Mind coordination, action
 boundaries, and stopping before proposing the smallest capability-specific
 graduation plan.
+
+### 2026-09-02 — Executive initiative is mapped to existing owners
+
+**Starting question:** What is the smallest way to mature goals, initiative,
+commitments, collaboration, help-seeking, and stopping without creating a
+duplicate executive organ or turning autonomy into one global switch?
+
+**Decision:** Keep the existing goal-drive, conversational contribution and
+energy, commitment, Core/Mind, resident-authority, Study, and Tendril owners.
+Add typed cross-owner receipts and graduate each capability separately.
+
+**Mapping:** Phase 8A gives explicit goals owner, scope, priority, evidence,
+stop, action-specific authority, lifecycle, lineage, and idempotency, plus one
+bounded Core/Mind conflict receipt. Phase 8B carries that receipt into one
+responsive current-turn contribution with genuine help-seeking, quiet, and
+natural closure. Phase 8C adds explicit commitment lineage and separate
+conversation, Study, Memory-proposal, tool, Tendril, and embodiment graduation
+receipts. Phase 8D verifies conflicts, interruption, help, commitments,
+duplicate lineage, and stopping synthetically before closure.
+
+**Evidence:** A focused pre-edit baseline passed 158 checks. Read-only resident
+inspection reported SQLite integrity `ok`, two goal-drive previews, one
+Tendril preview, 18 Chat sessions, 308 messages, 113 NLO runs, 16 Voice runs,
+zero LEA runs, zero personal Memory candidates, and 24 pending Dream
+reflections.
+
+**Boundaries preserved:** Source mapping made no production or resident change.
+Ordinary Chat cannot silently persist a goal. A goal does not grant its
+capability. Safety remains action-specific. No Dream, Study, Memory, teaching,
+identity, personality, Vys, relationship, tool, Tendril, external-action, or
+embodiment decision was made.
+
+**Next:** Phase 8A tests first — typed goal responsibility packets, ephemeral
+coordination, explicit idempotent persistence, lineage, and one terminal
+Core/Mind conflict receipt while preserving the existing preview route.

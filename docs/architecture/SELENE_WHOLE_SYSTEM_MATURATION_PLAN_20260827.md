@@ -862,9 +862,10 @@ These do not wait for one final cleanup phase.
 
 ## Immediate Starting Point
 
-Phases 0 through 7 are complete for current scope. The next production edge is
-Phase 8 source mapping: bounded executive initiative, goals, commitments, and
-collaboration without an unrestricted autonomy switch. F2 Group 8
+Phases 0 through 7 are complete for current scope. Phase 8 is source-mapped in
+the [Phase 8 implementation map](SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md);
+the next production edge is Phase 8A typed goal lifecycle and bounded
+Core/Mind conflict receipts, without an unrestricted autonomy switch. F2 Group 8
 remains
 unprepared and unauthorized until an exact Grade 4-6 source artifact and
 license are selected and explicitly approved by Aleks.

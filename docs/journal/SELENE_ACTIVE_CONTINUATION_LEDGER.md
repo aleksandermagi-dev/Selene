@@ -2,8 +2,8 @@
 
 Last refreshed: 2026-09-02
 
-Status: Phases 0 through 7 complete for current scope; resume at Phase 8
-executive initiative source mapping
+Status: Phases 0 through 7 complete for current scope; Phase 8 is source-mapped
+and Phase 8A typed goal lifecycle is the next production edge
 
 ## Purpose
 
@@ -28,9 +28,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Mature bounded long-form discourse`)
 - Latest Phase 7C checkpoint: `b44f4d9`
   (`Mature bounded conversational breadth`)
-- Phase 7D closure is the current staged implementation edge; confirm its hash
-  from Git after commit (`Close descriptive text conversation phase`).
-- Expected remote relation after the Phase 7D commit: six local
+- Latest Phase 7D and Phase 7 closure checkpoint: `542d2ec`
+  (`Close descriptive text conversation phase`)
+- Expected remote relation before this ledger refresh: six local
   commits ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
@@ -41,7 +41,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
   - Phase 6D and Phase 6 closure: `28abf57`
-- Expected tracked worktree after the continuation-ledger refresh: clean
+- Expected tracked worktree before the Phase 8 map checkpoint: the Phase 8
+  map, status, maturation plan, journal, and this ledger are modified
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
 
@@ -217,8 +218,18 @@ git log -5 --oneline
 - Phase 8 source mapping is next: goals, initiative, commitments,
   collaboration, help-seeking, Core/Mind coordination, action boundaries, and
   stopping.
+- Phase 8 source mapping found the smallest implementation order: 8A typed
+  goal ownership and Core/Mind conflict receipts; 8B responsive initiative,
+  collaboration, help, silence, and ending coordination; 8C commitment
+  lifecycle and capability-specific graduation receipts; 8D verification and
+  closure.
+- The existing owners remain canonical: goal drive in `remaining_runtime.py`,
+  responsive contribution/energy, commitment anomaly coordination, Core/Mind,
+  resident authority, and Tendril. No duplicate executive organ is planned.
 - No new organ, hidden Memory, source persona, recursive generator, provider,
   or automatic learned substrate is authorized.
+- Phase 8 implementation map:
+  `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md`
 
 ## Phase 7 Mapping Evidence
 
@@ -335,6 +346,7 @@ Before Phase 8 mapping or production work, read completely:
 - `docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md`
+- `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md`
@@ -356,12 +368,13 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Begin Phase 8 with source mapping only. Trace existing goal and drive previews,
-conversation initiative, commitment anomaly coordination, collaboration and
-help-seeking, Core/Mind responsibility resolution, tool/Tendril action
-boundaries, governing requirements, and natural stopping against the Phase 8
-completion gate. Briefly record the smallest typed contract and graduation
-order before editing.
+The Phase 8 implementation map is written from the completed source map and
+records the 158-test baseline and read-only resident evidence. Begin 8A with
+focused red tests for typed goal responsibility packets, ephemeral current-
+turn coordination, explicit idempotent persistence, ancestry, and one bounded
+Core/Mind responsibility-conflict receipt. Preserve existing
+`goal_drive_preview` behavior and do not integrate Chat until the 8A contract
+is green and inspectable.
 
 Do not create an unrestricted autonomy switch, hidden agenda, organ turf war,
 silent commitment loss, external action authority, identity/personality/Vys
