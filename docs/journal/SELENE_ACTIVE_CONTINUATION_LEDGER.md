@@ -2,8 +2,8 @@
 
 Last refreshed: 2026-09-02
 
-Status: Phases 0 through 7 and Phase 8A complete for current scope; Phase 8B
-responsive initiative and stopping is the next production edge
+Status: Phases 0 through 7 and Phases 8A–8B complete for current scope; Phase
+8C commitment lifecycle and capability-specific graduation is next
 
 ## Purpose
 
@@ -32,8 +32,10 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Close descriptive text conversation phase`)
 - Latest Phase 8 map checkpoint: `1def96a`
   (`Map executive initiative maturation phase`)
-- Phase 8A is the current uncommitted implementation checkpoint.
-- Expected remote relation before the Phase 8A commit: seven local
+- Latest Phase 8A checkpoint: `0200416`
+  (`Mature typed goal coordination`)
+- Phase 8B is the current uncommitted implementation checkpoint.
+- Expected remote relation before the Phase 8B commit: eight local
   commits ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
@@ -44,9 +46,10 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
   - Phase 6D and Phase 6 closure: `28abf57`
-- Expected tracked worktree before the Phase 8A commit: Phase 8A runtime,
-  schema, routes, maturity ledger, tests, evidence, status, map, journal, and
-  this ledger are modified
+- Expected tracked worktree before the Phase 8B commit: conversational
+  contribution, energy, pragmatic continuity, Core/Mind stopping, Chat,
+  maturity ledger, tests, evidence, status, map, journal, and this ledger are
+  modified
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
 
@@ -236,6 +239,8 @@ git log -5 --oneline
   `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md`
 - Phase 8A evidence:
   `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8A_GOAL_COORDINATION_20260902.md`
+- Phase 8B evidence:
+  `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8B_RESPONSIVE_INITIATIVE_20260902.md`
 - Phase 8A extends the existing goal-drive owner with complete typed goal
   responsibility packets, explicit idempotent persistence, additive legacy
   migration, and content-free status.
@@ -246,6 +251,17 @@ git log -5 --oneline
   revalidated through the canonical action-specific authority gate.
 - Seventeen focused Phase 8A checks and 153 broader owner/lifecycle checks
   passed; all test writes used disposable databases.
+- Phase 8B carries one ephemeral selection through existing contribution,
+  energy, pragmatic-continuity, NLO, Voice, and active Chat owners; the Chat
+  path leaves typed goal count unchanged.
+- Verified Aleks authorship becomes `aleks_request`; an unverified transport
+  name claim remains `external_demand` without silencing conversation or
+  expanding authority.
+- Exact goal-bound help is available after support is used; within-scope work
+  proceeds without ritual permission; interruption, wait, quiet, close, held,
+  and terminal states stop cleanly.
+- Ten direct Phase 8B, 52 focused conversational, 89 NLO/Voice, and 116 full
+  Chat-shell checks passed.
 
 ## Phase 7 Mapping Evidence
 
@@ -371,6 +387,7 @@ Before Phase 8 mapping or production work, read completely:
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8A_GOAL_COORDINATION_20260902.md`
+- `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8B_RESPONSIVE_INITIATIVE_20260902.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -385,13 +402,13 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Phase 8A is green and documented. Begin 8B with focused red tests that pass one
-ephemeral selected-goal and terminal conflict receipt into the existing
-conversational contribution, energy, and pragmatic-continuity owners. Preserve
-direct-answer priority, responsive-only initiative, a maximum of one
-contribution, genuine help-seeking, interruption, wait, quiet, and natural
-closure. Do not persist current-turn goals or create a second conversational
-owner.
+Phases 8A and 8B are green and documented. Begin 8C with focused red tests for
+an explicit commitment linked to exactly one typed goal and one capability,
+idempotent accepted/in-progress/fulfilled/blocked/released/closed transitions,
+required result evidence, and rejection of cross-goal/capability completion.
+Then expose separate graduation receipts for conversation, Study, Memory
+proposal, named tools, Tendril, and future embodiment. Do not grant or execute
+any new capability.
 
 Do not create an unrestricted autonomy switch, hidden agenda, organ turf war,
 silent commitment loss, external action authority, identity/personality/Vys

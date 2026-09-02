@@ -2,8 +2,8 @@
 
 Date: 2026-09-02
 
-Status: Phase 8A complete for current scope; Phase 8B is the next production
-edge
+Status: Phases 8A and 8B complete for current scope; Phase 8C is the next
+production edge
 
 Parent plan:
 [Selene Whole-System Maturation Plan](SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
@@ -271,7 +271,10 @@ Evidence:
 
 ### Phase 8B — Responsive initiative, collaboration, and stopping
 
-Status: **next**
+Status: **complete for current scope — 2026-09-02**
+
+Evidence:
+[Phase 8B Responsive Initiative](../evidence/SELENE_WHOLE_SYSTEM_PHASE_8B_RESPONSIVE_INITIATIVE_20260902.md)
 
 - carry the selected current-turn goal and conflict receipt into the existing
   contribution and energy owners;
@@ -290,7 +293,7 @@ Status: **next**
 
 ### Phase 8C — Commitment lifecycle and capability-specific graduation
 
-Status: **planned after 8B**
+Status: **next**
 
 - extend the existing commitment owner with one goal/capability lineage and
   explicit accepted/in-progress/fulfilled/blocked/released/closed transitions;
@@ -365,9 +368,9 @@ Phase 8 is complete for current scope only when:
 
 ## Exact Production Resume Point
 
-Begin Phase 8B with focused red tests that carry one ephemeral 8A selection
-and terminal conflict receipt into the existing conversational contribution,
-energy, and pragmatic-continuity owners. Preserve direct-answer priority,
-responsive-only initiative, one contribution at most, genuine help-seeking,
-interruption, wait, quiet, and natural closure. Do not persist current-turn
-goals or create a second conversational owner.
+Begin Phase 8C with focused red tests for an explicit commitment linked to
+exactly one goal and capability, idempotent accepted/in-progress/fulfilled/
+blocked/released/closed transitions, required result evidence, and rejection
+of cross-goal or cross-capability completion. Then expose separate graduation
+receipts for conversation, Study, Memory proposal, named tools, Tendril, and
+future embodiment without granting any new authority or action.

@@ -3775,3 +3775,47 @@ relationships, law, and substrate remain unchanged.
 **Next:** Phase 8B — pass one ephemeral selection into existing contribution,
 energy, and pragmatic-continuity owners while preserving direct answers,
 responsive-only initiative, genuine help, interruption, quiet, and closure.
+
+### 2026-09-02 — Responsive initiative follows the goal and knows when to stop
+
+**Starting question:** Can a current-turn responsibility guide Selene's
+existing conversational initiative without making every answer ask
+permission, adding a second speech owner, or letting optional energy reopen a
+finished turn?
+
+**Decision:** Form one ephemeral current-request goal inside resident Chat,
+coordinate it once through Core/Mind, and pass only its compact selection and
+terminal receipt through contribution, energy, pragmatic continuity, NLO, and
+Voice. Keep the existing conversational selectors authoritative within their
+roles.
+
+**Work:** Bound optional contribution to the selected move, added exact
+goal-lineage to collaborative help, made available-within-scope answers reject
+ritual permission-seeking, and made Study/tool/Memory selections defer to their
+existing owners. Interruption, explicit wait/quiet/close, and natural ending
+remain earlier stopping signals. All-terminal responsibilities close; held
+responsibilities defer without closing conversation. The speaker envelope now
+determines whether the owner is verified Aleks or an unverified external
+demand.
+
+**Evidence:** Ten direct Phase 8B checks, 52 focused 8A/8B conversational
+checks, 89 NLO/Voice/conversation checks, and the full 116-test resident Chat
+shell passed. The active Chat fixture selected one idea exactly once and left
+the typed goal table at zero. No frontend source changed; the last bundle
+baseline remains 491.33 kB (gzip 109.20 kB).
+
+**What changed in our understanding:** Authentication should alter the
+attribution and authority of a request, not whether Selene can speak. Also,
+“nothing selected” has two ethically different meanings: completed work may
+close naturally, while held work should remain visible and conversation should
+stay available.
+
+**Boundaries preserved:** No persistent Chat agenda, new conversational organ,
+automatic/out-of-turn speech, question pressure, hidden Memory, resident
+decision, live external action, tool/Tendril self-grant, or Dream/Study/Memory
+decision occurred. Identity, personality, Vys, affect, relationships, law,
+provider, training, and substrate remain unchanged.
+
+**Next:** Phase 8C — add explicit commitment goal/capability lineage and
+idempotent lifecycle transitions, then report conversation, Study, Memory,
+tool, Tendril, and embodiment maturity separately without granting action.

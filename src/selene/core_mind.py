@@ -156,6 +156,16 @@ def coordinate_goal_responsibilities(
                 }
             )
             continue
+        if lifecycle == "held":
+            held.append(
+                {
+                    "goal_key": packet["goal_key"],
+                    "reason": "lifecycle_is_held",
+                    "restricted_scope": packet["scope"]["boundary"],
+                    "conversation_may_continue": True,
+                }
+            )
+            continue
         authority = packet.get("authority") if isinstance(packet.get("authority"), dict) else {}
         if authority.get("state") == "held_for_specific_action":
             held.append(
@@ -199,7 +209,15 @@ def coordinate_goal_responsibilities(
         }
         for _, _, packet in eligible[1:]
     ]
-    stop_reason = "one_responsibility_selected" if selected else "all_responsibilities_held_or_terminal"
+    stop_reason = (
+        "one_responsibility_selected"
+        if selected
+        else "all_responsibilities_held_or_terminal"
+        if held and closed
+        else "all_responsibilities_held"
+        if held
+        else "all_responsibilities_terminal"
+    )
     collaboration_required = bool(
         selected
         and (

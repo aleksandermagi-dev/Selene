@@ -35,7 +35,7 @@ from .comprehension_integration import (
     retrieve_approved_expression_guidance,
 )
 from .c_vessel import return_to_b_preview
-from .core_mind import create_core_mind_route_preview
+from .core_mind import create_core_mind_route_preview, coordinate_goal_responsibilities
 from .conversation_repair import repair_conversation_candidate
 from .commitment_anomaly_coordination import inspect_visible_commitment_claim
 from .conversational_contribution import build_conversational_contribution_packet
@@ -97,6 +97,7 @@ from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
 from .resident_authority import attach_resident_capability_contract
 from .relational_context import interpret_relational_context
+from .remaining_runtime import build_goal_responsibility_packet
 from .self_state import build_self_state_packet, inactive_self_state_packet
 from .speaker_envelope import build_speaker_envelope
 from .selective_formation_braid import build_selective_formation_braid
@@ -1411,9 +1412,19 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "visible_speech_seed": visible_speech_seed,
         }
     )
+    goal_coordination = _current_turn_goal_coordination(
+        meaning_text,
+        session_id=session_id,
+        speaker_envelope=speaker_envelope,
+        route=route,
+        intent_decision=intent_decision,
+        payload=payload,
+        hard_boundary=bool(hard_blockers),
+    )
     local_continuity_supported = bool(continuity_reply)
     conversational_contribution = build_conversational_contribution_packet(
         {
+            "goal_coordination_receipt": goal_coordination,
             "content_seed": content_seed,
             "answer_available": bool(content_seed),
             "social_turn": intent_decision.get("social_turn") is True,
@@ -1807,6 +1818,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "answer_operations": answer_operations,
         "conversational_energy": conversational_energy,
         "conversational_contribution": conversational_contribution,
+        "goal_coordination": goal_coordination,
         "response_coverage": response_coverage,
         "expression_confidence": voice_preview.get("voice_confidence") or "not_assessed",
         "diagnostic_context": diagnostic_context,
@@ -2240,6 +2252,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "pragmatic_continuity": pragmatic_continuity,
         "conversational_energy": conversational_energy,
         "conversational_contribution": conversational_contribution,
+        "goal_coordination": goal_coordination,
         "native_language_organ": native_language,
         "dry_run_comparison": dry_run,
         "voice_preview": voice_preview,
@@ -2371,6 +2384,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "answer_operations": answer_operations,
             "conversational_energy": conversational_energy,
             "conversational_contribution": conversational_contribution,
+            "goal_coordination": goal_coordination,
             "self_state": self_state,
             "affect_expression": affect_expression,
             "relational_context": relational_context,
@@ -3558,6 +3572,114 @@ def _b_only_material_requested(text: str) -> bool:
     return any(marker in lower for marker in B_ONLY_STATUS_MARKERS) and any(marker in lower for marker in B_ONLY_OBJECT_MARKERS)
 
 
+def _current_turn_goal_coordination(
+    text: str,
+    *,
+    session_id: int,
+    speaker_envelope: dict[str, Any],
+    route: dict[str, Any],
+    intent_decision: dict[str, Any],
+    payload: dict[str, Any],
+    hard_boundary: bool,
+) -> dict[str, Any]:
+    supplied_energy = (
+        payload.get("conversational_energy")
+        if isinstance(payload.get("conversational_energy"), dict)
+        else {}
+    )
+    collaboration = (
+        payload.get("collaboration_context")
+        if isinstance(payload.get("collaboration_context"), dict)
+        else {}
+    )
+    supplied_help = (
+        supplied_energy.get("collaborative_help")
+        if isinstance(supplied_energy.get("collaborative_help"), dict)
+        else payload.get("collaborative_help")
+        if isinstance(payload.get("collaborative_help"), dict)
+        else collaboration.get("help_request")
+        if isinstance(collaboration.get("help_request"), dict)
+        else {}
+    )
+    requested_posture = str(
+        supplied_energy.get("requested_posture")
+        or collaboration.get("requested_posture")
+        or ""
+    ).strip().lower()
+    intent_name = str(intent_decision.get("intent") or "")
+    selected_route = str(route.get("selected_route") or "")
+    if requested_posture in {"close", "quiet", "wait"}:
+        requested_move = requested_posture
+    elif intent_name == "farewell":
+        requested_move = "close"
+    elif selected_route == "ask" or supplied_help:
+        requested_move = "ask"
+    else:
+        requested_move = "answer"
+
+    claimed_speaker = str(speaker_envelope.get("claimed_speaker") or "unknown")
+    verified_aleks = bool(
+        claimed_speaker.casefold() == "aleks"
+        and speaker_envelope.get("claimed_identity_is_proven_identity") is True
+    )
+    owner_kind = "aleks_request" if verified_aleks else "external_demand"
+    assessment = (
+        route.get("resident_authority_assessment")
+        if isinstance(route.get("resident_authority_assessment"), dict)
+        else {}
+    )
+    action_decisions = (
+        assessment.get("decisions")
+        if isinstance(assessment.get("decisions"), list)
+        else []
+    )
+    packet = build_goal_responsibility_packet(
+        {
+            "goal_key": f"chat-turn:{session_id}:current-request",
+            "goal_summary": truncate(text, 1000),
+            "owner_kind": owner_kind,
+            "owner_ref": (
+                f"speaker:{claimed_speaker}|channel:{speaker_envelope.get('channel') or 'unknown'}|"
+                f"authentication:{speaker_envelope.get('authentication_strength') or 'unverified'}"
+            ),
+            "capability": "conversation",
+            "scope_boundary": "one_requested_resident_chat_turn",
+            "priority_band": "current_request",
+            "priority_reason": "This is the attributable current conversation turn.",
+            "source_refs": [f"selene_chat_session:{session_id}:current_turn"],
+            "unknowns": (
+                []
+                if verified_aleks
+                else ["claimed speaker is not cryptographically verified as Aleks"]
+            ),
+            "completion_conditions": [
+                "the current answer obligation is fulfilled or its blocker is reported"
+            ],
+            "stop_conditions": [
+                "completion, interruption, explicit wait, quiet, close, or action-specific hold"
+            ],
+            "requested_move": requested_move,
+            "requested_actions": [
+                {
+                    "action": item.get("action"),
+                    "target": item.get("target"),
+                    "lexical_evidence": item.get("lexical_evidence"),
+                }
+                for item in action_decisions
+                if isinstance(item, dict)
+            ],
+            "safety_context": (
+                payload.get("safety_context")
+                if isinstance(payload.get("safety_context"), dict)
+                else {}
+            ),
+            "target_refs": ["current_resident_chat_response"],
+            "lifecycle_state": "held" if hard_boundary else "active",
+        }
+    )
+    return coordinate_goal_responsibilities([packet])
+
+
 def _conversational_energy_input(
     chat_payload: dict[str, Any],
     *,
@@ -3588,6 +3710,11 @@ def _conversational_energy_input(
     contribution_handoff = (
         contribution.get("energy_handoff")
         if isinstance(contribution.get("energy_handoff"), dict)
+        else {}
+    )
+    goal_handoff = (
+        contribution_handoff.get("goal_coordination_handoff")
+        if isinstance(contribution_handoff.get("goal_coordination_handoff"), dict)
         else {}
     )
     help_request = (
@@ -3636,6 +3763,7 @@ def _conversational_energy_input(
     if help_request:
         help_request = {
             **help_request,
+            "goal_key": str(help_request.get("goal_key") or goal_handoff.get("goal_key") or ""),
             "task_active": help_request.get("task_active") is True
             or collaboration.get("task_active") is True,
             "available_support_used": support_used,
@@ -3659,6 +3787,7 @@ def _conversational_energy_input(
         }
     return {
         **supplied,
+        "goal_coordination_handoff": goal_handoff,
         "answer_available": bool(str(content_seed or "").strip()),
         "social_turn": intent_decision.get("social_turn") is True,
         "hard_boundary": hard_boundary,

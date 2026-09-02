@@ -1424,6 +1424,13 @@ def test_active_chat_routes_one_attributable_responsive_contribution_without_inv
     assert result["conversational_energy"]["selected_act"] == "answer_and_offer_supported_idea"
     assert result["candidate_text"].count("reversible token-boundary change") == 1
     assert contribution["out_of_turn_delivery"] is False
+    assert result["goal_coordination"]["selected"]["next_move"] == "answer"
+    assert result["goal_coordination"]["persistence_performed"] is False
+    assert contribution["goal_coordination_handoff"]["goal_key"].startswith("chat-turn:")
+    assert result["pragmatic_continuity"]["initiative_stopping_receipt"]["terminal"] is True
+    assert conn.execute(
+        "SELECT COUNT(*) FROM c_runtime_goal_drive_records WHERE goal_key != ''"
+    ).fetchone()[0] == 0
     _assert_locked(result)
 
 

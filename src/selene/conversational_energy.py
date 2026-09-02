@@ -10,6 +10,7 @@ CONVERSATIONAL_ENERGY_BOUNDARY = (
     "responsive_current_turn_curiosity_initiative_and_collaborative_help_only_"
     "no_automatic_speech_action_permission_pressure_cocoon_routing_or_authority_expansion"
 )
+RESPONSIVE_INITIATIVE_VERSION = "v2_phase8b_goal_bound_current_turn_energy"
 
 CONTRIBUTION_KINDS = {
     "missing_observation",
@@ -41,7 +42,7 @@ def conversational_energy_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "conversational_energy_contract_ready",
-            "version": "v1_bounded_current_turn_energy",
+            "version": RESPONSIVE_INITIATIVE_VERSION,
             "available_acts": [
                 "answer_and_land",
                 "answer_and_offer_supported_idea",
@@ -75,8 +76,65 @@ def conversational_energy_status() -> dict[str, Any]:
     )
 
 
+def normalize_goal_coordination_handoff(value: Any) -> dict[str, Any]:
+    receipt = _dict(value)
+    if not receipt:
+        return {
+            "present": False,
+            "valid": True,
+            "goal_key": "",
+            "next_move": "",
+            "capability": "",
+            "authority_state": "",
+            "downstream_check_required": False,
+            "conflict_stop_reason": "not_supplied",
+            "persistence_performed": False,
+            "execution_performed": False,
+            "whole_system_authority_granted": False,
+        }
+    if "present" in receipt and "goal_key" in receipt:
+        normalized = dict(receipt)
+        normalized["persistence_performed"] = False
+        normalized["execution_performed"] = False
+        normalized["whole_system_authority_granted"] = False
+        return normalized
+
+    selected = _dict(receipt.get("selected"))
+    stopping = _dict(receipt.get("stopping_receipt"))
+    valid = bool(
+        receipt.get("status") == "core_mind_responsibility_conflict_resolved"
+        and receipt.get("pass_count") == 1
+        and stopping.get("terminal") is True
+        and stopping.get("further_coordination_allowed") is False
+        and receipt.get("persistence_performed") is False
+        and receipt.get("execution_performed") is False
+        and receipt.get("whole_system_authority_granted") is False
+    )
+    return {
+        "present": True,
+        "valid": valid,
+        "goal_key": str(selected.get("goal_key") or ""),
+        "owner_kind": str(selected.get("owner_kind") or ""),
+        "next_move": str(selected.get("next_move") or ""),
+        "capability": str(selected.get("capability") or ""),
+        "authority_state": str(selected.get("authority_state") or ""),
+        "downstream_check_required": selected.get("downstream_check_required") is True,
+        "collaboration_required": receipt.get("collaboration_required") is True,
+        "conflict_stop_reason": str(stopping.get("reason") or "invalid_or_missing_stop"),
+        "terminal_goal_count": len(receipt.get("closed") or []),
+        "held_goal_count": len(receipt.get("held") or []),
+        "deferred_goal_count": len(receipt.get("deferred") or []),
+        "persistence_performed": False,
+        "execution_performed": False,
+        "whole_system_authority_granted": False,
+    }
+
+
 def build_conversational_energy_plan(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
+    goal_handoff = normalize_goal_coordination_handoff(
+        payload.get("goal_coordination_receipt") or payload.get("goal_coordination_handoff")
+    )
     ending = _dict(payload.get("ending_decision"))
     initiative = _dict(payload.get("initiative_decision"))
     idea = _normalize_optional_signal(payload.get("supported_idea"), kind="idea")
@@ -102,6 +160,26 @@ def build_conversational_energy_plan(payload: dict[str, Any] | None = None) -> d
     )
     curiosity_ready, curiosity_reason = _curiosity_ready(curiosity, social_turn=social_turn)
 
+    goal_move = str(goal_handoff.get("next_move") or "")
+    goal_key = str(goal_handoff.get("goal_key") or "")
+    if goal_handoff["present"] and goal_handoff["valid"]:
+        if help_request and goal_move == "answer" and goal_handoff["authority_state"] == "available_within_scope":
+            help_ready = False
+            help_reason = "selected_goal_is_already_available_within_scope"
+        elif help_request and goal_move == "ask" and help_request.get("goal_key") != goal_key:
+            help_ready = False
+            help_reason = "collaborative_help_goal_lineage_does_not_match_selection"
+        elif help_request and goal_move != "ask":
+            help_ready = False
+            help_reason = "selected_goal_does_not_request_collaborative_help"
+        if goal_move not in {"answer", "suggest", "explore"}:
+            if idea:
+                idea_ready, idea_reason = False, "selected_goal_move_does_not_admit_optional_idea"
+            if connection:
+                connection_ready, connection_reason = False, "selected_goal_move_does_not_admit_optional_connection"
+            if curiosity:
+                curiosity_ready, curiosity_reason = False, "selected_goal_move_does_not_admit_optional_curiosity"
+
     for label, supplied, ready, reason in (
         ("collaborative_help", bool(help_request), help_ready, help_reason),
         ("supported_idea", bool(idea), idea_ready, idea_reason),
@@ -120,6 +198,31 @@ def build_conversational_energy_plan(payload: dict[str, Any] | None = None) -> d
         decision = _decision("wait_and_listen", "The current turn asks for a pause or listening posture.")
     elif requested_posture == "quiet":
         decision = _decision("stay_quiet", "Silence is the requested and sufficient response posture.")
+    elif goal_handoff["present"] and not goal_handoff["valid"]:
+        decision = _decision("defer_to_core_mind", "The goal coordination receipt is incomplete or invalid.")
+    elif goal_handoff["present"] and not goal_key:
+        decision = _decision(
+            "close_naturally" if goal_handoff["conflict_stop_reason"] == "all_responsibilities_terminal" else "defer_to_core_mind",
+            "All coordinated responsibilities are terminal."
+            if goal_handoff["conflict_stop_reason"] == "all_responsibilities_terminal"
+            else "The current responsibility is held or no conversational move is available.",
+        )
+    elif goal_move == "close":
+        decision = _decision("close_naturally", "The selected current-turn responsibility is complete and requests closure.")
+    elif goal_move == "wait":
+        decision = _decision("wait_and_listen", "The selected current-turn responsibility requests waiting.")
+    elif goal_move == "quiet":
+        decision = _decision("stay_quiet", "The selected current-turn responsibility requests quiet.")
+    elif goal_move in {"study", "tool", "remember_proposal"}:
+        decision = _decision(
+            "defer_to_core_mind",
+            "The selected move belongs to its existing downstream owner and still requires that owner's authority.",
+        )
+    elif goal_move == "ask" and not help_ready and ending_mode != "ask_one_material_question":
+        decision = _decision(
+            "defer_to_core_mind",
+            "The selected ask lacks an exact goal-bound missing contribution.",
+        )
     elif ending_mode == "ask_one_material_question":
         decision = _decision(
             "ask_one_material_question",
@@ -138,6 +241,7 @@ def build_conversational_energy_plan(payload: dict[str, Any] | None = None) -> d
             question_allowed=True,
             expression_handoff={
                 "kind": "collaborative_help",
+                "goal_key": goal_key,
                 "text": help_request["request"],
                 "why_it_matters": help_request["why_it_matters"],
                 "contribution_kind": help_request["contribution_kind"],
@@ -191,7 +295,7 @@ def build_conversational_energy_plan(payload: dict[str, Any] | None = None) -> d
     return _with_guards(
         {
             "status": "conversational_energy_plan_ready",
-            "version": "v1_bounded_current_turn_energy",
+            "version": RESPONSIVE_INITIATIVE_VERSION,
             **decision,
             "answer_available": answer_available,
             "answer_complete": answer_complete,
@@ -214,6 +318,12 @@ def build_conversational_energy_plan(payload: dict[str, Any] | None = None) -> d
                 "received_contribution_kind": str(help_response.get("contribution_kind") or ""),
                 "prior_request": str(help_response.get("prior_request") or ""),
                 "incorporate_current_turn_and_resume": bool(help_response),
+                "goal_key": str(help_request.get("goal_key") or ""),
+                "goal_lineage_matches": bool(
+                    help_request
+                    and goal_key
+                    and help_request.get("goal_key") == goal_key
+                ),
             },
             "initiative_contract": {
                 "supported": idea_ready or connection_ready,
@@ -229,6 +339,16 @@ def build_conversational_energy_plan(payload: dict[str, Any] | None = None) -> d
             "writes_records": False,
             "visible_summary_only": True,
             "hidden_chain_of_thought_exposed": False,
+            "goal_coordination_handoff": goal_handoff,
+            "goal_persistence_performed": False,
+            "execution_performed": False,
+            "initiative_recursion_allowed": False,
+            "initiative_stopping_receipt": {
+                "terminal": True,
+                "reason": selected,
+                "additional_contribution_allowed": False,
+                "may_reopen_only_for_new_turn_or_explicit_lifecycle_event": True,
+            },
             "review_destination": "Status",
             "review_status": "status_only",
             "provenance_boundary": CONVERSATIONAL_ENERGY_BOUNDARY,
@@ -279,6 +399,11 @@ def realize_conversational_energy(
             "whole_answer_replaced": False,
             "question_added": kind in {"curiosity", "collaborative_help"} and bool(addition),
             "pressure_added": False,
+            "goal_coordination_handoff": _dict(plan.get("goal_coordination_handoff")),
+            "goal_persistence_performed": False,
+            "execution_performed": False,
+            "initiative_recursion_allowed": False,
+            "initiative_stopping_receipt": _dict(plan.get("initiative_stopping_receipt")),
             "review_destination": "Status",
             "review_status": "status_only",
             "provenance_boundary": CONVERSATIONAL_ENERGY_BOUNDARY,
@@ -343,6 +468,7 @@ def _normalize_help(value: Any) -> dict[str, Any]:
         return {}
     contribution_kind = str(item.get("contribution_kind") or "").strip().lower()
     return {
+        "goal_key": truncate(str(item.get("goal_key") or ""), 180).strip(),
         "task_active": item.get("task_active") is True,
         "available_support_used": item.get("available_support_used") is True,
         "contribution_kind": contribution_kind,

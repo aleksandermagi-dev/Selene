@@ -3,7 +3,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from .conversational_energy import build_conversational_energy_plan
+from .conversational_energy import (
+    build_conversational_energy_plan,
+    normalize_goal_coordination_handoff,
+)
 from .registry import truncate
 
 
@@ -53,9 +56,14 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
         if isinstance(payload.get("conversational_energy_input"), dict)
         else {}
     )
+    goal_coordination_receipt = payload.get("goal_coordination_receipt")
+    goal_handoff = normalize_goal_coordination_handoff(
+        goal_coordination_receipt or energy_input.get("goal_coordination_handoff")
+    )
     conversational_energy = build_conversational_energy_plan(
         {
             **energy_input,
+            "goal_coordination_handoff": goal_handoff,
             "ending_decision": ending,
             "initiative_decision": initiative,
             "social_turn": intent.get("social_turn") is True,
@@ -91,6 +99,10 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
         "ending_decision": ending,
         "initiative_decision": initiative,
         "conversational_energy": conversational_energy,
+        "goal_coordination_handoff": goal_handoff,
+        "goal_persistence_performed": False,
+        "initiative_recursion_allowed": False,
+        "initiative_stopping_receipt": conversational_energy.get("initiative_stopping_receipt") or {},
         "speaker_scope": speaker,
         "active_correction": _active_correction(dialogue),
         "response_preference": (

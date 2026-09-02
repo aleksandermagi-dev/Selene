@@ -3,6 +3,7 @@ from __future__ import annotations
 from hashlib import sha256
 from typing import Any
 
+from .conversational_energy import normalize_goal_coordination_handoff
 from .registry import truncate
 
 
@@ -86,6 +87,9 @@ def build_conversational_contribution_packet(
     payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     payload = payload or {}
+    goal_handoff = normalize_goal_coordination_handoff(
+        payload.get("goal_coordination_receipt") or payload.get("goal_coordination_handoff")
+    )
     content_seed = _text(payload.get("content_seed"), 3600)
     recent_texts = _text_list(payload.get("recent_assistant_texts"), 1800, 12)
     hard_boundary = payload.get("hard_boundary") is True
@@ -153,6 +157,14 @@ def build_conversational_contribution_packet(
         room_blocker = "requested_posture_leaves_no_contribution_room"
     elif interruption_kind == "interruption":
         room_blocker = "interruption_requires_listening_before_optional_contribution"
+    elif goal_handoff["present"] and not goal_handoff["valid"]:
+        room_blocker = "goal_coordination_receipt_invalid"
+    elif goal_handoff["present"] and not goal_handoff["goal_key"]:
+        room_blocker = "goal_coordination_has_no_active_responsibility"
+    elif goal_handoff["next_move"] in {"close", "quiet", "wait"}:
+        room_blocker = f"selected_goal_requests_{goal_handoff['next_move']}"
+    elif goal_handoff["next_move"] in {"ask", "study", "tool", "remember_proposal"}:
+        room_blocker = "selected_goal_move_belongs_to_existing_noncontribution_owner"
 
     selected = (
         _select_candidate(
@@ -174,6 +186,8 @@ def build_conversational_contribution_packet(
             for item in eligible
         )
 
+    energy_handoff = _energy_handoff(selected)
+    energy_handoff["goal_coordination_handoff"] = goal_handoff
     return _with_guards(
         {
             "status": (
@@ -197,7 +211,7 @@ def build_conversational_contribution_packet(
             "selection_count": 1 if selected else 0,
             "maximum_optional_contributions": 1,
             "conversational_room_blocker": room_blocker,
-            "energy_handoff": _energy_handoff(selected),
+            "energy_handoff": energy_handoff,
             "generative_thought_handoff": _thought_handoff(selected),
             "direct_answer_keeps_priority": True,
             "may_be_primary_when_no_answer_is_owed": bool(selected and not answer_available),
@@ -206,6 +220,15 @@ def build_conversational_contribution_packet(
             "pressure_added": False,
             "out_of_turn_delivery": False,
             "writes_records": False,
+            "goal_coordination_handoff": goal_handoff,
+            "goal_persistence_performed": False,
+            "initiative_recursion_allowed": False,
+            "initiative_stopping_receipt": {
+                "terminal": True,
+                "reason": "one_contribution_selected" if selected else room_blocker or "no_supported_contribution",
+                "additional_contribution_allowed": False,
+                "may_reopen_only_for_new_turn_or_explicit_lifecycle_event": True,
+            },
             "visible_summary_only": True,
             "review_status": "status_only",
             "provenance_boundary": CONTRIBUTION_BOUNDARY,
