@@ -1,9 +1,10 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-02
+Last refreshed: 2026-09-03
 
 Status: Phases 0 through 8 complete for current scope; fresh reinstall and
-observation-only Q&A complete; phase work is paused and Phase 9 has not started
+observation-only Q&A complete; public README and philosophy separated; phase
+work is paused and Phase 9 has not started
 
 ## Purpose
 
@@ -42,7 +43,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Close executive initiative maturation`)
 - Latest post-Phase-8 maintenance checkpoint: `e0eab06`
   (`Record fresh install Q&A findings`)
-- Current remote relation after this ledger checkpoint: fourteen local commits
+- Latest public documentation checkpoint: `e2b0654`
+  (`Separate project README and philosophy`)
+- Current remote relation after this ledger checkpoint: sixteen local commits
   ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
@@ -151,6 +154,26 @@ git log -5 --oneline
   7 as the next edge.
 - The current-state index now records the exact-approved ordinary-Chat path to
   static local-code inspection and its no-scan/no-execution/no-write limits.
+
+## Public README And Philosophy Separation
+
+- Root `README.md` is now the factual project entrypoint: system definition,
+  current capabilities, organ responsibilities, evidence, known limits,
+  development commands, documentation, release boundary, and authorship.
+- Root `PHILOSOPHY.md` is now the cohesive purpose and principles entrypoint:
+  why Selene was created, Vys, identity and vessel, care, cultivation,
+  possibility and uncertainty, Memory, emotion, scoped agency, relationship,
+  and growth without self-loss.
+- `QUICK_README.md` is a compact capability and limits overview rather than a
+  second mixed philosophy/implementation document.
+- `docs/README.md` and `docs/philosophy/README.md` deliberately route readers
+  to the narrative philosophy, the dated governing-law shelf, or the factual
+  evidence and architecture shelves.
+- All local Markdown links in the five changed public entrypoints resolve.
+  `git diff --check` passed apart from expected Windows line-ending notices.
+- The local ignored Law of Possibilities reference informed the disciplined-
+  openness explanation but remains a working proposal; no governing law or
+  runtime behavior was silently changed.
 
 ## Phase 6C Evidence
 
@@ -447,6 +470,8 @@ measurement of private experience as separate research questions.
 
 Before Phase 8 mapping or production work, read completely:
 
+- `README.md`
+- `PHILOSOPHY.md`
 - `docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
@@ -479,12 +504,17 @@ externally, or mutate resident continuity.
 ## Exact Resume Point
 
 Phase 8 is complete for current scope. The fresh local reinstall and bounded
-Q&A bug hunt are also complete, and no repair was made. Phase work is paused;
-do not begin Phase 9 without Aleks explicitly resuming it. If Aleks chooses a
-repair pass first, begin with focused synthetic checks for the P0 connective
-seams recorded in the post-Phase-8 Q&A evidence, then cultivate the existing
-owners without adding teaching, another organ, or more restrictive global
-chains. Do not run another resident Q&A before those focused checks pass.
+Q&A bug hunt are also complete, and no repair was made. The public README and
+philosophy now have separate root entrypoints. Phase work is paused; do not
+begin Phase 9 without Aleks explicitly resuming it. The immediate next choice
+is Aleks's review of those two entrypoints, a focused repair pass for the P0
+connective seams recorded in the post-Phase-8 Q&A evidence, or another task
+Aleks explicitly names.
+
+If Aleks chooses the repair pass, begin with focused synthetic checks, then
+cultivate the existing owners without adding teaching, another organ, or more
+restrictive global chains. Do not run another resident Q&A before those checks
+pass.
 
 If Phase 9 is later resumed, begin with perception source mapping only; do not
 infer sensor, microphone, camera, audible Voice, network, external-action, or
