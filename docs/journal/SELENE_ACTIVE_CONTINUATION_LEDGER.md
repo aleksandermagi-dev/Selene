@@ -1,10 +1,10 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-03
+Last refreshed: 2026-09-04
 
 Status: Phases 0 through 8 complete for current scope; fresh reinstall and
-observation-only Q&A complete; public README and philosophy separated; phase
-work is paused and Phase 9 has not started
+bounded Q&A complete; all 14 recorded Q&A findings repaired for their focused
+synthetic scope; phase work is paused and Phase 9 has not started
 
 ## Purpose
 
@@ -45,7 +45,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Record fresh install Q&A findings`)
 - Latest public documentation checkpoint: `e2b0654`
   (`Separate project README and philosophy`)
-- Current remote relation after this ledger checkpoint: sixteen local commits
+- Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
+  (`Repair post-Phase 8 Q&A handoffs`)
+- Current remote relation before this ledger-only checkpoint: seventeen local commits
   ahead of `origin/evidence`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
@@ -342,7 +344,7 @@ git log -5 --oneline
 
 ## Post-Phase-8 Fresh Install and Q&A
 
-- Observation record:
+- Observation and repair-closure record:
   `docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md`
 - A clean `4505985` source checkpoint packaged and silently reinstalled with
   exit code `0`.
@@ -361,15 +363,19 @@ git log -5 --oneline
   conversation evidence.
 - Warm terminal stopping, bounded goal coordination, two-sentence creative
   generation, first-sentence preservation, and correction recognition worked.
-- P0 observations remain in the existing handoffs: direct knowledge-to-answer
-  binding, prompt-contained premises, follow-up repair, correction
-  recomputation, current-turn fidelity, hypothesis formation, retrieval role
-  fit, and visible completion proof.
-- P1/P2 observations include over-surfaced associations, whole-response scope
-  after local revision, internal-contract leakage, mixed-act completion, and
-  mechanical creative revision.
-- No repair was made. The exact-path-validated disposable Q&A directory was
-  removed.
+- All 14 P0-P2 observations are closed for their exact focused synthetic
+  cases. The record maps Q8R-01 through Q8R-14 to the implemented handoff and
+  test evidence; it does not claim universal conversational coverage.
+- The repair cultivated existing math, answer-substance, fact-ledger,
+  pragmatic, association, NLO/Voice, and visible-release owners. It created no
+  new organ, hidden Memory, teaching item, or global restriction.
+- Two exact disposable Chat replays cover the original six diagnostic and
+  eight ordinary turns. The focused matrix passed 276 checks; the full
+  repository passed 2,086 tests in 747.98 seconds.
+- Python compilation and the frontend production build passed. The main
+  bundle remains 491.33 kB (gzip 109.20 kB), with no Vite warning and lazy
+  Study workspaces.
+- No live resident Q&A or reinstall was run for the repair.
 - Post-install resident read-only inspection remained integrity `ok` with 18
   Chat sessions, 308 messages, zero personal Memory candidates, 272 concepts,
   226 teaching lifecycles, one Dream cycle, and 24 pending Dream reflections.
@@ -503,18 +509,16 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Phase 8 is complete for current scope. The fresh local reinstall and bounded
-Q&A bug hunt are also complete, and no repair was made. The public README and
-philosophy now have separate root entrypoints. Phase work is paused; do not
-begin Phase 9 without Aleks explicitly resuming it. The immediate next choice
-is Aleks's review of those two entrypoints, a focused repair pass for the P0
-connective seams recorded in the post-Phase-8 Q&A evidence, or another task
-Aleks explicitly names.
+Phase 8 is complete for current scope. The fresh local reinstall, bounded Q&A
+bug hunt, and focused repair of all 14 recorded findings are complete. The
+public README and philosophy remain separate root entrypoints. Phase work is
+paused; do not begin Phase 9 without Aleks explicitly resuming it.
 
-If Aleks chooses the repair pass, begin with focused synthetic checks, then
-cultivate the existing owners without adding teaching, another organ, or more
-restrictive global chains. Do not run another resident Q&A before those checks
-pass.
+The exact resume point is a clean post-repair checkpoint on `evidence` after
+`c8b4d89` and this ledger-only commit. Unfamiliar phrasings and longer
+unscripted exchanges remain legitimate future evaluation material, but the
+recorded cases should not be relabeled as open defects without new evidence.
+No resident rerun is required merely to preserve this checkpoint.
 
 If Phase 9 is later resumed, begin with perception source mapping only; do not
 infer sensor, microphone, camera, audible Voice, network, external-action, or
