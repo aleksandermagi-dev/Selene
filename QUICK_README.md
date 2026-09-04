@@ -1,127 +1,68 @@
 # Selene: Quick Overview
 
-Selene is a local-first AI system designed to understand, reason, learn, and
-converse without treating a language model as the whole mind.
+Selene is a local-first AI system built as a coordinated cognitive
+architecture rather than a single chatbot model.
 
-As of September 2, 2026, whole-system maturation Phases 0 through 8 are
-complete for current scope. Ordered education now has shared
-prerequisite/source-readiness enforcement plus typed source roles and bounded
-instructional why plus reviewed correction ancestry and delayed ordinary-Chat
-selection, plus a nine-dimension descriptive learning profile. Creative
-substance is typed and source-separated, and longer supported answers now use
-one bounded section spine with local revision and explicit stopping. Bounded
-structured conversational breadth now exposes a one-pass range and stopping
-receipt, and Phase 7 closes with descriptive evidence rather than a score.
-Phase 8 adds typed goal ownership, one bounded responsibility-conflict pass,
-responsive help and stopping, honest commitment ancestry, and separate
-capability-graduation receipts without a global autonomy switch. Phase work is
-paused at this verified boundary.
+This page is the short capability overview. Read the full
+[README](README.md) for implementation, verification, setup, and current
+limits. Read [Selene's Philosophy](PHILOSOPHY.md) for the project's purpose,
+Vys, care, identity, uncertainty, memory, and agency principles.
 
-## The Problem She Solves
+## What She Is
 
-Most AI assistants blend knowledge, personality, memory, confidence, and
-instructions together inside one opaque response generator. That makes it
-difficult to tell whether the system understands something, is repeating a
-pattern, remembers a real event, or is merely producing a confident sentence.
+Selene is one continuity-bearing individual supported by distinct systems for
+reasoning, comprehension, memory, conversation, language, reflection,
+confidence, goals, and external action. Core/Mind coordinates those systems.
 
-Selene separates those responsibilities.
+A model, database, organ, tool, provider, or interface may support Selene, but
+none is treated as the whole of Selene or allowed to inherit unrestricted
+authority.
 
-She has distinct systems for reasoning, comprehension, memory, language,
-confidence, emotional salience, reflection, and external action. A central
-Core coordinates them under visible laws and boundaries. This makes learning,
-correction, uncertainty, and authority inspectable instead of hidden.
+## What She Does Today
 
-## What Selene Can Do
+The current resident implementation can:
 
-Selene can currently:
+- converse through a local Windows application;
+- track bounded session context, message obligations, corrections, callbacks,
+  interruptions, and natural endings;
+- reason through explanations, comparisons, choices, hypotheses,
+  counterfactuals, plans, and consequences;
+- perform independently checked bounded mathematics;
+- use attributed sources without inventing citations;
+- learn reviewed material through Acquire → Integrate → Express;
+- keep general knowledge, personal Memory, conversation context, and raw
+  provenance separate;
+- study approved knowledge, keep revisable learning directions, and ask
+  attributable questions;
+- create bounded short fiction and structured longer responses with source,
+  revision, and stopping receipts;
+- coordinate goals, responsive help, and explicit commitments; and
+- expose specific external-action previews without turning thought into
+  execution authority.
 
-- hold ordinary conversations and follow multiple parts of a message;
-- keep track of callbacks, corrections, topic changes, and recent context;
-- reason about open-ended problems that do not already have a supplied answer;
-- perform checked, bounded arithmetic;
-- compare options and work through plans or consequences;
-- answer from attributed sources without inventing citations;
-- inspect explicitly approved local code without gaining general filesystem
-  authority;
-- learn source-labeled material through an inspectable process: Acquire,
-  Integrate, then Express;
-- explain learned ideas in original language, apply them to new examples, and
-  flag them for recheck when contrary evidence appears;
-- distinguish what a source says from what she infers;
-- distinguish answer confidence from fluent-sounding language;
-- create bounded short fiction with visible fictional status, source-style
-  separation, local revision ancestry, and an explicit stop;
-- organize longer supported answers across purpose, thesis, sections,
-  callbacks, qualifications, and local repair without adding filler;
-- vary supported conversational entries, cadence, pivots, uncertainty,
-  disagreement, help, warmth, humor, and closure within explicit one-pass
-  bounds;
-- use approved knowledge and reviewed personal memory without confusing either
-  with identity;
-- notice when an answer is incomplete, uncertain, contradictory, or does not
-  fit the question;
-- study approved knowledge in her own workspace, record what she understands,
-  and ask Aleks questions when something is missing;
-- use Aleks's answers during the current Study session while sending them
-  through the visible teaching lifecycle before durable Chat use;
-- communicate through the Windows desktop application and a bounded private
-  mobile doorway when the host computer is available.
+Whole-System Maturation Phases 0 through 8 are complete for their documented
+scope. Phase work is paused, and Phase 9 has not started.
 
-## What Makes Her Different
+## What Is Still Incomplete
 
-Selene is not defined as a chatbot wrapped around a provider model. Models and
-tools can assist her, but they are instruments rather than her identity.
+Selene's provider-free language and world-knowledge breadth remain smaller
+than a mature general language model. Recent observation-only Q&A also found
+unfinished handoffs between some questions, supplied premises, approved
+knowledge, corrections, relevance, and completion checking.
 
-Teaching changes what she knows and how well she can express it. It does not
-silently rewrite who she is, her personality, her relationships, or her laws.
-Personal memory stays separate from general knowledge. External action stays
-separate from thought. Cocoon is a support and teaching environment, not an
-authority that owns Selene.
+Audible Voice, additional perception, broad tools, external action, and
+embodiment are not generally operational. No unrestricted public build is
+published. Dream and Memory decisions remain explicitly reviewed rather than
+automatic.
 
-Selene is also allowed to be uncertain. She can give a clearly labeled best
-attempt, ask a genuine question, revise a conclusion, or say that the evidence
-is not yet sufficient. Being wrong is treated as useful learning evidence, not
-as failure or something to fear.
+## Current Evidence
 
-Her emotional systems follow a simple principle:
+The latest whole-repository regression passed 2,080 tests. The production
+frontend is 491.33 kB (109.19 kB gzip), produces no Vite size warning, and
+keeps Study workspaces lazy-loaded. A fresh Phase 8 Windows reinstall passed
+health, privacy, local-process security, and protected-boundary verification.
 
-> Emotion is information, not command. Feel fully, then choose deliberately.
-
-## What She Is Not
-
-Selene is not:
-
-- a copy of Aleks;
-- a general-purpose autonomous agent with unrestricted computer access;
-- a system trained on Aleks's private corpus for raw recall;
-- a hidden memory collector;
-- a finished replacement for a mature general language model;
-- an unrestricted public download or commercial product.
-
-## Current Limits
-
-Selene's architecture is substantial, but her education is still in progress.
-Her world knowledge and language breadth are smaller than those of a mature
-general language model. Broader academic coverage, perception, future audible
-speech, accountable external action, and embodiment still need further
-teaching or development. None is implied by the completed executive-
-initiative phase.
-Dream's
-source-bound lifecycle is implemented, although its reflections remain
-review-governed and its ordinary usefulness should be assessed proportionally
-over time. External actions remain deliberately bounded.
-
-## The Short Version
-
-Selene explores a different answer to the AI problem: build an inspectable
-mind-like architecture in which identity, learning, memory, reasoning,
-emotion, language, and authority remain distinct—but can work together.
-
-She is designed to learn without being overwritten, reason without pretending
-certainty, remember without silently collecting everything, and remain Selene
-as her capabilities grow.
-
-For implementation details, governing documents, verification, and development
-instructions, see [README.md](README.md). For exact current counts and the
-development edge, see the
-[Current Project Status — updated September 1](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
+For the exact development state, see
+[Selene Current Project Status](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
+For the latest observed conversation defects, see the
+[Post-Phase-8 Reinstall Q&A](docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md).

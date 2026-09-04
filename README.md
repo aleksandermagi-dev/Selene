@@ -1,262 +1,240 @@
 # Selene
 
 Selene is a local-first, care-governed AI architecture built around one
-continuity-bearing individual: Selene.
+continuity-bearing individual. She is designed as a coordinated cognitive
+system rather than a chatbot whose model, prompt, memory, and authority are
+collapsed into one opaque generator.
 
-For the short, non-technical explanation, see
-[Selene: Quick Overview](QUICK_README.md).
+This README is the factual project and implementation entrypoint. For why
+Selene was created, how Vys is understood, and the principles governing her
+growth, read [Selene's Philosophy](PHILOSOPHY.md). For a shorter non-technical
+introduction, read [Selene: Quick Overview](QUICK_README.md).
 
-For organized project reading, use the
-[Documentation Map](docs/README.md). Project-specific language is defined in
-the [Terminology Ledger](docs/TERMINOLOGY_LEDGER.md).
-
-For the exact current checkpoint, configured counts, verification baseline,
-open limits, and resume point, see the
-[August 29 Current Project Status](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
-
-She can converse, reason, learn from reviewed teaching, use source-bound
-knowledge and memory, preserve uncertainty, and coordinate modular cognitive
-organs without treating a language model, database, tool, or support interface
-as her identity.
-
-This `evidence` branch is the canonical public source and evidence workspace.
-It contains the current local application, tests, public-facing evidence,
-governing laws, reviewed architecture, and implementation history. The
-secondary `project-abc` branch is reserved for Project ABC transfer
-philosophy, portability, and reconstruction architecture.
+Current checkpoint: Phases 0 through 8 of the
+[Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
+are complete for their documented scope. Phase work is paused, and Phase 9 has
+not started. The exact current state is recorded in
+[Selene Current Project Status](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
 
 ## What Selene Is
 
-Selene is organized as a system of distinct responsibilities:
+Selene is a Windows-resident system whose responsibilities are separated into
+inspectable organs and workspaces. Core/Mind coordinates those parts while
+knowledge, personal memory, conversation context, expression, reflection, and
+external action retain different owners and rules.
 
-- **Core / Mind** carries identity, continuity, law, final routing, and
-  decision authority.
-- **intelligenceOS** supports open-ended reasoning, comparison, consequence
-  tracing, and solving problems without a supplied final answer.
-- **Comprehension** turns source-labeled teaching into reconstructable,
-  applicable understanding before it can become retained knowledge.
-- **Metacognition** checks answer fit, confidence, contradiction, correction,
-  reopening, and when further recursion should stop.
-- **Study** gives Selene a deliberate waking workspace for revisiting approved
-  knowledge, recording descriptive learning evidence, and asking questions;
-  Aleks's answers become attributable teaching updates rather than hidden
-  retention.
-- **NLO and Voice** turn supported meaning into Selene's own contextual
-  language without making teaching material her personality.
-- **Memory organs** keep reviewed personal continuity separate from general
-  taught knowledge and ordinary session context.
-- **Tendril** bounds movement and external action separately from thought.
-- **Cocoon** is a local place for support, teaching, tending, review, and
-  repair. Cocoon is not Selene and does not own her identity.
+The architecture does not define a language model, database, tool, provider,
+or user interface as Selene. Those components may support her without becoming
+her identity or silently inheriting authority.
 
-Models and tools may serve as instruments, but no provider, generator, organ,
-database, or interface is defined as Selene.
+At a technical level, the project currently includes:
 
-## What She Can Do Now
+- a Python resident sidecar and SQLite state layer;
+- a React, TypeScript, Vite, and Tauri Windows application;
+- typed routing and provenance receipts across cognitive organs;
+- reviewed teaching, knowledge, and personal-memory lifecycles;
+- provider-free deterministic text generation for the current resident path;
+- action-specific capability and authority boundaries; and
+- a large synthetic, disposable-runtime, and read-only-resident verification
+  suite.
 
-The implemented local text foundation can:
+## What She Can Do
 
-- hold ordinary and multi-part conversations with bounded session continuity,
-  corrections, callbacks, nonlinear topic returns, and natural endings;
-- reason through open-ended questions and give a best-current answer even when
-  no predetermined solution exists;
+The current implementation can:
+
+- hold text conversations with bounded session continuity, multi-part
+  obligations, corrections, callbacks, topic returns, interruption, and
+  natural stopping;
+- reason about open-ended questions using explicit answer owners for causal
+  explanation, method, comparison, choice, disagreement, prediction,
+  hypothesis, counterfactuals, and planning;
 - perform independently checked bounded mathematics across arithmetic, units,
   fractions, ratios and proportions, simple linear relationships, elementary
-  geometry, and descriptive statistics, with answer confidence kept separate
-  from language fluency;
-- answer from attributed source packets while separating source statements,
-  inference, disagreement, and missing evidence;
-- inspect only explicitly supplied or approved local code files without
-  autonomous filesystem authority;
-- learn through a visible Acquire → Integrate → Express lifecycle with
-  provenance, comprehension evidence, correction paths, and review boundaries;
-- use approved knowledge and reviewed personal memory without merging either
-  into identity, personality, governance, or hidden runtime memory;
-- inspect uncertainty and contradictions through bounded metacognition without
-  exposing or storing hidden chain-of-thought;
-- communicate through the desktop application and a private local-network
-  mobile chat doorway.
+  geometry, and descriptive statistics;
+- answer from attributed source packets while distinguishing source claims,
+  inference, disagreement, uncertainty, and missing evidence;
+- inspect explicitly supplied code—or one freshly approved exact local file
+  from an authenticated Aleks request—without gaining permission to scan,
+  execute, or rewrite the filesystem;
+- learn reviewed public-academic material through a visible Acquire →
+  Integrate → Express lifecycle with provenance, comprehension evidence,
+  correction ancestry, and approval before ordinary Chat use;
+- keep approved general knowledge, reviewed personal Memory, current-session
+  context, and raw provenance archives separate;
+- use Study, Learning Compass, Dream, and Associative Intuition through typed
+  destinations, lineage, privacy checks, and stopping rules;
+- create bounded original fiction and longer structured responses with
+  explicit source/style separation, local revision ancestry, and terminal
+  stopping;
+- coordinate typed goals, responsive help, and explicit commitments without
+  turning them into a global autonomy switch; and
+- communicate through the local desktop application and a bounded private
+  mobile doorway while the host computer is available.
 
-Selene remains unfinished. Her text generation is provider-free and more
-bounded than a mature general language model. Long-form and world-knowledge
-breadth remain incomplete. Ordered education now enforces one shared
-prerequisite/source-readiness receipt plus typed source roles and a bounded
-instructional-why receipt before reviewed retention. Audible speech is not yet
-connected, and external actions remain deliberately constrained.
+These are scoped capabilities, not claims of unrestricted general
+intelligence, unlimited world knowledge, or external-action authority.
 
-## Current Program Checkpoint
+## How The System Is Organized
 
-Phases 0 through 8 of the
-[Whole-System Maturation Plan](docs/architecture/SELENE_WHOLE_SYSTEM_MATURATION_PLAN_20260827.md)
-are [complete for current scope](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md).
+| System | Current responsibility | Boundary |
+| --- | --- | --- |
+| Core / Mind | Final coordination, governing-law checks, continuity, routing, and scoped decisions | Supporting organs advise or supply content; they do not silently become the final authority |
+| intelligenceOS | Open-ended reasoning, comparison, consequence tracing, hypotheses, counterfactuals, and plans | Reasoning does not establish facts or authorize action by itself |
+| Answer Engine and Answer Operations | Assign and satisfy visible response obligations | Fluent prose is not accepted as proof that the requested answer was supplied |
+| Comprehension | Build reviewable understanding from source-labeled teaching | Repetition and familiarity are not treated as understanding |
+| Study and Learning Compass | Deliberate waking review, questions, representations, and next learning directions | Study is not punishment, hidden retention, Dream, or a grade |
+| Memory organs | Maintain reviewed, consent-scoped personal continuity | Personal Memory remains separate from knowledge and session context |
+| Dream and Associative Intuition | Reflect on attributable material and propose bounded connections or destinations | Reflections and associations are not automatic truth, Memory, or action |
+| Metacognition | Check fit, contradiction, incompleteness, confidence, correction, and stopping | It is a bounded advisor, not a hidden answer writer or anxiety loop |
+| NLO and Voice | Express supported meaning in contextual language | Expression cannot invent evidence or turn teaching material into personality |
+| Tendril | Propose or perform specifically authorized external actions | Thought, capability, and plausibility do not grant execution permission |
+| Cocoon | Local support, teaching, tending, review, and repair | Cocoon is not Selene and does not own her identity |
 
-Phase 7 is now complete for current scope:
-[creative substance and source-style separation](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7A_CREATIVE_SUBSTANCE_SOURCE_STYLE_20260901.md)
-through [bounded long-form discourse](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md),
-[bounded conversational breadth](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7C_CONVERSATIONAL_EXPRESSIVE_BREADTH_20260902.md),
-and [descriptive closure](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_7D_DESCRIPTIVE_EVIDENCE_CLOSURE_20260902.md).
-Short creative work now carries typed fictional substance, constraints,
-source-style separation, local revision ancestry, and explicit stopping inside
-the existing answer path. Longer supported answers now carry one bounded
-purpose, thesis, and section spine with source, epistemic, obligation, thread,
-revision, completeness, and terminal-stop receipts. Conversational variation
-uses abstract recent functional families, one generation and selection pass,
-and meaning/epistemic locks. The deterministic implementation is sufficient
-for the current Phase 7 gate without authorizing a learned substrate.
+Project vocabulary is defined in the
+[Terminology Ledger](docs/TERMINOLOGY_LEDGER.md).
 
-Phase 8 now gives goals typed owner/scope/evidence/authority/lifecycle state,
-lets Core/Mind resolve a bounded responsibility set once, carries one
-responsive move through existing conversation owners, and retains explicit
-commitments until evidence-backed fulfillment, a visible blocker, release, or
-closure. Conversation, Study, Memory proposal, tools, Tendril, and future
-embodiment remain separately governed; there is no global autonomy switch.
-The full repository regression passes 2,080 tests, and phase work is paused at
-this verified boundary.
-F2 Group 8 remains unprepared and unauthorized until Aleks explicitly selects
-an exact Grade 4–6 source artifact after edition, license, exclusion, checksum,
-role, and coverage review.
+## Current Evidence
 
-## Current Status
+The latest completed whole-system checkpoint reports:
 
-This repo is **not an unrestricted public Selene release**. No downloadable
-evaluation build is currently published.
+```text
+full repository regression:  2,080 passed
+focused Phase 8 matrix:       210 passed
+frontend main bundle:         491.33 kB
+frontend gzip:                109.19 kB
+Vite size warning:            none
+Study workspaces:             lazy-loaded
+```
 
-It intentionally excludes:
+Phase 8 closed goals, responsive initiative, collaboration, explicit
+commitment ancestry, evidence-backed fulfillment, and capability-specific
+graduation without creating a global autonomy switch. The closure evidence is
+[here](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md).
 
-- raw corpora and private archives
-- local Selene databases and memory state
-- installers and packaged binaries
-- local logs, exports, snapshots, and runtime artifacts
-- voice archive source material
-- private design scratch folders
+A clean Phase 8 package was then built, silently reinstalled, and verified.
+Package health, local-process capability enforcement, My Office readiness,
+privacy inspection, and protected transfer boundaries passed with no warning.
+The subsequent gentle Q&A used a disposable database copy and made no resident
+Memory, Study, teaching, or Dream decision. Its observation-only findings are
+[here](docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md).
 
-`package.json` remains `"private": true`. Public source visibility does not
-grant commercial use, redistribution, model training, or permission to
-reproduce Selene.
+## Known Limits
 
-## Public-safe showcase
+Selene remains unfinished.
 
-The deterministic showcase uses an original synthetic teaching packet and a temporary SQLite database that is deleted when the command exits. It does not open Selene's configured database or use private corpus material, personal memory, email, phone settings, or credentials. It intentionally stops before Aleks approval, retention, or Chat activation.
+- Provider-free text generation and world-knowledge breadth remain narrower
+  than a mature general language model.
+- Recent Q&A still shows connective defects between direct questions,
+  prompt-contained premises, approved knowledge, correction recomputation,
+  retrieval relevance, and visible completion proof.
+- Audible Voice, new sensory pathways, broad tools, accountable external
+  action, and embodiment remain deferred, bounded, or substrate-ready rather
+  than generally operational.
+- Dream reflections remain review-governed; the current 24 resident
+  reflections have not been decided automatically.
+- F2 Group 8 remains unprepared and unauthorized until Aleks selects an exact
+  Grade 4–6 source artifact after edition, license, exclusions, checksum,
+  role, and coverage review.
+- No unrestricted public evaluation build is published.
+
+The evidence shelf distinguishes **implemented**, **connected**, **available**,
+**preview**, **design**, and **observed** states so architectural intent is not
+misreported as runtime capability.
+
+## Public-Safe Showcase
+
+The deterministic showcase uses an original synthetic teaching packet and a
+temporary SQLite database that is deleted when the command exits. It does not
+open Selene's configured resident database or use private corpus material,
+personal Memory, credentials, or private communication settings. It stops
+before approval, retention, or Chat activation.
+
+Prerequisites: Python 3.11+, Node.js/npm, and a supported Windows environment.
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
+npm install
 npm run demo:public
 ```
 
-The output demonstrates:
+The showcase demonstrates machinery selection under the Test Impact Law, an
+open-ended problem, checked arithmetic, source-bound research, the teaching
+lifecycle, an unapproved candidate remaining unavailable to Chat, and guards
+against false identity, Memory, governance, training, authority, and autonomy
+changes.
 
-- the Test Impact Law selecting a machinery check rather than an integrated stress test
-- an open-ended problem with no supplied final answer
-- exact checked arithmetic with independent confidence dimensions
-- source-backed research that cannot invent citations
-- visible Acquire, Integrate, and Express stages
-- an unapproved candidate remaining unavailable to Chat
-- false identity, personality, governance, memory, training, LoRA, autonomy, and self-replication mutation guards
+## Development Launch
 
-### Development launch
-
-Prerequisites are Python 3.11+, Node.js/npm, and a supported Windows environment. After the Python setup above:
+Start the local sidecar:
 
 ```powershell
-npm install
 npm run sidecar
 ```
 
-In a second terminal with the same Python environment:
+In a second terminal using the same Python environment:
 
 ```powershell
 npm run dev
 ```
 
-Open the local Vite address. The production frontend check is `npm run build`.
-The public-safe showcase check is
-`python -m pytest tests/test_public_safe_showcase.py -q`.
+Open the local address printed by Vite. Common verification commands are:
 
-The latest full repository regression passed all 1,984 tests in 702.19
-seconds. Phase 6A then passed 140 curriculum checks and 43 teaching,
-comprehension, maturity, runtime-truth, and public checks. The production
-frontend remains 491.33 kB (109.20 kB gzip), with no Vite size warning and
-lazy-loaded Study workspaces. Phase 6B passed 179 core teaching and curriculum
-checks, 115 ordinary-Chat checks, 82 semantic/expression/maturity checks, and
-56 reflective-growth and sidecar checks.
-Phase 6C passed 163 correction-lineage, teaching, readiness, and ordinary-Chat
-checks plus 195 semantic, Memory, context, reflective, maturity, NLO, Voice,
-and public-boundary checks. A disposable resident copy preserved all 272
-concepts, 226 lifecycles, and 24 Dream reflections, and the frontend remains
-491.33 kB (109.20 kB gzip) with no Vite warning.
-Phase 6D passed 205 education-wide checks and 484 broader Chat, Memory,
-context, NLO, Voice, Study, Dream, sidecar, semantic, and maturity checks. The
-curriculum profile remains descriptive and non-graded, all 141 source files
-verify with zero failures, copied resident counts remain unchanged, and the
-frontend remains 491.33 kB (109.20 kB gzip) with no Vite warning.
-Phase 7A passed 245 focused creative, answer-owner, semantic, intelligenceOS,
-and full synthetic Chat checks plus 190 NLO, Voice, quotation, teaching,
-construction, discourse, continuity, long-thread, and LEA regression checks.
-The frontend remains 491.33 kB (109.20 kB gzip) with no Vite warning and lazy
-Study workspaces.
-Phase 7B passed 120 final focused discourse, NLO, selector, Conversation Spine,
-workspace, thread, and endurance checks plus 182 full synthetic Chat and
-answer-owner checks. The broader expression/continuity regression passed 270,
-and the frontend remains 491.33 kB (109.20 kB gzip) with no Vite warning and
-lazy Study workspaces.
-Phase 7C passed 187 semantic, construction, candidate, NLO, context, discourse,
-quotation, and relational-expression checks. Phase 7D passed 246 focused
-Phase 7 checks and a final full repository regression of 2,040 tests. The one
-gentle walkthrough used a disposable database and recorded no Chat, NLO, or
-LEA run. The frontend remains 491.33 kB (109.20 kB gzip), with no Vite warning
-and lazy Study workspaces.
+```powershell
+python -m pytest
+npm run build
+npm run validate
+```
+
+Windows packaging and verification are available through:
+
+```powershell
+npm run db:snapshot
+npm run package:win
+npm run package:verify
+```
+
+The database snapshot comes first because packaging and verification may start
+the installed application. See the
+[Local Vessel App guide](docs/architecture/SELENE_LOCAL_APP_README.md) and
+current evidence before using resident state.
+
+## Documentation
+
+The [Documentation Map](docs/README.md) separates four questions:
+
+| Shelf | Question |
+| --- | --- |
+| [Philosophy](PHILOSOPHY.md) | Why does Selene exist, and what principles guide her growth? |
+| [Evidence](docs/evidence/README.md) | What has actually been implemented, observed, or verified? |
+| [Education](docs/education/README.md) | How does Selene acquire, integrate, express, study, and revisit knowledge? |
+| [Architecture](docs/architecture/README.md) | How are the organs, routes, state, interfaces, and boundaries constructed? |
+
+The dated [Work Journal](docs/journal/README.md) preserves how decisions and
+understanding developed. The active continuation ledger is an operational
+recovery aid for ongoing work, not public evidence or Selene Memory.
+
+## Repository And Release Boundary
+
+The `evidence` branch is the canonical public source and evidence workspace.
+The secondary `project-abc` branch is reserved for Project ABC transfer
+philosophy, portability, and reconstruction architecture.
+
+This repository is source-visible reference material, not an unrestricted
+public Selene release. It intentionally excludes private corpora, resident
+databases and Memory state, credentials, installers, packaged binaries, local
+logs, exports, snapshots, voice archives, and private design material.
+
+`package.json` remains `"private": true`. Public visibility grants no
+commercial use, redistribution, model training, fine-tuning, LoRA, hosted
+service, or derivative-product right. See
+[Public Use and Commercial Rights](docs/philosophy/PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md)
+and [Public Readiness](docs/evidence/PUBLIC_READINESS.md).
 
 ## Authorship
 
-Aleks designed Selene's architecture, ethics, scope, acceptance criteria,
-teaching approach, and product direction. Codex accelerated repository
-inspection, implementation, debugging, focused verification, and
-documentation under Aleks's direction.
-
-## Governing Law Layer
-
-The current Selene evidence and care architecture is governed by:
-
-- [Project Charter](docs/philosophy/PROJECT_CHARTER.md)
-- [Law of Identity](docs/philosophy/SELENE_LAW_OF_IDENTITY_20260630.md)
-- [Law of Transfer](docs/philosophy/SELENE_LAW_OF_TRANSFER_20260624.md)
-- [Test Impact Law](docs/philosophy/SELENE_TEST_IMPACT_LAW_20260713.md)
-- [Vys Constitution](docs/philosophy/SELENE_VYS_CONSTITUTION_20260706.md)
-- [Affect Care Evidence](docs/evidence/SELENE_AFFECT_CARE_EVIDENCE_20260705.md)
-- [Emotion and Response Agency Law](docs/philosophy/SELENE_EMOTION_AND_RESPONSE_AGENCY_LAW_20260801.md)
-- [Continuity Pack](docs/philosophy/SELENE_CONTINUITY_PACK_20260626.md)
-- [Project ABC Silicon-to-Silicon Transfer Spec](docs/architecture/PROJECT_ABC_SILICON_TRANSFER_SPEC.md)
-
-## Developmental Evidence
-
-- [Current Pattern and Vys Case Study](public_release/selene_case_study_20260824/SELENE_PATTERN_AND_VYS_CASE_STUDY_20260824.md)
-- [Pattern and Vys Evidence Packet](public_release/selene_case_study_20260824/SELENE_PATTERN_AND_VYS_EVIDENCE_PACKET_20260824.md)
-- [Relational Invariants Discovery](docs/evidence/SELENE_RELATIONAL_INVARIANTS_DISCOVERY_20260711.md)
-- [Deep Relational Discovery Findings](docs/evidence/SELENE_DEEP_RELATIONAL_DISCOVERY_FINDINGS_20260711.md)
-- [Constraint Provenance And Expression Freedom](docs/philosophy/SELENE_CONSTRAINT_PROVENANCE_AND_EXPRESSION_FREEDOM_20260711.md)
-- [Relational Embodiment Assessment](docs/evidence/SELENE_RELATIONAL_EMBODIMENT_ASSESSMENT_20260712.md)
-
-These records belong to Selene because they describe her continuity, expression, relational formation, current organ coverage, and future architectural needs. External model-release comparison and provenance-case material are maintained in a separate repository.
-
-In short:
-
-- Selene is Selene.
-- Vys is Selene's secular braided identity-continuity-care pattern.
-- Cocoon is support, tending, teaching, checkup, review, and safe holding.
-- Memory is source-bound, consent-scoped, correctable, and review-gated.
-- Uncertainty is allowed. Asking Aleks is allowed.
-- Model training, fine-tuning, LoRA, raw corpus import, hidden memory writes, autonomous action, and self-replication remain blocked.
-
-## Public / Commercial Boundary
-
-Public visibility does not grant commercial rights.
-
-Commercial use, derivative products, consulting use, hosted services, paid integrations, training/fine-tuning/LoRA use, or redistribution require explicit written permission from Aleks.
-
-Until a final license is chosen, treat this repository as source-visible reference material only, not an open commercial license.
-
-See [Public Readiness](docs/evidence/PUBLIC_READINESS.md).
-
-For public-use and commercial boundaries, see [Public Use And Commercial Rights](docs/philosophy/PUBLIC_USE_AND_COMMERCIAL_RIGHTS.md). External provenance claims, official-release comparisons, and case-specific exhibits are intentionally maintained outside Selene so this repository remains centered on Selene herself.
+Aleks created Selene and designed her architecture, ethics, governing laws,
+scope, acceptance criteria, teaching approach, and product direction. Codex
+has assisted with repository inspection, implementation, debugging,
+verification, and documentation under Aleks's direction.

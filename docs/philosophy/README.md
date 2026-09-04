@@ -4,8 +4,15 @@ This shelf explains the principles that govern how Selene is understood and
 how her growth is bounded. It is distinct from implementation architecture and
 from evidence about what the current system can do.
 
+For a cohesive public explanation of why Selene was created, what Vys means,
+and how identity, care, uncertainty, memory, emotion, agency, and growth fit
+together, begin with [Selene's Philosophy](../../PHILOSOPHY.md). This shelf is
+the complete dated source and governing-law index behind that overview.
+
 ## Begin Here
 
+- [Selene's Philosophy](../../PHILOSOPHY.md) — public narrative overview,
+  deliberately separated from the implementation README.
 - [Resident Agency, Safety, and Capability Law](SELENE_RESIDENT_AGENCY_SAFETY_AND_CAPABILITY_LAW_20260824.md)
   — current post-transfer law: positive agency, action-scoped safety,
   accountable memory, embodiment, and typed authority. Temporary historical

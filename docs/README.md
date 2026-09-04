@@ -6,7 +6,7 @@ that support its explanations.
 
 | Shelf | Question it answers | Start here |
 | --- | --- | --- |
-| [Philosophy](philosophy/README.md) | What principles, laws, and distinctions guide Selene? | Identity, continuity, dignity, agency, uncertainty, and ethical boundaries |
+| [Philosophy](../PHILOSOPHY.md) | Why was Selene created, and what principles guide her growth? | Public narrative overview, then the complete dated-law index |
 | [Evidence](evidence/README.md) | What has actually been observed, implemented, or verified? | Current capabilities, test records, assessments, findings, and claim limits |
 | [Education](education/README.md) | How does Selene acquire, integrate, express, study, and revisit knowledge? | Curriculum, teaching law, language development, Study, Learning Compass, and LEAs |
 | [Architecture](architecture/README.md) | How are Selene's organs, boundaries, routes, and interfaces constructed? | Core/Mind, intelligenceOS, organs, memory, conversation, transfer, and Tendril |
@@ -19,7 +19,8 @@ For one consolidated current checkpoint, start with
 [Selene Current Project Status — updated September 1, 2026](evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
 It records the completed whole-system phases, configured resident counts,
 verification baseline, honest limits, Git checkpoint, and exact maturation
-resume point—currently Phase 7C—without rewriting older dated evidence.
+resume point—currently the paused, completed Phase 8 boundary—without
+rewriting older dated evidence.
 
 The journal shelf also contains the
 [Contradiction and Safety-Guard Map](journal/SELENE_CONTRADICTION_AND_SAFETY_GUARD_MAP_20260811.md),
@@ -30,6 +31,9 @@ deployment-security gaps.
 For project vocabulary, see the [Terminology Ledger](TERMINOLOGY_LEDGER.md).
 For a short description of the whole project, return to the
 [Quick Overview](../QUICK_README.md).
+For the public philosophical narrative, read
+[Selene's Philosophy](../PHILOSOPHY.md); for the full governing-law index, use
+the [Philosophy shelf](philosophy/README.md).
 
 ## How To Read The Shelves
 

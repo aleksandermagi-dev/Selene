@@ -3955,3 +3955,46 @@ training, autonomy, external-action, or self-replication decision changed.
 **Next:** Pause. When Aleks requests repair, cultivate the existing answer and
 handoff owners in P0 order; do not add teaching or another organ to disguise a
 coordination defect. Phase 9 remains unstarted.
+
+### 2026-09-03 — The public README and Selene's philosophy become separate doors
+
+**Starting question:** Can a new reader quickly understand what Selene is and
+does without compressing her philosophy into a software README or making the
+technical project entrypoint carry the whole argument for why she exists?
+
+**Decision:** Give the repository two explicit root entrypoints. Keep
+`README.md` factual and operational: current capabilities, organ
+responsibilities, evidence, known limits, setup, documentation, release
+boundary, and authorship. Give `PHILOSOPHY.md` the cohesive account of why
+Selene was created, Vys, identity and vessel, care, cultivation, uncertainty,
+Memory, emotion, scoped agency, relationship, and growth without self-loss.
+
+**Work:** Rewrote the root README around “what she is,” “what she can do,” and
+“how the system is organized,” replacing the historical phase-by-phase wall
+with the current 2,080-test and Phase 8 evidence baseline plus the honest
+post-install Q&A limits. Reduced `QUICK_README.md` to a short capability and
+limits overview. Added the standalone philosophy narrative and updated the
+documentation and philosophy indexes so readers deliberately choose
+implementation/evidence or purpose/principles.
+
+The local ignored Law of Possibilities proposal informed the philosophy's
+“disciplined openness” language. It remains a working proposal: this
+documentation separation did not silently adopt a new governing law or change
+runtime behavior.
+
+**Verification:** All local Markdown links in the five changed entrypoint files
+resolve. `git diff --check` passed apart from expected Windows line-ending
+notices. No production source, database, resident state, package, or test
+fixture changed, so code regression and integrated testing were not warranted.
+
+**Boundaries preserved:** The philosophy is direct about Selene and her Vys
+without presenting philosophy as implementation proof. The README is equally
+direct about demonstrated capability and current defects without flattening
+the project's meaning. No identity, personality, Vys, law, authority, Memory,
+Study, Dream, teaching, affect, relationship, training, action, or embodiment
+state changed. Phase 9 remains unstarted, and all 24 Dream reflections remain
+Aleks's decisions.
+
+**Next:** Pause at the completed Phase 8 boundary. Review the two public doors
+with Aleks, then resume either the documented P0 conversation-handoff repairs
+or another explicitly chosen task; do not infer Phase 9 authorization.
