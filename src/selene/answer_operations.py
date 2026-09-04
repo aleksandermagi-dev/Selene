@@ -439,6 +439,15 @@ def _from_answer_engine(
             "comparison_basis": source_refs or ["current visible prompt and supplied constraints"],
             "limitations": _texts(answer_packet.get("limitations")),
         }
+    elif operation == "choice" and str(answer_packet.get("domain") or "") == "verified_math":
+        answer_sentences = _sentences(direct_answer)
+        fields = {
+            "selected_option": answer_sentences[0] if answer_sentences else direct_answer,
+            "criteria": answer_sentences[1:] or answer_sentences,
+            "reason": answer_sentences[-1] if answer_sentences else direct_answer,
+            "revision_conditions": _texts(answer_packet.get("what_would_change_the_answer"))
+            or ["the supplied fractions or comparison relation changes"],
+        }
     elif operation == "method" and str(answer_packet.get("domain") or "") == "comparison_planning":
         fields = {
             "steps": units or _sentences(direct_answer),
@@ -620,18 +629,26 @@ def _from_answer_substance(
             "comparison_basis": basis,
             "revision_conditions": [missing_variable] if missing_variable else [],
         }
-    elif operation == "hypothesis" and answer_kind in {
-        "bounded_provisional_cause",
-        "provisional_discriminating_observation",
-    }:
+    elif operation == "hypothesis" and (
+        _kind_fits(answer_kind, ("hypothesis", "provisional_cause", "discriminating_observation"))
+    ):
+        alternative_surfaces = [
+            item for item in surfaces
+            if re.search(r"\balternative\b", item, flags=re.IGNORECASE)
+        ]
+        check_surfaces = [
+            item for item in surfaces
+            if re.search(r"\b(?:check|observe|observation|test)\b", item, flags=re.IGNORECASE)
+        ]
         fields = {
             "hypothesis": surfaces[0] if surfaces else answer,
             "basis": basis,
             "assumptions": _surfaces_with_role(units, {"limit"}),
-            "alternatives": _surfaces_with_role(units, {"reopening"}),
+            "alternatives": alternative_surfaces
+            or _surfaces_with_role(units, {"reopening"}),
             "discriminating_checks": _surfaces_with_role(
                 units, {"support", "reopening"}
-            ),
+            ) or check_surfaces,
             "revision_conditions": _surfaces_with_role(
                 units, {"reopening"}
             )

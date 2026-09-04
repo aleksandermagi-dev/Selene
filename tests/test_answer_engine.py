@@ -581,6 +581,25 @@ def test_verified_math_adapter_returns_exact_answer_without_expression_confidenc
     _assert_locked(result)
 
 
+def test_verified_math_adapter_compares_named_fractions_with_one_visible_exact_check():
+    result = run_verified_math_answer(
+        {
+            "prompt": (
+                "Which is larger, three quarters or four fifths? "
+                "Show one check."
+            )
+        }
+    )
+
+    assert result["status"] == "answer_engine_verified_math_answer_ready"
+    answer = result["answer_packet"]["direct_answer"].lower()
+    assert "four fifths is larger" in answer
+    assert "3/4 = 15/20" in answer
+    assert "4/5 = 16/20" in answer
+    assert result["math_verification"]["typed_problem"]["kind"] == "named_fraction_comparison"
+    _assert_locked(result)
+
+
 def test_verified_addition_can_explain_why_and_supply_a_distinct_example():
     result = run_verified_math_answer(
         {

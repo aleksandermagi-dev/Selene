@@ -36,6 +36,33 @@ _SMALL_NUMBER_WORDS = {
     "twelve": 12,
 }
 
+_FRACTION_DENOMINATOR_WORDS = {
+    "half": 2,
+    "halves": 2,
+    "third": 3,
+    "thirds": 3,
+    "quarter": 4,
+    "quarters": 4,
+    "fourth": 4,
+    "fourths": 4,
+    "fifth": 5,
+    "fifths": 5,
+    "sixth": 6,
+    "sixths": 6,
+    "seventh": 7,
+    "sevenths": 7,
+    "eighth": 8,
+    "eighths": 8,
+    "ninth": 9,
+    "ninths": 9,
+    "tenth": 10,
+    "tenths": 10,
+    "eleventh": 11,
+    "elevenths": 11,
+    "twelfth": 12,
+    "twelfths": 12,
+}
+
 _BINARY_SYMBOLS: dict[type[ast.operator], str] = {
     ast.Add: "+",
     ast.Sub: "-",
@@ -265,6 +292,67 @@ def _verify_unit_conversion(prompt: str) -> dict[str, Any] | None:
 
 
 def _verify_fraction_operation(prompt: str) -> dict[str, Any] | None:
+    named_comparison = re.search(
+        r"\b(?P<a_num>zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+"
+        r"(?P<a_den>halves?|thirds?|quarters?|fourths?|fifths?|sixths?|sevenths?|eighths?|ninths?|tenths?|elevenths?|twelfths?)\s+"
+        r"(?:or|and|versus|vs\.?)\s+"
+        r"(?P<b_num>zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+"
+        r"(?P<b_den>halves?|thirds?|quarters?|fourths?|fifths?|sixths?|sevenths?|eighths?|ninths?|tenths?|elevenths?|twelfths?)\b",
+        prompt,
+    )
+    if named_comparison and re.search(r"\b(?:which|compare|larger|greater|smaller|less)\b", prompt):
+        left = Fraction(
+            _SMALL_NUMBER_WORDS[named_comparison.group("a_num")],
+            _FRACTION_DENOMINATOR_WORDS[named_comparison.group("a_den")],
+        )
+        right = Fraction(
+            _SMALL_NUMBER_WORDS[named_comparison.group("b_num")],
+            _FRACTION_DENOMINATOR_WORDS[named_comparison.group("b_den")],
+        )
+        common_denominator = left.denominator * right.denominator // gcd(
+            left.denominator, right.denominator
+        )
+        left_scaled = left.numerator * (common_denominator // left.denominator)
+        right_scaled = right.numerator * (common_denominator // right.denominator)
+        relation = ">" if left > right else "<" if left < right else "="
+        larger_words = (
+            f"{named_comparison.group('a_num')} {named_comparison.group('a_den')}"
+            if left > right
+            else f"{named_comparison.group('b_num')} {named_comparison.group('b_den')}"
+            if right > left
+            else "Neither fraction"
+        )
+        summary = (
+            f"{larger_words.capitalize()} is larger. "
+            if left != right
+            else "The two fractions are equal. "
+        )
+        summary += (
+            f"One check uses denominator {common_denominator}: "
+            f"{left.numerator}/{left.denominator} = {left_scaled}/{common_denominator} and "
+            f"{right.numerator}/{right.denominator} = {right_scaled}/{common_denominator}, so "
+            f"{left_scaled}/{common_denominator} {relation} {right_scaled}/{common_denominator}."
+        )
+        return _domain_ready(
+            stage="fractions_and_decimals",
+            typed_problem={
+                "kind": "named_fraction_comparison",
+                "left": f"{left.numerator}/{left.denominator}",
+                "right": f"{right.numerator}/{right.denominator}",
+                "common_denominator": common_denominator,
+            },
+            result_value=larger_words,
+            result_summary=summary,
+            checked_steps=[
+                f"Rewrite both fractions with denominator {common_denominator}.",
+                f"{left_scaled}/{common_denominator} {relation} {right_scaled}/{common_denominator}",
+            ],
+            exact_result={
+                "left": f"{left.numerator}/{left.denominator}",
+                "right": f"{right.numerator}/{right.denominator}",
+                "relation": relation,
+            },
+        )
     conversion = re.search(
         r"\b(?P<num>-?\d+)\s*/\s*(?P<den>\d+)\s+(?:as|to)\s+(?:a\s+)?decimal\b",
         prompt,

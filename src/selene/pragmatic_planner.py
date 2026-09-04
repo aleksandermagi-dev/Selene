@@ -530,7 +530,10 @@ def evaluate_response_coverage(
             "resolved_count": resolved_count,
             "all_required_addressed": obligation_coverage_complete and grounding_unresolved == 0,
             "unresolved_count": len(required) - addressed_count + grounding_unresolved,
-            "all_required_resolved": obligation_resolution_complete and release_grounding_unresolved == 0,
+            # "Resolved" remains answer-semantic: a safe hold may permit
+            # release, but it is not an answer and must not report completion.
+            "all_required_resolved": obligation_coverage_complete and grounding_unresolved == 0,
+            "all_required_release_safe": obligation_resolution_complete and release_grounding_unresolved == 0,
             "unresolved_release_count": len(required) - resolved_count + release_grounding_unresolved,
             "release_resolution_states": {
                 str(item.get("obligation_id") or ""): str(item.get("resolution_state") or "unresolved")
@@ -538,6 +541,7 @@ def evaluate_response_coverage(
             },
             "explicit_holds_are_answers": False,
             "supported_routes_are_answers": False,
+            "release_safety_is_answer_completion": False,
             "answered_loop_ids": answered_loop_ids,
             "items": items,
             "conversation_spine_alignment": spine_alignment,
@@ -1743,7 +1747,7 @@ def _response_shape_metadata(text: str, kind: str) -> dict[str, Any]:
     count = _requested_item_count(lower)
     counted = re.search(
         r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+"
-        r"(?:tiny\s+|little\s+|small\s+|short\s+|brief\s+|practical\s+)?"
+        r"(?:(?P<count_brevity>tiny|little|small|short|brief|concise|practical)\s+)?"
         r"(?:next\s+)?"
         r"(?P<unit>parts?|points?|steps?|items?|sections?|facts?|examples?|questions?|jokes?|puns?|options?|reasons?)\b",
         lower,
@@ -1751,10 +1755,14 @@ def _response_shape_metadata(text: str, kind: str) -> dict[str, Any]:
     # "Small correction" and "tiny correction" describe the size of the
     # revision, not the desired answer length. Treat smallness as a response
     # shape only when it modifies an actual response unit; explicit
-    # short/brief/concise language remains sufficient on its own.
+    # short/brief/concise language must also modify the response or be used as
+    # an answer-length instruction; a "short walk" or "brief delay" is prompt
+    # content, not a hidden word limit.
     brevity_match = re.search(
-        r"\b(short|brief|concise)\b|"
-        r"\b(tiny|little|small)\s+(?:answer|reply|response|summary|explanation|paragraph|note)\b",
+        r"\b(?:keep|make)\s+(?:it|the\s+answer|the\s+reply|the\s+response)?\s*"
+        r"(short|brief|concise)\b|"
+        r"\b(short|brief|concise|tiny|little|small)\s+"
+        r"(?:answer|reply|response|summary|explanation|paragraph|note)\b",
         lower,
     )
     ordered = bool(
@@ -1774,6 +1782,7 @@ def _response_shape_metadata(text: str, kind: str) -> dict[str, Any]:
                 ),
                 "",
             )
+            or (counted.group("count_brevity") if counted else "")
         ),
         "ordered": ordered,
         "act_kind": kind,

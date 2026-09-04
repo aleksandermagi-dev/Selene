@@ -111,3 +111,22 @@ def test_direct_correction_preserves_new_and_replaced_values() -> None:
     )
     assert ledger["owner_inputs_are_answers"] is False
     _assert_locked(ledger)
+
+
+def test_plain_observed_motion_is_available_to_the_hypothesis_owner() -> None:
+    ledger = _ledger(
+        "A plant bends toward one window each afternoon. Give one hypothesis, "
+        "one alternative, and the smallest next observation."
+    )
+    owner = next(
+        item
+        for item in ledger["owner_inputs"]
+        if "hypothesis" in item["requested_response_functions"]
+    )
+
+    assert owner["supplied_fields"]["observations"] == [
+        "A plant bends toward one window each afternoon."
+    ]
+    assert owner["supplied_fields"]["relations"][0]["predicate"] == "bends"
+    assert "observation" in ledger["facts_by_kind"]
+    _assert_locked(ledger)

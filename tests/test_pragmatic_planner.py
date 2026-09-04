@@ -846,13 +846,15 @@ def test_release_resolution_distinguishes_supported_hold_from_answer():
     )
 
     assert coverage["all_required_addressed"] is False
-    assert coverage["all_required_resolved"] is True
+    assert coverage["all_required_resolved"] is False
+    assert coverage["all_required_release_safe"] is True
     assert coverage["resolved_count"] == 1
     assert coverage["unresolved_release_count"] == 0
     assert coverage["items"][0]["resolution_state"] == "supported_route"
     assert coverage["items"][0]["explicitly_held"] is True
     assert coverage["items"][0]["supported_route_present"] is True
     assert coverage["explicit_holds_are_answers"] is False
+    assert coverage["release_safety_is_answer_completion"] is False
 
 
 def test_release_resolution_does_not_let_unrelated_text_borrow_a_missing_ground_part():
@@ -909,6 +911,21 @@ def test_canonical_ledger_preserves_compare_choose_and_reason_as_distinct_functi
         ]
         assert plan["obligation_ledger"]["obligations"] == obligations
         assert plan["obligation_ledger"]["downstream_reparse_allowed"] is False
+
+
+def test_option_adjectives_do_not_become_hidden_response_length_limits():
+    plan = build_pragmatic_plan(
+        {
+            "prompt": (
+                "Compare a short walk with sitting on a porch for a tired evening. "
+                "Choose one, give a reason, and name a limit."
+            )
+        }
+    )
+
+    comparison = plan["response_obligations"][0]
+    assert comparison["kind"] == "comparison"
+    assert comparison["response_shape"]["brevity"] == ""
 
 
 def test_canonical_ledger_keeps_conditional_disagreement_as_one_typed_act():

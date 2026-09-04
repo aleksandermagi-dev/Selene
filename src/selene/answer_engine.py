@@ -1263,6 +1263,13 @@ def _looks_like_math(value: str) -> bool:
         return True
     if _contains_any(lower, ("multiply", "divide")) and re.search(r"\d", value):
         return True
+    if re.search(
+        r"\b(?:which|compare)\b.{0,80}\b(?:halves?|thirds?|quarters?|fourths?|fifths?|sixths?|"
+        r"sevenths?|eighths?|ninths?|tenths?|elevenths?|twelfths?)\b",
+        value,
+        flags=re.IGNORECASE,
+    ):
+        return True
     number = r"(?:\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
     if re.search(
         rf"\b{number}\s+(?:plus|minus|times|multiplied\s+by|divided\s+by)\s+"

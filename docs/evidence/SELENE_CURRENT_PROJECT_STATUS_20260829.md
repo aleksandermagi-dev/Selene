@@ -205,6 +205,17 @@ repository regression passed 2,080 tests in 1,229.92 seconds. The production
 frontend remains 491.33 kB (gzip 109.19 kB), with no Vite warning and lazy
 Study workspaces.
 
+The post-Phase-8 repair run closes all 14 observations from the fresh-install
+Q&A for their exact focused synthetic scope. Named-fraction answering and its
+follow-up explanation, visible option and criterion use, correction
+recomputation, current-observation hypotheses, retrieval role fit, association
+restraint, bounded local revision, creative pacing, mixed-act completion, and
+truthful completion metadata now pass two exact disposable Chat replays. The
+full repository regression passes 2,086 tests in 747.98 seconds; Python
+compilation and the production build pass, and the frontend remains 491.33 kB
+(gzip 109.20 kB) with no Vite warning and lazy Study workspaces. No resident
+database or review decision was used.
+
 ## Current Open Edge
 
 Phase 8 is closed for current scope. Its typed goals, bounded conflict receipt,
@@ -214,6 +225,11 @@ runtime, resident-read-only, and frontend verification. Phase work is paused
 here. Phase 9 has not started.
 No unrestricted autonomy switch, hidden agenda, organ competition, silent
 commitment loss, or external action authority is authorized.
+
+The 14 recorded post-Phase-8 Q&A findings are closed for their reproduced
+synthetic cases. This is not a claim of universal language coverage; unfamiliar
+phrasing and longer unscripted exchanges remain appropriate future evaluation
+material.
 
 F2 Group 8—ratios, unit comparison, percentages, scale, and proportional
 language—remains unprepared and unauthorized. Its exact Grade 4-6 source

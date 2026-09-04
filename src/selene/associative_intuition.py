@@ -56,8 +56,9 @@ _STOP = {
     "before", "being", "both", "can", "could", "does", "each", "for",
     "from", "have", "into", "just", "more", "most", "other", "should",
     "some", "that", "the", "their", "then", "there", "these", "they",
+    "answer", "check", "choose", "give", "limit", "name", "one", "reason", "reply", "request",
     "thing", "things", "this", "those", "through", "what", "when",
-    "where", "which", "with", "would", "your", "selene",
+    "where", "which", "why", "with", "work", "would", "your", "selene",
 }
 
 # These cues select eligible source material; they never supply answer content.

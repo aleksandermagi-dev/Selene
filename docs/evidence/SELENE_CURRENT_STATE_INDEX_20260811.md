@@ -2,7 +2,7 @@
 
 Originally indexed: 2026-08-11
 
-Current refresh: 2026-09-02
+Current refresh: 2026-09-04
 Branch: `evidence`
 Status: date-stamped repository and configured-runtime truth
 
@@ -164,6 +164,8 @@ configured runtime reported 225 approved knowledge resources and SQLite integrit
 1,984 repository tests passed at the 2026-08-29 Phase 5 closure
 production TypeScript/Vite build passed at 491.33 kB (gzip 109.20 kB) with no size warning
 141 curriculum source files verified with zero checksum failures at the Phase 6 mapping checkpoint
+2,086 repository tests passed at the 2026-09-04 post-Phase-8 Q&A repair closure
+production TypeScript/Vite build remained 491.33 kB (gzip 109.20 kB) with no size warning
 ```
 
 `tests/test_current_state_index.py` now checks the source-defined F1, F2,

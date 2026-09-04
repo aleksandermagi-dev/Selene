@@ -176,6 +176,23 @@ def test_one_broad_resemblance_does_not_create_a_connection(tmp_path):
     assert result["stopping_receipt"]["recursive_reactivation_requested"] is False
 
 
+def test_request_scaffolding_does_not_become_associative_content(tmp_path):
+    conn = _conn(tmp_path)
+    _approved_concept(conn)
+
+    result = build_associative_intuition_bridge(
+        conn,
+        {"trigger_text": "Why does that check work? Give one reason and name a limit."},
+    )
+
+    assert result["contribution_ready"] is False
+    assert result["contribution_candidates"] == []
+    selected = result["selected_candidate"]
+    if selected:
+        shared_terms = selected["activation_basis"]["shared_terms"]
+        assert not {"why", "check", "work", "give", "one", "reason", "limit"}.intersection(shared_terms)
+
+
 def test_personal_memory_privacy_is_reused_before_content_enters_association_text(tmp_path):
     conn = _conn(tmp_path)
     conn.execute(

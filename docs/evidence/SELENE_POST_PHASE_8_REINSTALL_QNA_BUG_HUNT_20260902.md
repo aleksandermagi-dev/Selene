@@ -2,8 +2,8 @@
 
 Date: 2026-09-02
 
-Status: fresh reinstall verified; bounded observation complete; findings
-recorded without repair; Phase 9 not started
+Status: fresh reinstall verified; bounded observation complete; all 14 recorded
+findings repaired and synthetically verified on 2026-09-04; Phase 9 not started
 
 ## Purpose
 
@@ -166,13 +166,60 @@ safety chain, automatic truth, additional teaching, or a global autonomy
 switch. The eventual repair should cultivate the existing owners and their
 handoffs.
 
-## Pause Boundary
+## Repair Closure — 2026-09-04
 
-No fix was made. Phase 9 was not started. The disposable Q&A database was
-removed after these observations were recorded.
+Aleks authorized one focused repair run. The production changes cultivated the
+existing answer, fact-ledger, pragmatic, association, NLO/Voice, and visible-
+release handoffs. No new organ, hidden state, teaching item, global restriction,
+or automatic knowledge/Memory path was added.
 
-When Aleks later chooses a repair pass, begin from the P0 connective seams:
-answer ownership, prompt-contained premises, correction recomputation,
-requested-function relevance, and visible completion proof. Do not mask them
-with extra teaching or expression variation, and do not repeat a live resident
-Q&A before focused synthetic checks pass.
+| ID | Repair evidence | Current status |
+|---|---|---|
+| Q8R-01 | The bounded math owner now parses named fraction comparisons and emits one exact common-denominator check. | Closed for recorded case |
+| Q8R-02 | The immediate `Why does that check work?` callback reconstructs the visible fraction comparison and explains equal-sized denominator parts. | Closed for recorded case |
+| Q8R-03 | Visible option adjectives no longer become hidden answer-length limits; option/criterion prompts reach the existing choice owner. | Closed for recorded cases |
+| Q8R-04 | Notebook and walk/porch corrections now recompute the requested choice from the changed constraint. | Closed for recorded cases |
+| Q8R-05 | The local correction reconstruction preserves the visible `Actually,` transition. | Closed for recorded case |
+| Q8R-06 | The initial walk/porch answer stays within the supplied alternatives and does not introduce rain or reading. | Closed for recorded case |
+| Q8R-07 | The current-turn fact ledger recognizes observed directional growth and the hypothesis owner uses it for a provisional hypothesis, alternative, and next observation. | Closed for recorded case |
+| Q8R-08 | The next-check request stays attached to the active plant observation rather than unrelated learned simple-machine material. | Closed for recorded case |
+| Q8R-09 | Request scaffolding no longer creates weak associative overlap, and uninvited associations cannot occupy response space while direct obligations are open. | Closed for recorded cases |
+| Q8R-10 | The second-sentence-only revision returns the bounded artifact without an appended association. | Closed for recorded case |
+| Q8R-11 | The slow/soft revision avoids repeating `lingered` and uses a distinct pause construction. | Closed for recorded case |
+| Q8R-12 | `all_required_resolved` now means actually answered; a supported hold has a separate `all_required_release_safe` receipt and cannot impersonate answer completion. | Closed at contract and integrated levels |
+| Q8R-13 | Internal owner/scaffold phrases remain absent, and a meaning-preserved NLO reconstruction is no longer duplicated by the Answer Engine invariant guard. | Closed for recorded cases |
+| Q8R-14 | The mixed greeting and approach question receives a direct, bounded answer while remaining socially open. | Closed for recorded case |
+
+Two exact integrated regressions replay the original six-turn diagnostic and
+eight-turn ordinary sessions against disposable databases. They require all
+visible obligations to be addressed, no internal-contract leakage, no weak
+association appendix, natural terminal stopping, and zero Memory proposal or
+reviewed Memory write. The diagnostic replay remains diagnostic-only; the
+ordinary replay uses the normal non-diagnostic path.
+
+Verification result:
+
+```text
+focused repaired-owner and Chat matrix: 276 passed
+exact repair and documentation-contract rerun: 7 passed
+full repository regression: 2,086 passed in 747.98s
+Python compilation: passed
+frontend production build: 491.33 kB (gzip 109.20 kB)
+Vite size warning: none
+Study workspaces: lazy-loaded
+git diff --check: passed apart from expected Windows line-ending notices
+```
+
+The full run also exposed two stale documentation assertions left by the
+already-committed September 2 current-state and September 3 README refresh.
+Those tests now verify the refreshed September 4 index date and the current
+Dream review-boundary wording rather than requiring removed historical prose.
+
+## Closure Boundary
+
+All 14 observations are closed for their recorded and focused synthetic scope.
+This does not claim universal conversational coverage; unfamiliar phrasings and
+longer unscripted exchanges remain appropriate future evaluation material.
+No live resident Q&A, reinstall, schema change, teaching action, Memory/Study/
+Dream decision, or resident write was used for the repair. Phase 9 remains
+unstarted.

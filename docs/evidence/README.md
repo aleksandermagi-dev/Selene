@@ -16,10 +16,15 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
-- [Current Project Status — updated September 1, 2026](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
+- [Post-Phase-8 Reinstall Q&A and Repair Closure — September 4, 2026](SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md)
+  — preserves the original observation-only reinstall evidence and records the
+  focused closure of all 14 findings through two exact disposable Chat
+  replays, 2,086 repository tests, compilation, and the unchanged frontend
+  bundle boundary; no resident review decision or Phase 9 work occurred.
+- [Current Project Status — updated September 4, 2026](SELENE_CURRENT_PROJECT_STATUS_20260829.md)
   — consolidated current checkpoint for completed whole-system phases,
   configured resident counts, verification, honest limits, Git state, and the
-  exact Phase 7C resume point.
+  exact paused post-Phase-8 resume point.
 - [Whole-System Phase 7B — Long-Form Discourse Lifecycle — September 1, 2026](SELENE_WHOLE_SYSTEM_PHASE_7B_LONG_FORM_DISCOURSE_20260901.md)
   — verifies one bounded typed section spine, source/epistemic and thread
   receipts, unsupported-role holds, local target-only revision, and a single
@@ -123,7 +128,7 @@ a prototype result into a universal conclusion.
 - [G12 Live-Teaching Post-Reinstall Q&A](SELENE_G12_LIVE_TEACHING_POST_REINSTALL_QNA_20260820.md)
   — first bounded evidence-grounded breadth lesson taught live, followed by a
   20-turn diagnostic note-first assessment of the remaining ownership seams.
-- [Current-State Index — refreshed August 29, 2026](SELENE_CURRENT_STATE_INDEX_20260811.md)
+- [Current-State Index — refreshed September 4, 2026](SELENE_CURRENT_STATE_INDEX_20260811.md)
   — canonical dated counts for repository-defined and configured-runtime
   curriculum, language guidance, and Dream state.
 - [What Selene Can Currently Do](SELENE_CURRENT_CAPABILITIES_20260717.md) —

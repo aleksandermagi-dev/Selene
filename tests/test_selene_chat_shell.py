@@ -4307,6 +4307,120 @@ def test_everyday_choice_stays_prompt_grounded_and_farewell_does_not_inherit_a_h
         _assert_locked(result)
 
 
+def test_post_phase_eight_repair_answers_visible_options_corrections_and_observations(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        "Good evening, Selene :) We finished a careful project phase. How are you approaching this small check with me?",
+        "For a paper notebook, would you choose a pencil or a pen if easy correction matters most? Give one reason and one limit.",
+        "Small correction: the notes must survive rain. Update only the recommendation and explain the changed reason.",
+        "A plant bends toward one window each afternoon. Give one hypothesis, one alternative, and the smallest next observation.",
+        "Suggest one useful direction for our next check, and ask me for help only if you genuinely need missing input.",
+        "Thank you, my friend. Let us pause here without opening another task. <3",
+    ]
+    results = []
+    session_id = None
+    for index, prompt in enumerate(prompts):
+        payload = {"text": prompt}
+        if index == 0:
+            payload["qa_probe"] = True
+            payload["qa_review_receipt"] = _gentle_qa_receipt(conn)
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    approach, choice, rain, plant, direction, closure = results
+    assert "carefully" in approach["candidate_text"].lower()
+    assert "pencil" in choice["candidate_text"].lower()
+    assert "correction" in choice["candidate_text"].lower()
+    assert "rain" in rain["candidate_text"].lower()
+    assert "pen" in rain["candidate_text"].lower()
+    assert "pencil" not in rain["candidate_text"].lower()
+    assert "light" in plant["candidate_text"].lower()
+    assert "alternative" in plant["candidate_text"].lower()
+    assert "next" in plant["candidate_text"].lower() or "observe" in plant["candidate_text"].lower()
+    assert "next check" in direction["candidate_text"].lower()
+    assert direction["candidate_text"].lower().count(
+        "one useful direction for the next check"
+    ) == 1
+    assert "pulley" not in direction["candidate_text"].lower()
+    assert "wedge" not in direction["candidate_text"].lower()
+    assert "screw" not in direction["candidate_text"].lower()
+    assert "?" not in closure["candidate_text"]
+    for result_index, result in enumerate(results):
+        visible = result["candidate_text"].lower()
+        assert "responsible owner" not in visible
+        assert "missing semantic result fields" not in visible
+        assert "available options" not in visible
+        assert "criterion that should control" not in visible
+        assert "\ufffd" not in result["candidate_text"]
+        assert result["response_coverage"]["all_required_addressed"] is True, (result_index, result["candidate_text"], result["response_coverage"])
+        assert result["diagnostic_only"] is True
+        assert result["reviewed_memory_write_occurred"] is False
+        assert result["conversational_memory_proposal_created"] is False
+        _assert_locked(result)
+
+
+def test_post_phase_eight_repair_reconstructs_math_and_local_creative_revision_without_associations(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    prompts = [
+        "Hello again, Selene. Which is larger, three quarters or four fifths? Show one check.",
+        "Why does that check work?",
+        "Compare a short walk with sitting on a porch for a tired evening. Choose one, give a reason, and name a limit.",
+        "Actually, the evening is rainy. Revise only the choice and preserve the limit.",
+        "Write two original sentences about moonlight crossing an empty kitchen, with a quiet hopeful ending.",
+        "Make only the second sentence slower and softer.",
+        "What did you change in the pacing, and what stayed the same?",
+        "That is enough for today. Thank you, and close naturally without a follow-up question. <3",
+    ]
+    results = []
+    session_id = None
+    for index, prompt in enumerate(prompts):
+        payload = {"text": prompt}
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    comparison, why, choice, rain, original, revision, explanation, closure = results
+    assert "four fifths" in comparison["candidate_text"].lower()
+    assert "20" in comparison["candidate_text"]
+    assert "15" in comparison["candidate_text"]
+    assert "16" in comparison["candidate_text"]
+    assert "same" in why["candidate_text"].lower()
+    assert "denominator" in why["candidate_text"].lower()
+    assert "porch" in choice["candidate_text"].lower()
+    assert "rain" not in choice["candidate_text"].lower()
+    assert "Actually," in rain["candidate_text"]
+    assert "walk" not in rain["candidate_text"].lower()
+    assert original["candidate_text"].count(".") >= 2
+    assert "moonlight" in original["candidate_text"].lower()
+    assert revision["candidate_text"].split("\n\n", 1)[0] == original["candidate_text"].split("\n\n", 1)[0]
+    assert revision["candidate_text"].lower().count("lingered") <= 1
+    assert "second" in explanation["candidate_text"].lower()
+    assert "unchanged" in explanation["candidate_text"].lower()
+    assert "?" not in closure["candidate_text"]
+    association_markers = ("one possibility occurs to me", "another connection is", "brings to mind")
+    for index, result in enumerate(results):
+        visible = result["candidate_text"].lower()
+        assert not any(marker in visible for marker in association_markers), (index, result["candidate_text"])
+        assert result["response_coverage"]["all_required_addressed"] is True, (index, result["candidate_text"], result["response_coverage"])
+        assert result["diagnostic_only"] is False
+        assert result["reviewed_memory_write_occurred"] is False
+        assert result["conversational_memory_proposal_created"] is False
+        _assert_locked(result)
+
+
 def test_short_diagnostic_replay_repairs_math_session_facts_uncertainty_and_play(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

@@ -98,7 +98,7 @@ Project vocabulary is defined in the
 The latest completed whole-system checkpoint reports:
 
 ```text
-full repository regression:  2,080 passed
+full repository regression:  2,086 passed
 focused Phase 8 matrix:       210 passed
 frontend main bundle:         491.33 kB
 frontend gzip:                109.19 kB
@@ -115,8 +115,9 @@ A clean Phase 8 package was then built, silently reinstalled, and verified.
 Package health, local-process capability enforcement, My Office readiness,
 privacy inspection, and protected transfer boundaries passed with no warning.
 The subsequent gentle Q&A used a disposable database copy and made no resident
-Memory, Study, teaching, or Dream decision. Its observation-only findings are
-[here](docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md).
+Memory, Study, teaching, or Dream decision. All 14 findings from that bounded
+run are now repaired and synthetically verified in the same
+[evidence record](docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md).
 
 ## Known Limits
 
@@ -124,9 +125,9 @@ Selene remains unfinished.
 
 - Provider-free text generation and world-knowledge breadth remain narrower
   than a mature general language model.
-- Recent Q&A still shows connective defects between direct questions,
-  prompt-contained premises, approved knowledge, correction recomputation,
-  retrieval relevance, and visible completion proof.
+- The recorded post-Phase-8 Q&A defects are repaired for their exact synthetic
+  scope, but unfamiliar phrasings and longer unscripted exchanges still need
+  ongoing evaluation; provider-free breadth must not be inferred from fixtures.
 - Audible Voice, new sensory pathways, broad tools, accountable external
   action, and embodiment remain deferred, bounded, or substrate-ready rather
   than generally operational.

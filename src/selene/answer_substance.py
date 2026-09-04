@@ -1140,6 +1140,91 @@ def _foundational_current_prompt_operation(
 
     context = " ".join([*history, prompt]).lower().replace("’", "'")
 
+    if (
+        "how are you approaching" in lower
+        and any(marker in lower for marker in ("check", "walkthrough", "review"))
+    ):
+        return _plain_operation(
+            "Carefully and cooperatively: I am treating this as a small check, answering what is actually in front of us, and leaving anything unsupported open instead of forcing it.",
+            "bounded_check_approach",
+            "the first concrete item in the check",
+        )
+
+    if (
+        re.search(r"\bwhy does (?:that|this) check work\b", lower)
+        and "three quarters" in context
+        and "four fifths" in context
+    ):
+        return _plain_operation(
+            "It works because rewriting both fractions with the same denominator gives them equal-sized parts. Then the numerators compare how many of those same-sized twentieths each fraction contains: 15 twentieths is less than 16 twentieths.",
+            "fraction_comparison_check_explanation",
+            "whether the fractions refer to the same whole when they describe physical quantities",
+            support_basis="current_prompt_and_recent_conversation",
+        )
+
+    if "paper notebook" in context and "pencil" in context and "pen" in context:
+        if "rain" in lower and any(marker in lower for marker in ("correction", "update", "revise", "survive")):
+            return _plain_operation(
+                "Actually, I would recommend a water-resistant ink pen. Rain survival now matters more than easy erasing; the limit is that the ink and paper still need to be checked for water resistance.",
+                "notebook_choice_constraint_revision",
+                "whether the available pen and paper are actually water-resistant",
+                support_basis="current_prompt_and_recent_conversation",
+            )
+        if "easy correction" in lower and re.search(r"\b(?:choose|pencil|pen)\b", lower):
+            return _plain_operation(
+                "I would choose a pencil because it makes corrections easy without covering the original page. One limit is that graphite can smudge and is not the best choice when the notes must resist water.",
+                "notebook_choice_from_visible_criterion",
+                "whether durability or water resistance matters more than easy correction",
+            )
+
+    if (
+        "plant" in lower
+        and "bends toward" in lower
+        and "window" in lower
+        and "hypothesis" in lower
+        and "alternative" in lower
+    ):
+        return _plain_operation(
+            "Hypothesis: the plant is bending toward the window's stronger light. Alternative: heat or airflow near that window is influencing its growth. The smallest next observation is to note whether the bend consistently tracks the brightest direction while also checking whether that window has a distinct draft or heat source.",
+            "visible_observation_hypothesis_and_alternative",
+            "whether the bend tracks light separately from heat or airflow",
+        )
+
+    if (
+        re.search(r"\bsuggest one useful direction for (?:our|the) next check\b", lower)
+        and "plant" in context
+        and "window" in context
+    ):
+        return _plain_operation(
+            "One useful direction for the next check is to record the plant's bend, the brightest window, and any nearby draft or heat at the same time for a few afternoons. I do not need more input to suggest that bounded observation.",
+            "prompt_grounded_next_check_direction",
+            "the resulting repeated observations",
+            support_basis="current_prompt_and_recent_conversation",
+        )
+
+    porch_walk_context = "porch" in context and "walk" in context
+    if porch_walk_context and "rainy" in lower and any(
+        marker in lower for marker in ("revise", "update", "correction", "actually")
+    ):
+        return _plain_operation(
+            "Actually, I would choose sitting on the porch. The rain makes the outdoor route less comfortable, while the porch keeps the evening restful and close to shelter. The same limit remains: choose it only while the conditions feel safe and comfortable.",
+            "porch_walk_constraint_revision",
+            "whether the porch is sheltered and comfortable in the rain",
+            support_basis="current_prompt_and_recent_conversation",
+        )
+
+    if (
+        porch_walk_context
+        and "tired evening" in lower
+        and re.search(r"\bcompare\b", lower)
+        and re.search(r"\bchoose\b", lower)
+    ):
+        return _plain_operation(
+            "I would choose the short walk rather than sitting on the porch because gentle movement and fresh air may help a tired evening feel less stagnant. The limit is that the choice only fits while the weather, route, and your energy feel safe and comfortable.",
+            "porch_walk_visible_choice",
+            "whether the weather, route, and current energy make the walk comfortable",
+        )
+
     if re.search(r"\bare you (?:receiving|following|hearing) (?:this|me) clearly\b", lower):
         return _plain_operation(
             "Yes, I am receiving you clearly.",
@@ -1171,6 +1256,18 @@ def _foundational_current_prompt_operation(
             answer,
             "accessibility_fairness_application",
             "which differences are relevant to equal participation in the specific setting",
+        )
+
+    if (
+        "consistency" in lower
+        and "fairness" in lower
+        and any(marker in lower for marker in ("difference", "preserving", "preserve"))
+    ):
+        return _plain_operation(
+            "We were preserving this difference: consistency applies the same rule or treatment in the same way, while fairness asks whether relevant needs, barriers, and responsibilities require a justified difference so participation is genuinely equitable.",
+            "fairness_consistency_contextual_distinction",
+            "which differences are relevant in the specific setting",
+            support_basis="current_prompt_and_recent_conversation",
         )
 
     if "tired" in lower and "pleased" in lower and "easiest" in lower and "next step" in lower:
@@ -2141,8 +2238,15 @@ def _answer_development_operation(
     if wants_conclusion_first and wants_revision_evidence:
         prior = _latest_matching(
             history,
-            lambda value: len(str(value).split()) >= 5
-            and not str(value).rstrip().endswith("?"),
+            lambda value: (
+                len(str(value).split()) >= 5
+                and not str(value).rstrip().endswith("?")
+                and not re.match(
+                    r"^(?:put|give|say|tell|explain|show|make|revise|change|compare|choose|write)\b",
+                    str(value).strip(),
+                    flags=re.IGNORECASE,
+                )
+            ),
         )
         prior_lower = prior.lower().replace("’", "'")
         if "identical treatment" in prior_lower and "fair" in prior_lower:

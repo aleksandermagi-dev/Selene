@@ -253,7 +253,7 @@ def _facts_from_clause(
     relation = re.match(
         r"^(?P<subject>(?:the\s+)?[A-Za-z0-9][A-Za-z0-9_' -]{0,70}?)\s+"
         r"(?P<predicate>is|are|was|were|has|have|costs?|weighs?|holds?|uses?|"
-        r"contains?|dropped?|drops?|rose|rises?|changed?|stayed?|remained?)\s+"
+        r"contains?|bends?|leans?|tilts?|points?|faces?|grows?|dropped?|drops?|rose|rises?|changed?|stayed?|remained?)\s+"
         r"(?P<object>[^?]{1,220}?)(?:[.!]|$)",
         clean,
         flags=re.IGNORECASE,

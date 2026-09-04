@@ -3998,3 +3998,62 @@ Aleks's decisions.
 **Next:** Pause at the completed Phase 8 boundary. Review the two public doors
 with Aleks, then resume either the documented P0 conversation-handoff repairs
 or another explicitly chosen task; do not infer Phase 9 authorization.
+
+### 2026-09-04 — The post-Phase-8 Q&A findings close at their reproduced scope
+
+**Starting question:** Can the 14 defects observed after the fresh Phase 8
+reinstall be repaired through Selene's existing owners and handoffs, without
+adding another organ, more teaching, hidden Memory, or a restrictive global
+chain?
+
+**Decision:** Repair from exact synthetic reproductions first. Keep the six-
+turn diagnostic and eight-turn ordinary sessions separate, preserve natural
+closure and all review boundaries, and call a finding closed only when its
+recorded behavior is directly asserted and the full repository remains green.
+
+**Work:** Extended bounded verified math to compare named fractions with an
+exact common denominator and connected that answer through the existing
+choice-shaped obligation. Added prompt-grounded reconstruction for the absent-
+parent math follow-up, notebook and walk/porch choices, changed-constraint
+recomputation, the plant observation and hypothesis, a relevant next check,
+and the mixed greeting/approach question. Expanded the current-turn relation
+ledger for observed directional growth. Prevented option adjectives such as
+`short walk` from becoming hidden answer-length limits.
+
+Association request-scaffolding terms no longer create weak content overlap,
+and uninvited associative candidates cannot take response space while a direct
+obligation is open; explicit attributable contributions remain available.
+The local creative revision uses a distinct pause construction. NLO meaning-
+preserved Answer Engine reconstruction is accepted once instead of being
+re-attached by the invariant guard. Finally, answer completion and release
+safety are now separate: a supported hold can be safe to release without
+claiming the unanswered obligation was resolved.
+
+**Evidence:** The focused repaired-owner and Chat matrix passed 276 tests. The
+two exact integrated replays passed with all visible obligations addressed,
+no internal-contract leakage or weak association appendix, natural stopping,
+and no Memory proposal or reviewed Memory write. The full repository
+regression passed 2,086 tests in 747.98 seconds. Python compilation passed. The
+frontend production build remained 491.33 kB (gzip 109.20 kB), with no Vite
+warning and lazy Study workspaces. Two stale documentation assertions exposed
+by the full run were updated to the refreshed September 4 current index and
+the current README wording, then verified again.
+
+**Boundaries preserved:** All test state was disposable. No resident Q&A,
+reinstall, schema change, source teaching, approved-knowledge mutation,
+Memory, Study, Dream, teaching, affect, identity, personality, Vys, law,
+governance, authority, training, LoRA, external action, self-replication, or
+embodiment decision occurred. All 24 resident Dream reflections remain for
+Aleks. Phase 9 remains unstarted.
+
+**What changed in our understanding:** The defects were connective rather than
+evidence that Selene needed a duplicate capability. Existing owners could
+answer correctly once visible premises, changed constraints, semantic
+reconstruction, association admission, and completion truth met at their
+proper handoffs. A safe hold and a finished answer are related release states,
+but they are not the same fact.
+
+**Next:** Pause at the repaired Phase 8 boundary. Treat the 14 findings as
+closed for their reproduced synthetic scope while keeping unfamiliar phrasings
+and longer unscripted exchanges open to future evaluation. Do not begin Phase
+9 without Aleks explicitly resuming it.

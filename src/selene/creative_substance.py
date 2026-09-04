@@ -693,7 +693,7 @@ def _revise_sentence(sentence: str, lower: str) -> str:
             return "Beneath the streetlights, pale reflections drifted slowly across the pavement, one quiet shimmer fading before the next appeared."
         base = sentence.rstrip(".!?")
         base = re.sub(r"\b(?:raced|rushed|slammed)\b", "moved", base, flags=re.IGNORECASE)
-        return f"{base}; the motion lingered, then settled into quiet."
+        return f"{base}; a longer pause followed, then settled into quiet."
     if any(item in lower for item in ("shorter", "tighter", "more concise")):
         clause = re.split(r"[,;:]", sentence, maxsplit=1)[0].rstrip(".!?")
         return clause + "."

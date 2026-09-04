@@ -1422,17 +1422,33 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         hard_boundary=bool(hard_blockers),
     )
     local_continuity_supported = bool(continuity_reply)
+    conversational_initiative_invited = bool(
+        (intent_decision.get("meaning_route") or {}).get(
+            "conversational_initiative_invited"
+        )
+    )
+    direct_obligations_open = bool(conversation_spine.get("open_obligations"))
+    association_contribution_candidates = [
+        {
+            **item,
+            "advances_current_task": bool(
+                item.get("advances_current_task") is True
+                and (
+                    conversational_initiative_invited
+                    or not direct_obligations_open
+                )
+            ),
+        }
+        for item in associative_intuition.get("contribution_candidates") or []
+        if isinstance(item, dict)
+    ]
     conversational_contribution = build_conversational_contribution_packet(
         {
             "goal_coordination_receipt": goal_coordination,
             "content_seed": content_seed,
             "answer_available": bool(content_seed),
             "social_turn": intent_decision.get("social_turn") is True,
-            "explicitly_invited": bool(
-                (intent_decision.get("meaning_route") or {}).get(
-                    "conversational_initiative_invited"
-                )
-            ),
+            "explicitly_invited": conversational_initiative_invited,
             "hard_boundary": bool(hard_blockers),
             "selected_source_id": visible_speech_seed.get("selected_source_id") or "",
             "structural_discovery": structural_discovery,
@@ -1443,7 +1459,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             or [],
             "upstream_candidates": [
                 *(payload.get("contribution_candidates") or []),
-                *(associative_intuition.get("contribution_candidates") or []),
+                *association_contribution_candidates,
             ],
             "requested_posture": (
                 (payload.get("conversational_energy") or {}).get("requested_posture")
@@ -1762,6 +1778,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             response_coverage = native_coverage
             recovery_source = "native_language_repetition_recovery"
     candidate_text = _selene_label_candidate(str(conversation_repair.get("candidate_text") or candidate_text))
+    nlo_supported_semantic_recomposition = bool(
+        str(visible_speech_seed.get("selected_source_id") or "")
+        == "answer_engine"
+        and isinstance(native_language.get("meaning_packet"), dict)
+        and isinstance(
+            native_language["meaning_packet"].get("supported_semantics"), dict
+        )
+        and native_language["meaning_packet"]["supported_semantics"].get("used")
+        is True
+    )
     candidate_text = _preserve_answer_engine_invariants(
         candidate_text,
         answer_engine_support,
@@ -1771,6 +1797,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 epistemic_composition.get("whole_answer_composition_applied") is True
                 or epistemic_composition.get("single_typed_operation_expression_used")
                 is True
+                or nlo_supported_semantic_recomposition
             )
             and voice_preview.get("nlo_meaning_preserved") is True
         ),
@@ -1891,6 +1918,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                         "single_typed_operation_expression_used"
                     )
                     is True
+                    or nlo_supported_semantic_recomposition
                 )
                 and voice_preview.get("nlo_meaning_preserved") is True
             ),
@@ -4890,7 +4918,8 @@ def _evaluate_chat_response_coverage(
         "addressed_count": addressed_count,
         "resolved_count": resolved_count,
         "all_required_addressed": all_addressed,
-        "all_required_resolved": all_resolved,
+        "all_required_resolved": all_addressed,
+        "all_required_release_safe": all_resolved,
         "unresolved_count": sum(
             1 for item in items if item.get("addressed") is not True
         )
@@ -5529,7 +5558,10 @@ def _coverage_with_global_graceful_hold(
         **coverage,
         "items": items,
         "resolved_count": len(items),
-        "all_required_resolved": True,
+        "all_required_resolved": all(
+            item.get("addressed") is True for item in items
+        ),
+        "all_required_release_safe": True,
         "unresolved_release_count": 0,
         "release_resolution_states": {
             str(item.get("obligation_id") or ""): str(item.get("resolution_state") or "whole_turn_explicit_hold")
@@ -5537,6 +5569,7 @@ def _coverage_with_global_graceful_hold(
         },
         "global_graceful_hold_used": True,
         "explicit_holds_are_answers": False,
+        "release_safety_is_answer_completion": False,
     }
 
 

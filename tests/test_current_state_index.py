@@ -84,7 +84,7 @@ def test_current_state_index_matches_f2_coding_and_total_knowledge_counts():
 def test_current_state_index_records_canonical_resident_truth():
     index = CURRENT_INDEX.read_text(encoding="utf-8")
 
-    assert "Current refresh: 2026-08-29" in index
+    assert "Current refresh: 2026-09-04" in index
     assert "| Language capabilities | 73 | 73 approved and available" in index
     assert "## Canonical Resident Runtime" in index
     assert "Cocoon external teaching, tending, safety, and review support" in index
@@ -96,7 +96,7 @@ def test_current_facing_docs_do_not_describe_dream_as_unfinished():
     index = CURRENT_INDEX.read_text(encoding="utf-8")
 
     assert "academic coverage, Dream, and" not in quick_readme
-    assert "Dream's source-bound lifecycle is implemented" in quick_readme_words
+    assert "Dream and Memory decisions remain explicitly reviewed rather than automatic" in quick_readme_words
     assert "| Source-bound Dream lifecycle | Implemented and synthetically verified |" in index
     assert all(
         callable(operation)

@@ -217,7 +217,8 @@ def test_precise_missing_input_can_resolve_release_without_becoming_answer() -> 
     assert item["resolved_for_release"] is True
     assert item["resolution_state"] == "supported_route"
     assert coverage["all_required_addressed"] is False
-    assert coverage["all_required_resolved"] is True
+    assert coverage["all_required_resolved"] is False
+    assert coverage["all_required_release_safe"] is True
     assert coverage["missing_ground_statements_are_answers"] is False
 
 

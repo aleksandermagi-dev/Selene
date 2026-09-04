@@ -339,10 +339,18 @@ def inspect_visible_speech(
         issues.append("internal_organ_label_visible")
     if not architecture_requested and re.search(r"\bcandidate model(?:s)?\b", text_lower):
         issues.append("internal_reasoning_scaffold_visible")
+    release_safe = (
+        response_coverage.get("all_required_release_safe")
+        if isinstance(response_coverage, dict)
+        and "all_required_release_safe" in response_coverage
+        else response_coverage.get("all_required_resolved")
+        if isinstance(response_coverage, dict)
+        else None
+    )
     completion_attention_required = bool(
         isinstance(response_coverage, dict)
         and response_coverage.get("obligation_count")
-        and response_coverage.get("all_required_resolved") is not True
+        and release_safe is not True
     )
 
     # A real boundary answer may name the capability being refused. It still may
@@ -365,7 +373,10 @@ def inspect_visible_speech(
         "coverage_checked": isinstance(response_coverage, dict),
         "completion_attention_required": completion_attention_required,
         "all_required_parts_resolved": (
-            response_coverage.get("all_required_resolved")
+            release_safe
+        ),
+        "all_required_parts_answered": (
+            response_coverage.get("all_required_addressed")
             if isinstance(response_coverage, dict)
             else None
         ),

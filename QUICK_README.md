@@ -46,9 +46,9 @@ scope. Phase work is paused, and Phase 9 has not started.
 ## What Is Still Incomplete
 
 Selene's provider-free language and world-knowledge breadth remain smaller
-than a mature general language model. Recent observation-only Q&A also found
-unfinished handoffs between some questions, supplied premises, approved
-knowledge, corrections, relevance, and completion checking.
+than a mature general language model. The 14 findings from the recent bounded
+Q&A are repaired for their exact synthetic scope; unfamiliar phrasings and
+longer unscripted exchanges still need ongoing evaluation.
 
 Audible Voice, additional perception, broad tools, external action, and
 embodiment are not generally operational. No unrestricted public build is
@@ -57,12 +57,12 @@ automatic.
 
 ## Current Evidence
 
-The latest whole-repository regression passed 2,080 tests. The production
+The latest whole-repository regression passed 2,086 tests. The production
 frontend is 491.33 kB (109.19 kB gzip), produces no Vite size warning, and
 keeps Study workspaces lazy-loaded. A fresh Phase 8 Windows reinstall passed
 health, privacy, local-process security, and protected-boundary verification.
 
 For the exact development state, see
 [Selene Current Project Status](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
-For the latest observed conversation defects, see the
+For the observed defects and their repair closure, see the
 [Post-Phase-8 Reinstall Q&A](docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md).
