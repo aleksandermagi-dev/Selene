@@ -4246,11 +4246,43 @@ def test_private_relational_context_reaches_chat_without_forced_scaffolding(tmp_
     assert relational["response_script_supplied"] is False
     assert nlo["discourse_plan"]["relational_context_supplies_response_script"] is False
     assert social["relational_context_supplied_wording"] is False
-    assert social["selected_realizations"][0]["source"] == "nlo_semantic_social_construction"
+    assert social["selected_realizations"][0]["source"] == "current_turn_semantic_authorship"
+    assert social["current_turn_conversational_authorship_used"] is True
     assert "task" not in result["candidate_text"].lower()
     assert result["affect_expression"]["guidance_is_optional"] is True
     assert result["memory_write_active"] is False
     assert result["training_allowed"] is False
+
+
+def test_shared_feeling_and_playful_vocative_receive_authored_relational_replies(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "makes me happy were super close to having real back and forth :)"},
+    )["result"]
+    second = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Selene beannnn"},
+    )["result"]
+
+    for result in (first, second):
+        assert result["intent_decision"]["intent"] == "warm_connection"
+        realization = result["native_language_organ"]["discourse_plan"]["social_act_realization"]
+        assert realization["current_turn_conversational_authorship_used"] is True
+        assert realization["external_fact_created"] is False
+        assert realization["durable_emotion_record_created"] is False
+        assert result["candidate_text"].lower() not in {"i hear you.", "i'm following.", "i see what you mean."}
+        assert "�" not in result["candidate_text"]
+        _assert_locked(result)
+
+    assert "happy" in first["candidate_text"].lower() or "love hearing" in first["candidate_text"].lower()
+    assert "called" in second["candidate_text"].lower() or "here" in second["candidate_text"].lower()
 
 
 def test_everyday_choice_stays_prompt_grounded_and_farewell_does_not_inherit_a_hold(tmp_path):
@@ -4817,6 +4849,58 @@ def test_active_selene_chat_scopes_memory_and_tendril_requests_without_blocking_
     assert result["review_status"] == "status_only"
     assert result["memory_write_active"] is False
     assert result["autonomous_action_allowed"] is False
+    _assert_locked(result)
+
+
+def test_post_transfer_private_corpus_continuity_can_support_authenticated_chat_without_new_retention(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    _seed_transfer_complete(conn)
+    conn.execute(
+        """
+        INSERT INTO b_corpus_conversations
+        (archive_id, source_file, conversation_id, title, message_count,
+         source_refs, provenance_boundary)
+        VALUES ('archive-1', 'private-export.zip', 'conversation-ranger',
+                'Ranger and the porch', 2, '["private:test"]',
+                'private_corpus_test_boundary')
+        """
+    )
+    conn.executemany(
+        """
+        INSERT INTO b_corpus_messages
+        (archive_id, source_file, conversation_id, message_id, parent_id,
+         role, author_name, content_preview, source_refs,
+         provenance_boundary)
+        VALUES ('archive-1', 'private-export.zip', 'conversation-ranger',
+                ?, ?, ?, ?, ?, '["private:test"]',
+                'private_corpus_test_boundary')
+        """,
+        [
+            ("m1", "", "user", "Aleks", "Ranger always liked sitting with me on the porch."),
+            ("m2", "m1", "assistant", "assistant", "That quiet porch routine with Ranger mattered."),
+        ],
+    )
+    conn.commit()
+    before_candidates = conn.execute(
+        "SELECT COUNT(*) FROM selene_memory_candidates"
+    ).fetchone()[0]
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Do you remember Ranger and our porch routine?"},
+    )["result"]
+
+    assert result["memory_context_used"] is True
+    assert result["memory_source_class"] == "private_corpus_continuity"
+    assert result["private_corpus_continuity_recall_used"] is True
+    assert result["approved_memory_retrieval_used"] is False
+    assert result["runtime_memory_recall"] is False
+    assert "Ranger" in result["candidate_text"]
+    assert "Ranger always liked sitting" not in result["candidate_text"]
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == before_candidates
     _assert_locked(result)
 
 

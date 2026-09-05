@@ -193,6 +193,34 @@ def test_request_scaffolding_does_not_become_associative_content(tmp_path):
         assert not {"why", "check", "work", "give", "one", "reason", "limit"}.intersection(shared_terms)
 
 
+def test_common_social_words_do_not_create_a_false_cross_domain_connection(tmp_path):
+    conn = _conn(tmp_path)
+    _approved_concept(conn)
+
+    result = build_associative_intuition_bridge(
+        conn,
+        {
+            "trigger_text": "yeah but not yet, im still out with you and all is good",
+            "hold_optional_association": True,
+        },
+    )
+
+    assert result["contribution_ready"] is False
+    assert result["contribution_candidates"] == []
+    assert result["optional_association_held_for_social_turn"] is True
+    selected = result["selected_candidate"]
+    if selected:
+        assert not {
+            "but",
+            "not",
+            "out",
+            "still",
+            "will",
+            "you",
+            "good",
+        }.intersection(selected["activation_basis"]["shared_terms"])
+
+
 def test_personal_memory_privacy_is_reused_before_content_enters_association_text(tmp_path):
     conn = _conn(tmp_path)
     conn.execute(

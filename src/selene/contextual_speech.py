@@ -146,6 +146,16 @@ def inspect_contextual_follow_up(
         kind, marker = "viewpoint_follow_up", normalized
     elif (
         previous_assistant_preview
+        and previous_user_preview
+        and _assistant_requested_material_scope(previous_assistant_preview)
+        and re.match(
+            r"^(?:regarding|about|for|in terms of|i mean|specifically)\b",
+            normalized,
+        )
+    ):
+        kind, marker = "clarification_fulfillment", "answers_previous_scope_question"
+    elif (
+        previous_assistant_preview
         and re.fullmatch(r".{1,100}?\s+means\s+.{1,240}", normalized)
         and any(
             cue in previous_assistant_preview.lower()
@@ -163,6 +173,11 @@ def inspect_contextual_follow_up(
 
     previous_available = bool(previous_assistant_preview or previous_user_preview or session_landmarks)
     contextual = kind != "none" and (previous_available or kind == "topic_shift")
+    resolved_prompt = (
+        f"{previous_user_preview.rstrip()} {str(prompt or '').strip()}"
+        if contextual and kind == "clarification_fulfillment"
+        else ""
+    )
     return {
         "status": "contextual_follow_up_detected" if contextual else "contextual_follow_up_not_detected",
         "detected": contextual,
@@ -177,12 +192,19 @@ def inspect_contextual_follow_up(
         "matched_session_landmarks": _matching_landmarks(prompt, session_landmarks),
         "previous_confidence": previous.get("confidence_vector") if isinstance(previous.get("confidence_vector"), dict) else {},
         "prompt": truncate(str(prompt or ""), 600),
+        "resolved_prompt": truncate(resolved_prompt, 1200),
+        "clarification_source_prompt": (
+            truncate(previous_user_preview, 600)
+            if kind == "clarification_fulfillment"
+            else ""
+        ),
         "preserve_active_topic": contextual and kind in {
             "confidence_check", "reason_follow_up", "continuation", "elaboration", "example_request",
             "rephrase_request", "viewpoint_follow_up", "alternative_reference",
             "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request",
             "named_callback", "meaning_correction", "answer_development",
             "immediate_user_callback", "comparison_follow_up",
+            "clarification_fulfillment",
         },
         "session_scoped_only": True,
         "memory_write_active": False,
@@ -260,7 +282,7 @@ def apply_contextual_intent(
                 "confidence": "high",
             }
         )
-    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback", "immediate_user_callback", "answer_development", "comparison_follow_up"}:
+    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback", "immediate_user_callback", "answer_development", "comparison_follow_up", "clarification_fulfillment"}:
         result.update(
             {
                 "intent": "reasoning",
@@ -276,6 +298,19 @@ def apply_contextual_intent(
     elif kind == "topic_shift":
         result["topic_shift"] = True
     return result
+
+
+def _assistant_requested_material_scope(value: str) -> bool:
+    lower = " ".join(str(value or "").lower().split())
+    return bool(
+        "?" in value
+        or re.search(
+            r"\b(?:which|what)\s+(?:part|area|subject|context|kind|piece)\b|"
+            r"\bneed\s+(?:the|a|more)\s+(?:subject|context|scope|detail)|"
+            r"\bwhat (?:do you mean|are you referring to)\b",
+            lower,
+        )
+    )
 
 
 def contextual_response_seed(

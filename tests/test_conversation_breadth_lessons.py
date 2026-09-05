@@ -111,8 +111,8 @@ def test_status_exposes_breadth_group_without_requiring_it_to_be_taught(tmp_path
     status = language_teaching_status(conn)
     group = next(entry for entry in status["teaching_groups"] if entry["group_order"] == 12)
 
-    assert status["defined_lesson_count"] == 73
-    assert status["defined_group_count"] == 12
+    assert status["defined_lesson_count"] == 81
+    assert status["defined_group_count"] == 13
     assert group["teaching_group"] == TEACHING_GROUP
     assert group["defined_lesson_count"] == 12
     assert group["stored_lesson_count"] == 0

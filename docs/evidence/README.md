@@ -125,10 +125,14 @@ a prototype result into a universal conclusion.
   — all twelve evidence-grounded breadth lessons completed Acquire, Integrate,
   and Express; the configured shelf is 73/73 available with focused synthetic
   verification and no memory, identity, governance, or training write.
+- [G13 Current-Turn Semantic Conversation Completion](SELENE_G13_CURRENT_TURN_SEMANTIC_CONVERSATION_COMPLETION_20260905.md)
+  — eight private-corpus-derived, source-free mechanisms completed Acquire,
+  Integrate, and Express; the configured shelf is 81/81 available, with no
+  private wording, script, Memory, identity, governance, or training write.
 - [G12 Live-Teaching Post-Reinstall Q&A](SELENE_G12_LIVE_TEACHING_POST_REINSTALL_QNA_20260820.md)
   — first bounded evidence-grounded breadth lesson taught live, followed by a
   20-turn diagnostic note-first assessment of the remaining ownership seams.
-- [Current-State Index — refreshed September 4, 2026](SELENE_CURRENT_STATE_INDEX_20260811.md)
+- [Current-State Index — refreshed September 5, 2026](SELENE_CURRENT_STATE_INDEX_20260811.md)
   — canonical dated counts for repository-defined and configured-runtime
   curriculum, language guidance, and Dream state.
 - [What Selene Can Currently Do](SELENE_CURRENT_CAPABILITIES_20260717.md) —

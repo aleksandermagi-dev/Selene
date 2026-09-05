@@ -59,6 +59,8 @@ _STOP = {
     "answer", "check", "choose", "give", "limit", "name", "one", "reason", "reply", "request",
     "thing", "things", "this", "those", "through", "what", "when",
     "where", "which", "why", "with", "work", "would", "your", "selene",
+    "but", "not", "out", "still", "will", "you", "our", "ours", "mine",
+    "really", "right", "good", "okay", "yeah", "yes", "well", "like",
 }
 
 # These cues select eligible source material; they never supply answer content.
@@ -208,6 +210,7 @@ def build_associative_intuition_bridge(
     excluded_context_ids = _active_context_ids(payload.get("dual_horizon_context"))
     hard_boundary = payload.get("hard_boundary") is True
     diagnostic_only = payload.get("diagnostic_only") is True
+    hold_optional_association = payload.get("hold_optional_association") is True
     maximum_scan = max(20, min(int(payload.get("maximum_scan") or 300), 600))
     maximum_candidates = max(1, min(int(payload.get("maximum_candidates") or 4), 8))
     speaker_envelope = (
@@ -276,6 +279,7 @@ def build_associative_intuition_bridge(
         and int(selected.get("activation_score") or 0) >= 8
         and not hard_boundary
         and not diagnostic_only
+        and not hold_optional_association
         and selected.get("expression_eligible") is True
     )
     contribution_candidates = (
@@ -328,6 +332,7 @@ def build_associative_intuition_bridge(
         "selected_candidate": selected,
         "selected_state": selected_state,
         "contribution_ready": contribution_ready,
+        "optional_association_held_for_social_turn": hold_optional_association,
         "contribution_candidates": contribution_candidates,
         "held_back_sources": held[:30],
         "memory_privacy_gate_reused": True,

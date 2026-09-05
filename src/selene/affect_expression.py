@@ -203,7 +203,15 @@ def _conversation_cues(
             )
         ),
     )
-    _append_if(cues, "technical", any(term in lower for term in ("technical", "exact", "code", "math", "verify", "implementation")))
+    prompt_words = set(re.findall(r"[a-z][a-z0-9_-]*", lower))
+    _append_if(
+        cues,
+        "technical",
+        bool(
+            prompt_words
+            & {"technical", "exact", "code", "math", "verify", "implementation"}
+        ),
+    )
     _append_if(cues, "brief_requested", str(pragmatics.get("response_preference") or "") == "brief")
     _append_if(cues, "developed_requested", str(pragmatics.get("response_preference") or "") == "developed")
     return cues

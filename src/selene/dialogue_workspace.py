@@ -899,7 +899,15 @@ def _resolve_reference(
         "the former", "the latter", "former", "latter", "that", "this", "it", "there",
         "they", "them", "those", "he", "she",
     )
-    token = next((item for item in tokens if re.search(rf"\b{re.escape(item)}\b", lower)), "")
+    token = next(
+        (
+            item
+            for item in tokens
+            if re.search(rf"\b{re.escape(item)}\b", lower)
+            and (item != "there" or _there_is_deictic(lower))
+        ),
+        "",
+    )
     if not token or not previous:
         return None
     previous_preview = truncate(str(previous.get("preview") or ""), 480)
@@ -1094,6 +1102,24 @@ def _advance_correction_lifecycle(
         else:
             result.append(item)
     return result
+
+
+def _there_is_deictic(lower: str) -> bool:
+    """Keep existential/spatial idioms from becoming prior-turn references."""
+
+    if re.search(r"\b(?:is|are|was|were|could be|might be|may be)\s+there\b", lower):
+        return False
+    if re.search(r"\b(?:out|somewhere|anywhere|nowhere)\s+there\b", lower):
+        return False
+    if re.search(r"\bthere\s+(?:is|are|was|were|could|might|may|seems?|appears?)\b", lower):
+        return False
+    return bool(
+        re.search(
+            r"\b(?:go|went|been|stay|stayed|look|looked|happen|happened|"
+            r"from|over|back|right)\s+there\b|\bthere[?!.]?\s*$",
+            lower,
+        )
+    )
 
 
 def _utterance_units(

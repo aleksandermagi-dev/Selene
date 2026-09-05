@@ -60,10 +60,10 @@ def test_current_state_index_matches_repository_defined_language_counts():
     }
     index = CURRENT_INDEX.read_text(encoding="utf-8")
 
-    assert len(LANGUAGE_QOL_LESSONS) == 73
-    assert len(group_orders) == 12
-    assert "| Language groups | 12 |" in index
-    assert "| Language capabilities | 73 |" in index
+    assert len(LANGUAGE_QOL_LESSONS) == 81
+    assert len(group_orders) == 13
+    assert "| Language groups | 13 |" in index
+    assert "| Language capabilities | 81 |" in index
 
 
 def test_current_state_index_matches_f2_coding_and_total_knowledge_counts():
@@ -78,14 +78,14 @@ def test_current_state_index_matches_f2_coding_and_total_knowledge_counts():
     assert "| F2 concepts | 41 unique concepts |" in index
     assert "| Coding curriculum groups | 1 |" in index
     assert "| Coding concepts | 5 unique concepts |" in index
-    assert "| Approved knowledge resources | 225 defined items | 225 retained resources |" in index
+    assert "| Approved knowledge resources | 233 defined items | 233 retained resources |" in index
 
 
 def test_current_state_index_records_canonical_resident_truth():
     index = CURRENT_INDEX.read_text(encoding="utf-8")
 
-    assert "Current refresh: 2026-09-04" in index
-    assert "| Language capabilities | 73 | 73 approved and available" in index
+    assert "Current refresh: 2026-09-05" in index
+    assert "| Language capabilities | 81 | 81 approved and available" in index
     assert "## Canonical Resident Runtime" in index
     assert "Cocoon external teaching, tending, safety, and review support" in index
 

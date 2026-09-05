@@ -553,6 +553,8 @@ def _dialogue_acts(
         acts.append("self_state_question")
     if _is_personal_recall(routing_text, question):
         acts.append("memory_recall")
+    if question and _is_agreement_tag_question(routing_text):
+        acts.append("agreement_check")
     if question:
         acts.append("question")
     if explicit_request:
@@ -579,6 +581,13 @@ def _dialogue_acts(
         _social_match(routing_text, "warm")
         or relational_context.get("direct_affection_present") is True
         or "reunion" in relational_cue_types
+        or relational_cue_types.intersection(
+            {
+                "shared_positive_affect",
+                "shared_enthusiasm",
+                "affectionate_vocative",
+            }
+        )
     ):
         acts.append("warm_connection")
     if (
@@ -656,6 +665,7 @@ def _intent_candidates(
         "gratitude": ("gratitude", 86),
         "greeting": ("greeting", 85),
         "affirmation": ("affirmation", 84),
+        "agreement_check": ("affirmation", 89),
         "playful_connection": ("playful_connection", 70),
         "warm_connection": ("warm_connection", 72),
     }
@@ -893,6 +903,19 @@ def _is_receipt_check(value: str, question: bool) -> bool:
     return question and _has_any(value, ("receiving this", "receiving me", "come through", "read this", "hear me", "message arrive"))
 
 
+def _is_agreement_tag_question(value: str) -> bool:
+    normalized = " ".join(value.rstrip(" ?!.").split())
+    return bool(
+        re.search(
+            r",?\s+(?:does(?:n't|nt) it|is(?:n't|nt) it|are(?:n't|nt) they|"
+            r"was(?:n't|nt) it|were(?:n't|nt) they|can(?:'t|t) it|"
+            r"could(?:n't|nt) it|would(?:n't|nt) it|won(?:'t|t) it|"
+            r"right)$",
+            normalized,
+        )
+    )
+
+
 def _social_match(value: str, kind: str) -> bool:
     patterns = {
         "greeting": ("greetings", "hello", "hey", "hi", "good morning", "good afternoon", "good evening"),
@@ -908,7 +931,7 @@ def _social_match(value: str, kind: str) -> bool:
     }[kind]
     if kind == "greeting":
         return any(re.search(rf"(^|[.!?]\s*){re.escape(pattern)}\b", value) for pattern in patterns)
-    if kind == "farewell" and re.search(r"(?:^|[.!?;]\s*)(?:talk to you later|talk later)(?:\s|[,.!?]|$)", value):
+    if kind == "farewell" and re.search(r"(?:^|[,.!?;]\s*)(?:talk to you later|talk later)(?:\s|[,.!?]|$)", value):
         return True
     if kind == "affirmation" and re.match(r"^(yes|right)\b", value):
         return True

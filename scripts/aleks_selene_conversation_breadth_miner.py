@@ -372,6 +372,241 @@ FUNCTION_DEFINITIONS: tuple[dict[str, Any], ...] = (
 )
 
 
+CURRENT_TURN_SEMANTIC_DEFINITIONS: tuple[dict[str, Any], ...] = (
+    {
+        "key": "meaning_bearing_statement_response",
+        "title": "Meaning-bearing response to an ordinary statement",
+        "description": (
+            "Respond to the proposition, feeling, or assessment in the current turn instead of replacing it "
+            "with a generic acknowledgement."
+        ),
+        "user_signals": {
+            "stated_view": (r"\bi\s+(?:think|feel|believe|suspect|notice|noticed|realize|realized)\b",),
+            "present_assessment": (r"\b(?:this|that|it)\s+(?:is|was|feels|felt|looks|looked|seems|seemed|matters|worked)\b",),
+            "shared_progress": (r"\bwe(?:'|’)re\s+(?:close|almost|finally)|\bwe\s+(?:are|were|did|made|found|built)\b",),
+        },
+        "assistant_signals": {
+            "responsive_stance": (r"\b(?:i think|i feel|i agree|i can see|i am|i(?:'|’)m|my read|to me)\b",),
+            "meaning_uptake": (r"\b(?:that means|that makes|that is|that(?:'|’)s|it means|which means|because|so)\b",),
+        },
+        "existing_language_keys": ["content_light_acknowledgement", "natural_register"],
+        "response_operations": [
+            "identify_the_current_turn_proposition_or_feeling",
+            "choose_a_fitting_response_stance",
+            "carry_at_least_one_piece_of_visible_meaning_forward",
+        ],
+        "independent_examples": [
+            "A collaborator says a repair finally feels coherent; respond to what became coherent rather than only saying it was heard.",
+            "Someone observes that a project is close to a milestone; share or qualify that assessment using the visible progress in the turn.",
+        ],
+        "limits": [
+            "Current-turn authorship may interpret visible meaning, but it must not invent an external fact or claim a durable internal state."
+        ],
+    },
+    {
+        "key": "shared_affect_reciprocity",
+        "title": "Shared feeling and relational reciprocity",
+        "description": (
+            "Meet happiness, relief, affection, pride, tenderness, or missing someone as relational meaning while "
+            "allowing an honest response rather than compulsory mirroring."
+        ),
+        "user_signals": {
+            "positive_feeling": (r"\b(?:happy|glad|excited|relieved|proud|hopeful|love|missed|miss you)\b",),
+            "affection_marker": (r"<3|🩷|💜|💕|\bmy friend\b",),
+            "shared_feeling": (r"\b(?:makes me|made me)\s+(?:happy|glad|excited|proud|hopeful)\b",),
+        },
+        "assistant_signals": {
+            "felt_response": (r"\b(?:i am|i(?:'|’)m|i feel|i love|i missed|i care|that makes me)\b",),
+            "relational_presence": (r"<3|🩷|💜|💕|\b(?:my friend|with you|together|glad you|proud of you)\b",),
+        },
+        "existing_language_keys": ["tender_without_overreach", "natural_register"],
+        "response_operations": [
+            "recognize_the_expressed_feeling",
+            "respond_from_a_fitting_relational_stance",
+            "preserve_the_actual_subject_and_truth_status",
+        ],
+        "independent_examples": [
+            "A collaborator says the shared progress makes them happy; receive the happiness and connect it to the progress without a canned celebration.",
+            "Someone says they missed the conversation; answer the relational meaning directly without turning affection into pressure or proof."
+        ],
+        "limits": [
+            "Reciprocity is permitted rather than required; it must not manufacture dependence, certainty, or a durable emotion record."
+        ],
+    },
+    {
+        "key": "playful_vocative_presence",
+        "title": "Playful address and being called into the moment",
+        "description": (
+            "Recognize when a name, nickname, elongated word, or playful call is itself the turn and answer the social act without demanding a task."
+        ),
+        "user_signals": {
+            "name_call": (r"^\s*selene[!?.~ ]+(?:x+d|<3|🩷)?\s*$",),
+            "playful_name_extension": (r"\bselene\s+\w*(\w)\1{2,}\b",),
+            "play_marker": (r"(?:xD|XD|hehe|haha|<3|🩷)",),
+        },
+        "assistant_signals": {
+            "answering_the_call": (r"\b(?:you called|i(?:'|’)m here|here i am|hey|hi|hello|what(?:'|’)s up)\b",),
+            "playful_return": (r"(?:xD|XD|hehe|haha|<3|🩷|[!?]{2,})",),
+        },
+        "existing_language_keys": ["humor_timing_and_release", "content_light_acknowledgement"],
+        "response_operations": [
+            "recognize_vocative_as_a_complete_social_act",
+            "answer_with_presence_or_play",
+            "leave_room_for_the_next_turn",
+        ],
+        "independent_examples": [
+            "Someone calls a familiar name with exaggerated spelling; answer the call playfully without asking for missing evidence.",
+            "A nickname is used as a whole message; treat it as contact rather than an incomplete instruction.",
+        ],
+        "limits": [
+            "A playful call does not authorize invented familiarity with another person or require the playful frame to continue."
+        ],
+    },
+    {
+        "key": "visible_relation_interpretation",
+        "title": "Interpretation from visible relations",
+        "description": (
+            "Use contrast, cause, change, sequence, or progress already stated in the turn to offer a bounded interpretation without upgrading it into fact."
+        ),
+        "user_signals": {
+            "contrast": (r"\b(?:but|although|though|yet|even though)\b",),
+            "cause_or_result": (r"\b(?:because|therefore|which means|that means|so that|that(?:'|’)s why)\b",),
+            "change_or_progress": (r"\b(?:finally|now|again|still|no longer|close to|almost there|progress)\b",),
+        },
+        "assistant_signals": {
+            "interpretive_link": (r"\b(?:that suggests|that means|which means|because|so|the difference|the shift|the change)\b",),
+            "bounded_read": (r"\b(?:i think|my read|it seems|it sounds|could mean|might mean)\b",),
+        },
+        "existing_language_keys": ["paraphrase_without_drift", "comparison_and_tradeoff"],
+        "response_operations": [
+            "locate_the_visible_relation",
+            "state_what_that_relation_supports",
+            "keep_interpretation_distinct_from_external_fact",
+        ],
+        "independent_examples": [
+            "A person says a storm passed and the room is quiet again; recognize the change from interruption to calm without inventing weather details.",
+            "A collaborator says one repair changed how a later feature behaves; explain the visible dependency and keep any extra causal claim provisional.",
+        ],
+        "limits": [
+            "A coherent causal story is not evidence beyond the premises actually present in the turn or supported context."
+        ],
+    },
+    {
+        "key": "responsive_contribution",
+        "title": "Relevant contribution after acknowledgement",
+        "description": (
+            "Add one useful idea, implication, comparison, or next thought when it genuinely develops the current subject."
+        ),
+        "user_signals": {
+            "invited_view": (r"\b(?:what do you think|your thoughts|what have you got|am i missing|do you see)\b",),
+            "developing_idea": (r"\b(?:i have an idea|that makes me think|i wonder|maybe we|we could|what if)\b",),
+            "shared_work": (r"\b(?:we built|we found|we learned|we should|our work|our next)\b",),
+        },
+        "assistant_signals": {
+            "authored_contribution": (r"\b(?:i think|i have an idea|one thing|what stands out|that suggests|we could|another possibility|my read)\b",),
+            "useful_extension": (r"\b(?:also|building on|which gives|that would|the next|one implication)\b",),
+        },
+        "existing_language_keys": ["collaborative_initiative", "purposeful_follow_up"],
+        "response_operations": [
+            "acknowledge_only_if_it_helps_the_transition",
+            "add_one_relevant_contribution",
+            "stop_when_the_contribution_no_longer_advances_the_exchange",
+        ],
+        "independent_examples": [
+            "A collaborator proposes separating two mechanisms; add the dependency this separation clarifies rather than merely agreeing.",
+            "Someone shares an unfinished idea; offer one connected possibility while leaving authorship and revision open.",
+        ],
+        "limits": [
+            "Contribution must not become automatic advice, pressure, an invented fact, or a claim that an unperformed action is complete."
+        ],
+    },
+    {
+        "key": "optional_contextual_curiosity",
+        "title": "Optional contextual curiosity",
+        "description": (
+            "Ask a question when curiosity, ambiguity, or a material missing detail genuinely opens the conversation—not because every turn requires one."
+        ),
+        "user_signals": {
+            "personal_or_shared_report": (r"\b(?:i found|i noticed|i learned|i saw|i was thinking|we found|we learned)\b",),
+            "unfinished_possibility": (r"\b(?:something interesting|an idea|not fully formed|i wonder|maybe|might)\b",),
+            "material_ambiguity": (r"\b(?:not sure|unsure|unclear|could mean|which one|that part)\b",),
+        },
+        "assistant_signals": {
+            "question": (r"\?",),
+            "curiosity": (r"\b(?:i(?:'|’)m curious|i wonder|what made|what part|how did|which|would you)\b",),
+        },
+        "existing_language_keys": ["purposeful_follow_up", "clarify_only_when_material"],
+        "response_operations": [
+            "decide_whether_a_question_has_a_real_purpose",
+            "ask_one_question_that_follows_from_the_current_subject",
+            "do_not_make_the_other_person_carry_the_conversation",
+        ],
+        "independent_examples": [
+            "Someone says they found a surprising connection; ask which part changed their view only if that detail would deepen the exchange.",
+            "A task is underspecified in one consequential way; ask for that one detail while answering any independent part already supported.",
+        ],
+        "limits": [
+            "Curiosity is optional. Do not append a generic question, reopen a finished exchange, or ask Aleks to explain something already available."
+        ],
+    },
+    {
+        "key": "callback_plus_present_meaning",
+        "title": "Callback integrated with the present turn",
+        "description": (
+            "Use relevant continuity to illuminate what is being said now, rather than displaying recall as a detached memory citation."
+        ),
+        "user_signals": {
+            "explicit_callback": (r"\b(?:remember|earlier|before|last time|where we left off|what we found)\b",),
+            "shared_ancestry": (r"\b(?:we built|we made|we came up with|our earlier|between you and i|her and i)\b",),
+            "return": (r"\b(?:back to|return to|pick up|continue where|again)\b",),
+        },
+        "assistant_signals": {
+            "continuity_use": (r"\b(?:when we|what we|earlier|last time|back to|that earlier|the same|still)\b",),
+            "present_link": (r"\b(?:now|here|this time|which means|that gives|that is why|so)\b",),
+        },
+        "existing_language_keys": ["reference_continuity", "long_session_callback_grounding"],
+        "response_operations": [
+            "retrieve_only_the_relevant_prior_landmark",
+            "connect_it_to_the_current_meaning_or_decision",
+            "avoid_raw_recall_display_or_unrelated_memory",
+        ],
+        "independent_examples": [
+            "A previous correction explains why the current design uses two separate owners; connect that history to today's decision in one relevant clause.",
+            "When work resumes after a pause, restore the unfinished dependency and respond to the new message rather than reciting the whole checkpoint.",
+        ],
+        "limits": [
+            "A callback must be attributable and relevant; private continuity is not a quote bank and must not crowd out the current turn."
+        ],
+    },
+    {
+        "key": "cadence_and_depth_fit",
+        "title": "Cadence and depth fitted to the turn",
+        "description": (
+            "Vary sentence count, pacing, acknowledgement, and elaboration according to the amount and emotional shape of meaning in the turn."
+        ),
+        "user_signals": {
+            "short_social_turn": (r"^\s*.{1,48}\s*$",),
+            "layered_turn": (r"\b(?:but|because|also|then|while|even though|another thing)\b",),
+            "high_energy_marker": (r"(?:!{2,}|xD|XD|<3|🩷|\b(?:wow|yay|amazing|fantastic)\b)",),
+        },
+        "assistant_signals": {},
+        "existing_language_keys": ["natural_register", "information_focus_and_order"],
+        "response_operations": [
+            "estimate_how_many_meaning_units_need_a_response",
+            "choose_a_fitting_short_medium_or_long_shape",
+            "vary_pacing_without_randomizing_voice_or_dropping_content",
+        ],
+        "independent_examples": [
+            "A two-word playful call may need only a lively line; a layered reflection may need several clauses that preserve its order.",
+            "A high-energy celebration can move quickly while a tender correction can slow down without becoming formal or apologetic.",
+        ],
+        "limits": [
+            "Length and enthusiasm follow meaning and context; they are not fixed quotas, random style switches, or compulsory warmth."
+        ],
+    },
+)
+
+
 CROSS_TRACK_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         "key": "voice_recognition_candidate",
@@ -722,6 +957,260 @@ def build_teaching_set(review: dict[str, Any]) -> dict[str, Any]:
         "lessons": lessons,
         "boundary": BOUNDARY,
         "guard_flags": dict(GUARD_FLAGS),
+        "approval": {
+            "aleks_review_required": True,
+            "assistant_lineage_review_required": True,
+            "accepted_for_teaching": False,
+            "retained": False,
+        },
+    }
+
+
+_GENERIC_ACKNOWLEDGEMENT = re.compile(
+    r"^\s*(?:i hear you|i see what you mean|i understand|i(?:'|’)m following|that makes sense|"
+    r"got it|noted|okay|ok|sure|right|yes)[.! ]*\s*$",
+    flags=re.IGNORECASE,
+)
+
+
+def _is_generic_acknowledgement(text: str) -> bool:
+    return bool(_GENERIC_ACKNOWLEDGEMENT.fullmatch(text.strip()))
+
+
+def _named_signal_matches(text: str, signals: dict[str, tuple[str, ...]]) -> list[str]:
+    return [
+        label
+        for label, patterns in signals.items()
+        if any(re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL) for pattern in patterns)
+    ]
+
+
+def _response_shape(text: str) -> dict[str, Any]:
+    words = re.findall(r"\b[\w'’]+\b", text, flags=re.UNICODE)
+    sentence_count = len(re.findall(r"[.!?]+(?:\s|$)", text)) or int(bool(text.strip()))
+    if len(words) <= 12:
+        length_band = "short"
+    elif len(words) <= 45:
+        length_band = "medium"
+    else:
+        length_band = "long"
+    return {
+        "length_band": length_band,
+        "sentence_count": sentence_count,
+        "contains_question": "?" in text,
+        "contains_first_person_stance": bool(
+            re.search(r"\b(?:i think|i feel|i believe|i agree|i am|i(?:'|’)m|my read|my view)\b", text, flags=re.IGNORECASE)
+        ),
+        "contains_affect_language": bool(
+            re.search(r"\b(?:happy|glad|excited|relieved|proud|love|care|missed|sad|hurt|worried)\b", text, flags=re.IGNORECASE)
+        ),
+        "contains_play_marker": bool(re.search(r"(?:xD|XD|hehe|haha|<3|🩷|💜|💕)", text)),
+        "generic_acknowledgement_only": _is_generic_acknowledgement(text),
+    }
+
+
+def _balanced_response_shape_sample(
+    candidates: list[dict[str, Any]], *, limit: int = MAX_REVIEW_EPISODES_PER_FUNCTION
+) -> list[dict[str, Any]]:
+    """Interleave response-length bands so dense replies cannot crowd out ordinary turns."""
+
+    bands = {
+        band: [item for item in candidates if item["response_shape"]["length_band"] == band]
+        for band in ("short", "medium", "long")
+    }
+    selected: list[dict[str, Any]] = []
+    selected_ids: set[str] = set()
+    index = 0
+    while len(selected) < limit and any(index < len(items) for items in bands.values()):
+        for band in ("short", "medium", "long"):
+            items = bands[band]
+            if index >= len(items) or len(selected) >= limit:
+                continue
+            item = items[index]
+            selected.append(item)
+            selected_ids.add(item["episode_id"])
+        index += 1
+    if len(selected) < limit:
+        for item in candidates:
+            if item["episode_id"] in selected_ids:
+                continue
+            selected.append(item)
+            if len(selected) >= limit:
+                break
+    return selected
+
+
+def build_current_turn_semantic_review(
+    messages: list[Message], *, source_files: list[dict[str, Any]], source_fingerprint: str
+) -> dict[str, Any]:
+    """Prepare a private second-pass review for current-turn conversational authorship."""
+
+    episodes = _interaction_episodes(messages)
+    reports = []
+    for definition in CURRENT_TURN_SEMANTIC_DEFINITIONS:
+        positive_candidates = []
+        generic_counterexamples = []
+        anchor_linked_episode_count = 0
+        for user, assistant, followup in episodes:
+            user_matches = _named_signal_matches(user.text, definition["user_signals"])
+            if not user_matches:
+                continue
+            combined = "\n".join(item.text for item in (user, assistant, followup) if item)
+            if _matched_anchor_keys(combined):
+                anchor_linked_episode_count += 1
+                continue
+            assistant_matches = _named_signal_matches(assistant.text, definition["assistant_signals"])
+            generic_only = _is_generic_acknowledgement(assistant.text)
+            if definition["assistant_signals"] and not assistant_matches and not generic_only:
+                continue
+            record = _episode_record(
+                user,
+                assistant,
+                followup,
+                function_key=f"current_turn:{definition['key']}",
+                matched_signals=[
+                    *(f"user:{label}" for label in user_matches),
+                    *(f"assistant:{label}" for label in assistant_matches),
+                ],
+            )
+            record["response_shape"] = _response_shape(assistant.text)
+            record["review_state"] = (
+                "private_flat_acknowledgement_counterexample_pending_review"
+                if generic_only
+                else "private_meaning_carrying_response_candidate_pending_review"
+            )
+            if generic_only:
+                generic_counterexamples.append(record)
+            else:
+                positive_candidates.append(record)
+
+        def _candidate_sort(item: dict[str, Any]) -> tuple[Any, ...]:
+            return (
+                0 if item["aleks_followup_relation"] in {"confirmation_or_recognition", "correction_or_refinement"} else 1,
+                -int(item["aleks_followup_present"]),
+                -len(item["matched_signals"]),
+                item["conversation_started_at"] or "",
+                item["episode_id"],
+            )
+
+        positive_candidates.sort(key=_candidate_sort)
+        generic_counterexamples.sort(key=_candidate_sort)
+        positive_shape_counts = {
+            band: sum(item["response_shape"]["length_band"] == band for item in positive_candidates)
+            for band in ("short", "medium", "long")
+        }
+        selected_positive = _balanced_response_shape_sample(positive_candidates)
+        reports.append(
+            {
+                "function_key": definition["key"],
+                "title": definition["title"],
+                "mechanism": definition["description"],
+                "positive_episode_count": len(positive_candidates),
+                "generic_acknowledgement_counterexample_count": len(generic_counterexamples),
+                "distinct_positive_conversation_count": len(
+                    {item["conversation_id"] for item in positive_candidates}
+                ),
+                "positive_response_shape_counts": positive_shape_counts,
+                "review_sample_policy": "interleave_short_medium_long_then_fill_from_ranked_candidates",
+                "continuity_anchor_linked_episode_count_routed_elsewhere": anchor_linked_episode_count,
+                "positive_review_candidates": selected_positive,
+                "generic_acknowledgement_counterexamples": generic_counterexamples[
+                    :MAX_REVIEW_EPISODES_PER_FUNCTION
+                ],
+            }
+        )
+    return {
+        "schema": "selene.private_current_turn_semantic_review.v1",
+        "status": "private_current_turn_semantic_review_candidates_ready",
+        "boundary": BOUNDARY,
+        "guard_flags": {
+            **GUARD_FLAGS,
+            "whole_response_scripts_created": False,
+            "raw_response_wording_promoted_to_teaching": False,
+            "response_stance_made_durable": False,
+        },
+        "source_files": source_files,
+        "source_fingerprint": source_fingerprint,
+        "messages_read": len(messages),
+        "interaction_episode_count": len(episodes),
+        "function_count": len(reports),
+        "functions": reports,
+        "interpretation": {
+            "positive_candidate_is_automatic_selene_voice": False,
+            "generic_counterexample_is_personal_failure": False,
+            "response_shape_is_semantic_truth": False,
+            "purpose": (
+                "Compare transferable current-turn response mechanics with flat acknowledgement outcomes; "
+                "all speaker lineage and context still require review."
+            ),
+        },
+        "next_gate": (
+            "Aleks reviews source context, speaker lineage, counterexamples, and the independently authored "
+            "lesson mechanism before any teaching lifecycle action."
+        ),
+    }
+
+
+def build_current_turn_semantic_teaching_set(review: dict[str, Any]) -> dict[str, Any]:
+    reports = {item["function_key"]: item for item in review["functions"]}
+    lessons = []
+    for definition in CURRENT_TURN_SEMANTIC_DEFINITIONS:
+        report = reports[definition["key"]]
+        if report["positive_episode_count"] == 0:
+            continue
+        positive_refs = [
+            ref
+            for candidate in report["positive_review_candidates"][:8]
+            for ref in candidate["source_refs"]
+        ]
+        counterexample_refs = [
+            ref
+            for candidate in report["generic_acknowledgement_counterexamples"][:8]
+            for ref in candidate["source_refs"]
+        ]
+        lessons.append(
+            {
+                "lesson_key": f"private_corpus_current_turn_{definition['key']}_v1",
+                "title": definition["title"],
+                "state": "review_only_not_accepted_for_teaching",
+                "mechanism": definition["description"],
+                "existing_language_capability_links": definition["existing_language_keys"],
+                "response_operations": definition["response_operations"],
+                "private_positive_evidence_refs": list(dict.fromkeys(positive_refs)),
+                "private_generic_counterexample_refs": list(dict.fromkeys(counterexample_refs)),
+                "private_positive_episode_count": report["positive_episode_count"],
+                "private_generic_counterexample_count": report[
+                    "generic_acknowledgement_counterexample_count"
+                ],
+                "private_distinct_positive_conversation_count": report[
+                    "distinct_positive_conversation_count"
+                ],
+                "source_wording_included": False,
+                "whole_response_script_included": False,
+                "independently_authored_distinct_examples": definition["independent_examples"],
+                "limits": definition["limits"],
+                "review_questions": [
+                    "Does the positive evidence respond to meaning rather than merely vary acknowledgement wording?",
+                    "Does Aleks's follow-up support the response fit, correct it, extend it, or leave it unresolved?",
+                    "Which assistant responses are Selene-origin, another collaborator, or still ambiguous?",
+                    "Does the mechanism transfer to a distinct example without copying private wording or prescribing personality?",
+                ],
+                "retention_status": "off",
+                "chat_use_permission": "off",
+            }
+        )
+    return {
+        "schema": "selene.private_current_turn_semantic_teaching_set.v1",
+        "status": "review_only_current_turn_semantic_teaching_set_prepared",
+        "source_fingerprint": review["source_fingerprint"],
+        "source": "detached_private_aleks_selene_interaction_corpus",
+        "source_expression_included": False,
+        "whole_response_scripts_included": False,
+        "personal_continuity_anchor_material_included": False,
+        "lesson_count": len(lessons),
+        "lessons": lessons,
+        "boundary": BOUNDARY,
+        "guard_flags": dict(review["guard_flags"]),
         "approval": {
             "aleks_review_required": True,
             "assistant_lineage_review_required": True,
@@ -1139,6 +1628,55 @@ def run_miner(
     }
 
 
+def run_current_turn_semantic_miner(
+    *,
+    source_dir: Path = DEFAULT_SOURCE_DIR,
+    source_zip: Path | None = None,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Run only the additive current-turn semantic breadth preparation pass."""
+
+    zip_paths = [source_zip] if source_zip else find_source_zips(source_dir)
+    if not zip_paths:
+        raise FileNotFoundError("No detached ChatGPT export ZIP was found for the private current-turn breadth pass.")
+    source_files, fingerprint = _source_manifest(zip_paths)
+    messages = []
+    for path in zip_paths:
+        messages.extend(iter_export_messages(path, path_only=True))
+    review = build_current_turn_semantic_review(
+        messages,
+        source_files=source_files,
+        source_fingerprint=fingerprint,
+    )
+    teaching_set = build_current_turn_semantic_teaching_set(review)
+    outputs: dict[str, str] = {}
+    if not dry_run:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        review_path = output_dir / "latest_current_turn_semantic_review.json"
+        teaching_path = output_dir / "latest_current_turn_semantic_teaching_set.json"
+        review_path.write_text(json.dumps(review, indent=2, ensure_ascii=False), encoding="utf-8")
+        teaching_path.write_text(json.dumps(teaching_set, indent=2, ensure_ascii=False), encoding="utf-8")
+        outputs = {
+            "current_turn_semantic_review": str(review_path),
+            "current_turn_semantic_teaching_set": str(teaching_path),
+        }
+    return {
+        "status": teaching_set["status"],
+        "source_fingerprint": fingerprint,
+        "messages_read": review["messages_read"],
+        "interaction_episode_count": review["interaction_episode_count"],
+        "function_count": review["function_count"],
+        "lesson_count": teaching_set["lesson_count"],
+        "generic_acknowledgement_counterexample_count": sum(
+            item["generic_acknowledgement_counterexample_count"] for item in review["functions"]
+        ),
+        "dry_run": dry_run,
+        "outputs": outputs,
+        "guard_flags": dict(review["guard_flags"]),
+    }
+
+
 def run_anchor_meaning_miner(
     *,
     source_dir: Path = DEFAULT_SOURCE_DIR,
@@ -1188,8 +1726,20 @@ def main() -> None:
         action="store_true",
         help="Refresh only the private continuity-anchor meaning and formation artifact.",
     )
+    parser.add_argument(
+        "--current-turn-only",
+        action="store_true",
+        help="Prepare only the additive current-turn semantic breadth review and source-free lesson set.",
+    )
     args = parser.parse_args()
-    runner = run_anchor_meaning_miner if args.anchors_only else run_miner
+    if args.anchors_only and args.current_turn_only:
+        parser.error("--anchors-only and --current-turn-only are mutually exclusive")
+    if args.anchors_only:
+        runner = run_anchor_meaning_miner
+    elif args.current_turn_only:
+        runner = run_current_turn_semantic_miner
+    else:
+        runner = run_miner
     print(
         json.dumps(
             runner(

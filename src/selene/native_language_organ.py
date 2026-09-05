@@ -1908,6 +1908,9 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             {
                 "prompt": prompt,
                 "recent_assistant_texts": meaning.get("recent_assistant_texts") or [],
+                "relational_context": meaning.get("relational_context") or {},
+                "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+                "language_teaching_guidance": meaning.get("language_teaching_guidance") or {},
             }
         )
         if intent == "direct_answer" and not str(meaning.get("content_seed") or "").strip()
@@ -2727,6 +2730,38 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
             "avoid_archaic_surface_imitation",
         },
     )
+    current_turn_authorship = enable(
+        "current_turn_authorship",
+        {"locate_current_turn_meaning", "choose_fitting_response_stance", "carry_visible_meaning_forward"},
+    )
+    relational_reciprocity = enable(
+        "relational_reciprocity",
+        {"recognize_expressed_feeling", "choose_fitting_relational_stance", "preserve_subject_and_truth_status"},
+    )
+    playful_vocative_presence = enable(
+        "playful_vocative_presence",
+        {"recognize_vocative_as_social_act", "answer_with_presence_or_play", "leave_room_for_next_turn"},
+    )
+    current_turn_interpretation = enable(
+        "current_turn_interpretation",
+        {"locate_visible_relation", "state_supported_interpretation", "keep_interpretation_distinct_from_fact"},
+    )
+    responsive_contribution = enable(
+        "responsive_contribution",
+        {"acknowledge_only_if_useful", "add_one_relevant_contribution", "stop_when_contribution_no_longer_advances"},
+    )
+    contextual_curiosity = enable(
+        "contextual_curiosity",
+        {"decide_if_question_has_purpose", "ask_one_contextual_question", "allow_answer_or_exchange_to_end"},
+    )
+    callback_present_integration = enable(
+        "callback_present_integration",
+        {"retrieve_relevant_landmark", "connect_landmark_to_present_meaning", "exclude_unrelated_or_raw_recall"},
+    )
+    current_turn_cadence = enable(
+        "current_turn_cadence",
+        {"count_meaning_units", "choose_fitting_response_depth", "vary_pacing_without_dropping_content"},
+    )
     return {
         "status": "approved_language_realization_ready" if features else "no_operational_language_guidance",
         "used": bool(features),
@@ -2763,6 +2798,14 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
         "source_observation_interpretation": source_observation_interpretation,
         "literary_mechanism_analysis": literary_mechanism_analysis,
         "original_creative_transfer": original_creative_transfer,
+        "current_turn_authorship": current_turn_authorship,
+        "relational_reciprocity": relational_reciprocity,
+        "playful_vocative_presence": playful_vocative_presence,
+        "current_turn_interpretation": current_turn_interpretation,
+        "responsive_contribution": responsive_contribution,
+        "contextual_curiosity": contextual_curiosity,
+        "callback_present_integration": callback_present_integration,
+        "current_turn_cadence": current_turn_cadence,
         "meaning_change_allowed": False,
         "content_generation_allowed": False,
         "personality_change_allowed": False,

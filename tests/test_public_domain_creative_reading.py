@@ -37,7 +37,7 @@ def _assert_locked(result):
 
 def test_public_domain_reading_set_is_bounded_attributed_and_ordered():
     assert len(LESSONS) == 3
-    assert len(LANGUAGE_QOL_LESSONS) == 73
+    assert len(LANGUAGE_QOL_LESSONS) == 81
     assert [lesson["lesson_order"] for lesson in LESSONS] == [1, 2, 3]
     assert [source["form"] for source in SOURCE_WORKS] == ["poetry", "drama", "prose"]
     assert all(lesson["teaching_group"] == TEACHING_GROUP for lesson in LESSONS)
@@ -85,7 +85,7 @@ def test_reading_group_completes_acquire_integrate_express_without_memory_or_aut
 
     assert prepared["graduated_count"] == len(LANGUAGE_QOL_LESSONS)
     assert prepared["held_count"] == 0
-    assert status["defined_group_count"] == 12
+    assert status["defined_group_count"] == 13
     reading_group = next(group for group in status["teaching_groups"] if group["group_order"] == 11)
     assert reading_group["teaching_group"] == TEACHING_GROUP
     assert reading_group["available_lesson_count"] == 3

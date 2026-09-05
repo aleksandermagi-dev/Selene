@@ -2,7 +2,7 @@
 
 Originally indexed: 2026-08-11
 
-Current refresh: 2026-09-04
+Current refresh: 2026-09-05
 Branch: `evidence`
 Status: date-stamped repository and configured-runtime truth
 
@@ -26,7 +26,7 @@ knowledge or Dream reflections.
 
 ## Current Knowledge and Curriculum
 
-| Surface | Repository-defined | Configured runtime on 2026-08-29 | Meaning |
+| Surface | Repository-defined | Configured runtime on 2026-09-05 | Meaning |
 | --- | ---: | ---: | --- |
 | F1 curriculum groups | 17 | 17 retained groups | Ordered public-academic foundation groups |
 | F1 concepts | 106 unique concepts | 106 retained and Chat-eligible | Completed Acquire, Integrate, Express, and curriculum-authorized retention |
@@ -34,9 +34,9 @@ knowledge or Dream reflections.
 | F2 concepts | 41 unique concepts | 41 retained and Chat-eligible | Reading, vocabulary, composition, comparison, arithmetic, fractions, decimals, and operation relationships |
 | Coding curriculum groups | 1 | 1 retained group | Computational thinking and source-bounded code reading |
 | Coding concepts | 5 unique concepts | 5 retained and Chat-eligible | Knowledge only; no execution or filesystem authority |
-| Language groups | 12 | 12 represented groups on the indexed runtime | Provider-free language, grammar, creative-expression, bounded reading transfer, and evidence-grounded conversational breadth |
-| Language capabilities | 73 | 73 approved and available on the indexed runtime | Expression guidance; not factual authority or personality |
-| Approved knowledge resources | 225 defined items | 225 retained resources | 106 F1 + 41 F2 + 5 coding + 73 language-and-conversation capabilities |
+| Language groups | 13 | 13 represented groups on the indexed runtime | Provider-free language, grammar, creative expression, bounded reading transfer, evidence-grounded breadth, and current-turn semantic conversation |
+| Language capabilities | 81 | 81 approved and available on the indexed runtime | Expression guidance; not factual authority or personality |
+| Approved knowledge resources | 233 defined items | 233 retained resources | 106 F1 + 41 F2 + 5 coding + 81 language-and-conversation capabilities |
 | Unapproved comprehension candidates | — | 47 proposed items | Not retained and unavailable to Chat until the applicable review path completes |
 
 The F1 count is derived from the lesson definitions used by
@@ -46,9 +46,10 @@ same 106 F1 concepts as `retained_reviewed_knowledge` with
 `available_as_knowledge_resource` Chat permission.
 
 The language count is supported by `src/selene/language_teaching_shelf.py`, the
-Group 12 completion record, and the configured language shelf. At the indexed
-runtime date, all 73 stored rows were `approved_for_language_guidance` and
-`language_guidance_available` across all 12 defined groups.
+Group 12 and Group 13 completion records, and the configured language shelf. At
+the indexed runtime date, all 81 stored rows were
+`approved_for_language_guidance` and `language_guidance_available` across all
+13 defined groups.
 
 The F2 and coding counts are supported by their group modules and the same
 curriculum authorization lifecycle. Coding knowledge is Chat-eligible within
@@ -175,9 +176,9 @@ silently leaving the headline numbers stale.
 
 ## Accurate External Wording
 
-As of August 29, 2026, Selene's configured local runtime contains 106 retained
+As of September 5, 2026, Selene's configured local runtime contains 106 retained
 F1 foundation concepts, 41 retained F2 concepts, five retained coding
-foundations, and 73 reviewed language capabilities across twelve groups. Her
+foundations, and 81 reviewed language capabilities across thirteen groups. Her
 source-bound Dream lifecycle is complete;
 one explicit cycle produced 24 reflections that remain pending review, with no
 silent expression or memory promotion. Whole-system maturation Phases 0

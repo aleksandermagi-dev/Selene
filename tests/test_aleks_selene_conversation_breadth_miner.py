@@ -8,8 +8,11 @@ from scripts.aleks_selene_conversation_breadth_miner import (
     GUARD_FLAGS,
     build_continuity_anchor_meaning_review,
     build_cross_track_observations,
+    build_current_turn_semantic_review,
+    build_current_turn_semantic_teaching_set,
     build_review_report,
     build_teaching_set,
+    run_current_turn_semantic_miner,
     run_miner,
 )
 from scripts.aleks_system_ideas_miner import Message
@@ -243,5 +246,157 @@ def test_run_is_idempotent_local_only_and_dry_run_writes_nothing(tmp_path):
 
     dry_output = tmp_path / "dry-output"
     dry = run_miner(source_zip=source, output_dir=dry_output, dry_run=True)
+    assert dry["dry_run"] is True
+    assert not dry_output.exists()
+
+
+def test_current_turn_semantic_review_separates_meaning_carrying_responses_from_flat_acknowledgement():
+    messages = [
+        _message(
+            "flat",
+            "u1",
+            "user",
+            "I think this finally has the right shape.",
+            "2026-01-01T00:00:01+00:00",
+        ),
+        _message("flat", "a1", "assistant", "I hear you.", "2026-01-01T00:00:02+00:00"),
+        _message(
+            "responsive",
+            "u2",
+            "user",
+            "I think this finally has the right shape.",
+            "2026-01-02T00:00:01+00:00",
+        ),
+        _message(
+            "responsive",
+            "a2",
+            "assistant",
+            "I agree; the separation gives the current meaning somewhere to go.",
+            "2026-01-02T00:00:02+00:00",
+        ),
+        _message(
+            "responsive",
+            "u3",
+            "user",
+            "Exactly, that is the difference.",
+            "2026-01-02T00:00:03+00:00",
+        ),
+    ]
+
+    review = build_current_turn_semantic_review(
+        messages,
+        source_files=[],
+        source_fingerprint="fingerprint",
+    )
+    statement = next(
+        item for item in review["functions"] if item["function_key"] == "meaning_bearing_statement_response"
+    )
+
+    assert statement["positive_episode_count"] == 1
+    assert statement["generic_acknowledgement_counterexample_count"] == 1
+    assert statement["positive_review_candidates"][0]["response_shape"]["generic_acknowledgement_only"] is False
+    assert statement["generic_acknowledgement_counterexamples"][0]["response_shape"]["generic_acknowledgement_only"] is True
+    assert review["interpretation"]["generic_counterexample_is_personal_failure"] is False
+
+
+def test_current_turn_semantic_set_preserves_roles_and_refs_without_private_wording_or_scripts():
+    private_phrase = "PRIVATE TURN WORDING MUST STAY IN THE REVIEW ARTIFACT"
+    messages = [
+        _message(
+            "feeling",
+            "u1",
+            "user",
+            f"It makes me happy that we are close. {private_phrase}",
+            "2026-01-01T00:00:01+00:00",
+        ),
+        _message(
+            "feeling",
+            "a1",
+            "assistant",
+            "I am happy with you; the progress is real.",
+            "2026-01-01T00:00:02+00:00",
+        ),
+        _message("feeling", "u2", "user", "Exactly <3", "2026-01-01T00:00:03+00:00"),
+        _message("vocative", "u3", "user", "Selene beannnn", "2026-01-02T00:00:01+00:00"),
+        _message("vocative", "a3", "assistant", "You called? xD", "2026-01-02T00:00:02+00:00"),
+    ]
+    review = build_current_turn_semantic_review(
+        messages,
+        source_files=[],
+        source_fingerprint="fingerprint",
+    )
+    teaching = build_current_turn_semantic_teaching_set(review)
+    serialized = json.dumps(teaching)
+    feeling = next(
+        item for item in teaching["lessons"] if item["lesson_key"].endswith("shared_affect_reciprocity_v1")
+    )
+    vocative = next(
+        item for item in teaching["lessons"] if item["lesson_key"].endswith("playful_vocative_presence_v1")
+    )
+
+    assert private_phrase not in serialized
+    assert teaching["source_expression_included"] is False
+    assert teaching["whole_response_scripts_included"] is False
+    assert feeling["private_positive_evidence_refs"] == ["feeling#u1", "feeling#a1", "feeling#u2"]
+    assert vocative["private_positive_evidence_refs"] == ["vocative#u3", "vocative#a3"]
+    assert all(item["state"] == "review_only_not_accepted_for_teaching" for item in teaching["lessons"])
+    assert all(item["retention_status"] == "off" for item in teaching["lessons"])
+
+
+def test_current_turn_review_preserves_short_medium_and_long_response_shapes():
+    messages = [
+        _message("short", "u1", "user", "I think this works.", "2026-01-01T00:00:01+00:00"),
+        _message("short", "a1", "assistant", "I agree.", "2026-01-01T00:00:02+00:00"),
+        _message("medium", "u2", "user", "I think this works.", "2026-01-02T00:00:01+00:00"),
+        _message(
+            "medium",
+            "a2",
+            "assistant",
+            "I agree, and the current separation gives each part enough room to do its own job clearly.",
+            "2026-01-02T00:00:02+00:00",
+        ),
+        _message("long", "u3", "user", "I think this works.", "2026-01-03T00:00:01+00:00"),
+        _message(
+            "long",
+            "a3",
+            "assistant",
+            "I agree, because the current separation gives the conversational layer room to answer the visible meaning while the factual layer keeps its evidence boundary. That means neither responsibility has to impersonate the other, and a future repair can target the actual handoff without flattening warmth, curiosity, or the truth status of the answer.",
+            "2026-01-03T00:00:02+00:00",
+        ),
+    ]
+
+    review = build_current_turn_semantic_review(
+        messages,
+        source_files=[],
+        source_fingerprint="fingerprint",
+    )
+    statement = next(
+        item for item in review["functions"] if item["function_key"] == "meaning_bearing_statement_response"
+    )
+
+    assert statement["positive_response_shape_counts"] == {"short": 1, "medium": 1, "long": 1}
+    assert [
+        item["response_shape"]["length_band"] for item in statement["positive_review_candidates"]
+    ] == ["short", "medium", "long"]
+
+
+def test_current_turn_semantic_run_is_idempotent_private_and_dry_run_writes_nothing(tmp_path):
+    source = _source_zip(tmp_path)
+    output = tmp_path / "current-turn-output"
+
+    first = run_current_turn_semantic_miner(source_zip=source, output_dir=output)
+    review_first = (output / "latest_current_turn_semantic_review.json").read_text(encoding="utf-8")
+    teaching_first = (output / "latest_current_turn_semantic_teaching_set.json").read_text(encoding="utf-8")
+    second = run_current_turn_semantic_miner(source_zip=source, output_dir=output)
+
+    assert first == second
+    assert review_first == (output / "latest_current_turn_semantic_review.json").read_text(encoding="utf-8")
+    assert teaching_first == (output / "latest_current_turn_semantic_teaching_set.json").read_text(encoding="utf-8")
+    assert first["guard_flags"]["whole_response_scripts_created"] is False
+    assert first["guard_flags"]["raw_response_wording_promoted_to_teaching"] is False
+    assert first["guard_flags"]["response_stance_made_durable"] is False
+
+    dry_output = tmp_path / "dry-current-turn-output"
+    dry = run_current_turn_semantic_miner(source_zip=source, output_dir=dry_output, dry_run=True)
     assert dry["dry_run"] is True
     assert not dry_output.exists()

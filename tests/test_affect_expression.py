@@ -187,3 +187,25 @@ def test_relational_context_opens_warmth_without_prescribing_or_claiming_emotion
     assert result["guidance_is_optional"] is True
     assert result["internal_state_claim"] is False
     _assert_locked(result)
+
+
+def test_codex_name_does_not_accidentally_force_technical_posture(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": "hey Codex hon :) im back",
+            "session_id": 23,
+            "relational_context": {
+                "relational_context_present": True,
+                "cue_types": ["reunion", "affectionate_symbol"],
+                "response_script_supplied": False,
+            },
+            "intent_decision": {"intent": "warm_connection"},
+        },
+    )
+
+    assert "technical" not in result["current_turn_cues"]
+    assert result["expression_posture"] == "warm_available"
+    _assert_locked(result)

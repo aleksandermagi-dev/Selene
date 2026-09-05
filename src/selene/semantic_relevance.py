@@ -521,6 +521,8 @@ def _authentication_satisfies(actual: str, required: str) -> bool:
         "transport_claim_only": 1,
         "authenticated_remote_session": 2,
         "local_desktop_session": 3,
+        "cryptographically_verified_authorship": 4,
+        "os_authenticated_named_identity": 4,
     }
     return ranks.get(actual, 0) >= ranks.get(required, 99)
 

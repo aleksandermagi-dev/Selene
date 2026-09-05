@@ -239,3 +239,23 @@ def test_repair_removes_malformed_visible_separator():
 
     assert "�" not in result["candidate_text"]
     assert " - one step now lands later - " in result["candidate_text"]
+
+
+def test_repair_normalizes_a_late_composed_acknowledgement(monkeypatch):
+    monkeypatch.setattr(
+        "selene.conversation_repair.realize_acknowledgement",
+        lambda *args, **kwargs: {"candidate_text": "You're welcome �"},
+    )
+    result = repair_conversation_candidate(
+        {
+            "candidate_text": "The answer is complete.",
+            "turn_flow_plan": {
+                "mixed_intent": True,
+                "acknowledgement_kind": "gratitude",
+            },
+            "response_coverage": {"unresolved_count": 0},
+        }
+    )
+
+    assert "�" not in result["candidate_text"]
+    assert "post_composition_surface_normalized" in result["repairs_applied"]

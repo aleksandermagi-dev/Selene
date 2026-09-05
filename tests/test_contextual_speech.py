@@ -452,3 +452,27 @@ def test_generic_closure_words_do_not_match_unrelated_session_landmarks():
     }
 
     assert _matching_landmarks("Let's leave it there for today.", [landmark]) == []
+
+
+def test_short_scope_answer_fulfills_the_previous_clarification_request():
+    context = _context(
+        "Which area do you mean—our conversation, the architecture, or the way we work?"
+    )
+    context["recent_user_texts"] = ["Is there anything I could do better?"]
+
+    follow_up = inspect_contextual_follow_up("Regarding building you.", context)
+    decision = apply_contextual_intent(
+        classify_chat_intent(follow_up["resolved_prompt"]),
+        follow_up,
+    )
+
+    assert follow_up["kind"] == "clarification_fulfillment"
+    assert follow_up["preserve_active_topic"] is True
+    assert follow_up["clarification_source_prompt"] == (
+        "Is there anything I could do better?"
+    )
+    assert follow_up["resolved_prompt"] == (
+        "Is there anything I could do better? Regarding building you."
+    )
+    assert decision["intent"] == "reasoning"
+    assert decision["answer_shape"] == "continue_previous_answer"

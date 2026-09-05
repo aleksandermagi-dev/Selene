@@ -114,6 +114,26 @@ def interpret_relational_context(
     )
     _cue(
         cues,
+        "shared_positive_affect",
+        bool(
+            re.search(
+                r"(?:^|\b(?:this|that|it) )(?:(?:really )?)(?:makes|made) me "
+                r"(?:happy|glad|excited|proud|hopeful)\b|"
+                r"\b(?:i am|i'm|im) (?:really )?(?:happy|glad|excited|proud|hopeful) "
+                r"(?:about|that|because|we|you)\b",
+                lower,
+            )
+        ),
+        "current turn shares a positive feeling about this exchange or shared work",
+    )
+    _cue(
+        cues,
+        "affectionate_vocative",
+        _playful_vocative(lower),
+        "current turn uses Selene's name with a compact familiar or playful vocative",
+    )
+    _cue(
+        cues,
         "playful_tone",
         bool(re.search(r"(?:\b(?:haha|lol|lmao|xd|joking|kidding)\b|[:;]-?[)d])", lower)),
         "current turn visibly opens play",
@@ -123,7 +143,13 @@ def interpret_relational_context(
     private_scope = _private_scope(speaker)
     relational = bool(cues)
     direct_affection = bool(
-        {"missing_or_longing", "affection", "delight_in_presence"}.intersection(cue_types)
+        {
+            "missing_or_longing",
+            "affection",
+            "delight_in_presence",
+            "shared_positive_affect",
+            "affectionate_vocative",
+        }.intersection(cue_types)
     )
     intensity = (
         "strong_visible"
@@ -157,6 +183,9 @@ def interpret_relational_context(
         "address_term_echo_required": False,
         "heart_echo_required": False,
         "selene_authored_relational_expression_allowed": True,
+        "selene_authored_current_turn_response_stance_allowed": True,
+        "authored_response_stance_is_durable_emotion_record": False,
+        "authored_response_stance_creates_external_fact": False,
         "context_informs_expression_but_does_not_command_it": True,
         "nlo_retains_surface_formation": True,
         "voice_retains_expression_compatibility": True,
@@ -175,13 +204,31 @@ def interpret_relational_context(
 
 
 def _address_terms(value: str) -> list[str]:
+    searchable = _collapse_expressive_elongation(value)
     found: list[str] = []
     for term in sorted(ADDRESS_TERMS, key=len, reverse=True):
         if term == "friend" and "my friend" in found:
             continue
-        if re.search(rf"(?:^|[\s,;:!?]){re.escape(term)}(?:$|[\s,;:.!?<])", value):
+        if re.search(rf"(?:^|[\s,;:!?]){re.escape(term)}(?:$|[\s,;:.!?<])", searchable):
             found.append(term)
     return list(dict.fromkeys(found))
+
+
+def _playful_vocative(value: str) -> bool:
+    compact = value.strip()
+    normalized = _collapse_expressive_elongation(compact).strip(" .!?")
+    if normalized == "selene":
+        return True
+    return bool(
+        re.fullmatch(
+            r"selene[\s,;:!\-]+[a-z][a-z'\-]{1,30}(?:\s*[<:;x][\-^]?[)d3]+)?",
+            normalized,
+        )
+    )
+
+
+def _collapse_expressive_elongation(value: str) -> str:
+    return re.sub(r"([a-z])\1{2,}", r"\1", value)
 
 
 def _heart_markers(value: str) -> list[str]:

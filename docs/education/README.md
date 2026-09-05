@@ -23,6 +23,11 @@ governing law, personal memory, relationships, or authority.
   — speaker-aware results from the existing detached corpus snapshot, twelve
   review-only breadth lessons, and separate private Voice, correction, agency,
   co-formation, and possible Vys-continuity observation tracks.
+- [Current-Turn Semantic Breadth Preparation](SELENE_CURRENT_TURN_SEMANTIC_BREADTH_PREPARATION_20260905.md)
+  — an additive eight-mechanism private-corpus pass for meaning-bearing
+  statements, reciprocity, playful address, visible-relation interpretation,
+  contribution, curiosity, callback integration, and cadence; the source-free
+  mechanisms are now taught as G13 with no whole-response scripts.
 - [Teaching Lifecycle Phase 4](SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md)
   — Acquire → Integrate → Express.
 - [Study Workspace Contract](SELENE_STUDY_WORKSPACE_CONTRACT_20260801.md) —
@@ -89,12 +94,13 @@ network, deployment, self-modification, or self-replication permission.
 
 ## Language And Conversation Curriculum
 
-Current checkpoint (August 13, 2026): eleven ordered groups provide 61 reviewed
-language-and-conversation capabilities. Group 10 adds creative-writing and
-Voice foundations. Group 11 adds bounded attributed public-domain reading and
-original creative transfer. Both remain guidance-only. The groups guide
-expression of supported meaning; they do not provide factual authority or
-prescribe personality.
+Current checkpoint (September 5, 2026): thirteen ordered groups provide 81
+reviewed language-and-conversation capabilities. Group 10 adds creative-writing
+and Voice foundations; Group 11 adds bounded attributed public-domain reading
+and original creative transfer; Group 12 adds evidence-grounded conversation
+breadth; and Group 13 adds current-turn semantic conversation. All remain
+guidance-only. The groups guide expression of supported meaning; they do not
+provide factual authority or prescribe personality.
 
 - [Native Language Organ v1](../architecture/SELENE_NATIVE_LANGUAGE_ORGAN_V1_20260712.md)
 - [Language Teaching Completion](SELENE_LANGUAGE_TEACHING_COMPLETION_20260720.md)

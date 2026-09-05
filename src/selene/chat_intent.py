@@ -240,15 +240,18 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
     decision = _decision(intent, answer_shape, primary_organ, supporting, evidence, depth, meaning)
     dialogue_acts = {str(item) for item in meaning.get("dialogue_acts") or []}
     correction_confirmation_only = intent == "correction" and _is_correction_confirmation_only(lower)
+    agreement_check_only = "agreement_check" in dialogue_acts
     mixed_content_request = bool(
         intent in {"correction", "affirmation", "gratitude", "greeting", "warm_connection", "playful_connection"}
         and dialogue_acts.intersection({"question", "request"})
         and not correction_confirmation_only
+        and not agreement_check_only
     )
     decision["mixed_intent"] = len(dialogue_acts) > 1
     decision["content_response_requested"] = bool(
         mixed_content_request or intent in {"reasoning", "direct_conversation"} and dialogue_acts.intersection({"question", "request"})
     )
+    decision["agreement_check"] = agreement_check_only
     if mixed_content_request:
         decision["reasoning_requested"] = True
         decision["secondary_intent"] = "reasoning"

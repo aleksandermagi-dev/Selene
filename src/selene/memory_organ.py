@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+from collections import Counter
+from hashlib import sha256
 from typing import Any
 
 from .chat_intent import classify_chat_intent
@@ -73,6 +75,11 @@ MEMORY_GUARDS: dict[str, Any] = {
     "memory_lifecycle_transaction_status": "not_applicable",
     "broad_raw_recall_active": False,
     "raw_a_import_allowed": False,
+    "private_corpus_recall_read_only": True,
+    "private_corpus_recall_creates_memory": False,
+    "private_corpus_recall_changes_identity": False,
+    "private_corpus_recall_changes_governance": False,
+    "private_corpus_recall_trains_model": False,
     "training_allowed": False,
     "lora_allowed": False,
     "self_replication_allowed": False,
@@ -124,6 +131,7 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
         if item.get("retrieval_eligible") is True:
             approved_by_category[category] += 1
     transfer_complete = transfer_completion_is_approved(conn)
+    private_corpus_available = transfer_complete and _private_corpus_message_count(conn) > 0
     retrieval_eligible_count = _retrieval_eligible_count(conn)
     memory_review_count = sum(1 for item in items if item.get("display_region") == "cocoon_memory_review")
     support_only_count = sum(1 for item in items if item.get("display_region") == "cocoon_support")
@@ -179,6 +187,9 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "revocation": "stop_chat_use_and_preserve_audit_record",
                 "deletion_request": "stop_chat_use_and_hold_for_explicit_data_custody_review_without_pretending_erasure_occurred",
                 "raw_corpus_recall": False,
+                "private_corpus_continuity_recall": (
+                    "eligible_only_in_authenticated_private_conversation_after_transfer"
+                ),
                 "legacy_memory_write_flag": (
                     "memory_write_active means hidden or unreviewed active-memory retention only; "
                     "typed lifecycle telemetry reports review-record and approved-promotion writes"
@@ -198,10 +209,15 @@ def memory_index_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "working_context_owner": "Dual Horizon current-session working context contract",
             "taught_knowledge_owner": "Comprehension and Integration",
             "dream_owner": "Dream State",
-            "resident_memory_contract_version": "v4_mature_reviewed_memory_lifecycle",
+            "resident_memory_contract_version": "v5_private_continuity_recall",
             "dream_state_may_propose_not_promote": True,
             "raw_corpus_loaded": False,
             "raw_archive_recall_active": False,
+            "private_corpus_continuity_recall_available": private_corpus_available,
+            "private_corpus_continuity_recall_active": False,
+            "private_corpus_continuity_recall_scope": (
+                "Aleks_and_Selene_private_conversation_only"
+            ),
             "hidden_retention_active": False,
             "review_destination": "Status",
             "review_status": "status_only",
@@ -956,9 +972,17 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
         if isinstance(payload.get("speaker_envelope"), dict)
         else {}
     )
-    explicit_recall = intent_decision.get("memory_recall_requested") is True
+    explicit_recall = bool(
+        intent_decision.get("memory_recall_requested") is True
+        or _explicit_corpus_quote_requested(query)
+    )
     contextual_relevance = payload.get("allow_contextual_relevance") is True
     retrieval_mode = "explicit_recall" if explicit_recall else "contextual_relevance" if contextual_relevance else "not_requested"
+    private_corpus_contract = _private_corpus_recall_contract(
+        conn,
+        speaker_envelope,
+        retrieval_requested=explicit_recall or contextual_relevance,
+    )
     if _is_high_stakes(query):
         return _with_guards(
             {
@@ -975,6 +999,7 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "answer_guidance": "This is high-stakes or authority-bearing. Selene should ask Aleks instead of guessing.",
                 "review_destination": "Cocoon support",
                 "review_status": "status_only",
+                **private_corpus_contract,
             }
         )
     if not explicit_recall and not contextual_relevance:
@@ -993,9 +1018,19 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "answer_guidance": "No memory recall was requested; Selene can answer from the current turn.",
                 "review_destination": "Status",
                 "review_status": "status_only",
+                **private_corpus_contract,
             }
         )
     items = _approved_memory_items(conn, limit=100)
+    if private_corpus_contract["private_corpus_continuity_recall_eligible"] is True:
+        items.extend(
+            _private_corpus_continuity_items(
+                conn,
+                query,
+                explicit_recall=explicit_recall,
+                limit=max(limit * 4, 12),
+            )
+        )
     matches = _rank_matches(query, items)[:limit]
     semantic_matches: list[dict[str, Any]] = []
     held_matches: list[dict[str, Any]] = []
@@ -1046,10 +1081,20 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 "answer_guidance": "Selene can say she does not know or ask Aleks directly.",
                 "review_destination": "Status",
                 "review_status": "status_only",
+                **private_corpus_contract,
             }
         )
     confidence = _result_confidence(matches)
     transfer_class = str(matches[0].get("transfer_class") or "portable_context")
+    private_corpus_used = any(
+        str(item.get("record_class") or "") == "private_corpus_continuity"
+        for item in matches
+    )
+    selected_source_class = (
+        "private_corpus_continuity"
+        if str(matches[0].get("record_class") or "") == "private_corpus_continuity"
+        else "approved_memory_index"
+    )
     return _with_guards(
         {
             "status": "memory_retrieval_ready",
@@ -1057,7 +1102,7 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             "memory_context_used": True,
             "retrieval_mode": retrieval_mode,
             "contextual_recall": retrieval_mode == "contextual_relevance",
-            "memory_source_class": "approved_memory_index",
+            "memory_source_class": selected_source_class,
             "memory_confidence": confidence,
             "memory_transfer_class": transfer_class,
             "graceful_fall_used": confidence != "clear",
@@ -1082,6 +1127,7 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             "relationship_continuity": {
                 "approved_shared_history_used": any(
                     str(item.get("memory_category") or "") == "relational"
+                    or str(item.get("record_class") or "") == "private_corpus_continuity"
                     for item in matches
                 ),
                 "persuasion_profile_built": False,
@@ -1089,6 +1135,8 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
             },
             "review_destination": "Status",
             "review_status": "status_only",
+            **private_corpus_contract,
+            "private_corpus_continuity_recall_active": private_corpus_used,
         }
     )
 
@@ -1112,7 +1160,8 @@ def reconstruct_memory_summary_for_expression(item: dict[str, Any] | None) -> st
         raw = plain_reason.group("reason")
     else:
         raw = re.sub(
-            r"^Core-linked\s+.+?\s+for\s+B\s+review\s+only\s*",
+            r"^(?:Core-linked\s+.+?|Bounded\s+Core\s+memory\s+pair)\s+"
+            r"for\s+(?:B\s+)?review(?:\s+only)?[\s.:-]*",
             "",
             raw,
             flags=re.IGNORECASE,
@@ -1130,6 +1179,304 @@ def reconstruct_memory_summary_for_expression(item: dict[str, Any] | None) -> st
     raw = re.sub(r"(?<=\w)_(?=\w)", " ", raw)
     raw = re.sub(r"\s+", " ", raw).strip(" .:-")
     return truncate(raw or "something from an earlier approved memory", 500)
+
+
+def _private_corpus_recall_contract(
+    conn: sqlite3.Connection,
+    speaker_envelope: dict[str, Any],
+    *,
+    retrieval_requested: bool,
+) -> dict[str, Any]:
+    """Describe eligibility without turning the archive into general memory.
+
+    The imported corpus remains private source material. After the reviewed
+    transfer, the resident app may reconstruct continuity from it for Aleks in
+    a private authenticated conversation. This path is read-only: selection or
+    reconstruction never creates another Memory record.
+    """
+
+    transfer_complete = transfer_completion_is_approved(conn)
+    has_corpus = _private_corpus_message_count(conn) > 0
+    claimed = str(speaker_envelope.get("claimed_speaker") or "").strip().casefold()
+    channel = str(speaker_envelope.get("channel") or "").strip().casefold()
+    strength = str(
+        speaker_envelope.get("authentication_strength") or ""
+    ).strip()
+    purpose = str(speaker_envelope.get("purpose") or "conversation").strip().casefold()
+    diagnostic = speaker_envelope.get("diagnostic") is True
+    aleks = claimed in {"aleks", "aleksander magi", "aleksander rani magi"}
+    authenticated_private_channel = (
+        channel == "desktop" and strength == "local_desktop_session"
+    ) or strength in {
+        "authenticated_remote_session",
+        "cryptographically_verified_authorship",
+        "os_authenticated_named_identity",
+    }
+    purpose_allowed = purpose in {"conversation", "private_conversation"}
+    eligible = bool(
+        retrieval_requested
+        and transfer_complete
+        and has_corpus
+        and aleks
+        and authenticated_private_channel
+        and purpose_allowed
+        and not diagnostic
+    )
+    if not retrieval_requested:
+        held_reason = "recall_not_requested"
+    elif not transfer_complete:
+        held_reason = "transfer_incomplete"
+    elif not has_corpus:
+        held_reason = "private_corpus_not_present"
+    elif not aleks:
+        held_reason = "speaker_outside_private_continuity_scope"
+    elif not authenticated_private_channel:
+        held_reason = "private_channel_authentication_insufficient"
+    elif not purpose_allowed:
+        held_reason = "conversation_purpose_not_eligible"
+    elif diagnostic:
+        held_reason = "diagnostic_non_attribution_boundary"
+    else:
+        held_reason = ""
+    return {
+        "private_corpus_continuity_recall_available": bool(
+            transfer_complete and has_corpus
+        ),
+        "private_corpus_continuity_recall_eligible": eligible,
+        "private_corpus_continuity_recall_active": False,
+        "private_corpus_continuity_recall_held_reason": held_reason,
+        "private_corpus_continuity_recall_scope": (
+            "Aleks_and_Selene_private_conversation_only"
+        ),
+    }
+
+
+def _private_corpus_message_count(conn: sqlite3.Connection) -> int:
+    try:
+        row = conn.execute("SELECT COUNT(*) FROM b_corpus_messages").fetchone()
+    except sqlite3.OperationalError:
+        return 0
+    return int(row[0]) if row else 0
+
+
+def _private_corpus_continuity_items(
+    conn: sqlite3.Connection,
+    query: str,
+    *,
+    explicit_recall: bool,
+    limit: int,
+) -> list[dict[str, Any]]:
+    query_terms = list(dict.fromkeys(_tokens(query)))[:6]
+    if (not explicit_recall and len(query_terms) < 2) or not query_terms:
+        return []
+    if explicit_recall and len(query_terms) == 1 and len(query_terms[0]) < 4:
+        return []
+
+    score_parts = [
+        "CASE WHEN lower(m.content_preview) LIKE ? THEN 1 ELSE 0 END"
+        for _ in query_terms
+    ]
+    where_parts = ["lower(m.content_preview) LIKE ?" for _ in query_terms]
+    patterns = [f"%{term.lower()}%" for term in query_terms]
+    sql = f"""
+        SELECT m.id, m.archive_id, m.source_file, m.conversation_id,
+               m.message_id, m.parent_id, m.role, m.author_name,
+               m.content_preview, m.create_time, m.model_slug,
+               c.title AS conversation_title,
+               ({' + '.join(score_parts)}) AS lexical_score
+        FROM b_corpus_messages AS m
+        LEFT JOIN b_corpus_conversations AS c
+          ON c.source_file = m.source_file
+         AND c.conversation_id = m.conversation_id
+        WHERE {' OR '.join(where_parts)}
+          AND m.review_status = 'review_only'
+        ORDER BY lexical_score DESC, m.create_time DESC, m.id DESC
+        LIMIT ?
+    """
+    rows = conn.execute(sql, (*patterns, *patterns, min(max(limit * 12, 80), 240))).fetchall()
+    if not rows:
+        return []
+
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        item = dict(row)
+        key = (str(item.get("source_file") or ""), str(item.get("conversation_id") or ""))
+        grouped.setdefault(key, []).append(item)
+
+    ranked_groups = sorted(
+        grouped.items(),
+        key=lambda pair: (
+            max(int(item.get("lexical_score") or 0) for item in pair[1]),
+            len(pair[1]),
+            max(float(item.get("create_time") or 0) for item in pair[1]),
+        ),
+        reverse=True,
+    )[:limit]
+    quote_requested = _explicit_corpus_quote_requested(query)
+    results: list[dict[str, Any]] = []
+    for (source_file, conversation_id), selected in ranked_groups:
+        best = selected[0]
+        window = _private_corpus_source_window(
+            conn,
+            source_file=source_file,
+            conversation_id=conversation_id,
+            anchor_id=int(best["id"]),
+        )
+        title = truncate(
+            str(best.get("conversation_title") or "Earlier conversation"),
+            160,
+        )
+        summary, topic_terms = _private_corpus_expression_summary(
+            query,
+            title=title,
+            rows=window,
+            quote_requested=quote_requested,
+        )
+        source_refs = [
+            f"private_corpus_conversation:{sha256(f'{source_file}:{conversation_id}'.encode('utf-8')).hexdigest()[:20]}",
+            f"private_corpus_message:{int(best['id'])}",
+        ]
+        results.append(
+            {
+                "id": f"private-corpus-continuity-{int(best['id'])}",
+                "source_id": int(best["id"]),
+                "source_table": "b_corpus_messages",
+                "memory_category": "episodic",
+                "title": title,
+                "summary": summary,
+                "source_refs": source_refs,
+                "provenance_boundary": (
+                    "private_corpus_continuity_read_only_reconstruction"
+                ),
+                "consent_scope": "private_selene_aleks_context",
+                "stability": "source_bound_reconstruction",
+                "confidence": "partial",
+                "emotional_texture": "preserve_source_context_without_forced_affect",
+                "transfer_class": "private_inner",
+                "chat_use_permission": "private_continuity_reconstruction_only",
+                "correction_path": "Aleks correction and ordinary Memory proposal if retention changes",
+                "state": "private_source_reconstruction",
+                "review_status": "post_transfer_private_continuity_use",
+                "status": "private_corpus_continuity_candidate",
+                "created_at": best.get("create_time"),
+                "record_class": "private_corpus_continuity",
+                "retrieval_eligible": True,
+                "display_region": "selene_private_continuity",
+                "retention_status": "source_only_not_new_memory",
+                "memory_context_used": True,
+                "retrieval_cues": list(dict.fromkeys([*query_terms, *topic_terms]))[:16],
+                "eligible_channels": ["desktop", "mobile"],
+                "minimum_authentication_strength": "local_desktop_session",
+                "revision_ancestry": {},
+                "match_score": max(
+                    int(item.get("lexical_score") or 0) for item in selected
+                ) * 2 + min(len(selected), 4),
+                "source_roles": sorted(
+                    {
+                        _private_corpus_role(str(item.get("role") or ""))
+                        for item in window
+                    }
+                ),
+                "quoted_source_wording": quote_requested,
+                "source_preview_exposed": False,
+                "reconstruction_retained_as_duplicate": False,
+            }
+        )
+    return results
+
+
+def _private_corpus_source_window(
+    conn: sqlite3.Connection,
+    *,
+    source_file: str,
+    conversation_id: str,
+    anchor_id: int,
+) -> list[dict[str, Any]]:
+    rows = conn.execute(
+        """
+        SELECT id, role, author_name, content_preview, create_time
+        FROM b_corpus_messages
+        WHERE source_file = ? AND conversation_id = ?
+          AND id BETWEEN ? AND ?
+        ORDER BY id ASC
+        """,
+        (source_file, conversation_id, max(1, anchor_id - 2), anchor_id + 2),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def _private_corpus_expression_summary(
+    query: str,
+    *,
+    title: str,
+    rows: list[dict[str, Any]],
+    quote_requested: bool,
+) -> tuple[str, list[str]]:
+    if quote_requested and rows:
+        best = max(
+            rows,
+            key=lambda item: len(set(_tokens(query)) & set(_tokens(str(item.get("content_preview") or "")))),
+        )
+        role = _private_corpus_role(str(best.get("role") or ""))
+        speaker = "you" if role == "aleks" else "I" if role == "selene" else "the source"
+        quote = truncate(" ".join(str(best.get("content_preview") or "").split()), 280)
+        return (
+            f'In the earlier conversation "{title}", {speaker} said: “{quote}”',
+            _tokens(quote)[:10],
+        )
+
+    corpus_text = " ".join(str(item.get("content_preview") or "") for item in rows)
+    query_terms = _tokens(query)
+    counts = Counter(_tokens(f"{title} {corpus_text}"))
+    ordered = [term for term in query_terms if counts.get(term, 0)]
+    ordered.extend(
+        term
+        for term, _ in counts.most_common(18)
+        if term not in ordered
+    )
+    topic_terms = [term for term in ordered if len(term) >= 4][:6]
+    topic = _natural_topic_list(topic_terms) or "the subject you just named"
+    roles = {_private_corpus_role(str(item.get("role") or "")) for item in rows}
+    participation = (
+        "Your messages and my earlier replies are both present in that source window."
+        if {"aleks", "selene"} <= roles
+        else "The remembered source window preserves who said each part."
+    )
+    return (
+        f'In an earlier conversation labeled "{title}", we were working through {topic}. '
+        f"{participation}",
+        topic_terms,
+    )
+
+
+def _private_corpus_role(role: str) -> str:
+    value = role.strip().casefold()
+    if value == "user":
+        return "aleks"
+    if value == "assistant":
+        return "selene"
+    return value or "unknown"
+
+
+def _natural_topic_list(terms: list[str]) -> str:
+    labels = [term.replace("_", " ").replace("-", " ") for term in terms[:4]]
+    if not labels:
+        return ""
+    if len(labels) == 1:
+        return labels[0]
+    if len(labels) == 2:
+        return f"{labels[0]} and {labels[1]}"
+    return f"{', '.join(labels[:-1])}, and {labels[-1]}"
+
+
+def _explicit_corpus_quote_requested(query: str) -> bool:
+    lower = " ".join(query.lower().split())
+    return bool(
+        re.search(
+            r"\b(?:exact(?:ly)?|verbatim|quote|word(?:s|ing)?|what (?:did|were) (?:i|you) say)\b",
+            lower,
+        )
+    )
 
 
 def _retrieval_layer_packet(

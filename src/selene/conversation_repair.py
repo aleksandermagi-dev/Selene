@@ -170,6 +170,14 @@ def repair_conversation_candidate(payload: dict[str, Any] | None = None) -> dict
     ):
         issues.append("emotion_authority_boundary_not_confirmed")
 
+    # A prefix or acknowledgement can be composed after the initial surface
+    # normalization. Normalize the final assembled text too so a late source
+    # cannot reintroduce a replacement character or broken spacing.
+    final_surface = _normalize(repaired)
+    if final_surface != repaired:
+        repaired = final_surface
+        repairs.append("post_composition_surface_normalized")
+
     needs_content_revision = any(
         note in attention_notes
         for note in (

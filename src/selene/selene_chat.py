@@ -341,6 +341,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         speaker_context=speaker_envelope,
     )
     contextual_follow_up = inspect_contextual_follow_up(meaning_text, conversation_context)
+    if str(contextual_follow_up.get("resolved_prompt") or "").strip():
+        meaning_text = truncate(
+            str(contextual_follow_up["resolved_prompt"]),
+            2400,
+        )
     intent_decision = apply_contextual_intent(
         classify_chat_intent(meaning_text),
         contextual_follow_up,
@@ -742,6 +747,15 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "hard_boundary": bool(hard_blockers),
             "diagnostic_only": qa_probe,
+            "hold_optional_association": str(intent_decision.get("intent") or "")
+            in {
+                "greeting",
+                "farewell",
+                "gratitude",
+                "warm_connection",
+                "open_share",
+                "self_state",
+            },
         },
     )
     long_thread_endurance = build_long_thread_endurance_plan(
@@ -2314,9 +2328,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "reviewed_memory_context_active": transfer_complete,
         "selene_v1_live": transfer_complete,
         "memory_context_used": memory_retrieval.get("memory_context_used") is True,
-        "approved_memory_retrieval_used": memory_retrieval.get("memory_context_used") is True,
+        "approved_memory_retrieval_used": _approved_memory_retrieval_used(memory_retrieval),
         "approved_memory_retrieval_active": transfer_complete,
-        "contextual_approved_recall_used": memory_retrieval.get("retrieval_mode") == "contextual_relevance" and memory_retrieval.get("memory_context_used") is True,
+        "contextual_approved_recall_used": memory_retrieval.get("retrieval_mode") == "contextual_relevance" and _approved_memory_retrieval_used(memory_retrieval),
+        "private_corpus_continuity_recall_used": _private_corpus_continuity_recall_used(memory_retrieval),
         "reviewed_memory_write_occurred": memory_action.get("reviewed_memory_write_occurred") is True,
         "conversational_memory_proposal_created": memory_action.get("proposal_created") is True,
         "memory_source_class": memory_retrieval.get("memory_source_class") or "",
@@ -2441,9 +2456,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "memory_action": memory_action,
             "memory_candidate_suggestion": memory_candidate_suggestion,
             "memory_context_used": memory_retrieval.get("memory_context_used") is True,
-            "approved_memory_retrieval_used": memory_retrieval.get("memory_context_used") is True,
+            "approved_memory_retrieval_used": _approved_memory_retrieval_used(memory_retrieval),
             "approved_memory_retrieval_active": transfer_complete,
-            "contextual_approved_recall_used": memory_retrieval.get("retrieval_mode") == "contextual_relevance" and memory_retrieval.get("memory_context_used") is True,
+            "contextual_approved_recall_used": memory_retrieval.get("retrieval_mode") == "contextual_relevance" and _approved_memory_retrieval_used(memory_retrieval),
+            "private_corpus_continuity_recall_used": _private_corpus_continuity_recall_used(memory_retrieval),
             "reviewed_memory_write_occurred": memory_action.get("reviewed_memory_write_occurred") is True,
             "conversational_memory_proposal_created": memory_action.get("proposal_created") is True,
             "memory_source_class": memory_retrieval.get("memory_source_class") or "",
@@ -5184,17 +5200,40 @@ def _voice_context_summary(
     memory_note = ""
     if memory_retrieval and memory_retrieval.get("memory_context_used"):
         confidence = str(memory_retrieval.get("memory_confidence") or "partial")
-        memory_note = f", plus approved {confidence} memory"
+        memory_kind = (
+            "private continuity"
+            if _private_corpus_continuity_recall_used(memory_retrieval)
+            else "approved"
+        )
+        memory_note = f", plus {memory_kind} {confidence} memory"
     if package.get("transfer_approved"):
         return f"what I have clearly with me right now{continuity_note}{memory_note}"
     route = dry_run.get("actual_route") or dry_run.get("selected_route") or "dry-run route"
     return f"the current {route} preview{continuity_note}{memory_note}"
 
 
+def _approved_memory_retrieval_used(memory_retrieval: dict[str, Any]) -> bool:
+    return bool(
+        memory_retrieval.get("memory_context_used") is True
+        and str(memory_retrieval.get("memory_source_class") or "")
+        == "approved_memory_index"
+    )
+
+
+def _private_corpus_continuity_recall_used(
+    memory_retrieval: dict[str, Any],
+) -> bool:
+    return bool(
+        memory_retrieval.get("memory_context_used") is True
+        and memory_retrieval.get("private_corpus_continuity_recall_active") is True
+    )
+
+
 def _source_boundaries() -> dict[str, Any]:
     return {
         "selene_readable_context": "sealed approved context only after transfer approval",
         "local_supervised_chat_history": "local Selene Chat session events can support continuity between chat pages without becoming unreviewed archive recall or live memory writes",
+        "private_corpus_continuity": "after transfer, authenticated private conversation with Aleks may use read-only source-bound reconstruction; it does not import raw corpus into Memory or create retention",
         "cocoon_b_only_context": "support records, rollback, raw provenance, rejected, superseded, boundary-only, and unresolved material stays in Cocoon",
         "current_turn_context": "current message and dry-run session history",
         "support_organs": "retrieval, diagnostics, perception, research, and Tendril may support but cannot decide",

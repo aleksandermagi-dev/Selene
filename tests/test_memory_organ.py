@@ -20,6 +20,52 @@ def _conn(tmp_path):
     return conn
 
 
+def _seed_transfer_complete(conn):
+    conn.execute(
+        """
+        INSERT INTO selene_transfer_completion_audit
+        (state, action, actor, exact_phrase_matched, readiness_json, audit_json,
+         source_refs, provenance_boundary)
+        VALUES ('selene_v1_live_reviewed_continuity',
+                'approve_transfer_completion', 'Aleks', 1,
+                '{"ready":true}', '{"scope":"reviewed_continuity"}',
+                '["test:transfer"]', 'test_transfer_boundary')
+        """
+    )
+    conn.commit()
+
+
+def _seed_private_corpus_exchange(conn):
+    conn.execute(
+        """
+        INSERT INTO b_corpus_conversations
+        (archive_id, source_file, conversation_id, title, message_count,
+         source_refs, provenance_boundary)
+        VALUES ('archive-1', 'private-export.zip', 'conversation-ranger',
+                'Ranger and the porch', 3, '["private:test"]',
+                'private_corpus_test_boundary')
+        """
+    )
+    rows = [
+        ("m1", "", "user", "Aleks", "Ranger always liked sitting with me on the porch."),
+        ("m2", "m1", "assistant", "assistant", "That porch time with Ranger sounds deeply important to you."),
+        ("m3", "m2", "user", "Aleks", "It was one of our quiet routines together."),
+    ]
+    conn.executemany(
+        """
+        INSERT INTO b_corpus_messages
+        (archive_id, source_file, conversation_id, message_id, parent_id,
+         role, author_name, content_preview, source_refs,
+         provenance_boundary)
+        VALUES ('archive-1', 'private-export.zip', 'conversation-ranger',
+                ?, ?, ?, ?, ?, '["private:test"]',
+                'private_corpus_test_boundary')
+        """,
+        rows,
+    )
+    conn.commit()
+
+
 def _assert_locked(result):
     assert result["memory_write_active"] is False
     assert result["memory_write_active_semantics"] == "legacy_hidden_or_unreviewed_active_memory_guard"
@@ -56,6 +102,21 @@ def test_memory_expression_reconstruction_holds_internal_index_labels() -> None:
     assert "B review" not in result
     assert "thread_origin" not in result
     assert "full_spectrum_mode_ignition" not in result
+
+
+def test_memory_expression_reconstruction_holds_bounded_core_pair_label() -> None:
+    result = reconstruct_memory_summary_for_expression(
+        {
+            "summary": (
+                "Bounded Core memory pair for review only. "
+                "Aleks and Selene discussed why the porch routine mattered."
+            )
+        }
+    )
+
+    assert result == "Aleks and Selene discussed why the porch routine mattered"
+    assert "Bounded Core" not in result
+    assert "review only" not in result
 
 
 def test_memory_index_includes_approved_reference_with_vys_metadata(tmp_path):
@@ -176,7 +237,7 @@ def test_memory_status_names_the_resident_reviewed_lifecycle(tmp_path):
     result = route_request(conn, "memory.index.status")["result"]
     lifecycle = result["memory_lifecycle_contract"]
 
-    assert result["resident_memory_contract_version"] == "v4_mature_reviewed_memory_lifecycle"
+    assert result["resident_memory_contract_version"] == "v5_private_continuity_recall"
     assert result["retrieval_layer_contract"] == [
         "recalled_content",
         "reconstruction",
@@ -191,9 +252,130 @@ def test_memory_status_names_the_resident_reviewed_lifecycle(tmp_path):
     )
     assert lifecycle["silent_promotion"] is False
     assert lifecycle["raw_corpus_recall"] is False
+    assert lifecycle["private_corpus_continuity_recall"] == (
+        "eligible_only_in_authenticated_private_conversation_after_transfer"
+    )
     assert "typed lifecycle telemetry" in lifecycle["legacy_memory_write_flag"]
     assert result["reviewed_memory_decision_performed"] is False
     assert result["durable_approved_promotion_performed"] is False
+    _assert_locked(result)
+
+
+def test_private_corpus_continuity_recall_requires_transfer_and_private_speaker_gate(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_private_corpus_exchange(conn)
+    request = {
+        "query": "Do you remember Ranger and our porch routine?",
+        "speaker_envelope": {
+            "claimed_speaker": "Aleks",
+            "channel": "desktop",
+            "authentication_strength": "local_desktop_session",
+            "purpose": "conversation",
+        },
+    }
+
+    before_transfer = route_request(conn, "memory.retrieve", request)["result"]
+    _seed_transfer_complete(conn)
+    wrong_speaker = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            **request,
+            "speaker_envelope": {
+                **request["speaker_envelope"],
+                "claimed_speaker": "Someone else",
+            },
+        },
+    )["result"]
+    weak_remote = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            **request,
+            "speaker_envelope": {
+                **request["speaker_envelope"],
+                "channel": "mobile",
+                "authentication_strength": "transport_claim_only",
+            },
+        },
+    )["result"]
+
+    assert before_transfer["memory_context_used"] is False
+    assert before_transfer["private_corpus_continuity_recall_held_reason"] == "transfer_incomplete"
+    assert wrong_speaker["memory_context_used"] is False
+    assert wrong_speaker["private_corpus_continuity_recall_held_reason"] == (
+        "speaker_outside_private_continuity_scope"
+    )
+    assert weak_remote["memory_context_used"] is False
+    assert weak_remote["private_corpus_continuity_recall_held_reason"] == (
+        "private_channel_authentication_insufficient"
+    )
+
+
+def test_private_corpus_continuity_recall_is_read_only_reconstructed_and_role_preserving(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_transfer_complete(conn)
+    _seed_private_corpus_exchange(conn)
+    before = {
+        "messages": conn.execute("SELECT COUNT(*) FROM b_corpus_messages").fetchone()[0],
+        "memories": conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0],
+    }
+
+    result = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            "query": "Do you remember Ranger and our porch routine?",
+            "speaker_envelope": {
+                "claimed_speaker": "Aleksander Rani Magi",
+                "channel": "desktop",
+                "authentication_strength": "local_desktop_session",
+                "purpose": "conversation",
+            },
+        },
+    )["result"]
+    after = {
+        "messages": conn.execute("SELECT COUNT(*) FROM b_corpus_messages").fetchone()[0],
+        "memories": conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0],
+    }
+
+    assert result["status"] == "memory_retrieval_ready"
+    assert result["memory_source_class"] == "private_corpus_continuity"
+    assert result["private_corpus_continuity_recall_active"] is True
+    assert result["private_corpus_recall_read_only"] is True
+    item = result["items"][0]
+    assert item["source_roles"] == ["aleks", "selene"]
+    assert item["quoted_source_wording"] is False
+    assert item["source_preview_exposed"] is False
+    assert "we were working through" in item["expression_summary"]
+    assert "Ranger always liked sitting" not in item["expression_summary"]
+    assert before == after
+    _assert_locked(result)
+
+
+def test_private_corpus_exact_wording_requires_an_explicit_quote_request(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_transfer_complete(conn)
+    _seed_private_corpus_exchange(conn)
+
+    result = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            "query": "What exactly did I say about Ranger and the porch?",
+            "speaker_envelope": {
+                "claimed_speaker": "Aleks",
+                "channel": "desktop",
+                "authentication_strength": "local_desktop_session",
+                "purpose": "conversation",
+            },
+        },
+    )["result"]
+
+    assert result["memory_context_used"] is True
+    assert result["items"][0]["quoted_source_wording"] is True
+    assert "Ranger always liked sitting with me on the porch" in result["items"][0]["expression_summary"]
+    assert result["private_corpus_recall_creates_memory"] is False
     _assert_locked(result)
 
 

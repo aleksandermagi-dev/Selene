@@ -9,6 +9,10 @@ from .conversation_breadth_lessons import (
     EVIDENCE as CONVERSATION_BREADTH_EVIDENCE,
     LESSONS as CONVERSATION_BREADTH_LESSONS,
 )
+from .current_turn_semantic_lessons import (
+    EVIDENCE as CURRENT_TURN_SEMANTIC_EVIDENCE,
+    LESSONS as CURRENT_TURN_SEMANTIC_LESSONS,
+)
 from .creative_writing_foundations import (
     EVIDENCE as CREATIVE_WRITING_EVIDENCE,
     LESSONS as CREATIVE_WRITING_LESSONS,
@@ -747,6 +751,7 @@ LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
     *CREATIVE_WRITING_LESSONS,
     *PUBLIC_DOMAIN_READING_LESSONS,
     *CONVERSATION_BREADTH_LESSONS,
+    *CURRENT_TURN_SEMANTIC_LESSONS,
 )
 
 
@@ -1534,6 +1539,7 @@ LANGUAGE_LESSON_EVIDENCE: dict[str, dict[str, Any]] = {
     **CREATIVE_WRITING_EVIDENCE,
     **PUBLIC_DOMAIN_READING_EVIDENCE,
     **CONVERSATION_BREADTH_EVIDENCE,
+    **CURRENT_TURN_SEMANTIC_EVIDENCE,
 }
 
 
@@ -2033,6 +2039,14 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
         if isinstance(pragmatics.get("resolved_reference"), dict)
         else {}
     )
+    relational_context = (
+        intent.get("relational_context")
+        if isinstance(intent.get("relational_context"), dict)
+        else {}
+    )
+    relational_cues = {
+        str(value) for value in relational_context.get("cue_types") or [] if str(value)
+    }
     if key == "mixed_intent_balance" and (len(utterance_units) > 1 or intent.get("mixed_intent") is True):
         score += 5
     if key == "syntactic_rhythm_and_emphasis" and (
@@ -2174,6 +2188,110 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
         or any(marker in lower for marker in ("pause here", "stop here", "good stopping point", "be back later", "call it a day"))
     ):
         score += 11
+    ordinary_statement = "?" not in prompt and intent_name in {
+        "direct_conversation",
+        "warm_connection",
+        "playful_connection",
+        "gratitude",
+        "reassurance_received",
+    }
+    task_shaped_turn = (
+        intent_name in {"reasoned_answer", "direct_answer", "collaborative_task", "help_request"}
+        or intent.get("content_response_requested") is True
+        or any(
+            marker in lower
+            for marker in (
+                "please rewrite",
+                "rewrite this",
+                "compare the",
+                "explain why",
+                "explain how",
+                "tell me what",
+                "walk me through",
+                "summarize",
+                "analyse",
+                "analyze",
+            )
+        )
+    )
+    current_turn_social_or_ordinary = (
+        intent.get("social_turn") is True
+        or bool(relational_cues)
+        or (ordinary_statement and not task_shaped_turn)
+    )
+    if key == "current_turn_meaning_bearing_response" and current_turn_social_or_ordinary:
+        score += 13
+    if key == "current_turn_shared_affect_reciprocity" and (
+        bool(
+            relational_cues.intersection(
+                {
+                    "missing_or_longing",
+                    "affection",
+                    "delight_in_presence",
+                    "shared_positive_affect",
+                    "affectionate_address",
+                    "affectionate_symbol",
+                }
+            )
+        )
+        or any(marker in lower for marker in ("makes me happy", "i am glad", "i'm glad", "love you", "missed you", "<3"))
+    ):
+        score += 14
+    if key == "current_turn_playful_vocative_presence" and (
+        "affectionate_vocative" in relational_cues
+        or (
+            intent_name == "playful_connection"
+            and "selene" in lower
+            and "?" not in prompt
+        )
+    ):
+        score += 15
+    if key == "current_turn_visible_relation_interpretation" and (
+        not task_shaped_turn
+        and (
+            any(marker in lower for marker in (" because ", " but ", " although ", " though ", " therefore ", " which means "))
+            or any(marker in lower for marker in ("finally", "no longer", "almost there", "close to", "again"))
+        )
+    ):
+        score += 12
+    if key == "current_turn_responsive_contribution" and (
+        any(
+            marker in lower
+            for marker in (
+                "what do you think",
+                "your thoughts",
+                "i have an idea",
+                "that makes me think",
+                "what if",
+                "we built",
+                "we found",
+                "we should",
+            )
+        )
+        or intent_name in {"collaborative_task", "help_request"}
+    ):
+        score += 12
+    if key == "current_turn_optional_contextual_curiosity" and (
+        any(marker in lower for marker in ("i found", "i noticed", "i learned", "i was thinking", "not fully formed", "i wonder"))
+        or str((pragmatics.get("ambiguity") or {}).get("level") or "") == "material"
+    ):
+        score += 9
+    if key == "current_turn_callback_plus_present_meaning" and (
+        bool(pragmatics.get("session_landmarks"))
+        and any(marker in lower for marker in ("remember", "earlier", "before", "last time", "back to", "pick up", "we built", "we found"))
+    ):
+        score += 8
+    if key == "current_turn_cadence_and_depth_fit" and (
+        current_turn_social_or_ordinary
+        or (
+            not task_shaped_turn
+            and (
+                len(utterance_units) > 1
+                or any(marker in lower for marker in ("xD", "<3", "!!", "but", "because", "also"))
+            )
+        )
+    ):
+        score += 10
     if key == "flexible_supported_recomposition" and (
         str(intent.get("response_depth") or "") == "developed"
         or len(utterance_units) > 1
@@ -2568,7 +2686,9 @@ def _lesson_source_refs(key: str, lesson: dict[str, Any] | None = None) -> list[
     if lesson is None:
         lesson = next((item for item in LANGUAGE_QOL_LESSONS if str(item.get("key") or "") == key), {})
     group_order = int(_lesson_group_metadata(lesson)["group_order"])
-    if group_order >= 12:
+    if group_order >= 13:
+        source_phase = "speech_phase_14:current_turn_semantic_conversation"
+    elif group_order >= 12:
         source_phase = "speech_phase_13:evidence_grounded_conversation_breadth"
     elif group_order >= 11:
         source_phase = "speech_phase_12:public_domain_reading_and_creative_transfer"
@@ -2609,6 +2729,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "reviewed_public_and_project_grammar_guidance",
             "attributed_public_domain_reading_application_lesson",
             "project_authored_evidence_grounded_conversation_breadth_lesson",
+            "project_authored_private_corpus_current_turn_semantic_mechanism",
         ],
         "covered_effects": [
             "grammar",
@@ -2622,6 +2743,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "dialogue_viewpoint_and_scene_continuity",
             "attributed_public_domain_reading_mechanism_transfer",
             "evidence_grounded_conversation_breadth",
+            "current_turn_semantic_conversation",
         ],
         "item_approval_required": False,
         "acquire_integrate_express_required": True,

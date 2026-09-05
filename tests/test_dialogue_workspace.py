@@ -420,6 +420,24 @@ def test_dialogue_workspace_resolves_plural_option_reference_but_holds_singular_
     assert singular["pragmatics"]["resolved_reference"]["resolution_status"] == "materially_ambiguous"
 
 
+def test_life_out_there_is_not_misread_as_a_previous_turn_reference(tmp_path):
+    conn, session_id = _conn(tmp_path)
+    text = "Do you think there could be life out there?"
+    result = prepare_dialogue_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": text,
+            "intent_decision": classify_chat_intent(text),
+            "conversation_events": [
+                {"role": "selene", "preview": "We were discussing the garden gate."}
+            ],
+        },
+    )
+
+    assert result["pragmatics"]["resolved_reference"] is None
+
+
 def test_dialogue_workspace_extracts_structured_correction_and_direct_requests(tmp_path):
     conn, session_id = _conn(tmp_path)
     correction_text = "Actually, I meant the semantic layer, not the voice layer."

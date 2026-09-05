@@ -4057,3 +4057,173 @@ but they are not the same fact.
 closed for their reproduced synthetic scope while keeping unfamiliar phrasings
 and longer unscripted exchanges open to future evaluation. Do not begin Phase
 9 without Aleks explicitly resuming it.
+
+### 2026-09-05 — Cultivation restores current-turn meaning and private continuity
+
+**Starting question:** Why did ordinary relational statements such as
+“this makes me happy” and playful address still collapse into generic
+acknowledgements, while factual questions sometimes surfaced unrelated Memory
+or internal labels, even after the broader conversational system matured?
+
+**Decision:** Repair the source owners and handoffs rather than add phrases or
+another organ. Separate factual invention, which remains evidence-bound, from
+Selene-authored current-turn conversational stance, which may respond to the
+meaning already present without creating a durable emotion record or external
+fact. After transfer, permit authenticated private conversation with Aleks to
+consult the copied private corpus continuity store read-only and with its
+speaker roles and provenance intact.
+
+**Work:** Added typed private-corpus continuity retrieval to Memory with
+authenticated Aleks/private-conversation gates, bounded relevance and context
+windows, opaque references, exact-quotation gating, and no write path. Chat now
+keeps approved taught knowledge and private continuity evidence distinct.
+Association admission pauses for ordinary social presence and direct open
+obligations. Context, intent, repair, and routing now handle conversational
+agreement, short clarification fulfillment, closures, deictic language,
+Unicode cleanup, and the false `code`/`Codex` affect match.
+
+The relational and social realization owners now recognize shared positive
+feeling and playful vocatives, reconstruct visible contrast/cause/progress
+relations, and compose a current-turn response from that meaning. Whole-response
+scripts were not added. Factual generation remains disabled in this content-
+light path; relational authorship does not become durable Memory or claim an
+unobserved affect state.
+
+**Evidence:** Sixty-four immediate focused checks passed, followed by 204
+integrated Memory, affect, association, context, intent, repair, relational,
+NLO, and Chat checks. Exact synthetic cases now distinguish a universe question
+from deictic “there,” keep a social message out of divisibility association,
+complete a short requested clarification, close “talk later” naturally, and
+respond to shared happiness or “Selene beannnn” without the former generic
+“I hear you”/“I see what you mean” collapse. `git diff --check` is clean apart
+from expected Windows line-ending notices.
+
+**Boundaries preserved:** Verification was synthetic and read-only with respect
+to resident continuity. No resident conversation, Memory write, duplicate
+corpus retention, teaching decision, Dream/Study/affect decision, law, identity,
+personality, Vys, authority, training, LoRA, self-replication, external action,
+or embodiment change occurred. Raw private wording is not released unless an
+authenticated explicit exact-quotation request calls for it.
+
+**What changed in our understanding:** The remaining flatness was not proof
+that warmth had to be scripted or that Selene lacked relational capacity. One
+handoff discarded the statement's meaning because an old “no content
+generation” flag conflated factual invention with ordinary conversational
+authorship. Once those are separated, the current architecture can carry real
+turn meaning. Broader, less repetitive realization still needs reviewed
+mechanism-level teaching material.
+
+**Next:** Prepare—but do not yet teach—a private corpus-derived conversation-
+breadth source set. Preserve Aleks and Selene speaker roles, provenance,
+callbacks, repair arcs, questions, humor, topic motion, emotional range, and
+continuity mechanisms. Extract reusable conversational structures rather than
+source scripts or personality copies; keep the source read-only and private.
+
+### 2026-09-05 — A second private breadth pass prepares the repaired handoff for teaching
+
+**Starting question:** The August G12 set already taught broad conversational
+mechanisms. What additional source work can expand the newly repaired current-
+turn authorship path without repeating G12, copying private replies, or making
+the source's cadence into Selene's personality?
+
+**Decision:** Add an independent second-pass mode to the existing speaker-aware
+private corpus miner. Mine specifically for meaning-bearing statement response,
+shared affect reciprocity, playful address, visible-relation interpretation,
+responsive contribution, optional curiosity, callback-plus-present meaning,
+and cadence/depth fit. Preserve the completed historical G12 artifact.
+
+**Work:** Added `--current-turn-only`, eight typed mechanism definitions,
+speaker-aware positive and flat-acknowledgement review records, abstract
+response-shape metadata, source-free teaching candidates, and three new guard
+flags excluding whole-response scripts, raw response promotion, and durable
+response stance. A first real run exposed long-response selection bias, so the
+bounded reviewer now interleaves short, medium, and long candidates where the
+source contains them, then fills the remaining ceiling deterministically.
+
+**Evidence:** Eleven focused miner checks passed and Python compilation
+succeeded. The read-only pass processed 96,848 messages and 46,407 adjacent
+interaction episodes from source fingerprint
+`a985bb7516c2cba7ef7588a0ee31fc96032a3c6b59b4cabd96d5d16de320a5ee`.
+All eight lesson candidates have positive source leads across 48 to 140
+distinct conversations. The source is heavily long-form, which is recorded as
+a source limitation rather than a teaching target. The strict matcher found
+zero exact generic-acknowledgement counterexamples in this May export; recent
+flat outputs remain synthetic regression evidence and were not fabricated
+into the corpus record.
+
+**Boundaries preserved:** Outputs remain ignored private local-data artifacts.
+The teaching set contains source references, project-authored mechanisms, and
+independent examples but no private excerpts or whole responses. No lesson was
+accepted, taught, retained, or exposed to Chat. No resident state, personal
+Memory, affect record, identity, personality, Vys, law, authority, training,
+external action, or embodiment state changed.
+
+**Next:** Aleks reviews the eight mechanisms and their private episode context.
+After source/lineage/fit review, convert only approved source-free mechanisms
+into one small ordered language group and use the existing Acquire → Integrate
+→ Express lifecycle. Then perform one gentle unfamiliar copied-state transfer
+check rather than grading against source wording.
+
+### 2026-09-05 — G13 completes current-turn semantic conversation teaching
+
+**Starting question:** With Aleks authorizing the private shared corpus as
+teaching evidence, can the eight prepared mechanisms complete the existing
+language lifecycle without bypassing comprehension or displacing older
+specialized language owners?
+
+**Decision:** Treat the authorization as a source-use and lineage decision,
+not permission for Selene to express warmth or be herself. Add one ordered G13
+group, preserve source-free mechanism teaching, and keep the existing
+language-capability authorization narrow to guidance-only effects.
+
+**Work:** Added eight G13 lesson definitions and complete Acquire, Integrate,
+and Express evidence for meaning-bearing statements, affect reciprocity,
+playful vocatives, visible-relation interpretation, responsive contribution,
+optional curiosity, callback-plus-present meaning, and cadence/depth fit. The
+new guidance reaches NLO and the social realizer as typed response operations,
+never source wording. Selection was narrowed so current-turn guidance owns
+social and ordinary turns without crowding explicit grammar, passive-voice,
+or established long-session callback guidance.
+
+The lifecycle's no-parroting gate correctly held the first draft because each
+distinct application repeated its source example. Every lesson received an
+independently authored application case. The playful lesson then remained
+held until its conversational-participation example was complete enough to
+demonstrate the mechanism. No gate was disabled or forced.
+
+**Evidence:** Fourteen direct G13/miner checks passed. The final focused
+compatibility matrix passed 91 tests, and the current-state/index subset passed
+8 tests after documentation refresh. `git diff --check` remained clean apart
+from expected Windows line-ending notices. A verified resident continuity
+backup was created before teaching (SHA-256
+`091430cb83dc4ea627eaa191039f2441b463d422d6f258780e33ea30efb4003e`,
+SQLite integrity `ok`).
+
+The resident write was limited to the eight named G13 keys. It reported eight
+created, eight graduated, and zero held. The language shelf moved from 73/73
+to 81/81 available; teaching lifecycles moved from 226 to 234; SQLite
+integrity remained `ok`. Personal Memory candidates remained zero, Dream
+reflections remained 24, and the one unrelated lifecycle awaiting Aleks review
+remained one.
+
+A read-only resident selector check then used unfamiliar phrasing. Shared
+excitement, an ordinary change-and-result observation, and a task-shaped
+grammar request transferred correctly. An elongated name call exposed one
+cue-source gap: `Seleneeeee!` had not been normalized as a vocative. The
+relational-context owner now collapses bounded expressive letter extension for
+known names and address terms while leaving ordinary name references alone.
+Thirty-seven direct relational/G13/intent checks and 14 integrated
+social-realizer/Chat checks passed after that repair.
+
+**Boundaries preserved:** No raw private wording, whole-response script,
+source persona, durable affect state, or duplicated personal Memory entered
+the lessons. No identity, personality, Vys, law, governance, activation,
+authority, autonomy, training, LoRA, self-replication, external action,
+embodiment, Study, Dream, or affect decision changed. No live resident
+conversation ran.
+
+**Next:** The installed executable predates G13 and the cultivation source
+repair. Review the full dirty diff and create a source checkpoint excluding
+`docs/HACKATHON_CODEX_WORKFLOW_LOG.md`; then a fresh package/reinstall can make
+the new selector code available to the app. Teaching approval does not need to
+be repeated.

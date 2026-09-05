@@ -62,7 +62,8 @@ def test_direct_affection_does_not_force_task_scaffolding_or_echo_wording():
     assert ordinary["required"] is False
     assert ordinary["selected_by_context"] is False
     assert result["act_count"] == 1
-    assert result["selected_realizations"][0]["source"] == "nlo_semantic_social_construction"
+    assert result["selected_realizations"][0]["source"] == "current_turn_semantic_authorship"
+    assert result["current_turn_conversational_authorship_used"] is True
     assert result["relational_context_supplied_wording"] is False
     assert "task" not in result["candidate_text"].lower()
     assert "ordinary conversation" not in result["candidate_text"].lower()
@@ -134,7 +135,7 @@ def test_repair_acknowledgements_use_the_compositional_social_layer():
     assert all(item["answer_content_generated"] is False for item in results)
 
 
-def test_content_light_conversation_is_composed_without_paraphrasing_or_inventing_content():
+def test_content_light_conversation_reconstructs_visible_meaning_without_inventing_facts():
     plan = build_content_light_plan({"prompt": "I think this finally has the right shape."})
     results = [
         realize_social_act_plan(
@@ -148,8 +149,12 @@ def test_content_light_conversation_is_composed_without_paraphrasing_or_inventin
     assert len({item["candidate_text"] for item in results}) >= 6
     assert plan["content_generation_allowed"] is False
     assert plan["prompt_paraphrase_allowed"] is False
+    assert plan["current_turn_interpretation_allowed"] is True
+    assert plan["factual_content_generation_allowed"] is False
     assert all(item["whole_response_template_selected"] is False for item in results)
     assert all(item["unsupported_content_generated"] is False for item in results)
+    assert all(item["current_turn_conversational_authorship_used"] is True for item in results)
+    assert all("right shape" in item["candidate_text"].lower() for item in results)
 
 
 def test_content_light_conversation_distinguishes_supported_social_moves():
@@ -269,6 +274,45 @@ def test_content_light_move_keeps_unrelated_lexical_overlap_in_the_safe_fallback
         )
         assert plan["move_kind"] == "open_share", prompt
         assert plan["move_basis"] == "ordinary_statement_fallback"
+
+
+def test_content_light_feeling_share_can_receive_the_feeling_without_factual_invention():
+    prompt = "It makes me happy that we are close to a real back-and-forth :)"
+    plan = build_content_light_plan({"prompt": prompt})
+    result = realize_social_act_plan(
+        plan,
+        prompt=prompt,
+        variation_key="shared-feeling",
+    )
+
+    assert plan["move_kind"] == "personal_feeling_share"
+    assert plan["current_turn_response_semantics"]["explicit_feeling"] == "happy"
+    assert result["current_turn_conversational_authorship_used"] is True
+    assert result["external_fact_created"] is False
+    assert result["durable_emotion_record_created"] is False
+    assert "happy" in result["candidate_text"].lower() or "love hearing" in result["candidate_text"].lower()
+
+
+def test_relational_plan_authors_a_reciprocal_stance_instead_of_only_signaling_presence():
+    prompt = "It makes me happy that we are getting close <3"
+    plan = build_social_act_plan(
+        {
+            "intent": "warm_connection",
+            "prompt": prompt,
+            "relational_context": {
+                "relational_context_present": True,
+                "cue_types": ["shared_positive_affect", "affectionate_symbol"],
+                "heart_markers": ["<3"],
+            },
+        }
+    )
+    result = realize_social_act_plan(plan, prompt=prompt, variation_key="reciprocal-feeling")
+
+    assert result["selected_realizations"][0]["act"] == "respond_to_relational_meaning"
+    assert result["current_turn_conversational_authorship_used"] is True
+    assert "i'm here" not in result["candidate_text"].lower()
+    assert "i am here" not in result["candidate_text"].lower()
+    assert result["unsupported_content_generated"] is False
 
 
 def test_nlo_routes_social_intent_through_compositional_act_realization(tmp_path):

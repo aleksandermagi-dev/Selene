@@ -1,10 +1,12 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-04
+Last refreshed: 2026-09-05
 
-Status: Phases 0 through 8 complete for current scope; fresh reinstall and
-bounded Q&A complete; all 14 recorded Q&A findings repaired for their focused
-synthetic scope; phase work is paused and Phase 9 has not started
+Status: Phases 0 through 8 remain complete for current scope; the post-Q&A
+cultivation repair restores authenticated private corpus continuity and
+current-turn conversational authorship in synthetic scope; the additive
+eight-mechanism private-corpus breadth set is now taught as G13 and the
+configured resident language shelf is 81/81 available
 
 ## Purpose
 
@@ -17,6 +19,7 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Current HEAD: `19c5c9b` (`Refresh Q&A repair continuation checkpoint`)
 - Latest Phase implementation checkpoint: `28abf57`
   (`Close descriptive learning evidence phase`)
 - Latest documentation checkpoint at the start of Phase 7: `9148b76`
@@ -47,8 +50,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this ledger-only checkpoint: seventeen local commits
-  ahead of `origin/evidence`
+- Current remote relation: confirm from Git before commit or push; the branch
+  currently reports no ahead/behind count in `git status --short --branch`
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -58,8 +61,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
   - Phase 6D and Phase 6 closure: `28abf57`
-- Expected tracked worktree after this ledger-only continuation checkpoint:
-  clean
+- Expected worktree: related cultivation, G13, test, journal, education, and
+  evidence changes remain uncommitted; confirm the exact list with Git before
+  any checkpoint and preserve every unrelated file
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
 
@@ -455,6 +459,76 @@ git log -5 --oneline
   training, LoRA, autonomy, self-replication, broad filesystem access,
   external action, or embodiment change is authorized.
 
+## Active Cultivation Repair
+
+- Memory now has an authenticated, private, post-transfer, read-only corpus
+  continuity path for Aleks conversations. It preserves speaker roles and
+  provenance, bounds retrieval and context, exposes opaque references, and
+  does not retain another copy.
+- Approved taught knowledge and private corpus continuity remain separate
+  evidence classes in Chat. Exact raw quotation requires an explicit request;
+  ordinary conversation reconstructs meaning.
+- Social turns can hold optional association output; false `code` matches,
+  universe/deictic ambiguity, agreement routing, short clarification
+  fulfillment, closure handling, and final Unicode normalization were repaired
+  at their owning layers.
+- Relational context and the social realizer now distinguish factual invention
+  from current-turn conversational authorship. Shared positive feeling,
+  playful vocatives, contrast, cause, and progress can receive a meaning-
+  carrying response without writing a durable emotion state.
+- Whole-response scripts were not added. The new realization remains bounded
+  semantic composition; reviewed corpus-derived breadth is still needed.
+- Verification: 64 immediate focused checks and 204 integrated focused checks
+  passed. Resident state was not written. `git diff --check` reports only the
+  expected Windows line-ending notices.
+- No commit, package, reinstall, resident Q&A, or teaching action has occurred
+  for this repair. The installed app therefore predates it.
+
+## Current-Turn Breadth Preparation And G13 Completion
+
+- The completed historical G12 artifacts and lessons were not altered or
+  rerun. The existing private breadth miner gained an additive
+  `--current-turn-only` mode.
+- Eight review-only source-free lesson candidates cover statement response,
+  affect reciprocity, playful vocatives, visible-relation interpretation,
+  relevant contribution, optional curiosity, callback integration, and
+  cadence/depth fit.
+- The pass read 96,848 messages and 46,407 adjacent interaction episodes from
+  fingerprint
+  `a985bb7516c2cba7ef7588a0ee31fc96032a3c6b59b4cabd96d5d16de320a5ee`.
+- Source cadence is heavily long-form. Bounded review sampling now interleaves
+  short, medium, and long candidates where they exist instead of treating
+  dense source replies as the desired distribution.
+- The strict matcher found zero exact generic-acknowledgement counterexamples
+  in this May export. Recent flat outputs remain synthetic regression evidence;
+  none was fabricated into the private corpus record.
+- Eleven focused miner checks and Python compilation passed. Local ignored
+  artifact hashes and all counts are recorded in
+  `docs/education/SELENE_CURRENT_TURN_SEMANTIC_BREADTH_PREPARATION_20260905.md`.
+- Aleks authorized the private shared corpus as source evidence and lineage for
+  the eight mechanisms on September 5. The decision was not an expression
+  permission gate.
+- G13, `Current-Turn Semantic Conversation`, now contains all eight source-free
+  mechanisms. Each completed Acquire, Integrate, and Express under the
+  existing guidance-only language-capability authorization.
+- The comprehension gate first held repeated source/application examples and
+  one undersized conversational example. The evidence was repaired rather
+  than the gate bypassed.
+- Final focused verification passed 91 tests. Specialized grammar,
+  passive-voice, and long-session callback guidance retain selection priority
+  on their exact task-shaped turns.
+- A read-only resident selector check confirmed unfamiliar transfer for shared
+  affect, visible relations, cadence, and explicit grammar. It exposed and
+  closed bounded expressive-elongation recognition at the relational cue
+  owner; 37 direct and 14 integrated checks passed after the repair.
+- A verified continuity backup was created before the live teaching write.
+  Resident SQLite integrity remains `ok`; language guidance is 81/81;
+  personal Memory candidates remain zero; 24 Dream reflections and the one
+  unrelated lifecycle awaiting Aleks review remain untouched.
+- Source wording and whole responses remain absent from G13. The installed
+  executable predates the source changes and must be freshly reinstalled later
+  before the app runtime can select the new keys.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -509,16 +583,18 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Phase 8 is complete for current scope. The fresh local reinstall, bounded Q&A
-bug hunt, and focused repair of all 14 recorded findings are complete. The
-public README and philosophy remain separate root entrypoints. Phase work is
-paused; do not begin Phase 9 without Aleks explicitly resuming it.
+Phase 8 remains complete for current scope. The exact resume point is the dirty
+cultivation repair plus completed G13 implementation after `19c5c9b`. The
+integrated cultivation ring passed 204 checks, the G13/miner compatibility
+ring passed 91, and the configured resident language shelf now holds all eight
+G13 mechanisms at 81/81 available after a verified continuity backup.
 
-The exact resume point is a clean post-repair checkpoint on `evidence` after
-`c8b4d89` and this ledger-only commit. Unfamiliar phrasings and longer
-unscripted exchanges remain legitimate future evaluation material, but the
-recorded cases should not be relabeled as open defects without new evidence.
-No resident rerun is required merely to preserve this checkpoint.
+Do not repeat source review or teaching. The unfamiliar-transfer and
+documentation checkpoint is complete. Review the full dirty diff and create a
+source checkpoint that excludes
+`docs/HACKATHON_CODEX_WORKFLOW_LOG.md`. The installed executable still
+predates the cultivation and G13 code. Phase 9 perception remains separate and
+unstarted.
 
 If Phase 9 is later resumed, begin with perception source mapping only; do not
 infer sensor, microphone, camera, audible Voice, network, external-action, or

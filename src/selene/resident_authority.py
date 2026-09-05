@@ -304,6 +304,9 @@ def attach_resident_capability_contract(
 
     reviewed_write = payload.get("reviewed_memory_write_occurred") is True
     approved_recall_used = payload.get("approved_memory_retrieval_used") is True
+    private_continuity_recall_used = (
+        payload.get("private_corpus_continuity_recall_used") is True
+    )
     approved_available = payload.get("approved_memory_retrieval_active")
     contract = resident_capability_contract(
         transfer_complete=transfer_complete,
@@ -317,6 +320,13 @@ def attach_resident_capability_contract(
         approved_memory_retrieval_used=approved_recall_used,
     )
     result = dict(payload)
+    contract["memory"]["private_corpus_continuity_recall"] = (
+        "used_read_only_this_event"
+        if private_continuity_recall_used
+        else "available_only_when_post_transfer_private_speaker_gate_accepts"
+    )
+    contract["memory"]["private_corpus_recall_creates_memory"] = False
+    contract["memory"]["private_corpus_recall_trains_model"] = False
     result["resident_capability_contract"] = contract
     result["canonical_capability_contract"] = contract
     result["legacy_flat_guard_fields_deprecated"] = True

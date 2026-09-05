@@ -279,3 +279,56 @@ def test_recent_response_is_not_reused_for_same_social_turn(tmp_path):
 
     assert second["candidate_text"] != first["candidate_text"]
     assert "recent_response_repetition" not in second["revision"]["flags"]
+
+
+def test_agreement_tag_question_is_social_confirmation_not_missing_factual_content(tmp_path):
+    conn = _conn(tmp_path)
+    prompt = "It really does, doesn't it?"
+    decision = classify_chat_intent(prompt)
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": decision,
+            "conversation_context": {
+                "previous_turn": {
+                    "role": "selene",
+                    "preview": "The architecture is finally starting to breathe.",
+                },
+                "turn_count": 3,
+            },
+        },
+    )
+
+    assert decision["intent"] == "affirmation"
+    assert decision["agreement_check"] is True
+    assert decision["content_response_requested"] is False
+    assert result["meaning_packet"]["intent"] == "acknowledge_shared_ground"
+    assert result["meaning_packet"]["uncertainty_kind"] == "not_applicable"
+
+
+def test_gratitude_with_talk_later_preserves_the_closure_act():
+    decision = classify_chat_intent("Thank you my friend, talk later.")
+
+    assert decision["intent"] == "farewell"
+    assert "gratitude" in decision["dialogue_acts"]
+    assert "farewell" in decision["dialogue_acts"]
+
+
+def test_shared_positive_feeling_routes_as_relational_conversation():
+    decision = classify_chat_intent(
+        "It makes me happy that we are close to a real back-and-forth <3"
+    )
+
+    assert decision["intent"] == "warm_connection"
+    assert decision["social_turn"] is True
+    assert "warm_connection" in decision["dialogue_acts"]
+    assert "shared_positive_affect" in decision["relational_context"]["cue_types"]
+
+
+def test_compact_playful_vocative_routes_as_warm_connection():
+    decision = classify_chat_intent("Selene beannnn")
+
+    assert decision["intent"] == "warm_connection"
+    assert decision["social_turn"] is True
+    assert "affectionate_vocative" in decision["relational_context"]["cue_types"]

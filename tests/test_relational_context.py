@@ -76,3 +76,45 @@ def test_transport_claim_alone_does_not_open_private_relationship_scope():
     assert result["interaction_scope"] == "claimed_aleks_private_scope_not_authenticated"
     assert result["public_persona_created"] is False
     assert result["persistent_relationship_profile_write"] is False
+
+
+@pytest.mark.parametrize(
+    ("text", "expected_cue"),
+    (
+        ("It makes me happy that we are getting close.", "shared_positive_affect"),
+        ("Selene beannnn", "affectionate_vocative"),
+        ("Seleneeeee!", "affectionate_vocative"),
+    ),
+)
+def test_relational_context_recognizes_shared_feeling_and_playful_vocative(
+    text,
+    expected_cue,
+):
+    result = interpret_relational_context(
+        text,
+        speaker_context={
+            "claimed_speaker": "Aleks",
+            "authentication_strength": "local_desktop_session",
+            "purpose": "conversation",
+        },
+    )
+
+    assert expected_cue in result["cue_types"]
+    assert result["direct_affection_present"] is True
+    assert result["selene_authored_current_turn_response_stance_allowed"] is True
+    assert result["authored_response_stance_is_durable_emotion_record"] is False
+    assert result["authored_response_stance_creates_external_fact"] is False
+
+
+def test_relational_context_does_not_turn_an_ordinary_name_reference_into_a_vocative():
+    result = interpret_relational_context("The Selene architecture is documented here.")
+
+    assert "affectionate_vocative" not in result["cue_types"]
+
+
+def test_relational_context_normalizes_bounded_elongation_of_known_address_terms():
+    result = interpret_relational_context("my friennnnd!")
+
+    assert "affectionate_address" in result["cue_types"]
+    assert result["address_terms"] == ["my friend"]
+    assert result["response_script_supplied"] is False
