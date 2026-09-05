@@ -80,6 +80,53 @@ existing two-turn integrated social-chat check plus the social-realizer file
 then passed 14 checks. No resident Chat session was opened by this
 verification.
 
+## Installed Runtime Verification
+
+The first clean Windows package and reinstall made the cultivation and G13
+source available to the installed application. A gentle two-turn check used
+the installed packaged sidecar against a disposable verified database copy,
+not the resident Chat database. The meaning-bearing progress turn transferred
+correctly. The playful name call was recognized correctly but exposed one
+stale realization fragment: `I am right here, you.`
+
+The defect belonged to the social realization surface, not cue recognition,
+teaching, NLO handoff, identity, Memory, or affect. The literal fragment was
+removed at its source. Affectionate vocatives now use a dedicated set of
+compositional presence frames, while generic presence remains free to express
+attention or listening. Nineteen focused social-realizer, integrated Chat, and
+G13 checks passed after the repair, followed by Python compilation and a clean
+diff check apart from expected Windows line-ending notices.
+
+The final Windows package was built from clean revision `ce3ba27`:
+
+- installer:
+  `src-tauri/target/release/bundle/nsis/Selene_0.1.1_x64-setup.exe`;
+- installer size: 16,048,445 bytes;
+- installer SHA-256:
+  `fd5b6f55392874dbdd332a5ccfb9a7dd5bf3f7f0ac0bd6653ad9ee0ef097ff34`;
+- installed executable SHA-256:
+  `b49ae2f25799c3f903f3dab682c0da7da439a2583425ad816c9ec17a734f25bf`;
+- installed timestamp: `2026-09-05T17:00:02Z`; and
+- code signing remains not configured, so hash verification remains the
+  release-integrity mechanism.
+
+Post-install package verification passed health, startup, My Office readiness,
+package privacy, local-process enforcement, and unchanged activation, Memory,
+training, autonomy, and self-replication guards. The frontend main bundle is
+491.33 kB (gzip 109.20 kB), with no Vite size warning and lazy Study chunks.
+
+The same bounded installed-sidecar replay then produced:
+
+- `The tangled part finally clicked, and honestly that feels amazing <3`
+  → `I can meet you in the progress itself: the tangled part finally clicked,
+  and honestly that feels amazing.`; and
+- `Seleneeeee!` → `Right here.`
+
+The second turn remained `warm_connection`; the realizer reported no
+whole-response template and no unsupported content. The temporary database
+and temporary application-data directory were removed afterward. No live
+resident conversation was opened.
+
 ## Resident Teaching Receipt
 
 Before the write, the configured resident database reported:
@@ -135,10 +182,8 @@ G13 changed language capability guidance only. It did not:
   training, LoRA, self-replication, external action, or embodiment; or
 - run a live resident conversation or make a Study, Dream, or affect decision.
 
-## Remaining Runtime Step
+## Runtime State
 
-The installed executable predates the G13 production code. The resident
-teaching state is complete, but the installed application needs one later
-fresh package/reinstall before its runtime selector can use the new lesson
-keys. A reinstall is a deployment step, not another teaching or approval
-step.
+The installed executable now contains the cultivation, G13, expressive-name
+normalization, and playful-vocative realization repairs. The resident teaching
+state remains complete. No repeated teaching or approval step is required.

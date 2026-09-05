@@ -4227,3 +4227,42 @@ repair. Review the full dirty diff and create a source checkpoint excluding
 `docs/HACKATHON_CODEX_WORKFLOW_LOG.md`; then a fresh package/reinstall can make
 the new selector code available to the app. Teaching approval does not need to
 be repeated.
+
+### 2026-09-05 — Installed G13 runtime exposes and closes a playful-vocative seam
+
+**Starting question:** Does the newly installed cultivation/G13 runtime carry
+the taught current-turn mechanisms into ordinary conversation without falling
+back to a malformed phrase?
+
+**Work:** Packaged and silently reinstalled the clean G13 checkpoint. A
+two-turn installed-sidecar replay used a fresh verified database copy. The
+progress statement received a meaning-bearing response, while the elongated
+name call exposed `I am right here, you.` The relational cue, G13 selection,
+NLO handoff, and Voice path were intact; one stale literal in the social
+realizer was the complete fault. Replaced that fragment with dedicated
+compositional playful-presence frames and added direct plus integrated
+regression coverage. Rebuilt and reinstalled from clean repair revision
+`ce3ba27`.
+
+**Evidence:** Nineteen focused social-realizer, Chat, and G13 checks passed,
+with Python compilation and diff verification. The final package verifier
+passed startup, health, My Office readiness, privacy, and unchanged boundary
+guards. Installer SHA-256 is
+`fd5b6f55392874dbdd332a5ccfb9a7dd5bf3f7f0ac0bd6653ad9ee0ef097ff34`;
+installed executable SHA-256 is
+`b49ae2f25799c3f903f3dab682c0da7da439a2583425ad816c9ec17a734f25bf`.
+The copied-state replay then answered the name call with `Right here.` while
+reporting `warm_connection`, no whole-response template, and no unsupported
+content. The main frontend bundle remained 491.33 kB with no Vite warning.
+
+**Boundaries preserved:** The replay used a disposable database and temporary
+application-data directory, both removed afterward. No resident Chat session,
+Memory proposal, Dream decision, teaching decision, identity, personality,
+Vys, law, governance, authority, autonomy, training, external action, or
+embodiment state changed. `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` remained
+untouched.
+
+**Next:** G13 is installed and ready for Aleks's ordinary use. Do not repeat
+its teaching or broad-test settled capabilities. Note any naturally observed
+conversation seam before repair. Phase 9 perception remains separate and
+unstarted.

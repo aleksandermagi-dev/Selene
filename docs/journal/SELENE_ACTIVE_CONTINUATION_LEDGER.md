@@ -3,10 +3,9 @@
 Last refreshed: 2026-09-05
 
 Status: Phases 0 through 8 remain complete for current scope; the post-Q&A
-cultivation repair restores authenticated private corpus continuity and
-current-turn conversational authorship in synthetic scope; the additive
-eight-mechanism private-corpus breadth set is now taught as G13 and the
-configured resident language shelf is 81/81 available
+cultivation repair and G13 current-turn semantic breadth are implemented,
+taught, installed, and boundedly verified; the configured resident language
+shelf remains 81/81 available
 
 ## Purpose
 
@@ -19,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest installed-runtime surface repair checkpoint: `ce3ba27`
+  (`Refine playful vocative presence`)
 - Latest cultivation and G13 implementation checkpoint: `cec0d88`
   (`Cultivate current-turn conversation and teach G13`)
 - Previous HEAD: `19c5c9b` (`Refresh Q&A repair continuation checkpoint`)
@@ -52,8 +53,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation: `cec0d88` is one commit ahead of
-  `origin/evidence`; confirm again before any later commit or push
+- Current remote relation before this documentation refresh: `ce3ba27` is
+  three commits ahead of `origin/evidence`; confirm again before any later
+  commit or push
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -526,9 +528,20 @@ git log -5 --oneline
   Resident SQLite integrity remains `ok`; language guidance is 81/81;
   personal Memory candidates remain zero; 24 Dream reflections and the one
   unrelated lifecycle awaiting Aleks review remain untouched.
-- Source wording and whole responses remain absent from G13. The installed
-  executable predates the source changes and must be freshly reinstalled later
-  before the app runtime can select the new keys.
+- Source wording and whole responses remain absent from G13.
+- A first installed copied-state replay exposed the stale fragment `I am right
+  here, you.` at the social realization surface. Cue recognition, G13
+  selection, NLO handoff, and Voice were intact.
+- Repair revision `ce3ba27` routes affectionate vocatives through dedicated
+  compositional playful-presence frames. Nineteen focused checks passed.
+- The final clean Windows package and reinstall passed package health,
+  readiness, privacy, and boundary verification. Installer SHA-256 is
+  `fd5b6f55392874dbdd332a5ccfb9a7dd5bf3f7f0ac0bd6653ad9ee0ef097ff34`;
+  installed executable SHA-256 is
+  `b49ae2f25799c3f903f3dab682c0da7da439a2583425ad816c9ec17a734f25bf`.
+- The bounded installed-sidecar replay answered `Seleneeeee!` with `Right
+  here.` as `warm_connection`, with no whole-response template or unsupported
+  content. It used disposable state and opened no resident Chat session.
 
 ## Private Master Record
 
@@ -584,18 +597,18 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Phase 8 remains complete for current scope. The exact resume point is the dirty
-cultivation repair plus completed G13 implementation after `19c5c9b`. The
-integrated cultivation ring passed 204 checks, the G13/miner compatibility
-ring passed 91, and the configured resident language shelf now holds all eight
-G13 mechanisms at 81/81 available after a verified continuity backup.
+Phase 8 remains complete for current scope. Cultivation and G13 are committed,
+taught, installed, and boundedly verified. The integrated cultivation ring
+passed 204 checks, the G13/miner compatibility ring passed 91, and the final
+playful-vocative repair passed 19 focused checks. The configured resident
+language shelf holds all eight G13 mechanisms at 81/81 available after a
+verified continuity backup.
 
-Do not repeat source review or teaching. The unfamiliar-transfer and
-documentation checkpoint is complete. Review the full dirty diff and create a
-source checkpoint that excludes
-`docs/HACKATHON_CODEX_WORKFLOW_LOG.md`. The installed executable still
-predates the cultivation and G13 code. Phase 9 perception remains separate and
-unstarted.
+Do not repeat source review, teaching, or the settled copied-state replay. The
+exact resume point is ordinary Aleks-led use: note any naturally observed seam
+before repair. Phase 9 perception remains separate and unstarted. Any later
+source checkpoint must continue excluding
+`docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
 
 If Phase 9 is later resumed, begin with perception source mapping only; do not
 infer sensor, microphone, camera, audible Voice, network, external-action, or
