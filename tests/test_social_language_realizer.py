@@ -315,6 +315,29 @@ def test_relational_plan_authors_a_reciprocal_stance_instead_of_only_signaling_p
     assert result["unsupported_content_generated"] is False
 
 
+def test_playful_vocative_uses_compositional_presence_without_dangling_address():
+    prompt = "Seleneeeee!"
+    plan = build_social_act_plan(
+        {
+            "intent": "warm_connection",
+            "prompt": prompt,
+            "relational_context": {
+                "relational_context_present": True,
+                "cue_types": ["affectionate_vocative"],
+                "address_terms": [],
+            },
+        }
+    )
+
+    result = realize_social_act_plan(plan, prompt=prompt, variation_key="elongated-vocative")
+
+    assert result["current_turn_conversational_authorship_used"] is True
+    assert result["candidate_text"]
+    assert ", you" not in result["candidate_text"].lower()
+    assert result["whole_response_template_selected"] is False
+    assert result["unsupported_content_generated"] is False
+
+
 def test_nlo_routes_social_intent_through_compositional_act_realization(tmp_path):
     conn = _conn(tmp_path)
     prompt = "Greetings hon!"

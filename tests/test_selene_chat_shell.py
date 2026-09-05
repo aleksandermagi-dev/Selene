@@ -4283,6 +4283,7 @@ def test_shared_feeling_and_playful_vocative_receive_authored_relational_replies
 
     assert "happy" in first["candidate_text"].lower() or "love hearing" in first["candidate_text"].lower()
     assert "called" in second["candidate_text"].lower() or "here" in second["candidate_text"].lower()
+    assert ", you" not in second["candidate_text"].lower()
 
 
 def test_everyday_choice_stays_prompt_grounded_and_farewell_does_not_inherit_a_hold(tmp_path):

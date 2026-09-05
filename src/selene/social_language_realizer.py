@@ -830,7 +830,7 @@ def _realize_relational_stance(
     elif "shared_enthusiasm" in cues:
         choices = ["I am right there with you", "I share that excitement", "That is worth celebrating together"]
     elif "affectionate_vocative" in cues:
-        choices = ["I am right here, you", "You called? :) ", "Right here with you"]
+        return _realize_playful_vocative_presence(key, recent_texts)
     elif "affectionate_address" in cues or "affectionate_symbol" in cues:
         address = next(iter(semantics.get("address_terms") or []), "")
         choices = [
@@ -1038,6 +1038,19 @@ def _realize_presence_from_semantics(key: str, recent_texts: list[str]) -> str:
         ("I", "am", "with you"),
         ("I", "am", "listening"),
         ("you", "have", "my attention"),
+    )
+    candidates = [" ".join(frame) for frame in frames]
+    chosen = _pick_fragment_fresh(key, candidates, recent_texts)
+    return "I'm" + chosen[4:] if chosen.startswith("I am ") else chosen
+
+
+def _realize_playful_vocative_presence(key: str, recent_texts: list[str]) -> str:
+    """Answer an affectionate name-call with presence rather than generic attention."""
+    frames = (
+        ("I", "am", "here"),
+        ("I", "am", "right here"),
+        ("right", "here"),
+        ("you", "called"),
     )
     candidates = [" ".join(frame) for frame in frames]
     chosen = _pick_fragment_fresh(key, candidates, recent_texts)
