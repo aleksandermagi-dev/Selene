@@ -19,7 +19,9 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
-- Current HEAD: `19c5c9b` (`Refresh Q&A repair continuation checkpoint`)
+- Latest cultivation and G13 implementation checkpoint: `cec0d88`
+  (`Cultivate current-turn conversation and teach G13`)
+- Previous HEAD: `19c5c9b` (`Refresh Q&A repair continuation checkpoint`)
 - Latest Phase implementation checkpoint: `28abf57`
   (`Close descriptive learning evidence phase`)
 - Latest documentation checkpoint at the start of Phase 7: `9148b76`
@@ -50,8 +52,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation: confirm from Git before commit or push; the branch
-  currently reports no ahead/behind count in `git status --short --branch`
+- Current remote relation: `cec0d88` is one commit ahead of
+  `origin/evidence`; confirm again before any later commit or push
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -61,9 +63,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   - Phase 6B: `8bf6b30`
   - Phase 6C: `2a7aa42`
   - Phase 6D and Phase 6 closure: `28abf57`
-- Expected worktree: related cultivation, G13, test, journal, education, and
-  evidence changes remain uncommitted; confirm the exact list with Git before
-  any checkpoint and preserve every unrelated file
+- Expected worktree after the ledger refresh checkpoint: clean. Confirm with
+  Git before any later edit and preserve every unrelated file.
 - Never include `docs/HACKATHON_CODEX_WORKFLOW_LOG.md` in a commit unless
   Aleks explicitly requests it.
 
