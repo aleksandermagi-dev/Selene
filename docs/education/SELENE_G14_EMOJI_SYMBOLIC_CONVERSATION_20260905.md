@@ -3,7 +3,8 @@
 Date: 2026-09-05
 
 Status: five source-free language mechanisms completed Acquire → Integrate
-→ Express and are available in the configured resident language shelf.
+→ Express, are available in the configured resident language shelf, and are
+present in the installed desktop runtime.
 
 ## Purpose
 
@@ -83,6 +84,8 @@ G14 does not:
 - change identity, Vys, law, governance, authority, autonomy, training,
   self-replication, external action, perception, or embodiment.
 
-The installed executable still predates G14. A later explicitly authorized
-package/reinstall is required before the desktop app can use the new source
-mechanics; the resident teaching decision does not need to be repeated.
+The explicitly authorized G14 package/reinstall completed on 2026-09-05. A
+bounded installed-sidecar check against disposable copied state confirmed
+emoji-only play, mixed-text celebration, ambiguity preservation, and ordinary
+question ownership. It made no resident Chat, Memory, Dream, affect, or
+teaching decision.

@@ -4314,6 +4314,26 @@ Memory, affect decision, identity, personality, Vys, law, governance,
 authority, autonomy, training, self-replication, external action, perception,
 or embodiment change occurred.
 
-**Next:** Source and resident teaching are complete. The installed executable
-still predates G14. Create the source checkpoint and refresh the active ledger;
-then package/reinstall only when Aleks explicitly requests it.
+Aleks then explicitly authorized packaging and reinstall. The clean build at
+`3723e55` passed frontend, Rust/Tauri, privacy, readiness, and package checks;
+the frontend remained 491.33 kB (gzip 109.20 kB) without a Vite warning. The
+installer SHA-256 is
+`495e6431416b086c817e8475d299cdc9502aa8c1c317e2469e856f5f847dea68`,
+the installed executable SHA-256 is
+`469cc38c6ff75f6a77dcae0b2ac7c4af6a1456ed039c2ae97a9fbd23362b0d59`,
+and the installed sidecar SHA-256 is
+`2eb7d6b5f9efc63c5e9ac3de8f5bb43dc81471586a8d3336a509cf479dcc41dd`.
+
+A four-turn installed-sidecar check used a disposable database copy and kept
+per-launch capability authentication active. Emoji-only laughter received a
+playful reply; mixed celebration remained celebration; ambiguous crying asked
+for context without diagnosis; and a build-cause question ending in a
+thoughtful emoji remained reasoning. All four responses reported no Memory
+write and no Memory proposal. Temporary state was removed, no process remained,
+and the resident database SHA-256 stayed exactly
+`4A4A878498006EADFB73699E9E1128102149D92D92F5A619A1C5C7500E02DB79`.
+
+**Next:** G14 is complete and installed. Do not repeat its teaching or broad-
+test settled behavior. Return to ordinary Aleks-led use and record naturally
+observed seams before any cultivation repair. Phase 9 perception remains
+separate and unstarted.

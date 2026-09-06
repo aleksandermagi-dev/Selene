@@ -2,11 +2,10 @@
 
 Last refreshed: 2026-09-05
 
-Status: Phases 0 through 8 remain complete for current scope; cultivation and
-G13 are installed; G14 contextual emoji conversation is implemented, taught,
-and boundedly verified in source and resident state; the configured resident
-language shelf is 86/86 available, while the installed package still predates
-G14
+Status: Phases 0 through 8 remain complete for current scope; cultivation,
+G13, and G14 contextual emoji conversation are implemented, taught, installed,
+and boundedly verified; the configured resident language shelf is 86/86
+available
 
 ## Purpose
 
@@ -21,6 +20,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Branch: `evidence`
 - Latest G14 source and teaching checkpoint: `e514a44`
   (`Teach contextual emoji conversation`)
+- Latest G14 pre-package ledger checkpoint: `3723e55`
+  (`Refresh G14 continuation checkpoint`)
 - Latest installed-runtime surface repair checkpoint: `ce3ba27`
   (`Refine playful vocative presence`)
 - Latest cultivation and G13 implementation checkpoint: `cec0d88`
@@ -56,8 +57,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this documentation refresh: `e514a44` is
-  five commits ahead of `origin/evidence`; confirm again before any later
+- Current remote relation before this documentation refresh: `3723e55` is
+  six commits ahead of `origin/evidence`; confirm again before any later
   commit or push
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
@@ -576,9 +577,24 @@ git log -5 --oneline
   lifecycles are 239, SQLite integrity is `ok`, personal Memory candidates are
   zero, Dream reflections remain 24, and the unrelated lifecycle awaiting
   Aleks review remains one.
-- The installed executable still predates G14. Do not claim the desktop app
-  exposes emoji mechanics until a fresh package/reinstall and bounded copied-
-  state verification are explicitly authorized and complete.
+- Aleks explicitly authorized the clean package/reinstall. The packaged source
+  revision is `3723e55`; the installer SHA-256 is
+  `495e6431416b086c817e8475d299cdc9502aa8c1c317e2469e856f5f847dea68`,
+  installed executable SHA-256 is
+  `469cc38c6ff75f6a77dcae0b2ac7c4af6a1456ed039c2ae97a9fbd23362b0d59`,
+  and installed sidecar SHA-256 is
+  `2eb7d6b5f9efc63c5e9ac3de8f5bb43dc81471586a8d3336a509cf479dcc41dd`.
+- Post-install verification passed with zero warnings. The main frontend bundle
+  is 491.33 kB (gzip 109.20 kB), with no Vite warning. Code signing remains
+  unconfigured.
+- One installed-sidecar copied-state check confirmed emoji-only play, mixed
+  celebration, ambiguity preservation without diagnosis, and preservation of
+  a real reasoning question ending in an emoji. All four turns reported no
+  Memory write or proposal.
+- Disposable state was removed and no Selene process remained. The resident
+  database SHA-256 stayed exactly
+  `4A4A878498006EADFB73699E9E1128102149D92D92F5A619A1C5C7500E02DB79`;
+  personal Memory candidates remain zero and Dream reflections remain 24.
 
 ## Private Master Record
 
@@ -634,18 +650,17 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Phase 8 remains complete for current scope. Cultivation and G13 are committed,
-taught, installed, and boundedly verified. G14 is committed at `e514a44`, its
-five mechanisms are taught, and the configured resident language shelf is
-86/86 available after a verified continuity backup.
+Phase 8 remains complete for current scope. Cultivation, G13, and G14 are
+committed, taught, installed, and boundedly verified. The configured resident
+language shelf is 86/86 available after a verified continuity backup, and the
+installed G14 check used disposable copied state without changing resident
+continuity.
 
-Do not repeat G13 or G14 teaching. The exact resume point is a fresh G14
-package/reinstall only if Aleks explicitly requests it, followed by one bounded
-installed-sidecar copied-state check for emoji-only, mixed celebration,
-ambiguity, and question preservation. Otherwise return to ordinary Aleks-led
-use and note naturally observed seams before repair. Phase 9 perception
-remains separate and unstarted. Any later source checkpoint must continue
-excluding `docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
+Do not repeat G13 or G14 teaching or reinstall for this milestone. The exact
+resume point is ordinary Aleks-led use: note any naturally observed seam,
+investigate its owning mechanism before repair, and test only the affected
+surface. Phase 9 perception remains separate and unstarted. Any later source
+checkpoint must continue excluding `docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
 
 If Phase 9 is later resumed, begin with perception source mapping only; do not
 infer sensor, microphone, camera, audible Voice, network, external-action, or

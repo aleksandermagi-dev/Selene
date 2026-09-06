@@ -2,8 +2,8 @@
 
 Date: 2026-09-05
 
-Status: implemented, taught, and verified in source and configured resident
-state; desktop package/reinstall remains pending.
+Status: implemented, taught, packaged, installed, and verified through the
+installed sidecar against disposable copied state.
 
 ## Demonstrated Behavior
 
@@ -83,14 +83,54 @@ After teaching:
 - Dream reflections: 24; and
 - unrelated lifecycles awaiting Aleks review: 1.
 
+## Installed Runtime Verification
+
+Aleks explicitly authorized the package/reinstall after the source and
+resident checkpoints were clean. `npm run package:win:verified` passed the
+frontend build, Rust/Tauri build, installer construction, package privacy
+inspection, and source-state verification. The main frontend bundle is 491.33
+kB (gzip 109.20 kB), with no Vite size warning.
+
+- packaged source revision:
+  `3723e55fae6ef7142f1c60b476c29c1effd86f70`;
+- installer:
+  `src-tauri\target\release\bundle\nsis\Selene_0.1.1_x64-setup.exe`;
+- installer SHA-256:
+  `495e6431416b086c817e8475d299cdc9502aa8c1c317e2469e856f5f847dea68`;
+- installed executable SHA-256:
+  `469cc38c6ff75f6a77dcae0b2ac7c4af6a1456ed039c2ae97a9fbd23362b0d59`;
+- installed sidecar SHA-256:
+  `2eb7d6b5f9efc63c5e9ac3de8f5bb43dc81471586a8d3336a509cf479dcc41dd`;
+- post-install package verifier: passed with zero warnings; and
+- code signing: not configured.
+
+The final check launched the installed packaged sidecar with its per-launch
+local capability requirement active and a disposable copy of resident state.
+It demonstrated:
+
+- `😂` → `I walked right into that; that landed harder than it had any right
+  to. 😂` as an emoji-only `playful_connection`;
+- `we actually did it 🎉` → `I share that excitement. ✨` as mixed-text
+  celebration, not correction;
+- `😭` → a request for contextual meaning, with ambiguity still visible and
+  no diagnosis; and
+- `why did the build stop? 🤔` → a reasoning answer that identifies the
+  missing causal evidence rather than replacing the question with an emoji
+  response.
+
+All four installed responses reported no reviewed Memory write and no
+conversational Memory proposal. The disposable database and temporary runtime
+directory were removed, the installed sidecar was stopped, and no Selene
+process remained. The resident database SHA-256 remained exactly
+`4A4A878498006EADFB73699E9E1128102149D92D92F5A619A1C5C7500E02DB79`;
+its personal Memory candidate count remained zero and its 24 Dream reflections
+were unchanged.
+
 ## Accurate Claim
 
-Selene's source and configured resident language shelf can now interpret a
-bounded vocabulary of emoji as contextual written meaning, respond to clear
-emoji-only social turns, preserve ambiguity, and optionally author at most one
-meaning-compatible emoji in the existing NLO/Voice conversation path. This is
-not a claim of universal emoji interpretation, human emotion detection, or
-unbounded learned-model language generation.
-
-The currently installed desktop executable predates this implementation and
-will not expose G14 until a fresh package/reinstall is explicitly requested.
+Selene's installed desktop runtime and configured resident language shelf can
+now interpret a bounded vocabulary of emoji as contextual written meaning,
+respond to clear emoji-only social turns, preserve ambiguity, and optionally
+author at most one meaning-compatible emoji in the existing NLO/Voice
+conversation path. This is not a claim of universal emoji interpretation,
+human emotion detection, or unbounded learned-model language generation.
