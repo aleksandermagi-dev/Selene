@@ -19,6 +19,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest G15 source and teaching checkpoint: `af243ac`
+  (`Teach multi-source dialogue functions`)
 - Latest conversational-teaching implementation checkpoint: `8c0154e`
   (`Add bounded conversational teaching bridge`)
 - Latest G14 source and teaching checkpoint: `e514a44`
@@ -60,12 +62,11 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before the G15 checkpoint: local `evidence` is two
+- Current remote relation after the G15 checkpoint: local `evidence` is three
   commits ahead of `origin/evidence`; confirm again before any later commit or
   push
-- Current G15 implementation is the active working checkpoint until its commit
-  hash is recorded below; preserve the resident 96/96 teaching state even if
-  source packaging is deferred
+- Preserve the resident 96/96 teaching state even if source packaging is
+  deferred
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
