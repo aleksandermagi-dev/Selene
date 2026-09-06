@@ -2,10 +2,11 @@
 
 Last refreshed: 2026-09-05
 
-Status: Phases 0 through 8 remain complete for current scope; the post-Q&A
-cultivation repair and G13 current-turn semantic breadth are implemented,
-taught, installed, and boundedly verified; the configured resident language
-shelf remains 81/81 available
+Status: Phases 0 through 8 remain complete for current scope; cultivation and
+G13 are installed; G14 contextual emoji conversation is implemented, taught,
+and boundedly verified in source and resident state; the configured resident
+language shelf is 86/86 available, while the installed package still predates
+G14
 
 ## Purpose
 
@@ -18,6 +19,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest G14 source and teaching checkpoint: `e514a44`
+  (`Teach contextual emoji conversation`)
 - Latest installed-runtime surface repair checkpoint: `ce3ba27`
   (`Refine playful vocative presence`)
 - Latest cultivation and G13 implementation checkpoint: `cec0d88`
@@ -53,8 +56,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this documentation refresh: `ce3ba27` is
-  three commits ahead of `origin/evidence`; confirm again before any later
+- Current remote relation before this documentation refresh: `e514a44` is
+  five commits ahead of `origin/evidence`; confirm again before any later
   commit or push
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
@@ -543,6 +546,40 @@ git log -5 --oneline
   here.` as `warm_connection`, with no whole-response template or unsupported
   content. It used disposable state and opened no resident Chat session.
 
+## G14 Emoji And Symbolic Conversation
+
+- Five source-free language mechanisms now cover contextual emoji meaning,
+  ambiguity, emoji-only complete turns, optional authored emoji, and mixed
+  text-and-emoji cadence.
+- Emoji interpretation is visible-current-turn connective tissue inside the
+  existing Meaning Router, Relational Context, NLO, social realizer, and Voice
+  path. It is not a new organ, diagnosis, affect record, Memory, personality
+  instruction, or response script.
+- Clear emoji-only affection, amusement, and agreement can route as social
+  acts. Thoughtful or ambiguous symbols remain direct and contextual; a real
+  content question keeps its answer owner.
+- Selene may author zero or one meaning-compatible emoji. Mirroring is not
+  required and the symbol cannot replace owed content or alter epistemic
+  status.
+- A full-path disposable replay exposed bare `actually` being treated as a
+  correction by downstream owners. One shared correction-signal rule now
+  coordinates Meaning Router, Dialogue Workspace, Pragmatics, Affect,
+  Conversation Repair, and language selection.
+- Verification: 61 initial focused checks, one full-Chat check, 193 shared-
+  owner compatibility checks, 373 broader behavioral passes, 14 corrected
+  inventory/integration checks, 15 current-index/emoji checks, Python
+  compilation, and diff verification. The three failures in the broader run
+  were stale 81/13 inventory assertions, not behavior failures.
+- A verified continuity backup preceded teaching. Snapshot SHA-256:
+  `7e679b0e5111457f23e7ba483f33e4a0f89fe0de3dbe1d265afa0b6fe2a50571`.
+- Only the five G14 keys were taught. The resident shelf is 86/86, teaching
+  lifecycles are 239, SQLite integrity is `ok`, personal Memory candidates are
+  zero, Dream reflections remain 24, and the unrelated lifecycle awaiting
+  Aleks review remains one.
+- The installed executable still predates G14. Do not claim the desktop app
+  exposes emoji mechanics until a fresh package/reinstall and bounded copied-
+  state verification are explicitly authorized and complete.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -598,17 +635,17 @@ externally, or mutate resident continuity.
 ## Exact Resume Point
 
 Phase 8 remains complete for current scope. Cultivation and G13 are committed,
-taught, installed, and boundedly verified. The integrated cultivation ring
-passed 204 checks, the G13/miner compatibility ring passed 91, and the final
-playful-vocative repair passed 19 focused checks. The configured resident
-language shelf holds all eight G13 mechanisms at 81/81 available after a
-verified continuity backup.
+taught, installed, and boundedly verified. G14 is committed at `e514a44`, its
+five mechanisms are taught, and the configured resident language shelf is
+86/86 available after a verified continuity backup.
 
-Do not repeat source review, teaching, or the settled copied-state replay. The
-exact resume point is ordinary Aleks-led use: note any naturally observed seam
-before repair. Phase 9 perception remains separate and unstarted. Any later
-source checkpoint must continue excluding
-`docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
+Do not repeat G13 or G14 teaching. The exact resume point is a fresh G14
+package/reinstall only if Aleks explicitly requests it, followed by one bounded
+installed-sidecar copied-state check for emoji-only, mixed celebration,
+ambiguity, and question preservation. Otherwise return to ordinary Aleks-led
+use and note naturally observed seams before repair. Phase 9 perception
+remains separate and unstarted. Any later source checkpoint must continue
+excluding `docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
 
 If Phase 9 is later resumed, begin with perception source mapping only; do not
 infer sensor, microphone, camera, audible Voice, network, external-action, or
