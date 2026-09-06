@@ -1,11 +1,11 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-05
+Last refreshed: 2026-09-06
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation,
-G13, and G14 contextual emoji conversation are implemented, taught, installed,
-and boundedly verified; the configured resident language shelf is 86/86
-available
+G13, and G14 remain installed; the explicit conversational-teaching bridge and
+question-answer handoff are implemented and boundedly verified in source but
+have not been packaged or installed
 
 ## Purpose
 
@@ -18,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest conversational-teaching implementation checkpoint: `8c0154e`
+  (`Add bounded conversational teaching bridge`)
 - Latest G14 source and teaching checkpoint: `e514a44`
   (`Teach contextual emoji conversation`)
 - Latest G14 pre-package ledger checkpoint: `3723e55`
@@ -57,9 +59,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this documentation refresh: `3723e55` is
-  six commits ahead of `origin/evidence`; confirm again before any later
-  commit or push
+- Current remote relation before this documentation refresh: `8c0154e` is one
+  commit ahead of `origin/evidence`; confirm again before any later commit or
+  push
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -596,6 +598,28 @@ git log -5 --oneline
   `4A4A878498006EADFB73699E9E1128102149D92D92F5A619A1C5C7500E02DB79`;
   personal Memory candidates remain zero and Dream reflections remain 24.
 
+## Conversational Teaching Bridge
+
+- An explicit conversational teaching turn can now pass one small durable
+  proposition through the existing Comprehension, Acquire, Integrate, Express,
+  and Aleks approval lifecycle and make the approved item available to Chat.
+- Activation requires an explicit leading teaching cue or a direct response to
+  an immediately pending teaching invitation. Ordinary statements, ordinary
+  corrections, and answers to curiosity do not silently teach.
+- Assistant question handoffs distinguish teaching, reasons, personal
+  curiosity, proposals, and ordinary curiosity. Expanded `yes` or `no` answers
+  are interpreted against the pending question; `no` is accepted as a boundary
+  and a stated reason may be clarified but not overruled.
+- Approved knowledge is checked before offering another teaching invitation.
+  Current, high-stakes, personal, protected, ambiguous, or multi-claim material
+  remains on the deeper Cocoon/LEA path.
+- Seven new focused checks, 56 existing learning-lifecycle checks, and three
+  selected active-Chat compatibility checks passed in disposable state. No
+  resident state changed, and no package or reinstall was run.
+- The dated source update selects Taskmaster-2, ReDial/CCPE-M, Topical-Chat,
+  OASST1 structure, and private reviewed interaction evidence as the first
+  metadata-only breadth batch. No source was downloaded or taught.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -652,15 +676,20 @@ externally, or mutate resident continuity.
 
 Phase 8 remains complete for current scope. Cultivation, G13, and G14 are
 committed, taught, installed, and boundedly verified. The configured resident
-language shelf is 86/86 available after a verified continuity backup, and the
-installed G14 check used disposable copied state without changing resident
-continuity.
+language shelf remains 86/86. The new conversational-teaching bridge is
+committed at `8c0154e`, source-verified, and not installed.
 
-Do not repeat G13 or G14 teaching or reinstall for this milestone. The exact
-resume point is ordinary Aleks-led use: note any naturally observed seam,
-investigate its owning mechanism before repair, and test only the affected
-surface. Phase 9 perception remains separate and unstarted. Any later source
-checkpoint must continue excluding `docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
+The exact resume point is a metadata-only manifest and small balanced review of
+Taskmaster-2, ReDial/CCPE-M, the already mirrored Topical-Chat and OASST1, plus
+private reviewed breadth mechanisms. Stop before teaching so source exclusions,
+licenses, and selected functions can be reviewed. Do not bulk-import dialogue,
+adopt source assistant personas, or treat source utterances as facts or Voice.
+
+Do not repeat G13 or G14 teaching. Package/reinstall only when Aleks asks. A
+future installed check should use one gentle ordinary conversation, not a
+stress battery. Phase 9 perception remains separate and unstarted. Any later
+source checkpoint must continue excluding
+`docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
 
 If Phase 9 is later resumed, begin with perception source mapping only; do not
 infer sensor, microphone, camera, audible Voice, network, external-action, or

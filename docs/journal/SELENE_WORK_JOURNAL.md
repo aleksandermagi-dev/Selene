@@ -4337,3 +4337,56 @@ and the resident database SHA-256 stayed exactly
 test settled behavior. Return to ordinary Aleks-led use and record naturally
 observed seams before any cultivation repair. Phase 9 perception remains
 separate and unstarted.
+
+### 2026-09-06 — Conversational teaching becomes an explicit lightweight path
+
+**Starting observation:** Selene could accurately recognize a learned-
+knowledge gap, but ordinary Chat had no bounded way for her to ask Aleks to
+teach the missing point and then use the answer. Aleks also identified the
+adjacent dialogue need: when Selene asks a question, `yes`, `no`, a reason, or
+a follow-up must resolve that question naturally without becoming teaching.
+
+**Decision:** Add connective tissue rather than a new organ. Teaching activates
+only from an explicit leading teaching cue or a direct answer to an immediately
+pending teaching invitation. Ordinary statements and answers to ordinary
+curiosity remain conversation. A `no` is received as a boundary; Selene may ask
+why without pressure, but cannot reject the stated reason.
+
+**Work:** Added a session-scoped conversational-teaching bridge through the
+existing Comprehension -> Acquire -> Integrate -> Express -> explicit Aleks
+item-approval lifecycle. Small durable propositions may become approved
+knowledge. Current, high-stakes, personal, protected identity/governance/
+authority, ambiguous, and multi-claim material is held for the deeper path.
+Approved knowledge is checked before a new teaching invitation is offered.
+Canonical assistant payloads now preserve typed question handoffs for teaching,
+reasons, personal curiosity, proposals, and ordinary curiosity.
+
+The first disposable replay exposed two integration faults: a stale teaching
+invitation could appear beside approved knowledge, and an unmarked statement
+after an invitation could be mistaken for teaching. Both were repaired at the
+selection and activation owners. Optional associative output is held during a
+teaching acknowledgement so it cannot crowd the lesson receipt.
+
+**Evidence:** Checkpoint `8c0154e` contains the implementation, seven direct
+bridge and active-Chat checks, and two dated education records. Fifty-six
+existing Comprehension, teaching-lifecycle, and Dialogue Workspace checks and
+three selected active-Chat compatibility checks also passed. Python compilation
+and diff verification passed apart from expected Windows line-ending notices.
+
+**Source preparation:** Current official-source review retained Taskmaster-2,
+ReDial/CCPE-M, Topical-Chat, OASST1 structure, and private reviewed interaction
+evidence as the smallest useful breadth batch. Nothing was downloaded or
+taught. CC BY/Apache, ShareAlike/CDLA, exact-artifact, provenance, and persona
+conditions remain explicit.
+
+**Boundaries preserved:** Verification used disposable databases. No resident
+Chat, teaching, Memory, Study, Dream, affect, or continuity state changed. No
+dataset entered runtime. No identity, personality, Vys, law, governance,
+authority, autonomy, training, LoRA, external action, perception, or embodiment
+change occurred. No package or reinstall was run.
+
+**Next:** Prepare a metadata-only manifest for the five-source breadth batch and
+inspect a small balanced set of complete interactions. Stop before teaching for
+review. Package/reinstall only if Aleks separately requests it; a later ordinary
+use check may then verify the conversational teaching loop without a stress
+battery.
