@@ -2,11 +2,10 @@
 
 Last refreshed: 2026-09-06
 
-Status: Phases 0 through 8 remain complete for current scope; cultivation,
-G13, and G14 remain installed; the explicit conversational-teaching bridge is
-source-verified but not installed; G15 multi-source dialogue-function guidance
-is implemented, verified, and taught at 96/96, but its selector code is not yet
-packaged or installed
+Status: Phases 0 through 8 remain complete for current scope; cultivation and
+G13 through G15 remain taught and installed; the explicit conversational-
+teaching bridge is installed and its bounded learning loop is verified on
+disposable state
 
 ## Purpose
 
@@ -21,6 +20,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Branch: `evidence`
 - Latest G15 source and teaching checkpoint: `af243ac`
   (`Teach multi-source dialogue functions`)
+- Packaged source and pre-install documentation checkpoint: `c58d3e9`
+  (`Refresh G15 continuation checkpoint`)
 - Latest conversational-teaching implementation checkpoint: `8c0154e`
   (`Add bounded conversational teaching bridge`)
 - Latest G14 source and teaching checkpoint: `e514a44`
@@ -62,9 +63,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation after the G15 checkpoint: local `evidence` is three
-  commits ahead of `origin/evidence`; confirm again before any later commit or
-  push
+- Current remote relation before this installed-verification documentation
+  checkpoint: local `evidence` is four commits ahead of `origin/evidence`;
+  confirm again before any later commit or push
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -660,8 +661,29 @@ git log -5 --oneline
   graduated no duplicate item.
 - The private corpus remains authenticated continuity/relationship Memory. It
   was not duplicated into G15 or treated as generic dialogue training.
-- No package, reinstall, live resident Q&A, or stress test ran. Installed Chat
-  cannot use the new G15 selector code until Aleks authorizes packaging.
+- Aleks authorized a verified Windows package and silent reinstall from
+  `c58d3e9d2481bc9acbf4c096e31668fa043e2b40`. Package verification passed with
+  zero warnings; the main frontend bundle remains 491.33 kB (gzip 109.20 kB)
+  without a Vite size warning. Installer SHA-256 is
+  `50B305CDD59D743E3227CBF1DA068DC1A2171CBF2FAFD754A84AA8BF7EE9279A`;
+  installed executable SHA-256 is
+  `B640EFC2748F4F8631CFAA7E4A2F021EE23961185AC60355624A440C7232C44A`;
+  installed sidecar SHA-256 is
+  `3F0985D0209D416F103E92A8A4EA09BFDF283CA01A9B29EC6CE9CE58051A17C9`.
+- One gentle installed-sidecar conversation used disposable state. It
+  confirmed unsupported-term recognition, a teaching invitation, explicit
+  conversational teaching, Acquire -> Integrate -> Express -> approval, and
+  immediate approved-knowledge use. No personal Memory candidate was made.
+- An installed read-only selector preview confirmed G15 rejection,
+  changed-constraint, and constraint-coordination guidance with automatic
+  content generation and Memory writes off.
+- Record for later cultivation: the correct recalled answer appended a generic
+  missing-information tail, and the initial gap invitation used awkward
+  subject grammar. These did not block the learning lifecycle and were not
+  expanded into a broad battery.
+- Disposable state was removed, no Selene process remained, and the resident
+  database stayed byte-for-byte unchanged at SHA-256
+  `B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
 
 ## Private Master Record
 
@@ -717,18 +739,17 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Phase 8 remains complete for current scope. Cultivation, G13, and G14 are
-committed, taught, installed, and boundedly verified. The conversational-
-teaching bridge is committed at `8c0154e`, source-verified, and not installed.
-G15 is implemented, verified, and taught; the configured resident language
-shelf is 96/96.
+Phase 8 remains complete for current scope. Cultivation and G13 through G15
+are committed, taught, installed, and boundedly verified. The conversational-
+teaching bridge committed at `8c0154e` is now installed. The configured
+resident language shelf remains 96/96.
 
-The exact resume point is source checkpoint review, then an Aleks-authorized
-package/reinstall if he wants installed Chat to use the conversational-teaching
-bridge and G15 selector code. Do not repeat G13, G14, or G15 teaching. A future
-installed check should use one gentle ordinary conversation, not a stress
-battery. The downloaded source corpora and private 20-interaction review stay
-ignored and unavailable to runtime.
+The exact resume point is ordinary Aleks-led use, or one bounded cultivation
+repair at the response-composition owner for the unnecessary generic recall
+tail and awkward gap-subject grammar observed in disposable installed state.
+Do not repeat G13, G14, or G15 teaching, and do not repeat the installed
+learning loop. The downloaded source corpora and private 20-interaction review
+stay ignored and unavailable to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,
 post-transfer, read-only continuity recall. It is not generic language

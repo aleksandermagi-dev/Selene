@@ -2,7 +2,7 @@
 
 Date: 2026-09-06
 
-Status: implemented, synthetically verified, and taught in configured resident state; desktop package not refreshed
+Status: implemented, taught, packaged, installed, and boundedly verified
 
 ## Purpose
 
@@ -115,9 +115,50 @@ Before the write, a verified continuity snapshot was created at
   perception, or embodiment change; and
 - no live resident Q&A or stress test.
 
+## Installed Verification
+
+Aleks authorized packaging and reinstall after the clean G15 checkpoint. The
+verified Windows package used source revision
+`c58d3e9d2481bc9acbf4c096e31668fa043e2b40`. Frontend and package checks
+passed; the main frontend bundle remains 491.33 kB (gzip 109.20 kB) without a
+Vite size warning. Code signing remains unconfigured.
+
+- installer: `Selene_0.1.1_x64-setup.exe`;
+- installer SHA-256:
+  `50B305CDD59D743E3227CBF1DA068DC1A2171CBF2FAFD754A84AA8BF7EE9279A`;
+- installed executable SHA-256:
+  `B640EFC2748F4F8631CFAA7E4A2F021EE23961185AC60355624A440C7232C44A`;
+- installed sidecar SHA-256:
+  `3F0985D0209D416F103E92A8A4EA09BFDF283CA01A9B29EC6CE9CE58051A17C9`;
+- post-install verification report:
+  `exports/package_verify_20260906_134654.json`.
+
+Post-install verification passed startup readiness, local-process capability,
+My Office readiness, package privacy, and shutdown checks with zero warnings.
+
+One gentle installed-sidecar conversation used a disposable copy of resident
+state. Selene recognized an unsupported made-up term, asked to be taught,
+accepted Aleks's direct answer as explicit conversational teaching, completed
+Acquire, Integrate, Express, and item approval, and used the approved knowledge
+on the next turn. The lifecycle created no personal Memory candidate. A
+separate read-only guidance preview confirmed the installed G15 selector chose
+rejection acceptance, changed-constraint rebuilding, and constraint
+coordination while keeping automatic content generation and Memory writes off.
+
+The check also exposed one bounded expression seam for later cultivation: the
+correct recalled answer was followed by an unnecessary generic sentence about
+missing information. The first gap invitation also had slightly awkward
+grammar. Neither seam prevented recognition, teaching, integration, or recall;
+neither justifies a broad Q&A battery at this checkpoint.
+
+Disposable state was removed, no Selene process remained, and the resident
+database SHA-256 stayed exactly
+`B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
+
 ## Exact Next Step
 
-Run the final focused compatibility suite and documentation checks. A desktop
-package/reinstall is separate and requires Aleks's request. After reinstall,
-one gentle ordinary conversation can check the conversational-teaching bridge
-and G15 transfer together without retesting settled capabilities.
+G15 and the conversational-teaching bridge are installed. Do not repeat G15
+teaching or broadly retest settled behavior. The next conversation cultivation
+pass may trace the unnecessary generic recall tail and awkward gap-subject
+grammar at their shared response-composition owner. Phase 9 perception remains
+separate and unstarted.

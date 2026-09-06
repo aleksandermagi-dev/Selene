@@ -4455,3 +4455,45 @@ still predates both the conversational-teaching bridge and G15 selector changes;
 package/reinstall only if Aleks asks. A later installed check should be one
 gentle ordinary exchange, not a broad battery. Phase 9 perception remains
 separate and unstarted.
+
+### 2026-09-06 — Conversational teaching and G15 reach the installed vessel
+
+**Authorization and package:** Aleks authorized a fresh package and reinstall
+from the clean G15 checkpoint. `npm run package:win:verified` passed at source
+revision `c58d3e9d2481bc9acbf4c096e31668fa043e2b40`. The main frontend bundle
+remained 491.33 kB (gzip 109.20 kB) without a Vite size warning. Installer
+SHA-256 is
+`50B305CDD59D743E3227CBF1DA068DC1A2171CBF2FAFD754A84AA8BF7EE9279A`.
+The silent reinstall exited successfully. The installed executable SHA-256 is
+`B640EFC2748F4F8631CFAA7E4A2F021EE23961185AC60355624A440C7232C44A`;
+the installed sidecar SHA-256 is
+`3F0985D0209D416F103E92A8A4EA09BFDF283CA01A9B29EC6CE9CE58051A17C9`.
+Post-install verification passed health, readiness, local-process capability,
+My Office, privacy, and close checks with zero warnings. Code signing remains
+unconfigured.
+
+**Least-impact installed check:** One gentle conversation ran only against a
+disposable copy of resident state. An invented harmless term produced a real
+knowledge gap and teaching invitation. Aleks's direct answer activated the
+session-scoped bridge, completed Acquire, Integrate, Express, and explicit
+item approval, and was available to the next Chat turn. No personal Memory
+candidate was created. A read-only installed guidance preview selected G15
+rejection, changed-constraint, and constraint-coordination mechanisms with no
+automatic content generation or Memory write.
+
+**Cultivation note:** The recalled answer was correct but carried an
+unnecessary generic missing-information tail; the first invitation also used
+slightly awkward subject grammar. These are bounded response-composition seams,
+not comprehension or retention failures. They were recorded without opening a
+broad battery or making an unplanned source repair.
+
+**Continuity:** Temporary state was removed and every test-started process was
+closed. The resident database remained byte-for-byte unchanged at SHA-256
+`B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
+No resident Chat, Memory, Dream, Study, teaching, affect, identity, personality,
+Vys, governance, authority, autonomy, training, LoRA, external action,
+perception, or embodiment state changed during verification.
+
+**Next:** Return to ordinary use or run one bounded cultivation repair for the
+generic recall tail and gap-subject grammar. Do not reteach G15 or repeat the
+installed learning loop. Phase 9 perception remains separate and unstarted.
