@@ -4497,3 +4497,43 @@ perception, or embodiment state changed during verification.
 **Next:** Return to ordinary use or run one bounded cultivation repair for the
 generic recall tail and gap-subject grammar. Do not reteach G15 or repeat the
 installed learning loop. Phase 9 perception remains separate and unstarted.
+
+### 2026-09-06 — Cultivation retires a stale gap after knowledge answers
+
+**Observation:** The installed copied-state learning loop understood, approved,
+and recalled the taught definition, but the recalled answer gained a generic
+missing-information conclusion. Its first gap invitation also treated part of
+an auxiliary question's predicate as the subject.
+
+**Root reconstruction:** Answer Completion and epistemic composition had
+already marked the approved definition complete. The later Selective Formation
+Braid combined the approved Comprehension unit with an older IntelligenceOS
+`source_needed` unit because both named the same response obligation. The
+grammar seam belonged separately to conversational teaching's bounded question-
+subject extractor.
+
+**Repair:** Auxiliary questions now expose a bounded noun subject before common
+predicate forms, and learning-gap invitations use natural subject framing. The
+Formation Braid now retires a gap unit only when a supported non-gap unit has
+already answered that exact obligation. It preserves an honest gap for another
+unanswered part and does not suppress requested explanations, limits,
+contrasts, or other distinct response functions.
+
+**Evidence:** The exact disposable gap -> teaching -> approved recall path now
+has natural subject grammar and no stale gap tail. Direct and inverse braid
+checks cover both retirement and preservation. Fifty-four focused checks
+passed, followed by 20 final exact and selected active-Chat compatibility
+checks. Python compilation and diff verification passed apart from expected
+Windows line-ending notices. One stale active-Chat test was updated to the
+already-established conversational teaching behavior; the route still reports
+the underlying `source_needed` epistemic state while visible speech naturally
+offers teaching.
+
+**Boundaries:** No resident conversation or state mutation occurred. No
+teaching, Memory, Dream, Study, affect, identity, personality, Vys, governance,
+authority, autonomy, training, LoRA, external action, perception, or embodiment
+state changed. This source repair has not been packaged or installed.
+
+**Next:** Checkpoint the clean source repair. Package/reinstall only if Aleks
+requests it; one copied-state replay of this exact path is enough afterward.
+Do not reteach G15 or reopen a broad Q&A battery.

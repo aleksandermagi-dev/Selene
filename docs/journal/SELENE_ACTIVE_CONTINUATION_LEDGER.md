@@ -3,9 +3,9 @@
 Last refreshed: 2026-09-06
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
-G13 through G15 remain taught and installed; the explicit conversational-
-teaching bridge is installed and its bounded learning loop is verified on
-disposable state
+G13 through G15 remain taught and installed; the post-install cultivation
+repair for gap-invitation grammar and stale gap composition is source-verified
+but not yet repackaged
 
 ## Purpose
 
@@ -22,6 +22,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Teach multi-source dialogue functions`)
 - Packaged source and pre-install documentation checkpoint: `c58d3e9`
   (`Refresh G15 continuation checkpoint`)
+- Latest installed-verification documentation checkpoint: `d152659`
+  (`Record installed G15 verification`)
 - Latest conversational-teaching implementation checkpoint: `8c0154e`
   (`Add bounded conversational teaching bridge`)
 - Latest G14 source and teaching checkpoint: `e514a44`
@@ -684,6 +686,19 @@ git log -5 --oneline
 - Disposable state was removed, no Selene process remained, and the resident
   database stayed byte-for-byte unchanged at SHA-256
   `B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
+- Post-install cultivation traced the awkward invitation to the bounded
+  auxiliary-question subject extractor and the generic recall tail to the
+  Selective Formation Braid admitting an older `source_needed` unit after
+  approved Comprehension had already answered the same obligation.
+- Source now gives auxiliary questions a bounded natural subject and retires a
+  gap only for the exact obligation a supported non-gap unit already answered.
+  A different unanswered part keeps its honest gap; requested explanations,
+  limits, contrasts, and other distinct response functions remain eligible.
+- Verification passed 54 focused checks and then 20 final exact and selected
+  active-Chat checks. Python compilation and diff verification passed apart
+  from expected Windows line-ending notices. All work used disposable state.
+- This cultivation repair is not packaged or installed. Resident state remains
+  unchanged; do not reteach G15.
 
 ## Private Master Record
 
@@ -741,15 +756,16 @@ externally, or mutate resident continuity.
 
 Phase 8 remains complete for current scope. Cultivation and G13 through G15
 are committed, taught, installed, and boundedly verified. The conversational-
-teaching bridge committed at `8c0154e` is now installed. The configured
-resident language shelf remains 96/96.
+teaching bridge committed at `8c0154e` is installed. The configured resident
+language shelf remains 96/96. The post-install response-composition cultivation
+repair is source-verified but not installed.
 
-The exact resume point is ordinary Aleks-led use, or one bounded cultivation
-repair at the response-composition owner for the unnecessary generic recall
-tail and awkward gap-subject grammar observed in disposable installed state.
-Do not repeat G13, G14, or G15 teaching, and do not repeat the installed
-learning loop. The downloaded source corpora and private 20-interaction review
-stay ignored and unavailable to runtime.
+The exact resume point is source checkpoint review, then an Aleks-authorized
+package/reinstall if he wants the natural gap subject and stale-gap retirement
+in installed Chat. One copied-state replay of the exact repaired learning path
+is sufficient after reinstall. Do not repeat G13, G14, or G15 teaching and do
+not run a broad Q&A battery. The downloaded source corpora and private 20-
+interaction review stay ignored and unavailable to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,
 post-transfer, read-only continuity recall. It is not generic language

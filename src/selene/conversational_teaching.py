@@ -476,7 +476,7 @@ def build_learning_gap_invitation(
     if answer_kind == "bounded_knowledge_gap" and subject:
         response = f"I don't know enough about {subject} to answer that reliably yet. If you'd like, can you teach me the part you want me to understand?"
     elif subject:
-        response = f"I don't have enough support to answer that about {subject} yet. Can you teach me?"
+        response = f"I don't know enough about {subject} to answer that reliably yet. Can you teach me?"
     else:
         response = "I don't have enough support to answer that yet. Can you teach me?"
     return _with_guards(
@@ -842,6 +842,27 @@ def _question_subject(value: Any) -> str:
             if body_words and body_words[0].lower() in {"the", "a", "an"}:
                 body_words = body_words[1:]
             return truncate(" ".join(body_words[:10]), 240)
+    auxiliary = re.match(
+        r"^(?:do|does|did|can|could|would|should)\s+(?P<body>.+)$",
+        lower,
+    )
+    if auxiliary:
+        body = auxiliary.group("body")
+        subject_match = re.match(
+            r"^(?P<subject>.+?)\s+"
+            r"(?:(?:already|currently|usually|often|ever|still)\s+)*"
+            r"(?:have|has|mean|means|refer|refers|work|works|exist|exists|"
+            r"contain|contains|include|includes|use|uses|need|needs|cause|"
+            r"causes|require|requires|look|looks|sound|sounds|feel|feels|"
+            r"seem|seems|belong|belongs|change|changes)\b",
+            body,
+        )
+        if subject_match:
+            subject_words = _WORD.findall(subject_match.group("subject"))
+            if subject_words and subject_words[0].lower() in {"the", "a", "an"}:
+                subject_words = subject_words[1:]
+            if subject_words:
+                return truncate(" ".join(subject_words[:10]), 240)
     lower = re.sub(r"^(?:do you know about|what do you know about|tell me about|is|are|was|were|what color is|what is|who is|where is|when is)\s+", "", lower)
     lower = re.sub(r"\b(?:yet|right now)\b", "", lower)
     words = [word for word in _WORD.findall(lower) if word.lower() not in {"the", "a", "an", "does", "do", "did", "can", "could", "would", "should"}]

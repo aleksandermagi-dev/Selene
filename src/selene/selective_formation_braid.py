@@ -29,6 +29,12 @@ ALLOWED_SOURCE_CLASSES = {
 
 PROTECTIVE_ROLES = {"condition", "contrast", "limit", "reopening"}
 EXACT_SOURCE_KINDS = {"attributed_source", "verified_domain_answer"}
+GAP_ANSWER_KINDS = {
+    "bounded_knowledge_gap",
+    "causal_evidence_needed",
+    "source_needed",
+    "unsupported_fact",
+}
 SOURCE_PRIORITY = {
     "boundary_response": 80,
     "domain_answer": 70,
@@ -329,6 +335,7 @@ def build_selective_formation_braid(
     selected_units: list[dict[str, Any]] = []
     selected_fingerprints: set[str] = set()
     covered_obligations: set[str] = set()
+    answered_obligations: set[str] = set()
     preserved_roles: set[str] = set()
 
     for candidate in candidates:
@@ -348,6 +355,7 @@ def build_selective_formation_braid(
 
         available_units = []
         duplicate_supported_meaning = False
+        superseded_gap = False
         for unit in candidate["units"]:
             unit_obligation_ids = (
                 list(candidate["candidate_obligation_ids"])
@@ -360,6 +368,16 @@ def build_selective_formation_braid(
             )
             if not candidate["primary"] and not unit_obligation_ids:
                 continue
+            if not candidate["primary"] and candidate["gap_answer"]:
+                unresolved_ids = [
+                    obligation_id
+                    for obligation_id in unit_obligation_ids
+                    if obligation_id not in answered_obligations
+                ]
+                if not unresolved_ids:
+                    superseded_gap = True
+                    continue
+                unit_obligation_ids = unresolved_ids
             fingerprint = _unit_fingerprint(unit)
             if fingerprint and fingerprint in selected_fingerprints:
                 duplicate_supported_meaning = True
@@ -373,7 +391,9 @@ def build_selective_formation_braid(
             available_units.append((unit, fingerprint, unit_obligation_ids))
         if not available_units:
             reason = (
-                "duplicate_supported_meaning"
+                "superseded_gap_after_supported_answer"
+                if superseded_gap
+                else "duplicate_supported_meaning"
                 if duplicate_supported_meaning
                 else "no_requested_response_function"
             )
@@ -428,6 +448,8 @@ def build_selective_formation_braid(
             if fingerprint:
                 selected_fingerprints.add(fingerprint)
             candidate_covered_ids.update(unit_obligation_ids)
+            if not candidate["gap_answer"] and "answer" in _unit_response_functions(unit):
+                answered_obligations.update(unit_obligation_ids)
         covered_obligations.update(candidate_covered_ids)
         preserved_roles.update(candidate_roles)
         selected.append(
@@ -640,6 +662,8 @@ def _normalize_candidate(
         "protective": protective,
         "relevant": relevant,
         "exactness_lock": raw.get("exactness_lock") is True,
+        "answer_kind": str(packet.get("answer_kind") or ""),
+        "gap_answer": str(packet.get("answer_kind") or "") in GAP_ANSWER_KINDS,
         "score": score,
     }
 
@@ -655,6 +679,8 @@ def _candidate_summary(candidate: dict[str, Any]) -> dict[str, Any]:
         "candidate_obligation_ids": candidate["candidate_obligation_ids"],
         "prompt_overlap_count": candidate["prompt_overlap_count"],
         "source_refs": candidate["source_refs"],
+        "answer_kind": candidate["answer_kind"],
+        "gap_answer": candidate["gap_answer"],
         "score": candidate["score"],
     }
 

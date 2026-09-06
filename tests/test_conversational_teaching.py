@@ -170,6 +170,43 @@ def test_pending_gap_accepts_explicit_answer_and_approved_knowledge_prevents_rep
     assert "can you teach me" not in recalled["candidate_text"].lower()
 
 
+def test_auxiliary_question_gets_a_natural_subject_and_recall_retires_the_old_gap(tmp_path):
+    conn = _active_conn(tmp_path)
+    gap = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Does trailstar already have a meaning for us?"},
+    )["result"]
+    learned = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": gap["session_id"],
+            "text": "Sure. A trailstar means a small paper marker used for this check.",
+        },
+    )["result"]
+    recalled = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": gap["session_id"], "text": "What does trailstar mean?"},
+    )["result"]
+
+    assert "about trailstar" in gap["candidate_text"].lower()
+    assert "trailstar already have" not in gap["candidate_text"].lower()
+    assert learned["conversational_teaching"]["knowledge_activated"] is True
+    assert "small paper marker" in recalled["candidate_text"].lower()
+    assert "missing supporting information" not in recalled["candidate_text"].lower()
+    assert "without guessing" not in recalled["candidate_text"].lower()
+    assert recalled["formation_braid"]["selected_unit_count"] == 1
+    assert any(
+        item["source_id"] == "intelligence_os_answer"
+        and item["reason"] == "superseded_gap_after_supported_answer"
+        for item in recalled["formation_braid"]["excluded_candidates"]
+    )
+    assert recalled["reviewed_memory_write_occurred"] is False
+    assert recalled["conversational_memory_proposal_created"] is False
+
+
 def test_ordinary_curiosity_yes_no_handoff_never_becomes_teaching(tmp_path):
     conn = _conn(tmp_path)
     handoff = build_assistant_question_handoff("Would you like to keep talking about it?")

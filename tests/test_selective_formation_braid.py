@@ -307,6 +307,112 @@ def test_secondary_organ_cannot_repeat_primary_meaning_with_a_different_structur
     )
 
 
+def test_supported_primary_answer_retires_only_the_stale_gap_for_that_obligation():
+    result = build_selective_formation_braid(
+        {
+            "prompt": "What does trailstar mean?",
+            "primary_source_id": "approved_comprehension",
+            "primary_source_class": "approved_knowledge",
+            "primary_text": "A trailstar means a small paper marker.",
+            "response_obligations": [
+                {
+                    "id": "definition",
+                    "kind": "direct_question",
+                    "source_text": "What does trailstar mean?",
+                    "required": True,
+                }
+            ],
+            "candidates": [
+                {
+                    "source_id": "approved_comprehension",
+                    "source_class": "approved_knowledge",
+                    "primary": True,
+                    "obligation_ids": ["definition"],
+                    "supported_semantics": _packet(
+                        _unit("definition", "A trailstar means a small paper marker."),
+                        answer_kind="obligation_bound_knowledge",
+                    ),
+                },
+                {
+                    "source_id": "intelligence_os_answer",
+                    "source_class": "reasoning_answer",
+                    "obligation_ids": ["definition"],
+                    "supported_semantics": _packet(
+                        _unit(
+                            "missing",
+                            "The missing supporting information is needed for a reliable answer without guessing.",
+                        ),
+                        answer_kind="source_needed",
+                    ),
+                },
+            ],
+        }
+    )
+
+    units = semantic_units_for_formation(result["supported_semantics"])
+    assert [item["origin_unit_id"] for item in units] == ["definition"]
+    assert any(
+        item["source_id"] == "intelligence_os_answer"
+        and item["reason"] == "superseded_gap_after_supported_answer"
+        for item in result["excluded_candidates"]
+    )
+    _assert_locked(result)
+
+
+def test_gap_for_a_different_unanswered_part_remains_visible():
+    result = build_selective_formation_braid(
+        {
+            "prompt": "What does trailstar mean, and who first used it?",
+            "primary_source_id": "approved_comprehension",
+            "primary_source_class": "approved_knowledge",
+            "primary_text": "A trailstar means a small paper marker.",
+            "response_obligations": [
+                {
+                    "id": "definition",
+                    "kind": "direct_question",
+                    "source_text": "What does trailstar mean?",
+                    "required": True,
+                },
+                {
+                    "id": "origin",
+                    "kind": "direct_question",
+                    "source_text": "Who first used it?",
+                    "required": True,
+                },
+            ],
+            "candidates": [
+                {
+                    "source_id": "approved_comprehension",
+                    "source_class": "approved_knowledge",
+                    "primary": True,
+                    "obligation_ids": ["definition"],
+                    "supported_semantics": _packet(
+                        _unit("definition", "A trailstar means a small paper marker."),
+                        answer_kind="obligation_bound_knowledge",
+                    ),
+                },
+                {
+                    "source_id": "intelligence_os_answer",
+                    "source_class": "reasoning_answer",
+                    "obligation_ids": ["origin"],
+                    "supported_semantics": _packet(
+                        _unit("origin_gap", "I do not have support for who first used it."),
+                        answer_kind="source_needed",
+                    ),
+                },
+            ],
+        }
+    )
+
+    units = semantic_units_for_formation(result["supported_semantics"])
+    assert [item["origin_unit_id"] for item in units] == [
+        "definition",
+        "origin_gap",
+    ]
+    assert result["obligation_coverage"]["all_required_covered"] is True
+    _assert_locked(result)
+
+
 def test_exact_domain_meaning_and_sources_remain_locked():
     result = build_selective_formation_braid(
         {

@@ -2,7 +2,7 @@
 
 Date: 2026-09-06
 
-Status: implemented, taught, packaged, installed, and boundedly verified
+Status: G15 installed; post-install response-composition cultivation repair implemented and source-verified, not yet repackaged
 
 ## Purpose
 
@@ -155,10 +155,47 @@ Disposable state was removed, no Selene process remained, and the resident
 database SHA-256 stayed exactly
 `B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
 
+## Post-Install Cultivation Repair
+
+The two seams were traced independently rather than patched at final output.
+
+The invitation grammar came from the conversational-teaching question-subject
+extractor. Auxiliary questions such as `Does X already have ...?` were losing
+the auxiliary but retaining the predicate as though it were part of the
+subject. The extractor now recognizes a bounded set of auxiliary-question
+predicate boundaries, and the invitation uses the natural form `I don't know
+enough about X to answer that reliably yet.`
+
+The stale tail did not come from Answer Completion. That layer had correctly
+reported the approved knowledge answer complete. The Selective Formation Braid
+then admitted an older IntelligenceOS `source_needed` unit for the same already-
+answered obligation. The braid now retires a gap unit only when a non-gap
+supported unit already answers that exact obligation. A gap for another part of
+a multi-part question remains visible, as do separately requested explanations,
+limits, contrasts, and other supported functions.
+
+Verification used disposable databases only:
+
+- the exact gap -> teaching -> approved recall path now produces a natural
+  subject and no stale missing-information tail;
+- a direct braid check retires a superseded gap for an answered obligation;
+- an inverse braid check preserves a gap for a different unanswered part;
+- existing requested-reason, requested-limit, multi-part answer, visible-
+  speech, Answer Completion, epistemic-composition, knowledge-expression, and
+  active-Chat compatibility checks remain green;
+- 54 focused checks passed, followed by 20 final exact and active-Chat checks;
+  Python compilation and diff verification passed with only expected Windows
+  line-ending notices.
+
+No resident state, teaching, Memory, Dream, Study, identity, personality, Vys,
+governance, authority, training, LoRA, external action, perception, or
+embodiment state changed. The repair is source-only until Aleks requests
+another package/reinstall.
+
 ## Exact Next Step
 
-G15 and the conversational-teaching bridge are installed. Do not repeat G15
-teaching or broadly retest settled behavior. The next conversation cultivation
-pass may trace the unnecessary generic recall tail and awkward gap-subject
-grammar at their shared response-composition owner. Phase 9 perception remains
-separate and unstarted.
+G15 and the conversational-teaching bridge remain installed. Do not repeat G15
+teaching or broadly retest settled behavior. Package/reinstall the post-install
+cultivation repair only if Aleks requests it; then one copied-state replay of
+the exact repaired path is sufficient. Phase 9 perception remains separate and
+unstarted.

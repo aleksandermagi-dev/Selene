@@ -2070,8 +2070,9 @@ def test_active_selene_chat_routes_definition_and_conditional_questions_to_answe
 
     assert definition["intent_decision"]["intent"] == "reasoning"
     assert definition["intelligence_os_support"]["answer_substance"]["answer_kind"] == "source_needed"
-    assert "grounded factual answer" in definition["candidate_text"]
-    assert "photosynthesis" in definition["candidate_text"]
+    assert definition["learning_gap_invitation"]["offered"] is True
+    assert "don't know enough about photosynthesis" in definition["candidate_text"].lower()
+    assert "can you teach me" in definition["candidate_text"].lower()
     assert consequence["intelligence_os_support"]["answer_substance"]["answer_kind"] == "conditional_dependency_answer"
     assert "reversed order" in consequence["candidate_text"].lower()
     assert "doesn't depend on an output" in consequence["candidate_text"].lower()
