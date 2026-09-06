@@ -63,6 +63,7 @@ from .conversational_contribution import (
     build_conversational_contribution_packet,
     conversational_contribution_status,
 )
+from .conversational_teaching import conversational_teaching_status
 from .associative_intuition import (
     accept_association_for_study,
     associative_intuition_status,
@@ -968,6 +969,8 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
             "route": route_key,
             "result": build_conversational_contribution_packet(payload),
         }
+    if route_key == "conversational_teaching.status":
+        return {"route": route_key, "result": conversational_teaching_status()}
     if route_key == "associative_intuition.status":
         return {"route": route_key, "result": associative_intuition_status(conn)}
     if route_key == "associative_intuition.preview":

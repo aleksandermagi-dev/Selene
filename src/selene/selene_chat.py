@@ -39,6 +39,12 @@ from .core_mind import create_core_mind_route_preview, coordinate_goal_responsib
 from .conversation_repair import repair_conversation_candidate
 from .commitment_anomaly_coordination import inspect_visible_commitment_claim
 from .conversational_contribution import build_conversational_contribution_packet
+from .conversational_teaching import (
+    apply_conversational_teaching,
+    build_assistant_question_handoff,
+    build_learning_gap_invitation,
+    plan_conversational_teaching_turn,
+)
 from .associative_intuition import build_associative_intuition_bridge
 from .long_thread_endurance import build_long_thread_endurance_plan
 from .conversation_spine import (
@@ -386,6 +392,36 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         contextual_follow_up,
     )
     intent_decision["relational_context"] = relational_context
+    conversational_teaching_plan = plan_conversational_teaching_turn(
+        conn,
+        {
+            "session_id": session_id,
+            "text": meaning_text,
+            "speaker_envelope": speaker_envelope,
+            "diagnostic_only": qa_probe,
+            "hard_boundary": bool(hard_blockers),
+        },
+    )
+    conversational_teaching = apply_conversational_teaching(
+        conn,
+        conversational_teaching_plan,
+    )
+    if conversational_teaching.get("explicit_activation") is True:
+        intent_decision = {
+            **intent_decision,
+            "conversational_teaching": True,
+            "conversational_teaching_action": conversational_teaching.get("action") or "none",
+            "explicit_teaching_intent": True,
+            "content_response_requested": False,
+            "social_turn": False,
+        }
+    assistant_question_response = (
+        conversational_teaching.get("assistant_question_response")
+        if isinstance(conversational_teaching.get("assistant_question_response"), dict)
+        else {}
+    )
+    if assistant_question_response:
+        intent_decision["assistant_question_response"] = assistant_question_response
     memory_action_plan = _plan_conversational_memory_action(
         conn,
         text,
@@ -493,6 +529,13 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         ),
         hard=bool(hard_blockers),
     )
+    # A gap invitation is selected only after Comprehension has had the chance
+    # to supply already-approved knowledge. Until then it is deliberately inert.
+    learning_gap_invitation: dict[str, Any] = {
+        "status": "learning_gap_invitation_pending_knowledge_check",
+        "offered": False,
+        "response_seed": "",
+    }
     cocoon_suggestion = _cocoon_suggestion(meaning_text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
     continuity_reply = _local_chat_continuity_reply(meaning_text, chat_continuity, intent_decision)
     memory_action_reply = str(memory_action_plan.get("response_seed") or "")
@@ -650,9 +693,13 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     reasoning_content_seed = str(intelligence_support.get("best_current_answer") or "")
     language_content_seed = str(language_capability.get("content_seed") or "")
+    conversational_teaching_reply = str(conversational_teaching.get("response_seed") or "")
+    learning_gap_reply = str(learning_gap_invitation.get("response_seed") or "")
     initial_visible_speech_seed = select_visible_speech_seed(
         meaning_text,
         _visible_speech_seed_candidates(
+            conversational_teaching_reply=conversational_teaching_reply,
+            learning_gap_reply=learning_gap_reply,
             figurative_clarification_reply=figurative_clarification_reply,
             explicit_humor_reply=explicit_humor_reply,
             ordinary_uncertainty_reply=ordinary_uncertainty_reply,
@@ -723,6 +770,20 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "approved_knowledge_eligible": False,
             "review_status": DIAGNOSTIC_REVIEW_STATUS,
         }
+    learning_gap_invitation = build_learning_gap_invitation(
+        meaning_text,
+        intelligence_support,
+        knowledge_context=(
+            comprehension.get("knowledge_context")
+            if isinstance(comprehension.get("knowledge_context"), dict)
+            else {}
+        ),
+        speaker_envelope=speaker_envelope,
+        diagnostic_only=qa_probe,
+        hard_boundary=bool(hard_blockers),
+        teaching_turn=conversational_teaching,
+    )
+    learning_gap_reply = str(learning_gap_invitation.get("response_seed") or "")
     dual_horizon_context = build_dual_horizon_context(
         {
             "prompt": meaning_text,
@@ -747,15 +808,18 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "hard_boundary": bool(hard_blockers),
             "diagnostic_only": qa_probe,
-            "hold_optional_association": str(intent_decision.get("intent") or "")
-            in {
-                "greeting",
-                "farewell",
-                "gratitude",
-                "warm_connection",
-                "open_share",
-                "self_state",
-            },
+            "hold_optional_association": (
+                intent_decision.get("conversational_teaching") is True
+                or str(intent_decision.get("intent") or "")
+                in {
+                    "greeting",
+                    "farewell",
+                    "gratitude",
+                    "warm_connection",
+                    "open_share",
+                    "self_state",
+                }
+            ),
         },
     )
     long_thread_endurance = build_long_thread_endurance_plan(
@@ -1057,6 +1121,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         {},
     )
     visible_speech_candidates = _visible_speech_seed_candidates(
+        conversational_teaching_reply=conversational_teaching_reply,
+        learning_gap_reply=learning_gap_reply,
         figurative_clarification_reply=figurative_clarification_reply,
         explicit_humor_reply=explicit_humor_reply,
         ordinary_uncertainty_reply=ordinary_uncertainty_reply,
@@ -1150,6 +1216,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         elif (
             len(conversation_spine.get("open_obligations") or []) == 1
             and str(candidate.get("source_id") or "") in {
+                "conversational_teaching",
+                "learning_gap_invitation",
                 "contextual_follow_up",
                 "current_session_facts",
                 "explicit_humor_request",
@@ -2178,6 +2246,18 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     ]
     metacognition["organ_coalition_observed"] = True
     metacognition["organ_coalition_selection_authority"] = False
+    explicit_question_handoff = (
+        conversational_teaching.get("outgoing_question_handoff")
+        if isinstance(conversational_teaching.get("outgoing_question_handoff"), dict)
+        and conversational_teaching.get("outgoing_question_handoff")
+        else learning_gap_invitation.get("outgoing_question_handoff")
+        if isinstance(learning_gap_invitation.get("outgoing_question_handoff"), dict)
+        else {}
+    )
+    assistant_question_handoff = build_assistant_question_handoff(
+        candidate_text,
+        explicit_handoff=explicit_question_handoff,
+    )
     memory_action = _apply_conversational_memory_plan(conn, memory_action_plan, commit=False)
     memory_candidate_suggestion = _memory_candidate_suggestion(
         text,
@@ -2259,6 +2339,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     assistant_payload = {
         "diagnostic_context": diagnostic_context,
         "speaker_envelope": speaker_envelope,
+        "conversational_teaching": conversational_teaching,
+        "learning_gap_invitation": learning_gap_invitation,
+        "assistant_question_handoff": assistant_question_handoff,
         "input_interpretation": input_interpretation,
         "figurative_interpretation": figurative_interpretation,
         "dream_reflection_handoff": dream_reflection_handoff,
@@ -2389,6 +2472,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "diagnostic_context": diagnostic_context,
             "diagnostic_only": qa_probe,
             "speaker_envelope": speaker_envelope,
+            "conversational_teaching": conversational_teaching,
+            "learning_gap_invitation": learning_gap_invitation,
+            "assistant_question_handoff": assistant_question_handoff,
             "input_channel": input_channel,
             "delivery_constraint": delivery_constraint,
             "input_interpretation": input_interpretation,
@@ -3023,6 +3109,8 @@ def _dream_reflection_response_seed(
 
 def _visible_speech_seed_candidates(
     *,
+    conversational_teaching_reply: str = "",
+    learning_gap_reply: str = "",
     figurative_clarification_reply: str = "",
     explicit_humor_reply: str = "",
     ordinary_uncertainty_reply: str = "",
@@ -3050,6 +3138,16 @@ def _visible_speech_seed_candidates(
     hard_boundary: bool = False,
 ) -> list[dict[str, Any]]:
     candidates = [
+        {
+            "source_id": "conversational_teaching",
+            "source_class": "conversation",
+            "text": conversational_teaching_reply,
+        },
+        {
+            "source_id": "learning_gap_invitation",
+            "source_class": "conversation",
+            "text": learning_gap_reply,
+        },
         {
             "source_id": "figurative_meaning_clarification",
             "source_class": "conversation",
@@ -4671,6 +4769,8 @@ def _preserve_bounded_conversation_invariants(
     if source_id not in {
         "bounded_answer_completion",
         "current_session_facts",
+        "conversational_teaching",
+        "learning_gap_invitation",
         "explicit_humor_request",
         "figurative_meaning_clarification",
         "ordinary_uncertainty",
