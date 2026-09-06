@@ -6,6 +6,7 @@ import sqlite3
 from typing import Any
 
 from .affect_signal_lifecycle import select_current_affect_signal
+from .conversation_signals import correction_signal
 from .emotional_agency import build_response_agency_packet
 from .registry import truncate
 
@@ -146,7 +147,7 @@ def _conversation_cues(
         relational_context if isinstance(relational_context, dict) else {}
     )
     _append_if(cues, "hard_boundary", intent == "hard_boundary")
-    _append_if(cues, "correction", intent == "correction" or bool(re.search(r"\b(?:actually|i meant|correction)\b", lower)))
+    _append_if(cues, "correction", intent == "correction" or correction_signal(lower))
     _append_if(cues, "playful", any(term in lower for term in ("haha", "lol", "xd", "joke", "funny", "playful")))
     _append_if(cues, "tender_context", any(term in lower for term in ("nervous", "worried", "scared", "tender", "rough day", "hard day")))
     _append_if(
@@ -164,6 +165,19 @@ def _conversation_cues(
             "affectionate_address",
             "affectionate_symbol",
             "shared_enthusiasm",
+            "emoji_affection",
+            "emoji_warmth",
+            "emoji_amusement",
+            "emoji_playfulness",
+            "emoji_celebration",
+            "emoji_enthusiasm",
+            "emoji_tenderness",
+            "emoji_sadness",
+            "emoji_surprise",
+            "emoji_attention",
+            "emoji_thoughtfulness",
+            "emoji_uncertainty",
+            "emoji_ambiguous",
         }:
             _append_if(cues, f"relational:{cue_type}", True)
     _append_if(

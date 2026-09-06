@@ -4266,3 +4266,54 @@ untouched.
 its teaching or broad-test settled capabilities. Note any naturally observed
 conversation seam before repair. Phase 9 perception remains separate and
 unstarted.
+
+### 2026-09-05 — G14 adds contextual emoji and symbolic conversation
+
+**Starting observation:** Aleks noticed that Selene's written conversation
+still lacked broad emoji understanding and use. Existing ASCII warmth markers
+were partially recognized, but most emoji-only turns fell through as generic
+direct conversation and Selene had no bounded authored-emoji mechanism.
+
+**Decision:** Treat emoji as contextual written expression, not decoration,
+diagnosis, personality instruction, or an emotion record. Add connective
+tissue to the existing Meaning Router → Relational Context → NLO → Voice
+path and five source-free G14 language lessons. Preserve ambiguity and allow
+zero or one authored symbol without forced mirroring.
+
+**Work:** Added contextual known/unknown symbol interpretation, emoji-only and
+mixed-turn recognition, conversational-act arbitration, optional authored
+symbol planning, social realization, and G14 guidance selection. The first
+lifecycle pass held two undersized conversational examples; both were
+completed without weakening the Express gate.
+
+A disposable full-Chat replay then exposed `we actually did it 🎉` as a
+false correction. The old false-positive was deeper than G14: several
+downstream owners still treated bare `actually` as revision. Added one shared
+correction-signal function and connected Meaning Router, Dialogue Workspace,
+Pragmatics, Affect, Conversation Repair, and language selection to it. The
+result is `I share that excitement. 🙌`, while a genuine technical question
+with `🤔` remains a reasoning request and ambiguous `😭` remains open.
+
+**Evidence:** 61 initial focused checks, one full-Chat check, and 193 shared-
+owner compatibility checks passed. A broader affected-surface run produced
+373 passes and only three stale inventory counts; the corrected exact subset
+then passed 14 checks. Python compilation passed. All Chat checks used
+disposable state and created no Memory candidate.
+
+The resident database was backed up and verified before teaching. Snapshot
+SHA-256 is
+`7e679b0e5111457f23e7ba483f33e4a0f89fe0de3dbe1d265afa0b6fe2a50571`.
+Only the five G14 lesson keys were taught; all five graduated. The configured
+shelf moved from 81/81 to 86/86 and lifecycles from 234 to 239. SQLite
+integrity remains `ok`; personal Memory candidates remain zero, Dream
+reflections remain 24, and the unrelated review item remains untouched.
+
+**Boundaries preserved:** No private source wording, whole-response script,
+diagnosed emotion, forced warmth, persistent relationship claim, personal
+Memory, affect decision, identity, personality, Vys, law, governance,
+authority, autonomy, training, self-replication, external action, perception,
+or embodiment change occurred.
+
+**Next:** Source and resident teaching are complete. The installed executable
+still predates G14. Create the source checkpoint and refresh the active ledger;
+then package/reinstall only when Aleks explicitly requests it.

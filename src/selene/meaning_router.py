@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from .answer_ownership import research_domain_requested
+from .conversation_signals import actually_marks_correction, explicit_correction_signal
 from .relational_context import interpret_relational_context
 from .resident_authority import evaluate_requested_actions
 from .semantic_arbitration import build_canonical_meaning_frame
@@ -542,10 +543,10 @@ def _dialogue_acts(
         acts.append("topic_shift")
     if re.match(r"^(?:okay|yes|right|agreed|i agree)\b.{0,20}\bbut\b", routing_text):
         acts.append("partial_agreement")
-    if _explicit_correction_signal(routing_text) or re.search(
+    if explicit_correction_signal(routing_text) or re.search(
         r"\bwhen i say\s+quoted material\s*,?\s*i mean\s+quoted material\b",
         routing_text,
-    ) or _actually_marks_correction(routing_text, topic_shift=topic_shift):
+    ) or actually_marks_correction(routing_text, topic_shift=topic_shift):
         acts.append("correction")
     if _is_memory_candidate(routing_text):
         acts.append("memory_candidate")
@@ -597,49 +598,6 @@ def _dialogue_acts(
     if not acts:
         acts.append("statement")
     return list(dict.fromkeys(acts))
-
-
-def _explicit_correction_signal(value: str) -> bool:
-    """Recognize an interactional correction, not a discussion of correction.
-
-    A bare occurrence of the noun in a question such as ``why can a
-    correction preserve an idea?`` describes the topic.  It does not revise
-    anything Selene previously said.
-    """
-
-    if _has_any(value, ("i meant", "what i meant was", "not what i meant")):
-        return True
-    return bool(
-        re.search(
-            r"^(?:(?:one|a)\s+)?(?:(?:small|quick)\s+)?correction\b"
-            r"(?:\s*[:,-]|\s+to\b|\s*$)",
-            value,
-        )
-    )
-
-
-def _actually_marks_correction(value: str, *, topic_shift: bool) -> bool:
-    """Treat ``actually`` as revision only when it revises visible content.
-
-    In ordinary questions such as ``do we actually know?`` the word marks
-    epistemic emphasis, not a correction.  A bare lexical hit must not seize
-    the correction route.
-    """
-    if topic_shift or "actually" not in value:
-        return False
-    if re.search(
-        r"\b(?:do|does|did|can|could|would|will|is|are|was|were|have|has)\s+"
-        r"(?:we|i|you|it|that|this|they|he|she)\s+actually\b",
-        value,
-    ):
-        return False
-    return bool(
-        re.search(
-            r"(?:^|[.!?;]\s*|\bbut\s+)actually\s*,?\s+"
-            r"(?:the|a|an|i|we|you|it|that|this|they|he|she)\b",
-            value,
-        )
-    )
 
 
 def _intent_candidates(

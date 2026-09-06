@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .emoji_expression import EMOJI_MEANINGS, interpret_emoji_expression
 from .registry import truncate
 
 
@@ -35,7 +36,12 @@ def interpret_relational_context(
     lower = " ".join(raw.lower().replace("’", "'").split())
     speaker = speaker_context if isinstance(speaker_context, dict) else {}
     address_terms = _address_terms(lower)
-    heart_markers = _heart_markers(raw)
+    symbolic_expression = interpret_emoji_expression(raw)
+    heart_markers = [
+        marker
+        for marker in symbolic_expression.get("markers") or []
+        if "affection" in EMOJI_MEANINGS.get(marker, ())
+    ]
     cues: list[dict[str, Any]] = []
 
     _cue(
@@ -135,8 +141,37 @@ def interpret_relational_context(
     _cue(
         cues,
         "playful_tone",
-        bool(re.search(r"(?:\b(?:haha|lol|lmao|xd|joking|kidding)\b|[:;]-?[)d])", lower)),
+        bool(re.search(r"(?:\b(?:haha|lol|lmao|xd|joking|kidding)\b|[:;]-?[)d])", lower))
+        or symbolic_expression.get("primary_meaning") in {"amusement", "playfulness"},
         "current turn visibly opens play",
+    )
+    primary_symbolic_meaning = str(symbolic_expression.get("primary_meaning") or "")
+    for meaning in (
+        "affection",
+        "warmth",
+        "amusement",
+        "playfulness",
+        "celebration",
+        "enthusiasm",
+        "agreement",
+        "thoughtfulness",
+        "uncertainty",
+        "tenderness",
+        "sadness",
+        "surprise",
+        "attention",
+    ):
+        _cue(
+            cues,
+            f"emoji_{meaning}",
+            primary_symbolic_meaning == meaning,
+            f"visible emoji context supports {meaning} as the current written-expression reading",
+        )
+    _cue(
+        cues,
+        "emoji_ambiguous",
+        primary_symbolic_meaning == "ambiguous_expression",
+        "visible emoji has multiple live conversational meanings and context has not selected one",
     )
 
     cue_types = [str(item["type"]) for item in cues]
@@ -174,6 +209,9 @@ def interpret_relational_context(
         "relational_intensity": intensity,
         "address_terms": address_terms,
         "heart_markers": heart_markers,
+        "symbolic_expression": symbolic_expression,
+        "emoji_only_turn": symbolic_expression.get("emoji_only_turn") is True,
+        "emoji_meaning_is_contextual_not_universal": True,
         "interaction_scope": private_scope,
         "private_relational_context": private_scope == "private_aleks_selene_conversation",
         "may_inform_expression": relational,
@@ -229,16 +267,6 @@ def _playful_vocative(value: str) -> bool:
 
 def _collapse_expressive_elongation(value: str) -> str:
     return re.sub(r"([a-z])\1{2,}", r"\1", value)
-
-
-def _heart_markers(value: str) -> list[str]:
-    found: list[str] = []
-    if re.search(r"(?<!\w)<+3+", value, flags=re.IGNORECASE):
-        found.append("<3")
-    for marker in ("❤️", "🩷", "💜", "💙", "💚", "💛", "🧡", "🤍", "🖤", "💕", "💞", "💖"):
-        if marker in value:
-            found.append(marker)
-    return found[:8]
 
 
 def _private_scope(speaker: dict[str, Any]) -> str:

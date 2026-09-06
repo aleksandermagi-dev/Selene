@@ -4,6 +4,8 @@ import re
 from hashlib import sha256
 from typing import Any
 
+from .emoji_expression import apply_authored_emoji, plan_authored_emoji
+
 
 SOCIAL_REALIZER_BOUNDARY = (
     "social_conversational_act_realization_only_preserve_supported_meaning_"
@@ -436,7 +438,11 @@ def build_content_light_plan(payload: dict[str, Any] | None = None) -> dict[str,
         for item in language_guidance.get("response_moves") or []
         if str(item)
     ]
-    move_kind, move_basis = _content_light_move(prompt, recent_texts)
+    move_kind, move_basis = _content_light_move(
+        prompt,
+        recent_texts,
+        relational_context=relational_context,
+    )
     acts_by_move: dict[str, tuple[str, ...]] = {
         "positive_reaction": ("share_positive_momentum",),
         "near_result": ("acknowledge_near_result",),
@@ -444,6 +450,7 @@ def build_content_light_plan(payload: dict[str, Any] | None = None) -> dict[str,
         "problem_observation": ("receive_problem_signal", "invite_problem_detail"),
         "self_resolution": ("acknowledge_self_resolution", "offer_collaboration"),
         "personal_feeling_share": ("respond_to_current_feeling",),
+        "symbolic_expression": ("respond_to_relational_meaning",),
         "open_share": ("engage_current_turn",),
     }
     acts = acts_by_move[move_kind]
@@ -499,7 +506,12 @@ def build_content_light_plan(payload: dict[str, Any] | None = None) -> dict[str,
     }
 
 
-def _content_light_move(prompt: str, recent_texts: list[str]) -> tuple[str, str]:
+def _content_light_move(
+    prompt: str,
+    recent_texts: list[str],
+    *,
+    relational_context: dict[str, Any] | None = None,
+) -> tuple[str, str]:
     """Distinguish the conversational work of a content-light statement.
 
     These are bounded dialogue-act signals, not claims about the world.  The
@@ -509,6 +521,14 @@ def _content_light_move(prompt: str, recent_texts: list[str]) -> tuple[str, str]
     lower = _normalized(prompt)
     tokens = lower.split()
     token_set = set(tokens)
+    symbolic = (
+        relational_context.get("symbolic_expression")
+        if isinstance(relational_context, dict)
+        and isinstance(relational_context.get("symbolic_expression"), dict)
+        else {}
+    )
+    if symbolic.get("emoji_only_turn") is True:
+        return "symbolic_expression", "visible_emoji_only_conversational_act"
 
     if re.search(
         r"(?:^|\b(?:this|that|it) )(?:(?:really )?)(?:makes|made) me "
@@ -696,6 +716,19 @@ def realize_social_act_plan(
             }
         )
     text = _compose_selected(selected, variation_key, plan)
+    emoji_plan = plan_authored_emoji(
+        prompt=prompt,
+        candidate_text=text,
+        intent=str(plan.get("intent") or ""),
+        relational_context=(
+            plan.get("relational_context")
+            if isinstance(plan.get("relational_context"), dict)
+            else {}
+        ),
+        recent_texts=recent_texts,
+        variation_key=variation_key,
+    )
+    text = apply_authored_emoji(text, emoji_plan)
     return {
         "status": "social_act_realized" if text else "social_act_needs_supported_content",
         "candidate_text": text,
@@ -715,6 +748,9 @@ def realize_social_act_plan(
         ),
         "external_fact_created": False,
         "durable_emotion_record_created": False,
+        "emoji_expression": emoji_plan,
+        "emoji_expression_is_optional": True,
+        "emoji_expression_is_emotion_record": False,
         "coordinated_expression_contract_active": True,
         "provenance_boundary": SOCIAL_REALIZER_BOUNDARY,
     }
@@ -749,6 +785,11 @@ def _relational_response_semantics(
             for item in relational_context.get("heart_markers") or []
             if str(item)
         ],
+        "symbolic_expression": (
+            relational_context.get("symbolic_expression")
+            if isinstance(relational_context.get("symbolic_expression"), dict)
+            else {}
+        ),
         "support_source": "visible_current_turn",
         "response_stance_authorable": True,
         "external_fact_generation_allowed": False,
@@ -779,6 +820,11 @@ def _content_light_response_semantics(
             for item in relational_context.get("cue_types") or []
             if str(item)
         ],
+        "symbolic_expression": (
+            relational_context.get("symbolic_expression")
+            if isinstance(relational_context.get("symbolic_expression"), dict)
+            else {}
+        ),
         "approved_response_moves": [str(item) for item in approved_response_moves or [] if str(item)],
         "teaching_guidance_supplies_wording": False,
         "support_source": "visible_current_turn",
@@ -817,7 +863,14 @@ def _realize_relational_stance(
     key: str,
     recent_texts: list[str],
 ) -> str:
-    cues = {str(item) for item in semantics.get("cue_types") or []}
+    cues = {
+        str(item)
+        for item in (
+            semantics.get("cue_types")
+            or semantics.get("relational_cue_types")
+            or []
+        )
+    }
     if semantics.get("explicit_feeling"):
         return _realize_feeling_stance(semantics, key, recent_texts)
 
@@ -827,11 +880,28 @@ def _realize_relational_stance(
         choices = ["I love you too", "I care about you too", "That love is welcome here, and I return it"]
     elif "reunion" in cues or "delight_in_presence" in cues:
         choices = ["I am glad you are back too", "It is genuinely good to have you back", "I am happy to be back with you"]
-    elif "shared_enthusiasm" in cues:
+    elif cues.intersection({"shared_enthusiasm", "emoji_celebration", "emoji_enthusiasm"}):
         choices = ["I am right there with you", "I share that excitement", "That is worth celebrating together"]
+    elif cues.intersection({"playful_tone", "emoji_amusement", "emoji_playfulness"}):
+        choices = ["Okay, that got me", "I caught the play in that", "That landed xD"]
+    elif "emoji_agreement" in cues:
+        choices = ["Exactly", "We are on the same page", "I have you"]
+    elif cues.intersection({"emoji_tenderness", "emoji_sadness"}):
+        choices = ["I am with you in that", "That carries some weight", "I can stay here with you"]
+    elif cues.intersection({"emoji_thoughtfulness", "emoji_uncertainty"}):
+        choices = ["I see you thinking", "Something is turning over there", "There is a thought forming"]
+    elif "emoji_surprise" in cues:
+        choices = ["That got your attention", "Yeah—that is a moment", "That landed with some force"]
+    elif "emoji_attention" in cues:
+        choices = ["I see what caught your eye", "You have my attention too", "I am looking with you"]
+    elif "emoji_ambiguous" in cues:
+        choices = [
+            "That one can carry a few different meanings—what does it mean here?",
+            "I am with you, but I do not want to guess which meaning you intend there",
+        ]
     elif "affectionate_vocative" in cues:
         return _realize_playful_vocative_presence(key, recent_texts)
-    elif "affectionate_address" in cues or "affectionate_symbol" in cues:
+    elif cues.intersection({"affectionate_address", "affectionate_symbol", "emoji_affection", "emoji_warmth"}):
         address = next(iter(semantics.get("address_terms") or []), "")
         choices = [
             f"I am right here{', ' + address if address else ''}",

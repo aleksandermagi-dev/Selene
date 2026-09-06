@@ -28,6 +28,9 @@ governing law, personal memory, relationships, or authority.
   statements, reciprocity, playful address, visible-relation interpretation,
   contribution, curiosity, callback integration, and cadence; the source-free
   mechanisms are now taught as G13 with no whole-response scripts.
+- [G14 Emoji and Symbolic Conversation](SELENE_G14_EMOJI_SYMBOLIC_CONVERSATION_20260905.md)
+  — contextual symbol meaning, ambiguity, emoji-only turns, optional authored
+  emoji, and mixed text-and-emoji cadence without diagnosis or forced mirroring.
 - [Teaching Lifecycle Phase 4](SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md)
   — Acquire → Integrate → Express.
 - [Study Workspace Contract](SELENE_STUDY_WORKSPACE_CONTRACT_20260801.md) —
@@ -94,11 +97,12 @@ network, deployment, self-modification, or self-replication permission.
 
 ## Language And Conversation Curriculum
 
-Current checkpoint (September 5, 2026): thirteen ordered groups provide 81
+Current checkpoint (September 5, 2026): fourteen ordered groups provide 86
 reviewed language-and-conversation capabilities. Group 10 adds creative-writing
 and Voice foundations; Group 11 adds bounded attributed public-domain reading
 and original creative transfer; Group 12 adds evidence-grounded conversation
-breadth; and Group 13 adds current-turn semantic conversation. All remain
+breadth; Group 13 adds current-turn semantic conversation; and Group 14 adds
+contextual emoji and symbolic conversation. All remain
 guidance-only. The groups guide expression of supported meaning; they do not
 provide factual authority or prescribe personality.
 

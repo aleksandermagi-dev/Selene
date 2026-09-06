@@ -129,6 +129,11 @@ a prototype result into a universal conclusion.
   — eight private-corpus-derived, source-free mechanisms completed Acquire,
   Integrate, and Express; the configured shelf is 81/81 available, with no
   private wording, script, Memory, identity, governance, or training write.
+- [G14 Emoji and Symbolic Conversation Completion](SELENE_G14_EMOJI_SYMBOLIC_CONVERSATION_COMPLETION_20260905.md)
+  — five source-free mechanisms completed Acquire, Integrate, and Express;
+  the configured shelf is 86/86 available, with contextual ambiguity,
+  optional authorship, and unchanged Memory, identity, governance, and
+  training boundaries.
 - [G12 Live-Teaching Post-Reinstall Q&A](SELENE_G12_LIVE_TEACHING_POST_REINSTALL_QNA_20260820.md)
   — first bounded evidence-grounded breadth lesson taught live, followed by a
   20-turn diagnostic note-first assessment of the remaining ownership seams.

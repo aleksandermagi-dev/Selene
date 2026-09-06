@@ -5,6 +5,7 @@ from hashlib import sha256
 from typing import Any
 
 from .answer_ownership import current_preference_requested, enrich_obligation_ownership
+from .conversation_signals import correction_signal
 from .registry import truncate
 
 
@@ -1612,7 +1613,7 @@ def _utterance_units(value: str) -> list[dict[str, Any]]:
         lower = text.lower()
         if text.endswith("?"):
             kind = "question"
-        elif re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", lower):
+        elif correction_signal(lower):
             kind = "correction"
         elif re.match(
             r"^(?:(?:then|next|finally)\s+)?(?:please\s+)?"

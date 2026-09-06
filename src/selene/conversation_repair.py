@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from .registry import truncate
+from .conversation_signals import actually_marks_correction
 from .social_language_realizer import realize_acknowledgement
 
 
@@ -245,7 +246,7 @@ def _ordered_acts(prompt: str, primary: str, pragmatic: dict[str, Any]) -> list[
         found.append((0, "correction", "structured_correction"))
     cue_groups = (
         ("gratitude", ("thank you", "thanks", "appreciate")),
-        ("correction", (("i meant", "not what i meant", "wait,") if topic_shift else ("actually", "i meant", "not what i meant", "wait,"))),
+        ("correction", ("i meant", "not what i meant", "wait,")),
         ("uncertainty", ("not sure", "unsure", "maybe", "i think", "fuzzy")),
         ("partial_agreement", ("okay, but", "okay but", "yes, but", "yes but", "right, but", "right but", "i agree, but", "i agree but")),
         ("warm_connection", ("glad you're", "glad you are", "missed you", "love you", "friend")),
@@ -258,6 +259,8 @@ def _ordered_acts(prompt: str, primary: str, pragmatic: dict[str, Any]) -> list[
         if positions:
             position, cue = min(positions, key=lambda item: item[0])
             found.append((position, act, cue))
+    if actually_marks_correction(lower, topic_shift=topic_shift):
+        found.append((lower.find("actually"), "correction", "actually"))
     if "?" in prompt:
         found.append((prompt.find("?"), "question", "?"))
     if not found or primary not in {item[1] for item in found}:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .emoji_expression import interpret_emoji_expression
 from .meaning_router import interpret_turn_meaning
 
 
@@ -218,6 +219,44 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
 
     meaning = interpret_turn_meaning(text, selected_route=selected_route)
     intent = str(meaning.get("primary_intent") or "direct_conversation")
+    symbolic_expression = interpret_emoji_expression(text)
+    suggested_symbolic_intent = str(symbolic_expression.get("suggested_intent") or "")
+    dialogue_acts_before_symbol = {
+        str(item) for item in meaning.get("dialogue_acts") or [] if str(item)
+    }
+    symbolic_social_turn = bool(
+        symbolic_expression.get("emoji_only_turn") is True
+        or (
+            symbolic_expression.get("mixed_text_and_emoji") is True
+            and dialogue_acts_before_symbol.issubset({"statement"})
+        )
+    )
+    if (
+        intent == "direct_conversation"
+        and symbolic_social_turn
+        and suggested_symbolic_intent in {
+            "warm_connection",
+            "playful_connection",
+            "affirmation",
+        }
+    ):
+        intent = suggested_symbolic_intent
+        meaning = dict(meaning)
+        meaning["primary_intent"] = intent
+        meaning["dialogue_acts"] = list(
+            dict.fromkeys([*(meaning.get("dialogue_acts") or []), "symbolic_expression"])
+        )
+        meaning["intent_candidates"] = [
+            {
+                "intent": intent,
+                "score": 0.86,
+                "evidence": [
+                    f"emoji_{'only' if symbolic_expression.get('emoji_only_turn') is True else 'mixed'}:"
+                    f"{symbolic_expression.get('primary_meaning') or 'contextual'}"
+                ],
+            },
+            *(meaning.get("intent_candidates") or []),
+        ]
     shapes: dict[str, tuple[str, str, list[str]]] = {
         "receipt_check": ("brief_confirmation", "conversation", ["Native Language Organ"]),
         "correction": ("acknowledge_and_adjust", "Core/Mind", ["Native Language Organ"]),
@@ -238,6 +277,7 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
     evidence = list((meaning.get("intent_candidates") or [{}])[0].get("evidence") or [])
     depth = "brief" if intent in {"receipt_check", "farewell", "reassurance_received", "gratitude", "greeting", "warm_connection", "playful_connection", "affirmation"} else response_depth
     decision = _decision(intent, answer_shape, primary_organ, supporting, evidence, depth, meaning)
+    decision["symbolic_expression"] = symbolic_expression
     dialogue_acts = {str(item) for item in meaning.get("dialogue_acts") or []}
     correction_confirmation_only = intent == "correction" and _is_correction_confirmation_only(lower)
     agreement_check_only = "agreement_check" in dialogue_acts
@@ -247,7 +287,8 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
         and not correction_confirmation_only
         and not agreement_check_only
     )
-    decision["mixed_intent"] = len(dialogue_acts) > 1
+    substantive_dialogue_acts = dialogue_acts - {"symbolic_expression"}
+    decision["mixed_intent"] = len(substantive_dialogue_acts) > 1
     decision["content_response_requested"] = bool(
         mixed_content_request or intent in {"reasoning", "direct_conversation"} and dialogue_acts.intersection({"question", "request"})
     )

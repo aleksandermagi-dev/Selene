@@ -7,6 +7,7 @@ from hashlib import sha256
 from typing import Any
 
 from .input_detangler import detangle_user_input
+from .conversation_signals import correction_signal
 from .long_thread_endurance import (
     build_long_thread_endurance_plan,
     protected_thread_ids_for_workspace,
@@ -1155,7 +1156,7 @@ def _utterance_units(
         if value.endswith("?"):
             kind = "question"
         elif not explicit_topic_shift and (
-            re.search(r"\b(?:actually|i meant|not what i meant|correction)\b", lower)
+            correction_signal(lower)
             or ("when i say" in lower and "i mean" in lower)
         ):
             kind = "correction"

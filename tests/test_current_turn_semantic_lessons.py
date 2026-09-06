@@ -61,8 +61,8 @@ def test_current_turn_group_completes_existing_teaching_lifecycle_without_bounda
         if item["group_order"] == 13
     }
 
-    assert first["created_count"] == len(LANGUAGE_QOL_LESSONS) == 81
-    assert first["graduated_count"] == 81
+    assert first["created_count"] == len(LANGUAGE_QOL_LESSONS) == 86
+    assert first["graduated_count"] == 86
     assert second["created_count"] == 0
     assert second["refreshed_count"] == 8
     assert group["teaching_group"] == TEACHING_GROUP

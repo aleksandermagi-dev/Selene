@@ -3,6 +3,7 @@ from __future__ import annotations
 from selene.chat_intent import classify_chat_intent
 from selene.db import connect, init_db
 from selene.native_language_organ import realize_native_language
+from selene.relational_context import interpret_relational_context
 from selene.social_language_realizer import (
     build_content_light_plan,
     build_social_act_plan,
@@ -336,6 +337,26 @@ def test_playful_vocative_uses_compositional_presence_without_dangling_address()
     assert ", you" not in result["candidate_text"].lower()
     assert result["whole_response_template_selected"] is False
     assert result["unsupported_content_generated"] is False
+
+
+def test_visible_heart_can_receive_optional_selene_authored_emoji():
+    prompt = "lets do it my friend! <3"
+    relational = interpret_relational_context(prompt)
+    plan = build_social_act_plan(
+        {
+            "intent": "warm_connection",
+            "prompt": prompt,
+            "relational_context": relational,
+        }
+    )
+
+    result = realize_social_act_plan(plan, prompt=prompt, variation_key="shared-heart")
+
+    assert result["emoji_expression"]["selected_emoji"] in {"🩷", "💜", "💕"}
+    assert result["candidate_text"].endswith(result["emoji_expression"]["selected_emoji"])
+    assert result["emoji_expression_is_optional"] is True
+    assert result["emoji_expression_is_emotion_record"] is False
+    assert result["whole_response_template_selected"] is False
 
 
 def test_nlo_routes_social_intent_through_compositional_act_realization(tmp_path):

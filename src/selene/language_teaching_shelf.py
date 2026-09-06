@@ -9,9 +9,14 @@ from .conversation_breadth_lessons import (
     EVIDENCE as CONVERSATION_BREADTH_EVIDENCE,
     LESSONS as CONVERSATION_BREADTH_LESSONS,
 )
+from .conversation_signals import correction_signal
 from .current_turn_semantic_lessons import (
     EVIDENCE as CURRENT_TURN_SEMANTIC_EVIDENCE,
     LESSONS as CURRENT_TURN_SEMANTIC_LESSONS,
+)
+from .emoji_expression_lessons import (
+    EVIDENCE as EMOJI_EXPRESSION_EVIDENCE,
+    LESSONS as EMOJI_EXPRESSION_LESSONS,
 )
 from .creative_writing_foundations import (
     EVIDENCE as CREATIVE_WRITING_EVIDENCE,
@@ -752,6 +757,7 @@ LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
     *PUBLIC_DOMAIN_READING_LESSONS,
     *CONVERSATION_BREADTH_LESSONS,
     *CURRENT_TURN_SEMANTIC_LESSONS,
+    *EMOJI_EXPRESSION_LESSONS,
 )
 
 
@@ -1540,6 +1546,7 @@ LANGUAGE_LESSON_EVIDENCE: dict[str, dict[str, Any]] = {
     **PUBLIC_DOMAIN_READING_EVIDENCE,
     **CONVERSATION_BREADTH_EVIDENCE,
     **CURRENT_TURN_SEMANTIC_EVIDENCE,
+    **EMOJI_EXPRESSION_EVIDENCE,
 }
 
 
@@ -2022,7 +2029,7 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
     if key == "correction_refinement_flow" and (
         intent_name == "correction"
         or ((dialogue.get("pragmatics") or {}).get("correction_refinement") or {}).get("detected") is True
-        or any(marker in lower for marker in ("actually", "i meant", "not what i meant", "correction"))
+        or correction_signal(lower)
     ):
         score += 5
     utterance_units = (dialogue.get("pragmatics") or {}).get("utterance_units") or dialogue.get("utterance_units") or []
@@ -2047,6 +2054,11 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
     relational_cues = {
         str(value) for value in relational_context.get("cue_types") or [] if str(value)
     }
+    symbolic_expression = (
+        relational_context.get("symbolic_expression")
+        if isinstance(relational_context.get("symbolic_expression"), dict)
+        else {}
+    )
     if key == "mixed_intent_balance" and (len(utterance_units) > 1 or intent.get("mixed_intent") is True):
         score += 5
     if key == "syntactic_rhythm_and_emphasis" and (
@@ -2145,7 +2157,7 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
     if key == "evidence_grounded_correction_and_repair" and (
         intent_name == "correction"
         or bool((pragmatics.get("correction_refinement") or {}).get("detected"))
-        or any(marker in lower for marker in ("actually", "i meant", "correction", "not what i meant"))
+        or correction_signal(lower)
     ):
         score += 11
     if key == "evidence_grounded_uncertainty_and_missing_ground" and (
@@ -2292,6 +2304,34 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
         )
     ):
         score += 10
+    if key == "emoji_as_contextual_written_meaning" and (
+        bool(symbolic_expression.get("markers"))
+        or bool(symbolic_expression.get("unknown_markers"))
+    ):
+        score += 16
+    if key == "emoji_context_and_ambiguity" and (
+        (symbolic_expression.get("ambiguity") or {}).get("present") is True
+    ):
+        score += 18
+    if key == "emoji_only_complete_social_turn" and symbolic_expression.get("emoji_only_turn") is True:
+        score += 18
+    if key == "optional_authored_emoji_expression" and (
+        bool(symbolic_expression.get("markers"))
+        or bool(
+            relational_cues.intersection(
+                {
+                    "affection",
+                    "missing_or_longing",
+                    "shared_enthusiasm",
+                    "shared_positive_affect",
+                    "playful_tone",
+                }
+            )
+        )
+    ):
+        score += 12
+    if key == "mixed_text_emoji_cadence" and symbolic_expression.get("mixed_text_and_emoji") is True:
+        score += 16
     if key == "flexible_supported_recomposition" and (
         str(intent.get("response_depth") or "") == "developed"
         or len(utterance_units) > 1
@@ -2686,7 +2726,9 @@ def _lesson_source_refs(key: str, lesson: dict[str, Any] | None = None) -> list[
     if lesson is None:
         lesson = next((item for item in LANGUAGE_QOL_LESSONS if str(item.get("key") or "") == key), {})
     group_order = int(_lesson_group_metadata(lesson)["group_order"])
-    if group_order >= 13:
+    if group_order >= 14:
+        source_phase = "speech_phase_15:emoji_and_symbolic_conversation"
+    elif group_order >= 13:
         source_phase = "speech_phase_14:current_turn_semantic_conversation"
     elif group_order >= 12:
         source_phase = "speech_phase_13:evidence_grounded_conversation_breadth"
@@ -2730,6 +2772,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "attributed_public_domain_reading_application_lesson",
             "project_authored_evidence_grounded_conversation_breadth_lesson",
             "project_authored_private_corpus_current_turn_semantic_mechanism",
+            "project_authored_contextual_emoji_expression_mechanism",
         ],
         "covered_effects": [
             "grammar",
@@ -2744,6 +2787,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "attributed_public_domain_reading_mechanism_transfer",
             "evidence_grounded_conversation_breadth",
             "current_turn_semantic_conversation",
+            "emoji_and_symbolic_conversation",
         ],
         "item_approval_required": False,
         "acquire_integrate_express_required": True,

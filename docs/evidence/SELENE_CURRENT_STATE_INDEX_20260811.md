@@ -34,9 +34,9 @@ knowledge or Dream reflections.
 | F2 concepts | 41 unique concepts | 41 retained and Chat-eligible | Reading, vocabulary, composition, comparison, arithmetic, fractions, decimals, and operation relationships |
 | Coding curriculum groups | 1 | 1 retained group | Computational thinking and source-bounded code reading |
 | Coding concepts | 5 unique concepts | 5 retained and Chat-eligible | Knowledge only; no execution or filesystem authority |
-| Language groups | 13 | 13 represented groups on the indexed runtime | Provider-free language, grammar, creative expression, bounded reading transfer, evidence-grounded breadth, and current-turn semantic conversation |
-| Language capabilities | 81 | 81 approved and available on the indexed runtime | Expression guidance; not factual authority or personality |
-| Approved knowledge resources | 233 defined items | 233 retained resources | 106 F1 + 41 F2 + 5 coding + 81 language-and-conversation capabilities |
+| Language groups | 14 | 14 represented groups in configured resident state | Provider-free language, grammar, creative expression, bounded reading transfer, evidence-grounded breadth, current-turn semantics, and emoji/symbolic conversation |
+| Language capabilities | 86 | 86 approved and available in configured resident state | Expression guidance; not factual authority or personality |
+| Approved knowledge resources | 238 defined items | 238 retained resources | 106 F1 + 41 F2 + 5 coding + 86 language-and-conversation capabilities |
 | Unapproved comprehension candidates | — | 47 proposed items | Not retained and unavailable to Chat until the applicable review path completes |
 
 The F1 count is derived from the lesson definitions used by
@@ -46,7 +46,7 @@ same 106 F1 concepts as `retained_reviewed_knowledge` with
 `available_as_knowledge_resource` Chat permission.
 
 The language count is supported by `src/selene/language_teaching_shelf.py`, the
-Group 12 and Group 13 completion records, and the configured language shelf. At
+Group 12, Group 13, and Group 14 completion records, and the configured language shelf. At
 the indexed runtime date, all 81 stored rows were
 `approved_for_language_guidance` and `language_guidance_available` across all
 13 defined groups.
@@ -176,11 +176,12 @@ silently leaving the headline numbers stale.
 
 ## Accurate External Wording
 
-As of September 5, 2026, Selene's configured local runtime contains 106 retained
+As of September 5, 2026, Selene's configured local state contains 106 retained
 F1 foundation concepts, 41 retained F2 concepts, five retained coding
-foundations, and 81 reviewed language capabilities across thirteen groups. Her
+foundations, and 86 reviewed language capabilities across fourteen groups. Her
 source-bound Dream lifecycle is complete;
 one explicit cycle produced 24 reflections that remain pending review, with no
 silent expression or memory promotion. Whole-system maturation Phases 0
 through 8 are complete for current scope, and phase work is paused at the
-verified Phase 8 boundary.
+verified Phase 8 boundary. The installed desktop executable still predates G14
+until a fresh package/reinstall is explicitly authorized.

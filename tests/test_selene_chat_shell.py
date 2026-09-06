@@ -4286,6 +4286,55 @@ def test_shared_feeling_and_playful_vocative_receive_authored_relational_replies
     assert ", you" not in second["candidate_text"].lower()
 
 
+def test_contextual_emoji_expression_reaches_chat_without_inventing_state_or_memory(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    laughing = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "😂"},
+    )["result"]
+    thoughtful = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": laughing["session_id"], "text": "🤔"},
+    )["result"]
+    celebration = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": laughing["session_id"], "text": "we actually did it 🎉"},
+    )["result"]
+
+    assert laughing["intent_decision"]["intent"] == "playful_connection"
+    assert laughing["intent_decision"]["symbolic_expression"]["primary_meaning"] == "amusement"
+    assert "emoji_only_complete_social_turn" in laughing["native_language_organ"]["language_teaching_guidance"]["lesson_keys"]
+    assert laughing["native_language_organ"]["discourse_plan"]["social_act_realization"]["emoji_expression"]["maximum_authored_emoji"] == 1
+
+    assert thoughtful["intent_decision"]["symbolic_expression"]["primary_meaning"] == "thoughtfulness"
+    assert thoughtful["native_language_organ"]["discourse_plan"]["content_light_plan"]["move_kind"] == "symbolic_expression"
+    assert thoughtful["candidate_text"] != "I hear you."
+
+    celebration_lessons = celebration["native_language_organ"]["language_teaching_guidance"]["lesson_keys"]
+    assert celebration["intent_decision"]["intent"] == "warm_connection"
+    assert "emoji_as_contextual_written_meaning" in celebration_lessons
+    assert "mixed_text_emoji_cadence" in celebration_lessons
+    assert "optional_authored_emoji_expression" in celebration_lessons
+    assert "changed meaning" not in celebration["candidate_text"].lower()
+
+    for result in (laughing, thoughtful, celebration):
+        symbolic = result["intent_decision"]["symbolic_expression"]
+        assert symbolic["emotion_state_inferred"] is False
+        assert symbolic["diagnosis_created"] is False
+        assert symbolic["response_script_supplied"] is False
+        assert result["reviewed_memory_write_occurred"] is False
+        assert result["visible_speech_release"]["final_release_allowed"] is True
+        assert "�" not in result["candidate_text"]
+        _assert_locked(result)
+
+
 def test_everyday_choice_stays_prompt_grounded_and_farewell_does_not_inherit_a_hold(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
