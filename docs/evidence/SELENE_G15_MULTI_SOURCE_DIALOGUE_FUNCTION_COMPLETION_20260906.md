@@ -1,0 +1,123 @@
+# Selene G15 Multi-Source Dialogue Function Transfer
+
+Date: 2026-09-06
+
+Status: implemented, synthetically verified, and taught in configured resident state; desktop package not refreshed
+
+## Purpose
+
+G15 deepens conversational breadth without importing another system's voice.
+It transfers reusable dialogue functions from a bounded review of varied
+interactions into Selene's existing language-guidance lifecycle.
+
+This group does not supply factual answers. It helps Selene carry already
+supported meaning through a changing, ordinary conversation.
+
+## Source Review
+
+The review used exact, locally ignored artifacts from:
+
+- Taskmaster-2, revision `d92cb6af3005f1dc09c39e75e7daf4a04905e00b`, CC BY 4.0;
+- ReDial, data revision `27ae7ac0c212af62ca6b873cd5f08a469eda411e`, CC BY 4.0;
+- CCPE-M, revision `2c9cd30f33f3a154b5a27d015333679262ff36f5`, CC BY 4.0;
+- Topical-Chat, revision `7c939229cbcf6f55f6977b341a5a2f2fe982d53f`, CDLA-Sharing 1.0; and
+- OpenAssistant OASST1, revision `fdf72ae0827c1cda404aff25b6603abec9e3399b`, Apache 2.0.
+
+`scripts/prepare_conversation_breadth_batch.py` creates an ignored manifest and
+a private balanced review file. The selected review contained 20 complete
+interactions, four from each source. Raw excerpts stay ignored and unavailable
+to Chat.
+
+## Taught Mechanisms
+
+1. A brief yes, no, maybe, or expanded answer can complete the immediately
+   pending question.
+2. Preferences can be discovered without forcing a category or making them
+   permanent.
+3. Rejection updates the conversation; the rejected path is retired without
+   pressure.
+4. A changed constraint supersedes the affected premise and triggers bounded
+   dependent recomputation.
+5. Scattered constraints can be summarized while only material ambiguity is
+   confirmed.
+6. Alternatives are compared under shared criteria and current priorities.
+7. Informal wording, fragments, repetition, and self-repair can be understood
+   without grading or flattening the speaker.
+8. A subject can develop through relevant participation, not compulsory
+   questioning.
+9. Alternatives and retries must differ in mechanism, premise, or function—not
+   merely wording.
+10. Short, medium, and developed responses follow the current conversational
+    function and owed meaning.
+
+## Architecture Fit
+
+The group is implemented in
+`src/selene/multi_source_dialogue_lessons.py` and registered with the existing
+language shelf. Selection remains bounded in
+`src/selene/language_teaching_shelf.py`; NLO exposes the approved moves as
+typed expression-policy features in `src/selene/native_language_organ.py`.
+
+No new organ, generator, model, provider, or memory class was created. G12 and
+G13 remain the existing evidence-grounded and private-current-turn ancestry.
+Private corpus continuity remains owned by Memory and is not copied into G15.
+
+## Verification
+
+- The source preparation script counted all five selected artifacts and
+  created a 20-interaction ignored review set.
+- Four direct G15 checks passed on disposable databases.
+- Focused compatibility caught two stale inventory assertions and two
+  overbroad selector cues. The cues were repaired at their source so bare
+  `actually` does not imply a changed constraint and general recommendation
+  wording does not crowd existing callback or emoji guidance.
+- The corrected selector preserves existing specialized-guidance priority.
+- The final affected suite passed 68 G15, language-shelf, conversational-
+  teaching, G13, G14, NLO, and current-index checks in 143.71 seconds.
+- Resident SQLite integrity is `ok` after teaching.
+
+The final affected-suite count is recorded in the dated Work Journal after the
+closing verification run.
+
+## Resident Teaching Result
+
+Only the ten G15 keys were requested. All ten were newly created and graduated
+through Acquire, Integrate, and Express under Aleks's existing standing
+language-capability authorization. None was held.
+
+Configured state moved from:
+
+- 86 to 96 available language capabilities;
+- 285 to 295 comprehension concepts; and
+- 239 to 249 teaching lifecycles.
+
+Personal Memory candidates remain zero. Dream reflections remain 24 and
+pending Aleks review. The post-write resident database SHA-256 is
+`B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
+
+An idempotent G15-only refresh then recorded the explicit bounded-source-review
+authorization wording and `v3_language_capability_range_with_bounded_source_review`.
+It created and graduated zero additional items, refreshed the ten existing
+rows, and held none.
+
+Before the write, a verified continuity snapshot was created at
+`selene_continuity_20260906_173438.sqlite3` with SHA-256
+`4A4FE31C746616DC0050CD91DC21B1CC75C4232B1D486531C9F59EFF27763FE1`.
+
+## Boundaries
+
+- no raw source dialogue in tracked lessons;
+- no source facts or citations used as answer authority;
+- no source persona, relationship, or characteristic wording;
+- no duplicate private-corpus copy;
+- no Memory, Dream, Study, affect, identity, personality, Vys, law,
+  governance, authority, autonomy, training, LoRA, external action,
+  perception, or embodiment change; and
+- no live resident Q&A or stress test.
+
+## Exact Next Step
+
+Run the final focused compatibility suite and documentation checks. A desktop
+package/reinstall is separate and requires Aleks's request. After reinstall,
+one gentle ordinary conversation can check the conversational-teaching bridge
+and G15 transfer together without retesting settled capabilities.

@@ -18,6 +18,10 @@ from .emoji_expression_lessons import (
     EVIDENCE as EMOJI_EXPRESSION_EVIDENCE,
     LESSONS as EMOJI_EXPRESSION_LESSONS,
 )
+from .multi_source_dialogue_lessons import (
+    EVIDENCE as MULTI_SOURCE_DIALOGUE_EVIDENCE,
+    LESSONS as MULTI_SOURCE_DIALOGUE_LESSONS,
+)
 from .creative_writing_foundations import (
     EVIDENCE as CREATIVE_WRITING_EVIDENCE,
     LESSONS as CREATIVE_WRITING_LESSONS,
@@ -48,7 +52,9 @@ LANGUAGE_RANGE_AUTHORIZATION_BASIS = (
     "therefore does not require item-by-item approval when it cannot alter identity, personality, memory, governance, "
     "affect, authority, answer-bearing knowledge, or source persona. Aleks also authorized bounded attributed public-"
     "domain readings as technique exemplars when they retain only observation/interpretation discipline and original "
-    "creative transfer, never quotation recall or source-specific answer authority."
+    "creative transfer, never quotation recall or source-specific answer authority. Aleks additionally authorized "
+    "pinned, attributed conversation corpora as bounded dialogue-mechanism evidence when the retained lesson is an "
+    "independently written source-free reconstruction, never source wording, facts, persona, or relationship identity."
 )
 LANGUAGE_RANGE_AUTHORIZATION_BOUNDARY = (
     "standing_aleks_language_capability_authorization_guidance_only_no_identity_personality_memory_governance_"
@@ -758,6 +764,7 @@ LANGUAGE_QOL_LESSONS: tuple[dict[str, Any], ...] = (
     *CONVERSATION_BREADTH_LESSONS,
     *CURRENT_TURN_SEMANTIC_LESSONS,
     *EMOJI_EXPRESSION_LESSONS,
+    *MULTI_SOURCE_DIALOGUE_LESSONS,
 )
 
 
@@ -1547,6 +1554,7 @@ LANGUAGE_LESSON_EVIDENCE: dict[str, dict[str, Any]] = {
     **CONVERSATION_BREADTH_EVIDENCE,
     **CURRENT_TURN_SEMANTIC_EVIDENCE,
     **EMOJI_EXPRESSION_EVIDENCE,
+    **MULTI_SOURCE_DIALOGUE_EVIDENCE,
 }
 
 
@@ -2304,6 +2312,73 @@ def _guidance_score(item: dict[str, Any], prompt: str, intent: dict[str, Any], d
         )
     ):
         score += 10
+    recent_assistant_texts = [
+        str(value).strip()
+        for value in dialogue.get("recent_assistant_texts") or []
+        if str(value).strip()
+    ]
+    last_assistant_question = bool(
+        recent_assistant_texts and recent_assistant_texts[-1].rstrip().endswith("?")
+    )
+    brief_answer = len(lower.split()) <= 14 and lower.strip(" .!?") in {
+        "yes", "yeah", "yep", "sure", "okay", "ok", "no", "nope", "not today", "maybe", "probably"
+    }
+    if key == "contextual_yes_no_completion" and (
+        (last_assistant_question and brief_answer)
+        or (
+            last_assistant_question
+            and any(lower.startswith(marker) for marker in ("yes,", "yeah,", "no,", "nope,", "maybe,", "probably,"))
+        )
+    ):
+        score += 17
+    if key == "preference_discovery_without_leading" and any(
+        marker in lower
+        for marker in ("i like", "i love", "i prefer", "i dislike", "don't like", "do not like", "looking for", "my preference")
+    ):
+        score += 14
+    if key == "rejection_acceptance_and_redirection" and any(
+        marker in lower
+        for marker in ("no thanks", "not that", "don't want", "do not want", "not interested", "won't work", "will not work", "rather not")
+    ):
+        score += 17
+    changed_constraint_detected = any(
+        marker in lower
+        for marker in ("instead", "change that", "make that", "no longer", "rather than", "not anymore", "actually, keep", "actually, use", "actually, make")
+    ) or (intent_name == "correction" and lower.lstrip().startswith("actually,"))
+    if key == "changed_constraint_state_rebuild" and changed_constraint_detected:
+        score += 16
+    if key == "constraint_summary_and_confirmation" and (
+        sum(lower.count(marker) for marker in ("need", "must", "only", "at most", "no more than", "without", "keep", "but")) >= 2
+        or (changed_constraint_detected and len(obligations) > 1)
+    ):
+        score += 13
+    if key == "shared_criteria_comparison_in_dialogue" and any(
+        marker in lower
+        for marker in ("which one", "better", "compare", "tradeoff", "prefer", "option", "versus", " vs ")
+    ):
+        # Existing long-thread and obligation owners remain primary when a
+        # comparison is only one part of a braided request.
+        score += 8
+    if key == "informal_disfluency_meaning_reconstruction" and (
+        any(marker in lower for marker in (" i i ", " the the ", " um ", " uh ", "i mean", "no, wait", "sorry, i mean"))
+        or "..." in prompt
+    ):
+        score += 15
+    if key == "topic_development_without_interrogation" and (
+        current_turn_social_or_ordinary
+        and not last_assistant_question
+        and any(marker in lower for marker in ("i think", "i feel", "i noticed", "i was", "reminds me", "makes me", "the thing is"))
+    ):
+        score += 13
+    if key == "branching_alternatives_and_revision" and any(
+        marker in lower
+        for marker in ("another way", "alternative", "different approach", "other option", "what else", "retry", "try again", "several ways")
+    ):
+        score += 15
+    if key == "response_shape_across_live_exchange" and (
+        current_turn_social_or_ordinary or len(utterance_units) > 1 or len(obligations) > 1
+    ):
+        score += 8
     if key == "emoji_as_contextual_written_meaning" and (
         bool(symbolic_expression.get("markers"))
         or bool(symbolic_expression.get("unknown_markers"))
@@ -2726,7 +2801,9 @@ def _lesson_source_refs(key: str, lesson: dict[str, Any] | None = None) -> list[
     if lesson is None:
         lesson = next((item for item in LANGUAGE_QOL_LESSONS if str(item.get("key") or "") == key), {})
     group_order = int(_lesson_group_metadata(lesson)["group_order"])
-    if group_order >= 14:
+    if group_order >= 15:
+        source_phase = "speech_phase_16:multi_source_dialogue_function_transfer"
+    elif group_order >= 14:
         source_phase = "speech_phase_15:emoji_and_symbolic_conversation"
     elif group_order >= 13:
         source_phase = "speech_phase_14:current_turn_semantic_conversation"
@@ -2773,6 +2850,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "project_authored_evidence_grounded_conversation_breadth_lesson",
             "project_authored_private_corpus_current_turn_semantic_mechanism",
             "project_authored_contextual_emoji_expression_mechanism",
+            "project_authored_multi_source_dialogue_function_mechanism",
         ],
         "covered_effects": [
             "grammar",
@@ -2788,6 +2866,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
             "evidence_grounded_conversation_breadth",
             "current_turn_semantic_conversation",
             "emoji_and_symbolic_conversation",
+            "multi_source_dialogue_function_transfer",
         ],
         "item_approval_required": False,
         "acquire_integrate_express_required": True,
@@ -2809,7 +2888,7 @@ def _ensure_language_range_authorization(conn: sqlite3.Connection) -> dict[str, 
         (authorization_key, title, status, authorized_by, authorization_basis,
          scope_json, exception_classes_json, law_version, provenance_boundary, review_status, updated_at)
         VALUES (?, ?, 'active', 'Aleks', ?, ?, ?,
-                'v2_language_capability_range_with_bounded_public_domain_reading', ?, 'authorization_record', CURRENT_TIMESTAMP)
+                'v3_language_capability_range_with_bounded_source_review', ?, 'authorization_record', CURRENT_TIMESTAMP)
         ON CONFLICT(authorization_key) DO UPDATE SET
           title = excluded.title,
           status = selene_curriculum_authorizations.status,

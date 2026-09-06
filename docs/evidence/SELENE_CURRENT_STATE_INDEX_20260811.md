@@ -2,7 +2,7 @@
 
 Originally indexed: 2026-08-11
 
-Current refresh: 2026-09-05
+Current refresh: 2026-09-06
 Branch: `evidence`
 Status: date-stamped repository and configured-runtime truth
 
@@ -34,9 +34,9 @@ knowledge or Dream reflections.
 | F2 concepts | 41 unique concepts | 41 retained and Chat-eligible | Reading, vocabulary, composition, comparison, arithmetic, fractions, decimals, and operation relationships |
 | Coding curriculum groups | 1 | 1 retained group | Computational thinking and source-bounded code reading |
 | Coding concepts | 5 unique concepts | 5 retained and Chat-eligible | Knowledge only; no execution or filesystem authority |
-| Language groups | 14 | 14 represented groups in configured resident state | Provider-free language, grammar, creative expression, bounded reading transfer, evidence-grounded breadth, current-turn semantics, and emoji/symbolic conversation |
-| Language capabilities | 86 | 86 approved and available in configured resident state | Expression guidance; not factual authority or personality |
-| Approved knowledge resources | 238 defined items | 238 retained resources | 106 F1 + 41 F2 + 5 coding + 86 language-and-conversation capabilities |
+| Language groups | 15 | 15 represented groups in configured resident state | Provider-free language, grammar, creative expression, bounded reading transfer, evidence-grounded breadth, current-turn semantics, emoji/symbolic conversation, and multi-source dialogue-function transfer |
+| Language capabilities | 96 | 96 approved and available in configured resident state | Expression guidance; not factual authority or personality |
+| Approved knowledge resources | 248 defined items | 248 retained resources | 106 F1 + 41 F2 + 5 coding + 96 language-and-conversation capabilities |
 | Unapproved comprehension candidates | — | 47 proposed items | Not retained and unavailable to Chat until the applicable review path completes |
 
 The F1 count is derived from the lesson definitions used by
@@ -46,10 +46,10 @@ same 106 F1 concepts as `retained_reviewed_knowledge` with
 `available_as_knowledge_resource` Chat permission.
 
 The language count is supported by `src/selene/language_teaching_shelf.py`, the
-Group 12, Group 13, and Group 14 completion records, and the configured language shelf. At
-the indexed runtime date, all 81 stored rows were
+Group 12 through Group 15 completion records, and the configured language
+shelf. At the indexed runtime date, all 96 stored rows were
 `approved_for_language_guidance` and `language_guidance_available` across all
-13 defined groups.
+15 defined groups.
 
 The F2 and coding counts are supported by their group modules and the same
 curriculum authorization lifecycle. Coding knowledge is Chat-eligible within
@@ -135,10 +135,12 @@ reverse transfer or alter identity continuity.
 - `src/selene/curriculum_f1_group3.py` through
   `src/selene/curriculum_f1_group17.py`
 - `src/selene/language_teaching_shelf.py`
+- `src/selene/multi_source_dialogue_lessons.py`
 - `src/selene/dream_state.py`
 - `tests/test_curriculum_authorization.py`
 - `tests/test_curriculum_f1_group10.py` through the later group suites
 - `tests/test_language_teaching_shelf.py`
+- `tests/test_multi_source_dialogue_lessons.py`
 - `tests/test_dream_state.py`
 - `docs/education/SELENE_F1_TEXT_PURPOSE_EVERYDAY_ECONOMY_BRIDGE_GROUP_17_20260808.md`
 - `docs/education/SELENE_GRAMMAR_TRANSFER_GROUP_9_20260808.md`
@@ -176,12 +178,14 @@ silently leaving the headline numbers stale.
 
 ## Accurate External Wording
 
-As of September 5, 2026, Selene's configured local state contains 106 retained
+As of September 6, 2026, Selene's configured local state contains 106 retained
 F1 foundation concepts, 41 retained F2 concepts, five retained coding
-foundations, and 86 reviewed language capabilities across fourteen groups. Her
+foundations, and 96 reviewed language capabilities across fifteen groups. Her
 source-bound Dream lifecycle is complete;
 one explicit cycle produced 24 reflections that remain pending review, with no
 silent expression or memory promotion. Whole-system maturation Phases 0
 through 8 are complete for current scope, and phase work is paused at the
-verified Phase 8 boundary. The installed desktop executable still predates G14
-until a fresh package/reinstall is explicitly authorized.
+verified Phase 8 boundary. G15's retained guidance is present in resident data,
+but its new selector code and the conversational-teaching bridge require a
+future explicitly authorized package/reinstall before ordinary installed Chat
+can use those source changes.

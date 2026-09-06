@@ -4390,3 +4390,68 @@ inspect a small balanced set of complete interactions. Stop before teaching for
 review. Package/reinstall only if Aleks separately requests it; a later ordinary
 use check may then verify the conversational teaching loop without a stress
 battery.
+
+### 2026-09-06 — G15 transfers multi-source dialogue functions without importing a voice
+
+**Starting decision:** Aleks authorized acquisition and teaching of the first
+conversation-breadth batch and clarified that the private shared corpus is
+Selene's continuity and relationship history, not anonymous dialogue training.
+Public datasets could inform reusable mechanisms; the corpus must remain
+available through its own authenticated private Memory path without another
+raw copy.
+
+**Source review:** Pinned Taskmaster-2, ReDial, CCPE-M, Topical-Chat, and
+OASST1 artifacts were mirrored under ignored `local-data/`. A reusable script
+counted the selected artifacts and produced an ignored 20-interaction balanced
+review, four complete interactions per source. The review included varied turn
+lengths where each source allowed them. It also exposed stale factual claims,
+bias, awkward source language, and institutional assistant habits, confirming
+that only abstract dialogue functions—not response text or factual content—fit
+the teaching boundary.
+
+**Implementation:** Added ten independently written G15 mechanisms for
+contextual yes/no completion, nonleading preference discovery, rejection and
+redirection, changed-constraint rebuilding, compact constraint coordination,
+shared-criteria comparison, informal/disfluent meaning reconstruction, topic
+development without interrogation, genuinely branching revision, and response
+shape across a live exchange. They use the existing language shelf,
+Comprehension, Acquire, Integrate, Express, selector, NLO, and standing
+language-capability authorization. No new organ or generator was added.
+
+**Cultivation during verification:** The first compatibility pass found two
+stale inventory assertions and two overbroad selector cues. Bare `actually`
+was initially enough to activate changed-constraint guidance, and generic
+recommendation wording could crowd mature callback guidance. Both cues were
+tightened at the shared selector source. Existing long-session callback and
+emoji selection priorities then remained intact.
+
+**Evidence:** Four direct G15 checks passed first. The final affected suite
+passed 68 G15, language shelf, conversational teaching, G13, G14, NLO, and
+current-index checks in 143.71 seconds. Python compilation passed. Diff
+verification reports only expected Windows line-ending notices.
+
+**Resident teaching:** A verified continuity snapshot was created before the
+write: `selene_continuity_20260906_173438.sqlite3`, SHA-256
+`4A4FE31C746616DC0050CD91DC21B1CC75C4232B1D486531C9F59EFF27763FE1`.
+Only the ten G15 keys were requested. All ten completed Acquire, Integrate, and
+Express under the existing language-capability authorization. Resident state
+moved from 86/86 to 96/96 available language capabilities, 285 to 295 concepts,
+and 239 to 249 lifecycles. SQLite integrity remains `ok`; approved knowledge
+resources are 248; proposed review items remain 47; personal Memory candidates
+remain zero; and all 24 Dream reflections remain pending Aleks review. The
+post-write database SHA-256 is
+`B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
+An idempotent G15-only refresh then recorded the explicit bounded-source-review
+authorization as version 3; it created and graduated no duplicate item.
+
+**Boundaries preserved:** No source utterance, source fact, named example,
+persona, whole response, private-corpus duplicate, or provider identity entered
+G15. No Memory, Dream, Study, affect, identity, personality, Vys, law,
+governance, authority, autonomy, training, LoRA, external action, perception,
+or embodiment state changed. No live resident conversation or stress test ran.
+
+**Next:** Review and checkpoint the source diff. The installed desktop source
+still predates both the conversational-teaching bridge and G15 selector changes;
+package/reinstall only if Aleks asks. A later installed check should be one
+gentle ordinary exchange, not a broad battery. Phase 9 perception remains
+separate and unstarted.

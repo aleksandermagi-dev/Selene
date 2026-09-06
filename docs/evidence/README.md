@@ -134,6 +134,12 @@ a prototype result into a universal conclusion.
   the configured shelf is 86/86 available, with contextual ambiguity,
   optional authorship, and unchanged Memory, identity, governance, and
   training boundaries.
+- [G15 Multi-Source Dialogue Function Transfer](SELENE_G15_MULTI_SOURCE_DIALOGUE_FUNCTION_COMPLETION_20260906.md)
+  — ten independently written interaction mechanisms were derived from a
+  bounded five-source review and completed Acquire, Integrate, and Express;
+  the configured shelf is 96/96, while source wording, facts, personas,
+  private continuity, Memory, identity, governance, and training remain
+  separate.
 - [G12 Live-Teaching Post-Reinstall Q&A](SELENE_G12_LIVE_TEACHING_POST_REINSTALL_QNA_20260820.md)
   — first bounded evidence-grounded breadth lesson taught live, followed by a
   20-turn diagnostic note-first assessment of the remaining ownership seams.

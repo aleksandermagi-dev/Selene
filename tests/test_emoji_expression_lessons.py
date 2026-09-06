@@ -58,7 +58,7 @@ def test_g14_completes_existing_lifecycle_without_boundary_writes(tmp_path):
         if item["group_order"] == 14
     }
 
-    assert first["created_count"] == first["graduated_count"] == len(LANGUAGE_QOL_LESSONS) == 86
+    assert first["created_count"] == first["graduated_count"] == len(LANGUAGE_QOL_LESSONS) == 96
     assert second["created_count"] == 0
     assert second["refreshed_count"] == 5
     assert group["teaching_group"] == TEACHING_GROUP

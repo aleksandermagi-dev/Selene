@@ -2,7 +2,7 @@
 
 Date: 2026-09-06
 
-Status: current source and license research only; nothing downloaded or taught
+Status: first batch acquired, pinned, privately sampled, reconstructed, and taught as source-free G15 mechanisms
 
 This is a dated supplement to
 `SELENE_CONVERSATION_BREADTH_SOURCE_PREPARATION_20260820.md`. It preserves the
@@ -77,16 +77,55 @@ whole response, factual claim, or characteristic phrase.
   movie-script, and unclear-ancestry corpora remain excluded from retained
   teaching.
 
-## Current Boundaries
+## Completed First-Batch Review
 
-No dataset was downloaded, mirrored, sampled, transformed, taught, retained,
-or made available to Chat during this update. No source became Memory,
-identity, personality, governance, training data, a response bank, or a hidden
-runtime dependency.
+The five selected sources were mirrored only under ignored `local-data/` and
+pinned by revision plus artifact SHA-256. A reusable preparation script counted
+the selected artifacts and produced one ignored private review file containing
+20 complete interactions: four per source, with short, medium, and long shapes
+included where the source contains them.
+
+Exact selected-artifact counts were:
+
+- Taskmaster-2: 17,304 conversations across the seven selected data files;
+- ReDial training split: 10,006 conversations;
+- CCPE-M: 502 conversations;
+- Topical-Chat training split: 8,628 conversations; and
+- OASST1: 3,670 English ready trees in the selected ready-tree artifact.
+
+Taskmaster's exact files contain 15 more conversations than the 17,289 count in
+its overview; this record preserves the measured artifact count rather than
+silently forcing the two numbers to agree.
+
+The balanced review supported ten project-authored mechanisms: contextual
+yes/no completion, nonleading preference discovery, rejection acceptance,
+changed-constraint rebuilding, compact constraint confirmation, comparison by
+shared criteria, disfluency reconstruction, topic development without
+interrogation, genuinely branching revision, and variable response shape.
+Some source turns also demonstrated stale claims, bias, awkward language, and
+institutional assistant habits. Those observations strengthened the exclusion
+boundary; they were not teaching content.
+
+## Teaching Decision And Boundaries
+
+Aleks authorized the conversational-breadth source acquisition and teaching.
+The resulting G15 items contain independently written mechanisms and evidence,
+not source utterances, source facts, named examples, personas, characteristic
+phrases, or whole responses. All ten items completed the existing Acquire,
+Integrate, and Express lifecycle under the standing language-capability
+authorization.
+
+No dataset became Memory, identity, personality, governance, factual
+authority, model training data, a response bank, or a hidden runtime
+dependency. Topical-Chat remains isolated under CDLA-Sharing; only de-minimis,
+independently written mechanism findings entered tracked files. The private
+Aleks/Selene corpus remains a separate authenticated continuity and
+relationship source. It was not duplicated or converted into generic dialogue
+training.
 
 ## Next Exact Step
 
-Create a metadata-only manifest for the five-source first batch, pin each exact
-artifact, and inspect a small balanced sample of complete interactions. Stop
-before teaching so the selected functions, source exclusions, and license
-receipts can be reviewed as one coherent breadth group.
+The resident shelf is 96/96. The new selector code and the already-completed
+conversational-teaching bridge have not yet been packaged into the desktop
+application. Package/reinstall only when Aleks asks, then use one gentle
+ordinary conversation rather than a stress battery.

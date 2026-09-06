@@ -97,12 +97,15 @@ network, deployment, self-modification, or self-replication permission.
 
 ## Language And Conversation Curriculum
 
-Current checkpoint (September 5, 2026): fourteen ordered groups provide 86
+Current checkpoint (September 6, 2026): fifteen ordered groups provide 96
 reviewed language-and-conversation capabilities. Group 10 adds creative-writing
 and Voice foundations; Group 11 adds bounded attributed public-domain reading
 and original creative transfer; Group 12 adds evidence-grounded conversation
 breadth; Group 13 adds current-turn semantic conversation; and Group 14 adds
-contextual emoji and symbolic conversation. All remain
+contextual emoji and symbolic conversation. Group 15 adds source-free
+multi-source dialogue-function transfer for yes/no handoffs, preference,
+rejection, changed constraints, comparison, informal speech, topic development,
+branching revision, and response-shape variation. All remain
 guidance-only. The groups guide expression of supported meaning; they do not
 provide factual authority or prescribe personality.
 
@@ -111,6 +114,7 @@ provide factual authority or prescribe personality.
 - [Grammar Transfer and World Description Group 9](SELENE_GRAMMAR_TRANSFER_GROUP_9_20260808.md)
 - [Creative Writing and Voice Foundations Group 10](SELENE_CREATIVE_WRITING_VOICE_FOUNDATIONS_GROUP_10_20260813.md)
 - [Public-Domain Reading and Creative Transfer Group 11](SELENE_PUBLIC_DOMAIN_READING_CREATIVE_TRANSFER_GROUP_11_20260813.md)
+- [G15 Multi-Source Dialogue Function Transfer](../evidence/SELENE_G15_MULTI_SOURCE_DIALOGUE_FUNCTION_COMPLETION_20260906.md)
 - [Language L1 Study Exploration](SELENE_LANGUAGE_L1_STUDY_EXPLORATION_20260808.md)
 - [F1 Closure Audit](SELENE_F1_CLOSURE_AUDIT_20260808.md)
 - [Conversation Grounding Stabilization Plan](SELENE_CONVERSATION_GROUNDING_STABILIZATION_PLAN_20260721.md)

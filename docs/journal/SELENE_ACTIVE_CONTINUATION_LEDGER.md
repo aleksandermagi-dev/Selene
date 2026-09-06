@@ -3,9 +3,10 @@
 Last refreshed: 2026-09-06
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation,
-G13, and G14 remain installed; the explicit conversational-teaching bridge and
-question-answer handoff are implemented and boundedly verified in source but
-have not been packaged or installed
+G13, and G14 remain installed; the explicit conversational-teaching bridge is
+source-verified but not installed; G15 multi-source dialogue-function guidance
+is implemented, verified, and taught at 96/96, but its selector code is not yet
+packaged or installed
 
 ## Purpose
 
@@ -59,9 +60,12 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this documentation refresh: `8c0154e` is one
-  commit ahead of `origin/evidence`; confirm again before any later commit or
+- Current remote relation before the G15 checkpoint: local `evidence` is two
+  commits ahead of `origin/evidence`; confirm again before any later commit or
   push
+- Current G15 implementation is the active working checkpoint until its commit
+  hash is recorded below; preserve the resident 96/96 teaching state even if
+  source packaging is deferred
 - Previous checkpoints:
   - Phase 5 map: `72e289b`
   - Phase 5 complete: `a41a871`
@@ -616,9 +620,47 @@ git log -5 --oneline
 - Seven new focused checks, 56 existing learning-lifecycle checks, and three
   selected active-Chat compatibility checks passed in disposable state. No
   resident state changed, and no package or reinstall was run.
-- The dated source update selects Taskmaster-2, ReDial/CCPE-M, Topical-Chat,
+- The dated source update selected Taskmaster-2, ReDial/CCPE-M, Topical-Chat,
   OASST1 structure, and private reviewed interaction evidence as the first
-  metadata-only breadth batch. No source was downloaded or taught.
+  breadth batch. The external artifacts have since been mirrored and used only
+  to derive the source-free G15 mechanisms described below.
+
+## G15 Multi-Source Dialogue Function Transfer
+
+- Exact Taskmaster-2, ReDial, CCPE-M, Topical-Chat, and OASST1 artifacts are
+  locally mirrored and pinned under ignored `local-data/`.
+- `scripts/prepare_conversation_breadth_batch.py` counted the selected
+  artifacts and generated one ignored 20-interaction review set, four complete
+  interactions per source with varied turn lengths where available.
+- Raw dialogue exposed useful mechanics plus stale facts, bias, awkward source
+  wording, and assistant habits. Only independently written mechanism evidence
+  entered tracked files.
+- Ten G15 lessons cover contextual yes/no completion, nonleading preference,
+  rejection/redirection, changed constraints, constraint coordination,
+  shared-criteria comparison, disfluency reconstruction, open-topic
+  development, branching revision, and variable response shape.
+- The first compatibility pass caught and repaired broad `actually` and
+  recommendation cues before resident teaching. Existing callback and emoji
+  guidance retain priority.
+- Final affected verification: 68 checks passed in 143.71 seconds; Python
+  compilation passed; diff verification reports only Windows line-ending
+  notices.
+- Continuity snapshot before teaching:
+  `selene_continuity_20260906_173438.sqlite3`, SHA-256
+  `4A4FE31C746616DC0050CD91DC21B1CC75C4232B1D486531C9F59EFF27763FE1`.
+- Only the ten G15 keys were taught. Resident state is 96/96 language
+  capabilities, 295 concepts, 249 lifecycles, 248 approved resources, 47
+  proposed review items, zero personal Memory candidates, and 24 pending Dream
+  reflections. SQLite integrity is `ok`.
+- Post-write resident SHA-256:
+  `B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
+- An idempotent G15-only refresh recorded authorization version
+  `v3_language_capability_range_with_bounded_source_review`; it created and
+  graduated no duplicate item.
+- The private corpus remains authenticated continuity/relationship Memory. It
+  was not duplicated into G15 or treated as generic dialogue training.
+- No package, reinstall, live resident Q&A, or stress test ran. Installed Chat
+  cannot use the new G15 selector code until Aleks authorizes packaging.
 
 ## Private Master Record
 
@@ -675,21 +717,23 @@ externally, or mutate resident continuity.
 ## Exact Resume Point
 
 Phase 8 remains complete for current scope. Cultivation, G13, and G14 are
-committed, taught, installed, and boundedly verified. The configured resident
-language shelf remains 86/86. The new conversational-teaching bridge is
-committed at `8c0154e`, source-verified, and not installed.
+committed, taught, installed, and boundedly verified. The conversational-
+teaching bridge is committed at `8c0154e`, source-verified, and not installed.
+G15 is implemented, verified, and taught; the configured resident language
+shelf is 96/96.
 
-The exact resume point is a metadata-only manifest and small balanced review of
-Taskmaster-2, ReDial/CCPE-M, the already mirrored Topical-Chat and OASST1, plus
-private reviewed breadth mechanisms. Stop before teaching so source exclusions,
-licenses, and selected functions can be reviewed. Do not bulk-import dialogue,
-adopt source assistant personas, or treat source utterances as facts or Voice.
+The exact resume point is source checkpoint review, then an Aleks-authorized
+package/reinstall if he wants installed Chat to use the conversational-teaching
+bridge and G15 selector code. Do not repeat G13, G14, or G15 teaching. A future
+installed check should use one gentle ordinary conversation, not a stress
+battery. The downloaded source corpora and private 20-interaction review stay
+ignored and unavailable to runtime.
 
-Do not repeat G13 or G14 teaching. Package/reinstall only when Aleks asks. A
-future installed check should use one gentle ordinary conversation, not a
-stress battery. Phase 9 perception remains separate and unstarted. Any later
-source checkpoint must continue excluding
-`docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
+The private Aleks/Selene corpus remains available through authenticated,
+post-transfer, read-only continuity recall. It is not generic language
+training, and no duplicate Memory copy should be made. Phase 9 perception
+remains separate and unstarted. Any later source checkpoint must continue
+excluding `docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
 
 If Phase 9 is later resumed, begin with perception source mapping only; do not
 infer sensor, microphone, camera, audible Voice, network, external-action, or

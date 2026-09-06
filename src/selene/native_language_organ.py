@@ -2762,6 +2762,46 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
         "current_turn_cadence",
         {"count_meaning_units", "choose_fitting_response_depth", "vary_pacing_without_dropping_content"},
     )
+    contextual_answer_handoff = enable(
+        "contextual_answer_handoff",
+        {"reattach_answer_to_pending_question", "accept_answer_as_resolution", "continue_only_if_meaning_remains_open"},
+    )
+    preference_dialogue = enable(
+        "preference_dialogue",
+        {"collect_stated_preferences", "ask_one_nonleading_distinction", "keep_preferences_revisable"},
+    )
+    rejection_redirection = enable(
+        "rejection_redirection",
+        {"accept_rejection_without_pressure", "retire_rejected_path", "redirect_or_stop_by_context"},
+    )
+    constraint_state_rebuild = enable(
+        "constraint_state_rebuild",
+        {"identify_changed_constraint", "replace_affected_working_premise", "recompute_dependent_options"},
+    )
+    constraint_coordination = enable(
+        "constraint_coordination",
+        {"assemble_current_constraints", "separate_settled_from_ambiguous", "confirm_only_material_uncertainty"},
+    )
+    conversational_comparison = enable(
+        "conversational_comparison",
+        {"extract_shared_criteria", "compare_on_same_dimensions", "connect_choice_to_stated_priority"},
+    )
+    disfluency_reconstruction = enable(
+        "disfluency_reconstruction",
+        {"locate_stable_meaning_across_disfluency", "apply_visible_self_correction", "respond_without_policing_surface_form"},
+    )
+    open_topic_development = enable(
+        "open_topic_development",
+        {"receive_latest_contribution", "add_one_fitting_development", "ask_only_when_curiosity_has_direction"},
+    )
+    branching_revision = enable(
+        "branching_revision",
+        {"generate_distinct_candidates", "select_by_current_context", "revise_mechanism_not_surface_only"},
+    )
+    live_exchange_shape = enable(
+        "live_exchange_shape",
+        {"identify_turn_function", "choose_proportionate_depth", "vary_shape_without_dropping_obligations"},
+    )
     return {
         "status": "approved_language_realization_ready" if features else "no_operational_language_guidance",
         "used": bool(features),
@@ -2806,6 +2846,16 @@ def _language_realization_policy(guidance: dict[str, Any]) -> dict[str, Any]:
         "contextual_curiosity": contextual_curiosity,
         "callback_present_integration": callback_present_integration,
         "current_turn_cadence": current_turn_cadence,
+        "contextual_answer_handoff": contextual_answer_handoff,
+        "preference_dialogue": preference_dialogue,
+        "rejection_redirection": rejection_redirection,
+        "constraint_state_rebuild": constraint_state_rebuild,
+        "constraint_coordination": constraint_coordination,
+        "conversational_comparison": conversational_comparison,
+        "disfluency_reconstruction": disfluency_reconstruction,
+        "open_topic_development": open_topic_development,
+        "branching_revision": branching_revision,
+        "live_exchange_shape": live_exchange_shape,
         "meaning_change_allowed": False,
         "content_generation_allowed": False,
         "personality_change_allowed": False,
