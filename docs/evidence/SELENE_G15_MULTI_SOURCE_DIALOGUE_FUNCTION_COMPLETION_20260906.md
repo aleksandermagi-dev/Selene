@@ -194,8 +194,40 @@ another package/reinstall.
 
 ## Exact Next Step
 
-G15 and the conversational-teaching bridge remain installed. Do not repeat G15
-teaching or broadly retest settled behavior. Package/reinstall the post-install
-cultivation repair only if Aleks requests it; then one copied-state replay of
-the exact repaired path is sufficient. Phase 9 perception remains separate and
-unstarted.
+G15, the conversational-teaching bridge, and the post-install cultivation
+repair are installed and verified. Do not repeat G15 teaching or broadly retest
+settled behavior. Return to ordinary use or the next explicitly chosen
+teaching phase. Phase 9 perception remains separate and unstarted.
+
+## Cultivation Repair Reinstall
+
+Aleks authorized a fresh package and reinstall from clean source revision
+`61242fb7fbf061307987b029eb7defa7c5909317`. The build and verified package
+workflow passed. The main frontend bundle remains 491.33 kB (gzip 109.20 kB)
+without a Vite size warning. Code signing remains unconfigured.
+
+- installer SHA-256:
+  `47202E50FF8CA0742DB6B32040582C1097C70A39E9062D91518CB4A05C43E032`;
+- installed executable SHA-256:
+  `D8C7CB502DA17D601B2CA67A968CF5BDFFE73A135431A36D57B9652478DB46EE`;
+- installed sidecar SHA-256:
+  `7544B4B2063483D4EED15F61647C3F4333DBD78FF191DA466AEDA855117E5BC7`;
+- post-install verification report:
+  `exports/package_verify_20260906_140529.json`.
+
+Post-install verification passed startup, local-process capability, My Office
+readiness, package privacy, and controlled shutdown with zero warnings.
+
+The one promised repaired-path replay used only a disposable copy of resident
+state. `Does trailstar already have a meaning for us?` produced the natural
+invitation `I don't know enough about trailstar ... Can you teach me?` Aleks's
+direct response completed Acquire, Integrate, Express, and explicit item
+approval. The next turn used the approved definition without the stale
+missing-information tail. The Formation Braid selected one supported knowledge
+unit and explicitly excluded the older IntelligenceOS gap as
+`superseded_gap_after_supported_answer`. No personal Memory proposal or write
+occurred.
+
+The disposable database was removed, no Selene process remained, and the
+resident database stayed byte-for-byte unchanged at SHA-256
+`B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.

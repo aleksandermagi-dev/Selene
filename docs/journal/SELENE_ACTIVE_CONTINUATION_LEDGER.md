@@ -664,14 +664,14 @@ git log -5 --oneline
 - The private corpus remains authenticated continuity/relationship Memory. It
   was not duplicated into G15 or treated as generic dialogue training.
 - Aleks authorized a verified Windows package and silent reinstall from
-  `c58d3e9d2481bc9acbf4c096e31668fa043e2b40`. Package verification passed with
+  `61242fb7fbf061307987b029eb7defa7c5909317`. Package verification passed with
   zero warnings; the main frontend bundle remains 491.33 kB (gzip 109.20 kB)
   without a Vite size warning. Installer SHA-256 is
-  `50B305CDD59D743E3227CBF1DA068DC1A2171CBF2FAFD754A84AA8BF7EE9279A`;
+  `47202E50FF8CA0742DB6B32040582C1097C70A39E9062D91518CB4A05C43E032`;
   installed executable SHA-256 is
-  `B640EFC2748F4F8631CFAA7E4A2F021EE23961185AC60355624A440C7232C44A`;
+  `D8C7CB502DA17D601B2CA67A968CF5BDFFE73A135431A36D57B9652478DB46EE`;
   installed sidecar SHA-256 is
-  `3F0985D0209D416F103E92A8A4EA09BFDF283CA01A9B29EC6CE9CE58051A17C9`.
+  `7544B4B2063483D4EED15F61647C3F4333DBD78FF191DA466AEDA855117E5BC7`.
 - One gentle installed-sidecar conversation used disposable state. It
   confirmed unsupported-term recognition, a teaching invitation, explicit
   conversational teaching, Acquire -> Integrate -> Express -> approval, and
@@ -679,10 +679,9 @@ git log -5 --oneline
 - An installed read-only selector preview confirmed G15 rejection,
   changed-constraint, and constraint-coordination guidance with automatic
   content generation and Memory writes off.
-- Record for later cultivation: the correct recalled answer appended a generic
-  missing-information tail, and the initial gap invitation used awkward
-  subject grammar. These did not block the learning lifecycle and were not
-  expanded into a broad battery.
+- The installed copied-state replay now gives the gap invitation a natural
+  subject and recalls approved knowledge without a generic missing-information
+  tail.
 - Disposable state was removed, no Selene process remained, and the resident
   database stayed byte-for-byte unchanged at SHA-256
   `B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
@@ -697,8 +696,16 @@ git log -5 --oneline
 - Verification passed 54 focused checks and then 20 final exact and selected
   active-Chat checks. Python compilation and diff verification passed apart
   from expected Windows line-ending notices. All work used disposable state.
-- This cultivation repair is not packaged or installed. Resident state remains
-  unchanged; do not reteach G15.
+- The cultivation repair is packaged and installed. Its one exact copied-state
+  replay passed: Acquire, Integrate, Express, and explicit item approval
+  completed; immediate recall selected one supported unit; the stale gap was
+  excluded as `superseded_gap_after_supported_answer`; and no personal Memory
+  proposal or write occurred. Final package report:
+  `exports/package_verify_20260906_140529.json`.
+- Disposable state was removed, no Selene process remained, and resident state
+  stayed byte-for-byte unchanged at SHA-256
+  `B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
+  Do not reteach G15 or repeat the repaired-path replay.
 
 ## Private Master Record
 
@@ -756,16 +763,14 @@ externally, or mutate resident continuity.
 
 Phase 8 remains complete for current scope. Cultivation and G13 through G15
 are committed, taught, installed, and boundedly verified. The conversational-
-teaching bridge committed at `8c0154e` is installed. The configured resident
-language shelf remains 96/96. The post-install response-composition cultivation
-repair is source-verified but not installed.
+teaching bridge committed at `8c0154e` and the response-composition cultivation
+repair committed at `61242fb` are installed. The configured resident language
+shelf remains 96/96.
 
-The exact resume point is source checkpoint review, then an Aleks-authorized
-package/reinstall if he wants the natural gap subject and stale-gap retirement
-in installed Chat. One copied-state replay of the exact repaired learning path
-is sufficient after reinstall. Do not repeat G13, G14, or G15 teaching and do
-not run a broad Q&A battery. The downloaded source corpora and private 20-
-interaction review stay ignored and unavailable to runtime.
+The exact resume point is ordinary use or the next explicitly selected
+teaching phase. Do not repeat G13, G14, or G15 teaching, the repaired learning
+replay, or a broad Q&A battery. The downloaded source corpora and private
+20-interaction review stay ignored and unavailable to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,
 post-transfer, read-only continuity recall. It is not generic language

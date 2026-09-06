@@ -4537,3 +4537,40 @@ state changed. This source repair has not been packaged or installed.
 **Next:** Checkpoint the clean source repair. Package/reinstall only if Aleks
 requests it; one copied-state replay of this exact path is enough afterward.
 Do not reteach G15 or reopen a broad Q&A battery.
+
+### 2026-09-06 — Cultivation repair reaches the installed vessel
+
+**Package and install:** Aleks authorized packaging and reinstall from clean
+source revision `61242fb7fbf061307987b029eb7defa7c5909317`.
+`npm run package:win:verified` passed, followed by a successful silent install
+and a second installed-package verification. The main frontend bundle remains
+491.33 kB (gzip 109.20 kB) without a Vite size warning. Installer SHA-256 is
+`47202E50FF8CA0742DB6B32040582C1097C70A39E9062D91518CB4A05C43E032`;
+installed executable SHA-256 is
+`D8C7CB502DA17D601B2CA67A968CF5BDFFE73A135431A36D57B9652478DB46EE`;
+installed sidecar SHA-256 is
+`7544B4B2063483D4EED15F61647C3F4333DBD78FF191DA466AEDA855117E5BC7`.
+The final verification report is
+`exports/package_verify_20260906_140529.json`. Code signing remains
+unconfigured.
+
+**Least-impact confirmation:** The promised exact learning-path replay ran
+against a disposable copy of resident state. The unsupported `trailstar`
+question produced a natural subject and teaching invitation. Aleks's direct
+teaching completed Acquire, Integrate, Express, and explicit item approval.
+Immediate recall returned the approved definition with one selected knowledge
+unit and no generic missing-information tail; the obsolete IntelligenceOS gap
+was recorded as `superseded_gap_after_supported_answer`. No personal Memory
+proposal or write occurred.
+
+**Continuity:** Both disposable replay directories were removed and all
+test-started Selene processes were closed. The resident database remained
+byte-for-byte unchanged at SHA-256
+`B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
+No resident teaching, Chat, Memory, Dream, Study, identity, personality, Vys,
+governance, authority, autonomy, training, LoRA, external action, perception,
+or embodiment state changed.
+
+**Next:** Return to ordinary use or the next explicitly selected teaching
+phase. Do not reteach G15 or repeat the repaired learning replay. Phase 9
+perception remains separate and unstarted.
