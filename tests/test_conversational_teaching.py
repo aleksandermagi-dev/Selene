@@ -5,6 +5,7 @@ import json
 from selene.activation import ACTIVATION_APPROVAL_PHRASE
 from selene.conversational_teaching import (
     build_assistant_question_handoff,
+    build_learning_gap_invitation,
     plan_conversational_teaching_turn,
 )
 from selene.db import connect, init_db
@@ -145,6 +146,60 @@ def test_gap_invitation_can_be_declined_and_no_is_received_as_a_boundary(tmp_pat
     assert response["follow_up_may_clarify_but_may_not_override_user_boundary"] is True
     assert declined["conversational_teaching"]["knowledge_write_occurred"] is False
     assert "no pressure" in declined["candidate_text"].lower()
+
+
+def test_supported_current_turn_owner_preempts_learning_gap_invitation():
+    intelligence_gap = {
+        "answer_substance": {
+            "answer_kind": "unsupported_fact",
+            "answer": "I do not have enough grounded detail yet.",
+        }
+    }
+    dream_answer = {
+        "release_allowed": True,
+        "selected_source_id": "attributable_dream_reflection",
+        "content_seed": (
+            "No—not yet. The pending Dream reflection may not shape my answer "
+            "before review."
+        ),
+    }
+
+    result = build_learning_gap_invitation(
+        "Are those pending Dream notes allowed to shape your answer now?",
+        intelligence_gap,
+        current_turn_response=dream_answer,
+        speaker_envelope=_aleks_speaker(),
+    )
+
+    assert result["offered"] is False
+    assert result["reason"] == "current_turn_owner_already_supplied_supported_response"
+    assert result["current_turn_response_source"] == "attributable_dream_reflection"
+    assert result["current_turn_supported_response_preserved"] is True
+    assert result["response_seed"] == ""
+
+
+def test_intelligence_gap_does_not_preempt_its_own_teaching_invitation():
+    intelligence_gap = {
+        "answer_substance": {
+            "answer_kind": "unsupported_fact",
+            "answer": "I do not have enough grounded detail yet.",
+        }
+    }
+
+    result = build_learning_gap_invitation(
+        "Is the sky purple?",
+        intelligence_gap,
+        current_turn_response={
+            "release_allowed": True,
+            "selected_source_id": "intelligence_os_answer",
+            "content_seed": "I do not have enough grounded detail yet.",
+        },
+        speaker_envelope=_aleks_speaker(),
+    )
+
+    assert result["offered"] is True
+    assert result["status"] == "learning_gap_invitation_ready"
+    assert "teach me" in result["response_seed"].lower()
 
 
 def test_pending_gap_accepts_explicit_answer_and_approved_knowledge_prevents_repeat_invitation(tmp_path):

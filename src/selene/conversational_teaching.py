@@ -36,6 +36,26 @@ GUARDS: dict[str, Any] = {
     "lea_replaced": False,
 }
 
+GAP_PREEMPTING_RESPONSE_SOURCES = {
+    "approved_comprehension",
+    "attributable_dream_reflection",
+    "conversation_policy",
+    "conversational_memory_action",
+    "conversational_teaching",
+    "core_mind_boundary",
+    "current_session_facts",
+    "contextual_approved_memory",
+    "contextual_follow_up",
+    "epistemic_revision",
+    "explicit_humor_request",
+    "explicit_session_alias",
+    "figurative_meaning_clarification",
+    "grounded_self_state",
+    "mixed_conversation_answer",
+    "ordinary_uncertainty",
+    "reviewed_memory",
+}
+
 _EXPLICIT_TEACHING_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "let_me_teach_you",
@@ -432,6 +452,7 @@ def build_learning_gap_invitation(
     intelligence_support: dict[str, Any] | None,
     *,
     knowledge_context: dict[str, Any] | None = None,
+    current_turn_response: dict[str, Any] | None = None,
     speaker_envelope: dict[str, Any] | None = None,
     diagnostic_only: bool = False,
     hard_boundary: bool = False,
@@ -450,10 +471,21 @@ def build_learning_gap_invitation(
     speaker = speaker_envelope if isinstance(speaker_envelope, dict) else {}
     teaching = teaching_turn if isinstance(teaching_turn, dict) else {}
     knowledge = knowledge_context if isinstance(knowledge_context, dict) else {}
+    current_response = (
+        current_turn_response if isinstance(current_turn_response, dict) else {}
+    )
+    response_source = str(current_response.get("selected_source_id") or "")
+    response_text = str(current_response.get("content_seed") or "").strip()
+    current_owner_already_answered = bool(
+        current_response.get("release_allowed") is True
+        and response_text
+        and response_source in GAP_PREEMPTING_RESPONSE_SOURCES
+    )
     eligible = bool(
         not diagnostic_only
         and not hard_boundary
         and str(teaching.get("action") or "none") == "none"
+        and not current_owner_already_answered
         and knowledge.get("answer_eligible") is not True
         and not knowledge.get("answer_eligible_items")
         and answer_kind in {"unsupported_fact", "bounded_knowledge_gap", "source_needed", "causal_evidence_needed"}
@@ -469,7 +501,15 @@ def build_learning_gap_invitation(
                 "offered": False,
                 "answer_kind": answer_kind,
                 "response_seed": "",
-                "reason": "gap_not_eligible_or_invitation_not_contextually_needed",
+                "reason": (
+                    "current_turn_owner_already_supplied_supported_response"
+                    if current_owner_already_answered
+                    else "gap_not_eligible_or_invitation_not_contextually_needed"
+                ),
+                "current_turn_response_source": response_source,
+                "current_turn_supported_response_preserved": (
+                    current_owner_already_answered
+                ),
             }
         )
     subject = _question_subject(prompt)

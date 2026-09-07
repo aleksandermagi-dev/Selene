@@ -778,6 +778,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             if isinstance(comprehension.get("knowledge_context"), dict)
             else {}
         ),
+        current_turn_response=initial_visible_speech_seed,
         speaker_envelope=speaker_envelope,
         diagnostic_only=qa_probe,
         hard_boundary=bool(hard_blockers),

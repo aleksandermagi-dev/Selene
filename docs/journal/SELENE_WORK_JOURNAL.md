@@ -4612,3 +4612,37 @@ test ran.
 then use one gentle disposable-state bright-versus-neutral greeting contrast.
 Do not reopen broad Q&A or teaching. Investigate the separate Dream source
 selection only if it recurs or Aleks selects it for cultivation.
+
+### 2026-09-07 — Cultivation resolves Dream-owner versus learning-gap routing
+
+**Reproduction:** The previously noted source-selection issue reproduced in
+isolation. The Dream handoff correctly formed a source-bound answer explaining
+that pending reflections could not shape the current reply. IntelligenceOS
+also reported an unsupported fact, and the conversational learning-gap gate
+offered teaching because it checked IntelligenceOS and approved knowledge but
+not whether another current-turn owner had already answered.
+
+**Root repair:** The learning-gap gate now receives the current selected
+response and yields when an eligible supported owner already supplied the
+answer. This occurs before visible-speech arbitration, so both the wrong reply
+and the false pending teaching handoff disappear. An IntelligenceOS gap cannot
+preempt its own invitation; genuine unknowns such as an untaught factual
+question still offer the explicit conversational teaching path.
+
+**Evidence:** The isolated result selected
+`attributable_dream_reflection`, answered `No—not yet`, offered no learning-gap
+invitation, created no question handoff, and wrote no memory. The original long
+cross-domain scenario passed. Ten direct conversational-teaching checks passed,
+and the final affected teaching, Dream, visible-speech, and long-scenario slice
+passed 39 checks. Python compilation passed. Diff verification reports only
+expected Windows line-ending notices.
+
+**Boundaries:** No pending Dream content entered Chat. No genuine learning-gap
+behavior was disabled. Ordinary conversation remains non-teaching unless the
+existing explicit conditions are met. No resident Chat or state changed, and
+no Memory, Dream, Study, identity, personality, Vys, governance, authority,
+autonomy, training, LoRA, perception, embodiment, Tendril, or external action
+changed. No live probe, stress test, package, or reinstall ran.
+
+**Next:** Checkpoint the source repair. Package/reinstall only if Aleks asks;
+one exact gentle disposable-state replay is sufficient afterward.
