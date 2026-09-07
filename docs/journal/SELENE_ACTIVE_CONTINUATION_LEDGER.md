@@ -1,11 +1,11 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-06
+Last refreshed: 2026-09-07
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
-G13 through G15 remain taught and installed; the post-install cultivation
-repair for gap-invitation grammar and stale gap composition is source-verified
-but not yet repackaged
+G13 through G15 remain taught and installed; the social-expression handoff
+cultivation repair is source-verified and checkpointed but not packaged or
+installed
 
 ## Purpose
 
@@ -18,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest social-expression handoff cultivation checkpoint: `f1a0ecc`
+  (`Connect social expression handoff`)
 - Latest G15 source and teaching checkpoint: `af243ac`
   (`Teach multi-source dialogue functions`)
 - Packaged source and pre-install documentation checkpoint: `c58d3e9`
@@ -65,9 +67,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this installed-verification documentation
-  checkpoint: local `evidence` is four commits ahead of `origin/evidence`;
-  confirm again before any later commit or push
+- Current remote relation before this ledger refresh: local `evidence` is
+  eight commits ahead of `origin/evidence`; confirm again before any later
+  commit or push
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -707,6 +709,30 @@ git log -5 --oneline
   `B9D833F1BB34CA9C00BA7B3526CFA28DC638280CF49524370F5D5114CACD2772`.
   Do not reteach G15 or repeat the repaired-path replay.
 
+## Social Expression Handoff Cultivation
+
+- Checkpoint `f1a0ecc` repairs a source-level ownership seam: the specialized
+  social realizer previously took control before it could consume Affect
+  Expression and Relational Expression Range selections.
+- The social planner now runs after expression-range selection and receives an
+  inspectable handoff for selected channels, affect posture, conversational
+  energy, pragmatic continuity, and approved language mechanisms.
+- A bright or relationally warranted greeting may author one warm current-turn
+  stance. A plain unmarked greeting retains the quieter presence path. Warmth
+  is available, not compulsory.
+- No whole-response script, teaching wording, relationship fact, durable
+  emotion record, fact, memory, promise, or authority is introduced.
+- The final affected slice passed 37 checks; six additional active-Chat
+  compatibility checks passed independently. Python compilation passed.
+- One broader filtered run exposed a separate multi-domain Dream check whose
+  selected source was `learning_gap_invitation`. It is not repaired or treated
+  as a social-expression failure; revisit only if it recurs or Aleks selects
+  it for cultivation.
+- Evidence:
+  `docs/evidence/SELENE_SOCIAL_EXPRESSION_HANDOFF_CULTIVATION_20260907.md`.
+- This repair is source-only. It has not been packaged or installed. Resident
+  state remains 96/96 and was not mutated.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -767,10 +793,19 @@ teaching bridge committed at `8c0154e` and the response-composition cultivation
 repair committed at `61242fb` are installed. The configured resident language
 shelf remains 96/96.
 
-The exact resume point is ordinary use or the next explicitly selected
-teaching phase. Do not repeat G13, G14, or G15 teaching, the repaired learning
-replay, or a broad Q&A battery. The downloaded source corpora and private
-20-interaction review stay ignored and unavailable to runtime.
+The social-expression handoff cultivation repair is committed at `f1a0ecc` but
+is not packaged or installed. The exact resume point is to package/reinstall
+only if Aleks requests it, followed by at most one gentle disposable-state
+bright-versus-neutral greeting contrast. Otherwise continue ordinary use or
+the next explicitly selected teaching phase. Do not repeat G13, G14, or G15
+teaching, the repaired learning replay, or a broad Q&A battery. The downloaded
+source corpora and private 20-interaction review stay ignored and unavailable
+to runtime.
+
+The separate Dream/source-selection observation from the broader filtered run
+is a cultivation note, not part of this repair. Investigate it only if it
+recurs or Aleks explicitly selects it; do not patch it while resuming unrelated
+work.
 
 The private Aleks/Selene corpus remains available through authenticated,
 post-transfer, read-only continuity recall. It is not generic language

@@ -1,7 +1,9 @@
 # Selene Social Expression Handoff Cultivation
 
-Date: 2026-09-07  
-Scope: NLO social-realization handoff  
+Date: 2026-09-07
+
+Scope: NLO social-realization handoff
+
 Status: source verified; not packaged or installed
 
 ## Observation
