@@ -1805,17 +1805,6 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     corrected_meaning = str(correction_refinement.get("corrected_meaning") or "").strip()
     if intent == "receive_correction" and not corrected_meaning:
         corrected_meaning = _correction_content(prompt).rstrip(". ")
-    social_act_plan = build_social_act_plan(
-        {
-            "intent": intent,
-            "prompt": prompt,
-            "content_seed": meaning.get("content_seed") or "",
-            "corrected_meaning": corrected_meaning,
-            "turn_count": (meaning.get("conversation_context") or {}).get("turn_count") or 0,
-            "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
-            "relational_context": meaning.get("relational_context") or {},
-        }
-    )
     quotation_echo_plan = build_quotation_echo_plan(
         {
             "prompt": prompt,
@@ -1862,6 +1851,21 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "epistemic_composition": meaning.get("epistemic_composition") or {},
             "epistemic_answer_state": meaning.get("epistemic_answer_state") or {},
             "exploratory_reasoning": exploratory_reasoning,
+        }
+    )
+    social_act_plan = build_social_act_plan(
+        {
+            "intent": intent,
+            "prompt": prompt,
+            "content_seed": meaning.get("content_seed") or "",
+            "corrected_meaning": corrected_meaning,
+            "turn_count": (meaning.get("conversation_context") or {}).get("turn_count") or 0,
+            "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
+            "relational_context": meaning.get("relational_context") or {},
+            "relational_expression_range": relational_expression_range,
+            "language_teaching_guidance": meaning.get("language_teaching_guidance") or {},
+            "conversational_energy": conversational_energy,
+            "pragmatic_continuity": pragmatic_continuity,
         }
     )
     contextual_composition_plan = build_contextual_composition_plan(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from selene.affect_expression import build_affect_expression_guidance
 from selene.chat_intent import classify_chat_intent
 from selene.db import connect, init_db
 from selene.native_language_organ import realize_native_language
@@ -43,6 +44,130 @@ def test_social_plan_exposes_semantic_acts_without_claiming_voice_or_internal_st
     realized = realize_social_act_plan(plan, prompt="Good morning Selene!", variation_key="spacious-greeting")
     assert "\n\n" in realized["candidate_text"]
     assert realized["meaning_preserved"] is True
+
+
+def test_bright_greeting_consumes_selected_warmth_instead_of_collapsing_to_presence(tmp_path):
+    conn = _conn(tmp_path)
+    prompt = "Good morning Selene!"
+    intent = classify_chat_intent(prompt)
+    relational = interpret_relational_context(prompt)
+    affect = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": intent,
+            "relational_context": relational,
+        },
+    )
+
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": intent,
+            "relational_context": relational,
+            "affect_expression_guidance": affect,
+            "conversation_context": {"turn_count": 5, "recent_assistant_texts": []},
+        },
+    )
+
+    plan = result["discourse_plan"]["social_act_plan"]
+    realized = result["discourse_plan"]["social_act_realization"]
+    assert [item["act"] for item in plan["acts"]] == [
+        "return_greeting",
+        "author_greeting_stance",
+    ]
+    assert plan["expression_handoff"]["warm_greeting_selected"] is True
+    assert "warmth" in plan["expression_channels_available_to_social_realizer"]
+    assert "warmth" in realized["realized_expression_channels"]
+    assert realized["response_stance_authored"] is True
+    assert realized["durable_emotion_record_created"] is False
+    assert realized["external_fact_created"] is False
+    assert "right here" not in result["candidate_text"].lower()
+    assert any(
+        phrase in result["candidate_text"].lower()
+        for phrase in ("good to", "glad", "energy", "start the morning")
+    )
+    assert "?" not in result["candidate_text"]
+
+
+def test_plain_greeting_keeps_neutral_presence_available(tmp_path):
+    conn = _conn(tmp_path)
+    prompt = "Good morning."
+    intent = classify_chat_intent(prompt)
+    relational = interpret_relational_context(prompt)
+    affect = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": intent,
+            "relational_context": relational,
+        },
+    )
+
+    result = realize_native_language(
+        conn,
+        {
+            "prompt": prompt,
+            "intent_decision": intent,
+            "relational_context": relational,
+            "affect_expression_guidance": affect,
+            "conversation_context": {"turn_count": 2, "recent_assistant_texts": []},
+        },
+    )
+
+    plan = result["discourse_plan"]["social_act_plan"]
+    realized = result["discourse_plan"]["social_act_realization"]
+    assert [item["act"] for item in plan["acts"]] == [
+        "return_greeting",
+        "signal_presence",
+    ]
+    assert plan["expression_handoff"]["warm_greeting_selected"] is False
+    assert realized["response_stance_authored"] is False
+    assert realized["durable_emotion_record_created"] is False
+
+
+def test_social_expression_handoff_carries_guidance_without_copying_wording():
+    plan = build_social_act_plan(
+        {
+            "intent": "greet_presently",
+            "prompt": "Good morning Selene!",
+            "affect_expression_guidance": {
+                "expression_posture": "warm_available",
+                "current_turn_cues": ["friendly_check_in"],
+                "dimensions": {
+                    "warmth": "available_not_forced",
+                    "enthusiasm": "warm_available",
+                },
+            },
+            "relational_expression_range": {
+                "selected_channels": [
+                    {
+                        "channel": "warmth",
+                        "mode": "available_not_forced",
+                        "required": False,
+                    }
+                ]
+            },
+            "language_teaching_guidance": {
+                "used": True,
+                "lesson_keys": ["conversation.breadth.greeting"],
+                "response_moves": ["meet_relational_tone_briefly"],
+            },
+        }
+    )
+
+    handoff = plan["expression_handoff"]
+    assert handoff["approved_language_guidance_used"] is True
+    assert handoff["approved_language_lesson_keys"] == [
+        "conversation.breadth.greeting"
+    ]
+    assert handoff["approved_language_response_moves"] == [
+        "meet_relational_tone_briefly"
+    ]
+    assert handoff["language_guidance_supplies_wording"] is False
+    assert handoff["relational_context_supplies_wording"] is False
+    assert handoff["expression_is_available_not_compulsory"] is True
 
 
 def test_direct_affection_does_not_force_task_scaffolding_or_echo_wording():

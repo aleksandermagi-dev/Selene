@@ -4574,3 +4574,41 @@ or embodiment state changed.
 **Next:** Return to ordinary use or the next explicitly selected teaching
 phase. Do not reteach G15 or repeat the repaired learning replay. Phase 9
 perception remains separate and unstarted.
+
+### 2026-09-07 — Cultivation opens the social expression handoff
+
+**Observation:** `Good morning Selene!` reached the correct greeting route.
+Affect Expression selected `warm_available`, and the Relational Expression
+Range selected warmth and the rest of the fitting current-turn shape. The
+specialized social realizer nevertheless reduced that signal to a generic
+presence clause such as `I'm right here` before the broader conversational
+realizer could use it.
+
+**Root repair:** The social planner now runs after expression-range selection
+and receives an inspectable handoff carrying affect, relational expression,
+energy, continuity, and approved language-mechanism guidance. A bright or
+relationally warranted greeting may author one current-turn warm stance;
+ordinary unmarked greetings retain the quieter presence path. The change is at
+the ownership seam, not a phrase-trigger patch, whole-response script, or Voice
+override.
+
+**Evidence:** The final directly affected slice passed 37 focused social,
+affect, expression-range, and full active-Chat checks. Six additional existing
+social, warmth, relational, and long-request active-Chat compatibility checks
+passed independently. Python compilation passed. Diff verification reports
+only expected Windows line-ending notices. A broader filtered run also surfaced a separate
+Dream/learning-gap source-selection assertion after a long multi-domain
+sequence; it was recorded without opportunistically widening this repair.
+
+**Boundaries:** Warmth remains available rather than compulsory. A current-turn
+relational stance is not a durable emotion record, relationship fact, memory,
+or persona. No fact, certainty, source, identity, personality, Vys, law,
+governance, authority, autonomy, training, LoRA, Dream, Study, perception,
+embodiment, Tendril, or external-action state changed. No resident Chat or
+resident-state mutation occurred. No package, reinstall, live probe, or stress
+test ran.
+
+**Next:** Checkpoint the source repair. Package/reinstall only if Aleks asks;
+then use one gentle disposable-state bright-versus-neutral greeting contrast.
+Do not reopen broad Q&A or teaching. Investigate the separate Dream source
+selection only if it recurs or Aleks selects it for cultivation.

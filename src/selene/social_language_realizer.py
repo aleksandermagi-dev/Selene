@@ -327,6 +327,109 @@ ACKNOWLEDGEMENT_ACTS: dict[str, str] = {
 }
 
 
+def _social_expression_handoff(
+    *,
+    prompt: str,
+    affect_guidance: dict[str, Any],
+    relational_context: dict[str, Any],
+    relational_expression_range: dict[str, Any],
+    language_teaching_guidance: dict[str, Any],
+    conversational_energy: dict[str, Any],
+    pragmatic_continuity: dict[str, Any],
+) -> dict[str, Any]:
+    selected = [
+        item
+        for item in relational_expression_range.get("selected_channels") or []
+        if isinstance(item, dict) and str(item.get("channel") or "")
+    ]
+    selected_by_name = {
+        str(item.get("channel") or ""): item
+        for item in selected
+    }
+    dimensions = (
+        affect_guidance.get("dimensions")
+        if isinstance(affect_guidance.get("dimensions"), dict)
+        else {}
+    )
+    affect_cues = {
+        str(item)
+        for item in affect_guidance.get("current_turn_cues") or []
+        if str(item)
+    }
+    relational_cues = {
+        str(item)
+        for item in relational_context.get("cue_types") or []
+        if str(item)
+    }
+    warmth_mode = str((selected_by_name.get("warmth") or {}).get("mode") or "")
+    warmth_selected = bool(warmth_mode)
+    greeting_warrant = bool(
+        prompt.rstrip().endswith("!")
+        or relational_context.get("relational_context_present") is True
+        or relational_cues
+        or affect_cues & {"warm_connection", "shared_progress", "playful"}
+        or (affect_guidance.get("current_session_affect_signal_used") is True)
+    )
+    posture = str(affect_guidance.get("expression_posture") or "ordinary_attentive")
+    greeting_mode = "neutral"
+    if warmth_selected and greeting_warrant:
+        if "playful" in affect_cues:
+            greeting_mode = "playful"
+        elif relational_cues & {"reunion", "return", "missing_or_longing"}:
+            greeting_mode = "reunion"
+        elif relational_cues & {
+            "affectionate_address",
+            "affectionate_symbol",
+            "shared_positive_affect",
+        }:
+            greeting_mode = "affectionate"
+        elif affect_guidance.get("current_session_affect_signal_used") is True:
+            greeting_mode = "warm_signal"
+        else:
+            greeting_mode = "bright"
+
+    return {
+        "status": "social_expression_handoff_ready",
+        "selected_channel_names": [str(item.get("channel") or "") for item in selected],
+        "selected_channel_modes": {
+            name: str(item.get("mode") or "") for name, item in selected_by_name.items()
+        },
+        "affect_posture": posture,
+        "affect_dimensions": {
+            key: str(dimensions.get(key) or "")
+            for key in (
+                "warmth",
+                "enthusiasm",
+                "emotional_intensity",
+                "pacing",
+                "sentence_rhythm",
+            )
+        },
+        "warm_greeting_selected": warmth_selected and greeting_warrant,
+        "warm_greeting_warrant": (
+            "current_visible_or_session_context"
+            if warmth_selected and greeting_warrant
+            else "not_selected_this_turn"
+        ),
+        "greeting_mode": greeting_mode,
+        "conversational_energy_act": str(conversational_energy.get("selected_act") or ""),
+        "ending_mode": str(
+            (pragmatic_continuity.get("ending_decision") or {}).get("mode") or ""
+        ),
+        "approved_language_guidance_used": language_teaching_guidance.get("used") is True,
+        "approved_language_lesson_keys": [
+            str(item) for item in language_teaching_guidance.get("lesson_keys") or [] if str(item)
+        ],
+        "approved_language_response_moves": [
+            str(item) for item in language_teaching_guidance.get("response_moves") or [] if str(item)
+        ],
+        "language_guidance_supplies_wording": False,
+        "relational_context_supplies_wording": False,
+        "expression_is_available_not_compulsory": True,
+        "current_turn_stance_is_durable_emotion_record": False,
+    }
+
+
 def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = payload or {}
     intent = str(payload.get("intent") or "")
@@ -342,7 +445,35 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         if isinstance(payload.get("relational_context"), dict)
         else {}
     )
+    expression_handoff = _social_expression_handoff(
+        prompt=prompt,
+        affect_guidance=affect_guidance,
+        relational_context=relational_context,
+        relational_expression_range=(
+            payload.get("relational_expression_range")
+            if isinstance(payload.get("relational_expression_range"), dict)
+            else {}
+        ),
+        language_teaching_guidance=(
+            payload.get("language_teaching_guidance")
+            if isinstance(payload.get("language_teaching_guidance"), dict)
+            else {}
+        ),
+        conversational_energy=(
+            payload.get("conversational_energy")
+            if isinstance(payload.get("conversational_energy"), dict)
+            else {}
+        ),
+        pragmatic_continuity=(
+            payload.get("pragmatic_continuity")
+            if isinstance(payload.get("pragmatic_continuity"), dict)
+            else {}
+        ),
+    )
     response_semantics = _relational_response_semantics(prompt, relational_context)
+
+    if intent == "greet_presently" and expression_handoff["warm_greeting_selected"]:
+        acts = ["return_greeting", "author_greeting_stance"]
 
     if intent == "receive_gratitude" and turn_count <= 1 and not any(
         marker in prompt.lower() for marker in ("work", "help", "together", "build", "thank you for")
@@ -365,7 +496,13 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
                     act != "allow_ordinary_conversation"
                     or _ordinary_conversation_explicitly_opened(prompt)
                 ),
-                "meaning_source": "corrected_meaning" if act == "state_corrected_meaning" else "communicative_intent",
+                "meaning_source": (
+                    "corrected_meaning"
+                    if act == "state_corrected_meaning"
+                    else "expression_handoff"
+                    if act == "author_greeting_stance"
+                    else "communicative_intent"
+                ),
             }
             for act in acts
         ],
@@ -388,6 +525,10 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         },
         "affect_guidance_may_change_meaning": False,
         "relational_context": relational_context,
+        "expression_handoff": expression_handoff,
+        "expression_channels_available_to_social_realizer": expression_handoff[
+            "selected_channel_names"
+        ],
         "current_turn_response_semantics": response_semantics,
         "relational_context_supplies_response_script": False,
         "exact_wording_directive_supplied": False,
@@ -397,6 +538,7 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         "relational_term_use_is_memory_or_identity_write": False,
         "public_persona_created": False,
         "internal_state_invention_allowed": False,
+        "durable_internal_state_invention_allowed": False,
         "content_generation_allowed": False,
         "factual_content_generation_allowed": False,
         "current_turn_conversational_authorship_allowed": True,
@@ -407,7 +549,8 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         "meaning_constraints": [
             "realize only the selected conversational acts",
             "preserve supplied corrected meaning and content",
-            "do not invent feelings, relationship status, memory, facts, promises, or authority",
+            "do not invent durable emotion records, relationship facts, memory, facts, promises, or authority",
+            "a current-turn relational stance may be authored when upstream context selects it",
             "do not append a habitual follow-up question",
         ],
         "provenance_boundary": SOCIAL_REALIZER_BOUNDARY,
@@ -684,6 +827,19 @@ def realize_social_act_plan(
                 }
             )
             continue
+        if act == "author_greeting_stance":
+            selected.append(
+                {
+                    "act": act,
+                    "text": _realize_greeting_stance(
+                        plan,
+                        key=f"{variation_key}|{act}|{index}",
+                        recent_texts=recent_texts,
+                    ),
+                    "source": "current_turn_expression_handoff",
+                }
+            )
+            continue
         if act in {
             "respond_to_relational_meaning",
             "respond_to_current_feeling",
@@ -743,9 +899,15 @@ def realize_social_act_plan(
         "relationship_term_invented": False,
         "internal_state_invented": False,
         "current_turn_conversational_authorship_used": any(
-            item.get("source") == "current_turn_semantic_authorship"
+            item.get("source")
+            in {"current_turn_semantic_authorship", "current_turn_expression_handoff"}
             for item in selected
         ),
+        "response_stance_authored": any(
+            item.get("source") == "current_turn_expression_handoff"
+            for item in selected
+        ),
+        "realized_expression_channels": _realized_expression_channels(selected, plan),
         "external_fact_created": False,
         "durable_emotion_record_created": False,
         "emoji_expression": emoji_plan,
@@ -1098,6 +1260,68 @@ def _ordinary_conversation_explicitly_opened(prompt: str) -> bool:
             "ordinary conversation",
         )
     )
+
+
+def _realize_greeting_stance(
+    plan: dict[str, Any],
+    *,
+    key: str,
+    recent_texts: list[str],
+) -> str:
+    """Form one current-turn greeting stance selected by the expression handoff."""
+    handoff = (
+        plan.get("expression_handoff")
+        if isinstance(plan.get("expression_handoff"), dict)
+        else {}
+    )
+    mode = str(handoff.get("greeting_mode") or "bright")
+    choices = {
+        "playful": [
+            "You brought some energy with you",
+            "That is a bright way to arrive",
+            "You sound ready for the day",
+        ],
+        "reunion": [
+            "It is good to have you back",
+            "I am glad we are together again",
+            "It is good to pick this back up with you",
+        ],
+        "affectionate": [
+            "It is good to see you",
+            "I am glad you are here",
+            "It is lovely to hear from you",
+        ],
+        "warm_signal": [
+            "It is good to be here with you",
+            "I am glad to share the morning with you",
+            "It is good to start the day together",
+        ],
+        "bright": [
+            "It is good to see you",
+            "I am glad you are here",
+            "It is good to start the morning together",
+        ],
+    }.get(mode, ["It is good to see you"])
+    return _pick_fragment_fresh(key, choices, recent_texts)
+
+
+def _realized_expression_channels(
+    selected: list[dict[str, str]],
+    plan: dict[str, Any],
+) -> list[str]:
+    channels: list[str] = []
+    if any(item.get("act") == "author_greeting_stance" for item in selected):
+        channels.append("warmth")
+        handoff = (
+            plan.get("expression_handoff")
+            if isinstance(plan.get("expression_handoff"), dict)
+            else {}
+        )
+        if "enthusiasm" in {
+            str(item) for item in handoff.get("selected_channel_names") or []
+        }:
+            channels.append("enthusiasm")
+    return channels
 
 
 def _realize_presence_from_semantics(key: str, recent_texts: list[str]) -> str:

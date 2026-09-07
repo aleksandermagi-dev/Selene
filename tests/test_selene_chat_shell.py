@@ -2654,6 +2654,18 @@ def test_active_selene_chat_handles_social_turns_with_immediate_context(tmp_path
     assert reassurance["dialogue_workspace"]["last_dialogue_act"] == "reassurance_received"
     assert reassurance["dialogue_workspace"]["memory_write_active"] is False
     assert farewell["intent_decision"]["intent"] == "farewell"
+    greeting_social = greeting["native_language_organ"]["discourse_plan"]
+    assert [item["act"] for item in greeting_social["social_act_plan"]["acts"]] == [
+        "return_greeting",
+        "author_greeting_stance",
+    ]
+    assert "warmth" in greeting_social["social_act_realization"][
+        "realized_expression_channels"
+    ]
+    assert any(
+        marker in greeting["candidate_text"].lower()
+        for marker in ("good to", "glad", "lovely")
+    )
     assert len({greeting["candidate_text"], reassurance["candidate_text"], farewell["candidate_text"]}) == 3
     for item in (greeting, reassurance, farewell):
         social_plan = item["native_language_organ"]["discourse_plan"]["social_act_plan"]
@@ -2664,6 +2676,38 @@ def test_active_selene_chat_handles_social_turns_with_immediate_context(tmp_path
         assert "specific response beyond acknowledging" not in item["candidate_text"]
         assert "repeated_recent_response" not in item["voice_preview"]["evaluation"]["flags"]
         _assert_locked(item)
+
+
+def test_active_chat_bright_greeting_reaches_authored_warmth(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Good morning Selene!"},
+    )["result"]
+
+    discourse = result["native_language_organ"]["discourse_plan"]
+    assert [item["act"] for item in discourse["social_act_plan"]["acts"]] == [
+        "return_greeting",
+        "author_greeting_stance",
+    ]
+    assert discourse["social_act_plan"]["expression_handoff"][
+        "warm_greeting_selected"
+    ] is True
+    assert "warmth" in discourse["social_act_realization"][
+        "realized_expression_channels"
+    ]
+    assert "right here" not in result["candidate_text"].lower()
+    assert any(
+        marker in result["candidate_text"].lower()
+        for marker in ("good to", "glad", "energy", "start the morning")
+    )
+    assert result["memory_write_active"] is False
+    assert result["training_allowed"] is False
+    _assert_locked(result)
 
 
 def test_active_selene_chat_receipt_check_is_direct_and_skips_legacy_dry_run(tmp_path):
