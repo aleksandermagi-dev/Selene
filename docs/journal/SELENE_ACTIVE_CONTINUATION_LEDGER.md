@@ -4,8 +4,8 @@ Last refreshed: 2026-09-07
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; current-session decision
-continuity cultivation is source-complete and focused-verification green but
-not packaged or installed
+continuity cultivation is checkpointed and focused-verification green but not
+packaged or installed
 
 ## Purpose
 
@@ -18,9 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
-- Current source edge: current-session decision continuity, semantic-owner
-  completion, bounded manner contrast, callback restoration, and open-share
-  surface cleanup are implemented and awaiting checkpoint
+- Latest current-session decision continuity checkpoint: `eebec64`
+  (`Cultivate current-session decision continuity`)
 - Latest current-turn-owner learning-gap routing checkpoint: `dfab5eb`
   (`Respect current answer owner before teaching`)
 - Latest social-expression handoff cultivation checkpoint: `f1a0ecc`
@@ -73,7 +72,7 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  eleven commits ahead of `origin/evidence`; confirm again before any later
+  thirteen commits ahead of `origin/evidence`; confirm again before any later
   commit or push
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
@@ -853,9 +852,9 @@ shelf remains 96/96.
 
 The social-expression handoff repair is committed at `f1a0ecc`, and the
 current-turn-owner learning-gap repair is committed at `dfab5eb`. The
-current-session decision continuity repair is source-complete and focused-
-verification green; checkpoint hashes should be added after commit. None of
-these September 7 source repairs is packaged or installed.
+current-session decision continuity repair is committed at `eebec64` and
+focused-verification green. None of these September 7 source repairs is
+packaged or installed.
 
 The exact resume point is to package/reinstall only if Aleks requests it,
 followed by one gentle disposable-state confirmation of the repaired decision
