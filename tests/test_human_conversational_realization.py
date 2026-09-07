@@ -156,6 +156,37 @@ def test_contractions_do_not_corrupt_embedded_it_is_clause():
     assert "decide it's" not in result["candidate_text"]
 
 
+def test_complete_supported_surface_allows_wording_without_reauthoring_prediction():
+    source = (
+        "My best prediction is the slow but reliable plan. It is revisable; "
+        "I would update it if the premises changed."
+    )
+    plan = build_human_conversational_plan(
+        {
+            "epistemic_composition": {
+                "dominant_state": "bounded_prediction",
+                "parts": [{"epistemic_state": "bounded_prediction"}],
+            },
+            "exploratory_reasoning": {
+                "selected_for_answer": True,
+                "response_kind": "bounded_prediction",
+                "response_seed": "A different generic prediction.",
+            },
+            "supported_surface_available": True,
+            "preserve_complete_supported_surface": True,
+        }
+    )
+    result = realize_human_conversation(source, plan)
+
+    assert result["candidate_text"] == (
+        "My best prediction is the slow but reliable plan. It's revisable; "
+        "I'd update it if the premises changed."
+    )
+    assert "different generic prediction" not in result["candidate_text"].lower()
+    assert "preserve_complete_supported_surface" in result["operations"]
+    _assert_bounded(result)
+
+
 def test_exact_domain_and_hard_boundary_remain_preserved():
     exact = build_human_conversational_plan(
         {

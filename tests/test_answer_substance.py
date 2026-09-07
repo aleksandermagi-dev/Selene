@@ -332,3 +332,24 @@ def test_visible_option_revision_uses_latest_session_description():
     assert result["answer_kind"] == "grounded_visible_option_revision"
     assert "changed from wide but wobbly to wide and steady now" in result["answer"].lower()
     assert "other option's last supplied description stayed unchanged" in result["answer"].lower()
+
+
+def test_same_action_manner_contrast_answers_the_visible_comparison_directly():
+    result = build_answer_substance(
+        "What is the difference between moving quickly and moving carefully?"
+    )
+
+    assert result["answer_kind"] == "bounded_same_action_manner_contrast"
+    assert "speed" in result["answer"].lower()
+    assert "attention" in result["answer"].lower()
+    assert "neither is always better" in result["answer"].lower()
+    assert result["support_basis"] == "current_prompt_and_bounded_lexical_meaning"
+    assert result["external_fact_claimed"] is False
+
+
+def test_same_action_manner_contrast_accepts_compare_with_wording():
+    result = build_answer_substance("Compare working carefully with working quickly.")
+
+    assert result["answer_kind"] == "bounded_same_action_manner_contrast"
+    assert "working carefully" in result["answer"].lower()
+    assert "working quickly" in result["answer"].lower()

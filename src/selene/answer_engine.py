@@ -783,17 +783,39 @@ def run_comparison_planning_answer(
         )
 
     source_refs = _answer_source_refs(request, payload)
+    conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
+    session_decision = (
+        conversation_spine.get("session_decision_context")
+        if isinstance(conversation_spine.get("session_decision_context"), dict)
+        else {}
+    )
+    session_decision_answer = (
+        truncate(str(session_decision.get("response_seed") or ""), 5000).strip()
+        if session_decision.get("available") is True
+        and "comparison" in {
+            str(item) for item in session_decision.get("supported_operations") or []
+        }
+        else ""
+    )
     initial_run = initial_run or run_intelligence_os_reason(
         conn,
         _intelligence_os_payload(request["prompt"], source_refs, payload),
     )
+    if session_decision_answer:
+        initial_run = {
+            **initial_run,
+            "best_current_answer": session_decision_answer,
+            "confidence": "bounded_current_session",
+            "reasoning_summary": "The visible option descriptions were compared under one shared current-session standard.",
+            "source_refs": [*source_refs, "conversation_spine:visible_session_decision"],
+            "session_decision_context_used": True,
+        }
     initial_answer = truncate(str(initial_run.get("best_current_answer") or ""), 5000).strip()
     coverage_plan = {
         "response_obligations": [
             item for item in request["dialogue_obligations"] if item.get("required") is not False
         ]
     }
-    conversation_spine = payload.get("conversation_spine") if isinstance(payload.get("conversation_spine"), dict) else {}
     initial_coverage = evaluate_response_coverage(
         coverage_plan,
         initial_answer,

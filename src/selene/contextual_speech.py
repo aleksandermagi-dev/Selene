@@ -88,6 +88,11 @@ def inspect_contextual_follow_up(
         normalized,
     ):
         kind, marker = "comparison_follow_up", "difference_in_previous_answer"
+    elif previous_assistant_preview and re.search(
+        r"\bwhat (?:were|was) (?:we|you) (?:preserving|protecting|keeping) (?:there|then|in that)\b",
+        normalized,
+    ):
+        kind, marker = "immediate_answer_callback", "preservation_in_previous_answer"
     elif re.match(r"^(?:one\s+)?(?:refinement|constraint|adjustment|revision)\s*:", normalized):
         kind, marker = "constraint_refinement", "explicit_session_refinement"
     elif re.search(
@@ -203,7 +208,7 @@ def inspect_contextual_follow_up(
             "rephrase_request", "viewpoint_follow_up", "alternative_reference",
             "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request",
             "named_callback", "meaning_correction", "answer_development",
-            "immediate_user_callback", "comparison_follow_up",
+            "immediate_user_callback", "immediate_answer_callback", "comparison_follow_up",
             "clarification_fulfillment",
         },
         "session_scoped_only": True,
@@ -282,7 +287,7 @@ def apply_contextual_intent(
                 "confidence": "high",
             }
         )
-    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback", "immediate_user_callback", "answer_development", "comparison_follow_up", "clarification_fulfillment"}:
+    elif kind in {"reason_follow_up", "continuation", "elaboration", "example_request", "rephrase_request", "viewpoint_follow_up", "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request", "named_callback", "immediate_user_callback", "immediate_answer_callback", "answer_development", "comparison_follow_up", "clarification_fulfillment"}:
         result.update(
             {
                 "intent": "reasoning",
@@ -386,6 +391,15 @@ def contextual_response_seed(
     if kind == "immediate_user_callback" and previous_user:
         callback_subject = _bounded_user_callback_subject(previous_user)
         return f"You're celebrating this result: {callback_subject}."
+
+    if kind == "immediate_answer_callback" and previous:
+        previous_lower = previous.lower()
+        if "awaiting" in previous_lower and "review" in previous_lower and "shape my answer" in previous_lower:
+            return (
+                "We were preserving the review boundary: unreviewed reflections can remain visible for review, "
+                "but they do not shape my current answer until that review is complete."
+            )
+        return _bounded_preservation_callback(previous)
 
     if kind == "named_callback" and matched_landmarks:
         callback_prompt = str(contextual.get("prompt") or "").lower()
@@ -669,6 +683,16 @@ def _bounded_user_callback_subject(previous_user: str) -> str:
     if value[0].isupper():
         value = value[0].lower() + value[1:]
     return truncate(value, 620)
+
+
+def _bounded_preservation_callback(previous: str) -> str:
+    clean = " ".join(str(previous or "").split()).strip()
+    if not clean:
+        return "I do not have the previous point clearly enough to name what we were preserving."
+    reason = re.search(r"\bso\s+(.+?)(?:[.!?]|$)", clean, flags=re.IGNORECASE)
+    if reason:
+        return f"We were preserving this distinction: {reason.group(1).strip(' ,;:')}."
+    return f"We were preserving the distinction in the previous answer: {truncate(clean, 420)}"
 
 
 def _grounded_task_summary_clauses(

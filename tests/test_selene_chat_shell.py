@@ -5224,3 +5224,102 @@ def test_selene_reasoning_lessons_are_idempotent_review_only_packets(tmp_path):
         "SELECT COUNT(*) FROM b_teaching_packets WHERE source_refs LIKE '%manual:selene_reasoning_method_notes%'"
     ).fetchone()[0]
     assert packet_count >= 1
+
+
+def test_current_session_decision_survives_comparison_revision_disagreement_and_prediction(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    prompts = [
+        (
+            "Suppose we have three plans: one fast but fragile, one slow but reliable, "
+            "and one balanced. Compare them and recommend one."
+        ),
+        "Actually, the deadline moved closer, but reliability still matters most. What changes?",
+        "I think the balanced plan is still best. Do you disagree?",
+        "If evidence later showed the balanced plan fails twice as often, what would you update?",
+        "My best guess is that the reliable plan wins. What is your best prediction from what we have?",
+    ]
+    results = []
+    session_id = None
+    for prompt in prompts:
+        payload = {"text": prompt}
+        if session_id is not None:
+            payload["session_id"] = session_id
+        result = route_request(conn, "selene_chat.send", payload)["result"]
+        session_id = result["session_id"]
+        results.append(result)
+
+    opening, revision, disagreement, hypothetical, prediction = results
+    assert all(
+        result["visible_speech_seed"]["selected_source_id"] == "current_session_facts"
+        for result in results
+    )
+    assert all(result["response_coverage"]["all_required_addressed"] is True for result in results)
+    assert all(result["learning_gap_invitation"]["offered"] is False for result in results)
+    assert all(
+        result["native_language_organ"]["meaning_packet"][
+            "complete_current_session_decision"
+        ]
+        is True
+        for result in results
+    )
+    assert "fast but fragile plan" in opening["candidate_text"]
+    assert "slow but reliable plan" in opening["candidate_text"]
+    assert "balanced plan" in opening["candidate_text"]
+    assert "visible option descriptions were compared" not in opening["candidate_text"].lower()
+    assert "one assumption:" not in opening["candidate_text"].lower()
+    assert "deadline moved closer" in revision["candidate_text"]
+    assert "slow but reliable plan" in revision["candidate_text"]
+    assert "corrected meaning" not in revision["candidate_text"].lower()
+    assert disagreement["candidate_text"].lower().count("disagree") == 1
+    assert hypothetical["candidate_text"].startswith("If that evidence held")
+    assert "slow but reliable plan" in prediction["candidate_text"]
+    assert "revisable prediction" in prediction["candidate_text"]
+    assert "latest reported evidence" not in prediction["candidate_text"]
+    assert "under comparable conditions" not in prediction["candidate_text"].lower()
+    assert "�" not in prediction["candidate_text"]
+    assert prediction["metacognition"]["recommended_action"] == "answer_now"
+    for result in results:
+        _assert_locked(result)
+
+
+def test_active_chat_answers_a_bounded_same_action_manner_contrast(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "What is the difference between moving quickly and moving carefully?"},
+    )["result"]
+
+    assert result["visible_speech_seed"]["selected_source_id"] == "intelligence_os_answer"
+    assert "speed" in result["candidate_text"].lower()
+    assert "attention" in result["candidate_text"].lower()
+    assert "neither is always better" in result["candidate_text"].lower()
+    assert result["response_coverage"]["all_required_addressed"] is True
+    assert result["metacognition"]["recommended_action"] == "answer_now"
+    assert result["learning_gap_invitation"]["offered"] is False
+    _assert_locked(result)
+
+
+def test_active_chat_reflects_an_open_share_without_leaking_attached_emoticon_punctuation(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "I am glad to be back. I finally feel ready to think again :)"},
+    )["result"]
+
+    assert "You are glad to be back." in result["candidate_text"]
+    assert "You finally feel ready to think again." in result["candidate_text"]
+    assert ":)." not in result["candidate_text"]
+    assert ". you" not in result["candidate_text"]
+    assert result["response_coverage"]["all_required_addressed"] is True
+    assert result["metacognition"]["recommended_action"] == "answer_now"
+    _assert_locked(result)

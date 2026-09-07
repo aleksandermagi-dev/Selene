@@ -6,11 +6,26 @@ from selene.db import connect, init_db
 from selene.native_language_organ import realize_native_language
 from selene.relational_context import interpret_relational_context
 from selene.social_language_realizer import (
+    _clean_visible_statement,
+    _perspective_shift,
     build_content_light_plan,
     build_social_act_plan,
     realize_acknowledgement,
     realize_social_act_plan,
 )
+
+
+def test_perspective_shift_preserves_sentence_initial_capitalization():
+    result = _perspective_shift("I am glad to be back. I finally feel ready to think again")
+
+    assert result == "You are glad to be back. You finally feel ready to think again"
+    assert ". you" not in result
+
+
+def test_clean_visible_statement_removes_an_attached_trailing_emoticon():
+    result = _clean_visible_statement("I finally feel ready to think again:)")
+
+    assert result == "I finally feel ready to think again"
 
 
 def _conn(tmp_path):

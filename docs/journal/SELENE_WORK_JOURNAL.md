@@ -4646,3 +4646,93 @@ changed. No live probe, stress test, package, or reinstall ran.
 
 **Next:** Checkpoint the source repair. Package/reinstall only if Aleks asks;
 one exact gentle disposable-state replay is sufficient afterward.
+
+### 2026-09-07 — Social and learning-gap repairs installed; gentle Q&A maps the next seam
+
+**Package and install:** Aleks authorized a verified Windows rebuild and fresh
+reinstall from source revision `55ddf29e7adebad8f34f66979a66d22ccc1ff975`.
+Packaging, health, startup, My Office readiness, mobile protection,
+local-process enforcement, and package privacy passed with zero warnings. The
+main frontend bundle remains 491.33 kB (gzip 109.20 kB) with no Vite size
+warning. Installer SHA-256 is
+`996CE30FCB8B013287D577F57A99AD1677B884DECC581A9B1FE1180CB269652B`;
+installed executable SHA-256 is
+`4085C3538F933D7BFDE8564D9859A72FC1065B75395B8E34CE5D149F02F1C6F9`;
+installed sidecar SHA-256 is
+`F6E4EE0CC18A556DFD08664B502FF23068D87E248F594E1D14AA42712BDF6568`.
+Code signing remains unconfigured.
+
+**Gentle installed Q&A:** Thirteen ordinary turns ran through the installed
+sidecar against a disposable copy of resident state with an isolated data
+directory and no SMS/email configuration. The warm greeting and current
+self-state were natural. The exact Dream-review question selected the Dream
+owner, answered directly, and created no teaching invitation. Affirmation,
+contextual emoji, and farewell also landed cleanly.
+
+**Cultivation findings:** A supplied planning thread exposed the next coherent
+connective seam. Direct contrast omitted the requested distinction; option
+comparison leaked owner/completion scaffolding; changed-constraint parsing
+preserved punctuation and opened teaching; disagreement lost the active
+comparison; unrelated approved knowledge displaced supplied evidence; a
+revisable prediction embedded garbled session context; and a short callback to
+the Dream answer became a false knowledge gap. Response Coverage and
+Metacognition caught several incomplete turns but incorrectly passed some
+topically overlapping semantic drift. One personal open-share reconstruction
+also retained awkward casing and smile-marker attachment.
+
+**Interpretation:** The installed repairs are sound. The remaining cluster is
+not primarily missing warmth or world knowledge. It is current-session
+proposition continuity across comparison, revision, disagreement, new evidence,
+prediction, and callback, followed by semantic-fit validation and surface
+cleanup. No Q&A finding was repaired during this pass.
+
+**Continuity:** Disposable state was removed and every test-started process was
+closed. Resident state remained byte-for-byte unchanged at SHA-256
+`CE7736FB4DD9A918C7FCE0C461A34210F6A4B848614E76B63E9D9061FBD24952`.
+No resident Chat, Memory, Dream, Study, teaching, identity, personality, Vys,
+governance, authority, autonomy, training, LoRA, perception, embodiment,
+Tendril, or external-action state changed.
+
+**Next:** Cultivate typed current-session proposition continuity and owner
+handoffs before more teaching or another broad Q&A. Repair semantic ownership
+and validation before surface grammar. Re-run only the failed turns and inverse
+cases.
+
+### 2026-09-07 — Cultivation repairs current-session decision continuity
+
+**Root finding:** The supplied five-turn planning exchange was not failing for
+lack of teaching. Its current decision owner formed the right answer, but
+generic exploration, approved-knowledge candidates, NLO recomposition,
+micro-moves, and metacognitive completion could compete after the answer was
+already complete. Conditional evidence could also be carried forward as if it
+had become an observation.
+
+**Repair:** Added a bounded current-session decision context as connective
+tissue rather than a new organ. It keeps visible options, properties,
+constraints, priorities, recommendation, disagreement, hypothetical evidence,
+and prediction state together. A completion receipt now survives arbitration
+and NLO and prevents downstream planners from authoring a second answer act.
+Hypothetical evidence remains conditional. The same batch restored the exact
+Dream callback, added a bounded same-action manner contrast, and corrected
+open-share capitalization and attached-emoticon cleanup.
+
+**Evidence:** 158 focused machinery and neighboring checks passed. Three exact
+active-Chat checks passed for the five-turn decision sequence, direct manner
+contrast, and open personal share. The decision sequence remained complete,
+revisable, free of a false learning gap, and selected current-session facts on
+every turn. Python compilation passed.
+
+**Broader debt check:** A wider affected-owner run passed 155 checks and
+reported nine failures. Three representative failures reproduced identically
+in a clean detached worktree at `55ddf29`; they predate this change and remain
+separate stabilization debt rather than repair regressions.
+
+**Boundaries:** All checks used disposable state. No resident state or external
+action changed. The repair creates no Memory, teaching, identity, personality,
+Vys, governance, authority, autonomy, training, LoRA, Dream, Study,
+perception, embodiment, or Tendril capability. It is source-only and has not
+been packaged or installed.
+
+**Next:** Checkpoint source, tests, evidence, journal, and continuation ledger.
+Package/reinstall only if Aleks requests it; afterward use one gentle exact
+decision-chain confirmation rather than another broad Q&A.

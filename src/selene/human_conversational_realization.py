@@ -167,6 +167,9 @@ def build_human_conversational_plan(
     social_owned = contextual.get("social_act_structure_owned_elsewhere") is True
     hard_boundary = payload.get("hard_boundary") is True
     supported_surface_available = payload.get("supported_surface_available") is True
+    preserve_complete_supported_surface = (
+        payload.get("preserve_complete_supported_surface") is True
+    )
     response_kind = str(exploratory.get("response_kind") or "")
     profile = (
         response_kind
@@ -247,6 +250,7 @@ def build_human_conversational_plan(
             "hard_boundary": hard_boundary,
             "social_structure_owned_elsewhere": social_owned,
             "supported_surface_available": supported_surface_available,
+            "preserve_complete_supported_surface": preserve_complete_supported_surface,
             "capability_first": bool(supported and missing),
             "supported_parts": supported,
             "missing_parts": missing_details,
@@ -323,7 +327,11 @@ def realize_human_conversation(
     fragments: list[str] = []
     operations: list[str] = []
 
-    if profile == "bounded_prediction":
+    if plan.get("preserve_complete_supported_surface") is True:
+        candidate = source
+        fragments = [source]
+        operations.append("preserve_complete_supported_surface")
+    elif profile == "bounded_prediction":
         candidate, fragments = _realize_prediction(exploratory, variation_key, recent)
         operations.append("realize_bounded_prediction_conversationally")
     elif profile == "open_hypothesis":

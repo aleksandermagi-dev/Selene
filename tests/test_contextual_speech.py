@@ -227,6 +227,24 @@ def test_topic_shift_is_not_treated_as_a_correction():
     assert result["preserve_active_topic"] is False
 
 
+def test_immediate_preservation_callback_recovers_the_visible_review_boundary():
+    previous = (
+        "The reflections are awaiting review, so they remain visible for review "
+        "but do not shape my answer yet."
+    )
+    follow_up = inspect_contextual_follow_up(
+        "What were we preserving there?",
+        _context(previous),
+    )
+    response = contextual_response_seed(follow_up)
+
+    assert follow_up["kind"] == "immediate_answer_callback"
+    assert follow_up["preserve_active_topic"] is True
+    assert "preserving the review boundary" in response
+    assert "do not shape my current answer" in response
+    assert follow_up["memory_write_active"] is False
+
+
 def test_dependency_answer_supports_example_rephrase_and_viewpoint_follow_ups():
     previous = (
         "Start with whichever option supplies a prerequisite the other one needs. "

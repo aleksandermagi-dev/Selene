@@ -934,6 +934,10 @@ def _ordinary_prompt_grounded_operation(
     if foundational:
         return foundational
 
+    manner_contrast = _manner_contrast_operation(prompt)
+    if manner_contrast:
+        return manner_contrast
+
     current_context_inference = build_current_context_inference(prompt, observations)
     if current_context_inference.get("eligible") is True:
         return {
@@ -1123,6 +1127,65 @@ def _visible_option_comparison_operation(
         "grounded_visible_option_comparison",
         "whether the stated stability still holds under the actual load",
         support_basis="current_prompt_and_recent_conversation",
+    )
+
+
+def _manner_contrast_operation(prompt: str) -> dict[str, Any]:
+    """Contrast two explicitly named manners of the same visible action.
+
+    The operation uses only bounded lexical meanings for the supplied manner
+    words. It does not infer an external outcome or declare either manner
+    universally better.
+    """
+
+    match = re.search(
+        r"\b(?:difference\s+between|compare|contrast)\s+"
+        r"(?P<left_action>[a-z]+ing)\s+(?P<left_manner>[a-z]+ly|fast)\s+"
+        r"(?:and|with|versus|vs\.?)\s+"
+        r"(?P<right_action>[a-z]+ing)\s+(?P<right_manner>[a-z]+ly|fast)\b",
+        " ".join(str(prompt or "").lower().replace("’", "'").split()),
+        flags=re.IGNORECASE,
+    )
+    if not match or match.group("left_action") != match.group("right_action"):
+        return {}
+    meanings = {
+        "quickly": ("speed and finishing sooner", "when urgency matters most"),
+        "fast": ("speed and finishing sooner", "when urgency matters most"),
+        "carefully": (
+            "attention, checking, and reducing preventable mistakes or harm",
+            "when the cost of an error matters most",
+        ),
+        "cautiously": (
+            "risk awareness and reducing avoidable harm",
+            "when uncertainty or the cost of harm matters most",
+        ),
+        "slowly": (
+            "using more time",
+            "when pace itself needs to be reduced; slowness does not automatically mean care",
+        ),
+        "deliberately": (
+            "intentional choice and attention to each step",
+            "when the reasoning behind the action matters most",
+        ),
+    }
+    left_manner = match.group("left_manner")
+    right_manner = match.group("right_manner")
+    if left_manner not in meanings or right_manner not in meanings:
+        return {}
+    action = match.group("left_action")
+    left_priority, left_fit = meanings[left_manner]
+    right_priority, right_fit = meanings[right_manner]
+    answer = (
+        f"{action.title()} {left_manner} puts more weight on {left_priority}. "
+        f"{action.title()} {right_manner} puts more weight on {right_priority}. "
+        f"The difference is what each manner prioritizes: the first fits {left_fit}, "
+        f"while the second fits {right_fit}. Neither is always better; the context decides the useful tradeoff."
+    )
+    return _plain_operation(
+        answer,
+        "bounded_same_action_manner_contrast",
+        "the urgency, risk, and cost of an error in the actual situation",
+        support_basis="current_prompt_and_bounded_lexical_meaning",
     )
 
 

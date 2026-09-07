@@ -3,9 +3,9 @@
 Last refreshed: 2026-09-07
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
-G13 through G15 remain taught and installed; the social-expression handoff
-and current-turn-owner learning-gap cultivation repairs are source-verified
-and checkpointed but not packaged or installed
+G13 through G15 remain taught and installed; current-session decision
+continuity cultivation is source-complete and focused-verification green but
+not packaged or installed
 
 ## Purpose
 
@@ -18,6 +18,9 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Current source edge: current-session decision continuity, semantic-owner
+  completion, bounded manner contrast, callback restoration, and open-share
+  surface cleanup are implemented and awaiting checkpoint
 - Latest current-turn-owner learning-gap routing checkpoint: `dfab5eb`
   (`Respect current answer owner before teaching`)
 - Latest social-expression handoff cultivation checkpoint: `f1a0ecc`
@@ -70,7 +73,7 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  ten commits ahead of `origin/evidence`; confirm again before any later
+  eleven commits ahead of `origin/evidence`; confirm again before any later
   commit or push
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
@@ -757,6 +760,37 @@ git log -5 --oneline
 - This repair is source-only and has not been packaged or installed. Resident
   state remains 96/96 and was not mutated.
 
+## Current-Session Decision Continuity Cultivation
+
+- The post-install Q&A showed one connective seam across prompt-supplied
+  comparison, changed constraint, disagreement, conditional evidence,
+  prediction, and callback. It was not primarily a teaching gap.
+- New `session_decision_context` connective tissue preserves typed visible
+  propositions and updates them within the current session. It is not an
+  organ, Memory class, retained-knowledge store, or authority owner.
+- A completed current-session decision now retains answer ownership through
+  arbitration, NLO, expression planning, Response Coverage, and
+  Metacognition. Generic exploration, unrelated knowledge, and second answer
+  acts cannot replace a completed supported response.
+- Hypothetical evidence supports its immediate conditional case without
+  silently becoming an observed fact on later turns.
+- The same cultivation restores the immediate Dream callback, answers bounded
+  same-action manner contrasts directly, preserves sentence capitalization,
+  and removes attached user emoticons before visible punctuation is formed.
+- Verification: 158 focused checks passed, plus three exact active-Chat checks
+  for the five-turn decision sequence, manner contrast, and open share.
+- A broader run passed 155 checks and reported nine older failures. Three
+  representative failures reproduced identically in a clean detached
+  worktree at `55ddf29`; treat them as pre-existing stabilization debt, not
+  current-repair regressions.
+- All checks used disposable state. Resident 96/96 teaching state and all
+  Memory, Dream, Study, identity, personality, Vys, governance, authority,
+  autonomy, training, external-action, perception, and embodiment state were
+  untouched.
+- This repair is source-only and has not been packaged or installed.
+- Evidence:
+  `docs/evidence/SELENE_POST_SOCIAL_ROUTING_INSTALL_GENTLE_QNA_20260907.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -818,14 +852,19 @@ repair committed at `61242fb` are installed. The configured resident language
 shelf remains 96/96.
 
 The social-expression handoff repair is committed at `f1a0ecc`, and the
-current-turn-owner learning-gap repair is committed at `dfab5eb`. Neither is
-packaged or installed. The exact resume point is to package/reinstall only if
-Aleks requests it, followed by at most one gentle disposable-state greeting
-contrast and one exact Dream-boundary replay. Otherwise continue ordinary use
-or the next explicitly selected teaching phase. Do not repeat G13, G14, or G15
-teaching, the earlier repaired learning replay, or a broad Q&A battery. The
-downloaded source corpora and private 20-interaction review stay ignored and
-unavailable to runtime.
+current-turn-owner learning-gap repair is committed at `dfab5eb`. The
+current-session decision continuity repair is source-complete and focused-
+verification green; checkpoint hashes should be added after commit. None of
+these September 7 source repairs is packaged or installed.
+
+The exact resume point is to package/reinstall only if Aleks requests it,
+followed by one gentle disposable-state confirmation of the repaired decision
+chain. Otherwise continue ordinary use or the next explicitly selected
+teaching phase. Do not repeat G13, G14, or G15 teaching, the earlier repaired
+learning replay, or a broad Q&A battery. Keep the nine known pre-existing
+Chat-owner failures as a separate bounded stabilization batch. The downloaded
+source corpora and private 20-interaction review stay ignored and unavailable
+to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,
 post-transfer, read-only continuity recall. It is not generic language

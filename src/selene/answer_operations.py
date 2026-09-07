@@ -259,6 +259,23 @@ def _execute_operation(
     operation: str,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
+    # A visible session decision has already consumed the speaker's options,
+    # priorities, and updates. Prefer that exact current-session owner result
+    # over a second generic exploratory pass over compressed wording.
+    decision_owners = [
+        item
+        for item in payload.get("visible_conversation_owners") or []
+        if isinstance(item, dict)
+        and str(item.get("kind") or "") == "visible_session_decision"
+    ]
+    if decision_owners:
+        decision_result = _visible_conversation_owner_result(
+            obligation,
+            operation,
+            {**payload, "visible_conversation_owners": decision_owners},
+        )
+        if decision_result:
+            return decision_result
     exploratory = _dict(payload.get("exploratory_reasoning"))
     if operation == "prediction":
         prediction = _dict(exploratory.get("prediction"))
@@ -881,7 +898,11 @@ def _visible_conversation_owner_result(
     surfaces = _sentences(text)
     if not surfaces:
         return {}
-    if operation == "method":
+    operation_fields = _dict(owner.get("operation_fields"))
+    supplied_fields = _dict(operation_fields.get(operation))
+    if supplied_fields:
+        fields = supplied_fields
+    elif operation == "method":
         fields = {
             "steps": surfaces,
             "basis": "visible current-session context",

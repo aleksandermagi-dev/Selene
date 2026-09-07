@@ -7,6 +7,7 @@ from typing import Any
 from .pragmatic_planner import build_pragmatic_plan
 from .conversation_continuity import resolve_conversation_continuity
 from .current_turn_fact_ledger import build_current_turn_fact_ledger
+from .session_decision_context import build_session_decision_context
 from .registry import truncate
 
 
@@ -244,6 +245,13 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         for item in current_turn_fact_ledger.get("facts") or []
         if isinstance(item, dict)
     ]
+    session_decision_context = build_session_decision_context(
+        {
+            "session_id": session_id,
+            "prompt": interpreted,
+            "conversation_events": payload.get("conversation_events") or [],
+        }
+    )
     active_topic = truncate(str(dialogue.get("active_topic") or ""), 500)
     topic_anchors = _unique_text(
         [
@@ -363,6 +371,7 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "current_turn_facts": current_turn_facts,
             "current_turn_owner_inputs": current_turn_fact_ledger.get("owner_inputs") or [],
             "current_turn_facts_precede_optional_retrieval": True,
+            "session_decision_context": session_decision_context,
             "open_obligations": obligations,
             "obligation_sequence": [str(item.get("id") or "") for item in obligations],
             "obligation_ledger": {

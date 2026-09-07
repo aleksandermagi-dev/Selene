@@ -1204,7 +1204,7 @@ def _explicit_feeling(value: str) -> tuple[str, str]:
 
 def _clean_visible_statement(value: str) -> str:
     text = " ".join(str(value or "").replace("’", "'").split()).strip()
-    text = re.sub(r"(?:\s|^)(?:<+3+|[:;]-?[)d]|x+d+)\s*$", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*(?:<+3+|[:;]-?[)d]|x+d+)\s*$", "", text, flags=re.IGNORECASE)
     text = re.sub(r"^(?:well|so|okay|ok|yeah|yes|honestly|certainly)[,;:\s]+", "", text, flags=re.IGNORECASE)
     text = re.sub(r"^(?:i think|i believe|i feel)(?: that)?\s+", "", text, flags=re.IGNORECASE)
     return text.strip(" .!?")
@@ -1242,8 +1242,12 @@ def _perspective_shift(value: str) -> str:
     )
     for pattern, replacement in replacements:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
-    if text:
-        text = text[0].lower() + text[1:]
+    text = re.sub(
+        r"(^|[.!?]\s+)(you)\b",
+        lambda match: f"{match.group(1)}You",
+        text,
+        flags=re.IGNORECASE,
+    )
     return text
 
 

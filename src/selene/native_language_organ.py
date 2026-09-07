@@ -460,6 +460,20 @@ def _build_language_result(
         if isinstance(plan.get("contextual_composition_plan"), dict)
         else {}
     )
+    if meaning.get("complete_current_session_decision") is True:
+        # This answer has already been reconstructed and completed by the
+        # visible current-session decision owner. NLO may realize its wording,
+        # but a second structural pass must not reorder options, add a parallel
+        # stance, or reintroduce generic reasoning support.
+        contextual_composition_plan = {
+            **contextual_composition_plan,
+            "content_recomposition_allowed": False,
+            "complete_supported_surface_locked": True,
+            "complete_supported_surface_lock_reason": (
+                "visible_current_session_decision_already_complete"
+            ),
+        }
+        plan["contextual_composition_plan"] = contextual_composition_plan
     if _typed_discourse_structure_requires_preservation(draft, discourse_loom):
         contextual_composition_plan = {
             **contextual_composition_plan,
@@ -474,6 +488,9 @@ def _build_language_result(
     )
     plan["contextual_composition"] = contextual_composition
     draft = str(contextual_composition.get("candidate_text") or draft)
+    complete_supported_surface = (
+        draft if meaning.get("complete_current_session_decision") is True else ""
+    )
     quotation_echo_realization = realize_quotation_echo(
         draft,
         plan.get("quotation_echo_plan"),
@@ -514,6 +531,11 @@ def _build_language_result(
     )
     plan["commitment_anomaly_realization"] = commitment_anomaly_realization
     draft = str(commitment_anomaly_realization.get("candidate_text") or draft)
+    if complete_supported_surface:
+        # Downstream expression planners remain inspectable, but none may add
+        # a second answer act after the current-session owner has completed the
+        # requested decision. Preserve the NLO-realized supported surface.
+        draft = complete_supported_surface
     candidate, revision = _revise_candidate(draft, meaning, plan)
     return {
         "status": "native_language_response_realized" if mode == "responsive" else "native_language_initiative_draft_ready",
@@ -1038,6 +1060,9 @@ def _meaning_packet(
         "content_source_id": content_source_id,
         "content_source_class": content_source_class,
         "content_source_release_allowed": visible_speech_seed.get("release_allowed") is True,
+        "complete_current_session_decision": (
+            payload.get("complete_current_session_decision") is True
+        ),
         "contextual_follow_up": contextual_follow_up,
         "figurative_interpretation": figurative_interpretation,
         "dream_reflection": dream_reflection,
@@ -1905,6 +1930,9 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "supported_surface_available": bool(
                 str(meaning.get("content_seed") or "").strip()
             ),
+            "preserve_complete_supported_surface": (
+                meaning.get("complete_current_session_decision") is True
+            ),
         }
     )
     content_light_plan = (
@@ -2049,6 +2077,9 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
         return str(handshake.get("question") or "I have more than one possible meaning for that. Which part do you mean?")
     if ellipsis.get("detected") is True and ellipsis.get("confidence") == "unresolved" and not seed:
         return "I can follow the comparison, but I cannot tell which other item you mean yet. Which one are you pointing to?"
+
+    if meaning.get("complete_current_session_decision") is True and meaning.get("content_seed"):
+        return _clean_seed(str(meaning.get("content_seed") or ""))
 
     if intent in SOCIAL_INTENT_ACTS:
         social_plan = plan.get("social_act_plan") if isinstance(plan.get("social_act_plan"), dict) else {}
