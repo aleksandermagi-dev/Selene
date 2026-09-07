@@ -4,8 +4,8 @@ Last refreshed: 2026-09-07
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; the social-expression handoff
-cultivation repair is source-verified and checkpointed but not packaged or
-installed
+and current-turn-owner learning-gap cultivation repairs are source-verified
+and checkpointed but not packaged or installed
 
 ## Purpose
 
@@ -18,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest current-turn-owner learning-gap routing checkpoint: `dfab5eb`
+  (`Respect current answer owner before teaching`)
 - Latest social-expression handoff cultivation checkpoint: `f1a0ecc`
   (`Connect social expression handoff`)
 - Latest G15 source and teaching checkpoint: `af243ac`
@@ -68,7 +70,7 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  eight commits ahead of `origin/evidence`; confirm again before any later
+  ten commits ahead of `origin/evidence`; confirm again before any later
   commit or push
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
@@ -725,12 +727,34 @@ git log -5 --oneline
 - The final affected slice passed 37 checks; six additional active-Chat
   compatibility checks passed independently. Python compilation passed.
 - One broader filtered run exposed a separate multi-domain Dream check whose
-  selected source was `learning_gap_invitation`. It is not repaired or treated
-  as a social-expression failure; revisit only if it recurs or Aleks selects
-  it for cultivation.
+  selected source was `learning_gap_invitation`. The following cultivation
+  checkpoint reproduced and repaired that separate ownership issue.
 - Evidence:
   `docs/evidence/SELENE_SOCIAL_EXPRESSION_HANDOFF_CULTIVATION_20260907.md`.
 - This repair is source-only. It has not been packaged or installed. Resident
+  state remains 96/96 and was not mutated.
+
+## Current-Turn Owner Before Learning-Gap Invitation
+
+- Checkpoint `dfab5eb` repairs the reproduced Dream-owner versus learning-gap
+  misroute at the learning-gap eligibility gate.
+- The Dream handoff had already supplied the correct reviewed-state answer,
+  but IntelligenceOS independently reported an unsupported fact. Because the
+  learning-gap builder did not know another owner had answered, it offered
+  teaching and won an equal-rank visible-speech tie by list order.
+- The learning-gap gate now receives the already-selected current-turn
+  response. A released response from an eligible owner preempts a teaching
+  invitation; an IntelligenceOS gap does not preempt its own invitation.
+- This prevents both the wrong visible reply and a false pending teaching
+  handoff. Genuine unknowns retain conversational teaching.
+- The exact isolated replay selected `attributable_dream_reflection`, offered
+  no teaching, created no assistant-question handoff, and wrote no memory. The
+  original long scenario passed.
+- The final affected teaching, Dream, visible-speech, and long-scenario slice
+  passed 39 checks. Python compilation passed.
+- Evidence:
+  `docs/evidence/SELENE_CURRENT_TURN_OWNER_GAP_ROUTING_CULTIVATION_20260907.md`.
+- This repair is source-only and has not been packaged or installed. Resident
   state remains 96/96 and was not mutated.
 
 ## Private Master Record
@@ -793,19 +817,15 @@ teaching bridge committed at `8c0154e` and the response-composition cultivation
 repair committed at `61242fb` are installed. The configured resident language
 shelf remains 96/96.
 
-The social-expression handoff cultivation repair is committed at `f1a0ecc` but
-is not packaged or installed. The exact resume point is to package/reinstall
-only if Aleks requests it, followed by at most one gentle disposable-state
-bright-versus-neutral greeting contrast. Otherwise continue ordinary use or
-the next explicitly selected teaching phase. Do not repeat G13, G14, or G15
-teaching, the repaired learning replay, or a broad Q&A battery. The downloaded
-source corpora and private 20-interaction review stay ignored and unavailable
-to runtime.
-
-The separate Dream/source-selection observation from the broader filtered run
-is a cultivation note, not part of this repair. Investigate it only if it
-recurs or Aleks explicitly selects it; do not patch it while resuming unrelated
-work.
+The social-expression handoff repair is committed at `f1a0ecc`, and the
+current-turn-owner learning-gap repair is committed at `dfab5eb`. Neither is
+packaged or installed. The exact resume point is to package/reinstall only if
+Aleks requests it, followed by at most one gentle disposable-state greeting
+contrast and one exact Dream-boundary replay. Otherwise continue ordinary use
+or the next explicitly selected teaching phase. Do not repeat G13, G14, or G15
+teaching, the earlier repaired learning replay, or a broad Q&A battery. The
+downloaded source corpora and private 20-interaction review stay ignored and
+unavailable to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,
 post-transfer, read-only continuity recall. It is not generic language
