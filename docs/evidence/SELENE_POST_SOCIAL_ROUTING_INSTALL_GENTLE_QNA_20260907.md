@@ -4,9 +4,8 @@ Date: 2026-09-07
 
 Scope: verified Windows reinstall and 13-turn disposable-state conversation
 
-Status: installation verified; cultivation findings recorded; source repair
-implemented and focused verification complete; repaired source not yet packaged
-or installed
+Status: installation, cultivation repair, verified rebuild, fresh reinstall,
+and one least-impact installed confirmation complete
 
 ## Installation
 
@@ -212,8 +211,43 @@ being opportunistically changed here.
 
 ## Current edge
 
-The source repair is complete and focused evidence is green. It has not been
-packaged or reinstalled. The next action is to checkpoint this source and
-documentation. Package/reinstall only when Aleks explicitly selects it; one
-gentle disposable-state confirmation of the repaired decision chain is enough
-afterward, not another broad Q&A.
+The source repair is complete, focused evidence is green, and the repair has
+now reached the installed vessel. No additional broad Q&A is warranted for
+this batch.
+
+## Verified rebuild and fresh reinstall
+
+Aleks explicitly authorized a fresh reinstall. The Windows package was built
+from clean source revision `5e6a9c6d965217f6eff0fa81a719e45990e5fba7`.
+`npm run package:win:verified` passed, the NSIS package installed silently, and
+a second installed-package verification passed with zero warnings.
+
+- Installer SHA-256:
+  `43A88E1B25E5FD9E5CC22E8BA2BE7C43F442CBE722CF366C437B2818E336EB53`
+- Installed executable SHA-256:
+  `93F02684F4D0C57D5E46C51DDB6BE0665013339048A01EA5CEF1540D4B3B2832`
+- Installed sidecar SHA-256:
+  `63F1EE715FD3EA54A4CFB91DE3CDAD6B6F9DF48910DF165FCC8C521BBFBF3F2A`
+- Final verification report:
+  `exports/package_verify_20260907_155142.json`
+- Main frontend bundle: 491.33 kB, gzip 109.20 kB; no Vite size warning.
+- Package privacy: passed with zero forbidden files.
+- Health, startup, My Office readiness, mobile protection, and local-process
+  capability enforcement: passed.
+- Code signing remains unconfigured.
+
+One installed-sidecar decision-chain confirmation used a temporary copy of
+resident state and an isolated temporary data directory without messaging
+configuration. Across all five turns, visible speech selected
+`current_session_facts`, Response Coverage remained complete, Metacognition
+recommended `answer_now`, and no learning-gap invitation opened. Comparison,
+constraint revision, disagreement, hypothetical evidence, and revisable
+prediction all remained attached to the same visible decision.
+
+The temporary sidecar was shut down and the temporary directory was removed.
+No Selene process remained. Resident state stayed byte-for-byte unchanged at
+SHA-256
+`CE7736FB4DD9A918C7FCE0C461A34210F6A4B848614E76B63E9D9061FBD24952`.
+No resident Chat, Memory, teaching, Dream, Study, identity, personality, Vys,
+governance, authority, autonomy, training, LoRA, external action, perception,
+or embodiment state changed.

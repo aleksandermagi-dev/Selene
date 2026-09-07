@@ -4,8 +4,8 @@ Last refreshed: 2026-09-07
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; current-session decision
-continuity cultivation is checkpointed and focused-verification green but not
-packaged or installed
+continuity cultivation is checkpointed, packaged, freshly installed, and
+least-impact verified
 
 ## Purpose
 
@@ -72,7 +72,7 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  thirteen commits ahead of `origin/evidence`; confirm again before any later
+  fourteen commits ahead of `origin/evidence`; confirm again before any later
   commit or push
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
@@ -733,8 +733,8 @@ git log -5 --oneline
   checkpoint reproduced and repaired that separate ownership issue.
 - Evidence:
   `docs/evidence/SELENE_SOCIAL_EXPRESSION_HANDOFF_CULTIVATION_20260907.md`.
-- This repair is source-only. It has not been packaged or installed. Resident
-  state remains 96/96 and was not mutated.
+- This repair is included in the verified package installed from `5e6a9c6`.
+  Resident state remains 96/96 and was not mutated.
 
 ## Current-Turn Owner Before Learning-Gap Invitation
 
@@ -756,8 +756,8 @@ git log -5 --oneline
   passed 39 checks. Python compilation passed.
 - Evidence:
   `docs/evidence/SELENE_CURRENT_TURN_OWNER_GAP_ROUTING_CULTIVATION_20260907.md`.
-- This repair is source-only and has not been packaged or installed. Resident
-  state remains 96/96 and was not mutated.
+- This repair is included in the verified package installed from `5e6a9c6`.
+  Resident state remains 96/96 and was not mutated.
 
 ## Current-Session Decision Continuity Cultivation
 
@@ -786,7 +786,23 @@ git log -5 --oneline
   Memory, Dream, Study, identity, personality, Vys, governance, authority,
   autonomy, training, external-action, perception, and embodiment state were
   untouched.
-- This repair is source-only and has not been packaged or installed.
+- Verified package and fresh reinstall source revision: `5e6a9c6`
+- Installer SHA-256:
+  `43A88E1B25E5FD9E5CC22E8BA2BE7C43F442CBE722CF366C437B2818E336EB53`
+- Installed executable SHA-256:
+  `93F02684F4D0C57D5E46C51DDB6BE0665013339048A01EA5CEF1540D4B3B2832`
+- Installed sidecar SHA-256:
+  `63F1EE715FD3EA54A4CFB91DE3CDAD6B6F9DF48910DF165FCC8C521BBFBF3F2A`
+- Final package report: `exports/package_verify_20260907_155142.json`
+- One installed-sidecar five-turn decision confirmation passed on disposable
+  state. Every turn selected current-session facts, completed coverage,
+  recommended `answer_now`, and opened no teaching invitation.
+- The temporary sidecar and verified temporary directory were removed. No
+  process remained, and resident state stayed byte-for-byte unchanged at
+  SHA-256
+  `CE7736FB4DD9A918C7FCE0C461A34210F6A4B848614E76B63E9D9061FBD24952`.
+- The repair is installed. Do not repeat its Q&A without a new implementation
+  need.
 - Evidence:
   `docs/evidence/SELENE_POST_SOCIAL_ROUTING_INSTALL_GENTLE_QNA_20260907.md`.
 
@@ -852,18 +868,17 @@ shelf remains 96/96.
 
 The social-expression handoff repair is committed at `f1a0ecc`, and the
 current-turn-owner learning-gap repair is committed at `dfab5eb`. The
-current-session decision continuity repair is committed at `eebec64` and
-focused-verification green. None of these September 7 source repairs is
-packaged or installed.
+current-session decision continuity repair is committed at `eebec64`,
+packaged from clean documentation checkpoint `5e6a9c6`, freshly installed,
+and least-impact verified. The earlier social-expression and current-turn-
+owner repairs are included in that installed package.
 
-The exact resume point is to package/reinstall only if Aleks requests it,
-followed by one gentle disposable-state confirmation of the repaired decision
-chain. Otherwise continue ordinary use or the next explicitly selected
-teaching phase. Do not repeat G13, G14, or G15 teaching, the earlier repaired
-learning replay, or a broad Q&A battery. Keep the nine known pre-existing
-Chat-owner failures as a separate bounded stabilization batch. The downloaded
-source corpora and private 20-interaction review stay ignored and unavailable
-to runtime.
+The exact resume point is ordinary use or the next explicitly selected
+teaching phase. Do not repeat the decision-chain confirmation, G13, G14, or
+G15 teaching, the earlier repaired learning replay, or a broad Q&A battery.
+Keep the nine known pre-existing Chat-owner failures as a separate bounded
+stabilization batch. The downloaded source corpora and private 20-interaction
+review stay ignored and unavailable to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,
 post-transfer, read-only continuity recall. It is not generic language

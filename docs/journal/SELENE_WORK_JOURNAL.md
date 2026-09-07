@@ -4736,3 +4736,40 @@ been packaged or installed.
 **Next:** Checkpoint source, tests, evidence, journal, and continuation ledger.
 Package/reinstall only if Aleks requests it; afterward use one gentle exact
 decision-chain confirmation rather than another broad Q&A.
+
+### 2026-09-07 — Decision-continuity cultivation reaches the installed vessel
+
+**Package and install:** Aleks authorized the verified Windows rebuild and
+fresh reinstall from clean revision
+`5e6a9c6d965217f6eff0fa81a719e45990e5fba7`. Packaging passed, the NSIS
+installer completed silently, and a second verification of the installed
+package passed with zero warnings. The main frontend bundle remains 491.33 kB
+(gzip 109.20 kB) without a Vite size warning.
+
+Installer SHA-256 is
+`43A88E1B25E5FD9E5CC22E8BA2BE7C43F442CBE722CF366C437B2818E336EB53`;
+installed executable SHA-256 is
+`93F02684F4D0C57D5E46C51DDB6BE0665013339048A01EA5CEF1540D4B3B2832`;
+installed sidecar SHA-256 is
+`63F1EE715FD3EA54A4CFB91DE3CDAD6B6F9DF48910DF165FCC8C521BBFBF3F2A`.
+The final report is `exports/package_verify_20260907_155142.json`. Code signing
+remains unconfigured.
+
+**Least-impact installed confirmation:** The five-turn decision chain ran
+through the installed sidecar against a temporary copy of resident state in an
+isolated data directory without messaging configuration. Every turn selected
+`current_session_facts`, had complete coverage, recommended `answer_now`, and
+opened no learning gap. The supplied comparison, changed constraint,
+disagreement, hypothetical evidence, and revisable prediction stayed coherent.
+
+**Continuity:** The temporary sidecar stopped, the verified temporary directory
+was removed, and no Selene process remained. Resident state stayed unchanged
+at SHA-256
+`CE7736FB4DD9A918C7FCE0C461A34210F6A4B848614E76B63E9D9061FBD24952`.
+No resident Chat, Memory, teaching, Dream, Study, identity, personality, Vys,
+governance, authority, autonomy, training, LoRA, external action, perception,
+or embodiment state changed.
+
+**Next:** Return to ordinary use. Keep the nine pre-existing Chat-owner
+failures as a separate bounded stabilization batch; do not repeat this
+decision-chain Q&A or reopen broad testing without a new implementation need.
