@@ -4988,3 +4988,31 @@ reassessments rather than rewriting their historical claims.
 each fixture branch to a general capability and existing owner, then replace
 only the symptom paths through shared proposition normalization and changed-
 entity/paraphrase verification. Do not run another broad Q&A first.
+
+### 2026-09-08 — Cultivation Phase 0 contains fixture-bound answer patches
+
+**Implementation:** Answer Substance now explicitly classifies 54 historical
+fixture-shaped answer kinds. Its foundational scenario block runs only after
+general operation owners have had the first opportunity to answer. Every
+Answer Substance result carries a compatibility receipt that distinguishes a
+legacy fixture path from a non-fixture path and states that exact replay alone
+cannot prove general capability.
+
+**Enforcement:** A focused source-level check extracts all literal answer kinds
+from the six mapped fixture-handler functions and requires each to appear in
+the compatibility inventory. It caught one missing classification during the
+implementation pass. Historical paths remain available as fallback; none was
+removed without a verified general replacement.
+
+**Verification:** All 30 Answer Substance checks passed, including fixture
+classification, non-fixture distinction, shared-owner precedence, and source-
+inventory completeness. Python compilation and diff verification passed with
+only expected Windows line-ending notices. No broad Chat Q&A or resident,
+teaching, Memory, Dream, Study, packaging, installation, or external action
+occurred.
+
+**Next:** Begin Phase 1 at the existing session proposition and decision
+owners: normalize visible entities, attributes, relations, options,
+constraints, observations, and requested operations across paraphrased current
+conversation language. Retire a fixture only after changed-entity transfer is
+proved.

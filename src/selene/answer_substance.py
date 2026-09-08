@@ -21,6 +21,71 @@ _STOP_WORDS = {
 }
 
 
+# These answer kinds came from bounded stabilization scenarios and still
+# return scenario-shaped final prose. They remain available only as an
+# explicit compatibility fallback while their intended operations are moved
+# into shared proposition and answer owners. This receipt prevents an exact
+# replay from being mistaken for evidence of general language transfer.
+LEGACY_FIXTURE_COMPATIBILITY_KINDS = frozenset(
+    {
+        "accessibility_fairness_application",
+        "acknowledgement_and_small_next_step",
+        "bounded_aesthetic_comparison",
+        "bounded_check_approach",
+        "bounded_provisional_cause",
+        "bounded_spatial_relation",
+        "bounded_table_layout",
+        "bounded_tea_prediction",
+        "changed_and_stable_property",
+        "controlled_garden_observation",
+        "corrected_screen_flicker_reading",
+        "deliberately_open_table_question",
+        "fair_reversible_resource_sharing",
+        "fairness_consistency_contextual_distinction",
+        "fraction_comparison_check_explanation",
+        "grounded_conflicting_reports",
+        "grounded_current_context_inference",
+        "grounded_desk_comparison",
+        "grounded_desk_correction",
+        "grounded_desk_exception_revision",
+        "grounded_desk_first_step",
+        "grounded_desk_summary",
+        "grounded_everyday_choice_revision",
+        "grounded_low_stakes_choice",
+        "grounded_ordered_desk_plan",
+        "grounded_ordered_everyday_choice",
+        "grounded_reversible_everyday_choice",
+        "grounded_visible_option_comparison",
+        "grounded_visible_option_revision",
+        "grounded_confirm_receipt",
+        "history_purpose_and_example",
+        "local_code_boundary_follow_up",
+        "local_reversible_check_choice",
+        "multi_part_porch_and_drink",
+        "notebook_choice_constraint_revision",
+        "notebook_choice_from_visible_criterion",
+        "observation_interpretation_next_check",
+        "ordered_thread_synthesis",
+        "porch_walk_constraint_revision",
+        "porch_walk_visible_choice",
+        "prompt_grounded_next_check_direction",
+        "provisional_discriminating_observation",
+        "purpose_classification",
+        "recommendation_revision_condition",
+        "returned_corrected_drawer_log",
+        "returned_table_moisture_answer",
+        "reversible_trial_recommendation",
+        "revised_prerequisite_order",
+        "selective_evening_correction",
+        "summary_interpretation_distinction",
+        "table_layout_moisture_revision",
+        "table_layout_revision_reason",
+        "three_field_observation_log",
+        "visible_observation_hypothesis_and_alternative",
+    }
+)
+
+
 def build_answer_substance(
     prompt: str,
     observations: list[dict[str, Any]] | None = None,
@@ -348,6 +413,7 @@ def build_answer_substance(
         "semantic_units": semantic_packet["units"],
         "current_context_inference": current_context_inference_packet,
         "creative_receipt": creative_receipt,
+        "compatibility_receipt": _operation_compatibility_receipt(kind),
         "creative_contract_active": bool(creative_receipt),
         "fiction_status": (
             creative_receipt.get("fiction_status")
@@ -930,10 +996,6 @@ def _ordinary_prompt_grounded_operation(
     lower = " ".join(prompt.lower().replace("’", "'").split())
     history = _observation_texts(observations)
 
-    foundational = _foundational_current_prompt_operation(prompt, lower, history)
-    if foundational:
-        return foundational
-
     manner_contrast = _manner_contrast_operation(prompt)
     if manner_contrast:
         return manner_contrast
@@ -1042,7 +1104,35 @@ def _ordinary_prompt_grounded_operation(
     plan = _resource_plan_operation(prompt, lower)
     if plan:
         return plan
+
+    # Compatibility scenarios are deliberately last. Shared operation owners
+    # get the first opportunity to answer, while still-unmigrated historical
+    # cases remain available until their general replacement is verified.
+    foundational = _foundational_current_prompt_operation(prompt, lower, history)
+    if foundational:
+        return foundational
     return {}
+
+
+def _operation_compatibility_receipt(
+    answer_kind: str,
+) -> dict[str, Any]:
+    kind = str(answer_kind or "")
+    classified = kind in LEGACY_FIXTURE_COMPATIBILITY_KINDS
+    return {
+        "status": (
+            "legacy_fixture_compatibility_classified"
+            if classified
+            else "general_or_nonfixture_answer_path"
+        ),
+        "answer_kind": kind,
+        "legacy_fixture_compatibility": classified,
+        "general_capability_evidence_eligible": not classified,
+        "exact_replay_sufficient_for_general_capability": False,
+        "shared_owner_precedence_applied": True,
+        "retire_only_after_general_owner_verification": classified,
+        "changed_entity_or_paraphrase_verified": False,
+    }
 
 
 def _visible_option_comparison_operation(

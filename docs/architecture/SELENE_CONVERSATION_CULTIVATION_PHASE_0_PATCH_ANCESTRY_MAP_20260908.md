@@ -1,7 +1,9 @@
 # Selene Conversation Cultivation — Phase 0 Patch-Ancestry Map
 
-Date: 2026-09-08  
-Status: source audit complete; no production repair or behavioral test run  
+Date: 2026-09-08
+
+Status: source audit and compatibility containment complete
+
 Purpose: distinguish reusable conversational architecture from earlier
 fixture-bound repairs before the current ownership cultivation begins
 
@@ -191,8 +193,25 @@ word `point`.
 
 ## Next
 
-Review this reassessment with Aleks. If authorized, begin production Phase 0
-by inventorying each fixture-bound answer branch against a general capability
-requirement and its existing owner. Then remove or bypass only the branches
-whose capability is covered by the generalized path, using changed-entity and
-paraphrase checks as the completion gate.
+Phase 0 is complete for current scope. The runtime now carries an explicit
+inventory of 54 compatibility answer kinds. Every answer-substance result
+states whether it came from that inventory, and explicitly records that an
+exact replay is not sufficient evidence of general capability.
+
+The large foundational compatibility block now runs only after the existing
+general operation owners have had the first opportunity to answer. Historical
+scenario behavior remains available as a last fallback; nothing was deleted
+before a replacement was proved. A source-level test extracts every literal
+answer kind from the six classified fixture-handler functions and fails if a
+new kind appears without entering the inventory. That test caught one omitted
+kind during implementation before the checkpoint was accepted.
+
+Focused verification passed all 30 Answer Substance checks. Python compilation
+and diff verification passed; only the repository's expected Windows line-
+ending notices appeared. No broad Chat Q&A, resident access, teaching, Memory,
+Dream, Study, package, install, or external action occurred.
+
+Next is Phase 1: mature shared proposition normalization and the existing
+session proposition/decision owners. Each compatibility path may be retired
+only after its operation transfers across changed entities and paraphrased
+grammar.

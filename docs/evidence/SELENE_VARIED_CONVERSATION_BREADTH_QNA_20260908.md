@@ -252,6 +252,19 @@ revised dependency order:
 9. **Generalization verification:** exercise the same operation through novel
    nouns, paraphrases, and reordered wording before any short ordinary Q&A.
 
+### Phase 0 implementation status
+
+Phase 0 is complete for current scope. Fifty-four fixture-shaped Answer
+Substance kinds are now explicitly classified, exact replay is declared
+insufficient as general capability evidence, and the large historical
+compatibility block runs after shared operation owners rather than before
+them. A focused source-inventory test prevents an unclassified literal handler
+from silently entering the six mapped fixture functions. No historical answer
+was deleted before a general replacement existed.
+
+The next implementation edge is item 1: shared proposition normalization and
+the active session ledger. No additional Q&A should precede that source work.
+
 This is not a request for a new monolithic organ. Cultivation should first map
 these responsibilities to the existing Conversation Spine, pragmatic plan,
 current-session continuity, response ownership, learning-gap invitation,

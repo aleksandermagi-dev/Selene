@@ -1,6 +1,38 @@
 from __future__ import annotations
 
-from selene.answer_substance import build_answer_substance
+import ast
+import inspect
+import textwrap
+
+from selene.answer_substance import (
+    LEGACY_FIXTURE_COMPATIBILITY_KINDS,
+    _conflicting_reports_operation,
+    _desk_organization_operation,
+    _foundational_current_prompt_operation,
+    _ordinary_choice_operation,
+    _provisional_cause_operation,
+    _visible_option_comparison_operation,
+    build_answer_substance,
+)
+
+
+def _literal_operation_kinds(function) -> set[str]:
+    tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
+    result: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+            continue
+        if node.func.id == "_plain_operation" and len(node.args) > 1:
+            value = node.args[1]
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                result.add(value.value)
+        if node.func.id == "_operation":
+            for keyword in node.keywords:
+                if keyword.arg != "answer_kind":
+                    continue
+                if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
+                    result.add(keyword.value.value)
+    return result
 
 
 def test_fluency_without_distinct_application_reopens_understanding():
@@ -353,3 +385,79 @@ def test_same_action_manner_contrast_accepts_compare_with_wording():
     assert result["answer_kind"] == "bounded_same_action_manner_contrast"
     assert "working carefully" in result["answer"].lower()
     assert "working quickly" in result["answer"].lower()
+
+
+def test_fixture_bound_answer_is_labeled_as_compatibility_not_general_evidence():
+    result = build_answer_substance(
+        "A paper notebook can use a pencil or a pen. Easy correction matters most. "
+        "Which should I choose?"
+    )
+
+    receipt = result["compatibility_receipt"]
+    assert result["answer_kind"] == "notebook_choice_from_visible_criterion"
+    assert receipt["status"] == "legacy_fixture_compatibility_classified"
+    assert receipt["legacy_fixture_compatibility"] is True
+    assert receipt["general_capability_evidence_eligible"] is False
+    assert receipt["exact_replay_sufficient_for_general_capability"] is False
+    assert receipt["shared_owner_precedence_applied"] is True
+
+
+def test_general_operation_is_not_mislabeled_as_fixture_compatibility():
+    result = build_answer_substance(
+        "My working guess is a loose hinge, but the frame could be warped. "
+        "What should I check first, and what evidence would change your answer?"
+    )
+
+    receipt = result["compatibility_receipt"]
+    assert result["answer_kind"] == "hypothesis_discrimination"
+    assert receipt["status"] == "general_or_nonfixture_answer_path"
+    assert receipt["legacy_fixture_compatibility"] is False
+    assert receipt["general_capability_evidence_eligible"] is True
+    assert receipt["exact_replay_sufficient_for_general_capability"] is False
+
+
+def test_general_owner_runs_before_the_legacy_fixture_fallback(monkeypatch):
+    import selene.answer_substance as module
+
+    monkeypatch.setattr(
+        module,
+        "_manner_contrast_operation",
+        lambda _prompt: {
+            "answer": "general owner answer",
+            "answer_kind": "bounded_same_action_manner_contrast",
+            "missing_variable": "none",
+            "support_basis": "current_prompt_only",
+            "semantic_units": [],
+        },
+    )
+    monkeypatch.setattr(
+        module,
+        "_foundational_current_prompt_operation",
+        lambda _prompt, _lower, _history: {
+            "answer": "legacy fixture answer",
+            "answer_kind": "porch_walk_visible_choice",
+            "missing_variable": "none",
+            "support_basis": "current_prompt_only",
+            "semantic_units": [],
+        },
+    )
+
+    result = module.build_answer_substance("Compare these two options.")
+
+    assert result["answer"] == "general owner answer"
+    assert result["compatibility_receipt"]["legacy_fixture_compatibility"] is False
+
+
+def test_every_literal_fixture_handler_is_present_in_the_compatibility_inventory():
+    handlers = (
+        _visible_option_comparison_operation,
+        _foundational_current_prompt_operation,
+        _ordinary_choice_operation,
+        _conflicting_reports_operation,
+        _desk_organization_operation,
+        _provisional_cause_operation,
+    )
+    discovered = set().union(*(_literal_operation_kinds(handler) for handler in handlers))
+
+    assert discovered
+    assert discovered <= LEGACY_FIXTURE_COMPATIBILITY_KINDS
