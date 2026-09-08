@@ -4,8 +4,8 @@ Last refreshed: 2026-09-08
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
-installed and verified; two gentle installed Q&A runs now map one shared
-current-conversation ownership cluster without repair
+installed and verified; conversation Cultivation Phase 0 now contains the
+fixture-bound compatibility layer before shared proposition maturation
 
 ## Purpose
 
@@ -18,6 +18,10 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest conversation Cultivation Phase 0 checkpoint: `3485f30`
+  (`Contain fixture-bound conversation answers`)
+- Latest patch-ancestry map checkpoint: `8a50988`
+  (`Map conversation repair patch ancestry`)
 - Latest varied conversation breadth Q&A checkpoint: `0e5cd19`
   (`Map varied conversation ownership gaps`)
 - Latest installed social-expression Q&A evidence checkpoint: `060297a`
@@ -938,8 +942,15 @@ git log -5 --oneline
   commits wholesale or grow another phrase dictionary.
 - Evidence:
   `docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`.
-- No production code, resident state, package, install, teaching, Memory,
-  Dream, Study, external action, or behavioral test changed during this audit.
+- Checkpoint `3485f30` adds a 54-kind compatibility inventory, an explicit
+  per-answer receipt, shared-owner-first ordering ahead of the foundational
+  fixture block, and a source-level inventory guard. Exact replay is explicitly
+  insufficient as general capability evidence.
+- Historical fixture behavior remains available as a last fallback. No branch
+  was deleted before a changed-entity or paraphrase replacement was proved.
+- All 30 focused Answer Substance checks passed and Python compilation passed.
+  No resident state, package, install, teaching, Memory, Dream, Study, external
+  action, or broad Chat Q&A changed during this phase.
 
 ## Private Master Record
 
@@ -1022,24 +1033,24 @@ and a bounded cross-page expression-freshness window. It is packaged and
 installed from clean revision `160f2d9`; two new-page greetings confirmed
 visible familiar warmth and distinct surfaces.
 
-The exact resume point is review of the Phase 0 patch-ancestry reassessment with
-Aleks and then, if authorized, production Cultivation of the fully mapped
-current-conversation ownership cluster. The varied run and revised reading are
-recorded at
+Conversation Cultivation Phase 0 is complete and checkpointed at `3485f30`.
+The exact resume point is Phase 1: mature shared proposition normalization and
+the existing session proposition/decision owners. The varied run and revised
+reading are recorded at
 `docs/evidence/SELENE_VARIED_CONVERSATION_BREADTH_QNA_20260908.md`; the ancestry
 map is
 `docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`.
 
-Begin by classifying each fixture-bound final-answer branch against a general
-capability and existing owner. Then implement the smallest coordinated repair
-in dependency order: shared proposition normalization; ephemeral active
-propositions and revisions; current answer-owner priority;
+Implement the smallest coordinated repair in dependency order: shared
+proposition normalization; ephemeral active propositions and revisions;
+current answer-owner priority;
 learning-gap eligibility; approved-knowledge subject/entity/operation/function
 relevance; correction completion; typed humor/acknowledgement/recap/closure
 acts; semantic coverage; and shared subject, punctuation, symbol, and stale-
 fallback cleanup. Map these onto existing owners before editing; do not create
-a monolithic conversation organ. Replace scenario handlers only after their
-general capability passes changed-entity and paraphrase checks.
+a monolithic conversation organ. The 54-kind compatibility inventory is the
+removal ledger: replace scenario handlers only after their general capability
+passes changed-entity and paraphrase checks.
 
 Do not patch prompt phrases or teach around the route defect. Do not repeat the
 installed warmth gate, greeting/typo confirmation, decision-chain
