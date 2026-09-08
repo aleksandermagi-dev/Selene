@@ -4,8 +4,8 @@ Last refreshed: 2026-09-08
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
-installed and verified; conversation Cultivation Phase 0 now contains the
-fixture-bound compatibility layer before shared proposition maturation
+installed and verified; conversation Cultivation Phase 1 now supplies shared
+visible proposition normalization and ephemeral current-session continuity
 
 ## Purpose
 
@@ -18,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest conversation Cultivation Phase 1 checkpoint: `ba878b5`
+  (`Generalize current-session propositions`)
 - Latest conversation Cultivation Phase 0 checkpoint: `3485f30`
   (`Contain fixture-bound conversation answers`)
 - Latest patch-ancestry map checkpoint: `8a50988`
@@ -89,8 +91,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  twenty-three commits ahead of `origin/evidence`; the ledger refresh is
-  expected to make that twenty-four. Confirm again before any later commit or
+  twenty-eight commits ahead of `origin/evidence`; the ledger refresh is
+  expected to make that twenty-nine. Confirm again before any later commit or
   push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
@@ -952,6 +954,33 @@ git log -5 --oneline
   No resident state, package, install, teaching, Memory, Dream, Study, external
   action, or broad Chat Q&A changed during this phase.
 
+## Conversation Cultivation Phase 1 — Shared Propositions
+
+- Checkpoint `ba878b5` adds one non-organ shared normalization utility used by
+  the existing Current-Turn Fact Ledger and Current-Session Decision Context.
+- Natural `whether X or Y`, `would you rather X or Y`, explicit containers,
+  comparisons, coordinated relations, reported location changes, and requested
+  placement operations now share one visible structural grammar.
+- A requested move remains `requested_not_executed`; a user-reported move is
+  an independently unverified current-session state update.
+- Dialogue Workspace now carries structured current-turn facts into the
+  existing Session Proposition Ledger. Matching state slots supersede
+  selectively, unrelated active propositions remain, and dependent visible
+  results are invalidated when their premise changes.
+- Conversation Spine exposes a bounded relevant-active-proposition view for
+  the current subject, resolved reference, summary, or deictic continuation.
+- The ledger is current-session connective tissue, not Memory, retained
+  knowledge, truth determination, an answer generator, a new organ, or
+  authority.
+- Verification: 64 direct owner checks and a final 149-check affected-owner
+  matrix passed; Python compilation passed; diff verification reported only
+  expected Windows line-ending notices.
+- No resident state, broad Q&A, teaching, Dream, Study, Memory, identity,
+  personality, Vys, governance, authority, training, action, perception,
+  embodiment, package, or installed runtime changed.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_1_PROPOSITION_NORMALIZATION_20260908.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1034,16 +1063,21 @@ installed from clean revision `160f2d9`; two new-page greetings confirmed
 visible familiar warmth and distinct surfaces.
 
 Conversation Cultivation Phase 0 is complete and checkpointed at `3485f30`.
-The exact resume point is Phase 1: mature shared proposition normalization and
-the existing session proposition/decision owners. The varied run and revised
+Phase 1 is complete and checkpointed at `ba878b5`: shared proposition
+normalization now feeds the existing fact, session proposition, decision,
+Dialogue Workspace, and Conversation Spine owners. The varied run and revised
 reading are recorded at
 `docs/evidence/SELENE_VARIED_CONVERSATION_BREADTH_QNA_20260908.md`; the ancestry
 map is
 `docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`.
+Phase 1 evidence is
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_1_PROPOSITION_NORMALIZATION_20260908.md`.
 
-Implement the smallest coordinated repair in dependency order: shared
-proposition normalization; ephemeral active propositions and revisions;
-current answer-owner priority;
+The exact resume point is Phase 2: implement the current answer-owner priority
+gate. Prove that a current-turn or active-session owner can satisfy the
+requested response function, then rank that owner ahead of optional learned
+retrieval. Preserve an explicit hold when no current owner is capable. Continue
+the remaining dependency order after that gate:
 learning-gap eligibility; approved-knowledge subject/entity/operation/function
 relevance; correction completion; typed humor/acknowledgement/recap/closure
 acts; semantic coverage; and shared subject, punctuation, symbol, and stale-

@@ -1,7 +1,7 @@
 # Selene Conversation Cultivation Phase 1 — Shared Proposition Normalization
 
-Date: 2026-09-08  
-Status: implemented and focused-verification complete  
+Date: 2026-09-08
+Status: implemented and focused-verification complete
 Scope: visible current-turn structure and ephemeral current-session proposition continuity
 
 ## Purpose
