@@ -18,7 +18,9 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
-- Latest installed input-clarification documentation checkpoint: `06d5098`
+- Latest installed input-clarification verification checkpoint: `4cad75c`
+  (`Record installed input clarification verification`)
+- Packaged source and pre-install documentation revision: `06d5098`
   (`Refresh input clarification continuation edge`)
 - Latest input clarification, source-safe Memory expression, greeting warmth,
   and mistake-provenance checkpoint: `4be2f5f`
