@@ -2703,7 +2703,7 @@ def test_active_chat_bright_greeting_reaches_authored_warmth(tmp_path):
     assert "right here" not in result["candidate_text"].lower()
     assert any(
         marker in result["candidate_text"].lower()
-        for marker in ("good to", "glad", "energy", "start the morning")
+        for marker in ("good to", "glad", "happy", "energy", "start the morning")
     )
     assert result["memory_write_active"] is False
     assert result["training_allowed"] is False
@@ -2723,12 +2723,62 @@ def test_active_chat_bright_hello_reaches_authored_warmth(tmp_path):
 
     handoff = result["native_language_organ"]["discourse_plan"]["social_act_plan"]["expression_handoff"]
     assert handoff["warm_greeting_selected"] is True
-    assert "warmth" in result["native_language_organ"]["discourse_plan"]["social_act_realization"][
+    assert handoff["greeting_mode"] == "familiar"
+    realization = result["native_language_organ"]["discourse_plan"]["social_act_realization"]
+    assert "warmth" in realization[
         "realized_expression_channels"
     ]
     assert "right here" not in result["candidate_text"].lower()
+    assert any(
+        marker in result["candidate_text"].lower()
+        for marker in (
+            "my friend",
+            "aleks",
+            "really glad",
+            "happy you're here",
+            "get to talk again",
+            "genuinely glad",
+        )
+    )
+    assert realization["semantic_formation_receipts"]
+    assert realization["whole_response_template_selected"] is False
+    assert result["native_language_organ"]["discourse_plan"][
+        "human_conversational_plan"
+    ]["social_surface_realization_only"] is True
     assert result["affect_expression"]["expression_posture"] == "warm_available"
+    assert result["memory_write_active"] is False
+    assert result["training_allowed"] is False
     _assert_locked(result)
+
+
+def test_active_chat_greeting_surface_freshness_crosses_new_pages_without_becoming_memory(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Hello Selene!"},
+    )["result"]
+    second = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Hello Selene!"},
+    )["result"]
+
+    assert first["session_id"] != second["session_id"]
+    assert first["candidate_text"] != second["candidate_text"]
+    context = second["conversation_context"]
+    assert first["candidate_text"] in context["recent_cross_session_assistant_texts"]
+    assert first["candidate_text"] in context["recent_expression_texts"]
+    assert context["cross_session_expression_surface_used"] is True
+    assert context["cross_session_expression_semantic_recall_allowed"] is False
+    assert context["memory_write_active"] is False
+    assert second["approved_memory_retrieval_used"] is False
+    assert second["memory_write_active"] is False
+    _assert_locked(first)
+    _assert_locked(second)
 
 
 def test_active_chat_material_input_ambiguity_clarifies_without_memory_or_teaching_takeover(tmp_path):

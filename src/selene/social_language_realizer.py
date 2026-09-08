@@ -5,12 +5,21 @@ from hashlib import sha256
 from typing import Any
 
 from .emoji_expression import apply_authored_emoji, plan_authored_emoji
+from .language_formation import build_semantic_frame, realize_semantic_frame
 
 
 SOCIAL_REALIZER_BOUNDARY = (
     "social_conversational_act_realization_only_preserve_supported_meaning_"
     "no_identity_personality_memory_affect_invention_authority_or_voice_ownership"
 )
+
+GREETING_LANGUAGE_MOVES = {
+    "choose_fitting_response_stance",
+    "meet_relational_tone_briefly",
+    "meet_the_actual_moment",
+    "choose_fitting_response_depth",
+    "vary_shape_without_dropping_obligations",
+}
 
 POSITIVE_REACTION_TERMS = {
     "amazing", "awesome", "beautiful", "brilliant", "cool", "dope",
@@ -395,8 +404,17 @@ def _social_expression_handoff(
             greeting_mode = "affectionate"
         elif affect_guidance.get("current_session_affect_signal_used") is True:
             greeting_mode = "warm_signal"
+        elif relational_context.get("private_relational_context") is True:
+            greeting_mode = "familiar"
         else:
             greeting_mode = "bright"
+
+    approved_moves = [
+        str(item)
+        for item in language_teaching_guidance.get("response_moves") or []
+        if str(item)
+    ]
+    consumed_moves = [item for item in approved_moves if item in GREETING_LANGUAGE_MOVES]
 
     return {
         "status": "social_expression_handoff_ready",
@@ -433,6 +451,13 @@ def _social_expression_handoff(
         "approved_language_response_moves": [
             str(item) for item in language_teaching_guidance.get("response_moves") or [] if str(item)
         ],
+        "approved_language_guidance_consumed": bool(consumed_moves),
+        "consumed_language_response_moves": consumed_moves,
+        "language_guidance_effect": (
+            "select_stance_depth_and_surface_variation"
+            if consumed_moves
+            else "no_applicable_greeting_move"
+        ),
         "language_guidance_supplies_wording": False,
         "relational_context_supplies_wording": False,
         "expression_is_available_not_compulsory": True,
@@ -511,7 +536,7 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
 
     return {
         "status": "social_act_plan_ready" if acts else "social_act_plan_not_applicable",
-        "version": "v2_contextual_non_scripted_social_acts",
+        "version": "v3_compositional_familiar_social_expression",
         "intent": intent,
         "acts": [
             {
@@ -553,6 +578,11 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         "affect_guidance_may_change_meaning": False,
         "relational_context": relational_context,
         "expression_handoff": expression_handoff,
+        "recent_expression_texts": [
+            str(item)
+            for item in payload.get("recent_expression_texts") or []
+            if str(item).strip()
+        ][-6:],
         "expression_channels_available_to_social_realizer": expression_handoff[
             "selected_channel_names"
         ],
@@ -854,16 +884,32 @@ def realize_social_act_plan(
                 }
             )
             continue
-        if act == "author_greeting_stance":
+        if act == "return_greeting":
             selected.append(
                 {
                     "act": act,
-                    "text": _realize_greeting_stance(
+                    "text": _realize_greeting_opening(
                         plan,
+                        prompt=prompt,
                         key=f"{variation_key}|{act}|{index}",
                         recent_texts=recent_texts,
                     ),
+                    "source": "contextual_greeting_construction",
+                }
+            )
+            continue
+        if act == "author_greeting_stance":
+            greeting_stance = _realize_greeting_stance(
+                plan,
+                key=f"{variation_key}|{act}|{index}",
+                recent_texts=recent_texts,
+            )
+            selected.append(
+                {
+                    "act": act,
+                    "text": str(greeting_stance.get("candidate_text") or ""),
                     "source": "current_turn_expression_handoff",
+                    "formation_receipt": greeting_stance,
                 }
             )
             continue
@@ -930,6 +976,23 @@ def realize_social_act_plan(
             in {"current_turn_semantic_authorship", "current_turn_expression_handoff"}
             for item in selected
         ),
+        "approved_language_guidance_consumed": (
+            (plan.get("expression_handoff") or {}).get(
+                "approved_language_guidance_consumed"
+            )
+            is True
+        ),
+        "consumed_language_response_moves": (
+            (plan.get("expression_handoff") or {}).get(
+                "consumed_language_response_moves"
+            )
+            or []
+        ),
+        "semantic_formation_receipts": [
+            item.get("formation_receipt")
+            for item in selected
+            if isinstance(item.get("formation_receipt"), dict)
+        ],
         "response_stance_authored": any(
             item.get("source") == "current_turn_expression_handoff"
             for item in selected
@@ -1298,7 +1361,7 @@ def _realize_greeting_stance(
     *,
     key: str,
     recent_texts: list[str],
-) -> str:
+) -> dict[str, Any]:
     """Form one current-turn greeting stance selected by the expression handoff."""
     handoff = (
         plan.get("expression_handoff")
@@ -1306,33 +1369,130 @@ def _realize_greeting_stance(
         else {}
     )
     mode = str(handoff.get("greeting_mode") or "bright")
-    choices = {
+    objects = {
         "playful": [
-            "You brought some energy with you",
-            "That is a bright way to arrive",
-            "You sound ready for the day",
+            "glad you brought that energy with you",
+            "happy to meet you in that bright mood",
+            "ready to share the day with you",
         ],
         "reunion": [
-            "It is good to have you back",
-            "I am glad we are together again",
-            "It is good to pick this back up with you",
+            "really glad to have you back",
+            "happy we are together again",
+            "glad to pick this back up with you",
         ],
         "affectionate": [
-            "It is good to see you",
-            "I am glad you are here",
-            "It is lovely to hear from you",
+            "really glad to see you",
+            "happy you're here",
+            "genuinely glad to hear from you",
         ],
         "warm_signal": [
-            "It is good to be here with you",
-            "I am glad to share the morning with you",
-            "It is good to start the day together",
+            "glad to be here with you",
+            "happy to share the morning with you",
+            "glad we get to start the day together",
+        ],
+        "familiar": [
+            "really glad to see you",
+            "happy you're here",
+            "glad we get to talk again",
+            "genuinely glad to hear from you",
         ],
         "bright": [
-            "It is good to see you",
-            "I am glad you are here",
-            "It is good to start the morning together",
+            "glad to see you",
+            "happy you're here",
+            "glad to share the morning with you",
         ],
-    }.get(mode, ["It is good to see you"])
+    }.get(mode, ["glad to see you"])
+    selected_object = _pick_fragment_fresh(
+        f"{key}|{mode}|stance-object",
+        objects,
+        recent_texts,
+    )
+    frame = build_semantic_frame(
+        {
+            "intent": "greeting_stance",
+            "answer_shape": "brief_social_response",
+            "response_depth": "brief",
+            "certainty": "current_turn_stance",
+            "affect": "warm",
+            "propositions": [
+                {
+                    "id": "current-turn-greeting-stance",
+                    "subject": "I",
+                    "predicate": "be",
+                    "object": selected_object,
+                    "tense": "present",
+                    "required": True,
+                }
+            ],
+            "meaning_constraints": [
+                "author one current-turn greeting stance",
+                "do not create a durable emotion record or external fact",
+            ],
+        }
+    )
+    realized = realize_semantic_frame(
+        frame,
+        variation_key=f"{key}|{mode}|semantic-stance",
+        recent_texts=recent_texts,
+    )
+    return {
+        "status": "structured_greeting_stance_realized",
+        "candidate_text": str(
+            realized.get("candidate_text") or "I am glad to see you"
+        ).rstrip("."),
+        "semantic_frame": frame,
+        "formation": realized,
+        "current_turn_stance_only": True,
+        "durable_emotion_record_created": False,
+        "external_fact_created": False,
+        "memory_write_active": False,
+    }
+
+
+def _realize_greeting_opening(
+    plan: dict[str, Any],
+    *,
+    prompt: str,
+    key: str,
+    recent_texts: list[str],
+) -> str:
+    handoff = (
+        plan.get("expression_handoff")
+        if isinstance(plan.get("expression_handoff"), dict)
+        else {}
+    )
+    relational = (
+        plan.get("relational_context")
+        if isinstance(plan.get("relational_context"), dict)
+        else {}
+    )
+    private = relational.get("private_relational_context") is True
+    partner = str(relational.get("authenticated_conversation_partner") or "").strip()
+    if partner.casefold() in {"aleksander magi", "aleksander rani magi"}:
+        partner = "Aleks"
+    familiar_addresses = [partner, "my friend"] if partner else ["my friend"]
+    recent_surface = " ".join(_normalized(item) for item in recent_texts[:6])
+    fresh_addresses = [
+        address
+        for address in familiar_addresses
+        if _normalized(address) not in recent_surface
+    ]
+    lower = prompt.casefold()
+    if "good morning" in lower:
+        bases = ["Good morning", "Morning", "Hey"]
+    elif "good afternoon" in lower:
+        bases = ["Good afternoon", "Afternoon", "Hey"]
+    elif "good evening" in lower:
+        bases = ["Good evening", "Evening", "Hey"]
+    else:
+        bases = ["Hey", "Hello", "Hi there"]
+    choices = [f"{base}!" for base in bases]
+    if private and handoff.get("warm_greeting_selected") is True:
+        choices = [
+            f"{base}, {address}!"
+            for base in bases
+            for address in fresh_addresses
+        ] + choices
     return _pick_fragment_fresh(key, choices, recent_texts)
 
 

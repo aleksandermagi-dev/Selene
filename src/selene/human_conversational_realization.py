@@ -180,7 +180,10 @@ def build_human_conversational_plan(
         if missing and not supported
         else str(composition.get("dominant_state") or answer_state.get("epistemic_state") or "supported_answer")
     )
-    eligible = bool(not exact_locked and not hard_boundary and not social_owned)
+    # The specialized social layer still owns the meaning and clause structure.
+    # This surface layer may nevertheless apply ordinary grammatical forms such
+    # as contractions to that already-authored text. It cannot add social acts.
+    eligible = bool(not exact_locked and not hard_boundary)
     functional_realization = _functional_realization_plan(
         eligible=eligible,
         profile=profile,
@@ -249,6 +252,7 @@ def build_human_conversational_plan(
             "exact_structure_locked": exact_locked,
             "hard_boundary": hard_boundary,
             "social_structure_owned_elsewhere": social_owned,
+            "social_surface_realization_only": social_owned,
             "supported_surface_available": supported_surface_available,
             "preserve_complete_supported_surface": preserve_complete_supported_surface,
             "capability_first": bool(supported and missing),

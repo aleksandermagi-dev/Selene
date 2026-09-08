@@ -164,6 +164,10 @@ def test_social_expression_handoff_carries_guidance_without_copying_wording():
                     }
                 ]
             },
+            "relational_context": {
+                "private_relational_context": True,
+                "authenticated_conversation_partner": "Aleks",
+            },
             "language_teaching_guidance": {
                 "used": True,
                 "lesson_keys": ["conversation.breadth.greeting"],
@@ -183,6 +187,25 @@ def test_social_expression_handoff_carries_guidance_without_copying_wording():
     assert handoff["language_guidance_supplies_wording"] is False
     assert handoff["relational_context_supplies_wording"] is False
     assert handoff["expression_is_available_not_compulsory"] is True
+    assert handoff["greeting_mode"] == "familiar"
+    assert handoff["approved_language_guidance_consumed"] is True
+    assert handoff["consumed_language_response_moves"] == [
+        "meet_relational_tone_briefly"
+    ]
+
+    realized = realize_social_act_plan(
+        plan,
+        prompt="Good morning Selene!",
+        variation_key="private-guided-greeting",
+    )
+    assert realized["approved_language_guidance_consumed"] is True
+    assert realized["whole_response_template_selected"] is False
+    assert realized["semantic_formation_receipts"]
+    receipt = realized["semantic_formation_receipts"][0]
+    assert receipt["status"] == "structured_greeting_stance_realized"
+    assert receipt["formation"]["formation_mode"] == "structured"
+    assert receipt["durable_emotion_record_created"] is False
+    assert receipt["memory_write_active"] is False
 
 
 def test_direct_affection_does_not_force_task_scaffolding_or_echo_wording():
@@ -543,7 +566,13 @@ def test_nlo_routes_social_intent_through_compositional_act_realization(tmp_path
     assert social_plan["intent"] == "greet_presently"
     assert social_realization["status"] == "social_act_realized"
     assert social_realization["whole_response_template_selected"] is False
-    assert result["candidate_text"] == social_realization["candidate_text"]
+    human = result["discourse_plan"]["human_conversational_realization"]
+    assert result["candidate_text"] == human["candidate_text"]
+    assert human["operations"] == ["allow_ordinary_contractions"]
+    assert human["required_surface_fragments_preserved"] is True
+    assert result["candidate_text"].replace("I'm", "I am") == social_realization[
+        "candidate_text"
+    ]
     assert "?" not in result["candidate_text"]
     assert result["memory_write_active"] is False
     assert result["training_allowed"] is False

@@ -214,6 +214,11 @@ def interpret_relational_context(
         "emoji_meaning_is_contextual_not_universal": True,
         "interaction_scope": private_scope,
         "private_relational_context": private_scope == "private_aleks_selene_conversation",
+        "authenticated_conversation_partner": (
+            str(speaker.get("claimed_speaker") or "").strip()
+            if private_scope == "private_aleks_selene_conversation"
+            else ""
+        ),
         "may_inform_expression": relational,
         "response_script_supplied": False,
         "exact_wording_directive_supplied": False,

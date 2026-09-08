@@ -4843,3 +4843,41 @@ perception, or embodiment state changed.
 **Next:** Return to ordinary use or the next explicitly chosen teaching or
 bounded stabilization item. Do not repeat this installed confirmation or run a
 broad Q&A without a new implementation need.
+
+### 2026-09-07 — Cultivation reconnects familiar warmth to visible language
+
+**Corrected completion gate:** The installed `Hi there. I am glad you are
+here.` reply proved an internal warmth handoff, but it was not sufficient
+evidence of natural visible warmth. Ordinary use also showed that a new page
+could deterministically repeat the same fixed reply. The prior verification
+therefore passed too shallow a surface gate.
+
+**Root:** Affect Expression, Relational Expression Range, authenticated private
+scope, and approved language guidance were all present. The specialized social
+owner then reduced the turn to small fixed clause pools, ignored private
+familiarity and applicable teaching moves, bypassed ordinary contraction, and
+received freshness context from only the current page. Voice preserved that
+already-flat candidate correctly.
+
+**Repair:** The social owner now composes greeting openings from contextual
+parts and forms one warm current-turn stance through the existing structured
+Language Formation machinery. Authenticated private greetings may use a
+familiar mode without making warmth compulsory. Applicable teaching moves are
+recorded as consumed without supplying wording. Human Conversational
+Realization may contract the already-authored social surface without adding
+acts. A six-item, read-only cross-page surface window prevents exact response
+replay while remaining unavailable for semantic recall or Memory.
+
+**Evidence:** 66 full affected-module checks and 52 focused active/social checks
+passed. The exact private greeting is visibly relational and structurally
+formed; the same prompt on a second new page produces a different surface.
+Plain unmarked greetings remain neutral. Python compilation passed. All runtime
+checks used disposable state; resident state was untouched.
+
+**Boundaries:** No new organ, response script, semantic recall source, Memory,
+teaching write, durable emotion record, identity, personality, Vys,
+governance, authority, autonomy, training, LoRA, perception, embodiment,
+Tendril, or external action was added. No package or reinstall ran.
+
+**Next:** Checkpoint source and evidence. Reinstall only if Aleks requests it,
+then confirm one ordinary fresh-page greeting rather than repeating a Q&A.

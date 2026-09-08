@@ -6508,6 +6508,26 @@ def _active_conversation_context(
         for item in events
         if str(item.get("role") or "") == "selene" and str(item.get("preview") or "").strip()
     ][-4:]
+    recent_cross_session_assistant_texts = [
+        str(item.get("preview") or "").strip()
+        for item in chat_continuity.get("recent_events") or []
+        if isinstance(item, dict)
+        and str(item.get("role") or "") == "selene"
+        and str(item.get("preview") or "").strip()
+    ][-6:]
+    recent_expression_texts: list[str] = []
+    for surface in [
+        *recent_cross_session_assistant_texts,
+        *recent_assistant_texts,
+    ]:
+        key = " ".join(surface.casefold().split())
+        recent_expression_texts = [
+            item
+            for item in recent_expression_texts
+            if " ".join(item.casefold().split()) != key
+        ]
+        recent_expression_texts.append(surface)
+    recent_expression_texts = recent_expression_texts[-6:]
     recent_user_texts = [
         str(item.get("preview") or "").strip()
         for item in events
@@ -6538,6 +6558,8 @@ def _active_conversation_context(
         "status": "active_conversation_context_ready",
         "previous_turn": previous_turn,
         "recent_assistant_texts": recent_assistant_texts,
+        "recent_cross_session_assistant_texts": recent_cross_session_assistant_texts,
+        "recent_expression_texts": recent_expression_texts,
         "recent_user_texts": recent_user_texts,
         "recent_figurative_interpretations": recent_figurative_interpretations,
         "pending_collaborative_help": pending_collaborative_help,
@@ -6548,6 +6570,14 @@ def _active_conversation_context(
         "thread_braid": pragmatics.get("thread_braid") if isinstance(pragmatics.get("thread_braid"), dict) else {},
         "source_class": "current_supervised_chat_turns",
         "use_scope": "dialogue continuity only; not durable memory or broad recall",
+        "expression_freshness_scope": (
+            "bounded current and prior ordinary Selene Chat surfaces only; "
+            "wording freshness, not semantic recall"
+        ),
+        "cross_session_expression_surface_used": bool(
+            recent_cross_session_assistant_texts
+        ),
+        "cross_session_expression_semantic_recall_allowed": False,
         "memory_write_active": False,
         "runtime_memory_recall": False,
     }

@@ -910,6 +910,14 @@ def _meaning_packet(
         for item in conversation.get("recent_assistant_texts") or []
         if str(item).strip()
     ][:4]
+    recent_expression_texts = [
+        str(item).strip()
+        for item in (
+            conversation.get("recent_expression_texts")
+            or recent_assistant_texts
+        )
+        if str(item).strip()
+    ][-6:]
     previous_turn = conversation.get("previous_turn") if isinstance(conversation.get("previous_turn"), dict) else {}
     memory_supported = memory.get("memory_context_used") is True
     continuity_supported = continuity.get("available") is True or payload.get("local_chat_continuity_used") is True
@@ -1380,6 +1388,8 @@ def _meaning_packet(
             "session_scoped_only": True,
         },
         "recent_assistant_texts": recent_assistant_texts,
+        "recent_expression_texts": recent_expression_texts,
+        "cross_session_expression_semantic_recall_allowed": False,
         "expression_profile": expression_profile,
         "variation_context": variation_context,
         "voice_category": str(payload.get("voice_category") or _voice_category(intent, affect, affect_expression)),
@@ -1925,6 +1935,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "conversational_energy": conversational_energy,
             "language_teaching_guidance": meaning.get("language_teaching_guidance") or {},
             "recent_assistant_texts": meaning.get("recent_assistant_texts") or [],
+            "recent_expression_texts": meaning.get("recent_expression_texts") or [],
             # Formation can fall back to the user's prompt when no answer
             # content exists.  Only an actual supplied/owned content seed may
             # authorize general supported-answer surface variation.
@@ -2048,7 +2059,14 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     variation = meaning.get("variation_context") if isinstance(meaning.get("variation_context"), dict) else {}
     expression_profile = str(meaning.get("expression_profile") or "direct")
     digest_key = f"{prompt}|{intent}|{certainty}|{expression_profile}|{variation.get('variation_key', '')}"
-    recent = [str(item) for item in meaning.get("recent_assistant_texts") or []]
+    recent = [
+        str(item)
+        for item in (
+            meaning.get("recent_expression_texts")
+            or meaning.get("recent_assistant_texts")
+            or []
+        )
+    ]
     comprehension = meaning.get("comprehension") if isinstance(meaning.get("comprehension"), dict) else {}
     handshake = comprehension.get("handshake") if isinstance(comprehension.get("handshake"), dict) else {}
     pragmatic_plan = meaning.get("pragmatic_plan") if isinstance(meaning.get("pragmatic_plan"), dict) else {}
