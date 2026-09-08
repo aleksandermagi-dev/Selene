@@ -3,9 +3,9 @@
 Last refreshed: 2026-09-07
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
-G13 through G15 remain taught and installed; current-session decision
-continuity cultivation is checkpointed, packaged, freshly installed, and
-least-impact verified
+G13 through G15 remain taught and installed; input clarification, source-safe
+Memory expression, greeting warmth, and mistake provenance are source-
+checkpointed and focused-verification complete, but not yet packaged
 
 ## Purpose
 
@@ -18,6 +18,9 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest input clarification, source-safe Memory expression, greeting warmth,
+  and mistake-provenance checkpoint: `4be2f5f`
+  (`Cultivate input clarification and source-safe warmth`)
 - Latest current-session decision continuity checkpoint: `eebec64`
   (`Cultivate current-session decision continuity`)
 - Latest current-turn-owner learning-gap routing checkpoint: `dfab5eb`
@@ -72,7 +75,7 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  fourteen commits ahead of `origin/evidence`; confirm again before any later
+  fifteen commits ahead of `origin/evidence`; confirm again before any later
   commit or push
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
@@ -806,6 +809,34 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_POST_SOCIAL_ROUTING_INSTALL_GENTLE_QNA_20260907.md`.
 
+## Input Clarification, Source-Safe Memory, and Mistake Provenance
+
+- Checkpoint `4be2f5f` repairs the installed conversation findings without
+  changing resident state.
+- Expressive ordinary greetings such as `Hello Selene!` now make warmth
+  available to the existing social-expression handoff; unmarked greetings can
+  remain neutral.
+- The detangler repairs the structural `th e<word>` keyboard-slip shape while
+  preserving raw input and protected code, URLs, and paths.
+- A material unresolved token selects one targeted ordinary clarification.
+  Teaching, Memory retrieval, Memory action, and learning-gap invitation stand
+  down until meaning is resolved.
+- Contextual Memory no longer accepts double-counted one-word overlap. Memory
+  expression separates semantic reconstruction from transcript/code evidence,
+  and final visible-speech inspection independently holds raw source scaffolds.
+- Explicit mistake provenance allows Selene to learn from Aleks's correction
+  without claiming his mistake, lived experience, emotion, or failure as her
+  own. This is preventative; Selene had not been observed showing that external-
+  system behavior.
+- Verification passed 134 focused checks and 6 exact/neighboring active-Chat
+  checks. Python compilation passed. All databases were disposable; resident
+  state was untouched.
+- Evidence:
+  `docs/evidence/SELENE_INPUT_CLARIFICATION_MEMORY_SOURCE_WARMTH_CULTIVATION_20260907.md`.
+- The repair is not packaged or installed. Do not run another broad Q&A.
+  Package/reinstall only if Aleks asks, then use one bright greeting and one
+  ordinary typo/clarification confirmation.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -873,9 +904,17 @@ packaged from clean documentation checkpoint `5e6a9c6`, freshly installed,
 and least-impact verified. The earlier social-expression and current-turn-
 owner repairs are included in that installed package.
 
-The exact resume point is ordinary use or the next explicitly selected
-teaching phase. Do not repeat the decision-chain confirmation, G13, G14, or
-G15 teaching, the earlier repaired learning replay, or a broad Q&A battery.
+The input clarification, source-safe Memory expression, expressive greeting,
+and mistake-provenance cultivation is committed at `4be2f5f`. Its focused and
+exact Chat verification is complete, but it is not packaged or installed. The
+currently installed executable therefore remains the verified `5e6a9c6`
+package and does not yet contain this latest source repair.
+
+The exact resume point is Aleks deciding whether to package/reinstall
+`4be2f5f`, followed by at most one bright greeting and one ordinary
+typo/clarification check if installed, or otherwise the next explicitly
+selected teaching phase. Do not repeat the decision-chain confirmation, G13,
+G14, or G15 teaching, the earlier repaired learning replay, or a broad Q&A battery.
 Keep the nine known pre-existing Chat-owner failures as a separate bounded
 stabilization batch. The downloaded source corpora and private 20-interaction
 review stay ignored and unavailable to runtime.
