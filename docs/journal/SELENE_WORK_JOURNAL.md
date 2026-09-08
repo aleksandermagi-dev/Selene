@@ -4918,3 +4918,40 @@ Temporary state was removed and no Selene process remained.
 **Next:** Review the Q&A map with Aleks. If selected, cultivate current-visible
 premise and response-function ownership before more teaching. Do not repeat the
 settled warmth gate.
+### 2026-09-08 — Varied conversation breadth Q&A maps the shared ownership root
+
+**Observation:** Aleks requested a second ordinary Q&A with different prompts
+before repair. Three disposable conversations covered reflection, preferences,
+changed constraints, object/reference continuity, comparison, hypothesis,
+disagreement, humor, recap, and closure. The installed familiar greeting
+remained visibly warm. No resident state or external system was changed.
+
+**Root map:** The 24-turn run confirmed one connected implementation cluster:
+current-session propositions and requested functions lose answer ownership;
+the learning-gap invitation then overreaches; weak lexical overlap admits
+unrelated approved knowledge; corrections and changed constraints do not
+complete the open answer; and current coverage can accept answer-shaped text
+without verifying subject/entity/operation alignment. Humor, recap, and
+closure also lack complete typed ownership, while shared subject and symbol
+cleanup remains unfinished.
+
+**Notable evidence:** Object movement silently selected currency teaching,
+experimental equal improvement selected elementary equal-groups teaching, and
+`That was the point` selected literary point-of-view teaching. These are
+relevance and ownership defects, not unsafe source material. Selene accepted
+disagreement without defensiveness; no turn wrote Memory, trained, expanded
+authority, or acted externally.
+
+**Instrumentation note:** One pre-turn payload mismatch was rejected. The first
+complete disposable run captured routing receipts but omitted visible text due
+to a harness field mismatch, so the bounded prompts were repeated once on a
+fresh disposable copy. Future installed Q&A harnesses must read
+`candidate_text`; no further broad run should occur before repair.
+
+**Evidence:**
+`docs/evidence/SELENE_VARIED_CONVERSATION_BREADTH_QNA_20260908.md`.
+
+**Next:** Review with Aleks, then—if authorized—Cultivate the existing current-
+session proposition, response-owner, learning-gap, retrieval relevance,
+revision, coverage, and realization handoffs as one coordinated source repair.
+Do not teach around the defect or patch individual prompt phrases.
