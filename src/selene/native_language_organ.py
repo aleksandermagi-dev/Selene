@@ -1884,6 +1884,7 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "prompt": prompt,
             "content_seed": meaning.get("content_seed") or "",
             "corrected_meaning": corrected_meaning,
+            "epistemic_revision": meaning.get("epistemic_revision") or {},
             "turn_count": (meaning.get("conversation_context") or {}).get("turn_count") or 0,
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
             "relational_context": meaning.get("relational_context") or {},

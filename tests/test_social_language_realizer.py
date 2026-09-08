@@ -264,6 +264,32 @@ def test_correction_realization_preserves_supplied_changed_meaning_and_valid_con
     assert result["meaning_preserved"] is True
 
 
+def test_user_self_correction_cannot_be_realized_as_selenes_own_mistake():
+    plan = build_social_act_plan(
+        {
+            "intent": "receive_correction",
+            "prompt": "I was wrong; the reliable plan should come first.",
+            "corrected_meaning": "the reliable plan should come first",
+            "epistemic_revision": {
+                "mistake_provenance": {
+                    "owner": "aleks",
+                    "mistake_ownership_transfer_allowed": False,
+                }
+            },
+        }
+    )
+    result = realize_social_act_plan(
+        plan,
+        prompt="I was wrong; the reliable plan should come first.",
+        variation_key="user-self-correction",
+    )
+
+    assert plan["acts"][0]["act"] == "receive_user_self_correction"
+    assert plan["mistake_ownership_transfer_allowed"] is False
+    assert "I had the wrong" not in result["candidate_text"]
+    assert "the reliable plan should come first" in result["candidate_text"]
+
+
 def test_repair_acknowledgements_use_the_compositional_social_layer():
     results = [
         realize_acknowledgement("partial_agreement", variation_key=f"turn-{index}")

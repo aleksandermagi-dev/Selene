@@ -147,6 +147,15 @@ def _conversation_cues(
         relational_context if isinstance(relational_context, dict) else {}
     )
     _append_if(cues, "hard_boundary", intent == "hard_boundary")
+    _append_if(
+        cues,
+        "expressive_greeting",
+        intent == "greeting"
+        and bool(
+            re.search(r"!+\s*$", prompt)
+            or re.search(r"(?:<3|[:;]-?[)D])\s*$", prompt, flags=re.IGNORECASE)
+        ),
+    )
     _append_if(cues, "correction", intent == "correction" or correction_signal(lower))
     _append_if(cues, "playful", any(term in lower for term in ("haha", "lol", "xd", "joke", "funny", "playful")))
     _append_if(cues, "tender_context", any(term in lower for term in ("nervous", "worried", "scared", "tender", "rough day", "hard day")))
@@ -291,7 +300,8 @@ def _expression_posture(
     if "technical" in cues or "brief_requested" in cues:
         return "clear_direct"
     if (
-        "warm_connection" in cues
+        "expressive_greeting" in cues
+        or "warm_connection" in cues
         or "friendly_check_in" in cues
         or signal_posture == "warm_and_steady"
     ):

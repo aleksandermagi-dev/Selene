@@ -79,7 +79,7 @@ from .human_conversational_realization import (
     conversational_realization_preserves_required_meaning,
     preferred_conversational_realization_fallback,
 )
-from .input_detangler import detangle_user_input
+from .input_detangler import build_input_clarification, detangle_user_input
 from .intelligence_os import run_intelligence_os_reason
 from .language_teaching_shelf import (
     build_language_capability_answer,
@@ -277,6 +277,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     if not text.strip():
         raise ValueError("message text is required")
     input_interpretation = detangle_user_input(text)
+    input_clarification = build_input_clarification(input_interpretation)
+    input_clarification_required = input_clarification.get("required") is True
     understanding_text = truncate(str(input_interpretation.get("interpreted_text") or text), 2400)
     package = latest_c_readable_package(conn)
     approved = bool(package.get("transfer_approved"))
@@ -402,6 +404,16 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "hard_boundary": bool(hard_blockers),
         },
     )
+    if input_clarification_required:
+        conversational_teaching_plan = {
+            **conversational_teaching_plan,
+            "status": "conversational_teaching_held_for_input_clarification",
+            "action": "none",
+            "explicit_activation": False,
+            "teaching_claim": "",
+            "response_seed": "",
+            "reason": "material_input_meaning_must_be_clarified_before_teaching",
+        }
     conversational_teaching = apply_conversational_teaching(
         conn,
         conversational_teaching_plan,
@@ -428,7 +440,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         session_id=session_id,
         source_class=source_class,
         input_channel=input_channel,
-        hard=bool(hard_blockers),
+        hard=bool(hard_blockers) or input_clarification_required,
         transfer_complete=transfer_complete,
         diagnostic_only=qa_probe,
     )
@@ -478,6 +490,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "speaker_envelope": speaker_envelope,
             "allow_contextual_relevance": transfer_complete and not qa_probe,
+            "input_interpretation": input_interpretation,
         },
     )
     dual_horizon_context = build_dual_horizon_context(
@@ -708,9 +721,20 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     language_content_seed = str(language_capability.get("content_seed") or "")
     conversational_teaching_reply = str(conversational_teaching.get("response_seed") or "")
     learning_gap_reply = str(learning_gap_invitation.get("response_seed") or "")
+    if input_clarification_required:
+        learning_gap_invitation = {
+            **learning_gap_invitation,
+            "status": "learning_gap_invitation_held_for_input_clarification",
+            "offered": False,
+            "response_seed": "",
+            "outgoing_question_handoff": {},
+            "reason": "clarification_precedes_any_inference_of_a_learning_gap",
+        }
+        learning_gap_reply = ""
     initial_visible_speech_seed = select_visible_speech_seed(
         meaning_text,
         _visible_speech_seed_candidates(
+            input_clarification_reply=str(input_clarification.get("response_seed") or ""),
             conversational_teaching_reply=conversational_teaching_reply,
             learning_gap_reply=learning_gap_reply,
             figurative_clarification_reply=figurative_clarification_reply,
@@ -733,6 +757,18 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         ),
         conversation_spine=conversation_spine,
     )
+    if input_clarification_required:
+        initial_visible_speech_seed = select_visible_speech_seed(
+            meaning_text,
+            [
+                {
+                    "source_id": "input_meaning_clarification",
+                    "source_class": "conversation",
+                    "text": str(input_clarification.get("response_seed") or ""),
+                }
+            ],
+            conversation_spine=conversation_spine,
+        )
     content_seed = str(initial_visible_speech_seed.get("content_seed") or "")
     comprehension = build_comprehension_packet(
         conn,
@@ -1151,6 +1187,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         {},
     )
     visible_speech_candidates = _visible_speech_seed_candidates(
+        input_clarification_reply=str(input_clarification.get("response_seed") or ""),
         conversational_teaching_reply=conversational_teaching_reply,
         learning_gap_reply=learning_gap_reply,
         figurative_clarification_reply=figurative_clarification_reply,
@@ -1250,6 +1287,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             and str(candidate.get("source_id") or "") in {
                 "conversational_teaching",
                 "learning_gap_invitation",
+                "input_meaning_clarification",
                 "contextual_follow_up",
                 "current_session_facts",
                 "explicit_humor_request",
@@ -1322,6 +1360,17 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "selected_source_class": "reasoning_answer",
             "exploratory_reasoning_remains_primary": True,
         }
+    if input_clarification_required:
+        clarification_candidates = [
+            item
+            for item in visible_arbitration_candidates
+            if str(item.get("source_id") or "") == "input_meaning_clarification"
+        ]
+        visible_speech_seed = select_visible_speech_seed(
+            meaning_text,
+            clarification_candidates,
+            conversation_spine=conversation_spine,
+        )
     precompletion_formation_candidates = _formation_braid_candidates(
         visible_speech_candidates,
         answer_engine_support=answer_engine_support,
@@ -1422,6 +1471,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         }
     elif str(visible_speech_seed.get("selected_source_id") or "") in {
         "current_session_facts",
+        "input_meaning_clarification",
         "explicit_humor_request",
         "figurative_meaning_clarification",
         "ordinary_uncertainty",
@@ -2309,6 +2359,19 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     metacognition["organ_coalition_observed"] = True
     metacognition["organ_coalition_selection_authority"] = False
     explicit_question_handoff = (
+        {
+            "status": "awaiting_input_clarification",
+            "question_kind": "input_clarification",
+            "question": str(input_clarification.get("response_seed") or ""),
+            "unresolved_token": str(input_clarification.get("unresolved_token") or ""),
+            "session_scoped": True,
+            "ordinary_conversation_is_teaching": False,
+            "user_input_remains_user_authored": True,
+            "selene_failure_inferred": False,
+            "memory_write_active": False,
+        }
+        if input_clarification_required
+        else
         conversational_teaching.get("outgoing_question_handoff")
         if isinstance(conversational_teaching.get("outgoing_question_handoff"), dict)
         and conversational_teaching.get("outgoing_question_handoff")
@@ -2392,6 +2455,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "held_actions": route.get("held_actions") or [],
             "activation_state": "resident_chat_available",
             "input_interpretation": input_interpretation,
+            "input_clarification": input_clarification,
             "figurative_interpretation": figurative_interpretation,
             "interpreted_text": meaning_text,
             "input_channel": input_channel,
@@ -2405,6 +2469,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "learning_gap_invitation": learning_gap_invitation,
         "assistant_question_handoff": assistant_question_handoff,
         "input_interpretation": input_interpretation,
+        "input_clarification": input_clarification,
         "figurative_interpretation": figurative_interpretation,
         "dream_reflection_handoff": dream_reflection_handoff,
         "interpreted_text": meaning_text,
@@ -2540,6 +2605,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "input_channel": input_channel,
             "delivery_constraint": delivery_constraint,
             "input_interpretation": input_interpretation,
+            "input_clarification": input_clarification,
             "figurative_interpretation": figurative_interpretation,
             "dream_reflection_handoff": dream_reflection_handoff,
             "interpreted_text": meaning_text,
@@ -3171,6 +3237,7 @@ def _dream_reflection_response_seed(
 
 def _visible_speech_seed_candidates(
     *,
+    input_clarification_reply: str = "",
     conversational_teaching_reply: str = "",
     learning_gap_reply: str = "",
     figurative_clarification_reply: str = "",
@@ -3200,6 +3267,11 @@ def _visible_speech_seed_candidates(
     hard_boundary: bool = False,
 ) -> list[dict[str, Any]]:
     candidates = [
+        {
+            "source_id": "input_meaning_clarification",
+            "source_class": "conversation",
+            "text": input_clarification_reply,
+        },
         {
             "source_id": "conversational_teaching",
             "source_class": "conversation",
@@ -4844,6 +4916,7 @@ def _preserve_bounded_conversation_invariants(
         "current_session_facts",
         "conversational_teaching",
         "learning_gap_invitation",
+        "input_meaning_clarification",
         "explicit_humor_request",
         "figurative_meaning_clarification",
         "ordinary_uncertainty",

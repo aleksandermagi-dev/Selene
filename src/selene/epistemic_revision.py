@@ -101,7 +101,8 @@ def build_epistemic_revision_plan(
     ).strip()
     if requested_kind and requested_kind not in UPDATE_KINDS:
         raise ValueError(f"unsupported epistemic update kind: {requested_kind}")
-    update_subject = _update_subject(payload)
+    update_subject = _update_subject(payload, prompt=prompt)
+    mistake_owner = _mistake_owner(prompt)
 
     kind, basis = (
         (requested_kind, "explicit_structured_update_kind")
@@ -186,6 +187,14 @@ def build_epistemic_revision_plan(
         "detected": detected,
         "update_kind": kind if detected else "none",
         "update_subject": update_subject,
+        "mistake_provenance": {
+            "owner": mistake_owner,
+            "owner_inferred_only_from_explicit_first_or_second_person_wording": bool(mistake_owner),
+            "learning_from_another_persons_mistake_allowed": True,
+            "mistake_ownership_transfer_allowed": False,
+            "another_persons_lived_experience_claimed_by_selene": False,
+            "mistake_is_identity": False,
+        },
         "evidence_may_update_either_participant": True,
         "classification_basis": basis if detected or owner_locked else "no_explicit_update_signal",
         "target_class": target_class,
@@ -468,9 +477,12 @@ def _target_class(payload: dict[str, Any]) -> str:
     return aliases.get(supplied, supplied)
 
 
-def _update_subject(payload: dict[str, Any]) -> str:
+def _update_subject(payload: dict[str, Any], *, prompt: str = "") -> str:
     supplied = str(
-        payload.get("update_subject") or payload.get("claim_owner") or "unspecified"
+        payload.get("update_subject")
+        or payload.get("claim_owner")
+        or _mistake_owner(prompt)
+        or "unspecified"
     ).strip().lower()
     aliases = {
         "user": "aleks",
@@ -482,6 +494,21 @@ def _update_subject(payload: dict[str, Any]) -> str:
     if subject not in UPDATE_SUBJECTS:
         raise ValueError(f"unsupported epistemic update subject: {subject}")
     return subject
+
+
+def _mistake_owner(prompt: str) -> str:
+    lower = " ".join(str(prompt or "").lower().replace("’", "'").split())
+    if re.search(
+        r"\b(?:i (?:was|am|got) wrong|i made (?:a |the )?mistake|my mistake|that was my fault)\b",
+        lower,
+    ):
+        return "aleks"
+    if re.search(
+        r"\b(?:you were wrong|you made (?:a |the )?mistake|your mistake|not what i meant)\b",
+        lower,
+    ):
+        return "selene"
+    return ""
 
 
 def _disposition(kind: str, owner_locked: bool) -> str:

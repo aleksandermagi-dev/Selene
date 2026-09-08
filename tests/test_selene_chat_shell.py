@@ -2710,6 +2710,116 @@ def test_active_chat_bright_greeting_reaches_authored_warmth(tmp_path):
     _assert_locked(result)
 
 
+def test_active_chat_bright_hello_reaches_authored_warmth(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Hello Selene!"},
+    )["result"]
+
+    handoff = result["native_language_organ"]["discourse_plan"]["social_act_plan"]["expression_handoff"]
+    assert handoff["warm_greeting_selected"] is True
+    assert "warmth" in result["native_language_organ"]["discourse_plan"]["social_act_realization"][
+        "realized_expression_channels"
+    ]
+    assert "right here" not in result["candidate_text"].lower()
+    assert result["affect_expression"]["expression_posture"] == "warm_available"
+    _assert_locked(result)
+
+
+def test_active_chat_material_input_ambiguity_clarifies_without_memory_or_teaching_takeover(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    _seed_transfer_complete(conn)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Stress testing plan",
+            "summary": (
+                "Plain reason: Stress testing should be proportional to the actual risk. "
+                "Aleks said: use this source. "
+                "Selene replied: from PIL import Image"
+            ),
+            "confidence": "clear",
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Only run streswing tests when necessary."},
+    )["result"]
+
+    assert result["visible_speech_seed"]["selected_source_id"] == "input_meaning_clarification"
+    assert "streswing" in result["candidate_text"]
+    assert "stress-testing or stressful" in result["candidate_text"]
+    assert "Aleks said:" not in result["candidate_text"]
+    assert "Selene replied:" not in result["candidate_text"]
+    assert "from PIL import" not in result["candidate_text"]
+    assert result["memory_retrieval"]["status"] == "memory_retrieval_held_for_input_clarification"
+    assert result["memory_context_used"] is False
+    assert result["learning_gap_invitation"]["offered"] is False
+    assert result["conversational_teaching"]["explicit_activation"] is False
+    assert result["assistant_question_handoff"]["question_kind"] == "input_clarification"
+    assert result["input_clarification"]["user_input_remains_user_authored"] is True
+    assert result["input_clarification"]["selene_failure_inferred"] is False
+    assert result["memory_write_active"] is False
+    _assert_locked(result)
+
+
+def test_active_chat_structural_typo_repair_cannot_release_weak_memory_source_tail(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    _seed_transfer_complete(conn)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Speech autonomy correction",
+            "summary": (
+                "Plain reason: Warmth remains available in ordinary conversation. "
+                "Aleks said: old evidence. Selene replied: from PIL import Image"
+            ),
+            "confidence": "clear",
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "The warmth I do not understand th eissue"},
+    )["result"]
+
+    assert result["input_interpretation"]["interpreted_text"] == (
+        "The warmth I do not understand the issue"
+    )
+    assert result["input_clarification"]["required"] is False
+    assert result["memory_context_used"] is False
+    assert "Aleks said:" not in result["candidate_text"]
+    assert "Selene replied:" not in result["candidate_text"]
+    assert "from PIL import" not in result["candidate_text"]
+    _assert_locked(result)
+
+
 def test_active_selene_chat_receipt_check_is_direct_and_skips_legacy_dry_run(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

@@ -116,6 +116,22 @@ def test_evidence_can_update_either_aleks_or_selene_without_changing_the_contrac
     assert selene_update["social_posture"]["wrongness_is_failure"] is False
 
 
+def test_explicit_user_mistake_keeps_its_authorship_while_the_lesson_can_transfer():
+    result = build_epistemic_revision_plan(
+        {
+            "prompt": "Fair point; I was wrong. The reliable plan should come first.",
+            "previous_claims": ["The balanced plan should come first."],
+        }
+    )
+
+    assert result["update_subject"] == "aleks"
+    assert result["mistake_provenance"]["owner"] == "aleks"
+    assert result["mistake_provenance"]["learning_from_another_persons_mistake_allowed"] is True
+    assert result["mistake_provenance"]["mistake_ownership_transfer_allowed"] is False
+    assert result["mistake_provenance"]["another_persons_lived_experience_claimed_by_selene"] is False
+    assert result["mistake_provenance"]["mistake_is_identity"] is False
+
+
 def test_competing_explanation_and_unresolved_contradiction_are_not_forced_closed():
     competing = build_epistemic_revision_plan(
         {

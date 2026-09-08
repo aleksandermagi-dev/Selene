@@ -10,6 +10,7 @@ from selene.memory_organ import (
     propose_memory_candidate,
     reconstruct_memory_summary_for_expression,
 )
+from selene.input_detangler import detangle_user_input
 from selene.module_router import route_request
 from selene.current_turn_fact_ledger import build_current_turn_fact_ledger
 
@@ -117,6 +118,25 @@ def test_memory_expression_reconstruction_holds_bounded_core_pair_label() -> Non
     assert result == "Aleks and Selene discussed why the porch routine mattered"
     assert "Bounded Core" not in result
     assert "review only" not in result
+
+
+def test_memory_expression_reconstruction_separates_meaning_from_source_evidence_tail() -> None:
+    source = {
+        "summary": (
+            "Plain reason: Aleks invited Selene to speak with warmth when it fits. "
+            "Aleks said: You can be expressive. "
+            "Selene replied: from PIL import Image; Image.open('private.png')"
+        )
+    }
+    original = dict(source)
+
+    result = reconstruct_memory_summary_for_expression(source)
+
+    assert result == "Aleks invited Selene to speak with warmth when it fits"
+    assert "Aleks said:" not in result
+    assert "Selene replied:" not in result
+    assert "from PIL import" not in result
+    assert source == original
 
 
 def test_memory_index_includes_approved_reference_with_vys_metadata(tmp_path):
@@ -820,6 +840,60 @@ def test_memory_retrieve_can_use_strong_approved_context_without_explicit_recall
     assert weak["memory_context_used"] is False
     _assert_locked(contextual)
     _assert_locked(weak)
+
+
+def test_contextual_memory_does_not_treat_one_meaningful_word_as_strong_alignment(tmp_path):
+    conn = _conn(tmp_path)
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Speech autonomy correction",
+            "summary": "Warmth remains available during ordinary conversation and technical work.",
+            "confidence": "clear",
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+
+    result = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            "query": "The warmth I do not understand the issue",
+            "allow_contextual_relevance": True,
+        },
+    )["result"]
+
+    assert result["memory_context_used"] is False
+    assert result["items"] == []
+    _assert_locked(result)
+
+
+def test_memory_retrieval_stands_down_while_input_meaning_is_unresolved(tmp_path):
+    conn = _conn(tmp_path)
+    interpretation = detangle_user_input("Do you remember the streswing plan?")
+
+    result = route_request(
+        conn,
+        "memory.retrieve",
+        {
+            "query": interpretation["interpreted_text"],
+            "allow_contextual_relevance": True,
+            "input_interpretation": interpretation,
+        },
+    )["result"]
+
+    assert result["status"] == "memory_retrieval_held_for_input_clarification"
+    assert result["memory_context_used"] is False
+    assert result["items"] == []
+    assert result["user_input_remains_user_authored"] is True
+    assert result["selene_failure_inferred"] is False
+    _assert_locked(result)
 
 
 def test_local_private_approved_memory_can_be_recalled_but_stays_out_of_portable_manifest(tmp_path):

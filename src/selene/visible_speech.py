@@ -63,6 +63,15 @@ _INTERNAL_REASONING_SCAFFOLDS = (
     "stay corrigible",
 )
 
+_SOURCE_TRANSCRIPT_SCAFFOLD = re.compile(
+    r"(?:^|\s)(?:Aleks|Selene|User|Assistant)\s+(?:said|replied|wrote)\s*:",
+    re.IGNORECASE,
+)
+_CODE_PAYLOAD_SCAFFOLD = re.compile(
+    r"```|\bfrom\s+[A-Za-z_][\w.]*\s+import\s+|\bimport\s+[A-Za-z_][\w.]*",
+    re.IGNORECASE,
+)
+
 _ARCHITECTURE_CONTEXT_CUES = (
     "architecture",
     "candidate model",
@@ -325,6 +334,12 @@ def inspect_visible_speech(
     prompt_lower = " ".join(str(prompt or "").lower().split())
     text_lower = " ".join(text.lower().split())
     architecture_requested = any(cue in prompt_lower for cue in _ARCHITECTURE_CONTEXT_CUES)
+    exact_source_requested = bool(
+        re.search(
+            r"\b(?:quote|exact words|verbatim|transcript|what (?:did|had) (?:i|you) say|show (?:me )?the code)\b",
+            prompt_lower,
+        )
+    )
     issues: list[str] = []
 
     if not text:
@@ -335,6 +350,14 @@ def inspect_visible_speech(
         issues.append("internal_architecture_language_visible")
     if any(phrase in text_lower for phrase in _INTERNAL_REASONING_SCAFFOLDS):
         issues.append("internal_reasoning_scaffold_visible")
+    if not exact_source_requested and _SOURCE_TRANSCRIPT_SCAFFOLD.search(text):
+        issues.append("raw_source_transcript_scaffold_visible")
+    if (
+        source_id in {"reviewed_memory", "contextual_approved_memory"}
+        and not exact_source_requested
+        and _CODE_PAYLOAD_SCAFFOLD.search(text)
+    ):
+        issues.append("raw_memory_code_payload_visible")
     if not architecture_requested and "intelligenceos" in text_lower:
         issues.append("internal_organ_label_visible")
     if not architecture_requested and re.search(r"\bcandidate model(?:s)?\b", text_lower):

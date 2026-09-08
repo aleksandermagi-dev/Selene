@@ -46,6 +46,11 @@ REVIEWED_PHRASE_REPAIRS = {
     "on you your mind": "on your mind",
 }
 
+# A frequent keyboard slip can split ``the`` and attach its final letter to the
+# next word (``th eissue``). This shape is structurally unambiguous: restore
+# the article boundary without guessing the following word.
+_SPLIT_ARTICLE_ATTACHED_WORD = re.compile(r"\bth\s+e(?=[A-Za-z])", re.IGNORECASE)
+
 # A material ambiguity is surfaced, never silently selected from these options.
 AMBIGUOUS_TOKENS = {
     "caughtgit": ["caught it", "caught Git"],
@@ -121,6 +126,15 @@ def _repair_segment(
     ambiguities: list[dict[str, Any]],
 ) -> str:
     value = segment
+    value = _SPLIT_ARTICLE_ATTACHED_WORD.sub(
+        lambda match: _record_repair(
+            match,
+            "the ",
+            "reviewed_structural_spacing",
+            repairs,
+        ),
+        value,
+    )
     for original, replacement in REVIEWED_PHRASE_REPAIRS.items():
         escaped = re.escape(original).replace(r"\ ", r"\s+")
         pattern = re.compile(rf"\b{escaped}\b", re.IGNORECASE)
@@ -168,6 +182,65 @@ def _repair_segment(
             }
         )
     return normalized
+
+
+def build_input_clarification(
+    interpretation: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Build one ordinary clarification when an unresolved token changes meaning.
+
+    The raw wording remains the user's. The question neither turns ambiguity
+    into teaching nor attributes the user's input difficulty to Selene.
+    """
+
+    interpretation = interpretation if isinstance(interpretation, dict) else {}
+    ambiguities = [
+        item
+        for item in interpretation.get("ambiguities") or []
+        if isinstance(item, dict) and str(item.get("token") or "").strip()
+    ]
+    if not ambiguities or interpretation.get("ask_if_materially_ambiguous") is not True:
+        return {
+            "status": "input_clarification_not_needed",
+            "required": False,
+            "response_seed": "",
+            "user_input_remains_user_authored": True,
+            "selene_failure_inferred": False,
+            **GUARDS,
+        }
+
+    ambiguity = ambiguities[0]
+    token = truncate(str(ambiguity.get("token") or "that part"), 80)
+    alternatives = [
+        truncate(str(item), 100)
+        for item in ambiguity.get("alternatives") or []
+        if str(item).strip()
+    ][:3]
+    if len(alternatives) == 2:
+        question = (
+            f'I\u2019m not sure what you meant by \u201c{token}.\u201d '
+            f'Did you mean {alternatives[0]} or {alternatives[1]}?'
+        )
+    elif alternatives:
+        rendered = ", ".join(alternatives[:-1])
+        rendered = f"{rendered}, or {alternatives[-1]}" if rendered else alternatives[-1]
+        question = f'I\u2019m not sure what you meant by \u201c{token}.\u201d Did you mean {rendered}?'
+    else:
+        question = f'I\u2019m not sure what you meant by \u201c{token}.\u201d Could you rephrase that part?'
+    return {
+        "status": "material_input_clarification_ready",
+        "required": True,
+        "response_seed": question,
+        "unresolved_token": token,
+        "alternatives": alternatives,
+        "single_question_only": True,
+        "ordinary_conversation_not_teaching": True,
+        "user_input_remains_user_authored": True,
+        "selene_failure_inferred": False,
+        "memory_retrieval_eligible": False,
+        "provenance_boundary": INPUT_DETANGLER_BOUNDARY,
+        **GUARDS,
+    }
 
 
 def _record_repair(

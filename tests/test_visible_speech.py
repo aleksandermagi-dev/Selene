@@ -70,6 +70,18 @@ def test_final_release_holds_serialized_metadata_and_generic_reasoning_scaffold(
     assert "internal_reasoning_scaffold_visible" in scaffold["issues"]
 
 
+def test_visible_speech_holds_raw_memory_transcript_and_code_payloads():
+    result = inspect_visible_speech(
+        "A useful meaning. Aleks said: hello. Selene replied: from PIL import Image",
+        prompt="I am confused about the warmth issue.",
+        source_id="contextual_approved_memory",
+    )
+
+    assert result["release_allowed"] is False
+    assert "raw_source_transcript_scaffold_visible" in result["issues"]
+    assert "raw_memory_code_payload_visible" in result["issues"]
+
+
 def test_final_release_holds_bare_internal_route_values():
     result = inspect_visible_speech(
         "Alongside that, Answer_now.",

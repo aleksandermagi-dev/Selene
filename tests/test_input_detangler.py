@@ -3,7 +3,7 @@ from __future__ import annotations
 from selene.chat_intent import classify_chat_intent
 from selene.db import connect, init_db
 from selene.dialogue_workspace import prepare_dialogue_turn
-from selene.input_detangler import detangle_user_input
+from selene.input_detangler import build_input_clarification, detangle_user_input
 from selene.module_router import route_request
 from selene.pragmatic_planner import build_pragmatic_plan
 
@@ -40,6 +40,23 @@ def test_detangler_repairs_observed_unambiguous_doubled_pronoun_phrase():
     assert classify_chat_intent(result["interpreted_text"])["intent"] == "self_state"
 
 
+def test_detangler_repairs_split_article_attached_to_the_following_word():
+    raw = "The warmth I do not understand th eissue"
+    result = detangle_user_input(raw)
+
+    assert result["interpreted_text"] == "The warmth I do not understand the issue"
+    assert result["repairs"][0]["kind"] == "reviewed_structural_spacing"
+    assert result["safe_for_silent_repair"] is True
+
+
+def test_detangler_does_not_apply_split_article_repair_inside_protected_material():
+    raw = "please inspect `th eissue` and https://example.test/th%20eissue"
+    result = detangle_user_input(raw)
+
+    assert result["interpreted_text"] == raw
+    assert result["repair_count"] == 0
+
+
 def test_detangler_leaves_material_ambiguity_unresolved():
     raw = "only run streswing tests when necessary"
     result = detangle_user_input(raw)
@@ -52,6 +69,20 @@ def test_detangler_leaves_material_ambiguity_unresolved():
     assert result["interpretation_complete"] is False
     assert result["ask_if_materially_ambiguous"] is True
     assert result["interpretation_confidence"] == "unresolved"
+
+
+def test_material_ambiguity_builds_one_user_attributed_ordinary_clarification():
+    interpretation = detangle_user_input("only run streswing tests when necessary")
+    result = build_input_clarification(interpretation)
+
+    assert result["required"] is True
+    assert result["single_question_only"] is True
+    assert result["ordinary_conversation_not_teaching"] is True
+    assert "streswing" in result["response_seed"]
+    assert "stress-testing or stressful" in result["response_seed"]
+    assert result["user_input_remains_user_authored"] is True
+    assert result["selene_failure_inferred"] is False
+    assert result["memory_retrieval_eligible"] is False
 
 
 def test_detangler_does_not_rewrite_code_urls_or_workspace_paths():

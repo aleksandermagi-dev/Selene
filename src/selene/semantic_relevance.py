@@ -37,7 +37,7 @@ _STOP_TERMS = _GENERIC_TERMS | {
     "a", "an", "and", "are", "as", "at", "be", "because", "been", "before",
     "but", "by", "could", "did", "for", "from", "had", "has", "have", "he",
     "her", "here", "him", "his", "how", "i", "if", "in", "into", "is", "it",
-    "its", "me", "my", "of", "on", "or", "our", "she", "should", "so", "some",
+    "its", "me", "my", "no", "not", "never", "of", "on", "or", "our", "she", "should", "so", "some",
     "that", "the", "their", "them", "then", "there", "these", "they", "this",
     "those", "through", "to", "too", "us", "was", "we", "were", "what", "when",
     "where", "which", "who", "why", "will", "with", "would", "you", "your",

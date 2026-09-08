@@ -189,6 +189,34 @@ def test_relational_context_opens_warmth_without_prescribing_or_claiming_emotion
     _assert_locked(result)
 
 
+def test_expressive_ordinary_greeting_makes_warmth_available_without_forcing_it(tmp_path):
+    conn = _conn(tmp_path)
+
+    bright = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": "Hello Selene!",
+            "session_id": 24,
+            "intent_decision": {"intent": "greeting"},
+        },
+    )
+    plain = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": "Hello.",
+            "session_id": 25,
+            "intent_decision": {"intent": "greeting"},
+        },
+    )
+
+    assert "expressive_greeting" in bright["current_turn_cues"]
+    assert bright["expression_posture"] == "warm_available"
+    assert plain["expression_posture"] == "ordinary_attentive"
+    assert bright["guidance_is_optional"] is True
+    _assert_locked(bright)
+    _assert_locked(plain)
+
+
 def test_codex_name_does_not_accidentally_force_technical_posture(tmp_path):
     conn = _conn(tmp_path)
 

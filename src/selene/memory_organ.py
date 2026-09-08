@@ -1002,6 +1002,32 @@ def retrieve_memory(conn: sqlite3.Connection, payload: dict[str, Any] | None = N
                 **private_corpus_contract,
             }
         )
+    input_interpretation = (
+        payload.get("input_interpretation")
+        if isinstance(payload.get("input_interpretation"), dict)
+        else {}
+    )
+    if input_interpretation and input_interpretation.get("interpretation_complete") is False:
+        return _with_guards(
+            {
+                "status": "memory_retrieval_held_for_input_clarification",
+                "recall_state": "input_meaning_unresolved",
+                "memory_context_used": False,
+                "retrieval_mode": retrieval_mode,
+                "memory_source_class": "approved_memory_index",
+                "memory_confidence": "not_assessed",
+                "memory_transfer_class": "",
+                "graceful_fall_used": True,
+                "items": [],
+                "intent_decision": intent_decision,
+                "answer_guidance": "Clarify the material input ambiguity before retrieving Memory.",
+                "user_input_remains_user_authored": True,
+                "selene_failure_inferred": False,
+                "review_destination": "Status",
+                "review_status": "status_only",
+                **private_corpus_contract,
+            }
+        )
     if not explicit_recall and not contextual_relevance:
         return _with_guards(
             {
@@ -1173,6 +1199,16 @@ def reconstruct_memory_summary_for_expression(item: dict[str, Any] | None) -> st
             raw,
             flags=re.IGNORECASE,
         )
+    # Some reviewed summaries retain a semantic reconstruction followed by
+    # attributable source evidence. Ordinary expression uses only the
+    # reconstruction; transcript excerpts and code stay in the source record.
+    evidence_tail = re.search(
+        r"\s+(?:Aleks|Selene|User|Assistant)\s+(?:said|replied|wrote)\s*:",
+        raw,
+        flags=re.IGNORECASE,
+    )
+    if evidence_tail and len(raw[: evidence_tail.start()].strip()) >= 20:
+        raw = raw[: evidence_tail.start()]
     raw = re.sub(r"\bB\s+review(?:\s+only)?\b", "review", raw, flags=re.IGNORECASE)
     raw = re.sub(r"\bC\s+activation\b", "activation", raw, flags=re.IGNORECASE)
     raw = re.sub(r"\b(?:review_status|source_id|source_table|record_class)\s*[:=]\s*\S+", " ", raw, flags=re.IGNORECASE)
@@ -1932,18 +1968,29 @@ def _rank_matches(query: str, items: list[dict[str, Any]]) -> list[dict[str, Any
 
 def _contextual_match_is_strong(query: str, item: dict[str, Any]) -> bool:
     """Require stronger subject alignment when recall was not explicitly requested."""
-    score = int(item.get("match_score") or 0)
-    if score >= 2:
-        return True
     query_tokens = _tokens(query)
     title_tokens = _tokens(str(item.get("title") or ""))
-    if not query_tokens or not title_tokens:
+    cue_tokens = [
+        _tokens(str(cue))
+        for cue in _json_list(item.get("retrieval_cues"))
+    ]
+    summary_tokens = _tokens(str(item.get("summary") or ""))
+    if not query_tokens:
         return False
-    if len(title_tokens) == 1:
-        return len(title_tokens[0]) >= 4 and title_tokens[0] in query_tokens
     query_bigrams = set(zip(query_tokens, query_tokens[1:]))
     title_bigrams = set(zip(title_tokens, title_tokens[1:]))
-    return bool(query_bigrams & title_bigrams)
+    cue_bigrams = {
+        bigram
+        for tokens in cue_tokens
+        for bigram in zip(tokens, tokens[1:])
+    }
+    if query_bigrams & (title_bigrams | cue_bigrams):
+        return True
+    candidate_tokens = set(title_tokens) | set(summary_tokens)
+    for tokens in cue_tokens:
+        candidate_tokens.update(tokens)
+    distinct_overlap = set(query_tokens) & candidate_tokens
+    return bool(len(distinct_overlap) >= 2 and distinct_overlap & set(title_tokens))
 
 
 def _meaningful_memory_overlap(overlap: set[str], item: dict[str, Any], *, query_tokens: list[str], haystack_tokens: list[str]) -> bool:
@@ -2020,6 +2067,9 @@ def _tokens(value: str) -> list[str]:
         "it",
         "if",
         "is",
+        "not",
+        "no",
+        "never",
         "its",
         "our",
         "can",

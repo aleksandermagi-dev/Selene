@@ -206,6 +206,16 @@ ACT_REALIZATIONS: dict[str, tuple[str, ...]] = {
         "Okay, that is the distinction",
         "I had the wrong edge; I have the corrected one now",
     ),
+    "receive_user_self_correction": (
+        "Got it",
+        "I follow the update",
+        "That correction is clear",
+        "Okay, I have the revised point",
+        "Fair enough",
+        "I see what changed",
+        "All right, I have the new direction",
+        "That updates the point cleanly",
+    ),
     "preserve_valid_context": (
         "The rest of the context can stay intact",
         "That changes the relevant part rather than resetting everything",
@@ -437,6 +447,16 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
     prompt = " ".join(str(payload.get("prompt") or "").split())
     content_seed = " ".join(str(payload.get("content_seed") or "").split())
     corrected_meaning = " ".join(str(payload.get("corrected_meaning") or "").split())
+    epistemic_revision = (
+        payload.get("epistemic_revision")
+        if isinstance(payload.get("epistemic_revision"), dict)
+        else {}
+    )
+    correction_attribution = (
+        epistemic_revision.get("mistake_provenance")
+        if isinstance(epistemic_revision.get("mistake_provenance"), dict)
+        else {}
+    )
     affect_guidance = payload.get("affect_expression_guidance") if isinstance(payload.get("affect_expression_guidance"), dict) else {}
     dimensions = affect_guidance.get("dimensions") if isinstance(affect_guidance.get("dimensions"), dict) else {}
     turn_count = max(0, int(payload.get("turn_count") or 0))
@@ -483,6 +503,11 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         acts = ["receive_reassurance"]
     if intent == "receive_correction" and not corrected_meaning:
         acts = [act for act in acts if act != "state_corrected_meaning"]
+    if intent == "receive_correction" and correction_attribution.get("owner") == "aleks":
+        acts = [
+            "receive_user_self_correction" if act == "acknowledge_correction" else act
+            for act in acts
+        ]
 
     return {
         "status": "social_act_plan_ready" if acts else "social_act_plan_not_applicable",
@@ -508,6 +533,8 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         ],
         "content_seed_available": bool(content_seed),
         "corrected_meaning": corrected_meaning,
+        "correction_attribution": correction_attribution,
+        "mistake_ownership_transfer_allowed": False,
         "turn_count": turn_count,
         "affect_dimensions_consulted": {
             key: dimensions.get(key)

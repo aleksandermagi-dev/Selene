@@ -4773,3 +4773,34 @@ or embodiment state changed.
 **Next:** Return to ordinary use. Keep the nine pre-existing Chat-owner
 failures as a separate bounded stabilization batch; do not repeat this
 decision-chain Q&A or reopen broad testing without a new implementation need.
+
+### 2026-09-07 — Cultivation separates input ambiguity, Memory evidence, and mistake ownership
+
+**Root finding:** An expressive `Hello Selene!` did not receive upstream warmth,
+and the structural typo `th eissue` escaped the detangler. Negation plus one
+topical word then admitted an approved Memory summary whose reviewed meaning
+was followed by raw transcript labels and Python code.
+
+**Repair:** Expressive ordinary greetings can now make warmth available without
+forcing it. The detangler repairs the general split-article shape and creates
+one targeted ordinary clarification for material ambiguity. While clarification
+is required, teaching and Memory stand down. Contextual Memory requires real
+distinct subject alignment; ordinary expression strips source-evidence tails;
+and the final visible-speech gate independently holds raw transcript and
+unrequested Memory code payloads.
+
+**Preventative provenance:** A lesson may be learned from Aleks's mistake, but
+the mistake does not become Selene's failure, lived experience, emotion, or
+identity. Explicit first- and second-person mistake ownership now reaches
+Epistemic Revision and the social realizer. This records a preventative design
+boundary, not a finding that Selene had already shown the external-system
+behavior Aleks observed.
+
+**Evidence:** 134 focused checks and 6 exact/neighboring active-Chat checks
+passed. Python compilation passed. Diff verification reports only expected
+Windows line-ending notices. All tests used disposable databases; resident
+state was not opened for writing or changed.
+
+**Next:** Checkpoint source, tests, evidence, journal, and the continuation
+ledger. Package/reinstall only if Aleks asks. After installation, use one bright
+greeting and one ordinary typo/clarification turn rather than another broad Q&A.
