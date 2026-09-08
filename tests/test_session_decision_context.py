@@ -98,3 +98,35 @@ def test_hypothetical_evidence_updates_the_scenario_but_not_later_observed_state
         "the premises or results changed"
     ]
     _assert_bounded(later_result)
+
+
+def test_natural_whether_choice_uses_general_option_grammar() -> None:
+    prompt = "I'm deciding whether to sketch indoors or walk by the river. Which sounds better?"
+    result = build_session_decision_context(
+        {"session_id": 41, "prompt": prompt, "conversation_events": _events(prompt)}
+    )
+
+    assert result["available"] is True
+    assert result["mode"] == "choice"
+    assert [item["label"] for item in result["options"]] == [
+        "sketch indoors",
+        "walk by the river",
+    ]
+    assert "choose sketch indoors" in result["response_seed"]
+    assert "the sketch indoors" not in result["response_seed"]
+    _assert_bounded(result)
+
+
+def test_would_you_rather_paraphrase_uses_the_same_decision_owner() -> None:
+    prompt = "Would you rather assemble the shelf now or read beside the window?"
+    result = build_session_decision_context(
+        {"session_id": 42, "prompt": prompt, "conversation_events": _events(prompt)}
+    )
+
+    assert result["available"] is True
+    assert result["mode"] == "choice"
+    assert [item["label"] for item in result["options"]] == [
+        "assemble the shelf now",
+        "read beside the window",
+    ]
+    _assert_bounded(result)

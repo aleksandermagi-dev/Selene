@@ -37,12 +37,13 @@ def session_proposition_ledger_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "session_proposition_ledger_ready",
-            "version": "v1_selective_dependency_revision",
+            "version": "v2_active_structured_propositions",
             "is_organ": False,
             "owner": "Dialogue Workspace",
             "scope": "visible_current_session_only",
             "records": [
                 "visible propositions",
+                "typed visible current-turn facts and requested operations",
                 "declared or typed dependencies",
                 "selective invalidation",
                 "recomputation receipts",
@@ -296,6 +297,13 @@ def record_visible_session_propositions(
         for item in operations.get("results") or []
         if isinstance(item, dict) and item.get("status") == "completed"
     ]
+    current_fact_ids = _merge_current_turn_fact_propositions(
+        propositions,
+        _dict(payload.get("current_turn_fact_ledger")),
+        session_id=session_id,
+        turn_id=turn_id,
+        thread_id=thread_id,
+    )
     claim_ids = _merge_claim_propositions(
         propositions,
         _dict(payload.get("claim_evidence_packet")),
@@ -303,6 +311,7 @@ def record_visible_session_propositions(
         turn_id=turn_id,
         thread_id=thread_id,
     )
+    current_basis_ids = list(dict.fromkeys([*current_fact_ids, *claim_ids]))
 
     recomputation = dict(ledger.get("recomputation") or {})
     correction_result = next(
@@ -322,7 +331,7 @@ def record_visible_session_propositions(
                 turn_id=turn_id,
                 thread_id=thread_id,
                 source_refs=_texts(correction_result.get("source_refs")),
-                depends_on=[revised_id] if revised_id else claim_ids,
+                depends_on=[revised_id] if revised_id else current_basis_ids,
                 recomputed_from=_texts(recomputation.get("invalidated_result_ids")),
             )
             propositions.append(recomputed)
@@ -365,7 +374,7 @@ def record_visible_session_propositions(
                     turn_id=turn_id,
                     thread_id=str(landmark.get("thread_id") or thread_id),
                     source_refs=_operation_source_refs(completed),
-                    depends_on=claim_ids,
+                    depends_on=current_basis_ids,
                     landmark_id=str(landmark.get("id") or ""),
                 )
             )
@@ -398,7 +407,7 @@ def _normalize_ledger(value: Any, *, session_id: int) -> dict[str, Any]:
     supplied = _dict(value)
     return {
         "status": str(supplied.get("status") or "session_proposition_ledger_empty"),
-        "version": "v1_selective_dependency_revision",
+        "version": "v2_active_structured_propositions",
         "session_id": int(supplied.get("session_id") or session_id),
         "propositions": [
             dict(item) for item in supplied.get("propositions") or [] if isinstance(item, dict)
@@ -500,6 +509,97 @@ def _merge_claim_propositions(
     return [item["id"] for item in created]
 
 
+def _merge_current_turn_fact_propositions(
+    propositions: list[dict[str, Any]],
+    ledger: dict[str, Any],
+    *,
+    session_id: int,
+    turn_id: str,
+    thread_id: str,
+) -> list[str]:
+    """Carry visible user-supplied structures into this session, never Memory."""
+
+    facts = [item for item in ledger.get("facts") or [] if isinstance(item, dict)][:64]
+    active_ids: list[str] = []
+    for fact in facts:
+        text = truncate(str(fact.get("text") or fact.get("value") or ""), 1600).strip()
+        if not text:
+            continue
+        fact_key = _structured_fact_key(fact)
+        existing = next(
+            (
+                item
+                for item in reversed(propositions)
+                if str(item.get("status") or "") in _ACTIVE_STATES
+                and str(item.get("structured_fact_key") or "") == fact_key
+            ),
+            {},
+        )
+        if existing:
+            active_ids.append(str(existing.get("id") or ""))
+            continue
+
+        replacement_key = str(fact.get("replacement_key") or "").strip()
+        replaced = [
+            item
+            for item in propositions
+            if replacement_key
+            and str(item.get("status") or "") in _ACTIVE_STATES
+            and str(item.get("replacement_key") or "") == replacement_key
+        ]
+        replaced_ids = {str(item.get("id") or "") for item in replaced if item.get("id")}
+        proposition = _proposition(
+            text=text,
+            kind=str(fact.get("kind") or "observation"),
+            status="active",
+            session_id=session_id,
+            source="current_visible_user_turn",
+            turn_id=turn_id,
+            thread_id=thread_id,
+            source_refs=_texts(fact.get("source_ref")),
+            replaces=sorted(replaced_ids),
+            fact_id=str(fact.get("id") or ""),
+            structured_fact_key=fact_key,
+            replacement_key=replacement_key,
+            subject=str(fact.get("subject") or ""),
+            predicate=str(fact.get("predicate") or fact.get("action") or ""),
+            object=str(fact.get("object") or ""),
+            value=str(fact.get("value") or ""),
+            relation_type=str(fact.get("relation_type") or ""),
+            operation_status=str(fact.get("operation_status") or ""),
+            reported_not_independently_verified=(
+                fact.get("reported_not_independently_verified") is True
+            ),
+        )
+        propositions.append(proposition)
+        active_ids.append(proposition["id"])
+
+        if replaced_ids:
+            descendant_ids = _descendants(propositions, replaced_ids)
+            for item in propositions:
+                proposition_id = str(item.get("id") or "")
+                if proposition_id in replaced_ids:
+                    item["status"] = "superseded"
+                    item["replaced_by_proposition_id"] = proposition["id"]
+                elif proposition_id in descendant_ids:
+                    item["status"] = "invalidated"
+                    item["invalidated_by_proposition_id"] = proposition["id"]
+    return [item for item in dict.fromkeys(active_ids) if item]
+
+
+def _structured_fact_key(fact: dict[str, Any]) -> str:
+    fields = [
+        str(fact.get("kind") or "observation"),
+        str(fact.get("subject") or ""),
+        str(fact.get("predicate") or fact.get("action") or ""),
+        str(fact.get("object") or ""),
+        str(fact.get("value") or ""),
+        str(fact.get("unit") or ""),
+        str(fact.get("text") or ""),
+    ]
+    return "|".join(_normalize(item) for item in fields)
+
+
 def _proposition(
     *,
     text: str,
@@ -514,6 +614,7 @@ def _proposition(
     replaces: list[str] | None = None,
     recomputed_from: list[str] | None = None,
     landmark_id: str = "",
+    **metadata: Any,
 ) -> dict[str, Any]:
     clean = truncate(str(text or ""), 1600).strip()
     proposition_id = _identifier(
@@ -534,6 +635,7 @@ def _proposition(
         "landmark_id": landmark_id,
         "scope": "current_session_only",
         "durable_memory_write": False,
+        **metadata,
     }
 
 
@@ -574,7 +676,7 @@ def _finalize(
         {
             **ledger,
             "status": status,
-            "version": "v1_selective_dependency_revision",
+            "version": "v2_active_structured_propositions",
             "propositions": propositions,
             "dependency_edges": edges,
             "active_proposition_ids": [str(item.get("id") or "") for item in active],

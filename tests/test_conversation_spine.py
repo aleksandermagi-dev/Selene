@@ -8,6 +8,8 @@ from selene.conversation_spine import (
     spine_response_alignment,
 )
 from selene.pragmatic_planner import build_pragmatic_plan
+from selene.current_turn_fact_ledger import build_current_turn_fact_ledger
+from selene.session_proposition_ledger import record_visible_session_propositions
 
 
 def _dialogue(prompt: str, *, topic: str = "community garden limited water vegetables pollinators"):
@@ -139,6 +141,40 @@ def test_conversation_spine_carries_correctable_user_facts_only_within_the_sessi
     assert spine["memory_write_active"] is False
 
 
+def test_conversation_spine_selects_relevant_general_session_propositions() -> None:
+    fact_ledger = build_current_turn_fact_ledger(
+        {"session_id": 73, "prompt": "I moved the green cup to the cabinet."}
+    )
+    proposition_ledger = record_visible_session_propositions(
+        {
+            "session_id": 73,
+            "ledger": {},
+            "turn_id": "turn-cup-location",
+            "thread_id": "thread-cups",
+            "current_turn_fact_ledger": fact_ledger,
+            "answer_operations": {"results": []},
+        }
+    )
+    prompt = "Where is the green cup now?"
+    dialogue = _dialogue(prompt, topic="cup location")
+    dialogue["pragmatics"]["session_proposition_ledger"] = proposition_ledger
+    spine = build_conversation_spine(
+        {
+            "session_id": 73,
+            "prompt": prompt,
+            "intent_decision": classify_chat_intent(prompt),
+            "dialogue_workspace": dialogue,
+        }
+    )
+
+    assert any(
+        item.get("subject") == "green cup" and item.get("object") == "cabinet"
+        for item in spine["relevant_session_propositions"]
+    )
+    assert "Relevant visible propositions from this session:" in spine["grounded_prompt"]
+    assert spine["memory_write_active"] is False
+
+
 def test_conversation_spine_exposes_the_dialogue_workspaces_shared_thread_braid():
     prompt = "Plan the garden. Then move to irrigation. Back to the garden: use that to revise it."
     dialogue = _dialogue(prompt, topic="garden")
@@ -167,7 +203,7 @@ def test_conversation_spine_exposes_the_dialogue_workspaces_shared_thread_braid(
         }
     )
 
-    assert spine["version"] == "v2_braided_turn_grounding"
+    assert spine["version"] == "v3_active_proposition_grounding"
     assert spine["thread_braid"] == braid
     assert spine["thread_traversal"] == braid["turn_traversal"]
     assert spine["session_scoped_only"] is True

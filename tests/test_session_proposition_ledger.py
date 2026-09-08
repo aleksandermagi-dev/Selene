@@ -9,6 +9,7 @@ from selene.session_proposition_ledger import (
     prepare_session_proposition_revision,
     record_visible_session_propositions,
 )
+from selene.current_turn_fact_ledger import build_current_turn_fact_ledger
 
 
 def _prior_ledger() -> dict:
@@ -219,6 +220,9 @@ def test_dialogue_workspace_persists_session_ledger_without_memory_write(tmp_pat
         ).fetchone()[0]
     )
     first_text = "The evening is warm. Which drink fits?"
+    first_fact_ledger = build_current_turn_fact_ledger(
+        {"session_id": session_id, "prompt": first_text}
+    )
     first = prepare_dialogue_turn(
         conn,
         {
@@ -241,6 +245,7 @@ def test_dialogue_workspace_persists_session_ledger_without_memory_write(tmp_pat
             "conversation_spine": {
                 "turn_id": "turn-one",
                 "session_facts": [],
+                "current_turn_fact_ledger": first_fact_ledger,
             },
             "claim_evidence_packet": {
                 "claims": [
@@ -272,6 +277,10 @@ def test_dialogue_workspace_persists_session_ledger_without_memory_write(tmp_pat
 
     ledger = corrected["session_proposition_ledger"]
     assert recorded["session_proposition_ledger"]["active_proposition_ids"]
+    assert any(
+        item.get("source") == "current_visible_user_turn"
+        for item in recorded["session_proposition_ledger"]["propositions"]
+    )
     assert ledger["recomputation"]["state"] == "required"
     assert ledger["recomputation"]["invalidated_result_ids"]
     assert ledger["durable_memory_write"] is False
@@ -329,3 +338,59 @@ def test_router_exposes_bounded_session_proposition_contract(tmp_path) -> None:
     assert status["generates_answers"] is False
     assert status["automatic_retention"] is False
     _assert_bounded(status)
+
+
+def test_visible_turn_facts_enter_session_ledger_and_state_updates_supersede_selectively() -> None:
+    first_facts = build_current_turn_fact_ledger(
+        {
+            "session_id": 22,
+            "prompt": "I moved the green cup to the shelf. A silver cup is new.",
+        }
+    )
+    first = record_visible_session_propositions(
+        {
+            "session_id": 22,
+            "ledger": {},
+            "turn_id": "turn-green-one",
+            "thread_id": "thread-cups",
+            "current_turn_fact_ledger": first_facts,
+            "answer_operations": {"results": []},
+        }
+    )
+    second_facts = build_current_turn_fact_ledger(
+        {
+            "session_id": 22,
+            "prompt": "I moved the green cup to the cabinet.",
+        }
+    )
+    second = record_visible_session_propositions(
+        {
+            "session_id": 22,
+            "ledger": first,
+            "turn_id": "turn-green-two",
+            "thread_id": "thread-cups",
+            "current_turn_fact_ledger": second_facts,
+            "answer_operations": {"results": []},
+        }
+    )
+
+    locations = [
+        item
+        for item in second["propositions"]
+        if item.get("relation_type") == "location"
+    ]
+    assert [item["object"] for item in locations if item["status"] == "active"] == [
+        "cabinet"
+    ]
+    assert [item["object"] for item in locations if item["status"] == "superseded"] == [
+        "shelf"
+    ]
+    assert any(
+        item.get("subject") == "silver cup" and item["status"] == "active"
+        for item in second["propositions"]
+    )
+    assert all(
+        item.get("scope") == "current_session_only"
+        for item in second["propositions"]
+    )
+    _assert_bounded(second)

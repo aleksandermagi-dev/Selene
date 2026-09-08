@@ -130,3 +130,43 @@ def test_plain_observed_motion_is_available_to_the_hypothesis_owner() -> None:
     assert owner["supplied_fields"]["relations"][0]["predicate"] == "bends"
     assert "observation" in ledger["facts_by_kind"]
     _assert_locked(ledger)
+
+
+def test_natural_whether_choice_preserves_action_options_without_fixture_nouns() -> None:
+    ledger = _ledger(
+        "I'm deciding whether to sketch indoors or walk by the river. Which sounds better?"
+    )
+
+    options = [item["value"] for item in ledger["facts"] if item["kind"] == "option"]
+    assert options == ["sketch indoors", "walk by the river"]
+    assert all("porch" not in item.casefold() for item in options)
+    _assert_locked(ledger)
+
+
+def test_coordinated_attributes_are_separate_visible_relations() -> None:
+    ledger = _ledger("A green cup is cracked and a silver cup is new.")
+    relations = [item for item in ledger["facts"] if item["kind"] == "relation"]
+
+    assert [
+        (item["subject"], item["predicate"], item["object"])
+        for item in relations
+    ] == [
+        ("green cup", "is", "cracked"),
+        ("silver cup", "is", "new"),
+    ]
+    assert all(item["relation_type"] == "attribute" for item in relations)
+    _assert_locked(ledger)
+
+
+def test_requested_placement_is_an_operation_not_an_observed_state() -> None:
+    ledger = _ledger("Move the green cup to the cabinet.")
+    operation = next(item for item in ledger["facts"] if item["kind"] == "operation")
+
+    assert operation["action"] == "move"
+    assert operation["subject"] == "green cup"
+    assert operation["object"] == "cabinet"
+    assert operation["operation_status"] == "requested_not_executed"
+    assert not any(
+        item.get("state_update") is True for item in ledger["facts"]
+    )
+    _assert_locked(ledger)

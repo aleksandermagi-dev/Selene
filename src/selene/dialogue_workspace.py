@@ -545,6 +545,9 @@ def record_dialogue_response(
             "coverage_evaluation": coverage,
             "answer_operations": payload.get("answer_operations") or {},
             "claim_evidence_packet": payload.get("claim_evidence_packet") or {},
+            "current_turn_fact_ledger": (
+                conversation_spine.get("current_turn_fact_ledger") or {}
+            ),
         }
     )
     landmark_propositions = {

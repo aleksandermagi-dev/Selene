@@ -5,6 +5,11 @@ from hashlib import sha256
 from typing import Any
 
 from .registry import truncate
+from .proposition_normalization import (
+    extract_requested_operations,
+    extract_visible_options,
+    extract_visible_relations,
+)
 
 
 CURRENT_TURN_FACT_LEDGER_BOUNDARY = (
@@ -25,6 +30,7 @@ FACT_KINDS = frozenset(
         "constraint",
         "correction",
         "sequence",
+        "operation",
     }
 )
 
@@ -76,8 +82,8 @@ _OPERATION_FACT_KINDS: dict[str, set[str]] = {
     "disagreement": {"claim", "observation", "relation", "condition", "quantity"},
     "correction": {"correction", "claim", "relation", "quantity"},
     "reopening": {"correction", "claim", "relation", "quantity"},
-    "method": {"constraint", "sequence", "criterion", "condition", "quantity", "observation", "relation"},
-    "action_scope": {"constraint", "sequence", "criterion", "condition", "quantity", "observation", "relation"},
+    "method": {"constraint", "sequence", "criterion", "condition", "quantity", "observation", "relation", "operation"},
+    "action_scope": {"constraint", "sequence", "criterion", "condition", "quantity", "observation", "relation", "operation"},
     "reason": {"observation", "relation", "condition", "claim"},
     "summary": set(FACT_KINDS),
     "session_summary": set(FACT_KINDS),
@@ -88,7 +94,7 @@ def current_turn_fact_ledger_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "current_turn_fact_ledger_ready",
-            "version": "v1_typed_visible_turn_facts",
+            "version": "v2_shared_proposition_normalization",
             "scope": "one_visible_current_turn_only",
             "fact_kinds": sorted(FACT_KINDS),
             "owner_inputs_are_answers": False,
@@ -162,7 +168,7 @@ def build_current_turn_fact_ledger(
     return _with_guards(
         {
             "status": "current_turn_fact_ledger_ready",
-            "version": "v1_typed_visible_turn_facts",
+            "version": "v2_shared_proposition_normalization",
             "ledger_id": f"current-turn-facts-{turn_key}",
             "session_id": session_id,
             "literal_prompt": prompt,
@@ -237,7 +243,7 @@ def _facts_from_clause(
             )
         )
 
-    options = _options(clean)
+    options = extract_visible_options(clean).get("values") or []
     for option in options:
         facts.append(
             _fact(
@@ -250,18 +256,11 @@ def _facts_from_clause(
             )
         )
 
-    relation = re.match(
-        r"^(?P<subject>(?:the\s+)?[A-Za-z0-9][A-Za-z0-9_' -]{0,70}?)\s+"
-        r"(?P<predicate>is|are|was|were|has|have|costs?|weighs?|holds?|uses?|"
-        r"contains?|bends?|leans?|tilts?|points?|faces?|grows?|dropped?|drops?|rose|rises?|changed?|stayed?|remained?)\s+"
-        r"(?P<object>[^?]{1,220}?)(?:[.!]|$)",
-        clean,
-        flags=re.IGNORECASE,
-    )
-    if relation and not _REQUEST_START.match(clean):
-        subject = relation.group("subject").strip()
-        predicate = relation.group("predicate").strip()
-        obj = relation.group("object").strip(" ,.;")
+    relations = [] if _REQUEST_START.match(clean) else extract_visible_relations(clean)
+    for relation in relations:
+        subject = str(relation.get("subject") or "").strip()
+        predicate = str(relation.get("predicate") or "").strip()
+        obj = str(relation.get("object") or "").strip(" ,.;")
         facts.append(
             _fact(
                 "relation",
@@ -272,6 +271,9 @@ def _facts_from_clause(
                 subject=subject,
                 predicate=predicate,
                 object=obj,
+                relation_type=str(relation.get("relation_type") or "visible_relation"),
+                state_update=relation.get("state_update") is True,
+                replacement_key=str(relation.get("replacement_key") or ""),
             )
         )
         facts.append(
@@ -282,6 +284,23 @@ def _facts_from_clause(
                 session_id,
                 prompt,
                 value=subject,
+            )
+        )
+
+    for operation in extract_requested_operations(clean):
+        facts.append(
+            _fact(
+                "operation",
+                clean,
+                clause_index,
+                session_id,
+                prompt,
+                value=str(operation.get("action") or ""),
+                action=str(operation.get("action") or ""),
+                subject=str(operation.get("subject") or ""),
+                object=str(operation.get("object") or ""),
+                preposition=str(operation.get("preposition") or ""),
+                operation_status="requested_not_executed",
             )
         )
 
@@ -326,7 +345,7 @@ def _facts_from_clause(
         facts.append(_fact("sequence", clean, clause_index, session_id, prompt))
     if re.search(r"\b(?:i noticed|i observed|i saw|we noticed|we observed|the data|the report|the result)\b", lower):
         facts.append(_fact("observation", clean, clause_index, session_id, prompt))
-    elif not _REQUEST_START.match(clean) and relation:
+    elif not _REQUEST_START.match(clean) and relations:
         facts.append(_fact("observation", clean, clause_index, session_id, prompt))
     if re.search(r"\b(?:i think|i believe|my claim|the claim|according to|report says|report shows)\b", lower):
         facts.append(_fact("claim", clean, clause_index, session_id, prompt))
@@ -525,33 +544,6 @@ def _fact(
     }
 
 
-def _options(text: str) -> list[str]:
-    patterns = (
-        r"\b(?:choose|pick|decide)\s+between\s+(.{1,90}?)\s+and\s+(.{1,90}?)(?:[,.;?]|$)",
-        r"\b(?:compare|contrast)\s+(.{1,90}?)\s+(?:and|with|versus|vs\.?)\s+(.{1,90}?)(?:[,.;?]|$)",
-        r"\bwhich(?:\s+would\s+you\s+(?:choose|pick|prefer))?[, :]?\s*(.{1,70}?)\s+or\s+(.{1,70}?)(?:[,.;?]|$)",
-        r"\b(?:options?|choices?)\s+(?:are|include)\s+(.{1,90}?)\s+(?:and|or)\s+(.{1,90}?)(?:[,.;?]|$)",
-    )
-    for pattern in patterns:
-        match = re.search(pattern, text, flags=re.IGNORECASE)
-        if not match:
-            continue
-        return _unique([_clean_option(match.group(1)), _clean_option(match.group(2))])
-    return []
-
-
-def _clean_option(value: str) -> str:
-    value = re.sub(r"^(?:the|a|an)\s+", "", value.strip(" ,.;:?"), flags=re.IGNORECASE)
-    value = re.split(r"\b(?:and then|then|because|so that|while)\b", value, maxsplit=1, flags=re.IGNORECASE)[0]
-    value = re.sub(
-        r"\s+(?:as|in)\s+(?:a\s+)?(?:venn\s+diagram|table|list|chart|matrix)$",
-        "",
-        value,
-        flags=re.IGNORECASE,
-    )
-    return truncate(value.strip(" ,.;:?"), 140)
-
-
 def _clauses(text: str) -> list[str]:
     clauses: list[str] = []
     for sentence in re.split(r"(?<=[.!?])\s+|\n+|;\s*", text.strip()):
@@ -581,12 +573,15 @@ def _terms(value: str) -> list[str]:
 
 def _deduplicate(facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
-    seen: set[tuple[str, str, str]] = set()
+    seen: set[tuple[str, str, str, str, str, str]] = set()
     for fact in facts:
         key = (
             str(fact.get("kind") or ""),
             " ".join(str(fact.get("text") or "").lower().split()),
             str(fact.get("value") or "").lower(),
+            str(fact.get("subject") or "").lower(),
+            str(fact.get("predicate") or fact.get("action") or "").lower(),
+            str(fact.get("object") or "").lower(),
         )
         if key in seen:
             continue

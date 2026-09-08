@@ -55,7 +55,7 @@ def conversation_spine_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "conversation_spine_ready",
-            "version": "v2_braided_turn_grounding",
+            "version": "v3_active_proposition_grounding",
             "organ_name": "Conversation Spine",
             "scope": "current_chat_session_only",
             "carries": [
@@ -66,7 +66,7 @@ def conversation_spine_status() -> dict[str, Any]:
                 "selective current-session epistemic updates and model ancestry",
                 "bounded visible session landmarks",
                 "open response obligations",
-                "typed current-turn entities quantities options criteria observations claims relations conditions corrections and sequence",
+                "typed current-turn entities quantities options criteria observations claims relations conditions corrections sequence and requested operations",
                 "owner-specific current-turn input receipts before optional retrieval",
                 "session topic branches returns dependencies and landings",
                 "one selected continuity target across immediate answers threads landmarks checkpoints and referents",
@@ -224,6 +224,16 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
         if isinstance(pragmatics.get("resolved_reference"), dict)
         else {}
     )
+    active_session_propositions = [
+        item
+        for item in session_proposition_ledger.get("active_propositions") or []
+        if isinstance(item, dict)
+    ][:64]
+    relevant_session_propositions = _relevant_session_propositions(
+        interpreted,
+        active_session_propositions,
+        resolved_reference=resolved_reference,
+    )
     intent_class = _intent_class(intent, contextual)
     obligations = [
         _normalize_obligation(item)
@@ -296,6 +306,17 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             f"{grounded_prompt} Relevant user-supplied facts from this session: {fact_text}",
             4000,
         )
+    if relevant_session_propositions:
+        proposition_text = " ".join(
+            str(item.get("text") or "")
+            for item in relevant_session_propositions[:8]
+            if str(item.get("text") or "").strip()
+        )
+        grounded_prompt = truncate(
+            f"{grounded_prompt} Relevant visible propositions from this session: "
+            f"{proposition_text}",
+            4600,
+        )
     if current_turn_facts:
         current_fact_text = " ".join(
             str(item.get("text") or "")
@@ -313,7 +334,7 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
     return _with_guards(
         {
             "status": "conversation_spine_ready",
-            "version": "v2_braided_turn_grounding",
+            "version": "v3_active_proposition_grounding",
             "organ_name": "Conversation Spine",
             "session_id": session_id,
             "turn_id": turn_id,
@@ -351,11 +372,8 @@ def build_conversation_spine(payload: dict[str, Any] | None = None) -> dict[str,
             "epistemic_updates": epistemic_updates,
             "selective_revision_active": epistemic_revision.get("detected") is True,
             "session_proposition_ledger": session_proposition_ledger,
-            "active_session_propositions": [
-                item
-                for item in session_proposition_ledger.get("active_propositions") or []
-                if isinstance(item, dict)
-            ][:64],
+            "active_session_propositions": active_session_propositions,
+            "relevant_session_propositions": relevant_session_propositions,
             "stale_session_propositions_eligible_for_grounding": False,
             "session_landmarks": session_landmarks,
             "stale_session_landmark_ids_excluded": [
@@ -715,6 +733,62 @@ def _relevant_session_facts(prompt: str, facts: list[dict[str, Any]]) -> list[di
     selected = [item for _, _, item in ranked[:6]]
     selected.sort(key=lambda item: int(item.get("order") or 0))
     return selected
+
+
+def _relevant_session_propositions(
+    prompt: str,
+    propositions: list[dict[str, Any]],
+    *,
+    resolved_reference: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Select attributable visible session premises without turning them into Memory."""
+
+    lower = str(prompt or "").lower()
+    query_terms = set(_distinctive_terms(prompt))
+    reference_terms = set(
+        _distinctive_terms(str((resolved_reference or {}).get("resolved_to") or ""))
+    )
+    summary_request = bool(
+        re.search(r"\b(?:summarize|summary|recap|settled (?:points?|facts?))\b", lower)
+    )
+    deictic_request = bool(
+        re.search(r"\b(?:it|that|those|them|there|now|where|which one)\b", lower)
+    )
+    eligible_sources = {
+        "current_visible_user_turn",
+        "current_session_correction",
+        "claim_evidence_packet",
+    }
+    ranked: list[tuple[int, int, dict[str, Any]]] = []
+    fallback: list[tuple[int, dict[str, Any]]] = []
+    for index, item in enumerate(propositions):
+        if str(item.get("source") or "") not in eligible_sources:
+            continue
+        if str(item.get("status") or "") not in {"active", "recomputed"}:
+            continue
+        if str(item.get("kind") or "") == "result":
+            continue
+        text = " ".join(
+            str(item.get(name) or "")
+            for name in ("text", "subject", "predicate", "object", "value")
+        )
+        terms = set(_distinctive_terms(text))
+        score = 3 * len(query_terms & terms) + 2 * len(reference_terms & terms)
+        if summary_request:
+            score += 1
+        if score:
+            ranked.append((score, index, item))
+        fallback.append((index, item))
+    if not ranked and deictic_request:
+        return [item for _, item in fallback[-6:]]
+    ranked.sort(key=lambda value: (value[0], value[1]), reverse=True)
+    selected = [item for _, _, item in ranked[:8]]
+    selected_ids = {str(item.get("id") or "") for item in selected}
+    return [
+        item
+        for item in propositions
+        if str(item.get("id") or "") in selected_ids
+    ]
 
 
 def evaluate_candidate_compatibility(

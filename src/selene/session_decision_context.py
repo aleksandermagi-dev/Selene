@@ -5,6 +5,7 @@ from hashlib import sha256
 from typing import Any
 
 from .registry import truncate
+from .proposition_normalization import extract_visible_options
 
 
 SESSION_DECISION_BOUNDARY = (
@@ -98,7 +99,7 @@ def build_session_decision_context(payload: dict[str, Any] | None = None) -> dic
                 if len(options) >= 2
                 else "session_decision_context_not_material"
             ),
-            "version": "v1_visible_option_priority_revision",
+            "version": "v2_general_visible_option_grammar",
             "context_id": f"session-decision-{context_id}",
             "mode": mode,
             "options": options,
@@ -124,28 +125,15 @@ def build_session_decision_context(payload: dict[str, Any] | None = None) -> dic
 
 
 def _extract_options(text: str) -> tuple[list[dict[str, Any]], str]:
-    normalized = " ".join(str(text or "").replace("’", "'").split())
-    container = re.search(
-        r"\b(?:have|consider|compare|between)\s+(?:two|three|four|several|some|\d+)?\s*"
-        r"(?P<subject>plans?|options?|choices?|approaches?|routes?|designs?|candidates?)\s*:\s*"
-        r"(?P<body>[^.?!]{4,900})",
-        normalized,
-        flags=re.IGNORECASE,
-    )
-    if not container:
+    normalized = extract_visible_options(text)
+    values = [str(item) for item in normalized.get("values") or [] if str(item)]
+    if len(values) < 2:
         return [], ""
-    subject = _singular_subject(container.group("subject"))
-    body = container.group("body")
-    parts = re.split(
-        r"\s*,\s*(?:and\s+)?(?=(?:one|a|an|the)\s+)|\s+and\s+(?=(?:one|a|an|the)\s+)",
-        body,
-        flags=re.IGNORECASE,
-    )
+    subject = str(normalized.get("subject") or "option")
+    append_subject = normalized.get("append_subject_to_label") is True
     options: list[dict[str, Any]] = []
-    for index, raw in enumerate(parts[:6]):
-        value = re.sub(r"^(?:one|a|an|the)\s+", "", raw.strip(" ,;:"), flags=re.IGNORECASE)
-        value = re.split(r"\b(?:compare|recommend|choose|which)\b", value, maxsplit=1, flags=re.IGNORECASE)[0]
-        value = value.strip(" ,;:.")
+    for index, raw in enumerate(values[:6]):
+        value = raw.strip(" ,;:.")
         if not value:
             continue
         properties = [
@@ -153,19 +141,25 @@ def _extract_options(text: str) -> tuple[list[dict[str, Any]], str]:
             for item in re.split(r"\s+(?:but|and|yet|while)\s+", value, flags=re.IGNORECASE)
             if item.strip(" ,;:.")
         ][:4]
-        label = f"{value.lower()} {subject}".strip()
+        descriptor = value.lower()
+        label = (
+            f"{descriptor} {subject}".strip()
+            if append_subject and not descriptor.endswith(f" {subject}")
+            else descriptor
+        )
         aliases = list(
             dict.fromkeys(
-                [label, value.lower(), *[f"{item} {subject}" for item in properties], *properties]
+                [label, descriptor, *[f"{item} {subject}" for item in properties], *properties]
             )
         )
         options.append(
             {
                 "id": f"session-option-{index + 1}",
                 "label": label,
-                "descriptor": value.lower(),
-                "properties": properties or [value.lower()],
+                "descriptor": descriptor,
+                "properties": properties or [descriptor],
                 "aliases": aliases,
+                "takes_definite_article": append_subject,
                 "source": "visible_user_turn",
             }
         )
@@ -313,7 +307,12 @@ def _request_mode(prompt: str) -> str:
         return "revision"
     if re.search(r"\bcompare\b|\bcontrast\b", lower):
         return "comparison_and_choice" if re.search(r"\b(?:recommend|choose|pick|prefer)\b", lower) else "comparison"
-    if re.search(r"\b(?:recommend|choose|pick|prefer)\b", lower):
+    if re.search(
+        r"\b(?:recommend|choose|pick|prefer)\b|"
+        r"\bwould\s+you\s+rather\b|"
+        r"\b(?:which|what)\s+(?:one\s+)?(?:sounds?|seems?|feels?|is)\s+(?:the\s+)?better\b",
+        lower,
+    ):
         return "choice"
     return "none"
 
@@ -333,6 +332,12 @@ def _response(
     if len(options) < 2 or mode == "none" or not recommendation:
         return "", [], {}
     chosen = str(recommendation.get("option_label") or "")
+    chosen_text = _option_with_article(
+        next(
+            (item for item in options if str(item.get("id") or "") == str(recommendation.get("option_id") or "")),
+            {"label": chosen, "takes_definite_article": True},
+        )
+    )
     comparison_sentences = [_describe_option(item, subject) for item in options]
     comparison_fields = {
         "candidates": [str(item.get("label") or "") for item in options],
@@ -353,7 +358,7 @@ def _response(
         fields: dict[str, Any] = {"comparison": comparison_fields}
         if mode == "comparison_and_choice":
             reason = f"it best matches the stated priority of {priority}" if priority else str((recommendation.get("basis") or [""])[0])
-            text += f" I would start with the {chosen} because {reason}."
+            text += f" I would start with {chosen_text} because {reason}."
             text += " I would revise that choice if the priority or the outcome evidence changed."
             operations.append("choice")
             fields["choice"] = choice_fields
@@ -375,7 +380,7 @@ def _response(
             changed = constraint_updates[-1] if constraint_updates else "the latest condition changed"
             text = f"That changes the weighting: {changed.rstrip('.')}"
             text += f", but {priority} remains the controlling priority." if priority else "."
-        text += f" I would update the recommendation to the {chosen}."
+        text += f" I would update the recommendation to {chosen_text}."
         if not latest_evidence and priority and re.search(r"\bdeadline\b", changed, flags=re.IGNORECASE):
             text += " The tighter deadline makes the tradeoff closer; it does not erase the priority you kept."
         return text, ["correction", "choice"], {
@@ -392,9 +397,9 @@ def _response(
         preference_label = str(stated_preference.get("option_label") or "")
         disagree = bool(preference_label and preference_label != chosen)
         if disagree:
-            text = f"I do disagree, based on the priorities we have set. The {preference_label} remains a workable tradeoff, but the {chosen} fits the current evidence better."
+            text = f"I do disagree, based on the priorities we have set. The {preference_label} remains a workable tradeoff, but {chosen_text} fits the current evidence better."
         else:
-            text = f"I agree with that current choice: the {chosen} fits the priorities and evidence we have."
+            text = f"I agree with that current choice: {chosen_text} fits the priorities and evidence we have."
         text += " I would change my stance if those premises changed."
         return text, ["disagreement"], {
             "disagreement": {
@@ -408,7 +413,7 @@ def _response(
 
     if mode == "prediction":
         basis = [*priorities, *[str(item.get("text") or "") for item in evidence_updates]]
-        text = f"My best prediction from what we have is the {chosen}."
+        text = f"My best prediction from what we have is {chosen_text}."
         if latest_evidence:
             text += f" The latest reported evidence weighs {latest_evidence['direction']} the {latest_evidence['option_label']}."
         elif priority:
@@ -425,7 +430,7 @@ def _response(
     if mode == "choice":
         reason = str((recommendation.get("basis") or [""])[0])
         return (
-            f"I would choose the {chosen} because {reason}. I would revise that choice if the priority or outcome evidence changed.",
+            f"I would choose {chosen_text} because {reason}. I would revise that choice if the priority or outcome evidence changed.",
             ["choice"],
             {"choice": choice_fields},
         )
@@ -445,6 +450,11 @@ def _describe_option(option: dict[str, Any], subject: str) -> str:
     if len(properties) > 1:
         return f"The {label} combines {', '.join(properties[:-1])} and {properties[-1]}."
     return f"The {label} is defined here by {properties[0] if properties else label}."
+
+
+def _option_with_article(option: dict[str, Any]) -> str:
+    label = str(option.get("label") or "option")
+    return f"the {label}" if option.get("takes_definite_article") is True else label
 
 
 def _matched_alias(text: str, option: dict[str, Any]) -> str:
@@ -471,19 +481,6 @@ def _terms(value: str) -> list[str]:
 
 def _normalize(value: str) -> str:
     return " ".join(str(value or "").lower().replace("’", "'").split())
-
-
-def _singular_subject(value: str) -> str:
-    normalized = str(value or "").lower()
-    return {
-        "plans": "plan",
-        "options": "option",
-        "choices": "choice",
-        "approaches": "approach",
-        "routes": "route",
-        "designs": "design",
-        "candidates": "candidate",
-    }.get(normalized, normalized)
 
 
 def _is_hypothetical_evidence(value: str) -> bool:

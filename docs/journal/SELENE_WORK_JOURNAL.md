@@ -5016,3 +5016,35 @@ owners: normalize visible entities, attributes, relations, options,
 constraints, observations, and requested operations across paraphrased current
 conversation language. Retire a fixture only after changed-entity transfer is
 proved.
+
+### 2026-09-08 — Cultivation Phase 1 generalizes visible proposition continuity
+
+**Implementation:** One non-organ normalization utility now gives the existing
+Current-Turn Fact Ledger and Current-Session Decision Context the same option
+and relation grammar. It handles natural `whether` and `would you rather`
+alternatives, coordinated subject relations, reported location changes, and
+requested placement operations without scenario nouns.
+
+**Semantic distinction:** A placement request is recorded as requested and not
+executed. A speaker-reported placement is an unverified current-session state
+update. Dialogue Workspace carries typed current-turn facts into the existing
+Session Proposition Ledger; matching state slots supersede selectively,
+unrelated attributes survive, and visible results retain proposition bases.
+Conversation Spine exposes only bounded relevant active propositions for the
+current subject or reference.
+
+**Evidence:** 64 direct owner checks passed during implementation. The final
+affected-owner matrix passed 149 checks; Python compilation passed; diff
+verification reported only expected Windows line-ending notices. Novel tests
+used sketch/river, shelf/window, and green/silver cup language instead of the
+historical fixtures. No broad Q&A ran.
+
+**Boundaries:** This is visible current-session connective tissue, not Memory,
+retained knowledge, truth determination, an answer generator, a new organ, or
+authority. Resident state, teaching, Dream, Study, identity, personality, Vys,
+governance, training, action, perception, embodiment, packaging, and installed
+runtime were untouched.
+
+**Next:** Cultivation Phase 2: mature the current-owner gate so a capable
+current-turn or active-session owner outranks optional learned retrieval. Use
+changed entities and paraphrases before retiring any compatibility branch.

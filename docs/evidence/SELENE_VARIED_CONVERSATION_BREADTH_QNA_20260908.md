@@ -291,3 +291,22 @@ owners and implement the smallest coordinated source repair. Validate the
 specific mechanisms synthetically first, then use one short ordinary
 conversation only if the implementation evidence cannot establish end-to-end
 behavior.
+
+## Cultivation Phase 1 Update — 2026-09-08
+
+Shared proposition normalization and the ephemeral active-proposition path are
+now implemented through the existing Current-Turn Fact Ledger, Session
+Proposition Ledger, Current-Session Decision Context, Dialogue Workspace, and
+Conversation Spine. Natural option paraphrases, coordinated relations,
+reported location changes, and requested-but-unexecuted operations now share a
+general representation. Selective state replacement preserves unrelated
+current-session facts and never writes durable Memory.
+
+The final focused affected-owner run passed 149 checks using changed entities
+and paraphrases rather than the historical porch/notebook fixtures. This closes
+the representation portion of the root cluster, not the answer-selection
+portion. Current-owner arbitration remains the next source dependency; no new
+broad Q&A should run before that gate is repaired.
+
+Evidence:
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_1_PROPOSITION_NORMALIZATION_20260908.md`.
