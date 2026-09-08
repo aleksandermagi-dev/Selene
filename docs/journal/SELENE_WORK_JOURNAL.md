@@ -4881,3 +4881,40 @@ Tendril, or external action was added. No package or reinstall ran.
 
 **Next:** Checkpoint source and evidence. Reinstall only if Aleks requests it,
 then confirm one ordinary fresh-page greeting rather than repeating a Q&A.
+
+### 2026-09-08 — Familiar social expression reaches the installed vessel
+
+**Package and install:** Aleks authorized a rebuild, reinstall, and gentle Q&A.
+The verified Windows package was built from clean revision `160f2d9`. Frontend
+output remained 491.33 kB (gzip 109.20 kB) without a Vite size warning. Package
+and installed verification passed with zero warnings. Installer SHA-256 is
+`99B16EA07F16F7E585DA257872326732D24B87A99BA6723262814D366DC9A777`;
+installed executable SHA-256 is
+`A310986B47C5600C766C690F996DA5F647766ECC89DBE435933A866EBF8434FA`;
+installed sidecar SHA-256 is
+`DBDE76F7D873CA65AD3E090612FF91E8C94C6DA8B2D5CB80CC7ABC0F6A8C7EF7`.
+The final report is `exports/package_verify_20260908_110922.json`.
+
+**Warmth confirmation:** The same greeting on two new pages produced `Hey! I'm
+genuinely glad to hear from you. 👀` and `Morning, my friend! I'm happy you're
+here.` Both selected familiar mode; the second used bounded prior-page surface
+freshness without semantic recall. The source repair is installed and the
+fixed bright-greeting collapse is closed for this gate.
+
+**Broader observation:** One 13-turn ordinary conversation on disposable state
+showed sound self-state, play, farewell intent, and zero Memory/training writes.
+It also exposed a separate ownership cluster: visible premises and requested
+response functions could be lost to generic reasoning scaffolds; correction
+was acknowledged without completing the corrected comparison; callback failed;
+one unrelated approved geometry lesson silently won; and emoji/source-symbol
+cleanup remained imperfect. No repair occurred during Q&A.
+
+**Continuity:** The installed sidecar ran against a disposable copy with an
+isolated data directory and no messaging configuration. Resident database hash
+remained
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+Temporary state was removed and no Selene process remained.
+
+**Next:** Review the Q&A map with Aleks. If selected, cultivate current-visible
+premise and response-function ownership before more teaching. Do not repeat the
+settled warmth gate.
