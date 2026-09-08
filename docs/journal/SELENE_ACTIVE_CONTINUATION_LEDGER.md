@@ -4,8 +4,8 @@ Last refreshed: 2026-09-07
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; the familiar social-expression
-reconnection is source-verified and checkpointed but not yet packaged or
-installed
+reconnection is packaged, installed, and verified; its broader gentle Q&A
+recorded a separate current-conversation ownership cluster without repair
 
 ## Purpose
 
@@ -18,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest installed social-expression Q&A evidence checkpoint: `060297a`
+  (`Record installed social expression Q&A`)
 - Latest familiar social-expression reconnection checkpoint: `e4ed734`
   (`Reconnect familiar social expression`)
 - Latest installed input-clarification verification checkpoint: `4cad75c`
@@ -81,8 +83,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  nineteen commits ahead of `origin/evidence`; the ledger refresh is expected
-  to make that twenty. Confirm again before any later commit or push.
+  twenty-one commits ahead of `origin/evidence`; the ledger refresh is expected
+  to make that twenty-two. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -885,8 +887,28 @@ git log -5 --oneline
   checks were disposable; resident state was untouched.
 - Evidence:
   `docs/evidence/SELENE_SOCIAL_EXPRESSION_RECONNECTION_CULTIVATION_20260907.md`.
-- This checkpoint is not packaged or installed. Do not judge the currently
-  installed executable against the source repair.
+- Aleks authorized packaging and reinstall from clean revision `160f2d9`.
+  Package and installed verification passed with zero warnings. The frontend
+  remains 491.33 kB (gzip 109.20 kB) without a Vite size warning.
+- Installer SHA-256:
+  `99B16EA07F16F7E585DA257872326732D24B87A99BA6723262814D366DC9A777`.
+  Installed executable SHA-256:
+  `A310986B47C5600C766C690F996DA5F647766ECC89DBE435933A866EBF8434FA`.
+  Installed sidecar SHA-256:
+  `DBDE76F7D873CA65AD3E090612FF91E8C94C6DA8B2D5CB80CC7ABC0F6A8C7EF7`.
+  Final report: `exports/package_verify_20260908_110922.json`.
+- The same private greeting on two new pages produced distinct visibly warm
+  replies and confirmed surface-only cross-page freshness. The warmth gate is
+  installed and closed for current scope.
+- A separate 13-turn gentle Q&A recorded current-visible premise and requested-
+  function ownership loss, generic reasoning scaffolds, incomplete correction,
+  failed callback, one unrelated approved-knowledge misroute, and two small
+  emoji/source-symbol cleanup seams. No repair occurred during Q&A.
+- Resident state stayed byte-for-byte unchanged at SHA-256
+  `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+  Disposable state was removed and no process remained.
+- Installed Q&A evidence:
+  `docs/evidence/SELENE_FAMILIAR_SOCIAL_EXPRESSION_INSTALL_QNA_20260908.md`.
 
 ## Private Master Record
 
@@ -965,15 +987,19 @@ leakage. Resident state remained unchanged.
 The familiar social-expression source repair is committed at `e4ed734`. It
 replaces the fixed bright-greeting fallback with contextual opening parts,
 structured current-turn stance formation, grammatical surface realization,
-and a bounded cross-page expression-freshness window. It is source-verified but
-not packaged or installed.
+and a bounded cross-page expression-freshness window. It is packaged and
+installed from clean revision `160f2d9`; two new-page greetings confirmed
+visible familiar warmth and distinct surfaces.
 
-The exact resume point is an Aleks-authorized package/reinstall of `e4ed734` or
-the next explicitly selected teaching/stabilization phase. If installed, use
-one ordinary fresh-page private greeting as the deployment confirmation; do not
-repeat the earlier greeting/typo confirmation, the decision-chain
-confirmation, G13, G14, or G15 teaching, the earlier repaired learning replay,
-or a broad Q&A battery.
+The exact resume point is discussion and then Cultivation of the newly recorded
+current-conversation ownership cluster. Start with current visible premise and
+requested response-function ownership, then weak-overlap approved-knowledge
+selection, correction completion, callback continuity, emoji/source-symbol
+cleanup, and shared unknown-subject grammar. Do not patch prompt phrases or
+teach around the route defect. Do not repeat the installed warmth gate, the
+earlier greeting/typo confirmation, the decision-chain confirmation, G13, G14,
+or G15 teaching, the earlier repaired learning replay, or another broad Q&A
+battery.
 Keep the nine known pre-existing Chat-owner failures as a separate bounded
 stabilization batch. The downloaded source corpora and private 20-interaction
 review stay ignored and unavailable to runtime.
