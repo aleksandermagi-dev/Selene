@@ -1,11 +1,11 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-07
+Last refreshed: 2026-09-08
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
-G13 through G15 remain taught and installed; the familiar social-expression
-reconnection is packaged, installed, and verified; its broader gentle Q&A
-recorded a separate current-conversation ownership cluster without repair
+G13 through G15 remain taught and installed; familiar social expression is
+installed and verified; two gentle installed Q&A runs now map one shared
+current-conversation ownership cluster without repair
 
 ## Purpose
 
@@ -18,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest varied conversation breadth Q&A checkpoint: `0e5cd19`
+  (`Map varied conversation ownership gaps`)
 - Latest installed social-expression Q&A evidence checkpoint: `060297a`
   (`Record installed social expression Q&A`)
 - Latest familiar social-expression reconnection checkpoint: `e4ed734`
@@ -83,8 +85,9 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  twenty-one commits ahead of `origin/evidence`; the ledger refresh is expected
-  to make that twenty-two. Confirm again before any later commit or push.
+  twenty-three commits ahead of `origin/evidence`; the ledger refresh is
+  expected to make that twenty-four. Confirm again before any later commit or
+  push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -991,15 +994,25 @@ and a bounded cross-page expression-freshness window. It is packaged and
 installed from clean revision `160f2d9`; two new-page greetings confirmed
 visible familiar warmth and distinct surfaces.
 
-The exact resume point is discussion and then Cultivation of the newly recorded
-current-conversation ownership cluster. Start with current visible premise and
-requested response-function ownership, then weak-overlap approved-knowledge
-selection, correction completion, callback continuity, emoji/source-symbol
-cleanup, and shared unknown-subject grammar. Do not patch prompt phrases or
-teach around the route defect. Do not repeat the installed warmth gate, the
-earlier greeting/typo confirmation, the decision-chain confirmation, G13, G14,
-or G15 teaching, the earlier repaired learning replay, or another broad Q&A
-battery.
+The exact resume point is review with Aleks and then, if authorized,
+Cultivation of the fully mapped current-conversation ownership cluster. The
+second varied run is recorded at
+`docs/evidence/SELENE_VARIED_CONVERSATION_BREADTH_QNA_20260908.md`.
+
+Implement the smallest coordinated repair in dependency order: ephemeral
+active propositions and revisions; current answer-owner priority;
+learning-gap eligibility; approved-knowledge subject/entity/operation/function
+relevance; correction completion; typed humor/acknowledgement/recap/closure
+acts; semantic coverage; and shared subject, punctuation, symbol, and stale-
+fallback cleanup. Map these onto existing owners before editing; do not create
+a monolithic conversation organ.
+
+Do not patch prompt phrases or teach around the route defect. Do not repeat the
+installed warmth gate, greeting/typo confirmation, decision-chain
+confirmation, G13-G15 teaching, the earlier repaired learning replay, or any
+further broad Q&A before repair. Use focused synthetic owner checks first and
+one short ordinary end-to-end conversation only if source evidence cannot
+establish the handoff.
 Keep the nine known pre-existing Chat-owner failures as a separate bounded
 stabilization batch. The downloaded source corpora and private 20-interaction
 review stay ignored and unavailable to runtime.
