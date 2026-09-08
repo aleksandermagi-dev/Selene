@@ -3,9 +3,9 @@
 Last refreshed: 2026-09-07
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
-G13 through G15 remain taught and installed; input clarification, source-safe
-Memory expression, greeting warmth, and mistake provenance are committed,
-packaged, installed, and least-impact verified
+G13 through G15 remain taught and installed; the familiar social-expression
+reconnection is source-verified and checkpointed but not yet packaged or
+installed
 
 ## Purpose
 
@@ -18,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest familiar social-expression reconnection checkpoint: `e4ed734`
+  (`Reconnect familiar social expression`)
 - Latest installed input-clarification verification checkpoint: `4cad75c`
   (`Record installed input clarification verification`)
 - Packaged source and pre-install documentation revision: `06d5098`
@@ -79,8 +81,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  fifteen commits ahead of `origin/evidence`; confirm again before any later
-  commit or push
+  nineteen commits ahead of `origin/evidence`; the ledger refresh is expected
+  to make that twenty. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -858,6 +860,34 @@ git log -5 --oneline
 - Do not repeat these checks or run a broad Q&A without a new implementation
   need.
 
+## Familiar Social Expression Reconnection
+
+- Checkpoint `e4ed734` corrects the earlier greeting completion gate. The
+  installed `Hi there. I am glad you are here.` proved an internal warmth
+  handoff but did not prove natural visible warmth.
+- Cultivation found the complete upstream state was already present: Affect
+  Expression, Relational Expression Range, authenticated private scope, and
+  approved teaching guidance. The specialized social owner then reduced the
+  turn to fixed clause pools, did not distinguish familiar private context,
+  bypassed ordinary contraction, and saw freshness only within one page.
+- The existing social owner now composes a contextual opening and forms one
+  current-turn warm stance through structured Language Formation. It consumes
+  applicable response-move guidance without copying lesson wording.
+- Authenticated private greetings may use a familiar address. Plain unmarked
+  greetings retain their neutral path; warmth is available, not compulsory.
+- Human Conversational Realization may apply grammatical surface operations to
+  already-authored social text without adding or replacing social acts.
+- At most six deduplicated current/prior ordinary Chat surfaces may inform
+  wording freshness across pages. They cannot supply semantic answers, become
+  Memory, or authorize a write.
+- Verification passed 66 full affected-module checks and 52 focused active and
+  social checks. Python compilation and diff verification passed. All runtime
+  checks were disposable; resident state was untouched.
+- Evidence:
+  `docs/evidence/SELENE_SOCIAL_EXPRESSION_RECONNECTION_CULTIVATION_20260907.md`.
+- This checkpoint is not packaged or installed. Do not judge the currently
+  installed executable against the source repair.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -932,10 +962,18 @@ through the installed resident Chat route. One bright greeting selected warmth;
 the exact typo was structurally repaired without weak Memory use or source/code
 leakage. Resident state remained unchanged.
 
-The exact resume point is the next explicitly selected teaching or bounded
-stabilization phase. Do not repeat the installed greeting/typo confirmation,
-the decision-chain confirmation, G13, G14, or G15 teaching, the earlier
-repaired learning replay, or a broad Q&A battery.
+The familiar social-expression source repair is committed at `e4ed734`. It
+replaces the fixed bright-greeting fallback with contextual opening parts,
+structured current-turn stance formation, grammatical surface realization,
+and a bounded cross-page expression-freshness window. It is source-verified but
+not packaged or installed.
+
+The exact resume point is an Aleks-authorized package/reinstall of `e4ed734` or
+the next explicitly selected teaching/stabilization phase. If installed, use
+one ordinary fresh-page private greeting as the deployment confirmation; do not
+repeat the earlier greeting/typo confirmation, the decision-chain
+confirmation, G13, G14, or G15 teaching, the earlier repaired learning replay,
+or a broad Q&A battery.
 Keep the nine known pre-existing Chat-owner failures as a separate bounded
 stabilization batch. The downloaded source corpora and private 20-interaction
 review stay ignored and unavailable to runtime.
