@@ -4,8 +4,8 @@ Last refreshed: 2026-09-07
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; input clarification, source-safe
-Memory expression, greeting warmth, and mistake provenance are source-
-checkpointed and focused-verification complete, but not yet packaged
+Memory expression, greeting warmth, and mistake provenance are committed,
+packaged, installed, and least-impact verified
 
 ## Purpose
 
@@ -18,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest installed input-clarification documentation checkpoint: `06d5098`
+  (`Refresh input clarification continuation edge`)
 - Latest input clarification, source-safe Memory expression, greeting warmth,
   and mistake-provenance checkpoint: `4be2f5f`
   (`Cultivate input clarification and source-safe warmth`)
@@ -833,9 +835,26 @@ git log -5 --oneline
   state was untouched.
 - Evidence:
   `docs/evidence/SELENE_INPUT_CLARIFICATION_MEMORY_SOURCE_WARMTH_CULTIVATION_20260907.md`.
-- The repair is not packaged or installed. Do not run another broad Q&A.
-  Package/reinstall only if Aleks asks, then use one bright greeting and one
-  ordinary typo/clarification confirmation.
+- Aleks authorized packaging and reinstall from clean revision `06d5098`.
+  Build, pre-install verification, silent NSIS install, and post-install
+  verification passed. Final report:
+  `exports/package_verify_20260907_203524.json`.
+- Installer SHA-256:
+  `79DF4BC883EDD7CC443A312D0DC2853664ACFA2E59511099DCA68F121BC56DA9`.
+  Installed executable SHA-256:
+  `D9EB24DEAEBF8735A50C990BF05CAB73FBD7E67932DE81712DD538D7CF4E448B`.
+  Installed sidecar SHA-256:
+  `7B5AB1EB36691109D7405E81C3D9B0C3243F0A660C66FB75E2896799EA5D0AAB`.
+- The installed resident Chat route passed one bright greeting and one exact
+  typo/source-safety confirmation against a temporary database copy with an
+  isolated data directory and cleared messaging credentials. The dry-run
+  preview route does not exercise the full resident conversational pipeline
+  and must not be used to judge installed expression behavior.
+- Temporary state was removed, no Selene process remained, and the resident
+  database stayed byte-for-byte unchanged at SHA-256
+  `347CE3A59C0BC56C92023D41E0081C5AE6C41441160523B86669CA63BBB5DD93`.
+- Do not repeat these checks or run a broad Q&A without a new implementation
+  need.
 
 ## Private Master Record
 
@@ -905,16 +924,16 @@ and least-impact verified. The earlier social-expression and current-turn-
 owner repairs are included in that installed package.
 
 The input clarification, source-safe Memory expression, expressive greeting,
-and mistake-provenance cultivation is committed at `4be2f5f`. Its focused and
-exact Chat verification is complete, but it is not packaged or installed. The
-currently installed executable therefore remains the verified `5e6a9c6`
-package and does not yet contain this latest source repair.
+and mistake-provenance cultivation is committed at `4be2f5f`, packaged from
+clean documentation revision `06d5098`, freshly installed, and confirmed
+through the installed resident Chat route. One bright greeting selected warmth;
+the exact typo was structurally repaired without weak Memory use or source/code
+leakage. Resident state remained unchanged.
 
-The exact resume point is Aleks deciding whether to package/reinstall
-`4be2f5f`, followed by at most one bright greeting and one ordinary
-typo/clarification check if installed, or otherwise the next explicitly
-selected teaching phase. Do not repeat the decision-chain confirmation, G13,
-G14, or G15 teaching, the earlier repaired learning replay, or a broad Q&A battery.
+The exact resume point is the next explicitly selected teaching or bounded
+stabilization phase. Do not repeat the installed greeting/typo confirmation,
+the decision-chain confirmation, G13, G14, or G15 teaching, the earlier
+repaired learning replay, or a broad Q&A battery.
 Keep the nine known pre-existing Chat-owner failures as a separate bounded
 stabilization batch. The downloaded source corpora and private 20-interaction
 review stay ignored and unavailable to runtime.

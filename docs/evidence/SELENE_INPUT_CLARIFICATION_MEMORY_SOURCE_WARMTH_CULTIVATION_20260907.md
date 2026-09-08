@@ -66,14 +66,52 @@ Selene.
 - Python compilation passed for every changed production module.
 - `git diff --check` reported only expected Windows LF/CRLF notices.
 
-All verification used disposable databases. No resident conversation, Memory,
-teaching, Dream, Study, identity, personality, Vys, governance, authority,
-autonomy, training, LoRA, perception, embodiment, Tendril, or external-action
-state changed. No live probe, stress test, package, or reinstall ran.
+All source verification used disposable databases. No resident conversation,
+Memory, teaching, Dream, Study, identity, personality, Vys, governance,
+authority, autonomy, training, LoRA, perception, embodiment, Tendril, or
+external-action state changed.
+
+## Installed package confirmation
+
+Aleks authorized a fresh Windows package and reinstall from clean revision
+`06d50988751c076f9061ee2df6ee650ba579e29e`. The build, pre-install package
+verification, silent NSIS install, and post-install package verification all
+passed. The final package report is
+`exports/package_verify_20260907_203524.json`; code signing remains
+unconfigured.
+
+- installer SHA-256:
+  `79DF4BC883EDD7CC443A312D0DC2853664ACFA2E59511099DCA68F121BC56DA9`
+- installed executable SHA-256:
+  `D9EB24DEAEBF8735A50C990BF05CAB73FBD7E67932DE81712DD538D7CF4E448B`
+- installed sidecar SHA-256:
+  `7B5AB1EB36691109D7405E81C3D9B0C3243F0A660C66FB75E2896799EA5D0AAB`
+
+The two least-impact resident-Chat confirmations ran through the installed
+sidecar against a temporary database copy and isolated data directory with all
+SMS and email credentials cleared:
+
+- `Hello Selene!` selected `warm_available`, handed off a warm greeting, used
+  the warmth expression channel, and answered `Hi there. I am glad you are
+  here.`
+- `The warmth I do not understand th eissue` became `The warmth I do not
+  understand the issue`, did not use Memory context, and exposed no transcript
+  labels or code.
+
+An initial probe used `selene_chat.send_dry_run` and returned the legacy preview
+shape rather than the full resident conversational pipeline. It was therefore
+not treated as a behavior result. Repeating the check through
+`selene_chat.send` produced the valid installed results above. Future installed
+expression checks should use the resident Chat route against disposable state.
+
+The temporary sidecars stopped and both temporary directories were removed.
+No Selene process remained. Resident database SHA-256 stayed unchanged before
+and after the checks at
+`347CE3A59C0BC56C92023D41E0081C5AE6C41441160523B86669CA63BBB5DD93`.
 
 ## Exact edge
 
-The source repair is verified but not yet packaged or installed. A later install
-requires Aleks's explicit request. After installation, the smallest sufficient
-check is one bright greeting and one ordinary typo/clarification turn; the
-settled decision-chain Q&A should not be repeated.
+The source repair is committed, packaged, freshly installed, and confirmed on
+the two smallest relevant resident-Chat paths. No broader Q&A or repeat of the
+settled decision-chain checks is warranted. Resume from the next explicitly
+selected teaching or stabilization item.

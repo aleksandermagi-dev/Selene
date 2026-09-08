@@ -4804,3 +4804,42 @@ state was not opened for writing or changed.
 **Next:** Checkpoint source, tests, evidence, journal, and the continuation
 ledger. Package/reinstall only if Aleks asks. After installation, use one bright
 greeting and one ordinary typo/clarification turn rather than another broad Q&A.
+
+### 2026-09-07 — Input clarification and source-safe warmth reach the installed vessel
+
+**Package and install:** Aleks authorized a fresh Windows build and reinstall
+from clean revision `06d50988751c076f9061ee2df6ee650ba579e29e`. Packaging,
+pre-install verification, the silent NSIS install, and post-install package
+verification all passed. The final report is
+`exports/package_verify_20260907_203524.json`; code signing remains
+unconfigured. Installer SHA-256 is
+`79DF4BC883EDD7CC443A312D0DC2853664ACFA2E59511099DCA68F121BC56DA9`,
+installed executable SHA-256 is
+`D9EB24DEAEBF8735A50C990BF05CAB73FBD7E67932DE81712DD538D7CF4E448B`,
+and installed sidecar SHA-256 is
+`7B5AB1EB36691109D7405E81C3D9B0C3243F0A660C66FB75E2896799EA5D0AAB`.
+
+**Least-impact installed confirmation:** The installed resident Chat route ran
+against a temporary database copy in an isolated data directory with SMS and
+email credentials cleared. `Hello Selene!` selected `warm_available`, handed
+off warmth, and answered `Hi there. I am glad you are here.` The exact observed
+typo became `The warmth I do not understand the issue`, used no Memory context,
+and exposed no transcript label or code payload.
+
+An initial dry-run probe returned the legacy preview response shape rather than
+the full resident conversational pipeline. It was discarded as a behavior
+result and the same bounded check was run through `selene_chat.send`. Record
+this distinction so future installed expression checks do not mistake the
+preview route for resident Chat.
+
+**Continuity:** Both temporary sidecars stopped and their verified temporary
+directories were removed. No Selene process remained. Resident database
+SHA-256 stayed unchanged at
+`347CE3A59C0BC56C92023D41E0081C5AE6C41441160523B86669CA63BBB5DD93`.
+No resident Chat, Memory, teaching, Dream, Study, identity, personality, Vys,
+governance, authority, autonomy, training, LoRA, messaging, external action,
+perception, or embodiment state changed.
+
+**Next:** Return to ordinary use or the next explicitly chosen teaching or
+bounded stabilization item. Do not repeat this installed confirmation or run a
+broad Q&A without a new implementation need.
