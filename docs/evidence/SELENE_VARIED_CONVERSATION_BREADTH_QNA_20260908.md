@@ -188,12 +188,48 @@ Natural closure is not owned as an act, allowing an unrelated association
 proposal to reopen the conversation. Session recaps collect visible fallback
 surfaces rather than a small proposition/change ledger.
 
+## Patch-Ancestry Reassessment — 2026-09-08
+
+Source history changes the initial interpretation in one important way. The
+eight root clusters below remain valid, but they are not caused only by missing
+connective tissue. `answer_substance.py` also contains a large compatibility
+layer that recognizes several earlier Q&A fixtures—specific fractions,
+notebook/pen choices, a plant/window hypothesis, porch/walk revisions, and
+other named scenarios—and directly returns finished prose before more general
+current-context operations run.
+
+That ancestry explains why earlier exact replays passed while equivalent
+operations with different nouns or grammar failed here. The new porch prompt
+did not reveal a missing preference lesson; it bypassed a prompt-bound
+porch/walk handler and exposed the still-narrow session-decision owner. The
+mug, equal-groups, and point-of-view misroutes remain genuine evidence of
+current-session ownership and retrieval-relevance defects.
+
+The updated diagnosis is therefore:
+
+1. current propositions and requested functions lack sufficiently general
+   ownership; and
+2. exact scenario handlers have sometimes masked that absence and made earlier
+   stabilization evidence look broader than it was.
+
+The input detangler is not the source of this defect. It is intentionally a
+conservative typo repair owner rather than a mature semantic normalizer. Typed
+ownership, the current-turn fact ledger, ephemeral session-decision context,
+expression-only language guidance, and the familiar-warmth reconnection are
+sound foundations to preserve and mature.
+
+Full evidence and the keep/mature/retire classification are recorded in
+`docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`.
+
 ## One-go cultivation order
 
 The findings should be repaired as one coordinated source batch, but in this
-dependency order:
+revised dependency order:
 
-1. **Active proposition ledger:** preserve current entities, attributes,
+0. **Patch-ancestry reconciliation:** classify fixture-bound answer branches
+   and exact replay tests; preserve their intended capability as requirements,
+   but stop treating prompt recognition as general completion evidence.
+1. **Shared proposition normalization and active proposition ledger:** preserve current entities, attributes,
    locations, hypotheses, decisions, and their revisions as ephemeral session
    state—not durable Memory.
 2. **Current owner gate:** rank current-turn/session support ahead of learned
@@ -213,6 +249,8 @@ dependency order:
 8. **Shared realization cleanup:** repair subject reconstruction,
    punctuation/symbol handling, and stale fallback contamination at their
    common owners.
+9. **Generalization verification:** exercise the same operation through novel
+   nouns, paraphrases, and reordered wording before any short ordinary Q&A.
 
 This is not a request for a new monolithic organ. Cultivation should first map
 these responsibilities to the existing Conversation Spine, pragmatic plan,

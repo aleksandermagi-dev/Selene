@@ -4955,3 +4955,36 @@ fresh disposable copy. Future installed Q&A harnesses must read
 session proposition, response-owner, learning-gap, retrieval relevance,
 revision, coverage, and realization handoffs as one coordinated source repair.
 Do not teach around the defect or patch individual prompt phrases.
+
+### 2026-09-08 — Patch ancestry revises the conversation diagnosis
+
+**Reason:** Aleks recognized that repairs made before the Cultivation method
+may have patched symptoms rather than their shared source. The next repair was
+paused for a static ancestry audit; no behavioral test or production edit ran.
+
+**Finding:** The concern is confirmed. A 367-line compatibility operation in
+`answer_substance.py` contains numerous exact scenario conditions that return
+finished answers for prior Q&A fixtures before general current-context owners
+run. The September 4 notebook/pen, plant/window, porch/walk, and fraction
+closures can therefore pass exact replays while equivalent requests with new
+nouns or grammar fail. The September 8 porch prompt is direct transfer evidence
+of that limitation.
+
+**Updated reading:** Current-session proposition, requested-function,
+retrieval-relevance, revision, and coverage gaps are still real. Exact fixture
+branches have also masked them and made some earlier stabilization evidence
+look more general than it was. The input detangler is a safe bounded typo owner,
+not a general semantic normalizer, and is not the root. Typed ownership,
+ephemeral session decision context, current-turn facts, warmth reconnection,
+expression guidance, and all identity/Memory/authority boundaries remain valid
+foundations.
+
+**Evidence:**
+`docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`.
+The varied Q&A, August root map, and September 4 closure record now carry dated
+reassessments rather than rewriting their historical claims.
+
+**Next:** Review with Aleks. If authorized, begin Cultivation Phase 0 by mapping
+each fixture branch to a general capability and existing owner, then replace
+only the symptom paths through shared proposition normalization and changed-
+entity/paraphrase verification. Do not run another broad Q&A first.

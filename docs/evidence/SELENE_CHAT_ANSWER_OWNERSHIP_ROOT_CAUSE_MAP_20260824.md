@@ -302,6 +302,24 @@ a failure assigned to Selene.
 
 ## Current Disposition
 
+### Dated reassessment — 2026-09-08
+
+The disposition below accurately records the typed ownership infrastructure
+added in August. Later patch-ancestry inspection shows that it must not be read
+as universal closure of answer ownership. A substantial compatibility block in
+`answer_substance.py` still recognizes exact stabilization fixtures and returns
+their final prose before more general current-context owners run. Several
+September 4 recorded-case closures therefore proved their named examples, not
+general operation transfer across novel nouns and grammar.
+
+The ownership architecture remains the right skeleton. The next repair must
+remove the masking effect of fixture-bound answer branches, generalize
+ephemeral proposition and operation ownership, and verify paraphrases and
+changed entities. It must not revert the valid ownership contracts, warmth
+handoff, uncertainty, provenance, Memory, identity, Vys, governance, authority,
+training, or action boundaries. See
+`docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`.
+
 Aleks reviewed and authorized the dependency-ordered source repair. The runtime
 now carries a typed answer-ownership contract from pragmatic planning through
 the Conversation Spine, Answer Engine coordination, supported semantics,

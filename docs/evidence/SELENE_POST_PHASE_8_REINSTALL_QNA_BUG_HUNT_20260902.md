@@ -223,3 +223,19 @@ longer unscripted exchanges remain appropriate future evaluation material.
 No live resident Q&A, reinstall, schema change, teaching action, Memory/Study/
 Dream decision, or resident write was used for the repair. Phase 9 remains
 unstarted.
+
+### Dated reassessment — 2026-09-08
+
+Patch-ancestry review confirms that the `for recorded case(s)` qualification
+above is material. Several closures in Q8R-01 through Q8R-08 were implemented
+partly through exact scenario handlers in `answer_substance.py`, including the
+named fraction, notebook/pen, plant/window, and porch/walk fixtures. Those
+handlers remain useful historical evidence of the requested behavior, but an
+exact replay does not establish that the corresponding operation transfers to
+new entities or phrasing.
+
+The September 8 varied Q&A supplied that missing generalization evidence and
+showed the underlying ownership/relevance gap again. No historical result is
+being erased: the recorded cases did close. Their maturity is now more
+precisely classified as fixture-bounded pending the cultivation plan in
+`docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`.

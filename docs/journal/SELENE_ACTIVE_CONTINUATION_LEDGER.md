@@ -913,6 +913,34 @@ git log -5 --oneline
 - Installed Q&A evidence:
   `docs/evidence/SELENE_FAMILIAR_SOCIAL_EXPRESSION_INSTALL_QNA_20260908.md`.
 
+## Conversation Cultivation Phase 0 — Patch Ancestry
+
+- Aleks identified that pre-Cultivation conversational repairs may have
+  patched Q&A symptoms. Static ancestry review confirms the concern.
+- `answer_substance.py::_foundational_current_prompt_operation` is a 367-line
+  compatibility layer called before general current-context operations. It
+  includes exact named-scenario handlers for prior fraction, notebook/pen,
+  plant/window, porch/walk, and other Q&A fixtures that return final prose.
+- This revises the September 8 Q&A interpretation: current-session ownership,
+  learning-gap, retrieval relevance, revision, and coverage gaps are real, and
+  fixture-bound answers have sometimes masked them in exact replay tests.
+- Preserve the valid skeleton: typed answer ownership, the bounded input
+  detangler, current-turn fact ledger, ephemeral session-decision boundary,
+  expression-only language guidance, familiar warmth, uncertainty,
+  provenance, Memory, identity, Vys, governance, authority, training, action,
+  and stopping boundaries.
+- Mature or absorb: session proposition and operation normalization,
+  session-decision grammar, teaching-gap eligibility, subject reconstruction,
+  retrieval relevance, semantic coverage, and changed-entity/paraphrase
+  verification.
+- Retire only the fixture-specific final-answer paths once their intended
+  capabilities are covered by general owners. Do not revert the large source
+  commits wholesale or grow another phrase dictionary.
+- Evidence:
+  `docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`.
+- No production code, resident state, package, install, teaching, Memory,
+  Dream, Study, external action, or behavioral test changed during this audit.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -994,18 +1022,24 @@ and a bounded cross-page expression-freshness window. It is packaged and
 installed from clean revision `160f2d9`; two new-page greetings confirmed
 visible familiar warmth and distinct surfaces.
 
-The exact resume point is review with Aleks and then, if authorized,
-Cultivation of the fully mapped current-conversation ownership cluster. The
-second varied run is recorded at
-`docs/evidence/SELENE_VARIED_CONVERSATION_BREADTH_QNA_20260908.md`.
+The exact resume point is review of the Phase 0 patch-ancestry reassessment with
+Aleks and then, if authorized, production Cultivation of the fully mapped
+current-conversation ownership cluster. The varied run and revised reading are
+recorded at
+`docs/evidence/SELENE_VARIED_CONVERSATION_BREADTH_QNA_20260908.md`; the ancestry
+map is
+`docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`.
 
-Implement the smallest coordinated repair in dependency order: ephemeral
-active propositions and revisions; current answer-owner priority;
+Begin by classifying each fixture-bound final-answer branch against a general
+capability and existing owner. Then implement the smallest coordinated repair
+in dependency order: shared proposition normalization; ephemeral active
+propositions and revisions; current answer-owner priority;
 learning-gap eligibility; approved-knowledge subject/entity/operation/function
 relevance; correction completion; typed humor/acknowledgement/recap/closure
 acts; semantic coverage; and shared subject, punctuation, symbol, and stale-
 fallback cleanup. Map these onto existing owners before editing; do not create
-a monolithic conversation organ.
+a monolithic conversation organ. Replace scenario handlers only after their
+general capability passes changed-entity and paraphrase checks.
 
 Do not patch prompt phrases or teach around the route defect. Do not repeat the
 installed warmth gate, greeting/typo confirmation, decision-chain
