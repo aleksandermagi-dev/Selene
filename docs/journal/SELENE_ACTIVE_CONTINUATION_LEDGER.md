@@ -4,10 +4,10 @@ Last refreshed: 2026-09-09
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
-installed and verified; conversation Cultivation Phases 1 through 3 now supply
+installed and verified; conversation Cultivation Phases 1 through 5 now supply
 shared visible propositions, proved current answer ownership, learning-gap
-eligibility only after existing answer paths are exhausted, and one typed
-approved-knowledge relevance receipt
+eligibility, typed approved-knowledge relevance, and current-session revision
+completion from the changed premise
 
 ## Purpose
 
@@ -20,6 +20,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest conversation Cultivation Phase 5 checkpoint: `9b03043`
+  (`Complete current-session revisions`)
 - Latest conversation Cultivation Phase 4 checkpoint: `d587b57`
   (`Prove approved knowledge relevance`)
 - Latest conversation Cultivation Phase 3 checkpoint: `7803dc3`
@@ -99,8 +101,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  thirty-four commits ahead of `origin/evidence`; this ledger refresh is
-  expected to make that thirty-five. Confirm again before any later commit or
+  thirty-six commits ahead of `origin/evidence`; this ledger refresh is
+  expected to make that thirty-seven. Confirm again before any later commit or
   push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
@@ -1073,6 +1075,34 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_4_APPROVED_KNOWLEDGE_RELEVANCE_20260909.md`.
 
+## Conversation Cultivation Phase 5 — Revision Completion
+
+- Checkpoint `9b03043` completes the correction/revision handoff through the
+  existing Dialogue Workspace, Session Proposition Ledger, Current-Session
+  Decision Context, Answer Operations, Chat, and Visible Speech owners.
+- Dialogue Workspace extracts clausal `X, not Y`, `X instead of Y`, and quoted
+  referent replacements. An explicit pair targets the visible basis before an
+  equally similar downstream result.
+- The ledger accepts a general recomputation only from the responsible typed
+  owner for the exact revision after current-turn input accounting and visible
+  consumption of the changed premise. Generic change notices, stale answer
+  replay, and mismatched revision ids remain held.
+- One changed-noun swift/delicate versus steady/robust decision proved the
+  general owner path, selective invalidation, one-pass recomputation, visible
+  realization, and completed revision ancestry.
+- The three historical drink, screen, and drawer fixtures remain available as
+  compatibility fallbacks. They are explicitly ineligible as general
+  capability evidence and cannot outrank a proved general owner.
+- Verification: 22 focused revision checks, 117 affected-owner checks, and
+  126 full Chat checks passed. Six previously recorded later-phase failures
+  remain; the correction-revision failure is closed.
+- Resident integrity and counts were unchanged; SQLite remained byte-for-byte
+  identical at SHA-256
+  `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+- No live Q&A, teaching, package, install, or resident mutation occurred.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_5_REVISION_COMPLETION_20260909.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1180,14 +1210,20 @@ Conversation Cultivation Phase 4 is complete and checkpointed at `d587b57`.
 Approved-knowledge relevance now requires subject, entity,
 operation, and requested-function alignment through one shared receipt.
 
-The exact resume point is Phase 5: correction/revision completion. Map the
-existing correction, Current-Session Decision Context, Session Proposition
-Ledger, Answer Completion, and Visible Speech handoffs before editing. A
-correction must update active session state and recompute any still-open answer
-from that updated state rather than merely acknowledge the correction or
-replay the earlier answer. Then continue typed humor/acknowledgement/recap/
-closure acts; semantic coverage; and shared subject, punctuation, symbol, and
-stale-fallback cleanup. Do not create a monolithic conversation organ.
+Conversation Cultivation Phase 5 is complete and checkpointed at `9b03043`.
+Correction replacement pairs now target their visible basis; a general typed
+owner must match the exact revision and visibly consume the changed premise
+before its answer completes recomputation. The historical drink, screen, and
+drawer paths remain explicitly compatibility-only.
+
+The exact resume point is Phase 6: typed participation ownership. Map the
+existing humor, acknowledgement, recap, closure, Pragmatic Continuity,
+Conversation Contribution, NLO, Voice, Answer Operations, and Visible Speech
+handoffs before editing. Prove each ordinary conversational act through its
+responsible owner so the remaining broad prompt-grounded coordination guard
+can be retired obligation by obligation. Then continue semantic coverage and
+shared subject, punctuation, symbol, and stale-fallback cleanup. Do not create
+a monolithic conversation organ.
 The 54-kind compatibility inventory remains the removal ledger: replace a
 scenario handler only after changed-entity and paraphrase transfer is proved.
 
@@ -1197,9 +1233,11 @@ confirmation, G13-G15 teaching, the earlier repaired learning replay, or any
 further broad Q&A before repair. Use focused synthetic owner checks first and
 one short ordinary end-to-end conversation only if source evidence cannot
 establish the handoff.
-Keep the seven reproduced Chat failures as a separate bounded stabilization
-batch. The downloaded source corpora and private 20-interaction
-review stay ignored and unavailable to runtime.
+Keep the six reproduced Chat failures as a separate bounded stabilization
+batch: mixed-turn recovery-source ownership, long-request Answer Engine
+precedence, bare-why specificity, synthetic multi-operation coverage, Venn
+semantics, and older-thread return. The downloaded source corpora and private
+20-interaction review stay ignored and unavailable to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,
 post-transfer, read-only continuity recall. It is not generic language
