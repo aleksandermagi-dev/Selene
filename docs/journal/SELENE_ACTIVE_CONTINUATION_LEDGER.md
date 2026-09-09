@@ -5,8 +5,9 @@ Last refreshed: 2026-09-09
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
 installed and verified; conversation Cultivation Phases 1 through 3 now supply
-shared visible propositions, proved current answer ownership, and learning-gap
-eligibility only after existing answer paths are exhausted
+shared visible propositions, proved current answer ownership, learning-gap
+eligibility only after existing answer paths are exhausted, and one typed
+approved-knowledge relevance receipt
 
 ## Purpose
 
@@ -19,6 +20,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest conversation Cultivation Phase 4 checkpoint: `d587b57`
+  (`Prove approved knowledge relevance`)
 - Latest conversation Cultivation Phase 3 checkpoint: `7803dc3`
   (`Prove learning gap eligibility`)
 - Latest conversation Cultivation Phase 2 checkpoint: `ab03bbc`
@@ -96,8 +99,9 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  thirty-two commits ahead of `origin/evidence`; the ledger refresh is expected
-  to make that thirty-three. Confirm again before any later commit or push.
+  thirty-four commits ahead of `origin/evidence`; this ledger refresh is
+  expected to make that thirty-five. Confirm again before any later commit or
+  push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1040,6 +1044,35 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_3_LEARNING_GAP_ELIGIBILITY_20260909.md`.
 
+## Conversation Cultivation Phase 4 — Approved-Knowledge Relevance
+
+- Semantic Relevance now owns one inspectable approved-knowledge receipt for
+  required subject, current entity, requested operation, and requested
+  response-function alignment.
+- Approval remains permission to use a reviewed concept; it cannot substitute
+  for proof that the concept answers the current request.
+- Comprehension consumes the shared receipt after Conversation Spine
+  compatibility. Its former local word-count relevance judgment is removed;
+  compatibility output fields are projections of the shared decision.
+- Changed-entity controls hold nearby seedling/fertilizer and
+  turbine/controller lessons. Exact definition separates a unit fraction from
+  division with unit fractions. Current action ownership remains intact, while
+  a valid bell/sound distinct application remains eligible.
+- Full Chat exposed and then removed one Phase 4 Memory regression. Relevant
+  Memory may inform a choice, while approved teaching cannot impersonate the
+  choice-maker. This distinction is now explicit in source-class ownership.
+- Verification: 37 direct relevance/comprehension checks and 122 supporting
+  owner checks passed. Full Chat returned to 124 passing checks with exactly
+  the same seven known stabilization failures and no Phase 4 regression.
+- Resident SQLite integrity was `ok`; counts remained 295 concepts, 249
+  lifecycles, 23 Chat sessions, 360 Chat messages, zero Memory candidates, 24
+  Dream reflections, one Study session, and 248 approved resources. SHA-256
+  remained
+  `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+- No live Q&A, teaching, package, install, or resident mutation occurred.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_4_APPROVED_KNOWLEDGE_RELEVANCE_20260909.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1143,12 +1176,18 @@ current/session/domain/inference/clarification and approved-knowledge answer
 paths before teaching; shared subject and option normalization no longer
 preserve request-clause fragments as subject matter.
 
-After the Phase 3 checkpoint, the exact resume point is Phase 4:
-approved-knowledge relevance must require subject, entity, operation, and
-requested-function alignment. Then continue correction completion; typed
-humor/acknowledgement/recap/closure acts; semantic coverage; and shared
-subject, punctuation, symbol, and stale-fallback cleanup. Map each repair onto
-existing owners before editing; do not create a monolithic conversation organ.
+Conversation Cultivation Phase 4 is complete and checkpointed at `d587b57`.
+Approved-knowledge relevance now requires subject, entity,
+operation, and requested-function alignment through one shared receipt.
+
+The exact resume point is Phase 5: correction/revision completion. Map the
+existing correction, Current-Session Decision Context, Session Proposition
+Ledger, Answer Completion, and Visible Speech handoffs before editing. A
+correction must update active session state and recompute any still-open answer
+from that updated state rather than merely acknowledge the correction or
+replay the earlier answer. Then continue typed humor/acknowledgement/recap/
+closure acts; semantic coverage; and shared subject, punctuation, symbol, and
+stale-fallback cleanup. Do not create a monolithic conversation organ.
 The 54-kind compatibility inventory remains the removal ledger: replace a
 scenario handler only after changed-entity and paraphrase transfer is proved.
 
