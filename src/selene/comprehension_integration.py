@@ -1526,11 +1526,6 @@ def _answer_eligible_knowledge_items(
     )
     if meaning_frame.get("academic_knowledge_posture") == "hold_for_social_or_conversation_management":
         return []
-    protected_terms = {
-        _term_key(str(term).lower())
-        for term in meaning_frame.get("protected_knowledge_terms") or []
-        if str(term).strip()
-    }
     contextual = intent.get("contextual_follow_up") if isinstance(intent.get("contextual_follow_up"), dict) else {}
     dialogue_acts = {str(item) for item in intent.get("dialogue_acts") or []}
     intent_name = str(intent.get("intent") or "")
@@ -1560,18 +1555,6 @@ def _answer_eligible_knowledge_items(
         subject_query,
         flags=re.IGNORECASE,
     )
-    query_terms = _semantic_query_terms(subject_query) - protected_terms
-    generic = {
-        "answer", "another", "apply", "back", "but", "cannot", "change", "changed", "check",
-        "compare", "conversation", "different", "do", "example", "explain", "first", "give",
-        "handle", "help", "idea", "language", "lesson", "lessons", "make", "material", "most",
-        "new", "next", "one", "ordinary", "practical", "question", "reason", "return", "review",
-        "reviewed", "say", "should", "short", "simple", "student", "learner", "young", "step",
-        "thing", "things", "use", "version", "why",
-    }
-    weak_subject_terms = {
-        "available", "container", "current", "equal", "inside", "outside", "possible", "same",
-    }
     eligible: list[dict[str, Any]] = []
     for item in items:
         item_text = " ".join(
@@ -1617,68 +1600,34 @@ def _answer_eligible_knowledge_items(
         item["semantic_relevance"] = semantic_relevance
         if semantic_relevance.get("accepted") is not True:
             continue
-        overlap = set(item.get("matched_terms") or []) & query_terms
-        distinctive_overlap = {term for term in overlap if term not in generic}
-        title_terms = set(
-            _terms(
-                " ".join(
-                    [
-                        str(item.get("title") or ""),
-                        str(item.get("domain") or ""),
-                        str(item.get("concept_key") or "").replace("_", " "),
-                    ]
-                )
-            )
-        ) - generic
-        subject_overlap = distinctive_overlap & title_terms
-        # Approved knowledge may answer only when the prompt names the
-        # concept's subject. Peripheral overlap in claims or examples is not
-        # enough to redirect an otherwise ordinary question.
-        strong_subject_overlap = subject_overlap - weak_subject_terms
-        subject_query_terms = query_terms - generic - weak_subject_terms
-        application_overlap = (
-            set(item.get("retrieval_application_terms") or [])
-            & subject_query_terms
+        alignment = (
+            semantic_relevance.get("approved_knowledge_alignment")
+            if isinstance(semantic_relevance.get("approved_knowledge_alignment"), dict)
+            else {}
         )
-        application_alignment = bool(
-            len(application_overlap) >= 3
-            and len(distinctive_overlap - weak_subject_terms) >= 3
+        subject_alignment = (
+            alignment.get("subject_alignment")
+            if isinstance(alignment.get("subject_alignment"), dict)
+            else {}
         )
-        explicit_single_focus = bool(
-            len(strong_subject_overlap) == 1
-            and any(
-                re.search(
-                    rf"\b(?:explain|define|describe|understand|what\s+is|how\s+does|why\s+does|tell\s+me\s+about)"
-                    rf"\b.{{0,45}}\b{re.escape(term)}\b",
-                    subject_query,
-                    flags=re.IGNORECASE,
-                )
-                for term in strong_subject_overlap
-            )
+        item["approved_knowledge_alignment_receipt"] = alignment
+        item["answer_alignment_terms"] = list(alignment.get("answer_alignment_terms") or [])
+        item["answer_subject_terms"] = list(
+            subject_alignment.get("obligation_subject_overlap")
+            or subject_alignment.get("prompt_subject_overlap")
+            or []
         )
-        sufficiently_specific = bool(
-            len(strong_subject_overlap) >= 2
-            or (
-                len(strong_subject_overlap) == 1
-                and (
-                    len(subject_query_terms) <= 2
-                    or explicit_single_focus
-                    or len(distinctive_overlap - weak_subject_terms) >= 2
-                )
-            )
-            or application_alignment
-        )
-        if not sufficiently_specific:
-            continue
-        item["answer_alignment_terms"] = sorted(distinctive_overlap)
-        item["answer_subject_terms"] = sorted(strong_subject_overlap)
         item["answer_subject_alignment"] = {
-            "strong_term_count": len(strong_subject_overlap),
-            "prompt_subject_term_count": len(subject_query_terms),
-            "explicit_single_focus": explicit_single_focus,
-            "peripheral_terms_ignored": sorted(subject_overlap & weak_subject_terms),
-            "application_alignment": application_alignment,
-            "application_terms": sorted(application_overlap),
+            "strong_term_count": len(item["answer_subject_terms"]),
+            "prompt_subject_term_count": len(alignment.get("query_terms") or []),
+            "explicit_single_focus": subject_alignment.get("explicit_subject_focus") is True,
+            "peripheral_terms_ignored": [],
+            "application_alignment": subject_alignment.get("application_alignment") is True,
+            "application_terms": list(subject_alignment.get("application_terms") or []),
+            "subject_basis": str(subject_alignment.get("basis") or "none"),
+            "entity_alignment": alignment.get("entity_alignment") or {},
+            "operation_alignment": alignment.get("operation_alignment") or {},
+            "requested_function_alignment": alignment.get("requested_function_alignment") or {},
         }
         eligible.append(item)
     return eligible

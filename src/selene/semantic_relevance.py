@@ -47,16 +47,53 @@ _WEAK_SUBJECT_TERMS = {
     "amount", "inside", "outside", "pattern", "process", "result", "system", "value",
 }
 
+_CONTEXT_OWNER_ONLY_FUNCTIONS = {
+    "action_scope",
+    "comparison",
+    "correction",
+    "hypothesis",
+    "prediction",
+    "preference",
+    "reopening",
+}
+
+_KNOWLEDGE_OWNER_ONLY_FUNCTIONS = _CONTEXT_OWNER_ONLY_FUNCTIONS | {"choice"}
+
+_KNOWLEDGE_FUNCTION_ALIASES: dict[str, set[str]] = {
+    "answer": {"answer", "definition"},
+    "direct_answer": {"answer", "definition"},
+    "definition": {"definition"},
+    "reason": {"reason"},
+    "causal_explanation": {"reason"},
+    "method": {"method"},
+    "planning": {"method"},
+    "application": {"application"},
+    "example": {"application"},
+    "analogy": {"application"},
+    "limitation": {"limitation"},
+    "summary": {"answer", "definition", "reason", "application", "limitation"},
+    "session_summary": {"answer", "definition", "reason", "application", "limitation"},
+}
+
+_REQUEST_FUNCTION_TERMS = {
+    "answer", "choose", "conclusion", "define", "definition", "describe",
+    "explain", "give", "identify", "name", "predict", "produce", "recommend",
+    "report", "say", "show", "state", "suggest", "summarize", "tell", "update",
+}
+
 
 def semantic_relevance_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "semantic_relevance_gate_ready",
-            "version": "v1_role_topic_source_thread_gate",
+            "version": "v2_approved_knowledge_alignment_receipt",
             "scope": "current_turn_candidate_selection_only",
             "checks": [
                 "source class permission",
                 "topic and subject alignment",
+                "current entity preservation",
+                "requested operation ownership",
+                "requested response-function fit",
                 "requested answer role",
                 "conversation-thread compatibility",
                 "memory recall strength",
@@ -213,10 +250,7 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
         for item in candidate.get("performed_response_functions") or []
         if str(item).strip()
     }
-    owner_only_functions = requested_functions & {
-        "action_scope", "comparison", "correction", "hypothesis",
-        "prediction", "preference", "reopening",
-    }
+    owner_only_functions = requested_functions & _CONTEXT_OWNER_ONLY_FUNCTIONS
     requested_operation_performed = bool(
         not owner_only_functions
         or owner_only_functions & performed_functions
@@ -281,33 +315,41 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
         if meaning_frame.get("academic_knowledge_posture") == "hold_for_social_or_conversation_management":
             accepted = False
             reason = "canonical_meaning_frame_holds_academic_retrieval"
+            approved_knowledge_alignment = _approved_knowledge_alignment_receipt(
+                prompt=prompt,
+                candidate=candidate,
+                spine=spine,
+                query_terms=query_terms,
+                subject_terms=subject_terms,
+                core_terms=core_terms,
+                application_terms=application_terms,
+                requested_roles=requested_roles,
+                candidate_roles=candidate_roles,
+                requested_functions=requested_functions,
+                performed_functions=performed_functions,
+                protected_by_meaning_frame=True,
+            )
+            requested_operation_performed = False
         else:
-            direct_subject = bool(
-                strong_subject_overlap
-                and (
-                    explicit_focus
-                    or len(strong_subject_overlap) >= 2
-                    or len(all_overlap) >= 2
-                    or len(query_terms) <= 2
-                )
+            approved_knowledge_alignment = _approved_knowledge_alignment_receipt(
+                prompt=prompt,
+                candidate=candidate,
+                spine=spine,
+                query_terms=query_terms,
+                subject_terms=subject_terms,
+                core_terms=core_terms,
+                application_terms=application_terms,
+                requested_roles=requested_roles,
+                candidate_roles=candidate_roles,
+                requested_functions=requested_functions,
+                performed_functions=performed_functions,
+                protected_by_meaning_frame=False,
             )
-            transfer_application = bool(
-                len(application_overlap) >= 3
-                and len(all_overlap) >= 3
-                and (not requested_roles or bool(role_overlap) or "application" in candidate_roles)
-            )
-            accepted = bool(
-                requested_operation_performed
-                and (direct_subject or transfer_application)
-            )
-            reason = (
-                "approved_knowledge_describes_but_does_not_perform_requested_operation"
-                if not requested_operation_performed
-                else "approved_knowledge_subject_aligned"
-                if direct_subject
-                else "approved_knowledge_application_aligned"
-                if transfer_application
-                else "approved_knowledge_has_only_peripheral_overlap"
+            accepted = approved_knowledge_alignment["accepted"] is True
+            reason = str(approved_knowledge_alignment["reason"])
+            requested_operation_performed = bool(
+                (approved_knowledge_alignment.get("operation_alignment") or {}).get("aligned") is True
+                and (approved_knowledge_alignment.get("requested_function_alignment") or {}).get("aligned") is True
             )
     else:
         accepted = bool(all_overlap or not query_terms)
@@ -347,12 +389,284 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
                 and candidate.get("eligible_channels")
             ),
             "current_memory_conflict": current_memory_conflict,
+            "approved_knowledge_alignment": (
+                approved_knowledge_alignment
+                if source_class in {"approved_knowledge", "reviewed_teaching_knowledge_resource"}
+                else {}
+            ),
             "single_keyword_is_authority": False,
             "writes_state": False,
             "visible_summary_only": True,
             "provenance_boundary": SEMANTIC_RELEVANCE_BOUNDARY,
         }
     )
+
+
+def _approved_knowledge_alignment_receipt(
+    *,
+    prompt: str,
+    candidate: dict[str, Any],
+    spine: dict[str, Any],
+    query_terms: set[str],
+    subject_terms: set[str],
+    core_terms: set[str],
+    application_terms: set[str],
+    requested_roles: set[str],
+    candidate_roles: set[str],
+    requested_functions: set[str],
+    performed_functions: set[str],
+    protected_by_meaning_frame: bool,
+) -> dict[str, Any]:
+    """Prove that reviewed knowledge addresses this request, not a nearby word.
+
+    Approval proves that a concept may be used. This receipt separately proves
+    that its subject, current entities, requested operation, and response
+    function fit the present turn. It is intentionally non-writing.
+    """
+
+    obligations = [
+        item
+        for item in spine.get("open_obligations") or []
+        if isinstance(item, dict) and item.get("required") is not False
+    ]
+    focus_texts: list[str] = []
+    for obligation in obligations:
+        source_text = str(obligation.get("source_text") or "").strip()
+        topic = str(obligation.get("topic") or "").strip()
+        focus_texts.extend(value for value in (source_text, topic) if value)
+        source_terms = _semantic_terms(source_text)
+        if len(source_terms) <= 1 or _deictic_request(source_text):
+            parent = str(obligation.get("parent_source_text") or "").strip()
+            if parent:
+                focus_texts.append(parent)
+    focus_text = " ".join(dict.fromkeys(focus_texts)).strip() or prompt
+    focus_terms = _semantic_terms(focus_text)
+    focus_subject_terms = focus_terms - _REQUEST_FUNCTION_TERMS
+    focus_subject_overlap = focus_subject_terms & subject_terms
+    strong_focus_subject_overlap = focus_subject_overlap - _WEAK_SUBJECT_TERMS
+    full_subject_overlap = query_terms & subject_terms
+    strong_full_subject_overlap = full_subject_overlap - _WEAK_SUBJECT_TERMS
+    full_candidate_terms = subject_terms | core_terms | application_terms
+    full_overlap = query_terms & full_candidate_terms
+    focus_application_overlap = focus_terms & application_terms
+
+    explicit_focus = _explicit_subject_focus(
+        focus_text,
+        strong_focus_subject_overlap,
+    )
+    obligation_context_overlap = focus_subject_terms & full_candidate_terms
+    if obligations:
+        direct_subject = bool(
+            len(strong_focus_subject_overlap) >= 2
+            or (
+                len(strong_focus_subject_overlap) == 1
+                and (
+                    len(focus_subject_terms) == 1
+                    or (
+                        _explicit_subject_focus(focus_text, strong_focus_subject_overlap)
+                        and len(obligation_context_overlap) >= 2
+                    )
+                )
+            )
+        )
+        subject_basis = "required_obligation_names_knowledge_subject"
+    else:
+        direct_subject = bool(
+            strong_full_subject_overlap
+            and (
+                explicit_focus
+                or len(strong_full_subject_overlap) >= 2
+                or len(query_terms) <= 2
+            )
+        )
+        subject_basis = "prompt_names_knowledge_subject"
+
+    role_overlap = requested_roles & candidate_roles
+    transfer_application = bool(
+        (
+            len(focus_application_overlap) >= 3
+            and len(full_overlap) >= 3
+            and (not requested_roles or bool(role_overlap) or "application" in candidate_roles)
+        )
+        or (
+            explicit_focus
+            and bool(strong_focus_subject_overlap)
+            and len(focus_application_overlap) >= 2
+            and len(full_overlap) >= 2
+            and bool(candidate_roles & {"application", "reason"})
+        )
+    )
+    subject_aligned = bool(direct_subject or transfer_application)
+
+    facts = [
+        item
+        for item in (spine.get("current_turn_fact_ledger") or {}).get("facts") or []
+        if isinstance(item, dict)
+    ]
+    entity_texts: list[str] = []
+    operation_facts: list[dict[str, Any]] = []
+    for fact in facts:
+        kind = str(fact.get("kind") or "")
+        if kind == "entity":
+            entity_texts.append(str(fact.get("value") or fact.get("text") or ""))
+        elif kind == "operation":
+            operation_facts.append(fact)
+            entity_texts.extend(
+                str(fact.get(field) or "") for field in ("subject", "object")
+            )
+        elif kind == "relation":
+            entity_texts.extend(
+                str(fact.get(field) or "") for field in ("subject", "object")
+            )
+    entity_terms = _semantic_terms(" ".join(entity_texts))
+    entity_overlap = entity_terms & full_candidate_terms
+    entity_aligned = bool(
+        not entity_terms
+        or entity_overlap
+        or subject_aligned
+    )
+    entity_basis = (
+        "not_material_no_typed_current_entity"
+        if not entity_terms
+        else "candidate_preserves_named_current_entity"
+        if entity_overlap
+        else "requested_subject_preserves_current_entity_context"
+        if subject_aligned
+        else "candidate_does_not_preserve_current_entities"
+    )
+
+    operation_actions = {
+        str(item.get("action") or item.get("value") or "").strip().lower()
+        for item in operation_facts
+        if str(item.get("action") or item.get("value") or "").strip()
+    }
+    operation_functions = {
+        "action_scope",
+        "direct_answer",
+        "answer",
+        *operation_actions,
+    }
+    operation_aligned = bool(
+        not operation_facts
+        or performed_functions & operation_functions
+    )
+    operation_basis = (
+        "not_material_no_requested_current_operation"
+        if not operation_facts
+        else "candidate_performed_requested_current_operation"
+        if operation_aligned
+        else "current_operation_remains_with_its_responsible_owner"
+    )
+
+    candidate_capacities = set(candidate_roles)
+    # Broad descriptive prose often contains "is" somewhere. That does not
+    # prove that the resource defines the subject the current question names.
+    candidate_capacities.discard("definition")
+    if candidate.get("central_claim"):
+        candidate_capacities.add("answer")
+    if _candidate_defines_requested_subject(
+        candidate,
+        focus_text=focus_text,
+        focus_subject_terms=focus_subject_terms,
+        subject_overlap=strong_focus_subject_overlap,
+    ):
+        candidate_capacities.add("definition")
+    if candidate.get("relationships"):
+        candidate_capacities.add("reason")
+    if candidate.get("examples"):
+        candidate_capacities.add("application")
+    if candidate.get("limits") or candidate.get("counterexamples"):
+        candidate_capacities.add("limitation")
+    candidate_capacities.update(performed_functions)
+
+    missing_functions: set[str] = set()
+    owner_only_functions = requested_functions & _KNOWLEDGE_OWNER_ONLY_FUNCTIONS
+    for function in requested_functions:
+        if function in _KNOWLEDGE_OWNER_ONLY_FUNCTIONS:
+            if function not in performed_functions:
+                missing_functions.add(function)
+            continue
+        accepted_capacities = _KNOWLEDGE_FUNCTION_ALIASES.get(function, {function})
+        if not (accepted_capacities & candidate_capacities):
+            missing_functions.add(function)
+    function_aligned = not missing_functions
+
+    accepted = bool(
+        not protected_by_meaning_frame
+        and subject_aligned
+        and entity_aligned
+        and operation_aligned
+        and function_aligned
+    )
+    if protected_by_meaning_frame:
+        reason = "canonical_meaning_frame_holds_academic_retrieval"
+    elif not operation_aligned:
+        reason = "approved_knowledge_does_not_own_current_operation"
+    elif not entity_aligned:
+        reason = "approved_knowledge_current_entity_alignment_missing"
+    elif direct_subject:
+        reason = (
+            "approved_knowledge_subject_aligned"
+            if function_aligned
+            else "approved_knowledge_describes_but_does_not_perform_requested_operation"
+        )
+    elif transfer_application:
+        reason = (
+            "approved_knowledge_application_aligned"
+            if function_aligned
+            else "approved_knowledge_describes_but_does_not_perform_requested_operation"
+        )
+    else:
+        reason = "approved_knowledge_has_only_peripheral_overlap"
+
+    return {
+        "status": (
+            "approved_knowledge_alignment_proven"
+            if accepted
+            else "approved_knowledge_alignment_not_proven"
+        ),
+        "accepted": accepted,
+        "reason": reason,
+        "required_obligation_count": len(obligations),
+        "request_focus_text": focus_text,
+        "request_focus_terms": sorted(focus_terms),
+        "request_subject_terms": sorted(focus_subject_terms),
+        "query_terms": sorted(query_terms),
+        "answer_alignment_terms": sorted(full_overlap),
+        "subject_alignment": {
+            "aligned": subject_aligned,
+            "basis": subject_basis if direct_subject else "reviewed_distinct_application" if transfer_application else "none",
+            "subject_terms": sorted(subject_terms),
+            "prompt_subject_overlap": sorted(strong_full_subject_overlap),
+            "obligation_subject_overlap": sorted(strong_focus_subject_overlap),
+            "obligation_context_overlap": sorted(obligation_context_overlap),
+            "explicit_subject_focus": explicit_focus,
+            "application_alignment": transfer_application,
+            "application_terms": sorted(focus_application_overlap),
+        },
+        "entity_alignment": {
+            "aligned": entity_aligned,
+            "basis": entity_basis,
+            "current_entity_terms": sorted(entity_terms),
+            "matched_entity_terms": sorted(entity_overlap),
+        },
+        "operation_alignment": {
+            "aligned": operation_aligned,
+            "basis": operation_basis,
+            "requested_actions": sorted(operation_actions),
+            "performed_response_functions": sorted(performed_functions),
+        },
+        "requested_function_alignment": {
+            "aligned": function_aligned,
+            "requested_functions": sorted(requested_functions),
+            "candidate_capacities": sorted(candidate_capacities),
+            "owner_only_functions": sorted(owner_only_functions),
+            "missing_functions": sorted(missing_functions),
+        },
+        "approval_substitutes_for_relevance": False,
+        "single_overlap_term_is_sufficient_without_request_alignment": False,
+        "writes_state": False,
+    }
 
 
 def _requested_roles(prompt: str, spine: dict[str, Any]) -> set[str]:
@@ -419,11 +733,76 @@ def _explicit_subject_focus(prompt: str, subject_overlap: set[str]) -> bool:
     lower = " ".join(prompt.lower().split())
     return any(
         re.search(
-            rf"\b(?:explain|define|describe|understand|what\s+is|how\s+does|why\s+does|tell\s+me\s+about)"
+            rf"\b(?:explain|define|describe|understand|what\s+is|which|how\s+does|why\s+does|tell\s+me\s+about)"
             rf"\b.{{0,55}}\b{re.escape(term)}\b",
             lower,
         )
         for term in subject_overlap
+    )
+
+
+def _deictic_request(value: str) -> bool:
+    lower = " ".join(str(value or "").lower().split())
+    return bool(
+        re.fullmatch(
+            r"(?:and\s+)?(?:why|how|what about (?:that|this|it)|explain (?:that|this|it)|"
+            r"what does (?:that|this|it) mean|which one|what changed)[?.! ]*",
+            lower,
+        )
+    )
+
+
+def _candidate_defines_requested_subject(
+    candidate: dict[str, Any],
+    *,
+    focus_text: str,
+    focus_subject_terms: set[str],
+    subject_overlap: set[str],
+) -> bool:
+    if not focus_subject_terms or not subject_overlap:
+        return False
+    # A definition must be about the requested subject, not merely mention it
+    # inside a neighboring operation (for example, division *with* unit
+    # fractions is not a definition of a unit fraction).
+    coverage = len(subject_overlap) / max(1, len(focus_subject_terms))
+    if coverage < 0.75:
+        return False
+    title = " ".join(
+        re.findall(
+            r"[a-z0-9]+",
+            str(candidate.get("title") or "").lower(),
+        )
+    )
+    central = " ".join(
+        re.findall(
+            r"[a-z0-9]+",
+            str(candidate.get("central_claim") or "").lower(),
+        )
+    )
+    title = re.sub(r"^(?:a|an|the)\s+", "", title)
+    central = re.sub(r"^(?:a|an|the)\s+", "", central)
+    ordered_focus = [
+        _singular(term)
+        for term in re.findall(r"[a-z0-9]+", focus_text.lower())
+        if _singular(term) in focus_subject_terms
+    ]
+    minimum_phrase_size = max(1, (3 * len(subject_overlap) + 3) // 4)
+    phrases = [
+        " ".join(ordered_focus[index : index + size])
+        for size in (3, 2, 1)
+        for index in range(0, max(0, len(ordered_focus) - size + 1))
+        if size >= minimum_phrase_size
+        and set(ordered_focus[index : index + size]).issubset(subject_overlap)
+    ]
+    return any(
+        phrase
+        and (
+            title.startswith(phrase + " ")
+            or title == phrase
+            or central.startswith(phrase + " ")
+            or central == phrase
+        )
+        for phrase in phrases
     )
 
 

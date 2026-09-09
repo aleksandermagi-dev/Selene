@@ -280,3 +280,203 @@ def test_canonical_literal_control_still_admits_the_named_academic_subject():
     assert result["accepted"] is True
     assert result["reason"] == "approved_knowledge_subject_aligned"
     assert result["protected_query_terms"] == []
+
+
+def test_required_obligation_subject_blocks_equal_groups_from_displacing_an_experiment():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": (
+                "Both trial groups improved equally. What does that suggest "
+                "about the treatment?"
+            ),
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Equal groups connect repeated addition to multiplication",
+                "domain": "curriculum.f1.equal_groups",
+                "concept_key": "equal_groups_repeated_addition",
+                "central_claim": (
+                    "Both the number of groups and the number in each group "
+                    "determine the total."
+                ),
+                "relationships": [
+                    "Equal groups lead from repeated addition to multiplication."
+                ],
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": {
+                "open_obligations": [
+                    {
+                        "id": "interpret-treatment",
+                        "required": True,
+                        "source_text": "What does that suggest about the treatment?",
+                        "requested_response_functions": ["definition"],
+                    }
+                ],
+                "current_turn_fact_ledger": {"facts": [], "fact_count": 0},
+            },
+        }
+    )
+
+    receipt = result["approved_knowledge_alignment"]
+    assert result["accepted"] is False
+    assert result["reason"] == "approved_knowledge_has_only_peripheral_overlap"
+    assert receipt["subject_alignment"]["prompt_subject_overlap"] == ["group"]
+    assert receipt["subject_alignment"]["obligation_subject_overlap"] == []
+    assert receipt["request_subject_terms"] == ["treatment"]
+    assert receipt["approval_substitutes_for_relevance"] is False
+    _assert_locked(result)
+
+
+def test_changed_entities_keep_the_same_weak_overlap_from_becoming_authority():
+    candidate = {
+        "title": "Equal groups connect repeated addition to multiplication",
+        "domain": "curriculum.f1.equal_groups",
+        "central_claim": "Equal groups contain the same item count in every group.",
+    }
+    for premise, subject in (
+        ("Both seedling groups grew equally.", "fertilizer"),
+        ("Both turbine groups slowed equally.", "controller"),
+    ):
+        result = evaluate_semantic_relevance(
+            {
+                "prompt": f"{premise} What does that suggest about the {subject}?",
+                "source_class": "approved_knowledge",
+                "candidate": candidate,
+                "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+                "conversation_spine": {
+                    "open_obligations": [
+                        {
+                            "required": True,
+                            "source_text": f"What does that suggest about the {subject}?",
+                            "requested_response_functions": ["definition"],
+                        }
+                    ]
+                },
+            }
+        )
+        assert result["accepted"] is False
+        assert result["approved_knowledge_alignment"]["request_subject_terms"] == [subject]
+
+
+def test_definition_fit_selects_the_requested_concept_not_a_neighboring_operation():
+    spine = {
+        "open_obligations": [
+            {
+                "required": True,
+                "source_text": "What is a unit fraction?",
+                "requested_response_functions": ["definition"],
+            }
+        ]
+    }
+    neighboring = evaluate_semantic_relevance(
+        {
+            "prompt": "What is a unit fraction?",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Division with unit fractions preserves two meanings",
+                "domain": "fraction operations",
+                "central_claim": "Division can use unit fractions in two different ways.",
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": spine,
+        }
+    )
+    definition = evaluate_semantic_relevance(
+        {
+            "prompt": "What is a unit fraction?",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "A unit fraction names one equal part of a whole",
+                "domain": "fractions",
+                "central_claim": "A fraction describes a magnitude relative to a whole.",
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": spine,
+        }
+    )
+
+    assert neighboring["accepted"] is False
+    assert neighboring["reason"] == "approved_knowledge_describes_but_does_not_perform_requested_operation"
+    assert neighboring["approved_knowledge_alignment"]["requested_function_alignment"]["missing_functions"] == ["definition"]
+    assert definition["accepted"] is True
+    assert definition["approved_knowledge_alignment"]["requested_function_alignment"]["aligned"] is True
+
+
+def test_current_requested_action_stays_with_its_owner_even_when_a_lesson_shares_a_word():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "Move the copper lantern to the north shelf.",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Place value and monetary units",
+                "domain": "money math",
+                "central_claim": "Place each coin amount in one common currency unit.",
+            },
+            "intent_decision": {"intent": "direct_conversation", "dialogue_acts": ["request"]},
+            "conversation_spine": {
+                "open_obligations": [
+                    {
+                        "required": True,
+                        "source_text": "Move the copper lantern to the north shelf.",
+                        "requested_response_functions": ["action_scope"],
+                    }
+                ],
+                "current_turn_fact_ledger": {
+                    "fact_count": 1,
+                    "facts": [
+                        {
+                            "kind": "operation",
+                            "action": "move",
+                            "subject": "copper lantern",
+                            "object": "north shelf",
+                        }
+                    ],
+                },
+            },
+        }
+    )
+
+    receipt = result["approved_knowledge_alignment"]
+    assert result["accepted"] is False
+    assert result["reason"] == "approved_knowledge_does_not_own_current_operation"
+    assert receipt["operation_alignment"]["aligned"] is False
+    assert receipt["operation_alignment"]["requested_actions"] == ["move"]
+    assert receipt["entity_alignment"]["current_entity_terms"] == [
+        "copper",
+        "lantern",
+        "north",
+        "shelf",
+    ]
+    _assert_locked(result)
+
+
+def test_distinct_application_can_align_one_named_subject_with_its_supported_mechanism():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "How does a bell produce sound?",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Vibrating matter can make sound",
+                "domain": "physical science acoustics",
+                "central_claim": "Vibrating matter can produce sound.",
+                "relationships": ["Repeated motion can make nearby matter vibrate."],
+                "examples": ["A struck bell can vibrate and produce sound."],
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": {
+                "open_obligations": [
+                    {
+                        "required": True,
+                        "source_text": "How does a bell produce sound?",
+                        "requested_response_functions": ["answer"],
+                    }
+                ]
+            },
+        }
+    )
+
+    receipt = result["approved_knowledge_alignment"]
+    assert result["accepted"] is True
+    assert receipt["subject_alignment"]["application_alignment"] is True
+    assert receipt["subject_alignment"]["obligation_context_overlap"] == ["bell", "sound"]
+    _assert_locked(result)

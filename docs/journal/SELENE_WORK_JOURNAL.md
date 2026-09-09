@@ -5111,3 +5111,34 @@ authority, training, external action, package, install, or live Q&A occurred.
 **Next:** Cultivation Phase 4 — make approved-knowledge relevance require
 subject, entity, operation, and requested-function alignment. Keep the seven
 remaining Chat failures as separately named stabilization debt.
+
+### 2026-09-09 — Cultivation Phase 4 proves approved-knowledge relevance
+
+**Implementation:** The shared Semantic Relevance owner now emits one
+approved-knowledge alignment receipt for required subject, current entity,
+requested operation, and requested response function. Approval remains a use
+permission, not evidence that a lesson answers the current question.
+Comprehension removed its duplicate word-count relevance judgment and consumes
+the shared receipt after Conversation Spine compatibility.
+
+**Cultivation finding:** Full Chat initially exposed one new hold on relevant
+approved Memory during a choice request. The root was a shared `choice`
+ownership set. Memory context and teaching content now have separate typed
+boundaries: relevant Memory may inform a choice; reviewed teaching may not
+impersonate the choice-maker.
+
+**Evidence:** Changed-entity, exact-definition, current-action, and distinct-
+application controls passed. The supporting matrix passed 122 checks. Full
+Chat returned to 124 passes with only the same seven recorded stabilization
+failures. Resident integrity was `ok`, counts were unchanged, and SQLite stayed
+byte-for-byte unchanged at
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+No live Q&A, teaching, Memory, Dream, Study, packaging, installation, or
+resident mutation occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_4_APPROVED_KNOWLEDGE_RELEVANCE_20260909.md`.
+
+**Next:** Cultivation Phase 5 — complete correction/revision handoff by
+recomputing a still-open answer from updated active-session state. Keep the
+seven established Chat failures separate unless directly implicated.
