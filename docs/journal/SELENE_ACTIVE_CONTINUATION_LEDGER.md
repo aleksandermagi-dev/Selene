@@ -4,8 +4,9 @@ Last refreshed: 2026-09-09
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
-installed and verified; conversation Cultivation Phases 1 and 2 now supply
-shared visible propositions and proved current answer ownership
+installed and verified; conversation Cultivation Phases 1 through 3 now supply
+shared visible propositions, proved current answer ownership, and learning-gap
+eligibility only after existing answer paths are exhausted
 
 ## Purpose
 
@@ -18,6 +19,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Current conversation Cultivation Phase 3 implementation is complete and
+  awaiting its source checkpoint in this task.
 - Latest conversation Cultivation Phase 2 checkpoint: `ab03bbc`
   (`Prove current answer ownership`)
 - Latest conversation Cultivation Phase 1 checkpoint: `ba878b5`
@@ -92,10 +95,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this ledger refresh: local `evidence` is
-  twenty-eight commits ahead of `origin/evidence`; the ledger refresh is
-  expected to make that twenty-nine. Confirm again before any later commit or
-  push.
+- Current remote relation before the Phase 3 source checkpoint: local
+  `evidence` is thirty-one commits ahead of `origin/evidence`. Confirm again
+  before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1013,6 +1015,31 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_2_CURRENT_OWNER_GATE_20260908.md`.
 
+## Conversation Cultivation Phase 3 — Learning-Gap Eligibility
+
+- Conversational Teaching now records one non-writing receipt across
+  current-turn, active-session, exact-domain, bounded-inference,
+  clarification, and approved-knowledge owners.
+- Selene Chat waits until the existing Answer Engine, inference, exploratory,
+  session, and clarification paths have reported before it can offer teaching.
+  A teaching invitation is eligible only when every listed answer path is
+  absent.
+- A supported provisional intelligenceOS answer and named local-chat
+  continuity now preempt a parallel learning-gap fallback. Genuine unknowns
+  still invite bounded conversational teaching normally.
+- Shared request grammar no longer turns “give me an example” into a learning
+  subject, and following request clauses no longer become part of a compared
+  option.
+- Verification: 149 affected checks and 16 final targeted checks passed. Full
+  Chat passed 124 with 7 reproduced stabilization failures. Relative to Phase
+  2, one changed-entity Chat check was added and three older failures were
+  repaired with no new regression. Compilation and diff verification passed.
+- Resident SQLite remained byte-for-byte unchanged at SHA-256
+  `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+  No live Q&A, teaching, package, install, or resident mutation occurred.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_3_LEARNING_GAP_ELIGIBILITY_20260909.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1110,18 +1137,20 @@ Typed completion now proves current answer ownership before optional learned
 retrieval receives ordinary relevance consideration. Phase 2 evidence is
 `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_2_CURRENT_OWNER_GATE_20260908.md`.
 
-The exact resume point is Phase 3: make learning-gap eligibility depend on
-proved absence of a capable current-turn, active-session, exact-domain,
-bounded-inference, or clarification owner. Repair malformed learning-gap
-subjects at the shared subject owner rather than adding prompt phrases. After
-that, continue the remaining dependency order:
-approved-knowledge subject/entity/operation/function
-relevance; correction completion; typed humor/acknowledgement/recap/closure
-acts; semantic coverage; and shared subject, punctuation, symbol, and stale-
-fallback cleanup. Map these onto existing owners before editing; do not create
-a monolithic conversation organ. The 54-kind compatibility inventory is the
-removal ledger: replace scenario handlers only after their general capability
-passes changed-entity and paraphrase checks.
+Conversation Cultivation Phase 3 is implementation- and verification-complete.
+Its source checkpoint is the next repository action. The owner-eligibility
+receipt proves absence of current/session/domain/inference/clarification and
+approved-knowledge answer paths before teaching; shared subject and option
+normalization no longer preserve request-clause fragments as subject matter.
+
+After the Phase 3 checkpoint, the exact resume point is Phase 4:
+approved-knowledge relevance must require subject, entity, operation, and
+requested-function alignment. Then continue correction completion; typed
+humor/acknowledgement/recap/closure acts; semantic coverage; and shared
+subject, punctuation, symbol, and stale-fallback cleanup. Map each repair onto
+existing owners before editing; do not create a monolithic conversation organ.
+The 54-kind compatibility inventory remains the removal ledger: replace a
+scenario handler only after changed-entity and paraphrase transfer is proved.
 
 Do not patch prompt phrases or teach around the route defect. Do not repeat the
 installed warmth gate, greeting/typo confirmation, decision-chain
@@ -1129,8 +1158,8 @@ confirmation, G13-G15 teaching, the earlier repaired learning replay, or any
 further broad Q&A before repair. Use focused synthetic owner checks first and
 one short ordinary end-to-end conversation only if source evidence cannot
 establish the handoff.
-Keep the ten reproduced Phase 1 Chat failures as a separate bounded
-stabilization batch. The downloaded source corpora and private 20-interaction
+Keep the seven reproduced Chat failures as a separate bounded stabilization
+batch. The downloaded source corpora and private 20-interaction
 review stay ignored and unavailable to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,

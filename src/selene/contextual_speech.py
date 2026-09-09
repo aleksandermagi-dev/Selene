@@ -577,7 +577,18 @@ def contextual_response_seed(
         "step b needs a result",
         "step that creates what the next step needs",
     )
-    if any(marker in previous.lower() for marker in dependency_markers):
+    previous_user_lower = " ".join(previous_user.lower().split())
+    comparison_ordering_context = bool(
+        re.search(r"\b(?:compare|contrast)\b", previous_user_lower)
+        and re.search(
+            r"\b(?:come first|do first|start with|begin with|priority|prioritize)\b",
+            previous_user_lower,
+        )
+    )
+    if (
+        any(marker in previous.lower() for marker in dependency_markers)
+        or comparison_ordering_context
+    ):
         if kind == "example_request":
             return (
                 "For example, if step B needs a result produced by step A, A has to happen first. If the steps are independent, trying the cheaper reversible one first gives evidence without locking in the whole decision."

@@ -1061,6 +1061,10 @@ def test_active_selene_chat_answers_bounded_math_with_exact_result_and_separate_
     assert result["metacognition"]["fit_state"] == "fits_current_question"
     assert result["metacognition"]["recommended_action"] == "answer_now"
     assert support["confidence_vector"]["answer_confidence"] == "verified_exact"
+    assert result["learning_gap_invitation"]["offered"] is False
+    assert result["learning_gap_invitation"]["owner_eligibility"][
+        "available_owners"
+    ] == ["exact_domain"]
     assert support["confidence_vector"]["expression_confidence"] == "not_assessed"
     assert result["native_language_organ"]["discourse_plan"]["contextual_composition_plan"]["exact_domain_structure_locked"] is True
     assert result["native_language_organ"]["contextual_composition"]["applied"] is False
@@ -1587,6 +1591,10 @@ def test_active_chat_uses_prior_user_premises_for_one_modest_practical_inference
     assert "visible premise" not in inference["candidate_text"].lower()
     assert "not enough grounded" not in inference["candidate_text"].lower()
     assert inference["comprehension_integration"]["knowledge_context"]["answer_eligible"] is False
+    assert inference["learning_gap_invitation"]["offered"] is False
+    assert "bounded_inference" in inference["learning_gap_invitation"][
+        "owner_eligibility"
+    ]["available_owners"]
     user_observation = next(
         item
         for item in inference["intelligence_os_support"]["observations"]
@@ -1856,6 +1864,10 @@ def test_active_selene_chat_direct_concept_hides_model_scaffolding(tmp_path):
 
     assert result["intelligence_os_support"]["answer_shape"] == "answer_now"
     assert "answers the actual ask first" in result["candidate_text"]
+    assert result["learning_gap_invitation"]["offered"] is False
+    assert "bounded_inference" in result["learning_gap_invitation"][
+        "owner_eligibility"
+    ]["available_owners"]
     assert "candidate model" not in result["candidate_text"].lower()
     assert "Model A" not in result["candidate_text"]
     assert "intelligenceOS" not in result["candidate_text"]
@@ -2157,6 +2169,33 @@ def test_active_selene_chat_can_example_rephrase_and_expand_the_previous_depende
     _assert_locked(rephrase)
     _assert_locked(elaboration)
     _assert_locked(viewpoint)
+
+
+def test_changed_entity_ordering_follow_up_uses_session_owner_before_a_learning_gap(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    first = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Contrast a lantern with a mirror and explain which should come first."},
+    )["result"]
+    example = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": first["session_id"], "text": "Could you give me an example?"},
+    )["result"]
+
+    assert example["contextual_follow_up"]["kind"] == "example_request"
+    assert example["learning_gap_invitation"]["offered"] is False
+    assert "active_session" in example["learning_gap_invitation"][
+        "owner_eligibility"
+    ]["available_owners"]
+    assert example["visible_speech_seed"]["selected_source_id"] == "contextual_follow_up"
+    assert "if step B needs a result produced by step A" in example["candidate_text"]
+    assert "teach me" not in example["candidate_text"].lower()
+    _assert_locked(example)
 
 
 def test_active_selene_chat_uses_reviewed_comprehension_knowledge_without_calling_it_memory(tmp_path):

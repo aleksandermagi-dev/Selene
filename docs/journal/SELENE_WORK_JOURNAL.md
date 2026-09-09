@@ -5083,3 +5083,31 @@ state was disposable and no live Q&A ran.
 absence of a capable current/session/domain/inference/clarification owner, and
 repair malformed gap subjects at the shared subject owner rather than with
 prompt phrases.
+
+### 2026-09-09 — Cultivation Phase 3 proves a real learning gap before teaching
+
+**Implementation:** Conversational Teaching now receives one inspectable
+eligibility receipt covering current-turn, active-session, exact-domain,
+bounded-inference, clarification, and approved-knowledge owners. Selene Chat
+waits for the existing answer owners before offering teaching. The shared
+subject and option normalization paths now keep auxiliary request wording out
+of learning subjects and compared entities.
+
+**Evidence:** Verified Math, a bounded inference from visible premises, input
+clarification, named prior-chat continuity, direct concept reasoning, and a
+changed-entity ordering callback all retained their proper owners. Only a
+genuinely unsupported invented term reached “Can you teach me?” The affected
+matrix passed 149 checks; final targeted checks passed 16/16; full Chat passed
+124 with 7 reproduced stabilization failures. Relative to Phase 2, one new
+Chat check was added and three older failures were repaired with no new
+regression. Compilation and diff verification passed.
+
+**Boundaries:** All behavior ran on synthetic or disposable state. Resident
+SQLite remained byte-for-byte unchanged at
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+No teaching, Memory, Dream, Study, identity, personality, Vys, governance,
+authority, training, external action, package, install, or live Q&A occurred.
+
+**Next:** Cultivation Phase 4 — make approved-knowledge relevance require
+subject, entity, operation, and requested-function alignment. Keep the seven
+remaining Chat failures as separately named stabilization debt.

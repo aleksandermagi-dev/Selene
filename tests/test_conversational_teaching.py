@@ -6,7 +6,9 @@ from selene.activation import ACTIVATION_APPROVAL_PHRASE
 from selene.conversational_teaching import (
     build_assistant_question_handoff,
     build_learning_gap_invitation,
+    build_learning_gap_owner_eligibility,
     plan_conversational_teaching_turn,
+    resolve_learning_gap_subject,
 )
 from selene.db import connect, init_db
 from selene.module_router import route_request
@@ -176,6 +178,63 @@ def test_supported_current_turn_owner_preempts_learning_gap_invitation():
     assert result["current_turn_response_source"] == "attributable_dream_reflection"
     assert result["current_turn_supported_response_preserved"] is True
     assert result["response_seed"] == ""
+
+
+def test_gap_owner_receipt_requires_every_existing_answer_path_to_be_absent():
+    receipts = {
+        "active_session_owner": {
+            "available": True,
+            "status": "active_session_response_ready",
+            "source_id": "contextual_follow_up",
+        },
+        "exact_domain_owner": {
+            "available": True,
+            "status": "answer_engine_verified_math_answer_ready",
+            "domain": "verified_math",
+        },
+        "bounded_inference_owner": {
+            "available": True,
+            "status": "bounded_inference_response_ready",
+            "answer_kind": "grounded_current_context_inference",
+        },
+        "clarification_owner": {
+            "available": True,
+            "status": "input_clarification_required",
+        },
+    }
+
+    for owner_input, owner_name in (
+        ("active_session_owner", "active_session"),
+        ("exact_domain_owner", "exact_domain"),
+        ("bounded_inference_owner", "bounded_inference"),
+        ("clarification_owner", "clarification"),
+    ):
+        receipt = build_learning_gap_owner_eligibility(
+            **{owner_input: receipts[owner_input]}
+        )
+        assert receipt["all_answer_paths_exhausted"] is False
+        assert receipt["available_owners"] == [owner_name]
+        assert receipt["writes_state"] is False
+
+    exhausted = build_learning_gap_owner_eligibility()
+    assert exhausted["status"] == "learning_gap_answer_paths_exhausted"
+    assert exhausted["all_answer_paths_exhausted"] is True
+    assert exhausted["capable_answer_owner_available"] is False
+
+
+def test_gap_subject_owner_unwraps_questions_without_treating_request_words_as_subject():
+    assert resolve_learning_gap_subject("Could you tell me what a quorlin is?") == "a quorlin"
+    assert resolve_learning_gap_subject("Can you give me an example?") == ""
+    assert resolve_learning_gap_subject(
+        "Can you give me an example?",
+        {
+            "contextual_follow_up": {
+                "detected": True,
+                "previous_user_preview": "Compare lanterns and mirrors.",
+            },
+            "active_topic": "lantern and mirror comparison",
+        },
+    ) == "lantern and mirror comparison"
 
 
 def test_intelligence_gap_does_not_preempt_its_own_teaching_invitation():

@@ -78,6 +78,18 @@ def test_comparison_paraphrases_preserve_options_and_criterion() -> None:
         _assert_locked(ledger)
 
 
+def test_comparison_request_clause_is_not_part_of_the_second_option() -> None:
+    variants = (
+        "Compare lanterns and mirrors and tell me which should come first.",
+        "Contrast cedar with glass and explain which should come first.",
+    )
+
+    assert [
+        _ledger(prompt)["owner_inputs"][0]["supplied_fields"]["options"]
+        for prompt in variants
+    ] == [["lanterns", "mirrors"], ["cedar", "glass"]]
+
+
 def test_mixed_comparison_choice_and_reason_share_current_turn_support() -> None:
     ledger = _ledger(
         "Compare paper and thin card. Paper costs 2 dollars and thin card costs "

@@ -172,7 +172,8 @@ def _clean_option(value: str) -> str:
     )
     clean = re.split(
         r"\b(?:and then|then|because|so that|while|which sounds better|what sounds better|"
-        r"compare|recommend|choose|pick)\b",
+        r"compare|recommend|choose|pick|(?:and\s+)?(?:tell|show|give)\s+(?:me|us)|"
+        r"(?:and\s+)?explain(?:\s+(?:to\s+)?(?:me|us))?)\b",
         clean,
         maxsplit=1,
         flags=re.IGNORECASE,

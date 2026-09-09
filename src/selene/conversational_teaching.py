@@ -51,10 +51,20 @@ GAP_PREEMPTING_RESPONSE_SOURCES = {
     "explicit_session_alias",
     "figurative_meaning_clarification",
     "grounded_self_state",
+    "local_chat_continuity",
     "mixed_conversation_answer",
     "ordinary_uncertainty",
     "reviewed_memory",
 }
+
+LEARNING_GAP_ANSWER_KINDS = frozenset(
+    {
+        "unsupported_fact",
+        "bounded_knowledge_gap",
+        "source_needed",
+        "causal_evidence_needed",
+    }
+)
 
 _EXPLICIT_TEACHING_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
@@ -457,6 +467,8 @@ def build_learning_gap_invitation(
     diagnostic_only: bool = False,
     hard_boundary: bool = False,
     teaching_turn: dict[str, Any] | None = None,
+    owner_eligibility: dict[str, Any] | None = None,
+    subject_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     support = intelligence_support if isinstance(intelligence_support, dict) else {}
     substance = (
@@ -481,14 +493,25 @@ def build_learning_gap_invitation(
         and response_text
         and response_source in GAP_PREEMPTING_RESPONSE_SOURCES
     )
+    owner_receipt = owner_eligibility if isinstance(owner_eligibility, dict) else {}
+    if owner_receipt:
+        current_owner_already_answered = bool(
+            current_owner_already_answered
+            or owner_receipt.get("capable_answer_owner_available") is True
+        )
+    all_answer_paths_exhausted = (
+        owner_receipt.get("all_answer_paths_exhausted") is True
+        if owner_receipt
+        else not current_owner_already_answered
+        and knowledge.get("answer_eligible") is not True
+        and not knowledge.get("answer_eligible_items")
+    )
     eligible = bool(
         not diagnostic_only
         and not hard_boundary
         and str(teaching.get("action") or "none") == "none"
-        and not current_owner_already_answered
-        and knowledge.get("answer_eligible") is not True
-        and not knowledge.get("answer_eligible_items")
-        and answer_kind in {"unsupported_fact", "bounded_knowledge_gap", "source_needed", "causal_evidence_needed"}
+        and all_answer_paths_exhausted
+        and answer_kind in LEARNING_GAP_ANSWER_KINDS
         and "?" in str(prompt or "")
         and _speaker_may_authorize_conversational_teaching(speaker)
         and not _sensitive_markers(prompt)
@@ -502,7 +525,9 @@ def build_learning_gap_invitation(
                 "answer_kind": answer_kind,
                 "response_seed": "",
                 "reason": (
-                    "current_turn_owner_already_supplied_supported_response"
+                    str(owner_receipt.get("hold_reason") or "")
+                    if owner_receipt and not all_answer_paths_exhausted
+                    else "current_turn_owner_already_supplied_supported_response"
                     if current_owner_already_answered
                     else "gap_not_eligible_or_invitation_not_contextually_needed"
                 ),
@@ -510,9 +535,10 @@ def build_learning_gap_invitation(
                 "current_turn_supported_response_preserved": (
                     current_owner_already_answered
                 ),
+                "owner_eligibility": owner_receipt,
             }
         )
-    subject = _question_subject(prompt)
+    subject = resolve_learning_gap_subject(prompt, subject_context)
     if answer_kind == "bounded_knowledge_gap" and subject:
         response = f"I don't know enough about {subject} to answer that reliably yet. If you'd like, can you teach me the part you want me to understand?"
     elif subject:
@@ -524,8 +550,10 @@ def build_learning_gap_invitation(
             "status": "learning_gap_invitation_ready",
             "offered": True,
             "answer_kind": answer_kind,
+            "subject": truncate(subject, 240),
             "original_gap_response": original,
             "response_seed": response,
+            "owner_eligibility": owner_receipt,
             "outgoing_question_handoff": {
                 "status": "awaiting_teaching_response",
                 "question_kind": "teaching_invitation",
@@ -538,6 +566,114 @@ def build_learning_gap_invitation(
             },
             "review_destination": "Status",
             "review_status": "status_only",
+        }
+    )
+
+
+def build_learning_gap_owner_eligibility(
+    *,
+    current_turn_response: dict[str, Any] | None = None,
+    active_session_owner: dict[str, Any] | None = None,
+    exact_domain_owner: dict[str, Any] | None = None,
+    bounded_inference_owner: dict[str, Any] | None = None,
+    clarification_owner: dict[str, Any] | None = None,
+    knowledge_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Prove that a teaching invitation is the remaining answer path."""
+
+    current = current_turn_response if isinstance(current_turn_response, dict) else {}
+    session = active_session_owner if isinstance(active_session_owner, dict) else {}
+    domain = exact_domain_owner if isinstance(exact_domain_owner, dict) else {}
+    inference = bounded_inference_owner if isinstance(bounded_inference_owner, dict) else {}
+    clarification = clarification_owner if isinstance(clarification_owner, dict) else {}
+    knowledge = knowledge_context if isinstance(knowledge_context, dict) else {}
+    arbitration = (
+        current.get("candidate_arbitration")
+        if isinstance(current.get("candidate_arbitration"), dict)
+        else {}
+    )
+    current_gate = (
+        arbitration.get("current_owner_gate")
+        if isinstance(arbitration.get("current_owner_gate"), dict)
+        else {}
+    )
+    selected_source = str(current.get("selected_source_id") or "")
+    selected_text = str(current.get("content_seed") or "").strip()
+    selected_gate = (
+        current_gate.get("selected_gate")
+        if isinstance(current_gate.get("selected_gate"), dict)
+        else {}
+    )
+    current_available = bool(
+        current_gate.get("status")
+        in {"capable_current_owner_selected", "proved_capable_current_owner"}
+        or selected_gate.get("status") == "capable_current_owner_proved"
+        or (
+            current.get("release_allowed") is True
+            and selected_text
+            and selected_source in GAP_PREEMPTING_RESPONSE_SOURCES
+        )
+    )
+    checks = [
+        {
+            "owner": "clarification",
+            "available": clarification.get("available") is True,
+            "status": str(clarification.get("status") or "not_required"),
+        },
+        {
+            "owner": "current_turn",
+            "available": current_available,
+            "status": str(current_gate.get("status") or current.get("status") or "not_available"),
+            "selected_source_id": selected_source,
+        },
+        {
+            "owner": "active_session",
+            "available": session.get("available") is True,
+            "status": str(session.get("status") or "not_available"),
+            "source_id": str(session.get("source_id") or ""),
+        },
+        {
+            "owner": "exact_domain",
+            "available": domain.get("available") is True,
+            "status": str(domain.get("status") or "not_available"),
+            "domain": str(domain.get("domain") or ""),
+        },
+        {
+            "owner": "bounded_inference",
+            "available": inference.get("available") is True,
+            "status": str(inference.get("status") or "not_available"),
+            "answer_kind": str(inference.get("answer_kind") or ""),
+        },
+        {
+            "owner": "approved_knowledge",
+            "available": bool(
+                knowledge.get("answer_eligible") is True
+                or knowledge.get("answer_eligible_items")
+            ),
+            "status": str(knowledge.get("status") or "not_available"),
+        },
+    ]
+    available = [item for item in checks if item["available"]]
+    all_exhausted = not available
+    first_owner = str(available[0]["owner"] if available else "")
+    return _with_guards(
+        {
+            "status": (
+                "learning_gap_answer_paths_exhausted"
+                if all_exhausted
+                else "learning_gap_answer_owner_available"
+            ),
+            "checks": checks,
+            "available_owners": [str(item["owner"]) for item in available],
+            "capable_answer_owner_available": bool(available),
+            "all_answer_paths_exhausted": all_exhausted,
+            "hold_reason": (
+                f"{first_owner}_owner_already_has_a_current_answer_path"
+                if first_owner
+                else ""
+            ),
+            "invitation_is_failure_judgment": False,
+            "writes_state": False,
         }
     )
 
@@ -872,8 +1008,56 @@ def _held_response(eligibility: dict[str, Any]) -> str:
     return "I can take that as teaching, but I need a clearer bounded statement before I can honestly integrate it."
 
 
+def resolve_learning_gap_subject(
+    value: Any,
+    subject_context: dict[str, Any] | None = None,
+) -> str:
+    context = subject_context if isinstance(subject_context, dict) else {}
+    contextual = (
+        context.get("contextual_follow_up")
+        if isinstance(context.get("contextual_follow_up"), dict)
+        else {}
+    )
+    if contextual.get("detected") is True:
+        active_topic = truncate(str(context.get("active_topic") or ""), 240).strip()
+        if active_topic:
+            return active_topic
+        previous_prompt = str(contextual.get("previous_user_preview") or "").strip()
+        if previous_prompt:
+            return _question_subject(previous_prompt)
+    return _question_subject(value)
+
+
 def _question_subject(value: Any) -> str:
     lower = " ".join(str(value or "").lower().replace("’", "'").split()).strip(" ?!.")
+    request_wrapper = re.match(
+        r"^(?:can|could|would|will|do|did)\s+(?:you|we)\s+"
+        r"(?:please\s+)?(?:tell|show|give|explain|describe)\s+(?:me\s+|us\s+)?"
+        r"(?P<body>.+)$",
+        lower,
+    )
+    if request_wrapper:
+        body = request_wrapper.group("body").strip()
+        nested = re.match(
+            r"^(?:about\s+)?what\s+(?:is|are|does|do)\s+(?P<subject>.+)$",
+            body,
+        )
+        if not nested:
+            nested = re.match(
+                r"^(?:about\s+)?what\s+(?P<subject>.+?)\s+(?:is|are|does|do)$",
+                body,
+            )
+        if nested:
+            subject = re.sub(
+                r"\s+(?:is|are|does|do)$", "", nested.group("subject")
+            ).strip()
+            return truncate(subject, 240)
+        body = re.sub(
+            r"^(?:an?\s+example\s+)?(?:about|of|for)\s+", "", body
+        )
+        if body and body not in {"an example", "example", "that", "it", "this"}:
+            return truncate(body, 240)
+        return ""
     polar = re.match(r"^(?:is|are|was|were)\s+(?P<body>.+)$", lower)
     if polar:
         body_words = _WORD.findall(polar.group("body"))

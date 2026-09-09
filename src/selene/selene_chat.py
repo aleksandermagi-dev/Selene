@@ -43,6 +43,7 @@ from .conversational_teaching import (
     apply_conversational_teaching,
     build_assistant_question_handoff,
     build_learning_gap_invitation,
+    build_learning_gap_owner_eligibility,
     plan_conversational_teaching_turn,
 )
 from .associative_intuition import build_associative_intuition_bridge
@@ -819,21 +820,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "approved_knowledge_eligible": False,
             "review_status": DIAGNOSTIC_REVIEW_STATUS,
         }
-    learning_gap_invitation = build_learning_gap_invitation(
-        meaning_text,
-        intelligence_support,
-        knowledge_context=(
-            comprehension.get("knowledge_context")
-            if isinstance(comprehension.get("knowledge_context"), dict)
-            else {}
-        ),
-        current_turn_response=initial_visible_speech_seed,
-        speaker_envelope=speaker_envelope,
-        diagnostic_only=qa_probe,
-        hard_boundary=bool(hard_blockers),
-        teaching_turn=conversational_teaching,
-    )
-    learning_gap_reply = str(learning_gap_invitation.get("response_seed") or "")
     dual_horizon_context = build_dual_horizon_context(
         {
             "prompt": meaning_text,
@@ -1192,6 +1178,139 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "hard_boundary": bool(hard_blockers),
         }
     )
+    bounded_hypothesis = (
+        intelligence_support.get("hypothesis_attempt")
+        if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
+        else {}
+    )
+    intelligence_answer_kind = str(
+        (
+            intelligence_support.get("answer_substance")
+            if isinstance(intelligence_support.get("answer_substance"), dict)
+            else {}
+        ).get("answer_kind")
+        or ""
+    )
+    intelligence_substance_seed = str(
+        (
+            intelligence_support.get("answer_substance")
+            if isinstance(intelligence_support.get("answer_substance"), dict)
+            else {}
+        ).get("answer")
+        or ""
+    ).strip()
+    bounded_intelligence_answer_ready = bool(
+        intelligence_support.get("used") is True
+        and reasoning_content_seed
+        and (
+            intelligence_answer_kind
+            not in {
+                "unsupported_fact",
+                "bounded_knowledge_gap",
+                "source_needed",
+                "causal_evidence_needed",
+            }
+            or (
+                reasoning_content_seed.strip() != intelligence_substance_seed
+                and intelligence_support.get("support_points")
+                and str(intelligence_support.get("selected_next_step") or "")
+                in {"answer_now", "answer_provisionally"}
+                and str(intelligence_support.get("confidence") or "")
+                in {"clear_enough_to_continue", "high", "verified"}
+            )
+        )
+    )
+    bounded_inference_available = bool(
+        bounded_intelligence_answer_ready
+        or (
+            bounded_hypothesis.get("selected_for_answer") is True
+            and str(bounded_hypothesis.get("response_seed") or "").strip()
+        )
+        or (
+            exploratory_reasoning.get("selected_for_answer") is True
+            and exploratory_reasoning_content_seed
+        )
+    )
+    learning_gap_owner_eligibility = build_learning_gap_owner_eligibility(
+        current_turn_response=initial_visible_speech_seed,
+        active_session_owner={
+            "available": bool(
+                contextual_reply
+                or session_fact_reply
+                or correction_reconstruction_reply
+                or alias_reply
+            ),
+            "status": (
+                "active_session_response_ready"
+                if contextual_reply
+                or session_fact_reply
+                or correction_reconstruction_reply
+                or alias_reply
+                else "active_session_response_not_available"
+            ),
+            "source_id": (
+                "contextual_follow_up"
+                if contextual_reply
+                else "current_session_facts"
+                if session_fact_reply or correction_reconstruction_reply
+                else "explicit_session_alias"
+                if alias_reply
+                else ""
+            ),
+        },
+        exact_domain_owner={
+            "available": _domain_answer_is_complete(answer_engine_support),
+            "status": str(answer_engine_support.get("status") or "not_available"),
+            "domain": str(answer_engine_support.get("selected_domain") or ""),
+        },
+        bounded_inference_owner={
+            "available": bounded_inference_available,
+            "status": (
+                "bounded_inference_response_ready"
+                if bounded_inference_available
+                else "bounded_inference_response_not_available"
+            ),
+            "answer_kind": intelligence_answer_kind,
+        },
+        clarification_owner={
+            "available": bool(
+                input_clarification_required
+                or figurative_interpretation.get("clarification_required") is True
+            ),
+            "status": (
+                "input_clarification_required"
+                if input_clarification_required
+                else "figurative_clarification_required"
+                if figurative_interpretation.get("clarification_required") is True
+                else "clarification_not_required"
+            ),
+        },
+        knowledge_context=(
+            comprehension.get("knowledge_context")
+            if isinstance(comprehension.get("knowledge_context"), dict)
+            else {}
+        ),
+    )
+    learning_gap_invitation = build_learning_gap_invitation(
+        meaning_text,
+        intelligence_support,
+        knowledge_context=(
+            comprehension.get("knowledge_context")
+            if isinstance(comprehension.get("knowledge_context"), dict)
+            else {}
+        ),
+        current_turn_response=initial_visible_speech_seed,
+        speaker_envelope=speaker_envelope,
+        diagnostic_only=qa_probe,
+        hard_boundary=bool(hard_blockers),
+        teaching_turn=conversational_teaching,
+        owner_eligibility=learning_gap_owner_eligibility,
+        subject_context={
+            "contextual_follow_up": contextual_follow_up,
+            "active_topic": prepared_dialogue_workspace.get("active_topic") or "",
+        },
+    )
+    learning_gap_reply = str(learning_gap_invitation.get("response_seed") or "")
     knowledge_semantic_relevance = next(
         (
             item.get("semantic_relevance")
@@ -1332,11 +1451,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         meaning_text,
         visible_arbitration_candidates,
         conversation_spine=conversation_spine,
-    )
-    bounded_hypothesis = (
-        intelligence_support.get("hypothesis_attempt")
-        if isinstance(intelligence_support.get("hypothesis_attempt"), dict)
-        else {}
     )
     if (
         bounded_hypothesis.get("selected_for_answer") is True
