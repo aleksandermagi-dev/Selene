@@ -332,3 +332,231 @@ def test_fulfillment_arbitration_prefers_the_candidate_that_owns_and_performs_th
         if item["source_id"] == "intelligence_os_answer"
     )
     assert selected["fulfillment_arbitration"]["owner_fit_ids"] == ["prediction"]
+
+
+def test_typed_current_owner_outranks_optional_learned_retrieval_with_new_entities():
+    obligation = {
+        "id": "choose-route",
+        "kind": "choice_or_priority",
+        "source_text": "Would you rather map the creek path or inspect the old footbridge?",
+        "required": True,
+        "answer_act": "prompt_grounded_operation",
+        "responsible_owner": "ordinary_conversation_path",
+        "requested_response_functions": ["choice"],
+        "role_fit_required": True,
+    }
+    current_result = {
+        "obligation_id": "choose-route",
+        "operation": "choice",
+        "responsible_owner": "ordinary_conversation_path",
+        "status": "completed",
+        "expression_source_id": "current_session_facts",
+        "current_turn_input_receipt": {
+            "accounted_before_result": True,
+            "owner_input_present": True,
+            "current_turn_precedence": True,
+        },
+    }
+
+    result = select_visible_speech_seed(
+        obligation["source_text"],
+        [
+            {
+                "source_id": "approved_comprehension",
+                "source_class": "approved_knowledge",
+                "text": "A choice compares available options before deciding.",
+                "obligation_ids": ["choose-route"],
+            },
+            {
+                "source_id": "current_session_facts",
+                "source_class": "conversation",
+                "text": "I would inspect the old footbridge first; its condition may change which route is usable.",
+                "obligation_ids": ["choose-route"],
+                "typed_operation_results": [current_result],
+            },
+        ],
+        conversation_spine={
+            "open_obligations": [obligation],
+            "intent_class": "direct_content",
+            "source_compatibility": {
+                "compatible_source_classes": ["conversation", "approved_knowledge"]
+            },
+        },
+    )
+
+    assert result["selected_source_id"] == "current_session_facts"
+    gate = result["candidate_arbitration"]["current_owner_gate"]
+    assert gate["status"] == "capable_current_owner_selected"
+    assert gate["priority_applied"] is True
+    assert gate["selected_gate"]["capable_obligation_ids"] == ["choose-route"]
+    learned = next(
+        item
+        for item in result["inspected_candidates"]
+        if item["source_id"] == "approved_comprehension"
+    )
+    assert learned["fulfillment_arbitration"]["current_owner_gate"]["status"] == (
+        "held_optional_learned_retrieval_is_not_current_owner"
+    )
+
+
+def test_current_owner_gate_holds_when_typed_completion_is_not_proved():
+    obligation = {
+        "id": "compare-materials",
+        "kind": "comparison",
+        "source_text": "Compare cork and felt for quieting a rattling drawer.",
+        "required": True,
+        "responsible_owner": "answer_engine",
+        "requested_response_functions": ["comparison"],
+        "role_fit_required": True,
+    }
+    result = select_visible_speech_seed(
+        obligation["source_text"],
+        [
+            {
+                "source_id": "answer_engine",
+                "source_class": "domain_answer",
+                "text": "Cork is firmer; felt is softer against the drawer surface.",
+                "obligation_ids": ["compare-materials"],
+                "typed_operation_results": [
+                    {
+                        "obligation_id": "compare-materials",
+                        "operation": "comparison",
+                        "responsible_owner": "answer_engine",
+                        "status": "missing_input",
+                        "expression_source_id": "answer_engine",
+                        "current_turn_input_receipt": {
+                            "accounted_before_result": True,
+                        },
+                    }
+                ],
+            }
+        ],
+        conversation_spine={
+            "open_obligations": [obligation],
+            "intent_class": "direct_content",
+            "source_compatibility": {
+                "compatible_source_classes": ["domain_answer"]
+            },
+        },
+    )
+
+    assert result["selected_source_id"] == "answer_engine"
+    gate = result["candidate_arbitration"]["current_owner_gate"]
+    assert gate["status"] == "held_no_capable_current_owner"
+    assert gate["priority_applied"] is False
+    assert gate["selected_gate"]["held_obligations"] == [
+        {
+            "obligation_id": "compare-materials",
+            "reason": "typed_owner_result_not_completed",
+        }
+    ]
+
+
+def test_partial_current_owner_does_not_take_whole_turn_priority():
+    obligations = [
+        {
+            "id": "compare",
+            "required": True,
+            "responsible_owner": "ordinary_conversation_path",
+            "requested_response_functions": ["comparison"],
+            "role_fit_required": True,
+        },
+        {
+            "id": "choose",
+            "required": True,
+            "responsible_owner": "ordinary_conversation_path",
+            "requested_response_functions": ["choice"],
+            "role_fit_required": True,
+        },
+    ]
+    result = select_visible_speech_seed(
+        "Compare the two routes and choose one.",
+        [
+            {
+                "source_id": "current_session_facts",
+                "source_class": "conversation",
+                "text": "The marsh path is shorter than the ridge path.",
+                "obligation_ids": ["compare"],
+                "typed_operation_results": [
+                    {
+                        "obligation_id": "compare",
+                        "operation": "comparison",
+                        "responsible_owner": "ordinary_conversation_path",
+                        "status": "completed",
+                        "expression_source_id": "current_session_facts",
+                        "current_turn_input_receipt": {
+                            "accounted_before_result": True,
+                        },
+                    }
+                ],
+            }
+        ],
+        conversation_spine={
+            "open_obligations": obligations,
+            "intent_class": "direct_content",
+            "source_compatibility": {
+                "compatible_source_classes": ["conversation"]
+            },
+        },
+    )
+
+    gate = result["candidate_arbitration"]["current_owner_gate"]
+    assert gate["status"] == "held_no_capable_current_owner"
+    assert gate["priority_applied"] is False
+    assert gate["selected_gate"]["status"] == "held_partial_current_owner_completion"
+    assert gate["selected_gate"]["capable_obligation_ids"] == ["compare"]
+
+
+def test_governing_boundary_remains_ahead_of_a_capable_current_owner():
+    obligation = {
+        "id": "bounded-choice",
+        "kind": "choice_or_priority",
+        "source_text": "Choose one.",
+        "required": True,
+        "responsible_owner": "ordinary_conversation_path",
+        "requested_response_functions": ["choice"],
+        "role_fit_required": True,
+    }
+    result = select_visible_speech_seed(
+        obligation["source_text"],
+        [
+            {
+                "source_id": "current_session_facts",
+                "source_class": "conversation",
+                "text": "I would choose the reversible option.",
+                "obligation_ids": ["bounded-choice"],
+                "typed_operation_results": [
+                    {
+                        "obligation_id": "bounded-choice",
+                        "operation": "choice",
+                        "responsible_owner": "ordinary_conversation_path",
+                        "status": "completed",
+                        "expression_source_id": "current_session_facts",
+                        "current_turn_input_receipt": {
+                            "accounted_before_result": True,
+                        },
+                    }
+                ],
+            },
+            {
+                "source_id": "core_mind_boundary",
+                "source_class": "boundary_response",
+                "text": "I cannot take that action through this chat surface.",
+            },
+        ],
+        conversation_spine={
+            "open_obligations": [obligation],
+            "intent_class": "direct_content",
+            "source_compatibility": {
+                "compatible_source_classes": ["conversation", "boundary_response"]
+            },
+        },
+    )
+
+    assert result["selected_source_id"] == "core_mind_boundary"
+    assert result["candidate_arbitration"]["current_owner_gate"]["status"] == (
+        "governing_boundary_precedes_current_owner"
+    )
+    assert result["candidate_arbitration"]["current_owner_gate"][
+        "governing_boundary_remains_primary"
+    ] is True

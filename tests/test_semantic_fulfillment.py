@@ -98,6 +98,34 @@ def test_declared_id_and_generic_comparison_prose_do_not_prove_performance() -> 
     assert receipt["generic_prose_accepted_as_performance"] is False
 
 
+def test_direct_answer_requires_its_visible_owner_result() -> None:
+    obligation = _obligation("direct_answer")
+    result = _result(
+        obligation,
+        "direct_answer",
+        {
+            "answer": "23 + 19 = 42.",
+            "basis": ["verified_math:checked_result"],
+        },
+        expression_seed="23 + 19 = 42.",
+    )
+
+    missing = evaluate_operation_fulfillment(
+        obligation,
+        "I can calculate that.",
+        result,
+    )
+    visible = evaluate_operation_fulfillment(
+        obligation,
+        "23 + 19 = 42.",
+        result,
+    )
+
+    assert missing["fulfilled"] is False
+    assert visible["fulfilled"] is True
+    assert visible["visible_field_receipts"][0]["field"] == "answer"
+
+
 def test_visible_comparison_must_realize_candidates_and_findings() -> None:
     obligation = _obligation("comparison")
     result = _result(

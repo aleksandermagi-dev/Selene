@@ -5415,6 +5415,12 @@ def test_current_session_decision_survives_comparison_revision_disagreement_and_
         result["visible_speech_seed"]["selected_source_id"] == "current_session_facts"
         for result in results
     )
+    assert opening["visible_speech_seed"]["candidate_arbitration"][
+        "current_owner_gate"
+    ]["selected_gate"]["status"] == "capable_current_owner_proved"
+    assert prediction["visible_speech_seed"]["candidate_arbitration"][
+        "current_owner_gate"
+    ]["priority_applied"] is True
     assert all(result["response_coverage"]["all_required_addressed"] is True for result in results)
     assert all(result["learning_gap_invitation"]["offered"] is False for result in results)
     assert all(
@@ -5442,6 +5448,34 @@ def test_current_session_decision_survives_comparison_revision_disagreement_and_
     assert prediction["metacognition"]["recommended_action"] == "answer_now"
     for result in results:
         _assert_locked(result)
+
+
+def test_novel_current_session_choice_wins_through_the_general_owner_gate(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "I'm deciding whether to sketch the harbor indoors or walk along the dunes. "
+                "Which sounds better?"
+            )
+        },
+    )["result"]
+
+    assert result["visible_speech_seed"]["selected_source_id"] == "current_session_facts"
+    gate = result["visible_speech_seed"]["candidate_arbitration"]["current_owner_gate"]
+    assert gate["status"] == "capable_current_owner_selected"
+    assert gate["priority_applied"] is True
+    assert result["learning_gap_invitation"]["offered"] is False
+    assert result["response_coverage"]["all_required_addressed"] is True
+    assert "harbor" in result["candidate_text"].lower()
+    owner_inputs = result["conversation_spine"]["current_turn_owner_inputs"]
+    assert "dunes" in str(owner_inputs).lower()
+    _assert_locked(result)
 
 
 def test_active_chat_answers_a_bounded_same_action_manner_contrast(tmp_path):

@@ -299,6 +299,8 @@ def _visible_requirements(
     obligation: dict[str, Any],
 ) -> list[dict[str, Any]]:
     requested_count = int(obligation.get("requested_count") or 0)
+    if operation == "direct_answer":
+        return [_requirement("answer", fields.get("answer"))]
     if operation == "method":
         return [_requirement("steps", fields.get("steps"), requested_count or 1)]
     if operation == "causal_explanation":

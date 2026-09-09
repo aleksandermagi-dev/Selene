@@ -29,6 +29,10 @@ GUARDS: dict[str, Any] = {
 }
 
 _OPERATION_ALIASES = {
+    "answer": "direct_answer",
+    "fact": "direct_answer",
+    "definition": "direct_answer",
+    "source_answer": "direct_answer",
     "method": "method",
     "action_scope": "method",
     "reason": "causal_explanation",
@@ -51,6 +55,7 @@ _OPERATION_ALIASES = {
 }
 
 _CONTRACTS: dict[str, tuple[str, ...]] = {
+    "direct_answer": ("answer", "basis"),
     "method": ("steps", "basis", "limitations"),
     "causal_explanation": ("conclusion", "mechanism_or_reason", "basis"),
     "prediction": ("predicted_change", "basis", "revision_conditions"),
@@ -162,6 +167,14 @@ def build_answer_operation_packet(payload: dict[str, Any] | None = None) -> dict
             spine=spine,
             consumed=not hard_boundary,
         )
+        # Generic conversational answers are not all typed operations yet.
+        # Materialize this contract only when an existing owner actually
+        # completed it; a synthetic missing-result packet would otherwise
+        # turn an unaffected callback, acknowledgement, or social answer into
+        # a false completion defect. Later cultivation phases may type those
+        # acts at their own owners.
+        if operation == "direct_answer" and result.get("status") != "completed":
+            continue
         results.append(result)
 
     completed = [item for item in results if item.get("status") == "completed"]
@@ -276,6 +289,30 @@ def _execute_operation(
         )
         if decision_result:
             return decision_result
+    priority_visible_kinds = {
+        "answer_development",
+        "constraint_refinement",
+        "priority_follow_up",
+        "reason_follow_up",
+    }
+    priority_visible_owners = [
+        item
+        for item in payload.get("visible_conversation_owners") or []
+        if isinstance(item, dict)
+        and str(item.get("kind") or "") in priority_visible_kinds
+    ]
+    if operation == "direct_answer" or priority_visible_owners:
+        visible_owner_result = _visible_conversation_owner_result(
+            obligation,
+            operation,
+            (
+                {**payload, "visible_conversation_owners": priority_visible_owners}
+                if priority_visible_owners
+                else payload
+            ),
+        )
+        if visible_owner_result:
+            return visible_owner_result
     exploratory = _dict(payload.get("exploratory_reasoning"))
     if operation == "prediction":
         prediction = _dict(exploratory.get("prediction"))
@@ -454,6 +491,29 @@ def _from_answer_engine(
             "dimensions": _texts(answer_packet.get("comparison_dimensions")),
             "findings": units or _sentences(direct_answer),
             "comparison_basis": source_refs or ["current visible prompt and supplied constraints"],
+            "limitations": _texts(answer_packet.get("limitations")),
+        }
+    elif operation == "direct_answer":
+        answer_domain = str(
+            answer_packet.get("domain")
+            or answer_engine.get("selected_domain")
+            or ""
+        )
+        if (
+            str(obligation.get("responsible_owner") or "") != "answer_engine"
+            and answer_domain
+            not in {
+                "verified_math",
+                "source_backed_research",
+                "local_code_inspection",
+            }
+        ):
+            return {}
+        fields = {
+            "answer": direct_answer,
+            "basis": source_refs or [
+                f"answer_engine:{answer_packet.get('domain') or answer_engine.get('selected_domain') or 'bounded_domain'}"
+            ],
             "limitations": _texts(answer_packet.get("limitations")),
         }
     elif operation == "choice" and str(answer_packet.get("domain") or "") == "verified_math":
@@ -902,6 +962,12 @@ def _visible_conversation_owner_result(
     supplied_fields = _dict(operation_fields.get(operation))
     if supplied_fields:
         fields = supplied_fields
+    elif operation == "direct_answer":
+        fields = {
+            "answer": text,
+            "basis": _texts(owner.get("source_refs"))
+            or ["visible current-session owner result"],
+        }
     elif operation == "method":
         fields = {
             "steps": surfaces,
@@ -1210,6 +1276,7 @@ def _missing_input(operation: str, payload: dict[str, Any]) -> str:
     if supplied_fields:
         return "the owner result fields: " + ", ".join(supplied_fields)
     return {
+        "direct_answer": "a completed attributable domain or prompt-grounded answer",
         "method": "the intended outcome, available resources, and controlling constraints",
         "causal_explanation": "a mechanism connecting the observation to the proposed cause and a distinguishing observation",
         "prediction": "a visible observation, relevant model, or reviewed experience plus what would revise the prediction",

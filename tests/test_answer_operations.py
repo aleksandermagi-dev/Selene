@@ -614,6 +614,81 @@ def test_generic_comparison_method_does_not_impersonate_completed_comparison() -
     assert packet["generic_prose_accepted_as_completion"] is False
 
 
+def test_verified_domain_answer_completes_generic_answer_obligation() -> None:
+    packet = build_answer_operation_packet(
+        {
+            "conversation_spine": _spine(
+                requested_response_functions=["answer"],
+                source_text="Could you calculate 23 + 19?",
+                responsible_owner="ordinary_conversation_path",
+            ),
+            "answer_engine_support": {
+                "adapter_executed": True,
+                "selected_domain": "verified_math",
+                "answer_packet": {
+                    "domain": "verified_math",
+                    "direct_answer": "23 + 19 = 42.",
+                    "source_refs": ["verified_math:checked_result"],
+                },
+            },
+        }
+    )
+
+    result = packet["results"][0]
+    assert result["operation"] == "direct_answer"
+    assert result["status"] == "completed"
+    assert result["fields"]["answer"] == "23 + 19 = 42."
+    assert result["expression_source_id"] == "answer_engine"
+
+
+def test_generic_answer_without_a_completed_owner_stays_outside_typed_operations() -> None:
+    packet = build_answer_operation_packet(
+        {
+            "conversation_spine": _spine(
+                requested_response_functions=["answer"],
+                source_text="What did you make of that?",
+                responsible_owner="ordinary_conversation_path",
+            )
+        }
+    )
+
+    assert packet["status"] == "answer_operations_not_material"
+    assert packet["operation_count"] == 0
+    assert packet["results"] == []
+
+
+def test_active_contextual_owner_can_complete_a_direct_answer_before_parallel_reasoning() -> None:
+    packet = build_answer_operation_packet(
+        {
+            "conversation_spine": _spine(
+                requested_response_functions=["answer"],
+                source_text="How would you revise that plan?",
+                responsible_owner="ordinary_conversation_path",
+            ),
+            "visible_conversation_owners": [
+                {
+                    "owner_id": "contextual_follow_up",
+                    "kind": "constraint_refinement",
+                    "text": (
+                        "Keep the covered work, then revise only the staffing step "
+                        "affected by the shorter shift."
+                    ),
+                    "supported_operations": ["direct_answer"],
+                    "source_refs": ["conversation_spine:contextual_follow_up"],
+                }
+            ],
+        }
+    )
+
+    result = packet["results"][0]
+    assert result["status"] == "completed"
+    assert result["operation"] == "direct_answer"
+    assert result["expression_source_id"] == "contextual_follow_up"
+    assert result["source_result"] == (
+        "visible_conversation_owner:constraint_refinement"
+    )
+
+
 def test_missing_report_cannot_request_current_turn_inputs_already_supplied() -> None:
     obligation = {
         "id": "obligation-1",

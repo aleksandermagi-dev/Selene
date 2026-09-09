@@ -1053,9 +1053,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "named_callback",
     }
     if prompt_grounded_reasoning_precedes_knowledge and not correction_reconstruction_reply:
-        # A complete current-prompt operation owns the requested answer. Session
-        # callbacks still inform the operation through its observations, but a
-        # generic continuity acknowledgement must not replace that answer.
+        # This pre-existing grounded-owner handoff still protects callbacks and
+        # multi-act composition that do not yet carry complete typed operation
+        # results. Later cultivation phases may retire it obligation by
+        # obligation; Phase 2 does not discard valid unsupported coverage.
         session_fact_reply = ""
         contextual_reply = ""
         continuity_reply = ""
@@ -1108,7 +1109,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                             "owner_id": "current_session_facts",
                             "kind": "visible_session_decision",
                             "text": session_decision_reply,
-                            "supported_operations": session_decision_context.get("supported_operations") or [],
+                            "supported_operations": list(
+                                dict.fromkeys(
+                                    [
+                                        *(session_decision_context.get("supported_operations") or []),
+                                        "direct_answer",
+                                    ]
+                                )
+                            ),
                             "operation_fields": session_decision_context.get("operation_fields") or {},
                             "source_refs": session_decision_context.get("source_refs") or [
                                 "conversation_spine:visible_session_decision"
@@ -1125,6 +1133,17 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                             "kind": str(contextual_follow_up.get("kind") or ""),
                             "text": contextual_reply,
                             "supported_operations": [
+                                *(
+                                    ["direct_answer"]
+                                    if str(contextual_follow_up.get("kind") or "")
+                                    in {
+                                        "answer_development",
+                                        "constraint_refinement",
+                                        "priority_follow_up",
+                                        "reason_follow_up",
+                                    }
+                                    else []
+                                ),
                                 "causal_explanation",
                                 "comparison",
                                 "choice",
@@ -1159,7 +1178,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                             "owner_id": "language_capability",
                             "kind": "reviewed_language_capability_correction",
                             "text": language_content_seed,
-                            "supported_operations": ["correction"],
+                            "supported_operations": ["direct_answer", "correction"],
                             "source_refs": [
                                 "language_capability_shelf:reviewed_current_answer"
                             ],
@@ -1167,7 +1186,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                     ]
                     if language_capability.get("used") is True
                     and language_content_seed
-                    and epistemic_revision.get("detected") is True
                     else []
                 ),
             ],
@@ -1315,20 +1333,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         visible_arbitration_candidates,
         conversation_spine=conversation_spine,
     )
-    if session_decision_reply:
-        session_decision_candidates = [
-            item
-            for item in visible_arbitration_candidates
-            if str(item.get("source_id") or "") == "current_session_facts"
-            and " ".join(str(item.get("text") or "").split())
-            == " ".join(session_decision_reply.split())
-        ]
-        if session_decision_candidates:
-            visible_speech_seed = select_visible_speech_seed(
-                meaning_text,
-                session_decision_candidates,
-                conversation_spine=conversation_spine,
-            )
     bounded_hypothesis = (
         intelligence_support.get("hypothesis_attempt")
         if isinstance(intelligence_support.get("hypothesis_attempt"), dict)

@@ -89,6 +89,19 @@ _ARCHITECTURE_CONTEXT_CUES = (
     "source-bound",
 )
 
+_CURRENT_OWNER_SOURCE_CLASSES = {
+    "conversation",
+    "domain_answer",
+    "language_capability",
+    "reasoning_answer",
+    "self_state",
+}
+
+_OPTIONAL_LEARNED_SOURCE_CLASSES = {
+    "approved_knowledge",
+    "memory_reconstruction",
+}
+
 
 def select_visible_speech_seed(
     prompt: str,
@@ -195,11 +208,38 @@ def select_visible_speech_seed(
                 }
             )
     if accepted_candidates:
+        capable_current_owners = [
+            item
+            for item in accepted_candidates
+            if item["arbitration"]["current_owner_gate"]["priority_eligible"] is True
+        ]
         selected = max(
             accepted_candidates,
             key=lambda item: tuple(item["arbitration"]["rank"]),
         )
         candidate = selected["candidate"]
+        selected_gate = selected["arbitration"]["current_owner_gate"]
+        boundary_selected = selected["arbitration"]["governing_boundary_priority"] is True
+        current_owner_gate = {
+            "status": (
+                "governing_boundary_precedes_current_owner"
+                if boundary_selected
+                else "capable_current_owner_selected"
+                if selected_gate["priority_eligible"] is True
+                else "held_no_capable_current_owner"
+                if not capable_current_owners
+                else "capable_current_owner_available_but_not_selected"
+            ),
+            "priority_applied": bool(
+                selected_gate["priority_eligible"] is True and not boundary_selected
+            ),
+            "capable_current_owner_count": len(capable_current_owners),
+            "selected_source_id": selected["source_id"],
+            "selected_owner": selected["arbitration"]["candidate_owner"],
+            "selected_gate": selected_gate,
+            "optional_learned_retrieval_may_claim_current_ownership": False,
+            "governing_boundary_remains_primary": boundary_selected,
+        }
         return {
             "status": "visible_speech_seed_selected",
             "content_seed": selected["text"],
@@ -212,10 +252,11 @@ def select_visible_speech_seed(
             ],
             "inspected_candidates": inspected,
             "candidate_arbitration": {
-                "mode": "compatible_obligation_fulfillment",
+                "mode": "current_owner_then_compatible_obligation_fulfillment",
                 "selected_rank": selected["arbitration"]["rank"],
                 "accepted_candidate_count": len(accepted_candidates),
                 "first_accepted_is_automatic_winner": False,
+                "current_owner_gate": current_owner_gate,
             },
             "conversation_spine_used": bool(conversation_spine),
             "release_allowed": True,
@@ -227,6 +268,18 @@ def select_visible_speech_seed(
         "selected_source_id": "none",
         "selected_source_class": "conversation",
         "inspected_candidates": inspected,
+        "candidate_arbitration": {
+            "mode": "current_owner_then_compatible_obligation_fulfillment",
+            "accepted_candidate_count": 0,
+            "first_accepted_is_automatic_winner": False,
+            "current_owner_gate": {
+                "status": "held_no_releasable_candidate",
+                "priority_applied": False,
+                "capable_current_owner_count": 0,
+                "optional_learned_retrieval_may_claim_current_ownership": False,
+                "governing_boundary_remains_primary": False,
+            },
+        },
         "conversation_spine_used": bool(conversation_spine),
         "release_allowed": False,
         "provenance_boundary": VISIBLE_SPEECH_BOUNDARY,
@@ -278,8 +331,25 @@ def _candidate_fulfillment(
         )
     }
     validated_ids = owner_valid_semantic_ids | set(owner_fit_ids)
+    current_owner_gate = _current_owner_gate(
+        candidate,
+        source_id=source_id,
+        source_class=source_class,
+        candidate_owner=candidate_owner,
+        obligations=obligations,
+    )
+    governing_boundary_priority = bool(
+        source_class == "boundary_response" or source_id == "core_mind_boundary"
+    )
     exactness_eligible = bool(candidate.get("exactness_lock") is True and owner_fit_ids)
     rank = [
+        1 if governing_boundary_priority else 0,
+        1 if current_owner_gate["priority_eligible"] is True else 0,
+        (
+            len(current_owner_gate["capable_obligation_ids"])
+            if current_owner_gate["priority_eligible"] is True
+            else 0
+        ),
         len(validated_ids),
         len(owner_fit_ids),
         1 if exactness_eligible else 0,
@@ -292,6 +362,121 @@ def _candidate_fulfillment(
         "owner_fit_ids": owner_fit_ids,
         "validated_fulfillment_ids": sorted(validated_ids),
         "exactness_eligible_after_owner_fit": exactness_eligible,
+        "governing_boundary_priority": governing_boundary_priority,
+        "current_owner_gate": current_owner_gate,
+    }
+
+
+def _current_owner_gate(
+    candidate: dict[str, Any],
+    *,
+    source_id: str,
+    source_class: str,
+    candidate_owner: str,
+    obligations: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Prove current answer ownership from completed typed owner results.
+
+    Obligation ids or fluent text are not enough. A current candidate receives
+    precedence only when its own typed result completed every required
+    obligation, preserved the canonical owner, and accounted for the visible
+    current-turn input before producing the result. Learned retrieval remains
+    eligible through ordinary relevance arbitration, but cannot impersonate
+    this gate.
+    """
+
+    required = {
+        str(item.get("id") or ""): item
+        for item in obligations
+        if str(item.get("id") or "")
+    }
+    optional_learned_retrieval = source_class in _OPTIONAL_LEARNED_SOURCE_CLASSES
+    source_eligible = bool(
+        source_class in _CURRENT_OWNER_SOURCE_CLASSES
+        and not optional_learned_retrieval
+    )
+    typed_results = [
+        item
+        for item in candidate.get("typed_operation_results") or []
+        if isinstance(item, dict)
+    ]
+    result_by_id = {
+        str(item.get("obligation_id") or ""): item
+        for item in typed_results
+        if str(item.get("obligation_id") or "")
+    }
+    capable_ids: list[str] = []
+    held: list[dict[str, str]] = []
+    for obligation_id, obligation in required.items():
+        result = result_by_id.get(obligation_id)
+        if not result:
+            held.append({"obligation_id": obligation_id, "reason": "typed_owner_result_missing"})
+            continue
+        receipt = (
+            result.get("current_turn_input_receipt")
+            if isinstance(result.get("current_turn_input_receipt"), dict)
+            else {}
+        )
+        required_owner = str(obligation.get("responsible_owner") or "")
+        result_owner = str(result.get("responsible_owner") or "")
+        result_source = str(result.get("expression_source_id") or "")
+        source_result = str(result.get("source_result") or "")
+        delegated_session_owner = bool(
+            source_id == "current_session_facts"
+            and source_result.startswith("visible_conversation_owner:visible_session_decision")
+        )
+        exact_domain_owner = bool(
+            source_id == "answer_engine" and candidate.get("exactness_lock") is True
+        )
+        owner_binding_valid = bool(
+            _owner_matches(candidate_owner, required_owner)
+            or delegated_session_owner
+            or exact_domain_owner
+        )
+        reason = ""
+        if result.get("status") != "completed":
+            reason = "typed_owner_result_not_completed"
+        elif result_source != source_id:
+            reason = "typed_owner_result_source_mismatch"
+        elif not owner_binding_valid:
+            reason = "candidate_owner_does_not_match_or_hold_valid_delegation"
+        elif not _owner_matches(result_owner, required_owner):
+            reason = "typed_result_does_not_preserve_obligation_owner"
+        elif receipt.get("accounted_before_result") is not True:
+            reason = "current_turn_input_not_accounted_before_result"
+        if reason:
+            held.append({"obligation_id": obligation_id, "reason": reason})
+            continue
+        capable_ids.append(obligation_id)
+
+    all_required_completed = bool(required) and set(capable_ids) == set(required)
+    priority_eligible = bool(source_eligible and all_required_completed)
+    if not required:
+        status = "not_material_no_required_obligations"
+    elif optional_learned_retrieval:
+        status = "held_optional_learned_retrieval_is_not_current_owner"
+    elif not source_eligible:
+        status = "held_source_class_not_current_owner"
+    elif priority_eligible:
+        status = "capable_current_owner_proved"
+    elif capable_ids:
+        status = "held_partial_current_owner_completion"
+    elif not typed_results:
+        status = "held_no_typed_current_owner_result"
+    else:
+        status = "held_typed_current_owner_result_invalid"
+    return {
+        "status": status,
+        "priority_eligible": priority_eligible,
+        "source_eligible": source_eligible,
+        "optional_learned_retrieval": optional_learned_retrieval,
+        "required_obligation_ids": sorted(required),
+        "capable_obligation_ids": sorted(capable_ids),
+        "all_required_obligations_completed": all_required_completed,
+        "held_obligations": held,
+        "typed_result_count": len(typed_results),
+        "current_turn_accounting_required": True,
+        "obligation_ids_alone_are_proof": False,
     }
 
 

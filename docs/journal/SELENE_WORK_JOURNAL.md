@@ -5048,3 +5048,38 @@ runtime were untouched.
 **Next:** Cultivation Phase 2: mature the current-owner gate so a capable
 current-turn or active-session owner outranks optional learned retrieval. Use
 changed entities and paraphrases before retiring any compatibility branch.
+
+### 2026-09-08 — Cultivation Phase 2 proves current answer ownership
+
+**Implementation:** Visible Speech now gives whole-turn precedence only to a
+candidate whose completed typed operation results cover every required
+obligation, preserve canonical ownership, match the candidate source, and
+account for current-turn input before answering. Partial completion remains a
+typed hold. Optional approved-knowledge and Memory retrieval cannot claim the
+gate, while Core/Mind remains primary. The exact session-decision force-select
+shim was removed.
+
+**Direct-answer connection:** Answer Operations now types an existing completed
+direct answer from exact verified domains, directly requested reviewed language
+capability, an active session decision, or a bounded immediate contextual
+refinement. It emits no missing direct-answer result when no such owner exists,
+so ordinary untyped callbacks and participation acts retain their prior path.
+Semantic Fulfillment requires the answer itself to be visible.
+
+**Cultivation finding:** Removing the broader prompt-grounded coordination
+guard caused callback, correction, humor, and decision regressions. It was
+restored because it still holds valid coverage not yet replaced by later typed
+acts. A partial current result likewise cannot outrank a more complete answer.
+
+**Evidence:** Direct modules passed 59 checks. The final affected owner matrix
+passed 118 checks. Full Chat passed 120 checks
+with 10 failures; a correctly isolated clean Phase 1 worktree passed 115 with
+14 failures on its 129-test file. Phase 2 repaired verified Math, attributed
+Research, reviewed language-capability, and packet-wide source visibility. All
+10 remaining failures reproduce at Phase 1; no new regression remains. All
+state was disposable and no live Q&A ran.
+
+**Next:** Cultivation Phase 3—make learning-gap eligibility depend on proved
+absence of a capable current/session/domain/inference/clarification owner, and
+repair malformed gap subjects at the shared subject owner rather than with
+prompt phrases.
