@@ -1,11 +1,11 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-08
+Last refreshed: 2026-09-09
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
-installed and verified; conversation Cultivation Phase 1 now supplies shared
-visible proposition normalization and ephemeral current-session continuity
+installed and verified; conversation Cultivation Phases 1 and 2 now supply
+shared visible propositions and proved current answer ownership
 
 ## Purpose
 
@@ -18,6 +18,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest conversation Cultivation Phase 2 checkpoint: `ab03bbc`
+  (`Prove current answer ownership`)
 - Latest conversation Cultivation Phase 1 checkpoint: `ba878b5`
   (`Generalize current-session propositions`)
 - Latest conversation Cultivation Phase 0 checkpoint: `3485f30`
@@ -981,6 +983,36 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_1_PROPOSITION_NORMALIZATION_20260908.md`.
 
+## Conversation Cultivation Phase 2 — Current Owner Gate
+
+- Checkpoint `ab03bbc` gives whole-turn priority only to a candidate whose
+  typed owner results completed every required obligation, preserved the
+  canonical responsible owner, matched the candidate expression source, and
+  accounted for the visible current-turn input before answering.
+- Partial completion remains a typed hold. Optional approved-knowledge and
+  Memory retrieval remain available through ordinary relevance, but cannot
+  impersonate a current answer owner. Core/Mind boundary priority is unchanged.
+- Answer Operations now connects a bounded `direct_answer` contract to
+  existing exact domain, reviewed language-capability, current-session
+  decision, and selected immediate contextual owners. It does not manufacture
+  missing direct-answer results for ordinary conversational acts that are not
+  typed yet.
+- The exact session-decision force-select shim was retired. The broader
+  prompt-grounded coordination guard remains temporarily because comparative
+  testing proved that it still carries valid callback, correction, humor, and
+  multi-act coverage not yet replaced by typed owners.
+- Verification: 59 direct checks and the final 118-check affected-owner matrix
+  passed. Full Chat produced 120 passes and 10 failures; the correctly isolated
+  Phase 1 baseline produced 115 passes and 14 failures on its prior 129-test
+  file. Phase 2 repaired four older ownership failures and introduced no new
+  Chat regression. Compilation passed and diff verification reported only
+  expected Windows line-ending notices.
+- All state was synthetic or disposable. No resident state, live Q&A,
+  teaching, Memory, Dream, Study, identity, personality, Vys, governance,
+  authority, training, action, package, or installed runtime changed.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_2_CURRENT_OWNER_GATE_20260908.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1073,12 +1105,17 @@ map is
 Phase 1 evidence is
 `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_1_PROPOSITION_NORMALIZATION_20260908.md`.
 
-The exact resume point is Phase 2: implement the current answer-owner priority
-gate. Prove that a current-turn or active-session owner can satisfy the
-requested response function, then rank that owner ahead of optional learned
-retrieval. Preserve an explicit hold when no current owner is capable. Continue
-the remaining dependency order after that gate:
-learning-gap eligibility; approved-knowledge subject/entity/operation/function
+Conversation Cultivation Phase 2 is complete and checkpointed at `ab03bbc`.
+Typed completion now proves current answer ownership before optional learned
+retrieval receives ordinary relevance consideration. Phase 2 evidence is
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_2_CURRENT_OWNER_GATE_20260908.md`.
+
+The exact resume point is Phase 3: make learning-gap eligibility depend on
+proved absence of a capable current-turn, active-session, exact-domain,
+bounded-inference, or clarification owner. Repair malformed learning-gap
+subjects at the shared subject owner rather than adding prompt phrases. After
+that, continue the remaining dependency order:
+approved-knowledge subject/entity/operation/function
 relevance; correction completion; typed humor/acknowledgement/recap/closure
 acts; semantic coverage; and shared subject, punctuation, symbol, and stale-
 fallback cleanup. Map these onto existing owners before editing; do not create
@@ -1092,7 +1129,7 @@ confirmation, G13-G15 teaching, the earlier repaired learning replay, or any
 further broad Q&A before repair. Use focused synthetic owner checks first and
 one short ordinary end-to-end conversation only if source evidence cannot
 establish the handoff.
-Keep the nine known pre-existing Chat-owner failures as a separate bounded
+Keep the ten reproduced Phase 1 Chat failures as a separate bounded
 stabilization batch. The downloaded source corpora and private 20-interaction
 review stay ignored and unavailable to runtime.
 
