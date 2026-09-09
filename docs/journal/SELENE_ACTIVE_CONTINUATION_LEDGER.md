@@ -19,8 +19,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
-- Current conversation Cultivation Phase 3 implementation is complete and
-  awaiting its source checkpoint in this task.
+- Latest conversation Cultivation Phase 3 checkpoint: `7803dc3`
+  (`Prove learning gap eligibility`)
 - Latest conversation Cultivation Phase 2 checkpoint: `ab03bbc`
   (`Prove current answer ownership`)
 - Latest conversation Cultivation Phase 1 checkpoint: `ba878b5`
@@ -95,9 +95,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before the Phase 3 source checkpoint: local
-  `evidence` is thirty-one commits ahead of `origin/evidence`. Confirm again
-  before any later commit or push.
+- Current remote relation before this ledger refresh: local `evidence` is
+  thirty-two commits ahead of `origin/evidence`; the ledger refresh is expected
+  to make that thirty-three. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1137,11 +1137,11 @@ Typed completion now proves current answer ownership before optional learned
 retrieval receives ordinary relevance consideration. Phase 2 evidence is
 `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_2_CURRENT_OWNER_GATE_20260908.md`.
 
-Conversation Cultivation Phase 3 is implementation- and verification-complete.
-Its source checkpoint is the next repository action. The owner-eligibility
-receipt proves absence of current/session/domain/inference/clarification and
-approved-knowledge answer paths before teaching; shared subject and option
-normalization no longer preserve request-clause fragments as subject matter.
+Conversation Cultivation Phase 3 is complete and checkpointed at `7803dc3`.
+The owner-eligibility receipt proves absence of
+current/session/domain/inference/clarification and approved-knowledge answer
+paths before teaching; shared subject and option normalization no longer
+preserve request-clause fragments as subject matter.
 
 After the Phase 3 checkpoint, the exact resume point is Phase 4:
 approved-knowledge relevance must require subject, entity, operation, and
