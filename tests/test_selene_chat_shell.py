@@ -4728,6 +4728,12 @@ def test_post_phase_eight_repair_reconstructs_math_and_local_creative_revision_w
     assert "porch" in choice["candidate_text"].lower()
     assert "rain" not in choice["candidate_text"].lower()
     assert "Actually," in rain["candidate_text"]
+    assert "rain" in rain["candidate_text"].lower()
+    assert rain["session_revision_completion"]["owner_result_ready"] is False
+    assert rain["session_revision_completion"]["legacy_fixture_is_general_completion_evidence"] is False
+    assert rain["session_proposition_ledger"]["recomputation"]["state"] == "completed"
+    assert rain["session_proposition_ledger"]["recomputation"]["legacy_fixture_compatibility_used"] is True
+    assert rain["session_proposition_ledger"]["recomputation"]["general_capability_evidence_eligible"] is False
     assert "walk" not in rain["candidate_text"].lower()
     assert original["candidate_text"].count(".") >= 2
     assert "moonlight" in original["candidate_text"].lower()
@@ -5255,7 +5261,11 @@ def test_phase_nine_replay_preserves_prompt_answers_corrections_and_creative_cal
     assert pacing_creative["fiction_status"] == "no_fiction_released"
     assert rain["native_language_organ"]["meaning_packet"]["language_realization_policy"]["content_generation_allowed"] is False
     assert all(f"{index}." in log["candidate_text"] for index in (1, 2, 3))
-    assert "corrected three fields" in log_fix["candidate_text"].lower()
+    assert "drawer" in log_fix["candidate_text"].lower()
+    assert all(f"{index}." in log_fix["candidate_text"] for index in (1, 2, 3))
+    assert log_fix["session_revision_completion"]["legacy_fixture_is_general_completion_evidence"] is False
+    assert log_fix["session_proposition_ledger"]["recomputation"]["state"] == "completed"
+    assert log_fix["session_proposition_ledger"]["recomputation"]["legacy_fixture_compatibility_used"] is True
     assert "drawer joke stay separate" in returned["candidate_text"].lower()
     assert "that one landed" not in returned["candidate_text"].lower()
     assert "not enough grounded" not in returned["candidate_text"].lower()
@@ -5477,6 +5487,14 @@ def test_current_session_decision_survives_comparison_revision_disagreement_and_
     assert "deadline moved closer" in revision["candidate_text"]
     assert "slow but reliable plan" in revision["candidate_text"]
     assert "corrected meaning" not in revision["candidate_text"].lower()
+    assert revision["session_revision_completion"]["owner_result_ready"] is True
+    assert revision["session_revision_completion"]["selected_owner_id"] == "current_session_facts"
+    assert revision["session_revision_completion"]["revision_id"]
+    assert revision["session_proposition_ledger"]["recomputation"]["state"] == "completed"
+    assert any(
+        item.get("operation") == "correction" and item.get("status") == "completed"
+        for item in revision["answer_operations"]["results"]
+    )
     assert disagreement["candidate_text"].lower().count("disagree") == 1
     assert hypothetical["candidate_text"].startswith("If that evidence held")
     assert "slow but reliable plan" in prediction["candidate_text"]
@@ -5487,6 +5505,51 @@ def test_current_session_decision_survives_comparison_revision_disagreement_and_
     assert prediction["metacognition"]["recommended_action"] == "answer_now"
     for result in results:
         _assert_locked(result)
+
+
+def test_changed_noun_revision_recomputes_once_from_the_active_changed_premise(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    opening = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "We have two routes: one swift but delicate and one steady but robust. "
+                "Robust matters most. Compare them and choose one."
+            )
+        },
+    )["result"]
+    revision = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": opening["session_id"],
+            "text": (
+                "Actually, the deadline moved closer, but robust still matters most. "
+                "What changes?"
+            ),
+        },
+    )["result"]
+
+    completion = revision["session_revision_completion"]
+    recomputation = revision["session_proposition_ledger"]["recomputation"]
+    assert completion["status"] == "session_revision_owner_result_ready"
+    assert completion["selected_owner_id"] == "current_session_facts"
+    assert completion["candidate_receipts"][0]["revision_input_accounted_for"] is True
+    assert recomputation["state"] == "completed"
+    assert recomputation["general_capability_evidence_eligible"] is True
+    assert recomputation["maximum_owner_recompute_passes"] == 1
+    assert recomputation["invalidated_result_ids"]
+    assert "deadline moved closer" in revision["candidate_text"].lower()
+    assert "steady but robust route" in revision["candidate_text"].lower()
+    assert revision["candidate_text"] != opening["candidate_text"]
+    assert revision["response_coverage"]["all_required_addressed"] is True
+    assert revision["reviewed_memory_write_occurred"] is False
+    assert revision["conversational_memory_proposal_created"] is False
+    _assert_locked(revision)
 
 
 def test_novel_current_session_choice_wins_through_the_general_owner_gate(tmp_path):

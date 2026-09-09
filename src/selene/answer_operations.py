@@ -585,6 +585,7 @@ def _from_answer_substance(
     missing_variable = truncate(str(substance.get("missing_variable") or ""), 600)
     basis = str(substance.get("support_basis") or "current_prompt_only")
     creative_receipt = _dict(substance.get("creative_receipt"))
+    compatibility_receipt = _dict(substance.get("compatibility_receipt"))
 
     fields: dict[str, Any]
     if (
@@ -774,7 +775,10 @@ def _from_answer_substance(
             "support_status": "supported_from_current_visible_basis",
             "condition": _dict(obligation.get("condition")),
         }
-    elif operation == "correction" and _kind_fits(answer_kind, ("correction", "revision", "update")):
+    elif operation == "correction" and (
+        _kind_fits(answer_kind, ("correction", "revision", "update"))
+        or compatibility_receipt.get("legacy_fixture_compatibility") is True
+    ):
         fields = {
             "corrected_input": str(obligation.get("source_text") or ""),
             "affected_result": answer_kind,
@@ -792,7 +796,7 @@ def _from_answer_substance(
         fields = {"points": surfaces, "source_scope": "current_session_only"}
     else:
         return {}
-    return _complete_result(
+    result = _complete_result(
         obligation,
         operation,
         fields=fields,
@@ -804,6 +808,17 @@ def _from_answer_substance(
         supported_semantics=semantics,
         source_refs=_texts(semantics.get("source_refs")) or _texts(intelligence.get("source_refs")),
     )
+    if (
+        operation == "correction"
+        and compatibility_receipt.get("legacy_fixture_compatibility") is True
+    ):
+        result = {
+            **result,
+            "legacy_fixture_compatibility": True,
+            "general_capability_evidence_eligible": False,
+            "compatibility_receipt": compatibility_receipt,
+        }
+    return result
 
 
 def _from_conversation_state(
@@ -858,7 +873,7 @@ def _from_conversation_state(
             ).strip()
             if correction_application:
                 fields["current_application"] = correction_application
-                return _complete_result(
+                result = _complete_result(
                     obligation,
                     operation,
                     fields=fields,
@@ -868,6 +883,13 @@ def _from_conversation_state(
                     supported_semantics={},
                     source_refs=["conversation_spine:session_proposition_revision"],
                 )
+                if payload.get("legacy_correction_reconstruction") is True:
+                    result = {
+                        **result,
+                        "legacy_fixture_compatibility": True,
+                        "general_capability_evidence_eligible": False,
+                    }
+                return result
             visible_owner = _visible_conversation_owner_result(
                 obligation,
                 operation,

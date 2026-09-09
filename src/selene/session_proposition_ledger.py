@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from hashlib import sha256
 from typing import Any
 
@@ -52,6 +53,121 @@ def session_proposition_ledger_status() -> dict[str, Any]:
             "generates_answers": False,
             "automatic_retention": False,
             "ordinary_wrongness_is_failure": False,
+            "review_status": "status_only",
+            "provenance_boundary": SESSION_PROPOSITION_BOUNDARY,
+        }
+    )
+
+
+def coordinate_session_revision_completion(
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Select one typed owner result for an active session revision.
+
+    This coordinator does not generate a replacement answer. It proves that a
+    current owner recomputed the changed result from the active revision before
+    that result can be presented as correction completion.
+    """
+
+    payload = payload or {}
+    ledger = _normalize_ledger(
+        payload.get("session_proposition_ledger"),
+        session_id=int(payload.get("session_id") or 0),
+    )
+    revision = _dict(ledger.get("current_revision"))
+    recomputation = _dict(ledger.get("recomputation"))
+    state = str(recomputation.get("state") or "not_required")
+    pending = state in {"required", "held_pending_owner_result"}
+    candidates = [
+        item for item in payload.get("owner_candidates") or [] if isinstance(item, dict)
+    ][:8]
+    inspected: list[dict[str, Any]] = []
+    eligible: list[dict[str, Any]] = []
+    revision_id = str(recomputation.get("revision_id") or revision.get("revision_id") or "")
+    corrected_text = str(revision.get("corrected_text") or "").strip()
+    for candidate in candidates:
+        source_id = str(candidate.get("source_id") or candidate.get("owner_id") or "")
+        text = truncate(str(candidate.get("response_seed") or candidate.get("text") or ""), 5000).strip()
+        operations = {
+            str(item).strip().lower()
+            for item in candidate.get("supported_operations") or []
+            if str(item).strip()
+        }
+        candidate_revision_id = str(candidate.get("revision_id") or "")
+        consumed_revision_text = truncate(
+            str(candidate.get("consumed_revision_text") or ""), 1200
+        ).strip()
+        general_owner = candidate.get("legacy_fixture_compatibility") is not True
+        typed_owner_result = candidate.get("typed_owner_result") is True
+        responsible_owner = candidate.get("responsible_owner") is True
+        current_turn_inputs_accounted_for = (
+            candidate.get("current_turn_inputs_accounted_for") is True
+        )
+        matches_revision = bool(revision_id and candidate_revision_id == revision_id)
+        revision_input_accounted_for = _revision_input_accounted_for(
+            corrected_text,
+            consumed_revision_text,
+            text,
+        )
+        accepted = bool(
+            pending
+            and source_id
+            and text
+            and "correction" in operations
+            and general_owner
+            and typed_owner_result
+            and responsible_owner
+            and current_turn_inputs_accounted_for
+            and matches_revision
+            and revision_input_accounted_for
+        )
+        receipt = {
+            "source_id": source_id,
+            "has_visible_result": bool(text),
+            "supported_operations": sorted(operations),
+            "general_owner": general_owner,
+            "typed_owner_result": typed_owner_result,
+            "responsible_owner": responsible_owner,
+            "current_turn_inputs_accounted_for": current_turn_inputs_accounted_for,
+            "matches_active_revision": matches_revision,
+            "consumed_revision_text": consumed_revision_text,
+            "revision_input_accounted_for": revision_input_accounted_for,
+            "accepted": accepted,
+        }
+        inspected.append(receipt)
+        if accepted:
+            eligible.append({**candidate, "_text": text, "_receipt": receipt})
+
+    selected = eligible[0] if eligible else {}
+    if not pending:
+        status = "session_revision_completion_not_required"
+        reason = "no dependent current-session result is awaiting recomputation"
+    elif selected:
+        status = "session_revision_owner_result_ready"
+        reason = "one responsible owner recomputed the active revision"
+    else:
+        status = "session_revision_owner_result_held"
+        reason = "no typed owner result recomputed the active revision"
+    return _with_guards(
+        {
+            "status": status,
+            "version": "v1_typed_revision_owner_completion",
+            "pending": pending,
+            "revision_id": revision_id,
+            "recomputation_state": state,
+            "selected_owner_id": str(
+                selected.get("source_id") or selected.get("owner_id") or ""
+            ),
+            "response_seed": str(selected.get("_text") or ""),
+            "owner_result_ready": bool(selected),
+            "candidate_receipts": inspected,
+            "reason": reason,
+            "maximum_owner_recompute_passes": 1,
+            "previous_answer_replay_is_recomputation": False,
+            "legacy_fixture_is_general_completion_evidence": False,
+            "ordinary_wrongness_is_failure": False,
+            "generates_answers": False,
+            "current_session_only": True,
             "review_status": "status_only",
             "provenance_boundary": SESSION_PROPOSITION_BOUNDARY,
         }
@@ -153,7 +269,15 @@ def prepare_session_proposition_revision(
     active = [item for item in propositions if str(item.get("status") or "") in _ACTIVE_STATES]
     matched = [item for item in active if str(item.get("id") or "") in explicit_ids]
     if not matched:
-        matched = _match_targets(active, replaced=replaced, target=target)
+        matched = _match_targets(
+            active,
+            replaced=replaced,
+            target=target,
+            prefer_visible_basis=bool(
+                correction.get("replacement_pair_extracted") is True
+                or (corrected and replaced)
+            ),
+        )
 
     # Older sessions may predate the ledger. Preserve the visible prior claim
     # as ancestry so the first correction after an upgrade is still inspectable.
@@ -291,6 +415,7 @@ def record_visible_session_propositions(
     thread_id = str(payload.get("thread_id") or "")
     candidate = truncate(str(payload.get("candidate_text") or ""), 5000).strip()
     operations = _dict(payload.get("answer_operations"))
+    revision_completion = _dict(payload.get("session_revision_completion"))
     coverage = _dict(payload.get("coverage_evaluation"))
     completed = [
         item
@@ -318,9 +443,18 @@ def record_visible_session_propositions(
         (item for item in completed if str(item.get("operation") or "") == "correction"),
         {},
     )
+    legacy_compatibility_result = bool(
+        correction_result.get("legacy_fixture_compatibility") is True
+    )
     visible_complete = bool(candidate and coverage.get("all_required_addressed") is True)
+    typed_revision_owner_ready = bool(
+        revision_completion.get("pending") is not True
+        or revision_completion.get("owner_result_ready") is True
+    )
     if recomputation.get("state") == "required":
-        if correction_result and visible_complete:
+        if correction_result and visible_complete and (
+            typed_revision_owner_ready or legacy_compatibility_result
+        ):
             revised_id = str(recomputation.get("revised_proposition_id") or "")
             recomputed = _proposition(
                 text=candidate,
@@ -338,20 +472,32 @@ def record_visible_session_propositions(
             recomputation = {
                 **recomputation,
                 "state": "completed",
-                "reason": "the responsible owner result was visibly realized once",
+                "reason": (
+                    "a historical compatibility result was visibly realized for this exact case without proving general revision capability"
+                    if legacy_compatibility_result and not typed_revision_owner_ready
+                    else "the responsible owner result was visibly realized once"
+                ),
                 "owner_result_received": True,
                 "visible_recomputation_received": True,
                 "recomputed_proposition_id": recomputed["id"],
+                "general_capability_evidence_eligible": bool(
+                    typed_revision_owner_ready and not legacy_compatibility_result
+                ),
+                "legacy_fixture_compatibility_used": legacy_compatibility_result,
             }
         else:
             recomputation = {
                 **recomputation,
                 "state": "held_pending_owner_result",
                 "reason": (
-                    "the corrected result was not visibly completed by its responsible owner"
+                    "the visible correction result did not prove that its owner consumed the active revised premise"
+                    if revision_completion.get("pending") is True
+                    and revision_completion.get("owner_result_ready") is not True
+                    else "the corrected result was not visibly completed by its responsible owner"
                 ),
                 "owner_result_received": bool(correction_result),
                 "visible_recomputation_received": visible_complete,
+                "typed_revision_owner_ready": typed_revision_owner_ready,
             }
 
     if candidate and not (correction_result and recomputation.get("state") == "completed"):
@@ -425,22 +571,36 @@ def _match_targets(
     *,
     replaced: str,
     target: str,
+    prefer_visible_basis: bool = False,
 ) -> list[dict[str, Any]]:
     needles = [value for value in (replaced, target) if value and value != "the affected claim"]
     if not needles:
         return []
-    ranked: list[tuple[int, int, dict[str, Any]]] = []
+    ranked: list[tuple[int, int, int, dict[str, Any]]] = []
     for index, item in enumerate(propositions):
         text = str(item.get("text") or "")
         score = max((_text_match_score(text, needle) for needle in needles), default=0)
         if score:
-            ranked.append((score, index, item))
+            basis_priority = int(
+                prefer_visible_basis
+                and str(item.get("kind") or "")
+                in {
+                    "premise", "observation", "source_statement", "claim",
+                    "relation", "condition", "constraint", "correction",
+                }
+            )
+            ranked.append((score, basis_priority, index, item))
     if not ranked:
         return []
-    best = max(score for score, _, _ in ranked)
+    best = max((score, basis_priority) for score, basis_priority, _, _ in ranked)
     # Prefer the most recent equally strong visible target. A correction should
     # not silently rewrite every earlier mention of the same word.
-    return [max((entry for entry in ranked if entry[0] == best), key=lambda entry: entry[1])[2]]
+    return [
+        max(
+            (entry for entry in ranked if entry[:2] == best),
+            key=lambda entry: entry[2],
+        )[3]
+    ]
 
 
 def _text_match_score(text: str, needle: str) -> int:
@@ -455,6 +615,41 @@ def _text_match_score(text: str, needle: str) -> int:
     terms = set(wanted.split())
     overlap = len(terms & set(haystack.split()))
     return int(60 * overlap / max(1, len(terms))) if overlap else 0
+
+
+def _revision_input_accounted_for(
+    corrected_text: str,
+    consumed_text: str,
+    response_text: str,
+) -> bool:
+    """Require the owner result to consume content from the revised premise."""
+
+    stop = {
+        "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
+        "from", "has", "have", "i", "in", "is", "it", "most", "not", "of",
+        "on", "or", "still", "that", "the", "this", "to", "we", "what",
+        "which", "with", "you", "your", "actually", "correction", "small",
+    }
+
+    def terms(value: str) -> set[str]:
+        return {
+            item
+            for item in re.findall(r"[a-z0-9][a-z0-9'-]*", _normalize(value))
+            if len(item) >= 3 and item not in stop
+        }
+
+    corrected_terms = terms(corrected_text)
+    consumed_terms = terms(consumed_text)
+    response_terms = terms(response_text)
+    if not corrected_terms or not consumed_terms or not response_terms:
+        return False
+    shared = corrected_terms & consumed_terms
+    required_shared = 1 if min(len(corrected_terms), len(consumed_terms)) == 1 else 2
+    if len(shared) < required_shared:
+        return False
+    consumed_coverage = len(shared) / len(consumed_terms)
+    visible_coverage = len(consumed_terms & response_terms) / len(consumed_terms)
+    return consumed_coverage >= 0.5 and visible_coverage >= 0.5
 
 
 def _descendants(propositions: list[dict[str, Any]], roots: set[str]) -> set[str]:

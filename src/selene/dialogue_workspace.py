@@ -544,6 +544,7 @@ def record_dialogue_response(
             "response_landmarks": new_landmarks,
             "coverage_evaluation": coverage,
             "answer_operations": payload.get("answer_operations") or {},
+            "session_revision_completion": payload.get("session_revision_completion") or {},
             "claim_evidence_packet": payload.get("claim_evidence_packet") or {},
             "current_turn_fact_ledger": (
                 conversation_spine.get("current_turn_fact_ledger") or {}
@@ -1029,6 +1030,15 @@ def _correction_refinement(
     if quoted_definition:
         replaced = quoted_definition.group(1).strip(" ,.!?")
         corrected = quoted_definition.group(2).strip(" ,.!?")
+    quoted_replacement = re.search(
+        r"\bby\s+[\"'“](?P<replaced>.+?)[\"'”]\s*,?\s*"
+        r"(?:i\s+)?meant\s+(?P<corrected>.+?)(?=[.!?]|$)",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if quoted_replacement and not corrected:
+        replaced = quoted_replacement.group("replaced").strip(" ,.!?")
+        corrected = quoted_replacement.group("corrected").strip(" ,.!?")
     first = re.search(patterns[0], normalized, flags=re.IGNORECASE)
     if first and not corrected:
         corrected, replaced = first.group(1), first.group(2)
@@ -1036,6 +1046,26 @@ def _correction_refinement(
         second = re.search(patterns[1], normalized, flags=re.IGNORECASE)
         if second:
             replaced, corrected = second.group(1), second.group(2)
+    clausal_replacement = re.search(
+        r"^(?:(?:actually|correction|small correction|tiny correction)\s*[:,]?\s+)?"
+        r"(?P<corrected>[^.?!;]{2,300}?)\s*,\s*not\s+"
+        r"(?P<replaced>[^.?!;,]{1,180})(?=[.!?]|$)",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if clausal_replacement and not corrected:
+        corrected = clausal_replacement.group("corrected")
+        replaced = clausal_replacement.group("replaced")
+    instead_replacement = re.search(
+        r"^(?:(?:actually|correction|small correction|tiny correction)\s*[:,]?\s+)?"
+        r"(?P<corrected>[^.?!;]{2,300}?)\s+instead\s+of\s+"
+        r"(?P<replaced>[^.?!;,]{1,180})(?=[.!?]|$)",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if instead_replacement and not corrected:
+        corrected = instead_replacement.group("corrected")
+        replaced = instead_replacement.group("replaced")
     contextual_kind = str((contextual_follow_up or {}).get("kind") or "")
     if not corrected and contextual_kind == "meaning_correction":
         definition = re.fullmatch(r"(.{1,100}?)\s+means\s+(.{1,240}?)[.!?]?", normalized, flags=re.IGNORECASE)
@@ -1056,6 +1086,7 @@ def _correction_refinement(
         "summary": truncate(normalized, 360) if detected else "",
         "corrected_meaning": truncate(corrected.strip(" ,"), 240),
         "replaced_meaning": truncate(replaced.strip(" ,"), 240),
+        "replacement_pair_extracted": bool(corrected and replaced),
         "replaces_turn": truncate(str(previous.get("preview") or ""), 240) if detected else "",
         "scope": "current_session_refinement_only",
         "durable_memory_write": False,

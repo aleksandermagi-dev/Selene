@@ -6,6 +6,7 @@ from selene.dialogue_workspace import prepare_dialogue_turn, record_dialogue_res
 from selene.chat_intent import classify_chat_intent
 from selene.module_router import route_request
 from selene.session_proposition_ledger import (
+    coordinate_session_revision_completion,
     prepare_session_proposition_revision,
     record_visible_session_propositions,
 )
@@ -93,6 +94,57 @@ def test_revision_invalidates_only_dependents_and_preserves_unrelated_context() 
     _assert_bounded(revised)
 
 
+def test_extracted_replacement_pair_prefers_visible_premise_over_downstream_result() -> None:
+    prior = {
+        "session_id": 4,
+        "propositions": [
+            {
+                "id": "equal-groups-premise",
+                "kind": "premise",
+                "text": "The groups improved equally.",
+                "status": "active",
+                "depends_on": [],
+                "thread_id": "thread-seedlings",
+            },
+            {
+                "id": "equal-groups-result",
+                "kind": "result",
+                "text": "Neither treatment outperformed the other because the groups improved equally.",
+                "status": "active",
+                "depends_on": ["equal-groups-premise"],
+                "thread_id": "thread-seedlings",
+            },
+        ],
+        "revision_history": [],
+    }
+    revised = prepare_session_proposition_revision(
+        {
+            "session_id": 4,
+            "prior_ledger": prior,
+            "correction_refinement": {
+                "detected": True,
+                "corrected_meaning": "The fertilizer group improved more.",
+                "replaced_meaning": "The groups improved equally.",
+                "replacement_pair_extracted": True,
+            },
+            "epistemic_revision_plan": {
+                "detected": True,
+                "update_kind": "correction",
+                "target": "The groups improved equally.",
+            },
+        }
+    )
+    by_id = {item["id"]: item for item in revised["propositions"]}
+
+    assert revised["current_revision"]["matched_proposition_ids"] == [
+        "equal-groups-premise"
+    ]
+    assert by_id["equal-groups-premise"]["status"] == "superseded"
+    assert by_id["equal-groups-result"]["status"] == "invalidated"
+    assert revised["recomputation"]["state"] == "required"
+    _assert_bounded(revised)
+
+
 def test_visible_owner_result_completes_recomputation_once_without_erasing_ancestry() -> None:
     revised = _revision(_prior_ledger())
     completed = record_visible_session_propositions(
@@ -151,6 +203,88 @@ def test_revision_remains_held_when_no_owner_visibly_recomputes_the_result() -> 
     assert next_turn["status"] == "session_proposition_revision_held"
     assert next_turn["recomputation"]["state"] == "held_pending_owner_result"
     assert next_turn["recomputation"]["preserved_across_turn"] is True
+
+
+def test_revision_completion_accepts_only_owner_result_for_active_revision() -> None:
+    revised = _revision(_prior_ledger())
+    revision_id = revised["recomputation"]["revision_id"]
+    completion = coordinate_session_revision_completion(
+        {
+            "session_id": 1,
+            "session_proposition_ledger": revised,
+            "owner_candidates": [
+                {
+                    "source_id": "current_session_facts",
+                    "response_seed": "The evening is cool, so cocoa now fits the recommendation.",
+                    "supported_operations": ["correction", "choice"],
+                    "revision_id": revision_id,
+                    "consumed_revision_text": "The evening is cool.",
+                    "legacy_fixture_compatibility": False,
+                    "typed_owner_result": True,
+                    "responsible_owner": True,
+                    "current_turn_inputs_accounted_for": True,
+                }
+            ],
+        }
+    )
+
+    assert completion["status"] == "session_revision_owner_result_ready"
+    assert completion["owner_result_ready"] is True
+    assert completion["selected_owner_id"] == "current_session_facts"
+    assert completion["revision_id"] == revision_id
+    assert completion["maximum_owner_recompute_passes"] == 1
+    assert completion["previous_answer_replay_is_recomputation"] is False
+    assert completion["candidate_receipts"][0]["revision_input_accounted_for"] is True
+    _assert_bounded(completion)
+
+
+def test_revision_completion_holds_stale_fixture_or_mismatched_owner_result() -> None:
+    revised = _revision(_prior_ledger())
+    completion = coordinate_session_revision_completion(
+        {
+            "session_id": 1,
+            "session_proposition_ledger": revised,
+            "owner_candidates": [
+                {
+                    "source_id": "old_answer_replay",
+                    "response_seed": "Tea fits the warm evening.",
+                    "supported_operations": ["correction"],
+                    "revision_id": "a-different-revision",
+                },
+                {
+                    "source_id": "legacy_fixture",
+                    "response_seed": "A scenario-specific corrected answer.",
+                    "supported_operations": ["correction"],
+                    "revision_id": revised["recomputation"]["revision_id"],
+                    "legacy_fixture_compatibility": True,
+                },
+                {
+                    "source_id": "generic_change_notice",
+                    "response_seed": "The latest condition changed.",
+                    "supported_operations": ["correction"],
+                    "revision_id": revised["recomputation"]["revision_id"],
+                    "consumed_revision_text": "the latest condition changed",
+                    "legacy_fixture_compatibility": False,
+                    "typed_owner_result": True,
+                    "responsible_owner": True,
+                    "current_turn_inputs_accounted_for": True,
+                },
+            ],
+        }
+    )
+
+    assert completion["status"] == "session_revision_owner_result_held"
+    assert completion["owner_result_ready"] is False
+    assert completion["response_seed"] == ""
+    assert not any(item["accepted"] for item in completion["candidate_receipts"])
+    generic_receipt = next(
+        item
+        for item in completion["candidate_receipts"]
+        if item["source_id"] == "generic_change_notice"
+    )
+    assert generic_receipt["matches_active_revision"] is True
+    assert generic_receipt["revision_input_accounted_for"] is False
+    _assert_bounded(completion)
 
 
 def test_real_topic_transition_expires_pending_revision_to_inspectable_ancestry() -> None:
@@ -276,6 +410,10 @@ def test_dialogue_workspace_persists_session_ledger_without_memory_write(tmp_pat
     )
 
     ledger = corrected["session_proposition_ledger"]
+    refinement = corrected["pragmatics"]["correction_refinement"]
+    assert refinement["corrected_meaning"] == "the evening is cool"
+    assert refinement["replaced_meaning"] == "the evening is warm"
+    assert refinement["replacement_pair_extracted"] is True
     assert recorded["session_proposition_ledger"]["active_proposition_ids"]
     assert any(
         item.get("source") == "current_visible_user_turn"
@@ -285,6 +423,48 @@ def test_dialogue_workspace_persists_session_ledger_without_memory_write(tmp_pat
     assert ledger["recomputation"]["invalidated_result_ids"]
     assert ledger["durable_memory_write"] is False
     assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+
+
+def test_dialogue_workspace_extracts_changed_clauses_and_quoted_referents(tmp_path) -> None:
+    conn = connect(tmp_path / "selene.sqlite3")
+    init_db(conn)
+    session_id = int(
+        conn.execute(
+            "INSERT INTO selene_chat_sessions (title) VALUES (?) RETURNING id",
+            ("phase 5 correction grammar",),
+        ).fetchone()[0]
+    )
+    cases = [
+        (
+            "Small correction: the fertilizer group improved more, not equally. Update the conclusion.",
+            "the fertilizer group improved more",
+            "equally",
+        ),
+        (
+            "Correction: by 'it stopped' I meant the monitor stopped flashing. Update the observation.",
+            "the monitor stopped flashing",
+            "it stopped",
+        ),
+    ]
+
+    for text, corrected_meaning, replaced_meaning in cases:
+        prepared = prepare_dialogue_turn(
+            conn,
+            {
+                "session_id": session_id,
+                "text": text,
+                "intent_decision": classify_chat_intent(text),
+                "conversation_events": [
+                    {"role": "selene", "preview": "A visible prior answer."}
+                ],
+            },
+        )
+        refinement = prepared["pragmatics"]["correction_refinement"]
+        assert refinement["detected"] is True
+        assert refinement["corrected_meaning"] == corrected_meaning
+        assert refinement["replaced_meaning"] == replaced_meaning
+        assert refinement["replacement_pair_extracted"] is True
+        _assert_bounded(prepared["session_proposition_ledger"])
 
 
 def test_continuity_excludes_stale_landmark_and_rebinds_revised_reference() -> None:

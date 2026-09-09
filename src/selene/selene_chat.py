@@ -108,6 +108,7 @@ from .remaining_runtime import build_goal_responsibility_packet
 from .self_state import build_self_state_packet, inactive_self_state_packet
 from .speaker_envelope import build_speaker_envelope
 from .selective_formation_braid import build_selective_formation_braid
+from .session_proposition_ledger import coordinate_session_revision_completion
 from .structural_discovery import build_structural_discovery_packet
 from .supported_semantics import build_text_supported_semantic_packet
 from .test_impact_law import (
@@ -668,17 +669,91 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         else {}
     )
     session_decision_reply = str(session_decision_context.get("response_seed") or "")
+    session_decision_correction_fields = (
+        (session_decision_context.get("operation_fields") or {}).get("correction")
+        if isinstance(session_decision_context.get("operation_fields"), dict)
+        and isinstance(
+            (session_decision_context.get("operation_fields") or {}).get("correction"),
+            dict,
+        )
+        else {}
+    )
+    session_proposition_ledger = (
+        conversation_spine.get("session_proposition_ledger")
+        if isinstance(conversation_spine.get("session_proposition_ledger"), dict)
+        else {}
+    )
+    session_recomputation = (
+        session_proposition_ledger.get("recomputation")
+        if isinstance(session_proposition_ledger.get("recomputation"), dict)
+        else {}
+    )
+    active_session_revision_id = str(
+        session_recomputation.get("revision_id")
+        or (
+            session_proposition_ledger.get("current_revision")
+            if isinstance(session_proposition_ledger.get("current_revision"), dict)
+            else {}
+        ).get("revision_id")
+        or ""
+    )
+    session_revision_completion = coordinate_session_revision_completion(
+        {
+            "session_id": session_id,
+            "session_proposition_ledger": session_proposition_ledger,
+            "owner_candidates": [
+                {
+                    "source_id": "current_session_facts",
+                    "response_seed": session_decision_reply,
+                    "supported_operations": session_decision_context.get("supported_operations") or [],
+                    "revision_id": active_session_revision_id,
+                    "consumed_revision_text": session_decision_correction_fields.get("corrected_input") or "",
+                    "legacy_fixture_compatibility": False,
+                    "typed_owner_result": True,
+                    "responsible_owner": True,
+                    "current_turn_inputs_accounted_for": True,
+                }
+            ]
+            if session_decision_reply
+            else [],
+        }
+    )
+    if (
+        session_revision_completion.get("pending") is True
+        and session_revision_completion.get("owner_result_ready") is not True
+        and "correction" in (session_decision_context.get("supported_operations") or [])
+    ):
+        # A generic response that noticed a change but did not consume the
+        # changed premise cannot outrank a more precise current owner or close
+        # the revision as though it had recomputed the result.
+        session_decision_reply = ""
     if session_decision_reply:
         session_fact_reply = session_decision_reply
         epistemic_revision_reply = ""
-    correction_reconstruction_reply = (
-        ""
-        if session_decision_reply
-        else _correction_reconstruction_response_seed(
+    answer_substance = (
+        intelligence_support.get("answer_substance")
+        if isinstance(intelligence_support.get("answer_substance"), dict)
+        else {}
+    )
+    compatibility_receipt = (
+        answer_substance.get("compatibility_receipt")
+        if isinstance(answer_substance.get("compatibility_receipt"), dict)
+        else {}
+    )
+    legacy_correction_reconstruction_reply = (
+        _legacy_correction_fixture_response_seed(
             meaning_text,
             intent_decision=intent_decision,
             epistemic_revision=epistemic_revision,
         )
+        if session_revision_completion.get("owner_result_ready") is not True
+        and compatibility_receipt.get("legacy_fixture_compatibility") is True
+        else ""
+    )
+    correction_reconstruction_reply = (
+        str(session_revision_completion.get("response_seed") or "")
+        if session_revision_completion.get("owner_result_ready") is True
+        else legacy_correction_reconstruction_reply
     )
     if correction_reconstruction_reply:
         session_fact_reply = correction_reconstruction_reply
@@ -1075,6 +1150,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "epistemic_revision_plan": epistemic_revision,
             "epistemic_revision_reply": epistemic_revision_reply,
             "correction_reconstruction_reply": correction_reconstruction_reply,
+            "session_proposition_ledger": session_proposition_ledger,
+            "session_revision_completion": session_revision_completion,
+            "legacy_correction_reconstruction": bool(
+                legacy_correction_reconstruction_reply
+            ),
             "current_session_summary": {
                 "points": [
                     str(item.get("summary") or item.get("text") or "")
@@ -1104,6 +1184,8 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                                 )
                             ),
                             "operation_fields": session_decision_context.get("operation_fields") or {},
+                            "revision_id": active_session_revision_id,
+                            "session_revision_completion": session_revision_completion,
                             "source_refs": session_decision_context.get("source_refs") or [
                                 "conversation_spine:visible_session_decision"
                             ],
@@ -2527,6 +2609,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "structural_discovery": structural_discovery,
             "exploratory_reasoning": exploratory_reasoning,
             "answer_operations": answer_operations,
+            "session_revision_completion": session_revision_completion,
             "diagnostic_context": diagnostic_context,
             "source_refs": [
                 *_json_list(diagnostic_context.get("source_refs")),
@@ -2633,6 +2716,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "conversation_context": conversation_context,
         "dialogue_workspace": dialogue_workspace,
         "session_proposition_ledger": dialogue_workspace.get("session_proposition_ledger") or {},
+        "session_revision_completion": session_revision_completion,
         "response_coverage": response_coverage,
         "conversation_repair": conversation_repair,
         "visible_speech_seed": visible_speech_seed,
@@ -2779,6 +2863,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_context": conversation_context,
             "dialogue_workspace": dialogue_workspace,
             "session_proposition_ledger": dialogue_workspace.get("session_proposition_ledger") or {},
+            "session_revision_completion": session_revision_completion,
             "response_coverage": response_coverage,
             "conversation_repair": conversation_repair,
             "visible_speech_seed": visible_speech_seed,
@@ -3750,16 +3835,17 @@ def _figurative_response_seed(packet: dict[str, Any]) -> str:
     return ""
 
 
-def _correction_reconstruction_response_seed(
+def _legacy_correction_fixture_response_seed(
     prompt: str,
     *,
     intent_decision: dict[str, Any] | None = None,
     epistemic_revision: dict[str, Any] | None = None,
 ) -> str:
-    """Apply a local correction to the answer that is still due.
+    """Preserve three historical correction fixtures until general owners replace them.
 
-    The result remains current-session speech. It neither stores a profile nor
-    treats ordinary correction as failure.
+    The caller exposes these results as compatibility-only. They may preserve
+    an already-tested visible behavior but cannot establish general revision
+    capability or outrank a typed owner result for the active revision.
     """
 
     intent = intent_decision if isinstance(intent_decision, dict) else {}
@@ -5009,14 +5095,6 @@ def _preserve_bounded_conversation_invariants(
             return _selene_label_candidate(seed)
     if source_id == "current_session_facts":
         if seed.startswith(("The settled facts are:", "The settled points are:")) and numbered:
-            return _selene_label_candidate(seed)
-        if (
-            seed.startswith(("I understand the correction.", "That correction"))
-            and any(
-                marker in seed.lower()
-                for marker in ("hot tea", "screen stopped flickering", "corrected three fields")
-            )
-        ):
             return _selene_label_candidate(seed)
         seed = str(content_seed or "").strip()
         seed_terms = {

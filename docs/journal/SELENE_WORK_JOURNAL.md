@@ -5142,3 +5142,37 @@ resident mutation occurred.
 **Next:** Cultivation Phase 5 — complete correction/revision handoff by
 recomputing a still-open answer from updated active-session state. Keep the
 seven established Chat failures separate unless directly implicated.
+
+### 2026-09-09 — Cultivation Phase 5 proves correction/revision completion
+
+**Implementation:** Dialogue Workspace now extracts common clausal and quoted
+replacement pairs. The Session Proposition Ledger prefers their visible basis
+over an equally similar downstream result, then coordinates one typed owner
+recomputation for the exact active revision. Completion requires responsible-
+owner status, current-turn input accounting, correction support, an exact
+revision id, and visible consumption of the changed premise.
+
+**Cultivation finding:** A first focused attempt showed that “the latest
+condition changed” could appear recomputed without actually consuming “rain.”
+The owner handshake now rejects that false completion. Prior-answer replay,
+revision-id mismatch, and a legacy scenario fixture likewise cannot prove the
+general capability.
+
+**Compatibility:** The three historical drink, screen, and drawer correction
+fixtures remain available until their general semantic owners are proved.
+Their receipts now mark them as compatibility-only and ineligible as general
+capability evidence. A changed-noun swift/delicate versus steady/robust route
+proved the general owner path independently.
+
+**Evidence:** 22 focused revision checks, 117 affected-owner checks, and 126
+full Chat checks passed. The six remaining Chat failures are the known later-
+phase gaps; the correction failure is closed. Resident integrity and counts
+were unchanged, and the database remained byte-for-byte identical at
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+No live Q&A, teaching, package, install, or resident mutation occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_5_REVISION_COMPLETION_20260909.md`.
+
+**Next:** Cultivation Phase 6 — type humor, acknowledgement, recap, and
+closure ownership through their existing conversational owners.
