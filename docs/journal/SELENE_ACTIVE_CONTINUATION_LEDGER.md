@@ -1,13 +1,14 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-09
+Last refreshed: 2026-09-12
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
-installed and verified; conversation Cultivation Phases 1 through 5 now supply
+installed and verified; conversation Cultivation Phases 1 through 7 now supply
 shared visible propositions, proved current answer ownership, learning-gap
 eligibility, typed approved-knowledge relevance, and current-session revision
-completion from the changed premise
+completion from the changed premise, typed participation ownership, and
+whole-request semantic arbitration
 
 ## Purpose
 
@@ -20,6 +21,10 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest conversation Cultivation Phase 7 checkpoint: `3eb88e1`
+  (`Complete cultivation phase 7 semantic arbitration`)
+- Latest conversation Cultivation Phase 6 checkpoint: `6cd72a0`
+  (`Complete cultivation phase 6 participation ownership`)
 - Latest conversation Cultivation Phase 5 checkpoint: `9b03043`
   (`Complete current-session revisions`)
 - Latest conversation Cultivation Phase 4 checkpoint: `d587b57`
@@ -101,8 +106,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  thirty-six commits ahead of `origin/evidence`; this ledger refresh is
-  expected to make that thirty-seven. Confirm again before any later commit or
+  forty commits ahead of `origin/evidence`; this ledger refresh is expected to
+  make that forty-one. Confirm again before any later commit or
   push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
@@ -1136,6 +1141,31 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_6_TYPED_PARTICIPATION_20260912.md`.
 
+## Conversation Cultivation Phase 7 — Semantic Coverage and Arbitration
+
+- Checkpoint `3eb88e1` completes semantic coverage and arbitration through the
+  existing Visible Speech, Response Coverage, Semantic Fulfillment, Session
+  Decision, and Pragmatic Planning owners.
+- Candidate ranking now considers whole-request completion plus visibly
+  addressed and resolved obligation counts before claimed obligation ids.
+- A completed current-owner result receives priority only when its operation
+  meaning is present in the candidate's visible speech. Status and ownership
+  metadata alone are not proof.
+- Bare option labels remain available for reference and continuity but cannot
+  manufacture tautological comparison findings or suppress a richer owner.
+- `reversibility/reversible` and `reliability/reliable` remain equivalent for
+  visible semantic evidence. Structured named recap sections no longer gain a
+  duplicate aggregate summary obligation.
+- Verification: 85 focused owner, coverage, planner, and exact Chat-path checks
+  passed. The five Phase 7 cases from the previous six-case set pass. The sole
+  remaining case, internal `corrected meaning` wording, is explicitly deferred
+  to Phase 8 shared realization cleanup.
+- Compilation and diff verification passed. Broad suites, resident checks,
+  build, packaging, reinstall, and live Q&A remain deferred to Phase 11. No
+  resident or external state changed.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1178,6 +1208,7 @@ Before further production work, read completely:
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md`
 - `docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_6_TYPED_PARTICIPATION_20260912.md`
+- `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -1256,14 +1287,21 @@ Acknowledgement, requested humor, recap, and closure now carry typed ownership
 through their existing NLO, social-language, Pragmatic Continuity, Answer
 Operations, Semantic Fulfillment, and final visible-speech handoffs.
 
-The exact resume point is Phase 7: semantic coverage and arbitration. Require
-the released candidate to preserve the active subject and entities and to
-perform the requested operation; fluent lexical overlap alone is not enough.
-Begin from the existing Semantic Fulfillment, Response Coverage, Answer
-Operations, proposition normalization, and Visible Speech owners. Keep the
-six recorded Chat failures as the bounded working set and trace their common
-handoffs before changing behavior. Do not create a monolithic conversation
-organ or add scenario-specific answer phrases.
+Conversation Cultivation Phase 7 is complete and checkpointed at `3eb88e1`.
+Visible Speech now ranks candidate meaning by whole-request Response Coverage,
+and the current-owner gate requires Semantic Fulfillment proof on the visible
+surface. Bare labels cannot pose as comparison findings, and structured recap
+sections no longer create a redundant summary obligation. Five bounded Phase
+7 stabilization cases pass.
+
+The exact resume point is Phase 8: shared realization cleanup. Trace the
+remaining current-session correction surface that exposes `corrected meaning`,
+then inspect the same shared release path for punctuation/symbol preservation,
+malformed subjects, and stale fallback contamination. Repair the common
+realization owner rather than filtering individual phrases. Preserve supported
+meaning, source and epistemic status, conversational expression freedom, and
+typed operation evidence. Do not create a monolithic conversation organ or add
+scenario-specific answer phrases.
 The 54-kind compatibility inventory remains the removal ledger: replace a
 scenario handler only after changed-entity and paraphrase transfer is proved.
 
@@ -1273,10 +1311,11 @@ confirmation, G13-G15 teaching, the earlier repaired learning replay, or any
 further broad Q&A before repair. Use focused synthetic owner checks first and
 one short ordinary end-to-end conversation only if source evidence cannot
 establish the handoff.
-Keep the six reproduced Chat failures as a separate bounded stabilization
-batch: mixed-turn recovery-source ownership, long-request Answer Engine
-precedence, bare-why specificity, synthetic multi-operation coverage, Venn
-semantics, and older-thread return. The downloaded source corpora and private
+Keep the remaining shared-realization case separate from the five Phase 7
+cases now closed in bounded reproduction. Heavy Chat and repository suites,
+resident stabilization, frontend build, packaging, reinstall, and live Q&A
+remain deferred to Phase 11 unless Phase 8 reveals a direct safety or
+cross-system integrity concern. The downloaded source corpora and private
 20-interaction review stay ignored and unavailable to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,
