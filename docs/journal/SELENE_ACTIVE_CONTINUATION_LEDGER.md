@@ -1105,6 +1105,8 @@ git log -5 --oneline
 
 ## Conversation Cultivation Phase 6 — Typed Participation Ownership
 
+- Checkpoint `6cd72a0` completes typed participation ownership through the
+  existing conversational expression and release owners.
 - Pragmatic Planning now types gratitude/affirmation/reassurance
   acknowledgement, current-session recap, and natural closure obligations.
 - Conversation Spine preserves participation metadata. Existing NLO,
@@ -1248,6 +1250,11 @@ Correction replacement pairs now target their visible basis; a general typed
 owner must match the exact revision and visibly consume the changed premise
 before its answer completes recomputation. The historical drink, screen, and
 drawer paths remain explicitly compatibility-only.
+
+Conversation Cultivation Phase 6 is complete and checkpointed at `6cd72a0`.
+Acknowledgement, requested humor, recap, and closure now carry typed ownership
+through their existing NLO, social-language, Pragmatic Continuity, Answer
+Operations, Semantic Fulfillment, and final visible-speech handoffs.
 
 The exact resume point is Phase 7: semantic coverage and arbitration. Require
 the released candidate to preserve the active subject and entities and to
