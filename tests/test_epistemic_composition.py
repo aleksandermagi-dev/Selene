@@ -34,6 +34,7 @@ def test_status_preserves_known_parts_and_open_ended_exploration():
     assert result["unknown_part_may_not_downgrade_supported_part"] is True
     assert result["prediction_requires_future_fact"] is False
     assert result["hypothesis_requires_prior_proof"] is False
+    assert "expression_pending" in result["part_states"]
     _assert_locked(result)
 
 
@@ -157,6 +158,48 @@ def test_unlabeled_prediction_is_held_as_not_release_ready_without_erasing_it():
     assert result["parts"][0]["visible_label_present"] is False
     assert result["release_ready"] is False
     assert result["content_seed"] == "The temperature rises next."
+    _assert_locked(result)
+
+
+def test_pending_participation_waits_for_expression_without_becoming_missing_knowledge():
+    result = compose_epistemic_answer(
+        {
+            "prompt": "Summarize the plan, then let the conversation end naturally.",
+            "content_seed": "1. Keep the charging cable reachable. 2. Bundle the rest.",
+            "response_obligations": [
+                _obligation("summary", "session_summary", "Summarize the plan."),
+                _obligation("closure", "closure", "Let the conversation end naturally."),
+            ],
+            "answer_operations": {
+                "results": [
+                    {
+                        "obligation_id": "summary",
+                        "operation": "summary",
+                        "status": "completed",
+                        "expression_seed": (
+                            "1. Keep the charging cable reachable. 2. Bundle the rest."
+                        ),
+                    },
+                    {
+                        "obligation_id": "closure",
+                        "operation": "closure",
+                        "status": "pending_realization",
+                        "expression_seed": "",
+                    },
+                ]
+            },
+            "source_id": "current_session_summary",
+            "source_class": "conversation",
+        }
+    )
+
+    parts = {item["obligation_id"]: item for item in result["parts"]}
+    assert parts["summary"]["epistemic_state"] != "missing_ground"
+    assert parts["closure"]["epistemic_state"] == "expression_pending"
+    assert parts["closure"]["addressed"] is True
+    assert parts["closure"]["unsupported"] is False
+    assert result["missing_part_count"] == 0
+    assert "support for this requested part" not in result["content_seed"]
     _assert_locked(result)
 
 

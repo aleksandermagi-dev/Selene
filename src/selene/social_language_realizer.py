@@ -469,6 +469,30 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
     payload = payload or {}
     intent = str(payload.get("intent") or "")
     acts = list(SOCIAL_INTENT_ACTS.get(intent, ()))
+    participation_intents = list(
+        dict.fromkeys(
+            str(item)
+            for item in payload.get("participation_intents") or []
+            if str(item)
+        )
+    )
+    participation_language_intents = {
+        "gratitude": "receive_gratitude",
+        "affirmation": "acknowledge_shared_ground",
+        "reassurance_received": "receive_reassurance",
+        "farewell": "close_with_continuity",
+    }
+    for participation_intent in participation_intents:
+        acts.extend(
+            SOCIAL_INTENT_ACTS.get(
+                participation_language_intents.get(
+                    participation_intent,
+                    participation_intent,
+                ),
+                (),
+            )
+        )
+    acts = list(dict.fromkeys(acts))
     prompt = " ".join(str(payload.get("prompt") or "").split())
     content_seed = " ".join(str(payload.get("content_seed") or "").split())
     corrected_meaning = " ".join(str(payload.get("corrected_meaning") or "").split())
@@ -538,6 +562,10 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         "status": "social_act_plan_ready" if acts else "social_act_plan_not_applicable",
         "version": "v3_compositional_familiar_social_expression",
         "intent": intent,
+        "participation_intents": participation_intents,
+        "supplemental_participation_acts": bool(
+            participation_intents and intent not in SOCIAL_INTENT_ACTS
+        ),
         "acts": [
             {
                 "act": act,

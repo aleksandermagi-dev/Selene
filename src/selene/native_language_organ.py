@@ -1891,6 +1891,18 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
     social_act_plan = build_social_act_plan(
         {
             "intent": intent,
+            "participation_intents": [
+                str(item.get("participation_act") or item.get("dialogue_act") or "")
+                for item in pragmatic_plan.get("response_obligations") or []
+                if isinstance(item, dict)
+                and str(item.get("kind") or "")
+                in {"acknowledgement", "closure"}
+                and str(
+                    item.get("participation_act")
+                    or item.get("dialogue_act")
+                    or ""
+                )
+            ],
             "prompt": prompt,
             "content_seed": meaning.get("content_seed") or "",
             "corrected_meaning": corrected_meaning,
@@ -2097,11 +2109,15 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     if ellipsis.get("detected") is True and ellipsis.get("confidence") == "unresolved" and not seed:
         return "I can follow the comparison, but I cannot tell which other item you mean yet. Which one are you pointing to?"
 
-    if meaning.get("complete_current_session_decision") is True and meaning.get("content_seed"):
+    social_plan = plan.get("social_act_plan") if isinstance(plan.get("social_act_plan"), dict) else {}
+    if (
+        meaning.get("complete_current_session_decision") is True
+        and meaning.get("content_seed")
+        and not social_plan.get("acts")
+    ):
         return _clean_seed(str(meaning.get("content_seed") or ""))
 
-    if intent in SOCIAL_INTENT_ACTS:
-        social_plan = plan.get("social_act_plan") if isinstance(plan.get("social_act_plan"), dict) else {}
+    if intent in SOCIAL_INTENT_ACTS or social_plan.get("acts"):
         social_result = realize_social_act_plan(
             social_plan,
             prompt=prompt,
@@ -2208,7 +2224,7 @@ def _realize_sentences(prompt: str, meaning: dict[str, Any], plan: dict[str, Any
     return str(content_light_result.get("candidate_text") or "I hear you.")
 
 
-def _compose_mixed_content(acknowledgement: str, seed: str, pragmatic_plan: dict[str, Any]) -> str:
+def _compose_mixed_content(social_text: str, seed: str, pragmatic_plan: dict[str, Any]) -> str:
     content_obligations = [
         item
         for item in pragmatic_plan.get("response_obligations") or []
@@ -2218,10 +2234,29 @@ def _compose_mixed_content(acknowledgement: str, seed: str, pragmatic_plan: dict
     ]
     clean_seed = _clean_seed(seed)
     if not content_obligations or not clean_seed:
-        return acknowledgement
-    if clean_seed.lower() in acknowledgement.lower():
-        return acknowledgement
-    return f"{acknowledgement}\n\n{clean_seed}"
+        return social_text
+    if clean_seed.lower() in social_text.lower():
+        return social_text
+    participation_acts = {
+        str(
+            item.get("participation_act")
+            or item.get("dialogue_act")
+            or item.get("kind")
+            or ""
+        )
+        for item in content_obligations
+    }
+    acknowledgement_acts = {
+        "acknowledgement",
+        "affirmation",
+        "gratitude",
+        "reassurance_received",
+    }
+    if "farewell" in participation_acts and not (
+        participation_acts & acknowledgement_acts
+    ):
+        return f"{clean_seed}\n\n{social_text}"
+    return f"{social_text}\n\n{clean_seed}"
 
 
 def _revise_candidate(candidate: str, meaning: dict[str, Any], plan: dict[str, Any]) -> tuple[str, dict[str, Any]]:

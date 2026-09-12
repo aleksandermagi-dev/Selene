@@ -16,6 +16,10 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Conversation Cultivation Phase 6 — Typed Participation Ownership — September 12, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_6_TYPED_PARTICIPATION_20260912.md)
+  — types acknowledgement, requested humor, recap, and natural closure through
+  their existing owners, preserves expression-pending as distinct from missing
+  knowledge, and verifies the act again at the final visible-speech boundary.
 - [Post-Phase-8 Reinstall Q&A and Repair Closure — September 4, 2026](SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md)
   — preserves the original observation-only reinstall evidence and records the
   focused closure of all 14 findings through two exact disposable Chat

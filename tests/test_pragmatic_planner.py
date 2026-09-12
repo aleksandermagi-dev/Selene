@@ -747,7 +747,7 @@ def test_natural_series_and_compound_question_become_separate_obligations():
     )
 
     assert [item["kind"] for item in series_plan["response_obligations"]] == [
-        "direct_request",
+        "session_summary",
         "direct_request",
         "choice_or_priority",
     ]
@@ -1000,6 +1000,30 @@ def test_canonical_ledger_recognizes_present_curiosity_and_natural_closure():
         obligations = build_pragmatic_plan({"prompt": prompt})["response_obligations"]
         assert [item["kind"] for item in obligations] == ["closure"]
         assert obligations[0]["requested_response_functions"] == ["closure"]
+
+
+def test_canonical_ledger_types_acknowledgement_from_dialogue_act_without_inventing_content():
+    plan = build_pragmatic_plan(
+        {
+            "prompt": "Thank you for checking that; what changed?",
+            "intent_decision": {
+                "intent": "reasoning",
+                "dialogue_acts": ["gratitude", "question"],
+                "content_response_requested": True,
+                "reasoning_requested": True,
+            },
+        }
+    )
+
+    acknowledgement = next(
+        item
+        for item in plan["response_obligations"]
+        if item["kind"] == "acknowledgement"
+    )
+    assert acknowledgement["participation_act"] == "gratitude"
+    assert acknowledgement["requested_response_functions"] == ["acknowledgement"]
+    assert acknowledgement["responsible_owner"] == "ordinary_conversation_path"
+    assert acknowledgement["coverage_terms"] == []
 
 
 def test_parent_preference_wording_does_not_overwrite_an_explicit_comparison_child():

@@ -54,6 +54,7 @@ def epistemic_composition_status() -> dict[str, Any]:
                 "open_hypothesis",
                 "labeled_speculation",
                 "reviewed_experience_recall",
+                "expression_pending",
                 "missing_ground",
             ],
             "exploratory_reasoning_may_supply_complete_primary_part": True,
@@ -127,7 +128,7 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
     ]
     operation_by_id = {
         str(item.get("obligation_id") or ""): item
-        for item in completed_operations
+        for item in operation_results
     }
     whole_answer = compose_whole_answer(
         {
@@ -208,6 +209,9 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
         resolution = resolution_by_id.get(obligation_id, {})
         supplied = supplied_by_id.get(obligation_id, {})
         operation_result = operation_by_id.get(obligation_id, {})
+        expression_pending = (
+            str(operation_result.get("status") or "") == "pending_realization"
+        )
         units = [
             unit for unit in semantic_units
             if obligation_id in {
@@ -227,7 +231,8 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
         )
         coverage = coverage_by_id.get(obligation_id, {})
         unsupported = bool(
-            operation_result.get("status") != "completed"
+            not expression_pending
+            and operation_result.get("status") != "completed"
             and (
                 supplied.get("unsupported") is True
                 or resolution.get("unsupported") is True
@@ -235,7 +240,8 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
             )
         )
         addressed = bool(
-            operation_result.get("status") == "completed" and visible_text
+            expression_pending
+            or operation_result.get("status") == "completed" and visible_text
             or
             supplied.get("addressed") is True
             or resolution.get("added_to_answer") is True
@@ -252,7 +258,11 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
             operation_result.get("expression_source_id")
             or source_id
         )
-        state = str(supplied.get("epistemic_state") or "") or _part_state(
+        state = (
+            "expression_pending"
+            if expression_pending
+            else str(supplied.get("epistemic_state") or "")
+            or _part_state(
             prompt=prompt,
             obligation=obligation,
             text=visible_text or content_seed,
@@ -264,6 +274,7 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
                 hypothesis.get("offered") is True
                 and hypothesis.get("selected_for_answer") is True
             ),
+            )
         )
         missing_ground = str(
             supplied.get("missing_ground")
@@ -304,6 +315,7 @@ def compose_epistemic_answer(payload: dict[str, Any] | None = None) -> dict[str,
             "unknown_neighbor_changes_this_part": False,
             "typed_operation_result_used": bool(operation_result),
             "typed_operation": str(operation_result.get("operation") or ""),
+            "expression_pending": expression_pending,
         }
         parts.append(part)
         if visible_text and not whole_answer_applied:

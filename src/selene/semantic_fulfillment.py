@@ -221,7 +221,7 @@ def evaluate_operation_fulfillment(
 
     field_fit = bool(receipts and all(item["satisfied"] for item in receipts))
     if operation == "closure":
-        field_fit = _closure_realized(candidate)
+        field_fit = field_fit or _closure_realized(candidate)
     elif operation == "disagreement":
         field_fit = field_fit and _disagreement_realized(candidate)
 
@@ -233,7 +233,12 @@ def evaluate_operation_fulfillment(
         if isinstance(obligation.get("response_shape"), dict)
         else {}
     )
-    shape_receipt = _shape_receipt(candidate, response_shape, requested_count)
+    shape_surface = candidate
+    if operation == "humor" and str(fields.get("authored_humor") or "").strip():
+        # A tiny joke inside a larger multi-act reply is measured as the joke,
+        # not as every requested step or callback surrounding it.
+        shape_surface = str(fields.get("authored_humor") or "")
+    shape_receipt = _shape_receipt(shape_surface, response_shape, requested_count)
     constraint_fit = shape_receipt["satisfied"]
     condition = obligation.get("condition") if isinstance(obligation.get("condition"), dict) else {}
     condition_fit = _condition_fit(condition, fields, candidate)
@@ -338,10 +343,27 @@ def _visible_requirements(
         return [_requirement("corrected_application", application, 1)]
     if operation == "preference":
         return [_requirement("authored_preference", fields.get("authored_preference"))]
+    if operation == "acknowledgement":
+        return [
+            _requirement(
+                "visible_acknowledgement",
+                fields.get("visible_acknowledgement"),
+            )
+        ]
+    if operation == "humor":
+        return [
+            _requirement("authored_humor", fields.get("authored_humor")),
+            _requirement("subject", fields.get("subject")),
+        ]
     if operation == "summary":
         return [_requirement("points", fields.get("points"), requested_count or 1)]
     if operation == "closure":
-        return [_requirement("closure_intent", fields.get("closure_intent"))]
+        return [
+            _requirement(
+                "closure_signal",
+                fields.get("closure_signal") or fields.get("closure_intent"),
+            )
+        ]
     if operation == "creative_expression":
         if str(fields.get("fiction_status") or "") != "explicit_fictional_invention":
             return [

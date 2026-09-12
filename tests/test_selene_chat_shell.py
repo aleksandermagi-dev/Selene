@@ -81,6 +81,34 @@ def test_chat_invariant_restores_verified_conversational_surface_before_raw_scaf
     assert restored != source
 
 
+def test_chat_invariant_preserves_verified_participation_around_session_facts():
+    source = (
+        "The settled points are: 1. Keep the daily cable reachable. "
+        "2. Bundle the rest. 3. Check one clean label.\n\n"
+        "1. Keep the daily cable reachable. 2. Bundle the rest. "
+        "3. Check one clean label."
+    )
+    candidate = f"{source}\n\nUntil next time. We can pick it back up from here."
+    realization = realize_human_conversation(
+        candidate,
+        {
+            "eligible": True,
+            "profile": "mixed_epistemic_answer",
+            "contractions_allowed": True,
+        },
+    )
+
+    restored = _preserve_bounded_conversation_invariants(
+        candidate,
+        source,
+        "current_session_facts",
+        realization=realization,
+    )
+
+    assert restored == candidate
+    assert restored.endswith("We can pick it back up from here.")
+
+
 def test_humor_subject_extraction_does_not_turn_neighboring_requests_into_the_joke_subject():
     result = _explicit_humor_response_seed(
         "Give me two short next steps and add one tiny joke.",
@@ -3869,6 +3897,65 @@ def test_active_chat_preserves_phase_one_pragmatic_acts_through_every_consumer(t
         _assert_locked(result)
 
 
+def test_phase_six_chat_proves_acknowledgement_humor_and_closure_on_visible_speech(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    gratitude = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Thank you, that genuinely helped."},
+    )["result"]
+    humor = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": gratitude["session_id"],
+            "text": "Give me one little joke about the telescope.",
+        },
+    )["result"]
+    farewell = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": gratitude["session_id"],
+            "text": "Talk to you later, Selene.",
+        },
+    )["result"]
+
+    def operation_result(result, operation):
+        return next(
+            item
+            for item in result["answer_operations"]["results"]
+            if item["operation"] == operation
+        )
+
+    acknowledgement = operation_result(gratitude, "acknowledgement")
+    authored_humor = operation_result(humor, "humor")
+    closure = operation_result(farewell, "closure")
+
+    assert acknowledgement["status"] == "completed"
+    assert acknowledgement["fields"]["acknowledged_act"] == "gratitude"
+    assert "welcome" in acknowledgement["fields"]["visible_acknowledgement"].lower()
+    assert "welcome" in gratitude["candidate_text"].lower()
+    assert authored_humor["status"] == "completed"
+    assert authored_humor["fields"]["subject"] == "the telescope"
+    assert "telescope" in humor["candidate_text"].lower()
+    assert closure["status"] == "completed"
+    assert closure["fields"]["closure_signal"].lower() in farewell[
+        "candidate_text"
+    ].lower()
+    assert "?" not in farewell["candidate_text"]
+    for result in (gratitude, humor, farewell):
+        assert result["response_coverage"]["all_required_addressed"] is True
+        assert result["reviewed_memory_write_occurred"] is False
+        assert result["answer_operations"]["participation_finalization"][
+            "visible_surface_rewritten"
+        ] is False
+        _assert_locked(result)
+
+
 def test_phase_five_chat_makes_a_bounded_prediction_from_a_visible_relation(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)
@@ -4870,6 +4957,9 @@ def test_gentle_desk_replay_repairs_grounding_obligations_and_provisional_infere
     assert "cleaned" in discriminating["candidate_text"].lower()
     assert all(f"{index}." in summary["candidate_text"] for index in (1, 2, 3))
     assert "clean stopping point" in summary["candidate_text"].lower()
+    assert summary["candidate_text"].endswith(
+        "Until next time. We can pick it back up from here."
+    )
     fact_counts = [
         len(result["conversation_spine"].get("session_facts") or [])
         for result in results

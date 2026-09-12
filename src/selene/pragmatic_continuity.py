@@ -300,10 +300,15 @@ def _ending_decision(
         or handshake.get("required") is True
     )
     intent_name = str(intent.get("intent") or "")
-    if intent_name == "farewell":
+    closure_requested = any(
+        str(item.get("kind") or "") == "closure"
+        for item in pragmatic.get("response_obligations") or []
+        if isinstance(item, dict)
+    )
+    if intent_name == "farewell" or closure_requested:
         mode = "natural_close"
         question_allowed = False
-        reason = "the user is closing the conversation"
+        reason = "the user is closing the conversation or requested a natural ending"
     elif intent_name in {"greeting", "gratitude", "affirmation", "warm_connection", "reassurance_received"}:
         mode = "leave_room_without_pressuring"
         question_allowed = False

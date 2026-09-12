@@ -265,6 +265,30 @@ def test_social_realizer_uses_recent_wording_to_avoid_repeating_act_fragments():
     assert second["recent_wording_consulted"] is True
 
 
+def test_content_answer_can_receive_a_typed_supplemental_participation_act():
+    plan = build_social_act_plan(
+        {
+            "intent": "reasoning",
+            "prompt": "Exactly. Why does that fit?",
+            "content_seed": "It fits because the two constraints are compatible.",
+            "participation_intents": ["affirmation"],
+        }
+    )
+    realized = realize_social_act_plan(
+        plan,
+        prompt="Exactly. Why does that fit?",
+        variation_key="mixed-content-affirmation",
+    )
+
+    assert plan["supplemental_participation_acts"] is True
+    assert [item["act"] for item in plan["acts"]] == [
+        "confirm_shared_ground",
+        "carry_context_forward",
+    ]
+    assert realized["candidate_text"]
+    assert realized["unsupported_content_generated"] is False
+
+
 def test_correction_realization_preserves_supplied_changed_meaning_and_valid_context():
     plan = build_social_act_plan(
         {

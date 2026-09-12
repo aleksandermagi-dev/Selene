@@ -1103,6 +1103,37 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_5_REVISION_COMPLETION_20260909.md`.
 
+## Conversation Cultivation Phase 6 — Typed Participation Ownership
+
+- Pragmatic Planning now types gratitude/affirmation/reassurance
+  acknowledgement, current-session recap, and natural closure obligations.
+- Conversation Spine preserves participation metadata. Existing NLO,
+  social-language, Pragmatic Continuity, and humor owners author the visible
+  act; Answer Operations does not substitute wording.
+- Acknowledgement and closure remain `pending_realization` until the selected
+  owner act is visible. Epistemic Composition treats that as expression
+  pending, not missing knowledge.
+- Participation is reconciled after initial NLO/Voice realization and again at
+  final release. If a downstream layer removes the act, completion is removed
+  too. Fluent prose alone cannot prove the act.
+- The numbered current-session fact invariant preserves order and meaning
+  without discarding a verified NLO participation surface. Closure-only
+  participation follows the content it closes.
+- Embedded `exactly` inside a question no longer creates a false affirmation;
+  a real clause-positioned affirmation remains available.
+- Verification: 219 focused owner/language checks passed. Full Chat passed 128
+  with the same six later-phase categories: Answer Engine/current-session
+  arbitration, bare-why specificity, synthetic multi-operation coverage, Venn
+  semantics, older-thread return, and mixed-turn recovery-source/shared-
+  realization cleanup. Compilation and diff verification passed.
+- Resident integrity was `ok`; counts stayed 295 concepts, 249 lifecycles, 23
+  Chat sessions, 360 Chat messages, zero Memory candidates, 24 Dream
+  reflections, one Study session, and 248 approved resources. SHA-256 remained
+  `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+- No live Q&A, teaching, package, installation, or resident write occurred.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_6_TYPED_PARTICIPATION_20260912.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1122,7 +1153,7 @@ measurement of private experience as separate research questions.
 
 ## Required Reading Before Editing
 
-Before Phase 8 mapping or production work, read completely:
+Before further production work, read completely:
 
 - `README.md`
 - `PHILOSOPHY.md`
@@ -1131,6 +1162,7 @@ Before Phase 8 mapping or production work, read completely:
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_6_IMPLEMENTATION_MAP_20260829.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_7_IMPLEMENTATION_MAP_20260901.md`
 - `docs/architecture/SELENE_WHOLE_SYSTEM_PHASE_8_IMPLEMENTATION_MAP_20260902.md`
+- `docs/architecture/SELENE_CONVERSATION_CULTIVATION_PHASE_0_PATCH_ANCESTRY_MAP_20260908.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6A_PREREQUISITE_SOURCE_READINESS_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6B_TEACHING_CONTRACT_20260830.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_6C_CORRECTION_LINEAGE_20260831.md`
@@ -1143,6 +1175,7 @@ Before Phase 8 mapping or production work, read completely:
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8C_COMMITMENT_GRADUATION_20260902.md`
 - `docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md`
 - `docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md`
+- `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_6_TYPED_PARTICIPATION_20260912.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -1216,18 +1249,18 @@ owner must match the exact revision and visibly consume the changed premise
 before its answer completes recomputation. The historical drink, screen, and
 drawer paths remain explicitly compatibility-only.
 
-The exact resume point is Phase 6: typed participation ownership. Map the
-existing humor, acknowledgement, recap, closure, Pragmatic Continuity,
-Conversation Contribution, NLO, Voice, Answer Operations, and Visible Speech
-handoffs before editing. Prove each ordinary conversational act through its
-responsible owner so the remaining broad prompt-grounded coordination guard
-can be retired obligation by obligation. Then continue semantic coverage and
-shared subject, punctuation, symbol, and stale-fallback cleanup. Do not create
-a monolithic conversation organ.
+The exact resume point is Phase 7: semantic coverage and arbitration. Require
+the released candidate to preserve the active subject and entities and to
+perform the requested operation; fluent lexical overlap alone is not enough.
+Begin from the existing Semantic Fulfillment, Response Coverage, Answer
+Operations, proposition normalization, and Visible Speech owners. Keep the
+six recorded Chat failures as the bounded working set and trace their common
+handoffs before changing behavior. Do not create a monolithic conversation
+organ or add scenario-specific answer phrases.
 The 54-kind compatibility inventory remains the removal ledger: replace a
 scenario handler only after changed-entity and paraphrase transfer is proved.
 
-Do not patch prompt phrases or teach around the route defect. Do not repeat the
+Do not patch prompt phrases or teach around a coverage defect. Do not repeat the
 installed warmth gate, greeting/typo confirmation, decision-chain
 confirmation, G13-G15 teaching, the earlier repaired learning replay, or any
 further broad Q&A before repair. Use focused synthetic owner checks first and

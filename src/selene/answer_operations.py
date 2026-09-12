@@ -48,6 +48,8 @@ _OPERATION_ALIASES = {
     "correction": "correction",
     "reopening": "correction",
     "preference": "preference",
+    "acknowledgement": "acknowledgement",
+    "humor": "humor",
     "session_summary": "summary",
     "summary": "summary",
     "closure": "closure",
@@ -81,6 +83,8 @@ _CONTRACTS: dict[str, tuple[str, ...]] = {
     "disagreement": ("stance", "claim_evaluated", "premises"),
     "correction": ("corrected_input", "affected_result", "recompute_required"),
     "preference": ("authored_preference", "basis", "current_only"),
+    "acknowledgement": ("acknowledged_act", "visible_acknowledgement", "source_scope"),
+    "humor": ("subject", "authored_humor", "source_scope"),
     "summary": ("points", "source_scope"),
     "closure": ("closure_intent", "source_scope"),
     "creative_expression": (
@@ -106,7 +110,12 @@ def answer_operations_status() -> dict[str, Any]:
             "status": "answer_operation_coordination_ready",
             "version": "v1_typed_obligation_operation_results",
             "supported_operations": list(_CONTRACTS),
-            "result_states": ["completed", "missing_input", "unsupported"],
+            "result_states": [
+                "completed",
+                "pending_realization",
+                "missing_input",
+                "unsupported",
+            ],
             "epistemic_states": [
                 "KNOWN_SUPPORTED",
                 "CANDIDATE_UNVERIFIED",
@@ -177,8 +186,167 @@ def build_answer_operation_packet(payload: dict[str, Any] | None = None) -> dict
             continue
         results.append(result)
 
+    return _packet_from_results(results, spine=spine, ledger=ledger)
+
+
+def finalize_conversational_participation(
+    packet: dict[str, Any] | None,
+    *,
+    conversation_spine: dict[str, Any] | None,
+    native_language: dict[str, Any] | None,
+    candidate_text: str,
+) -> dict[str, Any]:
+    """Close typed participation acts only after their owner performed them.
+
+    Answer Operations is built before NLO so content owners can guide language
+    formation. Acknowledgement and farewell surfaces are authored inside NLO,
+    however, and therefore require this bounded post-realization receipt. This
+    function does not generate or rewrite speech.
+    """
+
+    current = packet if isinstance(packet, dict) else {}
+    spine = conversation_spine if isinstance(conversation_spine, dict) else {}
+    ledger = _dict(spine.get("obligation_ledger"))
+    obligations = [
+        item
+        for item in (ledger.get("obligations") or spine.get("open_obligations") or [])
+        if isinstance(item, dict) and item.get("required") is not False
+    ]
+    language = native_language if isinstance(native_language, dict) else {}
+    discourse = _dict(language.get("discourse_plan"))
+    social_realization = _dict(discourse.get("social_act_realization"))
+    continuity = _dict(discourse.get("pragmatic_continuity"))
+    selected_social = [
+        item
+        for item in social_realization.get("selected_realizations") or []
+        if isinstance(item, dict) and str(item.get("text") or "").strip()
+    ]
+    selected_acts = {str(item.get("act") or "") for item in selected_social}
+    visible = truncate(str(candidate_text or ""), 5000).strip()
+    results_by_id = {
+        str(item.get("obligation_id") or ""): dict(item)
+        for item in current.get("results") or []
+        if isinstance(item, dict) and str(item.get("obligation_id") or "")
+    }
+    finalized_ids: list[str] = []
+
+    for obligation in obligations:
+        operation = _operation_for_obligation(obligation)
+        if operation not in {"acknowledgement", "closure"}:
+            continue
+        obligation_id = str(obligation.get("id") or "")
+        result: dict[str, Any] = {}
+        if operation == "acknowledgement":
+            participation_act = str(
+                obligation.get("participation_act")
+                or obligation.get("dialogue_act")
+                or ""
+            )
+            expected = {
+                "gratitude": {"receive_thanks", "honor_shared_work"},
+                "affirmation": {"confirm_shared_ground", "carry_context_forward"},
+                "reassurance_received": {"receive_reassurance", "release_pressure"},
+            }.get(participation_act, set())
+            realized = [
+                item
+                for item in selected_social
+                if str(item.get("act") or "") in expected
+                and _visible_fragment(visible, str(item.get("text") or ""))
+            ]
+            if expected and realized and expected & selected_acts:
+                visible_acknowledgement = " ".join(
+                    str(item.get("text") or "").strip() for item in realized
+                )
+                result = _complete_result(
+                    obligation,
+                    operation,
+                    fields={
+                        "acknowledged_act": participation_act,
+                        "visible_acknowledgement": visible_acknowledgement,
+                        "source_scope": "current_turn_only",
+                    },
+                    source="native_language_organ.social_act_realization",
+                    expression_source_id="native_language_organ",
+                    expression_seed=visible_acknowledgement,
+                    supported_semantics={},
+                    source_refs=["nlo:social_act_plan", "nlo:social_act_realization"],
+                )
+        elif operation == "closure":
+            ending = _dict(continuity.get("ending_decision"))
+            realized = [
+                item
+                for item in selected_social
+                if str(item.get("act") or "") == "return_farewell"
+                and _visible_fragment(visible, str(item.get("text") or ""))
+            ]
+            if (
+                str(ending.get("mode") or "") == "natural_close"
+                and "return_farewell" in selected_acts
+                and realized
+            ):
+                closure_signal = " ".join(
+                    str(item.get("text") or "").strip() for item in realized
+                )
+                result = _complete_result(
+                    obligation,
+                    operation,
+                    fields={
+                        "closure_intent": "end the current exchange without reopening it",
+                        "closure_signal": closure_signal,
+                        "source_scope": "current_conversation",
+                    },
+                    source="pragmatic_continuity_and_nlo.social_act_realization",
+                    expression_source_id="native_language_organ",
+                    expression_seed=closure_signal,
+                    supported_semantics={},
+                    source_refs=[
+                        "pragmatic_continuity:ending_decision",
+                        "nlo:social_act_realization",
+                    ],
+                )
+        if not result:
+            result = _pending_realization_result(
+                obligation,
+                operation,
+                reason="the final visible surface does not perform the planned participation act",
+            )
+        results_by_id[obligation_id] = _attach_current_turn_input_receipt(
+            result,
+            obligation=obligation,
+            operation=operation,
+            spine=spine,
+            consumed=True,
+        )
+        if result.get("status") == "completed":
+            finalized_ids.append(obligation_id)
+
+    ordered_results = [
+        results_by_id[str(item.get("id") or "")]
+        for item in obligations
+        if str(item.get("id") or "") in results_by_id
+    ]
+    finalized = _packet_from_results(ordered_results, spine=spine, ledger=ledger)
+    return {
+        **finalized,
+        "participation_finalization": {
+            "attempted": True,
+            "finalized_obligation_ids": finalized_ids,
+            "visible_surface_rewritten": False,
+            "fluent_prose_alone_accepted_as_completion": False,
+            "owner_plan_and_realization_required": True,
+        },
+    }
+
+
+def _packet_from_results(
+    results: list[dict[str, Any]],
+    *,
+    spine: dict[str, Any],
+    ledger: dict[str, Any],
+) -> dict[str, Any]:
     completed = [item for item in results if item.get("status") == "completed"]
     missing = [item for item in results if item.get("status") == "missing_input"]
+    pending = [item for item in results if item.get("status") == "pending_realization"]
     unsupported = [item for item in results if item.get("status") == "unsupported"]
     required_ids = [str(item.get("obligation_id") or "") for item in results]
     completed_ids = [str(item.get("obligation_id") or "") for item in completed]
@@ -208,6 +376,8 @@ def build_answer_operation_packet(payload: dict[str, Any] | None = None) -> dict
                 if results and len(completed) == len(results)
                 else "answer_operations_partially_complete"
                 if completed
+                else "answer_operations_awaiting_realization"
+                if pending
                 else "answer_operations_need_input"
                 if missing
                 else "answer_operations_not_material"
@@ -233,10 +403,13 @@ def build_answer_operation_packet(payload: dict[str, Any] | None = None) -> dict
             "operation_count": len(results),
             "completed_count": len(completed),
             "missing_input_count": len(missing),
+            "pending_realization_count": len(pending),
             "unsupported_count": len(unsupported),
             "required_obligation_ids": required_ids,
             "completed_obligation_ids": completed_ids,
-            "all_supported_operations_complete": bool(results and len(completed) == len(results)),
+            "all_supported_operations_complete": bool(
+                results and len(completed) == len(results)
+            ),
             "results": results,
             "expression_handoff": {
                 "available": bool(completed),
@@ -267,11 +440,34 @@ def build_answer_operation_packet(payload: dict[str, Any] | None = None) -> dict
     )
 
 
+def _visible_fragment(candidate: str, fragment: str) -> bool:
+    candidate_surface = " ".join(candidate.lower().replace("’", "'").split())
+    fragment_surface = " ".join(fragment.lower().replace("’", "'").split())
+    if not candidate_surface or not fragment_surface:
+        return False
+    if fragment_surface in candidate_surface:
+        return True
+    fragment_terms = set(re.findall(r"[a-z][a-z0-9'-]{1,}", fragment_surface))
+    candidate_terms = set(re.findall(r"[a-z][a-z0-9'-]{1,}", candidate_surface))
+    minimum = max(1, (len(fragment_terms) + 1) // 2)
+    return len(fragment_terms & candidate_terms) >= minimum
+
+
 def _execute_operation(
     obligation: dict[str, Any],
     operation: str,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
+    if operation in {"acknowledgement", "closure"}:
+        return _pending_realization_result(
+            obligation,
+            operation,
+            reason=(
+                "the social-language owner must visibly realize this current-turn act"
+                if operation == "acknowledgement"
+                else "pragmatic continuity and the social-language owner must visibly realize this ending"
+            ),
+        )
     # A visible session decision has already consumed the speaker's options,
     # priorities, and updates. Prefer that exact current-session owner result
     # over a second generic exploratory pass over compressed wording.
@@ -826,20 +1022,6 @@ def _from_conversation_state(
     operation: str,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
-    if operation == "closure":
-        return _complete_result(
-            obligation,
-            operation,
-            fields={
-                "closure_intent": "allow the current exchange to end without forcing another topic",
-                "source_scope": "current_conversation",
-            },
-            source="canonical_obligation.closure",
-            expression_source_id="ordinary_conversation_path",
-            expression_seed="",
-            supported_semantics={},
-            source_refs=["conversation_spine:canonical_obligation"],
-        )
     if operation == "correction":
         revision = _dict(payload.get("epistemic_revision_plan"))
         if revision.get("detected") is True:
@@ -936,16 +1118,19 @@ def _from_conversation_state(
             )
     summary = _dict(payload.get("current_session_summary"))
     if operation == "summary" and summary.get("points"):
+        summary_seed = str(summary.get("response_seed") or "").strip()
+        visible_points = _sentences(summary_seed)
         return _complete_result(
             obligation,
             operation,
             fields={
-                "points": _texts(summary.get("points")),
+                "points": visible_points or _texts(summary.get("points")),
+                "source_points": _texts(summary.get("points")),
                 "source_scope": "current_session_only",
             },
             source="current_session_summary",
             expression_source_id="current_session_facts",
-            expression_seed=str(summary.get("response_seed") or ""),
+            expression_seed=summary_seed,
             supported_semantics=_dict(summary.get("supported_semantics")),
             source_refs=_texts(summary.get("source_refs")),
         )
@@ -1026,6 +1211,28 @@ def _visible_conversation_owner_result(
         fields = {
             "points": surfaces,
             "source_scope": "current_session_only",
+        }
+    elif operation == "acknowledgement":
+        fields = {
+            "acknowledged_act": str(owner.get("kind") or "current_turn"),
+            "visible_acknowledgement": text,
+            "source_scope": "current_turn_only",
+        }
+    elif operation == "humor":
+        fields = {
+            "subject": str(
+                obligation.get("topic")
+                or obligation.get("source_text")
+                or "current request"
+            ),
+            "authored_humor": text,
+            "source_scope": "current_turn_only",
+        }
+    elif operation == "closure":
+        fields = {
+            "closure_intent": "end the current exchange without reopening it",
+            "closure_signal": text,
+            "source_scope": "current_conversation",
         }
     elif operation == "correction":
         fields = {
@@ -1164,6 +1371,32 @@ def _missing_result(
         },
         "canonical_obligation_reparsed": False,
         **GUARDS,
+    }
+
+
+def _pending_realization_result(
+    obligation: dict[str, Any],
+    operation: str,
+    *,
+    reason: str,
+) -> dict[str, Any]:
+    """Represent a declared act whose existing expression owner runs later."""
+
+    return {
+        **_missing_result(
+            obligation,
+            operation,
+            missing_input="",
+            reason=reason,
+            status="pending_realization",
+        ),
+        "input_missing": False,
+        "epistemic_state": "CANDIDATE_UNVERIFIED",
+        "terminal_receipt": {
+            "state": "pending_realization",
+            "further_attempt_authorized": False,
+            "automatic_retention": False,
+        },
     }
 
 
@@ -1308,6 +1541,8 @@ def _missing_input(operation: str, payload: dict[str, Any]) -> str:
         "disagreement": "the claim to evaluate and the premises that support or oppose it",
         "correction": "the corrected input and the earlier result it changes",
         "preference": "a current preference authored by Selene for this exchange",
+        "acknowledgement": "a selected current-turn social act and its visible realization",
+        "humor": "a current-turn humor subject and an authored visible humorous response",
         "summary": "the current-session points that belong in the summary",
         "closure": "the current conversational closure intent",
         "creative_expression": (

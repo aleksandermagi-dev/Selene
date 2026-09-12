@@ -15,7 +15,10 @@ from .answer_engine import (
     run_verified_math_answer,
 )
 from .answer_completion import build_bounded_answer_completion
-from .answer_operations import build_answer_operation_packet
+from .answer_operations import (
+    build_answer_operation_packet,
+    finalize_conversational_participation,
+)
 from .answer_substance import build_answer_substance
 from .affect_expression import build_affect_expression_guidance
 from .bounded_organ_coalition import build_bounded_organ_coalition
@@ -1172,6 +1175,31 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 *(
                     [
                         {
+                            "owner_id": "explicit_humor_request",
+                            "kind": "authored_humor",
+                            "text": explicit_humor_reply,
+                            "supported_operations": ["humor"],
+                            "operation_fields": {
+                                "humor": {
+                                    "subject": _explicit_humor_subject(meaning_text),
+                                    "authored_humor": _explicit_humor_only(
+                                        explicit_humor_reply
+                                    ),
+                                    "source_scope": "current_turn_only",
+                                }
+                            },
+                            "source_refs": [
+                                "contextual_continuity:humor_decision",
+                                "selene_chat:explicit_humor_response",
+                            ],
+                        }
+                    ]
+                    if explicit_humor_reply
+                    else []
+                ),
+                *(
+                    [
+                        {
                             "owner_id": "current_session_facts",
                             "kind": "visible_session_decision",
                             "text": session_decision_reply,
@@ -2014,6 +2042,30 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             },
         )
         candidate_text = _selene_label_candidate(str(voice_preview.get("candidate_text") or native_language.get("candidate_text") or dry_run.get("candidate_text") or ""))
+    answer_operations = finalize_conversational_participation(
+        answer_operations,
+        conversation_spine=conversation_spine,
+        native_language=native_language,
+        candidate_text=candidate_text,
+    )
+    if isinstance(native_language.get("meaning_packet"), dict):
+        native_language["meaning_packet"]["answer_operations"] = {
+            "observed": True,
+            "status": str(answer_operations.get("status") or "not_supplied"),
+            "operation_count": int(answer_operations.get("operation_count") or 0),
+            "completed_count": int(answer_operations.get("completed_count") or 0),
+            "missing_input_count": int(answer_operations.get("missing_input_count") or 0),
+            "pending_realization_count": int(
+                answer_operations.get("pending_realization_count") or 0
+            ),
+            "meaning_units": (
+                answer_operations.get("expression_handoff") or {}
+            ).get("meaning_units")
+            or [],
+            "post_nlo_participation_finalized": True,
+            "changes_meaning": False,
+            "is_expression_authority": False,
+        }
     release_resolution_evidence = _current_turn_release_resolution_evidence(
         conversation_spine=conversation_spine,
         organ_coalition=organ_coalition,
@@ -2512,6 +2564,46 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         visible_speech_release["graceful_fall_used"] = False
         visible_speech_release["released_source_id"] = str(visible_speech_seed.get("selected_source_id") or "none")
         visible_speech_release["final_release_allowed"] = True
+    # Participation is declared before language formation, but its completion
+    # must match the surface that is actually released. Reconcile once more at
+    # the final speech boundary because repair, bounded completion, delivery
+    # constraints, or graceful fall may have changed the earlier draft.
+    answer_operations = finalize_conversational_participation(
+        answer_operations,
+        conversation_spine=conversation_spine,
+        native_language=native_language,
+        candidate_text=candidate_text,
+    )
+    if isinstance(native_language.get("meaning_packet"), dict):
+        native_language["meaning_packet"]["answer_operations"] = {
+            "observed": True,
+            "status": str(answer_operations.get("status") or "not_supplied"),
+            "operation_count": int(answer_operations.get("operation_count") or 0),
+            "completed_count": int(answer_operations.get("completed_count") or 0),
+            "missing_input_count": int(answer_operations.get("missing_input_count") or 0),
+            "pending_realization_count": int(
+                answer_operations.get("pending_realization_count") or 0
+            ),
+            "meaning_units": (
+                answer_operations.get("expression_handoff") or {}
+            ).get("meaning_units")
+            or [],
+            "post_nlo_participation_finalized": True,
+            "final_visible_surface_reconciled": True,
+            "changes_meaning": False,
+            "is_expression_authority": False,
+        }
+    response_coverage = _evaluate_chat_response_coverage(
+        native_language.get("pragmatic_plan"),
+        candidate_text,
+        conversation_spine=conversation_spine,
+        answer_engine_support=answer_engine_support,
+        supported_semantics=selected_supported_semantics,
+        epistemic_composition=epistemic_composition,
+        resolution_evidence=release_resolution_evidence,
+        answer_operations=answer_operations,
+    )
+    conversation_repair["final_response_coverage"] = response_coverage
     spine_confidence = dict(metacognition.get("confidence_vector") or {})
     spine_confidence["expression_confidence"] = str(voice_preview.get("voice_confidence") or "not_assessed")
     conversation_spine = finalize_conversation_spine(
@@ -3950,21 +4042,7 @@ def _explicit_humor_response_seed(
     if decision.get("explicit_humor_request") is not True:
         return ""
     text = " ".join(str(prompt or "").split())
-    subject_match = re.search(
-        r"\b(?:joke|pun)\s+about\s+(.+?)(?:,|;|\s+then\b|\s+and\s+(?:then\s+)?return\b|[.!?]|$)",
-        text,
-        flags=re.IGNORECASE,
-    )
-    if not subject_match:
-        subject_match = re.search(
-            r"\bgive\s+(?:the\s+)?(?P<subject>[a-z][a-z0-9' -]{1,100}?)\s+"
-            r"(?:one|a|an)\s+(?:tiny\s+|little\s+|quick\s+)?(?:joke|pun)\b",
-            text,
-            flags=re.IGNORECASE,
-        )
-    subject = truncate(subject_match.group(1).strip(), 140) if subject_match else ""
-    if subject and _humor_subject_is_command_fragment(subject):
-        subject = ""
+    subject = _explicit_humor_subject(text)
     if not subject:
         subject = "the plan" if re.search(r"\b(?:plan|steps?|next)\b", text, re.IGNORECASE) else "this"
     if "republic" in subject.lower():
@@ -4000,6 +4078,37 @@ def _explicit_humor_response_seed(
     if grounded_return:
         return f"{joke}\n\nBack to the {return_topic}: {grounded_return}"
     return f"{joke}\n\nBack to the {return_topic}."
+
+
+def _explicit_humor_subject(prompt: str) -> str:
+    text = " ".join(str(prompt or "").split())
+    subject_match = re.search(
+        r"\b(?:joke|pun)\s+about\s+(.+?)(?:,|;|\s+then\b|\s+and\s+(?:then\s+)?return\b|[.!?]|$)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not subject_match:
+        subject_match = re.search(
+            r"\bgive\s+(?:the\s+)?(?P<subject>[a-z][a-z0-9' -]{1,100}?)\s+"
+            r"(?:one|a|an)\s+(?:tiny\s+|little\s+|quick\s+)?(?:joke|pun)\b",
+            text,
+            flags=re.IGNORECASE,
+        )
+    subject = truncate(subject_match.group(1).strip(), 140) if subject_match else ""
+    if subject and _humor_subject_is_command_fragment(subject):
+        subject = ""
+    if subject:
+        return subject
+    return "the plan" if re.search(r"\b(?:plan|steps?|next)\b", text, re.IGNORECASE) else "this"
+
+
+def _explicit_humor_only(response: str) -> str:
+    """Return the authored joke without neighboring callback or task acts."""
+
+    text = str(response or "").strip()
+    if not text:
+        return ""
+    return truncate(re.split(r"\n\s*\n|\bBack to\b", text, maxsplit=1)[0].strip(), 500)
 
 
 def _humor_subject_is_command_fragment(subject: str) -> bool:
@@ -5075,7 +5184,12 @@ def _preserve_bounded_conversation_invariants(
         f"{label}:" not in candidate_lower for label in required_labels
     ):
         return _selene_label_candidate(seed)
-    numbered = [int(item) for item in re.findall(r"(?:^|\s)([1-9])\.\s", seed)]
+    numbered = list(
+        dict.fromkeys(
+            int(item)
+            for item in re.findall(r"(?:^|\s)([1-9])\.\s", seed)
+        )
+    )
     if len(numbered) >= 3:
         if seed.startswith("The corrected three fields are:"):
             return _selene_label_candidate(seed)
@@ -5094,8 +5208,6 @@ def _preserve_bounded_conversation_invariants(
         if required_labels and any(f"{label}:" not in candidate_lower for label in required_labels):
             return _selene_label_candidate(seed)
     if source_id == "current_session_facts":
-        if seed.startswith(("The settled facts are:", "The settled points are:")) and numbered:
-            return _selene_label_candidate(seed)
         seed = str(content_seed or "").strip()
         seed_terms = {
             word

@@ -379,3 +379,17 @@ def test_hold_that_thought_is_conversation_management_not_a_memory_candidate():
     assert "memory_candidate" not in result["dialogue_acts"]
     assert "hold" in result["canonical_meaning_frame"]["protected_knowledge_terms"]
     assert result["canonical_meaning_frame"]["memory_write_active"] is False
+
+
+def test_embedded_exactly_does_not_create_a_false_affirmation_act():
+    recall_question = interpret_turn_meaning(
+        "Do you remember exactly why Aleks chose the butterfly for the Cocoon button?"
+    )
+    mixed_affirmation = interpret_turn_meaning(
+        "Exactly. Why did that choice fit the Cocoon?"
+    )
+
+    assert "affirmation" not in recall_question["dialogue_acts"]
+    assert "question" in recall_question["dialogue_acts"]
+    assert "affirmation" in mixed_affirmation["dialogue_acts"]
+    assert "question" in mixed_affirmation["dialogue_acts"]

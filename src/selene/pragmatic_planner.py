@@ -139,6 +139,14 @@ def build_pragmatic_plan(payload: dict[str, Any] | None = None) -> dict[str, Any
                 "goal": "answer_content_request",
             }
         )
+    obligations.extend(
+        _participation_obligations(
+            prompt,
+            intent,
+            contextual,
+            obligations,
+        )
+    )
     spine_obligations = [
         item
         for item in conversation_spine.get("open_obligations") or []
@@ -917,10 +925,7 @@ def _request_kind(text: str) -> str:
         lower,
     ):
         return "closure"
-    if re.search(
-        r"(?:^|[):.!?]\s*)(?:summarize|recap)\b|\bsummary\b",
-        lower,
-    ):
+    if re.search(r"\b(?:summarize|recap|summary)\b", lower):
         return "session_summary"
     if "analogy" in lower:
         return "analogy"
@@ -944,6 +949,117 @@ def _request_kind(text: str) -> str:
     if re.match(r"^(?:then\s+|next\s+|finally\s+)?return\s+to\b", lower):
         return "callback"
     return "direct_request"
+
+
+def _participation_obligations(
+    prompt: str,
+    intent: dict[str, Any],
+    contextual: dict[str, Any],
+    existing: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Declare conversational acts that must later be visibly performed.
+
+    These are current-turn participation obligations, not factual questions.
+    NLO and the social/continuity owners still author the surface; this ledger
+    entry only prevents an acknowledgement or ending from being inferred from
+    answer-shaped prose after the fact.
+    """
+
+    for item in existing:
+        if str(item.get("kind") or "") == "closure":
+            item["dialogue_act"] = "farewell"
+            item["participation_act"] = "farewell"
+            item["priority"] = "participation"
+            item["goal"] = "visibly_close_the_current_exchange"
+    existing_kinds = {str(item.get("kind") or "") for item in existing}
+    dialogue_acts = {
+        str(item)
+        for item in intent.get("dialogue_acts") or []
+        if str(item)
+    }
+    intent_name = str(intent.get("intent") or "")
+    if intent_name:
+        dialogue_acts.add(intent_name)
+    additions: list[dict[str, Any]] = []
+
+    acknowledgement_act = next(
+        (
+            item
+            for item in (
+                "gratitude",
+                "affirmation",
+                "reassurance_received",
+            )
+            if item in dialogue_acts
+        ),
+        "",
+    )
+    if acknowledgement_act and "acknowledgement" not in existing_kinds:
+        additions.append(
+            {
+                "id": _obligation_id(
+                    f"participation:{acknowledgement_act}:{prompt}",
+                    len(existing) + len(additions),
+                ),
+                "loop_id": "",
+                "kind": "acknowledgement",
+                "dialogue_act": acknowledgement_act,
+                "participation_act": acknowledgement_act,
+                "source_text": prompt,
+                "topic": "",
+                "coverage_terms": [],
+                "required": True,
+                "priority": "participation",
+                "inference_level": "typed_dialogue_act",
+                "goal": f"visibly_respond_to_{acknowledgement_act}",
+            }
+        )
+
+    contextual_kind = str(contextual.get("kind") or "")
+    if (
+        (intent_name == "farewell" or "farewell" in dialogue_acts)
+        and "closure" not in existing_kinds
+    ):
+        additions.append(
+            {
+                "id": _obligation_id(
+                    f"participation:closure:{prompt}",
+                    len(existing) + len(additions),
+                ),
+                "loop_id": "",
+                "kind": "closure",
+                "dialogue_act": "farewell",
+                "participation_act": "farewell",
+                "source_text": prompt,
+                "topic": "",
+                "coverage_terms": [],
+                "required": True,
+                "priority": "participation",
+                "inference_level": "typed_dialogue_act",
+                "goal": "visibly_close_the_current_exchange",
+            }
+        )
+    if contextual_kind == "session_summary_request" and "session_summary" not in existing_kinds:
+        additions.append(
+            {
+                "id": _obligation_id(
+                    f"participation:summary:{prompt}",
+                    len(existing) + len(additions),
+                ),
+                "loop_id": "",
+                "kind": "session_summary",
+                "dialogue_act": "session_summary_request",
+                "participation_act": "session_summary_request",
+                "source_text": prompt,
+                "topic": "",
+                "coverage_terms": [],
+                "required": True,
+                "priority": "participation",
+                "inference_level": "bounded_session_context",
+                "goal": "summarize_current_session",
+            }
+        )
+    return additions
 
 
 def _explicit_humor_request(lower: str) -> bool:

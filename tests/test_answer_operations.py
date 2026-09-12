@@ -1,6 +1,7 @@
 from selene.answer_operations import (
     answer_operations_status,
     build_answer_operation_packet,
+    finalize_conversational_participation,
 )
 from selene.answer_substance import build_answer_substance
 
@@ -590,7 +591,10 @@ def test_current_session_summary_requires_real_points_and_preserves_scope() -> N
 
     result = packet["results"][0]
     assert result["status"] == "completed"
-    assert len(result["fields"]["points"]) == 2
+    assert result["fields"]["points"] == [
+        "We compared the porch and the walk, then kept the porch as the easier reversible choice."
+    ]
+    assert len(result["fields"]["source_points"]) == 2
     assert result["fields"]["source_scope"] == "current_session_only"
 
 
@@ -726,7 +730,7 @@ def test_missing_report_cannot_request_current_turn_inputs_already_supplied() ->
     assert packet["all_operation_inputs_accounted_for"] is True
 
 
-def test_correction_and_closure_are_typed_without_changing_identity_or_authority() -> None:
+def test_closure_waits_for_visible_continuity_owner_without_changing_identity_or_authority() -> None:
     packet = build_answer_operation_packet(
         {
             "conversation_spine": _spine(
@@ -749,14 +753,119 @@ def test_correction_and_closure_are_typed_without_changing_identity_or_authority
         }
     )
 
-    correction, closure = packet["results"]
+    correction, pending_closure = packet["results"]
     assert correction["status"] == "completed"
     assert correction["fields"]["recompute_required"] is True
     assert correction["fields"]["affected_result"] == "the drink recommendation"
+    assert pending_closure["status"] == "pending_realization"
+
+    packet = finalize_conversational_participation(
+        packet,
+        conversation_spine=_spine(
+            {
+                "requested_response_functions": ["correction", "reopening"],
+                "source_text": "I meant the cool evening, not the warm one.",
+                "responsible_owner": "ordinary_conversation_path",
+            },
+            {
+                "requested_response_functions": ["closure"],
+                "source_text": "Talk later.",
+                "responsible_owner": "ordinary_conversation_path",
+                "participation_act": "farewell",
+            },
+        ),
+        native_language={
+            "discourse_plan": {
+                "pragmatic_continuity": {
+                    "ending_decision": {"mode": "natural_close"}
+                },
+                "social_act_realization": {
+                    "selected_realizations": [
+                        {
+                            "act": "return_farewell",
+                            "text": "Catch you later",
+                        }
+                    ]
+                },
+            }
+        },
+        candidate_text="Catch you later.",
+    )
+    _, closure = packet["results"]
     assert closure["status"] == "completed"
-    assert closure["fields"]["closure_intent"]
+    assert closure["fields"]["closure_signal"] == "Catch you later"
+    assert packet["participation_finalization"]["finalized_obligation_ids"] == [
+        "obligation-2"
+    ]
     assert packet["identity_change"] is False
     assert packet["authority_change"] is False
+
+
+def test_acknowledgement_requires_selected_social_act_and_visible_surface() -> None:
+    spine = _spine(
+        requested_response_functions=["acknowledgement"],
+        responsible_owner="ordinary_conversation_path",
+        participation_act="gratitude",
+        dialogue_act="gratitude",
+        source_text="Thank you for catching that.",
+    )
+    packet = build_answer_operation_packet({"conversation_spine": spine})
+    assert packet["results"][0]["status"] == "pending_realization"
+
+    unrealized = finalize_conversational_participation(
+        packet,
+        conversation_spine=spine,
+        native_language={
+            "discourse_plan": {
+                "social_act_realization": {
+                    "selected_realizations": [
+                        {"act": "receive_thanks", "text": "Of course"}
+                    ]
+                }
+            }
+        },
+        candidate_text="The next step is ready.",
+    )
+    assert unrealized["results"][0]["status"] == "pending_realization"
+
+    realized = finalize_conversational_participation(
+        packet,
+        conversation_spine=spine,
+        native_language={
+            "discourse_plan": {
+                "social_act_realization": {
+                    "selected_realizations": [
+                        {"act": "receive_thanks", "text": "Of course"}
+                    ]
+                }
+            }
+        },
+        candidate_text="Of course. The next step is ready.",
+    )
+    result = realized["results"][0]
+    assert result["status"] == "completed"
+    assert result["fields"]["acknowledged_act"] == "gratitude"
+    assert result["fields"]["visible_acknowledgement"] == "Of course"
+    assert realized["generic_prose_accepted_as_completion"] is False
+
+    changed_before_release = finalize_conversational_participation(
+        realized,
+        conversation_spine=spine,
+        native_language={
+            "discourse_plan": {
+                "social_act_realization": {
+                    "selected_realizations": [
+                        {"act": "receive_thanks", "text": "Of course"}
+                    ]
+                }
+            }
+        },
+        candidate_text="The final visible reply no longer contains that acknowledgement.",
+    )
+    assert changed_before_release["results"][0]["status"] == "pending_realization"
+    assert changed_before_release["participation_finalization"][
+        "finalized_obligation_ids"
+    ] == []
 
 
 def test_source_wording_is_not_reparsed_into_an_operation() -> None:

@@ -411,6 +411,86 @@ def test_packet_summarizes_visible_fulfillment_without_new_authority() -> None:
     assert packet["expression_authority"] is False
 
 
+def test_typed_acknowledgement_requires_its_owned_visible_surface() -> None:
+    obligation = _obligation("acknowledgement")
+    obligation["responsible_owner"] = "ordinary_conversation_path"
+    result = _result(
+        obligation,
+        "acknowledgement",
+        {
+            "acknowledged_act": "gratitude",
+            "visible_acknowledgement": "Of course",
+            "source_scope": "current_turn_only",
+        },
+    )
+
+    absent = evaluate_operation_fulfillment(
+        obligation,
+        "We can keep working on the pinwheel.",
+        result,
+    )
+    visible = evaluate_operation_fulfillment(
+        obligation,
+        "Of course. We can keep working on the pinwheel.",
+        result,
+    )
+
+    assert absent["fulfilled"] is False
+    assert absent["generic_prose_accepted_as_performance"] is False
+    assert visible["fulfilled"] is True
+
+
+def test_typed_humor_requires_the_authored_joke_and_its_current_subject() -> None:
+    obligation = _obligation("humor")
+    obligation["responsible_owner"] = "ordinary_conversation_path"
+    result = _result(
+        obligation,
+        "humor",
+        {
+            "subject": "the telescope",
+            "authored_humor": "Tiny joke: the telescope keeps looking for space.",
+            "source_scope": "current_turn_only",
+        },
+    )
+
+    unrelated = evaluate_operation_fulfillment(
+        obligation,
+        "Tiny joke: the committee approved a motion.",
+        result,
+    )
+    visible = evaluate_operation_fulfillment(
+        obligation,
+        "Tiny joke: the telescope keeps looking for space.",
+        result,
+    )
+
+    assert unrelated["fulfilled"] is False
+    assert visible["fulfilled"] is True
+
+
+def test_typed_closure_accepts_the_owned_novel_visible_farewell() -> None:
+    obligation = _obligation("closure")
+    obligation["responsible_owner"] = "ordinary_conversation_path"
+    result = _result(
+        obligation,
+        "closure",
+        {
+            "closure_intent": "end the current exchange without reopening it",
+            "closure_signal": "Catch you after the rain passes",
+            "source_scope": "current_conversation",
+        },
+    )
+
+    receipt = evaluate_operation_fulfillment(
+        obligation,
+        "Catch you after the rain passes.",
+        result,
+    )
+
+    assert receipt["fulfilled"] is True
+    assert receipt["owner_fit"] is True
+
+
 def test_single_typed_operation_seed_reaches_epistemic_composition() -> None:
     obligation = _obligation("preference")
     result = _result(

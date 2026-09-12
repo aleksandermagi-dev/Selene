@@ -5176,3 +5176,39 @@ No live Q&A, teaching, package, install, or resident mutation occurred.
 
 **Next:** Cultivation Phase 6 — type humor, acknowledgement, recap, and
 closure ownership through their existing conversational owners.
+
+### 2026-09-12 — Cultivation Phase 6 proves typed participation at release
+
+**Implementation:** Pragmatic Planning now declares acknowledgement, recap,
+and closure as typed participation obligations. Conversation Spine preserves
+their act metadata; Answer Operations holds acknowledgement and closure in an
+expression-pending state until the existing NLO/social/continuity owner has
+actually performed them. Requested humor and recap likewise carry explicit
+owner fields. Semantic Fulfillment and final Chat coverage inspect the
+released surface rather than accepting fluent prose or an early plan.
+
+**Cultivation finding:** A mixed summary-and-close turn correctly authored a
+farewell inside NLO, but an older numbered-session-fact invariant restored the
+pre-NLO seed and silently removed it. Epistemic Composition also read a
+pending expression act as missing knowledge. The source repair preserves
+pending expression without inventing a support gap, places closure after the
+content it closes, and lets verified NLO participation survive the session-
+fact invariant. Number order remains protected. Embedded `exactly` in a
+question no longer creates a false affirmation act.
+
+**Evidence:** The focused ownership and language matrix passed 219 checks.
+Full Chat passed 128 with only the six already-recorded later-phase gaps:
+Answer Engine/current-session arbitration, bare-why specificity, synthetic
+multi-operation coverage, Venn semantics, older-thread return, and mixed-turn
+recovery-source/shared-realization cleanup. Compilation and diff verification
+passed. Resident integrity was `ok`, counts were unchanged, and SQLite stayed
+byte-for-byte unchanged at
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+No live Q&A, teaching, package, install, or resident mutation occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_6_TYPED_PARTICIPATION_20260912.md`.
+
+**Next:** Cultivation Phase 7 — mature semantic coverage and arbitration so a
+fluent candidate cannot pass after changing the active subject, losing an
+entity, or failing the requested operation.

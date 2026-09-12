@@ -194,8 +194,16 @@ def enrich_obligation_ownership(
         owner = "intelligence_os"
         completion_policy = "owner_must_perform_requested_operation"
         response_functions = ["disagreement", "claim_evaluation"]
-    elif kind in {"session_summary", "callback", "rephrase_request", "closure", "humor"}:
+    elif kind in {
+        "acknowledgement",
+        "session_summary",
+        "callback",
+        "rephrase_request",
+        "closure",
+        "humor",
+    }:
         answer_act = {
+            "acknowledgement": "current_turn_acknowledgement",
             "session_summary": "current_session_summary",
             "callback": "current_session_callback",
             "rephrase_request": "current_answer_rephrase",
@@ -205,7 +213,9 @@ def enrich_obligation_ownership(
         epistemic_basis = "current_session_conversation"
         owner = "ordinary_conversation_path"
         completion_policy = "preserve_current_owner"
-        response_functions = [kind]
+        response_functions = [
+            "acknowledgement" if kind == "acknowledgement" else kind
+        ]
     elif research_domain_requested(lower):
         answer_act = "attributed_source_answer"
         epistemic_basis = "attributed_source_packet"
