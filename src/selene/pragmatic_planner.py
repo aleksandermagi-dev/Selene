@@ -1039,7 +1039,15 @@ def _participation_obligations(
                 "goal": "visibly_close_the_current_exchange",
             }
         )
-    if contextual_kind == "session_summary_request" and "session_summary" not in existing_kinds:
+    if (
+        contextual_kind == "session_summary_request"
+        and "session_summary" not in existing_kinds
+        and "requested_section" not in existing_kinds
+    ):
+        # A structured summary such as "in three parts: design, pilot,
+        # condition" is already represented by its named required sections.
+        # Adding an aggregate summary obligation as well would count one
+        # language act twice and could make a complete answer look partial.
         additions.append(
             {
                 "id": _obligation_id(

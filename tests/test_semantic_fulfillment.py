@@ -153,6 +153,28 @@ def test_visible_comparison_must_realize_candidates_and_findings() -> None:
     assert receipt["owner_fit"] is True
 
 
+def test_visible_comparison_accepts_reversibility_expressed_as_reversible() -> None:
+    obligation = _obligation("comparison")
+    result = _result(
+        obligation,
+        "comparison",
+        {
+            "candidates": ["Plan A", "Plan B"],
+            "findings": ["shared reversibility"],
+        },
+    )
+
+    receipt = evaluate_operation_fulfillment(
+        obligation,
+        "Plan A and Plan B are both reversible.",
+        result,
+    )
+
+    assert receipt["fulfilled"] is True
+    assert receipt["visible_semantics_performed"] is True
+    assert receipt["owner_fit"] is True
+
+
 def test_requested_method_count_is_part_of_fulfillment_truth() -> None:
     obligation = _obligation("method", requested_count=2)
     result = _result(

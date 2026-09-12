@@ -16,6 +16,11 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Conversation Cultivation Phase 7 — Semantic Coverage and Arbitration — September 12, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md)
+  — ranks visible candidates by whole-request coverage, requires completed
+  typed operations to be visibly performed, prevents bare labels from posing
+  as comparison findings, and closes the five bounded Phase 7 stabilization
+  cases while preserving the shared-realization defect for Phase 8.
 - [Conversation Cultivation Phase 6 — Typed Participation Ownership — September 12, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_6_TYPED_PARTICIPATION_20260912.md)
   — types acknowledgement, requested humor, recap, and natural closure through
   their existing owners, preserves expression-pending as distinct from missing

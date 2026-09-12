@@ -4,8 +4,10 @@ import re
 from typing import Any
 
 from .conversation_spine import evaluate_candidate_compatibility
+from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
 from .selective_formation_braid import map_supported_semantics_to_obligations
+from .semantic_fulfillment import evaluate_operation_fulfillment
 
 
 VISIBLE_SPEECH_BOUNDARY = (
@@ -185,6 +187,7 @@ def select_visible_speech_seed(
             source_id=source_id,
             source_class=source_class,
             obligations=obligations,
+            conversation_spine=conversation_spine or {},
             index=index,
         )
         inspection_record = {
@@ -292,6 +295,7 @@ def _candidate_fulfillment(
     source_id: str,
     source_class: str,
     obligations: list[dict[str, Any]],
+    conversation_spine: dict[str, Any],
     index: int,
 ) -> dict[str, Any]:
     packet = (
@@ -333,11 +337,29 @@ def _candidate_fulfillment(
     validated_ids = owner_valid_semantic_ids | set(owner_fit_ids)
     current_owner_gate = _current_owner_gate(
         candidate,
+        candidate_text=str(candidate.get("text") or ""),
         source_id=source_id,
         source_class=source_class,
         candidate_owner=candidate_owner,
         obligations=obligations,
     )
+    # Response Coverage is the existing owner of whole-request completion.
+    # Reuse it here so arbitration compares what each visible candidate
+    # actually performs instead of counting only claimed obligation ids.
+    typed_results = [
+        item
+        for item in candidate.get("typed_operation_results") or []
+        if isinstance(item, dict)
+    ]
+    response_coverage = evaluate_response_coverage(
+        {"response_obligations": obligations},
+        str(candidate.get("text") or ""),
+        conversation_spine=conversation_spine,
+        supported_semantics=packet,
+        answer_operations={"results": typed_results} if typed_results else {},
+    )
+    addressed_count = int(response_coverage.get("addressed_count") or 0)
+    resolved_count = int(response_coverage.get("resolved_count") or 0)
     governing_boundary_priority = bool(
         source_class == "boundary_response" or source_id == "core_mind_boundary"
     )
@@ -350,6 +372,9 @@ def _candidate_fulfillment(
             if current_owner_gate["priority_eligible"] is True
             else 0
         ),
+        1 if response_coverage.get("all_required_addressed") is True else 0,
+        addressed_count,
+        resolved_count,
         len(validated_ids),
         len(owner_fit_ids),
         1 if exactness_eligible else 0,
@@ -364,12 +389,16 @@ def _candidate_fulfillment(
         "exactness_eligible_after_owner_fit": exactness_eligible,
         "governing_boundary_priority": governing_boundary_priority,
         "current_owner_gate": current_owner_gate,
+        "response_coverage": response_coverage,
+        "visibly_addressed_obligation_count": addressed_count,
+        "visibly_resolved_obligation_count": resolved_count,
     }
 
 
 def _current_owner_gate(
     candidate: dict[str, Any],
     *,
+    candidate_text: str,
     source_id: str,
     source_class: str,
     candidate_owner: str,
@@ -407,6 +436,7 @@ def _current_owner_gate(
     }
     capable_ids: list[str] = []
     held: list[dict[str, str]] = []
+    fulfillment_receipts: dict[str, dict[str, Any]] = {}
     for obligation_id, obligation in required.items():
         result = result_by_id.get(obligation_id)
         if not result:
@@ -428,11 +458,22 @@ def _current_owner_gate(
         exact_domain_owner = bool(
             source_id == "answer_engine" and candidate.get("exactness_lock") is True
         )
+        typed_expression_delegation = bool(
+            result_source == source_id
+            and _owner_matches(result_owner, required_owner)
+        )
         owner_binding_valid = bool(
             _owner_matches(candidate_owner, required_owner)
             or delegated_session_owner
             or exact_domain_owner
+            or typed_expression_delegation
         )
+        fulfillment = evaluate_operation_fulfillment(
+            obligation,
+            candidate_text,
+            result,
+        )
+        fulfillment_receipts[obligation_id] = fulfillment
         reason = ""
         if result.get("status") != "completed":
             reason = "typed_owner_result_not_completed"
@@ -444,6 +485,8 @@ def _current_owner_gate(
             reason = "typed_result_does_not_preserve_obligation_owner"
         elif receipt.get("accounted_before_result") is not True:
             reason = "current_turn_input_not_accounted_before_result"
+        elif fulfillment.get("fulfilled") is not True:
+            reason = "typed_owner_result_not_visibly_fulfilled"
         if reason:
             held.append({"obligation_id": obligation_id, "reason": reason})
             continue
@@ -474,6 +517,7 @@ def _current_owner_gate(
         "capable_obligation_ids": sorted(capable_ids),
         "all_required_obligations_completed": all_required_completed,
         "held_obligations": held,
+        "semantic_fulfillment_receipts": fulfillment_receipts,
         "typed_result_count": len(typed_results),
         "current_turn_accounting_required": True,
         "obligation_ids_alone_are_proof": False,

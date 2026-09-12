@@ -5212,3 +5212,34 @@ No live Q&A, teaching, package, install, or resident mutation occurred.
 **Next:** Cultivation Phase 7 — mature semantic coverage and arbitration so a
 fluent candidate cannot pass after changing the active subject, losing an
 entity, or failing the requested operation.
+
+### 2026-09-12 — Cultivation Phase 7 proves semantic coverage at arbitration
+
+**Implementation:** Visible Speech now ranks candidates with the existing
+whole-request Response Coverage receipt and asks Semantic Fulfillment to prove
+that each completed current-owner operation is present in released meaning.
+Session Decision retains bare labels for continuity but does not manufacture
+comparison findings from names alone. Semantic noun/adjective variants are
+normalized, and named recap sections no longer receive a duplicate aggregate
+summary obligation.
+
+**Cultivation finding:** The current-owner gate had proved status, owner, and
+current-turn input, but not visible fulfillment. That allowed a partial or
+tautological current-session answer to suppress a richer current-turn/domain
+answer. The source repair makes operation performance and whole-request
+coverage part of arbitration rather than adding prompt-specific reply text.
+
+**Evidence:** 85 focused owner, coverage, planner, and exact Chat-path checks
+passed. The five Phase 7 cases in the prior six-case stabilization set now
+pass. The remaining `corrected meaning` phrase is deliberately retained as a
+Phase 8 shared-realization defect. Compilation passed and diff verification
+reported only Windows line-ending notices. Heavy suites, resident checks,
+build, packaging, reinstall, and live Q&A remain deferred to Phase 11. No
+resident or external state changed.
+
+**Evidence:**
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md`.
+
+**Next:** Cultivation Phase 8 — shared realization cleanup for internal
+correction/recovery wording, punctuation and symbol preservation, malformed
+subjects, and stale fallback contamination.

@@ -197,6 +197,36 @@ def test_structured_summary_request_keeps_each_named_part_inspectable():
     assert partial["unresolved_count"] == 2
 
 
+def test_contextual_summary_does_not_duplicate_explicit_named_sections():
+    prompt = (
+        "Summarize the plan in three short parts: the design, the pilot, "
+        "and the condition that would make us change course."
+    )
+    plan = build_pragmatic_plan(
+        {
+            "prompt": prompt,
+            "dialogue_workspace": {
+                "active_topic": "festival plan",
+                "pragmatics": {
+                    "utterance_units": [
+                        {"kind": "direct_request", "text": prompt}
+                    ],
+                    "contextual_follow_up": {
+                        "kind": "session_summary_request",
+                    },
+                    "previous_turn_available": True,
+                },
+            },
+        }
+    )
+
+    assert [item["kind"] for item in plan["response_obligations"]] == [
+        "requested_section",
+        "requested_section",
+        "requested_section",
+    ]
+
+
 def test_quantitative_obligation_requires_a_visible_quantity_not_only_topic_words():
     plan = {
         "response_obligations": [

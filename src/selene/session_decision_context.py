@@ -331,6 +331,13 @@ def _response(
 ) -> tuple[str, list[str], dict[str, Any]]:
     if len(options) < 2 or mode == "none" or not recommendation:
         return "", [], {}
+    if mode in {"comparison", "comparison_and_choice"} and not _comparison_basis_available(options):
+        # Names alone are enough to preserve which options are under
+        # discussion, but they are not findings.  Holding here leaves a richer
+        # current-turn/domain owner free to compare supplied properties rather
+        # than manufacturing self-definitions such as "Plan A is defined by
+        # Plan A."
+        return "", [], {}
     chosen = str(recommendation.get("option_label") or "")
     chosen_text = _option_with_article(
         next(
@@ -450,6 +457,29 @@ def _describe_option(option: dict[str, Any], subject: str) -> str:
     if len(properties) > 1:
         return f"The {label} combines {', '.join(properties[:-1])} and {properties[-1]}."
     return f"The {label} is defined here by {properties[0] if properties else label}."
+
+
+def _comparison_basis_available(options: list[dict[str, Any]]) -> bool:
+    """Require a visible distinction for every option before comparing it.
+
+    The option grammar deliberately preserves bare labels for continuity and
+    later reference resolution.  A comparison owner needs more: each option
+    must also carry at least one description that is not merely the label
+    repeated back to the speaker.
+    """
+
+    if len(options) < 2:
+        return False
+    for option in options:
+        label = _normalize(str(option.get("label") or ""))
+        properties = [
+            _normalize(str(item))
+            for item in option.get("properties") or []
+            if _normalize(str(item))
+        ]
+        if not properties or all(item == label for item in properties):
+            return False
+    return True
 
 
 def _option_with_article(option: dict[str, Any]) -> str:

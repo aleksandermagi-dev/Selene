@@ -130,3 +130,17 @@ def test_would_you_rather_paraphrase_uses_the_same_decision_owner() -> None:
         "read beside the window",
     ]
     _assert_bounded(result)
+
+
+def test_bare_comparison_labels_are_preserved_without_becoming_findings() -> None:
+    prompt = "Compare Plan A and Plan B as a Venn diagram."
+    result = build_session_decision_context(
+        {"session_id": 43, "prompt": prompt, "conversation_events": _events(prompt)}
+    )
+
+    assert [item["label"] for item in result["options"]] == ["plan a", "plan b"]
+    assert result["mode"] == "comparison"
+    assert result["available"] is False
+    assert result["response_seed"] == ""
+    assert result["supported_operations"] == []
+    _assert_bounded(result)

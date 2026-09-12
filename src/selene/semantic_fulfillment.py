@@ -560,6 +560,8 @@ def _term_key(word: str) -> str:
         "predictions": "prediction",
         "reasons": "reason",
         "relationships": "relationship",
+        "reliability": "reliable",
+        "reversibility": "reversible",
         "revisions": "revision",
         "steps": "step",
         "summaries": "summary",

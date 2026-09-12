@@ -351,6 +351,12 @@ def test_typed_current_owner_outranks_optional_learned_retrieval_with_new_entiti
         "responsible_owner": "ordinary_conversation_path",
         "status": "completed",
         "expression_source_id": "current_session_facts",
+        "fields": {
+            "selected_option": "old footbridge",
+            "criteria": [
+                "its condition may change which route is usable",
+            ],
+        },
         "current_turn_input_receipt": {
             "accounted_before_result": True,
             "owner_input_present": True,
@@ -397,6 +403,58 @@ def test_typed_current_owner_outranks_optional_learned_retrieval_with_new_entiti
     assert learned["fulfillment_arbitration"]["current_owner_gate"]["status"] == (
         "held_optional_learned_retrieval_is_not_current_owner"
     )
+
+
+def test_completed_current_owner_status_without_visible_semantics_is_held():
+    obligation = {
+        "id": "choose-route",
+        "kind": "choice_or_priority",
+        "source_text": "Would you rather map the creek path or inspect the old footbridge?",
+        "required": True,
+        "answer_act": "prompt_grounded_operation",
+        "responsible_owner": "ordinary_conversation_path",
+        "requested_response_functions": ["choice"],
+        "role_fit_required": True,
+    }
+    result = select_visible_speech_seed(
+        obligation["source_text"],
+        [
+            {
+                "source_id": "current_session_facts",
+                "source_class": "conversation",
+                "text": "I can choose between those routes.",
+                "obligation_ids": ["choose-route"],
+                "typed_operation_results": [
+                    {
+                        "obligation_id": "choose-route",
+                        "operation": "choice",
+                        "responsible_owner": "ordinary_conversation_path",
+                        "status": "completed",
+                        "expression_source_id": "current_session_facts",
+                        "fields": {},
+                        "current_turn_input_receipt": {
+                            "accounted_before_result": True,
+                        },
+                    }
+                ],
+            }
+        ],
+        conversation_spine={
+            "open_obligations": [obligation],
+            "intent_class": "direct_content",
+            "source_compatibility": {"compatible_source_classes": ["conversation"]},
+        },
+    )
+
+    gate = result["candidate_arbitration"]["current_owner_gate"]
+    assert gate["status"] == "held_no_capable_current_owner"
+    assert gate["selected_gate"]["held_obligations"] == [
+        {
+            "obligation_id": "choose-route",
+            "reason": "typed_owner_result_not_visibly_fulfilled",
+        }
+    ]
+    assert gate["selected_gate"]["capable_obligation_ids"] == []
 
 
 def test_current_owner_gate_holds_when_typed_completion_is_not_proved():
@@ -484,6 +542,12 @@ def test_partial_current_owner_does_not_take_whole_turn_priority():
                         "responsible_owner": "ordinary_conversation_path",
                         "status": "completed",
                         "expression_source_id": "current_session_facts",
+                        "fields": {
+                            "candidates": ["marsh path", "ridge path"],
+                            "findings": [
+                                "the marsh path is shorter than the ridge path",
+                            ],
+                        },
                         "current_turn_input_receipt": {
                             "accounted_before_result": True,
                         },
