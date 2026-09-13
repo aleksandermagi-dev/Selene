@@ -306,9 +306,42 @@ def test_correction_realization_preserves_supplied_changed_meaning_and_valid_con
         "preserve_valid_context",
     ]
     assert "semantic layer should come first" in result["candidate_text"]
+    assert "corrected meaning" not in result["candidate_text"].lower()
     assert "changed point is that" not in result["candidate_text"].lower()
     assert any(item["source"] == "supplied_corrected_meaning" for item in result["selected_realizations"])
     assert result["meaning_preserved"] is True
+
+
+def test_proved_revision_delegates_meaning_to_content_owner_without_social_scaffold():
+    plan = build_social_act_plan(
+        {
+            "intent": "receive_correction",
+            "prompt": "Actually, the deadline moved closer. What changes?",
+            "content_seed": (
+                "That changes the weighting: the deadline moved closer, but reliability "
+                "remains the controlling priority."
+            ),
+            "corrected_meaning": "the deadline moved closer",
+            "session_revision_completion": {
+                "owner_result_ready": True,
+                "response_seed": (
+                    "That changes the weighting: the deadline moved closer, but reliability "
+                    "remains the controlling priority."
+                ),
+            },
+        }
+    )
+    result = realize_social_act_plan(
+        plan,
+        prompt="Actually, the deadline moved closer. What changes?",
+        variation_key="proved-revision",
+    )
+
+    assert [item["act"] for item in plan["acts"]] == ["acknowledge_correction"]
+    assert plan["correction_meaning_realized_by_content_owner"] is True
+    assert plan["correction_social_layer_repeats_content"] is False
+    assert "corrected meaning" not in result["candidate_text"].lower()
+    assert "relevant part rather than resetting" not in result["candidate_text"].lower()
 
 
 def test_user_self_correction_cannot_be_realized_as_selenes_own_mistake():
@@ -334,7 +367,7 @@ def test_user_self_correction_cannot_be_realized_as_selenes_own_mistake():
     assert plan["acts"][0]["act"] == "receive_user_self_correction"
     assert plan["mistake_ownership_transfer_allowed"] is False
     assert "I had the wrong" not in result["candidate_text"]
-    assert "the reliable plan should come first" in result["candidate_text"]
+    assert "the reliable plan should come first" in result["candidate_text"].lower()
 
 
 def test_repair_acknowledgements_use_the_compositional_social_layer():

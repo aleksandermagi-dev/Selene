@@ -5577,6 +5577,11 @@ def test_current_session_decision_survives_comparison_revision_disagreement_and_
     assert "deadline moved closer" in revision["candidate_text"]
     assert "slow but reliable plan" in revision["candidate_text"]
     assert "corrected meaning" not in revision["candidate_text"].lower()
+    assert "relevant part rather than resetting" not in revision["candidate_text"].lower()
+    assert ": ," not in revision["candidate_text"]
+    assert revision["native_language_organ"]["discourse_plan"]["social_act_plan"][
+        "correction_meaning_realized_by_content_owner"
+    ] is True
     assert revision["session_revision_completion"]["owner_result_ready"] is True
     assert revision["session_revision_completion"]["selected_owner_id"] == "current_session_facts"
     assert revision["session_revision_completion"]["revision_id"]

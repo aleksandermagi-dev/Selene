@@ -1922,6 +1922,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
             "epistemic_revision_plan": epistemic_revision,
+            "session_revision_completion": session_revision_completion,
             "claim_evidence_packet": claim_evidence_packet,
             "structural_discovery": structural_discovery,
             "exploratory_reasoning": (

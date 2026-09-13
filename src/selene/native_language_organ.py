@@ -1907,6 +1907,11 @@ def _discourse_plan(prompt: str, meaning: dict[str, Any], payload: dict[str, Any
             "content_seed": meaning.get("content_seed") or "",
             "corrected_meaning": corrected_meaning,
             "epistemic_revision": meaning.get("epistemic_revision") or {},
+            "session_revision_completion": (
+                payload.get("session_revision_completion")
+                if isinstance(payload.get("session_revision_completion"), dict)
+                else {}
+            ),
             "turn_count": (meaning.get("conversation_context") or {}).get("turn_count") or 0,
             "affect_expression_guidance": meaning.get("affect_expression_guidance") or {},
             "relational_context": meaning.get("relational_context") or {},
@@ -3343,10 +3348,19 @@ def _correction_content(prompt: str) -> str:
     if ":" in text:
         text = text.split(":", 1)[1].strip()
     else:
-        match = re.search(r"\b(?:i meant|what i meant was|actually)\b\s*(.+)", text, flags=re.IGNORECASE)
+        match = re.search(
+            r"\b(?:i meant|what i meant was|actually)\b\s*[,;:-]?\s*(.+)",
+            text,
+            flags=re.IGNORECASE,
+        )
         if match:
             text = match.group(1).strip()
-    trailing_question = re.search(r"\s+(?:can|could|will|would|do|does|are|is)\s+[^?]+\?\s*$", text, flags=re.IGNORECASE)
+    trailing_question = re.search(
+        r"(?:^|(?<=[.!]))\s*(?:what|why|how|which|who|when|where|"
+        r"can|could|will|would|do|does|are|is)\b[^?]*\?\s*$",
+        text,
+        flags=re.IGNORECASE,
+    )
     if trailing_question:
         text = text[: trailing_question.start()].strip()
     text = text.rstrip(".!? ")

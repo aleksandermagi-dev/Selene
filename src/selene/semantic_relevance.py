@@ -77,7 +77,7 @@ _KNOWLEDGE_FUNCTION_ALIASES: dict[str, set[str]] = {
 
 _REQUEST_FUNCTION_TERMS = {
     "answer", "choose", "conclusion", "define", "definition", "describe",
-    "explain", "give", "identify", "name", "predict", "produce", "recommend",
+    "explain", "give", "identify", "mean", "meaning", "name", "predict", "produce", "recommend",
     "report", "say", "show", "state", "suggest", "summarize", "tell", "update",
 }
 
@@ -454,6 +454,10 @@ def _approved_knowledge_alignment_receipt(
         focus_text,
         strong_focus_subject_overlap,
     )
+    direct_predication = _candidate_directly_addresses_requested_subject(
+        candidate,
+        subject_overlap=strong_focus_subject_overlap,
+    )
     obligation_context_overlap = focus_subject_terms & full_candidate_terms
     if obligations:
         direct_subject = bool(
@@ -463,8 +467,11 @@ def _approved_knowledge_alignment_receipt(
                 and (
                     len(focus_subject_terms) == 1
                     or (
-                        _explicit_subject_focus(focus_text, strong_focus_subject_overlap)
-                        and len(obligation_context_overlap) >= 2
+                        explicit_focus
+                        and (
+                            len(obligation_context_overlap) >= 2
+                            or direct_predication
+                        )
                     )
                 )
             )
@@ -641,6 +648,7 @@ def _approved_knowledge_alignment_receipt(
             "obligation_subject_overlap": sorted(strong_focus_subject_overlap),
             "obligation_context_overlap": sorted(obligation_context_overlap),
             "explicit_subject_focus": explicit_focus,
+            "candidate_directly_addresses_subject": direct_predication,
             "application_alignment": transfer_application,
             "application_terms": sorted(focus_application_overlap),
         },
@@ -732,13 +740,43 @@ def _explicit_subject_focus(prompt: str, subject_overlap: set[str]) -> bool:
         return False
     lower = " ".join(prompt.lower().split())
     return any(
-        re.search(
-            rf"\b(?:explain|define|describe|understand|what\s+is|which|how\s+does|why\s+does|tell\s+me\s+about)"
-            rf"\b.{{0,55}}\b{re.escape(term)}\b",
-            lower,
+        any(
+            re.search(pattern, lower)
+            for pattern in (
+                rf"\b(?:explain|define|describe|understand|what\s+is|which|how\s+does|why\s+does|tell\s+me\s+about)"
+                rf"\b.{{0,55}}\b{re.escape(term)}\b",
+                rf"\bwhat\s+(?:does\s+)?\b{re.escape(term)}\b.{{0,35}}\b(?:mean|refer\s+to)\b",
+                rf"\bwhat\s+[a-z0-9_-]+\s+(?:is|are)\b.{{0,35}}\b{re.escape(term)}\b",
+            )
         )
         for term in subject_overlap
     )
+
+
+def _candidate_directly_addresses_requested_subject(
+    candidate: dict[str, Any],
+    *,
+    subject_overlap: set[str],
+) -> bool:
+    """Distinguish a claim *about* a named subject from a nearby word hit.
+
+    One subject term is enough only when it is both grammatically requested by
+    the current turn and appears in the leading subject position of the
+    reviewed title or central claim. Function alignment is checked separately
+    by the approved-knowledge receipt.
+    """
+
+    if not subject_overlap:
+        return False
+    for value in (candidate.get("central_claim"), candidate.get("title")):
+        ordered_terms = [
+            _singular(term)
+            for term in re.findall(r"[a-z0-9][a-z0-9_-]{1,}", str(value or "").lower())
+            if _singular(term) not in _STOP_TERMS
+        ]
+        if set(ordered_terms[:3]) & subject_overlap:
+            return True
+    return False
 
 
 def _deictic_request(value: str) -> bool:

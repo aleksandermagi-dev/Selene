@@ -5243,3 +5243,34 @@ resident or external state changed.
 **Next:** Cultivation Phase 8 — shared realization cleanup for internal
 correction/recovery wording, punctuation and symbol preservation, malformed
 subjects, and stale fallback contamination.
+
+### 2026-09-12 — Cultivation Phase 8 cleans shared realization and stale fallback release
+
+**Implementation:** A proved current-session revision now reaches the social
+realizer through NLO. The content owner states the changed meaning and updated
+answer once; the social owner may acknowledge it but cannot repeat internal
+`corrected meaning` or generic recovery narration. Correction extraction
+separates marker punctuation and a following question from the changed
+premise.
+
+**Cultivation finding:** The focused neighboring matrix found retained
+conversational teaching being displaced by another teaching invitation.
+Semantic Relevance did not recognize ordinary property and named-meaning
+questions as direct subject requests. The shared gate now accepts one strong
+subject term only when request grammar and the leading subject of the reviewed
+claim agree, with entity, operation, and response-function checks still
+required. Function words such as `mean` no longer masquerade as subject matter.
+
+**Evidence:** 88 focused checks passed. The exact changed-deadline reproduction
+selected `current_session_facts`, delegated correction meaning to that owner,
+and released one clean updated recommendation. Freshly taught sky and
+trailstar concepts were recalled normally; established peripheral-collision
+controls remained held. No resident state, live Q&A, package, install, or
+external action was used.
+
+**Evidence:**
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_8_SHARED_REALIZATION_20260912.md`.
+
+**Next:** Cultivation Phase 9 — verify generalization with novel paraphrases,
+changed entities, and varied sentence shapes. Keep heavy stabilization,
+frontend build, packaging, reinstall, and live Q&A deferred to Phase 11.

@@ -76,6 +76,70 @@ def test_named_subject_accepts_relevant_approved_knowledge_and_preserves_compari
     _assert_locked(result)
 
 
+def test_property_question_accepts_a_reviewed_claim_that_directly_addresses_its_subject():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "What color is the sky?",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Sky",
+                "domain": "general knowledge",
+                "concept_key": "sky_observation",
+                "central_claim": "The sky is blue most of the time.",
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": {
+                "open_obligations": [
+                    {
+                        "required": True,
+                        "source_text": "What color is the sky?",
+                        "requested_response_functions": ["answer"],
+                    }
+                ]
+            },
+        }
+    )
+
+    receipt = result["approved_knowledge_alignment"]
+    assert result["accepted"] is True
+    assert receipt["subject_alignment"]["explicit_subject_focus"] is True
+    assert receipt["subject_alignment"]["candidate_directly_addresses_subject"] is True
+    assert receipt["subject_alignment"]["obligation_subject_overlap"] == ["sky"]
+    _assert_locked(result)
+
+
+def test_meaning_question_accepts_a_reviewed_definition_of_its_named_subject():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": "What does trailstar mean?",
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Trailstar meaning",
+                "domain": "general knowledge",
+                "concept_key": "trailstar",
+                "central_claim": "A trailstar means a small paper marker used for this check.",
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": {
+                "open_obligations": [
+                    {
+                        "required": True,
+                        "source_text": "What does trailstar mean?",
+                        "requested_response_functions": ["definition"],
+                    }
+                ]
+            },
+        }
+    )
+
+    receipt = result["approved_knowledge_alignment"]
+    assert result["accepted"] is True
+    assert receipt["subject_alignment"]["explicit_subject_focus"] is True
+    assert receipt["subject_alignment"]["candidate_directly_addresses_subject"] is True
+    assert receipt["requested_function_alignment"]["aligned"] is True
+    _assert_locked(result)
+
+
 def test_explicit_memory_recall_and_contextual_memory_have_different_thresholds():
     candidate = {
         "title": "Butterfly Cocoon button",

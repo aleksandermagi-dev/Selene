@@ -506,6 +506,17 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         if isinstance(epistemic_revision.get("mistake_provenance"), dict)
         else {}
     )
+    session_revision_completion = (
+        payload.get("session_revision_completion")
+        if isinstance(payload.get("session_revision_completion"), dict)
+        else {}
+    )
+    correction_realized_by_content_owner = bool(
+        intent == "receive_correction"
+        and content_seed
+        and session_revision_completion.get("owner_result_ready") is True
+        and str(session_revision_completion.get("response_seed") or "").strip()
+    )
     affect_guidance = payload.get("affect_expression_guidance") if isinstance(payload.get("affect_expression_guidance"), dict) else {}
     dimensions = affect_guidance.get("dimensions") if isinstance(affect_guidance.get("dimensions"), dict) else {}
     turn_count = max(0, int(payload.get("turn_count") or 0))
@@ -557,6 +568,16 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
             "receive_user_self_correction" if act == "acknowledge_correction" else act
             for act in acts
         ]
+    if correction_realized_by_content_owner:
+        # The typed current-session owner has already consumed the changed
+        # premise and recomputed the answer.  The social owner acknowledges
+        # that update but does not narrate internal correction labels or add a
+        # second generic account of what remained valid.
+        acts = [
+            act
+            for act in acts
+            if act not in {"state_corrected_meaning", "preserve_valid_context"}
+        ]
 
     return {
         "status": "social_act_plan_ready" if acts else "social_act_plan_not_applicable",
@@ -587,6 +608,8 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         "content_seed_available": bool(content_seed),
         "corrected_meaning": corrected_meaning,
         "correction_attribution": correction_attribution,
+        "correction_meaning_realized_by_content_owner": correction_realized_by_content_owner,
+        "correction_social_layer_repeats_content": False,
         "mistake_ownership_transfer_allowed": False,
         "turn_count": turn_count,
         "affect_dimensions_consulted": {
@@ -1665,7 +1688,9 @@ def _corrected_clause(value: str) -> str:
     text = " ".join(value.split()).strip().rstrip(". ")
     if not text:
         return ""
-    return f"I understand the corrected meaning: {text}"
+    # The value is already the supplied corrected meaning.  Realize that
+    # meaning directly instead of exposing an internal correction label.
+    return text
 
 
 def _sentence(value: str, *, original: str = "") -> str:
