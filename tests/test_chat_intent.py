@@ -214,7 +214,7 @@ def test_correction_separates_refinement_from_trailing_confirmation_question(tmp
     social = result["discourse_plan"]["social_act_realization"]
     acknowledgement = social["selected_realizations"][0]["text"]
     assert result["candidate_text"].startswith(acknowledgement)
-    assert "the answer should reopen only when evidence changes the fit." in result["candidate_text"]
+    assert "the answer should reopen only when evidence changes the fit." in result["candidate_text"].lower()
     assert "Can you keep" not in result["candidate_text"]
 
 

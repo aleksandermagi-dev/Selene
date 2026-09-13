@@ -273,6 +273,7 @@ def prepare_session_proposition_revision(
             active,
             replaced=replaced,
             target=target,
+            corrected=corrected,
             prefer_visible_basis=bool(
                 correction.get("replacement_pair_extracted") is True
                 or (corrected and replaced)
@@ -571,9 +572,24 @@ def _match_targets(
     *,
     replaced: str,
     target: str,
+    corrected: str = "",
     prefer_visible_basis: bool = False,
 ) -> list[dict[str, Any]]:
     needles = [value for value in (replaced, target) if value and value != "the affected claim"]
+    deictic_replacement = bool(
+        re.match(
+            r"^(?:it|that|this|they|them|he|him|she|her)\b",
+            _normalize(replaced),
+        )
+    )
+    # A quoted deictic correction can clarify what an earlier clause meant
+    # without repeating that clause word-for-word ("it stopped" -> "the
+    # screen stopped flickering").  In that narrow case, the clarified text
+    # is evidence for binding the correction to an existing visible premise.
+    # It is never used for ordinary value replacement, where the corrected
+    # value may be genuinely new.
+    if deictic_replacement and corrected:
+        needles.append(corrected)
     if not needles:
         return []
     ranked: list[tuple[int, int, int, dict[str, Any]]] = []
@@ -586,7 +602,7 @@ def _match_targets(
                 and str(item.get("kind") or "")
                 in {
                     "premise", "observation", "source_statement", "claim",
-                    "relation", "condition", "constraint", "correction",
+                    "relation", "condition", "constraint", "correction", "sequence",
                 }
             )
             ranked.append((score, basis_priority, index, item))

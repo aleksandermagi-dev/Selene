@@ -5345,3 +5345,34 @@ The resident database SHA256 remained byte-for-byte unchanged at
 **Next:** Cultivation Phase 11 — integrated stabilization and resident
 integrity verification, followed by frontend build and an explicitly approved
 package/reinstall before one bounded gentle installed Q&A.
+
+### 2026-09-13 — Cultivation Phase 11 reaches a clean source stabilization gate
+
+**Cultivation findings:** Repository-wide verification exposed two real seams.
+A quoted deictic correction could be understood without binding to the earlier
+visible premise, allowing stale wording to win. Multi-part knowledge relevance
+could also separate a requested function from its explicitly named subject,
+allowing a neighboring lesson to borrow a peripheral word.
+
+**Source repairs:** The proposition ledger now binds deictic clarification to a
+visible basis; Contextual Speech recomposes only the invalidated visible result
+and proves consumption through the typed revision owner. Semantic Relevance
+keeps explicit function-subject attachments such as `limit of insulation`
+through final answer eligibility. Visible owner precedence and existing
+decision ownership remain intact. Six stale curriculum totals and one
+case-sensitive test expectation were refreshed without changing production.
+
+**Evidence:** Focused checks passed 47, then 6 after one owner-label interaction
+was identified. The final repository run passed 2,233 checks. Frontend build
+passed at 491.33 kB without the prior Vite warning. Cleanup dry-run and diff
+hygiene passed. Resident SQLite integrity was `ok` and remained byte-for-byte
+unchanged at
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+No resident mutation or live test occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_11_INTEGRATED_STABILIZATION_20260913.md`.
+
+**Next:** Checkpoint the clean source, package and reinstall the explicitly
+approved build, verify the installed artifacts, then run one bounded gentle
+installed Q&A and note findings before any repair.

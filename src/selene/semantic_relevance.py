@@ -245,6 +245,11 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
     candidate_roles = _candidate_roles(core_text, application_text, candidate)
     role_overlap = requested_roles & candidate_roles
     requested_functions = _requested_response_functions(spine)
+    # Preserve function/subject attachments that a broader dialogue-act pass
+    # may represent only as a generic direct answer.  The relevance gate is
+    # the final place where a neighboring approved lesson must be prevented
+    # from borrowing that omitted specificity.
+    requested_functions.update(_requested_function_subject_terms(prompt))
     performed_functions = {
         str(item).strip().lower()
         for item in candidate.get("performed_response_functions") or []
@@ -595,6 +600,17 @@ def _approved_knowledge_alignment_receipt(
         candidate_capacities.add("limitation")
     candidate_capacities.update(performed_functions)
 
+    function_subject_terms = _requested_function_subject_terms(focus_text)
+    function_subject_alignment = {
+        function: {
+            "required_terms": sorted(terms),
+            "matched_terms": sorted(terms & full_candidate_terms),
+            "aligned": bool(terms & full_candidate_terms),
+        }
+        for function, terms in function_subject_terms.items()
+        if function in requested_functions and terms
+    }
+
     missing_functions: set[str] = set()
     owner_only_functions = requested_functions & _KNOWLEDGE_OWNER_ONLY_FUNCTIONS
     for function in requested_functions:
@@ -603,7 +619,8 @@ def _approved_knowledge_alignment_receipt(
                 missing_functions.add(function)
             continue
         accepted_capacities = _KNOWLEDGE_FUNCTION_ALIASES.get(function, {function})
-        if not (accepted_capacities & candidate_capacities):
+        named_subject_fit = function_subject_alignment.get(function, {}).get("aligned", True)
+        if not (accepted_capacities & candidate_capacities) or not named_subject_fit:
             missing_functions.add(function)
     function_aligned = not missing_functions
 
@@ -679,11 +696,41 @@ def _approved_knowledge_alignment_receipt(
             "candidate_capacities": sorted(candidate_capacities),
             "owner_only_functions": sorted(owner_only_functions),
             "missing_functions": sorted(missing_functions),
+            "function_subject_alignment": function_subject_alignment,
         },
         "approval_substitutes_for_relevance": False,
         "single_overlap_term_is_sufficient_without_request_alignment": False,
         "writes_state": False,
     }
+
+
+def _requested_function_subject_terms(focus_text: str) -> dict[str, set[str]]:
+    """Keep an explicitly named function subject attached to that function.
+
+    A multi-part request such as "explain why X, and name one limit of Y"
+    must not let a neighboring lesson satisfy the limitation merely because it
+    shares a peripheral word with X.  This deliberately handles only explicit
+    grammatical attachments; it does not guess an unstated subject.
+    """
+
+    result: dict[str, set[str]] = {}
+    patterns = {
+        "limitation": (
+            r"\b(?:limits?|limitations?|exceptions?|counterexamples?)\s+"
+            r"(?:of|to|for)\s+(?P<subject>[^,.;?!]+?)(?=\s+(?:and|but)\b|[,.;?!]|$)"
+        ),
+    }
+    for function, pattern in patterns.items():
+        terms: set[str] = set()
+        for match in re.finditer(pattern, focus_text, flags=re.IGNORECASE):
+            terms.update(
+                _semantic_terms(match.group("subject"))
+                - _REQUEST_FUNCTION_TERMS
+                - _WEAK_SUBJECT_TERMS
+            )
+        if terms:
+            result[function] = terms
+    return result
 
 
 def _requested_roles(prompt: str, spine: dict[str, Any]) -> set[str]:

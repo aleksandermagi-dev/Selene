@@ -669,6 +669,133 @@ def session_fact_response_seed(
     return ""
 
 
+def session_revision_response_seed(
+    prompt: str,
+    conversation_spine: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Recompose one visible result after a bound deictic correction.
+
+    This owner only substitutes the user's clarified wording into a visible
+    current-session result whose dependency was invalidated by that correction.
+    It does not infer a new fact, consult Memory, or turn a generic correction
+    acknowledgement into proof that the changed premise was applied.
+    """
+
+    spine = conversation_spine if isinstance(conversation_spine, dict) else {}
+    ledger = (
+        spine.get("session_proposition_ledger")
+        if isinstance(spine.get("session_proposition_ledger"), dict)
+        else {}
+    )
+    recomputation = (
+        ledger.get("recomputation")
+        if isinstance(ledger.get("recomputation"), dict)
+        else {}
+    )
+    revision = (
+        ledger.get("current_revision")
+        if isinstance(ledger.get("current_revision"), dict)
+        else {}
+    )
+    if str(recomputation.get("state") or "") not in {
+        "required",
+        "held_pending_owner_result",
+    }:
+        return _session_revision_hold("no_bound_revision_requires_recomposition")
+
+    corrected = truncate(str(revision.get("corrected_text") or ""), 1200).strip()
+    replaced = truncate(str(revision.get("replaced_text") or ""), 1200).strip()
+    if not corrected or not replaced or not re.match(
+        r"^(?:it|that|this|they|them|he|him|she|her)\b",
+        _normalize_session_text(replaced),
+    ):
+        return _session_revision_hold("revision_is_not_a_deictic_clarification")
+
+    invalidated_ids = {
+        str(item)
+        for item in recomputation.get("invalidated_result_ids") or []
+        if str(item)
+    }
+    candidates = [
+        item
+        for item in ledger.get("propositions") or []
+        if isinstance(item, dict)
+        and str(item.get("id") or "") in invalidated_ids
+        and str(item.get("kind") or "") in {"result", "conclusion"}
+        and str(item.get("text") or "").strip()
+    ]
+    # Prefer the most complete dependent result, then the most recent one.
+    ranked = sorted(
+        enumerate(candidates),
+        key=lambda pair: (len(str(pair[1].get("text") or "")), pair[0]),
+        reverse=True,
+    )
+    source = ranked[0][1] if ranked else {}
+    source_text = truncate(str(source.get("text") or ""), 5000).strip()
+    predicate = re.sub(
+        r"^(?:it|that|this|they|them|he|him|she|her)\s+",
+        "",
+        replaced,
+        count=1,
+        flags=re.IGNORECASE,
+    ).strip()
+    if not source_text or not predicate:
+        return _session_revision_hold("no_visible_dependent_result_can_be_recomposed")
+
+    pattern = re.compile(rf"\b{re.escape(predicate)}\b", flags=re.IGNORECASE)
+    if not pattern.search(source_text):
+        return _session_revision_hold("clarified_predicate_is_not_visible_in_prior_result")
+    revised_text = pattern.sub(corrected, source_text, count=1)
+    if _normalize_session_text(revised_text) == _normalize_session_text(source_text):
+        return _session_revision_hold("visible_result_was_not_changed")
+
+    return {
+        "status": "session_revision_visible_result_recomposed",
+        "response_seed": revised_text,
+        "corrected_input": corrected,
+        "replaced_input": replaced,
+        "source_proposition_id": str(source.get("id") or ""),
+        "revision_id": str(recomputation.get("revision_id") or revision.get("revision_id") or ""),
+        "supported_operations": ["correction"],
+        "typed_owner_result": True,
+        "responsible_owner": True,
+        "current_turn_inputs_accounted_for": True,
+        "current_session_only": True,
+        "new_fact_generated": False,
+        "writes_state": False,
+        "durable_memory_write": False,
+        "identity_change": False,
+        "personality_change": False,
+        "governance_change": False,
+        "authority_change": False,
+    }
+
+
+def _session_revision_hold(reason: str) -> dict[str, Any]:
+    return {
+        "status": "session_revision_visible_result_not_recomposed",
+        "reason": reason,
+        "response_seed": "",
+        "corrected_input": "",
+        "supported_operations": [],
+        "typed_owner_result": False,
+        "responsible_owner": True,
+        "current_turn_inputs_accounted_for": False,
+        "current_session_only": True,
+        "new_fact_generated": False,
+        "writes_state": False,
+        "durable_memory_write": False,
+        "identity_change": False,
+        "personality_change": False,
+        "governance_change": False,
+        "authority_change": False,
+    }
+
+
+def _normalize_session_text(value: str) -> str:
+    return " ".join(str(value or "").lower().replace("’", "'").split())
+
+
 def _bounded_user_callback_subject(previous_user: str) -> str:
     """Turn one visible user statement into a bounded callback noun phrase.
 

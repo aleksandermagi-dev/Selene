@@ -63,6 +63,7 @@ from .contextual_speech import (
     contextual_response_seed,
     inspect_contextual_follow_up,
     session_fact_response_seed,
+    session_revision_response_seed,
 )
 from .dialogue_workspace import dialogue_workspace_status, prepare_dialogue_turn, record_dialogue_response
 from .dream_state import dream_state_status, expression_eligible_dream_reflection
@@ -700,25 +701,44 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         ).get("revision_id")
         or ""
     )
+    session_revision_owner = session_revision_response_seed(
+        meaning_text,
+        conversation_spine,
+    )
+    revision_owner_candidates = []
+    if session_decision_reply:
+        revision_owner_candidates.append(
+            {
+                "source_id": "current_session_facts",
+                "response_seed": session_decision_reply,
+                "supported_operations": session_decision_context.get("supported_operations") or [],
+                "revision_id": active_session_revision_id,
+                "consumed_revision_text": session_decision_correction_fields.get("corrected_input") or "",
+                "legacy_fixture_compatibility": False,
+                "typed_owner_result": True,
+                "responsible_owner": True,
+                "current_turn_inputs_accounted_for": True,
+            }
+        )
+    if session_revision_owner.get("response_seed"):
+        revision_owner_candidates.append(
+            {
+                "source_id": "current_session_revision",
+                "response_seed": session_revision_owner.get("response_seed") or "",
+                "supported_operations": session_revision_owner.get("supported_operations") or [],
+                "revision_id": session_revision_owner.get("revision_id") or active_session_revision_id,
+                "consumed_revision_text": session_revision_owner.get("corrected_input") or "",
+                "legacy_fixture_compatibility": False,
+                "typed_owner_result": session_revision_owner.get("typed_owner_result") is True,
+                "responsible_owner": session_revision_owner.get("responsible_owner") is True,
+                "current_turn_inputs_accounted_for": session_revision_owner.get("current_turn_inputs_accounted_for") is True,
+            }
+        )
     session_revision_completion = coordinate_session_revision_completion(
         {
             "session_id": session_id,
             "session_proposition_ledger": session_proposition_ledger,
-            "owner_candidates": [
-                {
-                    "source_id": "current_session_facts",
-                    "response_seed": session_decision_reply,
-                    "supported_operations": session_decision_context.get("supported_operations") or [],
-                    "revision_id": active_session_revision_id,
-                    "consumed_revision_text": session_decision_correction_fields.get("corrected_input") or "",
-                    "legacy_fixture_compatibility": False,
-                    "typed_owner_result": True,
-                    "responsible_owner": True,
-                    "current_turn_inputs_accounted_for": True,
-                }
-            ]
-            if session_decision_reply
-            else [],
+            "owner_candidates": revision_owner_candidates,
         }
     )
     if (
@@ -1563,9 +1583,29 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         conversation_spine=conversation_spine,
     )
     if (
+        correction_reconstruction_reply
+        and session_revision_completion.get("owner_result_ready") is True
+    ):
+        # A typed current-session revision owner has already proved that it
+        # consumed the corrected premise and recomposed the affected visible
+        # result.  General reasoning about the earlier wording must not
+        # outrank that completed correction.
+        visible_speech_seed = {
+            **visible_speech_seed,
+            "status": "visible_speech_seed_selected_session_revision_owner",
+            "content_seed": correction_reconstruction_reply,
+            "selected_source_id": str(
+                session_revision_completion.get("selected_owner_id")
+                or "current_session_revision"
+            ),
+            "selected_source_class": "conversation",
+            "typed_revision_owner_remains_primary": True,
+        }
+    if (
         bounded_hypothesis.get("selected_for_answer") is True
         and str(bounded_hypothesis.get("response_seed") or "").strip()
         and not session_decision_reply
+        and not correction_reconstruction_reply
     ):
         visible_speech_seed = {
             **visible_speech_seed,
@@ -1579,6 +1619,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         exploratory_reasoning.get("selected_for_answer") is True
         and exploratory_reasoning_content_seed
         and not session_decision_reply
+        and not correction_reconstruction_reply
     ):
         visible_speech_seed = {
             **visible_speech_seed,

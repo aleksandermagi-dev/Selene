@@ -140,6 +140,56 @@ def test_meaning_question_accepts_a_reviewed_definition_of_its_named_subject():
     _assert_locked(result)
 
 
+def test_named_limit_subject_rejects_a_neighboring_resource_in_a_multi_part_request():
+    result = evaluate_semantic_relevance(
+        {
+            "prompt": (
+                "Explain why soup in a sealed insulated container cools gradually, "
+                "and name one limit of insulation."
+            ),
+            "source_class": "approved_knowledge",
+            "candidate": {
+                "title": "Container capacity and current amount",
+                "domain": "measurement capacity",
+                "concept_key": "container_capacity",
+                "central_claim": (
+                    "A container's capacity is different from the amount currently inside it."
+                ),
+                "relationships": [
+                    "Current volume can change while container capacity stays fixed."
+                ],
+                "limits": ["Capacity alone does not report the present amount."],
+            },
+            "intent_decision": {"intent": "reasoning", "reasoning_requested": True},
+            "conversation_spine": {
+                "open_obligations": [
+                    {
+                        "required": True,
+                        "source_text": (
+                            "Explain why soup in a sealed insulated container cools gradually, "
+                            "and name one limit of insulation."
+                        ),
+                        "requested_response_functions": ["answer", "reason"],
+                    }
+                ]
+            },
+        }
+    )
+
+    receipt = result["approved_knowledge_alignment"]
+    limitation = receipt["requested_function_alignment"][
+        "function_subject_alignment"
+    ]["limitation"]
+    assert result["accepted"] is False
+    assert result["reason"] == (
+        "approved_knowledge_describes_but_does_not_perform_requested_operation"
+    )
+    assert limitation["required_terms"] == ["insulation"]
+    assert limitation["matched_terms"] == []
+    assert limitation["aligned"] is False
+    _assert_locked(result)
+
+
 def test_explicit_memory_recall_and_contextual_memory_have_different_thresholds():
     candidate = {
         "title": "Butterfly Cocoon button",

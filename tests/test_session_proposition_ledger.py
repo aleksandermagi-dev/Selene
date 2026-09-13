@@ -11,6 +11,7 @@ from selene.session_proposition_ledger import (
     record_visible_session_propositions,
 )
 from selene.current_turn_fact_ledger import build_current_turn_fact_ledger
+from selene.contextual_speech import session_revision_response_seed
 
 
 def _prior_ledger() -> dict:
@@ -142,6 +143,65 @@ def test_extracted_replacement_pair_prefers_visible_premise_over_downstream_resu
     assert by_id["equal-groups-premise"]["status"] == "superseded"
     assert by_id["equal-groups-result"]["status"] == "invalidated"
     assert revised["recomputation"]["state"] == "required"
+    _assert_bounded(revised)
+
+
+def test_deictic_clarification_binds_and_recomposes_the_visible_dependent_result() -> None:
+    prior = {
+        "session_id": 8,
+        "propositions": [
+            {
+                "id": "screen-observation",
+                "kind": "observation",
+                "text": "The screen flickered once and then stopped.",
+                "status": "active",
+                "depends_on": [],
+                "thread_id": "thread-screen",
+            },
+            {
+                "id": "screen-result",
+                "kind": "result",
+                "text": (
+                    "Observation: the screen flickered once and then stopped. "
+                    "Interpretation: the interruption may have been temporary."
+                ),
+                "status": "active",
+                "depends_on": ["screen-observation"],
+                "thread_id": "thread-screen",
+            },
+        ],
+        "revision_history": [],
+    }
+    revised = prepare_session_proposition_revision(
+        {
+            "session_id": 8,
+            "prior_ledger": prior,
+            "correction_refinement": {
+                "detected": True,
+                "corrected_meaning": "the screen stopped flickering",
+                "replaced_meaning": "it stopped",
+                "replacement_pair_extracted": True,
+            },
+            "epistemic_revision_plan": {
+                "detected": True,
+                "update_kind": "correction",
+                "target": "it stopped",
+            },
+        }
+    )
+    owner = session_revision_response_seed(
+        "By 'it stopped' I meant the screen stopped flickering.",
+        {"session_proposition_ledger": revised},
+    )
+
+    assert revised["current_revision"]["matched_proposition_ids"] == [
+        "screen-observation"
+    ]
+    assert revised["recomputation"]["state"] == "required"
+    assert owner["typed_owner_result"] is True
+    assert "screen stopped flickering" in owner["response_seed"].lower()
+    assert "interruption may have been temporary" in owner["response_seed"].lower()
+    assert owner["new_fact_generated"] is False
     _assert_bounded(revised)
 
 

@@ -113,9 +113,9 @@ def test_maturity_ledger_generates_current_repository_curriculum_counts(tmp_path
         "f2_concept_count": 41,
         "coding_group_count": 1,
         "coding_concept_count": 5,
-        "language_group_count": 12,
-        "language_capability_count": 73,
-        "defined_approved_knowledge_capacity": 225,
+        "language_group_count": 15,
+        "language_capability_count": 96,
+        "defined_approved_knowledge_capacity": 248,
     }
     conn.close()
 

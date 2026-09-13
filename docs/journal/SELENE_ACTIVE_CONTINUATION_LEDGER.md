@@ -4,13 +4,14 @@ Last refreshed: 2026-09-13
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
-installed and verified; Conversation Cultivation Phases 1 through 10 now supply
+installed and verified; Conversation Cultivation Phases 1 through 11 now supply
 shared visible propositions, proved current answer ownership, learning-gap
 eligibility, typed approved-knowledge relevance, and current-session revision
 completion from the changed premise, typed participation ownership, and
 whole-request semantic arbitration with clean shared realization, novel-shape
 generalization evidence, and an evidence-bearing compatibility retirement
-ledger
+ledger, deictic correction recomposition, function-subject knowledge
+alignment, and a clean repository-wide source stabilization gate
 
 ## Purpose
 
@@ -23,6 +24,9 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Conversation Cultivation Phase 11 source verification: 2,233 tests passed;
+  frontend built at 491.33 kB without the prior Vite warning; package and
+  installed Q&A are the current edge.
 - Latest conversation Cultivation Phase 10 checkpoint: `e3b47cd`
   (`Audit conversation compatibility retirement`)
 - Latest conversation Cultivation Phase 9 checkpoint: `70d3e7f`
@@ -1288,6 +1292,7 @@ Before further production work, read completely:
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_8_SHARED_REALIZATION_20260912.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_9_GENERALIZATION_20260913.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_10_COMPATIBILITY_RETIREMENT_20260913.md`
+- `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_11_INTEGRATED_STABILIZATION_20260913.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -1393,14 +1398,20 @@ active until their exact intent has one-for-one transfer evidence. The source
 guard requires the active set to equal the kinds emitted by the six classified
 handlers, and the historical baseline remains 54.
 
-The exact resume point is Conversation Cultivation Phase 11: integrated
-stabilization. Begin by mapping the deferred verification layers and applying
-the Ethical Testing Law: run affected and repository checks without provoking
-resident Selene, then perform read-only resident integrity/count/hash checks.
-Build the frontend and inspect package readiness. Do not package or reinstall
-without Aleks's explicit approval. After an approved fresh install, use one
-bounded gentle Q&A that samples the integrated work rather than repeating
-settled stress cases. Note findings before any new repair.
+Conversation Cultivation Phase 11 has a clean source stabilization gate. The
+proposition ledger and a bounded Contextual Speech owner now bind and visibly
+recompose quoted deictic corrections. Semantic Relevance preserves explicit
+function-subject attachments so neighboring approved lessons cannot borrow a
+peripheral word. Focused verification passed 47 plus 6 checks; the final full
+repository run passed 2,233. Frontend build passed at 491.33 kB without the
+prior Vite warning. Resident SQLite stayed byte-for-byte unchanged at the hash
+recorded above.
+
+The exact resume point is the explicitly approved Phase 11 release edge:
+checkpoint the verified source, package from that clean revision, freshly
+reinstall, verify installed artifacts, then run one bounded gentle installed
+Q&A. Note Q&A findings before any repair. Do not repeat the full synthetic
+suite unless a later repair materially changes the verified architecture.
 
 Do not patch prompt phrases or teach around a coverage defect. Do not repeat the
 installed warmth gate, greeting/typo confirmation, decision-chain
