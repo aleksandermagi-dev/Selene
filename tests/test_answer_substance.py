@@ -5,7 +5,9 @@ import inspect
 import textwrap
 
 from selene.answer_substance import (
+    COMPATIBILITY_AUDIT_BASELINE_KINDS,
     LEGACY_FIXTURE_COMPATIBILITY_KINDS,
+    RETIRED_LEGACY_FIXTURE_COMPATIBILITY_KINDS,
     _conflicting_reports_operation,
     _desk_organization_operation,
     _foundational_current_prompt_operation,
@@ -416,6 +418,20 @@ def test_general_operation_is_not_mislabeled_as_fixture_compatibility():
     assert receipt["exact_replay_sufficient_for_general_capability"] is False
 
 
+def test_typed_current_context_owner_is_retired_from_fixture_compatibility():
+    result = build_answer_substance("How does a less noisy workshop sound?")
+
+    receipt = result["compatibility_receipt"]
+    assert result["answer_kind"] == "grounded_current_context_inference"
+    assert "less competing noise" in result["answer"].lower()
+    assert receipt["status"] == "general_owner_replacement_verified"
+    assert receipt["legacy_fixture_compatibility"] is False
+    assert receipt["retired_from_legacy_fixture_compatibility"] is True
+    assert receipt["general_capability_evidence_eligible"] is True
+    assert receipt["changed_entity_or_paraphrase_verified"] is True
+    assert "owner:current_context_inference" in receipt["retirement_evidence"]
+
+
 def test_general_owner_runs_before_the_legacy_fixture_fallback(monkeypatch):
     import selene.answer_substance as module
 
@@ -460,4 +476,16 @@ def test_every_literal_fixture_handler_is_present_in_the_compatibility_inventory
     discovered = set().union(*(_literal_operation_kinds(handler) for handler in handlers))
 
     assert discovered
-    assert discovered <= LEGACY_FIXTURE_COMPATIBILITY_KINDS
+    assert discovered == LEGACY_FIXTURE_COMPATIBILITY_KINDS
+
+
+def test_compatibility_retirement_preserves_the_original_audit_ledger():
+    assert len(COMPATIBILITY_AUDIT_BASELINE_KINDS) == 54
+    assert len(LEGACY_FIXTURE_COMPATIBILITY_KINDS) == 53
+    assert RETIRED_LEGACY_FIXTURE_COMPATIBILITY_KINDS == {
+        "grounded_current_context_inference"
+    }
+    assert not (
+        LEGACY_FIXTURE_COMPATIBILITY_KINDS
+        & RETIRED_LEGACY_FIXTURE_COMPATIBILITY_KINDS
+    )

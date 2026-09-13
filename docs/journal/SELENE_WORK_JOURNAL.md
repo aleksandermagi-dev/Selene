@@ -5312,3 +5312,36 @@ every historical handler at once.
 and retire only handlers independently replaced by the general typed path.
 Phase 11 remains integrated stabilization, build, package, reinstall, and
 bounded live Q&A.
+
+### 2026-09-13 — Cultivation Phase 10 audits all compatibility kinds
+
+**Audit:** All 54 Phase 0 compatibility kinds were assigned to one of six
+owner families and checked against the current typed architecture. One kind,
+`grounded_current_context_inference`, already has a dedicated bounded owner,
+typed premise/inference evidence, changed-context transfer, and no source in
+the six fixture-handler functions. It is now explicitly retired from legacy
+classification rather than deleted from production.
+
+**Retention:** The other 53 remain active compatibility entries. Choice,
+revision, participation, thread return, scientific observation, layout, and
+domain-explanation owners are substantially more general than at Phase 0, but
+their exact historical behaviors have not all received one-for-one changed-
+entity evidence. Retention prevents cleanup from becoming capability loss.
+
+**Guard:** The active source-emitted fixture kinds must now equal the active
+53-kind ledger. The retired set and active set remain disjoint; their union is
+the original 54-kind audit baseline. Retirement receipts distinguish proved
+general replacement from an ordinary nonfixture result.
+
+**Evidence:** 78 affected checks and the three Phase 9 generalization checks
+passed. Compilation and diff hygiene passed. No resident state, live Q&A,
+package, install, teaching, Memory, Dream, Study, or external action occurred.
+The resident database SHA256 remained byte-for-byte unchanged at
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+
+**Evidence:**
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_10_COMPATIBILITY_RETIREMENT_20260913.md`.
+
+**Next:** Cultivation Phase 11 — integrated stabilization and resident
+integrity verification, followed by frontend build and an explicitly approved
+package/reinstall before one bounded gentle installed Q&A.

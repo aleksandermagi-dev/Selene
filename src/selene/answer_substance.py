@@ -44,7 +44,6 @@ LEGACY_FIXTURE_COMPATIBILITY_KINDS = frozenset(
         "fairness_consistency_contextual_distinction",
         "fraction_comparison_check_explanation",
         "grounded_conflicting_reports",
-        "grounded_current_context_inference",
         "grounded_desk_comparison",
         "grounded_desk_correction",
         "grounded_desk_exception_revision",
@@ -83,6 +82,21 @@ LEGACY_FIXTURE_COMPATIBILITY_KINDS = frozenset(
         "three_field_observation_log",
         "visible_observation_hypothesis_and_alternative",
     }
+)
+
+# Retirement is evidence-bearing rather than destructive. Keeping the retired
+# kind visible here preserves the original 54-kind audit baseline and makes it
+# impossible to mistake removal from the active fallback ledger for an
+# unrecorded deletion. Each entry must have a dedicated typed owner plus
+# changed-entity or paraphrase evidence before it can move into this set.
+RETIRED_LEGACY_FIXTURE_COMPATIBILITY_KINDS = frozenset(
+    {
+        "grounded_current_context_inference",
+    }
+)
+COMPATIBILITY_AUDIT_BASELINE_KINDS = (
+    LEGACY_FIXTURE_COMPATIBILITY_KINDS
+    | RETIRED_LEGACY_FIXTURE_COMPATIBILITY_KINDS
 )
 
 
@@ -1119,19 +1133,32 @@ def _operation_compatibility_receipt(
 ) -> dict[str, Any]:
     kind = str(answer_kind or "")
     classified = kind in LEGACY_FIXTURE_COMPATIBILITY_KINDS
+    retired = kind in RETIRED_LEGACY_FIXTURE_COMPATIBILITY_KINDS
     return {
         "status": (
             "legacy_fixture_compatibility_classified"
             if classified
+            else "general_owner_replacement_verified"
+            if retired
             else "general_or_nonfixture_answer_path"
         ),
         "answer_kind": kind,
         "legacy_fixture_compatibility": classified,
+        "retired_from_legacy_fixture_compatibility": retired,
         "general_capability_evidence_eligible": not classified,
         "exact_replay_sufficient_for_general_capability": False,
         "shared_owner_precedence_applied": True,
         "retire_only_after_general_owner_verification": classified,
-        "changed_entity_or_paraphrase_verified": False,
+        "changed_entity_or_paraphrase_verified": retired,
+        "retirement_evidence": (
+            [
+                "owner:current_context_inference",
+                "tests:test_current_context_inference",
+                "evidence:conversation_cultivation_phase_10",
+            ]
+            if retired
+            else []
+        ),
     }
 
 

@@ -16,6 +16,10 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Conversation Cultivation Phase 10 — Compatibility Retirement Audit — September 13, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_10_COMPATIBILITY_RETIREMENT_20260913.md)
+  — audits all 54 historical answer kinds, retires one proved dedicated owner
+  from legacy classification, and retains 53 until one-for-one transfer is
+  independently demonstrated.
 - [Conversation Cultivation Phase 9 — Generalization Verification — September 13, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_9_GENERALIZATION_20260913.md)
   — proves transfer across novel decision/revision/prediction, conversational
   teaching/recall, and mixed-participation cases without scenario phrases.
