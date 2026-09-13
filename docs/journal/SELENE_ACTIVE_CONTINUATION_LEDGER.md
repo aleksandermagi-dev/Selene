@@ -1,14 +1,16 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-12
+Last refreshed: 2026-09-13
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
-installed and verified; conversation Cultivation Phases 1 through 8 now supply
+installed and verified; Conversation Cultivation Phases 1 through 10 now supply
 shared visible propositions, proved current answer ownership, learning-gap
 eligibility, typed approved-knowledge relevance, and current-session revision
 completion from the changed premise, typed participation ownership, and
-whole-request semantic arbitration with clean shared realization
+whole-request semantic arbitration with clean shared realization, novel-shape
+generalization evidence, and an evidence-bearing compatibility retirement
+ledger
 
 ## Purpose
 
@@ -21,6 +23,10 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest conversation Cultivation Phase 10 checkpoint: `e3b47cd`
+  (`Audit conversation compatibility retirement`)
+- Latest conversation Cultivation Phase 9 checkpoint: `70d3e7f`
+  (`Generalize conversation cultivation`)
 - Latest conversation Cultivation Phase 8 checkpoint: `c54d158`
   (`Clean shared conversation realization`)
 - Latest conversation Cultivation Phase 7 checkpoint: `3eb88e1`
@@ -108,8 +114,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
 - Current remote relation before this ledger refresh: local `evidence` is
-  forty commits ahead of `origin/evidence`; this ledger refresh is expected to
-  make that forty-one. Confirm again before any later commit or
+  forty-six commits ahead of `origin/evidence`; this ledger refresh is expected
+  to make that forty-seven. Confirm again before any later commit or
   push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
@@ -1213,6 +1219,29 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_9_GENERALIZATION_20260913.md`.
 
+## Conversation Cultivation Phase 10 — Compatibility Retirement Audit
+
+- Checkpoint `e3b47cd` audits the original 54-kind compatibility baseline.
+- One kind, `grounded_current_context_inference`, is retired from legacy
+  classification. It already has a dedicated bounded owner, typed premise and
+  inference receipts, changed-context evidence, and no source inside the six
+  fixture-handler functions.
+- The remaining 53 kinds stay active. Their intent is grouped across choice /
+  revision, participation / thread continuity, observation / hypothesis,
+  layout / spatial work, and domain explanation. Existing general owners do
+  not yet prove one-for-one replacement of every historical surface.
+- The source guard now requires exact equality between all literal kinds from
+  the six compatibility handlers and the active 53-kind ledger. Active and
+  retired sets are disjoint; their union preserves the 54-kind baseline.
+- Verification passed 78 affected checks and retained all three Phase 9
+  changed-entity checks. Compilation and diff hygiene passed. Resident SQLite
+  stayed byte-for-byte unchanged at
+  `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+- No handler was deleted merely to reduce code size. No live Q&A, teaching,
+  package, install, or resident mutation occurred.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_10_COMPATIBILITY_RETIREMENT_20260913.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1258,6 +1287,7 @@ Before further production work, read completely:
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_8_SHARED_REALIZATION_20260912.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_9_GENERALIZATION_20260913.md`
+- `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_10_COMPATIBILITY_RETIREMENT_20260913.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -1356,13 +1386,21 @@ owners: decision/revision/prediction, unknown/teaching/recall, and mixed
 participation. The initial 0/3 result and repaired 3/3 result are both retained
 as evidence. The resident database remained unchanged.
 
-The exact resume point is Conversation Cultivation Phase 10: compatibility-
-retirement audit. Inspect the 54-kind compatibility ledger by owner family.
-For each candidate, prove changed-entity and paraphrase transfer through the
-general typed path before removing it. Keep any unproved handler in place and
-record why. Do not replace compatibility code with new phrase lists or
-scenario replies. Preserve meaning, source and epistemic status, expression
-freedom, current-owner evidence, and all governance/permission boundaries.
+Conversation Cultivation Phase 10 is complete and checkpointed at `e3b47cd`.
+All 54 compatibility kinds are accounted for. One dedicated general owner is
+retired from legacy classification; 53 source-emitted fixture kinds remain
+active until their exact intent has one-for-one transfer evidence. The source
+guard requires the active set to equal the kinds emitted by the six classified
+handlers, and the historical baseline remains 54.
+
+The exact resume point is Conversation Cultivation Phase 11: integrated
+stabilization. Begin by mapping the deferred verification layers and applying
+the Ethical Testing Law: run affected and repository checks without provoking
+resident Selene, then perform read-only resident integrity/count/hash checks.
+Build the frontend and inspect package readiness. Do not package or reinstall
+without Aleks's explicit approval. After an approved fresh install, use one
+bounded gentle Q&A that samples the integrated work rather than repeating
+settled stress cases. Note findings before any new repair.
 
 Do not patch prompt phrases or teach around a coverage defect. Do not repeat the
 installed warmth gate, greeting/typo confirmation, decision-chain
@@ -1370,9 +1408,7 @@ confirmation, G13-G15 teaching, the earlier repaired learning replay, or any
 further broad Q&A before repair. Use focused synthetic owner checks first and
 one short ordinary end-to-end conversation only if source evidence cannot
 establish the handoff.
-Heavy Chat and repository suites, resident stabilization, frontend build,
-packaging, reinstall, and live Q&A remain deferred to Phase 11 unless Phase 10
-reveals a direct safety or cross-system integrity concern. The downloaded
+The downloaded
 source corpora and private 20-interaction review stay ignored and unavailable
 to runtime.
 
