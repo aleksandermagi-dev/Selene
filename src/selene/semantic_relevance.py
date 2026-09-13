@@ -433,13 +433,22 @@ def _approved_knowledge_alignment_receipt(
     for obligation in obligations:
         source_text = str(obligation.get("source_text") or "").strip()
         topic = str(obligation.get("topic") or "").strip()
-        focus_texts.extend(value for value in (source_text, topic) if value)
+        if source_text:
+            focus_texts.append(source_text)
         source_terms = _semantic_terms(source_text)
-        if len(source_terms) <= 1 or _deictic_request(source_text):
+        if not source_text or len(source_terms) <= 1 or _deictic_request(source_text):
+            if topic:
+                focus_texts.append(topic)
             parent = str(obligation.get("parent_source_text") or "").strip()
             if parent:
                 focus_texts.append(parent)
     focus_text = " ".join(dict.fromkeys(focus_texts)).strip() or prompt
+    focus_text = re.sub(
+        r"^(?:in|using)\s+(?:your|different)\s+(?:own\s+)?words\s*[,;:-]?\s*",
+        "",
+        focus_text,
+        flags=re.IGNORECASE,
+    ).strip() or focus_text
     focus_terms = _semantic_terms(focus_text)
     focus_subject_terms = focus_terms - _REQUEST_FUNCTION_TERMS
     focus_subject_overlap = focus_subject_terms & subject_terms

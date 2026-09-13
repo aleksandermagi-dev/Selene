@@ -67,7 +67,10 @@ def build_session_decision_context(payload: dict[str, Any] | None = None) -> dic
     active_evidence_updates = [
         item for item in evidence_updates if item.get("hypothetical") is not True
     ]
-    if mode == "revision" and _is_hypothetical_evidence(prompt):
+    if mode in {"revision", "prediction"} and _is_hypothetical_evidence(prompt):
+        # A declared hypothetical is not promoted to an observed session fact.
+        # It is, however, the evidence space the current revision/prediction
+        # explicitly asks us to reason within.
         active_evidence_updates = evidence_updates
     recommendation = _choose_option(
         options,
@@ -187,14 +190,16 @@ def _extract_constraint_updates(turns: list[str]) -> list[str]:
     for text in turns:
         for clause in re.split(r"[.;?!]|\s*,\s*(?:but|and)\s+", text):
             clean = re.sub(
-                r"^(?:actually|now|so)\s*,?\s+",
+                r"^(?:(?:actually|now|so)\s*,?\s+|(?:update|revision)\s*[:,-]\s*)",
                 "",
                 clause.strip(" ,;:."),
                 flags=re.IGNORECASE,
             )
             if re.search(
-                r"\b(?:deadline|budget|time|capacity|staffing|risk|cost|requirement|constraint)\b"
-                r".{0,80}\b(?:moved|changed|increased|decreased|closer|shorter|longer|tighter|looser)\b",
+                r"\b(?:deadline|budget|time|capacity|staffing|risk|cost|requirement|constraint|"
+                r"window|access|opening|gate)\b.{0,80}\b"
+                r"(?:moved|changed|increased|decreased|closer|shorter|longer|tighter|looser|"
+                r"closes?|opens?)\b",
                 clean,
                 flags=re.IGNORECASE,
             ):
@@ -206,13 +211,18 @@ def _extract_evidence_updates(turns: list[str], options: list[dict[str, Any]]) -
     result: list[dict[str, Any]] = []
     for text in turns:
         lower = _normalize(text)
-        if not re.search(r"\b(?:evidence|data|result|showed|shows|failed|fails|succeeded|succeeds)\b", lower):
+        if not re.search(
+            r"\b(?:evidence|data|results?|inspections?|tests?|trials?|observations?|"
+            r"showed|shows|found|finds|failed|fails|succeeded|succeeds|worked|works|"
+            r"better|worse|breaks?|broke|broken|cracks?|cracked)\b",
+            lower,
+        ):
             continue
         for option in options:
             alias = _matched_alias(lower, option)
             if not alias:
                 continue
-            negative = bool(re.search(rf"\b{re.escape(alias)}\b.{{0,60}}\b(?:fail|fails|failed|worse|less reliable|breaks?)\b", lower))
+            negative = bool(re.search(rf"\b{re.escape(alias)}\b.{{0,60}}\b(?:fail|fails|failed|worse|less reliable|breaks?|cracks?|cracked)\b", lower))
             positive = bool(re.search(rf"\b{re.escape(alias)}\b.{{0,60}}\b(?:succeed|succeeds|worked|works|better|more reliable)\b", lower))
             if negative or positive:
                 result.append(
@@ -299,7 +309,10 @@ def _choose_option(
 
 def _request_mode(prompt: str) -> str:
     lower = _normalize(prompt)
-    if re.search(r"\b(?:best prediction|predict|what do you expect|most likely)\b", lower):
+    if re.search(
+        r"\b(?:best prediction|predict|prediction|forecast|what do you expect|most likely)\b",
+        lower,
+    ):
         return "prediction"
     if re.search(r"\b(?:do you disagree|do you agree|agree or disagree|your stance)\b", lower):
         return "disagreement"
@@ -364,7 +377,7 @@ def _response(
         operations = ["comparison"]
         fields: dict[str, Any] = {"comparison": comparison_fields}
         if mode == "comparison_and_choice":
-            reason = f"it best matches the stated priority of {priority}" if priority else str((recommendation.get("basis") or [""])[0])
+            reason = str((recommendation.get("basis") or [""])[0])
             text += f" I would start with {chosen_text} because {reason}."
             text += " I would revise that choice if the priority or the outcome evidence changed."
             operations.append("choice")
@@ -386,7 +399,10 @@ def _response(
         else:
             changed = constraint_updates[-1] if constraint_updates else "the latest condition changed"
             text = f"That changes the weighting: {changed.rstrip('.')}"
-            text += f", but {priority} remains the controlling priority." if priority else "."
+            if priority and priority not in _normalize(changed):
+                text += f", but {priority} remains the controlling priority."
+            else:
+                text += "."
         text += f" I would update the recommendation to {chosen_text}."
         if not latest_evidence and priority and re.search(r"\bdeadline\b", changed, flags=re.IGNORECASE):
             text += " The tighter deadline makes the tradeoff closer; it does not erase the priority you kept."
@@ -422,7 +438,21 @@ def _response(
         basis = [*priorities, *[str(item.get("text") or "") for item in evidence_updates]]
         text = f"My best prediction from what we have is {chosen_text}."
         if latest_evidence:
-            text += f" The latest reported evidence weighs {latest_evidence['direction']} the {latest_evidence['option_label']}."
+            evidence_clause = re.split(
+                r"(?<=[.!?])\s+",
+                str(latest_evidence.get("text") or "the latest evidence").strip(),
+                maxsplit=1,
+            )[0].rstrip(".?!")
+            if latest_evidence.get("hypothetical") is True:
+                text += (
+                    f" In that hypothetical, {evidence_clause} would weigh "
+                    f"{latest_evidence['direction']} the {latest_evidence['option_label']}."
+                )
+            else:
+                text += (
+                    f" The latest reported evidence—{evidence_clause}—weighs "
+                    f"{latest_evidence['direction']} the {latest_evidence['option_label']}."
+                )
         elif priority:
             text += f" That follows from {priority} being the current priority."
         text += " It is a revisable prediction, not a guaranteed outcome; I would update it if the premises or results changed."
@@ -504,6 +534,8 @@ def _terms(value: str) -> list[str]:
     result = []
     for item in re.findall(r"[a-z][a-z0-9_-]{1,}", _normalize(value)):
         term = aliases.get(item, item)
+        if term == item and item.endswith("iness") and len(item) > 6:
+            term = f"{item[:-5]}y"
         if term not in result:
             result.append(term)
     return result
@@ -516,6 +548,7 @@ def _normalize(value: str) -> str:
 def _is_hypothetical_evidence(value: str) -> bool:
     return bool(
         re.search(
+            r"(?:^|[.!?]\s+)(?:suppose|assuming|imagine)\b|"
             r"(?:^|[.!?]\s+)if\s+(?:the\s+)?(?:evidence|data|results?)\b|"
             r"\bif\s+.+?\b(?:showed|shows|failed|fails|succeeded|succeeds)\b",
             str(value or ""),

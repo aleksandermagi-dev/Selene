@@ -152,7 +152,7 @@ def enrich_obligation_ownership(
         owner = "intelligence_os"
         completion_policy = "owner_must_perform_requested_operation"
         response_functions = ["counterfactual"]
-    elif _prediction_requested(lower) and generic_kind:
+    elif kind == "prediction" or (_prediction_requested(lower) and generic_kind):
         answer_act = "prompt_grounded_prediction"
         epistemic_basis = "visible_premises_and_bounded_model"
         owner = "intelligence_os"

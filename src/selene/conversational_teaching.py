@@ -1038,6 +1038,21 @@ def _question_subject(value: Any) -> str:
     )
     if request_wrapper:
         body = request_wrapper.group("body").strip()
+        whether = re.match(
+            r"^whether\s+(?P<subject>.+?)\s+"
+            r"(?:(?:already|currently|usually|often|ever|still)\s+)*"
+            r"(?:have|has|mean|means|refer|refers|work|works|exist|exists|"
+            r"contain|contains|include|includes|use|uses|need|needs|cause|"
+            r"causes|require|requires|look|looks|sound|sounds|feel|feels|"
+            r"seem|seems|belong|belongs|change|changes)\b",
+            body,
+        )
+        if whether:
+            subject_words = _WORD.findall(whether.group("subject"))
+            if subject_words and subject_words[0].lower() in {"the", "a", "an"}:
+                subject_words = subject_words[1:]
+            if subject_words:
+                return truncate(" ".join(subject_words[:10]), 240)
         nested = re.match(
             r"^(?:about\s+)?what\s+(?:is|are|does|do)\s+(?P<subject>.+)$",
             body,

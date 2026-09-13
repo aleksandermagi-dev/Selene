@@ -1039,6 +1039,13 @@ def _correction_refinement(
     if quoted_replacement and not corrected:
         replaced = quoted_replacement.group("replaced").strip(" ,.!?")
         corrected = quoted_replacement.group("corrected").strip(" ,.!?")
+    marked_revision = re.match(
+        r"^(?:update|revision)\s*[:,-]\s*(?P<corrected>.+?)(?=[.!?](?:\s|$)|$)",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if marked_revision and not corrected:
+        corrected = marked_revision.group("corrected").strip(" ,.!?")
     first = re.search(patterns[0], normalized, flags=re.IGNORECASE)
     if first and not corrected:
         corrected, replaced = first.group(1), first.group(2)
@@ -1073,6 +1080,7 @@ def _correction_refinement(
             replaced, corrected = definition.group(1), definition.group(2)
     explicit_marker = bool(
         re.search(r"\b(?:i meant|not what i meant|correction)\b", normalized, flags=re.IGNORECASE)
+        or re.search(r"^(?:update|revision)\s*[:,-]\s+\S", normalized, flags=re.IGNORECASE)
         or re.search(
             r"(?:^|[.!?;]\s*|\bbut\s+)actually\s*,?\s+"
             r"(?:the|a|an|i|we|you|it|that|this|they|he|she)\b",

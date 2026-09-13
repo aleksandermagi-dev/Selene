@@ -16,8 +16,11 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
-- [Conversation Cultivation Phase 7 — Semantic Coverage and Arbitration — September 12, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md)
+- [Conversation Cultivation Phase 9 — Generalization Verification — September 13, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_9_GENERALIZATION_20260913.md)
+  — proves transfer across novel decision/revision/prediction, conversational
+  teaching/recall, and mixed-participation cases without scenario phrases.
 - [Conversation Cultivation Phase 8 — Shared Realization Cleanup — September 12, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_8_SHARED_REALIZATION_20260912.md)
+- [Conversation Cultivation Phase 7 — Semantic Coverage and Arbitration — September 12, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md)
   — ranks visible candidates by whole-request coverage, requires completed
   typed operations to be visibly performed, prevents bare labels from posing
   as comparison findings, and closes the five bounded Phase 7 stabilization

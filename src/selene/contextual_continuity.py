@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .conversation_signals import explicit_humor_request
 from .registry import truncate
 
 
@@ -370,19 +371,7 @@ def _humor_decision(
     shared_joke: dict[str, Any],
     affect: dict[str, Any],
 ) -> dict[str, Any]:
-    explicit_humor_request = bool(
-        re.search(
-            r"\b(?:give|tell|make|write|share)\s+(?:me\s+)?(?:one\s+|a\s+|an\s+)?"
-            r"(?:little\s+|small\s+|quick\s+|short\s+)?(?:joke|pun)\b",
-            lower,
-        )
-        or re.search(
-            r"\bgive\s+(?:the\s+)?[a-z][a-z0-9' -]{1,100}?\s+"
-            r"(?:one|a|an)\s+(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
-            r"(?:joke|pun)\b",
-            lower,
-        )
-    )
+    humor_requested = explicit_humor_request(lower)
     user_opened_play = _contains_any(lower, _PLAY_CUES) and not bool(
         re.search(
             r"\b(?:no|not|without|avoid|skip|omit|separate|apart)\b[^.!?]{0,80}\b(?:joke|pun)\b"
@@ -398,7 +387,7 @@ def _humor_decision(
     elif affect_humor == "contextually_held_this_turn" and not user_opened_play:
         posture = "hold"
         reason = "The current conversation context holds humor for this turn without making it generally unavailable."
-    elif explicit_humor_request:
+    elif humor_requested:
         posture = "requested_once"
         reason = "The user explicitly requested one bounded humorous aside."
     elif user_opened_play:
@@ -412,14 +401,14 @@ def _humor_decision(
         "reason": reason,
         "tender_context": tender,
         "user_opened_play": user_opened_play,
-        "explicit_humor_request": explicit_humor_request,
+        "explicit_humor_request": humor_requested,
         "shared_joke_available": shared_joke.get("available") is True,
         "shared_joke_may_surface": (
             shared_joke.get("available") is True
             and user_opened_play
             and posture == "available_not_required"
         ),
-        "humor_required": explicit_humor_request,
+        "humor_required": humor_requested,
         "one_fitting_turn_then_release": True,
     }
 

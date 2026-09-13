@@ -306,7 +306,7 @@ def _facts_from_clause(
 
     criterion = ""
     criterion_match = re.search(
-        r"\b(?P<criterion>[^.!?;]{2,140}?)\s+(?:matters?|counts?)\s+more\b|"
+        r"\b(?P<criterion>[^.!?;]{2,140}?)\s+(?:still\s+)?(?:matters?|counts?)\s+(?:more|most)\b|"
         r"\b(?:criterion|priority|deciding factor)\s+(?:is|will be|should be)\s+(?P<named>[^.!?;]{2,140})|"
         r"\bbecause\s+(?P<because>[^.!?;]{2,160})",
         clean,

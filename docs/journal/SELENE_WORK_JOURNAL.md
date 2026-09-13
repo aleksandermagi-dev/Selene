@@ -5274,3 +5274,41 @@ external action was used.
 **Next:** Cultivation Phase 9 — verify generalization with novel paraphrases,
 changed entities, and varied sentence shapes. Keep heavy stabilization,
 frontend build, packaging, reinstall, and live Q&A deferred to Phase 11.
+
+### 2026-09-13 — Cultivation Phase 9 proves changed-entity generalization
+
+**Initial observation:** A novel three-family matrix began at 0/3. Concrete
+counted alternatives, `matters most`, marked updates, same-turn hypothetical
+predictions, own-words teaching questions, and combined acknowledgement /
+recap / humor / closure requests crossed adjacent owners with inconsistent
+grammar. This was treated as connective-tissue evidence, not Selene failing.
+
+**Cultivation repair:** Shared signals now own explicit humor, conversational
+closure, and marked revision cues. Proposition Normalization accepts visibly
+counted concrete alternative sets. Current-turn criteria, Session Decision
+prediction and hypothetical evidence, Pragmatic Planning, Semantic Relevance,
+Conversational Teaching, and Answer Ownership now preserve one compatible
+meaning across their handoffs. Hypothetical evidence can shape the requested
+prediction without becoming an observed fact. No scenario answer was added.
+
+**Evidence:** The same changed-entity matrix reached 3/3. It proved a cart
+decision through revision and prediction, unknown-to-teaching-to-recall for a
+new term, and one mixed participation turn with acknowledgement, two-point
+recap, requested humor, and closure. The focused owner/matrix run passed 128
+checks; five additional exact Chat paths passed. Compilation and diff hygiene
+passed. The resident database remained byte-for-byte unchanged at
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+No resident teaching, Memory, Dream, Study, live Q&A, package, install, or
+external action occurred.
+
+**Compatibility:** The 54-kind compatibility inventory remains intact. These
+three transfers are evidence for their shared owners, not permission to remove
+every historical handler at once.
+
+**Evidence:**
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_9_GENERALIZATION_20260913.md`.
+
+**Next:** Cultivation Phase 10 — audit compatibility families one at a time
+and retire only handlers independently replaced by the general typed path.
+Phase 11 remains integrated stabilization, build, package, reinstall, and
+bounded live Q&A.

@@ -5,7 +5,11 @@ from hashlib import sha256
 from typing import Any
 
 from .answer_ownership import current_preference_requested, enrich_obligation_ownership
-from .conversation_signals import correction_signal
+from .conversation_signals import (
+    correction_signal,
+    explicit_conversational_closure_request,
+    explicit_humor_request,
+)
 from .registry import truncate
 
 
@@ -838,7 +842,7 @@ def _unit_obligations(
                 r"(?:^|[):.!?]\s*)(?:summarize|recap|take\s+(?:this|these)\s+in\s+order|"
                 r"give|tell|show|look\s+at|compare|contrast|explain|name|revise|update|adjust|return|"
                 r"recommend|choose|pick|select|suggest|propose|ask|write|make|sort|arrange|describe|identify|state|disagree|"
-                r"let\s+the\s+(?:conversation|chat)\s+end)\b",
+                r"let\s+the\s+(?:conversation|chat)\s+end|close)\b",
                 text,
                 flags=re.IGNORECASE,
                 )
@@ -917,13 +921,7 @@ def _request_kind(text: str) -> str:
         lower,
     ):
         return "conditional_disagreement" if " if " in f" {lower} " else "disagreement"
-    if re.search(
-        r"\b(?:let|allow)\b.*\b(?:conversation|chat)\b.*\bend\b|\bend\b.*\bnaturally\b|"
-        r"\b(?:leave|stop|pause) (?:it|this|that|the\s+[a-z][a-z0-9' -]{0,80}) (?:here|there)(?:\s+for\s+now)?\b|"
-        r"\b(?:talk|chat|speak)(?:\s+again)?\s+(?:later|tomorrow|next time|another time)\b|"
-        r"\b(?:get|come|go|return) back to\b.{0,100}\b(?:later|tomorrow|next time|another time)\b",
-        lower,
-    ):
+    if explicit_conversational_closure_request(lower):
         return "closure"
     if re.search(r"\b(?:summarize|recap|summary)\b", lower):
         return "session_summary"
@@ -1005,7 +1003,7 @@ def _participation_obligations(
                 "kind": "acknowledgement",
                 "dialogue_act": acknowledgement_act,
                 "participation_act": acknowledgement_act,
-                "source_text": prompt,
+                "source_text": _dialogue_act_source(prompt, acknowledgement_act),
                 "topic": "",
                 "coverage_terms": [],
                 "required": True,
@@ -1070,20 +1068,25 @@ def _participation_obligations(
     return additions
 
 
+def _dialogue_act_source(prompt: str, act: str) -> str:
+    """Keep one participation act from inheriting a neighbor's constraints."""
+
+    patterns = {
+        "gratitude": r"\b(?:thank(?:s|\s+you)?|appreciate)\b",
+        "affirmation": r"\b(?:exactly|absolutely|agreed|right)\b",
+        "reassurance_received": r"\b(?:that helps|feel better|reassur)\w*\b",
+    }
+    marker = patterns.get(str(act or ""), "")
+    if not marker:
+        return prompt
+    for sentence in re.split(r"(?<=[.!?])\s+", str(prompt or "")):
+        if re.search(marker, sentence, flags=re.IGNORECASE):
+            return truncate(sentence.strip(), 480)
+    return prompt
+
+
 def _explicit_humor_request(lower: str) -> bool:
-    return bool(
-        re.search(
-            r"\b(?:give|tell|make|write|share|add|include|put in)\s+(?:me\s+)?(?:one\s+|a\s+|an\s+)?"
-            r"(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?(?:joke|pun)\b",
-            lower,
-        )
-        or re.search(
-            r"\bgive\s+(?:the\s+)?[a-z][a-z0-9' -]{1,100}?\s+"
-            r"(?:one|a|an)\s+(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
-            r"(?:joke|pun)\b",
-            lower,
-        )
-    )
+    return explicit_humor_request(lower)
 
 
 def _bind_obligations_to_threads(
@@ -1176,6 +1179,13 @@ def _question_kind(question: str) -> str:
         return "comparison"
     if re.search(r"\b(?:best grounded guess|best guess|current guess|provisional)\b", lower):
         return "provisional_inference"
+    if re.search(
+        r"\b(?:predict|prediction|forecast)\b|"
+        r"\bwhat (?:would|should|might) (?:follow|happen|occur|we expect|you expect)\b|"
+        r"\bwhat would we (?:see|observe) if\b",
+        lower,
+    ):
+        return "prediction"
     if lower.startswith("why") or " why " in lower:
         return "reason"
     if re.search(
@@ -1217,7 +1227,8 @@ def _is_response_format_directive(value: str) -> bool:
     return bool(
         re.fullmatch(
             r"(?:in )?(?:one|two|three|four|five|\d+) (?:short |brief )?"
-            r"(?:parts|points|sentences|paragraphs|steps)",
+            r"(?:parts|points|sentences|paragraphs|steps)|"
+            r"(?:in|using) (?:your|different) (?:own )?words",
             text,
         )
     )
@@ -1374,7 +1385,7 @@ def _split_coordinated_acts(text: str, *, interrogative: bool) -> list[str]:
         r"can|could|would|will|"
         r"compare|contrast|explain|give|tell|show|look\s+at|list|summarize|recap|say|"
         r"recommend|choose|pick|select|name|describe|identify|state|separate|distinguish|revise|update|adjust|"
-        r"calculate|count|walk|use|add|include|put|return|end|let|disagree|challenge)"
+        r"calculate|count|walk|use|add|include|put|return|end|close|let|disagree|challenge)"
     )
     normalized = re.sub(
         r"(?i)\b(?:first|second|third|finally|lastly)\s*,?\s*",

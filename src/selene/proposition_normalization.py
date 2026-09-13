@@ -27,6 +27,19 @@ def extract_visible_options(text: str) -> dict[str, Any]:
         normalized,
         flags=re.IGNORECASE,
     )
+    if not container:
+        # A counted, colon-delimited set is an option container even when the
+        # speaker names concrete objects instead of calling them "options".
+        # Requiring both the visible count and repeated determiners keeps this
+        # bounded to explicit alternatives.
+        container = re.search(
+            r"\b(?:have|consider|compare|between)\s+"
+            r"(?:two|three|four|\d+)\s+"
+            r"(?P<subject>[a-z][a-z0-9'-]*(?:\s+[a-z][a-z0-9'-]*){0,2})\s*:\s*"
+            r"(?P<body>(?:one|a|an|the)\s+[^.?!]{2,880})",
+            normalized,
+            flags=re.IGNORECASE,
+        )
     if container:
         parts = re.split(
             r"\s*,\s*(?:and\s+)?(?=(?:one|a|an|the)\s+)|"
@@ -193,7 +206,7 @@ def _clean_subject(value: str) -> str:
 
 def _singular_subject(value: str) -> str:
     normalized = str(value or "").lower()
-    return {
+    mapped = {
         "plans": "plan",
         "options": "option",
         "choices": "choice",
@@ -201,7 +214,13 @@ def _singular_subject(value: str) -> str:
         "routes": "route",
         "designs": "design",
         "candidates": "candidate",
-    }.get(normalized, normalized)
+    }.get(normalized)
+    if mapped:
+        return mapped
+    words = normalized.split()
+    if words and words[-1].endswith("s") and not words[-1].endswith("ss"):
+        words[-1] = words[-1][:-1]
+    return " ".join(words)
 
 
 def _key(value: str) -> str:
