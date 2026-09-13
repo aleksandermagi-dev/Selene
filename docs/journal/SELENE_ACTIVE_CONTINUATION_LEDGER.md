@@ -4,11 +4,11 @@ Last refreshed: 2026-09-12
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
-installed and verified; conversation Cultivation Phases 1 through 7 now supply
+installed and verified; conversation Cultivation Phases 1 through 8 now supply
 shared visible propositions, proved current answer ownership, learning-gap
 eligibility, typed approved-knowledge relevance, and current-session revision
 completion from the changed premise, typed participation ownership, and
-whole-request semantic arbitration
+whole-request semantic arbitration with clean shared realization
 
 ## Purpose
 
@@ -21,6 +21,8 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest conversation Cultivation Phase 8 checkpoint: `c54d158`
+  (`Clean shared conversation realization`)
 - Latest conversation Cultivation Phase 7 checkpoint: `3eb88e1`
   (`Complete cultivation phase 7 semantic arbitration`)
 - Latest conversation Cultivation Phase 6 checkpoint: `6cd72a0`
@@ -1166,6 +1168,29 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md`.
 
+## Conversation Cultivation Phase 8 — Shared Realization Cleanup
+
+- Checkpoint `c54d158` completes shared correction realization and stale-
+  fallback cleanup through the existing current-session owner, NLO/social
+  realization, Semantic Relevance, and Conversational Teaching handoffs.
+- A proved revision is stated once by its responsible content owner. The
+  social owner may acknowledge it but does not expose `corrected meaning` or
+  add a second generic recovery account.
+- Correction extraction removes marker punctuation and separates a following
+  question, preventing malformed `: ,` and question-as-meaning surfaces.
+- Ordinary property and named-meaning questions now prove direct reviewed-
+  knowledge relevance only when request grammar and the leading subject of
+  the reviewed claim agree. Entity, operation, and requested-function checks
+  remain required; one shared word alone is still not authority.
+- The focused matrix passed 88 checks. Exact reproduction selected
+  `current_session_facts` and released one clean changed-deadline answer.
+  Freshly taught sky and trailstar facts were recalled; peripheral-collision
+  controls remained held. Compilation and diff hygiene passed.
+- Heavy suites, resident checks, build, packaging, reinstall, and live Q&A
+  remain deferred to Phase 11. No resident or external state changed.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_8_SHARED_REALIZATION_20260912.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1209,6 +1234,7 @@ Before further production work, read completely:
 - `docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_6_TYPED_PARTICIPATION_20260912.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md`
+- `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_8_SHARED_REALIZATION_20260912.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -1223,8 +1249,8 @@ externally, or mutate resident continuity.
 
 ## Exact Resume Point
 
-Phase 8 remains complete for current scope. Cultivation and G13 through G15
-are committed, taught, installed, and boundedly verified. The conversational-
+Whole-system Phase 8 remains complete for current scope. Cultivation and G13
+through G15 are committed, taught, installed, and boundedly verified. The conversational-
 teaching bridge committed at `8c0154e` and the response-composition cultivation
 repair committed at `61242fb` are installed. The configured resident language
 shelf remains 96/96.
@@ -1294,14 +1320,19 @@ surface. Bare labels cannot pose as comparison findings, and structured recap
 sections no longer create a redundant summary obligation. Five bounded Phase
 7 stabilization cases pass.
 
-The exact resume point is Phase 8: shared realization cleanup. Trace the
-remaining current-session correction surface that exposes `corrected meaning`,
-then inspect the same shared release path for punctuation/symbol preservation,
-malformed subjects, and stale fallback contamination. Repair the common
-realization owner rather than filtering individual phrases. Preserve supported
-meaning, source and epistemic status, conversational expression freedom, and
-typed operation evidence. Do not create a monolithic conversation organ or add
-scenario-specific answer phrases.
+Conversation Cultivation Phase 8 is complete and checkpointed at `c54d158`.
+A proved current-session correction is realized once by its content owner;
+social acknowledgement no longer repeats internal recovery labels. Correction
+punctuation is clean. Direct property and meaning questions can retrieve
+reviewed knowledge when the request and claim subjects align, while peripheral
+one-word collisions remain held. The exact focused matrix passed 88 checks.
+
+The exact resume point is Conversation Cultivation Phase 9: generalization
+verification. Exercise the Phase 1–8 owners with novel paraphrases, changed
+entities, and varied sentence shapes. First record whether each route transfers;
+repair only a demonstrated shared root and do not add scenario-specific answer
+phrases. Preserve supported meaning, source and epistemic status,
+conversational expression freedom, and typed operation evidence.
 The 54-kind compatibility inventory remains the removal ledger: replace a
 scenario handler only after changed-entity and paraphrase transfer is proved.
 
@@ -1311,22 +1342,22 @@ confirmation, G13-G15 teaching, the earlier repaired learning replay, or any
 further broad Q&A before repair. Use focused synthetic owner checks first and
 one short ordinary end-to-end conversation only if source evidence cannot
 establish the handoff.
-Keep the remaining shared-realization case separate from the five Phase 7
-cases now closed in bounded reproduction. Heavy Chat and repository suites,
-resident stabilization, frontend build, packaging, reinstall, and live Q&A
-remain deferred to Phase 11 unless Phase 8 reveals a direct safety or
-cross-system integrity concern. The downloaded source corpora and private
-20-interaction review stay ignored and unavailable to runtime.
+Heavy Chat and repository suites, resident stabilization, frontend build,
+packaging, reinstall, and live Q&A remain deferred to Phase 11 unless Phase 9
+reveals a direct safety or cross-system integrity concern. The downloaded
+source corpora and private 20-interaction review stay ignored and unavailable
+to runtime.
 
 The private Aleks/Selene corpus remains available through authenticated,
 post-transfer, read-only continuity recall. It is not generic language
-training, and no duplicate Memory copy should be made. Phase 9 perception
-remains separate and unstarted. Any later source checkpoint must continue
+training, and no duplicate Memory copy should be made. Whole-system Phase 9
+perception remains separate and unstarted; it is not Conversation Cultivation
+Phase 9. Any later source checkpoint must continue
 excluding `docs/HACKATHON_CODEX_WORKFLOW_LOG.md`.
 
-If Phase 9 is later resumed, begin with perception source mapping only; do not
-infer sensor, microphone, camera, audible Voice, network, external-action, or
-embodiment authority.
+If whole-system Phase 9 perception is later resumed, begin with perception
+source mapping only; do not infer sensor, microphone, camera, audible Voice,
+network, external-action, or embodiment authority.
 
 Do not create an unrestricted autonomy switch, hidden agenda, organ turf war,
 silent commitment loss, external action authority, identity/personality/Vys
