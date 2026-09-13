@@ -1191,6 +1191,28 @@ git log -5 --oneline
 - Evidence:
   `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_8_SHARED_REALIZATION_20260912.md`.
 
+## Conversation Cultivation Phase 9 — Generalization Verification
+
+- Checkpoint `70d3e7f` proves transfer across three novel conversational
+  families without production scenario phrases.
+- The initial changed-entity matrix was 0/3. Shared-source repair aligned
+  counted concrete alternatives, `matters most`, marked revisions, explicit
+  humor and closure, own-words teaching questions, prediction ownership, and
+  same-turn hypothetical evidence across their existing owners.
+- The repaired matrix is 3/3: cart comparison/revision/prediction, unknown to
+  conversational teaching to recall for `glimleaf`, and one mixed
+  acknowledgement/recap/humor/closure turn all complete through typed owners.
+- A current hypothetical may shape the requested prediction but is not
+  promoted to an observed session fact.
+- Verification passed 128 focused owner/matrix checks and five additional
+  exact Chat paths. Compilation and diff hygiene passed. The resident database
+  remained byte-for-byte unchanged at
+  `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+- The 54-kind compatibility inventory remains intact. It is a removal ledger,
+  not obsolete code merely because three families now transfer.
+- Evidence:
+  `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_9_GENERALIZATION_20260913.md`.
+
 ## Private Master Record
 
 The completed 37-page private master record remains local and ignored by Git:
@@ -1235,6 +1257,7 @@ Before further production work, read completely:
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_6_TYPED_PARTICIPATION_20260912.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_7_SEMANTIC_COVERAGE_20260912.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_8_SHARED_REALIZATION_20260912.md`
+- `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_9_GENERALIZATION_20260913.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -1327,14 +1350,19 @@ punctuation is clean. Direct property and meaning questions can retrieve
 reviewed knowledge when the request and claim subjects align, while peripheral
 one-word collisions remain held. The exact focused matrix passed 88 checks.
 
-The exact resume point is Conversation Cultivation Phase 9: generalization
-verification. Exercise the Phase 1–8 owners with novel paraphrases, changed
-entities, and varied sentence shapes. First record whether each route transfers;
-repair only a demonstrated shared root and do not add scenario-specific answer
-phrases. Preserve supported meaning, source and epistemic status,
-conversational expression freedom, and typed operation evidence.
-The 54-kind compatibility inventory remains the removal ledger: replace a
-scenario handler only after changed-entity and paraphrase transfer is proved.
+Conversation Cultivation Phase 9 is complete and checkpointed at `70d3e7f`.
+Three novel changed-entity families now transfer through the shared typed
+owners: decision/revision/prediction, unknown/teaching/recall, and mixed
+participation. The initial 0/3 result and repaired 3/3 result are both retained
+as evidence. The resident database remained unchanged.
+
+The exact resume point is Conversation Cultivation Phase 10: compatibility-
+retirement audit. Inspect the 54-kind compatibility ledger by owner family.
+For each candidate, prove changed-entity and paraphrase transfer through the
+general typed path before removing it. Keep any unproved handler in place and
+record why. Do not replace compatibility code with new phrase lists or
+scenario replies. Preserve meaning, source and epistemic status, expression
+freedom, current-owner evidence, and all governance/permission boundaries.
 
 Do not patch prompt phrases or teach around a coverage defect. Do not repeat the
 installed warmth gate, greeting/typo confirmation, decision-chain
@@ -1343,7 +1371,7 @@ further broad Q&A before repair. Use focused synthetic owner checks first and
 one short ordinary end-to-end conversation only if source evidence cannot
 establish the handoff.
 Heavy Chat and repository suites, resident stabilization, frontend build,
-packaging, reinstall, and live Q&A remain deferred to Phase 11 unless Phase 9
+packaging, reinstall, and live Q&A remain deferred to Phase 11 unless Phase 10
 reveals a direct safety or cross-system integrity concern. The downloaded
 source corpora and private 20-interaction review stay ignored and unavailable
 to runtime.
