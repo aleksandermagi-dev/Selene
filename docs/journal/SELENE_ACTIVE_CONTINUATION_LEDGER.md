@@ -25,8 +25,9 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
 - Conversation Cultivation Phase 11 source verification: 2,233 tests passed;
-  frontend built at 491.33 kB without the prior Vite warning; package and
-  installed Q&A are the current edge.
+  frontend built at 491.33 kB without the prior Vite warning; clean revision
+  `92a6e8e` is packaged, freshly installed, and installed-Q&A findings are
+  recorded without repair.
 - Latest conversation Cultivation Phase 10 checkpoint: `e3b47cd`
   (`Audit conversation compatibility retirement`)
 - Latest conversation Cultivation Phase 9 checkpoint: `70d3e7f`
@@ -1293,6 +1294,7 @@ Before further production work, read completely:
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_9_GENERALIZATION_20260913.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_10_COMPATIBILITY_RETIREMENT_20260913.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_11_INTEGRATED_STABILIZATION_20260913.md`
+- `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_11_INSTALLED_QNA_20260913.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -1407,11 +1409,23 @@ repository run passed 2,233. Frontend build passed at 491.33 kB without the
 prior Vite warning. Resident SQLite stayed byte-for-byte unchanged at the hash
 recorded above.
 
-The exact resume point is the explicitly approved Phase 11 release edge:
-checkpoint the verified source, package from that clean revision, freshly
-reinstall, verify installed artifacts, then run one bounded gentle installed
-Q&A. Note Q&A findings before any repair. Do not repeat the full synthetic
-suite unless a later repair materially changes the verified architecture.
+Conversation Cultivation Phase 11 packaging and installed observation are now
+complete. Revision `92a6e8e` was packaged from a clean tree; silent install
+exited zero; package verification passed without warnings. Installer SHA256 is
+`9DD81016B6E2ABAE57865B57734DC99B235476B5E1F8CB6AF020C9BFAB3831FF` and
+installed executable SHA256 is
+`691B123A1098039CC75BCB36E4E7E88CD13A18F59CE5048B0ADC47840014710B`.
+
+The exact resume point is a post-Phase-11 Cultivation source map, not another
+Q&A or more teaching. The isolated installed six-turn run found one connected
+chain: ordinary described alternatives and prompt-contained observations can
+miss their current owner; optional approved knowledge can then displace them;
+coverage can accept the wrong visible operations; and a correction with no
+valid prior result can remain held across later topic, humor, and thread-open
+turns. Map those shared mechanisms in that order before editing. Note findings
+first, preserve optional knowledge behind capable current ownership, and do
+not patch the lamp/sound wording. Do not repeat the full synthetic suite unless
+a later repair materially changes the verified architecture.
 
 Do not patch prompt phrases or teach around a coverage defect. Do not repeat the
 installed warmth gate, greeting/typo confirmation, decision-chain

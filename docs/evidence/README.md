@@ -18,6 +18,8 @@ a prototype result into a universal conclusion.
 
 - [Conversation Cultivation Phase 11 — Integrated Stabilization — September 13, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_11_INTEGRATED_STABILIZATION_20260913.md)
   — repository-wide verification, deictic correction recomposition, function-subject knowledge alignment, resident integrity, and the package/install edge.
+- [Conversation Cultivation Phase 11 — Installed Gentle Q&A — September 13, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_11_INSTALLED_QNA_20260913.md)
+  — fresh-install evidence and six note-first findings from an isolated, ordinary conversation.
 - [Conversation Cultivation Phase 10 — Compatibility Retirement Audit — September 13, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_10_COMPATIBILITY_RETIREMENT_20260913.md)
   — audits all 54 historical answer kinds, retires one proved dedicated owner
   from legacy classification, and retains 53 until one-for-one transfer is

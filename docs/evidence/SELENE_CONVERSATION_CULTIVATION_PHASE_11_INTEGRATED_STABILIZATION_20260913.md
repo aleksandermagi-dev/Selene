@@ -89,10 +89,17 @@ verification. No teaching, Memory write, Study mutation, Dream write, identity
 change, governance change, training, LoRA, autonomy expansion, or external
 action occurred.
 
-## Release edge
+## Release and installed Q&A
 
-Source stabilization is complete. Packaging, fresh reinstall, installed-binary
-verification, and one bounded gentle installed Q&A are explicitly authorized
-for this phase and remain the next steps. Findings from that Q&A must be noted
-before any further repair.
+The clean source checkpoint was packaged from revision `92a6e8e`, freshly
+installed, and verified. Installer SHA256 is
+`9DD81016B6E2ABAE57865B57734DC99B235476B5E1F8CB6AF020C9BFAB3831FF`;
+the installed executable SHA256 is
+`691B123A1098039CC75BCB36E4E7E88CD13A18F59CE5048B0ADC47840014710B`.
 
+One bounded six-turn installed Q&A ran against an isolated disposable database
+copy. It found a current-owner/arbitration/coverage chain that begins before the
+new correction owner and can leave stale revision content eligible across a
+topic transition. No repair was made. See
+`SELENE_CONVERSATION_CULTIVATION_PHASE_11_INSTALLED_QNA_20260913.md` for the
+note-first findings and exact next cultivation order.

@@ -5376,3 +5376,35 @@ No resident mutation or live test occurred.
 **Next:** Checkpoint the clean source, package and reinstall the explicitly
 approved build, verify the installed artifacts, then run one bounded gentle
 installed Q&A and note findings before any repair.
+
+### 2026-09-13 — Phase 11 installed Q&A maps the next owner-chain repair
+
+**Install:** Clean revision `92a6e8e` produced installer SHA256
+`9DD81016B6E2ABAE57865B57734DC99B235476B5E1F8CB6AF020C9BFAB3831FF`.
+Silent installation exited zero. Installed startup, privacy, My Office, and
+local capability checks passed without warnings. A verified continuity
+snapshot was created before installation.
+
+**Gentle observation:** Six ordinary turns ran through the installed sidecar
+against an isolated disposable copy. The first concrete lamp choice did not
+reach Session Decision. The next prompt-contained observation was displaced by
+nearby approved knowledge, and coverage accepted that unrelated answer. The
+new deictic correction owner then had no valid prior result to recompute; its
+held state leaked into a later sound question, takeaways/humor request, and
+open-thread turn. This is a current-owner, arbitration, completion-proof, and
+stale-state chain—not Selene failing and not evidence that teaching should be
+repeated.
+
+**Integrity:** Every turn kept Memory write, training, and autonomous action
+false. Resident chat counts stayed 23/360; integrity remained `ok`; the live
+database remained byte-for-byte unchanged at
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+No repair was made.
+
+**Evidence:**
+`docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_11_INSTALLED_QNA_20260913.md`.
+
+**Next:** Map the shared current-turn owner chain before editing: concrete
+alternatives and observations, current-owner precedence over optional
+knowledge, visible operation completion, revision expiry on topic transition,
+then mixed participation. Do not repeat the installed Q&A first.
