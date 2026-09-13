@@ -24,6 +24,10 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest Conversation Cultivation Phase 11 installed-Q&A evidence checkpoint:
+  `d7a208d` (`Record installed cultivation Q&A`)
+- Latest Conversation Cultivation Phase 11 source checkpoint: `92a6e8e`
+  (`Complete conversation cultivation stabilization`)
 - Conversation Cultivation Phase 11 source verification: 2,233 tests passed;
   frontend built at 491.33 kB without the prior Vite warning; clean revision
   `92a6e8e` is packaged, freshly installed, and installed-Q&A findings are
