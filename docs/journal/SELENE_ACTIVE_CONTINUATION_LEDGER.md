@@ -14,7 +14,9 @@ ledger, deictic correction recomposition, function-subject knowledge
 alignment, and a clean repository-wide source stabilization gate
 plus the post-Phase-11 owner-chain repair for ordinary alternatives,
 observation analysis, correction expiry, mixed participation ordering, and
-open-thread session management
+open-thread session management; speaker provenance now distinguishes Aleks,
+Codex, Selene, named guests, and unknown legacy turns across current messages,
+continuity projections, and Dialogue Workspace without expanding authority
 
 ## Purpose
 
@@ -29,6 +31,15 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Branch: `evidence`
 - Latest post-Phase-11 owner-chain source checkpoint: `329515a`
   (`Repair post-phase 11 conversation ownership`)
+- Latest speaker-provenance checkpoint: `51528e9`
+  (`Preserve conversation speaker provenance`)
+- Incoming Chat turns now persist a normalized, explicitly non-authoritative
+  speaker attribution. Mixed Codex/Aleks session continuity can identify who
+  said a quoted earlier line; Codex and guests do not inherit Aleks-only
+  Memory, relationship, teaching, governance, or approval authority.
+- Speaker-provenance verification: 197 focused and adjacent checks passed;
+  frontend built at 491.50 kB without a Vite size warning. No resident write,
+  live conversation, package, or install occurred.
 - Ordinary conversational status checks now use
   `docs/education/SELENE_ORDINARY_CONVERSATIONAL_CHECK_IN_WORKFLOW.md`: a
   five-to-eight-exchange natural check with no bug search, grading, prepared
@@ -136,9 +147,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this ledger refresh: local `evidence` is 51
+- Current remote relation before this ledger refresh: local `evidence` is 54
   commits ahead of `origin/evidence`; this ledger refresh is expected to make
-  that 52. Confirm again before any later commit or push.
+  that 55. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1453,8 +1464,10 @@ and installed sidecar SHA256
 Resident integrity remained `ok` and byte-for-byte unchanged at SHA256
 `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
 
-The exact resume point is ordinary use or Aleks's next explicitly selected
-teaching or organ phase. Do not repeat the settled six-turn Q&A, full suite,
+The exact resume point is the speaker-provenance source checkpoint or Aleks's
+next explicitly selected teaching or organ phase. The source repair is not yet
+packaged or installed. Package/reinstall only if Aleks asks to place it in the
+installed vessel. Do not repeat the settled six-turn Q&A, full suite,
 installed warmth gate, greeting/typo confirmation, decision-chain
 confirmation, G13-G15 teaching, or earlier learning replay without a new
 implementation need. If a new conversation defect appears, record the visible
@@ -1466,6 +1479,15 @@ Conversational Check-In. Follow one natural thread, do not search for or invent
 bugs, and report no action when no material interruption appears. Escalate to a
 separate Cultivation investigation only from visible evidence of a genuine
 blocker.
+
+Every Codex-led check-in must send a typed `Codex` speaker envelope rather than
+relying on the generic `user` role. Normal resident desktop Chat sends Aleks's
+typed local envelope. New message traces, compact continuity projections, the
+active conversation context, and Dialogue Workspace now retain participant
+provenance. Historical ordinary resident desktop turns may be explicitly
+marked as inferred Aleks turns; otherwise missing legacy attribution remains
+unknown. Evidence is recorded in
+`docs/evidence/SELENE_SPEAKER_PROVENANCE_CONTINUITY_20260919.md`.
 
 The downloaded
 source corpora and private 20-interaction review stay ignored and unavailable
