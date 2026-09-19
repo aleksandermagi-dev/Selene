@@ -1,6 +1,6 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-13
+Last refreshed: 2026-09-19
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
@@ -12,6 +12,9 @@ whole-request semantic arbitration with clean shared realization, novel-shape
 generalization evidence, and an evidence-bearing compatibility retirement
 ledger, deictic correction recomposition, function-subject knowledge
 alignment, and a clean repository-wide source stabilization gate
+plus the post-Phase-11 owner-chain repair for ordinary alternatives,
+observation analysis, correction expiry, mixed participation ordering, and
+open-thread session management
 
 ## Purpose
 
@@ -24,6 +27,13 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest post-Phase-11 owner-chain source checkpoint: `329515a`
+  (`Repair post-phase 11 conversation ownership`)
+- Post-Phase-11 repair verification: 276 focused/adjacent checks passed. The
+  repository-wide run passed 2,237 checks and exposed one obsolete exact-
+  farewell assertion; its repaired semantic-closure replay passed. Frontend
+  built at 491.33 kB without a Vite size warning. Revision `329515a` is
+  packaged, freshly installed, and verified with zero warnings.
 - Latest Conversation Cultivation Phase 11 installed-Q&A evidence checkpoint:
   `d7a208d` (`Record installed cultivation Q&A`)
 - Latest Conversation Cultivation Phase 11 source checkpoint: `92a6e8e`
@@ -122,10 +132,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this ledger refresh: local `evidence` is
-  forty-six commits ahead of `origin/evidence`; this ledger refresh is expected
-  to make that forty-seven. Confirm again before any later commit or
-  push.
+- Current remote relation before this ledger refresh: local `evidence` is 51
+  commits ahead of `origin/evidence`; this ledger refresh is expected to make
+  that 52. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1420,23 +1429,34 @@ exited zero; package verification passed without warnings. Installer SHA256 is
 installed executable SHA256 is
 `691B123A1098039CC75BCB36E4E7E88CD13A18F59CE5048B0ADC47840014710B`.
 
-The exact resume point is a post-Phase-11 Cultivation source map, not another
-Q&A or more teaching. The isolated installed six-turn run found one connected
-chain: ordinary described alternatives and prompt-contained observations can
-miss their current owner; optional approved knowledge can then displace them;
-coverage can accept the wrong visible operations; and a correction with no
-valid prior result can remain held across later topic, humor, and thread-open
-turns. Map those shared mechanisms in that order before editing. Note findings
-first, preserve optional knowledge behind capable current ownership, and do
-not patch the lamp/sound wording. Do not repeat the full synthetic suite unless
-a later repair materially changes the verified architecture.
+The post-Phase-11 owner-chain repair is complete at `329515a`, packaged, and
+installed. Shared normalization now reaches bounded current-session decision
+and observation owners. Typed observation analysis separates the visible
+observation, provisional interpretation, and next check. Corrections visibly
+consume the changed premise; an unresolved revision expires on a genuine
+semantic topic change; mixed recap and humor follow requested order; social
+acknowledgements do not masquerade as takeaways; and keeping a named
+conversation thread open remains session management rather than durable
+Memory retention. No lamp-, sound-, clamp-, or reading-corner-specific answer
+was added.
 
-Do not patch prompt phrases or teach around a coverage defect. Do not repeat the
+Verified package/install provenance for `329515a`: installer SHA256
+`0D93AA2AAD4FAC43ECC2206934B9061316CED51CE420D0DE4243F50DA101E7F8`,
+installed executable SHA256
+`86206E2F3B42A453CACB3954A9B40B58AC856E43495299712FDDA73C0092BA2E`,
+and installed sidecar SHA256
+`233F0D40B06EEA2E76912A2B5E8364FBFBD23C359AB818916F63F1E4EDD3AF38`.
+Resident integrity remained `ok` and byte-for-byte unchanged at SHA256
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+
+The exact resume point is ordinary use or Aleks's next explicitly selected
+teaching or organ phase. Do not repeat the settled six-turn Q&A, full suite,
 installed warmth gate, greeting/typo confirmation, decision-chain
-confirmation, G13-G15 teaching, the earlier repaired learning replay, or any
-further broad Q&A before repair. Use focused synthetic owner checks first and
-one short ordinary end-to-end conversation only if source evidence cannot
-establish the handoff.
+confirmation, G13-G15 teaching, or earlier learning replay without a new
+implementation need. If a new conversation defect appears, record the visible
+evidence first and cultivate its shared owner rather than patching prompt
+wording or teaching around a coverage defect.
+
 The downloaded
 source corpora and private 20-interaction review stay ignored and unavailable
 to runtime.

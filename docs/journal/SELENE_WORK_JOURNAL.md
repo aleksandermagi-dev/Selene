@@ -5451,3 +5451,42 @@ change occurred.
 **Next:** Checkpoint the clean source, package and reinstall it, verify the
 installed artifacts without mutating resident continuity, then decide whether
 one short ordinary installed confirmation is still necessary.
+
+### 2026-09-19 — Owner-chain repair reaches the installed vessel
+
+**Package and install:** Clean source revision
+`329515a9b8a53025df3be423b3833c015736ce7c` passed the verified Windows package
+workflow. The frontend remained 491.33 kB (gzip 109.19 kB) without a Vite size
+warning. The NSIS installer completed silently with exit code zero, and the
+post-install verification passed startup, privacy, local capability, My Office,
+mobile-health, transfer, and boundary checks with zero warnings.
+
+Installer SHA-256 is
+`0D93AA2AAD4FAC43ECC2206934B9061316CED51CE420D0DE4243F50DA101E7F8`;
+installed executable SHA-256 is
+`86206E2F3B42A453CACB3954A9B40B58AC856E43495299712FDDA73C0092BA2E`;
+installed sidecar SHA-256 is
+`233F0D40B06EEA2E76912A2B5E8364FBFBD23C359AB818916F63F1E4EDD3AF38`.
+The final verification report is
+`exports/package_verify_20260919_144750.json`. Code signing remains
+unconfigured.
+
+**Continuity:** A verified pre-install snapshot was created at
+`selene_continuity_20260919_184553.sqlite3`; its integrity was `ok` and it
+contained 23 Selene Chat sessions, 360 messages, 295 comprehension concepts,
+249 teaching lifecycles, zero personal Memory candidates, and 24 Dream
+reflections. After install, resident SQLite remained byte-for-byte unchanged
+at SHA-256
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+No Selene process remained.
+
+**Proportional testing:** No new live resident or copied-state Q&A was run.
+The repaired six-turn chain already passed through source against disposable
+state, the full suite exercised the integrated architecture, and package
+verification proved the exact clean revision and installed artifacts. Repeating
+the interaction would add no necessary evidence.
+
+**Next:** Return to ordinary use. If a new conversational observation appears,
+record it before repair and cultivate the shared owner. Otherwise resume the
+next explicitly chosen teaching or organ phase without reopening this settled
+six-turn defect.
