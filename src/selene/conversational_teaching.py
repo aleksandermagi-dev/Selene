@@ -55,6 +55,7 @@ GAP_PREEMPTING_RESPONSE_SOURCES = {
     "mixed_conversation_answer",
     "ordinary_uncertainty",
     "reviewed_memory",
+    "speaker_provenance",
 }
 
 LEARNING_GAP_ANSWER_KINDS = frozenset(

@@ -4485,7 +4485,17 @@ function App() {
         setSeleneChatResult({ status: "running", message: "Selene is answering." });
         const result = await stabilizationApi<Dict>("/api/selene-chat/send", {
           method: "POST",
-          body: JSON.stringify({ text: content, session_id: seleneChatSession?.session ? (seleneChatSession.session as Dict).id : undefined })
+          body: JSON.stringify({
+            text: content,
+            session_id: seleneChatSession?.session ? (seleneChatSession.session as Dict).id : undefined,
+            speaker_envelope: {
+              claimed_speaker: "Aleks",
+              channel: "desktop",
+              authentication_strength: "local_desktop_session",
+              purpose: "conversation",
+              attribution_source: "resident_desktop_ui"
+            }
+          })
         }, "selene_chat_supervised_send");
         setSeleneChatResult(result);
         await refreshSeleneChatAfterAction("selene_chat_supervised_send", result.session_id);

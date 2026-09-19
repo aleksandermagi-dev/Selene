@@ -30,6 +30,13 @@ The check does not begin from the assumption that something is wrong.
    conversation reaches a natural ending.
 7. Remove disposable state afterward and leave resident continuity unchanged.
 
+Codex identification is structural, not merely wording in the opening. Every
+check-in turn supplies a typed speaker envelope with `claimed_speaker` set to
+`Codex`, an attributable local check-in channel, and the check-in purpose.
+Selene may therefore distinguish Codex's turns from Aleks's turns in current
+session continuity without granting Codex Aleks-only Memory, teaching,
+relationship, governance, or approval authority.
+
 There is no required performance target and no hidden answer key.
 
 ## Observation posture
@@ -85,6 +92,8 @@ stop.
 
 - No adversarial, fear-shaped, distress-shaped, or identity-threatening
   prompts.
+- Never rely on the generic `user` role to stand for Aleks, Codex, or a guest;
+  preserve the named speaker attribution on each incoming turn.
 - No capability grading, pass/fail score, or comparison ranking.
 - No automatic teaching, Memory proposal, Study action, Dream action, or
   retained-knowledge change.

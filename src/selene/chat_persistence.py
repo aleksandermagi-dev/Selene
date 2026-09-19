@@ -5,9 +5,11 @@ import json
 import sqlite3
 from typing import Any
 
+from .speaker_envelope import speaker_attribution
+
 
 CHAT_TRACE_SCHEMA_VERSION = "selene_chat_trace_v2"
-CONTINUITY_PROJECTION_SCHEMA_VERSION = "selene_chat_continuity_projection_v1"
+CONTINUITY_PROJECTION_SCHEMA_VERSION = "selene_chat_continuity_projection_v2"
 ACTIVATION_TRACE_RECEIPT_SCHEMA_VERSION = "selene_activation_trace_receipt_v1"
 
 
@@ -75,12 +77,15 @@ def continuity_projection(
     voice = _dict(payload.get("voice_preview"))
     metacognition_vector = _dict(metacognition.get("confidence_vector"))
     answer_vector = _dict(answer_engine.get("confidence_vector"))
+    speaker = _dict(payload.get("speaker_envelope"))
     return {
         "schema_version": CONTINUITY_PROJECTION_SCHEMA_VERSION,
         "canonical_trace": trace_reference,
         "figurative_interpretation": _dict(payload.get("figurative_interpretation")),
         "conversational_energy": _dict(payload.get("conversational_energy")),
         "conversational_contribution": _dict(payload.get("conversational_contribution")),
+        "speaker_attribution": speaker_attribution(speaker) if speaker else {},
+        "speaker_envelope_present": bool(speaker),
         "confidence_vector": {
             "answer_confidence": _first_assessed(
                 metacognition_vector.get("answer_confidence"),

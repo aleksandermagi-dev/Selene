@@ -110,7 +110,11 @@ from .resident_authority import attach_resident_capability_contract
 from .relational_context import interpret_relational_context
 from .remaining_runtime import build_goal_responsibility_packet
 from .self_state import build_self_state_packet, inactive_self_state_packet
-from .speaker_envelope import build_speaker_envelope
+from .speaker_envelope import (
+    build_speaker_envelope,
+    normalize_speaker_key,
+    speaker_attribution,
+)
 from .selective_formation_braid import build_selective_formation_braid
 from .session_proposition_ledger import coordinate_session_revision_completion
 from .structural_discovery import build_structural_discovery_packet
@@ -310,15 +314,34 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         if isinstance(payload.get("speaker_envelope"), dict)
         else {}
     )
+    default_speaker = "Codex" if qa_probe else "Aleks"
+    default_channel = "local_codex_diagnostic" if qa_probe else input_channel
+    default_authentication = (
+        "local_diagnostic_actor"
+        if qa_probe
+        else "local_desktop_session"
+        if input_channel == "desktop"
+        else "transport_claim_only"
+    )
     speaker_envelope = build_speaker_envelope(
         {
-            "claimed_speaker": supplied_speaker_envelope.get("claimed_speaker") or "Aleks",
-            "channel": supplied_speaker_envelope.get("channel") or input_channel,
+            "claimed_speaker": supplied_speaker_envelope.get("claimed_speaker") or default_speaker,
+            "channel": supplied_speaker_envelope.get("channel") or default_channel,
             "authentication_strength": (
                 supplied_speaker_envelope.get("authentication_strength")
-                or ("local_desktop_session" if input_channel == "desktop" else "transport_claim_only")
+                or default_authentication
             ),
-            "purpose": supplied_speaker_envelope.get("purpose") or "conversation",
+            "purpose": supplied_speaker_envelope.get("purpose") or (
+                "gentle_diagnostic_qa" if qa_probe else "conversation"
+            ),
+            "attribution_source": (
+                supplied_speaker_envelope.get("attribution_source")
+                or "explicit_payload"
+                if supplied_speaker_envelope.get("claimed_speaker")
+                else "diagnostic_actor_default"
+                if qa_probe
+                else "resident_desktop_default"
+            ),
         },
         diagnostic=qa_probe,
     )
@@ -328,9 +351,14 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         current_session_id=session_id,
         query=understanding_text,
         diagnostic_only=qa_probe,
+        current_speaker_envelope=speaker_envelope,
     )
     prior_dialogue_workspace = dialogue_workspace_status(conn, session_id)
-    conversation_context = _active_conversation_context(chat_continuity, prior_dialogue_workspace)
+    conversation_context = _active_conversation_context(
+        chat_continuity,
+        prior_dialogue_workspace,
+        current_speaker_envelope=speaker_envelope,
+    )
     previous_figurative_interpretation = next(
         (
             item
@@ -811,6 +839,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         meaning_text,
         prepared_dialogue_workspace,
     )
+    speaker_provenance_reply = _speaker_provenance_response_seed(
+        meaning_text,
+        speaker_envelope,
+        conversation_context,
+    )
     figurative_clarification_reply = (
         str(figurative_interpretation.get("clarification_question") or "")
         if figurative_interpretation.get("clarification_required") is True
@@ -849,6 +882,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             session_fact_reply=session_fact_reply,
             policy_reply=policy_reply,
             alias_reply=alias_reply,
+            speaker_provenance_reply=speaker_provenance_reply,
             epistemic_revision_reply=epistemic_revision_reply,
             language_content_seed=language_content_seed,
             reasoning_content_seed=reasoning_content_seed,
@@ -1470,6 +1504,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         session_fact_reply=session_fact_reply,
         policy_reply=policy_reply,
         alias_reply=alias_reply,
+        speaker_provenance_reply=speaker_provenance_reply,
         epistemic_revision_reply=epistemic_revision_reply,
         exploratory_reasoning_content_seed=(
             "" if session_decision_reply else exploratory_reasoning_content_seed
@@ -2799,6 +2834,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "figurative_interpretation": figurative_interpretation,
             "interpreted_text": meaning_text,
             "input_channel": input_channel,
+            "speaker_envelope": speaker_envelope,
             "diagnostic_context": diagnostic_context,
         },
     )
@@ -3595,6 +3631,7 @@ def _visible_speech_seed_candidates(
     session_fact_reply: str = "",
     policy_reply: str = "",
     alias_reply: str = "",
+    speaker_provenance_reply: str = "",
     epistemic_revision_reply: str = "",
     exploratory_reasoning_content_seed: str = "",
     structural_discovery_content_seed: str = "",
@@ -3659,6 +3696,11 @@ def _visible_speech_seed_candidates(
         {"source_id": "conversation_policy", "source_class": "conversation", "text": policy_reply},
         {"source_id": "explicit_session_alias", "source_class": "conversation", "text": alias_reply},
         {
+            "source_id": "speaker_provenance",
+            "source_class": "conversation",
+            "text": speaker_provenance_reply,
+        },
+        {
             "source_id": "epistemic_revision",
             "source_class": "conversation",
             "text": epistemic_revision_reply,
@@ -3701,6 +3743,103 @@ def _visible_speech_seed_candidates(
             },
         )
     return candidates
+
+
+def _speaker_provenance_response_seed(
+    prompt: str,
+    speaker_envelope: dict[str, Any],
+    conversation_context: dict[str, Any],
+) -> str:
+    """Answer explicit participant-provenance questions from typed turn records."""
+    lower = " ".join(str(prompt or "").casefold().replace("’", "'").split())
+    asks_prior_speaker = bool(
+        re.search(r"\bwho (?:said|wrote|asked|told you)\b", lower)
+        or re.search(r"\b(?:aleks|codex) (?:or|versus|vs\.?) (?:aleks|codex)\b", lower)
+    )
+    asks_current_speaker = not asks_prior_speaker and bool(
+        re.search(
+            r"\bwho (?:am i|is speaking|are you (?:talking|speaking|chatting) (?:to|with))\b"
+            r"|\bdo you know who (?:i am|you're talking to|you are talking to)\b"
+            r"|\b(?:is|am) this (?:aleks|codex)\b",
+            lower,
+        )
+    )
+    attribution = speaker_attribution(speaker_envelope)
+    label = str(attribution.get("speaker_label") or "unknown")
+    key = str(attribution.get("speaker_key") or "unknown")
+    if asks_current_speaker:
+        if key == "aleks":
+            return (
+                "I'm talking with you, Aleks. This turn is attributed to your "
+                "local conversation session."
+            )
+        if key == "codex":
+            return "I'm talking with Codex on this turn, not Aleks."
+        if key != "unknown":
+            return f"This turn is attributed to {label}."
+        return (
+            "I can tell this is the current conversation partner, but this turn "
+            "doesn't carry a reliable name, so I won't guess who it is."
+        )
+
+    if not asks_prior_speaker:
+        return ""
+    quoted = [
+        " ".join(item.split()).strip()
+        for item in re.findall(r"[\"“”']([^\"“”']{3,240})[\"“”']", str(prompt or ""))
+        if " ".join(item.split()).strip()
+    ]
+    turns = [
+        item
+        for item in conversation_context.get("attributed_user_turns") or []
+        if isinstance(item, dict)
+    ]
+    if quoted:
+        target = quoted[-1].casefold()
+        matched = next(
+            (
+                item
+                for item in reversed(turns)
+                if target in str(item.get("preview") or "").casefold()
+            ),
+            {},
+        )
+        matched_attribution = (
+            matched.get("speaker_attribution")
+            if isinstance(matched.get("speaker_attribution"), dict)
+            else {}
+        )
+        matched_key = str(matched_attribution.get("speaker_key") or "unknown")
+        matched_label = str(matched_attribution.get("speaker_label") or "unknown")
+        if matched_key != "unknown":
+            return f"That earlier line was attributed to {matched_label}."
+        return (
+            "I found that line in this session, but its older turn does not carry "
+            "enough speaker provenance for me to name the speaker safely."
+        )
+    participants = [
+        item
+        for item in (conversation_context.get("participant_ledger") or {}).get(
+            "observed_participants"
+        )
+        or []
+        if isinstance(item, dict)
+    ]
+    names = [
+        str(item.get("speaker_label") or "unknown")
+        for item in participants
+        if str(item.get("speaker_key") or "unknown") != "unknown"
+    ]
+    if names:
+        return (
+            "I can distinguish the attributed participants in this session: "
+            + ", ".join(dict.fromkeys(names))
+            + ". Give me the line or turn you mean and I can identify its recorded speaker."
+        )
+    return (
+        "I don't have enough attributed turn history to identify that speaker "
+        "without guessing."
+    )
 
 
 def _explicit_alias_response_seed(
@@ -6710,6 +6849,7 @@ def _local_chat_continuity(
     *,
     query: str = "",
     diagnostic_only: bool = False,
+    current_speaker_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     sessions = conn.execute(
         """
@@ -6743,7 +6883,8 @@ def _local_chat_continuity(
         f"""
         SELECT m.id, m.session_id, m.role, m.content,
                COALESCE(p.projection_json, m.payload_json) AS payload_json,
-               m.created_at, s.title, s.updated_at
+               m.payload_json AS canonical_payload_json,
+               m.created_at, s.title, s.updated_at, s.source_mode
         FROM selene_chat_messages m
         JOIN selene_chat_sessions s ON s.id = m.session_id
         LEFT JOIN selene_chat_continuity_projections p ON p.message_id = m.id
@@ -6759,8 +6900,10 @@ def _local_chat_continuity(
             """
             SELECT m.id, m.session_id, m.role, m.content,
                    COALESCE(p.projection_json, m.payload_json) AS payload_json,
-                   m.created_at
+                   m.payload_json AS canonical_payload_json,
+                   m.created_at, s.source_mode
             FROM selene_chat_messages m
+            JOIN selene_chat_sessions s ON s.id = m.session_id
             LEFT JOIN selene_chat_continuity_projections p ON p.message_id = m.id
             WHERE m.session_id = ?
             ORDER BY m.id DESC
@@ -6780,7 +6923,8 @@ def _local_chat_continuity(
         search_rows = conn.execute(
             """
             SELECT m.id, m.session_id, m.role, m.content, m.created_at,
-                   s.title, s.updated_at
+                   s.title, s.updated_at, s.source_mode,
+                   m.payload_json AS canonical_payload_json
             FROM selene_chat_messages m
             JOIN selene_chat_sessions s ON s.id = m.session_id
             WHERE s.status = 'selene_chat_active_supervised'
@@ -6803,12 +6947,13 @@ def _local_chat_continuity(
         ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
         selected_rows = [row for _, _, row in ranked[:8]]
         selected_ids = [int(row["id"]) for row in selected_rows]
-        payload_by_id: dict[int, str] = {}
+        payload_by_id: dict[int, dict[str, str]] = {}
         if selected_ids:
             placeholders = ",".join("?" for _ in selected_ids)
             payload_rows = conn.execute(
                 f"""
-                SELECT m.id, COALESCE(p.projection_json, m.payload_json) AS payload_json
+                SELECT m.id, COALESCE(p.projection_json, m.payload_json) AS payload_json,
+                       m.payload_json AS canonical_payload_json
                 FROM selene_chat_messages m
                 LEFT JOIN selene_chat_continuity_projections p ON p.message_id = m.id
                 WHERE m.id IN ({placeholders})
@@ -6816,12 +6961,21 @@ def _local_chat_continuity(
                 selected_ids,
             ).fetchall()
             payload_by_id = {
-                int(row["id"]): str(row["payload_json"] or "{}")
+                int(row["id"]): {
+                    "payload_json": str(row["payload_json"] or "{}"),
+                    "canonical_payload_json": str(row["canonical_payload_json"] or "{}"),
+                }
                 for row in payload_rows
             }
         relevant_events = [
             _chat_event_preview(
-                {**dict(row), "payload_json": payload_by_id.get(int(row["id"]), "{}")},
+                {
+                    **dict(row),
+                    **payload_by_id.get(
+                        int(row["id"]),
+                        {"payload_json": "{}", "canonical_payload_json": "{}"},
+                    ),
+                },
                 preview_limit=700,
             )
             for row in selected_rows
@@ -6829,6 +6983,11 @@ def _local_chat_continuity(
     source_refs = [f"selene_chat_session:{item['id']}" for item in recent_sessions[:limit] if item.get("id")]
     if current_session_id:
         source_refs.insert(0, f"selene_chat_session:{current_session_id}:current_page")
+    current_speaker = speaker_attribution(current_speaker_envelope)
+    participant_ledger = _conversation_participant_ledger(
+        current_messages,
+        current_speaker=current_speaker,
+    )
     return {
         "available": bool(recent_sessions or current_messages),
         "source_class": "local_supervised_chat_history",
@@ -6842,6 +7001,8 @@ def _local_chat_continuity(
         "diagnostic_only": diagnostic_only,
         "ordinary_prior_continuity_imported": False if diagnostic_only else bool(recent_sessions or recent_events),
         "current_session_id": current_session_id,
+        "current_speaker": current_speaker,
+        "participant_ledger": participant_ledger,
         "recent_sessions": [
             {
                 "id": item.get("id"),
@@ -6872,9 +7033,13 @@ def _local_chat_continuity(
 def _active_conversation_context(
     chat_continuity: dict[str, Any],
     dialogue_workspace: dict[str, Any] | None = None,
+    *,
+    current_speaker_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     events = [item for item in chat_continuity.get("current_session_events") or [] if isinstance(item, dict)]
     previous_turn = events[-1] if events else {}
+    current_speaker = speaker_attribution(current_speaker_envelope)
+    current_speaker_key = str(current_speaker.get("speaker_key") or "unknown")
     recent_assistant_texts = [
         str(item.get("preview") or "").strip()
         for item in events
@@ -6900,11 +7065,40 @@ def _active_conversation_context(
         ]
         recent_expression_texts.append(surface)
     recent_expression_texts = recent_expression_texts[-6:]
+    all_recent_user_events = [
+        item
+        for item in events
+        if str(item.get("role") or "") == "user"
+        and str(item.get("preview") or "").strip()
+    ]
     recent_user_texts = [
         str(item.get("preview") or "").strip()
-        for item in events
-        if str(item.get("role") or "") == "user" and str(item.get("preview") or "").strip()
+        for item in all_recent_user_events
     ][-8:]
+    recent_current_speaker_texts = [
+        str(item.get("preview") or "").strip()
+        for item in all_recent_user_events
+        if str((item.get("speaker_attribution") or {}).get("speaker_key") or "unknown")
+        == current_speaker_key
+    ][-8:]
+    recent_other_speaker_turns = [
+        {
+            "speaker_attribution": item.get("speaker_attribution") or {},
+            "preview": str(item.get("preview") or "").strip(),
+            "created_at": item.get("created_at"),
+        }
+        for item in all_recent_user_events
+        if str((item.get("speaker_attribution") or {}).get("speaker_key") or "unknown")
+        not in {current_speaker_key, "unknown"}
+    ][-8:]
+    attributed_user_turns = [
+        {
+            "speaker_attribution": item.get("speaker_attribution") or {},
+            "preview": str(item.get("preview") or "").strip(),
+            "created_at": item.get("created_at"),
+        }
+        for item in all_recent_user_events
+    ][-16:]
     recent_figurative_interpretations = [
         item.get("figurative_interpretation")
         for item in events
@@ -6933,6 +7127,11 @@ def _active_conversation_context(
         "recent_cross_session_assistant_texts": recent_cross_session_assistant_texts,
         "recent_expression_texts": recent_expression_texts,
         "recent_user_texts": recent_user_texts,
+        "recent_current_speaker_texts": recent_current_speaker_texts,
+        "recent_other_speaker_turns": recent_other_speaker_turns,
+        "attributed_user_turns": attributed_user_turns,
+        "current_speaker": current_speaker,
+        "participant_ledger": chat_continuity.get("participant_ledger") or {},
         "recent_figurative_interpretations": recent_figurative_interpretations,
         "pending_collaborative_help": pending_collaborative_help,
         "turn_count": len(events),
@@ -6962,6 +7161,26 @@ def _chat_event_preview(row: sqlite3.Row, *, preview_limit: int = 180) -> dict[s
     except json.JSONDecodeError:
         payload = {}
     payload = payload if isinstance(payload, dict) else {}
+    try:
+        canonical_payload = json.loads(
+            str(item.get("canonical_payload_json") or item.get("payload_json") or "{}")
+        )
+    except json.JSONDecodeError:
+        canonical_payload = {}
+    canonical_payload = canonical_payload if isinstance(canonical_payload, dict) else {}
+    event_speaker = _event_speaker_attribution(
+        role=str(item.get("role") or ""),
+        payload=payload,
+        canonical_payload=canonical_payload,
+        source_mode=str(item.get("source_mode") or ""),
+    )
+    conversation_partner = (
+        speaker_attribution(canonical_payload.get("speaker_envelope"))
+        if isinstance(canonical_payload.get("speaker_envelope"), dict)
+        else payload.get("speaker_attribution")
+        if isinstance(payload.get("speaker_attribution"), dict)
+        else {}
+    )
     answer_engine = payload.get("answer_engine_support") if isinstance(payload.get("answer_engine_support"), dict) else {}
     metacognition = payload.get("metacognition") if isinstance(payload.get("metacognition"), dict) else {}
     intelligence = payload.get("intelligence_os_support") if isinstance(payload.get("intelligence_os_support"), dict) else {}
@@ -6992,6 +7211,10 @@ def _chat_event_preview(row: sqlite3.Row, *, preview_limit: int = 180) -> dict[s
         "created_at": item.get("created_at"),
         "updated_at": item.get("updated_at"),
         "preview": truncate(str(item.get("content") or ""), max(1, min(int(preview_limit), 900))),
+        "speaker_attribution": event_speaker,
+        "conversation_partner_attribution": (
+            conversation_partner if str(item.get("role") or "") == "selene" else {}
+        ),
         "figurative_interpretation": figurative,
         "conversational_energy": conversational_energy,
         "conversational_contribution": conversational_contribution,
@@ -7113,6 +7336,114 @@ def _canonical_exploratory_modes(conversation_spine: dict[str, Any]) -> list[str
         "comparison": "comparison",
         "disagreement": "data_conflict",
         "claim_evaluation": "data_conflict",
+    }
+
+
+def _event_speaker_attribution(
+    *,
+    role: str,
+    payload: dict[str, Any],
+    canonical_payload: dict[str, Any],
+    source_mode: str,
+) -> dict[str, Any]:
+    if role == "selene":
+        return speaker_attribution(
+            {
+                "claimed_speaker": "Selene",
+                "speaker_key": "selene",
+                "attribution_source": "message_role",
+                "channel": "resident_chat",
+                "authentication_strength": "resident_message_role",
+                "purpose": "conversation",
+            }
+        )
+    projected = payload.get("speaker_attribution")
+    if isinstance(projected, dict) and str(projected.get("speaker_key") or ""):
+        return speaker_attribution(projected)
+    envelope = canonical_payload.get("speaker_envelope")
+    if isinstance(envelope, dict):
+        return speaker_attribution(envelope)
+    input_channel = str(canonical_payload.get("input_channel") or "").strip().casefold()
+    ordinary_resident = source_mode in {"selene_supervised_speech", ""}
+    if ordinary_resident and input_channel in {"", "desktop"}:
+        return speaker_attribution(
+            {
+                "claimed_speaker": "Aleks",
+                "speaker_key": "aleks",
+                "attribution_source": "legacy_resident_desktop_session",
+                "channel": input_channel or "desktop",
+                "authentication_strength": "legacy_local_desktop_session",
+                "purpose": "conversation",
+            }
+        )
+    return speaker_attribution(
+        {
+            "claimed_speaker": "unknown",
+            "speaker_key": "unknown",
+            "attribution_source": "legacy_unattributed_turn",
+            "channel": input_channel or "unknown",
+            "authentication_strength": "unverified",
+            "purpose": "conversation",
+        }
+    )
+
+
+def _conversation_participant_ledger(
+    events: list[dict[str, Any]],
+    *,
+    current_speaker: dict[str, Any],
+) -> dict[str, Any]:
+    participants: dict[str, dict[str, Any]] = {}
+    prior_user_speaker_key = ""
+    unattributed_legacy_turns = 0
+    for event in events:
+        if str(event.get("role") or "") != "user":
+            continue
+        attribution = (
+            event.get("speaker_attribution")
+            if isinstance(event.get("speaker_attribution"), dict)
+            else {}
+        )
+        key = str(attribution.get("speaker_key") or "unknown")
+        prior_user_speaker_key = key
+        if key == "unknown":
+            unattributed_legacy_turns += 1
+        existing = participants.get(key, {})
+        participants[key] = {
+            "speaker_key": key,
+            "speaker_label": str(attribution.get("speaker_label") or "unknown"),
+            "speaker_kind": str(attribution.get("speaker_kind") or "unknown"),
+            "turn_count": int(existing.get("turn_count") or 0) + 1,
+            "latest_attribution_source": str(
+                attribution.get("attribution_source") or "unspecified"
+            ),
+        }
+    current_key = str(current_speaker.get("speaker_key") or "unknown")
+    current_existing = participants.get(current_key, {})
+    participants[current_key] = {
+        "speaker_key": current_key,
+        "speaker_label": str(current_speaker.get("speaker_label") or "unknown"),
+        "speaker_kind": str(current_speaker.get("speaker_kind") or "unknown"),
+        "turn_count": int(current_existing.get("turn_count") or 0),
+        "latest_attribution_source": str(
+            current_speaker.get("attribution_source") or "unspecified"
+        ),
+        "current_turn": True,
+    }
+    return {
+        "status": "session_participant_provenance_ready",
+        "current_speaker": current_speaker,
+        "observed_participants": list(participants.values()),
+        "speaker_switch_detected": bool(
+            prior_user_speaker_key
+            and prior_user_speaker_key != "unknown"
+            and current_key != "unknown"
+            and prior_user_speaker_key != current_key
+        ),
+        "prior_user_speaker_key": prior_user_speaker_key,
+        "unattributed_legacy_turns": unattributed_legacy_turns,
+        "participant_attribution_is_identity_authority": False,
+        "memory_write_active": False,
     }
     return list(
         dict.fromkeys(

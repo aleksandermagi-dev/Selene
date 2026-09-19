@@ -268,6 +268,65 @@ def _seed_transfer_complete(conn):
     conn.commit()
 
 
+def test_chat_preserves_codex_and_aleks_as_distinct_session_speakers(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    codex_turn = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": "Who are you talking to right now?",
+            "speaker_envelope": {
+                "claimed_speaker": "Codex",
+                "channel": "local_codex_check_in",
+                "authentication_strength": "local_tool_declared",
+                "purpose": "ordinary_conversational_check_in",
+                "attribution_source": "explicit_payload",
+            },
+        },
+    )["result"]
+
+    assert codex_turn["speaker_envelope"]["speaker_key"] == "codex"
+    assert "Codex" in codex_turn["candidate_text"]
+    assert "not Aleks" in codex_turn["candidate_text"]
+    stored_codex = conn.execute(
+        "SELECT payload_json FROM selene_chat_messages WHERE id = ?",
+        (codex_turn["user_message_id"],),
+    ).fetchone()
+    assert json.loads(stored_codex["payload_json"])["speaker_envelope"]["speaker_key"] == "codex"
+
+    aleks_turn = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "session_id": codex_turn["session_id"],
+            "text": 'Who said "Who are you talking to right now?"',
+            "speaker_envelope": {
+                "claimed_speaker": "Aleks",
+                "channel": "desktop",
+                "authentication_strength": "local_desktop_session",
+                "purpose": "conversation",
+                "attribution_source": "resident_desktop_ui",
+            },
+        },
+    )["result"]
+
+    assert aleks_turn["speaker_envelope"]["speaker_key"] == "aleks"
+    assert aleks_turn["local_chat_continuity"]["participant_ledger"][
+        "speaker_switch_detected"
+    ] is True
+    assert "Codex" in aleks_turn["candidate_text"]
+    participants = {
+        item["speaker_key"]
+        for item in aleks_turn["local_chat_continuity"]["participant_ledger"][
+            "observed_participants"
+        ]
+    }
+    assert {"aleks", "codex"}.issubset(participants)
+
+
 def test_repaired_ordinary_check_in_confusion_and_phrase_correction_flow(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

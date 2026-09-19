@@ -152,7 +152,14 @@ def resolve_referent_address(
         if isinstance(payload.get("speaker_context"), dict)
         else {}
     )
-    speaker = truncate(str(speaker_context.get("speaker") or "current_user"), 120)
+    speaker = truncate(
+        str(
+            speaker_context.get("speaker")
+            or speaker_context.get("claimed_speaker")
+            or "current_user"
+        ),
+        120,
+    )
     prior = payload.get("prior_state") if isinstance(payload.get("prior_state"), dict) else {}
     reviewed_notes = _reviewed_nickname_notes(conn)
     quoted_spans = _quoted_spans(literal_text)
@@ -188,7 +195,11 @@ def resolve_referent_address(
             "session_id": int(payload.get("session_id") or 0),
             "speaker_scope": {
                 "speaker": speaker,
-                "source": str(speaker_context.get("source") or "current_turn_channel"),
+                "source": str(
+                    speaker_context.get("source")
+                    or speaker_context.get("attribution_source")
+                    or "current_turn_channel"
+                ),
                 "inferred_relationship_profile": False,
             },
             "literal_text": literal_text,

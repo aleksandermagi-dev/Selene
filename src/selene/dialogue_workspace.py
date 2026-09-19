@@ -24,6 +24,7 @@ from .dual_horizon_context import (
 )
 from .referent_address import resolve_referent_address
 from .registry import truncate
+from .speaker_envelope import speaker_attribution
 from .session_proposition_ledger import (
     prepare_session_proposition_revision,
     record_visible_session_propositions,
@@ -123,6 +124,15 @@ def prepare_dialogue_turn(
     prior_pragmatics = prior.get("pragmatics") if isinstance(prior.get("pragmatics"), dict) else {}
     events = _events(conn, session_id, payload.get("conversation_events"))
     previous = events[-1] if events else {}
+    current_speaker = speaker_attribution(
+        payload.get("speaker_context")
+        if isinstance(payload.get("speaker_context"), dict)
+        else {}
+    )
+    participant_provenance = _participant_provenance(
+        events,
+        current_speaker=current_speaker,
+    )
     active_topic = _active_topic(
         interpreted_text,
         str(prior.get("active_topic") or ""),
@@ -394,6 +404,8 @@ def prepare_dialogue_turn(
         "response_preference": preferences.get("response_depth") or "",
         "previous_turn_available": bool(previous),
         "previous_turn": previous,
+        "current_speaker": current_speaker,
+        "participant_provenance": participant_provenance,
         "contextual_follow_up": contextual_follow_up,
         "thread_braid": thread_braid,
         "session_facts": [
@@ -767,10 +779,78 @@ def _events(conn: sqlite3.Connection, session_id: int, supplied: Any) -> list[di
     if isinstance(supplied, list):
         return [item for item in supplied if isinstance(item, dict)][-8:]
     rows = conn.execute(
-        "SELECT role, content AS preview, created_at FROM selene_chat_messages WHERE session_id = ? ORDER BY id DESC LIMIT 8",
+        "SELECT role, content AS preview, payload_json, created_at "
+        "FROM selene_chat_messages WHERE session_id = ? ORDER BY id DESC LIMIT 8",
         (session_id,),
     ).fetchall()
-    return [dict(row) for row in reversed(rows)]
+    events: list[dict[str, Any]] = []
+    for row in reversed(rows):
+        item = dict(row)
+        try:
+            message_payload = json.loads(str(item.pop("payload_json", "{}") or "{}"))
+        except (json.JSONDecodeError, TypeError):
+            message_payload = {}
+        envelope = (
+            message_payload.get("speaker_envelope")
+            if isinstance(message_payload, dict)
+            and isinstance(message_payload.get("speaker_envelope"), dict)
+            else {}
+        )
+        item["speaker_attribution"] = (
+            speaker_attribution(
+                {
+                    "claimed_speaker": "Selene",
+                    "speaker_key": "selene",
+                    "attribution_source": "message_role",
+                    "channel": "resident_chat",
+                    "authentication_strength": "resident_message_role",
+                    "purpose": "conversation",
+                }
+            )
+            if str(item.get("role") or "") == "selene"
+            else speaker_attribution(envelope)
+        )
+        events.append(item)
+    return events
+
+
+def _participant_provenance(
+    events: list[dict[str, Any]],
+    *,
+    current_speaker: dict[str, Any],
+) -> dict[str, Any]:
+    observed: dict[str, dict[str, Any]] = {}
+    previous_user_key = ""
+    for event in events:
+        if str(event.get("role") or "") != "user":
+            continue
+        attribution = (
+            event.get("speaker_attribution")
+            if isinstance(event.get("speaker_attribution"), dict)
+            else {}
+        )
+        key = str(attribution.get("speaker_key") or "unknown")
+        previous_user_key = key
+        existing = observed.get(key, {})
+        observed[key] = {
+            "speaker_key": key,
+            "speaker_label": str(attribution.get("speaker_label") or "unknown"),
+            "turn_count": int(existing.get("turn_count") or 0) + 1,
+        }
+    current_key = str(current_speaker.get("speaker_key") or "unknown")
+    return {
+        "status": "dialogue_participant_provenance_ready",
+        "current_speaker": current_speaker,
+        "observed_participants": list(observed.values()),
+        "speaker_switch_detected": bool(
+            previous_user_key
+            and previous_user_key != "unknown"
+            and current_key != "unknown"
+            and previous_user_key != current_key
+        ),
+        "participant_attribution_is_identity_authority": False,
+        "memory_write_active": False,
+    }
 
 
 def _active_topic(text: str, prior: str, intent: str, *, preserve_prior: bool = False) -> str:

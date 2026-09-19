@@ -5513,3 +5513,38 @@ Workflow:
 **Next:** Use this workflow whenever Aleks asks for a conversational check or
 current conversation status without requesting Q&A, benchmarking, or a bug
 hunt.
+
+### 2026-09-19 — Speaker provenance becomes durable conversation context
+
+**Root finding:** The new Ordinary Conversational Check-In exposed a real
+participant-provenance gap. Selene already received a typed speaker envelope
+for the current turn, and her private corpus gate already distinguished Aleks
+from other speakers. Incoming messages did not persist that envelope, however,
+and continuity readers reduced Aleks, Codex, and any guest to the generic role
+`user`. The present privacy decision could therefore be correct while a later
+callback lost who had actually said the earlier line.
+
+**Cultivation repair:** Speaker envelopes now include normalized, explicitly
+non-authoritative attribution. New incoming messages and compact continuity
+projections retain it. Dialogue Workspace and active conversation context
+carry a bounded participant ledger, distinguish Selene-authored turns from the
+current partner, and detect explicit speaker changes. Resident desktop Chat
+supplies Aleks structurally; diagnostic QA defaults to Codex; explicit
+current-speaker and quoted-prior-speaker questions answer from the typed record
+instead of guessing. Codex and guests still receive no Aleks-only Memory,
+teaching, relationship, governance, or approval authority.
+
+**Evidence:** Backend compilation passed. 197 focused and adjacent speaker,
+continuity, relational, teaching, mobile, and integrated Chat checks passed.
+A mixed Codex/Aleks session preserved both participants and attributed a quoted
+earlier line back to Codex. Frontend build passed at 491.50 kB (gzip 109.27 kB)
+without a Vite size warning. No live conversation, resident write, historical
+rewrite, teaching, Memory, Study, Dream, package, install, or external action
+occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_SPEAKER_PROVENANCE_CONTINUITY_20260919.md`.
+
+**Next:** Refresh the active continuation ledger and checkpoint the source.
+Package and reinstall only when Aleks explicitly asks to place this repair in
+the installed vessel.
