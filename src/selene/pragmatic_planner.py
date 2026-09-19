@@ -903,6 +903,12 @@ def _request_kind(text: str) -> str:
     lower = text.lower()
     if current_preference_requested(lower):
         return "preference"
+    if (
+        "observation" in lower
+        and re.search(r"\binterpret(?:ation|ations|ing)?\b", lower)
+        and re.search(r"\b(?:next\s+)?(?:check|test|observation|step)\b", lower)
+    ):
+        return "observation_analysis"
     if _explicit_humor_request(lower):
         return "humor"
     if (
@@ -923,7 +929,7 @@ def _request_kind(text: str) -> str:
         return "conditional_disagreement" if " if " in f" {lower} " else "disagreement"
     if explicit_conversational_closure_request(lower):
         return "closure"
-    if re.search(r"\b(?:summarize|recap|summary)\b", lower):
+    if re.search(r"\b(?:summarize|recap|summary|takeaways?)\b", lower):
         return "session_summary"
     if "analogy" in lower:
         return "analogy"
@@ -1277,6 +1283,9 @@ def _contains_session_summary_request(value: str) -> bool:
             r"(?:summary|recap)|(?:summarize|sum up|recap)\s+(?:this|our|the)\s+"
             r"(?:conversation|chat)|what (?:has|have) (?:this|our) (?:conversation|chat) been about|"
             r"what have we been (?:talking|speaking) about|"
+            r"(?:give|tell|show)\s+(?:me|us)\s+(?:one|two|three|four|five|\d+)\s+"
+            r"(?:short\s+|brief\s+)?takeaways?\s+from\s+(?:this|our|the)\s+"
+            r"(?:conversation|chat|discussion)|"
             r"what\s+(?:one|two|three|four|five|\d+)\s+facts?.*\bsettled)\b",
             value,
             flags=re.IGNORECASE,
@@ -1314,6 +1323,20 @@ def _compound_question_parts(question: str) -> list[str]:
 
 
 def _structured_request_parts(text: str) -> list[str]:
+    summary_and_humor = re.match(
+        r"^(?P<summary>(?:please\s+)?(?:give|tell|show)\s+(?:me|us)\s+"
+        r"(?:\d+|one|two|three|four|five)\s+(?:short\s+|brief\s+)?"
+        r"(?:takeaways?|points?|facts?)\b.+?)\s+and\s+"
+        r"(?P<humor>(?:\d+|one|a|an)\s+(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
+        r"(?:[a-z][a-z0-9'-]*\s+){0,3}(?:joke|pun))\s*[.?!]?$",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if summary_and_humor:
+        return [
+            summary_and_humor.group("summary").strip(" ,.?!"),
+            f"Give me {summary_and_humor.group('humor').strip(' ,.?!')}",
+        ]
     ordered = re.match(r"^(?:take|do|answer)\s+(?:this|these)\s+in\s+order\s*:\s*(.+)$", text, flags=re.IGNORECASE)
     if ordered:
         parts = [
@@ -1683,7 +1706,7 @@ def _requested_item_count(value: str) -> int:
         r"\b(?P<count>\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+"
         r"(?:tiny\s+|little\s+|small\s+|short\s+|brief\s+|practical\s+)?"
         r"(?:next\s+)?"
-        r"(?:parts?|points?|steps?|items?|sections?|facts?|examples?|questions?|jokes?|puns?|options?|reasons?)\b",
+        r"(?:parts?|points?|steps?|items?|sections?|facts?|takeaways?|examples?|questions?|jokes?|puns?|options?|reasons?)\b",
         value,
     )
     if not match:
@@ -1853,6 +1876,7 @@ def _response_function_for_kind(kind: str) -> str:
         "disagreement": "disagreement",
         "correction_update": "correction",
         "creative_expression": "creative_expression",
+        "observation_analysis": "observation_analysis",
     }.get(kind, "answer")
 
 
@@ -1885,7 +1909,7 @@ def _response_shape_metadata(text: str, kind: str) -> dict[str, Any]:
         r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+"
         r"(?:(?P<count_brevity>tiny|little|small|short|brief|concise|practical)\s+)?"
         r"(?:next\s+)?"
-        r"(?P<unit>parts?|points?|steps?|items?|sections?|facts?|examples?|questions?|jokes?|puns?|options?|reasons?)\b",
+        r"(?P<unit>parts?|points?|steps?|items?|sections?|facts?|takeaways?|examples?|questions?|jokes?|puns?|options?|reasons?)\b",
         lower,
     )
     # "Small correction" and "tiny correction" describe the size of the

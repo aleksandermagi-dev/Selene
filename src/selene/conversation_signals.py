@@ -53,12 +53,24 @@ def explicit_humor_request(value: str) -> bool:
     """Recognize one visibly requested joke or pun across conversation owners."""
 
     normalized = " ".join(str(value or "").lower().replace("’", "'").split())
+    coordinated_nominal_request = bool(
+        re.match(
+            r"^(?:please\s+)?(?:give|tell|make|write|share|add|include|put in)\b",
+            normalized,
+        )
+        and re.search(
+            r"\b(?:and|then)\s+(?:one|a|an)\s+"
+            r"(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
+            r"(?:[a-z][a-z0-9'-]*\s+){0,3}(?:joke|pun)\b",
+            normalized,
+        )
+    )
     return bool(
         re.search(
             r"\b(?:give|tell|make|write|share|add|include|put in)\s+"
             r"(?:me\s+)?(?:one\s+|a\s+|an\s+)?"
             r"(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
-            r"(?:joke|pun)\b",
+            r"(?:[a-z][a-z0-9'-]*\s+){0,3}(?:joke|pun)\b",
             normalized,
         )
         or re.search(
@@ -67,6 +79,7 @@ def explicit_humor_request(value: str) -> bool:
             r"(?:joke|pun)\b",
             normalized,
         )
+        or coordinated_nominal_request
     )
 
 

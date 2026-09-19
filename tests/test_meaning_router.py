@@ -381,6 +381,16 @@ def test_hold_that_thought_is_conversation_management_not_a_memory_candidate():
     assert result["canonical_meaning_frame"]["memory_write_active"] is False
 
 
+def test_keep_thread_open_is_session_management_not_a_memory_candidate():
+    result = interpret_turn_meaning(
+        "Keep the reading-corner thread open; do not close it yet."
+    )
+
+    assert result["primary_intent"] == "direct_conversation"
+    assert "memory_candidate" not in result["dialogue_acts"]
+    assert result["canonical_meaning_frame"]["memory_write_active"] is False
+
+
 def test_embedded_exactly_does_not_create_a_false_affirmation_act():
     recall_question = interpret_turn_meaning(
         "Do you remember exactly why Aleks chose the butterfly for the Cocoon button?"

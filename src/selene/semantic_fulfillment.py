@@ -323,6 +323,12 @@ def _visible_requirements(
             _requirement("hypothesis", fields.get("hypothesis")),
             _requirement("revision_conditions", fields.get("revision_conditions")),
         ]
+    if operation == "observation_analysis":
+        return [
+            _requirement("observation", fields.get("observation")),
+            _requirement("interpretation", fields.get("interpretation")),
+            _requirement("next_check", fields.get("next_check")),
+        ]
     if operation == "comparison":
         return [
             _requirement("candidates", fields.get("candidates"), 2),

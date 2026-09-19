@@ -5408,3 +5408,46 @@ No repair was made.
 alternatives and observations, current-owner precedence over optional
 knowledge, visible operation completion, revision expiry on topic transition,
 then mixed participation. Do not repeat the installed Q&A first.
+
+### 2026-09-19 — Post-Phase-11 owner-chain cultivation repair
+
+**Root finding:** The installed six-turn defect was one connected owner chain,
+not missing teaching. Counted alternatives and ordinary event reports could
+fail to become current-turn owner inputs; optional knowledge could then win;
+broad coverage could accept the wrong work; a held correction could survive a
+real topic change; and mixed recap, humor, or open-thread turns inherited the
+damage.
+
+**Cultivation repair:** Shared proposition normalization now reaches the
+existing decision and observation owners. Observation analysis has typed
+observation, interpretation, and next-check fields with separate fulfillment
+receipts. Corrections visibly consume the changed premise. Held revisions
+expire on genuine semantic topic transitions without breaking callbacks.
+Mixed answer composition follows obligation order, filters social
+acknowledgements out of requested takeaways, and recovers supported labeled
+points from the active proposition ledger. Keeping a named conversation thread
+open is session management, not a personal-Memory request.
+
+**Visible replay:** The same ordinary six-turn chain selected the sturdy clamp,
+separated lantern observation from interpretation and next check, applied the
+clarified lantern premise, honestly requested teaching for unsupported sound
+knowledge, produced two real takeaways before one requested joke, and kept the
+reading-corner thread open. All required coverage was complete and no Memory
+proposal was created.
+
+**Evidence:** Focused and adjacent verification passed 276 checks. The full
+repository run passed 2,237 checks and found one legacy test that required a
+single farewell verbatim even though Selene produced a valid natural closure.
+The assertion now verifies the typed closure obligation instead of a script;
+its exact replay passed. The frontend build passed at 491.33 kB without a Vite
+size warning. Resident SQLite integrity remained `ok` and the SHA-256 remained
+`4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
+
+**Boundary:** All implementation checks used synthetic or disposable state.
+No resident conversation, teaching, Study, Dream, Memory, identity,
+personality, governance, training, authority, Tendril, or external-action
+change occurred.
+
+**Next:** Checkpoint the clean source, package and reinstall it, verify the
+installed artifacts without mutating resident continuity, then decide whether
+one short ordinary installed confirmation is still necessary.

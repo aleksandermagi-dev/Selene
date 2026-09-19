@@ -631,7 +631,10 @@ def session_fact_response_seed(
         )
     )
     asks_summary = bool(
-        re.search(r"\b(?:summarize|summary|recap|settled (?:points?|facts?))\b", lower)
+        re.search(
+            r"\b(?:summarize|summary|recap|takeaways?|settled (?:points?|facts?))\b",
+            lower,
+        )
     )
     asks_update = bool(
         re.search(r"\b(?:update|revise|adjust|change)\b", lower)

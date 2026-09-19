@@ -4957,9 +4957,14 @@ def test_gentle_desk_replay_repairs_grounding_obligations_and_provisional_infere
     assert "cleaned" in discriminating["candidate_text"].lower()
     assert all(f"{index}." in summary["candidate_text"] for index in (1, 2, 3))
     assert "clean stopping point" in summary["candidate_text"].lower()
-    assert summary["candidate_text"].endswith(
-        "Until next time. We can pick it back up from here."
-    )
+    closure_items = [
+        item
+        for item in summary["response_coverage"]["items"]
+        if item.get("kind") == "closure"
+    ]
+    assert closure_items
+    assert all(item["addressed"] is True for item in closure_items)
+    assert summary["response_coverage"]["all_required_addressed"] is True
     fact_counts = [
         len(result["conversation_spine"].get("session_facts") or [])
         for result in results
@@ -5329,7 +5334,7 @@ def test_phase_nine_replay_preserves_prompt_answers_corrections_and_creative_cal
     assert "iced tea" in porch["candidate_text"].lower()
     assert "hot tea" in drink_fix["candidate_text"].lower()
     assert directive["contextual_continuity"]["transient_preferences"]["remaining_turns"] == 3
-    assert all(label in screen["candidate_text"] for label in ("Observation:", "Interpretation:", "Next,"))
+    assert all(label in screen["candidate_text"] for label in ("Observation:", "Interpretation:", "Next check:"))
     assert "screen stopped flickering" in screen_fix["candidate_text"].lower()
     assert "inspect the cable first because" in cable["candidate_text"].lower()
     assert "empty street" in rain["candidate_text"].lower()

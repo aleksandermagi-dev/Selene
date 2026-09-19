@@ -767,6 +767,17 @@ def _is_memory_candidate(value: str) -> bool:
         return False
     if re.search(r"\bhold (?:that|this) thought\b", value):
         return False
+    if (
+        re.search(r"\b(?:thread|conversation|chat|topic|question|loop)\b", value)
+        and re.search(
+            r"\b(?:keep|hold|leave|remain|stay)\b.*\b(?:open|active|available|going)\b"
+            r"|\b(?:do not|don't)\s+(?:close|end|finish)\b",
+            value,
+        )
+    ):
+        # Keeping a conversational thread available is session management, not
+        # permission to create a retained personal-memory record.
+        return False
     retention_request = bool(
         re.search(r"^(please\s+)?(remember|save|keep|hold)|\b(can|could|would) you (save|keep|hold)", value)
     )

@@ -54,6 +54,7 @@ _OPERATION_ALIASES = {
     "summary": "summary",
     "closure": "closure",
     "creative_expression": "creative_expression",
+    "observation_analysis": "observation_analysis",
 }
 
 _CONTRACTS: dict[str, tuple[str, ...]] = {
@@ -94,6 +95,7 @@ _CONTRACTS: dict[str, tuple[str, ...]] = {
         "revision_lineage",
         "stopping_receipt",
     ),
+    "observation_analysis": ("observation", "interpretation", "next_check"),
 }
 
 _GENERIC_OR_MISSING_KINDS = {
@@ -928,6 +930,39 @@ def _from_answer_substance(
             )
             or ([missing_variable] if missing_variable else []),
         }
+    elif operation == "observation_analysis" and _kind_fits(
+        answer_kind,
+        ("observation_analysis", "observation_interpretation_next_check"),
+    ):
+        observation_units = [
+            surface
+            for item in units
+            for surface in [_semantic_surface(item)]
+            if surface and "observation_analysis_observation" in str(item.get("id") or "")
+        ] or _surfaces_with_role(units, {"premise", "observation"})
+        interpretation_units = [
+            surface
+            for item in units
+            for surface in [_semantic_surface(item)]
+            if surface and "observation_analysis_interpretation" in str(item.get("id") or "")
+        ] or _surfaces_with_role(units, {"answer", "conclusion"})
+        check_units = [
+            surface
+            for item in units
+            for surface in [_semantic_surface(item)]
+            if surface
+            and (
+                "next_check" in str(item.get("id") or "")
+                or re.search(r"\b(?:check|test|inspect|observe)\b", surface, re.IGNORECASE)
+            )
+        ]
+        fields = {
+            "observation": observation_units[0] if observation_units else "",
+            "interpretation": interpretation_units[0] if interpretation_units else "",
+            "next_check": check_units[0] if check_units else "",
+            "basis": basis,
+            "limitations": [missing_variable] if missing_variable else [],
+        }
     elif operation == "choice" and (
         _kind_fits(answer_kind, ("choice", "recommendation", "priority", "selection"))
         or answer_kind in {
@@ -992,6 +1027,35 @@ def _from_answer_substance(
         fields = {"points": surfaces, "source_scope": "current_session_only"}
     else:
         return {}
+    expression_answer = answer
+    expression_semantics = semantics
+    if operation == "correction":
+        revision = _dict(payload.get("epistemic_revision_plan"))
+        proposition_ledger = _dict(payload.get("session_proposition_ledger"))
+        current_revision = _dict(proposition_ledger.get("current_revision"))
+        corrected_text = truncate(
+            str(
+                revision.get("revised_claim")
+                or revision.get("replacement")
+                or current_revision.get("corrected_text")
+                or ""
+            ),
+            700,
+        ).strip(" .")
+        if corrected_text and corrected_text.lower() not in expression_answer.lower():
+            expression_answer = f"I understand the correction: {corrected_text}. {expression_answer}"
+            expression_semantics = build_text_supported_semantic_packet(
+                expression_answer,
+                answer_kind=f"visible_correction_application_{answer_kind}",
+                source_kind="current_session_observation",
+                source_refs=(
+                    _texts(semantics.get("source_refs"))
+                    or ["conversation_spine:session_proposition_revision"]
+                ),
+                certainty="current_session_supported",
+                scope="current_dialogue_obligation",
+            )
+            fields["current_application"] = _sentences(expression_answer)
     result = _complete_result(
         obligation,
         operation,
@@ -1000,9 +1064,9 @@ def _from_answer_substance(
         expression_source_id=(
             "bounded_answer_completion" if preview_only else "intelligence_os_answer"
         ),
-        expression_seed=answer,
-        supported_semantics=semantics,
-        source_refs=_texts(semantics.get("source_refs")) or _texts(intelligence.get("source_refs")),
+        expression_seed=expression_answer,
+        supported_semantics=expression_semantics,
+        source_refs=_texts(expression_semantics.get("source_refs")) or _texts(intelligence.get("source_refs")),
     )
     if (
         operation == "correction"
@@ -1119,13 +1183,40 @@ def _from_conversation_state(
     summary = _dict(payload.get("current_session_summary"))
     if operation == "summary" and summary.get("points"):
         summary_seed = str(summary.get("response_seed") or "").strip()
+        if _summary_point_is_acknowledgement(summary_seed):
+            summary_seed = ""
+        source_points = _summary_source_points(
+            summary,
+            _dict(payload.get("session_proposition_ledger")),
+        )
+        label_order = {"observation": 0, "interpretation": 1, "next check": 2}
+        source_points.sort(
+            key=lambda value: next(
+                (
+                    rank
+                    for label, rank in label_order.items()
+                    if value.lower().startswith(f"{label}:")
+                ),
+                3,
+            )
+        )
+        requested_count = int(
+            _dict(obligation.get("response_shape")).get("requested_count") or 0
+        )
+        selected_points = source_points[:requested_count] if requested_count > 0 else source_points
         visible_points = _sentences(summary_seed)
+        if not summary_seed and selected_points:
+            summary_seed = "\n".join(
+                f"{index}. {point}"
+                for index, point in enumerate(selected_points, start=1)
+            )
+            visible_points = selected_points
         return _complete_result(
             obligation,
             operation,
             fields={
-                "points": visible_points or _texts(summary.get("points")),
-                "source_points": _texts(summary.get("points")),
+                "points": visible_points or selected_points,
+                "source_points": source_points,
                 "source_scope": "current_session_only",
             },
             source="current_session_summary",
@@ -1500,7 +1591,7 @@ def _unmet_current_turn_inputs(
             open_inputs.append("the available options")
         if not has("criteria"):
             open_inputs.append("the criterion that should control the choice")
-    elif operation in {"prediction", "hypothesis", "counterfactual", "causal_explanation"}:
+    elif operation in {"prediction", "hypothesis", "counterfactual", "causal_explanation", "observation_analysis"}:
         if not any(has(field) for field in ("observations", "relations", "claims")):
             open_inputs.append("a visible observation, supported relation, or reviewed claim")
     elif operation == "planning":
@@ -1548,6 +1639,10 @@ def _missing_input(operation: str, payload: dict[str, Any]) -> str:
         "creative_expression": (
             "a bounded creative brief, fiction status, source-style receipt, "
             "revision lineage, and stopping receipt"
+        ),
+        "observation_analysis": (
+            "a visible reported observation that can be kept separate from a bounded "
+            "interpretation and next check"
         ),
     }.get(operation, "the typed inputs required by the requested operation")
 
@@ -1659,6 +1754,56 @@ def _sentences(value: str) -> list[str]:
     ][:16]
 
 
+def _summary_source_points(
+    summary: dict[str, Any],
+    proposition_ledger: dict[str, Any],
+) -> list[str]:
+    points = [
+        item
+        for item in _texts(summary.get("points"))
+        if not _summary_point_is_acknowledgement(item)
+    ]
+    for proposition in reversed(proposition_ledger.get("propositions") or []):
+        if not isinstance(proposition, dict):
+            continue
+        if str(proposition.get("status") or "") not in {"active", "recomputed"}:
+            continue
+        if str(proposition.get("kind") or "") not in {"result", "conclusion"}:
+            continue
+        text = str(proposition.get("text") or "").strip()
+        for label, surface in re.findall(
+            r"\b(Observation|Interpretation|Next check):\s*(.*?)"
+            r"(?=\s+(?:Observation|Interpretation|Next check):|$)",
+            text,
+            flags=re.IGNORECASE | re.DOTALL,
+        ):
+            visible_label = {
+                "observation": "Observation",
+                "interpretation": "Interpretation",
+                "next check": "Next check",
+            }[label.casefold()]
+            point = truncate(f"{visible_label}: {surface.strip()}", 1200)
+            if point and point.casefold() not in {item.casefold() for item in points}:
+                points.append(point)
+    return points[:16]
+
+
+def _summary_point_is_acknowledgement(value: str) -> bool:
+    normalized = " ".join(str(value or "").lower().replace("’", "'").split()).strip(
+        " .,!"
+    )
+    if normalized in {"yes", "okay", "ok", "got it", "understood"}:
+        return True
+    return bool(
+        re.fullmatch(
+            r"(?:yes,?\s+)?(?:that|the)\s+"
+            r"(?:adjustment|correction|clarification|update)\s+is\s+"
+            r"(?:clear|understood)",
+            normalized,
+        )
+    )
+
+
 def _kind_fits(kind: str, markers: tuple[str, ...]) -> bool:
     return any(marker in str(kind or "").lower() for marker in markers)
 
@@ -1675,7 +1820,7 @@ def _completed_epistemic_state(
             == "explicit_fictional_invention"
             else "NO_FICTION_RELEASED"
         )
-    if operation in {"prediction", "hypothesis", "counterfactual"}:
+    if operation in {"prediction", "hypothesis", "counterfactual", "observation_analysis"}:
         return "CANDIDATE_UNVERIFIED"
     if operation == "disagreement" and "data_conflict" in source:
         return "CONFLICT_UNSATISFIABLE"

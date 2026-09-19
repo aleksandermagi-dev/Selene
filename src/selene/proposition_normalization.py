@@ -9,7 +9,11 @@ from .registry import truncate
 _RELATION_PREDICATE = (
     r"is|are|was|were|has|have|costs?|weighs?|holds?|uses?|contains?|"
     r"bends?|leans?|tilts?|points?|faces?|grows?|dropped?|drops?|rose|rises?|"
-    r"changed?|stayed?|remained?"
+    r"changed?|stayed?|remained?|flashes?|flashed|flickers?|flickered|"
+    r"glows?|glowed|dims?|dimmed|darkens?|darkened|brightens?|brightened|"
+    r"starts?|started|stops?|stopped|fails?|failed|cracks?|cracked|"
+    r"breaks?|broke|falls?|fell|opens?|opened|closes?|closed|leaks?|leaked|"
+    r"spills?|spilled|heats?|heated|cools?|cooled"
 )
 
 
@@ -36,6 +40,18 @@ def extract_visible_options(text: str) -> dict[str, Any]:
             r"\b(?:have|consider|compare|between)\s+"
             r"(?:two|three|four|\d+)\s+"
             r"(?P<subject>[a-z][a-z0-9'-]*(?:\s+[a-z][a-z0-9'-]*){0,2})\s*:\s*"
+            r"(?P<body>(?:one|a|an|the)\s+[^.?!]{2,880})",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+    if not container:
+        # Ordinary speakers often introduce a concrete set as a noun phrase
+        # rather than with a routing verb: "two clamps, one ... and one ...".
+        # The visible count, concrete plural subject, delimiter, and repeated
+        # determiners together are the structure; no fixture noun is needed.
+        container = re.search(
+            r"\b(?:two|three|four|five|six|[2-6])\s+"
+            r"(?P<subject>[a-z][a-z0-9'-]*(?:\s+[a-z][a-z0-9'-]*){0,2})\s*[:,]\s*"
             r"(?P<body>(?:one|a|an|the)\s+[^.?!]{2,880})",
             normalized,
             flags=re.IGNORECASE,

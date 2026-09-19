@@ -161,8 +161,27 @@ def compose_whole_answer(payload: dict[str, Any] | None = None) -> dict[str, Any
     semantic_input_count = 0
     source_refs: list[str] = []
 
-    if seed:
-        seed_key = _surface_key(seed)
+    seed_key = _surface_key(seed)
+    completed_expression_keys = [
+        expression_key
+        for item in completed
+        if (
+            expression_key := _surface_key(
+                _clean_surface(str(item.get("expression_seed") or ""))
+            )
+        )
+    ]
+    seed_duplicates_completed_owner = bool(
+        seed_key
+        and any(
+            seed_key == expression_key
+            or seed_key in expression_key
+            or expression_key in seed_key
+            for expression_key in completed_expression_keys
+        )
+    )
+
+    if seed and not seed_duplicates_completed_owner:
         seed_hold_reason = _surface_hold_reason(seed, prompt_keys)
         if seed_key and not seed_hold_reason:
             deduplicated_seed, removed = _deduplicate_surface_sentences(
@@ -362,6 +381,9 @@ def compose_whole_answer(payload: dict[str, Any] | None = None) -> dict[str, Any
                 0, semantic_input_count - len(semantic_units)
             ),
             "surface_fragment_count": len(surface_fragments),
+            "existing_seed_deferred_to_canonical_operation_order": (
+                seed_duplicates_completed_owner
+            ),
             "deduplicated_surface_sentence_count": (
                 deduplicated_surface_sentence_count
             ),

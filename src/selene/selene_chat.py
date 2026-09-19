@@ -2213,7 +2213,12 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         and _coverage_rank(grounded_coverage) == _coverage_rank(response_coverage)
         and (
             grounded_obligation_kinds
-            & {"correction_update", "constraint_preservation"}
+            & {
+                "correction_update",
+                "constraint_preservation",
+                "observation_analysis",
+            }
+            or epistemic_composition.get("whole_answer_composition_applied") is True
             or re.search(
                 r"\b[1-9][.):]\s*(?=(?:[1-9][.):])|$)",
                 candidate_text,
@@ -4136,6 +4141,14 @@ def _explicit_humor_subject(prompt: str) -> str:
             text,
             flags=re.IGNORECASE,
         )
+    if not subject_match:
+        subject_match = re.search(
+            r"\b(?:one|a|an)\s+(?:tiny\s+|little\s+|small\s+|quick\s+|short\s+)?"
+            r"(?P<subject>[a-z][a-z0-9'-]*(?:\s+[a-z][a-z0-9'-]*){0,2})\s+"
+            r"(?:joke|pun)\b",
+            text,
+            flags=re.IGNORECASE,
+        )
     subject = truncate(subject_match.group(1).strip(), 140) if subject_match else ""
     if subject and _humor_subject_is_command_fragment(subject):
         subject = ""
@@ -5690,6 +5703,15 @@ def _intelligence_support_points(result: dict[str, Any]) -> list[str]:
 
 def _conversation_policy_reply(text: str) -> str:
     lower = text.lower()
+    keep_thread_open = re.search(
+        r"\bkeep\s+(?:the\s+)?"
+        r"(?P<name>[a-z0-9][a-z0-9_-]*(?:\s+[a-z0-9][a-z0-9_-]*){0,3})"
+        r"\s+thread\s+open\b",
+        lower,
+    )
+    if keep_thread_open:
+        name = " ".join(keep_thread_open.group("name").split())
+        return f"Got it—I’ll keep the {name} thread open."
     if "ordinary uncertainty" in lower and "cocoon" in lower and any(marker in lower for marker in ("automatically", "need to leave", "have to leave")):
         return "No. Ordinary uncertainty can stay in the conversation; I can be honest, ask Aleks, or keep thinking without being sent to Cocoon automatically."
     return ""

@@ -212,6 +212,18 @@ def prepare_dialogue_turn(
             "new question",
         )
     )
+    if not topic_transition:
+        topic_transition = _held_revision_topic_transition(
+            interpreted_text,
+            prior_topic=str(prior.get("active_topic") or ""),
+            prior_ledger=(
+                prior_pragmatics.get("session_proposition_ledger")
+                if isinstance(prior_pragmatics.get("session_proposition_ledger"), dict)
+                else {}
+            ),
+            current_correction_detected=correction.get("detected") is True,
+            contextual_follow_up=contextual_follow_up,
+        )
     corrections = _advance_correction_lifecycle(
         corrections,
         current_correction_detected=correction.get("detected") is True,
@@ -1145,6 +1157,81 @@ def _advance_correction_lifecycle(
         else:
             result.append(item)
     return result
+
+
+def _held_revision_topic_transition(
+    current_text: str,
+    *,
+    prior_topic: str,
+    prior_ledger: dict[str, Any],
+    current_correction_detected: bool,
+    contextual_follow_up: dict[str, Any],
+) -> bool:
+    """Expire an unresolved revision when ordinary wording clearly changes subject.
+
+    Explicit markers remain the primary route.  This bounded fallback applies
+    only while a correction is already held, and it will not treat a deictic
+    follow-up, named callback, return, or summary request as a topic change.
+    """
+
+    recomputation = (
+        prior_ledger.get("recomputation")
+        if isinstance(prior_ledger.get("recomputation"), dict)
+        else {}
+    )
+    if str(recomputation.get("state") or "") not in {
+        "required",
+        "held_pending_owner_result",
+        "held_target_not_found",
+        "held_missing_corrected_input",
+    }:
+        return False
+    if current_correction_detected or contextual_follow_up.get("preserve_active_topic") is True:
+        return False
+    if str(contextual_follow_up.get("kind") or "") in {
+        "named_callback",
+        "reason_follow_up",
+        "alternative_reference",
+        "session_summary_request",
+        "immediate_callback",
+        "return_to_prior_topic",
+    }:
+        return False
+
+    normalized = " ".join(str(current_text or "").split())
+    current_terms = set(_topic(normalized).split())
+    if len(current_terms) < 2:
+        return False
+    if re.match(
+        r"^(?:and|but|so)?\s*(?:does|did|is|was|are|were|what about|how about)\s+"
+        r"(?:that|this|it|they|those|these)\b",
+        normalized,
+        flags=re.IGNORECASE,
+    ):
+        return False
+
+    revision = (
+        prior_ledger.get("current_revision")
+        if isinstance(prior_ledger.get("current_revision"), dict)
+        else {}
+    )
+    revision_text = " ".join(
+        value
+        for value in (
+            str(revision.get("corrected_text") or ""),
+            str(revision.get("replaced_text") or ""),
+            str(prior_topic or ""),
+        )
+        if value
+    )
+    prior_terms = set(_topic(revision_text).split())
+    if not prior_terms:
+        return False
+
+    # Any meaningful shared topic term preserves a continuing subject.  With
+    # no shared terms, the held revision cannot silently own an otherwise
+    # distinct ordinary question forever.
+    return not bool(current_terms & prior_terms)
 
 
 def _there_is_deictic(lower: str) -> bool:

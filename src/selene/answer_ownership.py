@@ -146,6 +146,12 @@ def enrich_obligation_ownership(
         owner = "ordinary_conversation_path"
         completion_policy = "owner_must_perform_requested_operation"
         response_functions = ["method"]
+    elif kind == "observation_analysis":
+        answer_act = "prompt_grounded_observation_analysis"
+        epistemic_basis = "visible_reported_observation_and_bounded_inference"
+        owner = "intelligence_os"
+        completion_policy = "owner_must_perform_requested_operation"
+        response_functions = ["observation_analysis"]
     elif _counterfactual_requested(lower) and generic_kind:
         answer_act = "bounded_counterfactual"
         epistemic_basis = "declared_changed_premise_and_visible_supported_model"

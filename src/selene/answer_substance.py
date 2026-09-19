@@ -1014,6 +1014,14 @@ def _ordinary_prompt_grounded_operation(
     if manner_contrast:
         return manner_contrast
 
+    observation_analysis = _prompt_observation_analysis_operation(
+        prompt,
+        lower,
+        observations,
+    )
+    if observation_analysis:
+        return observation_analysis
+
     current_context_inference = build_current_context_inference(prompt, observations)
     if current_context_inference.get("eligible") is True:
         return {
@@ -1126,6 +1134,128 @@ def _ordinary_prompt_grounded_operation(
     if foundational:
         return foundational
     return {}
+
+
+def _prompt_observation_analysis_operation(
+    prompt: str,
+    lower: str,
+    observations: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Separate a reported event from inference and a bounded next check.
+
+    The owner is intentionally current-turn evidence.  It does not need an
+    approved knowledge packet to repeat what the speaker observed, mark the
+    causal reading as provisional, or propose a one-variable comparison.
+    """
+
+    request_surface = str(prompt or "").split("Selected current-session context:", 1)[0].strip()
+    request_lower = " ".join(request_surface.lower().replace("’", "'").split())
+    asks_for_observation = bool(
+        re.search(r"\b(?:observation|observed|what (?:i|we) (?:saw|noticed))\b", request_lower)
+    )
+    asks_for_interpretation = bool(
+        re.search(r"\b(?:interpretation|interpret|inference|infer|might mean)\b", request_lower)
+    )
+    asks_for_check = bool(
+        re.search(
+            r"\b(?:next|another|one)\s+(?:safe\s+)?(?:check|test|observation|step)\b"
+            r"|\b(?:check|test|inspect|observe)\s+(?:next|afterward)\b",
+            request_lower,
+        )
+    )
+    if not (asks_for_observation and asks_for_interpretation and asks_for_check):
+        return {}
+
+    candidates: list[tuple[int, str]] = []
+    for item in observations:
+        if not isinstance(item, dict):
+            continue
+        if item.get("premise_eligible") is False:
+            continue
+        source_kind = str(item.get("source_kind") or "")
+        if source_kind and source_kind not in {
+            "canonical_current_turn_fact",
+            "current_session_observation",
+            "current_prompt_observation",
+        }:
+            continue
+        value = truncate(str(item.get("observation") or item.get("preview") or ""), 900).strip()
+        if not value or "?" in value:
+            continue
+        value_lower = value.lower()
+        if (
+            asks_for_observation
+            and asks_for_interpretation
+            and ("separate" in value_lower or "suggest" in value_lower)
+        ):
+            continue
+        fact_kind = str(item.get("fact_kind") or "").strip().lower()
+        if fact_kind in {"entity", "sequence"}:
+            continue
+        rank = 3 if fact_kind == "observation" else 2 if fact_kind == "relation" else 1
+        if value.casefold() not in {known.casefold() for _, known in candidates}:
+            candidates.append((rank, value))
+
+    observation = max(candidates, key=lambda item: (item[0], len(item[1])))[1] if candidates else ""
+    if not observation:
+        # The request sentence is not evidence for itself.  Only take a
+        # preceding declarative clause from the visible prompt.
+        clauses = [
+            item.strip()
+            for item in re.split(r"(?<=[.!])\s+|\n+", request_surface)
+            if item.strip() and "?" not in item
+        ]
+        observation = clauses[0] if clauses else ""
+    observation = observation.rstrip(" .")
+    if not observation:
+        return {}
+
+    interpretation = (
+        "The timing makes the reported change and its surrounding conditions a reasonable "
+        "place to investigate, but this observation alone does not establish the cause."
+    )
+    next_check = (
+        "Record whether the same observable change happens again under the same conditions, "
+        "then change only one safe condition at a time."
+    )
+    answer = (
+        f"Observation: {observation}.\n"
+        f"Interpretation: {interpretation}\n"
+        f"Next check: {next_check}"
+    )
+    return _operation(
+        answer=answer,
+        answer_kind="prompt_grounded_observation_analysis",
+        missing_variable="whether the reported change recurs when one condition is varied",
+        support_basis="current_prompt_only",
+        units=[
+            _unit(
+                "observation_analysis_observation",
+                "premise",
+                "observation",
+                text=observation,
+                source_kind="current_session_observation",
+                source_refs=["answer_substance:current_turn_observation"],
+                meaning_keys=["reported observation"],
+            ),
+            _unit(
+                "observation_analysis_interpretation",
+                "answer",
+                "inference",
+                text=interpretation,
+                source_kind="prompt_grounded_method",
+                meaning_keys=["provisional interpretation does not establish cause"],
+            ),
+            _unit(
+                "observation_analysis_next_check",
+                "support",
+                "sequence",
+                text=next_check,
+                source_kind="prompt_grounded_method",
+                meaning_keys=["one safe condition changes at a time"],
+            ),
+        ],
+    )
 
 
 def _operation_compatibility_receipt(
