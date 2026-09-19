@@ -5490,3 +5490,26 @@ the interaction would add no necessary evidence.
 record it before repair and cultivate the shared owner. Otherwise resume the
 next explicitly chosen teaching or organ phase without reopening this settled
 six-turn defect.
+
+### 2026-09-19 — Ordinary Conversational Check-In becomes a distinct workflow
+
+Aleks distinguished a present-tense conversational status check from a Q&A or
+bug hunt. The new Ordinary Conversational Check-In uses a small, natural
+Codex/Selene conversation with no prepared coverage battery, hidden answer
+key, adversarial prompt, or obligation to find a defect. Codex follows the
+conversation for roughly five to eight exchanges and reports only visible
+function, ordinary variation, a genuine point worth noticing, or a supported
+reproducible blocker.
+
+The default uses disposable copied state, identifies Codex accurately, makes
+no resident write, and performs no automatic teaching, Memory, Study, Dream,
+repair, web search, dataset search, or repository audit. One surprising reply
+remains an observation rather than a bug. If nothing material appears, the
+correct result is that no action is needed.
+
+Workflow:
+`docs/education/SELENE_ORDINARY_CONVERSATIONAL_CHECK_IN_WORKFLOW.md`.
+
+**Next:** Use this workflow whenever Aleks asks for a conversational check or
+current conversation status without requesting Q&A, benchmarking, or a bug
+hunt.

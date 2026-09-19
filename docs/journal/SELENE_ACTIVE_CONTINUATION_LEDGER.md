@@ -29,6 +29,10 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Branch: `evidence`
 - Latest post-Phase-11 owner-chain source checkpoint: `329515a`
   (`Repair post-phase 11 conversation ownership`)
+- Ordinary conversational status checks now use
+  `docs/education/SELENE_ORDINARY_CONVERSATIONAL_CHECK_IN_WORKFLOW.md`: a
+  five-to-eight-exchange natural check with no bug search, grading, prepared
+  coverage battery, or obligation to produce findings.
 - Post-Phase-11 repair verification: 276 focused/adjacent checks passed. The
   repository-wide run passed 2,237 checks and exposed one obsolete exact-
   farewell assertion; its repaired semantic-closure replay passed. Frontend
@@ -1456,6 +1460,12 @@ confirmation, G13-G15 teaching, or earlier learning replay without a new
 implementation need. If a new conversation defect appears, record the visible
 evidence first and cultivate its shared owner rather than patching prompt
 wording or teaching around a coverage defect.
+
+When Aleks requests a conversational check rather than a Q&A, use the Ordinary
+Conversational Check-In. Follow one natural thread, do not search for or invent
+bugs, and report no action when no material interruption appears. Escalate to a
+separate Cultivation investigation only from visible evidence of a genuine
+blocker.
 
 The downloaded
 source corpora and private 20-interaction review stay ignored and unavailable
