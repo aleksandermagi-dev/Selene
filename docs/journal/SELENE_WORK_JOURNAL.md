@@ -5548,3 +5548,40 @@ occurred.
 **Next:** Refresh the active continuation ledger and checkpoint the source.
 Package and reinstall only when Aleks explicitly asks to place this repair in
 the installed vessel.
+
+### 2026-09-19 — Selene's focused-questioning idea gains a current-system owner
+
+An ordinary question about Selene's remaining capability gaps was answered by
+nearby F2 teaching material because the word `missing` had no dedicated
+current-system owner. The taught statement itself made a useful connection:
+focused questions support collaboration, completeness, uncertainty, Study,
+and metacognitive gap articulation. Cultivation separated the ownership defect
+from that valid architectural idea.
+
+Capability-status turns now route to a read-only Organ Maturity Ledger owner,
+not approved teaching by lexical overlap. Selene can describe current mature,
+bounded, and unavailable capability areas without inventing a percentage or
+treating incomplete capability as an identity gap. A shared focused-question
+receipt asks at most one exact, material question after existing support is
+used, never repeats known information, resumes the task, and permits unknown.
+
+Two stale conversation guards were retired at their source. Proven genuine
+curiosity may survive a preliminary social no-follow-up posture, while habitual
+engagement questions remain held. A supported association that already passes
+relevance, source, distinctness, current-task, repetition, pressure, and
+turn-taking gates no longer also needs an explicit invitation; the direct
+answer still keeps priority. Stale Organ Maturity Ledger future-work wording
+was refreshed without promoting unbuilt perception, audible Voice, Tendril
+action, or embodiment.
+
+Focused verification passed 28 nearest-path checks, 221 focused and adjacent
+module checks, and four integrated Chat checks. Backend compilation passed.
+`git diff --check` reported only existing Windows line-ending notices. All
+verification used synthetic or disposable state; no resident state, live Q&A,
+teaching, Memory, Study, Dream, package, install, or external action occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_FOCUSED_QUESTIONING_AND_CAPABILITY_SELF_ASSESSMENT_20260919.md`.
+
+**Next:** Refresh the active continuation ledger and checkpoint this source.
+Package or reinstall only when Aleks explicitly requests it.

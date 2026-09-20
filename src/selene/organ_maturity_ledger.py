@@ -8,7 +8,7 @@ from .curriculum_authorization import curriculum_authorization_status
 from .language_teaching_shelf import language_teaching_status
 
 
-ORGAN_MATURITY_LEDGER_VERSION = "v10_phase_8_completion_gate"
+ORGAN_MATURITY_LEDGER_VERSION = "v11_current_capability_self_assessment"
 ORGAN_MATURITY_BOUNDARY = (
     "read_only_current_capability_maturity_projection_no_identity_memory_"
     "governance_teaching_dream_action_or_authority_change"
@@ -126,13 +126,13 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "source_modules": ["comprehension_integration.py", "teaching_lifecycle.py"],
         "routes": ["comprehension.status", "teaching.lifecycle.status"],
         "connection_state": "ordinary_chat",
-        "maturity_state": "integration_verified",
+        "maturity_state": "mature_current_scope",
         "target_state": "mature_current_scope",
         "health_state": "phase_6c_reviewed_correction_lineage_and_delayed_chat_verified",
         "maturation_phase": 6,
         "metric_keys": ["knowledge_concepts", "approved_knowledge", "teaching_lifecycles"],
         "known_gaps": [
-            "The concept-level descriptive learning profile and broader Phase 6 closure remain Phase 6D work."
+            "Broader subject coverage and future teaching remain separately source- and authorization-bound."
         ],
     },
     {
@@ -163,7 +163,7 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "health_state": "phase_1_completion_gate_verified",
         "maturation_phase": 1,
         "metric_keys": ["chat_sessions", "dialogue_workspaces"],
-        "known_gaps": ["Later owner, Memory, education, and expression phases must continue consuming the canonical contract without reparsing it."],
+        "known_gaps": ["New owners must continue consuming the canonical contract without independently reparsing the turn."],
     },
     {
         "key": "nlo_voice_text",
@@ -201,7 +201,7 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "health_state": "phase_2_completion_gate_verified",
         "maturation_phase": 2,
         "metric_keys": ["approved_memory_references", "memory_candidates"],
-        "known_gaps": ["Delayed associative resurfacing, Dream handoff, and broader learned semantic coverage remain later phases; they are not personal Memory responsibilities."],
+        "known_gaps": ["Broader reviewed personal continuity still depends on privacy-eligible source coverage; association, Dream, and general knowledge remain separate owners."],
     },
     {
         "key": "approved_knowledge_retrieval",
@@ -427,7 +427,7 @@ ORGAN_SPECS: tuple[dict[str, Any], ...] = (
         "health_state": "phase_8_completion_gate_verified",
         "maturation_phase": 8,
         "metric_keys": ["typed_goal_records", "legacy_goal_previews", "commitment_lifecycle_events"],
-        "known_gaps": ["Broader perception, audible Voice, tools, Tendril action, and embodiment remain capability-specific later phases."],
+        "known_gaps": ["Broader perception, audible Voice, tools, Tendril action, and embodiment remain capability-specific later phases; focused questioning is bounded to one material current-turn detail."],
     },
     {
         "key": "perception",

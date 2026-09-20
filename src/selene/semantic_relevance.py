@@ -317,7 +317,7 @@ def evaluate_semantic_relevance(payload: dict[str, Any] | None = None) -> dict[s
             )
             reason = "contextual_memory_strongly_aligned" if accepted else "contextual_memory_alignment_too_weak"
     elif source_class in {"approved_knowledge", "reviewed_teaching_knowledge_resource"}:
-        if meaning_frame.get("academic_knowledge_posture") == "hold_for_social_or_conversation_management":
+        if str(meaning_frame.get("academic_knowledge_posture") or "").startswith("hold_for_"):
             accepted = False
             reason = "canonical_meaning_frame_holds_academic_retrieval"
             approved_knowledge_alignment = _approved_knowledge_alignment_receipt(

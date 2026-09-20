@@ -268,6 +268,29 @@ def _seed_transfer_complete(conn):
     conn.commit()
 
 
+def test_capability_gap_question_uses_read_only_maturity_owner_not_teaching_overlap(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "What gaps are we missing to get you to 100%?"},
+    )["result"]
+
+    assert result["intent_decision"]["intent"] == "capability_status"
+    assert result["capability_self_assessment"]["requested"] is True
+    assert result["visible_speech_seed"]["selected_source_id"] == "capability_maturity_status"
+    assert result["visible_speech_seed"]["candidate_arbitration"][
+        "current_owner_gate"
+    ]["selected_owner"] == "organ_maturity_ledger"
+    assert "not identity gaps" in result["candidate_text"]
+    assert "focused questioning extends" not in result["candidate_text"].lower()
+    assert result["memory_write_active"] is False
+    assert result["training_allowed"] is False
+
+
 def test_chat_preserves_codex_and_aleks_as_distinct_session_speakers(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

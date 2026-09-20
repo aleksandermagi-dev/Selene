@@ -145,6 +145,7 @@ def build_relational_expression_range(
     dimensions = _dict(affect.get("dimensions"))
     posture = str(affect.get("expression_posture") or "ordinary_attentive")
     continuity = _dict(payload.get("pragmatic_continuity"))
+    energy = _dict(continuity.get("conversational_energy"))
     contextual = _dict(payload.get("contextual_follow_up"))
     conversation = _dict(payload.get("conversation_context"))
     micro = _dict(payload.get("conversational_micro_move_plan"))
@@ -352,15 +353,26 @@ def build_relational_expression_range(
 
     question_allowed = bool(ending.get("question_allowed"))
     question_kind = str(thought.get("selected_kind") or "")
+    energy_handoff = _dict(energy.get("expression_handoff"))
+    energy_question = bool(
+        str(energy.get("selected_act") or "")
+        in {"answer_then_ask_relevant_curiosity", "ask_for_specific_collaborative_help"}
+        and str(energy_handoff.get("text") or "").strip()
+    )
     question_available = bool(
         question_allowed
-        and question_kind == "collaborative_question"
-        and str(
-            thought.get("expression_text")
-            or thought.get("selected_text")
-            or thought.get("candidate_text")
-            or ""
-        ).strip()
+        and (
+            energy_question
+            or (
+                question_kind == "collaborative_question"
+                and str(
+                    thought.get("expression_text")
+                    or thought.get("selected_text")
+                    or thought.get("candidate_text")
+                    or ""
+                ).strip()
+            )
+        )
     )
     if question_available:
         _select(
@@ -368,7 +380,11 @@ def build_relational_expression_range(
             "question",
             "one_material_collaborative_question",
             "a material supported question is already supplied and the ending posture permits it",
-            delegated_to="generative_thought_expression",
+            delegated_to=(
+                "conversational_energy"
+                if energy_question
+                else "generative_thought_expression"
+            ),
         )
     else:
         held.append(

@@ -22,6 +22,7 @@ from .answer_operations import (
 from .answer_substance import build_answer_substance
 from .affect_expression import build_affect_expression_guidance
 from .bounded_organ_coalition import build_bounded_organ_coalition
+from .capability_self_assessment import build_capability_self_assessment
 from .chat_intent import classify_chat_intent
 from .chat_persistence import (
     CHAT_TRACE_SCHEMA_VERSION,
@@ -393,6 +394,10 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         contextual_follow_up,
     )
     intent_decision["relational_context"] = relational_context
+    capability_self_assessment = build_capability_self_assessment(conn, meaning_text)
+    capability_status_reply = str(
+        capability_self_assessment.get("response_seed") or ""
+    )
     route = create_core_mind_route_preview(
         conn,
         {
@@ -883,6 +888,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             policy_reply=policy_reply,
             alias_reply=alias_reply,
             speaker_provenance_reply=speaker_provenance_reply,
+            capability_status_reply=capability_status_reply,
             epistemic_revision_reply=epistemic_revision_reply,
             language_content_seed=language_content_seed,
             reasoning_content_seed=reasoning_content_seed,
@@ -1229,6 +1235,21 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 *(
                     [
                         {
+                            "owner_id": "capability_maturity_status",
+                            "kind": "current_capability_maturity_report",
+                            "text": capability_status_reply,
+                            "supported_operations": ["direct_answer"],
+                            "source_refs": capability_self_assessment.get("source_refs")
+                            or ["organ_maturity_ledger:current_status"],
+                        }
+                    ]
+                    if capability_self_assessment.get("requested") is True
+                    and capability_status_reply
+                    else []
+                ),
+                *(
+                    [
+                        {
                             "owner_id": "explicit_humor_request",
                             "kind": "authored_humor",
                             "text": explicit_humor_reply,
@@ -1505,6 +1526,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         policy_reply=policy_reply,
         alias_reply=alias_reply,
         speaker_provenance_reply=speaker_provenance_reply,
+        capability_status_reply=capability_status_reply,
         epistemic_revision_reply=epistemic_revision_reply,
         exploratory_reasoning_content_seed=(
             "" if session_decision_reply else exploratory_reasoning_content_seed
@@ -1596,6 +1618,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
                 "figurative_meaning_clarification",
                 "ordinary_uncertainty",
                 "explicit_session_alias",
+                "capability_maturity_status",
                 "epistemic_revision",
             }
         ):
@@ -1919,16 +1942,11 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversational_initiative_invited"
         )
     )
-    direct_obligations_open = bool(conversation_spine.get("open_obligations"))
     association_contribution_candidates = [
         {
             **item,
             "advances_current_task": bool(
                 item.get("advances_current_task") is True
-                and (
-                    conversational_initiative_invited
-                    or not direct_obligations_open
-                )
             ),
         }
         for item in associative_intuition.get("contribution_candidates") or []
@@ -2862,6 +2880,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "metacognition": metacognition,
         "metacognitive_completion_repair": completion_repair,
         "intent_decision": intent_decision,
+        "capability_self_assessment": capability_self_assessment,
         "contextual_follow_up": contextual_follow_up,
         "conversation_spine": conversation_spine,
         "conversation_continuity": conversation_continuity,
@@ -3008,6 +3027,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "metacognition": metacognition,
             "metacognitive_completion_repair": completion_repair,
             "intent_decision": intent_decision,
+            "capability_self_assessment": capability_self_assessment,
             "contextual_follow_up": contextual_follow_up,
             "conversation_spine": conversation_spine,
             "conversation_continuity": conversation_continuity,
@@ -3632,6 +3652,7 @@ def _visible_speech_seed_candidates(
     policy_reply: str = "",
     alias_reply: str = "",
     speaker_provenance_reply: str = "",
+    capability_status_reply: str = "",
     epistemic_revision_reply: str = "",
     exploratory_reasoning_content_seed: str = "",
     structural_discovery_content_seed: str = "",
@@ -3699,6 +3720,12 @@ def _visible_speech_seed_candidates(
             "source_id": "speaker_provenance",
             "source_class": "conversation",
             "text": speaker_provenance_reply,
+        },
+        {
+            "source_id": "capability_maturity_status",
+            "source_class": "conversation",
+            "text": capability_status_reply,
+            "source_refs": ["organ_maturity_ledger:current_status"],
         },
         {
             "source_id": "epistemic_revision",

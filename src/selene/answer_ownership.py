@@ -97,7 +97,13 @@ def enrich_obligation_ownership(
     response_functions = ["answer"]
     generic_kind = kind in {"direct_question", "direct_request", "implied_request"}
 
-    if kind == "self_state_check_in" or intent.get("self_state_requested") is True:
+    if kind == "capability_status" or intent.get("capability_status_requested") is True:
+        answer_act = "current_capability_maturity_report"
+        epistemic_basis = "read_only_organ_maturity_ledger"
+        owner = "organ_maturity_ledger"
+        completion_policy = "preserve_current_owner"
+        response_functions = ["answer"]
+    elif kind == "self_state_check_in" or intent.get("self_state_requested") is True:
         answer_act = "current_self_state_report"
         epistemic_basis = "current_self_state_signal"
         owner = "self_state"

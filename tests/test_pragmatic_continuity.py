@@ -104,6 +104,42 @@ def test_complete_answer_and_social_turn_do_not_create_habitual_follow_up_questi
     assert social["ending_decision"]["mode"] == "leave_room_without_pressuring"
     assert answer["ending_decision"]["question_allowed"] is False
     assert social["ending_decision"]["habitual_follow_up_allowed"] is False
+    assert (
+        social["ending_decision"][
+            "supported_genuine_curiosity_may_override_preliminary_hold"
+        ]
+        is True
+    )
+
+
+def test_specific_collaborative_help_uses_the_shared_focused_question_gate():
+    result = build_pragmatic_continuity_plan(
+        {
+            "prompt": "Continue the repair with what we know.",
+            "intent_decision": {"intent": "reasoning", "social_turn": False},
+            "conversational_energy_input": {
+                "answer_available": True,
+                "collaborative_help": {
+                    "task_active": True,
+                    "request": "Which operating system is the target?",
+                    "why_it_matters": "The installation method changes with the platform.",
+                    "contribution_kind": "missing_observation",
+                    "available_support_used": True,
+                    "materiality": "material",
+                    "goal_key": "repair",
+                    "resume_after_help": True,
+                },
+            },
+        }
+    )
+
+    focused = result["focused_question_decision"]
+    assert result["conversational_energy"]["selected_act"] == (
+        "ask_for_specific_collaborative_help"
+    )
+    assert focused["outcome"] == "ask_one_focused_question"
+    assert focused["question"] == "Which operating system is the target?"
+    assert focused["maximum_questions"] == 1
 
 
 def test_responsive_contribution_does_not_require_invitation_and_never_speaks_out_of_turn():

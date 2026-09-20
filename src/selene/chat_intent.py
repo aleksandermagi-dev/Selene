@@ -263,6 +263,11 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
         "memory_candidate": ("respond_then_offer_to_keep", "conversation", ["Memory candidate intake"]),
         "self_state": ("grounded_self_report", "self-state", ["Cocoon Care", "Native Language Organ"]),
         "memory_recall": ("grounded_recall", "Memory", ["local chat continuity", "Native Language Organ"]),
+        "capability_status": (
+            "current_capability_maturity_report",
+            "organ_maturity_ledger",
+            ["Native Language Organ"],
+        ),
         "reasoning": ("best_current_answer", "intelligenceOS", ["Core/Mind", "Native Language Organ"]),
         "farewell": ("close_with_continuity", "conversation", ["Native Language Organ", "Voice Module"]),
         "reassurance_received": ("receive_reassurance", "conversation", ["Native Language Organ", "Voice Module"]),
@@ -290,7 +295,9 @@ def classify_chat_intent(text: str, *, selected_route: str = "") -> dict[str, An
     substantive_dialogue_acts = dialogue_acts - {"symbolic_expression"}
     decision["mixed_intent"] = len(substantive_dialogue_acts) > 1
     decision["content_response_requested"] = bool(
-        mixed_content_request or intent in {"reasoning", "direct_conversation"} and dialogue_acts.intersection({"question", "request"})
+        mixed_content_request
+        or intent in {"reasoning", "direct_conversation", "capability_status"}
+        and dialogue_acts.intersection({"question", "request", "capability_status_question"})
     )
     decision["agreement_check"] = agreement_check_only
     if mixed_content_request:
@@ -331,6 +338,7 @@ def _decision(
         "memory_candidate_requested": intent == "memory_candidate",
         "reasoning_requested": intent == "reasoning",
         "self_state_requested": intent == "self_state",
+        "capability_status_requested": intent == "capability_status",
         "dialogue_act": intent if intent in {"greeting", "farewell", "reassurance_received", "gratitude", "affirmation"} else "",
         "social_turn": intent in {"greeting", "farewell", "reassurance_received", "gratitude", "affirmation", "warm_connection", "playful_connection"},
         "response_depth": response_depth,
@@ -344,6 +352,10 @@ def _decision(
         result["intent_candidates"] = meaning_route.get("intent_candidates") or []
         dialogue_acts = {str(item) for item in meaning_route.get("dialogue_acts") or []}
         result["self_state_requested"] = result["self_state_requested"] or "self_state_question" in dialogue_acts
+        result["capability_status_requested"] = (
+            result["capability_status_requested"]
+            or "capability_status_question" in dialogue_acts
+        )
         result["memory_recall_requested"] = result["memory_recall_requested"] or "memory_recall" in dialogue_acts
         result["dialogue_acts"] = meaning_route.get("dialogue_acts") or []
         result["domain_candidates"] = meaning_route.get("domain_candidates") or []

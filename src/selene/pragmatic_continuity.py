@@ -7,6 +7,7 @@ from .conversational_energy import (
     build_conversational_energy_plan,
     normalize_goal_coordination_handoff,
 )
+from .focused_questioning import build_focused_question_decision
 from .registry import truncate
 
 
@@ -84,6 +85,35 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
             "reason": conversational_energy.get("reason") or ending.get("reason"),
             "habitual_follow_up_allowed": False,
         }
+    energy_handoff = (
+        conversational_energy.get("expression_handoff")
+        if isinstance(conversational_energy.get("expression_handoff"), dict)
+        else {}
+    )
+    focused_question = build_focused_question_decision(
+        {
+            "answer_available": energy_input.get("answer_available") is True,
+            "answer_complete": energy_input.get("answer_complete") is True,
+            "missing_detail": (
+                energy_handoff.get("contribution_kind")
+                or energy_input.get("missing_detail")
+                or referent.get("token")
+                or ""
+            ),
+            "question": energy_handoff.get("text") or energy_input.get("focused_question") or "",
+            "why_it_matters": (
+                energy_handoff.get("why_it_matters")
+                or energy_input.get("why_it_matters")
+                or ""
+            ),
+            "materially_changes_answer": (
+                energy_act == "ask_for_specific_collaborative_help"
+                or str(ending.get("mode") or "") == "ask_one_material_question"
+            ),
+            "already_available": energy_input.get("missing_detail_already_available") is True,
+            "hard_boundary": energy_input.get("hard_boundary") is True,
+        }
+    )
     speaker = _speaker_scope(prompt, payload.get("speaker_context"))
     transient_preferences = (
         contextual_continuity.get("transient_preferences")
@@ -99,6 +129,7 @@ def build_pragmatic_continuity_plan(payload: dict[str, Any] | None = None) -> di
         "ending_decision": ending,
         "initiative_decision": initiative,
         "conversational_energy": conversational_energy,
+        "focused_question_decision": focused_question,
         "goal_coordination_handoff": goal_handoff,
         "goal_persistence_performed": False,
         "initiative_recursion_allowed": False,
@@ -312,7 +343,10 @@ def _ending_decision(
     elif intent_name in {"greeting", "gratitude", "affirmation", "warm_connection", "reassurance_received"}:
         mode = "leave_room_without_pressuring"
         question_allowed = False
-        reason = "a social turn does not require a habitual follow-up"
+        reason = (
+            "a social turn does not require a habitual follow-up, while a separately "
+            "supported genuine curiosity may still be selected"
+        )
     elif material_question:
         mode = "ask_one_material_question"
         question_allowed = True
@@ -331,6 +365,10 @@ def _ending_decision(
         "question_required": material_question and question_allowed,
         "reason": reason,
         "habitual_follow_up_allowed": False,
+        "supported_genuine_curiosity_may_override_preliminary_hold": (
+            intent_name
+            in {"greeting", "gratitude", "affirmation", "warm_connection", "reassurance_received"}
+        ),
         "silence_or_completion_is_valid": True,
     }
 

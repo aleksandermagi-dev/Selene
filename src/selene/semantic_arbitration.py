@@ -186,7 +186,9 @@ def build_canonical_meaning_frame(
         else "ordinary_literal"
     )
     posture = (
-        "hold_for_social_or_conversation_management"
+        "hold_for_current_system_status"
+        if primary_intent == "capability_status"
+        else "hold_for_social_or_conversation_management"
         if deferred_return or (primary_intent == "farewell" and not _substantive_request(routed))
         else "require_independent_subject_alignment"
         if protected
@@ -195,7 +197,7 @@ def build_canonical_meaning_frame(
 
     return {
         "status": "canonical_turn_meaning_framed",
-        "version": "v1_pragmatic_literal_arbitration",
+        "version": "v2_pragmatic_literal_and_system_status_arbitration",
         "selected_reading": selected_reading,
         "primary_dialogue_function": primary_social or primary_intent or "direct_conversation",
         "selected_domain": selected_domain or "ordinary_conversation",

@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from .answer_ownership import research_domain_requested
+from .capability_self_assessment import capability_status_request_signal
 from .conversation_signals import actually_marks_correction, explicit_correction_signal
 from .relational_context import interpret_relational_context
 from .resident_authority import evaluate_requested_actions
@@ -261,6 +262,9 @@ def interpret_turn_meaning(
         explicit_request,
         relational_context,
     )
+    capability_signal = capability_status_request_signal(routing_text)
+    if capability_signal.get("requested") is True:
+        dialogue_acts = list(dict.fromkeys([*dialogue_acts, "capability_status_question"]))
     intent_candidates = _intent_candidates(routing_text, tokens, dialogue_acts, question)
     domain_candidates = _domain_candidates(
         raw,
@@ -302,6 +306,7 @@ def interpret_turn_meaning(
             "mixed_intent_possible": len(dialogue_acts) > 1,
         },
         "dialogue_acts": dialogue_acts,
+        "capability_status_request": capability_signal,
         "relational_context": relational_context,
         "intent_candidates": intent_candidates,
         "primary_intent": primary_intent["intent"],
@@ -617,6 +622,7 @@ def _intent_candidates(
         "memory_candidate": ("memory_candidate", 94),
         "self_state_question": ("self_state", 93),
         "memory_recall": ("memory_recall", 92),
+        "capability_status_question": ("capability_status", 96),
         "receipt_check": ("receipt_check", 91),
         "farewell": ("farewell", 88),
         "reassurance_received": ("reassurance_received", 87),
@@ -640,17 +646,18 @@ def _intent_candidates(
         "conclude", "conclusion",
     }
     self_state_turn = "self_state_question" in dialogue_acts
+    capability_status_turn = "capability_status_question" in dialogue_acts
     reasoning_hits = sorted(tokens.intersection(reasoning_terms))
     if self_state_turn:
         # "How are you feeling?" asks for Selene's present state. The generic
         # interrogative "how" must not turn that ordinary check-in into a
         # reasoning task. Explicit substantive cues can remain secondary.
         reasoning_hits = [item for item in reasoning_hits if item != "how"]
-    if reasoning_hits:
+    if reasoning_hits and not capability_status_turn:
         add("reasoning", 55 + min(20, len(reasoning_hits) * 5), "reasoning_structure:" + ",".join(reasoning_hits[:5]))
     if "reasoning" in scores and "request" in dialogue_acts:
         add("reasoning", 20, "explicit_substantive_request")
-    if question and not self_state_turn and tokens.intersection({"why", "how", "which"}):
+    if question and not self_state_turn and not capability_status_turn and tokens.intersection({"why", "how", "which"}):
         add("reasoning", 18, "open_question_shape")
     if _has_any(routing_text, ("what do you make of", "what makes", "what does that mean", "do you know about", "what do you know about")):
         add("reasoning", 70, "explanation_or_knowledge_request")
@@ -677,7 +684,7 @@ def _intent_candidates(
     if not scores:
         add("direct_conversation", 45, "ordinary_conversation_default")
     elif "question" in dialogue_acts and not any(
-        key in scores for key in ("self_state", "memory_recall", "receipt_check", "reasoning")
+        key in scores for key in ("self_state", "memory_recall", "capability_status", "receipt_check", "reasoning")
     ):
         add("direct_conversation", 50, "direct_question_without_specialized_claim")
 

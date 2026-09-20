@@ -5,6 +5,7 @@ from hashlib import sha256
 from typing import Any
 
 from .answer_ownership import current_preference_requested, enrich_obligation_ownership
+from .capability_self_assessment import capability_status_request_signal
 from .conversation_signals import (
     correction_signal,
     explicit_conversational_closure_request,
@@ -1175,6 +1176,8 @@ def _response_constraints(
 
 def _question_kind(question: str) -> str:
     lower = question.lower().strip()
+    if capability_status_request_signal(lower).get("requested") is True:
+        return "capability_status"
     if _contains_self_state_check_in(lower):
         return "self_state_check_in"
     if _contains_session_summary_request(lower):

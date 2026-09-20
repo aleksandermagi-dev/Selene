@@ -529,6 +529,8 @@ def _candidate_owner(source_id: str, source_class: str) -> str:
         return "core_mind"
     if source_id == "grounded_self_state" or source_class == "self_state":
         return "self_state"
+    if source_id == "capability_maturity_status":
+        return "organ_maturity_ledger"
     if source_id == "answer_engine" or source_class == "domain_answer":
         return "answer_engine"
     if source_id == "approved_comprehension" or source_class == "approved_knowledge":

@@ -227,6 +227,29 @@ def test_question_requires_a_supplied_material_question_and_ending_permission():
     assert allowed["follow_up_question_added_by_range"] is False
 
 
+def test_supported_conversational_energy_question_survives_expression_range_handoff():
+    result = build_relational_expression_range(
+        {
+            "pragmatic_continuity": {
+                "ending_decision": {"question_allowed": True},
+                "conversational_energy": {
+                    "selected_act": "answer_then_ask_relevant_curiosity",
+                    "expression_handoff": {
+                        "kind": "curiosity",
+                        "text": "Which part changed your view?",
+                    },
+                },
+            }
+        }
+    )
+
+    assert "question" in _selected(result)
+    question = next(
+        item for item in result["selected_channels"] if item["channel"] == "question"
+    )
+    assert question["owner"] == "conversational_energy"
+
+
 def test_interpretation_is_selected_only_from_an_upstream_revisable_packet():
     selected = build_relational_expression_range(
         {
