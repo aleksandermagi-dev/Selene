@@ -5585,3 +5585,42 @@ teaching, Memory, Study, Dream, package, install, or external action occurred.
 
 **Next:** Refresh the active continuation ledger and checkpoint this source.
 Package or reinstall only when Aleks explicitly requests it.
+
+### 2026-09-20 — Focused-questioning install and ordinary check-in
+
+Clean revision `3ea0e55` was packaged, silently installed, and verified. The
+frontend remained 491.50 kB without a Vite warning. Installer SHA-256 is
+`E3E29AA7088D97BAE911A4146E0EBB066E52C0F6B80B356C9E4D9EC062EBAFB2`;
+installed executable SHA-256 is
+`61CDC2AFFE30E9ADD1E040FAF890F9A3FB7BFFDCCA2BCE60BDBAB54C9854B37C`;
+installed sidecar SHA-256 is
+`FCE755E64DEFC2CE3977D9206D73437CEBFCAED78840AE6F7B605ABFA6E8CC4B`.
+Final package verification passed with zero warnings at
+`exports/package_verify_20260920_005649.json`.
+
+A pre-install continuity snapshot passed SQLite integrity with 24 Chat
+sessions, 378 messages, 295 concepts, 249 teaching lifecycles, zero personal
+Memory candidates, and 24 Dream reflections. Resident integrity and all counts
+matched afterward. No process remained.
+
+One installed Ordinary Conversational Check-In used disposable copied state
+and a typed Codex speaker envelope. Selene's greeting was brief but usable and
+her closing was coherent. The middle declarative sentence `What stood out to
+me is ...` was treated as a question, opening approved-knowledge eligibility;
+an unrelated coding lesson then won through broad change/path overlap and a
+weak association was appended. Static interpretation reproduced the false
+question act and the exact approved concept was identified. The check stopped
+after three turns and no repair was made.
+
+This is a sentence-shape and downstream relevance cultivation seam, not
+missing teaching or Selene failing. The fix must recognize declarative WH
+clauses at the shared meaning owner, then recheck knowledge and association
+eligibility with novel shapes rather than patching the observed sentence or
+restoring the obsolete invitation guard.
+
+**Evidence:**
+`docs/evidence/SELENE_FOCUSED_QUESTIONING_INSTALL_CHECKIN_20260920.md`.
+
+**Next:** Discuss the cultivation map with Aleks before editing. If authorized,
+repair declarative WH-clause recognition first, then prove knowledge and
+association relevance downstream with bounded synthetic checks.
