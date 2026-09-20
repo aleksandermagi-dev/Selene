@@ -46,6 +46,17 @@ resident state. Verify it against Git and newer filesystem evidence.
   requiring the pointer to be over the sidebar. Narrow/mobile layouts retain
   natural document scrolling. Frontend build passed at 491.50 kB without a
   Vite size warning. This UI repair is not yet packaged or installed.
+- The current source edge also gives resident Chat bounded newest-message
+  follow behavior: sends and replies follow the latest turn, intentional
+  upward reading pauses background follow, and a `Latest` control returns to
+  the newest message. Dream has an Aleks-only atomic `Approve All Pending`
+  route for untouched pending reflections and provisional expression only;
+  it does not include held/needs-context/terminal items or create Memory or
+  Study records. Future Dream cycles now require substantive correction
+  lineage and source-specific cross-source overlap. Existing 43 resident
+  reflections remain unchanged. Focused/adjacent checks passed 33 tests and
+  the frontend built at 493.45 kB without a Vite warning. This source is not
+  packaged or installed.
 - Clean documentation revision `60750d9` is packaged and installed. Final
   package verification passed with zero warnings. Installer SHA-256 is
   `DABE6EF79A9A5A8B22B196CFD1113EF1F1F3D4F651AA8F7615431FB50126BCE0`;
@@ -218,9 +229,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this review/UI checkpoint: local `evidence` is 62
-  commits ahead of `origin/evidence`; this ledger refresh is expected to make
-  that 63. Confirm again before any later commit or push.
+- Current remote relation before the Chat/Dream workflow checkpoint: local
+  `evidence` is 63 commits ahead of `origin/evidence`; this checkpoint is
+  expected to make that 64. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1551,10 +1562,14 @@ implementation need. If a new conversation defect appears, record the visible
 evidence first and cultivate its shared owner rather than patching prompt
 wording or teaching around a coverage defect.
 
-The current uninstalled source edge adds desktop workspace scroll ownership
-and a read-only review of all 43 resident Dream reflections. Checkpoint this
-source next. Do not decide, route, or label the Dream reflections on Aleks's
-behalf. Package and reinstall the UI repair only after his explicit request.
+The current uninstalled source edge includes desktop workspace scroll
+ownership, resident Chat latest-message follow with non-disruptive pause while
+reading older turns, an Aleks-only atomic bulk approval route for untouched
+pending Dream reflections, and stronger future-cycle correction and
+cross-source signal filtering. The read-only review of all 43 resident Dream
+reflections remains preserved. No existing reflection was decided, routed,
+rewritten, or relabeled. This source is checkpointed. Package and reinstall
+only after Aleks explicitly requests it.
 
 When Aleks requests a conversational check rather than a Q&A, use the Ordinary
 Conversational Check-In. Follow one natural thread, do not search for or invent

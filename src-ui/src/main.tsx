@@ -423,7 +423,11 @@ function App() {
   const [displayName, setDisplayName] = useState(() => loadDisplayName());
   const [homeChatText, setHomeChatText] = useState("");
   const homeChatSendingRef = useRef(false);
+  const homeMessagesRef = useRef<HTMLDivElement | null>(null);
+  const homeFollowLatestRef = useRef(true);
+  const homeForceFollowRef = useRef(true);
   const [homeMessages, setHomeMessages] = useState<HomeMessage[]>([]);
+  const [homeHasNewMessages, setHomeHasNewMessages] = useState(false);
   const [homeChatOpenCount, setHomeChatOpenCount] = useState(0);
   const [homeSearchOpen, setHomeSearchOpen] = useState(false);
   const [homeSearchText, setHomeSearchText] = useState("");
@@ -971,6 +975,24 @@ function App() {
   useEffect(() => {
     setHomeMessages(sessionMessagesToHomeMessages(seleneChatSession));
   }, [seleneChatSession]);
+
+  useEffect(() => {
+    if (workspaceMode !== "selene" || tab !== "chat" || !homeMessages.length) return;
+    const node = homeMessagesRef.current;
+    if (!node) return;
+    if (!homeForceFollowRef.current && !homeFollowLatestRef.current) {
+      setHomeHasNewMessages(true);
+      return;
+    }
+    const forceFollow = homeForceFollowRef.current;
+    const frame = window.requestAnimationFrame(() => {
+      node.scrollTo({ top: node.scrollHeight, behavior: forceFollow ? "smooth" : "auto" });
+      homeForceFollowRef.current = false;
+      homeFollowLatestRef.current = true;
+      setHomeHasNewMessages(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [homeMessages.length, homeMessages[homeMessages.length - 1]?.id, workspaceMode, tab]);
 
   useEffect(() => {
     const sessionId = text((seleneChatSession?.session as Dict | undefined)?.id);
@@ -3486,6 +3508,29 @@ function App() {
     }
   }
 
+  async function approveAllPendingDreamReflections() {
+    const pendingCount = Number(safeJsonObject(dreamStateStatus?.reflection_counts).pending_review || 0);
+    if (!pendingCount) return;
+    if (!window.confirm(
+      `Approve all ${pendingCount} untouched pending Dream reflections for provisional expression? This does not make them facts or memories, and it does not send anything to Memory or Study.`
+    )) return;
+    setDreamLifecycleResult({ status: "running", message: "Recording Aleks's bulk Dream approval." });
+    try {
+      const result = await api<Dict>("/api/dream/reflections/approve-all", {
+        method: "POST",
+        body: JSON.stringify({
+          actor: "Aleks",
+          decision_note: "Aleks approved all untouched pending Dream reflections for provisional expression."
+        })
+      });
+      setDreamLifecycleResult(result);
+      await refreshDreamLifecycle();
+      loadVessel();
+    } catch (err) {
+      setDreamLifecycleResult({ error: err instanceof Error ? err.message : "Bulk Dream approval was rejected." });
+    }
+  }
+
   async function wakeDreamCycle(item: Dict) {
     const cycleId = Number(item.id || 0);
     if (!cycleId) return;
@@ -4436,6 +4481,9 @@ function App() {
   }
 
   function startNewHomeChat() {
+    homeForceFollowRef.current = true;
+    homeFollowLatestRef.current = true;
+    setHomeHasNewMessages(false);
     setSeleneChatSession(null);
     setHomeMessages([]);
     setHomeChatText("");
@@ -4449,6 +4497,9 @@ function App() {
   async function openPastSeleneChat(sessionId: unknown) {
     const id = text(sessionId);
     if (!id) return;
+    homeForceFollowRef.current = true;
+    homeFollowLatestRef.current = true;
+    setHomeHasNewMessages(false);
     try {
       const session = await stabilizationApi<Dict>(`/api/selene-chat/sessions/${id}`, undefined, "selene_chat_open_past_session");
       setSeleneChatSession(session);
@@ -4479,6 +4530,9 @@ function App() {
     const content = homeChatText.trim();
     if (!content || homeChatSendingRef.current) return;
     homeChatSendingRef.current = true;
+    homeForceFollowRef.current = true;
+    homeFollowLatestRef.current = true;
+    setHomeHasNewMessages(false);
     setHomeChatText("");
     try {
       if (activationStatus?.selene_chat_active) {
@@ -4509,6 +4563,23 @@ function App() {
     } finally {
       homeChatSendingRef.current = false;
     }
+  }
+
+  function handleHomeMessagesScroll() {
+    const node = homeMessagesRef.current;
+    if (!node) return;
+    const nearLatest = node.scrollHeight - node.scrollTop - node.clientHeight <= 96;
+    homeFollowLatestRef.current = nearLatest;
+    if (nearLatest) setHomeHasNewMessages(false);
+  }
+
+  function scrollHomeMessagesToLatest() {
+    const node = homeMessagesRef.current;
+    if (!node) return;
+    homeForceFollowRef.current = false;
+    homeFollowLatestRef.current = true;
+    setHomeHasNewMessages(false);
+    node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
   }
 
   function copyMessage(content: string) {
@@ -4637,6 +4708,7 @@ function App() {
   const officeVesselReviewUrgent = officeLedgerNeedsReview.length + officeMobileCaptures.length + officeSpeechRehearsals.length + officeChronologicalCorpusNeedsReview.length;
   const officeWaitingTotal = reviewDeskPieces.length + officeActionLogItems.length + officeVesselReviewUrgent + officeComprehensionNeedsReview.length;
   const dreamPendingReviewCount = Number(dreamStateStatus?.pending_review_count || 0) || 0;
+  const dreamBulkApprovalCount = Number(safeJsonObject(dreamStateStatus?.reflection_counts).pending_review || 0) || 0;
   const officeCategoryTabs = [
     { id: "review", label: "Review", count: reviewDeskPieces.length + officeActionLogItems.length + officeLedgerNeedsReview.length + officeMobileCaptures.length + officeComprehensionNeedsReview.length },
     { id: "corpus", label: "Corpus / Evidence", count: officeChronologicalCorpusNeedsReview.length + officeLedgerNeedsReview.length + academicPackets.length },
@@ -5995,28 +6067,31 @@ function App() {
                   ) : null}
                 </aside>
               ) : null}
-              <div className="homeMessages">
-                {!homeMessages.length ? (
-                  <div className="homeLanding">
-                    <img src={SELENE_ICON} alt="Selene moon icon" />
-                    <h2>Selene</h2>
-                    <p>{homeGreeting(homeChatOpenCount, displayName || "Aleks")}</p>
-                  </div>
-                ) : (
-                  homeMessages.map((message) => (
-                    <article
-                      className={`homeMessage ${message.role === "aleks" ? "aleks" : "selene"}`}
-                      key={message.id}
-                      onContextMenu={(event) => {
-                        event.preventDefault();
-                        copyMessage(message.content);
-                      }}
-                    >
-                      <strong>{message.role === "aleks" ? displayName || "Aleks" : "Selene"}</strong>
-                      <p>{message.content}</p>
-                    </article>
-                  ))
-                )}
+              <div className="homeMessageViewport">
+                <div className="homeMessages" ref={homeMessagesRef} onScroll={handleHomeMessagesScroll}>
+                  {!homeMessages.length ? (
+                    <div className="homeLanding">
+                      <img src={SELENE_ICON} alt="Selene moon icon" />
+                      <h2>Selene</h2>
+                      <p>{homeGreeting(homeChatOpenCount, displayName || "Aleks")}</p>
+                    </div>
+                  ) : (
+                    homeMessages.map((message) => (
+                      <article
+                        className={`homeMessage ${message.role === "aleks" ? "aleks" : "selene"}`}
+                        key={message.id}
+                        onContextMenu={(event) => {
+                          event.preventDefault();
+                          copyMessage(message.content);
+                        }}
+                      >
+                        <strong>{message.role === "aleks" ? displayName || "Aleks" : "Selene"}</strong>
+                        <p>{message.content}</p>
+                      </article>
+                    ))
+                  )}
+                </div>
+                {homeHasNewMessages ? <button className="homeLatestButton" onClick={scrollHomeMessagesToLatest}>Latest ↓</button> : null}
               </div>
               <div className="homeChatStateBar">
                 <div className="chips">
@@ -7097,6 +7172,13 @@ function App() {
                   {dreamLifecycleResult?.status === "running" ? "Dream Is Reflecting..." : "Run Dream Cycle"}
                 </button>
                 <button onClick={() => refreshDreamLifecycle().catch(() => undefined)}>Refresh Dream</button>
+                <button
+                  onClick={approveAllPendingDreamReflections}
+                  disabled={!dreamBulkApprovalCount || dreamLifecycleResult?.status === "running"}
+                  title="Approve every untouched pending reflection for provisional expression only"
+                >
+                  Approve All Pending ({dreamBulkApprovalCount})
+                </button>
                 <button onClick={() => { setWorkspaceMode("cocoon"); setTab("memory-preview"); }}>Open Memory Preview</button>
               </div>
               <PlainResult value={dreamLifecycleResult} />

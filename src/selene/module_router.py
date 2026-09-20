@@ -473,6 +473,7 @@ from .post_transfer import (
     run_post_transfer_inspection,
 )
 from .dream_state import (
+    approve_pending_dream_reflections,
     decide_dream_reflection,
     dream_state_status,
     get_dream_cycle,
@@ -892,6 +893,8 @@ def _route_request_impl(conn: sqlite3.Connection, route_key: str, payload: dict[
         return {"route": route_key, "result": list_dream_reflections(conn, payload)}
     if route_key == "dream.reflections.decide":
         return {"route": route_key, "result": decide_dream_reflection(conn, payload)}
+    if route_key == "dream.reflections.approve_all":
+        return {"route": route_key, "result": approve_pending_dream_reflections(conn, payload)}
     if route_key == "memory.index.status":
         return {"route": route_key, "result": memory_index_status(conn)}
     if route_key == "memory.index.items":

@@ -5725,3 +5725,35 @@ changed.
 
 **Next:** Checkpoint the source. Package and reinstall only when Aleks
 explicitly asks to place the workspace-scroll repair into the installed app.
+
+### 2026-09-20 — Chat auto-follow and Dream review workflow matured
+
+Resident Chat now follows the newest message after Aleks sends and after
+Selene replies. Deliberately scrolling upward pauses background auto-follow and
+reveals a `Latest` return control, so reading older turns is not interrupted.
+
+Dream gained an Aleks-only atomic `Approve All Pending` action for untouched
+pending reflections. It approves provisional expression only and explicitly
+does not create Memory or Study records. Held, needs-context, routed, rejected,
+and superseded reflections remain outside the bulk action. No resident
+reflection was approved during implementation.
+
+Future Dream cycles now require substantive active correction lineage before
+creating correction reopenings, use clearer source-derived titles, and derive
+cross-source overlap from source-specific material rather than reflection
+templates. Same-primary-source pairs and generic process vocabulary no longer
+manufacture recurrence signals. Existing historical reflections remain
+unchanged.
+
+Focused and adjacent Dream verification passed 33 checks. Backend compilation
+and the frontend build passed; the main frontend bundle is 493.45 kB (gzip
+109.82 kB) with no Vite size warning. No live Q&A, resident write, Dream
+decision, Memory, Study, teaching, package, install, or external action
+occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_CHAT_AUTOFOLLOW_AND_DREAM_REVIEW_WORKFLOW_20260920.md`.
+
+**Next:** Checkpoint the source. Package and reinstall only if Aleks explicitly
+asks. A later non-blocking UI pass may collapse or filter reviewed Dream
+history so the page defaults to current pending work.

@@ -2269,6 +2269,11 @@ class SeleneHandler(BaseHTTPRequestHandler):
                 self._send(*json_bytes(route_request(self.server.conn, "dream.reflections.decide", body)["result"]))
             except (TypeError, ValueError) as exc:
                 self._send(*json_bytes({"error": str(exc)}, 400))
+        elif request_path == "/api/dream/reflections/approve-all":
+            try:
+                self._send(*json_bytes(route_request(self.server.conn, "dream.reflections.approve_all", body)["result"]))
+            except (TypeError, ValueError) as exc:
+                self._send(*json_bytes({"error": str(exc)}, 400))
         elif request_path == "/api/vessel/cycle/run":
             try:
                 self._send(*json_bytes(route_request(self.server.conn, "vessel.cycle.run", body)["result"]))

@@ -9,6 +9,7 @@ import pytest
 from selene.comprehension_integration import propose_comprehension_concept
 from selene.db import connect, init_db
 from selene.dream_state import (
+    approve_pending_dream_reflections,
     decide_dream_reflection,
     dream_state_status,
     expression_eligible_dream_reflection,
@@ -57,7 +58,14 @@ def _workspace(
             session_id,
             topic,
             json.dumps([{"question": open_loop}]),
-            json.dumps([{"corrected_meaning": correction}]),
+            json.dumps([
+                {
+                    "status": "active_refinement",
+                    "corrected_meaning": correction,
+                    "replaced_meaning": "The earlier interpretation.",
+                    "replacement_pair_extracted": True,
+                }
+            ]),
         ),
     )
     conn.commit()
@@ -669,6 +677,80 @@ def test_dream_marks_cross_source_word_recurrence_as_provisional(tmp_path):
     _assert_guards(result)
 
 
+def test_dream_skips_incomplete_correction_fragments_and_template_only_patterns(tmp_path):
+    conn = _conn(tmp_path)
+    _workspace(
+        conn,
+        open_loop="Does the practical process need a different working structure?",
+    )
+    conn.execute(
+        """
+        UPDATE selene_dialogue_workspaces
+        SET corrections_json = ?
+        """,
+        (json.dumps([{"status": "active_refinement", "summary": "A correction may exist."}]),),
+    )
+    conn.execute(
+        """
+        INSERT INTO metacognition_runs
+        (prompt_preview, fit_state, recommended_action, sufficiency_state,
+         source_refs, provenance_boundary)
+        VALUES (?, 'material_context_missing', 'seek_sources',
+                'evidence_needed', ?, 'test_metacognition')
+        """,
+        (
+            "The practical process may need a different working structure.",
+            json.dumps(["metacognition:generic-template"]),
+        ),
+    )
+    conn.commit()
+
+    result = run_dream_cycle(conn)
+    kinds = [item["reflection_kind"] for item in result["reflections"]]
+
+    assert "open_thread" in kinds
+    assert "metacognitive_reopening" in kinds
+    assert "correction_reopening" not in kinds
+    assert "cross_source_pattern" not in kinds
+
+
+def test_bulk_dream_approval_is_aleks_only_atomic_bounded_and_idempotent(tmp_path):
+    conn = _conn(tmp_path)
+    _workspace(conn)
+    cycle = run_dream_cycle(conn)
+    reflection_ids = [int(item["id"]) for item in cycle["reflections"]]
+
+    with pytest.raises(ValueError, match="requires Aleks"):
+        approve_pending_dream_reflections(conn, {"actor": "someone_else"})
+
+    result = approve_pending_dream_reflections(
+        conn,
+        {"actor": "Aleks", "decision_note": "Reviewed together."},
+    )
+
+    assert result["approved_count"] == len(reflection_ids)
+    assert result["reflection_ids"] == reflection_ids
+    assert all(
+        row["state"] == "approved_for_expression"
+        and row["review_status"] == "reviewed"
+        and row["expression_eligible"] == 1
+        and row["selected_destination"] == "expression"
+        for row in conn.execute(
+            "SELECT state, review_status, expression_eligible, selected_destination FROM selene_dream_reflections ORDER BY id"
+        ).fetchall()
+    )
+    assert conn.execute(
+        "SELECT COUNT(*) FROM vessel_review_queue WHERE queue_type = 'dream_reflection' AND status = 'resolved'"
+    ).fetchone()[0] == len(reflection_ids)
+    assert conn.execute("SELECT COUNT(*) FROM selene_memory_candidates").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM selene_study_pondering_threads").fetchone()[0] == 0
+    _assert_guards(result)
+
+    repeated = approve_pending_dream_reflections(conn, {"actor": "Aleks"})
+    assert repeated["status"] == "dream_reflections_no_pending_approval"
+    assert repeated["approved_count"] == 0
+
+
 def test_dream_routes_are_available_through_router_and_http(tmp_path):
     conn = _conn(tmp_path)
     _workspace(conn)
@@ -682,6 +764,12 @@ def test_dream_routes_are_available_through_router_and_http(tmp_path):
 
     assert routed["status"] == "dream_cycle_prepared"
     assert listed["count"] == 2
+    approved = route_request(
+        conn,
+        "dream.reflections.approve_all",
+        {"actor": "Aleks"},
+    )["result"]
+    assert approved["approved_count"] == 2
 
     server = SeleneServer(
         ("127.0.0.1", 0),
@@ -712,6 +800,21 @@ def test_dream_routes_are_available_through_router_and_http(tmp_path):
             server.server_address[1],
             timeout=5,
         )
+        client.request(
+            "POST",
+            "/api/dream/reflections/approve-all",
+            body=json.dumps({"actor": "Aleks"}),
+            headers={"Content-Type": "application/json"},
+        )
+        approve_response = client.getresponse()
+        approve_payload = json.loads(approve_response.read().decode("utf-8"))
+        client.close()
+
+        client = http.client.HTTPConnection(
+            "127.0.0.1",
+            server.server_address[1],
+            timeout=5,
+        )
         client.request("GET", "/api/dream/reflections")
         list_response = client.getresponse()
         list_payload = json.loads(
@@ -728,6 +831,8 @@ def test_dream_routes_are_available_through_router_and_http(tmp_path):
     assert payload["status"] == "dream_cycle_prepared"
     assert list_response.status == 200
     assert list_payload["count"] == 2
+    assert approve_response.status == 200
+    assert approve_payload["approved_count"] == 2
 
 
 def test_reflection_listing_preserves_source_and_review_state(tmp_path):

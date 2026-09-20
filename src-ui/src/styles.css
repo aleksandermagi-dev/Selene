@@ -901,6 +901,11 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   position: relative;
 }
 
+.homeMessageViewport {
+  min-height: 0;
+  position: relative;
+}
+
 .homeMessages {
   background: var(--front-bg);
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
@@ -912,6 +917,17 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   min-height: 0;
   overflow: auto;
   padding: 26px;
+  height: 100%;
+}
+
+.homeLatestButton {
+  background: color-mix(in srgb, var(--accent-2) 28%, var(--front-panel-bg));
+  border-color: color-mix(in srgb, var(--accent-2) 68%, var(--border));
+  bottom: 18px;
+  box-shadow: var(--shadow);
+  position: absolute;
+  right: 18px;
+  z-index: 3;
 }
 
 .homeChatStateBar {

@@ -153,6 +153,23 @@ PATTERN_STOPWORDS = {
     "without",
 }
 
+PATTERN_LOW_SPECIFICITY_TERMS = {
+    "another",
+    "better",
+    "different",
+    "important",
+    "later",
+    "possible",
+    "practical",
+    "process",
+    "relationship",
+    "repeated",
+    "returning",
+    "something",
+    "structure",
+    "working",
+}
+
 
 def dream_state_status(conn: sqlite3.Connection) -> dict[str, Any]:
     latest = conn.execute(
@@ -737,6 +754,94 @@ def decide_dream_reflection(
     )
 
 
+def approve_pending_dream_reflections(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Approve every untouched pending reflection for expression in one transaction."""
+    payload = payload or {}
+    _reject_misuse(payload)
+    actor = str(payload.get("actor") or "").strip()
+    if actor != "Aleks":
+        raise ValueError("bulk Dream reflection approval requires Aleks")
+    note = truncate(str(payload.get("decision_note") or ""), 1000)
+    rows = conn.execute(
+        """
+        SELECT id, cycle_id
+        FROM selene_dream_reflections
+        WHERE state = 'pending_review'
+          AND review_status = 'pending_review'
+          AND COALESCE(selected_destination, '') = ''
+          AND expression_eligible = 0
+        ORDER BY id
+        """
+    ).fetchall()
+    reflection_ids = [int(row["id"]) for row in rows]
+    cycle_ids = sorted({int(row["cycle_id"]) for row in rows})
+    if not reflection_ids:
+        return _with_guards(
+            {
+                "status": "dream_reflections_no_pending_approval",
+                "action": "approve_all_pending_for_expression",
+                "approved_count": 0,
+                "reflection_ids": [],
+                "review_destination": "Cocoon Dream",
+                "review_status": "no_pending_review",
+                "boundary": DREAM_BOUNDARY,
+            }
+        )
+
+    marks = ",".join("?" for _ in reflection_ids)
+    try:
+        conn.execute(
+            f"""
+            UPDATE selene_dream_reflections
+            SET state = 'approved_for_expression', review_status = 'reviewed',
+                expression_eligible = 1, selected_destination = 'expression',
+                destination_selected_at = COALESCE(destination_selected_at, CURRENT_TIMESTAMP),
+                decision_note = ?, reviewed_by = 'Aleks',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id IN ({marks})
+              AND state = 'pending_review'
+              AND review_status = 'pending_review'
+              AND COALESCE(selected_destination, '') = ''
+              AND expression_eligible = 0
+            """,
+            (note, *reflection_ids),
+        )
+        conn.execute(
+            f"""
+            UPDATE vessel_review_queue
+            SET status = 'resolved', review_status = 'reviewed'
+            WHERE subject_table = 'selene_dream_reflections'
+              AND subject_id IN ({marks})
+            """,
+            tuple(reflection_ids),
+        )
+        for cycle_id in cycle_ids:
+            _refresh_cycle_summary(conn, cycle_id)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+    return _with_guards(
+        {
+            "status": "dream_reflections_approved_for_expression",
+            "action": "approve_all_pending_for_expression",
+            "approved_count": len(reflection_ids),
+            "reflection_ids": reflection_ids,
+            "cycle_ids": cycle_ids,
+            "memory_candidate_created": False,
+            "study_thread_created": False,
+            "automatic_review_decision": False,
+            "review_destination": "Selene expression",
+            "review_status": "reviewed",
+            "boundary": DREAM_BOUNDARY,
+        }
+    )
+
+
 def wake_from_dream_cycle(
     conn: sqlite3.Connection,
     payload: dict[str, Any] | None = None,
@@ -1058,7 +1163,7 @@ def _dialogue_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
             items.append(
                 _candidate(
                     "open_thread",
-                    f"Open thread from {row['active_topic'] or 'conversation'}",
+                    f"Open question: {truncate(summary.rstrip(' ?.!'), 180)}",
                     (
                         f"A conversation thread remains open: {summary}. "
                         "It may be worth returning to if it still matters."
@@ -1068,28 +1173,39 @@ def _dialogue_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
                     [source_ref, f"selene_chat_session:{row['session_id']}"],
                     row["updated_at"],
                     salt=f"open:{index}:{summary}",
+                    pattern_basis=summary,
                 )
             )
         for index, correction in enumerate(
             _loads(row["corrections_json"], [])[-6:], start=1
         ):
-            summary = _summary_from_value(correction)
-            if not summary:
+            if not _dialogue_correction_is_reflectable(correction):
                 continue
+            corrected = truncate(str(correction.get("corrected_meaning") or ""), 420)
+            replaced = truncate(
+                str(
+                    correction.get("replaced_meaning")
+                    or correction.get("replaces_turn")
+                    or ""
+                ),
+                420,
+            )
+            summary = f"{replaced} -> {corrected}"
             items.append(
                 _candidate(
                     "correction_reopening",
-                    "A conversation correction may deserve reflection",
+                    f"Correction to revisit: {corrected}",
                     (
-                        f"A recorded correction or refinement says: {summary}. "
-                        "The useful structure can be kept while the corrected "
-                        "part remains reopened."
+                        f"A recorded correction replaced '{replaced}' with "
+                        f"'{corrected}'. The changed premise may be worth "
+                        "revisiting in its original context."
                     ),
                     "Corrections are evidence for better fit, not evidence of personal failure.",
                     "The correction applies only within its recorded context until reviewed more broadly.",
                     [source_ref, f"selene_chat_session:{row['session_id']}"],
                     row["updated_at"],
                     salt=f"correction:{index}:{summary}",
+                    pattern_basis=summary,
                 )
             )
     return items
@@ -1131,6 +1247,7 @@ def _metacognition_candidates(
                 ],
                 row["created_at"],
                 salt=f"{fit}:{action}:{prompt}",
+                pattern_basis=prompt,
             )
         )
     return items
@@ -1168,6 +1285,7 @@ def _memory_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
                 ],
                 row["updated_at"],
                 salt=f"{row['state']}:{row['summary']}",
+                pattern_basis=f"{row['title']} {row['summary']}",
             )
         )
     return items
@@ -1214,6 +1332,7 @@ def _study_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
                 ],
                 row["updated_at"],
                 salt=f"{row['note_kind']}:{row['clarification_state']}:{summary}",
+                pattern_basis=summary,
             )
         )
     thread_rows = conn.execute(
@@ -1262,6 +1381,7 @@ def _study_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
                 ],
                 row["updated_at"],
                 salt=f"{row['state']}:{row['title']}:{visible}",
+                pattern_basis=f"{row['title']} {visible}",
             )
         )
     return items
@@ -1309,6 +1429,7 @@ def _affect_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
                 ],
                 row["created_at"],
                 salt=summary,
+                pattern_basis=f"{row['signal_type']} {summary}",
             )
         )
     return items
@@ -1344,6 +1465,7 @@ def _evidence_tension_candidates(
             ],
             row["created_at"],
             salt=f"{row['claim']}:{row['tension_status']}:{row['support_status']}",
+            pattern_basis=f"{row['claim']} {row['support_status']} {row['tension_status']}",
         )
         for row in rows
     ]
@@ -1376,6 +1498,7 @@ def _chest_candidates(conn: sqlite3.Connection) -> list[dict[str, Any]]:
             ],
             row["created_at"],
             salt=f"{row['item_type']}:{row['summary']}:{row['salience_labels']}",
+            pattern_basis=f"{row['title']} {row['summary']} {row['salience_labels']}",
         )
         for row in rows
     ]
@@ -1401,6 +1524,8 @@ def _cross_source_candidates(
             start=left_index + 1,
         ):
             if left["reflection_kind"] == right["reflection_kind"]:
+                continue
+            if _primary_source_family(left) == _primary_source_family(right):
                 continue
             right_terms = candidate_terms[right_index]
             overlap = sorted(
@@ -1444,6 +1569,7 @@ def _cross_source_candidates(
                         f"{left['reflection_key']}:{right['reflection_key']}:"
                         f"{','.join(terms)}"
                     ),
+                    pattern_basis=" ".join(terms),
                 )
             )
             if len(patterns) >= 6:
@@ -1452,15 +1578,18 @@ def _cross_source_candidates(
 
 
 def _pattern_terms(item: dict[str, Any]) -> set[str]:
-    text = " ".join(
-        str(item.get(key) or "")
-        for key in ("title", "reflection", "why_it_may_matter")
-    ).lower()
+    text = str(item.get("pattern_basis") or item.get("reflection") or "").lower()
     return {
         term
         for term in re.findall(r"[a-z][a-z0-9'-]{3,}", text)
         if term not in PATTERN_STOPWORDS
+        and term not in PATTERN_LOW_SPECIFICITY_TERMS
     }
+
+
+def _primary_source_family(item: dict[str, Any]) -> str:
+    refs = _json_list(item.get("source_refs"))
+    return str(refs[0]).split(":", 1)[0] if refs else ""
 
 
 def _dialogue_loop_is_reflectable(
@@ -1485,6 +1614,20 @@ def _dialogue_loop_is_reflectable(
         if len(overlap) >= 3 and len(overlap) / len(question_terms) >= 0.6:
             return False
     return True
+
+
+def _dialogue_correction_is_reflectable(correction: Any) -> bool:
+    if not isinstance(correction, dict):
+        return False
+    if str(correction.get("status") or "") != "active_refinement":
+        return False
+    corrected = str(correction.get("corrected_meaning") or "").strip()
+    replaced = str(
+        correction.get("replaced_meaning")
+        or correction.get("replaces_turn")
+        or ""
+    ).strip()
+    return bool(corrected and replaced and len(_meaningful_terms(corrected)) >= 1)
 
 
 def _deduplicate_source_candidates(
@@ -1560,6 +1703,7 @@ def _candidate(
     source_updated_at: Any,
     *,
     salt: str,
+    pattern_basis: str = "",
 ) -> dict[str, Any]:
     refs = list(dict.fromkeys(_json_list(source_refs)))[:40]
     fingerprint = _digest(
@@ -1575,6 +1719,7 @@ def _candidate(
         "confidence": "provisional",
         "source_refs": refs,
         "source_updated_at": str(source_updated_at or ""),
+        "pattern_basis": truncate(pattern_basis or reflection, 1200),
     }
 
 
