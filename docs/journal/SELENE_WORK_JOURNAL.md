@@ -5662,3 +5662,31 @@ authority expansion occurred.
 **Next:** Checkpoint the source and refresh the active continuation ledger.
 Package and reinstall only when Aleks explicitly requests the repaired source
 to be placed in the installed vessel.
+
+### 2026-09-20 — Epistemic-integrity repair packaged and installed
+
+Aleks authorized installation. Clean documentation revision `60750d9` was
+packaged and silently installed. The frontend remained 491.50 kB (gzip 109.27
+kB) without a Vite size warning. The final package verifier passed with zero
+warnings and found no configured database, credentials, private corpus, private
+analysis maps, or other forbidden files in the packaged sidecar.
+
+Installer SHA-256 is
+`DABE6EF79A9A5A8B22B196CFD1113EF1F1F3D4F651AA8F7615431FB50126BCE0`;
+installed executable SHA-256 is
+`1B6982345C47267E1BE81797626A0DBDB58378FC4C858C764A4A1C63DBBA8A4B`;
+installed sidecar SHA-256 is
+`2C3B5166C203CE053DB9FE7414DF9C27F2BC2FD9D8720A13F6CD030F7E1B490F`.
+The final report is `exports/package_verify_20260920_141554.json`.
+
+The verified continuity snapshot remained healthy with 24 Chat sessions, 378
+messages, 295 concepts, 249 teaching lifecycles, zero personal Memory
+candidates, one Dream cycle, and 24 Dream reflections. Resident SQLite
+integrity remained `ok`, and its SHA-256 stayed byte-for-byte unchanged at
+`BBC6E6B9C25A3810D89DDBD3E0D87EB6A92FD03C8453C41A74DCF3ECF7A43AA9`.
+No Selene process remained. No live conversation, teaching, Memory, Study,
+Dream decision, or resident-state mutation occurred.
+
+**Next:** No automatic Q&A is required. If Aleks later wants an ordinary
+conversation check, use the bounded check-in workflow and cultivate only from
+visible evidence rather than searching for a defect.

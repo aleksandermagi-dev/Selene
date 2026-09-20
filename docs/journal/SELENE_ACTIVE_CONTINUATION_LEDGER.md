@@ -36,6 +36,18 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Branch: `evidence`
 - Latest declarative-meaning and epistemic-integrity source checkpoint:
   `ed34202` (`Cultivate meaning and epistemic integrity`).
+- Clean documentation revision `60750d9` is packaged and installed. Final
+  package verification passed with zero warnings. Installer SHA-256 is
+  `DABE6EF79A9A5A8B22B196CFD1113EF1F1F3D4F651AA8F7615431FB50126BCE0`;
+  installed executable SHA-256 is
+  `1B6982345C47267E1BE81797626A0DBDB58378FC4C858C764A4A1C63DBBA8A4B`;
+  installed sidecar SHA-256 is
+  `2C3B5166C203CE053DB9FE7414DF9C27F2BC2FD9D8720A13F6CD030F7E1B490F`.
+  Final report: `exports/package_verify_20260920_141554.json`.
+- Resident SQLite remained byte-for-byte unchanged at SHA-256
+  `BBC6E6B9C25A3810D89DDBD3E0D87EB6A92FD03C8453C41A74DCF3ECF7A43AA9`;
+  the verified continuity snapshot retained integrity `ok` and all protected
+  counts. No Selene process remained.
 - Declarative WH and free-relative clauses no longer become questions merely
   because they begin with `what`, `how`, `why`, `where`, `who`, or `which`.
   Approved knowledge remains closed on declarations, and associations need
@@ -196,9 +208,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this ledger refresh: local `evidence` is 60
+- Current remote relation before this install-record refresh: local `evidence` is 61
   commits ahead of `origin/evidence`; this ledger refresh is expected to make
-  that 61. Confirm again before any later commit or push.
+  that 62. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1515,14 +1527,14 @@ and installed sidecar SHA256
 Resident integrity remained `ok` and byte-for-byte unchanged at SHA256
 `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
 
-The exact resume point is source checkpoint `ed34202`. Declarative WH meaning,
+The exact resume point is installed source checkpoint `60750d9`, containing
+implementation checkpoint `ed34202`. Declarative WH meaning,
 downstream knowledge and association relevance, capability-status grammar,
 wrongness-versus-fabrication integrity, and first-person affect protection are
-implemented and boundedly verified. The installed application still contains
-clean revision `3ea0e55`; package and reinstall `ed34202` only when Aleks
-explicitly requests it. After installation, use at most one proportionate
-ordinary check-in only if implementation evidence genuinely requires it. Do
-not repeat the settled installed observation, settled six-turn Q&A, full suite,
+implemented, boundedly verified, packaged, and installed. No automatic Q&A is
+required. Use at most one proportionate ordinary check-in only if Aleks asks
+or implementation evidence genuinely requires it. Do not repeat the settled
+installed observation, settled six-turn Q&A, full suite,
 installed warmth gate, greeting/typo confirmation, decision-chain
 confirmation, G13-G15 teaching, or earlier learning replay without a new
 implementation need. If a new conversation defect appears, record the visible
