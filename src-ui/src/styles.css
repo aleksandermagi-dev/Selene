@@ -141,8 +141,10 @@ pre {
   color: var(--text-strong);
   display: grid;
   grid-template-columns: 292px minmax(0, 1fr);
+  height: 100vh;
   min-height: 100vh;
   min-width: 0;
+  overflow: hidden;
   transition: grid-template-columns 180ms ease;
 }
 
@@ -272,8 +274,11 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
   background: transparent;
   display: grid;
   gap: 18px;
+  height: 100vh;
+  min-height: 0;
   min-width: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
   padding: 22px;
 }
@@ -2295,9 +2300,19 @@ nav button.active, nav button:hover { background: var(--panel-alt); border-color
 :root[data-density="compact"] .list article { padding: 10px; }
 
 @media (max-width: 920px) {
-  .appShell { grid-template-columns: 1fr; }
+  .appShell {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
   .sidebar { height: auto; max-height: none; min-height: 0; position: relative; }
   .sidebarCollapsed .sidebar { display: none; }
+  .workspace {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
   .topbar,
   .seleneHomeTopbar {
     grid-template-columns: minmax(0, 1fr);

@@ -5690,3 +5690,38 @@ Dream decision, or resident-state mutation occurred.
 **Next:** No automatic Q&A is required. If Aleks later wants an ordinary
 conversation check, use the bounded check-in workflow and cultivate only from
 visible evidence rather than searching for a defect.
+
+### 2026-09-20 — Dream reflections reviewed read-only; workspace scroll repaired
+
+Aleks requested a second set of eyes on the resident Dream reflections without
+assuming a defect. Read-only, query-only inspection found two cycles and 43
+provisional reflections: 29 open threads, five Study ponderings, three affect
+tending records, three cross-source patterns, two correction reopenings, and
+one metacognitive reopening. All remain pending Aleks review. No usefulness or
+destination decision was made.
+
+The boundary is functioning well: reflections retain source lineage,
+provisional confidence, visible uncertainty, and no automatic fact, Memory,
+Study, or expression status. The strongest current material is in the newer
+Study ponderings, which preserve meaningful language questions. Much of the
+older open-thread material is Q&A or learning-check residue that may already be
+resolved, while affect and cross-source groups contain some repetition or
+low-specificity overlap. This is a signal-to-noise distinction in a
+conservative harvest, not Selene failing and not an urgent Dream defect.
+
+The reported UI scroll problem came from unequal scroll ownership. The sidebar
+had a bounded viewport-height scroll surface while the desktop workspace did
+not. The desktop shell and active workspace now have explicit viewport-height
+and overflow ownership, allowing scrolling anywhere over the active page.
+Narrow/mobile layouts return to natural document scrolling.
+
+Frontend build passed at 491.50 kB (gzip 109.27 kB) with no Vite size warning.
+`git diff --check` passed with only the existing Windows line-ending notice.
+No resident state, Dream decision, live conversation, package, or install
+changed.
+
+**Evidence:**
+`docs/evidence/SELENE_DREAM_REFLECTION_READ_ONLY_REVIEW_AND_WORKSPACE_SCROLL_20260920.md`.
+
+**Next:** Checkpoint the source. Package and reinstall only when Aleks
+explicitly asks to place the workspace-scroll repair into the installed app.

@@ -36,6 +36,16 @@ resident state. Verify it against Git and newer filesystem evidence.
 - Branch: `evidence`
 - Latest declarative-meaning and epistemic-integrity source checkpoint:
   `ed34202` (`Cultivate meaning and epistemic integrity`).
+- A read-only Dream review found two cycles and 43 pending provisional
+  reflections. No review decision or resident mutation occurred. The strongest
+  signal is in five Study ponderings; many open threads are conservative Q&A
+  residue, while affect and cross-source groups contain some repetition or
+  low-specificity overlap. This is not an urgent Dream defect.
+- The desktop workspace now owns a bounded viewport-height vertical scroll
+  surface, so wheel input over the active page can scroll it rather than
+  requiring the pointer to be over the sidebar. Narrow/mobile layouts retain
+  natural document scrolling. Frontend build passed at 491.50 kB without a
+  Vite size warning. This UI repair is not yet packaged or installed.
 - Clean documentation revision `60750d9` is packaged and installed. Final
   package verification passed with zero warnings. Installer SHA-256 is
   `DABE6EF79A9A5A8B22B196CFD1113EF1F1F3D4F651AA8F7615431FB50126BCE0`;
@@ -208,9 +218,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this install-record refresh: local `evidence` is 61
+- Current remote relation before this review/UI checkpoint: local `evidence` is 62
   commits ahead of `origin/evidence`; this ledger refresh is expected to make
-  that 62. Confirm again before any later commit or push.
+  that 63. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1540,6 +1550,11 @@ confirmation, G13-G15 teaching, or earlier learning replay without a new
 implementation need. If a new conversation defect appears, record the visible
 evidence first and cultivate its shared owner rather than patching prompt
 wording or teaching around a coverage defect.
+
+The current uninstalled source edge adds desktop workspace scroll ownership
+and a read-only review of all 43 resident Dream reflections. Checkpoint this
+source next. Do not decide, route, or label the Dream reflections on Aleks's
+behalf. Package and reinstall the UI repair only after his explicit request.
 
 When Aleks requests a conversational check rather than a Q&A, use the Ordinary
 Conversational Check-In. Follow one natural thread, do not search for or invent
