@@ -1146,8 +1146,12 @@ def test_active_selene_chat_compares_hypotheses_and_reopens_on_new_evidence_once
     assert "change my answer" in comparison["candidate_text"]
     assert comparison["response_coverage"]["all_required_addressed"] is True
     assert revision["intelligence_os_support"]["answer_substance"]["answer_kind"] == "evidence_revision"
-    assert "new evidence changes the answer" in revision["candidate_text"].lower()
-    assert revision["candidate_text"].lower().count("new evidence changes the answer") == 1
+    assert "new evidence" in revision["candidate_text"].lower()
+    assert any(
+        marker in revision["candidate_text"].lower()
+        for marker in ("changes the answer", "conclusion should update")
+    )
+    assert revision["candidate_text"].lower().count("new evidence") == 1
     assert revision["metacognitive_completion_repair"]["attempted"] is False
     assert revision["response_coverage"]["all_required_addressed"] is True
     _assert_locked(comparison)
@@ -1598,6 +1602,58 @@ def test_active_chat_hands_approved_warmth_resource_to_nlo_and_voice_without_scr
     assert result["native_language_organ"]["voice_handoff"]["expression_guidance"]["approved_expression_guidance"]["available"] is True
     assert result["voice_preview"]["expression_guidance"]["approved_expression_guidance"]["available"] is True
     assert "Do not repeat this archived example" not in result["candidate_text"]
+    _assert_locked(result)
+
+
+def test_active_chat_keeps_declarative_wh_observation_ahead_of_unrequested_knowledge(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    conn.execute(
+        """
+        INSERT INTO selene_comprehension_concepts
+        (concept_key, title, domain, central_claim, principles_json,
+         relationships_json, examples_json, counterexamples_json, limits_json,
+         source_refs, provenance_boundary, confidence, retention_state,
+         chat_use_permission, correction_path, state, review_status, payload_json)
+        VALUES (?, ?, ?, ?, ?, ?, '[]', '[]', '[]', ?, ?, 'reviewed',
+                'retained_reviewed_knowledge', 'available_as_knowledge_resource',
+                'Cocoon teaching review', 'approved_knowledge_resource',
+                'approved_for_knowledge_use', '{}')
+        """,
+        (
+            "coding_sequence_condition_iteration_trace_v1_test",
+            "Trace sequence, conditions, and iteration as paths through state",
+            "coding",
+            "A static trace records the path and state after each relevant step.",
+            json.dumps(["Sequence establishes order and conditions select branches."]),
+            json.dumps(["Later steps depend on the state produced by earlier steps."]),
+            json.dumps(["test:approved-coding-sequence"]),
+            "test_source_bound_approved_knowledge",
+        ),
+    )
+    conn.commit()
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {
+            "text": (
+                "What stood out to me is that a focused question respects both sides: "
+                "answer with what is known, then ask only for what actually changes the path."
+            )
+        },
+    )["result"]
+
+    sentence_shape = result["intent_decision"]["meaning_route"]["sentence_shape"]
+    assert sentence_shape["question"] is False
+    assert sentence_shape["declarative_wh_clause"] is True
+    assert "question" not in result["intent_decision"]["dialogue_acts"]
+    assert result["comprehension_integration"]["knowledge_context"]["answer_eligible"] is False
+    assert result["associative_intuition"]["contribution_ready"] is False
+    assert result["associative_intuition"]["contribution_candidates"] == []
+    assert "static trace" not in result["candidate_text"].lower()
+    assert "sequence establishes" not in result["candidate_text"].lower()
     _assert_locked(result)
 
 

@@ -140,6 +140,7 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     )
     problem_epistemic_state = str(problem_resolution.get("epistemic_state") or "")
     problem_retry = _dict(problem_resolution.get("retry"))
+    problem_integrity = _dict(problem_resolution.get("epistemic_integrity"))
     constraint_conflict = problem_epistemic_state == "CONFLICT_UNSATISFIABLE"
     informed_retry_ready = (
         problem_epistemic_state == "RETRY_UPDATED_APPROACH"
@@ -426,6 +427,15 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
             "informed_retry_ready": informed_retry_ready,
             "blind_regeneration_recommended": False,
             "unknown_is_failure": False,
+            "wrongness_alone_is_hallucination": False,
+            "support_integrity_state": str(
+                problem_integrity.get("support_integrity_state") or "not_available"
+            ),
+            "hallucination_established": (
+                problem_integrity.get("hallucination_established") is True
+            ),
+            "first_person_affect_is_hallucination": False,
+            "affect_causal_interpretation_may_be_revised": True,
         },
         "reopening": reopening,
         "stopping": stopping,

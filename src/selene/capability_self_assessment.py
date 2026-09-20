@@ -48,6 +48,25 @@ _STATUS_QUESTION = re.compile(
     re.IGNORECASE,
 )
 
+_TYPED_CAPABILITY_SUBJECT = re.compile(
+    r"\b(?:"
+    r"your(?: current)? (?:system|architecture|organs?|capabilit(?:y|ies)|readiness|maturity)|"
+    r"selene(?:'s)?(?: current)? (?:system|architecture|organs?|capabilit(?:y|ies)|readiness|maturity)|"
+    r"where (?:do you|does selene) stand|"
+    r"what (?:can(?:not|'t)?|could(?: not|n't)?) (?:you|selene) do|"
+    r"what (?:do|does) (?:you|selene) (?:still )?(?:need|lack)|"
+    r"what (?:gaps?|limitations?|capabilit(?:y|ies))\b[^?!.]{0,80}"
+    r"(?:do you have|does selene have|get you to 100\s*(?:%|percent))"
+    r")",
+    re.IGNORECASE,
+)
+
+_CONDITIONAL_TEACHING_OR_TASK_CASE = re.compile(
+    r"^\s*(?:if|suppose|assuming|imagine|when)\b[^?!.]{0,360}\bselene\b"
+    r"[^?!.]{0,360},\s*(?:what|which|how|where)\b",
+    re.IGNORECASE,
+)
+
 
 def capability_status_request_signal(text: str) -> dict[str, Any]:
     """Identify a question about Selene's implemented capability state.
@@ -64,6 +83,8 @@ def capability_status_request_signal(text: str) -> dict[str, Any]:
     capability_predicate = bool(_CAPABILITY_PREDICATE.search(surface))
     status = explicit_status or system_scope or capability_predicate
     question = bool(_STATUS_QUESTION.search(surface))
+    typed_subject_status_link = bool(_TYPED_CAPABILITY_SUBJECT.search(surface))
+    conditional_case = bool(_CONDITIONAL_TEACHING_OR_TASK_CASE.search(surface))
     self_state_only = bool(
         re.fullmatch(
             r"(?:so |and )?how are you(?: doing| feeling| holding up)?(?: right now| today| lately)?[?.!]*",
@@ -71,7 +92,14 @@ def capability_status_request_signal(text: str) -> dict[str, Any]:
             flags=re.IGNORECASE,
         )
     )
-    requested = subject and status and question and not self_state_only
+    requested = bool(
+        subject
+        and status
+        and question
+        and typed_subject_status_link
+        and not self_state_only
+        and not conditional_case
+    )
     return {
         "requested": requested,
         "subject_present": subject,
@@ -80,6 +108,8 @@ def capability_status_request_signal(text: str) -> dict[str, Any]:
         "system_scope_present": system_scope,
         "capability_predicate_present": capability_predicate,
         "question_or_request_shape": question,
+        "typed_subject_status_link": typed_subject_status_link,
+        "conditional_teaching_or_task_case": conditional_case,
         "ordinary_self_state_check_in": self_state_only,
         "single_status_word_is_route_authority": False,
     }

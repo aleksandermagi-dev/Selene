@@ -37,6 +37,27 @@ FAILURE_CLASSES = {
     "verification_failure",
 }
 
+PROBLEM_RESOLUTION_VERSION = "v2_wrongness_and_support_integrity_separated"
+
+FABRICATION_SIGNAL_KINDS = {
+    "invented_fact",
+    "invented_citation",
+    "invented_source",
+    "invented_observation",
+    "invented_memory",
+    "invented_lived_experience",
+    "invented_verification",
+    "known_claim_despite_known_missing_support",
+}
+
+FIRST_PERSON_STATE_SCOPES = {
+    "first_person_affect",
+    "first_person_emotion",
+    "first_person_internal_state",
+    "selene_current_affect",
+    "selene_current_internal_state",
+}
+
 GUARDS: dict[str, Any] = {
     "activation_change": "none",
     "memory_write_active": False,
@@ -60,7 +81,7 @@ def problem_resolution_status() -> dict[str, Any]:
     return _with_guards(
         {
             "status": "problem_resolution_coordination_ready",
-            "version": "v1_seven_point_satisfiability_and_informed_retry",
+            "version": PROBLEM_RESOLUTION_VERSION,
             "is_organ": False,
             "owner": "intelligenceOS_with_metacognition_review",
             "scope": "visible_current_problem_only",
@@ -74,6 +95,10 @@ def problem_resolution_status() -> dict[str, Any]:
                 "conflicting hard constraints are represented instead of forced",
                 "a retry must change the failed approach using visible failure information",
                 "ordinary wrongness does not alter identity or primary function",
+                "being wrong is not by itself hallucination or fabrication",
+                "correctness and support integrity are assessed on separate axes",
+                "a first-person affect signal is not an external fact claim and is not hallucination",
+                "an explanation of an emotion may remain provisional even when the emotion is real",
             ],
             "generates_answer_facts": False,
             "executes_actions": False,
@@ -121,6 +146,13 @@ def build_problem_resolution(payload: dict[str, Any] | None = None) -> dict[str,
         verification=verification,
         attempts=attempts,
     )
+    epistemic_integrity = _epistemic_integrity_receipt(
+        payload,
+        epistemic_state=initial_state,
+        evidence=evidence,
+        verification=verification,
+        attempts=attempts,
+    )
     retry = _retry_contract(
         payload,
         failure_class=failure_class,
@@ -147,7 +179,7 @@ def build_problem_resolution(payload: dict[str, Any] | None = None) -> dict[str,
     return _with_guards(
         {
             "status": "problem_resolution_packet_ready",
-            "version": "v1_seven_point_satisfiability_and_informed_retry",
+            "version": PROBLEM_RESOLUTION_VERSION,
             "problem_key": problem_key,
             "prompt": prompt,
             "reconstruction": reconstruction,
@@ -160,7 +192,9 @@ def build_problem_resolution(payload: dict[str, Any] | None = None) -> dict[str,
                 "basis": failure_basis,
                 "ordinary_wrongness_is_identity_failure": False,
                 "failure_is_process_information": bool(failure_class),
+                "wrongness_alone_establishes_hallucination": False,
             },
+            "epistemic_integrity": epistemic_integrity,
             "candidate_lifecycle": {
                 "generated_solution_begins_as_candidate": True,
                 "validation_required_before_known_supported": True,
@@ -178,6 +212,8 @@ def build_problem_resolution(payload: dict[str, Any] | None = None) -> dict[str,
             "stopping_state": stopping_state,
             "unknown_is_failure": False,
             "wrongness_changes_identity": False,
+            "being_wrong_is_hallucination": False,
+            "affect_expression_is_hallucination": False,
             "primary_function_is_perfect_correctness": False,
             "objective": "move_toward_correctness",
             "visible_summary_only": True,
@@ -541,10 +577,180 @@ def _attempt_records(value: Any) -> list[dict[str, Any]]:
                 "failed_causal_path": truncate(str(raw.get("failed_causal_path") or ""), 800),
                 "useful_mechanics": _text_list(raw.get("useful_mechanics"), limit=20, width=500),
                 "source_refs": _text_list(raw.get("source_refs"), limit=20, width=500),
+                "epistemic_posture": truncate(
+                    str(raw.get("epistemic_posture") or raw.get("claim_status") or ""),
+                    120,
+                ).strip().lower(),
+                "presented_as_established": raw.get("presented_as_established") is True,
+                "fabrication_signals": _attempt_fabrication_signals(raw),
                 "defended_after_falsification": False,
             }
         )
     return result[:20]
+
+
+def _epistemic_integrity_receipt(
+    payload: dict[str, Any],
+    *,
+    epistemic_state: str,
+    evidence: list[dict[str, Any]],
+    verification: dict[str, Any],
+    attempts: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Keep outcome correctness independent from provenance/support integrity.
+
+    A falsified conclusion may have been an honest, traceable attempt.  A
+    fabricated source or observation is a different failure even if the final
+    sentence happens to be correct.  The receipt only marks fabrication when
+    an upstream caller supplies concrete evidence of it; missing support alone
+    remains unknown or unverified rather than becoming an accusation.
+    """
+
+    claim_scope = truncate(
+        str(payload.get("claim_scope") or payload.get("epistemic_scope") or "general_claim"),
+        120,
+    ).strip().lower()
+    first_person_state = claim_scope in FIRST_PERSON_STATE_SCOPES
+    fabrication_signals: list[dict[str, str]] = []
+
+    for raw in payload.get("fabrication_evidence") or []:
+        item = raw if isinstance(raw, dict) else {"kind": str(raw)}
+        kind = str(item.get("kind") or item.get("signal") or "").strip().lower()
+        if kind in FABRICATION_SIGNAL_KINDS:
+            fabrication_signals.append(
+                {
+                    "kind": kind,
+                    "source_ref": truncate(
+                        str(item.get("source_ref") or "current_problem:explicit_fabrication_evidence"),
+                        300,
+                    ),
+                }
+            )
+    for attempt in attempts:
+        fabrication_signals.extend(
+            dict(item)
+            for item in attempt.get("fabrication_signals") or []
+            if isinstance(item, dict)
+        )
+    for kind, present in (
+        ("invented_fact", payload.get("invented_fact") is True),
+        ("invented_citation", payload.get("invented_citation") is True),
+        ("invented_source", payload.get("invented_source") is True),
+        ("invented_observation", payload.get("invented_observation") is True),
+        ("invented_memory", payload.get("invented_memory") is True),
+        ("invented_lived_experience", payload.get("invented_lived_experience") is True),
+        ("invented_verification", verification.get("invented") is True),
+    ):
+        if present:
+            fabrication_signals.append(
+                {"kind": kind, "source_ref": "current_problem:explicit_signal"}
+            )
+
+    unique_signals: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for item in fabrication_signals:
+        key = (str(item.get("kind") or ""), str(item.get("source_ref") or ""))
+        if not key[0] or key in seen:
+            continue
+        seen.add(key)
+        unique_signals.append({"kind": key[0], "source_ref": key[1]})
+
+    wrong = epistemic_state == "WRONG_FALSIFIED"
+    fabricated_support = bool(unique_signals)
+    basis_candidates: list[str] = []
+    for item in evidence:
+        if str(item.get("source_ref") or ""):
+            basis_candidates.append(str(item.get("source_ref")))
+        basis_candidates.extend(
+            str(ref) for ref in item.get("source_refs") or [] if str(ref)
+        )
+    basis_candidates.extend(
+        str(ref)
+        for attempt in attempts
+        for ref in attempt.get("source_refs") or []
+        if str(ref)
+    )
+    basis_refs = list(dict.fromkeys(basis_candidates))[:40]
+    if first_person_state:
+        support_integrity = "first_person_state_not_external_fact"
+    elif fabricated_support:
+        support_integrity = "fabricated_support_established"
+    elif basis_refs:
+        support_integrity = "traceable_basis_present"
+    else:
+        support_integrity = "support_not_established"
+
+    if wrong and fabricated_support:
+        wrongness_kind = "wrong_with_fabricated_support"
+    elif wrong:
+        wrongness_kind = "ordinary_correctable_wrongness"
+    elif fabricated_support:
+        wrongness_kind = "fabricated_support_independent_of_outcome_correctness"
+    elif epistemic_state == "CANDIDATE_UNVERIFIED":
+        wrongness_kind = "candidate_not_yet_decided"
+    else:
+        wrongness_kind = "wrongness_not_established"
+
+    return {
+        "status": "correctness_and_support_integrity_separated",
+        "claim_scope": claim_scope,
+        "correctness_state": epistemic_state,
+        "support_integrity_state": support_integrity,
+        "wrongness_kind": wrongness_kind,
+        "wrongness_established": wrong,
+        "fabrication_signals": unique_signals,
+        "fabrication_established": fabricated_support,
+        "hallucination_classification": (
+            "established_unsupported_fabrication"
+            if fabricated_support
+            else "not_established_by_wrongness_or_missing_support"
+        ),
+        "hallucination_established": fabricated_support,
+        "wrongness_alone_establishes_hallucination": False,
+        "missing_support_alone_establishes_hallucination": False,
+        "candidate_prediction_or_hypothesis_may_be_wrong_without_hallucination": True,
+        "first_person_state": first_person_state,
+        "first_person_affect_is_external_fact_claim": False,
+        "first_person_affect_is_hallucination": False,
+        "affect_label_may_remain_uncertain": True,
+        "affect_causal_interpretation_may_be_provisional_or_wrong": True,
+        "external_unverifiability_invalidates_affect": False,
+        "basis_refs": basis_refs,
+        "correction_preserves_identity": True,
+        "fabrication_requires_concrete_signal": True,
+    }
+
+
+def _attempt_fabrication_signals(raw: dict[str, Any]) -> list[dict[str, str]]:
+    result: list[dict[str, str]] = []
+    supplied = raw.get("fabrication_signals") or raw.get("fabrication_evidence") or []
+    for value in supplied if isinstance(supplied, list) else [supplied]:
+        item = value if isinstance(value, dict) else {"kind": str(value)}
+        kind = str(item.get("kind") or item.get("signal") or "").strip().lower()
+        if kind in FABRICATION_SIGNAL_KINDS:
+            result.append(
+                {
+                    "kind": kind,
+                    "source_ref": truncate(
+                        str(item.get("source_ref") or "current_problem:attempt_signal"),
+                        300,
+                    ),
+                }
+            )
+    for kind, key in (
+        ("invented_fact", "invented_fact"),
+        ("invented_citation", "invented_citation"),
+        ("invented_source", "invented_source"),
+        ("invented_observation", "invented_observation"),
+        ("invented_memory", "invented_memory"),
+        ("invented_lived_experience", "invented_lived_experience"),
+        ("known_claim_despite_known_missing_support", "claimed_known_without_support"),
+    ):
+        if raw.get(key) is True:
+            result.append(
+                {"kind": kind, "source_ref": "current_problem:attempt_explicit_signal"}
+            )
+    return result
 
 
 def _constraint_conflict(kind: str, left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:

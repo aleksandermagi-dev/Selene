@@ -381,6 +381,47 @@ def test_hold_that_thought_is_conversation_management_not_a_memory_candidate():
     assert result["canonical_meaning_frame"]["memory_write_active"] is False
 
 
+@pytest.mark.parametrize(
+    "prompt",
+    (
+        "What I noticed is that the answer changed.",
+        "How this works is through feedback.",
+        "Why this matters is that context changes the answer.",
+        "Where we differ is the stopping rule.",
+        "Who I mean is Aleks.",
+        "Which path we choose depends on the evidence.",
+        "What surprised me was the consistency.",
+    ),
+)
+def test_wh_subject_clauses_are_declarative_without_phrase_specific_routing(prompt):
+    result = interpret_turn_meaning(prompt)
+
+    assert result["sentence_shape"]["question"] is False
+    assert result["sentence_shape"]["declarative_wh_clause"] is True
+    assert result["sentence_shape"]["question_evidence"]
+    assert "question" not in result["dialogue_acts"]
+    assert "statement" in result["dialogue_acts"]
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    (
+        "What is love",
+        "How does this work",
+        "Why does context matter",
+        "Where did we stop",
+        "Who do you mean",
+        "Which path should we choose",
+    ),
+)
+def test_unpunctuated_interrogative_inversion_remains_a_question(prompt):
+    result = interpret_turn_meaning(prompt)
+
+    assert result["sentence_shape"]["question"] is True
+    assert result["sentence_shape"]["declarative_wh_clause"] is False
+    assert "question" in result["dialogue_acts"]
+
+
 def test_keep_thread_open_is_session_management_not_a_memory_candidate():
     result = interpret_turn_meaning(
         "Keep the reading-corner thread open; do not close it yet."

@@ -242,9 +242,8 @@ def interpret_turn_meaning(
     routing_text = normalized if quoted_actionable else outside_normalized
     tokens = _tokens(routing_text)
     clauses = _clauses(outside_quotes)
-    question = "?" in outside_quotes or bool(
-        re.match(r"^(who|what|when|where|why|how|which|can|could|would|should|do|does|did|is|are|was|were|will)\b", routing_text)
-    )
+    question_shape = _question_shape(routing_text, outside_quotes=outside_quotes)
+    question = question_shape["question"] is True
     explicit_request = bool(
         re.search(
             r"(?:^|[.!?]\s+)(?:please\s+)?"
@@ -301,6 +300,9 @@ def interpret_turn_meaning(
         "quoted_material_actionable": quoted_actionable,
         "sentence_shape": {
             "question": question,
+            "question_kind": question_shape["kind"],
+            "question_evidence": question_shape["evidence"],
+            "declarative_wh_clause": question_shape["declarative_wh_clause"],
             "explicit_request": explicit_request,
             "clause_count": len(clauses),
             "mixed_intent_possible": len(dialogue_acts) > 1,
@@ -479,6 +481,122 @@ def _action_routing_evidence(
         "evidence_complete_for_consequential_route": actionable,
         "resident_authority_assessment": authority,
     }
+
+
+def _question_shape(
+    routing_text: str,
+    *,
+    outside_quotes: str,
+) -> dict[str, Any]:
+    """Separate questions from declarative clauses that begin with a WH word.
+
+    English permits a whole clause to occupy the subject position: "What I
+    noticed is ...", "How this works is ...", and "Which path we choose
+    depends ...".  Their first word resembles an interrogative, but the clause
+    supplies information rather than requesting it.  Treating every leading WH
+    word as a question gives retrieval owners authority that the speaker never
+    requested.
+
+    Punctuation remains decisive.  Without it, only inspectable grammatical
+    evidence closes the interrogative reading; this is a sentence-shape owner,
+    not a list of observed conversation phrases.
+    """
+
+    text = _normalize(routing_text)
+    punctuated = "?" in str(outside_quotes or "")
+    if punctuated:
+        return {
+            "question": True,
+            "kind": "punctuated_question",
+            "evidence": ["question_mark_outside_quoted_material"],
+            "declarative_wh_clause": False,
+        }
+
+    non_wh_auxiliary = re.match(
+        r"^(?:can|could|would|should|do|does|did|is|are|was|were|will|"
+        r"have|has|had|may|might|must)\b",
+        text,
+    )
+    if non_wh_auxiliary:
+        return {
+            "question": True,
+            "kind": "leading_auxiliary_question",
+            "evidence": ["leading_auxiliary_inversion"],
+            "declarative_wh_clause": False,
+        }
+
+    wh = re.match(r"^(who|what|when|where|why|how|which)\b", text)
+    if not wh:
+        return {
+            "question": False,
+            "kind": "declarative_or_other",
+            "evidence": [],
+            "declarative_wh_clause": False,
+        }
+
+    declarative_evidence = _declarative_wh_clause_evidence(text)
+    if declarative_evidence:
+        return {
+            "question": False,
+            "kind": "declarative_wh_subject_clause",
+            "evidence": declarative_evidence,
+            "declarative_wh_clause": True,
+        }
+    return {
+        "question": True,
+        "kind": "leading_wh_question",
+        "evidence": [f"leading_{wh.group(1)}_interrogative"],
+        "declarative_wh_clause": False,
+    }
+
+
+def _declarative_wh_clause_evidence(text: str) -> list[str]:
+    # Embedded/free-relative subject clauses carry their own subject and
+    # predicate before the matrix predicate: "what I noticed is ...",
+    # "how the mechanism works depends ...", "which path we choose matters".
+    subject = (
+        r"(?:i|we|you|he|she|they|it|this|that|these|those|"
+        r"the\s+[a-z][a-z0-9'-]*|my\s+[a-z][a-z0-9'-]*|"
+        r"your\s+[a-z][a-z0-9'-]*|our\s+[a-z][a-z0-9'-]*|"
+        r"their\s+[a-z][a-z0-9'-]*)"
+    )
+    lexical_predicate = (
+        r"(?!is\b|are\b|was\b|were\b|do\b|does\b|did\b|can\b|could\b|"
+        r"would\b|should\b|will\b|have\b|has\b|had\b)"
+        r"[a-z][a-z0-9'-]*"
+    )
+    matrix_predicate = (
+        r"(?:is|are|was|were|means?|depends?|matters?|counts?|shows?|"
+        r"explains?|remains?|becomes?|changes?)"
+    )
+    embedded = re.match(
+        rf"^(?:what|who|when|where|why|how)\s+{subject}\s+"
+        rf"{lexical_predicate}(?:\s+[a-z][a-z0-9'-]*){{0,8}}\s+"
+        rf"{matrix_predicate}\b",
+        text,
+    )
+    which_embedded = re.match(
+        rf"^which\s+[a-z][a-z0-9'-]*\s+{subject}\s+"
+        rf"{lexical_predicate}(?:\s+[a-z][a-z0-9'-]*){{0,8}}\s+"
+        rf"{matrix_predicate}\b",
+        text,
+    )
+    if embedded or which_embedded:
+        return ["wh_clause_has_embedded_subject_predicate_and_matrix_predicate"]
+
+    # Fused focus clauses put the focused predicate before a matrix copula:
+    # "what matters here is ..." and "what stood out to me was ...".
+    focused = re.match(
+        r"^(?:what|who|when|where|why|how)\s+"
+        r"(?:matters?|counts?|changed|happened|works?|helped|surprised|"
+        r"stood\s+out|stands\s+out)\b"
+        r"(?:\s+[a-z][a-z0-9'-]*){0,8}\s+"
+        r"(?:is|are|was|were|means?|depends?|shows?|explains?)\b",
+        text,
+    )
+    if focused:
+        return ["wh_focus_clause_has_matrix_predicate"]
+    return []
 
 
 def _informational_boundary_shape(value: str, *, question: bool, explicit_request: bool) -> bool:

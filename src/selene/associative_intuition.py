@@ -63,6 +63,20 @@ _STOP = {
     "really", "right", "good", "okay", "yeah", "yes", "well", "like",
 }
 
+# These words can describe the structure of almost any conversation, lesson,
+# or procedure.  They may help notice a faint recurrence, but they cannot by
+# themselves establish that the current topic and an older source concern the
+# same subject.  Keeping them separate from `_STOP` preserves an inspectable
+# activation trace without letting generic discourse vocabulary authorize a
+# visible cross-domain contribution.
+_LOW_SPECIFICITY_TERMS = {
+    "ask", "asked", "asking", "change", "changed", "changes", "changing",
+    "context", "current", "different", "example", "known", "knows", "learn",
+    "learned", "learning", "only", "path", "question", "relevant", "respect",
+    "respects", "same", "side", "sides", "state", "states", "step", "steps",
+    "support", "supported", "system", "systems", "use", "used", "uses",
+}
+
 # These cues select eligible source material; they never supply answer content.
 # Keeping the vocabulary inspectable also lets later LEAs show exactly where a
 # local semantic encoder would add value instead of hiding that decision.
@@ -244,15 +258,18 @@ def build_associative_intuition_bridge(
         source_terms = _terms(source_text)
         source_cues = _semantic_cues(source_text)
         shared_terms = sorted(trigger_terms & source_terms)
+        subject_terms = sorted(set(shared_terms) - _LOW_SPECIFICITY_TERMS)
+        low_specificity_terms = sorted(set(shared_terms) & _LOW_SPECIFICITY_TERMS)
         shared_cues = sorted(trigger_cues & source_cues)
         phrase_match = _phrase_match(trigger, source_text)
         score = (
-            (3 * min(len(shared_terms), 4))
+            (3 * min(len(subject_terms), 4))
+            + min(len(low_specificity_terms), 2)
             + (2 * min(len(shared_cues), 4))
-            + (2 if phrase_match else 0)
+            + (2 if phrase_match and subject_terms else 0)
             + (1 if shared_cues and str(source.get("relationships") or "") else 0)
         )
-        state = _association_state(shared_terms, shared_cues, score)
+        state = _association_state(subject_terms, shared_cues, score)
         if state == "no_connection_noticed":
             continue
         candidate = _candidate(
@@ -261,6 +278,8 @@ def build_associative_intuition_bridge(
             state=state,
             score=score,
             shared_terms=shared_terms,
+            subject_terms=subject_terms,
+            low_specificity_terms=low_specificity_terms,
             shared_cues=shared_cues,
         )
         ranked.append((score, str(source.get("source_id") or ""), candidate))
@@ -281,6 +300,8 @@ def build_associative_intuition_bridge(
         and not diagnostic_only
         and not hold_optional_association
         and selected.get("expression_eligible") is True
+        and (selected.get("fit_receipt") or {}).get("current_topic_fit")
+        == "material_subject_and_relation_fit"
     )
     contribution_candidates = (
         [
@@ -840,10 +861,12 @@ def _candidate(
     state: str,
     score: int,
     shared_terms: list[str],
+    subject_terms: list[str],
+    low_specificity_terms: list[str],
     shared_cues: list[str],
 ) -> dict[str, Any]:
     title = truncate(str(source.get("title") or "earlier material"), 240)
-    basis_labels = [*shared_cues, *shared_terms][:6]
+    basis_labels = [*shared_cues, *subject_terms][:6]
     basis_text = ", ".join(label.replace("_", " ") for label in basis_labels)
     if state == "felt_connection":
         summary = (
@@ -870,6 +893,8 @@ def _candidate(
         "activation_score": score,
         "activation_basis": {
             "shared_terms": shared_terms[:8],
+            "shared_subject_terms": subject_terms[:8],
+            "shared_low_specificity_terms": low_specificity_terms[:8],
             "shared_semantic_cues": shared_cues[:8],
             "surface_wording_alone_is_proof": False,
             "source_was_dormant_before_this_trigger": True,
@@ -879,8 +904,20 @@ def _candidate(
             "source_domain": str(source.get("topic") or ""),
             "target_domain": "current_context",
             "shared_terms": shared_terms[:8],
+            "shared_subject_terms": subject_terms[:8],
+            "shared_low_specificity_terms": low_specificity_terms[:8],
             "shared_semantic_cues": shared_cues[:8],
             "transferable_structure_articulated": state == "articulated_connection",
+            "current_topic_fit": (
+                "material_subject_and_relation_fit"
+                if state == "articulated_connection" and subject_terms and shared_cues
+                else "material_subject_fit"
+                if state == "articulated_connection" and len(subject_terms) >= 2
+                else "generic_relation_recurrence_only"
+            ),
+            "visible_contribution_fit": bool(
+                state == "articulated_connection" and subject_terms and shared_cues
+            ),
             "new_evidence_supplied": False,
             "independent_fit_check_complete": False,
             "revision_required_if_counterexample_fits": True,
@@ -910,13 +947,13 @@ def _candidate(
 
 
 def _association_state(
-    shared_terms: list[str],
+    subject_terms: list[str],
     shared_cues: list[str],
     score: int,
 ) -> str:
     if score < 4:
         return "no_connection_noticed"
-    if len(shared_terms) >= 2 or (shared_terms and shared_cues):
+    if len(subject_terms) >= 2 or (subject_terms and shared_cues):
         return "articulated_connection"
     if len(shared_cues) >= 2:
         return "felt_connection"

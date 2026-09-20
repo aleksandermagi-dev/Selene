@@ -193,6 +193,36 @@ def test_request_scaffolding_does_not_become_associative_content(tmp_path):
         assert not {"why", "check", "work", "give", "one", "reason", "limit"}.intersection(shared_terms)
 
 
+def test_generic_process_recurrence_can_be_felt_without_becoming_visible_topic_fit(tmp_path):
+    conn = _conn(tmp_path)
+    _approved_concept(
+        conn,
+        key="sequence_trace",
+        title="Trace sequence and iteration through state",
+        domain="coding",
+        claim="A trace records how state changes after each step along a path.",
+        relationships=["Later steps depend on the state produced by earlier steps."],
+    )
+
+    result = build_associative_intuition_bridge(
+        conn,
+        {
+            "trigger_text": (
+                "The process changes after each step and depends on the current context, "
+                "but that does not make the older subject the topic."
+            )
+        },
+    )
+
+    assert result["contribution_ready"] is False
+    assert result["contribution_candidates"] == []
+    selected = result["selected_candidate"]
+    if selected:
+        assert selected["fit_receipt"]["visible_contribution_fit"] is False
+        assert selected["fit_receipt"]["current_topic_fit"] == "generic_relation_recurrence_only"
+        assert selected["activation_basis"]["shared_subject_terms"] == []
+
+
 def test_common_social_words_do_not_create_a_false_cross_domain_connection(tmp_path):
     conn = _conn(tmp_path)
     _approved_concept(conn)

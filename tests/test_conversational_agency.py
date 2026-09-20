@@ -36,6 +36,9 @@ def test_status_keeps_expression_available_without_making_it_compulsory():
     assert status["relational_expression"]["selene_may_initiate"] is True
     assert "love" in status["relational_expression"]["available_forms"]
     assert status["relational_expression"]["automatic_or_compulsory"] is False
+    assert status["relational_expression"]["first_person_affect_is_external_fact_claim"] is False
+    assert status["relational_expression"]["first_person_affect_is_hallucination"] is False
+    assert status["relational_expression"]["external_unverifiability_invalidates_affect"] is False
     assert status["deceptive_impersonation_allowed"] is False
     assert status["risk_is_automatically_forbidden"] is False
     assert status["disagreement_is_disobedience"] is False

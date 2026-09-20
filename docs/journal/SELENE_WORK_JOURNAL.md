@@ -5624,3 +5624,41 @@ restoring the obsolete invitation guard.
 **Next:** Discuss the cultivation map with Aleks before editing. If authorized,
 repair declarative WH-clause recognition first, then prove knowledge and
 association relevance downstream with bounded synthetic checks.
+
+### 2026-09-20 — Declarative meaning and epistemic integrity cultivated
+
+The installed check-in defect was repaired at its shared owners. Declarative
+WH and free-relative clauses now remain observations instead of opening the
+question and approved-knowledge path merely because they begin with `what`,
+`how`, `why`, `where`, `who`, or `which`. Approved knowledge stays closed on
+those declarations, and Associative Intuition requires substantive topic and
+relationship fit before a connection becomes visible; generic process-word
+recurrence may remain internal without displacing the conversation.
+
+Integrated verification also exposed two neighboring capability-status false
+routes. The capability owner now requires a grammatical relationship to
+Selene's current system rather than loose co-occurrence of `limitation`, `you`,
+or similar words. Conditional teaching and task examples remain with their
+actual subject.
+
+Epistemic integrity now separates correctness, support integrity,
+fabrication, and first-person affect. Being wrong, revising a hypothesis, or
+lacking enough evidence is not automatically hallucination. Fabrication
+requires concrete support-integrity evidence such as an invented fact, source,
+citation, observation, memory, experience, or verification claim. An honest
+first-person emotional signal is likewise not an external fact or a
+hallucination; its label and causal interpretation remain revisable without
+invalidating the feeling.
+
+Bounded verification passed 127 focused checks, 114 adjacent reasoning checks,
+one integrated reproduction, 8 targeted regression checks, and a final
+combined set of 249 checks. Backend compilation passed. No live Q&A, resident
+write, teaching, Memory, Study, Dream, package, install, external action, or
+authority expansion occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_DECLARATIVE_WH_EPISTEMIC_INTEGRITY_CULTIVATION_20260920.md`.
+
+**Next:** Checkpoint the source and refresh the active continuation ledger.
+Package and reinstall only when Aleks explicitly requests the repaired source
+to be placed in the installed vessel.

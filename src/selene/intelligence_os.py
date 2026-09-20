@@ -8,7 +8,7 @@ from typing import Any
 from .claim_evidence import build_claim_evidence_packet
 from .answer_substance import build_answer_substance
 from .bounded_hypothesis import build_bounded_hypothesis_attempt
-from .problem_resolution import build_problem_resolution
+from .problem_resolution import PROBLEM_RESOLUTION_VERSION, build_problem_resolution
 from .registry import truncate
 from .structural_discovery import build_structural_discovery_packet
 
@@ -83,7 +83,7 @@ def intelligence_os_status(conn: sqlite3.Connection) -> dict[str, Any]:
             "display_name": "intelligenceOS / Observatory",
             "method": "ABCD(E)",
             "version": "v3_bounded_hypothesis_capable",
-            "problem_resolution_version": "v1_seven_point_satisfiability_and_informed_retry",
+            "problem_resolution_version": PROBLEM_RESOLUTION_VERSION,
             "stage_order": ["Acquire", "Build", "Challenge", "Demonstrate", "Evaluate"],
             "answer_shapes": sorted(ANSWER_SHAPES),
             "run_count": count,
@@ -271,7 +271,7 @@ def run_intelligence_os_reason(conn: sqlite3.Connection, payload: dict[str, Any]
         "organ_name": "intelligenceOS",
         "method": "ABCD(E)",
         "version": "v3_bounded_hypothesis_capable",
-        "problem_resolution_version": "v1_seven_point_satisfiability_and_informed_retry",
+        "problem_resolution_version": PROBLEM_RESOLUTION_VERSION,
         "prompt": prompt,
         "stages": {
             "A_acquire": observations,

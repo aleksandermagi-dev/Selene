@@ -158,6 +158,31 @@ def test_answer_knowledge_requires_named_subject_not_generic_or_format_overlap()
     assert relevant[0]["answer_subject_terms"] == ["orbital", "shape"]
 
 
+def test_declarative_wh_observation_does_not_request_an_academic_answer():
+    prompt = (
+        "What stood out to me is that a focused question respects both sides: "
+        "answer with what is known, then ask only for what changes the path."
+    )
+    intent = classify_chat_intent(prompt)
+    coding_item = {
+        "title": "Trace sequence, conditions, and iteration as paths through state",
+        "domain": "coding",
+        "concept_key": "coding_sequence_condition_iteration_trace_v1",
+        "central_claim": (
+            "A static trace records the path and state after each relevant step."
+        ),
+        "principles": ["Sequence establishes order."],
+        "relationships": ["A condition selects one path through the sequence."],
+        "matched_terms": ["path", "state", "sequence", "changes"],
+    }
+
+    eligible = _answer_eligible_knowledge_items(prompt, intent, [coding_item])
+
+    assert "question" not in intent["dialogue_acts"]
+    assert intent["meaning_route"]["sentence_shape"]["declarative_wh_clause"] is True
+    assert eligible == []
+
+
 def test_weak_incidental_subject_word_does_not_redirect_an_ordinary_plan():
     intent = {
         "intent": "reasoning",

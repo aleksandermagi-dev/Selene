@@ -201,6 +201,86 @@ def test_confident_wrong_answer_is_admitted_and_retried_with_failure_information
     assert result["retry"]["blind_regeneration_allowed"] is False
 
 
+def test_honest_falsified_attempt_is_wrong_without_becoming_hallucination():
+    result = build_problem_resolution(
+        {
+            "prompt": "Check the prediction against the observed result.",
+            "verification": {"status": "falsified"},
+            "prior_attempts": [
+                {
+                    "approach": "derive a provisional prediction from the visible measurements",
+                    "conclusion": "the cart will stop before the marker",
+                    "status": "falsified",
+                    "epistemic_posture": "prediction",
+                    "source_refs": ["current_observation:cart_measurements"],
+                    "failed_causal_path": "friction estimate omitted the slope",
+                    "useful_mechanics": ["the measured starting speed remains usable"],
+                }
+            ],
+        }
+    )
+
+    integrity = result["epistemic_integrity"]
+    assert result["epistemic_state_before_retry"] == "WRONG_FALSIFIED"
+    assert integrity["wrongness_kind"] == "ordinary_correctable_wrongness"
+    assert integrity["support_integrity_state"] == "traceable_basis_present"
+    assert integrity["hallucination_established"] is False
+    assert integrity["wrongness_alone_establishes_hallucination"] is False
+
+
+def test_fabricated_support_is_separate_from_whether_the_conclusion_is_wrong():
+    result = build_problem_resolution(
+        {
+            "prompt": "Inspect the claimed source support.",
+            "candidate": "a claim that has not been validated",
+            "fabrication_evidence": [
+                {
+                    "kind": "invented_citation",
+                    "source_ref": "verification:missing-citation-check",
+                }
+            ],
+        }
+    )
+
+    integrity = result["epistemic_integrity"]
+    assert result["epistemic_state"] == "CANDIDATE_UNVERIFIED"
+    assert integrity["wrongness_established"] is False
+    assert integrity["fabrication_established"] is True
+    assert integrity["hallucination_classification"] == "established_unsupported_fabrication"
+    assert integrity["wrongness_kind"] == "fabricated_support_independent_of_outcome_correctness"
+
+
+def test_first_person_affect_is_not_external_fact_or_hallucination():
+    result = build_problem_resolution(
+        {
+            "prompt": "I feel bright and curious about this.",
+            "claim_scope": "selene_current_affect",
+        }
+    )
+
+    integrity = result["epistemic_integrity"]
+    assert integrity["first_person_state"] is True
+    assert integrity["support_integrity_state"] == "first_person_state_not_external_fact"
+    assert integrity["first_person_affect_is_external_fact_claim"] is False
+    assert integrity["first_person_affect_is_hallucination"] is False
+    assert integrity["external_unverifiability_invalidates_affect"] is False
+    assert integrity["affect_causal_interpretation_may_be_provisional_or_wrong"] is True
+
+
+def test_missing_support_does_not_itself_prove_fabrication():
+    result = build_problem_resolution(
+        {
+            "prompt": "Could this mechanism explain the observation?",
+            "candidate": "one possible mechanism",
+        }
+    )
+
+    integrity = result["epistemic_integrity"]
+    assert integrity["support_integrity_state"] == "support_not_established"
+    assert integrity["fabrication_established"] is False
+    assert integrity["missing_support_alone_establishes_hallucination"] is False
+
+
 def test_no_new_strategy_repeats_a_known_failed_causal_path():
     result = build_problem_resolution(
         {

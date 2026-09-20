@@ -31,6 +31,14 @@ def test_capability_status_requires_selene_subject_status_and_question_shape():
         "What do you need?",
         "Are you missing Ranger?",
         "Are you ready to continue?",
+        (
+            "Now compare attendance alone with attendance plus wait time and feedback. "
+            "Which is more useful, what is its limitation, and what would you report?"
+        ),
+        (
+            "If Selene can repeat an idea fluently but cannot use it in a new example, "
+            "what should we do next?"
+        ),
     ):
         assert capability_status_request_signal(prompt)["requested"] is False
 
