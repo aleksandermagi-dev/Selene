@@ -31,6 +31,15 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest focused-questioning install/check-in evidence checkpoint: `73badf6`
+  (`Record focused questioning install check-in`)
+- Clean revision `3ea0e55` is now packaged and installed. Package verification
+  passed with zero warnings; resident SQLite integrity and protected counts
+  matched the pre-install snapshot; no Selene process remained.
+- The Ordinary Conversational Check-In stopped after three turns. Greeting and
+  closure were usable, but declarative `What stood out to me is ...` was
+  misclassified as a question, allowing an unrelated coding concept and a weak
+  association to displace the topic. No repair was made.
 - Latest focused-questioning and capability-status checkpoint: `cfb11cb`
   (`Connect focused questioning and capability status`)
 - Current-system questions no longer fall through to nearby teaching material
@@ -164,9 +173,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this ledger refresh: local `evidence` is 56
+- Current remote relation before this ledger refresh: local `evidence` is 58
   commits ahead of `origin/evidence`; this ledger refresh is expected to make
-  that 57. Confirm again before any later commit or push.
+  that 59. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1341,6 +1350,7 @@ Before further production work, read completely:
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_11_INTEGRATED_STABILIZATION_20260913.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_11_INSTALLED_QNA_20260913.md`
 - `docs/evidence/SELENE_FOCUSED_QUESTIONING_AND_CAPABILITY_SELF_ASSESSMENT_20260919.md`
+- `docs/evidence/SELENE_FOCUSED_QUESTIONING_INSTALL_CHECKIN_20260920.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -1482,12 +1492,14 @@ and installed sidecar SHA256
 Resident integrity remained `ok` and byte-for-byte unchanged at SHA256
 `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
 
-The exact resume point is checkpoint `cfb11cb`: focused questioning, the
-read-only capability-status owner, and the bounded stale-guard cultivation are
-complete in source but not packaged or installed. Package/reinstall only if
-Aleks asks to place them in the installed vessel. Otherwise resume Aleks's next
-explicitly selected teaching or organ phase. Do not repeat the settled
-six-turn Q&A, full suite,
+The exact resume point is the cultivation map recorded at `73badf6`. Focused
+questioning and the read-only capability owner are packaged and installed from
+clean source revision `3ea0e55`. The next proposed repair is declarative
+WH-clause recognition at the shared meaning owner, followed by downstream
+approved-knowledge and association relevance checks with novel sentence
+shapes. Discuss this map with Aleks before editing; do not patch the observed
+sentence or restore the obsolete invitation guard. Do not repeat the ordinary
+check-in, settled six-turn Q&A, full suite,
 installed warmth gate, greeting/typo confirmation, decision-chain
 confirmation, G13-G15 teaching, or earlier learning replay without a new
 implementation need. If a new conversation defect appears, record the visible
