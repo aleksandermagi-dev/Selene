@@ -1,6 +1,6 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-19
+Last refreshed: 2026-09-20
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
@@ -18,7 +18,10 @@ open-thread session management; speaker provenance now distinguishes Aleks,
 Codex, Selene, named guests, and unknown legacy turns across current messages,
 continuity projections, and Dialogue Workspace without expanding authority;
 current capability questions now use a read-only Organ Maturity Ledger owner,
-and one bounded focused-question receipt coordinates material gaps
+and one bounded focused-question receipt coordinates material gaps;
+declarative WH clauses now remain observations, knowledge and association
+handoffs require material relevance, and epistemic integrity explicitly keeps
+wrongness, support integrity, fabrication, and first-person affect separate
 
 ## Purpose
 
@@ -31,6 +34,26 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest declarative-meaning and epistemic-integrity source checkpoint:
+  `ed34202` (`Cultivate meaning and epistemic integrity`).
+- Declarative WH and free-relative clauses no longer become questions merely
+  because they begin with `what`, `how`, `why`, `where`, `who`, or `which`.
+  Approved knowledge remains closed on declarations, and associations need
+  substantive subject and relationship fit before becoming visible.
+- Capability-status routing now requires a grammatical relationship to
+  Selene's current system. Conditional examples about another subject's
+  limitations or teaching needs no longer become whole-system status reports.
+- Correctness, support integrity, fabrication, and first-person affect now
+  remain explicit separate axes. Being wrong or unsupported does not alone
+  establish hallucination. First-person emotion is not an external factual
+  claim or hallucination; its label and causal interpretation remain
+  revisable.
+- Verification passed 127 focused checks, 114 adjacent reasoning checks, one
+  integrated reproduction, 8 targeted regressions, and a final combined 249
+  checks. Backend compilation and `git diff --check` passed; the latter showed
+  only existing Windows line-ending notices. No live Q&A, resident write,
+  teaching, Memory, Study, Dream, package, install, external action, or
+  authority expansion occurred.
 - Latest focused-questioning install/check-in evidence checkpoint: `73badf6`
   (`Record focused questioning install check-in`)
 - Clean revision `3ea0e55` is now packaged and installed. Package verification
@@ -173,9 +196,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this ledger refresh: local `evidence` is 58
+- Current remote relation before this ledger refresh: local `evidence` is 60
   commits ahead of `origin/evidence`; this ledger refresh is expected to make
-  that 59. Confirm again before any later commit or push.
+  that 61. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1492,14 +1515,14 @@ and installed sidecar SHA256
 Resident integrity remained `ok` and byte-for-byte unchanged at SHA256
 `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
 
-The exact resume point is the cultivation map recorded at `73badf6`. Focused
-questioning and the read-only capability owner are packaged and installed from
-clean source revision `3ea0e55`. The next proposed repair is declarative
-WH-clause recognition at the shared meaning owner, followed by downstream
-approved-knowledge and association relevance checks with novel sentence
-shapes. Discuss this map with Aleks before editing; do not patch the observed
-sentence or restore the obsolete invitation guard. Do not repeat the ordinary
-check-in, settled six-turn Q&A, full suite,
+The exact resume point is source checkpoint `ed34202`. Declarative WH meaning,
+downstream knowledge and association relevance, capability-status grammar,
+wrongness-versus-fabrication integrity, and first-person affect protection are
+implemented and boundedly verified. The installed application still contains
+clean revision `3ea0e55`; package and reinstall `ed34202` only when Aleks
+explicitly requests it. After installation, use at most one proportionate
+ordinary check-in only if implementation evidence genuinely requires it. Do
+not repeat the settled installed observation, settled six-turn Q&A, full suite,
 installed warmth gate, greeting/typo confirmation, decision-chain
 confirmation, G13-G15 teaching, or earlier learning replay without a new
 implementation need. If a new conversation defect appears, record the visible
