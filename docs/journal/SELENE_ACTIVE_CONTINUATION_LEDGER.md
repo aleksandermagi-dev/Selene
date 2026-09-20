@@ -16,7 +16,9 @@ plus the post-Phase-11 owner-chain repair for ordinary alternatives,
 observation analysis, correction expiry, mixed participation ordering, and
 open-thread session management; speaker provenance now distinguishes Aleks,
 Codex, Selene, named guests, and unknown legacy turns across current messages,
-continuity projections, and Dialogue Workspace without expanding authority
+continuity projections, and Dialogue Workspace without expanding authority;
+current capability questions now use a read-only Organ Maturity Ledger owner,
+and one bounded focused-question receipt coordinates material gaps
 
 ## Purpose
 
@@ -29,6 +31,21 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Latest focused-questioning and capability-status checkpoint: `cfb11cb`
+  (`Connect focused questioning and capability status`)
+- Current-system questions no longer fall through to nearby teaching material
+  on words such as `missing`. The typed owner reports current capability scope
+  without inventing a percentage, writing state, or treating a capability gap
+  as an identity gap.
+- The focused-question receipt asks at most one exact material question after
+  available support is used, does not request already known information, and
+  preserves `unknown` as valid. Proven genuine curiosity and attributable
+  current-task associations no longer inherit redundant invitation guards;
+  natural closure, direct-answer priority, evidence, privacy, consent, and
+  turn-taking protections remain.
+- Verification: 221 focused and adjacent module checks plus four integrated
+  Chat checks passed; backend compilation passed. No resident state, live Q&A,
+  teaching, Memory, Study, Dream, package, install, or external action occurred.
 - Latest post-Phase-11 owner-chain source checkpoint: `329515a`
   (`Repair post-phase 11 conversation ownership`)
 - Latest speaker-provenance checkpoint: `51528e9`
@@ -147,9 +164,9 @@ resident state. Verify it against Git and newer filesystem evidence.
   (`Separate project README and philosophy`)
 - Latest post-Phase-8 Q&A repair checkpoint: `c8b4d89`
   (`Repair post-Phase 8 Q&A handoffs`)
-- Current remote relation before this ledger refresh: local `evidence` is 54
+- Current remote relation before this ledger refresh: local `evidence` is 56
   commits ahead of `origin/evidence`; this ledger refresh is expected to make
-  that 55. Confirm again before any later commit or push.
+  that 57. Confirm again before any later commit or push.
 - Preserve the resident 96/96 teaching state even if source packaging is
   deferred
 - Previous checkpoints:
@@ -1323,6 +1340,7 @@ Before further production work, read completely:
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_10_COMPATIBILITY_RETIREMENT_20260913.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_11_INTEGRATED_STABILIZATION_20260913.md`
 - `docs/evidence/SELENE_CONVERSATION_CULTIVATION_PHASE_11_INSTALLED_QNA_20260913.md`
+- `docs/evidence/SELENE_FOCUSED_QUESTIONING_AND_CAPABILITY_SELF_ASSESSMENT_20260919.md`
 - `docs/education/SELENE_TEACHING_LIFECYCLE_PHASE_4_20260715.md`
 - `docs/education/SELENE_CURRICULUM_AUTHORIZATION_LAW_20260719.md`
 - `docs/philosophy/SELENE_CULTIVATION_METHOD_20260824.md`
@@ -1464,10 +1482,12 @@ and installed sidecar SHA256
 Resident integrity remained `ok` and byte-for-byte unchanged at SHA256
 `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
 
-The exact resume point is the speaker-provenance source checkpoint or Aleks's
-next explicitly selected teaching or organ phase. The source repair is not yet
-packaged or installed. Package/reinstall only if Aleks asks to place it in the
-installed vessel. Do not repeat the settled six-turn Q&A, full suite,
+The exact resume point is checkpoint `cfb11cb`: focused questioning, the
+read-only capability-status owner, and the bounded stale-guard cultivation are
+complete in source but not packaged or installed. Package/reinstall only if
+Aleks asks to place them in the installed vessel. Otherwise resume Aleks's next
+explicitly selected teaching or organ phase. Do not repeat the settled
+six-turn Q&A, full suite,
 installed warmth gate, greeting/typo confirmation, decision-chain
 confirmation, G13-G15 teaching, or earlier learning replay without a new
 implementation need. If a new conversation defect appears, record the visible
