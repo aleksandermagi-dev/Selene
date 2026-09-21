@@ -2,7 +2,7 @@
 
 Date: 2026-09-20
 
-Status: implemented and source-verified; packaging and installation pending
+Status: implemented, source-verified, packaged, and installed
 
 ## Why this pass happened
 
@@ -116,3 +116,26 @@ hidden tone, manufacture missing context, or turn vague cross-session language
 into Memory. It repairs the connective seams supported by current visible
 evidence.
 
+## Package and install closure
+
+Clean source checkpoint `14eb747` was packaged and silently installed. The
+frontend built at 493.45 kB (gzip 109.82 kB) without a Vite size warning. The
+installer exited zero, and final package verification passed with no warnings.
+The package contained no configured database, credentials, private corpus,
+private analysis maps, or other forbidden runtime-state files.
+
+- installer SHA-256:
+  `0C4736355DC2A36436CDC5B5261BF5B6AED75B10523EB4FA10F639E5A18163A1`
+- installed executable SHA-256:
+  `D6E6055DB7574E54CFB178482B305AE803320BE487982AEE1A9F85F5E31C83B0`
+- installed sidecar SHA-256:
+  `66F34EC03020A5AE84D20076583760C9CF1B502BEA123BBC2041B422F9DEEC11`
+- verification report:
+  `exports/package_verify_20260920_211000.json`
+
+Pre- and post-install continuity backups were byte-identical at SHA-256
+`6FBA6E387BEA82456042D208780BCE7713A18469DC2580C096EF65E027648B23`.
+SQLite integrity remained `ok`; protected counts remained 24 Chat sessions,
+384 messages, zero personal Memory candidates, 295 comprehension concepts,
+249 teaching lifecycles, 2 Dream cycles, and 43 Dream reflections. No Selene
+process remained after verification.

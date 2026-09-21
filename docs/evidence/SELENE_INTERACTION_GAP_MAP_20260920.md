@@ -25,15 +25,16 @@ Organ Maturity Ledger, and package/install provenance. It did not run a live
 Q&A, create teaching, review Dream reflections, write Memory, mutate resident
 state, package, or install.
 
-Two current states must remain distinct:
+Two states were distinct at audit time:
 
 - **Newest source:** checkpoint `7190b8a`, including workspace scroll, Chat
   latest-message follow, Dream bulk review, and future-reflection quality work.
 - **Installed application:** clean checkpoint `60750d9`, containing
   declarative-WH, relevance, capability-status, and epistemic-integrity work.
 
-The newest UI and Dream changes are therefore implemented in source but not
-yet present in the installed executable.
+The later clean package from checkpoint `14eb747` now includes both the newer
+UI/Dream work and the selected conversational-seam repairs. See the follow-up
+repair evidence linked above for current install provenance.
 
 ## Executive coverage summary
 
@@ -321,9 +322,10 @@ been classified as teach, route, guard, architecture, or leave alone.
     carrier transport was unreliable, and SMS is provider-dependent. Existing
     source should not be summarized as dependable phone conversation.
 
-16. **Current source and installed behavior differ.** Workspace-wide scroll,
-    Chat newest-message follow, Dream bulk approval, and smarter future Dream
-    filtering are implemented but not installed.
+16. **Source/install drift existed at audit time and is now closed for this
+    checkpoint.** Workspace-wide scroll, Chat newest-message follow, Dream
+    bulk approval, smarter future Dream filtering, and the selected IGM repairs
+    are included in installed checkpoint `14eb747`.
 
 17. **Status projection drift exists.** The Organ Maturity Ledger's older
     Dream count and some Tendril wording lag newer evidence. The ledger's state

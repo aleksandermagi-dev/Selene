@@ -58,7 +58,15 @@ resident state. Verify it against Git and newer filesystem evidence.
   before one stale expected-variation list was corrected and its check passed.
   Evidence:
   `docs/evidence/SELENE_IGM_CONVERSATIONAL_SEAMS_REPAIR_20260920.md`.
-  This repair is verified in source but not yet packaged or installed.
+  Clean checkpoint `14eb747` is packaged and installed. Installer SHA-256 is
+  `0C4736355DC2A36436CDC5B5261BF5B6AED75B10523EB4FA10F639E5A18163A1`;
+  installed executable SHA-256 is
+  `D6E6055DB7574E54CFB178482B305AE803320BE487982AEE1A9F85F5E31C83B0`;
+  installed sidecar SHA-256 is
+  `66F34EC03020A5AE84D20076583760C9CF1B502BEA123BBC2041B422F9DEEC11`.
+  Package verification passed without warnings. Pre/post continuity backups
+  were byte-identical at SHA-256
+  `6FBA6E387BEA82456042D208780BCE7713A18469DC2580C096EF65E027648B23`.
 - Latest declarative-meaning and epistemic-integrity source checkpoint:
   `ed34202` (`Cultivate meaning and epistemic integrity`).
 - A read-only Dream review found two cycles and 43 pending provisional
@@ -70,7 +78,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   surface, so wheel input over the active page can scroll it rather than
   requiring the pointer to be over the sidebar. Narrow/mobile layouts retain
   natural document scrolling. Frontend build passed at 491.50 kB without a
-  Vite size warning. This UI repair is not yet packaged or installed.
+  Vite size warning. This UI repair is included in installed checkpoint
+  `14eb747`.
 - The current source edge also gives resident Chat bounded newest-message
   follow behavior: sends and replies follow the latest turn, intentional
   upward reading pauses background follow, and a `Latest` control returns to
@@ -80,8 +89,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   Study records. Future Dream cycles now require substantive correction
   lineage and source-specific cross-source overlap. Existing 43 resident
   reflections remain unchanged. Focused/adjacent checks passed 33 tests and
-  the frontend built at 493.45 kB without a Vite warning. This source is not
-  packaged or installed.
+  the frontend built at 493.45 kB without a Vite warning. This work is included
+  in installed checkpoint `14eb747`.
 - Clean documentation revision `60750d9` is packaged and installed. Final
   package verification passed with zero warnings. Installer SHA-256 is
   `DABE6EF79A9A5A8B22B196CFD1113EF1F1F3D4F651AA8F7615431FB50126BCE0`;
@@ -1573,8 +1582,8 @@ and installed sidecar SHA256
 Resident integrity remained `ok` and byte-for-byte unchanged at SHA256
 `4391C45B2BEBD79C09C6A66378B266C2DC64D989708786EB7667FCE8F1C0BF6A`.
 
-The exact resume point is installed source checkpoint `60750d9`, containing
-implementation checkpoint `ed34202`. Declarative WH meaning,
+The prior installed source checkpoint was `60750d9`, containing implementation
+checkpoint `ed34202`. Declarative WH meaning,
 downstream knowledge and association relevance, capability-status grammar,
 wrongness-versus-fabrication integrity, and first-person affect protection are
 implemented, boundedly verified, packaged, and installed. No automatic Q&A is
@@ -1587,21 +1596,20 @@ implementation need. If a new conversation defect appears, record the visible
 evidence first and cultivate its shared owner rather than patching prompt
 wording or teaching around a coverage defect.
 
-The current uninstalled source edge includes desktop workspace scroll
-ownership, resident Chat latest-message follow with non-disruptive pause while
-reading older turns, an Aleks-only atomic bulk approval route for untouched
-pending Dream reflections, and stronger future-cycle correction and
-cross-source signal filtering. The read-only review of all 43 resident Dream
-reflections remains preserved. No existing reflection was decided, routed,
-rewritten, or relabeled. This source is checkpointed. Package and reinstall
-only after Aleks explicitly requests it.
+Installed checkpoint `14eb747` includes desktop workspace scroll ownership,
+resident Chat latest-message follow with non-disruptive pause while reading
+older turns, an Aleks-only atomic bulk approval route for untouched pending
+Dream reflections, stronger future-cycle correction and cross-source signal
+filtering, and the first IGM conversational seams repair. The read-only review
+of all 43 resident Dream reflections remains preserved. No existing reflection
+was decided, routed, rewritten, or relabeled.
 
-The exact next resume point is to checkpoint the verified IGM conversational
-seams repair, package from that clean documented revision, silently reinstall,
-and confirm package privacy plus resident integrity. A broad live Q&A is not
-required for installation. After install, any conversational check should be
-ordinary and evidence-led rather than a bug search. The remaining IGM
-candidates stay observations until Aleks selects and classifies them.
+The exact current resume point is installed checkpoint `14eb747`. The first
+IGM conversational seams repair is complete. A broad live Q&A is not required.
+Aleks may use ordinary installed conversation; if a material interruption
+appears, preserve its visible evidence and cultivate the shared owner rather
+than searching for bugs or patching wording. The remaining IGM candidates
+stay observations until Aleks selects and classifies them.
 
 When Aleks requests a conversational check rather than a Q&A, use the Ordinary
 Conversational Check-In. Follow one natural thread, do not search for or invent
