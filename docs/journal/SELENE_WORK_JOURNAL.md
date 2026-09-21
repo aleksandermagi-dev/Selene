@@ -5880,6 +5880,8 @@ install, external action, or authority change occurred.
 **Evidence:**
 `docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`.
 
-**Next:** Create the source checkpoint. Reinstall only if Aleks asks. Treat the
-separate brief-astonishment expression seam as future cultivation evidence,
-not as part of this Memory repair.
+**Checkpoint:** `0c8565b` (`Add memory metacognition appraisal`).
+
+**Next:** Reinstall only if Aleks asks. Treat the separate brief-astonishment
+expression seam as future cultivation evidence, not as part of this Memory
+repair.

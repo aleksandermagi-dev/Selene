@@ -46,7 +46,8 @@ resident state. Verify it against Git and newer filesystem evidence.
   to reasoning and expression. Final Metacognition checks withheld-fragment
   scope. Compilation and 231 affected checks passed. No resident state,
   teaching, package, or install changed. Evidence:
-  `docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`.
+  `docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`. Source checkpoint:
+  `0c8565b` (`Add memory metacognition appraisal`).
 - Interaction Gap Mapping (`IGM`) is now a reusable read-only audit workflow.
   The first current map records conversational behavior by function, relevant
   organs, active and legacy guards, source-versus-installed state, and 20 gap
@@ -1614,14 +1615,14 @@ filtering, and the first IGM conversational seams repair. The read-only review
 of all 43 resident Dream reflections remains preserved. No existing reflection
 was decided, routed, rewritten, or relabeled.
 
-The exact current source edge is the verified Memory Metacognition
-implementation recorded in
+The exact current functional edge is checkpoint `0c8565b`, the verified Memory
+Metacognition implementation recorded in
 `docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`; it has not yet been
 packaged or installed. The currently installed checkpoint remains `14eb747`.
-Create a source checkpoint next. Reinstall only if Aleks asks. A broad live
-Q&A is not required. The brief-astonishment expression seam remains separate
-future cultivation evidence if it materially recurs. Other remaining IGM
-candidates stay observations until Aleks selects and classifies them.
+Reinstall only if Aleks asks. A broad live Q&A is not required. The
+brief-astonishment expression seam remains separate future cultivation
+evidence if it materially recurs. Other remaining IGM candidates stay
+observations until Aleks selects and classifies them.
 
 When Aleks requests a conversational check rather than a Q&A, use the Ordinary
 Conversational Check-In. Follow one natural thread, do not search for or invent
