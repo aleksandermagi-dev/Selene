@@ -106,6 +106,56 @@ def test_short_words_without_a_previous_turn_do_not_invent_context():
     assert result["kind"] == "none"
 
 
+def test_shared_understanding_check_uses_visible_session_meaning_without_inventing_memory():
+    context = _context("I am following the distinction.")
+    context["recent_user_texts"] = [
+        "The issue is not warmth itself; it is whether warmth fits the moment."
+    ]
+
+    follow_up = inspect_contextual_follow_up("You know what I mean?", context)
+    response = contextual_response_seed(follow_up)
+
+    assert follow_up["kind"] == "shared_understanding_check"
+    assert follow_up["preserve_active_topic"] is True
+    assert "warmth fits the moment" in response
+    assert follow_up["memory_write_active"] is False
+
+
+def test_vague_earlier_reference_resolves_one_landmark_and_clarifies_multiple():
+    one = _context("We can return to it.")
+    one["session_landmarks"] = [
+        {
+            "kind": "conclusion",
+            "topic": "question handoff",
+            "summary": "Ordinary question answers belong to the session handoff.",
+            "coverage_complete_at_recording": True,
+        }
+    ]
+    resolved = inspect_contextual_follow_up("That thing earlier.", one)
+
+    many = dict(one)
+    many["session_landmarks"] = [
+        *one["session_landmarks"],
+        {
+            "kind": "conclusion",
+            "topic": "implicit sarcasm",
+            "summary": "Visible adverse context can reverse a positive surface reading.",
+            "coverage_complete_at_recording": True,
+        },
+    ]
+    ambiguous = inspect_contextual_follow_up("That thing earlier.", many)
+    decision = apply_contextual_intent(
+        classify_chat_intent("That thing earlier."), ambiguous
+    )
+
+    assert resolved["kind"] == "named_callback"
+    assert contextual_response_seed(resolved) == one["session_landmarks"][0]["summary"]
+    assert ambiguous["kind"] == "ambiguous_session_return"
+    assert decision["intent"] == "clarification"
+    assert "question handoff" in contextual_response_seed(ambiguous)
+    assert "implicit sarcasm" in contextual_response_seed(ambiguous)
+
+
 def test_bare_reason_follow_up_uses_only_the_explicit_reason_in_the_previous_answer():
     previous = (
         "I prefer the shared-schedule pilot first because it keeps the limited rooms and volunteers flexible. "

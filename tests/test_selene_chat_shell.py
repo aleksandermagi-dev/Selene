@@ -2233,6 +2233,7 @@ def test_active_selene_chat_preserves_partial_agreement_before_the_follow_up_ans
                 "Yes, that changes the comparison.",
                 "That is an important qualification.",
                 "Right, that condition changes the answer.",
+                "I have the qualifier.",
             )
     )
     _assert_locked(result)

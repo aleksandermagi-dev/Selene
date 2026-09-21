@@ -1030,7 +1030,7 @@ def _social_match(value: str, kind: str) -> bool:
     if kind == "affirmation":
         return bool(
             re.search(
-                r"(?:^|[.!?;]\s*)(?:yes|right|exactly|agreed|sounds good|gotcha|that makes sense)"
+                r"(?:^|[.!?;]\s*)(?:yes|yeah|yep|yup|okay|ok|absolutely|right|exactly|agreed|sounds good|gotcha|that makes sense)"
                 r"(?:\s|[,.!?;]|$)",
                 value,
             )

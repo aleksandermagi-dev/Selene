@@ -92,6 +92,10 @@ individually defined as Selene.
 
 ## Language, Conversation, And Memory
 
+- [Interaction Gap Mapping Workflow](SELENE_INTERACTION_GAP_MAPPING_WORKFLOW.md)
+  — reusable read-only audit method for tracing everyday interaction behavior
+  from turn meaning through ownership, guards, expression, and visible reply
+  without teaching or repairing during the mapping pass.
 - [Mature Conversational Voice Program](SELENE_MATURE_CONVERSATIONAL_VOICE_PROGRAM_20260813.md)
 - [Native Language Organ v1](SELENE_NATIVE_LANGUAGE_ORGAN_V1_20260712.md)
 - [Chat Generation Replacement Map](SELENE_CHAT_GENERATION_REPLACEMENT_MAP_20260612.md)

@@ -21,7 +21,10 @@ current capability questions now use a read-only Organ Maturity Ledger owner,
 and one bounded focused-question receipt coordinates material gaps;
 declarative WH clauses now remain observations, knowledge and association
 handoffs require material relevance, and epistemic integrity explicitly keeps
-wrongness, support integrity, fabrication, and first-person affect separate
+wrongness, support integrity, fabrication, and first-person affect separate;
+the first IGM conversational seams are source-repaired through a general
+session Interaction Handoff, visible-landmark callbacks, shared-understanding
+checks, and contextual implicit-sarcasm inference
 
 ## Purpose
 
@@ -34,6 +37,28 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Interaction Gap Mapping (`IGM`) is now a reusable read-only audit workflow.
+  The first current map records conversational behavior by function, relevant
+  organs, active and legacy guards, source-versus-installed state, and 20 gap
+  candidates without changing Selene. Its main conclusion is that the central
+  conversational path is present; the remaining seams are primarily finite
+  expression breadth, ambiguous micro-turns, continuity availability, legacy
+  compatibility, projection drift, and future interfaces. Artifacts:
+  `docs/architecture/SELENE_INTERACTION_GAP_MAPPING_WORKFLOW.md` and
+  `docs/evidence/SELENE_INTERACTION_GAP_MAP_20260920.md`.
+- Aleks selected IGM candidates 1, 3, and 4 for a bounded root repair.
+  Ordinary question answers now belong to a general session Interaction
+  Handoff instead of Conversational Teaching; affirmative, negative,
+  qualified, deferred, tentative, and reserved replies stay distinct.
+  Contextual Speech now handles visible `you know what I mean?` checks and
+  vague returns to one or several session landmarks. Brief positive wording
+  can be provisionally sarcastic only when visible adverse context supports
+  that reading. Arbitrary typo guessing remains unavailable. Compilation and
+  106 focused/adjacent checks passed; the broader adjacent run reached 241/242
+  before one stale expected-variation list was corrected and its check passed.
+  Evidence:
+  `docs/evidence/SELENE_IGM_CONVERSATIONAL_SEAMS_REPAIR_20260920.md`.
+  This repair is verified in source but not yet packaged or installed.
 - Latest declarative-meaning and epistemic-integrity source checkpoint:
   `ed34202` (`Cultivate meaning and epistemic integrity`).
 - A read-only Dream review found two cycles and 43 pending provisional
@@ -1570,6 +1595,13 @@ cross-source signal filtering. The read-only review of all 43 resident Dream
 reflections remains preserved. No existing reflection was decided, routed,
 rewritten, or relabeled. This source is checkpointed. Package and reinstall
 only after Aleks explicitly requests it.
+
+The exact next resume point is to checkpoint the verified IGM conversational
+seams repair, package from that clean documented revision, silently reinstall,
+and confirm package privacy plus resident integrity. A broad live Q&A is not
+required for installation. After install, any conversational check should be
+ordinary and evidence-led rather than a bug search. The remaining IGM
+candidates stay observations until Aleks selects and classifies them.
 
 When Aleks requests a conversational check rather than a Q&A, use the Ordinary
 Conversational Check-In. Follow one natural thread, do not search for or invent

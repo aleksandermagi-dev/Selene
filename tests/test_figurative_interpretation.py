@@ -89,6 +89,31 @@ def test_sarcasm_requires_explicit_or_multiple_visible_cues():
     assert "sarcasm" in explicit["detected_forms"]
 
 
+def test_brief_positive_surface_can_be_sarcastic_only_with_adverse_visible_context():
+    failed = interpret_figurative_language(
+        {
+            "text": "Wonderful.",
+            "conversation_context": {
+                "previous_turn": {"role": "selene", "preview": "The build failed again."}
+            },
+        }
+    )
+    passed = interpret_figurative_language(
+        {
+            "text": "Wonderful.",
+            "conversation_context": {
+                "previous_turn": {"role": "selene", "preview": "The build passed and is working now."}
+            },
+        }
+    )
+
+    assert failed["selected_reading"] == "figurative"
+    assert "sarcasm" in failed["detected_forms"]
+    assert failed["confidence"] == "provisional"
+    assert passed["selected_reading"] == "literal"
+    assert "sarcasm" not in passed["detected_forms"]
+
+
 def test_ordinary_comparison_is_not_misclassified_as_an_analogy():
     packet = interpret_figurative_language(
         {"text": "Compare fractions and conversational uncertainty."}

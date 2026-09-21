@@ -526,7 +526,7 @@ def _sarcasm(text: str, context_text: str) -> dict[str, Any]:
         marker in lower
         for marker in ("i'm being sarcastic", "i am being sarcastic", "that was sarcasm", "sarcastically")
     )
-    contradiction = any(
+    memorized_contradiction = any(
         marker in lower
         for marker in (
             "great, another",
@@ -537,14 +537,32 @@ def _sarcasm(text: str, context_text: str) -> dict[str, Any]:
             "very convenient",
         )
     )
-    adverse_context = any(
-        marker in f"{lower} {context_text}"
-        for marker in (
-            "broke", "failed", "crashed", "problem", "storm", "lost", "wrong",
-            "power went out", "power goes out", "outage", "interrupted",
+    positive_surface = bool(
+        re.fullmatch(
+            r"\s*(?:oh[,.!]?\s+)?(?:great|wonderful|perfect|lovely|fantastic|"
+            r"amazing|excellent|nice|brilliant)[.!?]*\s*",
+            lower,
         )
     )
-    if not explicit and not (contradiction and adverse_context):
+    visible_context = f"{lower} {context_text.lower()}"
+    adverse_context = any(
+        marker in visible_context
+        for marker in (
+            "broke", "failed", "crashed", "problem", "storm", "lost", "wrong",
+            "error", "bug", "power went out", "power goes out", "outage", "interrupted",
+        )
+    )
+    resolution_context = any(
+        marker in visible_context
+        for marker in (
+            "passed", "fixed", "resolved", "repaired", "working now",
+            "works now", "succeeded", "successful", "all good",
+        )
+    )
+    contradiction = memorized_contradiction or (
+        positive_surface and adverse_context and not resolution_context
+    )
+    if not explicit and not contradiction:
         return {}
     return {
         "form": "sarcasm",

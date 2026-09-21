@@ -335,6 +335,54 @@ ACT_REALIZATIONS: dict[str, tuple[str, ...]] = {
         "I can help trace it when you are ready",
         "You do not have to untangle it alone",
     ),
+    "accept_question_handoff": (
+        "All right",
+        "Okay",
+        "Sounds good",
+        "Yes, we can do that",
+        "Got it",
+        "I'm with you",
+    ),
+    "decline_question_handoff": (
+        "All right",
+        "Okay, we can leave it there",
+        "Got it—no pressure",
+        "That's fine",
+        "Understood",
+        "We do not have to do that",
+    ),
+    "defer_question_handoff": (
+        "Sure, later is fine",
+        "Okay, we can come back to it",
+        "No rush—we can leave it for later",
+        "All right, we can hold that thought",
+        "Got it; not right now",
+        "That can wait",
+    ),
+    "hold_question_handoff": (
+        "That's okay; you do not have to decide yet",
+        "We can leave it open for now",
+        "No rush",
+        "Fair enough—we can hold there",
+        "You can think on it",
+        "Uncertainty is a valid answer for now",
+    ),
+    "receive_reserved_acceptance": (
+        "All right",
+        "Okay",
+        "Got it",
+        "We can do that",
+        "Understood",
+        "I have your answer",
+    ),
+    "receive_stated_reason": (
+        "That makes sense",
+        "I understand your reason",
+        "Got it—that explains it",
+        "I see why",
+        "That answers what I was asking",
+        "I have the reason",
+    ),
 }
 
 
@@ -343,6 +391,12 @@ ACKNOWLEDGEMENT_ACTS: dict[str, str] = {
     "gratitude": "receive_thanks",
     "warm_connection": "signal_presence",
     "partial_agreement": "acknowledge_qualification",
+    "handoff_affirmative": "accept_question_handoff",
+    "handoff_negative": "decline_question_handoff",
+    "handoff_deferred": "defer_question_handoff",
+    "handoff_tentative": "hold_question_handoff",
+    "handoff_reserved_acceptance": "receive_reserved_acceptance",
+    "handoff_reason_received": "receive_stated_reason",
 }
 
 

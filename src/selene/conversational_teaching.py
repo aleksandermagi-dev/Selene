@@ -7,6 +7,11 @@ from hashlib import sha256
 from typing import Any
 
 from .comprehension_integration import propose_comprehension_concept
+from .interaction_handoff import (
+    build_assistant_question_handoff,
+    classify_question_response,
+    realize_question_response,
+)
 from .registry import truncate
 from .teaching_lifecycle import (
     acquire_teaching_item,
@@ -38,6 +43,7 @@ GUARDS: dict[str, Any] = {
 
 GAP_PREEMPTING_RESPONSE_SOURCES = {
     "approved_comprehension",
+    "assistant_question_response",
     "attributable_dream_reflection",
     "conversation_policy",
     "conversational_memory_action",
@@ -107,15 +113,6 @@ _EXPLICIT_TEACHING_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ),
 )
 
-_YES = {
-    "yes", "yeah", "yep", "yup", "sure", "okay", "ok", "absolutely",
-    "go ahead", "please do", "i can", "i will", "of course",
-}
-_NO = {
-    "no", "nope", "nah", "not now", "maybe later", "i'd rather not",
-    "id rather not", "do not", "don't", "dont",
-}
-
 _TIME_SENSITIVE = (
     "today", "tonight", "tomorrow", "yesterday", "right now", "currently",
     "current price", "latest", "live score", "weather", "forecast", "president",
@@ -171,7 +168,8 @@ def plan_conversational_teaching_turn(
     diagnostic_only = payload.get("diagnostic_only") is True
     hard_boundary = payload.get("hard_boundary") is True
     prior = _latest_assistant_question_handoff(conn, session_id)
-    answer_kind = _brief_answer_kind(text)
+    response = classify_question_response(text, prior)
+    answer_kind = str(response.get("answer_kind") or "not_applicable")
     base = {
         "status": "conversational_teaching_not_activated",
         "action": "none",
@@ -194,19 +192,39 @@ def plan_conversational_teaching_turn(
 
     prior_kind = str(prior.get("question_kind") or "")
     if prior_kind == "teaching_invitation":
-        if answer_kind == "negative":
+        if answer_kind in {"negative", "negative_with_reason", "deferred"}:
+            realized = realize_question_response(response)
             return _with_guards(
                 {
                     **base,
                     "status": "conversational_teaching_invitation_declined",
                     "action": "decline_teaching_invitation",
-                    "explicit_activation": True,
-                    "activation_cue": "answer_to_pending_teaching_invitation",
-                    "response_seed": "Okay. We can leave that gap open for now—no pressure.",
-                    "assistant_question_response": _question_response(prior, "negative", text),
+                    "explicit_activation": False,
+                    "activation_cue": "",
+                    "response_seed": (
+                        "Okay. We can leave that gap open for now—no pressure."
+                        if answer_kind in {"negative", "negative_with_reason"}
+                        else str(realized.get("response_seed") or "")
+                    ),
+                    "assistant_question_response": realized,
+                }
+            )
+        if answer_kind in {"tentative", "affirmative_reserved", "unclear_for_open_question"}:
+            realized = realize_question_response(response)
+            return _with_guards(
+                {
+                    **base,
+                    "status": "conversational_teaching_invitation_held",
+                    "action": "answer_assistant_question",
+                    "explicit_activation": False,
+                    "activation_cue": "",
+                    "response_seed": str(realized.get("response_seed") or ""),
+                    "assistant_question_response": realized,
+                    "reason": "teaching_requires_clear_explicit_acceptance",
                 }
             )
         if answer_kind == "affirmative" and _brief_answer_only(text):
+            realized = realize_question_response(response)
             return _with_guards(
                 {
                     **base,
@@ -216,7 +234,7 @@ def plan_conversational_teaching_turn(
                     "activation_cue": "answer_to_pending_teaching_invitation",
                     "response_seed": _teaching_prompt(prior),
                     "outgoing_question_handoff": {**prior, "status": "awaiting_teaching_content"},
-                    "assistant_question_response": _question_response(prior, "affirmative", text),
+                    "assistant_question_response": realized,
                 }
             )
         leading_acceptance = _leading_acceptance_present(text)
@@ -233,31 +251,19 @@ def plan_conversational_teaching_turn(
         claim = _bind_answer_to_pending_question(claim, prior)
         return _planned_claim(base, claim, cue, prior, speaker)
 
-    if prior and answer_kind in {"affirmative", "negative"}:
-        response = _question_response(prior, answer_kind, text)
-        if response:
+    if prior and response.get("recognized") is True:
+        realized = realize_question_response(response)
+        if answer_kind != "unclear_for_open_question":
             return _with_guards(
                 {
                     **base,
                     "status": "assistant_question_answer_received",
                     "action": "answer_assistant_question",
-                    "assistant_question_response": response,
-                    "response_seed": str(response.get("response_seed") or ""),
+                    "assistant_question_response": realized,
+                    "response_seed": str(realized.get("response_seed") or ""),
                     "reason": "session_scoped_answer_to_selene_question",
                 }
             )
-    if prior_kind == "reason_question" and text and answer_kind == "expanded":
-        response = _question_response(prior, "stated_reason", text)
-        return _with_guards(
-            {
-                **base,
-                "status": "assistant_reason_answer_received",
-                "action": "answer_assistant_question",
-                "assistant_question_response": response,
-                "response_seed": str(response.get("response_seed") or ""),
-                "reason": "user_stated_reason_is_received_not_overruled",
-            }
-        )
     return _with_guards({**base, "reason": "no_explicit_teaching_activation"})
 
 
@@ -679,45 +685,6 @@ def build_learning_gap_owner_eligibility(
     )
 
 
-def build_assistant_question_handoff(
-    candidate_text: str,
-    *,
-    explicit_handoff: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    if isinstance(explicit_handoff, dict) and explicit_handoff:
-        return _with_guards(dict(explicit_handoff))
-    questions = [item.strip() for item in re.findall(r"(?:^|(?<=[.!]))\s*([^?]{2,300}\?)", str(candidate_text or ""))]
-    if not questions:
-        return _with_guards({"status": "no_assistant_question_handoff", "question_kind": "none"})
-    question = truncate(questions[-1], 320)
-    lower = " ".join(question.lower().split())
-    direct = bool(re.search(r"\b(?:you|your|we|us)\b", lower))
-    if not direct:
-        return _with_guards({"status": "no_assistant_question_handoff", "question_kind": "none", "reason": "question_not_directed_to_user"})
-    if "teach me" in lower or "teach me about" in lower:
-        kind = "teaching_invitation"
-    elif re.search(r"\bwhy\b", lower):
-        kind = "reason_question"
-    elif re.search(r"\b(?:how was your day|did your day|has your day|are you doing|how are you)\b", lower):
-        kind = "personal_curiosity"
-    elif re.match(r"^(?:can|could|would|do|did|should)\b", lower):
-        kind = "permission_or_proposal"
-    else:
-        kind = "ordinary_curiosity"
-    return _with_guards(
-        {
-            "status": "assistant_question_handoff_ready",
-            "question_kind": kind,
-            "question": question,
-            "session_scoped": True,
-            "one_turn_answer_context": True,
-            "ordinary_curiosity_is_teaching": False,
-            "review_status": "status_only",
-            "provenance_boundary": CONVERSATIONAL_TEACHING_BOUNDARY,
-        }
-    )
-
-
 def _planned_claim(
     base: dict[str, Any],
     claim: str,
@@ -921,49 +888,6 @@ def _latest_assistant_question_handoff(conn: sqlite3.Connection, session_id: int
         return {}
     handoff = payload.get("assistant_question_handoff") if isinstance(payload, dict) else {}
     return handoff if isinstance(handoff, dict) and str(handoff.get("question_kind") or "") != "none" else {}
-
-
-def _question_response(handoff: dict[str, Any], answer_kind: str, text: str) -> dict[str, Any]:
-    kind = str(handoff.get("question_kind") or "ordinary_curiosity")
-    question = str(handoff.get("question") or "")
-    if kind == "teaching_invitation":
-        seed = _teaching_prompt(handoff) if answer_kind == "affirmative" else "Okay. We can leave that gap open for now—no pressure."
-    elif kind == "personal_curiosity":
-        seed = (
-            "I'm glad :) What made it a good day?"
-            if answer_kind == "affirmative"
-            else "I'm sorry it was a rough one. Do you want to tell me what happened?"
-        )
-    elif kind == "reason_question" and answer_kind == "stated_reason":
-        seed = "I understand. I'll take that as your reason rather than argue you out of it."
-    elif kind == "permission_or_proposal":
-        seed = "All right—let's do it." if answer_kind == "affirmative" else "Okay. We can leave that there."
-    else:
-        seed = "Got it :)" if answer_kind == "affirmative" else "Got it. We can leave that there."
-    return {
-        "status": "assistant_question_answer_context_ready",
-        "question_kind": kind,
-        "question": truncate(question, 320),
-        "answer_kind": answer_kind,
-        "user_answer": truncate(text, 360),
-        "response_seed": seed,
-        "user_boundary_accepted": answer_kind == "negative",
-        "may_ask_why_without_pressure": answer_kind == "negative",
-        "stated_reason_must_be_received_not_overruled": answer_kind in {"negative", "stated_reason"},
-        "stated_reason_is_user_authored": answer_kind == "stated_reason",
-        "follow_up_may_clarify_but_may_not_override_user_boundary": True,
-        "teaching_activated": kind == "teaching_invitation" and answer_kind not in {"negative"},
-        "session_scoped": True,
-    }
-
-
-def _brief_answer_kind(text: str) -> str:
-    normalized = re.sub(r"[^a-z0-9']+", " ", text.lower().replace("’", "'")).strip()
-    if normalized in _YES or any(normalized.startswith(f"{item} ") for item in _YES):
-        return "affirmative"
-    if normalized in _NO or any(normalized.startswith(f"{item} ") for item in _NO):
-        return "negative"
-    return "expanded"
 
 
 def _brief_answer_only(text: str) -> bool:

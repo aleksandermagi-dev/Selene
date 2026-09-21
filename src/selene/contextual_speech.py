@@ -38,6 +38,8 @@ def inspect_contextual_follow_up(
     session_landmarks = [
         item for item in context.get("session_landmarks") or [] if isinstance(item, dict)
     ][-64:]
+    eligible_landmarks = _eligible_session_landmarks(session_landmarks)
+    matched_session_landmarks = _matching_landmarks(prompt, session_landmarks)
     deferred_return = _is_deferred_return_closure(normalized)
 
     kind = "none"
@@ -108,6 +110,21 @@ def inspect_contextual_follow_up(
         normalized,
     ):
         kind, marker = "session_summary_request", "summarize_active_session"
+    elif normalized in {
+        "you know what i mean", "you get what i mean", "know what i mean",
+        "you know what i mean right", "you get what i mean right",
+    }:
+        kind, marker = "shared_understanding_check", "shared_meaning_from_visible_context"
+    elif normalized in {
+        "that thing earlier", "the thing earlier", "the thing from earlier",
+        "that part earlier", "that part from earlier",
+    }:
+        if len(eligible_landmarks) == 1:
+            kind, marker = "named_callback", "single_visible_session_landmark"
+            matched_session_landmarks = eligible_landmarks
+        elif len(eligible_landmarks) > 1:
+            kind, marker = "ambiguous_session_return", "multiple_visible_session_landmarks"
+            matched_session_landmarks = eligible_landmarks[-3:]
     elif not deferred_return and re.search(
         r"\b(?:earlier when|back to what|return to what|the point about|what you said about|we discussed)\b|"
         r"\b(?:back|return|going back)\s+to\s+[^,;:.!?]+",
@@ -194,7 +211,7 @@ def inspect_contextual_follow_up(
         "recent_assistant_texts": [truncate(item, 360) for item in recent_assistant[-4:]],
         "recent_user_texts": [truncate(item, 360) for item in recent_user[-8:]],
         "session_landmarks": session_landmarks,
-        "matched_session_landmarks": _matching_landmarks(prompt, session_landmarks),
+        "matched_session_landmarks": matched_session_landmarks,
         "previous_confidence": previous.get("confidence_vector") if isinstance(previous.get("confidence_vector"), dict) else {},
         "prompt": truncate(str(prompt or ""), 600),
         "resolved_prompt": truncate(resolved_prompt, 1200),
@@ -209,7 +226,7 @@ def inspect_contextual_follow_up(
             "constraint_refinement", "priority_follow_up", "session_summary_request", "analogy_transfer_request",
             "named_callback", "meaning_correction", "answer_development",
             "immediate_user_callback", "immediate_answer_callback", "comparison_follow_up",
-            "clarification_fulfillment",
+            "clarification_fulfillment", "shared_understanding_check", "ambiguous_session_return",
         },
         "session_scoped_only": True,
         "memory_write_active": False,
@@ -253,6 +270,32 @@ def apply_contextual_intent(
                 "self_state_requested": False,
                 "memory_recall_requested": False,
                 "content_response_requested": True,
+                "social_turn": False,
+                "confidence": "high",
+            }
+        )
+    elif kind == "shared_understanding_check":
+        result.update(
+            {
+                "intent": "affirmation",
+                "answer_shape": "confirm_or_bound_shared_understanding",
+                "primary_organ": "Conversation Spine",
+                "supporting_organs": ["Native Language Organ"],
+                "reasoning_requested": False,
+                "content_response_requested": False,
+                "social_turn": True,
+                "confidence": "bounded",
+            }
+        )
+    elif kind == "ambiguous_session_return":
+        result.update(
+            {
+                "intent": "clarification",
+                "answer_shape": "focused_session_reference_choice",
+                "primary_organ": "Conversation Spine",
+                "supporting_organs": ["Native Language Organ"],
+                "reasoning_requested": False,
+                "content_response_requested": False,
                 "social_turn": False,
                 "confidence": "high",
             }
@@ -388,6 +431,23 @@ def contextual_response_seed(
             )
         return "I am reasonably confident, but not absolute; I would change the answer if stronger evidence no longer fit it."
 
+    if kind == "shared_understanding_check":
+        source = previous_user or previous
+        if source:
+            return f"I think I do—you mean {_bounded_shared_meaning(source)}."
+        return "I think I have the direction, but tell me which part you mean if I missed it."
+
+    if kind == "ambiguous_session_return" and matched_landmarks:
+        labels = [_landmark_choice_label(item) for item in matched_landmarks[:3]]
+        labels = [item for item in labels if item]
+        if len(labels) == 2:
+            choices = f"{labels[0]} or {labels[1]}"
+        elif len(labels) > 2:
+            choices = ", ".join(labels[:-1]) + f", or {labels[-1]}"
+        else:
+            choices = labels[0] if labels else "one of the earlier points"
+        return f"Which earlier part do you mean—{choices}?"
+
     if kind == "immediate_user_callback" and previous_user:
         callback_subject = _bounded_user_callback_subject(previous_user)
         return f"You're celebrating this result: {callback_subject}."
@@ -402,6 +462,8 @@ def contextual_response_seed(
         return _bounded_preservation_callback(previous)
 
     if kind == "named_callback" and matched_landmarks:
+        if marker == "single_visible_session_landmark":
+            return str(matched_landmarks[0].get("summary") or "").strip()
         callback_prompt = str(contextual.get("prompt") or "").lower()
         if re.search(
             r"\b(?:what|which|who|where|when|remind me)\b",
@@ -900,6 +962,49 @@ def _summary_fact_clauses(facts: list[dict[str, Any]], requested_count: int) -> 
         del clauses[merge_index]
         del kinds[merge_index]
     return clauses[:requested_count]
+
+
+def _eligible_session_landmarks(landmarks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    eligible: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in landmarks:
+        if item.get("coverage_complete_at_recording") is False:
+            continue
+        summary = " ".join(str(item.get("summary") or "").split()).strip()
+        if not summary:
+            continue
+        key = summary.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        eligible.append(item)
+    return eligible
+
+
+def _landmark_choice_label(landmark: dict[str, Any]) -> str:
+    topic = " ".join(str(landmark.get("topic") or "").split()).strip(" .")
+    if topic and topic.casefold() not in {"conversation", "general", "none"}:
+        return truncate(topic, 80)
+    summary = " ".join(str(landmark.get("summary") or "").split()).strip(" .")
+    if not summary:
+        return ""
+    words = summary.split()
+    return truncate(" ".join(words[:10]), 90)
+
+
+def _bounded_shared_meaning(value: str) -> str:
+    clean = " ".join(str(value or "").split()).strip(" .!?")
+    clean = re.sub(
+        r"^(?:what i mean is|i mean|the point is|basically)\s+",
+        "",
+        clean,
+        flags=re.IGNORECASE,
+    ).strip()
+    if not clean:
+        return "the point you just made"
+    if clean[0].isupper():
+        clean = clean[0].lower() + clean[1:]
+    return truncate(clean, 420)
 
 
 def _matching_landmarks(prompt: str, landmarks: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -1,5 +1,7 @@
 # Evidence
 
+- [Selene IGM Conversational Seams Repair (2026-09-20)](SELENE_IGM_CONVERSATIONAL_SEAMS_REPAIR_20260920.md)
+
 - [Resident-Authority Post-Install Gentle Q&A](SELENE_RESIDENT_AUTHORITY_POST_INSTALL_GENTLE_QNA_20260824.md)
 - [Post-Archive-Cleanup Gentle Q&A](SELENE_POST_QNA_CLEANUP_GENTLE_QNA_20260824.md)
 
@@ -16,6 +18,10 @@ a prototype result into a universal conclusion.
 
 ## Current Baseline
 
+- [Interaction Gap Map — September 20, 2026](SELENE_INTERACTION_GAP_MAP_20260920.md)
+  — read-only behavior-first map of everyday conversational coverage, relevant
+  organs, active and legacy guards, source-versus-installed state, and small
+  interaction seams; findings are observations, not a repair list.
 - [Conversation Cultivation Phase 11 — Integrated Stabilization — September 13, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_11_INTEGRATED_STABILIZATION_20260913.md)
   — repository-wide verification, deictic correction recomposition, function-subject knowledge alignment, resident integrity, and the package/install edge.
 - [Conversation Cultivation Phase 11 — Installed Gentle Q&A — September 13, 2026](SELENE_CONVERSATION_CULTIVATION_PHASE_11_INSTALLED_QNA_20260913.md)

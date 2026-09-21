@@ -45,11 +45,11 @@ from .commitment_anomaly_coordination import inspect_visible_commitment_claim
 from .conversational_contribution import build_conversational_contribution_packet
 from .conversational_teaching import (
     apply_conversational_teaching,
-    build_assistant_question_handoff,
     build_learning_gap_invitation,
     build_learning_gap_owner_eligibility,
     plan_conversational_teaching_turn,
 )
+from .interaction_handoff import build_assistant_question_handoff
 from .associative_intuition import build_associative_intuition_bridge
 from .long_thread_endurance import build_long_thread_endurance_plan
 from .conversation_spine import (
@@ -856,7 +856,13 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     reasoning_content_seed = str(intelligence_support.get("best_current_answer") or "")
     language_content_seed = str(language_capability.get("content_seed") or "")
-    conversational_teaching_reply = str(conversational_teaching.get("response_seed") or "")
+    interaction_reply = str(conversational_teaching.get("response_seed") or "")
+    assistant_question_reply = (
+        interaction_reply
+        if str(conversational_teaching.get("action") or "") == "answer_assistant_question"
+        else ""
+    )
+    conversational_teaching_reply = "" if assistant_question_reply else interaction_reply
     learning_gap_reply = str(learning_gap_invitation.get("response_seed") or "")
     if input_clarification_required:
         learning_gap_invitation = {
@@ -872,6 +878,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         meaning_text,
         _visible_speech_seed_candidates(
             input_clarification_reply=str(input_clarification.get("response_seed") or ""),
+            assistant_question_reply=assistant_question_reply,
             conversational_teaching_reply=conversational_teaching_reply,
             learning_gap_reply=learning_gap_reply,
             figurative_clarification_reply=figurative_clarification_reply,
@@ -1510,6 +1517,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     )
     visible_speech_candidates = _visible_speech_seed_candidates(
         input_clarification_reply=str(input_clarification.get("response_seed") or ""),
+        assistant_question_reply=assistant_question_reply,
         conversational_teaching_reply=conversational_teaching_reply,
         learning_gap_reply=learning_gap_reply,
         figurative_clarification_reply=figurative_clarification_reply,
@@ -1798,6 +1806,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         }
     elif str(visible_speech_seed.get("selected_source_id") or "") in {
         "current_session_facts",
+        "assistant_question_response",
         "input_meaning_clarification",
         "explicit_humor_request",
         "figurative_meaning_clarification",
@@ -3636,6 +3645,7 @@ def _dream_reflection_response_seed(
 def _visible_speech_seed_candidates(
     *,
     input_clarification_reply: str = "",
+    assistant_question_reply: str = "",
     conversational_teaching_reply: str = "",
     learning_gap_reply: str = "",
     figurative_clarification_reply: str = "",
@@ -3673,9 +3683,13 @@ def _visible_speech_seed_candidates(
             "text": input_clarification_reply,
         },
         {
-            "source_id": "conversational_teaching",
+            "source_id": (
+                "assistant_question_response"
+                if assistant_question_reply
+                else "conversational_teaching"
+            ),
             "source_class": "conversation",
-            "text": conversational_teaching_reply,
+            "text": assistant_question_reply or conversational_teaching_reply,
         },
         {
             "source_id": "learning_gap_invitation",
@@ -5443,6 +5457,7 @@ def _preserve_bounded_conversation_invariants(
     if source_id not in {
         "bounded_answer_completion",
         "current_session_facts",
+        "assistant_question_response",
         "conversational_teaching",
         "learning_gap_invitation",
         "input_meaning_clarification",

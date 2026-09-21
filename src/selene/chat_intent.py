@@ -175,6 +175,12 @@ GRATITUDE_PATTERNS = (
 
 AFFIRMATION_PATTERNS = (
     "yes",
+    "yeah",
+    "yep",
+    "yup",
+    "okay",
+    "ok",
+    "absolutely",
     "exactly",
     "agreed",
     "sounds good",

@@ -40,6 +40,13 @@ def test_shared_intent_routes_distinct_chat_meanings():
         assert (decision["intent"], decision["primary_organ"]) == expected
 
 
+def test_ordinary_brief_agreement_forms_route_as_affirmation():
+    for prompt in ("Yeah.", "Yep.", "Yup.", "Okay.", "Absolutely."):
+        decision = classify_chat_intent(prompt)
+        assert decision["intent"] == "affirmation"
+        assert decision["content_response_requested"] is False
+
+
 def test_social_or_corrective_opening_does_not_hide_a_content_request():
     correction = classify_chat_intent(
         "Ah, I meant the conversation lessons, not sequence words. What changed in back-and-forth now?"

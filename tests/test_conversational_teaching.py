@@ -312,11 +312,8 @@ def test_auxiliary_question_gets_a_natural_subject_and_recall_retires_the_old_ga
     assert "missing supporting information" not in recalled["candidate_text"].lower()
     assert "without guessing" not in recalled["candidate_text"].lower()
     assert recalled["formation_braid"]["selected_unit_count"] == 1
-    assert any(
-        item["source_id"] == "intelligence_os_answer"
-        and item["reason"] == "superseded_gap_after_supported_answer"
-        for item in recalled["formation_braid"]["excluded_candidates"]
-    )
+    assert recalled["learning_gap_invitation"]["offered"] is False
+    assert recalled["visible_speech_seed"]["selected_source_id"] == "approved_comprehension"
     assert recalled["reviewed_memory_write_occurred"] is False
     assert recalled["conversational_memory_proposal_created"] is False
 
@@ -341,6 +338,43 @@ def test_ordinary_curiosity_yes_no_handoff_never_becomes_teaching(tmp_path):
     assert answer["explicit_activation"] is False
     assert answer["assistant_question_response"]["user_boundary_accepted"] is True
     assert answer["assistant_question_response"]["teaching_activated"] is False
+
+
+def test_deferred_or_tentative_teaching_answer_does_not_activate_learning(tmp_path):
+    conn = _conn(tmp_path)
+    handoff = {
+        **build_assistant_question_handoff("Can you teach me?"),
+        "question_kind": "teaching_invitation",
+        "subject": "the sky",
+    }
+
+    for text, expected in (("Yeah, but later.", "deferred"), ("Maybe.", "tentative")):
+        session_id = _record_assistant_handoff(conn, handoff)
+        answer = plan_conversational_teaching_turn(
+            conn,
+            {"session_id": session_id, "text": text, "speaker_envelope": _aleks_speaker()},
+        )
+
+        assert answer["action"] in {"decline_teaching_invitation", "answer_assistant_question"}
+        assert answer["explicit_activation"] is False
+        assert answer["assistant_question_response"]["answer_kind"] == expected
+        assert answer["assistant_question_response"]["teaching_activated"] is False
+
+
+def test_open_question_does_not_consume_bare_yes_as_a_complete_answer(tmp_path):
+    conn = _conn(tmp_path)
+    handoff = build_assistant_question_handoff("What made the result stand out to you?")
+    session_id = _record_assistant_handoff(conn, handoff)
+
+    answer = plan_conversational_teaching_turn(
+        conn,
+        {"session_id": session_id, "text": "Yeah.", "speaker_envelope": _aleks_speaker()},
+    )
+
+    assert handoff["expected_response_shape"] == "open"
+    assert answer["action"] == "none"
+    assert answer["memory_write_active"] is False
+    assert answer["ordinary_conversation_is_teaching"] is False
 
 
 def test_plain_factual_statement_after_teaching_invitation_is_not_silently_learned(tmp_path):

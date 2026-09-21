@@ -5757,3 +5757,69 @@ occurred.
 **Next:** Checkpoint the source. Package and reinstall only if Aleks explicitly
 asks. A later non-blocking UI pass may collapse or filter reviewed Dream
 history so the page defaults to current pending work.
+
+### 2026-09-20 — Interaction Gap Mapping workflow and first current map
+
+Aleks requested a new read-only audit workflow, Interaction Gap Mapping
+(`IGM`), to expose small conversational seams without treating every finding
+as a code defect. The reusable workflow now defines behavior-first mapping,
+Present/Partial/Missing/Unclear/Legacy status, evidence order, ethical example
+selection, guard review, source-versus-installed separation, and a later
+classification boundary of teach, route, guard, architecture, or leave alone.
+
+The first current map covers openings and closure, brief replies, correction,
+clarification, callbacks, topic movement, humor, affect, relationship,
+uncertainty, learning, Memory, identity continuity, and relevant organs. It
+also inventories active, legacy, and retired constraints and records 20 gap
+candidates as observations only.
+
+The central finding is that Selene's shared conversational nervous system is
+present: turn meaning, session state, answer ownership, correction,
+metacognition, knowledge/Memory relevance, whole-answer composition, and
+visible realization are connected. The remaining seams cluster around finite
+expression breadth, ambiguous micro-turns, novel slang and subtle sarcasm,
+long-distance continuity, legacy fixture compatibility, status projection
+drift, and future non-operational interfaces. Fifty-three of the original 54
+scenario-shaped answer kinds remain explicit compatibility fallbacks after
+general owners; one has evidence-bearing retirement.
+
+No production code, live Q&A, teaching, Memory, Study, Dream decision,
+resident-state write, packaging, install, or external action occurred.
+
+**Artifacts:**
+`docs/architecture/SELENE_INTERACTION_GAP_MAPPING_WORKFLOW.md` and
+`docs/evidence/SELENE_INTERACTION_GAP_MAP_20260920.md`.
+
+**Next:** Review and classify the 20 gap candidates with Aleks. Do not repair
+or teach from the list until each selected item is identified as teach, route,
+guard, architecture, or leave alone.
+
+### 2026-09-20 — First IGM conversational seams cultivated
+
+Aleks selected the small conversational seams before reinstalling. The root
+inspection found that ordinary answers to Selene's questions were still owned
+inside Conversational Teaching. A new general session-scoped Interaction
+Handoff now distinguishes affirmative, negative, qualified, deferred,
+tentative, and reserved replies without activating teaching, Memory, identity,
+governance, authority, or action.
+
+Contextual Speech now owns visible `you know what I mean?` checks and vague
+returns to one earlier landmark, while multiple plausible landmarks produce
+one focused clarification. Figurative interpretation now recognizes the
+general positive-surface/adverse-context relationship behind brief sarcasm,
+but keeps the reading provisional and leaves positive wording literal when
+the context is successful or resolved. The conservative arbitrary-typo
+boundary remains intentionally unchanged.
+
+Backend compilation passed. Focused verification passed 106 checks. A broader
+adjacent run passed 241 of 242 before exposing one stale expected-variation
+list; the omitted realization was already valid, the expectation was updated,
+and the affected check passed in the 106-check rerun. No live resident Q&A,
+teaching, Memory write, Dream decision, or external action occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_IGM_CONVERSATIONAL_SEAMS_REPAIR_20260920.md`.
+
+**Next:** Create a source checkpoint, package from a clean documented revision,
+reinstall, and verify package/resident integrity without running a broad live
+Q&A.
