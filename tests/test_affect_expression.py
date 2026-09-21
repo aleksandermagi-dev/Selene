@@ -237,3 +237,40 @@ def test_codex_name_does_not_accidentally_force_technical_posture(tmp_path):
     assert "technical" not in result["current_turn_cues"]
     assert result["expression_posture"] == "warm_available"
     _assert_locked(result)
+
+
+def test_appraised_relational_memory_can_shape_expression_without_supplying_content(tmp_path):
+    conn = _conn(tmp_path)
+
+    result = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": "I got it hon. I'll be right back.",
+            "session_id": 26,
+            "intent_decision": {"intent": "conversation"},
+            "memory_metacognition": {
+                "active": True,
+                "expression_handoff": {
+                    "surface_memory_allowed": False,
+                    "surface_text": "",
+                    "expression_scope": "influence_without_mention",
+                    "influence_channels": ["interpretation", "tone", "pacing", "restraint"],
+                },
+            },
+        },
+    )
+
+    assert result["memory_metacognition_used"] is True
+    assert result["memory_influence_channels"] == [
+        "interpretation",
+        "tone",
+        "pacing",
+        "restraint",
+    ]
+    assert result["memory_influence_is_optional_expression_guidance"] is True
+    assert result["memory_content_repeated_as_expression_guidance"] is False
+    assert result["dimensions"]["warmth"] == "available_not_forced"
+    assert result["dimensions"]["pacing"] == "memory_context_sensitive"
+    assert result["dimensions"]["restraint"] == "contextual_not_suppressive"
+    assert "moonlight" not in str(result).casefold()
+    _assert_locked(result)

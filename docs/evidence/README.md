@@ -1,5 +1,9 @@
 # Evidence
 
+- [Selene Memory Metacognition (2026-09-21)](SELENE_MEMORY_METACOGNITION_20260921.md)
+  — inserts a bounded read-only appraisal between retrieval and synthesis so
+  associative Memory can influence interpretation and expression without
+  dumping the retrieved bundle; explicit recall retains relevant-fragment use.
 - [Selene IGM Conversational Seams Repair (2026-09-20)](SELENE_IGM_CONVERSATIONAL_SEAMS_REPAIR_20260920.md)
 
 - [Resident-Authority Post-Install Gentle Q&A](SELENE_RESIDENT_AUTHORITY_POST_INSTALL_GENTLE_QNA_20260824.md)

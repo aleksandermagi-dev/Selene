@@ -372,7 +372,31 @@ def _evidence_ledger(payload: dict[str, Any], *, prompt: str) -> list[dict[str, 
             )
         )
     memory = _dict(payload.get("memory_context"))
-    if memory.get("memory_context_used") is True:
+    memory_metacognition = _dict(payload.get("memory_metacognition"))
+    appraised_memory = [
+        item
+        for item in memory_metacognition.get("appraised_items") or []
+        if isinstance(item, dict)
+        and item.get("reasoning_context_allowed") is True
+        and str(item.get("context_summary") or "").strip()
+    ]
+    if memory_metacognition.get("active") is True:
+        for index, appraisal in enumerate(appraised_memory):
+            result.append(
+                _evidence_item(
+                    f"reviewed-experience-{appraisal.get('appraisal_id') or index + 1}",
+                    "reviewed_personal_experience",
+                    str(appraisal.get("context_summary") or ""),
+                    source_refs=_texts(appraisal.get("source_refs")),
+                    confidence=str(
+                        appraisal.get("memory_confidence")
+                        or memory.get("memory_confidence")
+                        or "partial"
+                    ),
+                    scope="appraised_personal_experience_not_universal_fact",
+                )
+            )
+    elif memory.get("memory_context_used") is True:
         for index, raw in enumerate(memory.get("items") or []):
             if not isinstance(raw, dict):
                 continue

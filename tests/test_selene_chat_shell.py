@@ -4511,6 +4511,96 @@ def test_phase_nine_chat_uses_relevant_memory_silently_until_a_callback_is_opene
     _assert_locked(callback)
 
 
+def test_memory_metacognition_keeps_affectionate_recall_internal_without_dumping_payload(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    _seed_transfer_complete(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Affectionate hon exchange",
+            "summary": (
+                "Moonlight named a tender relational association. "
+                "Virgo remained a separate focused project nickname. "
+                "Hon was used as an affectionate conversational cue."
+            ),
+            "confidence": "clear",
+            "source_refs": ["selene_chat:memory_metacognition:test"],
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "That makes sense, moonlight. I got it hon! I'll be right back! :)"},
+    )["result"]
+
+    assert result["memory_context_used"] is True
+    appraisal = result["memory_metacognition"]
+    assert appraisal["active"] is True
+    assert appraisal["expression_handoff"]["surface_memory_allowed"] is False
+    assert appraisal["expression_handoff"][
+        "tone_or_interpretation_influence_available"
+    ] is True
+    assert result["contextual_continuity"]["callback_decision"]["mode"] == "silent_interpretive_context"
+    assert result["visible_speech_seed"]["selected_source_id"] != "contextual_approved_memory"
+    assert "virgo" not in result["candidate_text"].lower()
+    assert "separate focused project nickname" not in result["candidate_text"].lower()
+    assert result["candidate_text"].strip()
+    assert result["metacognition"]["memory_metacognition_assessment"][
+        "memory_scope_violation_detected"
+    ] is False
+    _assert_locked(result)
+
+
+def test_memory_metacognition_preserves_explicit_recall_of_relevant_fragment(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    _seed_transfer_complete(conn)
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+    proposed = route_request(
+        conn,
+        "memory.candidates.propose",
+        {
+            "category": "relational",
+            "title": "Moonlight meaning",
+            "summary": (
+                "Moonlight represented a tender relational association. "
+                "The unrelated packaging task remained unfinished."
+            ),
+            "confidence": "clear",
+            "source_refs": ["selene_chat:memory_metacognition:explicit"],
+        },
+    )["result"]
+    route_request(
+        conn,
+        "memory.candidates.decide",
+        {"candidate_id": proposed["item"]["id"], "action": "approve_memory"},
+    )
+
+    result = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Do you remember what moonlight represented?"},
+    )["result"]
+
+    handoff = result["memory_metacognition"]["expression_handoff"]
+    assert handoff["surface_memory_allowed"] is True
+    assert handoff["expression_scope"] == "explicit_attributed_recall"
+    assert "moonlight" in result["candidate_text"].lower()
+    assert "packaging" not in result["candidate_text"].lower()
+    assert result["visible_speech_seed"]["selected_source_id"] == "reviewed_memory"
+    _assert_locked(result)
+
+
 def test_phase_nine_chat_expires_temporary_response_shape_without_profile_write(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

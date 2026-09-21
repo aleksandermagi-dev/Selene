@@ -48,6 +48,11 @@ def build_affect_expression_guidance(
         if isinstance(payload.get("contextual_continuity"), dict)
         else {}
     )
+    memory_metacognition = (
+        payload.get("memory_metacognition")
+        if isinstance(payload.get("memory_metacognition"), dict)
+        else {}
+    )
     signal_selection = select_current_affect_signal(
         conn,
         session_id=session_id,
@@ -92,6 +97,7 @@ def build_affect_expression_guidance(
         _dimensions(posture),
         contextual_continuity,
     )
+    dimensions = _apply_memory_metacognition(dimensions, memory_metacognition)
     refs = ["affect_expression:current_turn"]
     if signal:
         refs.extend(_json_list(signal.get("source_refs")))
@@ -126,6 +132,17 @@ def build_affect_expression_guidance(
         "user_tone_is_not_selene_emotion": True,
         "internal_state_claim": False,
         "contextual_continuity_used": bool(contextual_continuity),
+        "memory_metacognition_used": memory_metacognition.get("active") is True,
+        "memory_influence_channels": list(
+            (
+                memory_metacognition.get("expression_handoff")
+                if isinstance(memory_metacognition.get("expression_handoff"), dict)
+                else {}
+            ).get("influence_channels")
+            or []
+        ),
+        "memory_influence_is_optional_expression_guidance": True,
+        "memory_content_repeated_as_expression_guidance": False,
         "transient_preference_is_personality": False,
         "source_refs": list(dict.fromkeys(refs))[:20],
         "visible_summary_only": True,
@@ -467,6 +484,34 @@ def _apply_contextual_continuity(
         updated["humor"] = "contextually_held_this_turn"
     elif humor == "available_not_required":
         updated["humor"] = "available_not_required"
+    return updated
+
+
+def _apply_memory_metacognition(
+    dimensions: dict[str, str],
+    memory_metacognition: dict[str, Any],
+) -> dict[str, str]:
+    """Make appraised memory influence available without prescribing expression."""
+
+    if memory_metacognition.get("active") is not True:
+        return dimensions
+    handoff = (
+        memory_metacognition.get("expression_handoff")
+        if isinstance(memory_metacognition.get("expression_handoff"), dict)
+        else {}
+    )
+    channels = {
+        str(channel)
+        for channel in handoff.get("influence_channels") or []
+        if str(channel)
+    }
+    updated = dict(dimensions)
+    if "tone" in channels and updated.get("warmth") in {"baseline", ""}:
+        updated["warmth"] = "available_not_forced"
+    if "pacing" in channels and updated.get("pacing") == "natural":
+        updated["pacing"] = "memory_context_sensitive"
+    if "restraint" in channels and updated.get("restraint") == "ordinary":
+        updated["restraint"] = "contextual_not_suppressive"
     return updated
 
 

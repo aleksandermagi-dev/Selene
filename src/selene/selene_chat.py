@@ -98,6 +98,7 @@ from .memory_organ import (
     reconstruct_memory_summary_for_expression,
     retrieve_memory,
 )
+from .memory_metacognition import appraise_retrieved_memory
 from .meaning_router import interpret_turn_meaning
 from .metacognition import inspect_metacognition
 from .native_language_organ import realize_native_language
@@ -532,23 +533,47 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "input_interpretation": input_interpretation,
         },
     )
+    conversation_continuity = (
+        conversation_spine.get("conversation_continuity")
+        if isinstance(conversation_spine.get("conversation_continuity"), dict)
+        else {}
+    )
+    contextual_continuity = build_contextual_continuity_plan(
+        {
+            "prompt": meaning_text,
+            "intent_decision": intent_decision,
+            "dialogue_workspace": prepared_dialogue_workspace,
+            "memory_context": memory_retrieval,
+            "current_session_events": chat_continuity.get("current_session_events") or [],
+            "conversation_continuity": conversation_continuity,
+            "speaker_context": speaker_envelope,
+            "relational_context": relational_context,
+        }
+    )
+    memory_metacognition = appraise_retrieved_memory(
+        {
+            "prompt": meaning_text,
+            "memory_retrieval": memory_retrieval,
+            "intent_decision": intent_decision,
+            "relational_context": relational_context,
+            "contextual_continuity": contextual_continuity,
+            "conversation_spine": conversation_spine,
+            "speaker_envelope": speaker_envelope,
+        }
+    )
     dual_horizon_context = build_dual_horizon_context(
         {
             "prompt": meaning_text,
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
             "memory_context": memory_retrieval,
+            "memory_metacognition": memory_metacognition,
             "source_packets": payload.get("source_packets") or [],
         }
     )
     conversation_spine = attach_dual_horizon_to_spine(
         conversation_spine,
         dual_horizon_context,
-    )
-    conversation_continuity = (
-        conversation_spine.get("conversation_continuity")
-        if isinstance(conversation_spine.get("conversation_continuity"), dict)
-        else {}
     )
     language_capability = build_language_capability_answer(
         conn,
@@ -591,7 +616,12 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
     cocoon_suggestion = _cocoon_suggestion(meaning_text, selected_route, route, source_class, intent_decision, hard=bool(hard_blockers))
     continuity_reply = _local_chat_continuity_reply(meaning_text, chat_continuity, intent_decision)
     memory_action_reply = str(memory_action_plan.get("response_seed") or "")
-    memory_reply = _approved_memory_reply(meaning_text, memory_retrieval, intent_decision)
+    memory_reply = _approved_memory_reply(
+        meaning_text,
+        memory_retrieval,
+        intent_decision,
+        memory_metacognition,
+    )
     self_state = (
         build_self_state_packet(
             conn,
@@ -608,18 +638,6 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         if intent_decision.get("self_state_requested") is True
         else inactive_self_state_packet()
     )
-    contextual_continuity = build_contextual_continuity_plan(
-        {
-            "prompt": meaning_text,
-            "intent_decision": intent_decision,
-            "dialogue_workspace": prepared_dialogue_workspace,
-            "memory_context": memory_retrieval,
-            "current_session_events": chat_continuity.get("current_session_events") or [],
-            "conversation_continuity": conversation_continuity,
-            "speaker_context": speaker_envelope,
-            "relational_context": relational_context,
-        }
-    )
     affect_expression = build_affect_expression_guidance(
         conn,
         {
@@ -631,6 +649,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "conversation_spine": conversation_spine,
             "conversation_continuity": conversation_continuity,
             "contextual_continuity": contextual_continuity,
+            "memory_metacognition": memory_metacognition,
             "relational_context": relational_context,
             "hard_boundary": bool(hard_blockers),
             "selected_route": selected_route,
@@ -669,6 +688,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         memory_retrieval,
         intent_decision,
         contextual_continuity,
+        memory_metacognition,
     )
     memory_semantic_relevance = next(
         (
@@ -971,6 +991,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "dialogue_workspace": prepared_dialogue_workspace,
             "conversation_spine": conversation_spine,
             "memory_context": memory_retrieval,
+            "memory_metacognition": memory_metacognition,
             "comprehension_context": comprehension,
             "source_packets": payload.get("source_packets") or [],
         }
@@ -1140,6 +1161,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             or [],
             "answer_engine_support": answer_engine_support,
             "memory_context": memory_retrieval,
+            "memory_metacognition": memory_metacognition,
             "hypothesis_attempt": intelligence_support.get("hypothesis_attempt") or {},
             "candidate_models": intelligence_support.get("candidate_models") or [],
             "claim_evidence_packet": claim_evidence_packet,
@@ -2388,6 +2410,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "formation_braid": formation_braid,
         "organ_coalition": organ_coalition,
         "dual_horizon_context": dual_horizon_context,
+        "memory_metacognition": memory_metacognition,
         "associative_intuition": associative_intuition,
         "long_thread_endurance": long_thread_endurance,
         "conversation_spine": conversation_spine,
@@ -2932,6 +2955,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "input_channel": input_channel,
         "delivery_constraint": delivery_constraint,
         "memory_retrieval": memory_retrieval,
+        "memory_metacognition": memory_metacognition,
         "memory_action": memory_action,
         "memory_candidate_suggestion": memory_candidate_suggestion,
         "source_boundaries": _source_boundaries(),
@@ -3074,6 +3098,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "formation_braid": formation_braid,
             "visible_speech_release": visible_speech_release,
             "memory_retrieval": memory_retrieval,
+            "memory_metacognition": memory_metacognition,
             "memory_action": memory_action,
             "memory_candidate_suggestion": memory_candidate_suggestion,
             "memory_context_used": memory_retrieval.get("memory_context_used") is True,
@@ -6643,7 +6668,12 @@ def _conversational_memory_payload(
     }
 
 
-def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any], intent_decision: dict[str, Any]) -> str:
+def _approved_memory_reply(
+    text: str,
+    memory_retrieval: dict[str, Any],
+    intent_decision: dict[str, Any],
+    memory_metacognition: dict[str, Any] | None = None,
+) -> str:
     if intent_decision.get("memory_recall_requested") is not True:
         return ""
     recall_state = str(memory_retrieval.get("recall_state") or "not_known")
@@ -6659,7 +6689,22 @@ def _approved_memory_reply(text: str, memory_retrieval: dict[str, Any], intent_d
             "I can ask whether I should keep it as a memory candidate."
         )
     first = items[0] if isinstance(items[0], dict) else {}
-    summary = _chat_memory_summary(first)
+    appraisal = (
+        memory_metacognition
+        if isinstance(memory_metacognition, dict)
+        else {}
+    )
+    handoff = (
+        appraisal.get("expression_handoff")
+        if isinstance(appraisal.get("expression_handoff"), dict)
+        else {}
+    )
+    if appraisal.get("active") is True:
+        summary = str(handoff.get("surface_text") or "").strip()
+        if handoff.get("surface_memory_allowed") is not True or not summary:
+            return ""
+    else:
+        summary = _chat_memory_summary(first)
     if recall_state in {"fuzzy", "partial", "felt_but_uncertain"}:
         return (
             f"I remember, I think, but it is {recall_state.replace('_', ' ')}: {summary} "
@@ -6672,6 +6717,7 @@ def _contextual_memory_reply(
     memory_retrieval: dict[str, Any],
     intent_decision: dict[str, Any],
     contextual_continuity: dict[str, Any] | None = None,
+    memory_metacognition: dict[str, Any] | None = None,
 ) -> str:
     if intent_decision.get("memory_recall_requested") is True:
         return ""
@@ -6687,6 +6733,29 @@ def _contextual_memory_reply(
     if not items:
         return ""
     first = items[0] if isinstance(items[0], dict) else {}
+    appraisal = (
+        memory_metacognition
+        if isinstance(memory_metacognition, dict)
+        else {}
+    )
+    handoff = (
+        appraisal.get("expression_handoff")
+        if isinstance(appraisal.get("expression_handoff"), dict)
+        else {}
+    )
+    if appraisal.get("active") is True:
+        if handoff.get("surface_memory_allowed") is not True:
+            return ""
+        summary = str(handoff.get("surface_text") or "").strip()
+        if not summary:
+            return ""
+        confidence = str(memory_retrieval.get("recall_state") or "partial")
+        if confidence == "clear":
+            return f"This connects with something we discussed earlier: {summary}"
+        return (
+            f"This may connect with something we discussed earlier: {summary} The fit is "
+            f"{confidence.replace('_', ' ')}."
+        )
     if callback and callback.get("surface_callback_allowed") is not True:
         # Silent influence may supply reconstructed meaning, but it may not
         # announce a callback or turn a retrieval label into speech.

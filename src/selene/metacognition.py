@@ -55,6 +55,7 @@ def metacognition_status(conn: sqlite3.Connection) -> dict[str, Any]:
                 "notice a threat-compressed option space and return an unmade choice to Core/Mind",
                 "recommend when to answer, qualify, ask, seek sources, hold, or stop",
                 "inspect a surfaced association without treating it as evidence or proof",
+                "inspect whether retrieved Memory influenced the reply within its appraised expression scope",
                 "inspect seven-point reconstruction, constraint satisfiability, and informed retry state",
             ],
             "project_neutral_blueprint_ancestry": [
@@ -178,6 +179,10 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
     conversational_energy = _dict(payload.get("conversational_energy"))
     structural_discovery = _dict(payload.get("structural_discovery"))
     associative_intuition = _dict(payload.get("associative_intuition"))
+    memory_metacognition = _dict(payload.get("memory_metacognition"))
+    memory_expression_handoff = _dict(
+        memory_metacognition.get("expression_handoff")
+    )
     exploratory_reasoning = _dict(payload.get("exploratory_reasoning"))
     exploratory_response_kind = str(
         exploratory_reasoning.get("response_kind") or ""
@@ -263,6 +268,18 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         or evidence_source_refs
     )
     certainty_overreach = confidence.get("certainty_overreach_detected") is True
+    withheld_memory_fragments = [
+        truncate(str(item.get("relevant_fragment") or ""), 700)
+        for item in memory_metacognition.get("appraised_items") or []
+        if isinstance(item, dict)
+        and item.get("surface_allowed") is not True
+        and len(str(item.get("relevant_fragment") or "").strip()) >= 24
+    ]
+    memory_scope_violation = any(
+        fragment.casefold() in candidate.casefold()
+        for fragment in withheld_memory_fragments
+        if fragment
+    )
 
     familiarity = _familiarity_assessment(payload, comprehension)
     observations = _visible_observations(
@@ -278,6 +295,10 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
         fit_state = "core_mind_boundary_controls"
         action = "defer_to_core_mind"
         sufficiency_state = "boundary_resolved_outside_metacognition"
+    elif memory_scope_violation:
+        fit_state = "memory_expression_exceeds_appraised_scope"
+        action = "hold_memory_expression_scope"
+        sufficiency_state = "recompose_without_withheld_memory_payload"
     elif agency_choice_pending:
         fit_state = "affective_influence_visible_response_choice_pending"
         action = "defer_to_core_mind"
@@ -566,6 +587,36 @@ def evaluate_metacognition(payload: dict[str, Any] | None = None) -> dict[str, A
             "fit_check_remains_downstream": True,
             "automatic_retention": False,
             "automatic_dream_routing": False,
+        },
+        "memory_metacognition": memory_metacognition,
+        "memory_metacognition_assessment": {
+            "observed": bool(memory_metacognition),
+            "active": memory_metacognition.get("active") is True,
+            "appraised_item_count": int(
+                memory_metacognition.get("appraised_item_count") or 0
+            ),
+            "surface_memory_allowed": (
+                memory_expression_handoff.get("surface_memory_allowed") is True
+            ),
+            "expression_scope": str(
+                memory_expression_handoff.get("expression_scope") or "not_used"
+            ),
+            "tone_or_interpretation_influence_available": (
+                memory_expression_handoff.get(
+                    "tone_or_interpretation_influence_available"
+                )
+                is True
+            ),
+            "raw_retrieval_summary_used_as_response_text": (
+                memory_expression_handoff.get(
+                    "raw_retrieval_summary_is_response_text"
+                )
+                is True
+            ),
+            "memory_scope_violation_detected": memory_scope_violation,
+            "retrieval_rank_changed": False,
+            "retrieval_eligibility_changed": False,
+            "automatic_memory_write": False,
         },
         "exploratory_reasoning": exploratory_reasoning,
         "exploratory_reasoning_assessment": {

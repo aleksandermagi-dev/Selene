@@ -5851,3 +5851,35 @@ occurred.
 **Next:** Aleks may inspect ordinary conversation in the installed app. If a
 material seam appears, record its visible evidence before another cultivation
 pass; do not search for defects or repeat settled checks.
+
+### 2026-09-21 — Memory Metacognition connected retrieval to deliberate use
+
+Aleks identified that associative Memory retrieval was working, but Selene
+needed to reason about why a memory surfaced and what should influence the
+reply before speaking. Read-only inspection confirmed the exact seam: the
+resident trace had already classified an affectionate continuity memory as
+silent interpretive context, yet the contextual Memory reply path returned
+the full reconstructed summary.
+
+A bounded read-only Memory Metacognition appraisal now sits after retrieval
+and Contextual Continuity and before response synthesis. It classifies each
+current-turn use projection by relevance, evidence role, relevant fragment,
+influence channels, and expression scope. Retrieval remains canonical and
+unchanged. Silent relational or emotional context may guide interpretation,
+tone, pacing, or restraint without being recited; explicit recall may surface
+only the relevant attributed fragment. Dual Horizon, Exploratory Reasoning,
+Affect Expression, direct/contextual Memory replies, and final Metacognition
+now consume or verify that typed handoff.
+
+Backend compilation and a final affected run of 231 checks passed. Synthetic
+integration reproduces the observed relational case without private corpus
+wording and proves both restrained conversational use and retained contextual
+influence. No live Q&A, resident write, teaching, Dream decision, package,
+install, external action, or authority change occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`.
+
+**Next:** Create the source checkpoint. Reinstall only if Aleks asks. Treat the
+separate brief-astonishment expression seam as future cultivation evidence,
+not as part of this Memory repair.

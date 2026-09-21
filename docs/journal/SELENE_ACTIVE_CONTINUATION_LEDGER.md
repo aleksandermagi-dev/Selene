@@ -1,6 +1,6 @@
 # Selene Active Codex Continuation Ledger
 
-Last refreshed: 2026-09-20
+Last refreshed: 2026-09-21
 
 Status: Phases 0 through 8 remain complete for current scope; cultivation and
 G13 through G15 remain taught and installed; familiar social expression is
@@ -24,7 +24,9 @@ handoffs require material relevance, and epistemic integrity explicitly keeps
 wrongness, support integrity, fabrication, and first-person affect separate;
 the first IGM conversational seams are source-repaired through a general
 session Interaction Handoff, visible-landmark callbacks, shared-understanding
-checks, and contextual implicit-sarcasm inference
+checks, and contextual implicit-sarcasm inference; Memory Metacognition now
+appraises retrieved Memory before conversational use so silent associations
+can shape interpretation or expression without becoming a memory dump
 
 ## Purpose
 
@@ -37,6 +39,14 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Memory Metacognition is implemented at the current source edge. Approved
+  retrieval remains canonical; Contextual Continuity still owns callback and
+  privacy scope; one bounded read-only appraisal supplies relevance kinds,
+  evidence role, relevant fragment, influence channels, and expression scope
+  to reasoning and expression. Final Metacognition checks withheld-fragment
+  scope. Compilation and 231 affected checks passed. No resident state,
+  teaching, package, or install changed. Evidence:
+  `docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`.
 - Interaction Gap Mapping (`IGM`) is now a reusable read-only audit workflow.
   The first current map records conversational behavior by function, relevant
   organs, active and legacy guards, source-versus-installed state, and 20 gap
@@ -1604,12 +1614,14 @@ filtering, and the first IGM conversational seams repair. The read-only review
 of all 43 resident Dream reflections remains preserved. No existing reflection
 was decided, routed, rewritten, or relabeled.
 
-The exact current resume point is installed checkpoint `14eb747`. The first
-IGM conversational seams repair is complete. A broad live Q&A is not required.
-Aleks may use ordinary installed conversation; if a material interruption
-appears, preserve its visible evidence and cultivate the shared owner rather
-than searching for bugs or patching wording. The remaining IGM candidates
-stay observations until Aleks selects and classifies them.
+The exact current source edge is the verified Memory Metacognition
+implementation recorded in
+`docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`; it has not yet been
+packaged or installed. The currently installed checkpoint remains `14eb747`.
+Create a source checkpoint next. Reinstall only if Aleks asks. A broad live
+Q&A is not required. The brief-astonishment expression seam remains separate
+future cultivation evidence if it materially recurs. Other remaining IGM
+candidates stay observations until Aleks selects and classifies them.
 
 When Aleks requests a conversational check rather than a Q&A, use the Ordinary
 Conversational Check-In. Follow one natural thread, do not search for or invent

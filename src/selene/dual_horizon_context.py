@@ -379,6 +379,7 @@ def build_dual_horizon_context(
     pragmatics = _dict(dialogue.get("pragmatics"))
     spine = _dict(payload.get("conversation_spine"))
     memory = _dict(payload.get("memory_context"))
+    memory_metacognition = _dict(payload.get("memory_metacognition"))
     comprehension = _dict(payload.get("comprehension_context"))
     knowledge = _dict(comprehension.get("knowledge_context"))
     source_packets = [
@@ -397,6 +398,7 @@ def build_dual_horizon_context(
     approved_items = _approved_horizon_items(
         prompt,
         memory=memory,
+        memory_metacognition=memory_metacognition,
         knowledge=knowledge,
         checkpoints=[
             item
@@ -774,6 +776,7 @@ def _approved_horizon_items(
     prompt: str,
     *,
     memory: dict[str, Any],
+    memory_metacognition: dict[str, Any],
     knowledge: dict[str, Any],
     checkpoints: list[dict[str, Any]],
     source_packets: list[dict[str, Any]],
@@ -781,7 +784,31 @@ def _approved_horizon_items(
     active_thread_id: str,
 ) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
-    if memory.get("memory_context_used") is True:
+    appraised_items = [
+        item
+        for item in memory_metacognition.get("appraised_items") or []
+        if isinstance(item, dict)
+        and item.get("context_influence_allowed") is True
+        and str(item.get("context_summary") or "").strip()
+    ]
+    if memory_metacognition.get("active") is True:
+        for appraisal in appraised_items:
+            items.append(
+                _context_item(
+                    f"appraised-memory-{appraisal.get('appraisal_id')}",
+                    summary=str(appraisal.get("context_summary") or ""),
+                    source_class="appraised_personal_memory_context",
+                    scope=str(appraisal.get("expression_scope") or "current_turn_context"),
+                    topic=str(appraisal.get("title") or ""),
+                    relationship_type=str(appraisal.get("evidence_role") or "association_only"),
+                    time_relevance="reviewed_long_range",
+                    approval_state="approved_memory_appraised_for_current_turn",
+                    certainty=str(appraisal.get("memory_confidence") or "reviewed"),
+                    retrieval_reason=str(appraisal.get("surfacing_reason") or "approved_retrieval"),
+                    source_refs=_text_list(appraisal.get("source_refs")),
+                )
+            )
+    elif memory.get("memory_context_used") is True:
         for memory_item in memory.get("items") or []:
             if (
                 not isinstance(memory_item, dict)
