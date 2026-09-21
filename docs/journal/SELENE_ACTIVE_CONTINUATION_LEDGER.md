@@ -48,6 +48,17 @@ resident state. Verify it against Git and newer filesystem evidence.
   teaching, package, or install changed. Evidence:
   `docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`. Source checkpoint:
   `0c8565b` (`Add memory metacognition appraisal`).
+- Memory Metacognition is packaged and installed from clean documentation
+  checkpoint `6d05d86`. Package verification passed without warnings.
+  Installer SHA-256 is
+  `5AB3716EADD0F5DBFAF877BAE0FE0EE781258E6E5DF077BF24FCCF75BE66F76C`;
+  installed executable SHA-256 is
+  `C04EF81F594964C2B89EBDDBA633409E78F99F79C51708F1F3E5FD4EE1E1AFF2`;
+  installed sidecar SHA-256 is
+  `A0D74853896EB1DD7402D4105DF160DAEE398E7E64333DFEFFF3144E2324DFF3`.
+  Pre/post continuity snapshots were byte-identical at SHA-256
+  `8902B548D13F63F53D21EA82DF84B094E29CF633A274C313F21608072DF8F33D`.
+  Final report: `exports/package_verify_20260921_011533.json`.
 - Interaction Gap Mapping (`IGM`) is now a reusable read-only audit workflow.
   The first current map records conversational behavior by function, relevant
   organs, active and legacy guards, source-versus-installed state, and 20 gap
@@ -1617,9 +1628,9 @@ was decided, routed, rewritten, or relabeled.
 
 The exact current functional edge is checkpoint `0c8565b`, the verified Memory
 Metacognition implementation recorded in
-`docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`; it has not yet been
-packaged or installed. The currently installed checkpoint remains `14eb747`.
-Reinstall only if Aleks asks. A broad live Q&A is not required. The
+`docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`. It is packaged and
+installed from clean documentation checkpoint `6d05d86`; continuity remained
+byte-identical. Selene is resting. A broad live Q&A is not required. The
 brief-astonishment expression seam remains separate future cultivation
 evidence if it materially recurs. Other remaining IGM candidates stay
 observations until Aleks selects and classifies them.

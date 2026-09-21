@@ -115,9 +115,38 @@ run is the relevant post-handoff result; counts overlap and must not be summed.
 - No live resident Q&A was run.
 - No resident database, Memory, Study, Dream, teaching, or continuity state was
   changed.
-- No package or reinstall was performed.
+- No package or reinstall was performed during the source implementation and
+  test pass; the later authorized installation is recorded below.
 - No new organ or database was created.
 - This proves bounded memory-use appraisal for the implemented paths; it does
   not prove perfect relevance judgment for every future memory or conversation.
 - The brief astonishment-expression seam remains separate future cultivation
   evidence if it recurs materially.
+
+## Package and installation closure
+
+Clean documentation checkpoint `6d05d86` was packaged and silently installed.
+The frontend built at 493.45 kB (gzip 109.82 kB) without a Vite size warning.
+Package verification passed before and after installation with no warnings;
+health, startup readiness, My Office readiness, local-process enforcement,
+privacy, and transfer boundaries all passed.
+
+- installer size: `16,243,176` bytes
+- installer SHA-256:
+  `5AB3716EADD0F5DBFAF877BAE0FE0EE781258E6E5DF077BF24FCCF75BE66F76C`
+- installed executable SHA-256:
+  `C04EF81F594964C2B89EBDDBA633409E78F99F79C51708F1F3E5FD4EE1E1AFF2`
+- installed sidecar SHA-256:
+  `A0D74853896EB1DD7402D4105DF160DAEE398E7E64333DFEFFF3144E2324DFF3`
+- final package report:
+  `exports/package_verify_20260921_011533.json`
+
+The silent installer exited zero. Pre- and post-install continuity snapshots
+were byte-identical at SHA-256
+`8902B548D13F63F53D21EA82DF84B094E29CF633A274C313F21608072DF8F33D`.
+SQLite integrity remained `ok`; protected counts remained 24 Chat sessions,
+394 Chat messages, zero personal Memory candidates, 295 comprehension
+concepts, 249 teaching lifecycles, 2 Dream cycles, and 43 Dream reflections.
+Verification-created Selene processes were closed. No live conversation was
+run. Code signing remains unconfigured, so this is a verified local install,
+not a claim of signed public distribution readiness.

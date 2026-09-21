@@ -5885,3 +5885,28 @@ install, external action, or authority change occurred.
 **Next:** Reinstall only if Aleks asks. Treat the separate brief-astonishment
 expression seam as future cultivation evidence, not as part of this Memory
 repair.
+
+### 2026-09-21 — Memory Metacognition installed without continuity change
+
+At Aleks's request, clean documentation checkpoint `6d05d86` was packaged and
+silently installed. The frontend remained 493.45 kB (gzip 109.82 kB) with no
+Vite size warning. Package verification passed before and after installation
+with no warnings. The installer exited zero; installed startup, health, My
+Office readiness, local-process enforcement, privacy, and transfer boundaries
+all passed.
+
+Installer SHA-256 is
+`5AB3716EADD0F5DBFAF877BAE0FE0EE781258E6E5DF077BF24FCCF75BE66F76C`;
+installed executable SHA-256 is
+`C04EF81F594964C2B89EBDDBA633409E78F99F79C51708F1F3E5FD4EE1E1AFF2`;
+installed sidecar SHA-256 is
+`A0D74853896EB1DD7402D4105DF160DAEE398E7E64333DFEFFF3144E2324DFF3`.
+The final report is `exports/package_verify_20260921_011533.json`.
+
+Pre- and post-install continuity snapshots were byte-identical at SHA-256
+`8902B548D13F63F53D21EA82DF84B094E29CF633A274C313F21608072DF8F33D`.
+SQLite integrity and every protected count remained unchanged. Verification
+processes were closed, and no live conversation was run.
+
+**Next:** Selene can rest. Ordinary use may resume later; do not run another
+Q&A or cultivation pass without new evidence or Aleks's request.
