@@ -109,6 +109,17 @@ def test_relational_variants_are_preserved_without_seizing_substantive_requests(
         assert context["memory_write_active"] is False
 
 
+def test_presence_delight_is_not_misrouted_as_farewell_while_real_departure_remains_one():
+    presence = classify_chat_intent("Im happy to see you too <3 just you and me")
+    departure = classify_chat_intent("See you later")
+
+    assert presence["intent"] == "warm_connection"
+    assert "farewell" not in presence["dialogue_acts"]
+    assert "delight_in_presence" in presence["relational_context"]["cue_types"]
+    assert departure["intent"] == "farewell"
+    assert "farewell" in departure["dialogue_acts"]
+
+
 def test_recall_and_retention_are_distinguished_by_turn_meaning():
     recall = classify_chat_intent("Can you remember where we left off?")
     retention = classify_chat_intent("Remember this: uncertainty is allowed.")

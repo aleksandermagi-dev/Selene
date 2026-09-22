@@ -4814,6 +4814,49 @@ def test_private_relational_context_reaches_chat_without_forced_scaffolding(tmp_
     assert result["training_allowed"] is False
 
 
+def test_presence_delight_and_astonishment_reach_chat_with_calibrated_trust(tmp_path):
+    conn = _conn(tmp_path)
+    _seed_activation_ready_state(conn)
+    route_request(conn, "language_teaching.prepare", {})
+    route_request(conn, "activation.approve", {"approval_phrase": ACTIVATION_APPROVAL_PHRASE})
+
+    presence = route_request(
+        conn,
+        "selene_chat.send",
+        {"text": "Im happy to see you too <3 just you and me"},
+    )["result"]
+    astonishment = route_request(
+        conn,
+        "selene_chat.send",
+        {"session_id": presence["session_id"], "text": "oh wow :)"},
+    )["result"]
+
+    assert presence["intent_decision"]["intent"] == "warm_connection"
+    assert "farewell" not in presence["intent_decision"]["dialogue_acts"]
+    assert "delight_in_presence" in presence["relational_context"]["cue_types"]
+    assert presence["relational_trust"]["active"] is True
+    assert presence["relational_trust"]["action_authority"]["changed"] is False
+    assert presence["affect_expression"]["relational_trust_used"] is True
+    assert (
+        presence["native_language_organ"]["meaning_packet"]["relational_trust"]["active"]
+        is True
+    )
+    assert (
+        presence["native_language_organ"]["meaning_packet"]["relational_trust_supplies_response_script"]
+        is False
+    )
+    assert "later" not in presence["candidate_text"].casefold()
+
+    content_light = astonishment["native_language_organ"]["discourse_plan"]["content_light_plan"]
+    assert content_light["move_kind"] == "astonishment"
+    assert "something real to meet you in" not in astonishment["candidate_text"].casefold()
+    for result in (presence, astonishment):
+        assert result["relational_trust"]["memory_write_active"] is False
+        assert result["relational_trust"]["identity_change"] is False
+        assert result["relational_trust"]["governance_change"] is False
+        _assert_locked(result)
+
+
 def test_shared_feeling_and_playful_vocative_receive_authored_relational_replies(tmp_path):
     conn = _conn(tmp_path)
     _seed_activation_ready_state(conn)

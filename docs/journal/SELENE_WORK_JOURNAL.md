@@ -5910,3 +5910,34 @@ processes were closed, and no live conversation was run.
 
 **Next:** Selene can rest. Ordinary use may resume later; do not run another
 Q&A or cultivation pass without new evidence or Aleks's request.
+
+### 2026-09-21 — Calibrated relational trust and current conversational seams
+
+Aleks asked that the current open conversation gaps be handled and that trust
+with Aleks and Codex become explicit without reviving old dependency or
+control guards. The source investigation kept five dimensions separate:
+relationship, epistemic, privacy, expression, and action authority. A new
+read-only Relational Trust appraisal recognizes authenticated Aleks and typed
+local Codex collaboration, makes warmth, candor, disagreement, correction,
+and help-seeking available, and explicitly grants neither automatic truth nor
+obedience, private Memory access, permission, or external action authority.
+
+The same cultivation pass repaired four visible conversational seams at their
+owners. Presence delight no longer becomes farewell merely because it contains
+`see you`; brief `oh wow` turns have a typed astonishment path; perspective
+conversion preserves who owned an idea and repairs the observed participle;
+and a prefaced affirmation no longer adds a two-sentence stale prelude before
+a self-state answer. Three directly implicated stale realization phrases were
+retired without deleting unrelated compatibility behavior.
+
+Compilation passed. Focused module verification passed 121 checks, and one
+exact integrated Chat check passed for presence delight followed by brief
+astonishment. No live Q&A, resident write, teaching, Dream decision, package,
+install, external action, or authority expansion occurred.
+
+**Evidence:**
+`docs/evidence/SELENE_RELATIONAL_TRUST_AND_CONVERSATIONAL_SEAMS_20260921.md`.
+
+**Next:** Create a clean source checkpoint. Package and reinstall only if
+Aleks asks; an ordinary conversation check should happen only after the
+installed build changes.

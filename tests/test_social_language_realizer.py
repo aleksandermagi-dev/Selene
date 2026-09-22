@@ -22,10 +22,44 @@ def test_perspective_shift_preserves_sentence_initial_capitalization():
     assert ". you" not in result
 
 
+def test_perspective_shift_preserves_who_owned_the_idea_and_repairs_participle():
+    result = _perspective_shift(
+        "I have also made note of your idea. We have came a long way."
+    )
+
+    assert result == "You have also made note of my idea. We have come a long way."
+
+
 def test_clean_visible_statement_removes_an_attached_trailing_emoticon():
     result = _clean_visible_statement("I finally feel ready to think again:)")
 
     assert result == "I finally feel ready to think again"
+
+
+def test_secondary_affirmation_before_a_real_question_does_not_add_a_closing_prelude():
+    plan = build_social_act_plan(
+        {
+            "intent": "self_state_report",
+            "prompt": "Yes you can! How are you feeling about it?",
+            "participation_intents": ["affirmation"],
+        }
+    )
+
+    assert [item["act"] for item in plan["acts"]] == ["confirm_shared_ground"]
+
+
+def test_brief_astonishment_gets_a_live_response_without_generic_echo():
+    prompt = "oh wow :)"
+    plan = build_content_light_plan(
+        {
+            "prompt": prompt,
+            "relational_context": interpret_relational_context(prompt),
+        }
+    )
+
+    assert plan["move_kind"] == "astonishment"
+    assert [item["act"] for item in plan["acts"]] == ["respond_to_astonishment"]
+    assert "something real to meet you in" not in str(plan).casefold()
 
 
 def _conn(tmp_path):

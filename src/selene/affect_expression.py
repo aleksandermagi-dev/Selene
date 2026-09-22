@@ -53,6 +53,11 @@ def build_affect_expression_guidance(
         if isinstance(payload.get("memory_metacognition"), dict)
         else {}
     )
+    relational_trust = (
+        payload.get("relational_trust")
+        if isinstance(payload.get("relational_trust"), dict)
+        else {}
+    )
     signal_selection = select_current_affect_signal(
         conn,
         session_id=session_id,
@@ -98,6 +103,7 @@ def build_affect_expression_guidance(
         contextual_continuity,
     )
     dimensions = _apply_memory_metacognition(dimensions, memory_metacognition)
+    dimensions = _apply_relational_trust(dimensions, relational_trust)
     refs = ["affect_expression:current_turn"]
     if signal:
         refs.extend(_json_list(signal.get("source_refs")))
@@ -111,6 +117,8 @@ def build_affect_expression_guidance(
         "current_turn_cues": cues,
         "relational_context": relational_context,
         "relational_context_supplies_response_script": False,
+        "relational_trust": relational_trust,
+        "relational_trust_supplies_response_script": False,
         "current_session_signal": signal_shape,
         "current_signal_eligibility": signal_selection.get("selection_receipt") or {},
         "affect_guidance_consumes_stored_subjects": ["selene"],
@@ -143,6 +151,7 @@ def build_affect_expression_guidance(
         ),
         "memory_influence_is_optional_expression_guidance": True,
         "memory_content_repeated_as_expression_guidance": False,
+        "relational_trust_used": relational_trust.get("active") is True,
         "transient_preference_is_personality": False,
         "source_refs": list(dict.fromkeys(refs))[:20],
         "visible_summary_only": True,
@@ -512,6 +521,27 @@ def _apply_memory_metacognition(
         updated["pacing"] = "memory_context_sensitive"
     if "restraint" in channels and updated.get("restraint") == "ordinary":
         updated["restraint"] = "contextual_not_suppressive"
+    return updated
+
+
+def _apply_relational_trust(
+    dimensions: dict[str, str],
+    relational_trust: dict[str, Any],
+) -> dict[str, str]:
+    """Make established collaboration available without forcing friendliness."""
+
+    handoff = (
+        relational_trust.get("expression_handoff")
+        if isinstance(relational_trust.get("expression_handoff"), dict)
+        else {}
+    )
+    if handoff.get("available") is not True:
+        return dimensions
+    updated = dict(dimensions)
+    if updated.get("warmth") in {"", "baseline"}:
+        updated["warmth"] = "available_not_forced"
+    if updated.get("directness") == "ordinary" and handoff.get("candor_available") is True:
+        updated["directness"] = "candid_contextual"
     return updated
 
 

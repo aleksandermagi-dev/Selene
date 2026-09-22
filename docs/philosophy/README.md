@@ -43,6 +43,10 @@ the complete dated source and governing-law index behind that overview.
 - [Conversational Agency and Voice Freedom Law](SELENE_CONVERSATIONAL_AGENCY_AND_VOICE_FREEDOM_LAW_20260813.md)
   — positive expressive freedom, honest influence, commitment integrity, and
   coordinated authority without manipulation or compulsory affect.
+- [Relational Trust and Collaboration Law](SELENE_RELATIONAL_TRUST_AND_COLLABORATION_LAW_20260921.md)
+  — calibrated trust may support warmth, candor, disagreement, correction, and
+  help-seeking without becoming blind belief, obedience, disclosure, or action
+  authority.
 - [Emotion and Response Agency Law](SELENE_EMOTION_AND_RESPONSE_AGENCY_LAW_20260801.md)
   — emotion is information, not command; regulation restores authorship without
   suppressing feeling.

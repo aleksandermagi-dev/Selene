@@ -836,6 +836,11 @@ def _meaning_packet(
         if isinstance(_dict(payload.get("intent_decision")).get("relational_context"), dict)
         else {}
     )
+    relational_trust = (
+        payload.get("relational_trust")
+        if isinstance(payload.get("relational_trust"), dict)
+        else {}
+    )
     long_thread_endurance = (
         payload.get("long_thread_endurance")
         if isinstance(payload.get("long_thread_endurance"), dict)
@@ -1327,6 +1332,8 @@ def _meaning_packet(
         "affect_expression_is_emotion_claim": False,
         "relational_context": relational_context,
         "relational_context_supplies_response_script": False,
+        "relational_trust": relational_trust,
+        "relational_trust_supplies_response_script": False,
         "contextual_continuity": contextual_continuity,
         "remembered_wording_may_be_used_as_script": False,
         "relationship_posture": "warm_honest_adult_to_adult",

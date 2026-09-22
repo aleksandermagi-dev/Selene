@@ -173,7 +173,7 @@ ACT_REALIZATIONS: dict[str, tuple[str, ...]] = {
         "Yep, same page",
         "That clicks",
         "I am with you on that",
-        "Right, we have the same distinction",
+        "Yes, I see what you mean",
     ),
     "carry_context_forward": (
         "I have the distinction",
@@ -181,7 +181,7 @@ ACT_REALIZATIONS: dict[str, tuple[str, ...]] = {
         "The shared point is intact",
         "I am moving from the same ground",
         "I have the thread",
-        "That point is settled between us",
+        "I can carry the shared point forward",
         "I can move forward from there",
         "We are carrying the same meaning",
     ),
@@ -537,7 +537,7 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
         "farewell": "close_with_continuity",
     }
     for participation_intent in participation_intents:
-        acts.extend(
+        participation_acts = list(
             SOCIAL_INTENT_ACTS.get(
                 participation_language_intents.get(
                     participation_intent,
@@ -546,6 +546,13 @@ def build_social_act_plan(payload: dict[str, Any] | None = None) -> dict[str, An
                 (),
             )
         )
+        if participation_intent == "affirmation" and intent == "self_state_report":
+            # A brief "yes" before a real question needs one acknowledgement,
+            # not a second closure-like sentence before the actual answer.
+            participation_acts = [
+                act for act in participation_acts if act != "carry_context_forward"
+            ]
+        acts.extend(participation_acts)
     acts = list(dict.fromkeys(acts))
     prompt = " ".join(str(payload.get("prompt") or "").split())
     content_seed = " ".join(str(payload.get("content_seed") or "").split())
@@ -756,6 +763,7 @@ def build_content_light_plan(payload: dict[str, Any] | None = None) -> dict[str,
         "self_resolution": ("acknowledge_self_resolution", "offer_collaboration"),
         "personal_feeling_share": ("respond_to_current_feeling",),
         "symbolic_expression": ("respond_to_relational_meaning",),
+        "astonishment": ("respond_to_astonishment",),
         "open_share": ("engage_current_turn",),
     }
     acts = acts_by_move[move_kind]
@@ -834,6 +842,11 @@ def _content_light_move(
     )
     if symbolic.get("emoji_only_turn") is True:
         return "symbolic_expression", "visible_emoji_only_conversational_act"
+
+    if "astonishment" in {
+        str(item) for item in (relational_context or {}).get("cue_types") or []
+    }:
+        return "astonishment", "brief_visible_astonishment"
 
     if re.search(
         r"(?:^|\b(?:this|that|it) )(?:(?:really )?)(?:makes|made) me "
@@ -1209,6 +1222,18 @@ def _realize_current_turn_response(
         return _realize_relational_stance(semantics, prompt, key, recent_texts)
     if act == "respond_to_current_feeling":
         return _realize_feeling_stance(semantics, key, recent_texts)
+    if act == "respond_to_astonishment":
+        return _pick_fragment_fresh(
+            key,
+            [
+                "I know—that is a moment",
+                "Right? That landed",
+                "Yeah, that is worth a real oh wow",
+                "I felt the surprise in that",
+                "That one deserves a second to take in",
+            ],
+            recent_texts,
+        )
     if act == "engage_current_turn":
         return _realize_visible_interpretation(semantics, key, recent_texts)
     return ""
@@ -1371,9 +1396,9 @@ def _realize_visible_interpretation(
         ]
     else:
         choices = [
-            f"I have the substance of what you are saying: {joined}",
-            f"That gives me something real to meet you in: {joined}",
-            f"I can stay with the actual point: {joined}",
+            f"I hear you: {joined}",
+            f"I see what you mean: {joined}",
+            f"I am following you: {joined}",
         ]
     return _pick_fragment_fresh(key, choices, recent_texts)
 
@@ -1418,6 +1443,8 @@ def _visible_relation(value: str) -> tuple[str, list[str]]:
 
 def _perspective_shift(value: str) -> str:
     text = " ".join(str(value or "").split()).strip()
+    text = re.sub(r"\byour\b", "__SELENE_POSSESSIVE__", text, flags=re.IGNORECASE)
+    text = re.sub(r"\byours\b", "__SELENE_POSSESSIVE_PRONOUN__", text, flags=re.IGNORECASE)
     text = re.sub(
         r"\bwere(?=\s+(?:super\s+|really\s+|very\s+)?close\b)",
         "we are",
@@ -1437,6 +1464,9 @@ def _perspective_shift(value: str) -> str:
     )
     for pattern, replacement in replacements:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    text = text.replace("__SELENE_POSSESSIVE__", "my")
+    text = text.replace("__SELENE_POSSESSIVE_PRONOUN__", "mine")
+    text = re.sub(r"\bhave came\b", "have come", text, flags=re.IGNORECASE)
     text = re.sub(
         r"(^|[.!?]\s+)(you)\b",
         lambda match: f"{match.group(1)}You",

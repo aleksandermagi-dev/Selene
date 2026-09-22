@@ -110,6 +110,7 @@ from .pragmatic_planner import evaluate_response_coverage
 from .registry import truncate
 from .resident_authority import attach_resident_capability_contract
 from .relational_context import interpret_relational_context
+from .relational_trust import appraise_relational_trust
 from .remaining_runtime import build_goal_responsibility_packet
 from .self_state import build_self_state_packet, inactive_self_state_packet
 from .speaker_envelope import (
@@ -384,6 +385,17 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         meaning_text,
         speaker_context=speaker_envelope,
     )
+    relational_trust = appraise_relational_trust(
+        {
+            "speaker_envelope": speaker_envelope,
+            "relational_context": relational_context,
+            "current_evidence": (
+                payload.get("relational_trust_evidence")
+                if isinstance(payload.get("relational_trust_evidence"), dict)
+                else {}
+            ),
+        }
+    )
     contextual_follow_up = inspect_contextual_follow_up(meaning_text, conversation_context)
     if str(contextual_follow_up.get("resolved_prompt") or "").strip():
         meaning_text = truncate(
@@ -651,6 +663,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "contextual_continuity": contextual_continuity,
             "memory_metacognition": memory_metacognition,
             "relational_context": relational_context,
+            "relational_trust": relational_trust,
             "hard_boundary": bool(hard_blockers),
             "selected_route": selected_route,
         },
@@ -2071,6 +2084,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "self_state_context": self_state,
             "affect_expression_guidance": affect_expression,
             "relational_context": relational_context,
+            "relational_trust": relational_trust,
             "response_agency": response_agency,
             "advice_input": payload.get("advice_input") or {},
             "authority_input": payload.get("authority_input") or {},
@@ -2123,7 +2137,9 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         ),
         "contextual_continuity": contextual_continuity,
         "relational_context": relational_context,
+        "relational_trust": relational_trust,
         "relational_context_supplies_response_script": False,
+        "relational_trust_supplies_response_script": False,
         "expression_guidance_changes_meaning": False,
     }
     if hard_blockers:
@@ -2429,6 +2445,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "speaker_envelope": speaker_envelope,
         "affect_expression": affect_expression,
         "relational_context": relational_context,
+        "relational_trust": relational_trust,
         "response_agency": response_agency,
         "source_refs": [
             "selene_chat:metacognition_observer",
@@ -2924,6 +2941,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
         "self_state": self_state,
         "affect_expression": affect_expression,
         "relational_context": relational_context,
+        "relational_trust": relational_trust,
         "response_agency": response_agency,
         "commitment_anomaly_coordination": native_language.get("commitment_anomaly_coordination") or {},
         "commitment_claim_release": commitment_claim_release,
@@ -3075,6 +3093,7 @@ def send_selene_chat(conn: sqlite3.Connection, payload: dict[str, Any] | None = 
             "self_state": self_state,
             "affect_expression": affect_expression,
             "relational_context": relational_context,
+            "relational_trust": relational_trust,
             "response_agency": response_agency,
             "contextual_continuity": contextual_continuity,
             "pragmatic_continuity": pragmatic_continuity,

@@ -1014,7 +1014,7 @@ def _social_match(value: str, kind: str) -> bool:
     patterns = {
         "greeting": ("greetings", "hello", "hey", "hi", "good morning", "good afternoon", "good evening"),
         "farewell": (
-            "catch you", "talk soon", "see you", "goodbye", "bye", "good night", "i'll be back", "ill be back",
+            "catch you", "talk soon", "goodbye", "bye", "good night", "i'll be back", "ill be back",
             "pause here", "pause for now", "stop here", "leave it here", "leave it there", "pick this up later",
             "enough for now", "enough for today", "done for now", "done for today",
         ),
@@ -1027,6 +1027,16 @@ def _social_match(value: str, kind: str) -> bool:
         return any(re.search(rf"(^|[.!?]\s*){re.escape(pattern)}\b", value) for pattern in patterns)
     if kind == "farewell" and re.search(r"(?:^|[,.!?;]\s*)(?:talk to you later|talk later)(?:\s|[,.!?]|$)", value):
         return True
+    if kind == "farewell" and re.search(
+        r"(?:^|[,.!?;]\s*)see you(?:\s+(?:soon|later|tomorrow|then|around))?(?:\s|[,.!?;]|$)",
+        value,
+    ):
+        return not bool(
+            re.search(
+                r"\b(?:glad|happy|good|nice|lovely)\s+to\s+see\s+you\b",
+                value,
+            )
+        )
     if kind == "affirmation":
         return bool(
             re.search(

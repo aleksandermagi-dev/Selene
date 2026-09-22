@@ -118,3 +118,12 @@ def test_relational_context_normalizes_bounded_elongation_of_known_address_terms
     assert "affectionate_address" in result["cue_types"]
     assert result["address_terms"] == ["my friend"]
     assert result["response_script_supplied"] is False
+
+
+@pytest.mark.parametrize("text", ("oh wow :)", "WOW!", "no way <3"))
+def test_relational_context_recognizes_brief_astonishment_without_inventing_state(text):
+    result = interpret_relational_context(text)
+
+    assert "astonishment" in result["cue_types"]
+    assert result["response_script_supplied"] is False
+    assert result["memory_write_active"] is False

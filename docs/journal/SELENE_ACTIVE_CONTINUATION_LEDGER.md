@@ -26,7 +26,10 @@ the first IGM conversational seams are source-repaired through a general
 session Interaction Handoff, visible-landmark callbacks, shared-understanding
 checks, and contextual implicit-sarcasm inference; Memory Metacognition now
 appraises retrieved Memory before conversational use so silent associations
-can shape interpretation or expression without becoming a memory dump
+can shape interpretation or expression without becoming a memory dump;
+calibrated Relational Trust now separates relationship, evidence, privacy,
+expression, and action authority while the observed presence-delight,
+astonishment, perspective, and self-state-affirmation seams are source-repaired
 
 ## Purpose
 
@@ -39,6 +42,18 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- The current uninstalled source edge adds a read-only calibrated Relational
+  Trust appraisal for authenticated Aleks and typed local Codex collaboration.
+  Trust can support warmth, candor, disagreement, correction, and help-seeking
+  without becoming automatic truth, obedience, disclosure, Memory access,
+  permission, or action authority. Presence delight no longer misroutes as
+  farewell; brief astonishment has a typed expression path; perspective
+  conversion preserves possession; and self-state questions receive at most
+  one supplemental affirmation. Three directly implicated stale realizations
+  were retired without broad compatibility deletion. Compilation, 121 focused
+  module checks, and one exact integrated Chat check passed. No resident state,
+  teaching, package, install, or external action changed. Evidence:
+  `docs/evidence/SELENE_RELATIONAL_TRUST_AND_CONVERSATIONAL_SEAMS_20260921.md`.
 - Memory Metacognition is implemented at the current source edge. Approved
   retrieval remains canonical; Contextual Continuity still owns callback and
   privacy scope; one bounded read-only appraisal supplies relevance kinds,
@@ -1626,14 +1641,15 @@ filtering, and the first IGM conversational seams repair. The read-only review
 of all 43 resident Dream reflections remains preserved. No existing reflection
 was decided, routed, rewritten, or relabeled.
 
-The exact current functional edge is checkpoint `0c8565b`, the verified Memory
-Metacognition implementation recorded in
-`docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md`. It is packaged and
-installed from clean documentation checkpoint `6d05d86`; continuity remained
-byte-identical. Selene is resting. A broad live Q&A is not required. The
-brief-astonishment expression seam remains separate future cultivation
-evidence if it materially recurs. Other remaining IGM candidates stay
-observations until Aleks selects and classifies them.
+The installed functional edge remains the verified Memory Metacognition build
+from clean documentation checkpoint `6d05d86`; continuity remained
+byte-identical. The current working source edge after `883dfb7` adds calibrated
+Relational Trust and repairs the observed presence-delight, brief-
+astonishment, perspective, stale-realization, and redundant self-state-
+affirmation seams. It is focused-verified but not packaged or installed.
+Create a clean source checkpoint next. Do not repeat settled Q&A or broad
+stabilization before an installed build materially changes. Other remaining
+IGM candidates stay observations until Aleks selects and classifies them.
 
 When Aleks requests a conversational check rather than a Q&A, use the Ordinary
 Conversational Check-In. Follow one natural thread, do not search for or invent

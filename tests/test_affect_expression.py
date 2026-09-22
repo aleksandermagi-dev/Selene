@@ -189,6 +189,35 @@ def test_relational_context_opens_warmth_without_prescribing_or_claiming_emotion
     _assert_locked(result)
 
 
+def test_relational_trust_makes_candor_and_warmth_available_without_scripting(tmp_path):
+    conn = _conn(tmp_path)
+    trust = {
+        "active": True,
+        "expression_handoff": {
+            "available": True,
+            "warmth_available_not_required": True,
+            "candor_available": True,
+            "response_script_supplied": False,
+        },
+    }
+    result = build_affect_expression_guidance(
+        conn,
+        {
+            "prompt": "Tell me what you really think.",
+            "session_id": 23,
+            "relational_trust": trust,
+        },
+    )
+
+    assert result["relational_trust"] == trust
+    assert result["relational_trust_used"] is True
+    assert result["relational_trust_supplies_response_script"] is False
+    assert result["dimensions"]["warmth"] == "available_not_forced"
+    assert result["dimensions"]["directness"] == "candid_contextual"
+    assert result["guidance_is_optional"] is True
+    _assert_locked(result)
+
+
 def test_expressive_ordinary_greeting_makes_warmth_available_without_forcing_it(tmp_path):
     conn = _conn(tmp_path)
 

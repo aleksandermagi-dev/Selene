@@ -145,6 +145,17 @@ def interpret_relational_context(
         or symbolic_expression.get("primary_meaning") in {"amusement", "playfulness"},
         "current turn visibly opens play",
     )
+    _cue(
+        cues,
+        "astonishment",
+        bool(
+            re.fullmatch(
+                r"(?:oh\s+)?(?:wow+|whoa+|woah+|no\s+way)(?:\s+(?:okay|damn|really))?",
+                lower.strip(" .!?<3:);("),
+            )
+        ),
+        "current turn is a brief visible expression of surprise or astonishment",
+    )
     primary_symbolic_meaning = str(symbolic_expression.get("primary_meaning") or "")
     for meaning in (
         "affection",
