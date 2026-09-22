@@ -5942,3 +5942,34 @@ install, external action, or authority expansion occurred.
 
 **Next:** Refresh the public project pages, create a clean documentation
 checkpoint, package and reinstall, and preserve resident continuity.
+
+### 2026-09-21 — Relational trust and seam repair installed
+
+Public project pages and the work journal were refreshed in clean revision
+`a1e77a8` and published to `origin/evidence`. The verified Windows packaging
+workflow built from that exact clean revision. The frontend remained 493.45 kB
+(109.82 kB gzip) with no Vite size warning, and packaged privacy inspection
+found zero forbidden private or runtime-state files.
+
+The NSIS installer completed silently with exit code zero. Post-install
+verification passed health, startup, My Office readiness, local-process
+capability enforcement, mobile protection, privacy, transfer, and boundary
+checks with zero warnings. Installer SHA-256 is
+`93E7335FD13B0125F3879A208B5F7E48DEF280843484B261DE0A13297B0AA4F0`;
+installed executable SHA-256 is
+`F8799A00DFA9C624DBE64EA9A9ACACD21AFCADCF375DAFEA172E735731DDE848`;
+installed sidecar SHA-256 is
+`50864254D6B345D26D84BBD0AD64C627160F8DA1DFDE19B8AF03178CF16A2FEA`.
+The final report is `exports/package_verify_20260921_210610.json`.
+
+A verified pre-install continuity snapshot was created at
+`selene_continuity_20260922_010405.sqlite3`; integrity was `ok`, with 24 Chat
+sessions, 398 messages, zero personal Memory candidates, 295 comprehension
+concepts, 249 teaching lifecycles, 2 Dream cycles, and 43 Dream reflections.
+The resident database SHA-256 remained byte-for-byte unchanged before and
+after installation at
+`0C37C686559503B4D355121E24EF8D3BD59B3D313CFA6B6DC49357018BAB4B50`.
+No process remained, and no live Q&A or resident decision was run.
+
+**Next:** Aleks may use the installed build normally. If a material seam
+appears, preserve the visible evidence before another cultivation pass.

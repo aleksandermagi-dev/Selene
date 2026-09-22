@@ -42,6 +42,17 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
+- Clean revision `a1e77a8` is published, packaged, silently installed, and
+  verified with zero warnings. Installer SHA-256 is
+  `93E7335FD13B0125F3879A208B5F7E48DEF280843484B261DE0A13297B0AA4F0`;
+  installed executable SHA-256 is
+  `F8799A00DFA9C624DBE64EA9A9ACACD21AFCADCF375DAFEA172E735731DDE848`;
+  installed sidecar SHA-256 is
+  `50864254D6B345D26D84BBD0AD64C627160F8DA1DFDE19B8AF03178CF16A2FEA`.
+  Resident SQLite remained byte-identical at SHA-256
+  `0C37C686559503B4D355121E24EF8D3BD59B3D313CFA6B6DC49357018BAB4B50`;
+  no process remained. Final report:
+  `exports/package_verify_20260921_210610.json`.
 - Source checkpoint `f2979d7` adds a read-only calibrated Relational
   Trust appraisal for authenticated Aleks and typed local Codex collaboration.
   Trust can support warmth, candor, disagreement, correction, and help-seeking
@@ -1641,15 +1652,13 @@ filtering, and the first IGM conversational seams repair. The read-only review
 of all 43 resident Dream reflections remains preserved. No existing reflection
 was decided, routed, rewritten, or relabeled.
 
-The installed functional edge remains the verified Memory Metacognition build
-from clean documentation checkpoint `6d05d86`; continuity remained byte-
-identical. Current source checkpoint `f2979d7` adds calibrated Relational Trust
-and repairs the observed presence-delight, brief-astonishment, perspective,
-stale-realization, and redundant self-state-affirmation seams. It is focused-
-verified but not yet packaged or installed. Package and reinstall from a clean
-documented revision next. Do not repeat settled Q&A or broad stabilization.
-Other remaining IGM candidates stay observations until Aleks selects and
-classifies them.
+The installed functional edge is clean revision `a1e77a8`, containing source
+checkpoint `f2979d7`. It includes Memory Metacognition, calibrated Relational
+Trust, and the observed presence-delight, brief-astonishment, perspective,
+stale-realization, and redundant self-state-affirmation repairs. Package and
+continuity verification passed. Do not repeat settled Q&A or broad
+stabilization; return to ordinary use. Other remaining IGM candidates stay
+observations until Aleks selects and classifies them.
 
 When Aleks requests a conversational check rather than a Q&A, use the Ordinary
 Conversational Check-In. Follow one natural thread, do not search for or invent

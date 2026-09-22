@@ -121,6 +121,11 @@ and redundant-affirmation seams. See the
 [latest evidence](docs/evidence/SELENE_RELATIONAL_TRUST_AND_CONVERSATIONAL_SEAMS_20260921.md)
 and [Memory Metacognition evidence](docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md).
 
+Clean revision `a1e77a8` is packaged and installed. Package health, My Office
+readiness, local-process capability enforcement, privacy exclusions, and
+protected transfer boundaries passed with zero warnings; resident continuity
+remained byte-for-byte unchanged.
+
 A clean Phase 8 package was then built, silently reinstalled, and verified.
 Package health, local-process capability enforcement, My Office readiness,
 privacy inspection, and protected transfer boundaries passed with no warning.

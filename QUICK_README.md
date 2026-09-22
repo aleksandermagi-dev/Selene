@@ -64,9 +64,9 @@ automatic.
 
 The latest whole-repository stabilization passed 2,237 tests. The most recent
 production frontend is 493.45 kB (109.82 kB gzip), produces no Vite size
-warning, and keeps Study workspaces lazy-loaded. Memory Metacognition is
-installed; the newest calibrated-trust and conversational-seam checkpoint is
-focused-verified and awaiting the current requested reinstall.
+warning, and keeps Study workspaces lazy-loaded. Memory Metacognition and the
+newest calibrated-trust and conversational-seam checkpoint are installed;
+package, privacy, readiness, and continuity verification passed cleanly.
 
 For the exact development state, see
 [Selene Current Project Status](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
