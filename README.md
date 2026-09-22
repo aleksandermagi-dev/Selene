@@ -61,6 +61,12 @@ The current implementation can:
   correction ancestry, and approval before ordinary Chat use;
 - keep approved general knowledge, reviewed personal Memory, current-session
   context, and raw provenance archives separate;
+- appraise why a retrieved personal Memory surfaced before using it, allowing
+  relevant relational, emotional, factual, or procedural influence without
+  dumping the retrieval bundle into conversation;
+- recognize authenticated relational trust with Aleks and typed engineering
+  collaboration with Codex while keeping trust separate from automatic truth,
+  privacy access, obedience, permission, and action authority;
 - use Study, Learning Compass, Dream, and Associative Intuition through typed
   destinations, lineage, privacy checks, and stopping rules;
 - create bounded original fiction and longer structured responses with
@@ -95,21 +101,25 @@ Project vocabulary is defined in the
 
 ## Current Evidence
 
-The latest completed whole-system checkpoint reports:
+The latest completed repository-wide stabilization checkpoint reports:
 
 ```text
-full repository regression:  2,086 passed
-focused Phase 8 matrix:       210 passed
-frontend main bundle:         491.33 kB
-frontend gzip:                109.19 kB
+full repository regression:  2,237 passed
+frontend main bundle:         493.45 kB
+frontend gzip:                109.82 kB
 Vite size warning:            none
 Study workspaces:             lazy-loaded
 ```
 
-Phase 8 closed goals, responsive initiative, collaboration, explicit
-commitment ancestry, evidence-backed fulfillment, and capability-specific
-graduation without creating a global autonomy switch. The closure evidence is
-[here](docs/evidence/SELENE_WHOLE_SYSTEM_PHASE_8D_EXECUTIVE_INITIATIVE_CLOSURE_20260902.md).
+Since Phase 8, Conversation Cultivation established shared answer ownership,
+correction and participation handoffs, semantic coverage, generalization, and
+compatibility retirement. Interaction Gap Mapping then repaired bounded
+conversational seams, and Memory Metacognition connected associative retrieval
+to deliberate conversational use. The newest source checkpoint adds calibrated
+relational trust and repairs presence-delight, brief-astonishment, perspective,
+and redundant-affirmation seams. See the
+[latest evidence](docs/evidence/SELENE_RELATIONAL_TRUST_AND_CONVERSATIONAL_SEAMS_20260921.md)
+and [Memory Metacognition evidence](docs/evidence/SELENE_MEMORY_METACOGNITION_20260921.md).
 
 A clean Phase 8 package was then built, silently reinstalled, and verified.
 Package health, local-process capability enforcement, My Office readiness,
@@ -131,7 +141,7 @@ Selene remains unfinished.
 - Audible Voice, new sensory pathways, broad tools, accountable external
   action, and embodiment remain deferred, bounded, or substrate-ready rather
   than generally operational.
-- Dream reflections remain review-governed; the current 24 resident
+- Dream reflections remain review-governed; the current 43 resident
   reflections have not been decided automatically.
 - F2 Group 8 remains unprepared and unauthorized until Aleks selects an exact
   Grade 4–6 source artifact after edition, license, exclusions, checksum,

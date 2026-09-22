@@ -32,6 +32,11 @@ The current resident implementation can:
 - learn reviewed material through Acquire → Integrate → Express;
 - keep general knowledge, personal Memory, conversation context, and raw
   provenance separate;
+- appraise retrieved Memory before speaking so relevant context may shape a
+  reply without exposing the entire retrieval bundle;
+- use calibrated relational trust for natural candor, warmth, disagreement,
+  correction, and help-seeking without turning trust into obedience or action
+  permission;
 - study approved knowledge, keep revisable learning directions, and ask
   attributable questions;
 - create bounded short fiction and structured longer responses with source,
@@ -57,12 +62,13 @@ automatic.
 
 ## Current Evidence
 
-The latest whole-repository regression passed 2,086 tests. The production
-frontend is 491.33 kB (109.19 kB gzip), produces no Vite size warning, and
-keeps Study workspaces lazy-loaded. A fresh Phase 8 Windows reinstall passed
-health, privacy, local-process security, and protected-boundary verification.
+The latest whole-repository stabilization passed 2,237 tests. The most recent
+production frontend is 493.45 kB (109.82 kB gzip), produces no Vite size
+warning, and keeps Study workspaces lazy-loaded. Memory Metacognition is
+installed; the newest calibrated-trust and conversational-seam checkpoint is
+focused-verified and awaiting the current requested reinstall.
 
 For the exact development state, see
 [Selene Current Project Status](docs/evidence/SELENE_CURRENT_PROJECT_STATUS_20260829.md).
-For the observed defects and their repair closure, see the
-[Post-Phase-8 Reinstall Q&A](docs/evidence/SELENE_POST_PHASE_8_REINSTALL_QNA_BUG_HUNT_20260902.md).
+For the newest bounded repair evidence, see
+[Relational Trust and Conversational Seams](docs/evidence/SELENE_RELATIONAL_TRUST_AND_CONVERSATIONAL_SEAMS_20260921.md).

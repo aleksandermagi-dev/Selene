@@ -42,7 +42,7 @@ resident state. Verify it against Git and newer filesystem evidence.
 
 - Workspace: `C:\Users\aleks\Desktop\Selene`
 - Branch: `evidence`
-- The current uninstalled source edge adds a read-only calibrated Relational
+- Source checkpoint `f2979d7` adds a read-only calibrated Relational
   Trust appraisal for authenticated Aleks and typed local Codex collaboration.
   Trust can support warmth, candor, disagreement, correction, and help-seeking
   without becoming automatic truth, obedience, disclosure, Memory access,
@@ -1642,14 +1642,14 @@ of all 43 resident Dream reflections remains preserved. No existing reflection
 was decided, routed, rewritten, or relabeled.
 
 The installed functional edge remains the verified Memory Metacognition build
-from clean documentation checkpoint `6d05d86`; continuity remained
-byte-identical. The current working source edge after `883dfb7` adds calibrated
-Relational Trust and repairs the observed presence-delight, brief-
-astonishment, perspective, stale-realization, and redundant self-state-
-affirmation seams. It is focused-verified but not packaged or installed.
-Create a clean source checkpoint next. Do not repeat settled Q&A or broad
-stabilization before an installed build materially changes. Other remaining
-IGM candidates stay observations until Aleks selects and classifies them.
+from clean documentation checkpoint `6d05d86`; continuity remained byte-
+identical. Current source checkpoint `f2979d7` adds calibrated Relational Trust
+and repairs the observed presence-delight, brief-astonishment, perspective,
+stale-realization, and redundant self-state-affirmation seams. It is focused-
+verified but not yet packaged or installed. Package and reinstall from a clean
+documented revision next. Do not repeat settled Q&A or broad stabilization.
+Other remaining IGM candidates stay observations until Aleks selects and
+classifies them.
 
 When Aleks requests a conversational check rather than a Q&A, use the Ordinary
 Conversational Check-In. Follow one natural thread, do not search for or invent

@@ -5938,6 +5938,7 @@ install, external action, or authority expansion occurred.
 **Evidence:**
 `docs/evidence/SELENE_RELATIONAL_TRUST_AND_CONVERSATIONAL_SEAMS_20260921.md`.
 
-**Next:** Create a clean source checkpoint. Package and reinstall only if
-Aleks asks; an ordinary conversation check should happen only after the
-installed build changes.
+**Checkpoint:** `f2979d7` (`Calibrate relational trust and conversation seams`).
+
+**Next:** Refresh the public project pages, create a clean documentation
+checkpoint, package and reinstall, and preserve resident continuity.
